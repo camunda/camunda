@@ -37,8 +37,8 @@ public class MetadataWriter {
         (objectMapper.writeValueAsString(metadataDto), HashMap.class);
       IndexResponse response = esclient
         .prepareIndex(
-          configurationService.getOptimizeIndex(configurationService.getMeataDataType()),
-          configurationService.getMeataDataType(),
+          configurationService.getOptimizeIndex(configurationService.getMetaDataType()),
+          configurationService.getMetaDataType(),
           ID
         )
         .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)

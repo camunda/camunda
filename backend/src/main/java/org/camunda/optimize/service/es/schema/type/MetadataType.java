@@ -16,7 +16,7 @@ public class MetadataType extends StrictTypeMappingCreator {
 
   @Override
   public String getType() {
-    return configurationService.getMeataDataType();
+    return configurationService.getMetaDataType();
   }
 
   @Override

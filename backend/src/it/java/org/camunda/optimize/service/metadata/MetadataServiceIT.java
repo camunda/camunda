@@ -40,7 +40,7 @@ public class MetadataServiceIT {
 
   @Test
   public void verifyNotStartingIfMetadataIsCorrupted() throws Exception {
-    String metaDataType = embeddedOptimizeRule.getConfigurationService().getMeataDataType();
+    String metaDataType = embeddedOptimizeRule.getConfigurationService().getMetaDataType();
     embeddedOptimizeRule.stopOptimize();
     MetadataDto meta = new MetadataDto();
     meta.setSchemaVersion("TEST");
@@ -61,7 +61,7 @@ public class MetadataServiceIT {
 
   @Test
   public void verifyNotStartingIfVersionDoesNotMatch () throws Exception {
-    String metaDataType = embeddedOptimizeRule.getConfigurationService().getMeataDataType();
+    String metaDataType = embeddedOptimizeRule.getConfigurationService().getMetaDataType();
     embeddedOptimizeRule.stopOptimize();
     elasticSearchRule.deleteOptimizeIndexes();
     MetadataDto meta = new MetadataDto();

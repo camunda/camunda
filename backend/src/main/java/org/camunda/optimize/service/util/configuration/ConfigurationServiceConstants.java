@@ -22,8 +22,6 @@ public interface ConfigurationServiceConstants {
   String ELASTICSEARCH_IMPORT_EXECUTOR_THREAD_COUNT = "$.import.elasticsearchJobExecutorThreadCount";
   String NUMBER_OF_RETRIES_ON_CONFLICT = "$.import.writer.numberOfRetries";
 
-  String ENGINE_IMPORT_MAX_PAGE_SIZE = "$.import.maxPageSize";
-  String ENGINE_IMPORT_PROCESS_DEFINITION_MAX_PAGE_SIZE = "$.import.data.process-definition.maxPageSize";
   String ENGINE_IMPORT_PROCESS_DEFINITION_XML_MAX_PAGE_SIZE = "$.import.data.process-definition-xml.maxPageSize";
   String ENGINE_IMPORT_ACTIVITY_INSTANCE_MAX_PAGE_SIZE = "$.import.data.activity-instance.maxPageSize";
   String ENGINE_IMPORT_PROCESS_INSTANCE_MAX_PAGE_SIZE = "$.import.data.process-instance.maxPageSize";
@@ -46,7 +44,6 @@ public interface ConfigurationServiceConstants {
   String PROCESS_DEFINITION_TYPE = "$.import.data.process-definition.elasticsearchType";
   String PROCESS_DEFINITION_XML_TYPE = "$.import.data.process-definition-xml.elasticsearchType";
   String IMPORT_INDEX_TYPE = "$.import.indexType";
-  String SCROLL_IMPORT_INDEX_TYPE = "$.import.scrollImportIndexType";
   String IMPORT_INDEX_AUTO_STORAGE_INTERVAL = "$.import.importIndexStorageIntervalInSec";
   String LICENSE_TYPE = "$.es.licenseType";
   String REPORT_TYPE = "$.es.reportType";
@@ -59,14 +56,10 @@ public interface ConfigurationServiceConstants {
   String ENGINE_CONNECT_TIMEOUT = "$.engine-commons.connection.timeout";
   String ENGINE_READ_TIMEOUT = "$.engine-commons.read.timeout";
   String HAI_ENDPOINT = "$.engine-commons.hai.resource";
-  String HAI_COUNT_ENDPOINT = "$.engine-commons.hai.count";
   String HVI_ENDPOINT = "$.engine-commons.history.variable.resource";
-  String HVI_COUNT_ENDPOINT = "$.engine-commons.history.variable.count";
   String PROCESS_DEFINITION_ENDPOINT = "$.engine-commons.procdef.resource";
-  String PROCESS_DEFINITION_COUNT_ENDPOINT = "$.engine-commons.procdef.count";
   String PROCESS_DEFINITION_XML_ENDPOINT = "$.engine-commons.procdef.xml";
   String HPI_ENDPOINT = "$.engine-commons.history.procinst.resource";
-  String HPI_COUNT_ENDPOINT = "$.engine-commons.history.procinst.count";
   String USER_VALIDATION_ENDPOINT = "$.engine-commons.user.validation.resource";
 
   String ANALYZER_NAME = "$.es.analyzer.name";
@@ -81,7 +74,6 @@ public interface ConfigurationServiceConstants {
 
   String ENGINE_DATE_FORMAT = "$.serialization.engineDateFormat";
   String OPTIMIZE_DATE_FORMAT = "$.serialization.optimizeDateFormat";
-  String MAX_VARIABLE_VALUE_LIST_SIZE = "$.variable.maxValueListSize";
   String CONTAINER_HOST = "$.container.host";
   String CONTAINER_KEYSTORE_PASSWORD = "$.container.keystore.password";
   String CONTAINER_KEYSTORE_LOCATION = "$.container.keystore.location";

@@ -35,9 +35,9 @@ public class MetadataReader {
 
     QueryBuilder allQuery = QueryBuilders.matchAllQuery();
     SearchResponse searchResponse = esclient.prepareSearch(
-      configurationService.getOptimizeIndex(configurationService.getMeataDataType())
+      configurationService.getOptimizeIndex(configurationService.getMetaDataType())
     )
-      .setTypes(configurationService.getMeataDataType())
+      .setTypes(configurationService.getMetaDataType())
       .setQuery(allQuery)
       .get();
 

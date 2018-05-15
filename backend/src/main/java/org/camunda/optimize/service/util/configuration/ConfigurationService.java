@@ -48,16 +48,13 @@ public class ConfigurationService {
   private Integer elasticSearchPort;
   private String optimizeIndex;
   private String haiEndpoint;
-  private String haiCountEndpoint;
   private String userValidationEndpoint;
   private String processDefinitionEndpoint;
-  private String processDefinitionCountEndpoint;
 
   private String eventType;
   private String processDefinitionType;
   private String processDefinitionXmlType;
   private String importIndexType;
-  private String scrollImportIndexType;
   private String durationHeatmapTargetValueType;
   private String variableType;
   private String processInstanceType;
@@ -76,7 +73,6 @@ public class ConfigurationService {
   private String tokenFilter;
   private String engineDateFormat;
   private String optimizeDateFormat;
-  private Integer engineImportMaxPageSize;
   private Long importHandlerWait;
   private Long maximumBackoff;
   private Boolean backoffEnabled;
@@ -88,9 +84,6 @@ public class ConfigurationService {
   private Integer engineConnectTimeout;
   private Integer engineReadTimeout;
   private String hviEndpoint;
-  private Integer maxVariableValueListSize;
-  private String hviCountEndpoint;
-  private String hpiCountEndpoint;
   private Integer engineImportProcessInstanceMaxPageSize;
   private Integer engineImportVariableInstanceMaxPageSize;
   private String esRefreshInterval;
@@ -103,7 +96,6 @@ public class ConfigurationService {
   private List<String> variableImportPluginBasePackages;
 
   private Integer numberOfRetriesOnConflict;
-  private Integer engineImportProcessDefinitionMaxPageSize;
   private Long engineImportActivityInstanceMaxPageSize;
   private String containerHost;
   private String containerKeystorePassword;
@@ -287,13 +279,6 @@ public class ConfigurationService {
     return haiEndpoint;
   }
 
-  public String getHistoricActivityInstanceCountEndpoint() {
-    if(haiCountEndpoint == null) {
-      haiCountEndpoint = jsonContext.read(ConfigurationServiceConstants.HAI_COUNT_ENDPOINT);
-    }
-    return haiCountEndpoint;
-  }
-
   public String getEventType() {
     if (eventType == null) {
       eventType = jsonContext.read(ConfigurationServiceConstants.EVENT_TYPE);
@@ -315,7 +300,7 @@ public class ConfigurationService {
     return processDefinitionType;
   }
 
-  public String getMeataDataType() {
+  public String getMetaDataType() {
     if (metaDataType == null) {
       metaDataType = jsonContext.read(ConfigurationServiceConstants.METADATA_TYPE);
     }
@@ -327,13 +312,6 @@ public class ConfigurationService {
       processDefinitionEndpoint = jsonContext.read(ConfigurationServiceConstants.PROCESS_DEFINITION_ENDPOINT);
     }
     return processDefinitionEndpoint;
-  }
-
-  public String getProcessDefinitionCountEndpoint() {
-    if (processDefinitionCountEndpoint == null) {
-      processDefinitionCountEndpoint = jsonContext.read(ConfigurationServiceConstants.PROCESS_DEFINITION_COUNT_ENDPOINT);
-    }
-    return processDefinitionCountEndpoint;
   }
 
   public String getCamundaWebappsEndpoint() {
@@ -399,14 +377,6 @@ public class ConfigurationService {
         jsonContext.read(ConfigurationServiceConstants.IMPORT_INDEX_AUTO_STORAGE_INTERVAL, Integer.class);
     }
     return importIndexAutoStorageIntervalInSec;
-  }
-
-  public int getEngineImportMaxPageSize() {
-    if (engineImportMaxPageSize == null) {
-      engineImportMaxPageSize = jsonContext.read(ConfigurationServiceConstants.ENGINE_IMPORT_MAX_PAGE_SIZE, Integer.class);
-    }
-    ensureGreaterThanZero(engineImportMaxPageSize);
-    return engineImportMaxPageSize;
   }
 
   public long getImportHandlerWait() {
@@ -486,13 +456,6 @@ public class ConfigurationService {
     return importIndexType;
   }
 
-  public String getScrollImportIndexType() {
-    if (scrollImportIndexType == null) {
-      scrollImportIndexType = jsonContext.read(ConfigurationServiceConstants.SCROLL_IMPORT_INDEX_TYPE);
-    }
-    return scrollImportIndexType;
-  }
-
   public String getDurationHeatmapTargetValueType() {
     if (durationHeatmapTargetValueType == null) {
       durationHeatmapTargetValueType = jsonContext.read(ConfigurationServiceConstants.DURATION_HEATMAP_TARGET_VALUE_TYPE);
@@ -514,32 +477,11 @@ public class ConfigurationService {
     return variableType;
   }
 
-  public int getMaxVariableValueListSize() {
-    if (maxVariableValueListSize == null) {
-      maxVariableValueListSize = jsonContext.read(ConfigurationServiceConstants.MAX_VARIABLE_VALUE_LIST_SIZE);
-    }
-    return maxVariableValueListSize;
-  }
-
-  public String getHistoricVariableInstanceCountEndpoint() {
-    if (hviCountEndpoint == null) {
-      hviCountEndpoint = jsonContext.read(ConfigurationServiceConstants.HVI_COUNT_ENDPOINT);
-    }
-    return hviCountEndpoint;
-  }
-
   public String getProcessInstanceType() {
     if (processInstanceType == null) {
       processInstanceType = jsonContext.read(ConfigurationServiceConstants.PROCESS_INSTANCE_TYPE);
     }
     return processInstanceType;
-  }
-
-  public String getHistoricProcessInstanceCountEndpoint() {
-    if (hpiCountEndpoint == null) {
-      hpiCountEndpoint = jsonContext.read(ConfigurationServiceConstants.HPI_COUNT_ENDPOINT);
-    }
-    return hpiCountEndpoint;
   }
 
   public int getEngineImportProcessInstanceMaxPageSize() {
@@ -652,14 +594,6 @@ public class ConfigurationService {
     return numberOfRetriesOnConflict;
   }
 
-  public int getEngineImportProcessDefinitionMaxPageSize() {
-    if (engineImportProcessDefinitionMaxPageSize == null) {
-      engineImportProcessDefinitionMaxPageSize = jsonContext.read(ConfigurationServiceConstants.ENGINE_IMPORT_PROCESS_DEFINITION_MAX_PAGE_SIZE);
-    }
-    ensureGreaterThanZero(engineImportProcessDefinitionMaxPageSize);
-    return engineImportProcessDefinitionMaxPageSize;
-  }
-
   public long getEngineImportActivityInstanceMaxPageSize() {
     if (engineImportActivityInstanceMaxPageSize == null) {
       engineImportActivityInstanceMaxPageSize = jsonContext.read(ConfigurationServiceConstants.ENGINE_IMPORT_ACTIVITY_INSTANCE_MAX_PAGE_SIZE, Long.class);
@@ -717,41 +651,6 @@ public class ConfigurationService {
     return checkMetadata;
   }
 
-  public String getHpiEndpoint() {
-    if (hpiEndpoint == null) {
-      hpiEndpoint = jsonContext.read(ConfigurationServiceConstants.HPI_ENDPOINT);
-    }
-    return hpiEndpoint;
-  }
-
-  public String getHviEndpoint() {
-    if (hviEndpoint == null) {
-      hviEndpoint = jsonContext.read(ConfigurationServiceConstants.HVI_ENDPOINT);
-    }
-    return hviEndpoint;
-  }
-
-  public String getHaiEndpoint() {
-    if (haiEndpoint == null) {
-      haiEndpoint = jsonContext.read(ConfigurationServiceConstants.HAI_ENDPOINT);
-    }
-    return haiEndpoint;
-  }
-
-  public String getHaiCountEndpoint() {
-    if (haiCountEndpoint == null) {
-      haiCountEndpoint = jsonContext.read(ConfigurationServiceConstants.HAI_COUNT_ENDPOINT);
-    }
-    return haiCountEndpoint;
-  }
-
-  public String getFinishedPiIdTrackingType() {
-    if (finishedPiIdTrackingType == null) {
-      finishedPiIdTrackingType = jsonContext.read(ConfigurationServiceConstants.FINISHED_PROCESS_INSTANCE_ID_TRACKING_TYPE);
-    }
-    return finishedPiIdTrackingType;
-  }
-
   public String getAlertType() {
     if (alertType == null) {
       alertType = jsonContext.read(ConfigurationServiceConstants.ALERT_TYPE);
@@ -773,20 +672,6 @@ public class ConfigurationService {
     return dashboardShareType;
   }
 
-  public String getHviCountEndpoint() {
-    if (hviCountEndpoint == null) {
-      hviCountEndpoint = jsonContext.read(ConfigurationServiceConstants.HVI_COUNT_ENDPOINT);
-    }
-    return hviCountEndpoint;
-  }
-
-  public String getHpiCountEndpoint() {
-    if (hpiCountEndpoint == null) {
-      hpiCountEndpoint = jsonContext.read(ConfigurationServiceConstants.HPI_COUNT_ENDPOINT);
-    }
-    return hpiCountEndpoint;
-  }
-
   public String getProcessDefinitionXmlEndpoint(String processDefinitionId) {
     String processDefinitionXmlEndpoint =
         getProcessDefinitionEndpoint() + "/" + processDefinitionId + getProcessDefinitionXmlEndpoint();
@@ -797,20 +682,12 @@ public class ConfigurationService {
     return this.getEngineRestApiEndpoint(engineAlias) + ENGINE_REST_PATH + getEngineName(engineAlias);
   }
 
-  public boolean isEngineAuthenticationEnabled(String engineAlias) {
-    return getEngineConfiguration(engineAlias).getAuthentication().isEnabled();
-  }
-
   public String getDefaultEngineAuthenticationUser(String engineAlias) {
     return getEngineConfiguration(engineAlias).getAuthentication().getUser();
   }
 
   public String getDefaultEngineAuthenticationPassword(String engineAlias) {
     return getEngineConfiguration(engineAlias).getAuthentication().getPassword();
-  }
-
-  public boolean isEngineConnected(String engineAlias) {
-    return getEngineConfiguration(engineAlias).isEnabled();
   }
 
   /**
@@ -983,10 +860,6 @@ public class ConfigurationService {
     this.haiEndpoint = haiEndpoint;
   }
 
-  public void setHaiCountEndpoint(String haiCountEndpoint) {
-    this.haiCountEndpoint = haiCountEndpoint;
-  }
-
   public void setEventType(String eventType) {
     this.eventType = eventType;
   }
@@ -1001,10 +874,6 @@ public class ConfigurationService {
 
   public void setProcessDefinitionEndpoint(String processDefinitionEndpoint) {
     this.processDefinitionEndpoint = processDefinitionEndpoint;
-  }
-
-  public void setProcessDefinitionCountEndpoint(String processDefinitionCountEndpoint) {
-    this.processDefinitionCountEndpoint = processDefinitionCountEndpoint;
   }
 
   public void setProcessDefinitionXmlType(String processDefinitionXmlType) {
@@ -1033,10 +902,6 @@ public class ConfigurationService {
 
   public void setOptimizeDateFormat(String optimizeDateFormat) {
     this.optimizeDateFormat = optimizeDateFormat;
-  }
-
-  public void setEngineImportMaxPageSize(Integer engineImportMaxPageSize) {
-    this.engineImportMaxPageSize = engineImportMaxPageSize;
   }
 
   public void setImportHandlerWait(Long importHandlerWait) {
@@ -1079,10 +944,6 @@ public class ConfigurationService {
     this.importIndexType = importIndexType;
   }
 
-  public void setScrollImportIndexType(String scrollImportIndexType) {
-    this.scrollImportIndexType = scrollImportIndexType;
-  }
-
   public void setDurationHeatmapTargetValueType(String durationHeatmapTargetValueType) {
     this.durationHeatmapTargetValueType = durationHeatmapTargetValueType;
   }
@@ -1095,20 +956,8 @@ public class ConfigurationService {
     this.variableType = variableType;
   }
 
-  public void setMaxVariableValueListSize(Integer maxVariableValueListSize) {
-    this.maxVariableValueListSize = maxVariableValueListSize;
-  }
-
-  public void setHviCountEndpoint(String hviCountEndpoint) {
-    this.hviCountEndpoint = hviCountEndpoint;
-  }
-
   public void setProcessInstanceType(String processInstanceType) {
     this.processInstanceType = processInstanceType;
-  }
-
-  public void setHpiCountEndpoint(String hpiCountEndpoint) {
-    this.hpiCountEndpoint = hpiCountEndpoint;
   }
 
   public void setEngineImportProcessInstanceMaxPageSize(Integer engineImportProcessInstanceMaxPageSize) {
@@ -1161,10 +1010,6 @@ public class ConfigurationService {
 
   public void setNumberOfRetriesOnConflict(Integer numberOfRetriesOnConflict) {
     this.numberOfRetriesOnConflict = numberOfRetriesOnConflict;
-  }
-
-  public void setEngineImportProcessDefinitionMaxPageSize(Integer engineImportProcessDefinitionMaxPageSize) {
-    this.engineImportProcessDefinitionMaxPageSize = engineImportProcessDefinitionMaxPageSize;
   }
 
   public void setEngineImportActivityInstanceMaxPageSize(Long engineImportActivityInstanceMaxPageSize) {
