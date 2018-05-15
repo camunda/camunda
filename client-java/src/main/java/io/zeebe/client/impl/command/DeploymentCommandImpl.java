@@ -26,6 +26,8 @@ public class DeploymentCommandImpl extends DeploymentRecordImpl implements Deplo
 {
     private DeploymentCommandName name;
 
+    private String errorMessage;
+
     @JsonCreator
     public DeploymentCommandImpl(@JacksonInject ZeebeObjectMapper objectMapper)
     {
@@ -43,6 +45,16 @@ public class DeploymentCommandImpl extends DeploymentRecordImpl implements Deplo
     public DeploymentCommandName getName()
     {
         return name;
+    }
+
+    public String getErrorMessage()
+    {
+        return errorMessage;
+    }
+
+    public void setErrorMessage(String errorMessage)
+    {
+        this.errorMessage = errorMessage;
     }
 
     @Override

@@ -15,25 +15,10 @@
  */
 package io.zeebe.broker.it.clustering;
 
-import io.zeebe.broker.it.ClientRule;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.clustering.impl.TopologyBroker;
-import io.zeebe.client.cmd.ClientException;
-import io.zeebe.client.event.TaskEvent;
-import io.zeebe.client.topic.Partition;
-import io.zeebe.client.topic.Topic;
-import io.zeebe.client.topic.Topics;
-import io.zeebe.client.impl.clustering.BrokerInfoImpl;
-import io.zeebe.client.impl.topic.Topic;
-import io.zeebe.client.impl.topic.Topics;
-import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.transport.SocketAddress;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -42,10 +27,18 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
-import static io.zeebe.test.util.TestUtil.waitUntil;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import io.zeebe.broker.it.ClientRule;
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.commands.*;
+import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.client.api.events.JobEvent.JobState;
+import io.zeebe.client.cmd.ClientException;
+import io.zeebe.protocol.Protocol;
+import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.transport.SocketAddress;
+import org.junit.*;
+import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
 
 public class CreateTopicClusteredTest
 {
@@ -92,7 +85,7 @@ public class CreateTopicClusteredTest
 
         // when
         final Topics topicsResponse =
-            doRepeatedly(() -> client.topics().getTopics().execute())
+            doRepeatedly(() -> client.newTopicsRequest().send().join())
                 .until((topics -> topics.getTopics().size() == 2));
 
         final List<Topic> topics = topicsResponse.getTopics();
@@ -108,16 +101,19 @@ public class CreateTopicClusteredTest
     }
 
     @Test
-    public void shouldCreateTaskAfterTopicCreation()
+    public void shouldCreateJobAfterTopicCreation()
     {
         // given
         clusteringRule.createTopic("foo", PARTITION_COUNT);
 
         // then
-        final TaskEvent taskEvent = client.tasks().create("foo", "bar").execute();
+        final JobEvent jobEvent = client.topicClient("foo").jobClient()
+                .newCreateCommand()
+                .jobType("bar")
+                .send()
+                .join();
 
-        assertThat(taskEvent).isNotNull();
-        assertThat(taskEvent.getState()).isEqualTo("CREATED");
+        assertThat(jobEvent.getState()).isEqualTo(JobState.CREATED);
     }
 
     @Test
@@ -126,23 +122,29 @@ public class CreateTopicClusteredTest
         // given
         final int partitionsCount = 1;
         clusteringRule.createTopic("foo", partitionsCount, 3);
-        final TaskEvent taskEvent = client.tasks().create("foo", "bar").execute();
-        final int partitionId = taskEvent.getMetadata().getPartitionId();
 
-        final BrokerInfoImpl leaderForPartition = clusteringRule.getLeaderForPartition(partitionId);
+        final JobEvent jobEvent = client.topicClient("foo").jobClient()
+                .newCreateCommand()
+                .jobType("bar")
+                .send()
+                .join();
+
+        final int partitionId = jobEvent.getMetadata().getPartitionId();
+
+        final BrokerInfo leaderForPartition = clusteringRule.getLeaderForPartition(partitionId);
         final SocketAddress currentLeaderAddress = leaderForPartition.getSocketAddress();
 
         // when
         clusteringRule.stopBroker(currentLeaderAddress);
 
         // then
-        final BrokerInfoImpl newLeader = clusteringRule.getLeaderForPartition(partitionId);
+        final BrokerInfo newLeader = clusteringRule.getLeaderForPartition(partitionId);
         assertThat(newLeader.getSocketAddress()).isNotEqualTo(leaderForPartition.getSocketAddress());
     }
 
     @Test
     @Ignore("https://github.com/zeebe-io/zeebe/issues/844")
-    public void shouldCompleteTaskAfterNewLeaderWasChosen() throws Exception
+    public void shouldCompleteJobAfterNewLeaderWasChosen() throws Exception
     {
         // given
         final int partitionsCount = 1;
@@ -150,45 +152,52 @@ public class CreateTopicClusteredTest
         final int replicationFactor = 3;
         clusteringRule.createTopic(topicName, partitionsCount, replicationFactor);
 
-        final TaskEvent taskEvent = client.tasks().create(topicName, "bar").execute();
-        final int partitionId = taskEvent.getMetadata().getPartitionId();
+        final JobEvent jobEvent = client.topicClient(topicName).jobClient()
+                .newCreateCommand()
+                .jobType("bar")
+                .send()
+                .join();
 
-        final BrokerInfoImpl leaderForPartition = clusteringRule.getLeaderForPartition(partitionId);
+        final int partitionId = jobEvent.getMetadata().getPartitionId();
+
+        final BrokerInfo leaderForPartition = clusteringRule.getLeaderForPartition(partitionId);
         final SocketAddress currentLeaderAddress = leaderForPartition.getSocketAddress();
 
         // when
         clusteringRule.stopBroker(currentLeaderAddress);
 
         // then
-        final BrokerInfoImpl newLeader = clusteringRule.getLeaderForPartition(partitionId);
+        final BrokerInfo newLeader = clusteringRule.getLeaderForPartition(partitionId);
         assertThat(newLeader.getSocketAddress()).isNotEqualTo(leaderForPartition.getSocketAddress());
 
-        final CompletableFuture<TaskEvent> taskCompleted = new CompletableFuture<>();
-        client.tasks()
-              .newTaskSubscription(topicName)
-              .handler((taskClient, lockedEvent) ->
+        final CompletableFuture<JobEvent> jobCompleted = new CompletableFuture<>();
+        client.topicClient(topicName)
+              .subscriptionClient()
+              .newJobSubscription()
+              .jobType("bar")
+              .handler((client, event) ->
               {
-                  final TaskEvent completedTask = taskClient.complete(lockedEvent)
-                                                      .execute();
-                  taskCompleted.complete(completedTask);
+                  final JobEvent completedJob = client
+                          .newCompleteCommand(event)
+                          .send()
+                          .join();
+
+                  jobCompleted.complete(completedJob);
               })
-              .taskType("bar")
-              .lockOwner("owner")
-              .lockTime(5000)
               .open();
 
-        waitUntil(taskCompleted::isDone);
+        waitUntil(jobCompleted::isDone);
 
-        assertThat(taskCompleted).isCompleted();
-        final TaskEvent completedTask = taskCompleted.get();
-        assertThat(completedTask.getState()).isEqualTo("COMPLETED");
+        assertThat(jobCompleted).isCompleted();
+        final JobEvent completedTask = jobCompleted.get();
+        assertThat(completedTask.getState()).isEqualTo(JobState.COMPLETED);
     }
 
     @Test
     public void shouldNotBeAbleToRequestTopicsAfterGoingUnderReplicationFactor()
     {
         // given
-        final TopologyBroker leaderForSystemPartition = clusteringRule.getLeaderForPartition(Protocol.SYSTEM_PARTITION);
+        final BrokerInfo leaderForSystemPartition = clusteringRule.getLeaderForPartition(Protocol.SYSTEM_PARTITION);
         final SocketAddress[] otherBrokers = clusteringRule.getOtherBrokers(leaderForSystemPartition.getSocketAddress());
 
         // when
@@ -205,7 +214,7 @@ public class CreateTopicClusteredTest
         }));
 
         // but requesting topics is not possible since replication factor is not reached -> leader partition was removed
-        final Future<Topics> topicRequestFuture = client.topics().getTopics().executeAsync();
+        final Future<Topics> topicRequestFuture = client.newTopicsRequest().send();
         doRepeatedly(() -> clientRule.getActorClock().addTime(Duration.ofSeconds(1)))
             .until((v) -> topicRequestFuture.isDone());
         assertThatThrownBy(() -> topicRequestFuture.get())
@@ -214,7 +223,7 @@ public class CreateTopicClusteredTest
     }
 
     @Test
-    public void shouldNotBeAbleToCreateTaskAfterGoingUnderReplicationFactor()
+    public void shouldNotBeAbleToCreateJobAfterGoingUnderReplicationFactor()
     {
         // given
         final int partitionCount = 1;
@@ -222,9 +231,9 @@ public class CreateTopicClusteredTest
         final String topicName = "topicName";
         final Topic topic = clusteringRule.createTopic(topicName, partitionCount, replicationFactor);
 
-        final TopologyBroker leaderForSystemPartition = clusteringRule.getLeaderForPartition(Protocol.SYSTEM_PARTITION);
+        final BrokerInfo leaderForSystemPartition = clusteringRule.getLeaderForPartition(Protocol.SYSTEM_PARTITION);
         final int partitionId = topic.getPartitions().get(0).getId();
-        final TopologyBroker leaderForTopicPartition = clusteringRule.getLeaderForPartition(partitionId);
+        final BrokerInfo leaderForTopicPartition = clusteringRule.getLeaderForPartition(partitionId);
         final SocketAddress[] otherBrokers = clusteringRule.getOtherBrokers(leaderForTopicPartition.getSocketAddress());
 
         // when
@@ -242,12 +251,17 @@ public class CreateTopicClusteredTest
         }));
 
         // but creating task on topic is no longer possible since replication factor is not reached -> leader partition was removed
-        final String taskType = "taskType";
-        final Future<TaskEvent> taskCreationFuture = client.tasks().create(topicName, taskType).executeAsync();
+        final String jobType = "jobType";
+        final Future<JobEvent> jobCreationFuture = client.topicClient(topicName)
+                .jobClient()
+                .newCreateCommand()
+                .jobType(jobType)
+                .send();
+
         doRepeatedly(() -> clientRule.getActorClock().addTime(Duration.ofSeconds(1)))
-            .until((v) -> taskCreationFuture.isDone());
-        assertThatThrownBy(() -> taskCreationFuture.get())
-            .hasMessageContaining("Request timed out (PT15S). Request was: [ topic = topicName, partition = 1, event type = TASK, state = CREATE ]")
+            .until((v) -> jobCreationFuture.isDone());
+        assertThatThrownBy(() -> jobCreationFuture.get())
+            .hasMessageContaining("Request timed out (PT15S). Request was: [ topic = topicName, partition = 1, value type = JOB, command = CREATE ]")
             .hasCauseInstanceOf(ClientException.class);
     }
 }

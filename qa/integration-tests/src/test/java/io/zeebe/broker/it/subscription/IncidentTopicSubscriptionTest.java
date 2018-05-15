@@ -22,15 +22,24 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.zeebe.client.api.events.IncidentEvent.IncidentState;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.event.*;
+import io.zeebe.client.api.clients.TopicClient;
+import io.zeebe.client.api.events.IncidentEvent;
+import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.record.RecordMetadata;
+import io.zeebe.client.api.subscription.IncidentEventHandler;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.test.util.TestUtil;
-import org.junit.*;
-import org.junit.rules.RuleChain;
 
 public class IncidentTopicSubscriptionTest
 {
@@ -43,12 +52,12 @@ public class IncidentTopicSubscriptionTest
         .outerRule(brokerRule)
         .around(clientRule);
 
-    protected ZeebeClient client;
+    protected TopicClient client;
 
     @Before
     public void setUp()
     {
-        this.client = clientRule.getClient();
+        this.client = clientRule.getClient().topicClient();
 
         final WorkflowDefinition workflow = Bpmn.createExecutableWorkflow("process")
                      .startEvent("start")
@@ -57,100 +66,114 @@ public class IncidentTopicSubscriptionTest
                      .endEvent("end")
                      .done();
 
-        clientRule.workflows().deploy(clientRule.getDefaultTopic())
+        client.workflowClient()
+            .newDeployCommand()
             .addWorkflowModel(workflow, "workflow.bpmn")
-            .execute();
+            .send()
+            .join();
     }
 
     @Test
     public void shouldReceiveWorkflowIncidentEvents()
     {
         // given
-        final WorkflowInstanceEvent workflowInstance = clientRule.workflows().create(clientRule.getDefaultTopic())
+        final WorkflowInstanceEvent workflowInstance = client.workflowClient()
+            .newCreateInstanceCommand()
             .bpmnProcessId("process")
-            .execute();
+            .latestVersion()
+            .send()
+            .join();
 
         final RecordingIncidentEventHandler handler = new RecordingIncidentEventHandler();
 
         // when
-        clientRule.topics().newSubscription(clientRule.getDefaultTopic())
-            .startAtHeadOfTopic()
-            .incidentEventHandler(handler)
+        client.subscriptionClient()
+            .newTopicSubscription()
             .name("test")
+            .incidentEventHandler(handler)
+            .startAtHeadOfTopic()
             .open();
 
         // then
-        TestUtil.waitUntil(() -> handler.numRecordedEvents() >= 2);
+        TestUtil.waitUntil(() -> handler.numRecordedEvents() >= 1);
 
-        final IncidentEvent event = handler.getEvent(1);
-        assertThat(event.getState()).isEqualTo("CREATED");
+        final IncidentEvent event = handler.getEvent(0);
+        assertThat(event.getState()).isEqualTo(IncidentState.CREATED);
         assertThat(event.getErrorType()).isEqualTo("IO_MAPPING_ERROR");
         assertThat(event.getErrorMessage()).isEqualTo("No data found for query $.foo.");
         assertThat(event.getBpmnProcessId()).isEqualTo("process");
         assertThat(event.getWorkflowInstanceKey()).isEqualTo(workflowInstance.getWorkflowInstanceKey());
         assertThat(event.getActivityId()).isEqualTo("task");
         assertThat(event.getActivityInstanceKey()).isGreaterThan(0);
-        assertThat(event.getTaskKey()).isNull();
+        assertThat(event.getJobKey()).isNull();
     }
 
     @Test
     public void shouldReceiveTaskIncidentEvents()
     {
         // given
-        final TaskEvent task = clientRule.tasks().create(clientRule.getDefaultTopic(), "test").execute();
+        final JobEvent job = client.jobClient()
+            .newCreateCommand()
+            .jobType("test")
+            .send()
+            .join();
 
-        clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
-            .lockTime(Duration.ofMinutes(5))
-            .lockOwner("test")
-            .taskType("test")
+        client.subscriptionClient()
+            .newJobSubscription()
+            .jobType("test")
             .handler((c, t) ->
             {
                 throw new RuntimeException("expected failure");
             })
+            .lockTime(Duration.ofMinutes(5))
+            .lockOwner("test")
             .open();
 
         final RecordingIncidentEventHandler handler = new RecordingIncidentEventHandler();
 
         // when
-        clientRule.topics().newSubscription(clientRule.getDefaultTopic())
-            .startAtHeadOfTopic()
-            .incidentEventHandler(handler)
+        client.subscriptionClient()
+            .newTopicSubscription()
             .name("test")
+            .incidentEventHandler(handler)
+            .startAtHeadOfTopic()
             .open();
 
         // then
-        TestUtil.waitUntil(() -> handler.numRecordedEvents() >= 2);
+        TestUtil.waitUntil(() -> handler.numRecordedEvents() >= 1);
 
-        final IncidentEvent event = handler.getEvent(1);
-        assertThat(event.getState()).isEqualTo("CREATED");
-        assertThat(event.getErrorType()).isEqualTo("TASK_NO_RETRIES");
+        final IncidentEvent event = handler.getEvent(0);
+        assertThat(event.getState()).isEqualTo(IncidentState.CREATED);
+        assertThat(event.getErrorType()).isEqualTo("JOB_NO_RETRIES");
         assertThat(event.getErrorMessage()).isEqualTo("No more retries left.");
         assertThat(event.getBpmnProcessId()).isNull();
         assertThat(event.getWorkflowInstanceKey()).isNull();
         assertThat(event.getActivityId()).isNull();
         assertThat(event.getActivityInstanceKey()).isNull();
-        assertThat(event.getTaskKey()).isEqualTo(task.getMetadata().getKey());
+        assertThat(event.getJobKey()).isEqualTo(job.getKey());
     }
 
     @Test
     public void shouldInvokeDefaultHandler() throws IOException
     {
         // given
-        clientRule.workflows().create(clientRule.getDefaultTopic())
+        client.workflowClient().newCreateInstanceCommand()
             .bpmnProcessId("process")
-            .execute();
+            .latestVersion()
+            .send()
+            .join();
 
         final RecordingEventHandler handler = new RecordingEventHandler();
 
         // when no POJO handler is registered
-        clientRule.topics().newSubscription(clientRule.getDefaultTopic())
-            .startAtHeadOfTopic()
-            .handler(handler)
+        client.subscriptionClient().newTopicSubscription()
             .name("sub-2")
+            .recordHandler(handler)
+            .startAtHeadOfTopic()
             .open();
 
         // then
-        TestUtil.waitUntil(() -> handler.numRecordedEventsOfType(TopicEventType.INCIDENT) >= 2);
+        TestUtil.waitUntil(() -> handler.numRecordsOfType(RecordMetadata.ValueType.INCIDENT) >= 2);
     }
 
     protected static class RecordingIncidentEventHandler implements IncidentEventHandler
@@ -158,7 +181,7 @@ public class IncidentTopicSubscriptionTest
         protected List<IncidentEvent> events = new ArrayList<>();
 
         @Override
-        public void handle(IncidentEvent event) throws Exception
+        public void onIncidentEvent(IncidentEvent event) throws Exception
         {
             this.events.add(event);
         }

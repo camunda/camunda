@@ -15,21 +15,31 @@
  */
 package io.zeebe.broker.it;
 
-import java.io.*;
-import java.util.concurrent.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
+
+import org.assertj.core.util.Files;
+import org.junit.rules.ExternalResource;
+import org.slf4j.Logger;
 
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceContainer;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.allocation.DirectBufferAllocator;
 import io.zeebe.util.sched.clock.ControlledActorClock;
-import org.assertj.core.util.Files;
-import org.junit.rules.ExternalResource;
-import org.slf4j.Logger;
 
 public class EmbeddedBrokerRule extends ExternalResource
 {

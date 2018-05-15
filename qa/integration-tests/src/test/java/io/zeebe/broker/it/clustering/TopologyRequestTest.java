@@ -25,12 +25,10 @@ import java.util.stream.Collectors;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.impl.clustering.*;
+import io.zeebe.client.api.commands.*;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
@@ -86,8 +84,8 @@ public class TopologyRequestTest
                     topologyBrokers.stream()
                                    .filter(broker -> !broker.getSocketAddress().equals(oldLeader))
                                    .flatMap(broker -> broker.getPartitions().stream())
-                                   .filter(PartitionInfoImpl::isLeader)
-                                   .map(PartitionInfoImpl::getPartitionId)
+                                   .filter(PartitionInfo::isLeader)
+                                   .map(PartitionInfo::getPartitionId)
                                    .collect(Collectors.toSet())
                                    .containsAll(partitions)
             );
@@ -96,9 +94,9 @@ public class TopologyRequestTest
         clusteringRule.createTopic("foo", 1);
     }
 
-    private List<BrokerInfoImpl> requestTopologyAsync()
+    private List<BrokerInfo> requestTopologyAsync()
     {
-        final Future<TopologyImpl> topologyResponseFuture = zeebeClient.requestTopology().send();
+        final Future<Topology> topologyResponseFuture = zeebeClient.newTopologyRequest().send();
 
         waitUntil(() -> topologyResponseFuture.isDone());
 

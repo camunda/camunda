@@ -15,37 +15,29 @@
  */
 package io.zeebe.broker.it.clustering;
 
-import io.zeebe.broker.Broker;
-import io.zeebe.broker.it.ClientRule;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.clustering.impl.BrokerPartitionState;
-import io.zeebe.client.clustering.impl.TopologyBroker;
-import io.zeebe.client.clustering.impl.TopologyResponse;
-import io.zeebe.client.event.Event;
-import io.zeebe.client.impl.clustering.BrokerInfoImpl;
-import io.zeebe.client.impl.clustering.PartitionInfoImpl;
-import io.zeebe.client.impl.topic.Topic;
-import io.zeebe.client.impl.topic.Topics;
-import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.transport.SocketAddress;
-import io.zeebe.util.FileUtil;
-import org.assertj.core.util.Files;
-import org.junit.rules.ExternalResource;
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
-import static org.assertj.core.api.Assertions.assertThat;
+import io.zeebe.broker.Broker;
+import io.zeebe.broker.it.ClientRule;
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.commands.*;
+import io.zeebe.client.api.events.TopicEvent;
+import io.zeebe.client.api.events.TopicEvent.TopicState;
+import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.transport.SocketAddress;
+import io.zeebe.util.FileUtil;
+import org.assertj.core.util.Files;
+import org.junit.rules.ExternalResource;
 
 public class ClusteringRule extends ExternalResource
 {
@@ -131,20 +123,21 @@ public class ClusteringRule extends ExternalResource
      * @param partition
      * @return
      */
-    public BrokerInfoImpl getLeaderForPartition(int partition)
+    public BrokerInfo getLeaderForPartition(int partition)
     {
         return
-            doRepeatedly(() -> {
-                final List<BrokerInfoImpl> brokers = zeebeClient.requestTopology().execute().getBrokers();
+            doRepeatedly(() ->
+            {
+                final List<BrokerInfo> brokers = zeebeClient.newTopologyRequest().send().join().getBrokers();
                 return extractPartitionLeader(brokers, partition);
             })
                 .until(Optional::isPresent)
                 .get();
     }
 
-    private Optional<BrokerInfoImpl> extractPartitionLeader(List<BrokerInfoImpl> topologyBrokers, int partition)
+    private Optional<BrokerInfo> extractPartitionLeader(List<BrokerInfo> brokers, int partition)
     {
-        return topologyBrokers.stream()
+        return brokers.stream()
             .filter(b -> b.getPartitions()
                     .stream()
                     .anyMatch(p -> p.getPartitionId() == partition && p.isLeader())
@@ -172,17 +165,22 @@ public class ClusteringRule extends ExternalResource
 
     public Topic createTopic(String topicName, int partitionCount, int replicationFactor)
     {
-        final Event topicEvent = zeebeClient.topics()
-                                         .create(topicName, partitionCount, replicationFactor)
-                                         .execute();
-        assertThat(topicEvent.getState()).isEqualTo("CREATING");
+        final TopicEvent topicEvent = zeebeClient
+                                         .newCreateTopicCommand()
+                                         .name(topicName)
+                                         .partitions(partitionCount)
+                                         .replicationFactor(replicationFactor)
+                                         .send()
+                                         .join();
+
+        assertThat(topicEvent.getState()).isEqualTo(TopicState.CREATING);
 
         waitForTopicPartitionReplicationFactor(topicName, partitionCount, replicationFactor);
 
         return waitForSpreading(() -> waitForTopicAvailability(topicName));
     }
 
-    private boolean hasPartitionsWithReplicationFactor(List<BrokerInfoImpl> brokers, String topicName, int partitionCount, int replicationFactor)
+    private boolean hasPartitionsWithReplicationFactor(List<BrokerInfo> brokers, String topicName, int partitionCount, int replicationFactor)
     {
         final AtomicLong leaders = new AtomicLong();
         final AtomicLong followers = new AtomicLong();
@@ -218,7 +216,7 @@ public class ClusteringRule extends ExternalResource
     {
         return doRepeatedly(() ->
         {
-            final Topics topics = zeebeClient.topics().getTopics().execute();
+            final Topics topics = zeebeClient.newTopicsRequest().send().join();
             return topics.getTopics().stream().filter(topic -> topicName.equals(topic.getName())).findAny();
         })
             .until(Optional::isPresent)
@@ -274,9 +272,13 @@ public class ClusteringRule extends ExternalResource
         });
     }
 
-    private List<TopologyBroker> requestBrokers()
+    private List<BrokerInfo> requestBrokers()
     {
-        return zeebeClient.requestTopology().execute().getBrokers();
+        return zeebeClient
+                .newTopologyRequest()
+                .send()
+                .join()
+                .getBrokers();
     }
 
     /**
@@ -287,14 +289,15 @@ public class ClusteringRule extends ExternalResource
      */
     public List<Integer> getBrokersLeadingPartitions(SocketAddress socketAddress)
     {
-        return zeebeClient.requestTopology()
-                          .execute()
+        return zeebeClient.newTopologyRequest()
+                          .send()
+                          .join()
                           .getBrokers()
                           .stream()
                           .filter(broker -> broker.getSocketAddress().equals(socketAddress))
                           .flatMap(broker -> broker.getPartitions().stream())
-                          .filter(PartitionInfoImpl::isLeader)
-                          .map(PartitionInfoImpl::getPartitionId)
+                          .filter(PartitionInfo::isLeader)
+                          .map(PartitionInfo::getPartitionId)
                           .collect(Collectors.toList());
     }
 
@@ -304,11 +307,12 @@ public class ClusteringRule extends ExternalResource
      */
     public List<SocketAddress> getBrokersInCluster()
     {
-        return zeebeClient.requestTopology()
-                          .execute()
+        return zeebeClient.newTopologyRequest()
+                          .send()
+                          .join()
                           .getBrokers()
                           .stream()
-                          .map(BrokerInfoImpl::getSocketAddress)
+                          .map(BrokerInfo::getSocketAddress)
                           .collect(Collectors.toList());
 
     }
@@ -331,8 +335,9 @@ public class ClusteringRule extends ExternalResource
     public long getPartitionLeaderCountForTopic(String topic)
     {
 
-        return zeebeClient.requestTopology()
-                          .execute()
+        return zeebeClient.newTopologyRequest()
+                          .send()
+                          .join()
                           .getBrokers()
                           .stream()
                           .flatMap(broker -> broker.getPartitions().stream())
@@ -378,19 +383,19 @@ public class ClusteringRule extends ExternalResource
                     topologyBrokers != null && topologyBrokers.stream()
                         .filter(broker -> !broker.getSocketAddress().equals(oldLeader))
                         .flatMap(broker -> broker.getPartitions().stream())
-                        .filter(PartitionInfoImpl::isLeader)
-                        .map(PartitionInfoImpl::getPartitionId)
+                        .filter(PartitionInfo::isLeader)
+                        .map(PartitionInfo::getPartitionId)
                         .collect(Collectors.toSet())
                         .containsAll(partitions));
         });
     }
 
-    public void checkTopology(Predicate<TopologyResponse> topologyPredicate)
+    public void checkTopology(Predicate<Topology> topologyPredicate)
     {
         final AtomicBoolean predicate = new AtomicBoolean();
         waitForSpreading(() ->
         {
-            final TopologyResponse topologyResponse = zeebeClient.requestTopology().execute();
+            final Topology topologyResponse = zeebeClient.newTopologyRequest().send().join();
             predicate.compareAndSet(false, topologyPredicate.test(topologyResponse));
         });
         assertThat(predicate).isTrue();

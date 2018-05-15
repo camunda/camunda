@@ -15,19 +15,16 @@
  */
 package io.zeebe.broker.it.clustering;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.event.TaskEvent;
-import io.zeebe.client.impl.clustering.BrokerInfoImpl;
-import io.zeebe.client.impl.topic.Topic;
-import io.zeebe.client.impl.topic.Topics;
+import io.zeebe.client.api.commands.*;
+import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.client.api.events.JobEvent.JobState;
 import io.zeebe.test.util.AutoCloseableRule;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.RuleChain;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 
 public class TaskEventClusteredTest
@@ -44,7 +41,7 @@ public class TaskEventClusteredTest
 
     @Test
     @Ignore("https://github.com/zeebe-io/zeebe/issues/844")
-    public void shouldCreateTaskWhenFollowerUnavailable()
+    public void shouldCreateJobWhenFollowerUnavailable()
     {
         // given
         final ZeebeClient client = clientRule.getClient();
@@ -52,22 +49,26 @@ public class TaskEventClusteredTest
         final String topicName = "foo";
         clusteringRule.createTopic(topicName, 1);
 
-        final Topics topics = client.topics().getTopics().execute();
+        final Topics topics = client.newTopicsRequest().send().join();
         final Topic topic = topics.getTopics()
             .stream()
             .filter(t -> topicName.equals(t.getName()))
             .findFirst()
             .get();
 
-        final BrokerInfoImpl leader = clusteringRule.getLeaderForPartition(topic.getPartitions().get(0).getId());
+        final BrokerInfo leader = clusteringRule.getLeaderForPartition(topic.getPartitions().get(0).getId());
 
         // choosing a new leader in a raft group where the previously leading broker is no longer available
         clusteringRule.stopBroker(leader.getSocketAddress());
 
         // when
-        final TaskEvent taskEvent = client.tasks().create(topicName, "bar").execute();
+        final JobEvent jobEvent = client.topicClient(topicName).jobClient()
+                .newCreateCommand()
+                .jobType("bar")
+                .send()
+                .join();
 
         // then
-        assertThat(taskEvent.getState()).isEqualTo("CREATED");
+        assertThat(jobEvent.getState()).isEqualTo(JobState.CREATED);
     }
 }

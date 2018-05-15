@@ -22,9 +22,14 @@ import io.zeebe.client.api.events.WorkflowInstanceEvent;
 public interface CreateWorkflowInstanceCommandStep1
 {
     /**
-     * Represents the latest version of a workflow.
+     * Use the latest version of the workflow (without guarantee).
      */
     int LATEST_VERSION = -1;
+
+    /**
+     * Use the latest version of the workflow (with guarantee).
+     */
+    int FORCE_LATEST_VERSION = -2;
 
     /**
      * Set the BPMN process id of the workflow to create an instance of. This is
@@ -63,12 +68,24 @@ public interface CreateWorkflowInstanceCommandStep1
 
         /**
          * Use the latest version of the workflow to create an instance of.
+         * <p>
+         * If the latest version was deployed few moments before then it can
+         * happen that the new instance is created of the previous version. Use
+         * {@link #latestVersionForce()} to force the latest version in any
+         * case.
          *
          * @return the builder for this command
          */
         CreateWorkflowInstanceCommandStep3 latestVersion();
 
-        // TODO: document and implement
+        /**
+         * Use the latest version of the workflow to create an instance of.
+         * <p>
+         * In contrast to {@link #latestVersion()}, it's guaranteed that the new
+         * instance is always created of the latest version.
+         *
+         * @return the builder for this command
+         */
         CreateWorkflowInstanceCommandStep3 latestVersionForce();
     }
 

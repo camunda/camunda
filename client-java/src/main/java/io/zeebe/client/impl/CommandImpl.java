@@ -50,7 +50,7 @@ public abstract class CommandImpl<R extends Record> implements Request<R>
         return client.send(this);
     }
 
-    public String generateError(R command, String reason)
+    public String generateError(Record command, String reason)
     {
         final long requestEventKey = command.getMetadata().getKey();
         final StringBuilder sb = new StringBuilder();

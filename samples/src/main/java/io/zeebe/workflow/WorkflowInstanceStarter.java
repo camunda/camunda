@@ -18,8 +18,9 @@ package io.zeebe.workflow;
 import java.util.stream.Collectors;
 
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.clients.WorkflowClient;
+import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
-import io.zeebe.client.event.DeploymentEvent;
 
 public class WorkflowInstanceStarter
 {
@@ -39,10 +40,13 @@ public class WorkflowInstanceStarter
 
         System.out.println(String.format("> Deploying workflow to topic '%s' and partition '%d'", topicName, partitionId));
 
-        final DeploymentEvent deploymentResult = zeebeClient.workflows()
-            .deploy(topicName)
+        final WorkflowClient workflowClient = zeebeClient.topicClient(topicName).workflowClient();
+
+        final DeploymentEvent deploymentResult = workflowClient
+            .newDeployCommand()
             .addResourceFromClasspath("demoProcess.bpmn")
-            .execute();
+            .send()
+            .join();
 
         try
         {
@@ -54,11 +58,13 @@ public class WorkflowInstanceStarter
 
             System.out.println(String.format("> Create workflow instance for workflow: %s", bpmnProcessId));
 
-            zeebeClient.workflows()
-                .create(topicName)
+            workflowClient
+                .newCreateInstanceCommand()
                 .bpmnProcessId(bpmnProcessId)
+                .latestVersion()
                 .payload("{\"a\": \"b\"}")
-                .execute();
+                .send()
+                .join();
 
             System.out.println("> Created.");
         }

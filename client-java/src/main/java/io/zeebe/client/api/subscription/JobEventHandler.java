@@ -21,5 +21,5 @@ import io.zeebe.client.api.events.JobEvent;
 public interface JobEventHandler
 {
 
-    void onJobEvent(JobEvent jobEvent);
+    void onJobEvent(JobEvent jobEvent) throws Exception;
 }

@@ -17,16 +17,13 @@ package io.zeebe.broker.it.network;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
-
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.client.event.TaskEvent;
+import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.test.util.TestUtil;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.*;
 
 public class ClientReconnectTest
 {
@@ -48,26 +45,28 @@ public class ClientReconnectTest
     public void shouldTransparentlyReconnectOnUnexpectedConnectionLoss()
     {
         // given
-        final long initialTaskKey = createTask();
+        final long initialTaskKey = createJob();
 
         clientRule.interruptBrokerConnections();
 
         // when
-        final long newTaskKey = TestUtil.doRepeatedly(() -> createTask())
+        final long newTaskKey = TestUtil.doRepeatedly(() -> createJob())
                 .until((key) -> key != null);
 
         // then
         assertThat(newTaskKey).isNotEqualTo(initialTaskKey);
     }
 
-    protected long createTask()
+    protected long createJob()
     {
-        final TaskEvent task = clientRule.tasks().create(clientRule.getDefaultTopic(), "foo")
+        final JobEvent jobEvent = clientRule.getJobClient().newCreateCommand()
+            .jobType("foo")
             .addCustomHeader("k1", "a")
             .addCustomHeader("k2", "b")
             .payload("{ \"payload\" : 123 }")
-            .execute();
+            .send()
+            .join();
 
-        return task.getMetadata().getKey();
+        return jobEvent.getMetadata().getKey();
     }
 }

@@ -21,15 +21,21 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.event.*;
+import io.zeebe.client.api.clients.TopicClient;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.events.WorkflowInstanceEvent.WorkflowInstanceState;
+import io.zeebe.client.api.record.RecordMetadata;
+import io.zeebe.client.api.subscription.WorkflowInstanceEventHandler;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.test.util.TestUtil;
-import org.junit.*;
-import org.junit.rules.RuleChain;
 
 public class WorkflowInstanceTopicSubscriptionTest
 {
@@ -42,46 +48,50 @@ public class WorkflowInstanceTopicSubscriptionTest
         .outerRule(brokerRule)
         .around(clientRule);
 
-    protected ZeebeClient client;
+    protected TopicClient client;
 
     @Before
     public void setUp()
     {
-        this.client = clientRule.getClient();
+        this.client = clientRule.getClient().topicClient();
 
         final WorkflowDefinition workflow = Bpmn.createExecutableWorkflow("process")
                 .startEvent("a")
                 .endEvent("b")
                 .done();
 
-        clientRule.workflows().deploy(clientRule.getDefaultTopic())
+        client.workflowClient()
+            .newDeployCommand()
             .addWorkflowModel(workflow, "workflow.bpmn")
-            .execute();
+            .send()
+            .join();
     }
 
     @Test
     public void shouldReceiveWorkflowInstanceEvents()
     {
         // given
-        final WorkflowInstanceEvent workflowInstance = clientRule.workflows().create(clientRule.getDefaultTopic())
+        final WorkflowInstanceEvent workflowInstance = client.workflowClient().newCreateInstanceCommand()
             .bpmnProcessId("process")
+            .latestVersion()
             .payload("{\"foo\":123}")
-            .execute();
+            .send()
+            .join();
 
         final RecordingWorkflowEventHandler handler = new RecordingWorkflowEventHandler();
 
         // when
-        clientRule.topics().newSubscription(clientRule.getDefaultTopic())
-            .startAtHeadOfTopic()
-            .workflowInstanceEventHandler(handler)
+        client.subscriptionClient().newTopicSubscription()
             .name("test")
+            .workflowInstanceEventHandler(handler)
+            .startAtHeadOfTopic()
             .open();
 
         // then
-        TestUtil.waitUntil(() -> handler.numRecordedEvents() >= 3);
+        TestUtil.waitUntil(() -> handler.numRecords() >= 2);
 
-        final WorkflowInstanceEvent event = handler.getEvent(2);
-        assertThat(event.getState()).isEqualTo("START_EVENT_OCCURRED");
+        final WorkflowInstanceEvent event = handler.getEvent(1);
+        assertThat(event.getState()).isEqualTo(WorkflowInstanceState.START_EVENT_OCCURRED);
         assertThat(event.getBpmnProcessId()).isEqualTo("process");
         assertThat(event.getVersion()).isEqualTo(1);
         assertThat(event.getWorkflowInstanceKey()).isEqualTo(workflowInstance.getWorkflowInstanceKey());
@@ -92,23 +102,24 @@ public class WorkflowInstanceTopicSubscriptionTest
     @Test
     public void shouldInvokeDefaultHandler() throws IOException
     {
-        // given
-        clientRule.workflows().create(clientRule.getDefaultTopic())
+        client.workflowClient().newCreateInstanceCommand()
             .bpmnProcessId("process")
+            .latestVersion()
             .payload("{\"foo\":123}")
-            .execute();
+            .send()
+            .join();
 
         final RecordingEventHandler handler = new RecordingEventHandler();
 
         // when no POJO handler is registered
-        clientRule.topics().newSubscription(clientRule.getDefaultTopic())
-            .startAtHeadOfTopic()
-            .handler(handler)
+        client.subscriptionClient().newTopicSubscription()
             .name("sub-2")
+            .recordHandler(handler)
+            .startAtHeadOfTopic()
             .open();
 
         // then
-        TestUtil.waitUntil(() -> handler.numRecordedEventsOfType(TopicEventType.WORKFLOW_INSTANCE) >= 3);
+        TestUtil.waitUntil(() -> handler.numRecordsOfType(RecordMetadata.ValueType.WORKFLOW_INSTANCE) >= 3);
     }
 
     protected static class RecordingWorkflowEventHandler implements WorkflowInstanceEventHandler
@@ -116,7 +127,7 @@ public class WorkflowInstanceTopicSubscriptionTest
         protected List<WorkflowInstanceEvent> events = new ArrayList<>();
 
         @Override
-        public void handle(WorkflowInstanceEvent event) throws Exception
+        public void onWorkflowInstanceEvent(WorkflowInstanceEvent event) throws Exception
         {
             this.events.add(event);
         }
@@ -126,7 +137,7 @@ public class WorkflowInstanceTopicSubscriptionTest
             return events.get(index);
         }
 
-        public int numRecordedEvents()
+        public int numRecords()
         {
             return events.size();
         }

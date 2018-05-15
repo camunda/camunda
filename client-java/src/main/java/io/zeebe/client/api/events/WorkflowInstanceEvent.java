@@ -43,6 +43,6 @@ public interface WorkflowInstanceEvent extends WorkflowInstanceRecord
         ACTIVITY_ACTIVATED,
         ACTIVITY_COMPLETING,
         ACTIVITY_COMPLETED,
-        ACTIVITY_TERMINATE;
+        ACTIVITY_TERMINATED;
     }
 }

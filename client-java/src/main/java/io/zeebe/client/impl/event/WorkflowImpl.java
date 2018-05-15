@@ -53,6 +53,7 @@ public class WorkflowImpl implements Workflow
         this.workflowKey = workflowKey;
     }
 
+    @Override
     public long getWorkflowKey()
     {
         return workflowKey;

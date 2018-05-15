@@ -18,8 +18,9 @@ package io.zeebe.topic;
 import java.util.Scanner;
 
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.event.EventMetadata;
-import io.zeebe.client.event.TopicSubscription;
+import io.zeebe.client.api.clients.TopicClient;
+import io.zeebe.client.api.record.RecordMetadata;
+import io.zeebe.client.api.subscription.TopicSubscription;
 
 public class EventLogger
 {
@@ -38,21 +39,24 @@ public class EventLogger
 
         System.out.println(String.format("> Open event subscription from topic '%s'", topicName));
 
-        final TopicSubscription subscription = zeebeClient.topics()
-            .newSubscription(topicName)
-            .startAtHeadOfTopic()
-            .forcedStart()
+        final TopicClient topicClient = zeebeClient.topicClient(topicName);
+
+        final TopicSubscription subscription = topicClient.subscriptionClient()
+            .newTopicSubscription()
             .name("logger")
-            .handler(event ->
+            .recordHandler(record ->
             {
-                final EventMetadata metadata = event.getMetadata();
-                System.out.println(String.format(">>> [topic: %d, position: %d, key: %d, type: %s]\n%s\n===",
+                final RecordMetadata metadata = record.getMetadata();
+                System.out.println(String.format(">>> [topic: %d, position: %d, key: %d, type: %s, intent: %s]\n%s\n===",
                         metadata.getPartitionId(),
                         metadata.getPosition(),
                         metadata.getKey(),
-                        metadata.getType(),
-                        event.getJson()));
+                        metadata.getValueType(),
+                        metadata.getIntent(),
+                        record.toJson()));
             })
+            .startAtHeadOfTopic()
+            .forcedStart()
             .open();
 
         System.out.println("> Opened.");

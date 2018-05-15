@@ -17,14 +17,17 @@ package io.zeebe.broker.it.subscription;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.event.TopicSubscription;
-import io.zeebe.test.util.TestUtil;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
+
+import io.zeebe.broker.it.ClientRule;
+import io.zeebe.broker.it.EmbeddedBrokerRule;
+import io.zeebe.client.api.clients.TopicClient;
+import io.zeebe.client.api.subscription.TopicSubscription;
+import io.zeebe.test.util.TestUtil;
 
 public class PersistentTopicSubscriptionTest
 {
@@ -40,66 +43,69 @@ public class PersistentTopicSubscriptionTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    protected ZeebeClient client;
+    protected TopicClient client;
     protected RecordingEventHandler recordingHandler;
 
     @Before
     public void setUp()
     {
-        this.client = clientRule.getClient();
+        this.client = clientRule.getClient().topicClient();
         this.recordingHandler = new RecordingEventHandler();
     }
 
     @Test
     public void shouldResumeSubscriptionOnRestart()
     {
-        // given a first task
-        clientRule.tasks().create(clientRule.getDefaultTopic(), "foo")
-                .addCustomHeader("key", "value")
-                .payload("{}")
-                .execute();
+        // given a first job
+        client.jobClient().newCreateCommand()
+            .jobType("foo")
+            .addCustomHeader("key", "value")
+            .payload("{}")
+            .send()
+            .join();
 
         final String subscriptionName = "foo";
 
-        final TopicSubscription subscription = clientRule.topics()
-            .newSubscription(clientRule.getDefaultTopic())
-            .handler(recordingHandler)
+        final TopicSubscription subscription = client.subscriptionClient()
+            .newTopicSubscription()
             .name(subscriptionName)
+            .recordHandler(recordingHandler)
             .startAtHeadOfTopic()
             .open();
 
         // that was received by the subscription
-        TestUtil.waitUntil(() -> recordingHandler.numRecordedTaskEvents() == 2);
+        TestUtil.waitUntil(() -> recordingHandler.numJobRecords() == 2);
 
         subscription.close();
 
-        final long lastEventPosition = recordingHandler.getRecordedEvents()
-                .get(recordingHandler.numRecordedEvents() - 1)
+        final long lastEventPosition = recordingHandler.getRecords()
+                .get(recordingHandler.numRecords() - 1)
                 .getMetadata()
                 .getPosition();
 
         recordingHandler.reset();
 
-        // and a second not-yet-received task
-        clientRule.tasks().create(clientRule.getDefaultTopic(), "foo")
+        // and a second not-yet-received job
+        client.jobClient().newCreateCommand()
+            .jobType("foo")
             .addCustomHeader("key", "value")
             .payload("{}")
-            .execute();
+            .send()
+            .join();
 
         // when
         restartBroker();
 
-        clientRule.topics()
-                .newSubscription(clientRule.getDefaultTopic())
-                .handler(recordingHandler)
-                .name(subscriptionName)
-                .startAtHeadOfTopic()
-                .open();
+        client.subscriptionClient().newTopicSubscription()
+            .name(subscriptionName)
+            .recordHandler(recordingHandler)
+            .startAtHeadOfTopic()
+            .open();
 
         // then
-        TestUtil.waitUntil(() -> recordingHandler.numRecordedEvents() > 0);
+        TestUtil.waitUntil(() -> recordingHandler.numRecords() > 0);
 
-        final long firstEventPositionAfterReopen = recordingHandler.getRecordedEvents()
+        final long firstEventPositionAfterReopen = recordingHandler.getRecords()
                 .get(0)
                 .getMetadata()
                 .getPosition();

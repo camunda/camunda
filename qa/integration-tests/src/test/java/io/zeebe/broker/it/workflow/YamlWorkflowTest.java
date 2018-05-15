@@ -15,22 +15,19 @@
  */
 package io.zeebe.broker.it.workflow;
 
-import static io.zeebe.broker.it.util.TopicEventRecorder.taskEvent;
-import static io.zeebe.broker.it.util.TopicEventRecorder.wfInstanceEvent;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.Duration;
-
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.broker.it.util.RecordingTaskHandler;
+import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
-import io.zeebe.client.TasksClient;
-import io.zeebe.client.WorkflowsClient;
-import io.zeebe.client.event.TaskEvent;
-import io.zeebe.client.event.WorkflowInstanceEvent;
-import org.junit.*;
+import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.client.api.events.JobEvent.JobState;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.events.WorkflowInstanceEvent.WorkflowInstanceState;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
@@ -50,86 +47,89 @@ public class YamlWorkflowTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    private WorkflowsClient workflowClient;
-    private TasksClient taskClient;
-
-    @Before
-    public void init()
-    {
-        workflowClient = clientRule.workflows();
-        taskClient = clientRule.tasks();
-    }
-
     @Test
     public void shouldCreateWorkflowInstance()
     {
         // given
-        workflowClient.deploy(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newDeployCommand()
             .addResourceFromClasspath("workflows/simple-workflow.yaml")
-            .execute();
+            .send()
+            .join();
 
         // when
-        final WorkflowInstanceEvent workflowInstance = workflowClient.create(clientRule.getDefaultTopic())
-                .bpmnProcessId("yaml-workflow")
-                .execute();
+        final WorkflowInstanceEvent workflowInstance = clientRule.getWorkflowClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId("yaml-workflow")
+            .latestVersion()
+            .send()
+            .join();
 
         // then
         assertThat(workflowInstance.getWorkflowInstanceKey()).isGreaterThan(0);
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("WORKFLOW_INSTANCE_CREATED")));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.CREATED));
     }
 
     @Test
     public void shouldCompleteWorkflowInstanceWithTask()
     {
         // given
-        workflowClient.deploy(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newDeployCommand()
             .addResourceFromClasspath("workflows/simple-workflow.yaml")
-            .execute();
+            .send()
+            .join();
 
-        workflowClient.create(clientRule.getDefaultTopic())
-                .bpmnProcessId("yaml-workflow")
-                .execute();
+        clientRule.getWorkflowClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId("yaml-workflow")
+            .latestVersion()
+            .send()
+            .join();
 
         // when
-        taskClient.newTaskSubscription(clientRule.getDefaultTopic())
-            .taskType("foo")
-            .lockOwner("owner")
-            .lockTime(Duration.ofMinutes(5))
-            .handler((c, t) -> c.complete(t).withoutPayload().execute())
+        clientRule.getSubscriptionClient()
+            .newJobSubscription()
+            .jobType("foo")
+            .handler((client, job) -> client.newCompleteCommand(job).withoutPayload().send())
             .open();
 
         // then
-        waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("COMPLETED")));
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("WORKFLOW_INSTANCE_COMPLETED")));
+        waitUntil(() -> eventRecorder.hasJobEvent(JobState.COMPLETED));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED));
     }
 
     @Test
     public void shouldGetTaskWithHeaders()
     {
         // given
-        workflowClient.deploy(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newDeployCommand()
             .addResourceFromClasspath("workflows/workflow-with-headers.yaml")
-            .execute();
+            .send()
+            .join();
 
-        workflowClient.create(clientRule.getDefaultTopic())
-                .bpmnProcessId("workflow-headers")
-                .execute();
+        clientRule.getWorkflowClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId("workflow-headers")
+            .latestVersion()
+            .send()
+            .join();
 
         // when
-        final RecordingTaskHandler recordingTaskHandler = new RecordingTaskHandler();
+        final RecordingJobHandler recordingJobHandler = new RecordingJobHandler();
 
-        taskClient.newTaskSubscription(clientRule.getDefaultTopic())
-            .taskType("foo")
-            .lockOwner("owner")
-            .lockTime(Duration.ofMinutes(5))
-            .handler(recordingTaskHandler)
+        clientRule.getSubscriptionClient()
+            .newJobSubscription()
+            .jobType("foo")
+            .handler(recordingJobHandler)
             .open();
 
         // then
-        waitUntil(() -> recordingTaskHandler.getHandledTasks().size() >= 1);
+        waitUntil(() -> recordingJobHandler.getHandledJobs().size() >= 1);
 
-        final TaskEvent taskLockedEvent = recordingTaskHandler.getHandledTasks().get(0);
-        assertThat(taskLockedEvent.getCustomHeaders())
+        final JobEvent jobEvent = recordingJobHandler.getHandledJobs().get(0);
+        assertThat(jobEvent.getCustomHeaders())
             .containsEntry("foo", "f")
             .containsEntry("bar", "b");
     }
@@ -138,37 +138,41 @@ public class YamlWorkflowTest
     public void shouldCompleteTaskWithPayload()
     {
         // given
-        workflowClient.deploy(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newDeployCommand()
             .addResourceFromClasspath("workflows/workflow-with-mappings.yaml")
-            .execute();
+            .send()
+            .join();
 
-        workflowClient.create(clientRule.getDefaultTopic())
-                .bpmnProcessId("workflow-mappings")
-                .payload("{\"foo\":1}")
-                .execute();
+        clientRule.getWorkflowClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId("workflow-mappings")
+            .latestVersion()
+            .payload("{\"foo\":1}")
+            .send()
+            .join();
 
         // when
-        final RecordingTaskHandler recordingTaskHandler = new RecordingTaskHandler((c, task) -> c
-            .complete(task)
+        final RecordingJobHandler recordingTaskHandler = new RecordingJobHandler((client, job) -> client
+            .newCompleteCommand(job)
             .payload("{\"result\":3}")
-            .execute());
+            .send());
 
-        taskClient.newTaskSubscription(clientRule.getDefaultTopic())
-            .taskType("foo")
-            .lockOwner("owner")
-            .lockTime(Duration.ofMinutes(5))
+        clientRule.getSubscriptionClient()
+            .newJobSubscription()
+            .jobType("foo")
             .handler(recordingTaskHandler)
             .open();
 
         // then
-        waitUntil(() -> recordingTaskHandler.getHandledTasks().size() >= 1);
+        waitUntil(() -> recordingTaskHandler.getHandledJobs().size() >= 1);
 
-        final TaskEvent taskLockedEvent = recordingTaskHandler.getHandledTasks().get(0);
-        assertThat(taskLockedEvent.getPayload()).isEqualTo("{\"bar\":1}");
+        final JobEvent jobEvent = recordingTaskHandler.getHandledJobs().get(0);
+        assertThat(jobEvent.getPayload()).isEqualTo("{\"bar\":1}");
 
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("ACTIVITY_COMPLETED")));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_COMPLETED));
 
-        final WorkflowInstanceEvent workflowEvent = eventRecorder.getSingleWorkflowInstanceEvent(wfInstanceEvent("ACTIVITY_COMPLETED"));
+        final WorkflowInstanceEvent workflowEvent = eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_COMPLETED);
         assertThat(workflowEvent.getPayload()).isEqualTo("{\"result\":3}");
     }
 

@@ -19,8 +19,9 @@ import java.util.Scanner;
 import java.util.function.Consumer;
 
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.event.Event;
-import io.zeebe.client.event.TopicSubscription;
+import io.zeebe.client.api.clients.SubscriptionClient;
+import io.zeebe.client.api.record.Record;
+import io.zeebe.client.api.subscription.TopicSubscription;
 
 public class TypedEventLogger
 {
@@ -39,24 +40,25 @@ public class TypedEventLogger
 
         System.out.println(String.format("> Open event subscription from topic '%s'", topicName));
 
-        final Consumer<Event> logger = e ->
+        final Consumer<Record> logger = r ->
         {
-            System.out.println(e.getMetadata());
-            System.out.println(e);
+            System.out.println(r.getMetadata());
+            System.out.println(r);
             System.out.println();
         };
 
+        final SubscriptionClient subscriptionClient = zeebeClient.topicClient(topicName).subscriptionClient();
+
         final TopicSubscription subscription =
-            zeebeClient.topics()
-                       .newSubscription(topicName)
-                       .name("logger")
-                       .startAtHeadOfTopic()
-                       .forcedStart()
-                       .workflowEventHandler(logger::accept)
-                       .workflowInstanceEventHandler(logger::accept)
-                       .taskEventHandler(logger::accept)
-                       .incidentEventHandler(logger::accept)
-                       .open();
+            subscriptionClient
+                .newTopicSubscription()
+                .name("logger")
+                .workflowInstanceEventHandler(logger::accept)
+                .jobEventHandler(logger::accept)
+                .incidentEventHandler(logger::accept)
+                .startAtHeadOfTopic()
+                .forcedStart()
+                .open();
 
         // wait for events
         try (Scanner scanner = new Scanner(System.in))

@@ -15,58 +15,32 @@
  */
 package io.zeebe.broker.it.clustering;
 
+import static io.zeebe.broker.it.clustering.ClusteringRule.DEFAULT_REPLICATION_FACTOR;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.commands.Partition;
+import io.zeebe.client.api.commands.Topic;
+import io.zeebe.client.api.events.DeploymentEvent;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.events.WorkflowInstanceEvent.WorkflowInstanceState;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
-import io.zeebe.client.event.DeploymentEvent;
-import io.zeebe.client.event.WorkflowInstanceEvent;
-import io.zeebe.client.topic.Partition;
-import io.zeebe.client.topic.Topic;
-import io.zeebe.client.workflow.impl.CreateWorkflowInstanceCommandImpl;
-import io.zeebe.client.impl.topic.Topic;
-import io.zeebe.client.impl.workflow.impl.CreateWorkflowInstanceCommandImpl;
+import io.zeebe.client.impl.workflow.CreateWorkflowInstanceCommandImpl;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.test.util.AutoCloseableRule;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
-
-import static io.zeebe.broker.it.clustering.ClusteringRule.DEFAULT_REPLICATION_FACTOR;
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.*;
+import org.junit.rules.*;
 
 public class DeploymentClusteredTest
 {
     private static final int PARTITION_COUNT = 3;
 
-    private static final WorkflowDefinition INVALID_WORKFLOW = Bpmn.createExecutableWorkflow("invalid").done();
-
     private static final WorkflowDefinition WORKFLOW = Bpmn.createExecutableWorkflow("process")
                                                            .startEvent()
                                                            .endEvent()
                                                            .done();
-
-    private static final WorkflowDefinition WORKFLOW_WITH_TASK = Bpmn.createExecutableWorkflow("process-2")
-                                                                     .startEvent()
-                                                                     .serviceTask()
-                                                                     .taskType("task")
-                                                                     .taskRetries(3)
-                                                                     .done()
-                                                                     .endEvent()
-                                                                     .done();
-
-    private static final WorkflowDefinition WORKFLOW_WITH_OTHER_TASK = Bpmn.createExecutableWorkflow("process-3")
-                                                                     .startEvent()
-                                                                     .serviceTask()
-                                                                     .taskType("otherTask")
-                                                                     .taskRetries(3)
-                                                                     .done()
-                                                                     .endEvent()
-                                                                     .done();
 
 
     public AutoCloseableRule closeables = new AutoCloseableRule();
@@ -99,14 +73,15 @@ public class DeploymentClusteredTest
         clusteringRule.createTopic("test", PARTITION_COUNT);
 
         // when
-        final DeploymentEvent deploymentEvent = client.workflows()
-                                                      .deploy("test")
-                                                      .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-                                                      .execute();
+        final DeploymentEvent deploymentEvent = client.topicClient("test")
+                .workflowClient()
+                .newDeployCommand()
+                .addWorkflowModel(WORKFLOW, "workflow.bpmn")
+                .send()
+                .join();
 
         // then
         assertThat(deploymentEvent.getDeployedWorkflows().size()).isEqualTo(1);
-        assertThat(deploymentEvent.getErrorMessage()).isEmpty();
     }
 
     @Test
@@ -116,19 +91,24 @@ public class DeploymentClusteredTest
         clusteringRule.createTopic("test", PARTITION_COUNT);
 
         // when
-        client.workflows().deploy("test")
+        client.topicClient("test")
+            .workflowClient()
+            .newDeployCommand()
             .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-            .execute();
+            .send()
+            .join();
 
         // then
         for (int p = 0; p < PARTITION_COUNT; p++)
         {
-            final WorkflowInstanceEvent workflowInstanceEvent = client.workflows()
-                                                                      .create("test")
-                                                                      .bpmnProcessId("process")
-                                                                      .execute();
+            final WorkflowInstanceEvent workflowInstanceEvent = client.topicClient("test").workflowClient()
+                    .newCreateInstanceCommand()
+                    .bpmnProcessId("process")
+                    .latestVersion()
+                    .send()
+                    .join();
 
-            assertThat(workflowInstanceEvent.getState()).isEqualTo("WORKFLOW_INSTANCE_CREATED");
+            assertThat(workflowInstanceEvent.getState()).isEqualTo(WorkflowInstanceState.CREATED);
         }
     }
 
@@ -143,13 +123,14 @@ public class DeploymentClusteredTest
         clusteringRule.stopBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
 
         // then
-        final DeploymentEvent deploymentEvent = client.workflows()
-                                           .deploy("test")
-                                           .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-                                           .execute();
+        final DeploymentEvent deploymentEvent = client.topicClient("test")
+                .workflowClient()
+                .newDeployCommand()
+                .addWorkflowModel(WORKFLOW, "workflow.bpmn")
+                .send()
+                .join();
 
         assertThat(deploymentEvent.getDeployedWorkflows().size()).isEqualTo(1);
-        assertThat(deploymentEvent.getErrorMessage()).isEmpty();
     }
 
     @Test
@@ -160,10 +141,12 @@ public class DeploymentClusteredTest
         final Topic topic = clusteringRule.createTopic("test", PARTITION_COUNT);
 
         clusteringRule.stopBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
-        client.workflows()
-              .deploy("test")
-              .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-              .execute();
+        client.topicClient("test")
+            .workflowClient()
+            .newDeployCommand()
+            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
+            .send()
+            .join();
 
         // when
         clusteringRule.restartBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
@@ -176,16 +159,20 @@ public class DeploymentClusteredTest
              {
                  final WorkflowInstanceEvent workflowInstanceEvent = createWorkflowInstanceOnPartition("test", partitionId, "process");
 
-                 assertThat(workflowInstanceEvent.getState()).isEqualTo("WORKFLOW_INSTANCE_CREATED");
+                 assertThat(workflowInstanceEvent.getState()).isEqualTo(WorkflowInstanceState.CREATED);
              });
     }
 
     protected WorkflowInstanceEvent createWorkflowInstanceOnPartition(String topic, int partition, String processId)
     {
-        final CreateWorkflowInstanceCommandImpl createTaskCommand =
-            (CreateWorkflowInstanceCommandImpl) client.workflows().create(topic).bpmnProcessId(processId);
-        createTaskCommand.getCommand().setPartitionId(partition);
-        return createTaskCommand.execute();
+        final CreateWorkflowInstanceCommandImpl command = (CreateWorkflowInstanceCommandImpl) client.topicClient(topic)
+            .workflowClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId(processId)
+            .latestVersion();
+
+        command.getCommand().setPartitionId(partition);
+        return command.execute();
     }
 
     @Test
@@ -200,13 +187,14 @@ public class DeploymentClusteredTest
         clusteringRule.restartBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
 
         // then
-        final DeploymentEvent deploymentEvent = client.workflows()
-                                                      .deploy(topicName)
-                                                      .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-                                                      .execute();
+        final DeploymentEvent deploymentEvent = client.topicClient("test")
+                .workflowClient()
+                .newDeployCommand()
+                .addWorkflowModel(WORKFLOW, "workflow.bpmn")
+                .send()
+                .join();
 
         assertThat(deploymentEvent.getDeployedWorkflows().size()).isEqualTo(1);
-        assertThat(deploymentEvent.getErrorMessage()).isEmpty();
     }
 
     @Test
@@ -217,22 +205,23 @@ public class DeploymentClusteredTest
         clusteringRule.createTopic("test-2", PARTITION_COUNT);
 
         // when
-        final DeploymentEvent deploymentEventOnTest1 = client.workflows()
-                                                             .deploy("test-2")
-                                                             .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-                                                             .execute();
+        final DeploymentEvent deploymentEventOnTest1 = client.topicClient("test-1")
+                .workflowClient()
+                .newDeployCommand()
+                .addWorkflowModel(WORKFLOW, "workflow.bpmn")
+                .send()
+                .join();
 
-        final DeploymentEvent deploymentEventOnTest2 = client.workflows()
-                                                             .deploy("test-2")
-                                                             .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-                                                             .execute();
+        final DeploymentEvent deploymentEventOnTest2 = client.topicClient("test-2")
+                .workflowClient()
+                .newDeployCommand()
+                .addWorkflowModel(WORKFLOW, "workflow.bpmn")
+                .send()
+                .join();
 
         // then
         assertThat(deploymentEventOnTest1.getDeployedWorkflows().size()).isEqualTo(1);
-        assertThat(deploymentEventOnTest1.getErrorMessage()).isEmpty();
-
         assertThat(deploymentEventOnTest2.getDeployedWorkflows().size()).isEqualTo(1);
-        assertThat(deploymentEventOnTest2.getErrorMessage()).isEmpty();
     }
 
     @Test
@@ -243,30 +232,32 @@ public class DeploymentClusteredTest
 
         // expect
         expectedException.expect(ClientCommandRejectedException.class);
-        expectedException.expectMessage("Deployment was rejected");
+        expectedException.expectMessage("Command was rejected by broker");
         expectedException.expectMessage("Failed to deploy resource 'invalid.bpmn'");
         expectedException.expectMessage("Failed to read BPMN model");
 
         // when
-        client.workflows()
-              .deploy("test")
-              .addResourceStringUtf8("invalid", "invalid.bpmn")
-              .execute();
+        client.topicClient("test")
+            .workflowClient()
+            .newDeployCommand()
+            .addResourceStringUtf8("invalid", "invalid.bpmn")
+            .send()
+            .join();
     }
 
     @Test
     public void shouldNotDeployForNonExistingTopic()
     {
-        // given
-
         // expect
         expectedException.expect(ClientCommandRejectedException.class);
-        expectedException.expectMessage("Deployment was rejected");
+        expectedException.expectMessage("Command was rejected by broker (CREATE)");
 
         // when
-        client.workflows()
-              .deploy("test")
-              .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-              .execute();
+        client.topicClient("test")
+            .workflowClient()
+            .newDeployCommand()
+            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
+            .send()
+            .join();
     }
 }

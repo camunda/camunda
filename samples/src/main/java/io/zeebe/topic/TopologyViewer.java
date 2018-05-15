@@ -19,7 +19,7 @@ import java.util.Properties;
 
 import io.zeebe.client.ClientProperties;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.impl.clustering.TopologyImpl;
+import io.zeebe.client.api.commands.Topology;
 
 public class TopologyViewer
 {
@@ -35,7 +35,9 @@ public class TopologyViewer
 
             try (ZeebeClient zeebeClient = ZeebeClient.create(clientProperties))
             {
-                final TopologyImpl topology = zeebeClient.requestTopology().execute();
+                final Topology topology = zeebeClient.newTopologyRequest()
+                    .send()
+                    .join();
 
                 System.out.println("Requesting topology with initial contact point " + broker);
 
@@ -43,7 +45,7 @@ public class TopologyViewer
                 topology.getBrokers().forEach(b ->
                 {
                     System.out.println("    " + b.getSocketAddress());
-                    b.getPartitions().forEach(p -> System.out.println("      " + p.getTopicName() + "." + p.getPartitionId() + " - " + p.getState()));
+                    b.getPartitions().forEach(p -> System.out.println("      " + p.getTopicName() + "." + p.getPartitionId() + " - " + (p.isLeader() ? "LEADER" : "FOLLOWER")));
                 });
             }
             catch (final Exception e)

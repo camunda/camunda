@@ -25,15 +25,14 @@ import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import io.zeebe.client.TasksClient;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.ZeebeFuture;
+import io.zeebe.client.api.clients.JobClient;
+import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
-import io.zeebe.client.event.TaskEvent;
-import io.zeebe.client.impl.job.cmd.CreateTaskCommand;
 
 public class NonBlockingTaskCreator
 {
-    private static final String SAMPLE_MAX_CONCURRENT_REQUESTS = "sample.maxConcurrentRequests";
     private static final String SAMPLE_NUMBER_OF_REQUESTS = "sample.numberOfRequests";
 
     public static void main(String[] args)
@@ -46,20 +45,24 @@ public class NonBlockingTaskCreator
 
         try (ZeebeClient client = ZeebeClient.create(System.getProperties()))
         {
+
             System.out.println("Client configuration: " + client.getConfiguration());
-            final int maxConcurrentRequests = client.getConfiguration().getMaxRequests();
 
             try
             {
                 // try to create default topic if it not exists already
-                client.topics().create(topicName, 4).execute();
+                client.newCreateTopicCommand().name(topicName)
+                    .partitions(4)
+                    .replicationFactor(1)
+                    .send()
+                    .join();
             }
             catch (final ClientCommandRejectedException e)
             {
                 // topic already exists
             }
 
-            final TasksClient asyncTaskService = client.tasks();
+            final JobClient jobClient = client.topicClient(topicName).jobClient();
 
             final String payload = "{}";
 
@@ -67,21 +70,20 @@ public class NonBlockingTaskCreator
 
             long tasksCreated = 0;
 
-            final List<Future<TaskEvent>> inFlightRequests = new LinkedList<>();
+            final List<Future<JobEvent>> inFlightRequests = new LinkedList<>();
 
             while (tasksCreated < tasks)
             {
 
-                if (inFlightRequests.size() < maxConcurrentRequests)
-                {
-                    final CreateTaskCommand cmd = asyncTaskService
-                            .create(topicName, "greeting")
-                            .addCustomHeader("some", "value")
-                            .payload(payload);
+                final ZeebeFuture<JobEvent> responseFuture = jobClient
+                    .newCreateCommand()
+                    .jobType("greeting")
+                    .addCustomHeader("some", "value")
+                    .payload(payload)
+                    .send();
 
-                    inFlightRequests.add(cmd.send());
-                    tasksCreated++;
-                }
+                inFlightRequests.add(responseFuture);
+                tasksCreated++;
 
                 poll(inFlightRequests);
             }
@@ -94,7 +96,7 @@ public class NonBlockingTaskCreator
 
     }
 
-    private static void awaitAll(List<Future<TaskEvent>> inFlightRequests)
+    private static void awaitAll(List<Future<JobEvent>> inFlightRequests)
     {
         while (!inFlightRequests.isEmpty())
         {
@@ -102,12 +104,12 @@ public class NonBlockingTaskCreator
         }
     }
 
-    private static void poll(List<Future<TaskEvent>> inFlightRequests)
+    private static void poll(List<Future<JobEvent>> inFlightRequests)
     {
-        final Iterator<Future<TaskEvent>> iterator = inFlightRequests.iterator();
+        final Iterator<Future<JobEvent>> iterator = inFlightRequests.iterator();
         while (iterator.hasNext())
         {
-            final Future<TaskEvent> future = iterator.next();
+            final Future<JobEvent> future = iterator.next();
             if (future.isDone())
             {
                 try

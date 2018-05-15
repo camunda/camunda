@@ -20,5 +20,5 @@ import io.zeebe.client.api.events.WorkflowInstanceEvent;
 @FunctionalInterface
 public interface WorkflowInstanceEventHandler
 {
-    void onWorkflowInstanceEvent(WorkflowInstanceEvent workflowInstanceEvent);
+    void onWorkflowInstanceEvent(WorkflowInstanceEvent workflowInstanceEvent) throws Exception;
 }

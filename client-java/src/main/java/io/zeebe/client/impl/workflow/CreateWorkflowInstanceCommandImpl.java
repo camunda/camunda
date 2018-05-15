@@ -76,6 +76,12 @@ public class CreateWorkflowInstanceCommandImpl extends CommandImpl<WorkflowInsta
     }
 
     @Override
+    public CreateWorkflowInstanceCommandStep3 latestVersionForce()
+    {
+        return version(FORCE_LATEST_VERSION);
+    }
+
+    @Override
     public CreateWorkflowInstanceCommandStep3 workflowKey(long workflowKey)
     {
         this.command.setWorkflowKey(workflowKey);
@@ -86,13 +92,6 @@ public class CreateWorkflowInstanceCommandImpl extends CommandImpl<WorkflowInsta
     public RecordImpl getCommand()
     {
         return command;
-    }
-
-    @Override
-    public CreateWorkflowInstanceCommandStep3 latestVersionForce()
-    {
-        // TODO Auto-generated method stub
-        return this;
     }
 
 }

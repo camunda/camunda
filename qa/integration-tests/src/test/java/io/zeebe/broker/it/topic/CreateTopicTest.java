@@ -17,27 +17,30 @@ package io.zeebe.broker.it.topic;
 
 import static io.zeebe.protocol.Protocol.SYSTEM_TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.fail;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.client.event.Event;
-import io.zeebe.client.event.TaskEvent;
-import io.zeebe.client.topic.Partition;
-import io.zeebe.client.topic.Topic;
-import io.zeebe.client.topic.Topics;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
-import io.zeebe.client.impl.topic.*;
+
+import io.zeebe.broker.it.ClientRule;
+import io.zeebe.broker.it.EmbeddedBrokerRule;
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.ZeebeFuture;
+import io.zeebe.client.api.commands.Partition;
+import io.zeebe.client.api.commands.Topic;
+import io.zeebe.client.api.commands.Topics;
+import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.client.api.events.JobEvent.JobState;
+import io.zeebe.client.api.events.TopicEvent;
+import io.zeebe.client.api.events.TopicEvent.TopicState;
 
 public class CreateTopicTest
 {
@@ -57,44 +60,62 @@ public class CreateTopicTest
     @Rule
     public Timeout testTimeout = Timeout.seconds(20);
 
+    private ZeebeClient client;
+
+    @Before
+    public void setUp()
+    {
+        this.client = clientRule.getClient();
+    }
+
     @Test
     public void shouldCreateTaskOnNewTopic()
     {
         // given
-        clientRule.topics().create("newTopic", 2).execute();
+        final String topicName = "newTopic";
+        client.newCreateTopicCommand()
+            .name(topicName)
+            .partitions(2)
+            .replicationFactor(1)
+            .send()
+            .join();
 
         // when
-        final TaskEvent taskEvent = clientRule.tasks().create("newTopic", "foo").execute();
+        final JobEvent jobEvent = client.topicClient(topicName).jobClient()
+            .newCreateCommand()
+            .jobType("foo")
+            .send()
+            .join();
 
         // then
-        assertThat(taskEvent.getState()).isEqualTo("CREATED");
+        assertThat(jobEvent.getState()).isEqualTo(JobState.CREATED);
     }
 
     @Test
     public void shouldCreateMultipleTopicsInParallel() throws Exception
     {
-        // given
-        final TopicsClient client = clientRule.topics();
-
         // when
-        final Future<Event> foo = client.create("foo", 2).executeAsync();
-        final Future<Event> bar = client.create("bar", 2).executeAsync();
+        final ZeebeFuture<TopicEvent> fooFuture = client.newCreateTopicCommand()
+            .name("foo")
+            .partitions(2)
+            .replicationFactor(1)
+            .send();
+
+        final ZeebeFuture<TopicEvent> barFuture = client.newCreateTopicCommand()
+            .name("bar")
+            .partitions(2)
+            .replicationFactor(1)
+            .send();
 
         // then
-        assertThat(bar.get(10, TimeUnit.SECONDS).getState()).isEqualTo("CREATING");
-        assertThat(foo.get(10, TimeUnit.SECONDS).getState()).isEqualTo("CREATING");
+        assertThat(fooFuture.get(10, TimeUnit.SECONDS).getState()).isEqualTo(TopicState.CREATING);
+        assertThat(barFuture.get(10, TimeUnit.SECONDS).getState()).isEqualTo(TopicState.CREATING);
 
-        // when
-        fail("what is correct here?");
-//<<<<<<< fd141d4533c2ec77bee64cc237c6e1a0c7d5dabe
-//        clientRule.waitUntilTopicsExists("foo", "bar");
-//=======
-//        final Future<Event> foo = topics.create("foo", 2).send();
-//        final Future<Event> bar = topics.create("bar", 2).send();
-//>>>>>>> wip
+        // and
+        clientRule.waitUntilTopicsExists("foo", "bar");
 
         // then
-        final Topics topics = client.getTopics().execute();
+        final Topics topics = client.newTopicsRequest().send().join();
 
         final Optional<Topic> fooTopic = topics.getTopics().stream().filter(t -> t.getName().equals("foo")).findFirst();
         assertThat(fooTopic).hasValueSatisfying(t -> assertThat(t.getPartitions()).hasSize(2));
@@ -108,7 +129,11 @@ public class CreateTopicTest
     public void shouldRequestTopics()
     {
         // given
-        clientRule.topics().create("foo", 2).execute();
+        client.newCreateTopicCommand()
+            .name("foo")
+            .partitions(2)
+            .replicationFactor(1)
+            .send();
 
         clientRule.waitUntilTopicsExists("foo");
 

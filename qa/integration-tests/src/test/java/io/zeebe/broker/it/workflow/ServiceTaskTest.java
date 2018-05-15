@@ -15,26 +15,24 @@
  */
 package io.zeebe.broker.it.workflow;
 
-import static io.zeebe.broker.it.util.TopicEventRecorder.taskEvent;
-import static io.zeebe.broker.it.util.TopicEventRecorder.wfInstanceEvent;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.broker.it.util.RecordingTaskHandler;
+import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
-import io.zeebe.client.TasksClient;
-import io.zeebe.client.WorkflowsClient;
-import io.zeebe.client.event.TaskEvent;
-import io.zeebe.client.event.WorkflowInstanceEvent;
+import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.client.api.events.JobEvent.JobState;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.events.WorkflowInstanceEvent.WorkflowInstanceState;
 import io.zeebe.model.bpmn.Bpmn;
-import org.junit.*;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
@@ -54,48 +52,44 @@ public class ServiceTaskTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    private WorkflowsClient workflowClient;
-    private TasksClient taskClient;
-
-    @Before
-    public void init()
-    {
-        workflowClient = clientRule.workflows();
-        taskClient = clientRule.tasks();
-    }
-
     @Test
     public void shouldCreateWorkflowInstanceWithServiceTask()
     {
         // given
-        workflowClient.deploy(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newDeployCommand()
             .addWorkflowModel(Bpmn.createExecutableWorkflow("process")
                    .startEvent("start")
                    .serviceTask("task", t -> t.taskType("foo"))
                    .endEvent("end")
                    .done(),
                    "workflow.bpmn")
-            .execute();
+            .send()
+            .join();
 
         // when
-        final WorkflowInstanceEvent workflowInstance = workflowClient.create(clientRule.getDefaultTopic())
+        final WorkflowInstanceEvent workflowInstance = clientRule.getWorkflowClient()
+                .newCreateInstanceCommand()
                 .bpmnProcessId("process")
-                .execute();
+                .latestVersion()
+                .send()
+                .join();
 
         // then
         assertThat(workflowInstance.getWorkflowInstanceKey()).isGreaterThan(0);
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("WORKFLOW_INSTANCE_CREATED")));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.CREATED));
     }
 
     @Test
     public void shouldLockServiceTask()
     {
         // given
-        final Map<String, String> taskHeaders = new HashMap<>();
-        taskHeaders.put("cust1", "a");
-        taskHeaders.put("cust2", "b");
+        final Map<String, String> customHeaders = new HashMap<>();
+        customHeaders.put("cust1", "a");
+        customHeaders.put("cust2", "b");
 
-        workflowClient.deploy(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newDeployCommand()
             .addWorkflowModel(Bpmn.createExecutableWorkflow("process")
                    .startEvent("start")
                    .serviceTask("task", t -> t.taskType("foo")
@@ -104,31 +98,34 @@ public class ServiceTaskTest
                    .endEvent("end")
                    .done(),
                    "workflow.bpmn")
-            .execute();
+            .send()
+            .join();
 
-        final WorkflowInstanceEvent workflowInstance = workflowClient.create(clientRule.getDefaultTopic())
+        final WorkflowInstanceEvent workflowInstance = clientRule.getWorkflowClient()
+                .newCreateInstanceCommand()
                 .bpmnProcessId("process")
-                .execute();
+                .latestVersion()
+                .send()
+                .join();
 
         // when
-        final RecordingTaskHandler recordingTaskHandler = new RecordingTaskHandler();
+        final RecordingJobHandler recordingJobHandler = new RecordingJobHandler();
 
-        taskClient.newTaskSubscription(clientRule.getDefaultTopic())
-            .taskType("foo")
-            .lockOwner("owner")
-            .lockTime(Duration.ofMinutes(5))
-            .handler(recordingTaskHandler)
+        clientRule.getSubscriptionClient()
+            .newJobSubscription()
+            .jobType("foo")
+            .handler(recordingJobHandler)
             .open();
 
         // then
-        waitUntil(() -> recordingTaskHandler.getHandledTasks().size() >= 1);
+        waitUntil(() -> recordingJobHandler.getHandledJobs().size() >= 1);
 
-        assertThat(recordingTaskHandler.getHandledTasks()).hasSize(1);
+        assertThat(recordingJobHandler.getHandledJobs()).hasSize(1);
 
-        final WorkflowInstanceEvent activityInstance = eventRecorder.getSingleWorkflowInstanceEvent(e -> "ACTIVITY_ACTIVATED".equals(e.getState()));
+        final WorkflowInstanceEvent activityInstance = eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED);
 
-        final TaskEvent taskLockedEvent = recordingTaskHandler.getHandledTasks().get(0);
-        assertThat(taskLockedEvent.getHeaders()).containsOnly(
+        final JobEvent jobEvent = recordingJobHandler.getHandledJobs().get(0);
+        assertThat(jobEvent.getHeaders()).containsOnly(
             entry("bpmnProcessId", "process"),
             entry("workflowDefinitionVersion", 1),
             entry("workflowKey", (int) workflowInstance.getWorkflowKey()),
@@ -136,7 +133,7 @@ public class ServiceTaskTest
             entry("activityId", "task"),
             entry("activityInstanceKey", activityInstance.getMetadata().getKey()));
 
-        assertThat(taskLockedEvent.getCustomHeaders()).containsOnly(
+        assertThat(jobEvent.getCustomHeaders()).containsOnly(
             entry("cust1", "a"),
             entry("cust2", "b"));
     }
@@ -145,37 +142,42 @@ public class ServiceTaskTest
     public void shouldCompleteServiceTask()
     {
         // given
-        workflowClient.deploy(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newDeployCommand()
             .addWorkflowModel(Bpmn.createExecutableWorkflow("process")
                    .startEvent("start")
                    .serviceTask("task", t -> t.taskType("foo"))
                    .endEvent("end")
                    .done(),
                    "workflow.bpmn")
-            .execute();
+            .send()
+            .join();
 
-        workflowClient.create(clientRule.getDefaultTopic())
-                .bpmnProcessId("process")
-                .execute();
+        clientRule.getWorkflowClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId("process")
+            .latestVersion()
+            .send()
+            .join();
 
         // when
-        taskClient.newTaskSubscription(clientRule.getDefaultTopic())
-            .taskType("foo")
-            .lockOwner("owner")
-            .lockTime(Duration.ofMinutes(5))
-            .handler((c, t) -> c.complete(t).withoutPayload().execute())
+        clientRule.getSubscriptionClient()
+            .newJobSubscription()
+            .jobType("foo")
+            .handler((client, job) -> client.newCompleteCommand(job).send())
             .open();
 
         // then
-        waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("COMPLETED")));
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("WORKFLOW_INSTANCE_COMPLETED")));
+        waitUntil(() -> eventRecorder.hasJobEvent(JobState.COMPLETED));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED));
     }
 
     @Test
     public void shouldMapPayloadIntoTask()
     {
         // given
-        workflowClient.deploy(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newDeployCommand()
             .addWorkflowModel(
                     Bpmn.createExecutableWorkflow("process")
                    .startEvent("start")
@@ -184,35 +186,39 @@ public class ServiceTaskTest
                    .endEvent("end")
                    .done(),
                    "workflow.bpmn")
-            .execute();
+            .send()
+            .join();
 
-        workflowClient.create(clientRule.getDefaultTopic())
-                .bpmnProcessId("process")
-                .payload("{\"foo\":1}")
-                .execute();
+        clientRule.getWorkflowClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId("process")
+            .latestVersion()
+            .payload("{\"foo\":1}")
+            .send()
+            .join();
 
         // when
-        final RecordingTaskHandler recordingTaskHandler = new RecordingTaskHandler();
+        final RecordingJobHandler recordingJobHandler = new RecordingJobHandler();
 
-        taskClient.newTaskSubscription(clientRule.getDefaultTopic())
-            .taskType("foo")
-            .lockOwner("owner")
-            .lockTime(Duration.ofMinutes(5))
-            .handler(recordingTaskHandler)
+        clientRule.getSubscriptionClient()
+            .newJobSubscription()
+            .jobType("foo")
+            .handler(recordingJobHandler)
             .open();
 
         // then
-        waitUntil(() -> recordingTaskHandler.getHandledTasks().size() >= 1);
+        waitUntil(() -> recordingJobHandler.getHandledJobs().size() >= 1);
 
-        final TaskEvent taskLockedEvent = recordingTaskHandler.getHandledTasks().get(0);
-        assertThat(taskLockedEvent.getPayload()).isEqualTo("{\"bar\":1}");
+        final JobEvent jobEvent = recordingJobHandler.getHandledJobs().get(0);
+        assertThat(jobEvent.getPayload()).isEqualTo("{\"bar\":1}");
     }
 
     @Test
     public void shouldMapPayloadFromTask()
     {
         // given
-        workflowClient.deploy(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newDeployCommand()
             .addWorkflowModel(
                     Bpmn.createExecutableWorkflow("process")
                    .startEvent("start")
@@ -221,24 +227,27 @@ public class ServiceTaskTest
                    .endEvent("end")
                    .done(),
                    "workflow.bpmn")
-            .execute();
+            .send()
+            .join();
 
-        workflowClient.create(clientRule.getDefaultTopic())
-                .bpmnProcessId("process")
-                .execute();
+        clientRule.getWorkflowClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId("process")
+            .latestVersion()
+            .send()
+            .join();
 
         // when
-        taskClient.newTaskSubscription(clientRule.getDefaultTopic())
-            .taskType("foo")
-            .lockOwner("owner")
-            .lockTime(Duration.ofMinutes(5))
-            .handler((c, t) ->  c.complete(t).payload("{\"foo\":2}").execute())
+        clientRule.getSubscriptionClient()
+            .newJobSubscription()
+            .jobType("foo")
+            .handler((client, job) ->  client.newCompleteCommand(job).payload("{\"foo\":2}").send())
             .open();
 
         // then
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("ACTIVITY_COMPLETED")));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_COMPLETED));
 
-        final WorkflowInstanceEvent workflowEvent = eventRecorder.getSingleWorkflowInstanceEvent(wfInstanceEvent("ACTIVITY_COMPLETED"));
+        final WorkflowInstanceEvent workflowEvent = eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_COMPLETED);
         assertThat(workflowEvent.getPayload()).isEqualTo("{\"bar\":2}");
     }
 
@@ -246,7 +255,8 @@ public class ServiceTaskTest
     public void shouldModifyPayloadInTask()
     {
         // given
-        workflowClient.deploy(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newDeployCommand()
             .addWorkflowModel(Bpmn.createExecutableWorkflow("process")
                    .startEvent("start")
                    .serviceTask("task", t -> t.taskType("foo")
@@ -255,29 +265,32 @@ public class ServiceTaskTest
                    .endEvent("end")
                    .done(),
                    "workflow.bpmn")
-            .execute();
+            .send()
+            .join();
 
-        workflowClient.create(clientRule.getDefaultTopic())
-                .bpmnProcessId("process")
-                .payload("{\"foo\":1}")
-                .execute();
+        clientRule.getWorkflowClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId("process")
+            .latestVersion()
+            .payload("{\"foo\":1}")
+            .send()
+            .join();
 
         // when
-        taskClient.newTaskSubscription(clientRule.getDefaultTopic())
-            .taskType("foo")
-            .lockOwner("owner")
-            .lockTime(Duration.ofMinutes(5))
-            .handler((c, t) ->
+        clientRule.getSubscriptionClient()
+            .newJobSubscription()
+            .jobType("foo")
+            .handler((client, job) ->
             {
-                final String modifiedPayload = t.getPayload().replaceAll("1", "2");
-                c.complete(t).payload(modifiedPayload).execute();
+                final String modifiedPayload = job.getPayload().replaceAll("1", "2");
+                client.newCompleteCommand(job).payload(modifiedPayload).send();
             })
             .open();
 
         // then
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("ACTIVITY_COMPLETED")));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_COMPLETED));
 
-        final WorkflowInstanceEvent workflowEvent = eventRecorder.getSingleWorkflowInstanceEvent(wfInstanceEvent("ACTIVITY_COMPLETED"));
+        final WorkflowInstanceEvent workflowEvent = eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_COMPLETED);
         assertThat(workflowEvent.getPayload()).isEqualTo("{\"foo\":2}");
     }
 
@@ -285,7 +298,8 @@ public class ServiceTaskTest
     public void shouldCompleteTasksFromMultipleProcesses() throws InterruptedException
     {
         // given
-        workflowClient.deploy(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newDeployCommand()
             .addWorkflowModel(Bpmn.createExecutableWorkflow("process")
                        .startEvent("start")
                        .serviceTask("task", t -> t.taskType("foo")
@@ -294,28 +308,31 @@ public class ServiceTaskTest
                        .endEvent("end")
                        .done(),
                        "workflow.bpmn")
-            .execute();
+            .send()
+            .join();
 
         // when
         final int instances = 10;
         for (int i = 0; i < instances; i++)
         {
-            workflowClient.create(clientRule.getDefaultTopic())
+            clientRule.getWorkflowClient()
+                .newCreateInstanceCommand()
                 .bpmnProcessId("process")
+                .latestVersion()
                 .payload("{\"foo\":1}")
-                .execute();
+                .send()
+                .join();
         }
 
-        taskClient.newTaskSubscription(clientRule.getDefaultTopic())
-            .taskType("foo")
-            .lockOwner("test")
-            .lockTime(Duration.ofMinutes(5))
-            .handler((c, t) -> c.complete(t).payload("{\"foo\":2}").execute())
+        clientRule.getSubscriptionClient()
+            .newJobSubscription()
+            .jobType("foo")
+            .handler((client, job) -> client.newCompleteCommand(job).payload("{\"foo\":2}").send())
             .open();
 
         // then
-        waitUntil(() -> eventRecorder.getTaskEvents(taskEvent("COMPLETED")).size() == instances);
-        waitUntil(() -> eventRecorder.getWorkflowInstanceEvents(wfInstanceEvent("WORKFLOW_INSTANCE_COMPLETED")).size() == instances);
+        waitUntil(() -> eventRecorder.getJobEvents(JobState.COMPLETED).size() == instances);
+        waitUntil(() -> eventRecorder.getWorkflowInstanceEvents(WorkflowInstanceState.COMPLETED).size() == instances);
     }
 
 }

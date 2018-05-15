@@ -127,13 +127,6 @@ public class CommandRequestHandler implements RequestResponseHandler
         final long key = decoder.key();
         final RecordType recordType = decoder.recordType();
 
-        if (recordType == RecordType.COMMAND_REJECTION)
-        {
-            final String rejectionReason = "unknown";
-
-            throw new ClientCommandRejectedException(errorFunction.apply(command, rejectionReason));
-        }
-
         final ValueType valueType = decoder.valueType();
         final Intent intent = Intent.fromProtocolValue(valueType, decoder.intent());
 
@@ -144,9 +137,9 @@ public class CommandRequestHandler implements RequestResponseHandler
                 decoder.limit() + ExecuteCommandResponseDecoder.valueHeaderLength(),
                 valueLength);
 
-        final RecordImpl result = objectMapper.fromJson(inStream, command.getEventClass());
+        final Class<? extends RecordImpl> resultClass = recordType == RecordType.EVENT ? command.getEventClass() : command.getClass();
 
-        result.setIntent(intent);
+        final RecordImpl result = objectMapper.fromJson(inStream, resultClass);
 
         final RecordMetadataImpl metadata = result.getMetadata();
         metadata.setKey(key);
@@ -155,6 +148,16 @@ public class CommandRequestHandler implements RequestResponseHandler
         metadata.setPosition(position);
         metadata.setRecordType(recordType);
         metadata.setValueType(valueType);
+        metadata.setIntent(intent);
+
+        if (recordType == RecordType.COMMAND_REJECTION)
+        {
+            metadata.setKey(command.getKey());
+
+            final String rejectionReason = "unknown";
+
+            throw new ClientCommandRejectedException(errorFunction.apply(result, rejectionReason));
+        }
 
         return result;
     }

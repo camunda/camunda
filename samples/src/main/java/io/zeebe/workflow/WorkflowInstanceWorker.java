@@ -19,7 +19,8 @@ import java.time.Duration;
 import java.util.Scanner;
 
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.impl.job.TaskSubscription;
+import io.zeebe.client.api.clients.SubscriptionClient;
+import io.zeebe.client.api.subscription.JobSubscription;
 
 public class WorkflowInstanceWorker
 {
@@ -40,22 +41,24 @@ public class WorkflowInstanceWorker
 
         System.out.println(String.format("> Open task subscription for topic '%s', partition '%d' and type '%s'", topicName, partitionId, taskType));
 
-        final TaskSubscription subscription = zeebeClient.tasks()
-            .newTaskSubscription(topicName)
-            .taskType(taskType)
-            .lockOwner(lockOwner)
-            .lockTime(Duration.ofSeconds(10))
-            .handler((client, task) ->
+        final SubscriptionClient subscriptionClient = zeebeClient.topicClient(topicName).subscriptionClient();
+
+        final JobSubscription subscription = subscriptionClient
+            .newJobSubscription()
+            .jobType(taskType)
+            .handler((client, job) ->
             {
                 System.out.println(String.format(">>> [type: %s, key: %s, lockExpirationTime: %s]\n[headers: %s]\n[payload: %s]\n===",
-                        task.getType(),
-                        task.getMetadata().getKey(),
-                        task.getLockExpirationTime().toString(),
-                        task.getHeaders(),
-                        task.getPayload()));
+                        job.getType(),
+                        job.getMetadata().getKey(),
+                        job.getLockExpirationTime().toString(),
+                        job.getHeaders(),
+                        job.getPayload()));
 
-                client.complete(task).withoutPayload().execute();
+                client.newCompleteCommand(job).withoutPayload().send().join();
             })
+            .lockOwner(lockOwner)
+            .lockTime(Duration.ofSeconds(10))
             .open();
 
         System.out.println("> Opened.");

@@ -15,17 +15,15 @@
  */
 package io.zeebe.broker.it.workflow;
 
-import static io.zeebe.broker.it.util.TopicEventRecorder.wfInstanceEvent;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
-
-import java.time.Duration;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.events.WorkflowInstanceEvent.WorkflowInstanceState;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
-import io.zeebe.client.event.WorkflowInstanceEvent;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import org.junit.*;
@@ -60,41 +58,47 @@ public class UpdatePayloadTest
     @Before
     public void init()
     {
-        clientRule.workflows().deploy(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newDeployCommand()
             .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-            .execute();
+            .send()
+            .join();
     }
 
     @Test
     public void shouldUpdatePayloadWhenActivityIsActivated()
     {
         // given
-        clientRule.workflows().create(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newCreateInstanceCommand()
             .bpmnProcessId("process")
-            .execute();
+            .latestVersion()
+            .send()
+            .join();
 
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("ACTIVITY_ACTIVATED")));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED));
 
-        final WorkflowInstanceEvent activtyInstance = eventRecorder.getSingleWorkflowInstanceEvent(wfInstanceEvent("ACTIVITY_ACTIVATED"));
+        final WorkflowInstanceEvent activtyInstance = eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED);
 
         // when
-        clientRule.workflows().updatePayload(activtyInstance)
+        clientRule.getWorkflowClient()
+            .newUpdatePayloadCommand(activtyInstance)
             .payload(PAYLOAD)
-            .execute();
+            .send()
+            .join();
 
         // then
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("PAYLOAD_UPDATED")));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.PAYLOAD_UPDATED));
 
-        clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
-            .taskType("task-1")
-            .lockOwner("owner")
-            .lockTime(Duration.ofMinutes(5))
-            .handler((c, t) -> c.complete(t).payload("{\"result\": \"ok\"}").execute())
+        clientRule.getSubscriptionClient()
+            .newJobSubscription()
+            .jobType("task-1")
+            .handler((client, job) -> client.newCompleteCommand(job).payload("{\"result\": \"ok\"}").send())
             .open();
 
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("WORKFLOW_INSTANCE_COMPLETED")));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED));
 
-        final WorkflowInstanceEvent wfEvent = eventRecorder.getWorkflowInstanceEvents(wfInstanceEvent("WORKFLOW_INSTANCE_COMPLETED")).get(0);
+        final WorkflowInstanceEvent wfEvent = eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED);
         assertThat(wfEvent.getPayload()).isEqualTo("{\"foo\":\"bar\",\"result\":\"ok\"}");
     }
 
@@ -102,31 +106,34 @@ public class UpdatePayloadTest
     public void shouldFailUpdatePayloadIfWorkflowInstanceIsCompleted()
     {
         // given
-        clientRule.workflows().create(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newCreateInstanceCommand()
             .bpmnProcessId("process")
-            .execute();
+            .latestVersion()
+            .send()
+            .join();
 
-        clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
-            .taskType("task-1")
-            .lockOwner("owner")
-            .lockTime(Duration.ofMinutes(5))
-            .handler((c, t) -> c.complete(t).payload("{\"result\": \"done\"}").execute())
+        clientRule.getSubscriptionClient()
+            .newJobSubscription()
+            .jobType("task-1")
+            .handler((client, job) -> client.newCompleteCommand(job).payload("{\"result\": \"done\"}").send())
             .open();
 
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("ACTIVITY_COMPLETED")));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_COMPLETED));
 
-        final WorkflowInstanceEvent activityInstance = eventRecorder.getSingleWorkflowInstanceEvent(wfInstanceEvent("ACTIVITY_ACTIVATED"));
+        final WorkflowInstanceEvent activityInstance = eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED);
 
         // then
         thrown.expect(ClientCommandRejectedException.class);
         thrown.expectMessage("Command for event with key " + activityInstance.getMetadata().getKey() +
-                " was rejected by broker (UPDATE_PAYLOAD_REJECTED)");
+                " was rejected by broker (UPDATE_PAYLOAD)");
 
         // when
-        clientRule.workflows().updatePayload(activityInstance)
+        clientRule.getWorkflowClient()
+            .newUpdatePayloadCommand(activityInstance)
             .payload(PAYLOAD)
-            .execute();
-
+            .send()
+            .join();
     }
 
 }

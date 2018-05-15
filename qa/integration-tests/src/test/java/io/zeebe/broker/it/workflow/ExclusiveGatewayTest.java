@@ -15,21 +15,18 @@
  */
 package io.zeebe.broker.it.workflow;
 
-import static io.zeebe.broker.it.util.TopicEventRecorder.wfInstanceEvent;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
-
-import java.time.Duration;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
-import io.zeebe.client.TasksClient;
-import io.zeebe.client.WorkflowsClient;
-import io.zeebe.client.event.WorkflowInstanceEvent;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.events.WorkflowInstanceEvent.WorkflowInstanceState;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
-import org.junit.*;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class ExclusiveGatewayTest
@@ -45,16 +42,6 @@ public class ExclusiveGatewayTest
         .around(clientRule)
         .around(eventRecorder);
 
-    private WorkflowsClient workflowClient;
-    private TasksClient taskClient;
-
-    @Before
-    public void init()
-    {
-        workflowClient = clientRule.workflows();
-        taskClient = clientRule.tasks();
-    }
-
     @Test
     public void shouldEvaluateConditionOnFlow()
     {
@@ -67,19 +54,24 @@ public class ExclusiveGatewayTest
                 .endEvent("b")
                 .done();
 
-        workflowClient.deploy(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newDeployCommand()
             .addWorkflowModel(workflowDefinition, "workflow.bpmn")
-            .execute();
+            .send()
+            .join();
 
         // when
-        workflowClient.create(clientRule.getDefaultTopic())
-                .bpmnProcessId("workflow")
-                .payload("{\"foo\":3}")
-                .execute();
+        clientRule.getWorkflowClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId("workflow")
+            .latestVersion()
+            .payload("{\"foo\":3}")
+            .send()
+            .join();
 
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("WORKFLOW_INSTANCE_COMPLETED")));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED));
 
-        final WorkflowInstanceEvent endEvent = eventRecorder.getSingleWorkflowInstanceEvent(wfInstanceEvent("END_EVENT_OCCURRED"));
+        final WorkflowInstanceEvent endEvent = eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.END_EVENT_OCCURRED);
         assertThat(endEvent.getActivityId()).isEqualTo("a");
     }
 
@@ -95,19 +87,24 @@ public class ExclusiveGatewayTest
                 .endEvent("b")
                 .done();
 
-        workflowClient.deploy(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newDeployCommand()
             .addWorkflowModel(workflowDefinition, "workflow.bpmn")
-            .execute();
+            .send()
+            .join();
 
         // when
-        workflowClient.create(clientRule.getDefaultTopic())
-                .bpmnProcessId("workflow")
-                .payload("{\"foo\":7}")
-                .execute();
+        clientRule.getWorkflowClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId("workflow")
+            .latestVersion()
+            .payload("{\"foo\":7}")
+            .send()
+            .join();
 
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("WORKFLOW_INSTANCE_COMPLETED")));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED));
 
-        final WorkflowInstanceEvent endEvent = eventRecorder.getSingleWorkflowInstanceEvent(wfInstanceEvent("END_EVENT_OCCURRED"));
+        final WorkflowInstanceEvent endEvent = eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.END_EVENT_OCCURRED);
         assertThat(endEvent.getActivityId()).isEqualTo("b");
     }
 
@@ -125,34 +122,38 @@ public class ExclusiveGatewayTest
                     .joinWith("inc")
                     .done();
 
-        workflowClient.deploy(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newDeployCommand()
             .addWorkflowModel(workflowDefinition, "workflow.bpmn")
-            .execute();
+            .send()
+            .join();
 
         // when
-        workflowClient.create(clientRule.getDefaultTopic())
-                .bpmnProcessId("workflow")
-                .payload("{\"count\":0}")
-                .execute();
+        clientRule.getWorkflowClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId("workflow")
+            .latestVersion()
+            .payload("{\"count\":0}")
+            .send()
+            .join();
 
-        taskClient.newTaskSubscription(clientRule.getDefaultTopic())
-            .lockTime(Duration.ofSeconds(5))
-            .lockOwner("test")
-            .taskType("inc")
-            .handler((c, task) ->
+        clientRule.getSubscriptionClient()
+            .newJobSubscription()
+            .jobType("inc")
+            .handler((client, job) ->
             {
-                final String payload = task.getPayload();
+                final String payload = job.getPayload();
                 final int i = payload.indexOf(":");
                 final int count = Integer.valueOf(payload.substring(i + 1, i + 2));
 
-                c.complete(task).payload("{\"count\":" + (count + 1) + "}").execute();
+                client.newCompleteCommand(job).payload("{\"count\":" + (count + 1) + "}").send();
             })
             .open();
 
         // then
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("WORKFLOW_INSTANCE_COMPLETED")));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED));
 
-        final WorkflowInstanceEvent event = eventRecorder.getSingleWorkflowInstanceEvent(wfInstanceEvent("WORKFLOW_INSTANCE_COMPLETED"));
+        final WorkflowInstanceEvent event = eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED);
         assertThat(event.getPayload()).isEqualTo("{\"count\":6}");
     }
 

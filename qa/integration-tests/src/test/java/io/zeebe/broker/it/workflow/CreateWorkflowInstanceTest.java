@@ -15,17 +15,16 @@
  */
 package io.zeebe.broker.it.workflow;
 
-import static io.zeebe.broker.it.util.TopicEventRecorder.wfInstanceEvent;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
-import io.zeebe.client.WorkflowsClient;
+import io.zeebe.client.api.events.DeploymentEvent;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.events.WorkflowInstanceEvent.WorkflowInstanceState;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
-import io.zeebe.client.event.DeploymentEvent;
-import io.zeebe.client.event.WorkflowInstanceEvent;
 import io.zeebe.model.bpmn.Bpmn;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
@@ -47,159 +46,123 @@ public class CreateWorkflowInstanceTest
     public ExpectedException exception = ExpectedException.none();
 
     private DeploymentEvent firstDeployment;
-    private DeploymentEvent secondDeployment;
 
     @Before
     public void deployProcess()
     {
-        final WorkflowsClient workflowService = clientRule.workflows();
-
-        firstDeployment = workflowService.deploy(clientRule.getDefaultTopic())
+        firstDeployment = clientRule.getWorkflowClient()
+            .newDeployCommand()
             .addWorkflowModel(
                 Bpmn.createExecutableWorkflow("anId")
                     .startEvent()
                     .endEvent()
                     .done(),
                     "workflow.bpmn")
-            .execute();
+            .send()
+            .join();
 
-        secondDeployment = workflowService.deploy(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newDeployCommand()
             .addWorkflowModel(
                 Bpmn.createExecutableWorkflow("anId")
                     .startEvent()
                     .endEvent()
                     .done(),
                     "workflow.bpmn")
-            .execute();
+            .send()
+            .join();
     }
 
     @Test
     public void shouldCreateBpmnProcessById()
     {
-        final WorkflowsClient workflowService = clientRule.workflows();
-
         // when
         final WorkflowInstanceEvent workflowInstance =
-            workflowService
-                .create(clientRule.getDefaultTopic())
+            clientRule.getWorkflowClient()
+                .newCreateInstanceCommand()
                 .bpmnProcessId("anId")
-                .execute();
+                .latestVersion()
+                .send()
+                .join();
 
         // then instance of latest of workflow version is created
         assertThat(workflowInstance.getBpmnProcessId()).isEqualTo("anId");
         assertThat(workflowInstance.getVersion()).isEqualTo(2);
         assertThat(workflowInstance.getWorkflowInstanceKey()).isGreaterThan(0);
 
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("WORKFLOW_INSTANCE_CREATED")));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.CREATED));
     }
 
     @Test
     public void shouldCreateBpmnProcessByIdAndVersion()
     {
-        final WorkflowsClient workflowService = clientRule.workflows();
-
-
         // when
         final WorkflowInstanceEvent workflowInstance =
-            workflowService
-                .create(clientRule.getDefaultTopic())
+            clientRule.getWorkflowClient()
+                .newCreateInstanceCommand()
                 .bpmnProcessId("anId")
                 .version(1)
-                .execute();
+                .send()
+                .join();
 
         // then instance is created of first workflow version
         assertThat(workflowInstance.getBpmnProcessId()).isEqualTo("anId");
         assertThat(workflowInstance.getVersion()).isEqualTo(1);
         assertThat(workflowInstance.getWorkflowInstanceKey()).isGreaterThan(0);
 
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("WORKFLOW_INSTANCE_CREATED")));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.CREATED));
     }
 
     @Test
     public void shouldCreateBpmnProcessByKey()
     {
-        final WorkflowsClient workflowService = clientRule.workflows();
-
         final long workflowKey = firstDeployment.getDeployedWorkflows().get(0).getWorkflowKey();
 
         // when
         final WorkflowInstanceEvent workflowInstance =
-            workflowService
-                .create(clientRule.getDefaultTopic())
+            clientRule.getWorkflowClient()
+                .newCreateInstanceCommand()
                 .workflowKey(workflowKey)
-                .execute();
+                .send()
+                .join();
 
         // then
         assertThat(workflowInstance.getBpmnProcessId()).isEqualTo("anId");
         assertThat(workflowInstance.getVersion()).isEqualTo(1);
         assertThat(workflowInstance.getWorkflowKey()).isEqualTo(workflowKey);
 
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("WORKFLOW_INSTANCE_CREATED")));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.CREATED));
     }
 
     @Test
     public void shouldRejectCreateBpmnProcessByIllegalId()
     {
-        final WorkflowsClient workflowService = clientRule.workflows();
-
         // expected
         exception.expect(ClientCommandRejectedException.class);
-        exception.expectMessage("Failed to create instance of workflow with BPMN process id 'illegal' and version '-1'.");
+        exception.expectMessage("Command was rejected by broker (CREATE)");
 
         // when
-        workflowService
-            .create(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newCreateInstanceCommand()
             .bpmnProcessId("illegal")
-            .execute();
+            .latestVersion()
+            .send()
+            .join();
     }
 
     @Test
     public void shouldRejectCreateBpmnProcessByIllegalKey()
     {
-        final WorkflowsClient workflowService = clientRule.workflows();
-
         // expected
         exception.expect(ClientCommandRejectedException.class);
-        exception.expectMessage("Failed to create instance of workflow with key '99'");
+        exception.expectMessage("Command was rejected by broker (CREATE)");
 
         // when
-        workflowService
-            .create(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newCreateInstanceCommand()
             .workflowKey(99L)
-            .execute();
-    }
-
-    @Test
-    public void shouldThrowExceptionForCreateBpmnProcessIfBpmnProcessIdAndWorkflowKeyNotSet()
-    {
-        final WorkflowsClient workflowService = clientRule.workflows();
-
-        // expected
-        exception.expect(ClientCommandRejectedException.class);
-        exception.expectMessage("Command was rejected by broker (WORKFLOW_INSTANCE_REJECTED)");
-
-        // when
-        workflowService
-            .create(clientRule.getDefaultTopic())
-            .execute();
-    }
-
-    @Test
-    @Ignore("https://github.com/zeebe-io/zeebe/issues/369")
-    public void shouldThrowExceptionForIllegalVersion()
-    {
-        final WorkflowsClient workflowService = clientRule.workflows();
-
-        // expected
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("version must be greater than or equal to -1");
-
-        // when
-        workflowService
-            .create(clientRule.getDefaultTopic())
-            .bpmnProcessId("anId")
-            .version(-10)
-            .execute();
+            .send()
+            .join();
     }
 
 }

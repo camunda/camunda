@@ -17,27 +17,19 @@ package io.zeebe.broker.it.clustering;
 
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.subscription.RecordingEventHandler;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.impl.job.impl.CreateTaskCommandImpl;
-import io.zeebe.client.impl.topic.Topic;
-import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.intent.JobIntent;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
+import io.zeebe.client.api.commands.Topic;
+import io.zeebe.client.api.events.JobEvent.JobState;
+import io.zeebe.client.impl.job.CreateJobCommandImpl;
 import io.zeebe.test.util.AutoCloseableRule;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
+import org.junit.*;
+import org.junit.rules.*;
 
 public class SubscriptionClusteredTest
 {
@@ -79,28 +71,29 @@ public class SubscriptionClusteredTest
                                             .boxed()
                                             .toArray(Integer[]::new);
 
-        createTaskOnPartition(topicName, partitionIds[0]);
-        createTaskOnPartition(topicName, partitionIds[1]);
-        createTaskOnPartition(topicName, partitionIds[2]);
-        createTaskOnPartition(topicName, partitionIds[3]);
-        createTaskOnPartition(topicName, partitionIds[4]);
+        createJobOnPartition(topicName, partitionIds[0]);
+        createJobOnPartition(topicName, partitionIds[1]);
+        createJobOnPartition(topicName, partitionIds[2]);
+        createJobOnPartition(topicName, partitionIds[3]);
+        createJobOnPartition(topicName, partitionIds[4]);
 
         // and
-        final RecordingEventHandler recordingEventHandler = new RecordingEventHandler();
+        final RecordingEventHandler recordHandler = new RecordingEventHandler();
         final List<Integer> receivedPartitionIds = new ArrayList<>();
-        client.topics()
-              .newSubscription(topicName)
-              .handler(recordingEventHandler)
-              .taskEventHandler(e ->
+        client.topicClient(topicName)
+              .subscriptionClient()
+              .newTopicSubscription()
+              .name("SubscriptionName")
+              .recordHandler(recordHandler)
+              .jobEventHandler(e ->
               {
-                  if ("CREATE".equals(e.getState()))
+                  if (e.getState() == JobState.CREATED)
                   {
                       receivedPartitionIds.add(e.getMetadata()
                                                 .getPartitionId());
                   }
               })
               .startAtHeadOfTopic()
-              .name("SubscriptionName")
               .open();
 
         // then
@@ -109,16 +102,13 @@ public class SubscriptionClusteredTest
         assertThat(receivedPartitionIds).containsExactlyInAnyOrder(partitionIds);
     }
 
-    @Test
-    public void shouldReceiveRaftEvent()
+    protected void createJobOnPartition(String topic, int partition)
     {
-        fail("assert that raft events are received and have a proper intent value");
-    }
+        final CreateJobCommandImpl command = (CreateJobCommandImpl) client.topicClient(topic).jobClient()
+            .newCreateCommand()
+            .jobType("baz");
 
-    protected void createTaskOnPartition(String topic, int partition)
-    {
-        final CreateTaskCommandImpl createTaskCommand = (CreateTaskCommandImpl) client.tasks().create(topic, "baz");
-        createTaskCommand.getCommand().setPartitionId(partition);
-        createTaskCommand.execute();
+        command.getCommand().setPartitionId(partition);
+        command.execute();
     }
 }

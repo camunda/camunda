@@ -111,7 +111,7 @@ public class JobStubs
             .respondWith()
             .event()
             .intent(JobIntent.RETRIES_UPDATED)
-            .key(123)
+            .key(r -> r.key())
             .value()
               .allOf((r) -> r.getCommand())
               .put("state", "RETRIES_UPDATED")

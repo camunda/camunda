@@ -15,8 +15,7 @@
  */
 package io.zeebe.broker.it.incident;
 
-import static io.zeebe.broker.it.util.TopicEventRecorder.incidentEvent;
-import static io.zeebe.broker.it.util.TopicEventRecorder.taskEvent;
+import static io.zeebe.broker.it.util.TopicEventRecorder.state;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 
 import java.time.Duration;
@@ -24,14 +23,17 @@ import java.time.Duration;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
-import io.zeebe.client.TasksClient;
-import io.zeebe.client.event.TaskEvent;
-import io.zeebe.client.event.WorkflowInstanceEvent;
-import io.zeebe.client.impl.job.JobHandler;
+import io.zeebe.client.api.clients.JobClient;
+import io.zeebe.client.api.clients.WorkflowClient;
+import io.zeebe.client.api.events.IncidentEvent.IncidentState;
+import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.client.api.events.JobEvent.JobState;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.events.WorkflowInstanceEvent.WorkflowInstanceState;
+import io.zeebe.client.api.subscription.JobHandler;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.RuleChain;
 
 public class IncidentTest
@@ -54,111 +56,138 @@ public class IncidentTest
         .around(clientRule)
         .around(eventRecorder);
 
+    private WorkflowClient workflowClient;
+    private JobClient jobClient;
+
+    @Before
+    public void setUp()
+    {
+        workflowClient = clientRule.getClient().topicClient().workflowClient();
+        jobClient = clientRule.getClient().topicClient().jobClient();
+    }
+
     @Test
     public void shouldCreateAndResolveInputMappingIncident()
     {
         // given
-        clientRule.workflows().deploy(clientRule.getDefaultTopic())
+        workflowClient.newDeployCommand()
             .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-            .execute();
+            .send()
+            .join();
 
-        clientRule.workflows().create(clientRule.getDefaultTopic())
+        workflowClient.newCreateInstanceCommand()
             .bpmnProcessId("process")
-            .execute();
+            .latestVersion()
+            .send()
+            .join();
 
-        waitUntil(() -> eventRecorder.hasIncidentEvent(incidentEvent("CREATED")));
+        waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.CREATED));
 
         final WorkflowInstanceEvent activityInstanceEvent =
-                eventRecorder.getSingleWorkflowInstanceEvent(w -> "ACTIVITY_READY".equals(w.getState()));
+                eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_READY);
 
         // when
-        clientRule.workflows().updatePayload(activityInstanceEvent)
+        workflowClient.newUpdatePayloadCommand(activityInstanceEvent)
             .payload(PAYLOAD)
-            .execute();
+            .send()
+            .join();
 
         // then
-        waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("CREATED")));
-        waitUntil(() -> eventRecorder.hasIncidentEvent(incidentEvent("RESOLVED")));
+        waitUntil(() -> eventRecorder.hasJobEvent(state(JobState.CREATED)));
+        waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.RESOLVED));
     }
 
     @Test
     public void shouldDeleteIncidentWhenWorkflowInstanceIsCanceled()
     {
         // given
-        clientRule.workflows().deploy(clientRule.getDefaultTopic())
+        workflowClient.newDeployCommand()
             .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-            .execute();
+            .send()
+            .join();
 
-        final WorkflowInstanceEvent workflowInstance = clientRule.workflows().create(clientRule.getDefaultTopic())
+        final WorkflowInstanceEvent workflowInstance = workflowClient.newCreateInstanceCommand()
             .bpmnProcessId("process")
-            .execute();
+            .latestVersion()
+            .send()
+            .join();
 
-        waitUntil(() -> eventRecorder.hasIncidentEvent(incidentEvent("CREATED")));
+        waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.CREATED));
 
         // when
-        clientRule.workflows().cancel(workflowInstance).execute();
+        workflowClient.newCancelInstanceCommand(workflowInstance)
+            .send()
+            .join();
 
         // then
-        waitUntil(() -> eventRecorder.hasIncidentEvent(incidentEvent("DELETED")));
+        waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.DELETED));
     }
 
     @Test
-    public void shouldCreateAndResolveTaskIncident()
+    public void shouldCreateAndResolveJobIncident()
     {
-        // given a workflow instance with an open task
-        clientRule.workflows().deploy(clientRule.getDefaultTopic())
+        // given a workflow instance with an open job
+        workflowClient.newDeployCommand()
             .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-            .execute();
+            .send()
+            .join();
 
-        clientRule.workflows().create(clientRule.getDefaultTopic())
+        workflowClient.newCreateInstanceCommand()
             .bpmnProcessId("process")
+            .latestVersion()
             .payload(PAYLOAD)
-            .execute();
+            .send()
+            .join();
 
-        // when the task fails until it has no more retries left
-        final ControllableTaskHandler taskHandler = new ControllableTaskHandler();
-        taskHandler.failTask = true;
+        // when the job fails until it has no more retries left
+        final ControllableJobHandler jobHandler = new ControllableJobHandler();
+        jobHandler.failJob = true;
 
-        clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
-            .taskType("test")
+        clientRule.getClient().topicClient().subscriptionClient()
+            .newJobSubscription()
+            .jobType("test")
+            .handler(jobHandler)
             .lockOwner("owner")
             .lockTime(Duration.ofMinutes(5))
-            .handler(taskHandler)
             .open();
 
         // then an incident is created
-        waitUntil(() -> eventRecorder.hasIncidentEvent(incidentEvent("CREATED")));
+        waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.CREATED));
 
-        // when the task retries are increased
-        taskHandler.failTask = false;
+        // when the job retries are increased
+        jobHandler.failJob = false;
 
-        final TaskEvent task = taskHandler.task;
+        final JobEvent job = jobHandler.job;
 
-        clientRule.tasks().updateRetries(task)
+        jobClient.newUpdateRetriesCommand(job)
             .retries(3)
-            .execute();
+            .send()
+            .join();
 
         // then the incident is deleted
-        waitUntil(() -> eventRecorder.hasIncidentEvent(incidentEvent("DELETED")));
+        waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.DELETED));
     }
 
-    private static final class ControllableTaskHandler implements JobHandler
+    private static final class ControllableJobHandler implements JobHandler
     {
-        boolean failTask = false;
-        TaskEvent task;
+        boolean failJob = false;
+        JobEvent job;
 
         @Override
-        public void handle(TasksClient client, TaskEvent task)
+        public void handle(JobClient client, JobEvent job)
         {
-            this.task = task;
+            this.job = job;
 
-            if (failTask)
+            if (failJob)
             {
                 throw new RuntimeException("expected failure");
             }
             else
             {
-                client.complete(task).withoutPayload().execute();
+                client.newCompleteCommand(job)
+                    .withoutPayload()
+                    .send()
+                    .join();
             }
         }
     }

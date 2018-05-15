@@ -15,37 +15,29 @@
  */
 package io.zeebe.broker.it.startup;
 
-import static io.zeebe.broker.it.util.TopicEventRecorder.incidentEvent;
-import static io.zeebe.broker.it.util.TopicEventRecorder.taskEvent;
-import static io.zeebe.broker.it.util.TopicEventRecorder.wfInstanceEvent;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
+import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Duration;
 import java.util.List;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.broker.it.util.RecordingTaskHandler;
+import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.events.DeploymentEvent;
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.commands.*;
+import io.zeebe.client.api.events.*;
+import io.zeebe.client.api.events.IncidentEvent.IncidentState;
+import io.zeebe.client.api.events.JobEvent.JobState;
+import io.zeebe.client.api.events.WorkflowInstanceEvent.WorkflowInstanceState;
+import io.zeebe.client.api.subscription.JobSubscription;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
-import io.zeebe.client.event.TaskEvent;
-import io.zeebe.client.impl.clustering.*;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.raft.Raft;
@@ -55,6 +47,11 @@ import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.FileUtil;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
 public class BrokerRecoveryTest
 {
@@ -97,148 +94,176 @@ public class BrokerRecoveryTest
     public void shouldCreateWorkflowInstanceAfterRestart()
     {
         // given
-        clientRule.workflows().deploy(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newDeployCommand()
             .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-            .execute();
+            .send()
+            .join();
 
         // when
         deleteSnapshotsAndRestart();
 
-        clientRule.workflows().create(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newCreateInstanceCommand()
             .bpmnProcessId("process")
-            .execute();
+            .latestVersion()
+            .send()
+            .join();
 
         // then
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("WORKFLOW_INSTANCE_CREATED")));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.CREATED));
     }
 
     @Test
     public void shouldContinueWorkflowInstanceAtTaskAfterRestart()
     {
         // given
-        clientRule.workflows().deploy(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newDeployCommand()
             .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-            .execute();
+            .send()
+            .join();
 
-        clientRule.workflows().create(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newCreateInstanceCommand()
             .bpmnProcessId("process")
-            .execute();
+            .latestVersion()
+            .send()
+            .join();
 
-        waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("CREATED")));
+        waitUntil(() -> eventRecorder.hasJobEvent(JobState.CREATED));
 
         // when
         deleteSnapshotsAndRestart();
 
-        clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
-            .taskType("foo")
-            .lockOwner("test")
-            .lockTime(Duration.ofSeconds(5))
-            .handler((c, t) -> c.complete(t).withoutPayload().execute())
+        clientRule.getSubscriptionClient()
+            .newJobSubscription()
+            .jobType("foo")
+            .handler((client, job) -> client.newCompleteCommand(job).withoutPayload().send())
             .open();
 
         // then
-        waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("COMPLETED")));
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("WORKFLOW_INSTANCE_COMPLETED")));
+        waitUntil(() -> eventRecorder.hasJobEvent(JobState.COMPLETED));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED));
     }
 
     @Test
     public void shouldContinueWorkflowInstanceWithLockedTaskAfterRestart()
     {
         // given
-        clientRule.workflows().deploy(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newDeployCommand()
             .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-            .execute();
+            .send()
+            .join();
 
-        clientRule.workflows().create(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newCreateInstanceCommand()
             .bpmnProcessId("process")
-            .execute();
+            .latestVersion()
+            .send()
+            .join();
 
-        final RecordingTaskHandler recordingTaskHandler = new RecordingTaskHandler();
-        clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
-            .taskType("foo")
-            .lockOwner("test")
-            .lockTime(Duration.ofSeconds(5))
-            .handler(recordingTaskHandler)
+        final RecordingJobHandler recordingJobHandler = new RecordingJobHandler();
+        clientRule.getSubscriptionClient()
+            .newJobSubscription()
+            .jobType("foo")
+            .handler(recordingJobHandler)
             .open();
 
-        waitUntil(() -> !recordingTaskHandler.getHandledTasks().isEmpty());
+        waitUntil(() -> !recordingJobHandler.getHandledJobs().isEmpty());
 
         // when
         deleteSnapshotsAndRestart();
 
-        final TaskEvent task = recordingTaskHandler.getHandledTasks().get(0);
-        clientRule.tasks().complete(task).execute();
+        final JobEvent jobEvent = recordingJobHandler.getHandledJobs().get(0);
+
+        clientRule.getJobClient()
+            .newCompleteCommand(jobEvent)
+            .send()
+            .join();
 
         // then
-        waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("COMPLETED")));
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("WORKFLOW_INSTANCE_COMPLETED")));
+        waitUntil(() -> eventRecorder.hasJobEvent(JobState.COMPLETED));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED));
     }
 
     @Test
     public void shouldContinueWorkflowInstanceAtSecondTaskAfterRestart()
     {
         // given
-        clientRule.workflows().deploy(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newDeployCommand()
             .addWorkflowModel(WORKFLOW_TWO_TASKS, "two-tasks.bpmn")
-            .execute();
+            .send()
+            .join();
 
-        clientRule.workflows().create(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newCreateInstanceCommand()
             .bpmnProcessId("process")
-            .execute();
+            .latestVersion()
+            .send()
+            .join();
 
-        clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
-            .taskType("foo")
-            .lockOwner("test")
-            .lockTime(Duration.ofSeconds(5))
-            .handler((c, t) -> c.complete(t).withoutPayload().execute())
+        clientRule.getSubscriptionClient()
+            .newJobSubscription()
+            .jobType("foo")
+            .handler((client, job) -> client.newCompleteCommand(job).withoutPayload().send())
             .open();
 
-        waitUntil(() -> eventRecorder.getTaskEvents(taskEvent("CREATED")).size() > 1);
+        waitUntil(() -> eventRecorder.getJobEvents(JobState.CREATED).size() > 1);
 
         // when
         deleteSnapshotsAndRestart();
 
-        clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
-            .taskType("bar")
-            .lockOwner("test")
-            .lockTime(Duration.ofSeconds(5))
-            .handler((c, t) -> c.complete(t).withoutPayload().execute())
+        clientRule.getSubscriptionClient()
+            .newJobSubscription()
+            .jobType("bar")
+            .handler((client, job) -> client.newCompleteCommand(job).withoutPayload().send())
             .open();
 
         // then
-        waitUntil(() -> eventRecorder.getTaskEvents(taskEvent("COMPLETED")).size() > 1);
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("WORKFLOW_INSTANCE_COMPLETED")));
+        waitUntil(() -> eventRecorder.getJobEvents(JobState.COMPLETED).size() > 1);
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED));
     }
 
     @Test
+    // FIXME: https://github.com/zeebe-io/zeebe/issues/567
+    @Category(io.zeebe.UnstableTest.class)
     public void shouldDeployNewWorkflowVersionAfterRestart()
     {
         // given
-        clientRule.workflows().deploy(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newDeployCommand()
             .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-            .execute();
+            .send()
+            .join();
 
         // when
         deleteSnapshotsAndRestart();
 
-        final DeploymentEvent deploymentResult = clientRule.workflows().deploy(clientRule.getDefaultTopic())
+        final DeploymentEvent deploymentResult = clientRule.getWorkflowClient()
+            .newDeployCommand()
             .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-            .execute();
+            .send()
+            .join();
 
         // then
         assertThat(deploymentResult.getDeployedWorkflows().get(0).getVersion()).isEqualTo(2);
 
-        final WorkflowInstanceEvent workflowInstanceV1 = clientRule.workflows()
-            .create(clientRule.getDefaultTopic())
+        final WorkflowInstanceEvent workflowInstanceV1 = clientRule.getWorkflowClient()
+            .newCreateInstanceCommand()
             .bpmnProcessId("process")
             .version(1)
-            .execute();
+            .send()
+            .join();
 
-        final WorkflowInstanceEvent workflowInstanceV2 = clientRule.workflows()
-            .create(clientRule.getDefaultTopic())
+        final WorkflowInstanceEvent workflowInstanceV2 = clientRule.getWorkflowClient()
+            .newCreateInstanceCommand()
             .bpmnProcessId("process")
-            .latestVersionForceRefresh()
-            .execute();
+            .latestVersionForce()
+            .send()
+            .join();
 
         // then
         assertThat(workflowInstanceV1.getVersion()).isEqualTo(1);
@@ -246,202 +271,225 @@ public class BrokerRecoveryTest
     }
 
     @Test
-    public void shouldLockAndCompleteStandaloneTaskAfterRestart()
+    public void shouldLockAndCompleteStandaloneJobAfterRestart()
     {
         // given
-        clientRule.tasks().create(clientRule.getDefaultTopic(), "foo").execute();
+        clientRule.getJobClient()
+            .newCreateCommand()
+            .jobType("foo")
+            .send()
+            .join();
 
-        waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("CREATED")));
+        waitUntil(() -> eventRecorder.hasJobEvent(JobState.CREATED));
 
         // when
         deleteSnapshotsAndRestart();
 
-        clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
-            .taskType("foo")
-            .lockOwner("test")
-            .lockTime(Duration.ofSeconds(5))
-            .handler((c, t) -> c.complete(t).withoutPayload().execute())
+        clientRule.getSubscriptionClient()
+            .newJobSubscription()
+            .jobType("foo")
+            .handler((client, job) -> client.newCompleteCommand(job).withoutPayload().send())
             .open();
 
         // then
-        waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("COMPLETED")));
+        waitUntil(() -> eventRecorder.hasJobEvent(JobState.COMPLETED));
     }
 
     @Test
-    public void shouldCompleteStandaloneTaskAfterRestart()
+    public void shouldCompleteStandaloneJobAfterRestart()
     {
         // given
-        clientRule.tasks().create(clientRule.getDefaultTopic(), "foo").execute();
+        clientRule.getJobClient()
+            .newCreateCommand()
+            .jobType("foo")
+            .send()
+            .join();
 
-        final RecordingTaskHandler recordingTaskHandler = new RecordingTaskHandler();
-        clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
-            .taskType("foo")
-            .lockOwner("test")
-            .lockTime(Duration.ofSeconds(5))
-            .handler(recordingTaskHandler)
+        final RecordingJobHandler recordingJobHandler = new RecordingJobHandler();
+        clientRule.getSubscriptionClient()
+            .newJobSubscription()
+            .jobType("foo")
+            .handler(recordingJobHandler)
             .open();
 
-        waitUntil(() -> !recordingTaskHandler.getHandledTasks().isEmpty());
+        waitUntil(() -> !recordingJobHandler.getHandledJobs().isEmpty());
 
         // when
         deleteSnapshotsAndRestart();
 
-        final TaskEvent task = recordingTaskHandler.getHandledTasks().get(0);
-        clientRule.tasks().complete(task).execute();
+        final JobEvent jobEvent = recordingJobHandler.getHandledJobs().get(0);
+        clientRule.getJobClient()
+            .newCompleteCommand(jobEvent)
+            .send()
+            .join();
 
         // then
-        waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("COMPLETED")));
+        waitUntil(() -> eventRecorder.hasJobEvent(JobState.COMPLETED));
     }
 
     @Test
-    public void shouldNotReceiveLockedTasksAfterRestart()
+    public void shouldNotReceiveLockedJobAfterRestart()
     {
         // given
-        clientRule.tasks().create(clientRule.getDefaultTopic(), "foo").execute();
+        clientRule.getJobClient()
+            .newCreateCommand()
+            .jobType("foo")
+            .send()
+            .join();
 
-        final RecordingTaskHandler taskHandler = new RecordingTaskHandler();
-        clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
-            .taskType("foo")
-            .lockTime(Duration.ofSeconds(5))
-            .lockOwner("test")
-            .handler(taskHandler)
+        final RecordingJobHandler jobHandler = new RecordingJobHandler();
+        clientRule.getSubscriptionClient()
+            .newJobSubscription()
+            .jobType("foo")
+            .handler(jobHandler)
             .open();
 
-        waitUntil(() -> !taskHandler.getHandledTasks().isEmpty());
+        waitUntil(() -> !jobHandler.getHandledJobs().isEmpty());
 
         // when
         deleteSnapshotsAndRestart();
 
-        taskHandler.clear();
+        jobHandler.clear();
 
-        clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
-            .taskType("foo")
-            .lockTime(Duration.ofMinutes(10L))
-            .lockOwner("test")
-            .handler(taskHandler)
+        clientRule.getSubscriptionClient()
+            .newJobSubscription()
+            .jobType("foo")
+            .handler(jobHandler)
             .open();
 
         // then
         TestUtil.doRepeatedly(() -> null)
-            .whileConditionHolds((o) -> taskHandler.getHandledTasks().isEmpty());
+            .whileConditionHolds((o) -> jobHandler.getHandledJobs().isEmpty());
 
-        assertThat(taskHandler.getHandledTasks()).isEmpty();
+        assertThat(jobHandler.getHandledJobs()).isEmpty();
     }
 
     @Test
-    public void shouldReceiveLockExpiredTasksAfterRestart()
+    public void shouldReceiveLockExpiredJobAfterRestart()
     {
         // given
-        clientRule.tasks().create(clientRule.getDefaultTopic(), "foo").execute();
+        clientRule.getJobClient()
+            .newCreateCommand()
+            .jobType("foo")
+            .send()
+            .join();
 
-        final RecordingTaskHandler recordingTaskHandler = new RecordingTaskHandler();
-        clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
-            .taskType("foo")
-            .lockTime(Duration.ofSeconds(5))
-            .lockOwner("test")
-            .handler(recordingTaskHandler)
+        final RecordingJobHandler jobHandler = new RecordingJobHandler();
+        final JobSubscription subscription = clientRule.getSubscriptionClient()
+            .newJobSubscription()
+            .jobType("foo")
+            .handler(jobHandler)
             .open();
 
-        waitUntil(() -> !recordingTaskHandler.getHandledTasks().isEmpty());
+        waitUntil(() -> !jobHandler.getHandledJobs().isEmpty());
+        subscription.close();
 
         // when
         deleteSnapshotsAndRestart();
 
-        // wait until stream processor and scheduler process the lock task event which is not re-processed on recovery
         doRepeatedly(() ->
         {
             brokerRule.getClock().addTime(Duration.ofSeconds(60)); // retriggers lock expiration check in broker
             return null;
-        }).until(t -> eventRecorder.hasTaskEvent(taskEvent("LOCK_EXPIRED")));
+        }).until(t -> eventRecorder.hasJobEvent(JobState.LOCK_EXPIRED));
+        jobHandler.clear();
 
-        recordingTaskHandler.clear();
-
-        clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
-            .taskType("foo")
-            .lockTime(Duration.ofMinutes(10L))
-            .lockOwner("test")
-            .handler(recordingTaskHandler)
+        clientRule.getSubscriptionClient()
+            .newJobSubscription()
+            .jobType("foo")
+            .handler(jobHandler)
             .open();
 
         // then
-        waitUntil(() -> !recordingTaskHandler.getHandledTasks().isEmpty());
+        waitUntil(() -> !jobHandler.getHandledJobs().isEmpty());
 
-        final TaskEvent task = recordingTaskHandler.getHandledTasks().get(0);
-        clientRule.tasks().complete(task).execute();
+        final JobEvent jobEvent = jobHandler.getHandledJobs().get(0);
+        clientRule.getJobClient()
+            .newCompleteCommand(jobEvent)
+            .send()
+            .join();
 
-        waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("COMPLETED")));
+        waitUntil(() -> eventRecorder.hasJobEvent(JobState.COMPLETED));
     }
 
     @Test
     public void shouldResolveIncidentAfterRestart()
     {
         // given
-        clientRule.workflows().deploy(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newDeployCommand()
             .addWorkflowModel(WORKFLOW_INCIDENT, "incident.bpmn")
-            .execute();
+            .send()
+            .join();
 
-        clientRule.workflows().create(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newCreateInstanceCommand()
             .bpmnProcessId("process")
-            .execute();
+            .latestVersion()
+            .send()
+            .join();
 
-        waitUntil(() -> eventRecorder.hasIncidentEvent(incidentEvent("CREATED")));
+        waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.CREATED));
 
         final WorkflowInstanceEvent activityInstance =
-                eventRecorder.getSingleWorkflowInstanceEvent(TopicEventRecorder.wfInstanceEvent("ACTIVITY_READY"));
+                eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_READY);
 
         // when
         deleteSnapshotsAndRestart();
 
-        clientRule.workflows().updatePayload(activityInstance)
+        clientRule.getWorkflowClient()
+            .newUpdatePayloadCommand(activityInstance)
             .payload("{\"foo\":\"bar\"}")
-            .execute();
+            .send()
+            .join();
 
         // then
-        waitUntil(() -> eventRecorder.hasIncidentEvent(incidentEvent("RESOLVED")));
-        waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("CREATED")));
-
-        assertThat(eventRecorder.getIncidentEvents(i -> true))
-            .extracting("state")
-            .containsExactly("CREATE", "CREATED", "RESOLVE", "RESOLVED");
+        waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.RESOLVED));
+        waitUntil(() -> eventRecorder.hasJobEvent(JobState.CREATED));
     }
 
     @Test
     public void shouldResolveFailedIncidentAfterRestart()
     {
         // given
-        clientRule.workflows().deploy(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newDeployCommand()
             .addWorkflowModel(WORKFLOW_INCIDENT, "incident.bpmn")
-            .execute();
+            .send()
+            .join();
 
-        clientRule.workflows().create(clientRule.getDefaultTopic())
+        clientRule.getWorkflowClient()
+            .newCreateInstanceCommand()
             .bpmnProcessId("process")
-            .execute();
+            .latestVersion()
+            .send()
+            .join();
 
-        waitUntil(() -> eventRecorder.hasIncidentEvent(incidentEvent("CREATED")));
+        waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.CREATED));
 
         final WorkflowInstanceEvent activityInstance =
-                eventRecorder.getSingleWorkflowInstanceEvent(TopicEventRecorder.wfInstanceEvent("ACTIVITY_READY"));
+                eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_READY);
 
-        clientRule.workflows().updatePayload(activityInstance)
+        clientRule.getWorkflowClient()
+            .newUpdatePayloadCommand(activityInstance)
             .payload("{\"x\":\"y\"}")
-            .execute();
+            .send()
+            .join();
 
-        waitUntil(() -> eventRecorder.hasIncidentEvent(incidentEvent("RESOLVE_FAILED")));
+        waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.RESOLVE_FAILED));
 
         // when
         deleteSnapshotsAndRestart();
 
-        clientRule.workflows().updatePayload(activityInstance)
+        clientRule.getWorkflowClient()
+            .newUpdatePayloadCommand(activityInstance)
             .payload("{\"foo\":\"bar\"}")
-            .execute();
+            .send()
+            .join();
 
         // then
-        waitUntil(() -> eventRecorder.hasIncidentEvent(incidentEvent("RESOLVED")));
-        waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("CREATED")));
-
-        assertThat(eventRecorder.getIncidentEvents(i -> true))
-            .extracting("state")
-            .containsExactly("CREATE", "CREATED", "RESOLVE", "RESOLVE_FAILED", "RESOLVE", "RESOLVED");
+        waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.RESOLVED));
+        waitUntil(() -> eventRecorder.hasJobEvent(JobState.CREATED));
     }
 
     @Test
@@ -478,13 +526,22 @@ public class BrokerRecoveryTest
         deleteSnapshotsAndRestart();
 
         // when
-        client.topics().create("foo", 2).execute();
+        client.newCreateTopicCommand()
+            .name("foo")
+            .partitions(2)
+            .replicationFactor(1)
+            .send()
+            .join();
 
         // then
-        final TaskEvent taskEvent = client.tasks().create("foo", "bar").execute();
-        assertThat(taskEvent.getState()).isEqualTo("CREATED");
-    }
+        final JobEvent jobEvent = client.topicClient("foo").jobClient()
+                .newCreateCommand()
+                .jobType("bar")
+                .send()
+                .join();
 
+        assertThat(jobEvent.getState()).isEqualTo(JobState.CREATED);
+    }
 
     @Test
     public void shouldNotCreatePreviouslyCreatedTopicAfterRestart()
@@ -493,7 +550,12 @@ public class BrokerRecoveryTest
         final ZeebeClient client = clientRule.getClient();
 
         final String topicName = "foo";
-        client.topics().create(topicName, 2).execute();
+        client.newCreateTopicCommand()
+            .name(topicName)
+            .partitions(2)
+            .replicationFactor(1)
+            .send()
+            .join();
 
         deleteSnapshotsAndRestart();
 
@@ -501,7 +563,12 @@ public class BrokerRecoveryTest
         exception.expect(ClientCommandRejectedException.class);
 
         // when
-        client.topics().create(topicName, 2).execute();
+        client.newCreateTopicCommand()
+            .name(topicName)
+            .partitions(2)
+            .replicationFactor(1)
+            .send()
+            .join();
     }
 
     @Test
@@ -510,22 +577,34 @@ public class BrokerRecoveryTest
         // given
         final ZeebeClient client = clientRule.getClient();
 
-        client.topics().create("foo", 2).execute();
+        client.newCreateTopicCommand()
+            .name("foo")
+            .partitions(2)
+            .replicationFactor(1)
+            .send()
+            .join();
+
         clientRule.waitUntilTopicsExists("foo");
 
         deleteSnapshotsAndRestart();
 
         // when
-        client.topics().create("bar", 2).execute();
+        client.newCreateTopicCommand()
+            .name("bar")
+            .partitions(2)
+            .replicationFactor(1)
+            .send()
+            .join();
+
         clientRule.waitUntilTopicsExists("bar");
 
         // then
-        final TopologyImpl topology = client.requestTopology().execute();
-        final List<BrokerInfoImpl> brokers = topology.getBrokers();
+        final Topology topology = client.newTopologyRequest().send().join();
+        final List<BrokerInfo> brokers = topology.getBrokers();
         assertThat(brokers).hasSize(1);
 
-        final BrokerInfoImpl topologyBroker = brokers.get(0);
-        final List<PartitionInfoImpl> partitions = topologyBroker.getPartitions();
+        final BrokerInfo topologyBroker = brokers.get(0);
+        final List<PartitionInfo> partitions = topologyBroker.getPartitions();
 
         assertThat(partitions).hasSize(6); // default partition + system partition + 4 partitions we create here
         assertThat(partitions).extracting("partitionId").doesNotHaveDuplicates();

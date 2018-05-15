@@ -21,5 +21,5 @@ import io.zeebe.client.api.events.IncidentEvent;
 public interface IncidentEventHandler
 {
 
-    void onIncidentEvent(IncidentEvent incidentEvent);
+    void onIncidentEvent(IncidentEvent incidentEvent) throws Exception;
 }

@@ -26,6 +26,7 @@ import java.util.List;
 import io.zeebe.client.api.commands.*;
 import io.zeebe.client.api.commands.DeployWorkflowCommandStep1.DeployWorkflowCommandBuilderStep2;
 import io.zeebe.client.api.events.DeploymentEvent;
+import io.zeebe.client.api.record.Record;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.impl.CommandImpl;
 import io.zeebe.client.impl.RequestManager;
@@ -172,6 +173,20 @@ public class DeployWorkflowCommandImpl extends CommandImpl<DeploymentEvent> impl
         {
             throw new RuntimeException(String.format("Cannot resolve type of resource '%s'.", resourceName));
         }
+    }
+
+    @Override
+    public String generateError(Record command, String reason)
+    {
+        final DeploymentCommandImpl deploymentComment = (DeploymentCommandImpl) command;
+
+        final StringBuilder sb = new StringBuilder();
+        sb.append("Command was rejected by broker (");
+        sb.append(command.getMetadata().getIntent());
+        sb.append("): ");
+        sb.append(deploymentComment.getErrorMessage());
+
+        return sb.toString();
     }
 
 }

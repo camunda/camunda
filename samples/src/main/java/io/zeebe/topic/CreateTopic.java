@@ -19,6 +19,7 @@ import java.util.Properties;
 
 import io.zeebe.client.ClientProperties;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.events.TopicEvent;
 
 public class CreateTopic
 {
@@ -35,7 +36,15 @@ public class CreateTopic
         try (ZeebeClient client = ZeebeClient.create(clientProperties))
         {
             System.out.println("Creating topic " + topic + " with " + partitions + " partition(s) with contact point " + broker);
-            System.out.println(client.topics().create(topic, partitions).execute().getState());
+
+            final TopicEvent topicEvent = client.newCreateTopicCommand()
+                .name(topic)
+                .partitions(partitions)
+                .replicationFactor(1)
+                .send()
+                .join();
+
+            System.out.println(topicEvent.getState());
         }
     }
 }

@@ -22,84 +22,66 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.client.event.EventMetadata;
-import io.zeebe.client.event.GeneralEvent;
-import io.zeebe.client.event.UniversalEventHandler;
-import io.zeebe.client.event.TopicEventType;
 
-public class RecordingEventHandler implements UniversalEventHandler
+import io.zeebe.client.api.record.Record;
+import io.zeebe.client.api.record.RecordMetadata;
+import io.zeebe.client.api.subscription.RecordHandler;
+
+public class RecordingEventHandler implements RecordHandler
 {
 
-    protected List<GeneralEvent> events = new CopyOnWriteArrayList<>();
+    protected List<Record> records = new CopyOnWriteArrayList<>();
     protected ObjectMapper objectMapper = new ObjectMapper();
 
 
     @Override
-    public void handle(GeneralEvent event)
+    public void onRecord(Record event)
     {
-        this.events.add(event);
+        this.records.add(event);
     }
 
-    public int numRecordedEvents()
+    public int numRecords()
     {
-        return events.size();
+        return records.size();
     }
 
-    public int numRecordedEventsOfType(TopicEventType type)
+    public int numRecordsOfType(RecordMetadata.ValueType type)
     {
-        return (int) events.stream().filter(e -> e.getMetadata().getType() == type).count();
+        return (int) records.stream().filter(e -> e.getMetadata().getValueType() == type).count();
     }
 
-    public int numRecordedTaskEvents()
+    public int numJobRecords()
     {
-        return numRecordedEventsOfType(TopicEventType.TASK);
+        return numRecordsOfType(RecordMetadata.ValueType.JOB);
     }
 
-    public int numRecordedRaftEvents()
+    public int numRaftRecords()
     {
-        return numRecordedEventsOfType(TopicEventType.RAFT);
+        return numRecordsOfType(RecordMetadata.ValueType.RAFT);
     }
 
-    public List<GeneralEvent> getRecordedEvents()
+    public List<Record> getRecords()
     {
-        return events;
+        return records;
     }
 
-    public void assertTaskEvent(int index, long taskKey, String eventType) throws IOException
+    public void assertJobRecord(int index, long taskKey, String intent) throws IOException
     {
-        final List<GeneralEvent> taskEvents = events.stream()
-                .filter(e -> e.getMetadata().getType() == TopicEventType.TASK)
+        final List<Record> taskEvents = records.stream()
+                .filter(e -> e.getMetadata().getValueType() == RecordMetadata.ValueType.JOB)
                 .collect(Collectors.toList());
 
-        final GeneralEvent taskEvent = taskEvents.get(index);
+        final Record taskEvent = taskEvents.get(index);
 
-        final EventMetadata eventMetadata = taskEvent.getMetadata();
-        assertThat(eventMetadata.getType()).isEqualTo(TopicEventType.TASK);
+        final RecordMetadata eventMetadata = taskEvent.getMetadata();
+        assertThat(eventMetadata.getValueType()).isEqualTo(RecordMetadata.ValueType.JOB);
         assertThat(eventMetadata.getKey()).isEqualTo(taskKey);
-
-        final JsonNode event = objectMapper.readTree(taskEvent.getJson());
-        assertThat(event.get("state").asText()).isEqualTo(eventType);
+        assertThat(eventMetadata.getIntent()).isEqualTo(intent);
     }
 
     public void reset()
     {
-        this.events.clear();
-    }
-
-    public static class RecordedEvent
-    {
-        protected EventMetadata metadata;
-        protected GeneralEvent event;
-
-        public EventMetadata getMetadata()
-        {
-            return metadata;
-        }
-        public GeneralEvent getEvent()
-        {
-            return event;
-        }
+        this.records.clear();
     }
 }

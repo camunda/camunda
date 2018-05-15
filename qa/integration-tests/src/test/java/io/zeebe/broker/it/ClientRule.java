@@ -15,31 +15,21 @@
  */
 package io.zeebe.broker.it;
 
-import io.zeebe.client.TasksClient;
-import io.zeebe.client.TopicsClient;
-import io.zeebe.client.WorkflowsClient;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.clustering.impl.BrokerPartitionState;
-import io.zeebe.client.clustering.impl.TopologyBroker;
-import io.zeebe.client.clustering.impl.TopologyResponse;
-import io.zeebe.client.impl.ZeebeClientBuilderImpl;
-import io.zeebe.client.impl.ZeebeClientImpl;
-import io.zeebe.client.topic.Partition;
-import io.zeebe.client.topic.Topic;
-import io.zeebe.client.impl.ZeebeClientImpl;
-import io.zeebe.client.impl.clustering.*;
-import io.zeebe.transport.ClientTransport;
-import io.zeebe.util.sched.clock.ControlledActorClock;
-import org.junit.rules.ExternalResource;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
+
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.clients.*;
+import io.zeebe.client.api.commands.*;
+import io.zeebe.client.impl.ZeebeClientBuilderImpl;
+import io.zeebe.client.impl.ZeebeClientImpl;
+import io.zeebe.transport.ClientTransport;
+import io.zeebe.util.sched.clock.ControlledActorClock;
+import org.junit.rules.ExternalResource;
 
 public class ClientRule extends ExternalResource
 {
@@ -81,18 +71,24 @@ public class ClientRule extends ExternalResource
 
     private void createDefaultTopic()
     {
-        client.topics().create(DEFAULT_TOPIC, 1).execute();
+        client.newCreateTopicCommand()
+            .name(DEFAULT_TOPIC)
+            .partitions(1)
+            .replicationFactor(1)
+            .send()
+            .join();
+
         waitUntilTopicsExists(DEFAULT_TOPIC);
 
-        final TopologyImpl topology = client.requestTopology().execute();
+        final Topology topology = client.newTopologyRequest().send().join();
 
         defaultPartition = -1;
-        final List<BrokerInfoImpl> topologyBrokers = topology.getBrokers();
+        final List<BrokerInfo> topologyBrokers = topology.getBrokers();
 
-        for (BrokerInfoImpl leader : topologyBrokers)
+        for (BrokerInfo leader : topologyBrokers)
         {
-            final List<PartitionInfoImpl> partitions = leader.getPartitions();
-            for (PartitionInfoImpl brokerPartitionState : partitions)
+            final List<PartitionInfo> partitions = leader.getPartitions();
+            for (PartitionInfo brokerPartitionState : partitions)
             {
                 if (DEFAULT_TOPIC.equals(brokerPartitionState.getTopicName())
                     && brokerPartitionState.isLeader())
@@ -108,8 +104,6 @@ public class ClientRule extends ExternalResource
             throw new RuntimeException("Could not detect leader for default partition");
         }
     }
-
-
 
     @Override
     protected void after()
@@ -138,25 +132,10 @@ public class ClientRule extends ExternalResource
 
     public Map<String, List<Partition>> topicsByName()
     {
-        return topics().getTopics().execute()
-                       .getTopics()
-                       .stream()
-                       .collect(Collectors.toMap(Topic::getName, Topic::getPartitions));
-    }
-
-    public TopicsClient topics()
-    {
-        return client.topics();
-    }
-
-    public TasksClient tasks()
-    {
-        return client.tasks();
-    }
-
-    public WorkflowsClient workflows()
-    {
-        return client.workflows();
+        final Topics topics = client.newTopicsRequest().send().join();
+        return topics.getTopics()
+                .stream()
+                .collect(Collectors.toMap(Topic::getName, Topic::getPartitions));
     }
 
     public String getDefaultTopic()
@@ -172,5 +151,20 @@ public class ClientRule extends ExternalResource
     public ControlledActorClock getActorClock()
     {
         return actorClock;
+    }
+
+    public WorkflowClient getWorkflowClient()
+    {
+        return getClient().topicClient().workflowClient();
+    }
+
+    public JobClient getJobClient()
+    {
+        return getClient().topicClient().jobClient();
+    }
+
+    public SubscriptionClient getSubscriptionClient()
+    {
+        return getClient().topicClient().subscriptionClient();
     }
 }
