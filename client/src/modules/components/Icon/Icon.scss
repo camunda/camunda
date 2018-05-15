@@ -29,7 +29,8 @@ $icons: (
   'embed',
   'save',
   'overflow-menu-vertical',
-  'overflow-menu-horizontal'
+  'overflow-menu-horizontal',
+  'open-in-cockpit'
 );
 
 @each $icon in $icons {

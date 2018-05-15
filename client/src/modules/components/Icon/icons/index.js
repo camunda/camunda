@@ -15,6 +15,7 @@ import embed from '-!svg-react-loader!./embed.svg';
 import save from '-!svg-react-loader!./save.svg';
 import overflowMenuVertical from '-!svg-react-loader!./overflow-menu-vertical.svg';
 import overflowMenuHorizontal from '-!svg-react-loader!./overflow-menu-horizontal.svg';
+import openInCockpit from '-!svg-react-loader!./open-in-cockpit.svg';
 
 const icons = {
   autorefresh,
@@ -31,7 +32,8 @@ const icons = {
   embed,
   save,
   'overflow-menu-vertical': overflowMenuVertical,
-  'overflow-menu-horizontal': overflowMenuHorizontal
+  'overflow-menu-horizontal': overflowMenuHorizontal,
+  'open-in-cockpit': openInCockpit
 };
 
 export default icons;
