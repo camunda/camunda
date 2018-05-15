@@ -187,7 +187,6 @@ public class Sender extends Actor implements TimerHandler
                     requestsByTimeoutIds.remove(timerId);
                 }
             }
-
         }
     }
 

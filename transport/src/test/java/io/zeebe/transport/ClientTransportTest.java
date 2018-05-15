@@ -23,8 +23,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 import java.time.Duration;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.*;
 import java.util.function.*;
 
 import io.zeebe.dispatcher.*;
@@ -506,6 +507,62 @@ public class ClientTransportTest
             clientTransport.getOutput().sendRequest(remote, writer)
                 .join();
         }
+    }
+
+    @Test
+    public void shouldSendMultipleRequestsAsync() throws InterruptedException
+    {
+        // given
+        final BufferWriter writer = mock(BufferWriter.class);
+        when(writer.getLength()).thenReturn(16);
+
+        buildServerTransport(b -> b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
+            .build(null, new EchoRequestResponseHandler()));
+
+        final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+
+        final List<ActorFuture<ClientResponse>> responseList = new ArrayList<>();
+
+        for (int i = 0; i < 10; i++)
+        {
+            responseList.add(clientTransport.getOutput().sendRequest(remote, writer));
+        }
+
+        responseList.forEach(ActorFuture::join);
+    }
+
+    @Test
+    public void shouldProvideResponseProperties() throws InterruptedException
+    {
+        // given
+        final BufferWriter writer = new DirectBufferWriter().wrap(BUF1);
+
+        final AtomicLong capturedRequestId = new AtomicLong();
+
+        final EchoRequestResponseHandler requestHandler = new EchoRequestResponseHandler()
+        {
+            @Override
+            public boolean onRequest(ServerOutput output, RemoteAddress remoteAddress, DirectBuffer buffer, int offset, int length, long requestId)
+            {
+                capturedRequestId.set(requestId);
+
+                return super.onRequest(output, remoteAddress, buffer, offset, length, requestId);
+            }
+        };
+
+
+        buildServerTransport(b -> b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
+            .build(null, requestHandler));
+
+        final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+
+        // when
+        final ClientResponse response = clientTransport.getOutput().sendRequest(remote, writer).join();
+
+        // then
+        assertThat(response.getRemoteAddress().getAddress()).isEqualTo(SERVER_ADDRESS1);
+        assertThat(response.getRequestId()).isEqualTo(capturedRequestId.get());
+        assertThat(response.getResponseBuffer()).isEqualTo(BUF1);
     }
 
     @Test
