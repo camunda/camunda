@@ -28,8 +28,8 @@ public class FsSnapshotStorageConfiguration
 
     protected static final String CHECKSUM_FILE_NAME_TEMPLATE = "%s" + File.separatorChar + "%s-%d." + CHECKSUM_ALGORITHM.toLowerCase();
 
-    protected static final String CHECKSUM_CONTENT_SEPARATOR = ";";
-    protected static final String CHECKSUM_CONTENT_TEMPLATE = "%s" + CHECKSUM_CONTENT_SEPARATOR + "%s";
+    protected static final String CHECKSUM_CONTENT_SEPARATOR = "  ";
+    protected static final String CHECKSUM_CONTENT_TEMPLATE = "%s" + CHECKSUM_CONTENT_SEPARATOR + "%s" + System.lineSeparator();
 
     protected String rootPath;
 
@@ -105,7 +105,7 @@ public class FsSnapshotStorageConfiguration
             throw new RuntimeException("Read invalid checksum file, missing separator.");
         }
 
-        return content.substring(indexOfSeparator + 1);
+        return content.substring(indexOfSeparator + CHECKSUM_CONTENT_SEPARATOR.length());
     }
 
     public String getSnapshotFileNameTemplate()
