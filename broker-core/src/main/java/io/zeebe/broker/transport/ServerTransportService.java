@@ -21,7 +21,7 @@ import java.net.InetSocketAddress;
 
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.*;
-import io.zeebe.transport.impl.memory.SimpleMemoryPool;
+import io.zeebe.transport.impl.memory.NonBlockingMemoryPool;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorScheduler;
 import org.slf4j.Logger;
@@ -57,7 +57,7 @@ public class ServerTransportService implements Service<ServerTransport>
             .name(readableName)
             .bindAddress(bindAddress)
             .scheduler(scheduler)
-            .messageMemoryPool(new SimpleMemoryPool(sendBufferSize))
+            .messageMemoryPool(new NonBlockingMemoryPool(sendBufferSize))
             .build(messageHandler, requestHandler);
 
         LOG.info("Bound {} to {}", readableName, bindAddress);

@@ -21,7 +21,7 @@ import java.util.Collection;
 
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.*;
-import io.zeebe.transport.impl.memory.SimpleMemoryPool;
+import io.zeebe.transport.impl.memory.NonBlockingMemoryPool;
 import io.zeebe.transport.impl.memory.UnboundedMemoryPool;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorScheduler;
@@ -47,7 +47,7 @@ public class ClientTransportService implements Service<ClientTransport>
         final ClientTransportBuilder transportBuilder = Transports.newClientTransport();
 
         transport = transportBuilder
-            .messageMemoryPool(new SimpleMemoryPool(messageBufferSize))
+            .messageMemoryPool(new NonBlockingMemoryPool(messageBufferSize))
             // client transport in broker should no do any high volume interactions using request/resp
             .requestMemoryPool(new UnboundedMemoryPool())
             .scheduler(scheduler)

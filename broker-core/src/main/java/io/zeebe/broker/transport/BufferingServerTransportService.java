@@ -24,7 +24,7 @@ import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.BufferingServerTransport;
 import io.zeebe.transport.Transports;
-import io.zeebe.transport.impl.memory.SimpleMemoryPool;
+import io.zeebe.transport.impl.memory.NonBlockingMemoryPool;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorScheduler;
 import org.slf4j.Logger;
@@ -57,7 +57,7 @@ public class BufferingServerTransportService implements Service<BufferingServerT
         serverTransport = Transports.newServerTransport()
             .name(readableName)
             .bindAddress(bindAddress)
-            .messageMemoryPool(new SimpleMemoryPool(sendBufferSize))
+            .messageMemoryPool(new NonBlockingMemoryPool(sendBufferSize))
             .scheduler(scheduler)
             .buildBuffering(receiveBuffer);
 
