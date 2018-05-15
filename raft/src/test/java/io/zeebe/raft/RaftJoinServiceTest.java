@@ -31,22 +31,23 @@ public class RaftJoinServiceTest
     public ServiceContainerRule serviceContainerRule = new ServiceContainerRule(actorSchedulerRule);
 
     public RaftRule raft1 = new RaftRule(serviceContainerRule, "localhost", 8001, "default", 0);
-    public RaftRule raft2 = new RaftRule(serviceContainerRule, "localhost", 8002, "default", 0, true, raft1);
+    public RaftRule raft2 = new RaftRule(serviceContainerRule, "localhost", 8002, "default", 0, raft1);
 
+    // Do not add raft 1 to cluster rule so raft 2 is never able to join
     @Rule
-    public RaftClusterRule cluster = new RaftClusterRule(actorSchedulerRule, serviceContainerRule, raft1, raft2);
+    public RaftClusterRule cluster = new RaftClusterRule(actorSchedulerRule, serviceContainerRule, raft2);
 
     @Test
     public void shouldBeInterruptedIfShutdownDuringStart()
     {
         // given
-        cluster.awaitRaftState(raft1, RaftState.LEADER);
+        cluster.awaitRaftState(raft2, RaftState.FOLLOWER);
 
         // when
-        raft1.closeRaft();
+        raft2.closeRaft();
 
         // then
-        assertThat(raft1.isClosed()).isTrue();
+        assertThat(raft2.isClosed()).isTrue();
         assertThat(raft2.isJoined()).isFalse();
     }
 }
