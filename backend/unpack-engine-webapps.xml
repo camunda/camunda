@@ -9,7 +9,7 @@
     <format>zip</format>
   </formats>
 
-  <baseDirectory>/server/apache-tomcat-8.0.47/webapps</baseDirectory>
+  <baseDirectory>/server/apache-tomcat-${version.tomcat}/webapps</baseDirectory>
 
   <dependencySets>
     <dependencySet>

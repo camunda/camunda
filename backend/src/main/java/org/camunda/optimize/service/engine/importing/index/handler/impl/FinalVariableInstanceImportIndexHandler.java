@@ -25,9 +25,9 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHandler {
+public class FinalVariableInstanceImportIndexHandler extends ScrollBasedImportIndexHandler {
 
-  public VariableInstanceImportIndexHandler(EngineContext engineContext) {
+  public FinalVariableInstanceImportIndexHandler(EngineContext engineContext) {
     this.engineContext = engineContext;
   }
 

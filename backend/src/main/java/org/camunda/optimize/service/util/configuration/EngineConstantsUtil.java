@@ -27,13 +27,21 @@ public class EngineConstantsUtil {
   public static final String SORT_TYPE_START_TIME = "startTime";
   public static final String SORT_TYPE_END_TIME = "endTime";
   public static final String SORT_TYPE_ID = "id";
+  public static final String SORT_BY_TIME = "time";
+
 
   public static final String SORT_ORDER = "sortOrder";
   public static final String SORT_ORDER_TYPE_ASCENDING = "asc";
   public static final String SORT_ORDER_TYPE_DESCENDING = "desc";
 
+  public static final String OCCURRED_AFTER = "occurredAfter";
+  public static final String OCCURRED_BEFORE = "occurredBefore";
+  public static final String DESERIALIZE_VALUES = "deserializeValues";
+  public static final String VARIABLE_UPDATES = "variableUpdates";
+
   public static final String MEMBER = "member";
 
+  public static final String HISTORY_DETAIL_ENDPOINT = "/history/detail";
   public static final String AUTHORIZATION_ENDPOINT = "/authorization";
   public static final String GROUP_ENDPOINT = "/group";
 

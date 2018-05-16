@@ -9,7 +9,7 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.VariableElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.VariableWriter;
+import org.camunda.optimize.service.es.writer.variable.FinalVariableInstanceWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,9 +20,9 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
 
-public class VariableInstanceImportService {
+public class FinalVariableInstanceImportService {
 
-  private VariableWriter variableWriter;
+  private FinalVariableInstanceWriter variableWriter;
   private ImportAdapterProvider importAdapterProvider;
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
@@ -30,10 +30,10 @@ public class VariableInstanceImportService {
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   protected EngineContext engineContext;
 
-  public VariableInstanceImportService(VariableWriter variableWriter,
-                                       ImportAdapterProvider importAdapterProvider,
-                                       ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-                                       EngineContext engineContext
+  public FinalVariableInstanceImportService(FinalVariableInstanceWriter variableWriter,
+                                            ImportAdapterProvider importAdapterProvider,
+                                            ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+                                            EngineContext engineContext
   ) {
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.engineContext = engineContext;

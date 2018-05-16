@@ -4,7 +4,7 @@ import static org.camunda.optimize.service.util.VariableHelper.DOUBLE_TYPE;
 
 public class DoubleVariableDto extends VariableInstanceDto {
 
-  private double value;
+  private Double value;
 
   public DoubleVariableDto() {
     super();
@@ -15,7 +15,7 @@ public class DoubleVariableDto extends VariableInstanceDto {
     return value;
   }
 
-  public void setValue(double value) {
+  public void setValue(Double value) {
     this.value = value;
   }
 

@@ -4,7 +4,7 @@ import static org.camunda.optimize.service.util.VariableHelper.INTEGER_TYPE;
 
 public class IntegerVariableDto extends VariableInstanceDto {
 
-  private int value;
+  private Integer value;
 
   public IntegerVariableDto() {
     super();
@@ -15,7 +15,7 @@ public class IntegerVariableDto extends VariableInstanceDto {
     return value;
   }
 
-  public void setValue(int value) {
+  public void setValue(Integer value) {
     this.value = value;
   }
 

@@ -2,11 +2,8 @@ package org.camunda.optimize.service.importing;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.util.configuration.EngineConfiguration;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -19,23 +16,18 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.END_DATE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
-import static org.camunda.optimize.test.util.ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -145,7 +137,9 @@ public class ImportIT  {
       .userTask()
       .endEvent()
       .done();
-    engineRule.deployAndStartProcess(processModel);
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("aVariable", "aStringVariable");
+    engineRule.deployAndStartProcessWithVariables(processModel, variables);
   }
 
   @Test
@@ -219,21 +213,6 @@ public class ImportIT  {
   }
 
   @Test
-  public void deletionOfProcessInstancesDoesNotDistortVariableInstanceImport() throws IOException {
-    // given
-    ProcessInstanceEngineDto firstProcInst = createImportAndDeleteTwoProcessInstances();
-
-    // when
-    engineRule.startProcessInstance(firstProcInst.getDefinitionId());
-    engineRule.startProcessInstance(firstProcInst.getDefinitionId());
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    // then
-    assertThatEveryFlowNodeWasExecuted4Times(firstProcInst.getProcessDefinitionKey());
-  }
-
-  @Test
   public void importOnlyFinishedHistoricActivityInstances() {
     //given
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
@@ -254,79 +233,6 @@ public class ImportIT  {
     SearchHit hit = idsResp.getHits().getAt(0);
     List events = (List) hit.getSourceAsMap().get(EVENTS);
     assertThat(events.size(), is(1));
-  }
-
-  @Test
-  public void variableImportWorks() {
-    //given
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-        .startEvent()
-        .serviceTask()
-          .camundaExpression("${true}")
-        .endEvent()
-      .done();
-
-    Map<String, Object> variables = createPrimitiveTypeVariables();
-    ProcessInstanceEngineDto instanceDto =
-      engineRule.deployAndStartProcessWithVariables(processModel, variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    //when
-    List<VariableRetrievalDto> variablesResponseDtos =
-      embeddedOptimizeRule.target("variables")
-        .queryParam("processDefinitionKey", instanceDto.getProcessDefinitionKey())
-        .queryParam("processDefinitionVersion", instanceDto.getProcessDefinitionVersion())
-        .request()
-        .header(HttpHeaders.AUTHORIZATION,embeddedOptimizeRule.getAuthorizationHeader())
-        .get(new GenericType<List<VariableRetrievalDto>>(){});
-
-    //then
-    assertThat(variablesResponseDtos.size(),is(variables.size()));
-  }
-
-  @Test
-  public void variablesWithComplexTypeAreNotImported() {
-    // given
-    ComplexVariableDto complexVariableDto = new ComplexVariableDto();
-    complexVariableDto.setType("Object");
-    complexVariableDto.setValue(null);
-    ComplexVariableDto.ValueInfo info = new ComplexVariableDto.ValueInfo();
-    info.setObjectTypeName("java.util.ArrayList");
-    info.setSerializationDataFormat("application/x-java-serialized-object");
-    complexVariableDto.setValueInfo(info);
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("var", complexVariableDto);
-    ProcessInstanceEngineDto instanceDto = deployAndStartSimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    // when
-    List<VariableRetrievalDto> variablesResponseDtos =
-      embeddedOptimizeRule.target("variables")
-        .queryParam("processDefinitionKey", instanceDto.getProcessDefinitionKey())
-        .queryParam("processDefinitionVersion", instanceDto.getProcessDefinitionVersion())
-        .request()
-        .header(HttpHeaders.AUTHORIZATION,embeddedOptimizeRule.getAuthorizationHeader())
-        .get(new GenericType<List<VariableRetrievalDto>>(){});
-
-    //then
-    assertThat(variablesResponseDtos.size(),is(0));
-  }
-
-  private Map<String, Object> createPrimitiveTypeVariables() {
-    Map<String, Object> variables = new HashMap<>();
-    Integer integer = 1;
-    variables.put("stringVar", "aStringValue");
-    variables.put("boolVar", true);
-    variables.put("integerVar", integer);
-    variables.put("shortVar", integer.shortValue());
-    variables.put("longVar", 1L);
-    variables.put("doubleVar", 1.1);
-    variables.put("dateVar", new Date());
-    return variables;
   }
 
   @Test
@@ -535,32 +441,6 @@ public class ImportIT  {
     engineRule.deleteHistoricProcessInstance(firstProcInst.getId());
     engineRule.deleteHistoricProcessInstance(secondProcInst.getId());
     return firstProcInst;
-  }
-
-  private void assertThatEveryFlowNodeWasExecuted4Times(String processDefinitionKey) {
-    ReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
-      processDefinitionKey, ALL_VERSIONS
-    );
-    MapReportResultDto result = evaluateReport(reportData);
-    assertThat(result.getResult(), is(notNullValue()));
-    Map<String, Long> flowNodeIdToExecutionFrequency = result.getResult();
-    for (Long frequency : flowNodeIdToExecutionFrequency.values()) {
-      assertThat(frequency, is(4L));
-    }
-  }
-
-  private MapReportResultDto evaluateReport(ReportDataDto reportData) {
-    Response response = evaluateReportAndReturnResponse(reportData);
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(MapReportResultDto.class);
-  }
-
-  private Response evaluateReportAndReturnResponse(ReportDataDto reportData) {
-    return embeddedOptimizeRule.target("report/evaluate")
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-      .post(Entity.json(reportData));
   }
 
 }

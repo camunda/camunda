@@ -1,8 +1,7 @@
-package org.camunda.optimize.service.es.writer;
+package org.camunda.optimize.service.es.writer.variable;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.value.BooleanVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.value.DateVariableDto;
@@ -29,10 +28,10 @@ import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.camunda.optimize.service.util.VariableHelper.isBooleanType;
 import static org.camunda.optimize.service.util.VariableHelper.isDateType;
@@ -45,46 +44,19 @@ import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSup
 import static org.camunda.optimize.service.util.VariableHelper.variableTypeToFieldLabel;
 
 @Component
-public class VariableWriter {
+public abstract class VariableWriter {
 
-  private final Logger logger = LoggerFactory.getLogger(VariableWriter.class);
-
-  @Autowired
-  private Client esclient;
-  @Autowired
-  private ConfigurationService configurationService;
-  @Autowired
-  private ObjectMapper objectMapper;
+  protected final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired
-  private DateTimeFormatter dateTimeFormatter;
+  protected Client esclient;
+  @Autowired
+  protected ConfigurationService configurationService;
+  @Autowired
+  protected ObjectMapper objectMapper;
 
-  public void flagProcessInstancesAllVariablesHaveBeenImportedFor(List<String> processDefinitionIds) {
-    logger.debug("Marking [{}] process instance that all variables have been imported", processDefinitionIds.size());
-    BulkRequestBuilder variableBulkRequest = esclient.prepareBulk();
-
-    for (String processInstanceId : processDefinitionIds) {
-      Script updateScript = new Script(
-        ScriptType.INLINE,
-        Script.DEFAULT_SCRIPT_LANG,
-        "ctx._source.allVariablesImported = true; ",
-        new HashMap<>()
-      );
-
-      variableBulkRequest.add(
-        esclient.prepareUpdate(
-          configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()),
-          configurationService.getProcessInstanceType(),
-          processInstanceId
-        )
-        .setScript(updateScript)
-      );
-    }
-
-    if (variableBulkRequest.numberOfActions() != 0) {
-      variableBulkRequest.get();
-    }
-  }
+  @Autowired
+  protected DateTimeFormatter dateTimeFormatter;
 
   public void importVariables(List<VariableDto> variables) throws Exception {
     logger.debug("Writing [{}] variables to elasticsearch", variables.size());
@@ -93,21 +65,8 @@ public class VariableWriter {
     BulkRequestBuilder variableBulkRequest = esclient.prepareBulk();
 
     //build map first
-    Map<String, Map <String, List<VariableDto>>> processInstanceIdToTypedVariables = new HashMap<>();
-    for (VariableDto variable : variables) {
-      if (isVariableFromCaseDefinition(variable) || !isVariableTypeSupported(variable.getType())) {
-        logger.warn("Variable [{}] is either a case definition variable or the type [{}] is not supported!");
-        continue;
-      }
-
-      if (!processInstanceIdToTypedVariables.containsKey(variable.getProcessInstanceId())) {
-        processInstanceIdToTypedVariables.put(variable.getProcessInstanceId(), newTypeMap());
-      }
-      Map<String,List<VariableDto>> typedVars = processInstanceIdToTypedVariables.get(variable.getProcessInstanceId());
-
-      typedVars.get(variableTypeToFieldLabel(variable.getType())).add(variable);
-      addVariableRequest(variableBulkRequest, variable);
-    }
+    Map<String, Map <String, List<VariableDto>>> processInstanceIdToTypedVariables =
+      groupVariablesByProcessInstanceIds(variables);
 
     for (Map.Entry<String, Map <String, List<VariableDto>>> entry : processInstanceIdToTypedVariables.entrySet()) {
       //for every process id
@@ -129,6 +88,24 @@ public class VariableWriter {
     if (variableBulkRequest.numberOfActions() != 0) {
       variableBulkRequest.get();
     }
+  }
+
+  private Map<String, Map<String, List<VariableDto>>> groupVariablesByProcessInstanceIds(List<VariableDto> variableUpdates) {
+    Map<String, Map <String, List<VariableDto>>> processInstanceIdToTypedVariables = new HashMap<>();
+    for (VariableDto variable : variableUpdates) {
+      if (isVariableFromCaseDefinition(variable) || !isVariableTypeSupported(variable.getType())) {
+        logger.warn("Variable [{}] is either a case definition variable or the type [{}] is not supported!");
+        continue;
+      }
+
+      if (!processInstanceIdToTypedVariables.containsKey(variable.getProcessInstanceId())) {
+        processInstanceIdToTypedVariables.put(variable.getProcessInstanceId(), newTypeMap());
+      }
+      Map<String,List<VariableDto>> typedVars = processInstanceIdToTypedVariables.get(variable.getProcessInstanceId());
+
+      typedVars.get(variableTypeToFieldLabel(variable.getType())).add(variable);
+    }
+    return processInstanceIdToTypedVariables;
   }
 
   private Map<String, List<VariableDto>> newTypeMap() {
@@ -186,47 +163,19 @@ public class VariableWriter {
   private List<VariableInstanceDto> mapTypeValues(List<VariableDto> variablesOfOneType) {
     List <VariableInstanceDto> result = new ArrayList<>();
     for (VariableDto variable : variablesOfOneType) {
-      result.add(parseValue(variable));
+      parseValue(variable)
+        .ifPresent(result::add);
     }
     return result;
   }
 
-  private String createInlineUpdateScript(Map<String, List<VariableDto>> typeMappedVars) {
-    StringBuilder builder = new StringBuilder();
-    builder.append("if(!ctx._source.allVariablesImported) {\n"); // we need to ensure that variables are not added twice
-      for (Map.Entry<String, List<VariableDto>> typedVarsEntry : typeMappedVars.entrySet()) {
-        String typeName = typedVarsEntry.getKey();
-        builder.append("ctx._source." + typeName + ".addAll(params." + typeName + ");\n");
-      }
-      builder.append("ctx._source.allVariablesImported=true; \n");
-    builder.append("}");
-    return builder.toString();
-  }
+  protected abstract String createInlineUpdateScript(Map<String, List<VariableDto>> typeMappedVars);
 
-  private String getNewProcessInstanceRecordString(String processInstanceId, Map<String, List<VariableDto>> typeMappedVars) throws JsonProcessingException {
+  protected abstract String getNewProcessInstanceRecordString(String processInstanceId,
+                                                              Map<String, List<VariableDto>> typeMappedVars) throws JsonProcessingException;
 
-    VariableDto variable = grabFirstOne(typeMappedVars);
-    if (variable == null) {
-      //all is lost, no variables to persist, should have crashed before.
-      return null;
-    }
 
-    ProcessInstanceDto procInst = new ProcessInstanceDto();
-    procInst.setProcessDefinitionId(variable.getProcessDefinitionId());
-    procInst.setProcessDefinitionKey(variable.getProcessDefinitionKey());
-    procInst.setProcessInstanceId(processInstanceId);
-    procInst.setStartDate(OffsetDateTime.now());
-    procInst.setEndDate(OffsetDateTime.now());
-    procInst.setAllVariablesImported(true);
-    for (Map.Entry<String, List<VariableDto>> entry: typeMappedVars.entrySet()) {
-      for (VariableDto var : entry.getValue()) {
-        procInst.addVariableInstance(parseValue(var));
-      }
-    }
-    return objectMapper.writeValueAsString(procInst);
-  }
-
-  private VariableDto grabFirstOne(Map<String, List<VariableDto>> typeMappedVars) {
+  protected VariableDto grabFirstOne(Map<String, List<VariableDto>> typeMappedVars) {
     VariableDto variable = null;
     for (Map.Entry <String, List<VariableDto>> e : typeMappedVars.entrySet()) {
       if (!e.getValue().isEmpty()) {
@@ -237,69 +186,89 @@ public class VariableWriter {
     return variable;
   }
 
-
-  private void addVariableRequest(BulkRequestBuilder variableBulkRequest, VariableDto variable) {
-    String variableId = variable.getId();
-    variableBulkRequest.add(esclient
-      .prepareIndex(
-        configurationService.getOptimizeIndex(configurationService.getVariableType()),
-        configurationService.getVariableType(),
-        variableId
-      )
-      .setSource(Collections.emptyMap())
-    );
-  }
-
   private boolean isVariableFromCaseDefinition(VariableDto variable) {
     return variable.getProcessDefinitionId() == null;
   }
 
-  private VariableInstanceDto parseValue(VariableDto e) {
+  protected Optional<VariableInstanceDto> parseValue(VariableDto var) {
+    try {
+      return Optional.of(parseValueWithException(var));
+    } catch (NumberFormatException ex) {
+      logger.error("Could not parse variable [{}] with type [{}] and value [{}]. Skipping this variable",
+        var.getName(),
+        var.getType(),
+        var.getValue(),
+        ex);
+      return Optional.empty();
+    }
+  }
+
+  private VariableInstanceDto parseValueWithException(VariableDto var) {
     VariableInstanceDto variableInstanceDto;
-    if (isStringType(e.getType())) {
+    if (isStringType(var.getType())) {
       StringVariableDto stringVariableDto = new StringVariableDto();
-      stringVariableDto.setValue(e.getValue());
+      stringVariableDto.setValue(var.getValue());
       variableInstanceDto = stringVariableDto;
-    } else if (isIntegerType(e.getType())) {
+    } else if (isIntegerType(var.getType())) {
       IntegerVariableDto integerVariableDto = new IntegerVariableDto();
-      integerVariableDto.setValue(Integer.parseInt(e.getValue()));
+      integerVariableDto.setValue(parseInteger(var));
       variableInstanceDto = integerVariableDto;
-    } else if (isLongType(e.getType())) {
+    } else if (isLongType(var.getType())) {
       LongVariableDto longVariableDto = new LongVariableDto();
-      longVariableDto.setValue(Long.parseLong(e.getValue()));
+      longVariableDto.setValue(parseLong(var));
       variableInstanceDto = longVariableDto;
-    } else if(isShortType(e.getType())) {
+    } else if(isShortType(var.getType())) {
       ShortVariableDto shortVariableDto = new ShortVariableDto();
-      shortVariableDto.setValue(Short.parseShort(e.getValue()));
+      shortVariableDto.setValue(parseShort(var));
       variableInstanceDto = shortVariableDto;
-    } else if(isDoubleType(e.getType())) {
+    } else if(isDoubleType(var.getType())) {
       DoubleVariableDto doubleVariableDto = new DoubleVariableDto();
-      doubleVariableDto.setValue(Double.parseDouble(e.getValue()));
+      doubleVariableDto.setValue(parseDouble(var));
       variableInstanceDto = doubleVariableDto;
-    } else if(isBooleanType(e.getType())) {
+    } else if(isBooleanType(var.getType())) {
       BooleanVariableDto booleanVariableDto = new BooleanVariableDto();
-      booleanVariableDto.setValue(Boolean.parseBoolean(e.getValue()));
+      booleanVariableDto.setValue(parseBoolean(var));
       variableInstanceDto = booleanVariableDto;
-    } else if(isDateType(e.getType())) {
+    } else if(isDateType(var.getType())) {
       DateVariableDto dateVariableDto = new DateVariableDto();
       try {
-        OffsetDateTime offsetDateTime = objectMapper.readerFor(OffsetDateTime.class).readValue("\""+ e.getValue() + "\"");
+        OffsetDateTime offsetDateTime = objectMapper.readerFor(OffsetDateTime.class).readValue("\""+ var.getValue() + "\"");
         dateVariableDto.setValue(offsetDateTime);
       } catch (IOException error) {
-        logger.debug("Could not deserialize date variable out of [{}]! Reason: {}", e.getValue(), error.getMessage());
+        logger.debug("Could not deserialize date variable out of [{}]! Reason: {}", var.getValue(), error.getMessage());
       }
       variableInstanceDto = dateVariableDto;
     } else {
       logger.warn("Unsupported variable type [{}] if variable {}! " +
-        "Interpreting this as string type instead.", e.getType(), e.getName());
+        "Interpreting this as string type instead.", var.getType(), var.getName());
       StringVariableDto stringVariableDto = new StringVariableDto();
-      stringVariableDto.setValue(e.getValue());
+      stringVariableDto.setValue(var.getValue());
       variableInstanceDto = stringVariableDto;
     }
-    variableInstanceDto.setType(e.getType());
-    variableInstanceDto.setId(e.getId());
-    variableInstanceDto.setName(e.getName());
+    variableInstanceDto.setType(var.getType());
+    variableInstanceDto.setId(var.getId());
+    variableInstanceDto.setName(var.getName());
     return variableInstanceDto;
+  }
+
+  private Boolean parseBoolean(VariableDto var) {
+    return var == null? null: Boolean.parseBoolean(var.getValue());
+  }
+
+  private Double parseDouble(VariableDto var) {
+    return var == null? null: Double.parseDouble(var.getValue());
+  }
+
+  private Short parseShort(VariableDto var) {
+    return var == null? null: Short.parseShort(var.getValue());
+  }
+
+  private Long parseLong(VariableDto var) {
+    return var == null? null: Long.parseLong(var.getValue());
+  }
+
+  private Integer parseInteger(VariableDto var) {
+    return var == null? null: Integer.parseInt(var.getValue());
   }
 
 }

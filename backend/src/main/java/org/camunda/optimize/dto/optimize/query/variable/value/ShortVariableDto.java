@@ -4,7 +4,7 @@ import static org.camunda.optimize.service.util.VariableHelper.SHORT_TYPE;
 
 public class ShortVariableDto extends VariableInstanceDto<Short> {
 
-  private short value;
+  private Short value;
 
   public ShortVariableDto() {
     super();
@@ -15,7 +15,7 @@ public class ShortVariableDto extends VariableInstanceDto<Short> {
     return value;
   }
 
-  public void setValue(short value) {
+  public void setValue(Short value) {
     this.value = value;
   }
 

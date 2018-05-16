@@ -10,10 +10,10 @@ let {c7ports} = require('./config');
 
 const tmpDir = path.resolve(__dirname, '..', 'tmp');
 
-const bpmPlatformXmlDir = path.resolve(tmpDir, 'engine_8050/server/apache-tomcat-8.0.47/conf/bpm-platform.xml');
+const bpmPlatformXmlDir = path.resolve(tmpDir, 'engine_8050/server/apache-tomcat-9.0.5/conf/bpm-platform.xml');
 const dataPreparationPlugin = '      <plugin>\n        <class>org.camunda.bpm.platform.plugin.optimize.data.preparation.EasyOptimizeDataPreparationPlugin</class>\n      </plugin>\n'
 const pluginJarSrc = './demo-data/easy-optimize-data-preparation-plugin-1.0.0.jar';
-const pluginJarDest = path.resolve(tmpDir, 'engine_8050/server/apache-tomcat-8.0.47/lib');
+const pluginJarDest = path.resolve(tmpDir, 'engine_8050/server/apache-tomcat-9.0.5/lib');
 
 const maxConnections = 5;
 // it can be configured, but it would pain in ass, so it is better

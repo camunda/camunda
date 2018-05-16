@@ -6,7 +6,8 @@ import org.camunda.optimize.service.engine.importing.index.handler.impl.Finished
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessDefinitionImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessDefinitionXmlImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.RunningProcessInstanceImportIndexHandler;
-import org.camunda.optimize.service.engine.importing.index.handler.impl.VariableInstanceImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.index.handler.impl.VariableUpdateInstanceImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.index.handler.impl.FinalVariableInstanceImportIndexHandler;
 import org.camunda.optimize.service.util.BeanHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -90,11 +91,20 @@ public class ImportIndexHandlerProvider {
     return result;
   }
 
-  public VariableInstanceImportIndexHandler getVariableInstanceImportIndexHandler(String engineAlias) {
-    VariableInstanceImportIndexHandler result = null;
+  public FinalVariableInstanceImportIndexHandler getVariableInstanceImportIndexHandler(String engineAlias) {
+    FinalVariableInstanceImportIndexHandler result = null;
     EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(engineAlias);
     if (engineImportIndexHandlerProvider != null) {
       result = engineImportIndexHandlerProvider.getVariableInstanceImportIndexHandler();
+    }
+    return result;
+  }
+
+  public VariableUpdateInstanceImportIndexHandler getRunningVariableInstanceImportIndexHandler(String engineAlias) {
+    VariableUpdateInstanceImportIndexHandler result = null;
+    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(engineAlias);
+    if (engineImportIndexHandlerProvider != null) {
+      result = engineImportIndexHandlerProvider.getVariableUpdateInstanceImportIndexHandler();
     }
     return result;
   }

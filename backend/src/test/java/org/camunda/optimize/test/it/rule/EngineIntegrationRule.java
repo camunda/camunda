@@ -279,6 +279,22 @@ public class EngineIntegrationRule extends TestWatcher {
     }
   }
 
+  public void deleteVariableInstanceForProcessInstance(String variableName, String processInstanceId) {
+    CloseableHttpClient client = getHttpClient();
+    HttpDelete delete = new HttpDelete(getVariableDeleteUri(variableName, processInstanceId));
+    try {
+      CloseableHttpResponse response = client.execute(delete);
+      if(response.getStatusLine().getStatusCode() != 204) {
+        logger.error("Could not delete variable [{}] for process instance [{}]. Reason: wrong response code [{}]",
+          variableName,
+          processInstanceId,
+          response.getStatusLine().getStatusCode());
+      }
+    } catch (Exception e) {
+      logger.error("Could not delete variable for process instance: " + processInstanceId, e );
+    }
+  }
+
   private CloseableHttpClient getHttpClient() {
     return closeableHttpClient;
   }
@@ -352,6 +368,11 @@ public class EngineIntegrationRule extends TestWatcher {
   private String getHistoricGetProcessInstanceUri(String processInstanceId) {
     return getEngineUrl() +  "/history/process-instance/" + processInstanceId;
   }
+
+  private String getVariableDeleteUri(String variableName, String processInstanceId) {
+    return getEngineUrl() +  "/process-instance/" + processInstanceId + "/variables/" + variableName;
+  }
+
   private String getProcessDefinitionUri() {
     return getEngineUrl() + "/process-definition";
   }

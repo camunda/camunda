@@ -23,10 +23,10 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class  VariableInstanceFetcher
+public class FinalVariableInstanceFetcher
   extends RetryBackoffEngineEntityFetcher<HistoricVariableInstanceDto> {
 
-  public VariableInstanceFetcher(EngineContext engineContext) {
+  public FinalVariableInstanceFetcher(EngineContext engineContext) {
     super(engineContext);
   }
 

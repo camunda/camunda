@@ -3,12 +3,12 @@ package org.camunda.optimize.service.engine.importing.service.mediator;
 import org.camunda.optimize.dto.engine.HistoricVariableInstanceDto;
 import org.camunda.optimize.plugin.ImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.engine.importing.fetcher.instance.VariableInstanceFetcher;
-import org.camunda.optimize.service.engine.importing.index.handler.impl.VariableInstanceImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.fetcher.instance.FinalVariableInstanceFetcher;
+import org.camunda.optimize.service.engine.importing.index.handler.impl.FinalVariableInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.page.IdSetBasedImportPage;
-import org.camunda.optimize.service.engine.importing.service.VariableInstanceImportService;
+import org.camunda.optimize.service.engine.importing.service.FinalVariableInstanceImportService;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
-import org.camunda.optimize.service.es.writer.VariableWriter;
+import org.camunda.optimize.service.es.writer.variable.FinalVariableInstanceWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -19,14 +19,14 @@ import java.util.List;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class VariableInstanceEngineImportMediator
-    extends BackoffImportMediator<VariableInstanceImportIndexHandler> {
+public class FinalVariableInstanceEngineImportMediator
+    extends BackoffImportMediator<FinalVariableInstanceImportIndexHandler> {
 
-  private VariableInstanceFetcher engineEntityFetcher;
-  private VariableInstanceImportService variableInstanceImportService;
+  private FinalVariableInstanceFetcher engineEntityFetcher;
+  private FinalVariableInstanceImportService finalVariableInstanceImportService;
 
   @Autowired
-  private VariableWriter variableWriter;
+  private FinalVariableInstanceWriter variableWriter;
   @Autowired
   private ImportAdapterProvider importAdapterProvider;
   @Autowired
@@ -34,15 +34,15 @@ public class VariableInstanceEngineImportMediator
 
   protected EngineContext engineContext;
 
-  public VariableInstanceEngineImportMediator(EngineContext engineContext) {
+  public FinalVariableInstanceEngineImportMediator(EngineContext engineContext) {
     this.engineContext = engineContext;
   }
 
   @PostConstruct
   public void init() {
     importIndexHandler = provider.getVariableInstanceImportIndexHandler(engineContext.getEngineAlias());
-    engineEntityFetcher = beanHelper.getInstance(VariableInstanceFetcher.class, engineContext);
-    variableInstanceImportService = new VariableInstanceImportService(
+    engineEntityFetcher = beanHelper.getInstance(FinalVariableInstanceFetcher.class, engineContext);
+    finalVariableInstanceImportService = new FinalVariableInstanceImportService(
       variableWriter,
       importAdapterProvider,
       elasticsearchImportJobExecutor,
@@ -55,7 +55,7 @@ public class VariableInstanceEngineImportMediator
     IdSetBasedImportPage page = importIndexHandler.getNextPage();
     if (!page.getIds().isEmpty()) {
       List<HistoricVariableInstanceDto> entities = engineEntityFetcher.fetchHistoricVariableInstances(page);
-      variableInstanceImportService.executeImport(entities, page.getIds());
+      finalVariableInstanceImportService.executeImport(entities, page.getIds());
       return true;
     }
     return false;

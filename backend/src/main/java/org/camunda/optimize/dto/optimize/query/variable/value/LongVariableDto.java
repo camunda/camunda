@@ -4,7 +4,7 @@ import static org.camunda.optimize.service.util.VariableHelper.LONG_TYPE;
 
 public class LongVariableDto extends VariableInstanceDto {
 
-  private long value;
+  private Long value;
 
   public LongVariableDto() {
     super();
@@ -15,7 +15,7 @@ public class LongVariableDto extends VariableInstanceDto {
     return value;
   }
 
-  public void setValue(long value) {
+  public void setValue(Long value) {
     this.value = value;
   }
 

@@ -4,7 +4,7 @@ import static org.camunda.optimize.service.util.VariableHelper.BOOLEAN_TYPE;
 
 public class BooleanVariableDto extends VariableInstanceDto {
 
-  private boolean value;
+  private Boolean value;
 
   public BooleanVariableDto() {
     super();
@@ -15,7 +15,7 @@ public class BooleanVariableDto extends VariableInstanceDto {
     return value;
   }
 
-  public void setValue(boolean value) {
+  public void setValue(Boolean value) {
     this.value = value;
   }
 

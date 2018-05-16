@@ -310,7 +310,7 @@ public class MultipleEngineSupportIT {
       .setSize(100)
       .get();
 
-    assertThat(searchResponse.getHits().getTotalHits(), is(6L));
+    assertThat(searchResponse.getHits().getTotalHits(), is(8L));
     for (SearchHit searchHit : searchResponse.getHits().getHits()) {
       String timestampOfLastEntity = searchHit.getSourceAsMap().get(TIMESTAMP_OF_LAST_ENTITY).toString();
       OffsetDateTime timestamp = OffsetDateTime.parse(timestampOfLastEntity, embeddedOptimizeRule.getDateTimeFormatter());

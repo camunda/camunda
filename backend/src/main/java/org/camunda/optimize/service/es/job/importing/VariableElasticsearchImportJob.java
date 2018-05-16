@@ -1,8 +1,8 @@
 package org.camunda.optimize.service.es.job.importing;
 
 import org.camunda.optimize.dto.optimize.query.variable.VariableDto;
-import org.camunda.optimize.service.es.writer.VariableWriter;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
+import org.camunda.optimize.service.es.writer.variable.FinalVariableInstanceWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,12 +11,12 @@ import java.util.List;
 
 public class VariableElasticsearchImportJob extends ElasticsearchImportJob<VariableDto> {
 
-  private VariableWriter variableWriter;
-  private Logger logger = LoggerFactory.getLogger(VariableElasticsearchImportJob.class);
+  private FinalVariableInstanceWriter variableWriter;
+  private Logger logger = LoggerFactory.getLogger(getClass());
 
   private List<String> processInstanceIdsVariablesHaveBeenImportedFor = new ArrayList<>();
 
-  public VariableElasticsearchImportJob(VariableWriter variableWriter) {
+  public VariableElasticsearchImportJob(FinalVariableInstanceWriter variableWriter) {
     this.variableWriter = variableWriter;
   }
 
