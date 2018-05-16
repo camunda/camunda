@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.agrona.DirectBuffer;
 
-import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex.WorkflowMetatata;
+import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex.WorkflowMetadata;
 import io.zeebe.broker.system.workflow.repository.service.WorkflowRepositoryService;
 import io.zeebe.broker.transport.controlmessage.AbstractControlMessageHandler;
 import io.zeebe.protocol.Protocol;
@@ -67,7 +67,7 @@ public class GetWorkflowControlMessageHandler extends AbstractControlMessageHand
             final String bpmnProcessId = BufferUtil.bufferAsString(controlRequest.getBpmnProcessId());
             final long workflowKey = controlRequest.getWorkflowKey();
 
-            final ActorFuture<Tuple<WorkflowMetatata, DirectBuffer>> future;
+            final ActorFuture<Tuple<WorkflowMetadata, DirectBuffer>> future;
 
             final String errorMessage;
 
@@ -102,7 +102,7 @@ public class GetWorkflowControlMessageHandler extends AbstractControlMessageHand
                 {
                     if (workflowAndResource != null)
                     {
-                        final WorkflowMetatata workflow = workflowAndResource.getLeft();
+                        final WorkflowMetadata workflow = workflowAndResource.getLeft();
 
                         final WorkflowMetadataAndResource controlResponse = new WorkflowMetadataAndResource();
 

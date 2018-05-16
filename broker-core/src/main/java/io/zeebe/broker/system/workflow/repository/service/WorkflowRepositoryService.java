@@ -20,7 +20,7 @@ package io.zeebe.broker.system.workflow.repository.service;
 import java.util.List;
 
 import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex;
-import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex.WorkflowMetatata;
+import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex.WorkflowMetadata;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.util.collection.Tuple;
 import io.zeebe.util.sched.ActorControl;
@@ -48,11 +48,11 @@ public class WorkflowRepositoryService implements Service<WorkflowRepositoryServ
         return this;
     }
 
-    public ActorFuture<Tuple<WorkflowMetatata, DirectBuffer>> getWorkflowByKey(long key)
+    public ActorFuture<Tuple<WorkflowMetadata, DirectBuffer>> getWorkflowByKey(long key)
     {
         return actor.call(() ->
         {
-            final WorkflowMetatata metadata = index.getWorkflowByKey(key);
+            final WorkflowMetadata metadata = index.getWorkflowByKey(key);
 
             if (metadata != null)
             {
@@ -65,11 +65,11 @@ public class WorkflowRepositoryService implements Service<WorkflowRepositoryServ
         });
     }
 
-    public ActorFuture<Tuple<WorkflowMetatata, DirectBuffer>> getLatestWorkflowByBpmnProcessId(String topicName, String bpmnProcessId)
+    public ActorFuture<Tuple<WorkflowMetadata, DirectBuffer>> getLatestWorkflowByBpmnProcessId(String topicName, String bpmnProcessId)
     {
         return actor.call(() ->
         {
-            final WorkflowMetatata metadata = index.getLatestWorkflowByBpmnProcessId(topicName, bpmnProcessId);
+            final WorkflowMetadata metadata = index.getLatestWorkflowByBpmnProcessId(topicName, bpmnProcessId);
 
             if (metadata != null)
             {
@@ -82,11 +82,11 @@ public class WorkflowRepositoryService implements Service<WorkflowRepositoryServ
         });
     }
 
-    public ActorFuture<Tuple<WorkflowMetatata, DirectBuffer>> getWorkflowByBpmnProcessIdAndVersion(String topicName, String bpmnProcessId, int version)
+    public ActorFuture<Tuple<WorkflowMetadata, DirectBuffer>> getWorkflowByBpmnProcessIdAndVersion(String topicName, String bpmnProcessId, int version)
     {
         return actor.call(() ->
         {
-            final WorkflowMetatata metadata = index.getWorkflowByBpmnProcessIdAndVersion(topicName, bpmnProcessId, version);
+            final WorkflowMetadata metadata = index.getWorkflowByBpmnProcessIdAndVersion(topicName, bpmnProcessId, version);
 
             if (metadata != null)
             {
@@ -99,7 +99,7 @@ public class WorkflowRepositoryService implements Service<WorkflowRepositoryServ
         });
     }
 
-    public ActorFuture<List<WorkflowMetatata>> getWorkflowsByTopic(String topicName)
+    public ActorFuture<List<WorkflowMetadata>> getWorkflowsByTopic(String topicName)
     {
         return actor.call(() ->
         {
@@ -107,7 +107,7 @@ public class WorkflowRepositoryService implements Service<WorkflowRepositoryServ
         });
     }
 
-    public ActorFuture<List<WorkflowMetatata>> getWorkflowsByBpmnProcessId(String topicName, String bpmnProcessId)
+    public ActorFuture<List<WorkflowMetadata>> getWorkflowsByBpmnProcessId(String topicName, String bpmnProcessId)
     {
         return actor.call(() ->
         {

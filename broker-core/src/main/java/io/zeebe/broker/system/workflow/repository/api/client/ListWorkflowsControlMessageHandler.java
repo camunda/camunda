@@ -20,7 +20,7 @@ package io.zeebe.broker.system.workflow.repository.api.client;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex.WorkflowMetatata;
+import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex.WorkflowMetadata;
 import io.zeebe.broker.system.workflow.repository.service.WorkflowRepositoryService;
 import io.zeebe.broker.transport.controlmessage.AbstractControlMessageHandler;
 import io.zeebe.msgpack.value.ValueArray;
@@ -36,7 +36,7 @@ import org.agrona.DirectBuffer;
 
 public class ListWorkflowsControlMessageHandler extends AbstractControlMessageHandler
 {
-    private AtomicReference<WorkflowRepositoryService> workflowRepositroyServiceRef = new AtomicReference<>();
+    private AtomicReference<WorkflowRepositoryService> workflowRepositoryServiceRef = new AtomicReference<>();
 
     public ListWorkflowsControlMessageHandler(ServerOutput output)
     {
@@ -52,7 +52,7 @@ public class ListWorkflowsControlMessageHandler extends AbstractControlMessageHa
     @Override
     public void handle(ActorControl actor, int partitionId, DirectBuffer buffer, RecordMetadata metadata)
     {
-        final WorkflowRepositoryService repository = workflowRepositroyServiceRef.get();
+        final WorkflowRepositoryService repository = workflowRepositoryServiceRef.get();
 
         if (repository == null)
         {
@@ -66,7 +66,7 @@ public class ListWorkflowsControlMessageHandler extends AbstractControlMessageHa
             final String topicName = BufferUtil.bufferAsString(controlRequest.getTopicName());
             final String bpmnProcessId = BufferUtil.bufferAsString(controlRequest.getBpmnProcessId());
 
-            final ActorFuture<List<WorkflowMetatata>> future;
+            final ActorFuture<List<WorkflowMetadata>> future;
 
             if (!bpmnProcessId.isEmpty())
             {
@@ -85,8 +85,8 @@ public class ListWorkflowsControlMessageHandler extends AbstractControlMessageHa
                 }
                 else
                 {
-                    final ListWorkflowsResonse response = new ListWorkflowsResonse();
-                    final ValueArray<WorkflowMetadata> responseWorklows = response.getWorkflows();
+                    final ListWorkflowsResponse response = new ListWorkflowsResponse();
+                    final ValueArray<io.zeebe.broker.system.workflow.repository.api.client.WorkflowMetadata> responseWorklows = response.getWorkflows();
 
                     workflows.forEach((workflow) ->
                         responseWorklows.add()
@@ -104,6 +104,6 @@ public class ListWorkflowsControlMessageHandler extends AbstractControlMessageHa
 
     public void setWorkflowRepositoryService(WorkflowRepositoryService service)
     {
-        workflowRepositroyServiceRef.set(service);
+        workflowRepositoryServiceRef.set(service);
     }
 }

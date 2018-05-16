@@ -99,7 +99,7 @@ public class DeploymentManagerRequestHandler extends Actor implements Service<De
             {
                 case FetchWorkflowRequestDecoder.TEMPLATE_ID:
                 {
-                    return onFetchWorkfow(buffer, offset, length, output, remoteAddress, requestId);
+                    return onFetchWorkflow(buffer, offset, length, output, remoteAddress, requestId);
                 }
                 default:
                 {
@@ -115,13 +115,13 @@ public class DeploymentManagerRequestHandler extends Actor implements Service<De
         }
     }
 
-    private boolean onFetchWorkfow(DirectBuffer buffer, int offset, int length, ServerOutput output, RemoteAddress remoteAddress, long requestId)
+    private boolean onFetchWorkflow(DirectBuffer buffer, int offset, int length, ServerOutput output, RemoteAddress remoteAddress, long requestId)
     {
         final FetchWorkflowRequestHandler handler = fetchWorkflowHandlerRef.get();
 
         if (handler != null)
         {
-            handler.onFetchWorkfow(buffer, offset, length, output, remoteAddress, requestId, actor);
+            handler.onFetchWorkflow(buffer, offset, length, output, remoteAddress, requestId, actor);
 
             return true;
         }

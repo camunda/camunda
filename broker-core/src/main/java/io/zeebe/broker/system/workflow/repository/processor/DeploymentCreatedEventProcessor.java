@@ -17,13 +17,11 @@
  */
 package io.zeebe.broker.system.workflow.repository.processor;
 
-import java.util.Iterator;
-
 import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.broker.system.workflow.repository.data.DeployedWorkflow;
 import io.zeebe.broker.system.workflow.repository.data.DeploymentRecord;
 import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex;
-import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex.WorkflowMetatata;
+import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex.WorkflowMetadata;
 import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.util.buffer.BufferUtil;
@@ -52,20 +50,15 @@ public class DeploymentCreatedEventProcessor implements TypedRecordProcessor<Dep
 
         final String topicName = BufferUtil.bufferAsString(deploymentEvent.getTopicName());
 
-        final Iterator<DeployedWorkflow> iterator = deployedWorkflows.iterator();
-
-        while (iterator.hasNext())
+        for (final DeployedWorkflow deployedWorkflow : deployedWorkflows)
         {
-            final DeployedWorkflow deployedWorkflow = iterator.next();
+            final WorkflowMetadata workflowMetadata = new WorkflowMetadata().setKey(deployedWorkflow.getKey())
+                    .setBpmnProcessId(BufferUtil.bufferAsString(deployedWorkflow.getBpmnProcessId()))
+                    .setEventPosition(event.getPosition())
+                    .setVersion(deployedWorkflow.getVersion())
+                    .setTopicName(topicName);
 
-            final WorkflowMetatata workflowMetatata = new WorkflowMetatata()
-                .setKey(deployedWorkflow.getKey())
-                .setBpmnProcessId(BufferUtil.bufferAsString(deployedWorkflow.getBpmnProcessId()))
-                .setEventPosition(event.getPosition())
-                .setVersion(deployedWorkflow.getVersion())
-                .setTopicName(topicName);
-
-            repositoryIndex.add(workflowMetatata);
+            repositoryIndex.add(workflowMetadata);
         }
     }
 }

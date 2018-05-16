@@ -35,16 +35,16 @@ public class WorkflowRepositoryIndex extends JsonSnapshotSupport<WorkflowReposit
     {
         private long lastGeneratedKey = 0;
 
-        private Map<Long, WorkflowMetatata> workflows = new HashMap<>();
+        private Map<Long, WorkflowMetadata> workflows = new HashMap<>();
 
         private Map<String, WorkflowsByTopic> topics = new HashMap<>();
 
-        public Map<Long, WorkflowMetatata> getWorkflows()
+        public Map<Long, WorkflowMetadata> getWorkflows()
         {
             return workflows;
         }
 
-        public void setWorkflows(Map<Long, WorkflowMetatata> workflows)
+        public void setWorkflows(Map<Long, WorkflowMetadata> workflows)
         {
             this.workflows = workflows;
         }
@@ -112,7 +112,7 @@ public class WorkflowRepositoryIndex extends JsonSnapshotSupport<WorkflowReposit
         }
     }
 
-    public static class WorkflowMetatata
+    public static class WorkflowMetadata
     {
         private long key;
         private int version;
@@ -125,7 +125,7 @@ public class WorkflowRepositoryIndex extends JsonSnapshotSupport<WorkflowReposit
             return key;
         }
 
-        public WorkflowMetatata setKey(long key)
+        public WorkflowMetadata setKey(long key)
         {
             this.key = key;
             return this;
@@ -136,7 +136,7 @@ public class WorkflowRepositoryIndex extends JsonSnapshotSupport<WorkflowReposit
             return version;
         }
 
-        public WorkflowMetatata setVersion(int version)
+        public WorkflowMetadata setVersion(int version)
         {
             this.version = version;
             return this;
@@ -147,7 +147,7 @@ public class WorkflowRepositoryIndex extends JsonSnapshotSupport<WorkflowReposit
             return bpmnProcessId;
         }
 
-        public WorkflowMetatata setBpmnProcessId(String bpmnProcessId)
+        public WorkflowMetadata setBpmnProcessId(String bpmnProcessId)
         {
             this.bpmnProcessId = bpmnProcessId;
             return this;
@@ -158,7 +158,7 @@ public class WorkflowRepositoryIndex extends JsonSnapshotSupport<WorkflowReposit
             return topicName;
         }
 
-        public WorkflowMetatata setTopicName(String topicName)
+        public WorkflowMetadata setTopicName(String topicName)
         {
             this.topicName = topicName;
             return this;
@@ -169,7 +169,7 @@ public class WorkflowRepositoryIndex extends JsonSnapshotSupport<WorkflowReposit
             return eventPosition;
         }
 
-        public WorkflowMetatata setEventPosition(long eventPosition)
+        public WorkflowMetadata setEventPosition(long eventPosition)
         {
             this.eventPosition = eventPosition;
             return this;
@@ -206,7 +206,7 @@ public class WorkflowRepositoryIndex extends JsonSnapshotSupport<WorkflowReposit
         return nextVersion;
     }
 
-    public void add(WorkflowMetatata workflow)
+    public void add(WorkflowMetadata workflow)
     {
         final WorkflowRepositoryIndexData data = getData();
 
@@ -254,14 +254,14 @@ public class WorkflowRepositoryIndex extends JsonSnapshotSupport<WorkflowReposit
         }
     }
 
-    public WorkflowMetatata getWorkflowByKey(long key)
+    public WorkflowMetadata getWorkflowByKey(long key)
     {
         return getData()
             .getWorkflows()
             .get(key);
     }
 
-    public WorkflowMetatata getLatestWorkflowByBpmnProcessId(String topicName, String bpmnProcessId)
+    public WorkflowMetadata getLatestWorkflowByBpmnProcessId(String topicName, String bpmnProcessId)
     {
         final WorkflowsByBpmnProcessId byBpmnProcessId = getWorkflowsByTopicNameAndBpmnProcessId(topicName, bpmnProcessId);
 
@@ -279,7 +279,7 @@ public class WorkflowRepositoryIndex extends JsonSnapshotSupport<WorkflowReposit
         return null;
     }
 
-    public WorkflowMetatata getWorkflowByBpmnProcessIdAndVersion(String topicName, String bpmnProcessId, int version)
+    public WorkflowMetadata getWorkflowByBpmnProcessIdAndVersion(String topicName, String bpmnProcessId, int version)
     {
         final WorkflowsByBpmnProcessId byBpmnProcessId = getWorkflowsByTopicNameAndBpmnProcessId(topicName, bpmnProcessId);
 
@@ -297,7 +297,7 @@ public class WorkflowRepositoryIndex extends JsonSnapshotSupport<WorkflowReposit
         return null;
     }
 
-    public List<WorkflowMetatata> getWorkflowsByTopic(String topicName)
+    public List<WorkflowMetadata> getWorkflowsByTopic(String topicName)
     {
         final WorkflowRepositoryIndexData data = getData();
 
@@ -312,7 +312,7 @@ public class WorkflowRepositoryIndex extends JsonSnapshotSupport<WorkflowReposit
             .collect(Collectors.toList());
     }
 
-    public List<WorkflowMetatata> getWorkflowsByTopicAndBpmnProcessId(String topicName, String bpmnProcessId)
+    public List<WorkflowMetadata> getWorkflowsByTopicAndBpmnProcessId(String topicName, String bpmnProcessId)
     {
         final WorkflowRepositoryIndexData data = getData();
 

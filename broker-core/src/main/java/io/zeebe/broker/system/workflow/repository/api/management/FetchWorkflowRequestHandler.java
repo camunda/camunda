@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.system.workflow.repository.api.management;
 
-import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex.WorkflowMetatata;
+import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex.WorkflowMetadata;
 import io.zeebe.broker.system.workflow.repository.service.WorkflowRepositoryService;
 import io.zeebe.clustering.management.FetchWorkflowRequestDecoder;
 import io.zeebe.transport.*;
@@ -38,11 +38,11 @@ public class FetchWorkflowRequestHandler
         this.workflowRepositoryService = workflowRepositoryService;
     }
 
-    public void onFetchWorkfow(DirectBuffer buffer, int offset, int length, ServerOutput output, RemoteAddress remoteAddress, long requestId, ActorControl actor)
+    public void onFetchWorkflow(DirectBuffer buffer, int offset, int length, ServerOutput output, RemoteAddress remoteAddress, long requestId, ActorControl actor)
     {
         fetchWorkflowRequest.wrap(buffer, offset, length);
 
-        final ActorFuture<Tuple<WorkflowMetatata, DirectBuffer>> future;
+        final ActorFuture<Tuple<WorkflowMetadata, DirectBuffer>> future;
 
         final long workflowKey = fetchWorkflowRequest.getWorkflowKey();
 
@@ -74,7 +74,7 @@ public class FetchWorkflowRequestHandler
 
             if (workflowAndResource != null)
             {
-                final WorkflowMetatata workflow = workflowAndResource.getLeft();
+                final WorkflowMetadata workflow = workflowAndResource.getLeft();
 
                 fetchWorkflowResponse.workflowKey(workflow.getKey())
                     .version(workflow.getVersion())

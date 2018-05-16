@@ -21,7 +21,7 @@ import java.util.Iterator;
 
 import io.zeebe.broker.system.workflow.repository.data.DeployedWorkflow;
 import io.zeebe.broker.system.workflow.repository.data.DeploymentRecord;
-import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex.WorkflowMetatata;
+import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex.WorkflowMetadata;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.util.buffer.BufferUtil;
@@ -44,7 +44,7 @@ public class DeploymentResourceCache
         this.reader = reader;
     }
 
-    public DirectBuffer getResource(WorkflowMetatata workflow)
+    public DirectBuffer getResource(WorkflowMetadata workflow)
     {
         return resourceCache.computeIfAbsent(workflow.getKey(), (key) ->
         {

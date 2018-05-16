@@ -21,13 +21,13 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.value.ValueArray;
 
-public class ListWorkflowsResonse extends UnpackedObject
+public class ListWorkflowsResponse extends UnpackedObject
 {
     private final ArrayProperty<WorkflowMetadata> workflowsProp = new ArrayProperty<>(
         "workflows",
         new WorkflowMetadata());
 
-    public ListWorkflowsResonse()
+    public ListWorkflowsResponse()
     {
         declareProperty(workflowsProp);
     }
