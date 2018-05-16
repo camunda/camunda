@@ -16,14 +16,14 @@
 package io.zeebe.client.impl.subscription.topic;
 
 import org.agrona.collections.Long2LongHashMap;
-import io.zeebe.client.impl.record.GeneralRecordImpl;
+import io.zeebe.client.impl.record.UntypedRecordImpl;
 import io.zeebe.util.CheckedConsumer;
 
 public class TopicSubscriptionSpec
 {
 
     protected final String topic;
-    protected final CheckedConsumer<GeneralRecordImpl> handler;
+    protected final CheckedConsumer<UntypedRecordImpl> handler;
     protected final boolean forceStart;
     protected final String name;
     protected final int prefetchCapacity;
@@ -32,7 +32,7 @@ public class TopicSubscriptionSpec
 
     public TopicSubscriptionSpec(
             String topic,
-            CheckedConsumer<GeneralRecordImpl> handler,
+            CheckedConsumer<UntypedRecordImpl> handler,
             long defaultStartPosition,
             Long2LongHashMap startPositions,
             boolean forceStart,
@@ -52,7 +52,7 @@ public class TopicSubscriptionSpec
     {
         return topic;
     }
-    public CheckedConsumer<GeneralRecordImpl> getHandler()
+    public CheckedConsumer<UntypedRecordImpl> getHandler()
     {
         return handler;
     }

@@ -18,30 +18,76 @@ package io.zeebe.client.impl.subscription.topic;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import io.zeebe.client.api.record.RecordMetadata.RecordType;
-import io.zeebe.client.api.record.RecordMetadata.ValueType;
-import io.zeebe.client.api.subscription.*;
+import io.zeebe.client.api.commands.IncidentCommand;
+import io.zeebe.client.api.commands.JobCommand;
+import io.zeebe.client.api.commands.WorkflowInstanceCommand;
+import io.zeebe.client.api.events.IncidentEvent;
+import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.client.api.events.RaftEvent;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.record.RecordType;
+import io.zeebe.client.api.record.ValueType;
+import io.zeebe.client.api.subscription.IncidentCommandHandler;
+import io.zeebe.client.api.subscription.IncidentEventHandler;
+import io.zeebe.client.api.subscription.JobCommandHandler;
+import io.zeebe.client.api.subscription.JobEventHandler;
+import io.zeebe.client.api.subscription.RaftEventHandler;
+import io.zeebe.client.api.subscription.RecordHandler;
+import io.zeebe.client.api.subscription.TopicSubscription;
+import io.zeebe.client.api.subscription.TopicSubscriptionBuilderStep1;
 import io.zeebe.client.api.subscription.TopicSubscriptionBuilderStep1.TopicSubscriptionBuilderStep2;
 import io.zeebe.client.api.subscription.TopicSubscriptionBuilderStep1.TopicSubscriptionBuilderStep3;
+import io.zeebe.client.api.subscription.WorkflowInstanceCommandHandler;
+import io.zeebe.client.api.subscription.WorkflowInstanceEventHandler;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.impl.TopicClientImpl;
 import io.zeebe.client.impl.ZeebeObjectMapperImpl;
-import io.zeebe.client.impl.command.*;
-import io.zeebe.client.impl.event.*;
-import io.zeebe.client.impl.record.GeneralRecordImpl;
+import io.zeebe.client.impl.command.IncidentCommandImpl;
+import io.zeebe.client.impl.command.JobCommandImpl;
+import io.zeebe.client.impl.command.TopicCommandImpl;
+import io.zeebe.client.impl.command.WorkflowInstanceCommandImpl;
+import io.zeebe.client.impl.event.IncidentEventImpl;
+import io.zeebe.client.impl.event.JobEventImpl;
+import io.zeebe.client.impl.event.RaftEventImpl;
+import io.zeebe.client.impl.event.TopicEventImpl;
+import io.zeebe.client.impl.event.WorkflowInstanceEventImpl;
+import io.zeebe.client.impl.record.RecordImpl;
 import io.zeebe.client.impl.record.RecordMetadataImpl;
+import io.zeebe.client.impl.record.UntypedRecordImpl;
+import io.zeebe.util.CheckedConsumer;
 import io.zeebe.util.EnsureUtil;
 
 public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilderStep1, TopicSubscriptionBuilderStep2, TopicSubscriptionBuilderStep3
 {
     private RecordHandler defaultRecordHandler;
-    private JobEventHandler jobEventHandler;
-    private JobCommandHandler jobCommandHandler;
-    private WorkflowInstanceEventHandler workflowInstanceEventHandler;
-    private WorkflowInstanceCommandHandler workflowInstanceCommandHandler;
-    private IncidentEventHandler incidentEventHandler;
-    private IncidentCommandHandler incidentCommandHandler;
-    private RaftEventHandler raftEventHandler;
+
+    private static final BiEnumMap<RecordType, ValueType, Class<? extends RecordImpl>> RECORD_CLASSES =
+            new BiEnumMap<>(RecordType.class, ValueType.class, Class.class);
+    static
+    {
+        RECORD_CLASSES.put(RecordType.COMMAND, ValueType.JOB, JobCommandImpl.class);
+        RECORD_CLASSES.put(RecordType.EVENT, ValueType.JOB, JobEventImpl.class);
+
+        RECORD_CLASSES.put(RecordType.COMMAND, ValueType.INCIDENT, IncidentCommandImpl.class);
+        RECORD_CLASSES.put(RecordType.EVENT, ValueType.INCIDENT, IncidentEventImpl.class);
+
+        RECORD_CLASSES.put(RecordType.EVENT, ValueType.RAFT, RaftEventImpl.class);
+
+        RECORD_CLASSES.put(RecordType.COMMAND, ValueType.TOPIC, TopicCommandImpl.class);
+        RECORD_CLASSES.put(RecordType.EVENT, ValueType.TOPIC, TopicEventImpl.class);
+
+        RECORD_CLASSES.put(RecordType.COMMAND, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceCommandImpl.class);
+        RECORD_CLASSES.put(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceEventImpl.class);
+
+        for (ValueType valueType : ValueType.values())
+        {
+            final Class<? extends RecordImpl> commandClass = RECORD_CLASSES.get(RecordType.COMMAND, valueType);
+            RECORD_CLASSES.put(RecordType.COMMAND_REJECTION, valueType, commandClass);
+        }
+    }
+
+    private BiEnumMap<RecordType, ValueType, CheckedConsumer<RecordImpl>> handlers =
+            new BiEnumMap<>(RecordType.class, ValueType.class, CheckedConsumer.class);
 
     private final TopicSubscriberGroupBuilder builder;
     private final ZeebeObjectMapperImpl objectMapper;
@@ -67,7 +113,8 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilderSte
     public TopicSubscriptionBuilderStep3 jobEventHandler(JobEventHandler handler)
     {
         EnsureUtil.ensureNotNull("jobEventHandler", handler);
-        this.jobEventHandler = handler;
+        handlers.put(RecordType.EVENT, ValueType.JOB, e -> handler.onJobEvent((JobEvent) e));
+
         return this;
     }
 
@@ -75,7 +122,9 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilderSte
     public TopicSubscriptionBuilderStep3 jobCommandHandler(JobCommandHandler handler)
     {
         EnsureUtil.ensureNotNull("jobCommandHandler", handler);
-        this.jobCommandHandler = handler;
+        handlers.put(RecordType.COMMAND, ValueType.JOB, e -> handler.onJobCommand((JobCommand) e));
+        handlers.put(RecordType.COMMAND_REJECTION, ValueType.JOB, e -> handler.onJobCommandRejection((JobCommand) e));
+
         return this;
     }
 
@@ -83,7 +132,7 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilderSte
     public TopicSubscriptionBuilderStep3 workflowInstanceEventHandler(WorkflowInstanceEventHandler handler)
     {
         EnsureUtil.ensureNotNull("workflowInstanceEventHandler", handler);
-        this.workflowInstanceEventHandler = handler;
+        handlers.put(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, e -> handler.onWorkflowInstanceEvent((WorkflowInstanceEvent) e));
         return this;
     }
 
@@ -91,7 +140,8 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilderSte
     public TopicSubscriptionBuilderStep3 workflowInstanceCommandHandler(WorkflowInstanceCommandHandler handler)
     {
         EnsureUtil.ensureNotNull("workflowInstanceCommandHandler", handler);
-        this.workflowInstanceCommandHandler = handler;
+        handlers.put(RecordType.COMMAND, ValueType.WORKFLOW_INSTANCE, e -> handler.onWorkflowInstanceCommand((WorkflowInstanceCommand) e));
+        handlers.put(RecordType.COMMAND_REJECTION, ValueType.WORKFLOW_INSTANCE, e -> handler.onWorkflowInstanceCommand((WorkflowInstanceCommand) e));
         return this;
     }
 
@@ -99,7 +149,7 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilderSte
     public TopicSubscriptionBuilderStep3 incidentEventHandler(IncidentEventHandler handler)
     {
         EnsureUtil.ensureNotNull("incidentEventHandler", handler);
-        this.incidentEventHandler = handler;
+        handlers.put(RecordType.EVENT, ValueType.INCIDENT, e -> handler.onIncidentEvent((IncidentEvent) e));
         return this;
     }
 
@@ -107,7 +157,8 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilderSte
     public TopicSubscriptionBuilderStep3 incidentCommandHandler(IncidentCommandHandler handler)
     {
         EnsureUtil.ensureNotNull("incidentCommandHandler", handler);
-        this.incidentCommandHandler = handler;
+        handlers.put(RecordType.COMMAND, ValueType.INCIDENT, e -> handler.onIncidentCommand((IncidentCommand) e));
+        handlers.put(RecordType.COMMAND_REJECTION, ValueType.INCIDENT, e -> handler.onIncidentCommand((IncidentCommand) e));
         return this;
     }
 
@@ -115,7 +166,7 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilderSte
     public TopicSubscriptionBuilderImpl raftEventHandler(final RaftEventHandler handler)
     {
         EnsureUtil.ensureNotNull("raftEventHandler", handler);
-        this.raftEventHandler = handler;
+        handlers.put(RecordType.EVENT, ValueType.RAFT, e -> handler.onRaftEvent((RaftEvent) e));
         return this;
     }
 
@@ -172,116 +223,36 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilderSte
 
     public Future<TopicSubscriberGroup> buildSubscriberGroup()
     {
-        builder.handler(this::dispatchEvent);
+        builder.handler(this::dispatchRecord);
 
         return builder.build();
     }
 
-    protected void dispatchEvent(GeneralRecordImpl event) throws Exception
+    protected <T extends RecordImpl> void dispatchRecord(UntypedRecordImpl record) throws Exception
     {
-        final RecordMetadataImpl metadata = event.getMetadata();
+        final RecordMetadataImpl metadata = record.getMetadata();
         final ValueType valueType = metadata.getValueType();
         final RecordType recordType = metadata.getRecordType();
-        boolean handled = false;
 
-        // TODO: refactor this to make it easier extensible
-        if (ValueType.JOB == valueType)
+        final Class<T> targetClass = (Class<T>) RECORD_CLASSES.get(recordType, valueType);
+
+        if (targetClass == null)
         {
-            if (RecordType.EVENT == recordType && jobEventHandler != null)
-            {
-                final JobEventImpl jobEvent = objectMapper.fromJson(event.getAsMsgPack(), JobEventImpl.class);
-                jobEvent.updateMetadata(event.getMetadata());
-
-                jobEventHandler.onJobEvent(jobEvent);
-                handled = true;
-            }
-            else if (RecordType.COMMAND == recordType && jobCommandHandler != null)
-            {
-                final JobCommandImpl jobCommand = objectMapper.fromJson(event.getAsMsgPack(), JobCommandImpl.class);
-                jobCommand.updateMetadata(event.getMetadata());
-
-                jobCommandHandler.onJobCommand(jobCommand);
-                handled = true;
-            }
-            else if (RecordType.COMMAND_REJECTION == recordType && jobCommandHandler != null)
-            {
-                final JobCommandImpl jobCommand = objectMapper.fromJson(event.getAsMsgPack(), JobCommandImpl.class);
-                jobCommand.updateMetadata(event.getMetadata());
-
-                jobCommandHandler.onJobCommandRejection(jobCommand);
-                handled = true;
-            }
-        }
-        else if (ValueType.WORKFLOW_INSTANCE == valueType)
-        {
-            if (RecordType.EVENT == recordType && workflowInstanceEventHandler != null)
-            {
-                final WorkflowInstanceEventImpl workflowInstanceEvent = objectMapper.fromJson(event.getAsMsgPack(), WorkflowInstanceEventImpl.class);
-                workflowInstanceEvent.updateMetadata(event.getMetadata());
-
-                workflowInstanceEventHandler.onWorkflowInstanceEvent(workflowInstanceEvent);
-                handled = true;
-            }
-            else if (RecordType.COMMAND == recordType && workflowInstanceCommandHandler != null)
-            {
-                final WorkflowInstanceCommandImpl workflowInstanceCommand = objectMapper.fromJson(event.getAsMsgPack(), WorkflowInstanceCommandImpl.class);
-                workflowInstanceCommand.updateMetadata(event.getMetadata());
-
-                workflowInstanceCommandHandler.onWorkflowInstanceCommand(workflowInstanceCommand);
-                handled = true;
-            }
-            else if (RecordType.COMMAND_REJECTION == recordType && workflowInstanceCommandHandler != null)
-            {
-                final WorkflowInstanceCommandImpl workflowInstanceCommand = objectMapper.fromJson(event.getAsMsgPack(), WorkflowInstanceCommandImpl.class);
-                workflowInstanceCommand.updateMetadata(event.getMetadata());
-
-                workflowInstanceCommandHandler.onWorkflowInstanceCommandRejection(workflowInstanceCommand);
-                handled = true;
-            }
-        }
-        else if (ValueType.INCIDENT == valueType)
-        {
-            if (RecordType.EVENT == recordType && incidentEventHandler != null)
-            {
-                final IncidentEventImpl incidentEvent = objectMapper.fromJson(event.getAsMsgPack(), IncidentEventImpl.class);
-                incidentEvent.updateMetadata(event.getMetadata());
-
-                incidentEventHandler.onIncidentEvent(incidentEvent);
-                handled = true;
-            }
-            else if (RecordType.COMMAND == recordType && incidentCommandHandler != null)
-            {
-                final IncidentCommandImpl incidentCommand = objectMapper.fromJson(event.getAsMsgPack(), IncidentCommandImpl.class);
-                incidentCommand.updateMetadata(event.getMetadata());
-
-                incidentCommandHandler.onIncidentCommand(incidentCommand);
-                handled = true;
-            }
-            else if (RecordType.COMMAND_REJECTION == recordType && jobCommandHandler != null)
-            {
-                final IncidentCommandImpl incidentCommand = objectMapper.fromJson(event.getAsMsgPack(), IncidentCommandImpl.class);
-                incidentCommand.updateMetadata(event.getMetadata());
-
-                incidentCommandHandler.onIncidentCommandRejection(incidentCommand);
-                handled = true;
-            }
-        }
-        else if (ValueType.RAFT == valueType)
-        {
-            if (RecordType.EVENT == recordType && raftEventHandler != null)
-            {
-                final RaftEventImpl raftEvent = objectMapper.fromJson(event.getAsMsgPack(), RaftEventImpl.class);
-                raftEvent.updateMetadata(event.getMetadata());
-
-                raftEventHandler.onRaftEvent(raftEvent);
-                handled = true;
-            }
+            throw new ClientException("Cannot deserialize record " + recordType + "/" + valueType + ": No POJO class registered");
         }
 
+        final T typedRecord = objectMapper.fromJson(record.getAsMsgPack(), targetClass);
+        typedRecord.updateMetadata(record.getMetadata());
 
-        if (!handled && defaultRecordHandler != null)
+        final CheckedConsumer<T> handler = (CheckedConsumer<T>) handlers.get(recordType, valueType);
+
+        if (handler != null)
         {
-            defaultRecordHandler.onRecord(event);
+            handler.accept(typedRecord);
+        }
+        else
+        {
+            defaultRecordHandler.onRecord(typedRecord);
         }
     }
 

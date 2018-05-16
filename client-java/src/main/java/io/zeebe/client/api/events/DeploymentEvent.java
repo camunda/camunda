@@ -31,15 +31,4 @@ public interface DeploymentEvent extends DeploymentRecord
      * @return the workflows which are deployed
      */
     List<Workflow> getDeployedWorkflows();
-
-    enum DeploymentState
-    {
-        CREATED,
-
-        VALIDATED,
-        DISTRIBUTED,
-
-        TIMED_OUT
-    }
-
 }

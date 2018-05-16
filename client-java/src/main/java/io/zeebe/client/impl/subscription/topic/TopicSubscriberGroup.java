@@ -20,17 +20,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import io.zeebe.client.api.subscription.*;
 import io.zeebe.client.impl.Loggers;
 import io.zeebe.client.impl.ZeebeClientImpl;
-import io.zeebe.client.impl.record.GeneralRecordImpl;
+import io.zeebe.client.impl.record.UntypedRecordImpl;
 import io.zeebe.client.impl.subscription.*;
 import io.zeebe.util.CheckedConsumer;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 
-public class TopicSubscriberGroup extends SubscriberGroup<TopicSubscriber> implements TopicSubscription, PollableTopicSubscription
+public class TopicSubscriberGroup extends SubscriberGroup<TopicSubscriber> implements TopicSubscription
 {
-    private static final int MAX_HANDLING_RETRIES = 2;
-
     private AtomicBoolean processingFlag = new AtomicBoolean(false);
     private final TopicSubscriptionSpec subscription;
 
@@ -50,14 +48,13 @@ public class TopicSubscriberGroup extends SubscriberGroup<TopicSubscriber> imple
         return pollEvents(subscription.getHandler());
     }
 
-    @Override
     public int poll(RecordHandler recordHandler)
     {
         return pollEvents((e) -> recordHandler.onRecord(e));
     }
 
     @Override
-    public int pollEvents(CheckedConsumer<GeneralRecordImpl> pollHandler)
+    public int pollEvents(CheckedConsumer<UntypedRecordImpl> pollHandler)
     {
 
         // ensuring at most one thread polls at a time which is the guarantee we give for

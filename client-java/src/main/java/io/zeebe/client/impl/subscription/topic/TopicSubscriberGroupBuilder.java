@@ -18,7 +18,7 @@ package io.zeebe.client.impl.subscription.topic;
 import java.util.concurrent.Future;
 
 import org.agrona.collections.Long2LongHashMap;
-import io.zeebe.client.impl.record.GeneralRecordImpl;
+import io.zeebe.client.impl.record.UntypedRecordImpl;
 import io.zeebe.client.impl.subscription.SubscriptionManager;
 import io.zeebe.util.CheckedConsumer;
 import io.zeebe.util.EnsureUtil;
@@ -26,7 +26,7 @@ import io.zeebe.util.EnsureUtil;
 public class TopicSubscriberGroupBuilder
 {
     protected final String topic;
-    protected CheckedConsumer<GeneralRecordImpl> handler;
+    protected CheckedConsumer<UntypedRecordImpl> handler;
     protected final SubscriptionManager acquisition;
     protected String name;
     protected final int prefetchCapacity;
@@ -48,7 +48,7 @@ public class TopicSubscriberGroupBuilder
         startAtTailOfTopic();
     }
 
-    public TopicSubscriberGroupBuilder handler(CheckedConsumer<GeneralRecordImpl> handler)
+    public TopicSubscriberGroupBuilder handler(CheckedConsumer<UntypedRecordImpl> handler)
     {
         this.handler = handler;
         return this;
@@ -88,7 +88,7 @@ public class TopicSubscriberGroupBuilder
         return this;
     }
 
-    public CheckedConsumer<GeneralRecordImpl> getHandler()
+    public CheckedConsumer<UntypedRecordImpl> getHandler()
     {
         return handler;
     }

@@ -22,16 +22,26 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.Duration;
 import java.util.List;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
+
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.commands.*;
-import io.zeebe.client.api.events.*;
-import io.zeebe.client.api.events.IncidentEvent.IncidentState;
-import io.zeebe.client.api.events.JobEvent.JobState;
-import io.zeebe.client.api.events.WorkflowInstanceEvent.WorkflowInstanceState;
+import io.zeebe.client.api.commands.BrokerInfo;
+import io.zeebe.client.api.commands.PartitionInfo;
+import io.zeebe.client.api.commands.Topology;
+import io.zeebe.client.api.events.DeploymentEvent;
+import io.zeebe.client.api.events.IncidentState;
+import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.client.api.events.JobState;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.events.WorkflowInstanceState;
 import io.zeebe.client.api.subscription.JobSubscription;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.model.bpmn.Bpmn;
@@ -42,11 +52,6 @@ import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.SocketAddress;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
 
 public class BrokerRestartTest
 {

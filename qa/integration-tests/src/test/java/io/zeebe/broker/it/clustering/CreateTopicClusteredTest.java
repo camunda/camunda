@@ -27,18 +27,25 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
+
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.commands.*;
+import io.zeebe.client.api.commands.BrokerInfo;
+import io.zeebe.client.api.commands.Partition;
+import io.zeebe.client.api.commands.Topic;
+import io.zeebe.client.api.commands.Topics;
 import io.zeebe.client.api.events.JobEvent;
-import io.zeebe.client.api.events.JobEvent.JobState;
+import io.zeebe.client.api.events.JobState;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
-import org.junit.*;
-import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
 
 public class CreateTopicClusteredTest
 {

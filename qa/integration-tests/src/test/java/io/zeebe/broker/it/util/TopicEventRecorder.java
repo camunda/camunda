@@ -21,16 +21,19 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.junit.rules.ExternalResource;
+
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.api.clients.SubscriptionClient;
 import io.zeebe.client.api.commands.JobCommand;
-import io.zeebe.client.api.commands.JobCommand.JobCommandName;
-import io.zeebe.client.api.events.*;
-import io.zeebe.client.api.events.IncidentEvent.IncidentState;
-import io.zeebe.client.api.events.JobEvent.JobState;
-import io.zeebe.client.api.events.WorkflowInstanceEvent.WorkflowInstanceState;
+import io.zeebe.client.api.commands.JobCommandName;
+import io.zeebe.client.api.events.IncidentEvent;
+import io.zeebe.client.api.events.IncidentState;
+import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.client.api.events.JobState;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.events.WorkflowInstanceState;
 import io.zeebe.client.api.subscription.TopicSubscription;
-import org.junit.rules.ExternalResource;
 
 public class TopicEventRecorder extends ExternalResource
 {

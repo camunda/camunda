@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 import io.zeebe.client.impl.Loggers;
 import io.zeebe.client.impl.ZeebeClientImpl;
-import io.zeebe.client.impl.record.GeneralRecordImpl;
+import io.zeebe.client.impl.record.UntypedRecordImpl;
 import io.zeebe.client.impl.record.RecordMetadataImpl;
 import io.zeebe.client.impl.subscription.job.JobSubscriberGroup;
 import io.zeebe.client.impl.subscription.job.JobSubscriptionSpec;
@@ -60,7 +60,7 @@ public class SubscriptionManager extends Actor implements SubscribedEventHandler
     @Override
     protected void onActorStarting()
     {
-        final SubscribedEventCollector taskCollector = new SubscribedEventCollector(
+        final SubscribedRecordCollector taskCollector = new SubscribedRecordCollector(
                 this,
                 client.getMsgPackConverter(),
                 client.getObjectMapper());
@@ -207,7 +207,7 @@ public class SubscriptionManager extends Actor implements SubscribedEventHandler
     }
 
     @Override
-    public boolean onEvent(SubscriptionType type, long subscriberKey, GeneralRecordImpl event)
+    public boolean onEvent(SubscriptionType type, long subscriberKey, UntypedRecordImpl event)
     {
         final RecordMetadataImpl eventMetadata = event.getMetadata();
 

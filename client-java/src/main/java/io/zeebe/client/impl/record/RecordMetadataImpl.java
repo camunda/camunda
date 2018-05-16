@@ -18,8 +18,9 @@ package io.zeebe.client.impl.record;
 import java.time.Instant;
 
 import io.zeebe.client.api.record.RecordMetadata;
+import io.zeebe.client.api.record.RecordType;
+import io.zeebe.client.api.record.ValueType;
 import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
-import io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder;
 import io.zeebe.protocol.intent.Intent;
 
 public class RecordMetadataImpl implements RecordMetadata

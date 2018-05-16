@@ -19,13 +19,13 @@ import static io.zeebe.util.VarDataUtil.readBytes;
 
 import io.zeebe.client.api.record.ZeebeObjectMapper;
 import io.zeebe.client.impl.data.MsgPackConverter;
-import io.zeebe.client.impl.record.GeneralRecordImpl;
+import io.zeebe.client.impl.record.UntypedRecordImpl;
 import io.zeebe.protocol.clientapi.*;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.transport.*;
 import org.agrona.DirectBuffer;
 
-public class SubscribedEventCollector implements ClientMessageHandler
+public class SubscribedRecordCollector implements ClientMessageHandler
 {
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SubscribedRecordDecoder subscribedRecordDecoder = new SubscribedRecordDecoder();
@@ -34,7 +34,7 @@ public class SubscribedEventCollector implements ClientMessageHandler
     private final MsgPackConverter converter;
     private final ZeebeObjectMapper objectMapper;
 
-    public SubscribedEventCollector(
+    public SubscribedRecordCollector(
             SubscribedEventHandler eventHandler,
             MsgPackConverter converter,
             ZeebeObjectMapper objectMapper)
@@ -73,7 +73,7 @@ public class SubscribedEventCollector implements ClientMessageHandler
 
             final byte[] valueBuffer = readBytes(subscribedRecordDecoder::getValue, subscribedRecordDecoder::valueLength);
 
-            final GeneralRecordImpl event = new GeneralRecordImpl(
+            final UntypedRecordImpl event = new UntypedRecordImpl(
                     objectMapper,
                     converter,
                     recordType,

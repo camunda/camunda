@@ -15,12 +15,13 @@
  */
 package io.zeebe.client.api.events;
 
-import io.zeebe.client.api.record.IncidentRecord;
-
-public interface IncidentEvent extends IncidentRecord
+public enum JobState
 {
-    /**
-     * @return the current state
-     */
-    IncidentState getState();
+    CREATED,
+    LOCKED,
+    COMPLETED,
+    LOCK_EXPIRED,
+    FAILED,
+    RETRIES_UPDATED,
+    CANCELED,
 }

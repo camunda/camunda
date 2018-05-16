@@ -15,13 +15,14 @@
  */
 package io.zeebe.client.impl.subscription.topic;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
-import io.zeebe.client.api.events.TopicSubscriptionEvent;
 import io.zeebe.client.impl.ZeebeClientImpl;
-import io.zeebe.client.impl.record.GeneralRecordImpl;
-import io.zeebe.client.impl.subscription.*;
+import io.zeebe.client.impl.event.TopicSubscriptionEventImpl;
+import io.zeebe.client.impl.record.UntypedRecordImpl;
+import io.zeebe.client.impl.subscription.Subscriber;
+import io.zeebe.client.impl.subscription.SubscriberGroup;
+import io.zeebe.client.impl.subscription.SubscriptionManager;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.CheckedConsumer;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -33,13 +34,12 @@ public class TopicSubscriber extends Subscriber
 
     private final ZeebeClientImpl client;
 
-    private AtomicBoolean processingFlag = new AtomicBoolean(false);
     private volatile long lastProcessedEventPosition;
     private long lastAcknowledgedPosition;
 
     private final TopicSubscriptionSpec subscription;
 
-    private final Function<CheckedConsumer<GeneralRecordImpl>, CheckedConsumer<GeneralRecordImpl>> eventHandlerAdapter;
+    private final Function<CheckedConsumer<UntypedRecordImpl>, CheckedConsumer<UntypedRecordImpl>> eventHandlerAdapter;
 
     public TopicSubscriber(
             ZeebeClientImpl client,
@@ -73,12 +73,12 @@ public class TopicSubscriber extends Subscriber
     }
 
     @Override
-    public int pollEvents(CheckedConsumer<GeneralRecordImpl> consumer)
+    public int pollEvents(CheckedConsumer<UntypedRecordImpl> consumer)
     {
         return super.pollEvents(eventHandlerAdapter.apply(consumer));
     }
 
-    protected void logExceptionAndClose(GeneralRecordImpl event, Exception e)
+    protected void logExceptionAndClose(UntypedRecordImpl event, Exception e)
     {
         logEventHandlingError(e, event, "Closing subscription.");
         disable();
@@ -86,13 +86,13 @@ public class TopicSubscriber extends Subscriber
         acquisition.closeGroup(group, "Event handling failed");
     }
 
-    protected void logExceptionAndPropagate(GeneralRecordImpl event, Exception e)
+    protected void logExceptionAndPropagate(UntypedRecordImpl event, Exception e)
     {
         logEventHandlingError(e, event, "Propagating exception to caller.");
         throw new RuntimeException(e);
     }
 
-    protected void logRetry(GeneralRecordImpl event, Exception e)
+    protected void logRetry(UntypedRecordImpl event, Exception e)
     {
         logEventHandlingError(e, event, "Retrying.");
     }
@@ -122,7 +122,7 @@ public class TopicSubscriber extends Subscriber
         if (positionToAck > lastAcknowledgedPosition)
         {
             // TODO: what to do on error here? close the group (but only if it is not already closing)
-            final ActorFuture<TopicSubscriptionEvent> future = new AcknowledgeSubscribedEventCommandImpl(client.getCommandManager(), subscription.getTopic(), partitionId)
+            final ActorFuture<TopicSubscriptionEventImpl> future = new AcknowledgeSubscribedEventCommandImpl(client.getCommandManager(), subscription.getTopic(), partitionId)
                 .subscriptionName(subscription.getName())
                 .ackPosition(positionToAck)
                 .send();
@@ -138,12 +138,12 @@ public class TopicSubscriber extends Subscriber
         }
     }
 
-    protected void recordProcessedEvent(GeneralRecordImpl event)
+    protected void recordProcessedEvent(UntypedRecordImpl event)
     {
         this.lastProcessedEventPosition = event.getMetadata().getPosition();
     }
 
-    protected void logEventHandlingError(Exception e, GeneralRecordImpl event, String resolution)
+    protected void logEventHandlingError(Exception e, UntypedRecordImpl event, String resolution)
     {
         LOGGER.error(LOG_MESSAGE_PREFIX + "Unhandled exception during handling of event {}.{}", this, event, resolution, e);
     }

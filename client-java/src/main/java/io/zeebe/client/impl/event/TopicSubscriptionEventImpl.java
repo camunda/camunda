@@ -15,13 +15,14 @@
  */
 package io.zeebe.client.impl.event;
 
-import com.fasterxml.jackson.annotation.*;
-import io.zeebe.client.api.events.TopicSubscriptionEvent;
+import com.fasterxml.jackson.annotation.JacksonInject;
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 import io.zeebe.client.api.record.ZeebeObjectMapper;
 import io.zeebe.client.impl.record.TopicSubscriptionRecordImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 
-public class TopicSubscriptionEventImpl extends TopicSubscriptionRecordImpl implements TopicSubscriptionEvent
+public class TopicSubscriptionEventImpl extends TopicSubscriptionRecordImpl
 {
     @JsonCreator
     public TopicSubscriptionEventImpl(@JacksonInject ZeebeObjectMapper objectMapper)
@@ -29,20 +30,11 @@ public class TopicSubscriptionEventImpl extends TopicSubscriptionRecordImpl impl
         super(objectMapper, RecordType.EVENT);
     }
 
-    @JsonIgnore
-    @Override
-    public TopicSubscriptionState getState()
-    {
-        return TopicSubscriptionState.valueOf(getMetadata().getIntent());
-    }
-
     @Override
     public String toString()
     {
         final StringBuilder builder = new StringBuilder();
-        builder.append("TopicSubscriptionrEvent [state=");
-        builder.append(getState());
-        builder.append(", name=");
+        builder.append("TopicSubscriptionrEvent [name=");
         builder.append(getName());
         builder.append(", ackPosition=");
         builder.append(getAckPosition());

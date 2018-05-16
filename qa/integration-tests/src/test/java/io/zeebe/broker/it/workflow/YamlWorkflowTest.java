@@ -18,18 +18,19 @@ package io.zeebe.broker.it.workflow;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
+
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.client.api.events.JobEvent;
-import io.zeebe.client.api.events.JobEvent.JobState;
+import io.zeebe.client.api.events.JobState;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
-import io.zeebe.client.api.events.WorkflowInstanceEvent.WorkflowInstanceState;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
+import io.zeebe.client.api.events.WorkflowInstanceState;
 
 public class YamlWorkflowTest
 {

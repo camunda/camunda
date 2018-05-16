@@ -67,27 +67,4 @@ public interface RecordMetadata
      *         an event or a command (rejection)
      */
     String getIntent();
-
-    enum ValueType
-    {
-        JOB,
-        WORKFLOW_INSTANCE,
-        INCIDENT,
-        SUBSCRIBER,
-        SUBSCRIPTION,
-        DEPLOYMENT,
-
-        TOPIC,
-
-        RAFT,
-
-        UNKNOWN
-    }
-
-    enum RecordType
-    {
-        EVENT,
-        COMMAND,
-        COMMAND_REJECTION
-    }
 }

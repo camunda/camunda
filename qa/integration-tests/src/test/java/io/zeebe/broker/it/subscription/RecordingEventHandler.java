@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.zeebe.client.api.record.Record;
 import io.zeebe.client.api.record.RecordMetadata;
+import io.zeebe.client.api.record.ValueType;
 import io.zeebe.client.api.subscription.RecordHandler;
 
 public class RecordingEventHandler implements RecordHandler
@@ -46,19 +47,19 @@ public class RecordingEventHandler implements RecordHandler
         return records.size();
     }
 
-    public int numRecordsOfType(RecordMetadata.ValueType type)
+    public int numRecordsOfType(ValueType type)
     {
         return (int) records.stream().filter(e -> e.getMetadata().getValueType() == type).count();
     }
 
     public int numJobRecords()
     {
-        return numRecordsOfType(RecordMetadata.ValueType.JOB);
+        return numRecordsOfType(ValueType.JOB);
     }
 
     public int numRaftRecords()
     {
-        return numRecordsOfType(RecordMetadata.ValueType.RAFT);
+        return numRecordsOfType(ValueType.RAFT);
     }
 
     public List<Record> getRecords()
@@ -69,13 +70,13 @@ public class RecordingEventHandler implements RecordHandler
     public void assertJobRecord(int index, long taskKey, String intent) throws IOException
     {
         final List<Record> taskEvents = records.stream()
-                .filter(e -> e.getMetadata().getValueType() == RecordMetadata.ValueType.JOB)
+                .filter(e -> e.getMetadata().getValueType() == ValueType.JOB)
                 .collect(Collectors.toList());
 
         final Record taskEvent = taskEvents.get(index);
 
         final RecordMetadata eventMetadata = taskEvent.getMetadata();
-        assertThat(eventMetadata.getValueType()).isEqualTo(RecordMetadata.ValueType.JOB);
+        assertThat(eventMetadata.getValueType()).isEqualTo(ValueType.JOB);
         assertThat(eventMetadata.getKey()).isEqualTo(taskKey);
         assertThat(eventMetadata.getIntent()).isEqualTo(intent);
     }

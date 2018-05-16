@@ -15,6 +15,7 @@
  */
 package io.zeebe.client.impl.clustering;
 
+import io.zeebe.client.api.commands.PartitionBrokerRole;
 import io.zeebe.client.api.commands.PartitionInfo;
 
 public class PartitionInfoImpl implements PartitionInfo

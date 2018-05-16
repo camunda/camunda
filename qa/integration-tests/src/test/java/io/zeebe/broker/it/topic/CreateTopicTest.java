@@ -38,7 +38,7 @@ import io.zeebe.client.api.commands.Partition;
 import io.zeebe.client.api.commands.Topic;
 import io.zeebe.client.api.commands.Topics;
 import io.zeebe.client.api.events.JobEvent;
-import io.zeebe.client.api.events.JobEvent.JobState;
+import io.zeebe.client.api.events.JobState;
 import io.zeebe.client.api.events.TopicEvent;
 import io.zeebe.client.api.events.TopicEvent.TopicState;
 

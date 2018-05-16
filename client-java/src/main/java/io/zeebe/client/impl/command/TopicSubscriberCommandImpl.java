@@ -15,14 +15,15 @@
  */
 package io.zeebe.client.impl.command;
 
-import com.fasterxml.jackson.annotation.*;
-import io.zeebe.client.api.commands.TopicSubscriberCommand;
+import com.fasterxml.jackson.annotation.JacksonInject;
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 import io.zeebe.client.api.record.ZeebeObjectMapper;
 import io.zeebe.client.impl.record.TopicSubscriberRecordImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.intent.SubscriberIntent;
 
-public class TopicSubscriberCommandImpl extends TopicSubscriberRecordImpl implements TopicSubscriberCommand
+public class TopicSubscriberCommandImpl extends TopicSubscriberRecordImpl
 {
     @JsonCreator
     public TopicSubscriberCommandImpl(@JacksonInject ZeebeObjectMapper objectMapper)
@@ -34,13 +35,6 @@ public class TopicSubscriberCommandImpl extends TopicSubscriberRecordImpl implem
     {
         super(null, RecordType.COMMAND);
         setIntent(intent);
-    }
-
-    @JsonIgnore
-    @Override
-    public TopicSubscriberCommandName getCommandName()
-    {
-        return TopicSubscriberCommandName.valueOf(getMetadata().getIntent());
     }
 
     @Override

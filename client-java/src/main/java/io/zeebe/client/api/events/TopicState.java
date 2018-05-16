@@ -15,17 +15,7 @@
  */
 package io.zeebe.client.api.events;
 
-import io.zeebe.client.api.record.TopicSubscriptionRecord;
-
-public interface TopicSubscriptionEvent extends TopicSubscriptionRecord
+public enum TopicState
 {
-    /**
-     * @return the current state
-     */
-    TopicSubscriptionState getState();
-
-    enum TopicSubscriptionState
-    {
-        ACKNOWLEDGED
-    }
+    CREATING
 }

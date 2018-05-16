@@ -22,8 +22,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.zeebe.client.api.events.IncidentEvent.IncidentState;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -33,9 +31,10 @@ import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.client.api.clients.TopicClient;
 import io.zeebe.client.api.events.IncidentEvent;
+import io.zeebe.client.api.events.IncidentState;
 import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
-import io.zeebe.client.api.record.RecordMetadata;
+import io.zeebe.client.api.record.ValueType;
 import io.zeebe.client.api.subscription.IncidentEventHandler;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
@@ -173,7 +172,7 @@ public class IncidentTopicSubscriptionTest
             .open();
 
         // then
-        TestUtil.waitUntil(() -> handler.numRecordsOfType(RecordMetadata.ValueType.INCIDENT) >= 2);
+        TestUtil.waitUntil(() -> handler.numRecordsOfType(ValueType.INCIDENT) >= 2);
     }
 
     protected static class RecordingIncidentEventHandler implements IncidentEventHandler

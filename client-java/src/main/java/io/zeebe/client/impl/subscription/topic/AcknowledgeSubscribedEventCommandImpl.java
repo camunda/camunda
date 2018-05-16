@@ -15,14 +15,14 @@
  */
 package io.zeebe.client.impl.subscription.topic;
 
-import io.zeebe.client.api.events.TopicSubscriptionEvent;
 import io.zeebe.client.impl.CommandImpl;
 import io.zeebe.client.impl.RequestManager;
 import io.zeebe.client.impl.command.TopicSubscriptionCommandImpl;
+import io.zeebe.client.impl.event.TopicSubscriptionEventImpl;
 import io.zeebe.client.impl.record.RecordImpl;
 import io.zeebe.protocol.intent.SubscriptionIntent;
 
-public class AcknowledgeSubscribedEventCommandImpl extends CommandImpl<TopicSubscriptionEvent>
+public class AcknowledgeSubscribedEventCommandImpl extends CommandImpl<TopicSubscriptionEventImpl>
 {
     private final TopicSubscriptionCommandImpl command = new TopicSubscriptionCommandImpl(SubscriptionIntent.ACKNOWLEDGE);
 

@@ -15,7 +15,7 @@
  */
 package io.zeebe.client.impl.subscription;
 
-import io.zeebe.client.impl.record.GeneralRecordImpl;
+import io.zeebe.client.impl.record.UntypedRecordImpl;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 
 public interface SubscribedEventHandler
@@ -24,5 +24,5 @@ public interface SubscribedEventHandler
     /**
      * @return true if event could be successfully handled; false, if it should be retried later
      */
-    boolean onEvent(SubscriptionType type, long subscriberKey, GeneralRecordImpl event);
+    boolean onEvent(SubscriptionType type, long subscriberKey, UntypedRecordImpl event);
 }

@@ -30,8 +30,8 @@ import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.client.api.clients.TopicClient;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
-import io.zeebe.client.api.events.WorkflowInstanceEvent.WorkflowInstanceState;
-import io.zeebe.client.api.record.RecordMetadata;
+import io.zeebe.client.api.events.WorkflowInstanceState;
+import io.zeebe.client.api.record.ValueType;
 import io.zeebe.client.api.subscription.WorkflowInstanceEventHandler;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
@@ -119,7 +119,7 @@ public class WorkflowInstanceTopicSubscriptionTest
             .open();
 
         // then
-        TestUtil.waitUntil(() -> handler.numRecordsOfType(RecordMetadata.ValueType.WORKFLOW_INSTANCE) >= 3);
+        TestUtil.waitUntil(() -> handler.numRecordsOfType(ValueType.WORKFLOW_INSTANCE) >= 3);
     }
 
     protected static class RecordingWorkflowEventHandler implements WorkflowInstanceEventHandler

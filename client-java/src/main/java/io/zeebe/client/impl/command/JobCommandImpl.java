@@ -15,8 +15,12 @@
  */
 package io.zeebe.client.impl.command;
 
-import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JacksonInject;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import io.zeebe.client.api.commands.JobCommand;
+import io.zeebe.client.api.commands.JobCommandName;
 import io.zeebe.client.api.record.ZeebeObjectMapper;
 import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.impl.record.JobRecordImpl;

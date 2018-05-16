@@ -23,10 +23,17 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.HashMap;
 
+import org.assertj.core.util.Maps;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
+
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.commands.CreateJobCommandStep1;
 import io.zeebe.client.api.events.JobEvent;
-import io.zeebe.client.api.events.JobEvent.JobState;
+import io.zeebe.client.api.events.JobState;
 import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.util.ClientRule;
 import io.zeebe.protocol.Protocol;
@@ -37,10 +44,6 @@ import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import org.assertj.core.util.Maps;
-import org.junit.*;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
 
 public class CreateJobTest
 {

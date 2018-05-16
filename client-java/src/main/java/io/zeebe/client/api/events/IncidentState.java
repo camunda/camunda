@@ -13,19 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.api.commands;
+package io.zeebe.client.api.events;
 
-import io.zeebe.client.api.record.TopicSubscriberRecord;
-
-public interface TopicSubscriberCommand extends TopicSubscriberRecord
+public enum IncidentState
 {
-    /**
-     * @return the command name
-     */
-    TopicSubscriberCommandName getCommandName();
-
-    enum TopicSubscriberCommandName
-    {
-        SUBSCRIBE
-    }
+    CREATED,
+    RESOLVED,
+    RESOLVE_FAILED,
+    DELETED,
 }

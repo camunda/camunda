@@ -22,7 +22,7 @@ import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 
 public class JobSubscriberGroup extends SubscriberGroup<JobSubscriber> implements
-    JobSubscription, PollableJobSubscription
+    JobSubscription
 {
     private final JobSubscriptionSpec subscription;
 
@@ -42,7 +42,6 @@ public class JobSubscriberGroup extends SubscriberGroup<JobSubscriber> implement
         return poll(subscription.getJobHandler());
     }
 
-    @Override
     public int poll(JobHandler jobHandler)
     {
         int workCount = 0;

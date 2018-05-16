@@ -20,11 +20,11 @@ import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 
-public class GeneralRecordImpl extends RecordImpl
+public class UntypedRecordImpl extends RecordImpl
 {
     private final MsgPackField content;
 
-    public GeneralRecordImpl(
+    public UntypedRecordImpl(
             final ZeebeObjectMapper objectMapper,
             final MsgPackConverter converter,
             final RecordType recordType,

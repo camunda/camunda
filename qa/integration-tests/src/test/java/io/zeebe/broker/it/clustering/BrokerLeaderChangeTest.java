@@ -21,17 +21,20 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
+
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.api.commands.BrokerInfo;
 import io.zeebe.client.api.events.JobEvent;
-import io.zeebe.client.api.events.JobEvent.JobState;
+import io.zeebe.client.api.events.JobState;
 import io.zeebe.client.api.subscription.JobSubscription;
 import io.zeebe.client.api.subscription.TopicSubscription;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
-import org.junit.*;
-import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
 
 public class BrokerLeaderChangeTest
 {

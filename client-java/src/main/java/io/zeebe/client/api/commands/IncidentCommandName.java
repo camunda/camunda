@@ -13,14 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.api.events;
+package io.zeebe.client.api.commands;
 
-import io.zeebe.client.api.record.IncidentRecord;
-
-public interface IncidentEvent extends IncidentRecord
+public enum IncidentCommandName
 {
-    /**
-     * @return the current state
-     */
-    IncidentState getState();
+    CREATE,
+    RESOLVE,
+    DELETE,
 }

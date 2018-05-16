@@ -40,12 +40,12 @@ import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.clients.TopicClient;
-import io.zeebe.client.api.commands.JobCommand;
+import io.zeebe.client.api.commands.JobCommandName;
 import io.zeebe.client.api.commands.Topic;
 import io.zeebe.client.api.commands.Topics;
 import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.record.Record;
-import io.zeebe.client.api.record.RecordMetadata;
+import io.zeebe.client.api.record.ValueType;
 import io.zeebe.client.api.subscription.RecordHandler;
 import io.zeebe.client.api.subscription.TopicSubscription;
 import io.zeebe.client.impl.job.CreateJobCommandImpl;
@@ -196,7 +196,7 @@ public class TopicSubscriptionTest
         waitUntil(() -> recordingHandler.numJobRecords() == 2);
 
         final List<Record> recordedTaskEvents = recordingHandler.getRecords().stream()
-                .filter((re) -> re.getMetadata().getValueType() == RecordMetadata.ValueType.JOB)
+                .filter((re) -> re.getMetadata().getValueType() == ValueType.JOB)
                 .collect(Collectors.toList());
 
         final RecordingEventHandler subscription2Handler = new RecordingEventHandler();
@@ -559,12 +559,12 @@ public class TopicSubscriptionTest
         topic1Subscription.close();
 
         Set<String> receivedTopicNamesSubscription = recordingHandler.getRecords().stream()
-            .filter((re) -> re.getMetadata().getValueType() == RecordMetadata.ValueType.JOB)
+            .filter((re) -> re.getMetadata().getValueType() == ValueType.JOB)
             .map((re) -> re.getMetadata().getTopicName())
             .collect(Collectors.toSet());
 
         Set<Integer> receivedPartitionIdsSubscription = recordingHandler.getRecords().stream()
-            .filter((re) -> re.getMetadata().getValueType() == RecordMetadata.ValueType.JOB)
+            .filter((re) -> re.getMetadata().getValueType() == ValueType.JOB)
             .map((re) -> re.getMetadata().getPartitionId())
             .collect(Collectors.toSet());
 
@@ -572,12 +572,12 @@ public class TopicSubscriptionTest
         assertThat(receivedPartitionIdsSubscription).containsExactly(clientRule.getDefaultPartition());
 
         receivedTopicNamesSubscription = anotherRecordingHandler.getRecords().stream()
-            .filter((re) -> re.getMetadata().getValueType() == RecordMetadata.ValueType.JOB)
+            .filter((re) -> re.getMetadata().getValueType() == ValueType.JOB)
             .map((re) -> re.getMetadata().getTopicName())
             .collect(Collectors.toSet());
 
         receivedPartitionIdsSubscription = anotherRecordingHandler.getRecords().stream()
-            .filter((re) -> re.getMetadata().getValueType() == RecordMetadata.ValueType.JOB)
+            .filter((re) -> re.getMetadata().getValueType() == ValueType.JOB)
             .map((re) -> re.getMetadata().getPartitionId())
             .collect(Collectors.toSet());
 
@@ -606,7 +606,7 @@ public class TopicSubscriptionTest
         waitUntil(() -> recordingHandler.numJobRecords() == 2);
 
         assertThat(recordingHandler.getRecords())
-            .filteredOn((re) -> re.getMetadata().getValueType() == RecordMetadata.ValueType.UNKNOWN)
+            .filteredOn((re) -> re.getMetadata().getValueType() == ValueType.UNKNOWN)
             .isEmpty();
     }
 
@@ -675,7 +675,7 @@ public class TopicSubscriptionTest
             .recordHandler(recordingHandler)
             .jobCommandHandler(c ->
             {
-                if (c.getName() == JobCommand.JobCommandName.CREATE)
+                if (c.getName() == JobCommandName.CREATE)
                 {
                     receivedPartitionIds.add(c.getMetadata().getPartitionId());
                 }

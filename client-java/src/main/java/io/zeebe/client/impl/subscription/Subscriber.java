@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.concurrent.ManyToManyConcurrentArrayQueue;
 import org.slf4j.Logger;
 import io.zeebe.client.impl.Loggers;
-import io.zeebe.client.impl.record.GeneralRecordImpl;
+import io.zeebe.client.impl.record.UntypedRecordImpl;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.CheckedConsumer;
 import io.zeebe.util.sched.ActorCondition;
@@ -36,7 +36,7 @@ public abstract class Subscriber
     public static final double REPLENISHMENT_THRESHOLD = 0.3d;
 
     protected final long subscriberKey;
-    protected final ManyToManyConcurrentArrayQueue<GeneralRecordImpl> pendingEvents;
+    protected final ManyToManyConcurrentArrayQueue<UntypedRecordImpl> pendingEvents;
     protected final int capacity;
     protected final SubscriptionManager acquisition;
     protected final SubscriberGroup<?> group;
@@ -121,7 +121,7 @@ public abstract class Subscriber
 
     protected abstract ActorFuture<?> requestEventSourceReplenishment(int eventsProcessed);
 
-    public boolean addEvent(GeneralRecordImpl event)
+    public boolean addEvent(UntypedRecordImpl event)
     {
         final boolean added = this.pendingEvents.offer(event);
 
@@ -154,12 +154,12 @@ public abstract class Subscriber
         this.state = STATE_DISABLED;
     }
 
-    protected int pollEvents(CheckedConsumer<GeneralRecordImpl> pollHandler)
+    protected int pollEvents(CheckedConsumer<UntypedRecordImpl> pollHandler)
     {
         final int currentlyAvailableEvents = size();
         int handledEvents = 0;
 
-        GeneralRecordImpl event;
+        UntypedRecordImpl event;
 
         // handledTasks < currentlyAvailableTasks avoids very long cycles that we spend in this method
         // in case the broker continuously produces new tasks
@@ -211,7 +211,7 @@ public abstract class Subscriber
     }
 
 
-    protected void logHandling(GeneralRecordImpl event)
+    protected void logHandling(UntypedRecordImpl event)
     {
         try
         {
@@ -224,7 +224,7 @@ public abstract class Subscriber
         }
     }
 
-    protected void onUnhandledEventHandlingException(GeneralRecordImpl event, Exception e)
+    protected void onUnhandledEventHandlingException(UntypedRecordImpl event, Exception e)
     {
         throw new RuntimeException("Exception during handling of event " + event.getMetadata().getKey(), e);
     }

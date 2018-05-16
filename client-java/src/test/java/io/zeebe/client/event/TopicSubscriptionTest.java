@@ -542,8 +542,8 @@ public class TopicSubscriptionTest
         final Record event1 = eventHandler.topicEvents.get(0);
         final Record event2 = eventHandler.topicEvents.get(1);
 
-        assertMetadata(event1, 1L, 1L, expectedEventTimestamp, RecordMetadata.RecordType.EVENT, RecordMetadata.ValueType.JOB, "CREATED");
-        assertMetadata(event2, 1L, 2L, expectedEventTimestamp, RecordMetadata.RecordType.COMMAND, RecordMetadata.ValueType.JOB, "LOCKED");
+        assertMetadata(event1, 1L, 1L, expectedEventTimestamp, RecordType.EVENT, ValueType.JOB, "CREATED");
+        assertMetadata(event2, 1L, 2L, expectedEventTimestamp, RecordType.COMMAND, ValueType.JOB, "LOCKED");
 
         assertThat(eventHandler.numTopicEvents()).isEqualTo(2);
         assertThat(eventHandler.numJobEvents()).isEqualTo(0);
@@ -577,8 +577,8 @@ public class TopicSubscriptionTest
         final JobEvent event1 = eventHandler.jobEvents.get(0);
         final JobEvent event2 = eventHandler.jobEvents.get(1);
 
-        assertMetadata(event1, 1L, 1L, expectedEventTimestamp, RecordMetadata.RecordType.EVENT, RecordMetadata.ValueType.JOB, "CREATED");
-        assertMetadata(event2, 1L, 2L, expectedEventTimestamp, RecordMetadata.RecordType.EVENT, RecordMetadata.ValueType.JOB, "LOCKED");
+        assertMetadata(event1, 1L, 1L, expectedEventTimestamp, RecordType.EVENT, ValueType.JOB, "CREATED");
+        assertMetadata(event2, 1L, 2L, expectedEventTimestamp, RecordType.EVENT, ValueType.JOB, "LOCKED");
 
         assertThat(eventHandler.numTopicEvents()).isEqualTo(0);
         assertThat(eventHandler.numJobEvents()).isEqualTo(2);
@@ -612,8 +612,8 @@ public class TopicSubscriptionTest
         final JobCommand command1 = eventHandler.jobCommands.get(0);
         final JobCommand command2 = eventHandler.jobCommands.get(1);
 
-        assertMetadata(command1, 1L, 1L, expectedEventTimestamp, RecordMetadata.RecordType.COMMAND, RecordMetadata.ValueType.JOB, "CREATE");
-        assertMetadata(command2, 1L, 2L, expectedEventTimestamp, RecordMetadata.RecordType.COMMAND, RecordMetadata.ValueType.JOB, "LOCK");
+        assertMetadata(command1, 1L, 1L, expectedEventTimestamp, RecordType.COMMAND, ValueType.JOB, "CREATE");
+        assertMetadata(command2, 1L, 2L, expectedEventTimestamp, RecordType.COMMAND, ValueType.JOB, "LOCK");
 
         assertThat(eventHandler.numTopicEvents()).isEqualTo(0);
         assertThat(eventHandler.numJobEvents()).isEqualTo(0);
@@ -647,8 +647,8 @@ public class TopicSubscriptionTest
         final WorkflowInstanceEvent event1 = eventHandler.workflowInstanceEvents.get(0);
         final WorkflowInstanceEvent event2 = eventHandler.workflowInstanceEvents.get(1);
 
-        assertMetadata(event1, 1L, 1L, expectedEventTimestamp, RecordMetadata.RecordType.EVENT, RecordMetadata.ValueType.WORKFLOW_INSTANCE, "CREATED");
-        assertMetadata(event2, 1L, 2L, expectedEventTimestamp, RecordMetadata.RecordType.EVENT, RecordMetadata.ValueType.WORKFLOW_INSTANCE, "COMPLETED");
+        assertMetadata(event1, 1L, 1L, expectedEventTimestamp, RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, "CREATED");
+        assertMetadata(event2, 1L, 2L, expectedEventTimestamp, RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, "COMPLETED");
 
         assertThat(eventHandler.numTopicEvents()).isEqualTo(0);
         assertThat(eventHandler.numJobEvents()).isEqualTo(0);
@@ -682,8 +682,8 @@ public class TopicSubscriptionTest
         final WorkflowInstanceCommand command1 = eventHandler.workflowInstanceCommands.get(0);
         final WorkflowInstanceCommand command2 = eventHandler.workflowInstanceCommands.get(1);
 
-        assertMetadata(command1, 1L, 1L, expectedEventTimestamp, RecordMetadata.RecordType.COMMAND, RecordMetadata.ValueType.WORKFLOW_INSTANCE, "CREATE");
-        assertMetadata(command2, 1L, 2L, expectedEventTimestamp, RecordMetadata.RecordType.COMMAND, RecordMetadata.ValueType.WORKFLOW_INSTANCE, "UPDATE_PAYLOAD");
+        assertMetadata(command1, 1L, 1L, expectedEventTimestamp, RecordType.COMMAND, ValueType.WORKFLOW_INSTANCE, "CREATE");
+        assertMetadata(command2, 1L, 2L, expectedEventTimestamp, RecordType.COMMAND, ValueType.WORKFLOW_INSTANCE, "UPDATE_PAYLOAD");
 
         assertThat(eventHandler.numTopicEvents()).isEqualTo(0);
         assertThat(eventHandler.numJobEvents()).isEqualTo(0);
@@ -717,8 +717,8 @@ public class TopicSubscriptionTest
         final IncidentEvent event1 = eventHandler.incidentEvents.get(0);
         final IncidentEvent event2 = eventHandler.incidentEvents.get(1);
 
-        assertMetadata(event1, 1L, 1L, expectedEventTimestamp, RecordMetadata.RecordType.EVENT, RecordMetadata.ValueType.INCIDENT, "CREATED");
-        assertMetadata(event2, 1L, 2L, expectedEventTimestamp, RecordMetadata.RecordType.EVENT, RecordMetadata.ValueType.INCIDENT, "DELETED");
+        assertMetadata(event1, 1L, 1L, expectedEventTimestamp, RecordType.EVENT, ValueType.INCIDENT, "CREATED");
+        assertMetadata(event2, 1L, 2L, expectedEventTimestamp, RecordType.EVENT, ValueType.INCIDENT, "DELETED");
 
         assertThat(eventHandler.numTopicEvents()).isEqualTo(0);
         assertThat(eventHandler.numJobEvents()).isEqualTo(0);
@@ -752,8 +752,8 @@ public class TopicSubscriptionTest
         final IncidentCommand command1 = eventHandler.incidentCommands.get(0);
         final IncidentCommand command2 = eventHandler.incidentCommands.get(1);
 
-        assertMetadata(command1, 1L, 1L, expectedEventTimestamp, RecordMetadata.RecordType.COMMAND, RecordMetadata.ValueType.INCIDENT, "CREATE");
-        assertMetadata(command2, 1L, 2L, expectedEventTimestamp, RecordMetadata.RecordType.COMMAND, RecordMetadata.ValueType.INCIDENT, "DELETE");
+        assertMetadata(command1, 1L, 1L, expectedEventTimestamp, RecordType.COMMAND, ValueType.INCIDENT, "CREATE");
+        assertMetadata(command2, 1L, 2L, expectedEventTimestamp, RecordType.COMMAND, ValueType.INCIDENT, "DELETE");
 
         assertThat(eventHandler.numTopicEvents()).isEqualTo(0);
         assertThat(eventHandler.numJobEvents()).isEqualTo(0);
@@ -787,8 +787,8 @@ public class TopicSubscriptionTest
         final RaftEvent event1 = eventHandler.raftEvents.get(0);
         final RaftEvent event2 = eventHandler.raftEvents.get(1);
 
-        assertMetadata(event1, 1L, 1L, expectedEventTimestamp, RecordMetadata.RecordType.EVENT, RecordMetadata.ValueType.RAFT, "UNKNOWN");
-        assertMetadata(event2, 1L, 2L, expectedEventTimestamp, RecordMetadata.RecordType.EVENT, RecordMetadata.ValueType.RAFT, "UNKNOWN");
+        assertMetadata(event1, 1L, 1L, expectedEventTimestamp, RecordType.EVENT, ValueType.RAFT, "UNKNOWN");
+        assertMetadata(event2, 1L, 2L, expectedEventTimestamp, RecordType.EVENT, ValueType.RAFT, "UNKNOWN");
 
         assertThat(eventHandler.numTopicEvents()).isEqualTo(0);
         assertThat(eventHandler.numJobEvents()).isEqualTo(0);
@@ -1104,19 +1104,22 @@ public class TopicSubscriptionTest
             long expectedKey,
             long expectedPosition,
             Instant expectedTimestamp,
-            RecordMetadata.RecordType expectedRecordType,
-            RecordMetadata.ValueType expectedValueType,
+            RecordType expectedRecordType,
+            ValueType expectedValueType,
             String expectedIntent)
     {
+
+        final io.zeebe.client.api.record.RecordType clientRecordType = io.zeebe.client.api.record.RecordType.valueOf(expectedRecordType.name());
+        final io.zeebe.client.api.record.ValueType clientValueType = io.zeebe.client.api.record.ValueType.valueOf(expectedValueType.name());
 
         final RecordMetadata metadata = actualRecord.getMetadata();
         assertThat(metadata.getKey()).isEqualTo(expectedKey);
         assertThat(metadata.getPosition()).isEqualTo(expectedPosition);
         assertThat(metadata.getTimestamp()).isEqualTo(expectedTimestamp);
-        assertThat(metadata.getValueType()).isEqualTo(expectedValueType);
+        assertThat(metadata.getValueType()).isEqualTo(clientValueType);
         assertThat(metadata.getTopicName()).isEqualTo(clientRule.getDefaultTopicName());
         assertThat(metadata.getPartitionId()).isEqualTo(clientRule.getDefaultPartitionId());
-        assertThat(metadata.getRecordType()).isEqualTo(expectedRecordType);
+        assertThat(metadata.getRecordType()).isEqualTo(clientRecordType);
         assertThat(metadata.getIntent()).isEqualTo(expectedIntent);
     }
 

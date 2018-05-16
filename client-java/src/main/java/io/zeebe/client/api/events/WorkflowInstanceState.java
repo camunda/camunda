@@ -13,19 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.api.commands;
+package io.zeebe.client.api.events;
 
-import io.zeebe.client.api.record.TopicSubscriptionRecord;
-
-public interface TopicSubscriptionCommand extends TopicSubscriptionRecord
+public enum WorkflowInstanceState
 {
-    /**
-     * @return the command name
-     */
-    TopicSubscriptionCommandName getCommandName();
+    CREATED,
+    COMPLETED,
+    CANCELED,
 
-    enum TopicSubscriptionCommandName
-    {
-        ACKNOWLEDGE
-    }
+    PAYLOAD_UPDATED,
+
+    START_EVENT_OCCURRED,
+    END_EVENT_OCCURRED,
+
+    SEQUENCE_FLOW_TAKEN,
+
+    GATEWAY_ACTIVATED,
+
+    ACTIVITY_READY,
+    ACTIVITY_ACTIVATED,
+    ACTIVITY_COMPLETING,
+    ACTIVITY_COMPLETED,
+    ACTIVITY_TERMINATED;
 }

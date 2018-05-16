@@ -21,15 +21,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
+
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.subscription.RecordingEventHandler;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.commands.Topic;
-import io.zeebe.client.api.events.JobEvent.JobState;
+import io.zeebe.client.api.events.JobState;
 import io.zeebe.client.impl.job.CreateJobCommandImpl;
 import io.zeebe.test.util.AutoCloseableRule;
-import org.junit.*;
-import org.junit.rules.*;
 
 public class SubscriptionClusteredTest
 {

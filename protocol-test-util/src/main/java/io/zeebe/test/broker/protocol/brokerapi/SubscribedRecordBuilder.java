@@ -51,7 +51,7 @@ public class SubscribedRecordBuilder implements BufferWriter
     protected ValueType valueType;
     private Intent intent;
     protected byte[] event;
-    protected Instant timestamp;
+    protected Instant timestamp = Instant.ofEpochMilli(0);
 
     public SubscribedRecordBuilder(MsgPackHelper msgPackHelper, ServerTransport transport)
     {

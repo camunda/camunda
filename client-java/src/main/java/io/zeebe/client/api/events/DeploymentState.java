@@ -15,12 +15,12 @@
  */
 package io.zeebe.client.api.events;
 
-import io.zeebe.client.api.record.IncidentRecord;
-
-public interface IncidentEvent extends IncidentRecord
+public enum DeploymentState
 {
-    /**
-     * @return the current state
-     */
-    IncidentState getState();
+    CREATED,
+
+    VALIDATED,
+    DISTRIBUTED,
+
+    TIMED_OUT
 }

@@ -15,16 +15,21 @@
  */
 package io.zeebe.client.impl.subscription;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
+
+import org.agrona.collections.Int2ObjectHashMap;
 
 import io.zeebe.client.api.commands.Partition;
 import io.zeebe.client.api.commands.Topic;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.impl.Loggers;
 import io.zeebe.client.impl.ZeebeClientImpl;
-import io.zeebe.client.impl.record.GeneralRecordImpl;
+import io.zeebe.client.impl.record.UntypedRecordImpl;
 import io.zeebe.client.impl.topic.TopicsRequestImpl;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.CheckedConsumer;
@@ -32,7 +37,6 @@ import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import org.agrona.collections.Int2ObjectHashMap;
 
 public abstract class SubscriberGroup<T extends Subscriber>
 {
@@ -399,7 +403,7 @@ public abstract class SubscriberGroup<T extends Subscriber>
 
     protected abstract String describeGroup();
 
-    public int pollEvents(CheckedConsumer<GeneralRecordImpl> pollHandler)
+    public int pollEvents(CheckedConsumer<UntypedRecordImpl> pollHandler)
     {
         int events = 0;
         for (Subscriber subscriber : subscribersList)

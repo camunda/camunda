@@ -23,10 +23,4 @@ public interface DeploymentCommand extends DeploymentRecord
      * @return the command name
      */
     DeploymentCommandName getName();
-
-    enum DeploymentCommandName
-    {
-        CREATE
-    }
-
 }

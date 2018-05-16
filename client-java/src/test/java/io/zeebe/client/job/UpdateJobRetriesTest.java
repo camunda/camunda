@@ -18,8 +18,13 @@ package io.zeebe.client.job;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
+
 import io.zeebe.client.api.events.JobEvent;
-import io.zeebe.client.api.events.JobEvent.JobState;
+import io.zeebe.client.api.events.JobState;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.client.impl.event.JobEventImpl;
 import io.zeebe.client.util.ClientRule;
@@ -27,10 +32,6 @@ import io.zeebe.client.util.Events;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
 
 public class UpdateJobRetriesTest
 {

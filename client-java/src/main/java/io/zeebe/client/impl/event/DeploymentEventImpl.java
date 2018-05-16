@@ -17,10 +17,14 @@ package io.zeebe.client.impl.event;
 
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JacksonInject;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
 import io.zeebe.client.api.commands.Workflow;
 import io.zeebe.client.api.events.DeploymentEvent;
+import io.zeebe.client.api.events.DeploymentState;
 import io.zeebe.client.api.record.ZeebeObjectMapper;
 import io.zeebe.client.impl.record.DeploymentRecordImpl;
 import io.zeebe.protocol.clientapi.RecordType;

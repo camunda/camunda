@@ -39,9 +39,4 @@ public interface PartitionInfo
      */
     boolean isLeader();
 
-    enum PartitionBrokerRole
-    {
-        LEADER, FOLLOWER
-    }
-
 }

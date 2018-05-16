@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import io.zeebe.client.api.commands.TopicCommand;
+import io.zeebe.client.api.commands.TopicCommandName;
 import io.zeebe.client.api.record.ZeebeObjectMapper;
 import io.zeebe.client.impl.record.TopicRecordImpl;
 import io.zeebe.protocol.clientapi.RecordType;
