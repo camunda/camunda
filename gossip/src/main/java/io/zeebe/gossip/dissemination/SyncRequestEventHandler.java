@@ -131,12 +131,12 @@ public class SyncRequestEventHandler implements GossipEventConsumer
                     }
                     else
                     {
-                        LOG.warn("Ignore sync response with type '{}' and sender '{}'. Event type is unknown. ", bufferAsString(request.getType()), address);
+                        LOG.debug("Ignore sync response with type '{}' and sender '{}'. Event type is unknown. ", bufferAsString(request.getType()), address);
                     }
                 }
                 else
                 {
-                    LOG.warn("Ignore sync response with type '{}' and sender '{}'. Sender is unknown. ", bufferAsString(request.getType()), address);
+                    LOG.debug("Ignore sync response with type '{}' and sender '{}'. Sender is unknown. ", bufferAsString(request.getType()), address);
                 }
             }
         }
