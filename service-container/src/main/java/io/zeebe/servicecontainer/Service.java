@@ -27,10 +27,5 @@ public interface Service<S>
 
     }
 
-    default void onInterruption(ServiceStartContext startContext)
-    {
-
-    }
-
     S get();
 }
