@@ -22,6 +22,7 @@ import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.parti
 import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_CLIENT_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.clientTransport;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -125,7 +126,7 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
         final DirectBuffer topicName = invitationRequest.topicName();
         final int partitionId = invitationRequest.partitionId();
         final int replicationFactor = invitationRequest.replicationFactor();
-        final List<SocketAddress> members = invitationRequest.members();
+        final List<SocketAddress> members = new ArrayList<>(invitationRequest.members());
 
         installPartition(topicName, partitionId, replicationFactor, members, output, remoteAddress, requestId);
 
