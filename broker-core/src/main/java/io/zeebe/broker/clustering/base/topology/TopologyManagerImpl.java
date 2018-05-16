@@ -82,10 +82,12 @@ public class TopologyManagerImpl extends Actor implements TopologyManager, RaftS
         gossip.addCustomEventListener(CONTACT_POINTS_EVENT_TYPE, contactPointsChangeListener);
         gossip.addCustomEventListener(PARTITIONS_EVENT_TYPE, partitionChangeListener);
 
+        // publishing should be done before registering sync handler, since
+        // we can only handle sync requests if we published the custom event type before
+        publishLocalContactPoints();
+
         gossip.registerSyncRequestHandler(CONTACT_POINTS_EVENT_TYPE, localContactPointsSycHandler);
         gossip.registerSyncRequestHandler(PARTITIONS_EVENT_TYPE, knownPartitionsSyncHandler);
-
-        publishLocalContactPoints();
     }
 
     @Override
