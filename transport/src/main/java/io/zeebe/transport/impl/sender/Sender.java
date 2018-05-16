@@ -199,37 +199,47 @@ public class Sender extends Actor implements TimerHandler
             requestsByTimeoutIds.put(timerId, request);
         }
 
-        final RemoteAddress remoteAddress = request.getNextRemoteAddress();
-
-        if (remoteAddress != null)
+        if (!request.isTimedout())
         {
-            final ChannelWriteQueue sendQueue = channelMap.get(remoteAddress.getStreamId());
-            if (sendQueue != null)
+            final RemoteAddress remoteAddress = request.getNextRemoteAddress();
+
+            if (remoteAddress != null)
             {
-                request.markRemoteAddress(remoteAddress);
-                sendQueue.offer(request);
+                final ChannelWriteQueue sendQueue = channelMap.get(remoteAddress.getStreamId());
+                if (sendQueue != null)
+                {
+                    request.markRemoteAddress(remoteAddress);
+                    sendQueue.offer(request);
+                }
+                else
+                {
+                    // channel not open, retry
+                    actor.runDelayed(Duration.ofMillis(10), () -> submittedRequests.offer(request));
+                }
             }
             else
             {
-                // channel not open, retry
+                // no remote address available, retry
                 actor.runDelayed(Duration.ofMillis(10), () -> submittedRequests.offer(request));
             }
-        }
-        else
-        {
-            // no remote address available, retry
-            actor.runDelayed(Duration.ofMillis(10), () -> submittedRequests.offer(request));
         }
     }
 
     private void onMessageSubmitted(final OutgoingMessage message)
     {
-        final int remoteStreamId = message.getRemoteStreamId();
-
-        final ChannelWriteQueue sendQueue = channelMap.get(remoteStreamId);
-        if (sendQueue != null)
+        try
         {
-            sendQueue.offer(message);
+            final int remoteStreamId = message.getRemoteStreamId();
+
+            final ChannelWriteQueue sendQueue = channelMap.get(remoteStreamId);
+            if (sendQueue != null)
+            {
+                sendQueue.offer(message);
+            }
+        }
+        finally
+        {
+            reclaimMessageBuffer(message.getAllocatedBuffer());
         }
     }
 
@@ -365,8 +375,6 @@ public class Sender extends Actor implements TimerHandler
 
                 pendingWrites.addLast(batch);
             }
-
-            reclaimMessageBuffer(message.getAllocatedBuffer());
         }
 
         public Deque<Batch> getPendingWrites()
@@ -537,7 +545,7 @@ public class Sender extends Actor implements TimerHandler
         if (request != null)
         {
             reclaimRequestBuffer(request.getRequestBuffer().byteBuffer());
-            request.fail(new RequestTimeoutException("Request timed out after " + request.getTimeout()));
+            request.timeout();
             inFlightRequests.remove(request.getLastRequestId());
         }
 

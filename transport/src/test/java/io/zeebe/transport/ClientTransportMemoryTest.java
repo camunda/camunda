@@ -203,6 +203,29 @@ public class ClientTransportMemoryTest
     }
 
     @Test
+    public void shouldReclaimOnMessageSendFailed() throws InterruptedException
+    {
+        // given
+        final BufferWriter writer = mock(BufferWriter.class);
+        when(writer.getLength()).thenReturn(16);
+
+        // no channel open
+        final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+
+        final TransportMessage message = new TransportMessage();
+
+        message.writer(writer);
+        message.remoteAddress(remote);
+
+        // when
+        clientTransport.getOutput().sendMessage(message);
+
+        // then
+        verify(messageMemoryPoolSpy, times(1)).allocate(anyInt());
+        verify(messageMemoryPoolSpy, timeout(1000).times(1)).reclaim(any());
+    }
+
+    @Test
     public void shouldReclaimOnMessageWriterException() throws InterruptedException
     {
         // given

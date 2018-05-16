@@ -42,7 +42,7 @@ public interface ClientOutput
 
     /**
      * <p>Like {@link #sendRequestWithRetry(Supplier, Predicate, BufferWriter, Duration)}
-     * with a static remote and no respons inspection (i.e. first response is accepted).
+     * with a static remote and no response inspection (i.e. first response is accepted).
      *
      * @return the response future or null in case no memory is currently available to allocate the request
      */

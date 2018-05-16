@@ -53,6 +53,8 @@ public class OutgoingRequest
 
     private long lastRequestId = -1;
 
+    private boolean isTimedout;
+
     public OutgoingRequest(Supplier<RemoteAddress> remoteAddressSupplier,
         Predicate<DirectBuffer> retryPredicate,
         UnsafeBuffer requestBuffer,
@@ -167,6 +169,17 @@ public class OutgoingRequest
     public void setLastRequestId(long requestId)
     {
         this.lastRequestId = requestId;
+    }
+
+    public void timeout()
+    {
+        isTimedout = true;
+        fail(new RequestTimeoutException("Request timed out after " + timeout));
+    }
+
+    public boolean isTimedout()
+    {
+        return isTimedout;
     }
 
 }
