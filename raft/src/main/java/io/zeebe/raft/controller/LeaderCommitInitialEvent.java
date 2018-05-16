@@ -56,7 +56,7 @@ public class LeaderCommitInitialEvent implements Service<Void>
     @Override
     public void start(ServiceStartContext startContext)
     {
-        startContext.async(commitFuture);
+        startContext.async(commitFuture, true);
         actor.call(this::appendInitialEvent);
     }
 
