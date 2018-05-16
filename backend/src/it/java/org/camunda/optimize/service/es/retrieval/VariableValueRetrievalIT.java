@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 
+import static junit.framework.TestCase.assertTrue;
 import static org.camunda.optimize.rest.VariableRestService.NAME;
 import static org.camunda.optimize.rest.VariableRestService.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.rest.VariableRestService.PROCESS_DEFINITION_VERSION;
@@ -313,6 +314,127 @@ public class VariableValueRetrievalIT {
     // then
     assertThat(variableResponse.size(), is(1));
     assertThat(variableResponse.contains("value2"), is(true));
+  }
+
+  @Test
+  public void getOnlyValuesWithSpecifiedPrefix() throws Exception {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("var", "fooo");
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
+    variables.put("var", "bar");
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
+    variables.put("var", "ball");
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    Map<String, Object> queryParams = new HashMap<>();
+    queryParams.put("valuePrefix", "ba");
+    queryParams.put(PROCESS_DEFINITION_KEY, processDefinition.getKey());
+    queryParams.put(PROCESS_DEFINITION_VERSION, processDefinition.getVersion());
+    queryParams.put("name", "var");
+    queryParams.put("type", "string");
+    List<String> variableResponse = getVariableValues(queryParams);
+
+    // then
+    assertThat(variableResponse.size(), is(2));
+    assertTrue(variableResponse.contains("bar"));
+    assertTrue(variableResponse.contains("ball"));
+  }
+
+  @Test
+  public void unknownPrefixReturnsEmptyResult() throws Exception {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("var", "fooo");
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    Map<String, Object> queryParams = new HashMap<>();
+    queryParams.put("valuePrefix", "bar");
+    queryParams.put(PROCESS_DEFINITION_KEY, processDefinition.getKey());
+    queryParams.put(PROCESS_DEFINITION_VERSION, processDefinition.getVersion());
+    queryParams.put("name", "var");
+    queryParams.put("type", "string");
+    List<String> variableResponse = getVariableValues(queryParams);
+
+    // then
+    assertThat(variableResponse.size(), is(0));
+  }
+
+  @Test
+  public void valuePrefixForNonStringVariablesIsIgnored() throws Exception {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("var", 2);
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    Map<String, Object> queryParams = new HashMap<>();
+    queryParams.put("valuePrefix", "bar");
+    queryParams.put(PROCESS_DEFINITION_KEY, processDefinition.getKey());
+    queryParams.put(PROCESS_DEFINITION_VERSION, processDefinition.getVersion());
+    queryParams.put("name", "var");
+    queryParams.put("type", "integer");
+    List<String> variableResponse = getVariableValues(queryParams);
+
+    // then
+    assertThat(variableResponse.size(), is(1));
+  }
+
+  @Test
+  public void nullPrefixIsIgnored() throws Exception {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("var", "foo");
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    Map<String, Object> queryParams = new HashMap<>();
+    queryParams.put("valuePrefix", null);
+    queryParams.put(PROCESS_DEFINITION_KEY, processDefinition.getKey());
+    queryParams.put(PROCESS_DEFINITION_VERSION, processDefinition.getVersion());
+    queryParams.put("name", "var");
+    queryParams.put("type", "string");
+    List<String> variableResponse = getVariableValues(queryParams);
+
+    // then
+    assertThat(variableResponse.size(), is(1));
+  }
+
+  @Test
+  public void emptyStringPrefixIsIgnored() throws Exception {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("var", "foo");
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    Map<String, Object> queryParams = new HashMap<>();
+    queryParams.put("valuePrefix", "");
+    queryParams.put(PROCESS_DEFINITION_KEY, processDefinition.getKey());
+    queryParams.put(PROCESS_DEFINITION_VERSION, processDefinition.getVersion());
+    queryParams.put("name", "var");
+    queryParams.put("type", "string");
+    List<String> variableResponse = getVariableValues(queryParams);
+
+    // then
+    assertThat(variableResponse.size(), is(1));
   }
 
   @Test

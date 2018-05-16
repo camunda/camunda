@@ -30,7 +30,6 @@ public class ProcessInstanceType extends StrictTypeMappingCreator {
   public static final String DOUBLE_VARIABLES = "doubleVariables";
   public static final String DATE_VARIABLES = "dateVariables";
   public static final String BOOLEAN_VARIABLES = "booleanVariables";
-  public static final String ALL_VARIABLES_IMPORTED = "allVariablesImported";
 
   public static final String VARIABLE_ID = "id";
   public static final String VARIABLE_NAME = "name";
@@ -144,9 +143,6 @@ public class ProcessInstanceType extends StrictTypeMappingCreator {
           .startObject("properties");
             addNestedVariableField(newBuilder, "boolean")
           .endObject()
-        .endObject()
-        .startObject(ALL_VARIABLES_IMPORTED)
-          .field("type", "boolean")
         .endObject();
     return newBuilder;
   }

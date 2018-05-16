@@ -54,6 +54,7 @@ public class VariableRestService {
       @QueryParam(PROCESS_DEFINITION_VERSION) String processDefinitionVersion,
       @QueryParam(NAME) String name,
       @QueryParam(TYPE) String type,
+      @QueryParam("valuePrefix") String valuePrefix,
       @QueryParam("resultOffset") String resultOffset,
       @QueryParam("numResults") String numResults) {
 
@@ -62,7 +63,7 @@ public class VariableRestService {
     ValidationHelper.ensureNotEmpty("variable name", name);
     ValidationHelper.ensureNotEmpty("variable type", type);
     List<String> variableValues =
-      variableReader.getVariableValues(processDefinitionKey, processDefinitionVersion, name, type);
+      variableReader.getVariableValues(processDefinitionKey, processDefinitionVersion, name, type, valuePrefix);
 
     MultivaluedMap<String, String> queryParameters = new MultivaluedStringMap();
     queryParameters.put("resultOffset", Collections.singletonList(resultOffset));
