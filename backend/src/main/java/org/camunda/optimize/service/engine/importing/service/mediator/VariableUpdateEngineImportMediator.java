@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.engine.importing.service.mediator;
 
 import org.camunda.optimize.dto.engine.HistoricVariableUpdateInstanceDto;
+import org.camunda.optimize.plugin.ImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.VariableUpdateInstanceFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.VariableUpdateInstanceImportIndexHandler;
@@ -14,7 +15,10 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -26,6 +30,8 @@ public class VariableUpdateEngineImportMediator
   private VariableUpdateInstanceImportService variableUpdateInstanceImportService;
   @Autowired
   private VariableUpdateWriter variableWriter;
+  @Autowired
+  private ImportAdapterProvider importAdapterProvider;
 
   public VariableUpdateEngineImportMediator(EngineContext engineContext) {
     this.engineContext = engineContext;
@@ -37,6 +43,7 @@ public class VariableUpdateEngineImportMediator
     engineEntityFetcher = beanHelper.getInstance(VariableUpdateInstanceFetcher.class, engineContext);
     variableUpdateInstanceImportService = new VariableUpdateInstanceImportService(
       variableWriter,
+      importAdapterProvider,
       elasticsearchImportJobExecutor,
       engineContext
     );
@@ -55,9 +62,22 @@ public class VariableUpdateEngineImportMediator
       OffsetDateTime timestamp = entities.get(entities.size() - 1).getTime();
       importIndexHandler.updateTimestampOfLastEntity(timestamp);
       entities.addAll(entitiesOfLastTimestamp);
+      entities = filterLatestUpdates(entities);
       variableUpdateInstanceImportService.executeImport(entities);
     }
     return entities.size() >= configurationService.getEngineImportVariableInstanceMaxPageSize();
+  }
+
+  private List<HistoricVariableUpdateInstanceDto> filterLatestUpdates(List<HistoricVariableUpdateInstanceDto> updates) {
+    Map<String, HistoricVariableUpdateInstanceDto> latestUpdateForVariable = new HashMap<>();
+    for (HistoricVariableUpdateInstanceDto update : updates) {
+      latestUpdateForVariable
+        .compute(
+          update.getVariableInstanceId(),
+          (k, v) -> (v != null && v.getTime().isAfter(update.getTime()))? v : update
+        );
+    }
+    return new ArrayList<>(latestUpdateForVariable.values());
   }
 
 }

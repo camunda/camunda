@@ -8,10 +8,9 @@ import org.camunda.optimize.service.engine.importing.service.mediator.EngineImpo
 import org.camunda.optimize.service.engine.importing.service.mediator.FinishedProcessInstanceEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.ProcessDefinitionEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.ProcessDefinitionXmlEngineImportMediator;
-import org.camunda.optimize.service.engine.importing.service.mediator.VariableUpdateEngineImportMediator;
-import org.camunda.optimize.service.engine.importing.service.mediator.StoreIndexesEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.RunningProcessInstanceEngineImportMediator;
-import org.camunda.optimize.service.engine.importing.service.mediator.FinalVariableInstanceEngineImportMediator;
+import org.camunda.optimize.service.engine.importing.service.mediator.StoreIndexesEngineImportMediator;
+import org.camunda.optimize.service.engine.importing.service.mediator.VariableUpdateEngineImportMediator;
 import org.camunda.optimize.service.util.BeanHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.slf4j.Logger;
@@ -73,8 +72,6 @@ public class EngineImportSchedulerFactory implements ConfigurationReloadable {
         beanHelper.getInstance(StoreIndexesEngineImportMediator.class, engineContext));
     mediators.add(
         beanHelper.getInstance(RunningProcessInstanceEngineImportMediator.class, engineContext));
-    mediators.add(
-        beanHelper.getInstance(FinalVariableInstanceEngineImportMediator.class, engineContext));
     mediators.add(
         beanHelper.getInstance(VariableUpdateEngineImportMediator.class, engineContext));
 

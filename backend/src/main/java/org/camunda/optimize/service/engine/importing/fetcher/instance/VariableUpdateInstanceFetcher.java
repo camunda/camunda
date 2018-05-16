@@ -12,11 +12,8 @@ import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.camunda.optimize.service.util.VariableHelper.ALL_SUPPORTED_VARIABLE_TYPES;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.DESERIALIZE_VALUES;
@@ -63,7 +60,7 @@ public class VariableUpdateInstanceFetcher extends
       pageSize,
       requestEnd - requestStart
     );
-    return filterLatestUpdates(entries);
+    return entries;
   }
 
   private List<HistoricVariableUpdateInstanceDto> performGetVariableInstanceUpdateRequest(OffsetDateTime timeStamp, long pageSize) {
@@ -93,7 +90,7 @@ public class VariableUpdateInstanceFetcher extends
       secondEntries.size(),
       requestEnd - requestStart
     );
-    return filterLatestUpdates(secondEntries);
+    return secondEntries;
   }
 
   private List<HistoricVariableUpdateInstanceDto> performGetVariableInstanceUpdateRequest(OffsetDateTime endTimeOfLastInstance) {
@@ -111,15 +108,4 @@ public class VariableUpdateInstanceFetcher extends
       });
   }
 
-  private List<HistoricVariableUpdateInstanceDto> filterLatestUpdates(List<HistoricVariableUpdateInstanceDto> updates) {
-    Map<String, HistoricVariableUpdateInstanceDto> latestUpdateForVariable = new HashMap<>();
-    for (HistoricVariableUpdateInstanceDto update : updates) {
-      latestUpdateForVariable
-        .compute(
-          update.getVariableInstanceId(),
-          (k, v) -> (v != null && v.getTime().isAfter(update.getTime()))? v : update
-        );
-    }
-    return new ArrayList<>(latestUpdateForVariable.values());
-  }
 }

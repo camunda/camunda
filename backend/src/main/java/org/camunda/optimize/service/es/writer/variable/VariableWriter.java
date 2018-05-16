@@ -252,23 +252,23 @@ public abstract class VariableWriter {
   }
 
   private Boolean parseBoolean(VariableDto var) {
-    return var == null? null: Boolean.parseBoolean(var.getValue());
+    return var.getValue() == null? null: Boolean.parseBoolean(var.getValue());
   }
 
   private Double parseDouble(VariableDto var) {
-    return var == null? null: Double.parseDouble(var.getValue());
+    return var.getValue() == null? null: Double.parseDouble(var.getValue());
   }
 
   private Short parseShort(VariableDto var) {
-    return var == null? null: Short.parseShort(var.getValue());
+    return var.getValue() == null? null: Short.parseShort(var.getValue());
   }
 
   private Long parseLong(VariableDto var) {
-    return var == null? null: Long.parseLong(var.getValue());
+    return var.getValue() == null? null: Long.parseLong(var.getValue());
   }
 
   private Integer parseInteger(VariableDto var) {
-    return var == null? null: Integer.parseInt(var.getValue());
+    return var.getValue() == null? null: Integer.parseInt(var.getValue());
   }
 
 }

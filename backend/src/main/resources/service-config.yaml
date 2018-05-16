@@ -125,7 +125,7 @@ import:
     variable:
       #Overwrites the maximum page size for historic variable instance
       #fetching.
-      maxPageSize: 1000
+      maxPageSize: 10000
       #The name of the variable type.
       elasticsearchType: variable
   # Number of threads being used to process the import jobs that are writing data to elasticsearch.

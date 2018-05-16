@@ -15,18 +15,16 @@ public class VariableUpdateWriter extends VariableWriter {
   @Override
   protected String createInlineUpdateScript(Map<String, List<VariableDto>> typeMappedVars) {
     StringBuilder builder = new StringBuilder();
-    builder.append("if(!ctx._source.allVariablesImported) {\n"); // we need to ensure that variables are not added twice
-      for (Map.Entry<String, List<VariableDto>> typedVarsEntry : typeMappedVars.entrySet()) {
-        String typeName = typedVarsEntry.getKey();
-        builder.append("for (def var : params." + typeName + ") {");
-          builder.append("ctx._source." + typeName + ".removeIf(item -> item.id.equals(var.id) || var.value == null) ;");
-        builder.append("}");
-        // if a variable update has the value null then this means that the runtime variable
-        // has been deleted and therefore we shouldn't add it to Optimize
-        builder.append("params." + typeName + ".removeIf(item -> item.value == null);");
-        builder.append("ctx._source." + typeName + ".addAll(params." + typeName + ");\n");
-      }
-    builder.append("}");
+    for (Map.Entry<String, List<VariableDto>> typedVarsEntry : typeMappedVars.entrySet()) {
+      String typeName = typedVarsEntry.getKey();
+      builder.append("for (def var : params." + typeName + ") {");
+        builder.append("ctx._source." + typeName + ".removeIf(item -> item.id.equals(var.id) || var.value == null) ;");
+      builder.append("}");
+      // if a variable update has the value null then this means that the runtime variable
+      // has been deleted and therefore we shouldn't add it to Optimize
+      builder.append("params." + typeName + ".removeIf(item -> item.value == null);");
+      builder.append("ctx._source." + typeName + ".addAll(params." + typeName + ");\n");
+    }
     return builder.toString();
   }
 

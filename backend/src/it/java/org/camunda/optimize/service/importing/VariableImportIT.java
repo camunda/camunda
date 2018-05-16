@@ -236,6 +236,12 @@ public class VariableImportIT {
         .camundaExpression("${true}")
         .camundaOutputParameter("stringVar", "foo")
         .camundaOutputParameter("anotherVar", "1")
+      .scriptTask()
+        .scriptFormat("groovy")
+        // we need to wait 1 second to make sure that the next
+        // variable update does not happen at the exact same time.
+        // This will be fixed with OPT-1250
+        .scriptText("sleep(1);")
       .serviceTask()
         .camundaExpression("${true}")
         .camundaOutputParameter("stringVar", "bar")

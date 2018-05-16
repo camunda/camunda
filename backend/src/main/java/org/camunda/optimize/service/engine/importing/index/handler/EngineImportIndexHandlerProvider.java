@@ -7,7 +7,6 @@ import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessD
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessDefinitionXmlImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.RunningProcessInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.VariableUpdateInstanceImportIndexHandler;
-import org.camunda.optimize.service.engine.importing.index.handler.impl.FinalVariableInstanceImportIndexHandler;
 import org.camunda.optimize.service.util.BeanHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -54,10 +53,8 @@ public class EngineImportIndexHandlerProvider {
     allHandlers.put(ProcessDefinitionImportIndexHandler.class.getSimpleName(), getProcessDefinitionImportIndexHandler());
     allHandlers.put(ProcessDefinitionXmlImportIndexHandler.class.getSimpleName(), getProcessDefinitionXmlImportIndexHandler());
     allHandlers.put(RunningProcessInstanceImportIndexHandler.class.getSimpleName(), getUnfinishedProcessInstanceImportIndexHandler());
-    allHandlers.put(FinalVariableInstanceImportIndexHandler.class.getSimpleName(), getVariableInstanceImportIndexHandler());
     allHandlers.put(VariableUpdateInstanceImportIndexHandler.class.getSimpleName(), getVariableUpdateInstanceImportIndexHandler());
 
-    scrollBasedHandlers.add(getVariableInstanceImportIndexHandler());
     scrollBasedHandlers.add(getProcessDefinitionXmlImportIndexHandler());
 
     timestampBasedHandlers.add(getUnfinishedProcessInstanceImportIndexHandler());
@@ -125,10 +122,6 @@ public class EngineImportIndexHandlerProvider {
 
   public RunningProcessInstanceImportIndexHandler getUnfinishedProcessInstanceImportIndexHandler() {
     return getImportIndexHandlerInstance(engineContext, RunningProcessInstanceImportIndexHandler.class);
-  }
-
-  public FinalVariableInstanceImportIndexHandler getVariableInstanceImportIndexHandler() {
-    return getImportIndexHandlerInstance(engineContext, FinalVariableInstanceImportIndexHandler.class);
   }
 
   public VariableUpdateInstanceImportIndexHandler getVariableUpdateInstanceImportIndexHandler() {
