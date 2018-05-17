@@ -39,7 +39,7 @@ public class NonBlockingTaskCreator
     {
         final Properties systemProperties = System.getProperties();
 
-        final int tasks = Integer.parseInt(systemProperties.getProperty(SAMPLE_NUMBER_OF_REQUESTS, "1_000_000"));
+        final int tasks = Integer.parseInt(systemProperties.getProperty(SAMPLE_NUMBER_OF_REQUESTS, "1000000"));
 
         final String topicName = "default-topic";
 

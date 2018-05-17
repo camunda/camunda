@@ -48,6 +48,7 @@ public class ClientTopologyManager extends Actor
 
     protected final ClientOutput output;
     protected final ClientTransport transport;
+    protected final ClientTransport internalTransport;
 
     protected final AtomicReference<ClusterStateImpl> topology;
     protected final List<CompletableActorFuture<ClusterState>> nextTopologyFutures = new ArrayList<>();
@@ -59,9 +60,14 @@ public class ClientTopologyManager extends Actor
     protected int refreshAttempt = 0;
     protected long lastRefreshTime = -1;
 
-    public ClientTopologyManager(ClientTransport transport, ZeebeObjectMapperImpl objectMapper, RemoteAddress initialContact)
+
+    public ClientTopologyManager(ClientTransport transport,
+        ClientTransport internalTransport,
+        ZeebeObjectMapperImpl objectMapper,
+        RemoteAddress initialContact)
     {
         this.transport = transport;
+        this.internalTransport = internalTransport;
         this.output = transport.getOutput();
 
         this.topology = new AtomicReference<>(new ClusterStateImpl(initialContact));
@@ -131,7 +137,9 @@ public class ClientTopologyManager extends Actor
     private void refreshTopology()
     {
         final RemoteAddress endpoint = topology.get().getRandomBroker();
-        final ActorFuture<ClientResponse> responseFuture = output.sendRequest(endpoint, requestWriter, Duration.ofSeconds(1));
+        final RemoteAddress internalRemoteAddress = internalTransport.registerRemoteAddress(endpoint.getAddress());
+        final ActorFuture<ClientResponse> responseFuture = internalTransport.getOutput()
+            .sendRequest(internalRemoteAddress, requestWriter, Duration.ofSeconds(1));
 
         refreshAttempt++;
         lastRefreshTime = ActorClock.currentTimeMillis();

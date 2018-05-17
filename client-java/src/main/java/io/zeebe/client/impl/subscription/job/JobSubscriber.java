@@ -52,7 +52,7 @@ public class JobSubscriber extends Subscriber
 
     public int pollEvents(JobHandler jobHandler)
     {
-        int polledEvents = pollEvents((e) ->
+        final int polledEvents = pollEvents((e) ->
         {
             final JobEventImpl jobEvent = objectMapper.fromJson(e.getAsMsgPack(), JobEventImpl.class);
             jobEvent.updateMetadata(e.getMetadata());

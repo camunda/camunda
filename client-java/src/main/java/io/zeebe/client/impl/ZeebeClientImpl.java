@@ -68,6 +68,8 @@ public class ZeebeClientImpl implements ZeebeClient
 
     protected boolean isClosed;
 
+    private ClientTransport internalTransport;
+
     public ZeebeClientImpl(final ZeebeClientConfiguration configuration)
     {
         this(configuration, null);
@@ -106,12 +108,21 @@ public class ZeebeClientImpl implements ZeebeClient
             .requestMemoryPool(new BlockingMemoryPool(sendBufferSize, requestBlockTimeMs))
             .scheduler(scheduler);
 
+        // internal transport is used for topology request
+        final ClientTransportBuilder internalTransportBuilder = Transports.newClientTransport()
+            .messageMaxLength(1024 * 1024)
+            .messageMemoryPool(new UnboundedMemoryPool())
+            .requestMemoryPool(new UnboundedMemoryPool())
+            .scheduler(scheduler);
+
         if (configuration.getTcpChannelKeepAlivePeriod() != null)
         {
             transportBuilder.keepAlivePeriod(configuration.getTcpChannelKeepAlivePeriod());
+            internalTransportBuilder.keepAlivePeriod(configuration.getTcpChannelKeepAlivePeriod());
         }
 
         transport = transportBuilder.build();
+        internalTransport = transportBuilder.build();
 
         this.msgPackConverter = new MsgPackConverter();
         this.objectMapper = new ZeebeObjectMapperImpl(msgPackConverter);
@@ -120,7 +131,7 @@ public class ZeebeClientImpl implements ZeebeClient
 
         final RemoteAddress initialContactPoint = transport.registerRemoteAddress(contactPoint);
 
-        topologyManager = new ClientTopologyManager(transport, objectMapper, initialContactPoint);
+        topologyManager = new ClientTopologyManager(transport, internalTransport, objectMapper, initialContactPoint);
         scheduler.submitActor(topologyManager);
 
         apiCommandManager = new RequestManager(
@@ -155,8 +166,11 @@ public class ZeebeClientImpl implements ZeebeClient
         doAndLogException(() -> topologyManager.close().join());
         LOG.debug("topology manager closed");
         doAndLogException(() -> transport.close());
-        LOG.debug("data frame receive buffer closed");
+        LOG.debug("transport closed");
+        doAndLogException(() -> internalTransport.close());
+        LOG.debug("internal transport closed");
         doAndLogException(() -> dataFrameReceiveBuffer.close());
+        LOG.debug("data frame receive buffer closed");
 
         try
         {

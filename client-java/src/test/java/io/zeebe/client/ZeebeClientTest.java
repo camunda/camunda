@@ -91,8 +91,8 @@ public class ZeebeClientTest
 
         // then
         assertThat(subscription.isClosed()).isTrue();
-        waitUntil(() -> channelListener.connectionState.size() == 1); // listener invocation on close is asynchronous
-        assertThat(channelListener.connectionState).containsExactly(ConnectionState.CLOSED);
+        waitUntil(() -> channelListener.connectionState.size() == 2); // listener invocation on close is asynchronous
+        assertThat(channelListener.connectionState).containsExactly(ConnectionState.CLOSED, ConnectionState.CLOSED);
     }
 
     @Test
@@ -102,7 +102,7 @@ public class ZeebeClientTest
         final ClientTransport clientTransport = client.getTransport();
 
         // ensuring an open connection
-        client.newTopologyRequest().send().join();
+        client.newTopicsRequest().send().join();
 
         final LoggingChannelListener channelListener = new LoggingChannelListener();
         clientTransport.registerChannelListener(channelListener).join();

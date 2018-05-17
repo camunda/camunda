@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.junit.rules.ExternalResource;
 
@@ -201,6 +202,14 @@ public class StubBrokerRule extends ExternalResource
     public List<ControlMessageRequest> getReceivedControlMessageRequests()
     {
         return channelHandler.getReceivedControlMessageRequests();
+    }
+
+    public List<ControlMessageRequest> getReceivedControlMessageRequestsByType(ControlMessageType type)
+    {
+        return channelHandler.getReceivedControlMessageRequests()
+                .stream()
+                .filter((r) -> type == r.messageType())
+                .collect(Collectors.toList());
     }
 
     public List<ExecuteCommandRequest> getReceivedCommandRequests()

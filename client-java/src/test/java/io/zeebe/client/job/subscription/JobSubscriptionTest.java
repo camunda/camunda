@@ -585,7 +585,7 @@ public class JobSubscriptionTest
             .lockTime(10000L)
             .open();
 
-        final RemoteAddress clientAddress = broker.getReceivedControlMessageRequests().get(0).getSource();
+        final RemoteAddress clientAddress = broker.getReceivedControlMessageRequestsByType(ControlMessageType.ADD_JOB_SUBSCRIPTION).get(0).getSource();
 
         for (int i = 0; i < jobCapacity + numExecutionThreads; i++)
         {
@@ -636,7 +636,7 @@ public class JobSubscriptionTest
             .fetchSize(subscriptionCapacity)
             .open();
 
-        final RemoteAddress clientAddress = broker.getReceivedControlMessageRequests().get(0).getSource();
+        final RemoteAddress clientAddress = broker.getReceivedControlMessageRequestsByType(ControlMessageType.ADD_JOB_SUBSCRIPTION).get(0).getSource();
 
         for (int i = 0; i < subscriptionCapacity; i++)
         {

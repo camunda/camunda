@@ -127,8 +127,8 @@ public class PartitionedJobSubscriptionTest
             .lockTime(Duration.ofSeconds(6))
             .open();
 
-        final RemoteAddress clientAddressFromBroker1 = broker1.getReceivedControlMessageRequests().get(0).getSource();
-        final RemoteAddress clientAddressFromBroker2 = broker2.getReceivedControlMessageRequests().get(0).getSource();
+        final RemoteAddress clientAddressFromBroker1 = broker1.getReceivedControlMessageRequestsByType(ControlMessageType.ADD_JOB_SUBSCRIPTION).get(0).getSource();
+        final RemoteAddress clientAddressFromBroker2 = broker2.getReceivedControlMessageRequestsByType(ControlMessageType.ADD_JOB_SUBSCRIPTION).get(0).getSource();
 
         // when
         final long key1 = 3;
