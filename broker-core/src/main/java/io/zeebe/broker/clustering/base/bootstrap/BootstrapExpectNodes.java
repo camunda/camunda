@@ -17,17 +17,23 @@
  */
 package io.zeebe.broker.clustering.base.bootstrap;
 
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.*;
-
-import java.time.Duration;
-
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.clustering.base.topology.*;
+import io.zeebe.broker.clustering.base.topology.NodeInfo;
+import io.zeebe.broker.clustering.base.topology.Topology;
+import io.zeebe.broker.clustering.base.topology.TopologyManager;
+import io.zeebe.broker.clustering.base.topology.TopologyMemberListener;
 import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ScheduledTimer;
 import org.slf4j.Logger;
+
+import java.time.Duration;
+
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.*;
 
 /**
  * Service implementing the "-bootstrap-expect" parameter on startup:
@@ -103,7 +109,7 @@ public class BootstrapExpectNodes extends Actor implements Service<Void>, Topolo
         {
             nodeCount++;
 
-            if (nodeCount >= countOfExpectedNodes)
+            if (nodeCount == countOfExpectedNodes)
             {
                 LOG.info("Cluster bootstrap: Reached expected node count of {} got {}", countOfExpectedNodes, nodeCount);
                 loggerTimer.cancel();
