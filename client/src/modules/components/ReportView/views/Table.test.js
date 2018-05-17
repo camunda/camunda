@@ -4,6 +4,8 @@ import {mount} from 'enzyme';
 import Table from './Table';
 import {processRawData} from 'services';
 
+import {getCamundaEndpoint} from './service';
+
 jest.mock('components', () => {
   return {
     Table: ({head, body}) => <div>{JSON.stringify({head, body})}</div>
@@ -16,8 +18,21 @@ jest.mock('services', () => {
   };
 });
 
-it('should display data for key-value pairs', () => {
-  const node = mount(
+jest.mock('./service', () => {
+  return {
+    getCamundaEndpoint: jest.fn().mockReturnValue('camundaEndpoint')
+  };
+});
+
+it('should get the camunda endpoint', () => {
+  getCamundaEndpoint.mockClear();
+  mount(<Table configuration={{}} />);
+
+  expect(getCamundaEndpoint).toHaveBeenCalled();
+});
+
+it('should display data for key-value pairs', async () => {
+  const node = await mount(
     <Table
       data={{
         a: 1,
@@ -37,8 +52,8 @@ it('should display data for key-value pairs', () => {
   expect(node).toIncludeText('3');
 });
 
-it('should process raw data', () => {
-  mount(
+it('should process raw data', async () => {
+  await mount(
     <Table
       data={[
         {prop1: 'foo', prop2: 'bar', variables: {innerProp: 'bla'}},
@@ -52,28 +67,30 @@ it('should process raw data', () => {
   expect(processRawData).toHaveBeenCalled();
 });
 
-it('should display an error message for a non-object result (single number)', () => {
-  const node = mount(<Table data={7} errorMessage="Error" formatter={v => v} configuration={{}} />);
+it('should display an error message for a non-object result (single number)', async () => {
+  const node = await mount(
+    <Table data={7} errorMessage="Error" formatter={v => v} configuration={{}} />
+  );
 
   expect(node).toIncludeText('Error');
 });
 
-it('should display an error message if no data is provided', () => {
-  const node = mount(<Table errorMessage="Error" formatter={v => v} configuration={{}} />);
+it('should display an error message if no data is provided', async () => {
+  const node = await mount(<Table errorMessage="Error" formatter={v => v} configuration={{}} />);
 
   expect(node).toIncludeText('Error');
 });
 
-it('should display an error message if data is null', () => {
-  const node = mount(
+it('should display an error message if data is null', async () => {
+  const node = await mount(
     <Table data={null} errorMessage="Error" formatter={v => v} configuration={{}} />
   );
 
   expect(node).toIncludeText('Error');
 });
 
-it('should not display an error message if data is valid', () => {
-  const node = mount(
+it('should not display an error message if data is valid', async () => {
+  const node = await mount(
     <Table
       data={[
         {prop1: 'foo', prop2: 'bar', variables: {innerProp: 'bla'}},
@@ -88,8 +105,8 @@ it('should not display an error message if data is valid', () => {
   expect(node).not.toIncludeText('Error');
 });
 
-it('should format data according to the provided formatter', () => {
-  const node = mount(
+it('should format data according to the provided formatter', async () => {
+  const node = await mount(
     <Table
       data={{
         a: 1,

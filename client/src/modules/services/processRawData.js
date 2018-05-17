@@ -1,7 +1,10 @@
+import React from 'react';
+
 export default function processRawData(
   data,
   excludedColumns = [],
-  columnOrder = {processInstanceProps: [], variables: []}
+  columnOrder = {processInstanceProps: [], variables: []},
+  endpoint = ''
 ) {
   const processInstanceProps = Object.keys(data[0]).filter(
     entry => entry !== 'variables' && !excludedColumns.includes(entry)
@@ -10,11 +13,24 @@ export default function processRawData(
     entry => !excludedColumns.includes('var__' + entry)
   );
 
+  function applyBehavior(type, content) {
+    if (type === 'processInstanceId' && endpoint) {
+      return <a href={`${endpoint}app/cockpit/#/process-instance/${content}`}>{content}</a>;
+    }
+    return content;
+  }
+
   const body = data.map(instance => {
-    let row = processInstanceProps.map(entry => instance[entry]);
-    const variableValues = variableNames.map(entry => instance.variables[entry]);
+    let row = processInstanceProps.map(entry => applyBehavior(entry, instance[entry]));
+    const variableValues = variableNames.map(entry => {
+      const value = instance.variables[entry];
+      if (value === null) {
+        return '';
+      }
+      return value.toString();
+    });
     row.push(...variableValues);
-    row = row.map(entry => (entry === null ? '' : entry.toString()));
+
     return row;
   });
 
