@@ -22,6 +22,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 
+import static org.camunda.optimize.rest.VariableRestService.NAME_PREFIX;
+import static org.camunda.optimize.rest.VariableRestService.PROCESS_DEFINITION_KEY;
+import static org.camunda.optimize.rest.VariableRestService.PROCESS_DEFINITION_VERSION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
 import static org.hamcrest.CoreMatchers.is;
@@ -226,12 +229,127 @@ public class VariableRetrievalIT {
     }
   }
 
+   @Test
+  public void getOnlyVariablesWithSpecifiedNamePrefix() throws Exception {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+    Map<String, Object> variables = new HashMap<>();
+     variables.put("a", "value3");
+     variables.put("ab", "value1");
+     variables.put("c", "value2");
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    List<VariableRetrievalDto> variableResponse = getVariablesWithPrefix(processDefinition, "a");
+
+    // then
+    assertThat(variableResponse.size(), is(2));
+    assertThat(variableResponse.get(0).getName(), is("a"));
+    assertThat(variableResponse.get(1).getName(), is("ab"));
+  }
+
+  @Test
+  public void unknownPrefixReturnsEmptyResult() throws Exception {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+    Map<String, Object> variables = new HashMap<>();
+     variables.put("a", "value3");
+     variables.put("ab", "value1");
+     variables.put("c", "value2");
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    List<VariableRetrievalDto> variableResponse = getVariablesWithPrefix(processDefinition, "foo");
+
+    // then
+    assertThat(variableResponse.size(), is(0));
+  }
+
+  @Test
+  public void nullPrefixIsIgnored() throws Exception {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+    Map<String, Object> variables = new HashMap<>();
+     variables.put("a", "value3");
+     variables.put("ab", "value1");
+     variables.put("c", "value2");
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    List<VariableRetrievalDto> variableResponse = getVariablesWithPrefix(processDefinition, null);
+
+    // then
+    assertThat(variableResponse.size(), is(3));
+    assertThat(variableResponse.get(0).getName(), is("a"));
+    assertThat(variableResponse.get(1).getName(), is("ab"));
+    assertThat(variableResponse.get(2).getName(), is("c"));
+  }
+
+  @Test
+  public void emptyStringPrefixIsIgnored() throws Exception {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+    Map<String, Object> variables = new HashMap<>();
+     variables.put("a", "value3");
+     variables.put("ab", "value1");
+     variables.put("c", "value2");
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    List<VariableRetrievalDto> variableResponse = getVariablesWithPrefix(processDefinition, "");
+
+    // then
+    assertThat(variableResponse.size(), is(3));
+    assertThat(variableResponse.get(0).getName(), is("a"));
+    assertThat(variableResponse.get(1).getName(), is("ab"));
+    assertThat(variableResponse.get(2).getName(), is("c"));
+  }
+
+  @Test
+  public void prefixCanBeAppliedToAllVariableTypes() throws Exception {
+    // given
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("dateVar", new Date());
+    variables.put("boolVar", true);
+    variables.put("shortVar", (short)2);
+    variables.put("intVar", 5);
+    variables.put("longVar", 5L);
+    variables.put("doubleVar", 5.5);
+    variables.put("stringVar", "aString");
+
+    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    List<VariableRetrievalDto> variableResponse = getVariablesWithPrefix(processDefinition, "d");
+
+    // then
+    assertThat(variableResponse.size(), is(2));
+  }
+
   private ProcessDefinitionEngineDto deploySimpleProcessDefinition() throws IOException {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(A_PROCESS)
       .startEvent()
       .endEvent()
       .done();
     return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
+  }
+
+  private List<VariableRetrievalDto> getVariablesWithPrefix(ProcessDefinitionEngineDto processDefinition,
+                                                            String namePrefix) {
+    String key = processDefinition.getKey();
+    String version = String.valueOf(processDefinition.getVersion());
+    return getVariablesWithPrefix(key, version, namePrefix);
   }
 
   private List<VariableRetrievalDto> getVariables(ProcessDefinitionEngineDto processDefinition) {
@@ -241,10 +359,15 @@ public class VariableRetrievalIT {
   }
 
   private List<VariableRetrievalDto> getVariables(String key, String version) {
+    return getVariablesWithPrefix(key, version, null);
+  }
+
+  private List<VariableRetrievalDto> getVariablesWithPrefix(String key, String version, String namePrefix) {
     Response response =
         embeddedOptimizeRule.target("variables/")
-            .queryParam("processDefinitionKey", key)
-            .queryParam("processDefinitionVersion", version)
+            .queryParam(PROCESS_DEFINITION_KEY, key)
+            .queryParam(PROCESS_DEFINITION_VERSION, version)
+            .queryParam(NAME_PREFIX, namePrefix)
             .request()
             .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .get();

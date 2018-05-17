@@ -29,6 +29,7 @@ public class VariableRestService {
   public static final String TYPE = "type";
   public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
   public static final String PROCESS_DEFINITION_VERSION = "processDefinitionVersion";
+  public static final String NAME_PREFIX = "namePrefix";
 
   @Autowired
   private VariableReader variableReader;
@@ -37,12 +38,13 @@ public class VariableRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public List<VariableRetrievalDto> getVariables(
-      @QueryParam("processDefinitionKey") String processDefinitionKey,
-      @QueryParam("processDefinitionVersion") String processDefinitionVersion) {
+      @QueryParam(PROCESS_DEFINITION_KEY) String processDefinitionKey,
+      @QueryParam(PROCESS_DEFINITION_VERSION) String processDefinitionVersion,
+      @QueryParam(NAME_PREFIX) String namePrefix) {
 
     ValidationHelper.ensureNotEmpty("process definition key", processDefinitionKey);
     ValidationHelper.ensureNotEmpty("process definition version", processDefinitionVersion);
-    return variableReader.getVariables(processDefinitionKey, processDefinitionVersion);
+    return variableReader.getVariables(processDefinitionKey, processDefinitionVersion, namePrefix);
   }
 
   @GET

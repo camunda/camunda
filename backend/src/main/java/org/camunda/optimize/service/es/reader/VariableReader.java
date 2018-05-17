@@ -14,7 +14,9 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
+import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
+import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.slf4j.Logger;
@@ -44,6 +46,7 @@ public class VariableReader {
   private final Logger logger = LoggerFactory.getLogger(VariableReader.class);
 
   private static final String FILTER_FOR_NAME_AGGREGATION = "filterForName";
+  public static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
   private static final String NAMES_AGGREGATION = "names";
   private static final String VALUE_AGGREGATION = "values";
 
@@ -52,18 +55,21 @@ public class VariableReader {
   @Autowired
   private ConfigurationService configurationService;
 
-  public List<VariableRetrievalDto> getVariables(String processDefinitionKey, String processDefinitionVersion) {
+  public List<VariableRetrievalDto> getVariables(String processDefinitionKey,
+                                                 String processDefinitionVersion,
+                                                 String namePrefix) {
     logger.debug("Fetching variables for process definition with key [{}] and version [{}]",
       processDefinitionKey,
       processDefinitionVersion);
-    BoolQueryBuilder query = buildProcessDefinitionBaseQUery(processDefinitionKey, processDefinitionVersion);
+
+    BoolQueryBuilder query = buildProcessDefinitionBaseQuery(processDefinitionKey, processDefinitionVersion);
 
     SearchRequestBuilder requestBuilder =
       esclient
           .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
           .setTypes(configurationService.getProcessInstanceType())
           .setQuery(query);
-    addVariableAggregation(requestBuilder);
+    addVariableAggregation(requestBuilder, namePrefix);
     SearchResponse response = requestBuilder.get();
 
 
@@ -71,7 +77,7 @@ public class VariableReader {
     return extractVariables(aggregations);
   }
 
-  public BoolQueryBuilder buildProcessDefinitionBaseQUery(String processDefinitionKey, String processDefinitionVersion) {
+  public BoolQueryBuilder buildProcessDefinitionBaseQuery(String processDefinitionKey, String processDefinitionVersion) {
     BoolQueryBuilder query;
     query =
       QueryBuilders.boolQuery()
@@ -93,8 +99,9 @@ public class VariableReader {
   }
 
   private List<VariableRetrievalDto> extractVariablesFromType(Aggregations aggregations, String variableFieldLabel) {
-    Nested stringVariables = aggregations.get(variableFieldLabel);
-    Terms nameTerms = stringVariables.getAggregations().get(NAMES_AGGREGATION);
+    Nested variables = aggregations.get(variableFieldLabel);
+    Filter filteredVariables = variables.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
+    Terms nameTerms = filteredVariables.getAggregations().get(NAMES_AGGREGATION);
     List<VariableRetrievalDto> responseDtoList = new ArrayList<>();
     for (Terms.Bucket nameBucket : nameTerms.getBuckets()) {
       VariableRetrievalDto response = new VariableRetrievalDto();
@@ -105,16 +112,27 @@ public class VariableReader {
     return responseDtoList;
   }
 
-  private void addVariableAggregation(SearchRequestBuilder requestBuilder) {
+  private void addVariableAggregation(SearchRequestBuilder requestBuilder, String namePrefix) {
+    String securedNamePrefix = namePrefix == null ? "" : namePrefix;
     for (String variableFieldLabel : getAllVariableTypeFieldLabels()) {
+      FilterAggregationBuilder filterAllVariablesWithCertainPrefixInName = filter(
+        FILTERED_VARIABLES_AGGREGATION,
+        prefixQuery(getNestedVariableNameFieldLabel(variableFieldLabel), securedNamePrefix)
+      );
+      TermsAggregationBuilder collectAllVariableNames = terms(NAMES_AGGREGATION)
+        .field(getNestedVariableNameFieldLabel(variableFieldLabel))
+        .size(10_000)
+        .order(BucketOrder.key(true));
+      NestedAggregationBuilder checkoutVariables = nested(variableFieldLabel, variableFieldLabel);
+
       requestBuilder
         .addAggregation(
-          nested(variableFieldLabel, variableFieldLabel)
+          checkoutVariables
             .subAggregation(
-              terms(NAMES_AGGREGATION)
-                .field(getNestedVariableNameFieldLabel(variableFieldLabel))
-                .size(10_000)
-                .order(BucketOrder.key(true))
+              filterAllVariablesWithCertainPrefixInName
+                .subAggregation(
+                  collectAllVariableNames
+                )
             )
         );
     }
@@ -131,8 +149,8 @@ public class VariableReader {
 
     String variableFieldLabel = VariableHelper.variableTypeToFieldLabel(type);
 
-    BoolQueryBuilder query = buildProcessDefinitionBaseQUery(processDefinitionKey, processDefinitionVersion);
-    mustStartWithPrefix(query, valuePrefix, type);
+    BoolQueryBuilder query = buildProcessDefinitionBaseQuery(processDefinitionKey, processDefinitionVersion);
+    mustStartWithValuePrefix(query, valuePrefix, type);
 
     SearchResponse response =
       esclient
@@ -146,7 +164,7 @@ public class VariableReader {
     return extractVariableValues(aggregations, variableFieldLabel);
   }
 
-  private void mustStartWithPrefix(BoolQueryBuilder query, String valuePrefix, String type) {
+  private void mustStartWithValuePrefix(BoolQueryBuilder query, String valuePrefix, String type) {
     if(valuePrefix != null && !valuePrefix.isEmpty() && VariableHelper.isStringType(type)) {
       String variableFieldLabel = VariableHelper.variableTypeToFieldLabel(type);
       query.must(
@@ -171,23 +189,26 @@ public class VariableReader {
   }
 
   private AggregationBuilder getVariableValueAggregation(String name, String variableFieldLabel) {
-    TermsAggregationBuilder variableValuesAgg =
+    TermsAggregationBuilder collectAllVariableValues =
       terms(VALUE_AGGREGATION)
         .field(getNestedVariableValueFieldLabel(variableFieldLabel))
         .size(10_000)
         .order(BucketOrder.key(true));
     if (DATE_VARIABLES.equals(variableFieldLabel)) {
-      variableValuesAgg.format(configurationService.getOptimizeDateFormat());
+      collectAllVariableValues.format(configurationService.getOptimizeDateFormat());
     }
+    FilterAggregationBuilder filterForVariableWithGivenName = filter(
+      FILTER_FOR_NAME_AGGREGATION,
+      termQuery(getNestedVariableNameFieldLabel(variableFieldLabel), name)
+    );
+    NestedAggregationBuilder checkoutVariables = nested(variableFieldLabel, variableFieldLabel);
+    
     return
-      nested(variableFieldLabel, variableFieldLabel)
+      checkoutVariables
         .subAggregation(
-          filter(
-            FILTER_FOR_NAME_AGGREGATION,
-            termQuery(getNestedVariableNameFieldLabel(variableFieldLabel), name)
-          )
+          filterForVariableWithGivenName
             .subAggregation(
-              variableValuesAgg
+              collectAllVariableValues
             )
         );
   }
