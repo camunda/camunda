@@ -1,0 +1,14 @@
+.ReportModal__selectReports {
+  min-width: 200px;
+  max-width: 500px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ReportModal__externalSourceLink {
+  font-size: 0.8em;
+  color: gray;
+  text-decoration: underline;
+  cursor: pointer;
+}
