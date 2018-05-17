@@ -136,6 +136,14 @@ public class BootstrapSystemTopic extends Actor implements Service<Void>
                         serviceStartContext.createService(SYSTEM_PARTITION_BOOTSTRAP_REPLICATION_SERVICE_NAME, bootstrapSystemTopicReplication)
                                            .dependency(ClusterBaseLayerServiceNames.leaderPartitionServiceName(partitionName), bootstrapSystemTopicReplication.getPartitionInjector())
                                            .install();
+
+                        if (!brokerCfg.getTopics().isEmpty())
+                        {
+                            final BootstrapDefaultTopicsService bootstrapDefaultTopics = new BootstrapDefaultTopicsService(brokerCfg.getTopics());
+                            serviceStartContext.createService(DEFAULT_TOPICS_BOOTSTRAP_SERVICE_NAME, bootstrapDefaultTopics)
+                                    .dependency(ClusterBaseLayerServiceNames.leaderPartitionServiceName(partitionName), bootstrapDefaultTopics.getPartitionInjector())
+                                    .install();
+                        }
                     }
                     else
                     {
