@@ -27,7 +27,7 @@ public interface LogStreamWriter
 
     LogStreamWriter key(long key);
 
-    LogStreamWriter sourceEvent(int logStreamPartitionId, long position);
+    LogStreamWriter sourceRecordPosition(long position);
 
     LogStreamWriter producerId(int producerId);
 

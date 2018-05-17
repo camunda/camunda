@@ -15,15 +15,11 @@
  */
 package io.zeebe.logstreams.impl;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
-import static org.agrona.BitUtil.SIZE_OF_SHORT;
-
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
+import static org.agrona.BitUtil.*;
 
 /**
  *  * <pre>
@@ -38,8 +34,6 @@ import org.agrona.MutableDirectBuffer;
  *  |                           RAFT TERM ID                        |
  *  +---------------------------------------------------------------+
  *  |                           PRODUCER ID                         |
- *  +---------------------------------------------------------------+
- *  |                SOURCE EVENT STREAM PARTITION ID               |
  *  +---------------------------------------------------------------+
  *  |                      SOURCE EVENT POSITION                    |
  *  |                                                               |
@@ -71,8 +65,6 @@ public class LogEntryDescriptor
 
     public static final int PRODUCER_ID_OFFSET;
 
-    public static final int SOURCE_EVENT_LOG_STREAM_PARTITION_ID_OFFSET;
-
     public static final int SOURCE_EVENT_POSITION_OFFSET;
 
     public static final int KEY_OFFSET;
@@ -102,9 +94,6 @@ public class LogEntryDescriptor
         offset += SIZE_OF_INT;
 
         PRODUCER_ID_OFFSET = offset;
-        offset += SIZE_OF_INT;
-
-        SOURCE_EVENT_LOG_STREAM_PARTITION_ID_OFFSET = offset;
         offset += SIZE_OF_INT;
 
         SOURCE_EVENT_POSITION_OFFSET = offset;
@@ -181,21 +170,6 @@ public class LogEntryDescriptor
     public static void setProducerId(final MutableDirectBuffer buffer, final int offset, final int producerId)
     {
         buffer.putInt(producerIdOffset(offset), producerId);
-    }
-
-    public static int sourceEventLogStreamPartitionIdOffset(final int offset)
-    {
-        return SOURCE_EVENT_LOG_STREAM_PARTITION_ID_OFFSET + offset;
-    }
-
-    public static int getSourceEventLogStreamPartitionId(final DirectBuffer buffer, final int offset)
-    {
-        return buffer.getInt(sourceEventLogStreamPartitionIdOffset(offset));
-    }
-
-    public static void setSourceEventLogStreamPartitionId(final MutableDirectBuffer buffer, final int offset, final int sourceEventLogStreamPartitionId)
-    {
-        buffer.putInt(sourceEventLogStreamPartitionIdOffset(offset), sourceEventLogStreamPartitionId);
     }
 
     public static int sourceEventPositionOffset(final int offset)

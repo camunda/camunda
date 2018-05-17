@@ -266,12 +266,11 @@ public class LogStreamWriterTest
         final long position = writer
             .positionAsKey()
             .value(EVENT_VALUE)
-            .sourceEvent(4, 123L)
+            .sourceRecordPosition(123L)
             .tryWrite();
 
         // then
         final LoggedEvent event = getWrittenEvent(position);
-        assertThat(event.getSourceEventLogStreamPartitionId()).isEqualTo(4);
         assertThat(event.getSourceEventPosition()).isEqualTo(123L);
     }
 
@@ -286,7 +285,6 @@ public class LogStreamWriterTest
 
         // then
         final LoggedEvent event = getWrittenEvent(position);
-        assertThat(event.getSourceEventLogStreamPartitionId()).isEqualTo(-1);
         assertThat(event.getSourceEventPosition()).isEqualTo(-1L);
     }
 

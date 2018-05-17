@@ -39,7 +39,7 @@ public class DisabledLogStreamWriter implements LogStreamWriter
     }
 
     @Override
-    public LogStreamWriter sourceEvent(int logStreamPartitionId, long position)
+    public LogStreamWriter sourceRecordPosition(long position)
     {
         return this;
     }

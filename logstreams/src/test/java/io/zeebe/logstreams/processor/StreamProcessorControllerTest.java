@@ -374,7 +374,6 @@ public class StreamProcessorControllerTest
 
         assertThat(writtenEvent.getProducerId()).isEqualTo(PROCESSOR_ID);
 
-        assertThat(writtenEvent.getSourceEventLogStreamPartitionId()).isEqualTo(logStreamRule.getLogStream().getPartitionId());
         assertThat(writtenEvent.getSourceEventPosition()).isEqualTo(firstEventPosition);
 
         final UnsafeBuffer eventMetadata = new UnsafeBuffer(writtenEvent.getMetadata(), writtenEvent.getMetadataOffset(), writtenEvent.getMetadataLength());

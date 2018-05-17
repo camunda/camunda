@@ -15,12 +15,14 @@
  */
 package io.zeebe.logstreams.processor;
 
-import java.time.Duration;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import io.zeebe.logstreams.impl.Loggers;
-import io.zeebe.logstreams.log.*;
-import io.zeebe.logstreams.spi.*;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.spi.ReadableSnapshot;
+import io.zeebe.logstreams.spi.SnapshotStorage;
+import io.zeebe.logstreams.spi.SnapshotWriter;
 import io.zeebe.util.LangUtil;
 import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.*;
@@ -28,6 +30,9 @@ import io.zeebe.util.sched.ActorTask.ActorLifecyclePhase;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.slf4j.Logger;
+
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class StreamProcessorController extends Actor
 {
@@ -424,11 +429,9 @@ public class StreamProcessorController extends Actor
     {
         try
         {
-            final LogStream sourceStream = streamProcessorContext.getLogStream();
-
             logStreamWriter
                 .producerId(streamProcessorContext.getId())
-                .sourceEvent(sourceStream.getPartitionId(), currentEvent.getPosition());
+                .sourceRecordPosition(currentEvent.getPosition());
 
             eventPosition = eventProcessor.writeEvent(logStreamWriter);
 

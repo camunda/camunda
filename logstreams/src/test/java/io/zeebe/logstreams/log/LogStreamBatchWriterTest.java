@@ -355,7 +355,7 @@ public class LogStreamBatchWriterTest
     {
         // when
         final long position = writer
-            .sourceEvent(4, 123L)
+            .sourceRecordPosition(123L)
             .event()
                 .positionAsKey()
                 .value(EVENT_VALUE_1)
@@ -369,10 +369,7 @@ public class LogStreamBatchWriterTest
         // then
         final List<LoggedEvent> events = getWrittenEvents(position);
 
-        assertThat(events.get(0).getSourceEventLogStreamPartitionId()).isEqualTo(4);
         assertThat(events.get(0).getSourceEventPosition()).isEqualTo(123L);
-
-        assertThat(events.get(1).getSourceEventLogStreamPartitionId()).isEqualTo(4);
         assertThat(events.get(1).getSourceEventPosition()).isEqualTo(123L);
     }
 
@@ -394,10 +391,7 @@ public class LogStreamBatchWriterTest
         // then
         final List<LoggedEvent> events = getWrittenEvents(position);
 
-        assertThat(events.get(0).getSourceEventLogStreamPartitionId()).isEqualTo(-1);
         assertThat(events.get(0).getSourceEventPosition()).isEqualTo(-1L);
-
-        assertThat(events.get(1).getSourceEventLogStreamPartitionId()).isEqualTo(-1);
         assertThat(events.get(1).getSourceEventPosition()).isEqualTo(-1L);
     }
 

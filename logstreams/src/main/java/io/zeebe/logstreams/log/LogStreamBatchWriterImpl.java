@@ -15,13 +15,6 @@
  */
 package io.zeebe.logstreams.log;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedFramedLength;
-import static io.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.*;
-import static io.zeebe.util.EnsureUtil.*;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
-
 import io.zeebe.dispatcher.ClaimedFragmentBatch;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
@@ -32,6 +25,13 @@ import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.LangUtil;
 import org.agrona.MutableDirectBuffer;
+
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedFramedLength;
+import static io.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.*;
+import static io.zeebe.util.EnsureUtil.*;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryBuilder
 {
@@ -60,7 +60,6 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
     private int producerId;
 
     private long sourceEventPosition;
-    private int sourceEventLogStreamPartitionId;
 
     private BufferWriter metadataWriter;
     private BufferWriter valueWriter;
@@ -86,9 +85,8 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
     }
 
     @Override
-    public LogStreamBatchWriter sourceEvent(int logStreamPartitionId, long position)
+    public LogStreamBatchWriter sourceRecordPosition(long position)
     {
-        this.sourceEventLogStreamPartitionId = logStreamPartitionId;
         this.sourceEventPosition = position;
         return this;
     }
@@ -270,7 +268,6 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
             setPosition(writeBuffer, bufferOffset, position);
             setRaftTerm(writeBuffer, bufferOffset, logStream.getTerm());
             setProducerId(writeBuffer, bufferOffset, producerId);
-            setSourceEventLogStreamPartitionId(writeBuffer, bufferOffset, sourceEventLogStreamPartitionId);
             setSourceEventPosition(writeBuffer, bufferOffset, sourceEventPosition);
             setKey(writeBuffer, bufferOffset, keyToWrite);
             setTimestamp(writeBuffer, bufferOffset, ActorClock.currentTimeMillis());
@@ -297,12 +294,8 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
         eventBufferOffset = 0;
         eventLength = 0;
         eventCount = 0;
-
-        sourceEventLogStreamPartitionId = -1;
         sourceEventPosition = -1L;
-
         producerId = -1;
-
         resetEvent();
     }
 

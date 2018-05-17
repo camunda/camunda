@@ -97,7 +97,7 @@ public class StreamProcessorReprocessingTest
     {
         // given [1|S:-] --> [2|S:1]
         final long eventPosition1 = writeEvent();
-        final long eventPosition2 = writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceEvent(partitionId, eventPosition1));
+        final long eventPosition2 = writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition1));
 
         // when
         openStreamProcessorController();
@@ -137,7 +137,7 @@ public class StreamProcessorReprocessingTest
 
         // given [1|S:-] --> [2|S:1]
         final long eventPosition1 = writeEvent();
-        final long eventPosition2 = writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceEvent(partitionId, eventPosition1));
+        final long eventPosition2 = writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition1));
 
         // when
         openStreamProcessorController();
@@ -171,7 +171,7 @@ public class StreamProcessorReprocessingTest
     {
         // given [1|S:-] --> [2|S:1]
         final long eventPosition1 = writeEvent();
-        final long eventPosition2 = writeEventWith(w -> w.producerId(OTHER_PROCESSOR_ID).sourceEvent(partitionId, eventPosition1));
+        final long eventPosition2 = writeEventWith(w -> w.producerId(OTHER_PROCESSOR_ID).sourceRecordPosition(eventPosition1));
 
         // when
         openStreamProcessorController();
@@ -194,8 +194,8 @@ public class StreamProcessorReprocessingTest
     {
         // given [1|S:-] --> [2|S:1] --> [3|S:2]
         final long eventPosition1 = writeEvent();
-        final long eventPosition2 = writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceEvent(partitionId, eventPosition1));
-        final long eventPosition3 = writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceEvent(partitionId, eventPosition2));
+        final long eventPosition2 = writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition1));
+        final long eventPosition3 = writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition2));
 
         // when
         openStreamProcessorController();
@@ -219,7 +219,7 @@ public class StreamProcessorReprocessingTest
         // given [1|S:-] --> [2|S:-] --> [3|S:2]
         final long eventPosition1 = writeEvent();
         final long eventPosition2 = writeEvent();
-        final long eventPosition3 = writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceEvent(partitionId, eventPosition2));
+        final long eventPosition3 = writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition2));
 
         // when
         openStreamProcessorController();
@@ -243,7 +243,7 @@ public class StreamProcessorReprocessingTest
         // given [1|S:-] --> [2|S:-] --> [3|S:2]
         writeEvent();
         final long eventPosition2 = writeEvent();
-        final long eventPosition3 = writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceEvent(partitionId, eventPosition2));
+        final long eventPosition3 = writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition2));
 
         // return null as event processor for first event
         doReturn(null).doCallRealMethod().when(streamProcessor).onEvent(any());
@@ -270,7 +270,7 @@ public class StreamProcessorReprocessingTest
         // given [1|S:-] --> [2|S:-] --> [3|S:2]
         writeEvent();
         final long eventPosition2 = writeEvent();
-        final long eventPosition3 = writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceEvent(partitionId, eventPosition2));
+        final long eventPosition3 = writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition2));
 
         when(eventFilter.applies(any())).thenReturn(false, true, true);
 
@@ -295,7 +295,7 @@ public class StreamProcessorReprocessingTest
     {
         // given [1|S:-] --> [2|S:1]
         final long eventPosition1 = writeEvent();
-        writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceEvent(partitionId, eventPosition1));
+        writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition1));
 
         doThrow(new RuntimeException("expected")).when(eventProcessor).processEvent();
 
@@ -316,7 +316,7 @@ public class StreamProcessorReprocessingTest
     {
         // given [1|S:-] --> [2|S:1]
         final long eventPosition1 = writeEvent();
-        writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceEvent(partitionId, eventPosition1));
+        writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition1));
 
         doAnswer((invocation) ->
         {
@@ -352,7 +352,7 @@ public class StreamProcessorReprocessingTest
 
         // given [1|S:-] --> [2|S:1]
         final long eventPosition1 = writeEvent();
-        final long eventPosition2 = writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceEvent(partitionId, eventPosition1));
+        final long eventPosition2 = writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition1));
 
         // when
         openStreamProcessorController();

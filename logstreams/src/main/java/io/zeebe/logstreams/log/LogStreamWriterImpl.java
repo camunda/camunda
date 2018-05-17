@@ -41,9 +41,7 @@ public class LogStreamWriterImpl implements LogStreamWriter
     protected boolean positionAsKey;
     protected long key;
 
-    protected long sourceEventPosition = -1L;
-    protected int sourceEventLogStreamPartitionId = -1;
-
+    protected long sourceRecordPosition = -1L;
     protected int producerId = -1;
 
     protected final short keyLength = SIZE_OF_LONG;
@@ -82,11 +80,9 @@ public class LogStreamWriterImpl implements LogStreamWriter
         return this;
     }
 
-    @Override
-    public LogStreamWriter sourceEvent(int logStreamPartitionId, long position)
+    public LogStreamWriter sourceRecordPosition(long position)
     {
-        this.sourceEventLogStreamPartitionId = logStreamPartitionId;
-        this.sourceEventPosition = position;
+        this.sourceRecordPosition = position;
         return this;
     }
 
@@ -143,8 +139,7 @@ public class LogStreamWriterImpl implements LogStreamWriter
         key = -1L;
         metadataWriter = metadataWriterInstance;
         valueWriter = null;
-        sourceEventLogStreamPartitionId = -1;
-        sourceEventPosition = -1L;
+        sourceRecordPosition = -1L;
         producerId = -1;
 
         bufferWriterInstance.reset();
@@ -181,8 +176,7 @@ public class LogStreamWriterImpl implements LogStreamWriter
                 setPosition(writeBuffer, bufferOffset, claimedPosition);
                 setRaftTerm(writeBuffer, bufferOffset, logStream.getTerm());
                 setProducerId(writeBuffer, bufferOffset, producerId);
-                setSourceEventLogStreamPartitionId(writeBuffer, bufferOffset, sourceEventLogStreamPartitionId);
-                setSourceEventPosition(writeBuffer, bufferOffset, sourceEventPosition);
+                setSourceEventPosition(writeBuffer, bufferOffset, sourceRecordPosition);
                 setKey(writeBuffer, bufferOffset, keyToWrite);
                 setTimestamp(writeBuffer, bufferOffset, ActorClock.currentTimeMillis());
                 setMetadataLength(writeBuffer, bufferOffset, (short) metadataLength);

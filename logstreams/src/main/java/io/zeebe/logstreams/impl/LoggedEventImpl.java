@@ -15,9 +15,9 @@
  */
 package io.zeebe.logstreams.impl;
 
-import org.agrona.DirectBuffer;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.util.buffer.BufferReader;
+import org.agrona.DirectBuffer;
 
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.headerLength;
@@ -160,12 +160,6 @@ public class LoggedEventImpl implements ReadableFragment, LoggedEvent
     }
 
     @Override
-    public int getSourceEventLogStreamPartitionId()
-    {
-        return LogEntryDescriptor.getSourceEventLogStreamPartitionId(buffer, messageOffset);
-    }
-
-    @Override
     public long getSourceEventPosition()
     {
         return LogEntryDescriptor.getSourceEventPosition(buffer, messageOffset);
@@ -192,8 +186,6 @@ public class LoggedEventImpl implements ReadableFragment, LoggedEvent
             getKey() +
             ", timestamp=" +
             getTimestamp() +
-            ", sourceEventLogStreamPartitionId=" +
-            getSourceEventLogStreamPartitionId() +
             ", sourceEventPosition=" +
             getSourceEventPosition() +
             ", producerId=" +
