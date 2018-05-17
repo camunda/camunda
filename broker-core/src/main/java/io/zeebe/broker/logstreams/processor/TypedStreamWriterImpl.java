@@ -91,7 +91,7 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
 
         if (sourcePartitionId >= 0)
         {
-            writer.sourceEvent(sourcePartitionId, sourcePosition);
+            writer.sourceRecordPosition(sourcePosition);
         }
 
         initMetadata(type, intent, value);
@@ -262,7 +262,7 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
 
         if (sourcePartitionId >= 0)
         {
-            batchWriter.sourceEvent(sourcePartitionId, sourcePosition);
+            batchWriter.sourceRecordPosition(sourcePosition);
         }
 
         return this;

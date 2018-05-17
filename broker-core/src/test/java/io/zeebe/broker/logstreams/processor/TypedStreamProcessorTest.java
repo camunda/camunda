@@ -106,7 +106,6 @@ public class TypedStreamProcessorTest
         // then
         assertThat(writtenEvent.getProducerId()).isEqualTo(STREAM_PROCESSOR_ID);
 
-        assertThat(writtenEvent.getSourceEventLogStreamPartitionId()).isEqualTo(stream.getPartitionId());
         assertThat(writtenEvent.getSourceEventPosition()).isEqualTo(firstEventPosition);
     }
 
