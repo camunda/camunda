@@ -1,0 +1,20 @@
+# Broker with default topic, but one that should not be created since
+# bootstrap < 1
+# based on zeebe.cluster.2.cfg.toml
+
+[[topics]]
+name = "default-topic-2"
+partitions = 1
+replicationFactor = 1
+
+[network.client]
+port = 41015
+
+[network.management]
+port = 41016
+
+[network.replication]
+port = 41017
+
+[cluster]
+initialContactPoints = [ "localhost:51016" ]
