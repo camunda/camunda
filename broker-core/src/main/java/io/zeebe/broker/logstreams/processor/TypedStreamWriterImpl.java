@@ -47,8 +47,7 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
     protected LogStreamBatchWriter batchWriter;
 
     protected int producerId;
-    protected int sourcePartitionId;
-    protected long sourcePosition;
+    protected long sourceRecordPosition;
 
     public TypedStreamWriterImpl(
             LogStream stream,
@@ -62,11 +61,10 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
         eventRegistry.forEach((e, c) -> typeRegistry.put(c, e));
     }
 
-    public void configureSourceContext(int producerId, int sourcePartitionId, long sourcePosition)
+    public void configureSourceContext(int producerId, long sourceRecordPosition)
     {
         this.producerId = producerId;
-        this.sourcePartitionId = sourcePartitionId;
-        this.sourcePosition = sourcePosition;
+        this.sourceRecordPosition = sourceRecordPosition;
     }
 
     protected void initMetadata(RecordType type, Intent intent, UnpackedObject value)
@@ -89,9 +87,9 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
         writer.reset();
         writer.producerId(producerId);
 
-        if (sourcePartitionId >= 0)
+        if (sourceRecordPosition >= 0)
         {
-            writer.sourceRecordPosition(sourcePosition);
+            writer.sourceRecordPosition(sourceRecordPosition);
         }
 
         initMetadata(type, intent, value);
@@ -260,9 +258,9 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
         batchWriter.reset();
         batchWriter.producerId(producerId);
 
-        if (sourcePartitionId >= 0)
+        if (sourceRecordPosition >= 0)
         {
-            batchWriter.sourceRecordPosition(sourcePosition);
+            batchWriter.sourceRecordPosition(sourceRecordPosition);
         }
 
         return this;

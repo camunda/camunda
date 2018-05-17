@@ -192,7 +192,7 @@ public class TypedStreamProcessor implements StreamProcessor
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            this.writer.configureSourceContext(streamProcessorId, logStream.getPartitionId(), event.getPosition());
+            this.writer.configureSourceContext(streamProcessorId, event.getPosition());
             return eventProcessor.writeRecord(event, this.writer);
         }
 
