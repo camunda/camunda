@@ -17,20 +17,6 @@
     <aspectj.version>1.8.9</aspectj.version>
   </properties>
 
-  <!-- DO NOT REMOVE IF YOU DON'T KNOW WHAT YOU DO -->
-  <repositories>
-    <repository>
-      <id>test</id>
-      <url>http://repository</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
-
   <dependencies>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
