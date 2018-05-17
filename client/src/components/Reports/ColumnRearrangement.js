@@ -153,13 +153,13 @@ function cellsForColumn(target, matcher) {
 
 function removeHighlights(alsoRemoveDraggedColumnStyle) {
   forColumn('all').do(({classList}) =>
-    classList.remove(
+    [
       'ColumnRearrangement__dropTarget--left',
       'ColumnRearrangement__dropTarget--right',
       'ColumnRearrangement__dropTarget--invalid-left',
       'ColumnRearrangement__dropTarget--invalid-right',
       alsoRemoveDraggedColumnStyle && 'ColumnRearrangement__draggedColumn'
-    )
+    ].forEach(cssClass => classList.remove(cssClass))
   );
 }
 
