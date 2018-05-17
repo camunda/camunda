@@ -19,6 +19,10 @@ package io.zeebe.broker.benchmarks.msgpack;
 
 import java.util.function.Consumer;
 
+import io.zeebe.broker.job.data.JobRecord;
+import io.zeebe.msgpack.spec.MsgPackReader;
+import io.zeebe.msgpack.spec.MsgPackWriter;
+import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -26,16 +30,11 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 
-import io.zeebe.broker.job.data.JobEvent;
-import io.zeebe.msgpack.spec.MsgPackReader;
-import io.zeebe.msgpack.spec.MsgPackWriter;
-import io.zeebe.util.buffer.BufferUtil;
-
 @State(Scope.Thread)
 public class POJOMappingContext
 {
 
-    protected JobEvent jobEvent = new JobEvent();
+    protected JobRecord jobRecord = new JobRecord();
 
     /*
      * values encoded in the way TaskEvent declares them
@@ -50,8 +49,8 @@ public class POJOMappingContext
     public void setUp()
     {
 
-        jobEvent.setLockTime(System.currentTimeMillis());
-        jobEvent.setType(BufferUtil.wrapString("someTaskType"));
+        jobRecord.setLockTime(System.currentTimeMillis());
+        jobRecord.setType(BufferUtil.wrapString("someTaskType"));
 
         final DirectBuffer payload = write((w) ->
         {
@@ -64,7 +63,7 @@ public class POJOMappingContext
             w.writeString(BufferUtil.wrapString("key4"));
             w.writeString(BufferUtil.wrapString("yetAnotherValue"));
         });
-        jobEvent.setPayload(payload);
+        jobRecord.setPayload(payload);
 
         final DirectBuffer headers = write((w) ->
         {
@@ -74,17 +73,17 @@ public class POJOMappingContext
             w.writeString(BufferUtil.wrapString("key2"));
             w.writeString(BufferUtil.wrapString("value"));
         });
-        jobEvent.setCustomHeaders(headers);
+        jobRecord.setCustomHeaders(headers);
 
-        optimalOrderMsgPack = new UnsafeBuffer(new byte[jobEvent.getLength()]);
-        jobEvent.write(optimalOrderMsgPack, 0);
+        optimalOrderMsgPack = new UnsafeBuffer(new byte[jobRecord.getLength()]);
+        jobRecord.write(optimalOrderMsgPack, 0);
 
         this.reverseOrderMsgPack = revertMapProperties(optimalOrderMsgPack);
 
         this.writeBuffer = new UnsafeBuffer(new byte[optimalOrderMsgPack.capacity()]);
     }
 
-    protected DirectBuffer write(Consumer<MsgPackWriter> arg)
+    protected DirectBuffer write(final Consumer<MsgPackWriter> arg)
     {
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024]);
         final MsgPackWriter writer = new MsgPackWriter();
@@ -109,20 +108,20 @@ public class POJOMappingContext
         return writeBuffer;
     }
 
-    public JobEvent getJobEvent()
+    public JobRecord getJobRecord()
     {
-        return jobEvent;
+        return jobRecord;
     }
 
-    protected DirectBuffer revertMapProperties(DirectBuffer msgPack)
+    protected DirectBuffer revertMapProperties(final DirectBuffer msgPack)
     {
-        MsgPackReader reader = new MsgPackReader();
+        final MsgPackReader reader = new MsgPackReader();
         reader.wrap(msgPack, 0, msgPack.capacity());
-        int size = reader.readMapHeader();
+        final int size = reader.readMapHeader();
 
-        UnsafeBuffer buf = new UnsafeBuffer(new byte[msgPack.capacity()]);
+        final UnsafeBuffer buf = new UnsafeBuffer(new byte[msgPack.capacity()]);
 
-        MsgPackWriter writer = new MsgPackWriter();
+        final MsgPackWriter writer = new MsgPackWriter();
         writer.wrap(buf, 0);
         writer.writeMapHeader(size);
 
@@ -130,12 +129,12 @@ public class POJOMappingContext
 
         for (int i = 0; i < size; i++)
         {
-            int keySourceOffset = reader.getOffset();
+            final int keySourceOffset = reader.getOffset();
             reader.skipValue();
-            int valueSourceOffset = reader.getOffset();
-            int keyLength = valueSourceOffset - keySourceOffset;
+            final int valueSourceOffset = reader.getOffset();
+            final int keyLength = valueSourceOffset - keySourceOffset;
             reader.skipValue();
-            int valueLength = reader.getOffset() - valueSourceOffset;
+            final int valueLength = reader.getOffset() - valueSourceOffset;
 
             targetOffset -= keyLength + valueLength;
             buf.putBytes(targetOffset, msgPack, keySourceOffset, keyLength + valueLength);

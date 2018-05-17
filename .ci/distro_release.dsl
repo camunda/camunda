@@ -5,7 +5,7 @@ def repository = 'zeebe'
 def gitBranch = 'master'
 
 def pom = 'pom.xml'
-def mvnGoals = 'clean generate-sources license:check source:jar javadoc:jar deploy -B'
+def mvnGoals = 'clean generate-sources license:check source:jar javadoc:jar deploy -B -P jmh'
 
 def mavenVersion = 'maven-3.3-latest'
 def mavenSettingsId = 'camunda-maven-settings'
@@ -216,6 +216,11 @@ mavenJob(jobName)
         archiveJunit('**/target/surefire-reports/*.xml')
         {
             retainLongStdout()
+        }
+
+        jmhReport
+        {
+            resultPath '**/target/jmh-result.json'
         }
 
         extendedEmail

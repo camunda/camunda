@@ -15,9 +15,9 @@
  */
 package io.zeebe.client.benchmark.msgpack;
 
+import io.zeebe.msgpack.UnpackedObject;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import io.zeebe.broker.util.msgpack.UnpackedObject;
 
 public class MsgPackBrokerSerializer implements MsgPackSerializer
 {

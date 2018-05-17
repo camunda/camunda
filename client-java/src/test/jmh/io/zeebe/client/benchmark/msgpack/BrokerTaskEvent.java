@@ -17,18 +17,13 @@ package io.zeebe.client.benchmark.msgpack;
 
 import static io.zeebe.util.StringUtil.getBytes;
 
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.msgpack.property.*;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import io.zeebe.broker.util.msgpack.UnpackedObject;
-import io.zeebe.broker.util.msgpack.property.BinaryProperty;
-import io.zeebe.broker.util.msgpack.property.EnumProperty;
-import io.zeebe.broker.util.msgpack.property.LongProperty;
-import io.zeebe.broker.util.msgpack.property.PackedProperty;
-import io.zeebe.broker.util.msgpack.property.StringProperty;
 import io.zeebe.msgpack.spec.MsgPackReader;
 import io.zeebe.msgpack.spec.MsgPackWriter;
 
@@ -57,9 +52,9 @@ public class BrokerTaskEvent extends UnpackedObject implements TaskEvent
         this(true);
     }
 
-    public BrokerTaskEvent(boolean accessValuesOnDeserialization)
+    public BrokerTaskEvent(final boolean accessValuesOnDeserialization)
     {
-        objectValue.declareProperty(eventTypeProp)
+        this.declareProperty(eventTypeProp)
             .declareProperty(lockTimeProp)
             .declareProperty(typeProp)
             .declareProperty(headersProp)
@@ -78,7 +73,7 @@ public class BrokerTaskEvent extends UnpackedObject implements TaskEvent
         return lockTimeProp.getValue();
     }
 
-    public void setLockTime(long val)
+    public void setLockTime(final long val)
     {
         lockTimeProp.setValue(val);
     }
@@ -94,20 +89,20 @@ public class BrokerTaskEvent extends UnpackedObject implements TaskEvent
     }
 
     @Override
-    public void setEventType(TaskEventType event)
+    public void setEventType(final TaskEventType event)
     {
         eventTypeProp.setValue(event);
     }
 
     @Override
-    public void setType(String type)
+    public void setType(final String type)
     {
         typeProp.setValue(type);
 
     }
 
     @Override
-    public void setHeaders(Map<String, String> headers)
+    public void setHeaders(final Map<String, String> headers)
     {
         tempBuffer.wrap(headersArray);
         writer.wrap(tempBuffer, 0);
@@ -121,7 +116,7 @@ public class BrokerTaskEvent extends UnpackedObject implements TaskEvent
     }
 
     @Override
-    public void setPayload(byte[] payload)
+    public void setPayload(final byte[] payload)
     {
         tempBuffer.wrap(payload);
         payloadProp.setValue(tempBuffer);
@@ -129,7 +124,7 @@ public class BrokerTaskEvent extends UnpackedObject implements TaskEvent
     }
 
     @Override
-    public void wrap(DirectBuffer buff, int offset, int length)
+    public void wrap(final DirectBuffer buff, final int offset, final int length)
     {
         super.wrap(buff, offset, length);
 
@@ -159,7 +154,7 @@ public class BrokerTaskEvent extends UnpackedObject implements TaskEvent
         }
     }
 
-    protected String readString(DirectBuffer buf, int offset, int length)
+    protected String readString(final DirectBuffer buf, final int offset, final int length)
     {
 
         final byte[] arr = new byte[length];

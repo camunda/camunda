@@ -17,26 +17,24 @@ package io.zeebe.client.benchmark.msgpack;
 
 import java.util.concurrent.TimeUnit;
 
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Measurement;
-import org.openjdk.jmh.annotations.Mode;
-import org.openjdk.jmh.annotations.Threads;
-import org.openjdk.jmh.annotations.Warmup;
+import org.agrona.DirectBuffer;
+import org.openjdk.jmh.annotations.*;
 
 @BenchmarkMode(Mode.Throughput)
+@Fork(1)
 @Warmup(iterations = 5, time = 200, timeUnit = TimeUnit.MILLISECONDS)
 @Measurement(iterations = 5, time = 200, timeUnit = TimeUnit.MILLISECONDS)
-public class POJOSerializationBenchmark
+public class POJODeserializationBenchmark
 {
 
     @Benchmark
     @Threads(1)
-    public void serialize(POJOSerializationContext ctx) throws Exception
+    public void deserialize(POJODeserializationContext ctx) throws Exception
     {
-
         final MsgPackSerializer serializer = ctx.getSerializer();
-        final POJOFactory pojoFactory = ctx.getPojoFactory();
-        serializer.serialize(pojoFactory.build(), ctx.getTargetBuffer(), 0);
+        final DirectBuffer encodedMsgPack = ctx.getMsgpackBuffer();
+        serializer.deserialize(ctx.getTargetClass(), encodedMsgPack, 0, encodedMsgPack.capacity());
     }
+
+
 }
