@@ -251,8 +251,8 @@ public class ZeebeClientImpl implements ZeebeClient
     @Override
     public TopicClient topicClient()
     {
-        // TODO resolve the default topic
-        return new TopicClientImpl(this, "default-topic");
+        final String defaultTopic = getConfiguration().getDefaultTopic();
+        return topicClient(defaultTopic);
     }
 
     @Override

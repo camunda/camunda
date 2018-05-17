@@ -69,4 +69,9 @@ public interface ZeebeClientConfiguration
      */
     Duration getDefaultJobLockTime();
 
+    /**
+     * @see ZeebeClientBuilder#defaultTopic(String)
+     */
+    String getDefaultTopic();
+
 }

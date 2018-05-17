@@ -90,7 +90,13 @@ public interface ZeebeClientBuilder
     ZeebeClientBuilder defaultJobLockTime(Duration lockTime);
 
     /**
+     * The name of the topic which is used for
+     * {@link ZeebeClient#topicClient()}. Default is "default-topic".
+     */
+    ZeebeClientBuilder defaultTopic(String topic);
+
+    /**
      * @return a new {@link ZeebeClient} with the provided configuration options.
      */
-    io.zeebe.client.ZeebeClient create();
+    ZeebeClient create();
 }

@@ -74,12 +74,18 @@ public class ClientProperties
      * The lock owner which is used when no owner is set for the job
      * subscription. Default is 'default'.
      */
-    public static final String CLIENT_JOB_DEFAULT_LOCK_OWNER = "zeebe.client.job.lockOwner";
+    public static final String CLIENT_DEFAULT_JOB_LOCK_OWNER = "zeebe.client.job.lockOwner";
 
     /**
      * The lock time in milliseconds which is used when no time is set for the
      * job subscription. Default is 5 minutes.
      */
-    public static final String CLIENT_JOB_DEFAULT_LOCK_TIME = "zeebe.client.job.lockTime";
+    public static final String CLIENT_DEFAULT_JOB_LOCK_TIME = "zeebe.client.job.lockTime";
+
+    /**
+     * The name of the topic which is used for
+     * {@link ZeebeClient#topicClient()}. Default is "default-topic".
+     */
+    public static final String CLIENT_DEFAULT_TOPIC = "zeebe.client.defaultTopic";
 
 }

@@ -36,6 +36,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
     private ActorClock actorClock;
     private String defaultJobLockOwner = "default";
     private Duration defaultJobLockTime = Duration.ofMinutes(5);
+    private String defaultTopic = "default-topic";
 
     @Override
     public String getBrokerContactPoint()
@@ -179,6 +180,19 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
     }
 
     @Override
+    public ZeebeClientBuilder defaultTopic(String topic)
+    {
+        this.defaultTopic = topic;
+        return this;
+    }
+
+    @Override
+    public String getDefaultTopic()
+    {
+        return defaultTopic;
+    }
+
+    @Override
     public ZeebeClient create()
     {
         return new ZeebeClientImpl(this, actorClock);
@@ -220,13 +234,17 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
         {
             builder.topicSubscriptionPrefetchCapacity(Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY)));
         }
-        if (properties.containsKey(CLIENT_JOB_DEFAULT_LOCK_OWNER))
+        if (properties.containsKey(CLIENT_DEFAULT_JOB_LOCK_OWNER))
         {
-            builder.defaultJobLockOwner(properties.getProperty(CLIENT_JOB_DEFAULT_LOCK_OWNER));
+            builder.defaultJobLockOwner(properties.getProperty(CLIENT_DEFAULT_JOB_LOCK_OWNER));
         }
-        if (properties.containsKey(CLIENT_JOB_DEFAULT_LOCK_TIME))
+        if (properties.containsKey(CLIENT_DEFAULT_JOB_LOCK_TIME))
         {
-            builder.defaultJobLockTime(Duration.ofMillis(Integer.parseInt(properties.getProperty(CLIENT_JOB_DEFAULT_LOCK_TIME))));
+            builder.defaultJobLockTime(Duration.ofMillis(Integer.parseInt(properties.getProperty(CLIENT_DEFAULT_JOB_LOCK_TIME))));
+        }
+        if (properties.containsKey(CLIENT_DEFAULT_TOPIC))
+        {
+            builder.defaultTopic(properties.getProperty(CLIENT_DEFAULT_TOPIC));
         }
 
         return builder;
@@ -247,6 +265,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
         appendProperty(sb, "tcpChannelKeepAlivePeriod", tcpChannelKeepAlivePeriod);
         appendProperty(sb, "defaultJobLockOwner", defaultJobLockOwner);
         appendProperty(sb, "defaultJobLockTime", defaultJobLockTime);
+        appendProperty(sb, "defaultTopic", defaultTopic);
 
         return sb.toString();
     }
