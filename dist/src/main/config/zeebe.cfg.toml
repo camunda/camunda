@@ -51,6 +51,18 @@
 # replication factor.
 bootstrap = 1
 
+# Topics defined below are created automatically during bootstrapping.
+# You can configure them as follows:
+# * name: the topic name, e.g. "default-topic"
+# * partitions: the number of partitions that should be created for this topic, e.g. 1
+# * replicationFactor: the number of nodes this on which the partitions should be replicated, e.g. 3
+#                      the replication factor cannot be greater than the number of nodes in the
+#                      cluster.
+[[topics]]
+name = "default-topic"
+partitions = 1
+replicationFactor = 1
+
 [network]
 
 # This section contains the network configuration. Particularly, it allows to

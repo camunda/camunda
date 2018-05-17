@@ -17,6 +17,9 @@
  */
 package io.zeebe.broker.system.configuration;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import io.zeebe.gossip.GossipConfiguration;
 import io.zeebe.raft.RaftConfiguration;
 
@@ -31,6 +34,7 @@ public class BrokerCfg
     private DataCfg data = new DataCfg();
     private GossipConfiguration gossip = new GossipConfiguration();
     private RaftConfiguration raft = new RaftConfiguration();
+    private List<TopicCfg> topics = new ArrayList<>();
 
     public void init(String brokerBase)
     {
@@ -45,12 +49,10 @@ public class BrokerCfg
     {
         return bootstrap;
     }
-
     public void setBootstrap(int bootstrap)
     {
         this.bootstrap = bootstrap;
     }
-
     public NetworkCfg getNetwork()
     {
         return network;
@@ -106,5 +108,13 @@ public class BrokerCfg
     public void setRaft(RaftConfiguration raft)
     {
         this.raft = raft;
+    }
+    public List<TopicCfg> getTopics()
+    {
+        return topics;
+    }
+    public void setTopics(List<TopicCfg> topics)
+    {
+        this.topics = topics;
     }
 }
