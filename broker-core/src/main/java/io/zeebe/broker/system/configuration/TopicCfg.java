@@ -52,4 +52,10 @@ public class TopicCfg
     {
         this.replicationFactor = replicationFactor;
     }
+
+    @Override
+    public String toString()
+    {
+        return "TopicCfg{" + "name='" + name + '\'' + ", partitions=" + partitions + ", replicationFactor=" + replicationFactor + '}';
+    }
 }

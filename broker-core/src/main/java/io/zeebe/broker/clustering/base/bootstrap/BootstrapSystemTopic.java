@@ -139,6 +139,7 @@ public class BootstrapSystemTopic extends Actor implements Service<Void>
 
                         if (!brokerCfg.getTopics().isEmpty())
                         {
+                            LOG.info("Bootstrapping default topics {}", brokerCfg.getTopics());
                             final BootstrapDefaultTopicsService bootstrapDefaultTopics = new BootstrapDefaultTopicsService(brokerCfg.getTopics());
                             serviceStartContext.createService(DEFAULT_TOPICS_BOOTSTRAP_SERVICE_NAME, bootstrapDefaultTopics)
                                     .dependency(ClusterBaseLayerServiceNames.leaderPartitionServiceName(partitionName), bootstrapDefaultTopics.getPartitionInjector())
