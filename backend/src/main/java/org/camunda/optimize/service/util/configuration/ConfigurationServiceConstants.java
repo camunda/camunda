@@ -56,7 +56,6 @@ public interface ConfigurationServiceConstants {
   String ENGINE_CONNECT_TIMEOUT = "$.engine-commons.connection.timeout";
   String ENGINE_READ_TIMEOUT = "$.engine-commons.read.timeout";
   String HAI_ENDPOINT = "$.engine-commons.hai.resource";
-  String HVI_ENDPOINT = "$.engine-commons.history.variable.resource";
   String PROCESS_DEFINITION_ENDPOINT = "$.engine-commons.procdef.resource";
   String PROCESS_DEFINITION_XML_ENDPOINT = "$.engine-commons.procdef.xml";
   String HPI_ENDPOINT = "$.engine-commons.history.procinst.resource";

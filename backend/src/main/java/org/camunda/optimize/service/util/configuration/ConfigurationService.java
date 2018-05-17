@@ -83,7 +83,6 @@ public class ConfigurationService {
   private Integer elasticsearchConnectionTimeout;
   private Integer engineConnectTimeout;
   private Integer engineReadTimeout;
-  private String hviEndpoint;
   private Integer engineImportProcessInstanceMaxPageSize;
   private Integer engineImportVariableInstanceMaxPageSize;
   private String esRefreshInterval;
@@ -461,13 +460,6 @@ public class ConfigurationService {
       durationHeatmapTargetValueType = jsonContext.read(ConfigurationServiceConstants.DURATION_HEATMAP_TARGET_VALUE_TYPE);
     }
     return durationHeatmapTargetValueType;
-  }
-
-  public String getHistoricVariableInstanceEndpoint() {
-    if (hviEndpoint == null) {
-      hviEndpoint = jsonContext.read(ConfigurationServiceConstants.HVI_ENDPOINT);
-    }
-    return hviEndpoint;
   }
 
   public String getVariableType() {
@@ -946,10 +938,6 @@ public class ConfigurationService {
 
   public void setDurationHeatmapTargetValueType(String durationHeatmapTargetValueType) {
     this.durationHeatmapTargetValueType = durationHeatmapTargetValueType;
-  }
-
-  public void setHviEndpoint(String hviEndpoint) {
-    this.hviEndpoint = hviEndpoint;
   }
 
   public void setVariableType(String variableType) {

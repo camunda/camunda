@@ -62,24 +62,13 @@ engine-commons:
     #until a time out is triggered.
     timeout: 10000
   hai:
-    #The engine endpoint to the historic activity instance count.
-    count: "/history/activity-instance/count"
     #The engine endpoint to the historic activity instances.
     resource: "/history/activity-instance"
   history:
     procinst:
-      #The engine endpoint to the historic process instance count.
-      count: "/history/process-instance/count"
       #The engine endpoint to the historic process instances.
       resource: "/history/process-instance"
-    variable:
-      #The engine endpoint to the historic variable instance count.
-      count: "/history/variable-instance/count"
-      #The engine endpoint to the historic variable instances.
-      resource: "/history/variable-instance"
   procdef:
-    #The engine endpoint to the process definition count.
-    count: "/process-definition/count"
     #The engine endpoint to the process definition.
     resource: "/process-definition"
     #The engine endpoint to the process definition xml.
