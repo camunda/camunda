@@ -16,36 +16,24 @@
 package io.zeebe.client.impl;
 
 import java.time.Duration;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.agrona.DirectBuffer;
-
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.record.Record;
-import io.zeebe.client.cmd.BrokerErrorException;
-import io.zeebe.client.cmd.ClientCommandRejectedException;
-import io.zeebe.client.cmd.ClientException;
-import io.zeebe.client.cmd.ClientOutOfMemoryException;
-import io.zeebe.client.impl.clustering.ClientTopologyManager;
-import io.zeebe.client.impl.clustering.ClusterState;
-import io.zeebe.client.impl.clustering.ClusterStateImpl;
+import io.zeebe.client.cmd.*;
+import io.zeebe.client.impl.clustering.*;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import io.zeebe.transport.ClientOutput;
-import io.zeebe.transport.ClientResponse;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.RequestTimeoutException;
+import io.zeebe.transport.*;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorTask;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import org.agrona.DirectBuffer;
 
 public class RequestManager extends Actor
 {
@@ -83,7 +71,7 @@ public class RequestManager extends Actor
 
     public <E> E execute(ControlMessageRequest<E> controlMessage)
     {
-        return waitAndResolve(executeAsync(controlMessage));
+        return waitAndResolve(send(controlMessage));
     }
 
     private <R> ResponseFuture<R> executeAsync(final RequestResponseHandler requestHandler)
@@ -207,13 +195,13 @@ public class RequestManager extends Actor
         }
     }
 
-    public <E> ActorFuture<E> executeAsync(final ControlMessageRequest<E> controlMessage)
+    public <E> ResponseFuture<E> send(final ControlMessageRequest<E> controlMessage)
     {
         final ControlMessageRequestHandler requestHandler = new ControlMessageRequestHandler(objectMapper, controlMessage);
         return executeAsync(requestHandler);
     }
 
-    public <R extends Record> ZeebeFuture<R> send(final CommandImpl<R> command)
+    public <R extends Record> ResponseFuture<R> send(final CommandImpl<R> command)
     {
         final CommandRequestHandler requestHandler = new CommandRequestHandler(objectMapper, command);
         return executeAsync(requestHandler);
@@ -269,7 +257,7 @@ public class RequestManager extends Actor
         }
     }
 
-    protected static class ResponseFuture<E> implements ActorFuture<E>, ZeebeFuture<E>
+    public static class ResponseFuture<E> implements ActorFuture<E>, ZeebeFuture<E>
     {
         protected final ActorFuture<ClientResponse> transportFuture;
         protected final RequestResponseHandler responseHandler;

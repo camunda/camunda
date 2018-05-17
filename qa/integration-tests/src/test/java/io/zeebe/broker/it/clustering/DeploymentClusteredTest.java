@@ -172,7 +172,7 @@ public class DeploymentClusteredTest
             .latestVersion();
 
         command.getCommand().setPartitionId(partition);
-        return command.execute();
+        return command.send().join();
     }
 
     @Test

@@ -23,7 +23,6 @@ import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.client.api.commands.*;
 import io.zeebe.client.api.events.DeploymentEvent;
-import io.zeebe.client.cmd.BrokerErrorException;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
@@ -78,48 +77,6 @@ public class CreateDeploymentTest
         assertThat(deployedWorkflow.getBpmnProcessId()).isEqualTo("process");
         assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
         assertThat(deployedWorkflow.getWorkflowKey()).isGreaterThan(0);
-    }
-
-    @Test
-    public void shouldRequestWorkflowDefinition()
-    {
-        // given
-        final WorkflowDefinition model = Bpmn.createExecutableWorkflow("process")
-               .startEvent()
-               .endEvent()
-               .done();
-
-        final DeploymentEvent result = clientRule.getWorkflowClient()
-                .newDeployCommand()
-                .addWorkflowModel(model, "workflow.bpmn")
-                .send()
-                .join();
-
-        final Workflow deployedWorkflow = result.getDeployedWorkflows().get(0);
-
-        // when
-        final Workflow workflow = clientRule.getClient()
-            .requestWorkflowDefinitionByKey(deployedWorkflow.getWorkflowKey())
-            .execute();
-
-        // then
-        assertThat(workflow.getWorkflowKey()).isEqualTo(deployedWorkflow.getWorkflowKey());
-        assertThat(workflow.getVersion()).isEqualTo(deployedWorkflow.getVersion());
-        assertThat(workflow.getBpmnProcessId()).isEqualTo(deployedWorkflow.getBpmnProcessId());
-
-        // TODO assert that Bpmn.readFromXmlBuffer(new UnsafeBuffer(workflow.getBpmnXml()));
-    }
-
-    @Test
-    public void shouldNotFindUnexistingWorkflow()
-    {
-        // when then
-        exception.expect(BrokerErrorException.class);
-        exception.expectMessage("No workflow found with key '100'");
-
-        clientRule.getClient()
-            .requestWorkflowDefinitionByKey(100)
-            .execute();
     }
 
     @Test

@@ -168,7 +168,7 @@ public class ClientCommandManagerTest
         exception.expectMessage("Unexpected exception during response handling");
 
         // when
-        command.execute();
+        command.send().join();
     }
 
     @Test

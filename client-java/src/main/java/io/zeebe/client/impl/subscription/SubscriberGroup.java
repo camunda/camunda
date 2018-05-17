@@ -19,11 +19,13 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
 
-import io.zeebe.client.api.commands.*;
+import io.zeebe.client.api.commands.Partition;
+import io.zeebe.client.api.commands.Topic;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.impl.Loggers;
 import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.client.impl.record.GeneralRecordImpl;
+import io.zeebe.client.impl.topic.TopicsRequestImpl;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.CheckedConsumer;
 import io.zeebe.util.sched.ActorCondition;
@@ -82,9 +84,8 @@ public abstract class SubscriberGroup<T extends Subscriber>
     {
         this.openFuture = openFuture;
 
-        // TODO actor future vs. zeebe future
-        final ActorFuture<Topics> topicsFuture = (ActorFuture<Topics>) client.newTopicsRequest().send();
-        actor.runOnCompletion(topicsFuture, (topics, failure) ->
+        final TopicsRequestImpl topicsRequest = (TopicsRequestImpl) client.newTopicsRequest();
+        actor.runOnCompletion(topicsRequest.send(), (topics, failure) ->
         {
             if (failure != null)
             {

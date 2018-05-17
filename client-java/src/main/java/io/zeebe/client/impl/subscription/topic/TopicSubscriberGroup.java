@@ -93,7 +93,7 @@ public class TopicSubscriberGroup extends SubscriberGroup<TopicSubscriber> imple
             .prefetchCapacity(subscription.getPrefetchCapacity())
             .name(subscription.getName())
             .forceStart(subscription.isForceStart())
-            .executeAsync();
+            .send();
     }
 
     @Override

@@ -20,7 +20,6 @@ import java.util.Properties;
 import io.zeebe.client.api.clients.TopicClient;
 import io.zeebe.client.api.commands.*;
 import io.zeebe.client.api.record.ZeebeObjectMapper;
-import io.zeebe.client.cmd.Request;
 import io.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
 
@@ -97,9 +96,6 @@ public interface ZeebeClient extends AutoCloseable
      * @return a builder for the command
      */
     CreateTopicCommandStep1 newCreateTopicCommand();
-
-    // TODO: Put this in the proper place
-    Request<Workflow> requestWorkflowDefinitionByKey(long key);
 
     /**
      * Request all topics. Can be used to inspect which topics and partitions

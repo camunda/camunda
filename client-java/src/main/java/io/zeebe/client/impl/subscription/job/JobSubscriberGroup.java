@@ -68,7 +68,7 @@ public class JobSubscriberGroup extends SubscriberGroup<JobSubscriber> implement
                 .lockDuration(subscription.getLockTime())
                 .lockOwner(subscription.getLockOwner())
                 .initialCredits(subscription.getCapacity())
-                .executeAsync();
+                .send();
     }
 
     @Override

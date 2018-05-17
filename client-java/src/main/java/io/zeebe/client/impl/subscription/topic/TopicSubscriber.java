@@ -103,7 +103,7 @@ public class TopicSubscriber extends Subscriber
         LOGGER.debug("Closing subscriber at partition {}", partitionId);
 
         return new CloseTopicSubscriptionCommandImpl(client.getCommandManager(), partitionId, subscriberKey)
-                .executeAsync();
+                .send();
     }
 
     @Override
@@ -125,7 +125,7 @@ public class TopicSubscriber extends Subscriber
             final ActorFuture<TopicSubscriptionEvent> future = new AcknowledgeSubscribedEventCommandImpl(client.getCommandManager(), subscription.getTopic(), partitionId)
                 .subscriptionName(subscription.getName())
                 .ackPosition(positionToAck)
-                .executeAsync();
+                .send();
 
             // record this immediately to avoid repeated requests for the same position
             lastAcknowledgedPosition = positionToAck;

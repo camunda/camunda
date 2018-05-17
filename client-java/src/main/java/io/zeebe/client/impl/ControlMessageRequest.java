@@ -16,12 +16,10 @@
 package io.zeebe.client.impl;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.zeebe.client.api.ZeebeFuture;
-import io.zeebe.client.cmd.Request;
+import io.zeebe.client.impl.RequestManager.ResponseFuture;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.util.sched.future.ActorFuture;
 
-public abstract class ControlMessageRequest<R> implements Request<R>
+public abstract class ControlMessageRequest<R>
 {
 
     protected final ControlMessageType type;
@@ -102,22 +100,9 @@ public abstract class ControlMessageRequest<R> implements Request<R>
 
     public abstract Object getRequest();
 
-    @Override
-    public R execute()
+    public ResponseFuture<R> send()
     {
-        return client.execute(this);
-    }
-
-    @Override
-    public ActorFuture<R> executeAsync()
-    {
-        return client.executeAsync(this);
-    }
-
-    public ZeebeFuture<R> send()
-    {
-        // TODO remove cast to zeebe future
-        return (ZeebeFuture<R>) client.executeAsync(this);
+        return client.send(this);
     }
 
 }

@@ -109,6 +109,6 @@ public class SubscriptionClusteredTest
             .jobType("baz");
 
         command.getCommand().setPartitionId(partition);
-        command.execute();
+        command.send().join();
     }
 }

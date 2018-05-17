@@ -15,13 +15,11 @@
  */
 package io.zeebe.client.impl;
 
-import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.record.Record;
-import io.zeebe.client.cmd.Request;
+import io.zeebe.client.impl.RequestManager.ResponseFuture;
 import io.zeebe.client.impl.record.RecordImpl;
-import io.zeebe.util.sched.future.ActorFuture;
 
-public abstract class CommandImpl<R extends Record> implements Request<R>
+public abstract class CommandImpl<R extends Record>
 {
 
     protected final RequestManager client;
@@ -31,21 +29,7 @@ public abstract class CommandImpl<R extends Record> implements Request<R>
         this.client = client;
     }
 
-    @Override
-    public R execute()
-    {
-        // TODO remove execute
-        return client.execute(this);
-    }
-
-    @Override
-    public ActorFuture<R> executeAsync()
-    {
-        // TODO remove executeAsync
-        return (ActorFuture<R>) client.send(this);
-    }
-
-    public ZeebeFuture<R> send()
+    public ResponseFuture<R> send()
     {
         return client.send(this);
     }

@@ -88,14 +88,14 @@ public class JobSubscriber extends Subscriber
         return new IncreaseJobSubscriptionCreditsCmdImpl(client.getCommandManager(), partitionId)
             .subscriberKey(subscriberKey)
             .credits(eventsProcessed)
-            .executeAsync();
+            .send();
     }
 
     @Override
     public ActorFuture<Void> requestSubscriptionClose()
     {
         return new CloseJobSubscriptionCommandImpl(client.getCommandManager(), partitionId, subscriberKey)
-                .executeAsync();
+                .send();
     }
 
     @Override

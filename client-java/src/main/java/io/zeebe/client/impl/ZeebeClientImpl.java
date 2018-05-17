@@ -15,21 +15,13 @@
  */
 package io.zeebe.client.impl;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
-import org.slf4j.Logger;
+import java.util.concurrent.*;
 
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientConfiguration;
 import io.zeebe.client.api.clients.TopicClient;
-import io.zeebe.client.api.commands.CreateTopicCommandStep1;
-import io.zeebe.client.api.commands.TopicsRequestStep1;
-import io.zeebe.client.api.commands.TopologyRequestStep1;
-import io.zeebe.client.api.commands.Workflow;
+import io.zeebe.client.api.commands.*;
 import io.zeebe.client.api.record.ZeebeObjectMapper;
-import io.zeebe.client.cmd.Request;
 import io.zeebe.client.impl.clustering.ClientTopologyManager;
 import io.zeebe.client.impl.clustering.TopologyRequestImpl;
 import io.zeebe.client.impl.data.MsgPackConverter;
@@ -38,16 +30,13 @@ import io.zeebe.client.impl.topic.CreateTopicCommandImpl;
 import io.zeebe.client.impl.topic.TopicsRequestImpl;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.ClientTransportBuilder;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.Transports;
+import io.zeebe.transport.*;
 import io.zeebe.transport.impl.memory.BlockingMemoryPool;
 import io.zeebe.transport.impl.memory.UnboundedMemoryPool;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
+import org.slf4j.Logger;
 
 public class ZeebeClientImpl implements ZeebeClient
 {
@@ -191,12 +180,6 @@ public class ZeebeClientImpl implements ZeebeClient
         {
             Loggers.CLIENT_LOGGER.error("Exception when closing client. Ignoring", e);
         }
-    }
-
-    @Override
-    public Request<Workflow> requestWorkflowDefinitionByKey(long key)
-    {
-        return new RequestWorkflowDefinitionByKey(apiCommandManager, topologyManager, key);
     }
 
     public RequestManager getCommandManager()
