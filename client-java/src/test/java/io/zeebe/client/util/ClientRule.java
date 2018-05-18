@@ -54,7 +54,7 @@ public class ClientRule extends ExternalResource
     protected void before() throws Throwable
     {
         clock = new ControlledActorClock();
-        final ZeebeClientBuilderImpl builder = (ZeebeClientBuilderImpl) ZeebeClient.newClient();
+        final ZeebeClientBuilderImpl builder = (ZeebeClientBuilderImpl) ZeebeClient.newClientBuilder();
         configurator.accept(builder);
 
         client = new ZeebeClientImpl(builder, clock);
