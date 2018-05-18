@@ -29,9 +29,9 @@ public class EventLogger
     {
         final String brokerContactPoint = "127.0.0.1:51015";
 
-        final ZeebeClient zeebeClient = ZeebeClient.newClient()
+        final ZeebeClient zeebeClient = ZeebeClient.newClientBuilder()
                 .brokerContactPoint(brokerContactPoint)
-                .create();
+                .build();
 
         System.out.println(String.format("> Connecting to %s", brokerContactPoint));
 

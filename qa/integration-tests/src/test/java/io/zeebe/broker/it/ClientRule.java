@@ -61,7 +61,7 @@ public class ClientRule extends ExternalResource
     @Override
     protected void before()
     {
-        client = ((ZeebeClientBuilderImpl) ZeebeClient.newClient(properties)).setActorClock(actorClock).create();
+        client = ((ZeebeClientBuilderImpl) ZeebeClient.newClientBuilder().withProperties(properties)).setActorClock(actorClock).build();
 
         if (createDefaultTopic)
         {

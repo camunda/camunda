@@ -33,9 +33,9 @@ public class WorkflowInstanceWorker
         final String taskType = "foo";
         final String lockOwner = "worker-1";
 
-        final ZeebeClient zeebeClient = ZeebeClient.newClient()
+        final ZeebeClient zeebeClient = ZeebeClient.newClientBuilder()
             .brokerContactPoint(brokerContactPoint)
-            .create();
+            .build();
 
         System.out.println(String.format("> Connecting to %s", brokerContactPoint));
 

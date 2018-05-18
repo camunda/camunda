@@ -33,7 +33,7 @@ public class TopologyViewer
             final Properties clientProperties = new Properties();
             clientProperties.put(ClientProperties.BROKER_CONTACTPOINT, broker);
 
-            try (ZeebeClient zeebeClient = ZeebeClient.create(clientProperties))
+            try (ZeebeClient zeebeClient = ZeebeClient.newClientBuilder().withProperties(clientProperties).build())
             {
                 final Topology topology = zeebeClient.newTopologyRequest()
                     .send()

@@ -43,7 +43,7 @@ public class NonBlockingTaskCreator
 
         final String topicName = "default-topic";
 
-        try (ZeebeClient client = ZeebeClient.create(System.getProperties()))
+        try (ZeebeClient client = ZeebeClient.newClientBuilder().withProperties(System.getProperties()).build())
         {
 
             System.out.println("Client configuration: " + client.getConfiguration());

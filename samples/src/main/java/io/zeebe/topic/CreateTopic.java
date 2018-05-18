@@ -33,7 +33,7 @@ public class CreateTopic
         final Properties clientProperties = new Properties();
         clientProperties.put(ClientProperties.BROKER_CONTACTPOINT, broker);
 
-        try (ZeebeClient client = ZeebeClient.create(clientProperties))
+        try (ZeebeClient client = ZeebeClient.newClientBuilder().withProperties(clientProperties).build())
         {
             System.out.println("Creating topic " + topic + " with " + partitions + " partition(s) with contact point " + broker);
 

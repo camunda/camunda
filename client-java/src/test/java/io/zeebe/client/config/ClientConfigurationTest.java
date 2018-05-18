@@ -45,7 +45,7 @@ public class ClientConfigurationTest
         final Duration expectedTimeout = Duration.ofMillis(KEEP_ALIVE_TIMEOUT);
 
         // when
-        final ZeebeClient client = ZeebeClient.create(props);
+        final ZeebeClient client = ZeebeClient.newClientBuilder().withProperties(props).build();
 
         // then
         final ClientTransport transport = ((ZeebeClientImpl) client).getTransport();
@@ -60,7 +60,7 @@ public class ClientConfigurationTest
         config.setProperty(ClientProperties.CLIENT_DEFAULT_JOB_LOCK_OWNER, "me");
 
         // when
-        final ZeebeClient client = ZeebeClient.create(config);
+        final ZeebeClient client = ZeebeClient.newClientBuilder().withProperties(config).build();
 
         // then
         assertThat(client.getConfiguration().getDefaultJobLockOwner()).isEqualTo("me");
@@ -74,7 +74,7 @@ public class ClientConfigurationTest
         config.setProperty(ClientProperties.CLIENT_DEFAULT_JOB_LOCK_TIME, "5000");
 
         // when
-        final ZeebeClient client = ZeebeClient.create(config);
+        final ZeebeClient client = ZeebeClient.newClientBuilder().withProperties(config).build();
 
         // then
         assertThat(client.getConfiguration().getDefaultJobLockTime()).isEqualTo(Duration.ofMillis(5000));
@@ -88,7 +88,7 @@ public class ClientConfigurationTest
         config.setProperty(ClientProperties.CLIENT_DEFAULT_TOPIC, "my-topic");
 
         // when
-        final ZeebeClient client = ZeebeClient.create(config);
+        final ZeebeClient client = ZeebeClient.newClientBuilder().withProperties(config).build();
 
         // then
         assertThat(client.getConfiguration().getDefaultTopic()).isEqualTo("my-topic");
@@ -101,7 +101,7 @@ public class ClientConfigurationTest
     public void shouldApplyDefaults()
     {
         // given
-        final ZeebeClient client = ZeebeClient.create(new Properties());
+        final ZeebeClient client = ZeebeClient.newClient();
 
         // then
         final ZeebeClientConfiguration configuration = client.getConfiguration();

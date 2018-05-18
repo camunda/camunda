@@ -66,7 +66,7 @@ public class ZeebeClientTest
         properties.setProperty(ClientProperties.CLIENT_REQUEST_TIMEOUT_SEC, "3");
         properties.setProperty(ClientProperties.CLIENT_REQUEST_BLOCKTIME_MILLIS, "250");
 
-        client = (ZeebeClientImpl) ZeebeClient.create(properties);
+        client = (ZeebeClientImpl) ZeebeClient.newClientBuilder().withProperties(properties).build();
         broker.stubTopicSubscriptionApi(0);
     }
 
@@ -458,7 +458,7 @@ public class ZeebeClientTest
         final int topicSubscriptionPrefetchCapacity = 8;
 
         // when
-        final ZeebeClient client = ZeebeClient.newClient()
+        final ZeebeClient client = ZeebeClient.newClientBuilder()
                 .brokerContactPoint(contactPoint)
                 .numManagementThreads(numManagementThreads)
                 .numSubscriptionExecutionThreads(numSubscriptionThreads)
@@ -467,7 +467,7 @@ public class ZeebeClientTest
                 .sendBufferSize(sendBufferSize)
                 .tcpChannelKeepAlivePeriod(tcpChannelKeepAlivePeriod)
                 .topicSubscriptionPrefetchCapacity(topicSubscriptionPrefetchCapacity)
-                .create();
+                .build();
 
         // then
         final ZeebeClientConfiguration configuration = client.getConfiguration();

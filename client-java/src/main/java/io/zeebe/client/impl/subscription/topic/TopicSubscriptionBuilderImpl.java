@@ -228,6 +228,7 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilderSte
         return builder.build();
     }
 
+    @SuppressWarnings("unchecked")
     protected <T extends RecordImpl> void dispatchRecord(UntypedRecordImpl record) throws Exception
     {
         final RecordMetadataImpl metadata = record.getMetadata();

@@ -32,9 +32,9 @@ public class WorkflowInstanceStarter
         final String topicName = "default-topic";
         final int partitionId = 0;
 
-        final ZeebeClient zeebeClient = ZeebeClient.newClient()
+        final ZeebeClient zeebeClient = ZeebeClient.newClientBuilder()
             .brokerContactPoint(brokerContactPoint)
-            .create();
+            .build();
 
         System.out.println(String.format("> Connecting to %s", brokerContactPoint));
 

@@ -16,9 +16,18 @@
 package io.zeebe.client;
 
 import java.time.Duration;
+import java.util.Properties;
 
 public interface ZeebeClientBuilder
 {
+
+    /**
+     * <p>Sets all the properties from a {@link Properties} object. Can be used to configure the client
+     * from a properties file.
+     *
+     * <p>See {@link ClientProperties} for valid property names.
+     */
+    ZeebeClientBuilder withProperties(Properties properties);
 
     /**
      * @param contactPoint the IP socket address of a broker that the client can initially connect to.
@@ -98,5 +107,5 @@ public interface ZeebeClientBuilder
     /**
      * @return a new {@link ZeebeClient} with the provided configuration options.
      */
-    ZeebeClient create();
+    ZeebeClient build();
 }

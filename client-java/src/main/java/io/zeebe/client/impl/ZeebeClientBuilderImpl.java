@@ -193,61 +193,59 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
     }
 
     @Override
-    public ZeebeClient create()
+    public ZeebeClient build()
     {
         return new ZeebeClientImpl(this, actorClock);
     }
 
-    public static ZeebeClientBuilderImpl fromProperties(Properties properties)
+    public ZeebeClientBuilder withProperties(Properties properties)
     {
-        final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
-
         if (properties.containsKey(ClientProperties.BROKER_CONTACTPOINT))
         {
-            builder.brokerContactPoint(properties.getProperty(ClientProperties.BROKER_CONTACTPOINT));
+            brokerContactPoint(properties.getProperty(ClientProperties.BROKER_CONTACTPOINT));
         }
         if (properties.containsKey(ClientProperties.CLIENT_REQUEST_TIMEOUT_SEC))
         {
-            builder.requestTimeout(Duration.ofSeconds(Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_REQUEST_TIMEOUT_SEC))));
+            requestTimeout(Duration.ofSeconds(Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_REQUEST_TIMEOUT_SEC))));
         }
         if (properties.containsKey(CLIENT_REQUEST_BLOCKTIME_MILLIS))
         {
-            builder.requestBlocktime(Duration.ofMillis(Integer.parseInt(properties.getProperty(CLIENT_REQUEST_BLOCKTIME_MILLIS))));
+            requestBlocktime(Duration.ofMillis(Integer.parseInt(properties.getProperty(CLIENT_REQUEST_BLOCKTIME_MILLIS))));
         }
         if (properties.containsKey(CLIENT_SENDBUFFER_SIZE))
         {
-            builder.sendBufferSize(Integer.parseInt(properties.getProperty(CLIENT_SENDBUFFER_SIZE)));
+            sendBufferSize(Integer.parseInt(properties.getProperty(CLIENT_SENDBUFFER_SIZE)));
         }
         if (properties.containsKey(ClientProperties.CLIENT_MANAGEMENT_THREADS))
         {
-            builder.numManagementThreads(Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_MANAGEMENT_THREADS)));
+            numManagementThreads(Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_MANAGEMENT_THREADS)));
         }
         if (properties.containsKey(ClientProperties.CLIENT_TCP_CHANNEL_KEEP_ALIVE_PERIOD))
         {
-            builder.tcpChannelKeepAlivePeriod(Duration.ofMillis(Long.parseLong(properties.getProperty(ClientProperties.CLIENT_TCP_CHANNEL_KEEP_ALIVE_PERIOD))));
+            tcpChannelKeepAlivePeriod(Duration.ofMillis(Long.parseLong(properties.getProperty(ClientProperties.CLIENT_TCP_CHANNEL_KEEP_ALIVE_PERIOD))));
         }
         if (properties.containsKey(ClientProperties.CLIENT_SUBSCRIPTION_EXECUTION_THREADS))
         {
-            builder.numSubscriptionExecutionThreads(Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_SUBSCRIPTION_EXECUTION_THREADS)));
+            numSubscriptionExecutionThreads(Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_SUBSCRIPTION_EXECUTION_THREADS)));
         }
         if (properties.containsKey(ClientProperties.CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY))
         {
-            builder.topicSubscriptionPrefetchCapacity(Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY)));
+            topicSubscriptionPrefetchCapacity(Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY)));
         }
         if (properties.containsKey(CLIENT_DEFAULT_JOB_LOCK_OWNER))
         {
-            builder.defaultJobLockOwner(properties.getProperty(CLIENT_DEFAULT_JOB_LOCK_OWNER));
+            defaultJobLockOwner(properties.getProperty(CLIENT_DEFAULT_JOB_LOCK_OWNER));
         }
         if (properties.containsKey(CLIENT_DEFAULT_JOB_LOCK_TIME))
         {
-            builder.defaultJobLockTime(Duration.ofMillis(Integer.parseInt(properties.getProperty(CLIENT_DEFAULT_JOB_LOCK_TIME))));
+            defaultJobLockTime(Duration.ofMillis(Integer.parseInt(properties.getProperty(CLIENT_DEFAULT_JOB_LOCK_TIME))));
         }
         if (properties.containsKey(CLIENT_DEFAULT_TOPIC))
         {
-            builder.defaultTopic(properties.getProperty(CLIENT_DEFAULT_TOPIC));
+            defaultTopic(properties.getProperty(CLIENT_DEFAULT_TOPIC));
         }
 
-        return builder;
+        return this;
     }
 
     @Override

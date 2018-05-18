@@ -15,22 +15,16 @@
  */
 package io.zeebe.client;
 
-import java.util.Properties;
-
 import io.zeebe.client.api.clients.TopicClient;
-import io.zeebe.client.api.commands.*;
+import io.zeebe.client.api.commands.CreateTopicCommandStep1;
+import io.zeebe.client.api.commands.TopicsRequestStep1;
+import io.zeebe.client.api.commands.TopologyRequestStep1;
 import io.zeebe.client.api.record.ZeebeObjectMapper;
 import io.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
 
 /**
  * The client to communicate with a Zeebe broker/cluster.
- * <p>
- * TODO: show how to configure and bootstrap the client
- * <p>
- * TODO: explain something about topic
- * <p>
- * TODO: explain something about command (async, rejection)
  */
 public interface ZeebeClient extends AutoCloseable
 {
@@ -141,24 +135,31 @@ public interface ZeebeClient extends AutoCloseable
      */
     ZeebeClientConfiguration getConfiguration();
 
-    static ZeebeClient create(Properties properties)
+    /**
+     * @return a new Zeebe client with default configuration values.
+     * In order to customize configuration, use the methods {@link #newClientBuilder()}
+     * or {@link #newClient(ZeebeClientConfiguration)}. See {@link ZeebeClientBuilder}
+     * for the configuration options and default values.
+     */
+    static ZeebeClient newClient()
     {
-        return newClient(properties).create();
+        return newClientBuilder().build();
     }
 
-    static ZeebeClient create(ZeebeClientConfiguration configuration)
+    /**
+     * @return a new {@link ZeebeClient} using the provided configuration.
+     */
+    static ZeebeClient newClient(ZeebeClientConfiguration configuration)
     {
         return new ZeebeClientImpl(configuration);
     }
 
-    static ZeebeClientBuilder newClient()
+    /**
+     * @return a builder to configure and create a new {@link ZeebeClient}.
+     */
+    static ZeebeClientBuilder newClientBuilder()
     {
         return new ZeebeClientBuilderImpl();
-    }
-
-    static ZeebeClientBuilder newClient(Properties initProperties)
-    {
-        return ZeebeClientBuilderImpl.fromProperties(initProperties);
     }
 
     @Override
