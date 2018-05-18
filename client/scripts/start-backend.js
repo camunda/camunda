@@ -116,7 +116,10 @@ function startBackend(code) {
                             password: '',
                             user: ''
                           },
-                          enabled: true
+                          webapps: {
+                            endpoint: `http://localhost:${port}/camunda`,
+                            enabled: true
+                          }
                         }
                       }
                     );
