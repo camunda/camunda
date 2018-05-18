@@ -73,8 +73,8 @@ public class TopicSubscriberEventImpl extends TopicSubscriberRecordImpl implemen
         builder.append(getStartPosition());
         builder.append(", isForceStart=");
         builder.append(isForceStart());
-        builder.append(", prefetchCapacit)=");
-        builder.append(getPrefetchCapacity());
+        builder.append(", bufferSize)=");
+        builder.append(getBufferSize());
         builder.append("]");
         return builder.toString();
     }

@@ -15,13 +15,12 @@
  */
 package io.zeebe.client.impl.record;
 
-import io.zeebe.client.api.record.TopicSubscriptionRecord;
 import io.zeebe.client.api.record.ZeebeObjectMapper;
 import io.zeebe.client.impl.event.TopicSubscriptionEventImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 
-public abstract class TopicSubscriptionRecordImpl extends RecordImpl implements TopicSubscriptionRecord
+public abstract class TopicSubscriptionRecordImpl extends RecordImpl
 {
     private String name;
     private long ackPosition = -1L;
@@ -31,7 +30,6 @@ public abstract class TopicSubscriptionRecordImpl extends RecordImpl implements 
         super(objectMapper, recordType, ValueType.SUBSCRIPTION);
     }
 
-    @Override
     public String getName()
     {
         return name;
@@ -42,7 +40,6 @@ public abstract class TopicSubscriptionRecordImpl extends RecordImpl implements 
         this.name = subscriptionName;
     }
 
-    @Override
     public long getAckPosition()
     {
         return ackPosition;

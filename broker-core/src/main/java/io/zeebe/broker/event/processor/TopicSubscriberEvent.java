@@ -25,7 +25,7 @@ public class TopicSubscriberEvent extends UnpackedObject
 {
     // negative value for end of log
     protected LongProperty startPositionProp = new LongProperty("startPosition", -1L);
-    protected IntegerProperty prefetchCapacityProp = new IntegerProperty("prefetchCapacity", -1);
+    protected IntegerProperty bufferSizeProp = new IntegerProperty("bufferSize", -1);
     protected StringProperty nameProp = new StringProperty("name");
 
     // true if startPosition should override any previously acknowledged position
@@ -36,7 +36,7 @@ public class TopicSubscriberEvent extends UnpackedObject
         this
             .declareProperty(startPositionProp)
             .declareProperty(nameProp)
-            .declareProperty(prefetchCapacityProp)
+            .declareProperty(bufferSizeProp)
             .declareProperty(forceStartProp);
     }
 
@@ -51,15 +51,15 @@ public class TopicSubscriberEvent extends UnpackedObject
         return startPositionProp.getValue();
     }
 
-    public TopicSubscriberEvent setPrefetchCapacity(int prefetchCapacity)
+    public TopicSubscriberEvent setBufferSize(int bufferSize)
     {
-        this.prefetchCapacityProp.setValue(prefetchCapacity);
+        this.bufferSizeProp.setValue(bufferSize);
         return this;
     }
 
-    public int getPrefetchCapacity()
+    public int getBufferSize()
     {
-        return prefetchCapacityProp.getValue();
+        return bufferSizeProp.getValue();
     }
 
     public String getNameAsString()

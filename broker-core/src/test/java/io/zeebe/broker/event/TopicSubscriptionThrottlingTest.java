@@ -44,34 +44,34 @@ public class TopicSubscriptionThrottlingTest
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
-    public void openSubscription(int prefetchCapacity)
+    public void openSubscription(int bufferSize)
     {
         apiRule.createCmdRequest()
             .type(ValueType.SUBSCRIBER, SubscriberIntent.SUBSCRIBE)
             .command()
                 .put("startPosition", 0)
                 .put("name", "foo")
-                .put("prefetchCapacity", prefetchCapacity)
+                .put("bufferSize", bufferSize)
                 .done()
             .sendAndAwait();
     }
 
     @Test
-    public void shouldNotPushMoreThanPrefetchCapacity() throws InterruptedException
+    public void shouldNotPushMoreThanBufferSize() throws InterruptedException
     {
         // given
         final int nrOfJobs = 5;
-        final int prefetchCapacity = 3;
+        final int bufferSize = 3;
 
         createJobs(nrOfJobs);
 
         // when
-        openSubscription(prefetchCapacity);
+        openSubscription(bufferSize);
 
         // then
         TestUtil.waitUntil(() -> apiRule.numSubscribedEventsAvailable() >= 3);
         Thread.sleep(1000L); // there might be more received in case this feature is broken
-        assertThat(apiRule.numSubscribedEventsAvailable()).isEqualTo(prefetchCapacity);
+        assertThat(apiRule.numSubscribedEventsAvailable()).isEqualTo(bufferSize);
 
     }
 
@@ -80,10 +80,10 @@ public class TopicSubscriptionThrottlingTest
     {
         // given
         final int nrOfJobs = 5;
-        final int prefetchCapacity = 3;
+        final int bufferSize = 3;
 
         createJobs(nrOfJobs);
-        openSubscription(prefetchCapacity);
+        openSubscription(bufferSize);
         TestUtil.waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 3);
 
         final List<Long> eventPositions = apiRule.subscribedEvents()
@@ -116,16 +116,16 @@ public class TopicSubscriptionThrottlingTest
     }
 
     @Test
-    public void shouldPushAllEventsWithoutPrefetchCapacity() throws InterruptedException
+    public void shouldPushAllEventsWithoutBufferSize() throws InterruptedException
     {
         // given
         final int nrOfJobs = 5;
-        final int prefetchCapacity = -1;
+        final int bufferSize = -1;
 
         createJobs(nrOfJobs);
 
         // when
-        openSubscription(prefetchCapacity);
+        openSubscription(bufferSize);
 
         // then
         final int expectedNumberOfEvents = nrOfJobs * 2; // CREATE and CREATED

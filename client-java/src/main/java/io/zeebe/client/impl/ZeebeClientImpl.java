@@ -64,8 +64,6 @@ public class ZeebeClientImpl implements ZeebeClient
     protected final RequestManager apiCommandManager;
     protected SubscriptionManager subscriptionManager;
 
-    protected final int subscriptionPrefetchCapacity;
-
     protected boolean isClosed;
 
     private ClientTransport internalTransport;
@@ -126,8 +124,6 @@ public class ZeebeClientImpl implements ZeebeClient
 
         this.msgPackConverter = new MsgPackConverter();
         this.objectMapper = new ZeebeObjectMapperImpl(msgPackConverter);
-
-        subscriptionPrefetchCapacity = configuration.getDefaultTopicSubscriptionBufferSize();
 
         final RemoteAddress initialContactPoint = transport.registerRemoteAddress(contactPoint);
 
@@ -235,11 +231,6 @@ public class ZeebeClientImpl implements ZeebeClient
     public SubscriptionManager getSubscriptionManager()
     {
         return subscriptionManager;
-    }
-
-    public int getSubscriptionPrefetchCapacity()
-    {
-        return subscriptionPrefetchCapacity;
     }
 
     @Override

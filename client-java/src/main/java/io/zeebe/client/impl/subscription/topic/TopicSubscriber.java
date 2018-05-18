@@ -50,7 +50,7 @@ public class TopicSubscriber extends Subscriber
             SubscriberGroup group,
             SubscriptionManager acquisition)
     {
-        super(subscriberKey, partitionId, subscription.getPrefetchCapacity(), eventSource, group, acquisition);
+        super(subscriberKey, partitionId, subscription.getBufferSize(), eventSource, group, acquisition);
         this.subscription = subscription;
         this.client = client;
         this.lastProcessedEventPosition = subscription.getStartPosition(partitionId);

@@ -24,7 +24,7 @@ public abstract class TopicSubscriberRecordImpl extends RecordImpl
 {
     private String name;
     private long startPosition = -1L;
-    private int prefetchCapacity = -1;
+    private int bufferSize = -1;
     private boolean forceStart;
 
     public TopicSubscriberRecordImpl(ZeebeObjectMapper objectMapper, RecordType recordType)
@@ -52,14 +52,14 @@ public abstract class TopicSubscriberRecordImpl extends RecordImpl
         return name;
     }
 
-    public void setPrefetchCapacity(int prefetchCapacity)
+    public void setBufferSize(int bufferSize)
     {
-        this.prefetchCapacity = prefetchCapacity;
+        this.bufferSize = bufferSize;
     }
 
-    public int getPrefetchCapacity()
+    public int getBufferSize()
     {
-        return prefetchCapacity;
+        return bufferSize;
     }
 
     public boolean isForceStart()

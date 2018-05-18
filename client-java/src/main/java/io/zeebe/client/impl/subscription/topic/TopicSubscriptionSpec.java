@@ -26,7 +26,7 @@ public class TopicSubscriptionSpec
     protected final CheckedConsumer<UntypedRecordImpl> handler;
     protected final boolean forceStart;
     protected final String name;
-    protected final int prefetchCapacity;
+    protected final int bufferSize;
     protected final long defaultStartPosition;
     protected final Long2LongHashMap startPositions;
 
@@ -37,7 +37,7 @@ public class TopicSubscriptionSpec
             Long2LongHashMap startPositions,
             boolean forceStart,
             String name,
-            int prefetchCapacity)
+            int bufferSize)
     {
         this.topic = topic;
         this.handler = handler;
@@ -45,7 +45,7 @@ public class TopicSubscriptionSpec
         this.startPositions = startPositions;
         this.forceStart = forceStart;
         this.name = name;
-        this.prefetchCapacity = prefetchCapacity;
+        this.bufferSize = bufferSize;
     }
 
     public String getTopic()
@@ -81,9 +81,9 @@ public class TopicSubscriptionSpec
     {
         return name;
     }
-    public int getPrefetchCapacity()
+    public int getBufferSize()
     {
-        return prefetchCapacity;
+        return bufferSize;
     }
 
     @Override
@@ -102,8 +102,8 @@ public class TopicSubscriptionSpec
         builder.append(forceStart);
         builder.append(", name=");
         builder.append(name);
-        builder.append(", prefetchCapacity=");
-        builder.append(prefetchCapacity);
+        builder.append(", bufferSize=");
+        builder.append(bufferSize);
         builder.append("]");
         return builder.toString();
     }

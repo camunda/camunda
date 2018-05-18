@@ -277,7 +277,8 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
         appendProperty(sb, "sendBufferSize", sendBufferSize);
         appendProperty(sb, "numManagementThreads", numManagementThreads);
         appendProperty(sb, "numSubscriptionExecutionThreads", numSubscriptionExecutionThreads);
-        appendProperty(sb, "topicSubscriptionPrefetchCapacity", topicSubscriptionBufferSize);
+        appendProperty(sb, "topicSubscriptionBufferSize", topicSubscriptionBufferSize);
+        appendProperty(sb, "jobSubscriptionBufferSize", jobSubscriptionBufferSize);
         appendProperty(sb, "tcpChannelKeepAlivePeriod", tcpChannelKeepAlivePeriod);
         appendProperty(sb, "defaultJobLockOwner", defaultJobLockOwner);
         appendProperty(sb, "defaultJobLockTime", defaultJobLockTime);

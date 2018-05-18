@@ -96,9 +96,9 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilderSte
     {
         this.objectMapper = client.getObjectMapper();
 
-        final int prefetchCapacity = client.getConfiguration().getDefaultTopicSubscriptionBufferSize();
+        final int bufferSize = client.getConfiguration().getDefaultTopicSubscriptionBufferSize();
         this.builder = new TopicSubscriberGroupBuilder(client.getTopic(), client.getSubscriptionManager(),
-                prefetchCapacity);
+                bufferSize);
     }
 
     @Override

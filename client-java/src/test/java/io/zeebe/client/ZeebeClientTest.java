@@ -455,7 +455,7 @@ public class ZeebeClientTest
         final Duration requestTimeout = Duration.ofSeconds(5);
         final int sendBufferSize = 6;
         final Duration tcpChannelKeepAlivePeriod = Duration.ofSeconds(7);
-        final int topicSubscriptionPrefetchCapacity = 8;
+        final int topicSubscriptionBufferSize = 8;
         final int jobSubscriptionBufferSize = 9;
 
         // when
@@ -467,7 +467,7 @@ public class ZeebeClientTest
                 .requestTimeout(requestTimeout)
                 .sendBufferSize(sendBufferSize)
                 .tcpChannelKeepAlivePeriod(tcpChannelKeepAlivePeriod)
-                .defaultTopicSubscriptionBufferSize(topicSubscriptionPrefetchCapacity)
+                .defaultTopicSubscriptionBufferSize(topicSubscriptionBufferSize)
                 .defaultJobSubscriptionBufferSize(jobSubscriptionBufferSize)
                 .build();
 
@@ -480,7 +480,7 @@ public class ZeebeClientTest
         assertThat(configuration.getRequestTimeout()).isEqualTo(requestTimeout);
         assertThat(configuration.getSendBufferSize()).isEqualTo(sendBufferSize);
         assertThat(configuration.getTcpChannelKeepAlivePeriod()).isEqualTo(tcpChannelKeepAlivePeriod);
-        assertThat(configuration.getDefaultTopicSubscriptionBufferSize()).isEqualTo(topicSubscriptionPrefetchCapacity);
+        assertThat(configuration.getDefaultTopicSubscriptionBufferSize()).isEqualTo(topicSubscriptionBufferSize);
         assertThat(configuration.getDefaultJobSubscriptionBufferSize()).isEqualTo(jobSubscriptionBufferSize);
     }
 

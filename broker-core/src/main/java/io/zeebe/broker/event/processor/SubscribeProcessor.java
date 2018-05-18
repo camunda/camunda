@@ -140,7 +140,7 @@ public class SubscribeProcessor implements EventProcessor
                 event.getKey(),
                 resumePosition,
                 subscriptionName,
-                subscriberEvent.getPrefetchCapacity(),
+                subscriberEvent.getBufferSize(),
                 manager.getEventWriterFactory().get());
 
             final ActorFuture<StreamProcessorService> future = manager.openPushProcessorAsync(processor);

@@ -87,7 +87,7 @@ public class TopicSubscriberGroup extends SubscriberGroup<TopicSubscriber> imple
     {
         return new CreateTopicSubscriptionCommandImpl(client.getCommandManager(), subscription.getTopic(), partitionId)
             .startPosition(subscription.getStartPosition(partitionId))
-            .prefetchCapacity(subscription.getPrefetchCapacity())
+            .bufferSize(subscription.getBufferSize())
             .name(subscription.getName())
             .forceStart(subscription.isForceStart())
             .send();

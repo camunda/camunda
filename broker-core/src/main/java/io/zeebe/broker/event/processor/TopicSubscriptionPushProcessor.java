@@ -61,7 +61,7 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
             long subscriberKey,
             long startPosition,
             DirectBuffer name,
-            int prefetchCapacity,
+            int bufferSize,
             SubscribedRecordWriter channelWriter)
     {
         this.channelWriter = channelWriter;
@@ -71,9 +71,9 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
         this.name = cloneBuffer(name);
         this.nameString = name.getStringWithoutLengthUtf8(0, name.capacity());
 
-        if (prefetchCapacity > 0)
+        if (bufferSize > 0)
         {
-            this.pendingEvents = new LongRingBuffer(prefetchCapacity);
+            this.pendingEvents = new LongRingBuffer(bufferSize);
         }
     }
 

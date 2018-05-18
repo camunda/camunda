@@ -46,9 +46,9 @@ public class CreateTopicSubscriptionCommandImpl extends CommandImpl<TopicSubscri
         return this;
     }
 
-    public CreateTopicSubscriptionCommandImpl prefetchCapacity(int prefetchCapacity)
+    public CreateTopicSubscriptionCommandImpl bufferSize(int bufferSize)
     {
-        this.command.setPrefetchCapacity(prefetchCapacity);
+        this.command.setBufferSize(bufferSize);
         return this;
     }
 

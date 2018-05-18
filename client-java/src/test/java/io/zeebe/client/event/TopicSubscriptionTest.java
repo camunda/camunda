@@ -135,7 +135,7 @@ public class TopicSubscriptionTest
 
         assertThat(subscribeRequest.getCommand())
             .containsEntry("startPosition", 0)
-            .containsEntry("prefetchCapacity", 1024)
+            .containsEntry("bufferSize", 1024)
             .containsEntry("name", SUBSCRIPTION_NAME)
             .doesNotContainEntry("forceStart", true);
     }
@@ -189,7 +189,7 @@ public class TopicSubscriptionTest
 
         assertThat(subscribeRequest.getCommand())
             .hasEntrySatisfying("startPosition", Conditions.isLowerThan(0))
-            .containsEntry("prefetchCapacity", 1024)
+            .containsEntry("bufferSize", 1024)
             .containsEntry("name", SUBSCRIPTION_NAME)
             .doesNotContainEntry("forceStart", true);
     }
@@ -219,7 +219,7 @@ public class TopicSubscriptionTest
 
         assertThat(subscribeRequest.getCommand())
             .containsEntry("startPosition", 654)
-            .containsEntry("prefetchCapacity", 1024)
+            .containsEntry("bufferSize", 1024)
             .containsEntry("name", SUBSCRIPTION_NAME)
             .doesNotContainEntry("forceStart", true);
     }
@@ -397,7 +397,7 @@ public class TopicSubscriptionTest
             .findFirst()
             .get();
 
-        assertThat(addSubscriptionRequest.getCommand()).containsEntry("prefetchCapacity", bufferSize);
+        assertThat(addSubscriptionRequest.getCommand()).containsEntry("bufferSize", bufferSize);
     }
 
     @Test
@@ -422,7 +422,7 @@ public class TopicSubscriptionTest
             .findFirst()
             .get();
 
-        assertThat(addSubscriptionRequest.getCommand()).containsEntry("prefetchCapacity", bufferSize);
+        assertThat(addSubscriptionRequest.getCommand()).containsEntry("bufferSize", bufferSize);
     }
 
     @Test
@@ -933,7 +933,7 @@ public class TopicSubscriptionTest
 
         assertThat(reopenRequest.getCommand())
             .containsEntry("startPosition", 0)
-            .containsEntry("prefetchCapacity", 1024)
+            .containsEntry("bufferSize", 1024)
             .containsEntry("name", SUBSCRIPTION_NAME)
             .doesNotContainEntry("forceStart", true);
 
@@ -1097,6 +1097,7 @@ public class TopicSubscriptionTest
     {
         // given
         final long subscriberKey = 123L;
+        final int bufferSize = 16;
         broker.stubTopicSubscriptionApi(subscriberKey);
         broker.onExecuteCommandRequest(ValueType.SUBSCRIPTION, SubscriptionIntent.ACKNOWLEDGE)
             .respondWithError()
@@ -1109,13 +1110,13 @@ public class TopicSubscriptionTest
             .name(SUBSCRIPTION_NAME)
             .recordHandler(DO_NOTHING)
             .startAtHeadOfTopic()
+            .bufferSize(bufferSize)
             .open();
 
         final RemoteAddress clientAddress = receivedSubscribeCommands().findFirst().get().getSource();
-        final int subscriptionCapacity = ((ZeebeClientImpl) client).getSubscriptionPrefetchCapacity();
 
         // when
-        for (int i = 0; i < subscriptionCapacity; i++)
+        for (int i = 0; i < bufferSize; i++)
         {
             broker.pushRaftEvent(clientAddress, subscriberKey, i, i);
         }

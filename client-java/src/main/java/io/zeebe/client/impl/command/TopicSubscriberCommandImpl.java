@@ -49,8 +49,8 @@ public class TopicSubscriberCommandImpl extends TopicSubscriberRecordImpl
         builder.append(getStartPosition());
         builder.append(", isForceStart=");
         builder.append(isForceStart());
-        builder.append(", prefetchCapacit)=");
-        builder.append(getPrefetchCapacity());
+        builder.append(", bufferSize)=");
+        builder.append(getBufferSize());
         builder.append("]");
         return builder.toString();
     }
