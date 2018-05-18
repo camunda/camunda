@@ -149,7 +149,7 @@ export default class ReportView extends React.Component {
       case 'number':
         config = {
           component: Number,
-          props: {data: result}
+          props: {data: result, targetValue: data.configuration.targetValue}
         };
         break;
       case 'table':

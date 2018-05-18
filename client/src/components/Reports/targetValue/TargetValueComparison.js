@@ -2,6 +2,8 @@ import React from 'react';
 
 import TargetValueModal from './TargetValueModal';
 
+import {isSingleNumber, isDurationHeatmap} from './service';
+
 import {ButtonGroup, Button} from 'components';
 import settingsIcon from './settings.svg';
 
@@ -69,7 +71,7 @@ export default class TargetValueComparison extends React.Component {
     this.closeModal();
   };
 
-  isEnabled = () => {
+  isDurationHeatmap = () => {
     const {
       processDefinitionKey,
       processDefinitionVersion,
@@ -86,6 +88,23 @@ export default class TargetValueComparison extends React.Component {
       view.property === 'duration' &&
       groupBy.type === 'flowNode' &&
       visualization === 'heat'
+    );
+  };
+
+  isSingleNumber = () => {
+    const {
+      processDefinitionKey,
+      processDefinitionVersion,
+      visualization
+    } = this.props.reportResult.data;
+
+    return processDefinitionKey && processDefinitionVersion && visualization === 'number';
+  };
+
+  isEnabled = () => {
+    return (
+      isDurationHeatmap(this.props.reportResult.data) ||
+      isSingleNumber(this.props.reportResult.data)
     );
   };
 

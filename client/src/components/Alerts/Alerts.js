@@ -3,17 +3,14 @@ import update from 'immutability-helper';
 
 import {Button, Modal} from 'components';
 
-import {
-  loadAlerts,
-  loadReports,
-  saveNewAlert,
-  deleteAlert,
-  updateAlert,
-  convertDurationToObject
-} from './service';
+import {loadAlerts, loadReports, saveNewAlert, deleteAlert, updateAlert} from './service';
+
+import {formatters} from 'services';
+
 import AlertModal from './AlertModal';
 
 import './Alerts.css';
+const {duration, frequency} = formatters;
 
 export default class Alerts extends React.Component {
   constructor(props) {
@@ -87,12 +84,6 @@ export default class Alerts extends React.Component {
   cancelEdit = () => this.setState({alertToEdit: null});
   showDeleteModal = alert => () => this.setState({alertToDelete: alert});
   cancelDeleting = () => this.setState({alertToDelete: null});
-
-  formatThreshold = valueInMs => {
-    const {value, unit} = convertDurationToObject(valueInMs);
-
-    return `${value} ${unit}`;
-  };
 
   render() {
     return (
@@ -173,8 +164,8 @@ export default class Alerts extends React.Component {
                   <span className="Alert__data--highlight">
                     {alert.thresholdOperator === '<' ? 'below ' : 'above '}
                     {report.data.view.property === 'duration'
-                      ? this.formatThreshold(alert.threshold)
-                      : alert.threshold}
+                      ? duration(alert.threshold)
+                      : frequency(alert.threshold)}
                   </span>
                 </span>
                 <span className="Alert__data Alert__data--tool">

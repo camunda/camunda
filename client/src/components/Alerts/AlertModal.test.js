@@ -2,13 +2,13 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import AlertModal from './AlertModal';
-import {emailNotificationIsEnabled, convertDurationToObject} from './service';
+import {emailNotificationIsEnabled} from './service';
+
+import {formatters} from 'services';
 
 jest.mock('./service', () => {
   return {
-    emailNotificationIsEnabled: jest.fn(),
-    convertDurationToSingleNumber: jest.fn().mockReturnValue(723),
-    convertDurationToObject: jest.fn().mockReturnValue({value: '14', unit: 'seconds'})
+    emailNotificationIsEnabled: jest.fn()
   };
 });
 
@@ -37,6 +37,15 @@ jest.mock('components', () => {
       return <input {...allowedProps} />;
     },
     Select
+  };
+});
+
+jest.mock('services', () => {
+  return {
+    formatters: {
+      convertDurationToSingleNumber: jest.fn().mockReturnValue(723),
+      convertDurationToObject: jest.fn().mockReturnValue({value: '14', unit: 'seconds'})
+    }
   };
 });
 
@@ -208,7 +217,7 @@ it('should convert a duration threshold when opening', async () => {
   });
 
   expect(node.state('threshold')).toEqual({value: '14', unit: 'seconds'});
-  expect(convertDurationToObject).toHaveBeenCalledWith('14000');
+  expect(formatters.convertDurationToObject).toHaveBeenCalledWith('14000');
 });
 
 it('should convert a duration threshold when confirming', async () => {

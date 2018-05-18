@@ -2,15 +2,14 @@ import React from 'react';
 import update from 'immutability-helper';
 
 import {Modal, Button, Input, Select, ErrorMessage} from 'components';
-import {
-  emailNotificationIsEnabled,
-  convertDurationToObject,
-  convertDurationToSingleNumber
-} from './service';
+import {emailNotificationIsEnabled} from './service';
 
 import ThresholdInput from './ThresholdInput';
 
 import './AlertModal.css';
+
+import {formatters} from 'services';
+const {convertDurationToObject, convertDurationToSingleNumber} = formatters;
 
 const newAlert = {
   name: 'New Alert',

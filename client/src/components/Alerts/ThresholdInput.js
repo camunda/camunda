@@ -17,7 +17,7 @@ export default function ThresholdInput({id, value, onChange, type, isInvalid}) {
           value={value.unit}
           onChange={({target}) => onChange({...value, unit: target.value})}
         >
-          <Select.Option value="milliseconds">Milliseconds</Select.Option>
+          <Select.Option value="millis">Milliseconds</Select.Option>
           <Select.Option value="seconds">Seconds</Select.Option>
           <Select.Option value="minutes">Minutes</Select.Option>
           <Select.Option value="hours">Hours</Select.Option>

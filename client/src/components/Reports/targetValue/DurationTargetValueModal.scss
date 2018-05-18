@@ -1,24 +1,24 @@
-.TargetValueModal__Table {
+.DurationTargetValueModal__Table {
   max-height: 30%;
 }
 
-.TargetValueModal__modal-content-container {
+.DurationTargetValueModal__modal-content-container {
   display: flex;
   flex-direction: column;
   height: 100%;
   min-height: 0;
 }
 
-.TargetValueModal__warning {
+.DurationTargetValueModal__warning {
   text-align: right;
 }
 
-.TargetValueModal__DiagramContainer {
+.DurationTargetValueModal__DiagramContainer {
   height: 70%;
   display: flex;
 }
 
-.TargetValueModal__selection {
+.DurationTargetValueModal__selection {
   display: flex;
 
   min-width: 0;
@@ -28,11 +28,11 @@
   flex-direction: row;
 }
 
-.TargetValueModal__selection--select {
+.DurationTargetValueModal__selection--select {
   min-width: 0;
 }
 
-.TargetValueModal__selection--input {
+.DurationTargetValueModal__selection--input {
   min-width: 0;
   flex-grow: 1;
 }

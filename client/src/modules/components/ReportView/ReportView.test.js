@@ -51,7 +51,8 @@ it('should display a number if visualization is number', () => {
       groupBy: {
         type: 'bar'
       },
-      visualization: 'number'
+      visualization: 'number',
+      configuration: {}
     },
     result: 1234
   };
@@ -74,7 +75,8 @@ it('should provide an errorMessage property to the component', () => {
       groupBy: {
         type: 'bar'
       },
-      visualization: 'number'
+      visualization: 'number',
+      configuration: {}
     },
     result: 1234
   };
@@ -212,7 +214,7 @@ it('should not add instruction for group by if operation is raw data', () => {
       groupBy: {
         type: ''
       },
-      visualization: 'number'
+      visualization: 'table'
     },
     result: 1234
   };

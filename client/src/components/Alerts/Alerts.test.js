@@ -22,8 +22,7 @@ jest.mock('./service', () => {
     loadReports: jest.fn(),
     saveNewAlert: jest.fn(),
     deleteAlert: jest.fn(),
-    updateAlert: jest.fn(),
-    convertDurationToObject: jest.fn().mockReturnValue({value: '14', unit: 'seconds'})
+    updateAlert: jest.fn()
   };
 });
 
@@ -32,6 +31,15 @@ jest.mock('./AlertModal', () => props => (
     EditModal: <span id="ModalProps">{JSON.stringify(props)}</span>
   </span>
 ));
+
+jest.mock('services', () => {
+  return {
+    formatters: {
+      duration: () => '14 seconds',
+      frequency: () => '12'
+    }
+  };
+});
 
 const reports = [
   {id: '1', data: {visualization: 'table', view: {property: 'frequency'}}, name: 'Report 1'},

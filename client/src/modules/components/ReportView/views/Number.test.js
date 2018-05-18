@@ -3,6 +3,14 @@ import {mount} from 'enzyme';
 
 import Number from './Number';
 
+jest.mock('services', () => {
+  return {
+    formatters: {convertDurationToSingleNumber: () => 12}
+  };
+});
+
+jest.mock('./ProgressBar', () => () => <div>ProgressBar</div>);
+
 it('should display the number provided per data property', () => {
   const node = mount(<Number data={1234} formatter={v => v} />);
 
@@ -31,4 +39,12 @@ it('should format data according to the provided formatter', () => {
   const node = mount(<Number data={123} formatter={v => 2 * v} />);
 
   expect(node).toIncludeText('246');
+});
+
+it('should display a progress bar if target values are active', () => {
+  const node = mount(
+    <Number data={123} formatter={v => 2 * v} targetValue={{active: true, values: {}}} />
+  );
+
+  expect(node).toIncludeText('ProgressBar');
 });

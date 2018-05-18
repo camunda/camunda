@@ -159,6 +159,10 @@ export default withErrorHandling(
         await this.loadXmlToConfiguration(data);
       }
 
+      if (updates.view) {
+        data.configuration = {...data.configuration, targetValue: {}};
+      }
+
       this.setState({data});
 
       let reportResult;

@@ -1,3 +1,14 @@
+const timeUnits = {
+  millis: {value: 1, abbreviation: 'ms'},
+  seconds: {value: 1000, abbreviation: 's'},
+  minutes: {value: 60 * 1000, abbreviation: 'min'},
+  hours: {value: 60 * 60 * 1000, abbreviation: 'h'},
+  days: {value: 24 * 60 * 60 * 1000, abbreviation: 'd'},
+  weeks: {value: 7 * 24 * 60 * 60 * 1000, abbreviation: 'wk'},
+  months: {value: 30 * 24 * 60 * 60 * 1000, abbreviation: 'm'},
+  years: {value: 12 * 30 * 24 * 60 * 60 * 1000, abbreviation: 'y'}
+};
+
 export function frequency(number) {
   const separator = '\u202F';
   const numberString = '' + number;
@@ -14,20 +25,9 @@ export function frequency(number) {
 }
 
 export function duration(timeObject) {
-  const units = [
-    {name: 'y', longName: 'years', value: 1000 * 60 * 60 * 24 * 30 * 12},
-    {name: 'm', longName: 'months', value: 1000 * 60 * 60 * 24 * 30},
-    {name: 'wk', longName: 'weeks', value: 1000 * 60 * 60 * 24 * 7},
-    {name: 'd', longName: 'days', value: 1000 * 60 * 60 * 24},
-    {name: 'h', longName: 'hours', value: 1000 * 60 * 60},
-    {name: 'min', longName: 'minutes', value: 1000 * 60},
-    {name: 's', longName: 'seconds', value: 1000},
-    {name: 'ms', longName: 'millis', value: 1}
-  ];
-
   const time =
     typeof timeObject === 'object'
-      ? timeObject.value * units.find(({longName}) => longName === timeObject.unit).value
+      ? timeObject.value * timeUnits[timeObject.unit].value
       : timeObject;
 
   if (time === 0) {
@@ -36,17 +36,39 @@ export function duration(timeObject) {
 
   const timeSegments = [];
   let remainingTime = time;
-  for (let i = 0; i < units.length; i++) {
-    const currentUnit = units[i];
+  Object.keys(timeUnits)
+    .map(key => timeUnits[key])
+    .sort((a, b) => b.value - a.value)
+    .forEach(currentUnit => {
+      if (remainingTime >= currentUnit.value) {
+        const numberOfUnits = Math.floor(remainingTime / currentUnit.value);
 
-    if (remainingTime >= currentUnit.value) {
-      const numberOfUnits = Math.floor(remainingTime / currentUnit.value);
+        timeSegments.push(numberOfUnits + currentUnit.abbreviation);
 
-      timeSegments.push(numberOfUnits + currentUnit.name);
-
-      remainingTime -= numberOfUnits * currentUnit.value;
-    }
-  }
+        remainingTime -= numberOfUnits * currentUnit.value;
+      }
+    });
 
   return timeSegments.join('\u00A0');
 }
+
+export const convertDurationToObject = value => {
+  // sort the time units in descending order, then find the first one
+  // that fits the provided value without any decimal places
+  const [divisor, unit] = Object.keys(timeUnits)
+    .map(key => [timeUnits[key].value, key])
+    .sort(([a], [b]) => b - a)
+    .find(([divisor]) => ~~(value / divisor) === value / divisor);
+
+  return {
+    value: (value / divisor).toString(),
+    unit
+  };
+};
+
+export const convertDurationToSingleNumber = threshold => {
+  if (typeof threshold.value === 'undefined') {
+    return threshold;
+  }
+  return threshold.value * timeUnits[threshold.unit].value;
+};
