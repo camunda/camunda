@@ -18,6 +18,8 @@ package io.zeebe.client.topic;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
+import java.time.Instant;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -51,11 +53,13 @@ public class CreateTopicTest
     public void shouldCreateTopic()
     {
         // given
+        final Instant expectedTimestamp = Instant.now();
         brokerRule.onExecuteCommandRequest(Protocol.SYSTEM_PARTITION, ValueType.TOPIC, TopicIntent.CREATE)
             .respondWith()
             .event()
             .key(123)
             .position(456)
+            .timestamp(expectedTimestamp)
             .intent(TopicIntent.CREATING)
             .value()
               .allOf(ExecuteCommandRequest::getCommand)
@@ -86,6 +90,7 @@ public class CreateTopicTest
         assertThat(responseEvent.getMetadata().getTopicName()).isEqualTo(Protocol.SYSTEM_TOPIC);
         assertThat(responseEvent.getMetadata().getPartitionId()).isEqualTo(Protocol.SYSTEM_PARTITION);
         assertThat(responseEvent.getMetadata().getPosition()).isEqualTo(456);
+        assertThat(responseEvent.getMetadata().getTimestamp()).isEqualTo(expectedTimestamp);
         assertThat(responseEvent.getState()).isEqualTo(TopicEvent.TopicState.CREATING);
     }
 

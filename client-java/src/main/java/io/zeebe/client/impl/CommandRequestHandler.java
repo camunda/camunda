@@ -15,6 +15,7 @@
  */
 package io.zeebe.client.impl;
 
+import java.time.Instant;
 import java.util.function.BiFunction;
 
 import io.zeebe.client.api.record.Record;
@@ -126,6 +127,7 @@ public class CommandRequestHandler implements RequestResponseHandler
         final long position = decoder.position();
         final long key = decoder.key();
         final RecordType recordType = decoder.recordType();
+        final Instant timestamp = Instant.ofEpochMilli(decoder.timestamp());
 
         final ValueType valueType = decoder.valueType();
         final Intent intent = Intent.fromProtocolValue(valueType, decoder.intent());
@@ -149,6 +151,7 @@ public class CommandRequestHandler implements RequestResponseHandler
         metadata.setRecordType(recordType);
         metadata.setValueType(valueType);
         metadata.setIntent(intent);
+        metadata.setTimestamp(timestamp);
 
         if (recordType == RecordType.COMMAND_REJECTION)
         {

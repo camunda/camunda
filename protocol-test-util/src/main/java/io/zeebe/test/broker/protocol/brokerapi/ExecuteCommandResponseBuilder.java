@@ -15,6 +15,7 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi;
 
+import java.time.Instant;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -103,7 +104,7 @@ public class ExecuteCommandResponseBuilder
         return new MapFactoryBuilder<>(this, commandResponseWriter::setEventFunction);
     }
 
-    public ExecuteCommandResponseBuilder timestamp(long timestamp)
+    public ExecuteCommandResponseBuilder timestamp(Instant timestamp)
     {
         commandResponseWriter.setTimestamp(timestamp);
         return this;

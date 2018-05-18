@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.entry;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.HashMap;
 
 import io.zeebe.client.ZeebeClient;
@@ -69,11 +70,13 @@ public class CreateJobTest
     public void shouldCreateJob()
     {
         // given
+        final Instant expectedTimestamp = Instant.now();
         brokerRule.onExecuteCommandRequest(ValueType.JOB, JobIntent.CREATE)
             .respondWith()
             .event()
             .key(123)
             .position(456)
+            .timestamp(expectedTimestamp)
             .intent(JobIntent.CREATED)
             .value()
               .allOf((r) -> r.getCommand())
@@ -113,6 +116,7 @@ public class CreateJobTest
         assertThat(job.getMetadata().getTopicName()).isEqualTo(StubBrokerRule.TEST_TOPIC_NAME);
         assertThat(job.getMetadata().getPartitionId()).isEqualTo(StubBrokerRule.TEST_PARTITION_ID);
         assertThat(job.getMetadata().getPosition()).isEqualTo(456);
+        assertThat(job.getMetadata().getTimestamp()).isEqualTo(expectedTimestamp);
 
         assertThat(job.getState()).isEqualTo(JobState.CREATED);
         assertThat(job.getHeaders()).isEmpty();

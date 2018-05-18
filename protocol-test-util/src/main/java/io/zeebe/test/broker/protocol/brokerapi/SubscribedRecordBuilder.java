@@ -15,6 +15,7 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi;
 
+import java.time.Instant;
 import java.util.Map;
 
 import org.agrona.MutableDirectBuffer;
@@ -50,7 +51,7 @@ public class SubscribedRecordBuilder implements BufferWriter
     protected ValueType valueType;
     private Intent intent;
     protected byte[] event;
-    protected long timestamp;
+    protected Instant timestamp;
 
     public SubscribedRecordBuilder(MsgPackHelper msgPackHelper, ServerTransport transport)
     {
@@ -117,7 +118,7 @@ public class SubscribedRecordBuilder implements BufferWriter
         return new MapBuilder<>(this, this::value);
     }
 
-    public SubscribedRecordBuilder timestamp(long timestamp)
+    public SubscribedRecordBuilder timestamp(Instant timestamp)
     {
         this.timestamp = timestamp;
         return this;
@@ -164,7 +165,7 @@ public class SubscribedRecordBuilder implements BufferWriter
             .subscriberKey(subscriberKey)
             .subscriptionType(subscriptionType)
             .partitionId(partitionId)
-            .timestamp(timestamp)
+            .timestamp(timestamp.toEpochMilli())
             .putValue(event, 0, event.length);
     }
 

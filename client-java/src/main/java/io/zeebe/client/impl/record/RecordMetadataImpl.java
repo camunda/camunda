@@ -15,6 +15,8 @@
  */
 package io.zeebe.client.impl.record;
 
+import java.time.Instant;
+
 import io.zeebe.client.api.record.RecordMetadata;
 import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder;
@@ -26,10 +28,10 @@ public class RecordMetadataImpl implements RecordMetadata
     private int partitionId = ExecuteCommandRequestEncoder.partitionIdNullValue();
     private long key = ExecuteCommandRequestEncoder.keyNullValue();
     private long position = ExecuteCommandRequestEncoder.positionNullValue();
-    private long timestamp = ExecuteCommandResponseEncoder.timestampNullValue();
     private io.zeebe.protocol.clientapi.RecordType recordType;
     private io.zeebe.protocol.clientapi.ValueType valueType;
     private Intent intent;
+    private Instant timestamp = null;
 
     @Override
     public String getTopicName()
@@ -81,12 +83,12 @@ public class RecordMetadataImpl implements RecordMetadata
     }
 
     @Override
-    public long getTimestamp()
+    public Instant getTimestamp()
     {
         return timestamp;
     }
 
-    public void setTimestamp(long timestamp)
+    public void setTimestamp(Instant timestamp)
     {
         this.timestamp = timestamp;
     }

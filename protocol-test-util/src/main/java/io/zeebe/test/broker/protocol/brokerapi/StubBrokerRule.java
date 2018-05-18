@@ -18,6 +18,7 @@ package io.zeebe.test.broker.protocol.brokerapi;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 
 import java.net.InetSocketAddress;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -364,7 +365,7 @@ public class StubBrokerRule extends ExternalResource
         ValueType valueType,
         Intent intent)
     {
-        pushRecord(remote, subscriberKey, key, position, clock.getCurrentTimeInMillis(), recordType, valueType, intent);
+        pushRecord(remote, subscriberKey, key, position, clock.getCurrentTime(), recordType, valueType, intent);
     }
 
     public void pushRecord(
@@ -372,7 +373,7 @@ public class StubBrokerRule extends ExternalResource
             long subscriberKey,
             long key,
             long position,
-            long timestamp,
+            Instant timestamp,
             RecordType recordType,
             ValueType valueType,
             Intent intent)
@@ -405,7 +406,7 @@ public class StubBrokerRule extends ExternalResource
         builder.position(0);
         builder.valueType(ValueType.RAFT);
         builder.subscriberKey(0);
-        builder.timestamp(clock.getCurrentTimeInMillis());
+        builder.timestamp(clock.getCurrentTime());
         builder.partitionId(TEST_PARTITION_ID);
         builder.value().done();
 
@@ -426,7 +427,7 @@ public class StubBrokerRule extends ExternalResource
             .intent(JobIntent.LOCKED)
             .subscriberKey(subscriberKey)
             .subscriptionType(SubscriptionType.JOB_SUBSCRIPTION)
-            .timestamp(clock.getCurrentTimeInMillis())
+            .timestamp(clock.getCurrentTime())
             .value()
                 .put("type", jobType)
                 .put("lockTime", 1000L)

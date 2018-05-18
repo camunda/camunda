@@ -15,6 +15,8 @@
  */
 package io.zeebe.client.api.record;
 
+import java.time.Instant;
+
 /**
  * The metadata of a record.
  */
@@ -47,7 +49,7 @@ public interface RecordMetadata
      * @return the timestamp of the record. This is the time at which the event
      *         was written to the log.
      */
-    long getTimestamp();
+    Instant getTimestamp();
 
     /**
      * @return the type of the record (event, command or command rejection)

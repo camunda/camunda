@@ -15,6 +15,7 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi;
 
+import java.time.Instant;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -94,6 +95,12 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
     public void setIntentFunction(Function<ExecuteCommandRequest, Intent> intentFunction)
     {
         this.intentFunction = intentFunction;
+    }
+
+    public void setTimestamp(Instant timestamp)
+    {
+        long epochMillis = timestamp == null ? ExecuteCommandResponseEncoder.timestampNullValue() : timestamp.toEpochMilli();
+        setTimestamp(epochMillis);
     }
 
     public void setTimestamp(long timestamp)

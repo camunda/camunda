@@ -15,6 +15,8 @@
  */
 package io.zeebe.client.impl.record;
 
+import java.time.Instant;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.client.api.record.Record;
 import io.zeebe.client.api.record.ZeebeObjectMapper;
@@ -84,9 +86,14 @@ public abstract class RecordImpl implements Record
         return this.metadata.hasPartitionId();
     }
 
-    public void setTimestamp(long timestamp)
+    public void setTimestamp(Instant timestamp)
     {
         this.metadata.setTimestamp(timestamp);
+    }
+
+    public void setTimestamp(long timestamp)
+    {
+        setTimestamp(Instant.ofEpochMilli(timestamp));
     }
 
     public void updateMetadata(RecordMetadataImpl other)
