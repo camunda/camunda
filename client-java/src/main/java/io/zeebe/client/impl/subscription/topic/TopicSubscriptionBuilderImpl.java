@@ -250,7 +250,7 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilderSte
         {
             handler.accept(typedRecord);
         }
-        else
+        else if (defaultRecordHandler != null)
         {
             defaultRecordHandler.onRecord(typedRecord);
         }

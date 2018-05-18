@@ -850,6 +850,31 @@ public class TopicSubscriptionTest
     }
 
     @Test
+    public void shouldIgnoreEventWithoutHandler()
+    {
+        // given
+        broker.stubTopicSubscriptionApi(123L);
+
+        final RecordingTopicEventHandler defaultEventHandler = new RecordingTopicEventHandler();
+
+        final TopicSubscription subscription = clientRule.subscriptionClient().newTopicSubscription()
+            .name(SUBSCRIPTION_NAME)
+            .jobEventHandler(defaultEventHandler)
+            .startAtHeadOfTopic()
+            .open();
+
+        final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
+
+        // when
+        broker.pushRecord(clientAddress, 123L, 1L, 1L, RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATED);
+        broker.pushRecord(clientAddress, 123L, 1L, 2L, RecordType.EVENT, ValueType.JOB, JobIntent.CREATED);
+
+        // then
+        waitUntil(() -> defaultEventHandler.numJobEvents() == 1);
+        assertThat(subscription.isOpen()).isTrue();
+    }
+
+    @Test
     public void shouldReopenSubscriptionOnChannelInterruption() throws InterruptedException
     {
         // given
