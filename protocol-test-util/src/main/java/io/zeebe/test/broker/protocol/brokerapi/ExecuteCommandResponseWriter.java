@@ -99,7 +99,7 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
 
     public void setTimestamp(Instant timestamp)
     {
-        long epochMillis = timestamp == null ? ExecuteCommandResponseEncoder.timestampNullValue() : timestamp.toEpochMilli();
+        final long epochMillis = timestamp == null ? ExecuteCommandResponseEncoder.timestampNullValue() : timestamp.toEpochMilli();
         setTimestamp(epochMillis);
     }
 
