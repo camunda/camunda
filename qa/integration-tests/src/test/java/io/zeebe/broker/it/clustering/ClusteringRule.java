@@ -16,23 +16,24 @@
 package io.zeebe.broker.it.clustering;
 
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.io.InputStream;
 import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Predicate;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.it.ClientRule;
+import io.zeebe.broker.it.util.TopologyClient;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.commands.*;
 import io.zeebe.client.api.events.TopicEvent;
 import io.zeebe.client.api.events.TopicEvent.TopicState;
+import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.FileUtil;
@@ -41,7 +42,6 @@ import org.junit.rules.ExternalResource;
 
 public class ClusteringRule extends ExternalResource
 {
-    private static final int REPLICATION_RETRY_COUNT = 100;
 
     public static final int DEFAULT_REPLICATION_FACTOR = 1;
     public static final int SYSTEM_TOPIC_REPLICATION_FACTOR = 3;
@@ -60,7 +60,6 @@ public class ClusteringRule extends ExternalResource
 
     private SocketAddress[] brokerAddresses = new SocketAddress[]{BROKER_1_CLIENT_ADDRESS, BROKER_2_CLIENT_ADDRESS, BROKER_3_CLIENT_ADDRESS};
     private String[] brokerConfigs = new String[]{BROKER_1_TOML, BROKER_2_TOML, BROKER_3_TOML};
-    private final int spreadCount = brokerAddresses.length * 6;
 
     // rules
     private final AutoCloseableRule autoCloseableRule;
@@ -68,6 +67,7 @@ public class ClusteringRule extends ExternalResource
 
     // internal
     private ZeebeClient zeebeClient;
+    private TopologyClient topologyClient;
     protected final Map<SocketAddress, Broker> brokers = new HashMap<>();
     protected final Map<SocketAddress, File> brokerBases = new HashMap<>();
 
@@ -88,6 +88,7 @@ public class ClusteringRule extends ExternalResource
     protected void before()
     {
         zeebeClient = clientRule.getClient();
+        topologyClient = new TopologyClient((ZeebeClientImpl) zeebeClient);
 
         for (int i = 0; i < brokerConfigs.length; i++)
         {
@@ -100,16 +101,18 @@ public class ClusteringRule extends ExternalResource
 
         waitForInternalSystemAndReplicationFactor();
 
-        waitUntilBrokersInTopology(brokers.size());
+        waitUntilBrokersInTopology(brokers.keySet());
     }
 
-    private void waitUntilBrokersInTopology(int size)
+    private void waitUntilBrokersInTopology(final Set<SocketAddress> addresses)
     {
-        waitForSpreading(() ->
-        {
-            doRepeatedly(this::requestBrokers)
-                .until(topologyBrokers -> topologyBrokers.size() == size);
-        });
+        waitForTopology(topology ->
+            topology
+                .stream()
+                .map(BrokerInfo::getSocketAddress)
+                .collect(Collectors.toSet())
+                .containsAll(addresses)
+        );
     }
 
     private void waitForInternalSystemAndReplicationFactor()
@@ -152,7 +155,7 @@ public class ClusteringRule extends ExternalResource
      * and the replication factor was reached for each partition.
      * Besides that the topic request needs to be return the created topic.
      *
-     * The replication factor is per default the number of current brokers in the cluster, see {@link #getReplicationFactor()}.
+     * The replication factor is per default the number of current brokers in the cluster, see {@link #DEFAULT_REPLICATION_FACTOR}.
      *
      * @param topicName the name of the topic to create
      * @param partitionCount to number of partitions for the new topic
@@ -177,7 +180,7 @@ public class ClusteringRule extends ExternalResource
 
         waitForTopicPartitionReplicationFactor(topicName, partitionCount, replicationFactor);
 
-        return waitForSpreading(() -> waitForTopicAvailability(topicName));
+        return waitForTopicAvailability(topicName);
     }
 
     private boolean hasPartitionsWithReplicationFactor(List<BrokerInfo> brokers, String topicName, int partitionCount, int replicationFactor)
@@ -205,11 +208,7 @@ public class ClusteringRule extends ExternalResource
 
     public void waitForTopicPartitionReplicationFactor(String topicName, int partitionCount, int replicationFactor)
     {
-        waitForSpreading(() ->
-        {
-            doRepeatedly(this::requestBrokers)
-                .until(topologyBrokers -> hasPartitionsWithReplicationFactor(topologyBrokers, topicName, partitionCount, replicationFactor), REPLICATION_RETRY_COUNT);
-        });
+        waitForTopology(topology -> hasPartitionsWithReplicationFactor(topology, topicName, partitionCount, replicationFactor));
     }
 
     private Topic waitForTopicAvailability(String topicName)
@@ -265,11 +264,7 @@ public class ClusteringRule extends ExternalResource
 
     private void waitUntilBrokerIsAddedToTopology(SocketAddress socketAddress)
     {
-        waitForSpreading(() ->
-        {
-            doRepeatedly(this::requestBrokers)
-                .until(topologyBrokers -> topologyBrokers.stream().anyMatch(topologyBroker -> topologyBroker.getSocketAddress().equals(socketAddress)));
-        });
+        waitForTopology(topology -> topology.stream().anyMatch(topologyBroker -> topologyBroker.getSocketAddress().equals(socketAddress)));
     }
 
     private List<BrokerInfo> requestBrokers()
@@ -367,67 +362,31 @@ public class ClusteringRule extends ExternalResource
 
     private void waitUntilBrokerIsRemovedFromTopology(SocketAddress socketAddress)
     {
-        waitForSpreading(() ->
-        {
-            doRepeatedly(this::requestBrokers)
-                .until(topologyBrokers -> topologyBrokers.stream().noneMatch(topologyBroker -> topologyBroker.getSocketAddress().equals(socketAddress)));
-        });
+        waitForTopology(topology -> topology.stream().noneMatch(b -> b.getSocketAddress().equals(socketAddress)));
     }
 
     private void waitForNewLeaderOfPartitions(List<Integer> partitions, SocketAddress oldLeader)
     {
-        waitForSpreading(() ->
-        {
-            doRepeatedly(this::requestBrokers)
-                .until(topologyBrokers ->
-                    topologyBrokers != null && topologyBrokers.stream()
-                        .filter(broker -> !broker.getSocketAddress().equals(oldLeader))
-                        .flatMap(broker -> broker.getPartitions().stream())
-                        .filter(PartitionInfo::isLeader)
-                        .map(PartitionInfo::getPartitionId)
-                        .collect(Collectors.toSet())
-                        .containsAll(partitions));
-        });
+        waitForTopology(topology ->
+            topology.stream()
+                .filter(broker -> !broker.getSocketAddress().equals(oldLeader))
+                .flatMap(broker -> broker.getPartitions().stream())
+                .filter(PartitionInfo::isLeader)
+                .map(PartitionInfo::getPartitionId)
+                .collect(Collectors.toSet())
+                .containsAll(partitions)
+        );
     }
 
-    public void checkTopology(Predicate<Topology> topologyPredicate)
+    public void waitForTopology(final Function<List<BrokerInfo>, Boolean> topologyPredicate)
     {
-        final AtomicBoolean predicate = new AtomicBoolean();
-        waitForSpreading(() ->
-        {
-            final Topology topologyResponse = zeebeClient.newTopologyRequest().send().join();
-            predicate.compareAndSet(false, topologyPredicate.test(topologyResponse));
-        });
-        assertThat(predicate).isTrue();
-    }
-
-    private void waitForSpreading(Runnable r)
-    {
-        for (int i = 0; i < spreadCount; i++)
-        {
-            r.run();
-
-            // retry to make sure
-        }
-    }
-
-    private <V> V waitForSpreading(Callable<V> callable)
-    {
-        V value = null;
-        for (int i = 0; i < spreadCount; i++)
-        {
-            try
-            {
-                value = callable.call();
-            }
-            catch (Exception e)
-            {
-                throw new RuntimeException(e);
-            }
-
-            // retry to make sure
-        }
-        return value;
+        waitUntil(() ->
+            brokers.keySet().stream()
+               .allMatch(socketAddress -> {
+                   final List<BrokerInfo> topology = topologyClient.requestTopologyFromBroker(socketAddress);
+                   return topologyPredicate.apply(topology);
+               }), 250
+        );
     }
 
 }

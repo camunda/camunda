@@ -212,13 +212,10 @@ public class CreateTopicClusteredTest
         clusteringRule.stopBroker(otherBrokers[0]);
 
         // then topology contains still topic
-        clusteringRule.checkTopology((topologyResponse ->
-        {
-            return topologyResponse.getBrokers()
-                .stream()
-                .flatMap(broker -> broker.getPartitions().stream())
-                .anyMatch(partition -> partition.getTopicName().equalsIgnoreCase(Protocol.SYSTEM_TOPIC));
-        }));
+        clusteringRule.waitForTopology((topology -> topology
+            .stream()
+            .flatMap(broker -> broker.getPartitions().stream())
+            .anyMatch(partition -> partition.getTopicName().equalsIgnoreCase(Protocol.SYSTEM_TOPIC))));
 
         // but requesting topics is not possible since replication factor is not reached -> leader partition was removed
         final Future<Topics> topicRequestFuture = client.newTopicsRequest().send();
@@ -249,13 +246,10 @@ public class CreateTopicClusteredTest
         clusteringRule.stopBroker(brokerWhichIsNoLeader);
 
         // then topology contains still topic
-        clusteringRule.checkTopology((topologyResponse ->
-        {
-            return topologyResponse.getBrokers()
-                .stream()
-                .flatMap(broker -> broker.getPartitions().stream())
-                .anyMatch(partition -> partition.getTopicName().equalsIgnoreCase(topicName));
-        }));
+        clusteringRule.waitForTopology((topology -> topology
+            .stream()
+            .flatMap(broker -> broker.getPartitions().stream())
+            .anyMatch(partition -> partition.getTopicName().equalsIgnoreCase(topicName))));
 
         // but creating task on topic is no longer possible since replication factor is not reached -> leader partition was removed
         final String jobType = "jobType";
