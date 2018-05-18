@@ -218,11 +218,6 @@ mavenJob(jobName)
             retainLongStdout()
         }
 
-        jmhReport
-        {
-            resultPath '**/target/jmh-result.json'
-        }
-
         extendedEmail
         {
           triggers
