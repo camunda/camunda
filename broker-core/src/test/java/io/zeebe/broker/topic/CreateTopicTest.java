@@ -105,7 +105,7 @@ public class CreateTopicTest
     }
 
     @Test
-    public void shouldNotCreateExistingTopic() throws InterruptedException
+    public void shouldNotCreateExistingTopic()
     {
         // given
         final String topicName = "newTopic";

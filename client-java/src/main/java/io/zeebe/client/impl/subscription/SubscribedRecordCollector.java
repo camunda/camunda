@@ -69,6 +69,7 @@ public class SubscribedRecordCollector implements ClientMessageHandler
 
             final int partitionId = subscribedRecordDecoder.partitionId();
             final long position = subscribedRecordDecoder.position();
+            final long sourceRecordPosition = subscribedRecordDecoder.sourceRecordPosition();
             final long key = subscribedRecordDecoder.key();
             final long subscriberKey = subscribedRecordDecoder.subscriberKey();
             final RecordType recordType = subscribedRecordDecoder.recordType();
@@ -102,6 +103,7 @@ public class SubscribedRecordCollector implements ClientMessageHandler
             event.setPartitionId(partitionId);
             event.setPosition(position);
             event.setKey(key);
+            event.setSourceRecordPosition(sourceRecordPosition);
             event.setIntent(intent);
             event.setTimestamp(timestamp);
             event.setRejectionType(rejectionType);

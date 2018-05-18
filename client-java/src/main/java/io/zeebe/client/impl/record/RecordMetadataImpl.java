@@ -15,12 +15,17 @@
  */
 package io.zeebe.client.impl.record;
 
-import java.time.Instant;
-
-import com.fasterxml.jackson.annotation.*;
-import io.zeebe.client.api.record.*;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.zeebe.client.api.record.RecordMetadata;
+import io.zeebe.client.api.record.RecordType;
+import io.zeebe.client.api.record.RejectionType;
+import io.zeebe.client.api.record.ValueType;
 import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
 import io.zeebe.protocol.intent.Intent;
+
+import java.time.Instant;
 
 public class RecordMetadataImpl implements RecordMetadata
 {
@@ -28,6 +33,7 @@ public class RecordMetadataImpl implements RecordMetadata
     private int partitionId = ExecuteCommandRequestEncoder.partitionIdNullValue();
     private long key = ExecuteCommandRequestEncoder.keyNullValue();
     private long position = ExecuteCommandRequestEncoder.positionNullValue();
+    private long sourceRecordPosition = ExecuteCommandRequestEncoder.sourceRecordPositionNullValue();
     private io.zeebe.protocol.clientapi.RecordType recordType;
     private io.zeebe.protocol.clientapi.ValueType valueType;
     private Intent intent;
@@ -98,6 +104,17 @@ public class RecordMetadataImpl implements RecordMetadata
     public void setPosition(long position)
     {
         this.position = position;
+    }
+
+    @Override
+    public long getSourceRecordPosition()
+    {
+        return sourceRecordPosition;
+    }
+
+    public void setSourceRecordPosition(long sourceRecordPosition)
+    {
+        this.sourceRecordPosition = sourceRecordPosition;
     }
 
     @Override
@@ -224,6 +241,8 @@ public class RecordMetadataImpl implements RecordMetadata
         builder.append(partitionId);
         builder.append(", position=");
         builder.append(position);
+        builder.append(", sourceRecordPosition=");
+        builder.append(sourceRecordPosition);
         builder.append(", key=");
         builder.append(key);
         builder.append(", timestamp=");

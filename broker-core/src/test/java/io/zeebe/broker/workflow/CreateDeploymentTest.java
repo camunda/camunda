@@ -29,6 +29,7 @@ import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
+import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
 import io.zeebe.util.StreamUtil;
 import org.junit.Rule;
 import org.junit.Test;
@@ -72,9 +73,14 @@ public class CreateDeploymentTest
                 .done()
                 .sendAndAwait();
 
+
+
         // then
-        assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
+        final SubscribedRecord createDeploymentCommand = getFirstDeploymentCreateCommand();
+
+        assertThat(resp.key()).isEqualTo(createDeploymentCommand.position());
         assertThat(resp.position()).isGreaterThanOrEqualTo(0L);
+        assertThat(resp.sourceRecordPosition()).isEqualTo(createDeploymentCommand.position());
         assertThat(resp.partitionId()).isEqualTo(Protocol.SYSTEM_PARTITION);
         assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
         assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATED);
@@ -159,7 +165,10 @@ public class CreateDeploymentTest
             apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, resource);
 
         // then
-        assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
+        final SubscribedRecord createDeploymentCommand = getFirstDeploymentCreateCommand();
+
+        assertThat(resp.key()).isEqualTo(createDeploymentCommand.position());
+        assertThat(resp.sourceRecordPosition()).isEqualTo(createDeploymentCommand.position());
         assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
         assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATE);
         assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
@@ -186,7 +195,10 @@ public class CreateDeploymentTest
                 .sendAndAwait();
 
         // then
-        assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
+        final SubscribedRecord createDeploymentCommand = getFirstDeploymentCreateCommand();
+
+        assertThat(resp.key()).isEqualTo(createDeploymentCommand.position());
+        assertThat(resp.sourceRecordPosition()).isEqualTo(createDeploymentCommand.position());
         assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
         assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
         assertThat(resp.rejectionReason())
@@ -209,7 +221,10 @@ public class CreateDeploymentTest
                 .sendAndAwait();
 
         // then
-        assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
+        final SubscribedRecord createDeploymentCommand = getFirstDeploymentCreateCommand();
+
+        assertThat(resp.key()).isEqualTo(createDeploymentCommand.position());
+        assertThat(resp.sourceRecordPosition()).isEqualTo(createDeploymentCommand.position());
         assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
         assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATE);
         assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
@@ -299,5 +314,16 @@ public class CreateDeploymentTest
     {
         final List<Map<String, Object>> d1Workflows = (List<Map<String, Object>>) d1.getValue().get("deployedWorkflows");
         return d1Workflows.get(offset);
+    }
+
+    public SubscribedRecord getFirstDeploymentCreateCommand()
+    {
+        return apiRule
+            .topic(Protocol.SYSTEM_PARTITION)
+            .receiveRecords()
+            .skipUntil(r -> r.valueType() == ValueType.DEPLOYMENT)
+            .filter(r -> r.valueType() == ValueType.DEPLOYMENT && r.intent() == DeploymentIntent.CREATE)
+            .findFirst()
+            .get();
     }
 }

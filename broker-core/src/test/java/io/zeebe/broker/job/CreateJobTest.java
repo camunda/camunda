@@ -55,6 +55,7 @@ public class CreateJobTest
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
         assertThat(resp.position()).isGreaterThanOrEqualTo(0L);
+        assertThat(resp.sourceRecordPosition()).isEqualTo(resp.key());
         assertThat(resp.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
         assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
         assertThat(resp.intent()).isEqualTo(JobIntent.CREATED);

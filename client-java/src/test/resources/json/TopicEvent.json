@@ -7,6 +7,7 @@
     "partitionId": 0,
     "key": 4294968552,
     "position": 4294969128,
+    "sourceRecordPosition": 4294967300,
     "timestamp": "2018-06-04T08:43:25.399Z",
     "rejectionType": null,
     "rejectionReason": null

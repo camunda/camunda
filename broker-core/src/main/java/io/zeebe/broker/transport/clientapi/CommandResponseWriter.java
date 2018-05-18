@@ -17,28 +17,19 @@
  */
 package io.zeebe.broker.transport.clientapi;
 
-import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.keyNullValue;
-import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.partitionIdNullValue;
-import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.positionNullValue;
-import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.timestampNullValue;
-import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.valueHeaderLength;
-
-import java.util.Objects;
-
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder;
-import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.RejectionType;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.clientapi.*;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerResponse;
 import io.zeebe.util.buffer.BufferWriter;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+
+import java.util.Objects;
+
+import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.*;
 
 public class CommandResponseWriter implements BufferWriter
 {
@@ -47,6 +38,7 @@ public class CommandResponseWriter implements BufferWriter
 
     protected int partitionId = partitionIdNullValue();
     protected long position = positionNullValue();
+    private long sourceRecordPosition = sourceRecordPositionNullValue();
     protected long key = keyNullValue();
     protected long timestamp = timestampNullValue();
     private RecordType recordType = RecordType.NULL_VAL;
@@ -107,6 +99,12 @@ public class CommandResponseWriter implements BufferWriter
         return this;
     }
 
+    public CommandResponseWriter sourcePosition(final long sourcePosition)
+    {
+        this.sourceRecordPosition = sourcePosition;
+        return this;
+    }
+
     public CommandResponseWriter key(final long key)
     {
         this.key = key;
@@ -163,6 +161,7 @@ public class CommandResponseWriter implements BufferWriter
             .recordType(recordType)
             .partitionId(partitionId)
             .position(position)
+            .sourceRecordPosition(sourceRecordPosition)
             .valueType(valueType)
             .intent(intent)
             .key(key)
@@ -198,6 +197,8 @@ public class CommandResponseWriter implements BufferWriter
     {
         partitionId = partitionIdNullValue();
         key = keyNullValue();
+        position = positionNullValue();
+        sourceRecordPosition = sourceRecordPositionNullValue();
         valueWriter = null;
         recordType = RecordType.NULL_VAL;
         intent = Intent.NULL_VAL;

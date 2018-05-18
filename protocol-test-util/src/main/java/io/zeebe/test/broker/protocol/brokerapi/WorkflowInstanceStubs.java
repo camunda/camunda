@@ -52,10 +52,9 @@ public class WorkflowInstanceStubs
         builder.register();
     }
 
-    public void registerCancelCommand()
+    public void registerCancelCommand(long sourceRecordPosition)
     {
-        registerCancelCommand(b ->
-        { });
+        registerCancelCommand(b -> b.sourceRecordPosition(sourceRecordPosition));
     }
 
     public void registerCancelCommand(Consumer<ExecuteCommandResponseBuilder> modifier)
@@ -74,10 +73,9 @@ public class WorkflowInstanceStubs
         builder.register();
     }
 
-    public void registerUpdatedPayloadCommand()
+    public void registerUpdatedPayloadCommand(long sourceRecordPosition)
     {
-        registerUpdatedPayloadCommand(b ->
-        { });
+        registerUpdatedPayloadCommand(b -> b.sourceRecordPosition(sourceRecordPosition));
     }
 
     public void registerUpdatedPayloadCommand(Consumer<ExecuteCommandResponseBuilder> modifier)

@@ -39,4 +39,11 @@ public interface TypedResponseWriter
      * @return true if successful
      */
     boolean writeEvent(Intent intent, TypedRecord<?> record);
+
+    /*
+     * Writes event as it is
+     *
+     * @return true if successful
+     */
+    boolean writeEventUnchanged(TypedRecord<?> record);
 }

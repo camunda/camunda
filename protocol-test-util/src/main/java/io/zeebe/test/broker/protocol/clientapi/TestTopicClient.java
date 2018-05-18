@@ -15,19 +15,21 @@
  */
 package io.zeebe.test.broker.protocol.clientapi;
 
-import static io.zeebe.util.buffer.BufferUtil.bufferAsArray;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.assertj.core.api.Assertions.assertThat;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.SubscriptionType;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.*;
+import org.agrona.DirectBuffer;
 
 import java.util.*;
 import java.util.function.Predicate;
 
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.*;
-import io.zeebe.protocol.intent.*;
-import org.agrona.DirectBuffer;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsArray;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestTopicClient
 {
@@ -210,27 +212,29 @@ public class TestTopicClient
             event.remove("payload");
         }
 
-        final ExecuteCommandResponse response = completeJob(jobEvent.key(), event);
+        final ExecuteCommandResponse response = completeJob(jobEvent.position(), jobEvent.key(), event);
 
         assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
         assertThat(response.intent()).isEqualTo(JobIntent.COMPLETED);
     }
 
-    public ExecuteCommandResponse completeJob(long key, Map<String, Object> event)
+    public ExecuteCommandResponse completeJob(long sourceRecordPosition, long key, Map<String, Object> event)
     {
         return apiRule.createCmdRequest()
             .type(ValueType.JOB, JobIntent.COMPLETE)
             .key(key)
+            .sourceRecordPosition(sourceRecordPosition)
             .command()
                 .putAll(event)
             .done()
             .sendAndAwait();
     }
 
-    public ExecuteCommandResponse failJob(long key, Map<String, Object> event)
+    public ExecuteCommandResponse failJob(long sourceRecordPosition, long key, Map<String, Object> event)
     {
         return apiRule.createCmdRequest()
             .type(ValueType.JOB, JobIntent.FAIL)
+            .sourceRecordPosition(sourceRecordPosition)
             .key(key)
             .command()
                 .putAll(event)
@@ -238,10 +242,11 @@ public class TestTopicClient
             .sendAndAwait();
     }
 
-    public ExecuteCommandResponse updateJobRetries(long key, Map<String, Object> event)
+    public ExecuteCommandResponse updateJobRetries(long sourceRecordPosition, long key, Map<String, Object> event)
     {
         return apiRule.createCmdRequest()
             .type(ValueType.JOB, JobIntent.UPDATE_RETRIES)
+            .sourceRecordPosition(sourceRecordPosition)
             .key(key)
             .command()
                 .putAll(event)
@@ -361,5 +366,77 @@ public class TestTopicClient
     public static Predicate<SubscribedRecord> incidentRecords(Intent intent, long workflowInstanceKey)
     {
         return incidentRecords(intent).and(workflowInstanceKey(workflowInstanceKey));
+    }
+
+    //////////////////////////////////////////////////////////////////////////////
+    // short cuts ////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////
+
+    public SubscribedRecord receiveFirstIncidentEvent(IncidentIntent intent)
+    {
+        return receiveEvents()
+            .ofTypeIncident()
+            .withIntent(intent)
+            .getFirst();
+    }
+
+    public SubscribedRecord receiveFirstIncidentEvent(long wfInstanceKey, Intent intent)
+    {
+        return receiveEvents()
+            .ofTypeIncident()
+            .withIntent(intent)
+            .filter(r -> (Long) r.value().get("workflowInstanceKey") == wfInstanceKey)
+            .findFirst()
+            .get();
+    }
+
+    public SubscribedRecord receiveFirstIncidentCommand(IncidentIntent intent)
+    {
+        return receiveCommands()
+            .ofTypeIncident()
+            .withIntent(intent)
+            .getFirst();
+    }
+
+    public SubscribedRecord receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent intent)
+    {
+        return receiveEvents()
+            .ofTypeWorkflowInstance()
+            .withIntent(intent)
+            .getFirst();
+    }
+
+    public SubscribedRecord receiveFirstWorkflowInstanceCommand(WorkflowInstanceIntent intent)
+    {
+        return receiveCommands()
+            .ofTypeWorkflowInstance()
+            .withIntent(intent)
+            .getFirst();
+    }
+
+    public SubscribedRecord receiveFirstWorkflowInstanceEvent(long wfInstanceKey, Intent intent)
+    {
+        return receiveEvents()
+            .ofTypeWorkflowInstance()
+            .withIntent(intent)
+            .filter(r -> (Long) r.value().get("workflowInstanceKey") == wfInstanceKey)
+            .findFirst()
+            .get();
+    }
+
+    public SubscribedRecord receiveFirstJobEvent(JobIntent intent)
+    {
+        return receiveEvents()
+            .ofTypeJob()
+            .withIntent(intent)
+            .getFirst();
+    }
+
+    public SubscribedRecord receiveFirstJobCommand(JobIntent intent)
+    {
+        return receiveCommands()
+            .ofTypeJob()
+            .withIntent(intent)
+            .getFirst();
     }
 }

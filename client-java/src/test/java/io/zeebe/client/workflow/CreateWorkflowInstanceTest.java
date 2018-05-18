@@ -15,11 +15,6 @@
  */
 package io.zeebe.client.workflow;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
-
-import java.util.Collections;
-
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.commands.CreateWorkflowInstanceCommandStep1;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
@@ -31,9 +26,17 @@ import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
+
+import java.io.ByteArrayInputStream;
+import java.util.Collections;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 
 public class CreateWorkflowInstanceTest
@@ -62,7 +65,8 @@ public class CreateWorkflowInstanceTest
     {
         // given
         brokerRule.workflowInstances().registerCreateCommand(b ->
-            b.value()
+            b.sourceRecordPosition(1L)
+             .value()
                 .allOf(r -> r.getCommand())
                 .put("version", 1)
                 .put("workflowInstanceKey", 1)
@@ -92,6 +96,47 @@ public class CreateWorkflowInstanceTest
         assertThat(workflowInstance.getWorkflowInstanceKey()).isEqualTo(1);
         assertThat(workflowInstance.getPayload()).isNull();
         assertThat(workflowInstance.getPayloadAsMap()).isNull();
+        assertThat(workflowInstance.getSourceRecordPosition()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldCreateWorkflowInstanceWithPayload()
+    {
+        // given
+        final String payload = "{\"bar\":4}";
+
+        brokerRule.workflowInstances().registerCreateCommand(b ->
+            b.sourceRecordPosition(1L)
+             .value()
+                .allOf(r -> r.getCommand())
+                .put("version", 1)
+                .put("workflowInstanceKey", 1)
+                .done());
+
+        // when
+        final WorkflowInstanceEvent workflowInstance = clientRule.workflowClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId("foo")
+            .latestVersion()
+            .payload(new ByteArrayInputStream(payload.getBytes()))
+            .send()
+            .join();
+
+        // then
+        final ExecuteCommandRequest commandRequest = brokerRule.getReceivedCommandRequests().get(0);
+        assertThat(commandRequest.getCommand()).containsOnly(
+              entry("bpmnProcessId", "foo"),
+              entry("version", CreateWorkflowInstanceCommandStep1.LATEST_VERSION),
+              entry("workflowKey", -1),
+              entry("workflowInstanceKey", -1),
+              entry("payload", msgPackConverter.convertToMsgPack(payload)));
+
+        assertThat(workflowInstance.getBpmnProcessId()).isEqualTo("foo");
+        assertThat(workflowInstance.getVersion()).isEqualTo(1);
+        assertThat(workflowInstance.getWorkflowInstanceKey()).isEqualTo(1);
+        assertThat(workflowInstance.getPayload()).isEqualTo(payload);
+        assertThat(workflowInstance.getSourceRecordPosition()).isEqualTo(1);
+        assertThat(workflowInstance.getPayloadAsMap()).containsOnly(entry("bar", 4));
     }
 
     @Test
@@ -99,8 +144,9 @@ public class CreateWorkflowInstanceTest
     {
         // given
         brokerRule.workflowInstances().registerCreateCommand(b ->
-                b.value()
-                    .allOf(r -> r.getCommand())
+            b.sourceRecordPosition(1L)
+                .value()
+                .allOf(r -> r.getCommand())
                     .put("workflowInstanceKey", 1)
                 .done());
 
@@ -123,6 +169,7 @@ public class CreateWorkflowInstanceTest
         assertThat(workflowInstance.getBpmnProcessId()).isEqualTo("foo");
         assertThat(workflowInstance.getVersion()).isEqualTo(2);
         assertThat(workflowInstance.getWorkflowInstanceKey()).isEqualTo(1);
+        assertThat(workflowInstance.getSourceRecordPosition()).isEqualTo(1);
     }
 
     @Test
@@ -130,8 +177,9 @@ public class CreateWorkflowInstanceTest
     {
         // given
         brokerRule.workflowInstances().registerCreateCommand(b ->
-                b.value()
-                    .allOf(r -> r.getCommand())
+            b.sourceRecordPosition(1L)
+                .value()
+                .allOf(r -> r.getCommand())
                     .put("workflowInstanceKey", 1)
                     .put("payload", msgPackConverter.convertToMsgPack("{ \"bar\" : 4 }"))
                 .done());
@@ -152,31 +200,7 @@ public class CreateWorkflowInstanceTest
 
         assertThat(workflowInstance.getWorkflowKey()).isEqualTo(2);
         assertThat(workflowInstance.getWorkflowInstanceKey()).isEqualTo(1);
-    }
-
-    @Test
-    public void shouldCreateWorkflowInstanceWithPayload()
-    {
-        // given
-        final String payload = "{\"foo\":\"bar\"}";
-
-        brokerRule.workflowInstances().registerCreateCommand();
-
-        // when
-        final WorkflowInstanceEvent workflowInstance = clientRule.workflowClient()
-            .newCreateInstanceCommand()
-            .bpmnProcessId("foo")
-            .latestVersion()
-            .payload(payload)
-            .send()
-            .join();
-
-        // then
-        final ExecuteCommandRequest commandRequest = brokerRule.getReceivedCommandRequests().get(0);
-        assertThat(commandRequest.getCommand()).contains(entry("payload", msgPackConverter.convertToMsgPack(payload)));
-
-        assertThat(workflowInstance.getPayload()).isEqualTo(payload);
-        assertThat(workflowInstance.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+        assertThat(workflowInstance.getSourceRecordPosition()).isEqualTo(1);
     }
 
     @Test

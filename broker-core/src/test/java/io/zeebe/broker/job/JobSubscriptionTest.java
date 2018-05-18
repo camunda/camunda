@@ -17,8 +17,21 @@
  */
 package io.zeebe.broker.job;
 
-import static io.zeebe.test.util.TestUtil.waitUntil;
-import static org.assertj.core.api.Assertions.assertThat;
+import io.zeebe.broker.job.processor.JobSubscription;
+import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.protocol.clientapi.ControlMessageType;
+import io.zeebe.protocol.clientapi.ErrorCode;
+import io.zeebe.protocol.clientapi.SubscriptionType;
+import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.test.broker.protocol.clientapi.*;
+import io.zeebe.transport.SocketAddress;
+import io.zeebe.util.StringUtil;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.IOException;
 import java.net.StandardSocketOptions;
@@ -30,28 +43,8 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-
-import io.zeebe.broker.job.processor.JobSubscription;
-import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.ErrorCode;
-import io.zeebe.protocol.clientapi.SubscriptionType;
-import io.zeebe.protocol.intent.Intent;
-import io.zeebe.protocol.intent.JobIntent;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ControlMessageRequestBuilder;
-import io.zeebe.test.broker.protocol.clientapi.ControlMessageResponse;
-import io.zeebe.test.broker.protocol.clientapi.ErrorResponse;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
-import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
-import io.zeebe.transport.SocketAddress;
-import io.zeebe.util.StringUtil;
+import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
 
 
 public class JobSubscriptionTest
@@ -71,7 +64,7 @@ public class JobSubscriptionTest
     }
 
     @Test
-    public void shouldAddJobSubscription() throws InterruptedException
+    public void shouldAddJobSubscription()
     {
         // given
         apiRule
@@ -90,10 +83,8 @@ public class JobSubscriptionTest
         final ExecuteCommandResponse response = testClient.createJob("foo");
 
         // then
-        final SubscribedRecord jobEvent = testClient.receiveEvents()
-                .ofTypeJob()
-                .withIntent(JobIntent.ACTIVATED)
-                .getFirst();
+        final SubscribedRecord jobEvent = testClient.receiveFirstJobEvent(JobIntent.ACTIVATED);
+
         assertThat(jobEvent.key()).isEqualTo(response.key());
         assertThat(jobEvent.position()).isGreaterThan(response.position());
         assertThat(jobEvent.timestamp()).isGreaterThanOrEqualTo(response.timestamp());
@@ -110,6 +101,39 @@ public class JobSubscriptionTest
             .collect(Collectors.toList());
 
         assertThat(jobStates).containsExactly(JobIntent.CREATE, JobIntent.CREATED, JobIntent.ACTIVATE, JobIntent.ACTIVATED);
+    }
+
+    @Test
+    public void shouldContainSourceRecordPosition()
+    {
+        // given
+        apiRule
+            .createControlMessageRequest()
+            .messageType(ControlMessageType.ADD_JOB_SUBSCRIPTION)
+            .partitionId(apiRule.getDefaultPartitionId())
+            .data()
+                .put("jobType", "foo")
+                .put("timeout", 10000L)
+                .put("worker", "bar")
+                .put("credits", 5)
+            .   done()
+            .send();
+
+
+        // when
+        final ExecuteCommandResponse response = testClient.createJob("foo");
+
+
+        // then
+        final SubscribedRecord createJobCommand = testClient.receiveFirstJobCommand(JobIntent.CREATE);
+        final SubscribedRecord createdJobEvent = testClient.receiveFirstJobEvent(JobIntent.CREATED);
+        final SubscribedRecord activeJobCommand = testClient.receiveFirstJobCommand(JobIntent.ACTIVATE);
+        final SubscribedRecord activatedJobEvent = testClient.receiveFirstJobEvent(JobIntent.ACTIVATED);
+
+        assertThat(response.sourceRecordPosition()).isEqualTo(createJobCommand.position());
+        assertThat(createdJobEvent.sourceRecordPosition()).isEqualTo(createJobCommand.position());
+        assertThat(activeJobCommand.sourceRecordPosition()).isEqualTo(createdJobEvent.position());
+        assertThat(activatedJobEvent.sourceRecordPosition()).isEqualTo(activeJobCommand.position());
     }
 
     @Test
@@ -395,7 +419,7 @@ public class JobSubscriptionTest
      *   that receives no jobs.
      */
     @Test
-    public void shouldOpenSubscriptionConcurrentWithRemoval() throws InterruptedException
+    public void shouldOpenSubscriptionConcurrentWithRemoval()
     {
         // given
         final ControlMessageResponse openResponse = apiRule
@@ -553,7 +577,7 @@ public class JobSubscriptionTest
     }
 
     @Test
-    public void shouldActivateJobsUntilCreditsAreExhausted() throws InterruptedException
+    public void shouldActivateJobsUntilCreditsAreExhausted()
     {
         // given
         apiRule
@@ -588,7 +612,7 @@ public class JobSubscriptionTest
     }
 
     @Test
-    public void shouldIncreaseSubscriptionCredits() throws InterruptedException
+    public void shouldIncreaseSubscriptionCredits()
     {
         // given
         final ControlMessageResponse response = apiRule
@@ -666,7 +690,7 @@ public class JobSubscriptionTest
         // when
         final Map<String, Object> event = new HashMap<>(job.value());
         event.put("retries", 0);
-        testClient.failJob(job.key(), event);
+        testClient.failJob(job.position(), job.key(), event);
 
         // then
         Thread.sleep(500);

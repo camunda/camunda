@@ -81,6 +81,18 @@ public abstract class RecordImpl implements Record
         this.metadata.setPosition(position);
     }
 
+    @Override
+    @JsonIgnore
+    public long getSourceRecordPosition()
+    {
+        return metadata.getSourceRecordPosition();
+    }
+
+    public void setSourceRecordPosition(long sourceRecordPosition)
+    {
+        this.metadata.setSourceRecordPosition(sourceRecordPosition);
+    }
+
     public boolean hasValidPartitionId()
     {
         return this.metadata.hasPartitionId();
@@ -114,6 +126,7 @@ public abstract class RecordImpl implements Record
         this.metadata.setPartitionId(other.getPartitionId());
         this.metadata.setRecordType(other.getProtocolRecordType());
         this.metadata.setValueType(other.getProtocolValueType());
+        this.metadata.setSourceRecordPosition(other.getSourceRecordPosition());
         this.metadata.setIntent(other.getProtocolIntent());
         this.metadata.setTimestamp(other.getTimestamp());
         this.metadata.setRejectionType(other.getProtocolRejectionType());

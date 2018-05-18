@@ -63,6 +63,26 @@ public class TypedResponseWriterImpl implements TypedResponseWriter
         return write(RecordType.EVENT, intent, RejectionType.NULL_VAL, stringWrapper, record);
     }
 
+    @Override
+    public boolean writeEventUnchanged(TypedRecord<?> record)
+    {
+        final RecordMetadata metadata = record.getMetadata();
+
+        return writer
+            .partitionId(partitionId)
+            .position(record.getPosition())
+            .sourcePosition(record.getSourcePosition())
+            .key(record.getKey())
+            .timestamp(record.getTimestamp())
+            .intent(metadata.getIntent())
+            .recordType(metadata.getRecordType())
+            .valueType(metadata.getValueType())
+            .rejectionType(metadata.getRejectionType())
+            .rejectionReason(metadata.getRejectionReason())
+            .valueWriter(record.getValue())
+            .tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId());
+    }
+
     private boolean write(
             RecordType type,
             Intent intent,
@@ -75,6 +95,7 @@ public class TypedResponseWriterImpl implements TypedResponseWriter
         return writer
             .partitionId(partitionId)
             .position(0) // TODO: this depends on the value of written event => https://github.com/zeebe-io/zeebe/issues/374
+            .sourcePosition(record.getPosition())
             .key(record.getKey())
             .timestamp(record.getTimestamp())
             .intent(intent)

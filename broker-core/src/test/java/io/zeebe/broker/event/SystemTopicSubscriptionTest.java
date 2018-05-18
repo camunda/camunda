@@ -17,21 +17,29 @@
  */
 package io.zeebe.broker.event;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
+import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.clientapi.ControlMessageType;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.SubscriptionType;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.protocol.intent.TopicIntent;
+import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
+import io.zeebe.test.broker.protocol.clientapi.ControlMessageResponse;
+import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
+import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.*;
-import io.zeebe.protocol.intent.DeploymentIntent;
-import io.zeebe.protocol.intent.TopicIntent;
-import io.zeebe.test.broker.protocol.clientapi.*;
-import org.junit.*;
-import org.junit.rules.RuleChain;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 
 public class SystemTopicSubscriptionTest
@@ -86,7 +94,7 @@ public class SystemTopicSubscriptionTest
     }
 
     @Test
-    public void shouldPushDeploymentEvents() throws InterruptedException
+    public void shouldPushDeploymentEvents()
     {
         // given
         final long deploymentKey = apiRule
@@ -115,12 +123,13 @@ public class SystemTopicSubscriptionTest
         assertThat(deploymentEvents).extracting(SubscribedRecord::timestamp).containsOnly(brokerRule.getClock().getCurrentTimeInMillis());
 
         assertThat(deploymentEvents).extracting(SubscribedRecord::valueType).containsOnly(ValueType.DEPLOYMENT);
+        assertThat(deploymentEvents).extracting(SubscribedRecord::sourceRecordPosition).containsExactly(-1L, deploymentEvents.get(0).position());
         assertThat(deploymentEvents).extracting(SubscribedRecord::recordType).containsExactly(RecordType.COMMAND, RecordType.EVENT);
         assertThat(deploymentEvents).extracting(SubscribedRecord::intent).containsExactly(DeploymentIntent.CREATE, DeploymentIntent.CREATED);
     }
 
     @Test
-    public void shouldPushTopicEvents() throws InterruptedException
+    public void shouldPushTopicEvents()
     {
         // given
         apiRule.createTopic("my-topic", 1);
@@ -133,21 +142,27 @@ public class SystemTopicSubscriptionTest
         final long subscriberKey = addResponse.key();
 
         // then
-        final List<SubscribedRecord> deploymentEvents = apiRule.subscribedEvents()
+        final List<SubscribedRecord> topicEvents = apiRule.subscribedEvents()
             .filter((e) -> e.valueType() == ValueType.TOPIC && "my-topic".equals(e.value().get("name")))
             .limit(4)
             .collect(Collectors.toList());
 
-        assertThat(deploymentEvents).hasSize(4);
+        assertThat(topicEvents).hasSize(4);
 
-        assertThat(deploymentEvents).extracting(SubscribedRecord::subscriberKey).containsOnly(subscriberKey);
-        assertThat(deploymentEvents).extracting(SubscribedRecord::subscriptionType).containsOnly(SubscriptionType.TOPIC_SUBSCRIPTION);
-        assertThat(deploymentEvents).extracting(SubscribedRecord::partitionId).containsOnly(Protocol.SYSTEM_PARTITION);
-        assertThat(deploymentEvents).extracting(SubscribedRecord::timestamp).containsOnly(brokerRule.getClock().getCurrentTimeInMillis());
+        assertThat(topicEvents).extracting(SubscribedRecord::subscriberKey).containsOnly(subscriberKey);
+        assertThat(topicEvents).extracting(SubscribedRecord::subscriptionType).containsOnly(SubscriptionType.TOPIC_SUBSCRIPTION);
+        assertThat(topicEvents).extracting(SubscribedRecord::partitionId).containsOnly(Protocol.SYSTEM_PARTITION);
+        assertThat(topicEvents).extracting(SubscribedRecord::timestamp).containsOnly(brokerRule.getClock().getCurrentTimeInMillis());
 
-        assertThat(deploymentEvents).extracting(SubscribedRecord::valueType).containsOnly(ValueType.TOPIC);
-        assertThat(deploymentEvents).extracting(SubscribedRecord::recordType).contains(RecordType.COMMAND, RecordType.EVENT);
-        assertThat(deploymentEvents).extracting(SubscribedRecord::intent).containsExactly(TopicIntent.CREATE,
+        assertThat(topicEvents).extracting(SubscribedRecord::valueType).containsOnly(ValueType.TOPIC);
+        assertThat(topicEvents).extracting(SubscribedRecord::recordType).contains(RecordType.COMMAND, RecordType.EVENT);
+
+        assertThat(topicEvents).extracting(SubscribedRecord::sourceRecordPosition)
+            .containsExactly(-1L,
+                topicEvents.get(0).position(),
+                -1L, // since current topic creation impl do not know the source event
+                topicEvents.get(2).position());
+        assertThat(topicEvents).extracting(SubscribedRecord::intent).containsExactly(TopicIntent.CREATE,
                                                                                           TopicIntent.CREATING,
                                                                                           TopicIntent.CREATE_COMPLETE,
                                                                                           TopicIntent.CREATED);

@@ -45,6 +45,11 @@ public class ExecuteCommandRequest implements BufferReader
         this.msgPackHelper = msgPackHelper;
     }
 
+    public long sourceRecordPosition()
+    {
+        return bodyDecoder.sourceRecordPosition();
+    }
+
     public long key()
     {
         return bodyDecoder.key();

@@ -48,7 +48,7 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
     protected LogStreamBatchWriter batchWriter;
 
     protected int producerId;
-    protected long sourceRecordPosition;
+    protected long sourceRecordPosition = -1;
 
     public TypedStreamWriterImpl(
             LogStream stream,

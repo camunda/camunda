@@ -22,6 +22,8 @@ import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_MAPPER;
 import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_PAYLOAD;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_ACTIVITY_ID;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
+import static io.zeebe.protocol.intent.WorkflowInstanceIntent.CREATE;
+import static io.zeebe.protocol.intent.WorkflowInstanceIntent.CREATED;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_INSTANCE_KEY;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_KEY;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_PAYLOAD;
@@ -36,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import io.zeebe.test.broker.protocol.clientapi.*;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -51,10 +54,6 @@ import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
-import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
 import io.zeebe.util.StreamUtil;
 
 
@@ -86,8 +85,11 @@ public class CreateWorkflowInstanceTest
                 .sendAndAwait();
 
         // then
-        assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.position()).isGreaterThanOrEqualTo(0L);
+        final SubscribedRecord createWorkflowCommand = testClient.receiveFirstWorkflowInstanceCommand(CREATE);
+
+        assertThat(resp.key()).isEqualTo(createWorkflowCommand.position());
+        assertThat(resp.position()).isGreaterThan(createWorkflowCommand.position());
+        assertThat(resp.sourceRecordPosition()).isEqualTo(createWorkflowCommand.position());
         assertThat(resp.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
         assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
         assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
@@ -107,6 +109,7 @@ public class CreateWorkflowInstanceTest
                 .done());
 
         // when
+        // then
         final ExecuteCommandResponse resp = apiRule.createCmdRequest()
                 .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
                 .command()
@@ -115,9 +118,13 @@ public class CreateWorkflowInstanceTest
                 .sendAndAwait();
 
         // then
-        assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
+        final SubscribedRecord createWorkflowCommand = testClient.receiveFirstWorkflowInstanceCommand(CREATE);
+
+        assertThat(resp.key()).isEqualTo(createWorkflowCommand.position());
+        assertThat(resp.position()).isGreaterThan(createWorkflowCommand.position());
+        assertThat(resp.sourceRecordPosition()).isEqualTo(createWorkflowCommand.position());
         assertThat(resp.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
-        assertThat(resp.intent()).isEqualTo(WorkflowInstanceIntent.CREATED);
+        assertThat(resp.intent()).isEqualTo(CREATED);
         assertThat(resp.getValue())
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
             .containsEntry(PROP_WORKFLOW_VERSION, 1)
@@ -234,7 +241,7 @@ public class CreateWorkflowInstanceTest
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
         assertThat(resp.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
-        assertThat(resp.intent()).isEqualTo(WorkflowInstanceIntent.CREATED);
+        assertThat(resp.intent()).isEqualTo(CREATED);
         assertThat(resp.getValue())
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
             .containsEntry(PROP_WORKFLOW_VERSION, 2)
@@ -270,7 +277,7 @@ public class CreateWorkflowInstanceTest
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
         assertThat(resp.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
-        assertThat(resp.intent()).isEqualTo(WorkflowInstanceIntent.CREATED);
+        assertThat(resp.intent()).isEqualTo(CREATED);
         assertThat(resp.getValue())
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
             .containsEntry(PROP_WORKFLOW_VERSION, 1)
@@ -297,9 +304,14 @@ public class CreateWorkflowInstanceTest
                 .sendAndAwait();
 
         // then
-        assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
+
+        final SubscribedRecord createWorkflowCommand = testClient.receiveFirstWorkflowInstanceCommand(CREATE);
+
+        assertThat(resp.key()).isEqualTo(createWorkflowCommand.position());
+        assertThat(resp.position()).isGreaterThan(createWorkflowCommand.position());
+        assertThat(resp.sourceRecordPosition()).isEqualTo(createWorkflowCommand.position());
         assertThat(resp.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
-        assertThat(resp.intent()).isEqualTo(WorkflowInstanceIntent.CREATED);
+        assertThat(resp.intent()).isEqualTo(CREATED);
         assertThat(resp.getValue())
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
             .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, resp.key())
@@ -328,7 +340,11 @@ public class CreateWorkflowInstanceTest
                 .sendAndAwait();
 
         // then
-        assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
+        final SubscribedRecord createWorkflowCommand = testClient.receiveFirstWorkflowInstanceCommand(CREATE);
+
+        assertThat(resp.key()).isEqualTo(createWorkflowCommand.position());
+        assertThat(resp.position()).isGreaterThan(createWorkflowCommand.position());
+        assertThat(resp.sourceRecordPosition()).isEqualTo(createWorkflowCommand.position());
         assertThat(resp.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
         assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
         assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
@@ -358,7 +374,7 @@ public class CreateWorkflowInstanceTest
         // then
         final List<SubscribedRecord> workflowInstanceEvents = testClient.receiveEvents()
                 .ofTypeWorkflowInstance()
-                .withIntent(WorkflowInstanceIntent.CREATED)
+                .withIntent(CREATED)
                 .limit(2)
                 .collect(Collectors.toList());
 
@@ -422,7 +438,7 @@ public class CreateWorkflowInstanceTest
     }
 
     @Test
-    public void shouldCreateMultipleWorkflowInstancesForDifferentVersionsAfterTimeout() throws InterruptedException
+    public void shouldCreateMultipleWorkflowInstancesForDifferentVersionsAfterTimeout()
     {
         // given
         final WorkflowDefinition workflow = Bpmn.createExecutableWorkflow("process")
@@ -493,7 +509,7 @@ public class CreateWorkflowInstanceTest
 
         // then
         final SubscribedRecord workflowInstanceEvent = testClient.receiveEvents().ofTypeWorkflowInstance()
-            .withIntent(WorkflowInstanceIntent.CREATED)
+            .withIntent(CREATED)
             .getFirst();
 
         assertThat(workflowInstanceEvent.value())
@@ -551,21 +567,11 @@ public class CreateWorkflowInstanceTest
         final long wfInstance2 = testClient.createWorkflowInstance("process2");
 
         // then
-        final SubscribedRecord event1 = testClient.receiveEvents()
-            .ofTypeWorkflowInstance()
-            .withIntent(WorkflowInstanceIntent.CREATED)
-            .filter(r -> r.key() == wfInstance1)
-            .findFirst()
-            .get();
+        final SubscribedRecord event1 = testClient.receiveFirstWorkflowInstanceEvent(wfInstance1, CREATED);
 
         assertThat(event1.value().get("bpmnProcessId")).isEqualTo("process1");
 
-        final SubscribedRecord event2 = testClient.receiveEvents()
-            .ofTypeWorkflowInstance()
-            .withIntent(WorkflowInstanceIntent.CREATED)
-            .filter(r -> r.key() == wfInstance2)
-            .findFirst()
-            .get();
+        final SubscribedRecord event2 = testClient.receiveFirstWorkflowInstanceEvent(wfInstance2, CREATED);
 
         assertThat(event2.value().get("bpmnProcessId")).isEqualTo("process2");
     }

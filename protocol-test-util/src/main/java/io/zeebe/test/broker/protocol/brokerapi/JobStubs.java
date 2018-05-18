@@ -76,10 +76,9 @@ public class JobStubs
         builder.register();
     }
 
-    public void registerFailCommand()
+    public void registerFailCommand(long sourceRecordPosition)
     {
-        registerFailCommand(r ->
-        { });
+        registerFailCommand(r -> r.sourceRecordPosition(sourceRecordPosition));
     }
 
     public void registerFailCommand(Consumer<ExecuteCommandResponseBuilder> modifier)
@@ -99,10 +98,9 @@ public class JobStubs
         builder.register();
     }
 
-    public void registerUpdateRetriesCommand()
+    public void registerUpdateRetriesCommand(long sourceRecordPosition)
     {
-        registerUpdateRetriesCommand(b ->
-        { });
+        registerUpdateRetriesCommand(b -> b.sourceRecordPosition(sourceRecordPosition));
     }
 
     public void registerUpdateRetriesCommand(Consumer<ExecuteCommandResponseBuilder> modifier)

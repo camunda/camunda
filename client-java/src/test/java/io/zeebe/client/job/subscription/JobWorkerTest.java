@@ -339,8 +339,9 @@ public class JobWorkerTest
         // when
         broker.newSubscribedEvent()
             .partitionId(StubBrokerRule.TEST_PARTITION_ID)
-            .key(4L)
+            .key(3L)
             .position(5L)
+            .sourceRecordPosition(4L)
             .recordType(RecordType.EVENT)
             .valueType(ValueType.JOB)
             .intent(JobIntent.ACTIVATED)
@@ -362,7 +363,8 @@ public class JobWorkerTest
 
         final JobEvent job = handler.getHandledJobs().get(0);
 
-        assertThat(job.getMetadata().getKey()).isEqualTo(4L);
+        assertThat(job.getMetadata().getKey()).isEqualTo(3L);
+        assertThat(job.getSourceRecordPosition()).isEqualTo(4L);
         assertThat(job.getType()).isEqualTo("type");
         assertThat(job.getHeaders()).isEqualTo(jobHeaders);
         assertThat(job.getDeadline()).isEqualTo(Instant.ofEpochMilli(deadline));
@@ -482,6 +484,7 @@ public class JobWorkerTest
         assertThat(jobRequest.partitionId()).isEqualTo(clientRule.getDefaultPartitionId());
         assertThat(jobRequest.key()).isEqualTo(4L);
         assertThat(jobRequest.intent()).isEqualTo(JobIntent.COMPLETE);
+        assertThat(jobRequest.sourceRecordPosition()).isEqualTo(4L);
         assertThat(jobRequest.getCommand())
             .containsEntry("type", "bar")
             .containsEntry("worker", "foo")
@@ -518,6 +521,7 @@ public class JobWorkerTest
         assertThat(jobRequest.partitionId()).isEqualTo(clientRule.getDefaultPartitionId());
         assertThat(jobRequest.key()).isEqualTo(4L);
         assertThat(jobRequest.intent()).isEqualTo(JobIntent.COMPLETE);
+        assertThat(jobRequest.sourceRecordPosition()).isEqualTo(4L);
         assertThat(jobRequest.getCommand())
             .containsEntry("type", "bar")
             .containsEntry("worker", "foo")
@@ -529,7 +533,7 @@ public class JobWorkerTest
     {
         // given
         broker.stubJobSubscriptionApi(123L);
-        broker.jobs().registerFailCommand();
+        broker.jobs().registerFailCommand(3L);
 
         clientRule.jobClient()
             .newWorker()
@@ -557,6 +561,7 @@ public class JobWorkerTest
         assertThat(jobRequest.partitionId()).isEqualTo(clientRule.getDefaultPartitionId());
         assertThat(jobRequest.key()).isEqualTo(4L);
         assertThat(jobRequest.intent()).isEqualTo(JobIntent.FAIL);
+        assertThat(jobRequest.sourceRecordPosition()).isEqualTo(4L);
         assertThat(jobRequest.getCommand())
             .containsEntry("type", "bar")
             .containsEntry("worker", "foo");

@@ -42,4 +42,10 @@ public interface Record
      *         combination of topic, partition and record type.
      */
     long getKey();
+
+    /**
+     * @return the unique position of the source record. Records are
+     *         ordered by position.
+     */
+    long getSourceRecordPosition();
 }

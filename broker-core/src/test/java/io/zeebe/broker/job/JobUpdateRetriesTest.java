@@ -62,6 +62,7 @@ public class JobUpdateRetriesTest
         client = apiRule.topic();
     }
 
+
     @Test
     public void shouldUpdateRetries()
     {
@@ -74,13 +75,41 @@ public class JobUpdateRetriesTest
 
         Map<String, Object> event = subscribedEvent.value();
         event.put("retries", 0);
-        final ExecuteCommandResponse failResponse = client.failJob(subscribedEvent.key(), event);
+        final ExecuteCommandResponse failResponse = client.failJob(subscribedEvent.position(), subscribedEvent.key(), event);
 
         event = failResponse.getValue();
         event.put("retries", NEW_RETRIES);
 
         // when
-        final ExecuteCommandResponse response = client.updateJobRetries(subscribedEvent.key(), event);
+        final ExecuteCommandResponse response = client.updateJobRetries(subscribedEvent.position(), subscribedEvent.key(), event);
+
+        // then
+        final SubscribedRecord jobCommand = apiRule.topic().receiveFirstJobCommand(JobIntent.UPDATE_RETRIES);
+
+        assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
+        assertThat(response.sourceRecordPosition()).isEqualTo(jobCommand.position());
+        assertThat(response.intent()).isEqualTo(JobIntent.RETRIES_UPDATED);
+    }
+
+    @Test
+    public void shouldUpdateRetriesAndRetry()
+    {
+        // given
+        client.createJob(JOB_TYPE);
+
+        apiRule.openJobSubscription(JOB_TYPE).await();
+
+        final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
+
+        Map<String, Object> event = subscribedEvent.value();
+        event.put("retries", 0);
+        final ExecuteCommandResponse failResponse = client.failJob(subscribedEvent.position(), subscribedEvent.key(), event);
+
+        event = failResponse.getValue();
+        event.put("retries", NEW_RETRIES);
+
+        // when
+        final ExecuteCommandResponse response = client.updateJobRetries(subscribedEvent.position(), subscribedEvent.key(), event);
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
@@ -130,7 +159,7 @@ public class JobUpdateRetriesTest
         event.put("type", JOB_TYPE);
 
         // when
-        final ExecuteCommandResponse response = client.updateJobRetries(123, event);
+        final ExecuteCommandResponse response = client.updateJobRetries(0, 123, event);
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
@@ -150,13 +179,13 @@ public class JobUpdateRetriesTest
         final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
 
         Map<String, Object> event = subscribedEvent.value();
-        final ExecuteCommandResponse completeResponse = client.completeJob(subscribedEvent.key(), event);
+        final ExecuteCommandResponse completeResponse = client.completeJob(subscribedEvent.position(), subscribedEvent.key(), event);
 
         event = completeResponse.getValue();
         event.put("retries", NEW_RETRIES);
 
         // when
-        final ExecuteCommandResponse response = client.updateJobRetries(subscribedEvent.key(), event);
+        final ExecuteCommandResponse response = client.updateJobRetries(subscribedEvent.position(), subscribedEvent.key(), event);
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
@@ -179,7 +208,7 @@ public class JobUpdateRetriesTest
         event.put("retries", NEW_RETRIES);
 
         // when
-        final ExecuteCommandResponse response = client.updateJobRetries(subscribedEvent.key(), event);
+        final ExecuteCommandResponse response = client.updateJobRetries(subscribedEvent.position(), subscribedEvent.key(), event);
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
@@ -201,13 +230,13 @@ public class JobUpdateRetriesTest
 
         Map<String, Object> event = subscribedEvent.value();
         event.put("retries", 0);
-        final ExecuteCommandResponse failResponse = client.failJob(subscribedEvent.key(), event);
+        final ExecuteCommandResponse failResponse = client.failJob(subscribedEvent.position(), subscribedEvent.key(), event);
 
         event = failResponse.getValue();
         event.put("retries", 0);
 
         // when
-        final ExecuteCommandResponse response = client.updateJobRetries(subscribedEvent.key(), event);
+        final ExecuteCommandResponse response = client.updateJobRetries(subscribedEvent.position(), subscribedEvent.key(), event);
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
@@ -228,13 +257,13 @@ public class JobUpdateRetriesTest
 
         Map<String, Object> event = subscribedEvent.value();
         event.put("retries", 0);
-        final ExecuteCommandResponse failResponse = client.failJob(subscribedEvent.key(), event);
+        final ExecuteCommandResponse failResponse = client.failJob(subscribedEvent.position(), subscribedEvent.key(), event);
 
         event = failResponse.getValue();
         event.put("retries", -1);
 
         // when
-        final ExecuteCommandResponse response = client.updateJobRetries(subscribedEvent.key(), event);
+        final ExecuteCommandResponse response = client.updateJobRetries(subscribedEvent.position(), subscribedEvent.key(), event);
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);

@@ -496,9 +496,7 @@ public class TopicSubscriptionTest
         assertThat(closeFuture).isNotDone();
 
         boolean hasSentAck = broker.getReceivedCommandRequests().stream()
-            .filter((r) -> r.valueType() == ValueType.SUBSCRIPTION)
-            .findAny()
-            .isPresent();
+            .anyMatch((r) -> r.valueType() == ValueType.SUBSCRIPTION);
 
         assertThat(hasSentAck).isFalse();
 
@@ -510,9 +508,7 @@ public class TopicSubscriptionTest
 
         // and
         hasSentAck = broker.getReceivedCommandRequests().stream()
-            .filter((r) -> r.valueType() == ValueType.SUBSCRIPTION)
-            .findAny()
-            .isPresent();
+            .anyMatch((r) -> r.valueType() == ValueType.SUBSCRIPTION);
 
         assertThat(hasSentAck).isTrue();
     }
@@ -1264,6 +1260,7 @@ public class TopicSubscriptionTest
 
         final RecordMetadata metadata = actualRecord.getMetadata();
         assertThat(metadata.getKey()).isEqualTo(expectedKey);
+        assertThat(metadata.getSourceRecordPosition()).isEqualTo(expectedPosition - 1);
         assertThat(metadata.getPosition()).isEqualTo(expectedPosition);
         assertThat(metadata.getTimestamp()).isEqualTo(expectedTimestamp);
         assertThat(metadata.getValueType()).isEqualTo(clientValueType);

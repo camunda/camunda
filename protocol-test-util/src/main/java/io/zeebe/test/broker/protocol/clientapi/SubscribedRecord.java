@@ -56,6 +56,11 @@ public class SubscribedRecord implements BufferReader
         return bodyDecoder.position();
     }
 
+    public long sourceRecordPosition()
+    {
+        return bodyDecoder.sourceRecordPosition();
+    }
+
     public long key()
     {
         return bodyDecoder.key();

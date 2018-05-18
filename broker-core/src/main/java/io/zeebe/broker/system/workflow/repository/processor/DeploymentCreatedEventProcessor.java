@@ -25,7 +25,6 @@ import io.zeebe.broker.system.workflow.repository.data.DeploymentRecord;
 import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex;
 import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex.WorkflowMetadata;
 import io.zeebe.msgpack.value.ValueArray;
-import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.util.buffer.BufferUtil;
 
 public class DeploymentCreatedEventProcessor implements TypedRecordProcessor<DeploymentRecord>
@@ -40,7 +39,7 @@ public class DeploymentCreatedEventProcessor implements TypedRecordProcessor<Dep
     @Override
     public boolean executeSideEffects(TypedRecord<DeploymentRecord> event, TypedResponseWriter responseWriter)
     {
-        return responseWriter.writeEvent(DeploymentIntent.CREATED, event);
+        return responseWriter.writeEventUnchanged(event);
     }
 
     @Override

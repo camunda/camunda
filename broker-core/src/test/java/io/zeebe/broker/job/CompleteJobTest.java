@@ -24,6 +24,8 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -45,8 +47,16 @@ public class CompleteJobTest
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
     public ClientApiRule apiRule = new ClientApiRule();
 
+    private TestTopicClient testClient;
+
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+
+    @Before
+    public void setUp()
+    {
+        testClient = apiRule.topic();
+    }
 
     @Test
     public void shouldCompleteJob()
@@ -62,7 +72,10 @@ public class CompleteJobTest
         final ExecuteCommandResponse response = completeJob(subscribedEvent.key(), subscribedEvent.value());
 
         // then
+        final SubscribedRecord completeEvent = testClient.receiveFirstJobCommand(JobIntent.COMPLETE);
+
         assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
+        assertThat(response.sourceRecordPosition()).isEqualTo(completeEvent.position());
         assertThat(response.intent()).isEqualTo(JobIntent.COMPLETED);
     }
 
@@ -79,8 +92,11 @@ public class CompleteJobTest
         final ExecuteCommandResponse response = completeJob(key, event);
 
         // then
+        final SubscribedRecord completeEvent = testClient.receiveFirstJobCommand(JobIntent.COMPLETE);
+
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
         assertThat(response.intent()).isEqualTo(JobIntent.COMPLETE);
+        assertThat(response.sourceRecordPosition()).isEqualTo(completeEvent.position());
         assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
         assertThat(response.rejectionReason()).isEqualTo("Job is not in state: ACTIVATED, TIMED_OUT");
     }
@@ -102,8 +118,11 @@ public class CompleteJobTest
         final ExecuteCommandResponse response = completeJob(subscribedEvent.key(), event);
 
         // then
+        final SubscribedRecord completeEvent = testClient.receiveFirstJobCommand(JobIntent.COMPLETE);
+
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
         assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+        assertThat(response.sourceRecordPosition()).isEqualTo(completeEvent.position());
         assertThat(response.rejectionReason()).isEqualTo("Payload is not a valid msgpack-encoded JSON object or nil");
         assertThat(response.intent()).isEqualTo(JobIntent.COMPLETE);
     }
@@ -173,7 +192,10 @@ public class CompleteJobTest
         final ExecuteCommandResponse response = completeJob(subscribedEvent.key(), event);
 
         // then
+        final SubscribedRecord jobCommand = testClient.receiveFirstJobCommand(JobIntent.COMPLETE);
+
         assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
+        assertThat(response.sourceRecordPosition()).isEqualTo(jobCommand.position());
         assertThat(response.intent()).isEqualTo(JobIntent.COMPLETED);
     }
 

@@ -23,7 +23,6 @@ import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.OutputBehavior;
 import io.zeebe.protocol.intent.IncidentIntent;
-import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
@@ -34,6 +33,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -69,7 +69,7 @@ public class WorkflowTaskIOMappingTest
     }
 
     @Test
-    public void shouldUseDefaultInputMappingIfNoMappingIsSpecified() throws Throwable
+    public void shouldUseDefaultInputMappingIfNoMappingIsSpecified() throws IOException
     {
         // given
         testClient.deploy(Bpmn.createExecutableWorkflow("process")
@@ -82,10 +82,7 @@ public class WorkflowTaskIOMappingTest
         final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
         // then
-        final SubscribedRecord event = testClient.receiveCommands()
-            .ofTypeJob()
-            .withIntent(JobIntent.CREATE)
-            .getFirst();
+        final SubscribedRecord event = testClient.receiveFirstJobCommand(JobIntent.CREATE);
 
         assertThat(event.key()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
         final byte[] result = (byte[]) event.value().get(PROP_JOB_PAYLOAD);
@@ -94,7 +91,7 @@ public class WorkflowTaskIOMappingTest
     }
 
     @Test
-    public void shouldCreateTwoNewObjectsViaInputMapping() throws Throwable
+    public void shouldCreateTwoNewObjectsViaInputMapping() throws IOException
     {
         // given
         testClient.deploy(Bpmn.createExecutableWorkflow("process")
@@ -107,7 +104,7 @@ public class WorkflowTaskIOMappingTest
 
         // when
         testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
-        final SubscribedRecord event = receiveFirstJobCommand(JobIntent.CREATE);
+        final SubscribedRecord event = testClient.receiveFirstJobCommand(JobIntent.CREATE);
 
         // then payload is expected as
         final byte[] result = (byte[]) event.value().get(PROP_JOB_PAYLOAD);
@@ -116,7 +113,7 @@ public class WorkflowTaskIOMappingTest
     }
 
     @Test
-    public void shouldUseNILIfCreatedWithNoPayload() throws Throwable
+    public void shouldUseNILIfCreatedWithNoPayload()
     {
         // given
         testClient.deploy(Bpmn.createExecutableWorkflow("process")
@@ -127,7 +124,7 @@ public class WorkflowTaskIOMappingTest
 
         // when
         testClient.createWorkflowInstance("process");
-        final SubscribedRecord event = receiveFirstJobCommand(JobIntent.CREATE);
+        final SubscribedRecord event = testClient.receiveFirstJobCommand(JobIntent.CREATE);
 
         // then
         assertThat(event.value()).containsEntry(WorkflowInstanceRecord.PROP_WORKFLOW_PAYLOAD, NIL);
@@ -135,7 +132,7 @@ public class WorkflowTaskIOMappingTest
 
 
     @Test
-    public void shouldCreateIncidentForNoMatchOnInputMapping() throws Throwable
+    public void shouldCreateIncidentForNoMatchOnInputMapping()
     {
         // given
         testClient.deploy(Bpmn.createExecutableWorkflow("process")
@@ -147,7 +144,7 @@ public class WorkflowTaskIOMappingTest
 
         // when
         testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
-        final SubscribedRecord incidentEvent = receiveFirstIncidentCommand(IncidentIntent.CREATE);
+        final SubscribedRecord incidentEvent = testClient.receiveFirstIncidentCommand(IncidentIntent.CREATE);
 
         // then incident is created
         assertThat(incidentEvent.key()).isGreaterThan(0);
@@ -157,7 +154,7 @@ public class WorkflowTaskIOMappingTest
     }
 
     @Test
-    public void shouldCreateIncidentForNonMatchingAndMatchingValueOnInputMapping() throws Throwable
+    public void shouldCreateIncidentForNonMatchingAndMatchingValueOnInputMapping()
     {
         // given
         testClient.deploy(Bpmn.createExecutableWorkflow("process")
@@ -171,7 +168,7 @@ public class WorkflowTaskIOMappingTest
 
         // when
         testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
-        final SubscribedRecord incidentEvent = receiveFirstIncidentCommand(IncidentIntent.CREATE);
+        final SubscribedRecord incidentEvent = testClient.receiveFirstIncidentCommand(IncidentIntent.CREATE);
 
         // then incident is created
         assertThat(incidentEvent.key()).isGreaterThan(0);
@@ -181,7 +178,7 @@ public class WorkflowTaskIOMappingTest
     }
 
     @Test
-    public void shouldUseDefaultOutputMapping() throws Throwable
+    public void shouldUseDefaultOutputMapping() throws IOException
     {
         // given
         testClient.deploy(Bpmn.createExecutableWorkflow("process")
@@ -196,8 +193,8 @@ public class WorkflowTaskIOMappingTest
         testClient.completeJobOfType("external", OTHER_PAYLOAD);
 
         // then
-        final SubscribedRecord activityCompletedEvent = receiveFirstWorkflowInstanceEvent(
-                WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+        final SubscribedRecord activityCompletedEvent =
+            testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
 
         final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(result))
@@ -205,7 +202,7 @@ public class WorkflowTaskIOMappingTest
     }
 
     @Test
-    public void shouldUseDefaultOutputMappingWithNoWorkflowPayload() throws Throwable
+    public void shouldUseDefaultOutputMappingWithNoWorkflowPayload() throws IOException
     {
         // given
         testClient.deploy(Bpmn.createExecutableWorkflow("process")
@@ -220,8 +217,8 @@ public class WorkflowTaskIOMappingTest
         testClient.completeJobOfType("external", OTHER_PAYLOAD);
 
         // then
-        final SubscribedRecord activityCompletedEvent = receiveFirstWorkflowInstanceEvent(
-            WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+        final SubscribedRecord activityCompletedEvent =
+            testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
 
         final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(result))
@@ -229,7 +226,7 @@ public class WorkflowTaskIOMappingTest
     }
 
     @Test
-    public void shouldUseOutputMappingWithNoWorkflowPayload() throws Throwable
+    public void shouldUseOutputMappingWithNoWorkflowPayload() throws IOException
     {
         // given
         testClient.deploy(Bpmn.createExecutableWorkflow("process")
@@ -244,8 +241,8 @@ public class WorkflowTaskIOMappingTest
         testClient.completeJobOfType("external", OTHER_PAYLOAD);
 
         // then
-        final SubscribedRecord activityCompletedEvent = receiveFirstWorkflowInstanceEvent(
-            WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+        final SubscribedRecord activityCompletedEvent =
+            testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
 
         final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(result))
@@ -253,7 +250,7 @@ public class WorkflowTaskIOMappingTest
     }
 
     @Test
-    public void shouldUseNoneOutputBehaviorWithoutCompletePayload() throws Throwable
+    public void shouldUseNoneOutputBehaviorWithoutCompletePayload() throws IOException
     {
         // given
         testClient.deploy(Bpmn.createExecutableWorkflow("process")
@@ -269,8 +266,8 @@ public class WorkflowTaskIOMappingTest
         testClient.completeJobOfType("external");
 
         // then
-        final SubscribedRecord activityCompletedEvent = receiveFirstWorkflowInstanceEvent(
-            WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+        final SubscribedRecord activityCompletedEvent =
+            testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
 
         final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(result))
@@ -278,7 +275,7 @@ public class WorkflowTaskIOMappingTest
     }
 
     @Test
-    public void shouldUseNoneOutputBehaviorAndCompletePayload() throws Throwable
+    public void shouldUseNoneOutputBehaviorAndCompletePayload() throws IOException
     {
         // given
         testClient.deploy(Bpmn.createExecutableWorkflow("process")
@@ -294,8 +291,8 @@ public class WorkflowTaskIOMappingTest
         testClient.completeJobOfType("external", OTHER_PAYLOAD);
 
         // then
-        final SubscribedRecord activityCompletedEvent = receiveFirstWorkflowInstanceEvent(
-            WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+        final SubscribedRecord activityCompletedEvent =
+            testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
 
         final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(result))
@@ -304,7 +301,7 @@ public class WorkflowTaskIOMappingTest
 
 
     @Test
-    public void shouldUseOverwriteOutputBehaviorWithoutCompletePayload() throws Throwable
+    public void shouldUseOverwriteOutputBehaviorWithoutCompletePayload() throws IOException
     {
         // given
         testClient.deploy(Bpmn.createExecutableWorkflow("process")
@@ -320,8 +317,8 @@ public class WorkflowTaskIOMappingTest
         testClient.completeJobOfType("external");
 
         // then
-        final SubscribedRecord activityCompletedEvent = receiveFirstWorkflowInstanceEvent(
-            WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+        final SubscribedRecord activityCompletedEvent =
+            testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
 
         final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(result))
@@ -329,7 +326,7 @@ public class WorkflowTaskIOMappingTest
     }
 
     @Test
-    public void shouldUseOverwriteOutputBehaviorAndCompletePayload() throws Throwable
+    public void shouldUseOverwriteOutputBehaviorAndCompletePayload() throws IOException
     {
         // given
         testClient.deploy(Bpmn.createExecutableWorkflow("process")
@@ -345,8 +342,8 @@ public class WorkflowTaskIOMappingTest
         testClient.completeJobOfType("external", OTHER_PAYLOAD);
 
         // then
-        final SubscribedRecord activityCompletedEvent = receiveFirstWorkflowInstanceEvent(
-            WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+        final SubscribedRecord activityCompletedEvent =
+            testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
 
         final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(result))
@@ -354,7 +351,7 @@ public class WorkflowTaskIOMappingTest
     }
 
     @Test
-    public void shouldUseOverwriteOutputBehaviorWithOutputMappingAndCompletePayload() throws Throwable
+    public void shouldUseOverwriteOutputBehaviorWithOutputMappingAndCompletePayload() throws IOException
     {
         // given
         testClient.deploy(Bpmn.createExecutableWorkflow("process")
@@ -371,8 +368,8 @@ public class WorkflowTaskIOMappingTest
         testClient.completeJobOfType("external", OTHER_PAYLOAD);
 
         // then
-        final SubscribedRecord activityCompletedEvent = receiveFirstWorkflowInstanceEvent(
-            WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+        final SubscribedRecord activityCompletedEvent =
+            testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
 
         final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(result))
@@ -380,7 +377,7 @@ public class WorkflowTaskIOMappingTest
     }
 
     @Test
-    public void shouldCreateIncidentOnOverwriteOutputBehaviorWithOutputMappingAndWithoutCompletedPayload() throws Throwable
+    public void shouldCreateIncidentOnOverwriteOutputBehaviorWithOutputMappingAndWithoutCompletedPayload()
     {
         // given
         testClient.deploy(Bpmn.createExecutableWorkflow("process")
@@ -397,7 +394,7 @@ public class WorkflowTaskIOMappingTest
         testClient.completeJobOfType("external");
 
         // then incident is created
-        final SubscribedRecord incidentEvent = receiveFirstIncidentCommand(IncidentIntent.CREATE);
+        final SubscribedRecord incidentEvent = testClient.receiveFirstIncidentCommand(IncidentIntent.CREATE);
 
         assertThat(incidentEvent.key()).isGreaterThan(0);
         assertThat(incidentEvent.value())
@@ -406,7 +403,7 @@ public class WorkflowTaskIOMappingTest
     }
 
     @Test
-    public void shouldUseDefaultOutputMappingWithNoCompletePayload() throws Throwable
+    public void shouldUseDefaultOutputMappingWithNoCompletePayload() throws IOException
     {
         // given
         testClient.deploy(Bpmn.createExecutableWorkflow("process")
@@ -421,8 +418,8 @@ public class WorkflowTaskIOMappingTest
         testClient.completeJobOfType("external");
 
         // then
-        final SubscribedRecord activityCompletedEvent = receiveFirstWorkflowInstanceEvent(
-            WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+        final SubscribedRecord activityCompletedEvent =
+            testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
 
         final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(result))
@@ -430,7 +427,7 @@ public class WorkflowTaskIOMappingTest
     }
 
     @Test
-    public void shouldUseDefaultOutputMappingWithNoCreatedPayload() throws Throwable
+    public void shouldUseDefaultOutputMappingWithNoCreatedPayload() throws IOException
     {
         // given
         testClient.deploy(Bpmn.createExecutableWorkflow("process")
@@ -445,8 +442,8 @@ public class WorkflowTaskIOMappingTest
         testClient.completeJobOfType("external", OTHER_PAYLOAD);
 
         // then
-        final SubscribedRecord activityCompletedEvent = receiveFirstWorkflowInstanceEvent(
-            WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+        final SubscribedRecord activityCompletedEvent =
+            testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
 
         final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(result))
@@ -454,7 +451,7 @@ public class WorkflowTaskIOMappingTest
     }
 
     @Test
-    public void shouldNotSeePayloadOfWorkflowInstanceBefore() throws Throwable
+    public void shouldNotSeePayloadOfWorkflowInstanceBefore() throws IOException
     {
         // given
         testClient.deploy(Bpmn.createExecutableWorkflow("process")
@@ -472,19 +469,19 @@ public class WorkflowTaskIOMappingTest
 
         // then first event payload is expected as
         final SubscribedRecord firstWFActivityCompletedEvent =
-                receiveFirstWorkflowInstanceEvent(firstWFInstanceKey, WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+            testClient.receiveFirstWorkflowInstanceEvent(firstWFInstanceKey, WorkflowInstanceIntent.ACTIVITY_COMPLETED);
         byte[] payload = (byte[]) firstWFActivityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(payload)).isEqualTo(JSON_MAPPER.readTree(JSON_DOCUMENT));
 
         // and second event payload is expected as
         final SubscribedRecord secondWFActivityCompletedEvent =
-                receiveFirstWorkflowInstanceEvent(secondWFInstanceKey, WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+            testClient.receiveFirstWorkflowInstanceEvent(secondWFInstanceKey, WorkflowInstanceIntent.ACTIVITY_COMPLETED);
         payload = (byte[]) secondWFActivityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(payload)).isEqualTo(JSON_MAPPER.readTree("{'foo':'bar'}"));
     }
 
     @Test
-    public void shouldNotSeePayloadOfWorkflowInstanceBeforeOnOutputMapping() throws Throwable
+    public void shouldNotSeePayloadOfWorkflowInstanceBeforeOnOutputMapping() throws IOException
     {
         // given
         testClient.deploy(Bpmn.createExecutableWorkflow("process")
@@ -504,21 +501,21 @@ public class WorkflowTaskIOMappingTest
 
         // then first event payload is expected as
         final SubscribedRecord firstWFActivityCompletedEvent =
-                receiveFirstWorkflowInstanceEvent(firstWFInstanceKey, WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+            testClient.receiveFirstWorkflowInstanceEvent(firstWFInstanceKey, WorkflowInstanceIntent.ACTIVITY_COMPLETED);
         byte[] payload = (byte[]) firstWFActivityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(payload))
             .isEqualTo(JSON_MAPPER.readTree("{'string':'value', 'jsonObject':{'testAttr':'test'},'taskPayload':{'string':'value', 'jsonObject':{'testAttr':'test'}}}"));
 
         // and second event payload is expected as
         final SubscribedRecord secondWFActivityCompletedEvent =
-                receiveFirstWorkflowInstanceEvent(secondWFInstanceKey, WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+            testClient.receiveFirstWorkflowInstanceEvent(secondWFInstanceKey, WorkflowInstanceIntent.ACTIVITY_COMPLETED);
         payload = (byte[]) secondWFActivityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(payload))
             .isEqualTo(JSON_MAPPER.readTree("{'otherPayload':'value','taskPayload':{'foo':'bar'}}"));
     }
 
     @Test
-    public void shouldUseDefaultOutputMappingIfOnlyInputMappingSpecified() throws Throwable
+    public void shouldUseDefaultOutputMappingIfOnlyInputMappingSpecified() throws IOException
     {
         // given
         final Map<String, String> inputMapping = new HashMap<>();
@@ -537,7 +534,7 @@ public class WorkflowTaskIOMappingTest
 
         // then
         final SubscribedRecord activityCompletedEvent =
-                receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+            testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
 
         final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(result))
@@ -545,7 +542,7 @@ public class WorkflowTaskIOMappingTest
     }
 
     @Test
-    public void shouldUseWFPayloadIfCompleteWithNoPayload() throws Throwable
+    public void shouldUseWFPayloadIfCompleteWithNoPayload()
     {
         // given
         testClient.deploy(Bpmn.createExecutableWorkflow("process")
@@ -561,14 +558,14 @@ public class WorkflowTaskIOMappingTest
 
         // then
         final SubscribedRecord activityCompletedEvent =
-                receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+            testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
 
         assertThat(activityCompletedEvent.value())
             .containsEntry(WorkflowInstanceRecord.PROP_WORKFLOW_PAYLOAD, MSGPACK_PAYLOAD);
     }
 
     @Test
-    public void shouldUseOutputMappingToAddObjectsToWorkflowPayload() throws Throwable
+    public void shouldUseOutputMappingToAddObjectsToWorkflowPayload() throws IOException
     {
         // given
         testClient.deploy(Bpmn.createExecutableWorkflow("process")
@@ -584,7 +581,7 @@ public class WorkflowTaskIOMappingTest
         // when
         testClient.completeJobOfType("external", MSGPACK_PAYLOAD);
         final SubscribedRecord activityCompletedEvent =
-                receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+            testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
 
         // then payload contains old objects
         final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
@@ -595,7 +592,7 @@ public class WorkflowTaskIOMappingTest
     }
 
     @Test
-    public void shouldCreateIncidentForNotMatchingOnOutputMapping() throws Throwable
+    public void shouldCreateIncidentForNotMatchingOnOutputMapping()
     {
         // given
         testClient.deploy(Bpmn.createExecutableWorkflow("process")
@@ -609,9 +606,9 @@ public class WorkflowTaskIOMappingTest
 
         // when
         testClient.completeJobOfType("external", MSGPACK_PAYLOAD);
-        receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED);
+        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED);
 
-        final SubscribedRecord incidentEvent = receiveFirstIncidentCommand(IncidentIntent.CREATE);
+        final SubscribedRecord incidentEvent = testClient.receiveFirstIncidentCommand(IncidentIntent.CREATE);
 
         // then incident is created
         assertThat(incidentEvent.key()).isGreaterThan(0);
@@ -621,7 +618,7 @@ public class WorkflowTaskIOMappingTest
     }
 
     @Test
-    public void shouldUseInOutMapping() throws Throwable
+    public void shouldUseInOutMapping() throws IOException
     {
         // given
         testClient.deploy(Bpmn.createExecutableWorkflow("process")
@@ -634,7 +631,7 @@ public class WorkflowTaskIOMappingTest
 
         // when
         testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
-        final SubscribedRecord event = receiveFirstJobCommand(JobIntent.CREATE);
+        final SubscribedRecord event = testClient.receiveFirstJobCommand(JobIntent.CREATE);
 
         // then payload is expected as
         byte[] result = (byte[]) event.value().get(PROP_JOB_PAYLOAD);
@@ -647,46 +644,11 @@ public class WorkflowTaskIOMappingTest
 
         // then
         final SubscribedRecord activityCompletedEvent =
-                receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+                testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
 
         result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(result))
             .isEqualTo(JSON_MAPPER.readTree(
                 "{'string':'value', 'jsonObject':{'testAttr':'test'}, 'result':123}"));
-    }
-
-    private SubscribedRecord receiveFirstWorkflowInstanceEvent(Intent intent)
-    {
-        return testClient.receiveEvents()
-            .ofTypeWorkflowInstance()
-            .withIntent(intent)
-            .getFirst();
-    }
-
-    private SubscribedRecord receiveFirstWorkflowInstanceEvent(long key, Intent intent)
-    {
-        return testClient.receiveEvents()
-            .ofTypeWorkflowInstance()
-            .withIntent(intent)
-            .filter(r -> (Long) r.value().get("workflowInstanceKey") == key)
-            .findFirst()
-            .get();
-    }
-
-    private SubscribedRecord receiveFirstJobCommand(Intent intent)
-    {
-        return testClient.receiveCommands()
-            .ofTypeJob()
-            .withIntent(intent)
-            .getFirst();
-    }
-
-
-    private SubscribedRecord receiveFirstIncidentCommand(Intent intent)
-    {
-        return testClient.receiveCommands()
-            .ofTypeIncident()
-            .withIntent(intent)
-            .getFirst();
     }
 }

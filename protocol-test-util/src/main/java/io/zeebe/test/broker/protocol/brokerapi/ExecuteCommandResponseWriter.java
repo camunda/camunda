@@ -15,22 +15,17 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi;
 
+import io.zeebe.protocol.clientapi.*;
+import io.zeebe.protocol.intent.Intent;
+import io.zeebe.test.broker.protocol.MsgPackHelper;
+import io.zeebe.util.EnsureUtil;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Map;
 import java.util.function.Function;
-
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-
-import io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder;
-import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.RejectionType;
-import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.intent.Intent;
-import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.util.EnsureUtil;
 
 public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<ExecuteCommandRequest>
 {
@@ -42,12 +37,14 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
     protected Function<ExecuteCommandRequest, Integer> partitionIdFunction = r -> r.partitionId();
     protected Function<ExecuteCommandRequest, Map<String, Object>> eventFunction;
     protected Function<ExecuteCommandRequest, Long> positionFunction = r -> r.position();
+    protected Function<ExecuteCommandRequest, Long> sourceRecordPositionFunction = r -> r.sourceRecordPosition();
     private Function<ExecuteCommandRequest, Intent> intentFunction = r -> r.intent();
 
     protected long key;
     protected int partitionId;
     protected byte[] value;
     protected long position;
+    private long sourceRecordPosition;
     private RecordType recordType;
     private Intent intent;
     private ValueType valueType;
@@ -66,6 +63,7 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
         key = keyFunction.apply(request);
         partitionId = partitionIdFunction.apply(request);
         position = positionFunction.apply(request);
+        sourceRecordPosition = sourceRecordPositionFunction.apply(request);
         final Map<String, Object> deserializedEvent = eventFunction.apply(request);
         value = msgPackHelper.encodeAsMsgPack(deserializedEvent);
         this.valueType = request.valueType();
@@ -95,6 +93,11 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
     public void setPositionFunction(Function<ExecuteCommandRequest, Long> positionFunction)
     {
         this.positionFunction = positionFunction;
+    }
+
+    public void setSourceRecordPositionFunction(Function<ExecuteCommandRequest, Long> sourceRecordPositionFunction)
+    {
+        this.sourceRecordPositionFunction = sourceRecordPositionFunction;
     }
 
     public void setIntentFunction(Function<ExecuteCommandRequest, Intent> intentFunction)
@@ -164,7 +167,8 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
             .position(position)
             .rejectionType(rejectionType)
             .putValue(value, 0, value.length)
-            .putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
+            .putRejectionReason(rejectionReason, 0, rejectionReason.capacity())
+            .sourceRecordPosition(sourceRecordPosition);
 
     }
 

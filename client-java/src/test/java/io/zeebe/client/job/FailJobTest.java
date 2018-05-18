@@ -50,8 +50,10 @@ public class FailJobTest
     {
         // given
         final JobEventImpl baseEvent = Events.exampleJob();
+        baseEvent.setPosition(2L);
+        baseEvent.setSourceRecordPosition(1L);
 
-        brokerRule.jobs().registerFailCommand();
+        brokerRule.jobs().registerFailCommand(3L);
 
         // when
         final JobEvent jobEvent = clientRule.jobClient()
@@ -65,6 +67,7 @@ public class FailJobTest
         assertThat(request.valueType()).isEqualTo(io.zeebe.protocol.clientapi.ValueType.JOB);
         assertThat(request.partitionId()).isEqualTo(StubBrokerRule.TEST_PARTITION_ID);
         assertThat(request.intent()).isEqualTo(JobIntent.FAIL);
+        assertThat(request.sourceRecordPosition()).isEqualTo(1L);
 
         assertThat(request.getCommand()).containsOnly(
                 entry("deadline", baseEvent.getDeadline().toEpochMilli()),
@@ -78,6 +81,8 @@ public class FailJobTest
         assertThat(jobEvent.getMetadata().getKey()).isEqualTo(baseEvent.getKey());
         assertThat(jobEvent.getMetadata().getTopicName()).isEqualTo(StubBrokerRule.TEST_TOPIC_NAME);
         assertThat(jobEvent.getMetadata().getPartitionId()).isEqualTo(StubBrokerRule.TEST_PARTITION_ID);
+        assertThat(jobEvent.getMetadata().getSourceRecordPosition()).isEqualTo(3L);
+        assertThat(jobEvent.getSourceRecordPosition()).isEqualTo(3L);
 
         assertThat(jobEvent.getState()).isEqualTo(JobState.FAILED);
         assertThat(jobEvent.getHeaders()).isEqualTo(baseEvent.getHeaders());

@@ -15,15 +15,6 @@
  */
 package io.zeebe.client.job;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
-
-import java.io.ByteArrayInputStream;
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.Collections;
-import java.util.HashMap;
-
 import io.zeebe.client.api.commands.CreateJobCommandStep1;
 import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.events.JobState;
@@ -35,18 +26,27 @@ import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.assertj.core.util.Maps;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
+
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.HashMap;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 public class CreateJobTest
 {
     private static final String PAYLOAD = "{\"foo\":\"bar\"}";
     private static final byte[] MSGPACK_PAYLOAD = new MsgPackConverter().convertToMsgPack(PAYLOAD);
 
-    public ActorSchedulerRule schedulerRule = new ActorSchedulerRule();
     public ClientRule clientRule = new ClientRule();
     public StubBrokerRule brokerRule = new StubBrokerRule();
 
@@ -67,6 +67,7 @@ public class CreateJobTest
                                    .key(123)
                                    .position(456)
                                    .timestamp(now)
+                                   .sourceRecordPosition(1L)
                                    .value()
                                        .allOf(r -> r.getCommand())
                                        .put("worker", "")
@@ -76,6 +77,8 @@ public class CreateJobTest
     @Test
     public void shouldCreateJob()
     {
+        // given
+
         // when
         final JobEvent job = clientRule.jobClient()
             .newCreateCommand()
@@ -109,6 +112,7 @@ public class CreateJobTest
         assertThat(metadata.getTimestamp()).isEqualTo(now);
         assertThat(metadata.getRejectionType()).isEqualTo(null);
         assertThat(metadata.getRejectionReason()).isEqualTo(null);
+        assertThat(metadata.getSourceRecordPosition()).isEqualTo(1L);
 
         assertThat(job.getState()).isEqualTo(JobState.CREATED);
         assertThat(job.getHeaders()).isEmpty();

@@ -39,6 +39,12 @@ public interface RecordMetadata
     long getPosition();
 
     /**
+     * @return the unique position of the source record. Records are
+     *         ordered by position.
+     */
+    long getSourceRecordPosition();
+
+    /**
      * @return the key of the record. Multiple records can have the same key if
      *         they belongs to the same logical entity. Keys are unique for the
      *         combination of topic, partition and record type.

@@ -17,16 +17,16 @@
  */
 package io.zeebe.broker.system.workflow.repository.processor;
 
-import io.zeebe.broker.logstreams.processor.*;
+import io.zeebe.broker.logstreams.processor.TypedRecord;
+import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
+import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.system.workflow.repository.data.DeploymentRecord;
-import io.zeebe.protocol.impl.RecordMetadata;
 
 public class DeploymentRejectedEventProcessor implements TypedRecordProcessor<DeploymentRecord>
 {
     @Override
     public boolean executeSideEffects(TypedRecord<DeploymentRecord> event, TypedResponseWriter responseWriter)
     {
-        final RecordMetadata metadata = event.getMetadata();
-        return responseWriter.writeRejection(event, metadata.getRejectionType(), metadata.getRejectionReason());
+        return responseWriter.writeEventUnchanged(event);
     }
 }

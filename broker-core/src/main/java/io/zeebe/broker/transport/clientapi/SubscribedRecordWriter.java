@@ -45,6 +45,7 @@ public class SubscribedRecordWriter implements BufferWriter
 
     protected int partitionId = partitionIdNullValue();
     protected long position = positionNullValue();
+    protected long sourceRecordPosition = sourceRecordPositionNullValue();
     protected long key = keyNullValue();
     protected long subscriberKey = subscriberKeyNullValue();
     protected SubscriptionType subscriptionType;
@@ -74,6 +75,12 @@ public class SubscribedRecordWriter implements BufferWriter
     public SubscribedRecordWriter position(final long position)
     {
         this.position = position;
+        return this;
+    }
+
+    public SubscribedRecordWriter sourceRecordPosition(long sourceRecordPosition)
+    {
+        this.sourceRecordPosition = sourceRecordPosition;
         return this;
     }
 
@@ -172,6 +179,7 @@ public class SubscribedRecordWriter implements BufferWriter
             .recordType(recordType)
             .partitionId(partitionId)
             .position(position)
+            .sourceRecordPosition(sourceRecordPosition)
             .key(key)
             .timestamp(timestamp)
             .subscriberKey(subscriberKey)
@@ -219,6 +227,7 @@ public class SubscribedRecordWriter implements BufferWriter
     {
         this.partitionId = partitionIdNullValue();
         this.position = positionNullValue();
+        this.sourceRecordPosition = sourceRecordPositionNullValue();
         this.key = keyNullValue();
         this.timestamp = timestampNullValue();
         this.subscriberKey = subscriberKeyNullValue();

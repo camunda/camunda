@@ -362,7 +362,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         public boolean executeSideEffects(TypedRecord<WorkflowInstanceRecord> record, TypedResponseWriter responseWriter)
         {
             workflowInstanceEventCreate.incrementOrdered();
-            return responseWriter.writeEvent(WorkflowInstanceIntent.CREATED, record);
+            return responseWriter.writeEventUnchanged(record);
         }
 
         @Override
@@ -383,8 +383,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         @Override
         public boolean executeSideEffects(TypedRecord<WorkflowInstanceRecord> record, TypedResponseWriter responseWriter)
         {
-            final RecordMetadata metadata = record.getMetadata();
-            return responseWriter.writeRejection(record, metadata.getRejectionType(), metadata.getRejectionReason());
+            return responseWriter.writeEventUnchanged(record);
         }
     }
 

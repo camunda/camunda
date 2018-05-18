@@ -33,8 +33,7 @@ public class DeploymentStubs
 
     public void registerCreateCommand()
     {
-        registerCreateCommand(b ->
-        { });
+        registerCreateCommand(b -> b.sourceRecordPosition(1L));
     }
 
     public void registerCreateCommand(Consumer<ExecuteCommandResponseBuilder> modifier)
