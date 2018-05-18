@@ -1,6 +1,6 @@
 import {get} from 'request';
 
-export async function getCamundaEndpoint() {
+export async function getCamundaEndpoints() {
   const response = await get('/api/camunda');
-  return await response.text();
+  return await response.json();
 }

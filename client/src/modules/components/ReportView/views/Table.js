@@ -3,60 +3,73 @@ import ReportBlankSlate from '../ReportBlankSlate';
 
 import {Table as TableRenderer} from 'components';
 import {processRawData} from 'services';
+import {withErrorHandling} from 'HOC';
 
-import {getCamundaEndpoint} from './service';
+import {getCamundaEndpoints} from './service';
 
-export default class Table extends React.Component {
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      camundaEndpoint: null
+export default withErrorHandling(
+  class Table extends React.Component {
+    state = {
+      camundaEndpoints: null,
+      needEndpoint: false
     };
-  }
 
-  async componentDidMount() {
-    this.setState({
-      camundaEndpoint: await getCamundaEndpoint()
-    });
-  }
-
-  render() {
-    const {
-      data,
-      configuration: {excludedColumns, columnOrder},
-      formatter = v => v,
-      labels,
-      errorMessage,
-      disableReportScrolling
-    } = this.props;
-
-    if (!data || typeof data !== 'object') {
-      return <ReportBlankSlate message={errorMessage} />;
+    static getDerivedStateFromProps({data}) {
+      if (data && isRaw(data)) {
+        return {needEndpoint: true};
+      }
+      return null;
     }
 
-    if (this.state.camundaEndpoint === null) {
-      return 'loading...';
+    componentDidMount() {
+      if (this.state.needEndpoint) {
+        this.props.mightFail(getCamundaEndpoints(), camundaEndpoints =>
+          this.setState({camundaEndpoints})
+        );
+      }
     }
 
-    return (
-      <TableRenderer
-        disableReportScrolling={disableReportScrolling}
-        {...formatData(
-          data,
-          formatter,
-          labels,
-          excludedColumns,
-          columnOrder,
-          this.state.camundaEndpoint
-        )}
-      />
-    );
+    render() {
+      const {
+        data,
+        configuration: {excludedColumns, columnOrder},
+        formatter = v => v,
+        labels,
+        errorMessage,
+        disableReportScrolling
+      } = this.props;
+
+      if (!data || typeof data !== 'object') {
+        return <ReportBlankSlate message={errorMessage} />;
+      }
+
+      if (this.state.needEndpoint && this.state.camundaEndpoints === null) {
+        return 'loading...';
+      }
+
+      return (
+        <TableRenderer
+          disableReportScrolling={disableReportScrolling}
+          {...formatData(
+            data,
+            formatter,
+            labels,
+            excludedColumns,
+            columnOrder,
+            this.state.camundaEndpoints
+          )}
+        />
+      );
+    }
   }
+);
+
+function isRaw(data) {
+  return data.length;
 }
 
 export function formatData(data, formatter, labels, excludedColumns, columnOrder, endpoint) {
-  if (data.length) {
+  if (isRaw(data)) {
     // raw data
     return processRawData(data, excludedColumns, columnOrder, endpoint);
   } else {

@@ -73,18 +73,19 @@ it('should sort and hide simulateously', () => {
 
 it('should make the process instance id a link', () => {
   const cell = processRawData(
-    [{processInstanceId: '123', variables: {}}],
+    [{processInstanceId: '123', engineName: '1', variables: {}}],
     undefined,
     undefined,
-    'http://camunda.com/'
+    {1: {endpoint: 'http://camunda.com', engineName: 'a'}}
   ).body[0][0];
 
   expect(cell.type).toBe('a');
-  expect(cell.props.href).toBe('http://camunda.com/app/cockpit/#/process-instance/123');
+  expect(cell.props.href).toBe('http://camunda.com/app/cockpit/a/#/process-instance/123');
 });
 
 it('should not make the process instance id a link if no endpoint is specified', () => {
-  const cell = processRawData([{processInstanceId: '123', variables: {}}]).body[0][0];
+  const cell = processRawData([{processInstanceId: '123', engineName: '1', variables: {}}])
+    .body[0][0];
 
   expect(cell).toBe('123');
 });

@@ -4,7 +4,7 @@ import {mount} from 'enzyme';
 import Table from './Table';
 import {processRawData} from 'services';
 
-import {getCamundaEndpoint} from './service';
+import {getCamundaEndpoints} from './service';
 
 jest.mock('components', () => {
   return {
@@ -20,15 +20,22 @@ jest.mock('services', () => {
 
 jest.mock('./service', () => {
   return {
-    getCamundaEndpoint: jest.fn().mockReturnValue('camundaEndpoint')
+    getCamundaEndpoints: jest.fn().mockReturnValue('camundaEndpoint')
   };
 });
 
-it('should get the camunda endpoint', () => {
-  getCamundaEndpoint.mockClear();
-  mount(<Table configuration={{}} />);
+it('should get the camunda endpoints for raw data', () => {
+  getCamundaEndpoints.mockClear();
+  mount(<Table configuration={{}} data={[{}]} />);
 
-  expect(getCamundaEndpoint).toHaveBeenCalled();
+  expect(getCamundaEndpoints).toHaveBeenCalled();
+});
+
+it('should not get the camunda endpoints for non-raw-data tables', () => {
+  getCamundaEndpoints.mockClear();
+  mount(<Table configuration={{}} data={{}} />);
+
+  expect(getCamundaEndpoints).not.toHaveBeenCalled();
 });
 
 it('should display data for key-value pairs', async () => {

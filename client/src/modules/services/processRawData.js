@@ -4,7 +4,7 @@ export default function processRawData(
   data,
   excludedColumns = [],
   columnOrder = {processInstanceProps: [], variables: []},
-  endpoint = ''
+  endpoints = {}
 ) {
   const processInstanceProps = Object.keys(data[0]).filter(
     entry => entry !== 'variables' && !excludedColumns.includes(entry)
@@ -13,15 +13,23 @@ export default function processRawData(
     entry => !excludedColumns.includes('var__' + entry)
   );
 
-  function applyBehavior(type, content) {
-    if (type === 'processInstanceId' && endpoint) {
-      return <a href={`${endpoint}app/cockpit/#/process-instance/${content}`}>{content}</a>;
+  function applyBehavior(type, instance) {
+    const content = instance[type];
+    if (type === 'processInstanceId') {
+      const {endpoint, engineName} = endpoints[instance.engineName] || {};
+      if (endpoint) {
+        return (
+          <a href={`${endpoint}/app/cockpit/${engineName}/#/process-instance/${content}`}>
+            {content}
+          </a>
+        );
+      }
     }
     return content;
   }
 
   const body = data.map(instance => {
-    let row = processInstanceProps.map(entry => applyBehavior(entry, instance[entry]));
+    let row = processInstanceProps.map(entry => applyBehavior(entry, instance));
     const variableValues = variableNames.map(entry => {
       const value = instance.variables[entry];
       if (value === null) {
