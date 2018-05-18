@@ -238,7 +238,7 @@ public class JobSubscriptionTest
             .handler(handler)
             .lockTime(Duration.ofMinutes(5))
             .lockOwner("test")
-            .fetchSize(10)
+            .bufferSize(10)
             .open();
 
         // when

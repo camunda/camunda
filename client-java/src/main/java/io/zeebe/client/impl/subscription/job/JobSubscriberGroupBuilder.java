@@ -18,7 +18,6 @@ package io.zeebe.client.impl.subscription.job;
 import java.util.concurrent.Future;
 
 import io.zeebe.client.api.subscription.JobHandler;
-import io.zeebe.client.api.subscription.JobSubscriptionBuilderStep1;
 import io.zeebe.client.impl.subscription.SubscriptionManager;
 import io.zeebe.util.EnsureUtil;
 
@@ -28,7 +27,7 @@ public class JobSubscriberGroupBuilder
     protected long lockTime = -1L;
     protected String lockOwner;
     protected JobHandler jobHandler;
-    protected int jobFetchSize = JobSubscriptionBuilderStep1.DEFAULT_JOB_FETCH_SIZE;
+    protected int bufferSize;
 
     protected final SubscriptionManager jobAcquisition;
     protected final String topic;
@@ -65,9 +64,9 @@ public class JobSubscriberGroupBuilder
         return this;
     }
 
-    public JobSubscriberGroupBuilder jobFetchSize(int jobFetchSize)
+    public JobSubscriberGroupBuilder bufferSize(int bufferSize)
     {
-        this.jobFetchSize = jobFetchSize;
+        this.bufferSize = bufferSize;
         return this;
     }
 
@@ -76,10 +75,10 @@ public class JobSubscriberGroupBuilder
         EnsureUtil.ensureNotNullOrEmpty("jobType", jobType);
         EnsureUtil.ensureGreaterThan("lockTime", lockTime, 0L);
         EnsureUtil.ensureNotNullOrEmpty("lockOwner", lockOwner);
-        EnsureUtil.ensureGreaterThan("jobFetchSize", jobFetchSize, 0);
+        EnsureUtil.ensureGreaterThan("jobFetchSize", bufferSize, 0);
 
         final JobSubscriptionSpec subscription =
-                new JobSubscriptionSpec(topic, jobHandler, jobType, lockTime, lockOwner, jobFetchSize);
+                new JobSubscriptionSpec(topic, jobHandler, jobType, lockTime, lockOwner, bufferSize);
 
         return jobAcquisition.openJobSubscription(subscription);
     }

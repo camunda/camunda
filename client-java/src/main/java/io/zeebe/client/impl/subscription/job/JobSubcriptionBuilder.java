@@ -39,6 +39,7 @@ public class JobSubcriptionBuilder implements JobSubscriptionBuilderStep1, JobSu
         final ZeebeClientConfiguration configuration = client.getConfiguration();
         this.subscriberBuilder.lockOwner(configuration.getDefaultJobLockOwner());
         this.subscriberBuilder.lockTime(configuration.getDefaultJobLockTime().toMillis());
+        this.subscriberBuilder.bufferSize(configuration.getDefaultJobSubscriptionBufferSize());
     }
 
     @Override
@@ -70,9 +71,9 @@ public class JobSubcriptionBuilder implements JobSubscriptionBuilderStep1, JobSu
     }
 
     @Override
-    public JobSubscriptionBuilderStep3 fetchSize(int fetchSize)
+    public JobSubscriptionBuilderStep3 bufferSize(int fetchSize)
     {
-        subscriberBuilder.jobFetchSize(fetchSize);
+        subscriberBuilder.bufferSize(fetchSize);
         return this;
     }
 

@@ -121,7 +121,6 @@ public class TopicSubscriber extends Subscriber
 
         if (positionToAck > lastAcknowledgedPosition)
         {
-            // TODO: what to do on error here? close the group (but only if it is not already closing)
             final ActorFuture<TopicSubscriptionEventImpl> future = new AcknowledgeSubscribedEventCommandImpl(client.getCommandManager(), subscription.getTopic(), partitionId)
                 .subscriptionName(subscription.getName())
                 .ackPosition(positionToAck)

@@ -63,8 +63,8 @@ public class ZeebeClientTest
     {
         this.clientMaxRequests = 128;
         final Properties properties = new Properties();
-        properties.setProperty(ClientProperties.CLIENT_REQUEST_TIMEOUT_SEC, "3");
-        properties.setProperty(ClientProperties.CLIENT_REQUEST_BLOCKTIME_MILLIS, "250");
+        properties.setProperty(ClientProperties.REQUEST_TIMEOUT_SEC, "3");
+        properties.setProperty(ClientProperties.REQUEST_BLOCKTIME_MILLIS, "250");
 
         client = (ZeebeClientImpl) ZeebeClient.newClientBuilder().withProperties(properties).build();
         broker.stubTopicSubscriptionApi(0);
@@ -456,6 +456,7 @@ public class ZeebeClientTest
         final int sendBufferSize = 6;
         final Duration tcpChannelKeepAlivePeriod = Duration.ofSeconds(7);
         final int topicSubscriptionPrefetchCapacity = 8;
+        final int jobSubscriptionBufferSize = 9;
 
         // when
         final ZeebeClient client = ZeebeClient.newClientBuilder()
@@ -466,7 +467,8 @@ public class ZeebeClientTest
                 .requestTimeout(requestTimeout)
                 .sendBufferSize(sendBufferSize)
                 .tcpChannelKeepAlivePeriod(tcpChannelKeepAlivePeriod)
-                .topicSubscriptionPrefetchCapacity(topicSubscriptionPrefetchCapacity)
+                .defaultTopicSubscriptionBufferSize(topicSubscriptionPrefetchCapacity)
+                .defaultJobSubscriptionBufferSize(jobSubscriptionBufferSize)
                 .build();
 
         // then
@@ -478,7 +480,8 @@ public class ZeebeClientTest
         assertThat(configuration.getRequestTimeout()).isEqualTo(requestTimeout);
         assertThat(configuration.getSendBufferSize()).isEqualTo(sendBufferSize);
         assertThat(configuration.getTcpChannelKeepAlivePeriod()).isEqualTo(tcpChannelKeepAlivePeriod);
-        assertThat(configuration.getTopicSubscriptionPrefetchCapacity()).isEqualTo(topicSubscriptionPrefetchCapacity);
+        assertThat(configuration.getDefaultTopicSubscriptionBufferSize()).isEqualTo(topicSubscriptionPrefetchCapacity);
+        assertThat(configuration.getDefaultJobSubscriptionBufferSize()).isEqualTo(jobSubscriptionBufferSize);
     }
 
     @Test

@@ -25,51 +25,56 @@ public class ClientProperties
     /**
      * @see ZeebeClientBuilder#requestBlocktime(java.time.Duration)
      */
-    public static final String CLIENT_REQUEST_BLOCKTIME_MILLIS = "zeebe.client.requestBlockTime";
+    public static final String REQUEST_BLOCKTIME_MILLIS = "zeebe.client.requestBlockTime";
 
     /**
      * @see ZeebeClientBuilder#sendBufferSize(int)
      */
-    public static final String CLIENT_SENDBUFFER_SIZE = "zeebe.client.sendbuffer.size";
+    public static final String SENDBUFFER_SIZE = "zeebe.client.sendbuffer.size";
 
     /**
      * @see ZeebeClientBuilder#numManagementThreads(int)
      */
-    public static final String CLIENT_MANAGEMENT_THREADS = "zeebe.client.threads";
+    public static final String MANAGEMENT_THREADS = "zeebe.client.threads";
 
     /**
      * @see ZeebeClientBuilder#numSubscriptionExecutionThreads(int)
      */
-    public static final String CLIENT_SUBSCRIPTION_EXECUTION_THREADS = "zeebe.client.subscription.threads";
+    public static final String SUBSCRIPTION_EXECUTION_THREADS = "zeebe.client.subscription.threads";
 
     /**
-     * @see ZeebeClientBuilder#topicSubscriptionPrefetchCapacity(int)
+     * @see ZeebeClientBuilder#defaultTopicSubscriptionBufferSize(int)
      */
-    public static final String CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY = "zeebe.client.subscription.prefetch";
+    public static final String TOPIC_SUBSCRIPTION_BUFFER_SIZE = "zeebe.client.subscription.buffersize";
+
+    /**
+     * @see ZeebeClientBuilder#defaultTopicSubscriptionBufferSize(int)
+     */
+    public static final String JOB_SUBSCRIPTION_BUFFER_SIZE = "zeebe.client.worker.buffersize";
 
     /**
      * @see ZeebeClientBuilder#tcpChannelKeepAlivePeriod(java.time.Duration)
      */
-    public static final String CLIENT_TCP_CHANNEL_KEEP_ALIVE_PERIOD = "zeebe.client.channel.keepalive";
+    public static final String TCP_CHANNEL_KEEP_ALIVE_PERIOD = "zeebe.client.channel.keepalive";
 
     /**
      * @see ZeebeClientBuilder#requestTimeout(java.time.Duration)
      */
-    public static final String CLIENT_REQUEST_TIMEOUT_SEC = "zeebe.client.request.timeout";
+    public static final String REQUEST_TIMEOUT_SEC = "zeebe.client.request.timeout";
 
     /**
      * @see ZeebeClientBuilder#defaultJobLockOwner(String)
      */
-    public static final String CLIENT_DEFAULT_JOB_LOCK_OWNER = "zeebe.client.job.lockOwner";
+    public static final String DEFAULT_JOB_LOCK_OWNER = "zeebe.client.job.lockOwner";
 
     /**
      * @see ZeebeClientBuilder#defaultJobLockTime(java.time.Duration)
      */
-    public static final String CLIENT_DEFAULT_JOB_LOCK_TIME = "zeebe.client.job.lockTime";
+    public static final String DEFAULT_JOB_LOCK_TIME = "zeebe.client.job.lockTime";
 
     /**
      * @see ZeebeClientBuilder#defaultTopic(String)
      */
-    public static final String CLIENT_DEFAULT_TOPIC = "zeebe.client.defaultTopic";
+    public static final String DEFAULT_TOPIC = "zeebe.client.defaultTopic";
 
 }

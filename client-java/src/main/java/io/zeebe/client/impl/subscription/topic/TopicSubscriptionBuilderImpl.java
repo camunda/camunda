@@ -96,7 +96,7 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilderSte
     {
         this.objectMapper = client.getObjectMapper();
 
-        final int prefetchCapacity = client.getConfiguration().getTopicSubscriptionPrefetchCapacity();
+        final int prefetchCapacity = client.getConfiguration().getDefaultTopicSubscriptionBufferSize();
         this.builder = new TopicSubscriberGroupBuilder(client.getTopic(), client.getSubscriptionManager(),
                 prefetchCapacity);
     }
@@ -203,6 +203,13 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilderSte
     public TopicSubscriptionBuilderStep3 forcedStart()
     {
         builder.forceStart();
+        return this;
+    }
+
+    @Override
+    public TopicSubscriptionBuilderStep3 bufferSize(int numberOfRecords)
+    {
+        builder.bufferSize(numberOfRecords);
         return this;
     }
 

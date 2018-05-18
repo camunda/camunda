@@ -31,7 +31,8 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
     private int sendBufferSize = 16;
     private int numManagementThreads = 1;
     private int numSubscriptionExecutionThreads = 1;
-    private int topicSubscriptionPrefetchCapacity = 32;
+    private int topicSubscriptionBufferSize = 1024;
+    private int jobSubscriptionBufferSize = 32;
     private Duration tcpChannelKeepAlivePeriod;
     private ActorClock actorClock;
     private String defaultJobLockOwner = "default";
@@ -117,15 +118,28 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
     }
 
     @Override
-    public int getTopicSubscriptionPrefetchCapacity()
+    public int getDefaultTopicSubscriptionBufferSize()
     {
-        return topicSubscriptionPrefetchCapacity;
+        return topicSubscriptionBufferSize;
     }
 
     @Override
-    public ZeebeClientBuilder topicSubscriptionPrefetchCapacity(int topicSubscriptionPrefetchCapacity)
+    public ZeebeClientBuilder defaultTopicSubscriptionBufferSize(int numberOfRecords)
     {
-        this.topicSubscriptionPrefetchCapacity = topicSubscriptionPrefetchCapacity;
+        this.topicSubscriptionBufferSize = numberOfRecords;
+        return this;
+    }
+
+    @Override
+    public int getDefaultJobSubscriptionBufferSize()
+    {
+        return jobSubscriptionBufferSize;
+    }
+
+    @Override
+    public ZeebeClientBuilder defaultJobSubscriptionBufferSize(int numberOfJobs)
+    {
+        this.jobSubscriptionBufferSize = numberOfJobs;
         return this;
     }
 
@@ -204,45 +218,49 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
         {
             brokerContactPoint(properties.getProperty(ClientProperties.BROKER_CONTACTPOINT));
         }
-        if (properties.containsKey(ClientProperties.CLIENT_REQUEST_TIMEOUT_SEC))
+        if (properties.containsKey(ClientProperties.REQUEST_TIMEOUT_SEC))
         {
-            requestTimeout(Duration.ofSeconds(Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_REQUEST_TIMEOUT_SEC))));
+            requestTimeout(Duration.ofSeconds(Integer.parseInt(properties.getProperty(ClientProperties.REQUEST_TIMEOUT_SEC))));
         }
-        if (properties.containsKey(CLIENT_REQUEST_BLOCKTIME_MILLIS))
+        if (properties.containsKey(REQUEST_BLOCKTIME_MILLIS))
         {
-            requestBlocktime(Duration.ofMillis(Integer.parseInt(properties.getProperty(CLIENT_REQUEST_BLOCKTIME_MILLIS))));
+            requestBlocktime(Duration.ofMillis(Integer.parseInt(properties.getProperty(REQUEST_BLOCKTIME_MILLIS))));
         }
-        if (properties.containsKey(CLIENT_SENDBUFFER_SIZE))
+        if (properties.containsKey(SENDBUFFER_SIZE))
         {
-            sendBufferSize(Integer.parseInt(properties.getProperty(CLIENT_SENDBUFFER_SIZE)));
+            sendBufferSize(Integer.parseInt(properties.getProperty(SENDBUFFER_SIZE)));
         }
-        if (properties.containsKey(ClientProperties.CLIENT_MANAGEMENT_THREADS))
+        if (properties.containsKey(ClientProperties.MANAGEMENT_THREADS))
         {
-            numManagementThreads(Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_MANAGEMENT_THREADS)));
+            numManagementThreads(Integer.parseInt(properties.getProperty(ClientProperties.MANAGEMENT_THREADS)));
         }
-        if (properties.containsKey(ClientProperties.CLIENT_TCP_CHANNEL_KEEP_ALIVE_PERIOD))
+        if (properties.containsKey(ClientProperties.TCP_CHANNEL_KEEP_ALIVE_PERIOD))
         {
-            tcpChannelKeepAlivePeriod(Duration.ofMillis(Long.parseLong(properties.getProperty(ClientProperties.CLIENT_TCP_CHANNEL_KEEP_ALIVE_PERIOD))));
+            tcpChannelKeepAlivePeriod(Duration.ofMillis(Long.parseLong(properties.getProperty(ClientProperties.TCP_CHANNEL_KEEP_ALIVE_PERIOD))));
         }
-        if (properties.containsKey(ClientProperties.CLIENT_SUBSCRIPTION_EXECUTION_THREADS))
+        if (properties.containsKey(ClientProperties.SUBSCRIPTION_EXECUTION_THREADS))
         {
-            numSubscriptionExecutionThreads(Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_SUBSCRIPTION_EXECUTION_THREADS)));
+            numSubscriptionExecutionThreads(Integer.parseInt(properties.getProperty(ClientProperties.SUBSCRIPTION_EXECUTION_THREADS)));
         }
-        if (properties.containsKey(ClientProperties.CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY))
+        if (properties.containsKey(ClientProperties.TOPIC_SUBSCRIPTION_BUFFER_SIZE))
         {
-            topicSubscriptionPrefetchCapacity(Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY)));
+            defaultTopicSubscriptionBufferSize(Integer.parseInt(properties.getProperty(ClientProperties.TOPIC_SUBSCRIPTION_BUFFER_SIZE)));
         }
-        if (properties.containsKey(CLIENT_DEFAULT_JOB_LOCK_OWNER))
+        if (properties.containsKey(ClientProperties.JOB_SUBSCRIPTION_BUFFER_SIZE))
         {
-            defaultJobLockOwner(properties.getProperty(CLIENT_DEFAULT_JOB_LOCK_OWNER));
+            defaultJobSubscriptionBufferSize(Integer.parseInt(properties.getProperty(ClientProperties.JOB_SUBSCRIPTION_BUFFER_SIZE)));
         }
-        if (properties.containsKey(CLIENT_DEFAULT_JOB_LOCK_TIME))
+        if (properties.containsKey(DEFAULT_JOB_LOCK_OWNER))
         {
-            defaultJobLockTime(Duration.ofMillis(Integer.parseInt(properties.getProperty(CLIENT_DEFAULT_JOB_LOCK_TIME))));
+            defaultJobLockOwner(properties.getProperty(DEFAULT_JOB_LOCK_OWNER));
         }
-        if (properties.containsKey(CLIENT_DEFAULT_TOPIC))
+        if (properties.containsKey(DEFAULT_JOB_LOCK_TIME))
         {
-            defaultTopic(properties.getProperty(CLIENT_DEFAULT_TOPIC));
+            defaultJobLockTime(Duration.ofMillis(Integer.parseInt(properties.getProperty(DEFAULT_JOB_LOCK_TIME))));
+        }
+        if (properties.containsKey(DEFAULT_TOPIC))
+        {
+            defaultTopic(properties.getProperty(DEFAULT_TOPIC));
         }
 
         return this;
@@ -259,7 +277,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
         appendProperty(sb, "sendBufferSize", sendBufferSize);
         appendProperty(sb, "numManagementThreads", numManagementThreads);
         appendProperty(sb, "numSubscriptionExecutionThreads", numSubscriptionExecutionThreads);
-        appendProperty(sb, "topicSubscriptionPrefetchCapacity", topicSubscriptionPrefetchCapacity);
+        appendProperty(sb, "topicSubscriptionPrefetchCapacity", topicSubscriptionBufferSize);
         appendProperty(sb, "tcpChannelKeepAlivePeriod", tcpChannelKeepAlivePeriod);
         appendProperty(sb, "defaultJobLockOwner", defaultJobLockOwner);
         appendProperty(sb, "defaultJobLockTime", defaultJobLockTime);

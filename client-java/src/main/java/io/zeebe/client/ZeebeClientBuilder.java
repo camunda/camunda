@@ -73,11 +73,18 @@ public interface ZeebeClientBuilder
     ZeebeClientBuilder numSubscriptionExecutionThreads(int numSubscriptionThreads);
 
     /**
-     * @param topicSubscriptionPrefetchCapacity Determines the maximum amount of topic events
-     * that are prefetched and buffered at a time before they are handled to the event handler.
+     * @param numberOfRecords Default value for
+     * {@link io.zeebe.client.api.subscription.TopicSubscriptionBuilderStep1.TopicSubscriptionBuilderStep3#bufferSize(int)}.
+     * Default value is 1024.
+     */
+    ZeebeClientBuilder defaultTopicSubscriptionBufferSize(int numberOfRecords);
+
+    /**
+     * @param numberOfJobs Default value for
+     * {@link io.zeebe.client.api.subscription.JobSubscriptionBuilderStep1.JobSubscriptionBuilderStep3#bufferSize(int)}.
      * Default value is 32.
      */
-    ZeebeClientBuilder topicSubscriptionPrefetchCapacity(int topicSubscriptionPrefetchCapacity);
+    ZeebeClientBuilder defaultJobSubscriptionBufferSize(int numberOfJobs);
 
     /**
      * The period of time in milliseconds for sending keep alive messages on tcp channels.

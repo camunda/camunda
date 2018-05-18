@@ -614,7 +614,7 @@ public class TopicSubscriptionTest
     public void shouldReceiveMoreEventsThanSubscriptionCapacity()
     {
         // given
-        final int subscriptionCapacity = clientRule.getClient().getConfiguration().getTopicSubscriptionPrefetchCapacity();
+        final int subscriptionCapacity = clientRule.getClient().getConfiguration().getDefaultTopicSubscriptionBufferSize();
 
         for (int i = 0; i < subscriptionCapacity + 1; i++)
         {

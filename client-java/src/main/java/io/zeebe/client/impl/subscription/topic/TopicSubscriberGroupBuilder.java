@@ -25,11 +25,11 @@ import io.zeebe.util.EnsureUtil;
 
 public class TopicSubscriberGroupBuilder
 {
+    private int bufferSize;
     protected final String topic;
     protected CheckedConsumer<UntypedRecordImpl> handler;
     protected final SubscriptionManager acquisition;
     protected String name;
-    protected final int prefetchCapacity;
     protected boolean forceStart;
     protected long defaultStartPosition;
     protected final Long2LongHashMap startPositions = new Long2LongHashMap(-1);
@@ -37,14 +37,14 @@ public class TopicSubscriberGroupBuilder
     public TopicSubscriberGroupBuilder(
             String topic,
             SubscriptionManager acquisition,
-            int prefetchCapacity)
+            int defaultBufferSize)
     {
         EnsureUtil.ensureNotNull("topic", topic);
         EnsureUtil.ensureNotEmpty("topic", topic);
 
         this.topic = topic;
         this.acquisition = acquisition;
-        this.prefetchCapacity = prefetchCapacity;
+        this.bufferSize = defaultBufferSize;
         startAtTailOfTopic();
     }
 
@@ -82,6 +82,12 @@ public class TopicSubscriberGroupBuilder
         return this;
     }
 
+    public TopicSubscriberGroupBuilder bufferSize(int bufferSize)
+    {
+        this.bufferSize = bufferSize;
+        return this;
+    }
+
     public TopicSubscriberGroupBuilder name(String name)
     {
         this.name = name;
@@ -107,7 +113,7 @@ public class TopicSubscriberGroupBuilder
                 startPositions,
                 forceStart,
                 name,
-                prefetchCapacity);
+                bufferSize);
 
         return acquisition.openTopicSubscription(subscription);
     }

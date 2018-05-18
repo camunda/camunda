@@ -200,6 +200,20 @@ public interface TopicSubscriptionBuilderStep1
         TopicSubscriptionBuilderStep3 forcedStart();
 
         /**
+         * <p>Determines the maximum amount of records
+         * that are fetched and buffered at a time before they are handled to the event handler.
+         *
+         * <p>Considerations:
+         * <ul>
+         * <li>A greater value can avoid situations in which the client waits idle for the broker to
+         * provide more records. This can improve overall throughput.
+         * <li>The memory used by the subscription is linear with respect to this value.
+         *
+         * @param numberOfRecords
+         */
+        TopicSubscriptionBuilderStep3 bufferSize(int numberOfRecords);
+
+        /**
          * Open the subscription and start to process available events/commands.
          *
          * @return the subscription

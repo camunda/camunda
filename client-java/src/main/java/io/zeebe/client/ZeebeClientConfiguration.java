@@ -50,9 +50,14 @@ public interface ZeebeClientConfiguration
     int getNumSubscriptionExecutionThreads();
 
     /**
-     * @see ZeebeClientBuilder#topicSubscriptionPrefetchCapacity(int)
+     * @see ZeebeClientBuilder#defaultTopicSubscriptionBufferSize(int)
      */
-    int getTopicSubscriptionPrefetchCapacity();
+    int getDefaultTopicSubscriptionBufferSize();
+
+    /**
+     * @see ZeebeClientBuilder#defaultJobSubscriptionBufferSize(int)
+     */
+    int getDefaultJobSubscriptionBufferSize();
 
     /**
      * @see ZeebeClientBuilder#tcpChannelKeepAlivePeriod(Duration)

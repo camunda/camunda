@@ -127,7 +127,7 @@ public class ZeebeClientImpl implements ZeebeClient
         this.msgPackConverter = new MsgPackConverter();
         this.objectMapper = new ZeebeObjectMapperImpl(msgPackConverter);
 
-        subscriptionPrefetchCapacity = configuration.getTopicSubscriptionPrefetchCapacity();
+        subscriptionPrefetchCapacity = configuration.getDefaultTopicSubscriptionBufferSize();
 
         final RemoteAddress initialContactPoint = transport.registerRemoteAddress(contactPoint);
 

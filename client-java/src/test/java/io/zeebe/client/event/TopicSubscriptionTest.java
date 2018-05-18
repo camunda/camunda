@@ -76,6 +76,7 @@ import io.zeebe.test.broker.protocol.brokerapi.ControlMessageRequest;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.ResponseController;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
+import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.Conditions;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.RemoteAddress;
@@ -97,6 +98,9 @@ public class TopicSubscriptionTest
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
+
+    @Rule
+    public AutoCloseableRule closeables = new AutoCloseableRule();
 
     protected ZeebeClient client;
 
@@ -131,7 +135,7 @@ public class TopicSubscriptionTest
 
         assertThat(subscribeRequest.getCommand())
             .containsEntry("startPosition", 0)
-            .containsEntry("prefetchCapacity", 32)
+            .containsEntry("prefetchCapacity", 1024)
             .containsEntry("name", SUBSCRIPTION_NAME)
             .doesNotContainEntry("forceStart", true);
     }
@@ -185,7 +189,7 @@ public class TopicSubscriptionTest
 
         assertThat(subscribeRequest.getCommand())
             .hasEntrySatisfying("startPosition", Conditions.isLowerThan(0))
-            .containsEntry("prefetchCapacity", 32)
+            .containsEntry("prefetchCapacity", 1024)
             .containsEntry("name", SUBSCRIPTION_NAME)
             .doesNotContainEntry("forceStart", true);
     }
@@ -215,7 +219,7 @@ public class TopicSubscriptionTest
 
         assertThat(subscribeRequest.getCommand())
             .containsEntry("startPosition", 654)
-            .containsEntry("prefetchCapacity", 32)
+            .containsEntry("prefetchCapacity", 1024)
             .containsEntry("name", SUBSCRIPTION_NAME)
             .doesNotContainEntry("forceStart", true);
     }
@@ -369,12 +373,18 @@ public class TopicSubscriptionTest
     }
 
     @Test
-    public void shouldSendPrefetchCapacityAsDefinedInClientProperties()
+    public void shouldSendBufferSizeAsDefinedInClientProperties()
     {
         // given
+        final int bufferSize = 999;
         broker.stubTopicSubscriptionApi(123L);
 
-        clientRule.subscriptionClient()
+        final ZeebeClient configuredClient = ZeebeClient.newClientBuilder()
+            .defaultTopicSubscriptionBufferSize(bufferSize)
+            .build();
+        closeables.manage(configuredClient);
+
+        configuredClient.topicClient().subscriptionClient()
             .newTopicSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(DO_NOTHING)
@@ -387,7 +397,32 @@ public class TopicSubscriptionTest
             .findFirst()
             .get();
 
-        assertThat(addSubscriptionRequest.getCommand()).containsEntry("prefetchCapacity", 32);
+        assertThat(addSubscriptionRequest.getCommand()).containsEntry("prefetchCapacity", bufferSize);
+    }
+
+    @Test
+    public void shouldSendBufferSizeAsDefinedViaBuilder()
+    {
+        // given
+        final int bufferSize = 123;
+
+        broker.stubTopicSubscriptionApi(123L);
+
+        clientRule.subscriptionClient()
+            .newTopicSubscription()
+            .name(SUBSCRIPTION_NAME)
+            .recordHandler(DO_NOTHING)
+            .startAtHeadOfTopic()
+            .bufferSize(bufferSize)
+            .open();
+
+        // then
+        final ExecuteCommandRequest addSubscriptionRequest = broker.getReceivedCommandRequests().stream()
+            .filter((r) -> r.valueType() == ValueType.SUBSCRIBER && r.intent() == SubscriberIntent.SUBSCRIBE)
+            .findFirst()
+            .get();
+
+        assertThat(addSubscriptionRequest.getCommand()).containsEntry("prefetchCapacity", bufferSize);
     }
 
     @Test
@@ -898,7 +933,7 @@ public class TopicSubscriptionTest
 
         assertThat(reopenRequest.getCommand())
             .containsEntry("startPosition", 0)
-            .containsEntry("prefetchCapacity", 32)
+            .containsEntry("prefetchCapacity", 1024)
             .containsEntry("name", SUBSCRIPTION_NAME)
             .doesNotContainEntry("forceStart", true);
 

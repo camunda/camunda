@@ -46,6 +46,7 @@ import io.zeebe.protocol.clientapi.*;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.broker.protocol.brokerapi.*;
+import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.RemoteAddress;
 import org.junit.*;
@@ -71,6 +72,9 @@ public class JobSubscriptionTest
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
+
+    @Rule
+    public AutoCloseableRule closeables = new AutoCloseableRule();
 
     protected ZeebeClient client;
 
@@ -100,7 +104,7 @@ public class JobSubscriptionTest
                 .handler(DO_NOTHING)
                 .lockOwner("foo")
                 .lockTime(10000L)
-                .fetchSize(456)
+                .bufferSize(456)
                 .open();
 
         // then
@@ -188,13 +192,20 @@ public class JobSubscriptionTest
     }
 
     @Test
-    public void shouldUseDefaultJobFetchSize()
+    public void shouldUseDefaultBufferSize()
     {
         // given
+        final int bufferSize = 975;
+
+        final ZeebeClient configuredClient = ZeebeClient.newClientBuilder()
+            .defaultJobSubscriptionBufferSize(bufferSize)
+            .build();
+        closeables.manage(configuredClient);
+
         broker.stubJobSubscriptionApi(123L);
 
         // when
-        clientRule.subscriptionClient()
+        configuredClient.topicClient().subscriptionClient()
             .newJobSubscription()
             .jobType("bar")
             .handler(DO_NOTHING)
@@ -206,7 +217,31 @@ public class JobSubscriptionTest
         final ControlMessageRequest subscriptionRequest = getSubscribeRequests().findFirst().get();
         assertThat(subscriptionRequest.messageType()).isEqualByComparingTo(ControlMessageType.ADD_JOB_SUBSCRIPTION);
 
-        assertThat(subscriptionRequest.getData()).containsEntry("credits", 32);
+        assertThat(subscriptionRequest.getData()).containsEntry("credits", bufferSize);
+    }
+
+    @Test
+    public void shouldUseBufferSizeDefinedViaBuilder()
+    {
+        // given
+        final int bufferSize = 975;
+        broker.stubJobSubscriptionApi(123L);
+
+        // when
+        clientRule.subscriptionClient()
+            .newJobSubscription()
+            .jobType("bar")
+            .handler(DO_NOTHING)
+            .lockOwner("foo")
+            .lockTime(10000L)
+            .bufferSize(bufferSize)
+            .open();
+
+        // then
+        final ControlMessageRequest subscriptionRequest = getSubscribeRequests().findFirst().get();
+        assertThat(subscriptionRequest.messageType()).isEqualByComparingTo(ControlMessageType.ADD_JOB_SUBSCRIPTION);
+
+        assertThat(subscriptionRequest.getData()).containsEntry("credits", bufferSize);
     }
 
     @Test
@@ -633,7 +668,7 @@ public class JobSubscriptionTest
             .handler(jobHandler)
             .lockOwner("owner")
             .lockTime(10000L)
-            .fetchSize(subscriptionCapacity)
+            .bufferSize(subscriptionCapacity)
             .open();
 
         final RemoteAddress clientAddress = broker.getReceivedControlMessageRequestsByType(ControlMessageType.ADD_JOB_SUBSCRIPTION).get(0).getSource();
@@ -733,7 +768,7 @@ public class JobSubscriptionTest
             .handler(handler)
             .lockOwner("owner")
             .lockTime(10000L)
-            .fetchSize(subscriptionCapacity)
+            .bufferSize(subscriptionCapacity)
             .open();
 
         final RemoteAddress clientAddress = getSubscribeRequests().findFirst().get().getSource();

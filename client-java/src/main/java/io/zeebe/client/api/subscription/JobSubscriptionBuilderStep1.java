@@ -17,10 +17,10 @@ package io.zeebe.client.api.subscription;
 
 import java.time.Duration;
 
+import io.zeebe.client.ZeebeClientConfiguration;
+
 public interface JobSubscriptionBuilderStep1
 {
-    int DEFAULT_JOB_FETCH_SIZE = 32;
-
     /**
      * Set the type of jobs to work on.
      *
@@ -122,21 +122,30 @@ public interface JobSubscriptionBuilderStep1
          * this subscription at the same time.
          * <p>
          * This is used to control the backpressure of the subscription. When
-         * the number of assigned jobs is reached then the broker will no assign
-         * more jobs to the subscription to not overwhelm the client and give
+         * the number of assigned jobs is reached then the broker will stop assigning
+         * new jobs to the subscription in order to to not overwhelm the client and give
          * other subscriptions the chance to work on the jobs. The broker will
          * assign new jobs again when jobs are completed (or marked as failed) which
          * were assigned to the subscription.
          * <p>
-         * If no fetch size is set then the default is used from the
-         * configuration.
+         * If no buffer size is set then the default is used from the {@link ZeebeClientConfiguration}.
          *
-         * @param fetchSize
+         * <p>
+         * Considerations:
+         * <ul>
+         * <li>A greater value can avoid situations in which the client waits idle for the broker to
+         * provide more jobs. This can improve the subscription's throughput.
+         * <li>The memory used by the subscription is linear with respect to this value.
+         * <li>The job's lock time starts to run down as soon as the broker pushes the job.
+         * Keep in mind that the following must hold to ensure fluent job handling:
+         * <code>time spent in buffer + time job handler needs until job completion < job lock expiration time</code>.
+         *
+         * @param numberOfJobs
          *            the number of assigned jobs
          *
          * @return the builder for this subscription
          */
-        JobSubscriptionBuilderStep3 fetchSize(int fetchSize);
+        JobSubscriptionBuilderStep3 bufferSize(int numberOfJobs);
 
         /**
          * Open the subscription and start to work on available tasks.

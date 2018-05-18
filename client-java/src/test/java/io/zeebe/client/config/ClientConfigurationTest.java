@@ -24,6 +24,7 @@ import io.zeebe.client.*;
 import io.zeebe.client.impl.TopicClientImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
+import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.ClientTransport;
 import org.junit.Rule;
 import org.junit.Test;
@@ -35,17 +36,21 @@ public class ClientConfigurationTest
     @Rule
     public StubBrokerRule broker = new StubBrokerRule();
 
+    @Rule
+    public AutoCloseableRule closeables = new AutoCloseableRule();
+
     @Test
     public void shouldConfigureKeepAlive()
     {
         // given
         final Properties props = new Properties();
-        props.put(ClientProperties.CLIENT_TCP_CHANNEL_KEEP_ALIVE_PERIOD, Long.toString(KEEP_ALIVE_TIMEOUT));
+        props.put(ClientProperties.TCP_CHANNEL_KEEP_ALIVE_PERIOD, Long.toString(KEEP_ALIVE_TIMEOUT));
 
         final Duration expectedTimeout = Duration.ofMillis(KEEP_ALIVE_TIMEOUT);
 
         // when
         final ZeebeClient client = ZeebeClient.newClientBuilder().withProperties(props).build();
+        closeables.manage(client);
 
         // then
         final ClientTransport transport = ((ZeebeClientImpl) client).getTransport();
@@ -57,10 +62,11 @@ public class ClientConfigurationTest
     {
         // given
         final Properties config = new Properties();
-        config.setProperty(ClientProperties.CLIENT_DEFAULT_JOB_LOCK_OWNER, "me");
+        config.setProperty(ClientProperties.DEFAULT_JOB_LOCK_OWNER, "me");
 
         // when
         final ZeebeClient client = ZeebeClient.newClientBuilder().withProperties(config).build();
+        closeables.manage(client);
 
         // then
         assertThat(client.getConfiguration().getDefaultJobLockOwner()).isEqualTo("me");
@@ -71,10 +77,11 @@ public class ClientConfigurationTest
     {
         // given
         final Properties config = new Properties();
-        config.setProperty(ClientProperties.CLIENT_DEFAULT_JOB_LOCK_TIME, "5000");
+        config.setProperty(ClientProperties.DEFAULT_JOB_LOCK_TIME, "5000");
 
         // when
         final ZeebeClient client = ZeebeClient.newClientBuilder().withProperties(config).build();
+        closeables.manage(client);
 
         // then
         assertThat(client.getConfiguration().getDefaultJobLockTime()).isEqualTo(Duration.ofMillis(5000));
@@ -85,10 +92,11 @@ public class ClientConfigurationTest
     {
         // given
         final Properties config = new Properties();
-        config.setProperty(ClientProperties.CLIENT_DEFAULT_TOPIC, "my-topic");
+        config.setProperty(ClientProperties.DEFAULT_TOPIC, "my-topic");
 
         // when
         final ZeebeClient client = ZeebeClient.newClientBuilder().withProperties(config).build();
+        closeables.manage(client);
 
         // then
         assertThat(client.getConfiguration().getDefaultTopic()).isEqualTo("my-topic");
@@ -97,11 +105,31 @@ public class ClientConfigurationTest
         assertThat(topicClient.getTopic()).isEqualTo("my-topic");
     }
 
+
+    @Test
+    public void shouldConfigureDefaultBufferSizes()
+    {
+        // given
+        final Properties config = new Properties();
+        config.setProperty(ClientProperties.TOPIC_SUBSCRIPTION_BUFFER_SIZE, "123");
+        config.setProperty(ClientProperties.JOB_SUBSCRIPTION_BUFFER_SIZE, "345");
+
+        // when
+        final ZeebeClient client = ZeebeClient.newClientBuilder().withProperties(config).build();
+        closeables.manage(client);
+
+        // then
+        assertThat(client.getConfiguration().getDefaultTopicSubscriptionBufferSize()).isEqualTo(123);
+        assertThat(client.getConfiguration().getDefaultJobSubscriptionBufferSize()).isEqualTo(345);
+    }
+
+
     @Test
     public void shouldApplyDefaults()
     {
         // given
         final ZeebeClient client = ZeebeClient.newClient();
+        closeables.manage(client);
 
         // then
         final ZeebeClientConfiguration configuration = client.getConfiguration();
@@ -109,7 +137,8 @@ public class ClientConfigurationTest
         assertThat(configuration.getDefaultJobLockOwner()).isEqualTo("default");
         assertThat(configuration.getDefaultJobLockTime()).isEqualTo(Duration.ofMinutes(5));
         assertThat(configuration.getDefaultTopic()).isEqualTo("default-topic");
-        assertThat(configuration.getTopicSubscriptionPrefetchCapacity()).isEqualTo(32);
+        assertThat(configuration.getDefaultTopicSubscriptionBufferSize()).isEqualTo(1024);
+        assertThat(configuration.getDefaultJobSubscriptionBufferSize()).isEqualTo(32);
     }
 
 }

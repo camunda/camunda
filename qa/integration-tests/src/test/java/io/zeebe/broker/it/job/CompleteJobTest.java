@@ -39,7 +39,7 @@ public class CompleteJobTest
     public ClientRule clientRule = new ClientRule(() ->
     {
         final Properties p = new Properties();
-        p.setProperty(ClientProperties.CLIENT_REQUEST_TIMEOUT_SEC, "3");
+        p.setProperty(ClientProperties.REQUEST_TIMEOUT_SEC, "3");
         return p;
     }, true);
 
