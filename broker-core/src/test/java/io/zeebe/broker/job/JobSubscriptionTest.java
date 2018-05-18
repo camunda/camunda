@@ -94,7 +94,7 @@ public class JobSubscriptionTest
                 .getFirst();
         assertThat(jobEvent.key()).isEqualTo(response.key());
         assertThat(jobEvent.position()).isGreaterThan(response.position());
-        assertThat(jobEvent.timestamp()).isGreaterThan(response.timestamp());
+        assertThat(jobEvent.timestamp()).isGreaterThanOrEqualTo(response.timestamp());
         assertThat(jobEvent.value())
             .containsEntry("type", "foo")
             .containsEntry("retries", 3)
