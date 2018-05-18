@@ -557,6 +557,8 @@ public class BrokerRecoveryTest
             .send()
             .join();
 
+        clientRule.waitUntilTopicsExists("foo");
+
         deleteSnapshotsAndRestart();
 
         // then

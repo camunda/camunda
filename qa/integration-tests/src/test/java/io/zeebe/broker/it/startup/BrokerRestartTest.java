@@ -553,6 +553,8 @@ public class BrokerRestartTest
             .send()
             .join();
 
+        clientRule.waitUntilTopicsExists("foo");
+
         restartBroker();
 
         // then
