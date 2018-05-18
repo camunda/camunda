@@ -391,26 +391,24 @@ public class ZeebeClientTest
     public void shouldThrottleTopologyRefreshRequestsWhenTopicPartitionCannotBeDetermined()
     {
         // when
-        assertThatThrownBy(() ->
-        {
-            client.topicClient("non-existing-topic")
-                    .jobClient()
-                    .newCreateCommand()
-                    .jobType("baz")
-                    .send()
-                    .join();
-        });
+        final long start = System.currentTimeMillis();
+        assertThatThrownBy(() -> client.topicClient("non-existing-topic")
+                .jobClient()
+                .newCreateCommand()
+                .jobType("baz")
+                .send()
+                .join());
+        final long requestDuration = System.currentTimeMillis() - start;
 
-        // +4 (one for the extra request when client is started)
-        final Duration requestTimeout = client.getConfiguration().getRequestTimeout();
-        final long requestTimeoutMs = requestTimeout.toMillis();
-        final long expectedMaximumTopologyRequests =
-                (requestTimeoutMs / ClientTopologyManager.MIN_REFRESH_INTERVAL_MILLIS.toMillis()) + 4;
+        // then
         final long actualTopologyRequests = broker
             .getReceivedControlMessageRequests()
             .stream()
             .filter(r -> r.messageType() == ControlMessageType.REQUEST_TOPOLOGY)
             .count();
+
+        // +4 (one for the extra request when client is started)
+        final long expectedMaximumTopologyRequests = (requestDuration / ClientTopologyManager.MIN_REFRESH_INTERVAL_MILLIS.toMillis()) + 4;
 
         assertThat(actualTopologyRequests).isLessThanOrEqualTo(expectedMaximumTopologyRequests);
     }
@@ -418,30 +416,30 @@ public class ZeebeClientTest
     @Test
     public void shouldThrottleTopologyRefreshRequestsWhenPartitionLeaderCannotBeDetermined()
     {
-        // when
+        // given
         final int nonExistingPartition = 999;
 
         final JobEventImpl jobEvent = Events.exampleJob();
         jobEvent.setPartitionId(nonExistingPartition);
 
-        assertThatThrownBy(() ->
-        {
-            client.topicClient()
-                    .jobClient()
-                    .newCompleteCommand(jobEvent)
-                    .send()
-                    .join();
-        });
+        // when
+        final long start = System.currentTimeMillis();
+        assertThatThrownBy(() -> client.topicClient()
+                .jobClient()
+                .newCompleteCommand(jobEvent)
+                .send()
+                .join());
+        final long requestDuration = System.currentTimeMillis() - start;
 
-        // +4 (one for the extra request when client is started)
-        final Duration requestTimeout = client.getConfiguration().getRequestTimeout();
-        final long requestTimeoutMs = requestTimeout.toMillis();
-        final long expectedMaximumTopologyRequests = (requestTimeoutMs / ClientTopologyManager.MIN_REFRESH_INTERVAL_MILLIS.toMillis()) + 4;
+        // then
         final long actualTopologyRequests = broker
             .getReceivedControlMessageRequests()
             .stream()
             .filter(r -> r.messageType() == ControlMessageType.REQUEST_TOPOLOGY)
             .count();
+
+        // +4 (one for the extra request when client is started)
+        final long expectedMaximumTopologyRequests = (requestDuration / ClientTopologyManager.MIN_REFRESH_INTERVAL_MILLIS.toMillis()) + 4;
 
         assertThat(actualTopologyRequests).isLessThanOrEqualTo(expectedMaximumTopologyRequests);
     }
