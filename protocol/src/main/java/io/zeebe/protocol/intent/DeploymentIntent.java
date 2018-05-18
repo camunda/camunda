@@ -18,10 +18,7 @@ package io.zeebe.protocol.intent;
 public enum DeploymentIntent implements Intent
 {
     CREATE((short) 0),
-    VALIDATED((short) 1),
-    DISTRIBUTED((short) 2),
-    CREATED((short) 3),
-    TIMED_OUT((short) 4);
+    CREATED((short) 3);
 
     private short value;
 
@@ -40,10 +37,7 @@ public enum DeploymentIntent implements Intent
         switch (value)
         {
             case 0: return CREATE;
-            case 1: return VALIDATED;
-            case 2: return DISTRIBUTED;
             case 3: return CREATED;
-            case 4: return TIMED_OUT;
             default: return Intent.UNKNOWN;
         }
     }
