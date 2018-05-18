@@ -66,4 +66,16 @@
     <sbe:message name="NotLeaderResponse" id="5">
     </sbe:message>
 
+    <sbe:message name="ListSnapshotsRequest" id="6">
+        <field name="partitionId" id="0" type="uint16" />
+    </sbe:message>
+
+    <sbe:message name="ListSnapshotsResponse" id="7">
+        <group name="snapshots" id="0" dimensionType="groupSizeEncoding">
+            <field name="filesize" id="1" type="uint64" />
+            <data name="filename" id="2" type="varDataEncoding" />
+            <data name="checksum" id="3" type="varDataEncoding" />
+        </group>
+    </sbe:message>
+
 </sbe:messageSchema>
