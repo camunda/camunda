@@ -84,6 +84,11 @@ public abstract class RecordImpl implements Record
         return this.metadata.hasPartitionId();
     }
 
+    public void setTimestamp(long timestamp)
+    {
+        this.metadata.setTimestamp(timestamp);
+    }
+
     public void updateMetadata(RecordMetadataImpl other)
     {
         this.metadata.setKey(other.getKey());
@@ -93,6 +98,7 @@ public abstract class RecordImpl implements Record
         this.metadata.setRecordType(other.getProtocolRecordType());
         this.metadata.setValueType(other.getProtocolValueType());
         this.metadata.setIntent(other.getProtocolIntent());
+        this.metadata.setTimestamp(other.getTimestamp());
     }
 
     @Override

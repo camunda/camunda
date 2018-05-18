@@ -69,6 +69,7 @@ public class SubscribedEventCollector implements ClientMessageHandler
             final SubscriptionType subscriptionType = subscribedRecordDecoder.subscriptionType();
             final ValueType valueType = subscribedRecordDecoder.valueType();
             final Intent intent = Intent.fromProtocolValue(valueType, subscribedRecordDecoder.intent());
+            final long timestamp = subscribedRecordDecoder.timestamp();
 
             final byte[] valueBuffer = readBytes(subscribedRecordDecoder::getValue, subscribedRecordDecoder::valueLength);
 
@@ -83,6 +84,7 @@ public class SubscribedEventCollector implements ClientMessageHandler
             event.setPosition(position);
             event.setKey(key);
             event.setIntent(intent);
+            event.setTimestamp(timestamp);
 
             messageHandled = eventHandler.onEvent(subscriptionType, subscriberKey, event);
         }

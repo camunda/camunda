@@ -356,10 +356,23 @@ public class StubBrokerRule extends ExternalResource
     }
 
     public void pushRecord(
+        RemoteAddress remote,
+        long subscriberKey,
+        long key,
+        long position,
+        RecordType recordType,
+        ValueType valueType,
+        Intent intent)
+    {
+        pushRecord(remote, subscriberKey, key, position, clock.getCurrentTimeInMillis(), recordType, valueType, intent);
+    }
+
+    public void pushRecord(
             RemoteAddress remote,
             long subscriberKey,
             long key,
             long position,
+            long timestamp,
             RecordType recordType,
             ValueType valueType,
             Intent intent)
@@ -373,6 +386,7 @@ public class StubBrokerRule extends ExternalResource
             .intent(intent)
             .subscriberKey(subscriberKey)
             .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION)
+            .timestamp(timestamp)
             .value()
                 .done()
             .push(remote);
@@ -391,6 +405,7 @@ public class StubBrokerRule extends ExternalResource
         builder.position(0);
         builder.valueType(ValueType.RAFT);
         builder.subscriberKey(0);
+        builder.timestamp(clock.getCurrentTimeInMillis());
         builder.partitionId(TEST_PARTITION_ID);
         builder.value().done();
 
@@ -411,6 +426,7 @@ public class StubBrokerRule extends ExternalResource
             .intent(JobIntent.LOCKED)
             .subscriberKey(subscriberKey)
             .subscriptionType(SubscriptionType.JOB_SUBSCRIPTION)
+            .timestamp(clock.getCurrentTimeInMillis())
             .value()
                 .put("type", jobType)
                 .put("lockTime", 1000L)

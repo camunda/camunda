@@ -103,6 +103,12 @@ public class ExecuteCommandResponseBuilder
         return new MapFactoryBuilder<>(this, commandResponseWriter::setEventFunction);
     }
 
+    public ExecuteCommandResponseBuilder timestamp(long timestamp)
+    {
+        commandResponseWriter.setTimestamp(timestamp);
+        return this;
+    }
+
     public void register()
     {
         registrationFunction.accept(commandResponseWriter);

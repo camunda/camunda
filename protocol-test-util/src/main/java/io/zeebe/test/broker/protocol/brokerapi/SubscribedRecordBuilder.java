@@ -50,6 +50,7 @@ public class SubscribedRecordBuilder implements BufferWriter
     protected ValueType valueType;
     private Intent intent;
     protected byte[] event;
+    protected long timestamp;
 
     public SubscribedRecordBuilder(MsgPackHelper msgPackHelper, ServerTransport transport)
     {
@@ -116,6 +117,12 @@ public class SubscribedRecordBuilder implements BufferWriter
         return new MapBuilder<>(this, this::value);
     }
 
+    public SubscribedRecordBuilder timestamp(long timestamp)
+    {
+        this.timestamp = timestamp;
+        return this;
+    }
+
     public void push(RemoteAddress target)
     {
         message.reset()
@@ -157,6 +164,7 @@ public class SubscribedRecordBuilder implements BufferWriter
             .subscriberKey(subscriberKey)
             .subscriptionType(subscriptionType)
             .partitionId(partitionId)
+            .timestamp(timestamp)
             .putValue(event, 0, event.length);
     }
 

@@ -44,6 +44,12 @@ public interface RecordMetadata
     long getKey();
 
     /**
+     * @return the timestamp of the record. This is the time at which the event
+     *         was written to the log.
+     */
+    long getTimestamp();
+
+    /**
      * @return the type of the record (event, command or command rejection)
      */
     RecordType getRecordType();

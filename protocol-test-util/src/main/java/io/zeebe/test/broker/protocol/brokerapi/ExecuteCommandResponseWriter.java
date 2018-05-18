@@ -47,6 +47,7 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
     private RecordType recordType;
     private Intent intent;
     private ValueType valueType;
+    private long timestamp = ExecuteCommandResponseEncoder.timestampNullValue();
 
     public ExecuteCommandResponseWriter(MsgPackHelper msgPackHelper)
     {
@@ -95,6 +96,11 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
         this.intentFunction = intentFunction;
     }
 
+    public void setTimestamp(long timestamp)
+    {
+        this.timestamp = timestamp;
+    }
+
     @Override
     public int getLength()
     {
@@ -129,6 +135,7 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
             .intent(intent.value())
             .partitionId(partitionId)
             .key(key)
+            .timestamp(timestamp)
             .position(position)
             .putValue(value, 0, value.length);
 

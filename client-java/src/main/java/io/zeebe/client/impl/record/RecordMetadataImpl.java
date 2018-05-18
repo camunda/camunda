@@ -17,6 +17,7 @@ package io.zeebe.client.impl.record;
 
 import io.zeebe.client.api.record.RecordMetadata;
 import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
+import io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder;
 import io.zeebe.protocol.intent.Intent;
 
 public class RecordMetadataImpl implements RecordMetadata
@@ -25,6 +26,7 @@ public class RecordMetadataImpl implements RecordMetadata
     private int partitionId = ExecuteCommandRequestEncoder.partitionIdNullValue();
     private long key = ExecuteCommandRequestEncoder.keyNullValue();
     private long position = ExecuteCommandRequestEncoder.positionNullValue();
+    private long timestamp = ExecuteCommandResponseEncoder.timestampNullValue();
     private io.zeebe.protocol.clientapi.RecordType recordType;
     private io.zeebe.protocol.clientapi.ValueType valueType;
     private Intent intent;
@@ -79,6 +81,17 @@ public class RecordMetadataImpl implements RecordMetadata
     }
 
     @Override
+    public long getTimestamp()
+    {
+        return timestamp;
+    }
+
+    public void setTimestamp(long timestamp)
+    {
+        this.timestamp = timestamp;
+    }
+
+    @Override
     public RecordType getRecordType()
     {
         return RecordType.valueOf(recordType.name());
@@ -130,7 +143,7 @@ public class RecordMetadataImpl implements RecordMetadata
     public String toString()
     {
         return "EventMetadata [topicName=" + topicName + ", partitionId=" + partitionId + ", key=" +
-                key + ", position=" + position + ", eventType=" + recordType + "]";
+                key + ", position=" + position + ", eventType=" + recordType + ", timestamp=" + timestamp + "]";
     }
 
 }

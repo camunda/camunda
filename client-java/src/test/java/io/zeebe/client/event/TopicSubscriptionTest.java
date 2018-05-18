@@ -530,8 +530,8 @@ public class TopicSubscriptionTest
         final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
 
         // when pushing two events
-        broker.pushRecord(clientAddress, 123L, 1L, 1L, RecordType.EVENT, ValueType.JOB, JobIntent.CREATED);
-        broker.pushRecord(clientAddress, 123L, 1L, 2L, RecordType.COMMAND, ValueType.JOB, JobIntent.LOCKED);
+        broker.pushRecord(clientAddress, 123L, 1L, 1L, 1L, RecordType.EVENT, ValueType.JOB, JobIntent.CREATED);
+        broker.pushRecord(clientAddress, 123L, 1L, 2L, 2L, RecordType.COMMAND, ValueType.JOB, JobIntent.LOCKED);
 
         // then
         waitUntil(() -> eventHandler.numTopicEvents() == 2);
@@ -539,8 +539,8 @@ public class TopicSubscriptionTest
         final Record event1 = eventHandler.topicEvents.get(0);
         final Record event2 = eventHandler.topicEvents.get(1);
 
-        assertMetadata(event1, 1L, 1L, RecordMetadata.RecordType.EVENT, RecordMetadata.ValueType.JOB, "CREATED");
-        assertMetadata(event2, 1L, 2L, RecordMetadata.RecordType.COMMAND, RecordMetadata.ValueType.JOB, "LOCKED");
+        assertMetadata(event1, 1L, 1L, 1L, RecordMetadata.RecordType.EVENT, RecordMetadata.ValueType.JOB, "CREATED");
+        assertMetadata(event2, 1L, 2L, 2L, RecordMetadata.RecordType.COMMAND, RecordMetadata.ValueType.JOB, "LOCKED");
 
         assertThat(eventHandler.numTopicEvents()).isEqualTo(2);
         assertThat(eventHandler.numJobEvents()).isEqualTo(0);
@@ -563,8 +563,8 @@ public class TopicSubscriptionTest
         final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
 
         // when pushing two events
-        broker.pushRecord(clientAddress, 123L, 1L, 1L, RecordType.EVENT, ValueType.JOB, JobIntent.CREATED);
-        broker.pushRecord(clientAddress, 123L, 1L, 2L, RecordType.EVENT, ValueType.JOB, JobIntent.LOCKED);
+        broker.pushRecord(clientAddress, 123L, 1L, 1L, 1L, RecordType.EVENT, ValueType.JOB, JobIntent.CREATED);
+        broker.pushRecord(clientAddress, 123L, 1L, 2L, 2L, RecordType.EVENT, ValueType.JOB, JobIntent.LOCKED);
 
         // then
         waitUntil(() -> eventHandler.numJobEvents() >= 2);
@@ -572,8 +572,8 @@ public class TopicSubscriptionTest
         final JobEvent event1 = eventHandler.jobEvents.get(0);
         final JobEvent event2 = eventHandler.jobEvents.get(1);
 
-        assertMetadata(event1, 1L, 1L, RecordMetadata.RecordType.EVENT, RecordMetadata.ValueType.JOB, "CREATED");
-        assertMetadata(event2, 1L, 2L, RecordMetadata.RecordType.EVENT, RecordMetadata.ValueType.JOB, "LOCKED");
+        assertMetadata(event1, 1L, 1L, 1L, RecordMetadata.RecordType.EVENT, RecordMetadata.ValueType.JOB, "CREATED");
+        assertMetadata(event2, 1L, 2L, 2L, RecordMetadata.RecordType.EVENT, RecordMetadata.ValueType.JOB, "LOCKED");
 
         assertThat(eventHandler.numTopicEvents()).isEqualTo(0);
         assertThat(eventHandler.numJobEvents()).isEqualTo(2);
@@ -596,8 +596,8 @@ public class TopicSubscriptionTest
         final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
 
         // when pushing two events
-        broker.pushRecord(clientAddress, 123L, 1L, 1L, RecordType.COMMAND, ValueType.JOB, JobIntent.CREATE);
-        broker.pushRecord(clientAddress, 123L, 1L, 2L, RecordType.COMMAND, ValueType.JOB, JobIntent.LOCK);
+        broker.pushRecord(clientAddress, 123L, 1L, 1L, 3L, RecordType.COMMAND, ValueType.JOB, JobIntent.CREATE);
+        broker.pushRecord(clientAddress, 123L, 1L, 2L, 4L, RecordType.COMMAND, ValueType.JOB, JobIntent.LOCK);
 
         // then
         waitUntil(() -> eventHandler.numJobCommands() >= 2);
@@ -605,8 +605,8 @@ public class TopicSubscriptionTest
         final JobCommand command1 = eventHandler.jobCommands.get(0);
         final JobCommand command2 = eventHandler.jobCommands.get(1);
 
-        assertMetadata(command1, 1L, 1L, RecordMetadata.RecordType.COMMAND, RecordMetadata.ValueType.JOB, "CREATE");
-        assertMetadata(command2, 1L, 2L, RecordMetadata.RecordType.COMMAND, RecordMetadata.ValueType.JOB, "LOCK");
+        assertMetadata(command1, 1L, 1L, 3L, RecordMetadata.RecordType.COMMAND, RecordMetadata.ValueType.JOB, "CREATE");
+        assertMetadata(command2, 1L, 2L, 4L, RecordMetadata.RecordType.COMMAND, RecordMetadata.ValueType.JOB, "LOCK");
 
         assertThat(eventHandler.numTopicEvents()).isEqualTo(0);
         assertThat(eventHandler.numJobEvents()).isEqualTo(0);
@@ -629,8 +629,8 @@ public class TopicSubscriptionTest
         final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
 
         // when pushing two events
-        broker.pushRecord(clientAddress, 123L, 1L, 1L, RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATED);
-        broker.pushRecord(clientAddress, 123L, 1L, 2L, RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.COMPLETED);
+        broker.pushRecord(clientAddress, 123L, 1L, 1L, 5L, RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATED);
+        broker.pushRecord(clientAddress, 123L, 1L, 2L, 6L, RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.COMPLETED);
 
         // then
         waitUntil(() -> eventHandler.numWorkflowInstanceEvents() >= 2);
@@ -638,8 +638,8 @@ public class TopicSubscriptionTest
         final WorkflowInstanceEvent event1 = eventHandler.workflowInstanceEvents.get(0);
         final WorkflowInstanceEvent event2 = eventHandler.workflowInstanceEvents.get(1);
 
-        assertMetadata(event1, 1L, 1L, RecordMetadata.RecordType.EVENT, RecordMetadata.ValueType.WORKFLOW_INSTANCE, "CREATED");
-        assertMetadata(event2, 1L, 2L, RecordMetadata.RecordType.EVENT, RecordMetadata.ValueType.WORKFLOW_INSTANCE, "COMPLETED");
+        assertMetadata(event1, 1L, 1L, 5L, RecordMetadata.RecordType.EVENT, RecordMetadata.ValueType.WORKFLOW_INSTANCE, "CREATED");
+        assertMetadata(event2, 1L, 2L, 6L, RecordMetadata.RecordType.EVENT, RecordMetadata.ValueType.WORKFLOW_INSTANCE, "COMPLETED");
 
         assertThat(eventHandler.numTopicEvents()).isEqualTo(0);
         assertThat(eventHandler.numJobEvents()).isEqualTo(0);
@@ -662,8 +662,8 @@ public class TopicSubscriptionTest
         final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
 
         // when pushing two events
-        broker.pushRecord(clientAddress, 123L, 1L, 1L, RecordType.COMMAND, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE);
-        broker.pushRecord(clientAddress, 123L, 1L, 2L, RecordType.COMMAND, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.UPDATE_PAYLOAD);
+        broker.pushRecord(clientAddress, 123L, 1L, 1L, 7L, RecordType.COMMAND, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE);
+        broker.pushRecord(clientAddress, 123L, 1L, 2L, 8L, RecordType.COMMAND, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.UPDATE_PAYLOAD);
 
         // then
         waitUntil(() -> eventHandler.numWorkflowInstanceCommands() >= 2);
@@ -671,8 +671,8 @@ public class TopicSubscriptionTest
         final WorkflowInstanceCommand command1 = eventHandler.workflowInstanceCommands.get(0);
         final WorkflowInstanceCommand command2 = eventHandler.workflowInstanceCommands.get(1);
 
-        assertMetadata(command1, 1L, 1L, RecordMetadata.RecordType.COMMAND, RecordMetadata.ValueType.WORKFLOW_INSTANCE, "CREATE");
-        assertMetadata(command2, 1L, 2L, RecordMetadata.RecordType.COMMAND, RecordMetadata.ValueType.WORKFLOW_INSTANCE, "UPDATE_PAYLOAD");
+        assertMetadata(command1, 1L, 1L, 7L, RecordMetadata.RecordType.COMMAND, RecordMetadata.ValueType.WORKFLOW_INSTANCE, "CREATE");
+        assertMetadata(command2, 1L, 2L, 8L, RecordMetadata.RecordType.COMMAND, RecordMetadata.ValueType.WORKFLOW_INSTANCE, "UPDATE_PAYLOAD");
 
         assertThat(eventHandler.numTopicEvents()).isEqualTo(0);
         assertThat(eventHandler.numJobEvents()).isEqualTo(0);
@@ -695,8 +695,8 @@ public class TopicSubscriptionTest
         final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
 
         // when pushing two events
-        broker.pushRecord(clientAddress, 123L, 1L, 1L, RecordType.EVENT, ValueType.INCIDENT, IncidentIntent.CREATED);
-        broker.pushRecord(clientAddress, 123L, 1L, 2L, RecordType.EVENT, ValueType.INCIDENT, IncidentIntent.DELETED);
+        broker.pushRecord(clientAddress, 123L, 1L, 1L, 9L, RecordType.EVENT, ValueType.INCIDENT, IncidentIntent.CREATED);
+        broker.pushRecord(clientAddress, 123L, 1L, 2L, 10L, RecordType.EVENT, ValueType.INCIDENT, IncidentIntent.DELETED);
 
         // then
         waitUntil(() -> eventHandler.numIncidentEvents() >= 2);
@@ -704,8 +704,8 @@ public class TopicSubscriptionTest
         final IncidentEvent event1 = eventHandler.incidentEvents.get(0);
         final IncidentEvent event2 = eventHandler.incidentEvents.get(1);
 
-        assertMetadata(event1, 1L, 1L, RecordMetadata.RecordType.EVENT, RecordMetadata.ValueType.INCIDENT, "CREATED");
-        assertMetadata(event2, 1L, 2L, RecordMetadata.RecordType.EVENT, RecordMetadata.ValueType.INCIDENT, "DELETED");
+        assertMetadata(event1, 1L, 1L, 9L, RecordMetadata.RecordType.EVENT, RecordMetadata.ValueType.INCIDENT, "CREATED");
+        assertMetadata(event2, 1L, 2L, 10L, RecordMetadata.RecordType.EVENT, RecordMetadata.ValueType.INCIDENT, "DELETED");
 
         assertThat(eventHandler.numTopicEvents()).isEqualTo(0);
         assertThat(eventHandler.numJobEvents()).isEqualTo(0);
@@ -728,8 +728,8 @@ public class TopicSubscriptionTest
         final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
 
         // when pushing two events
-        broker.pushRecord(clientAddress, 123L, 1L, 1L, RecordType.COMMAND, ValueType.INCIDENT, IncidentIntent.CREATE);
-        broker.pushRecord(clientAddress, 123L, 1L, 2L, RecordType.COMMAND, ValueType.INCIDENT, IncidentIntent.DELETE);
+        broker.pushRecord(clientAddress, 123L, 1L, 1L, 11L, RecordType.COMMAND, ValueType.INCIDENT, IncidentIntent.CREATE);
+        broker.pushRecord(clientAddress, 123L, 1L, 2L, 12L, RecordType.COMMAND, ValueType.INCIDENT, IncidentIntent.DELETE);
 
         // then
         waitUntil(() -> eventHandler.numIncidentCommands() >= 2);
@@ -737,8 +737,8 @@ public class TopicSubscriptionTest
         final IncidentCommand command1 = eventHandler.incidentCommands.get(0);
         final IncidentCommand command2 = eventHandler.incidentCommands.get(1);
 
-        assertMetadata(command1, 1L, 1L, RecordMetadata.RecordType.COMMAND, RecordMetadata.ValueType.INCIDENT, "CREATE");
-        assertMetadata(command2, 1L, 2L, RecordMetadata.RecordType.COMMAND, RecordMetadata.ValueType.INCIDENT, "DELETE");
+        assertMetadata(command1, 1L, 1L, 11L, RecordMetadata.RecordType.COMMAND, RecordMetadata.ValueType.INCIDENT, "CREATE");
+        assertMetadata(command2, 1L, 2L, 12L, RecordMetadata.RecordType.COMMAND, RecordMetadata.ValueType.INCIDENT, "DELETE");
 
         assertThat(eventHandler.numTopicEvents()).isEqualTo(0);
         assertThat(eventHandler.numJobEvents()).isEqualTo(0);
@@ -761,8 +761,8 @@ public class TopicSubscriptionTest
         final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
 
         // when pushing two events
-        broker.pushRecord(clientAddress, 123L, 1L, 1L, RecordType.EVENT, ValueType.RAFT, Intent.UNKNOWN);
-        broker.pushRecord(clientAddress, 123L, 1L, 2L, RecordType.EVENT, ValueType.RAFT, Intent.UNKNOWN);
+        broker.pushRecord(clientAddress, 123L, 1L, 1L, 13L, RecordType.EVENT, ValueType.RAFT, Intent.UNKNOWN);
+        broker.pushRecord(clientAddress, 123L, 1L, 2L, 14L, RecordType.EVENT, ValueType.RAFT, Intent.UNKNOWN);
 
         // then
         waitUntil(() -> eventHandler.numRaftEvents() >= 2);
@@ -770,8 +770,8 @@ public class TopicSubscriptionTest
         final RaftEvent event1 = eventHandler.raftEvents.get(0);
         final RaftEvent event2 = eventHandler.raftEvents.get(1);
 
-        assertMetadata(event1, 1L, 1L, RecordMetadata.RecordType.EVENT, RecordMetadata.ValueType.RAFT, "UNKNOWN");
-        assertMetadata(event2, 1L, 2L, RecordMetadata.RecordType.EVENT, RecordMetadata.ValueType.RAFT, "UNKNOWN");
+        assertMetadata(event1, 1L, 1L, 13L, RecordMetadata.RecordType.EVENT, RecordMetadata.ValueType.RAFT, "UNKNOWN");
+        assertMetadata(event2, 1L, 2L, 14L, RecordMetadata.RecordType.EVENT, RecordMetadata.ValueType.RAFT, "UNKNOWN");
 
         assertThat(eventHandler.numTopicEvents()).isEqualTo(0);
         assertThat(eventHandler.numJobEvents()).isEqualTo(0);
@@ -1086,6 +1086,7 @@ public class TopicSubscriptionTest
             Record actualRecord,
             long expectedKey,
             long expectedPosition,
+            long expectedTimestamp,
             RecordMetadata.RecordType expectedRecordType,
             RecordMetadata.ValueType expectedValueType,
             String expectedIntent)
@@ -1094,6 +1095,7 @@ public class TopicSubscriptionTest
         final RecordMetadata metadata = actualRecord.getMetadata();
         assertThat(metadata.getKey()).isEqualTo(expectedKey);
         assertThat(metadata.getPosition()).isEqualTo(expectedPosition);
+        assertThat(metadata.getTimestamp()).isEqualTo(expectedTimestamp);
         assertThat(metadata.getValueType()).isEqualTo(expectedValueType);
         assertThat(metadata.getTopicName()).isEqualTo(clientRule.getDefaultTopicName());
         assertThat(metadata.getPartitionId()).isEqualTo(clientRule.getDefaultPartitionId());
