@@ -42,7 +42,7 @@ engines:
     #The name of the engine that will be used to import data.
     name: default
     #A base URL that will be used for connections to the Camunda Engine REST API.
-    rest: http://localhost:8080/engine-rest
+    rest: 'http://localhost:8080/engine-rest'
     authentication:
       #Toggles basic authentication on or off. When enabling basic
       #authentication, please be aware that you also need to adjust the values
@@ -54,8 +54,15 @@ engines:
       #When basic authentication is enabled, this user is used to authenticate
       #against the engine.
       user: ''
-    #Check if engine should be considered connected. Disable only for testing!
-    enabled: true
+    # The webapps configuration allows Optimize to directly link
+    # to the other Camunda Web Applications, e.g. to jump from
+    # Optimize directly to a dedicated process instance in Cockpit
+    webapps:
+      # Defines the endpoint where to find the camunda webapps for the given engine
+      endpoint: 'http://localhost:8080/camunda/'
+      # Enables/disables linking to other Camunda Web Applications
+      enabled: true
+
 engine-commons:
   connection:
     #Maximum time without connection to the engine, Optimize should wait
@@ -63,16 +70,16 @@ engine-commons:
     timeout: 10000
   hai:
     #The engine endpoint to the historic activity instances.
-    resource: "/history/activity-instance"
+    resource: '/history/activity-instance'
   history:
     procinst:
       #The engine endpoint to the historic process instances.
-      resource: "/history/process-instance"
+      resource: '/history/process-instance'
   procdef:
     #The engine endpoint to the process definition.
-    resource: "/process-definition"
+    resource: '/process-definition'
     #The engine endpoint to the process definition xml.
-    xml: "/xml"
+    xml: '/xml'
   read:
     #Maximum time a request to the engine should last,
     #before a timeout triggers.
@@ -80,7 +87,7 @@ engine-commons:
   user:
     validation:
       #The engine endpoint for the user validation.
-      resource: "/identity/verify"
+      resource: '/identity/verify'
 import:
   data:
     activity-instance:
@@ -132,7 +139,7 @@ import:
       interval: 5000
       # Once all pages are consumed, the import service component will
       # start scheduling fetching tasks in increasing periods of time,
-      # controlled by "backoff" counter.
+      # controlled by 'backoff' counter.
       max: 15
       # Tells if the backoff is enabled of not.
       isEnabled: true
@@ -249,6 +256,6 @@ camunda:
   # Optimize directly to a dedicated process instance in Cockpit
   webapps:
     # Defines the endpoint where to find the camunda webapps
-    endpoint: "http://localhost:8080/camunda/"
+    endpoint: 'http://localhost:8080/camunda/'
     # Enables/disables linking to other Camunda Web Applications
     enabled: true

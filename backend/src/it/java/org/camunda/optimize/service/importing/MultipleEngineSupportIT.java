@@ -376,7 +376,6 @@ public class MultipleEngineSupportIT {
     EngineAuthenticationConfiguration engineAuthenticationConfiguration = constructEngineAuthenticationConfiguration(withAuthentication, username, password);
 
     EngineConfiguration anotherEngineConfig = new EngineConfiguration();
-    anotherEngineConfig.setEnabled(true);
     anotherEngineConfig.setName(engineName);
     anotherEngineConfig.setRest(restEndpoint);
     anotherEngineConfig.setAuthentication(engineAuthenticationConfiguration);

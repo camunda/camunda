@@ -85,7 +85,4 @@ public interface ConfigurationServiceConstants {
   String EXPORT_CSV_LIMIT = "$.export.csv.limit";
   String EXPORT_CSV_OFFSET = "$.export.csv.offset";
 
-  String WEBAPPS_ENDPOINT = "$.camunda.webapps.endpoint";
-  String WEBAPPS_ENDPOINT_ENABLED = "$.camunda.webapps.enabled";
-
 }

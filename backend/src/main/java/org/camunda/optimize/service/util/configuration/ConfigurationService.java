@@ -116,9 +116,6 @@ public class ConfigurationService {
   private Integer exportCsvLimit;
   private Integer exportCsvOffset;
 
-  private String camundaWebappsEndpoint;
-  private Boolean camundaWebappsEndpointEnabled;
-
   private Properties quartzProperties;
 
 
@@ -311,21 +308,6 @@ public class ConfigurationService {
       processDefinitionEndpoint = jsonContext.read(ConfigurationServiceConstants.PROCESS_DEFINITION_ENDPOINT);
     }
     return processDefinitionEndpoint;
-  }
-
-  public String getCamundaWebappsEndpoint() {
-    if (camundaWebappsEndpoint == null) {
-      camundaWebappsEndpoint = jsonContext.read(ConfigurationServiceConstants.WEBAPPS_ENDPOINT);
-    }
-    return camundaWebappsEndpoint;
-  }
-
-  public Boolean getCamundaWebappsEndpointEnabled() {
-    if (camundaWebappsEndpointEnabled == null) {
-      camundaWebappsEndpointEnabled =
-        jsonContext.read(ConfigurationServiceConstants.WEBAPPS_ENDPOINT_ENABLED, Boolean.class);
-    }
-    return camundaWebappsEndpointEnabled;
   }
 
   public String getProcessDefinitionXmlType() {
@@ -1064,11 +1046,4 @@ public class ConfigurationService {
     this.alertEmailProtocol = alertEmailProtocol;
   }
 
-  public void setCamundaWebappsEndpoint(String camundaWebappsEndpoint) {
-    this.camundaWebappsEndpoint = camundaWebappsEndpoint;
-  }
-
-  public void setCamundaWebappsEndpointEnabled(Boolean camundaWebappsEndpointEnabled) {
-    this.camundaWebappsEndpointEnabled = camundaWebappsEndpointEnabled;
-  }
 }

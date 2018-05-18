@@ -2,12 +2,14 @@
 engines:
   '1':
     name: default
-    rest: http://localhost:48080/engine-rest
+    rest: 'http://localhost:48080/engine-rest'
     authentication:
       enabled: false
       password: ''
       user: ''
-    enabled: true
+    webapps:
+      endpoint: 'http://localhost:8080/camunda/'
+      enabled: true
 import:
   data:
     process-definition-xml:

@@ -7,4 +7,6 @@ engines:
       enabled: false
       password: ''
       user: ''
-    enabled: true
+    webapps:
+      endpoint: "http://localhost:8080/camunda/"
+      enabled: true

@@ -1,38 +1,44 @@
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.rest.providers.Secured;
+import org.camunda.optimize.dto.optimize.WebappsEndpointDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.EngineConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import java.util.HashMap;
+import java.util.Map;
 
 @Path("/camunda")
-@Secured
 @Component
 public class CamundaRestService {
+
   @Autowired
   private ConfigurationService configurationService;
 
   /**
    * Provides endpoint link to the Camunda Webapplications if enabled.
-   *
-   * @return Response code 200 (OK) and
-   * -> Response code 200 (OK): the Camunda Webapplications (Cockpit, Admin, Tasklist) endpoint as
-   * plain test, e.g. http://localhost:8080/camunda, if the feature is enabled
-   * -> esponse code 200 (No-content) if the feature is disabled
    */
   @GET
-  @Produces(MediaType.TEXT_PLAIN)
-  public Response getCamundaWebappsEndpoint() {
-    if (configurationService.getCamundaWebappsEndpointEnabled()) {
-      return Response.ok(configurationService.getCamundaWebappsEndpoint()).build();
-    } else {
-      return Response.noContent().build();
+  @Produces(MediaType.APPLICATION_JSON)
+  public Map<String, WebappsEndpointDto> getCamundaWebappsEndpoint() {
+    Map<String, WebappsEndpointDto> engineNameToEndpoints = new HashMap<>();
+    for (Map.Entry<String, EngineConfiguration> entry : configurationService.getConfiguredEngines().entrySet()) {
+      EngineConfiguration engineConfiguration = entry.getValue();
+      WebappsEndpointDto webappsEndpoint = new WebappsEndpointDto();
+      String endpointAsString = "";
+      if (engineConfiguration.getWebapps().isEnabled()) {
+        endpointAsString = engineConfiguration.getWebapps().getEndpoint();
+      }
+      webappsEndpoint.setEndpoint(endpointAsString);
+      webappsEndpoint.setEngineName(engineConfiguration.getName());
+      engineNameToEndpoints.put(entry.getKey(), webappsEndpoint);
     }
+    return engineNameToEndpoints;
   }
 }

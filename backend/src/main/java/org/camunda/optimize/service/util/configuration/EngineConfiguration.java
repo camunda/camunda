@@ -4,8 +4,7 @@ public class EngineConfiguration {
 
   private String name;
   private String rest;
-  private String alias;
-  private boolean enabled;
+  private EngineWebappsConfiguration webapps;
 
   private EngineAuthenticationConfiguration authentication;
 
@@ -30,27 +29,19 @@ public class EngineConfiguration {
     return str.replaceAll("/$", "");
   }
 
-  public String getAlias() {
-    return alias;
-  }
-
-  public void setAlias(String alias) {
-    this.alias = alias;
-  }
-
-  public boolean isEnabled() {
-    return enabled;
-  }
-
-  public void setEnabled(boolean enabled) {
-    this.enabled = enabled;
-  }
-
   public EngineAuthenticationConfiguration getAuthentication() {
     return authentication;
   }
 
   public void setAuthentication(EngineAuthenticationConfiguration authentication) {
     this.authentication = authentication;
+  }
+
+  public EngineWebappsConfiguration getWebapps() {
+    return webapps;
+  }
+
+  public void setWebapps(EngineWebappsConfiguration webapps) {
+    this.webapps = webapps;
   }
 }
