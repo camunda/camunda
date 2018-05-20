@@ -24,6 +24,7 @@ import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.api.commands.BrokerInfo;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -109,6 +110,7 @@ public class GossipDifferentNodeJoinTest
     }
 
     @Test
+    @Ignore("https://github.com/zeebe-io/zeebe/issues/880")
     public void shouldReAddToCluster()
     {
         // given
