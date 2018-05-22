@@ -89,7 +89,7 @@ public class JobUpdateRetriesTest
         final SubscribedRecord republishedEvent = receiveSingleSubscribedEvent();
         assertThat(republishedEvent.key()).isEqualTo(subscribedEvent.key());
         assertThat(republishedEvent.position()).isNotEqualTo(subscribedEvent.position());
-        assertThat(republishedEvent.timestamp()).isNotEqualTo(subscribedEvent.timestamp());
+        assertThat(republishedEvent.timestamp()).isGreaterThanOrEqualTo(subscribedEvent.timestamp());
 
         // and the job lifecycle is correct
         apiRule.openTopicSubscription("foo", 0).await();
