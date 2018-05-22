@@ -23,6 +23,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUser;
 
@@ -107,6 +108,24 @@ public class SharingRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public DashboardDefinitionDto evaluateDashboard(@PathParam("shareId") String dashboardShareId) {
     return sharingService.evaluateDashboard(dashboardShareId).orElse(null);
+  }
+
+  /**
+   * Returns status code
+   * - 200: if user that performs the request is allowed to share the dashboard
+   * - 403: if the user does not have the authorization to share the dashboard
+   * - 404: if the dashboard for the id does not exist
+   * - 500: if there were problems checking the authorizations.
+   *
+   */
+  @GET
+  @Path("/dashboard/{dashboardId}/isAuthorizedToShare")
+  public Response evaluateDashboard(@Context ContainerRequestContext requestContext,
+                                    @PathParam("dashboardId") String dashboardId) {
+    String userId = getRequestUser(requestContext);
+    sharingService.validateAndCheckAuthorization(dashboardId, userId);
+    // if no error was thrown
+    return Response.status(200).entity("OK").build();
   }
 
   @POST

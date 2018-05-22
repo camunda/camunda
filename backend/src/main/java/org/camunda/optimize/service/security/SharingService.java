@@ -70,7 +70,7 @@ public class SharingService  {
   }
 
   public IdDto crateNewDashboardShare(DashboardShareDto createSharingDto, String userId) {
-    validateAndCheckAuthorization(createSharingDto, userId);
+    validateAndCheckAuthorization(createSharingDto.getDashboardId(), userId);
 
     String result;
     Optional<DashboardShareDto> existing =
@@ -94,11 +94,11 @@ public class SharingService  {
     createSharingDto.setReportShares(dashboardDefinition.getReports());
   }
 
-  public void validateAndCheckAuthorization(DashboardShareDto dashboardShare, String userId) {
-    ValidationHelper.ensureNotEmpty("dashboardId", dashboardShare.getDashboardId());
+  public void validateAndCheckAuthorization(String  dashboardId, String userId) {
+    ValidationHelper.ensureNotEmpty("dashboardId", dashboardId);
     try {
       DashboardDefinitionDto dashboardDefinition =
-        dashboardService.getDashboardDefinition(dashboardShare.getDashboardId());
+        dashboardService.getDashboardDefinition(dashboardId);
       List<String> authorizedFilterIds = reportService
         .findAndFilterReports(userId)
         .stream()
@@ -116,7 +116,7 @@ public class SharingService  {
 
     } catch (OptimizeRuntimeException | NotFoundException e) {
       String errorMessage = "Could not retrieve dashboard [" +
-        dashboardShare.getDashboardId() + "]. Probably it does not exist.";
+        dashboardId + "]. Probably it does not exist.";
       throw new OptimizeRuntimeException(errorMessage, e);
     }
   }

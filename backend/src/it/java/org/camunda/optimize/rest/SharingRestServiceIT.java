@@ -67,7 +67,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void createNewReportShare() throws Exception {
+  public void createNewReportShare() {
     //given
     String reportId = createReport();
     ReportShareDto share = createReportShare(reportId);
@@ -125,7 +125,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void deleteReportShare() throws Exception {
+  public void deleteReportShare() {
     //given
     String reportId = createReport();
     String id = addShareForReport(reportId);
@@ -143,7 +143,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void deleteDashboardShare() throws Exception {
+  public void deleteDashboardShare() {
     //given
     String reportId = createReport();
     String dashboardWithReport = createDashboardWithReport(reportId);
@@ -162,7 +162,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void findShareForReport() throws Exception {
+  public void findShareForReport() {
     //given
     String reportId = createReport();
     String id = addShareForReport(reportId);
@@ -190,7 +190,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void findShareForSharedDashboard() throws Exception {
+  public void findShareForSharedDashboard() {
     //given
     String reportId = createReport();
     String dashboardWithReport = createDashboardWithReport(reportId);
@@ -205,7 +205,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void evaluateSharedDashboard() throws Exception {
+  public void evaluateSharedDashboard() {
     //given
     String reportId = createReport();
     String dashboardId = createDashboardWithReport(reportId);
@@ -238,7 +238,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void findShareForDashboardWithoutAuthentication() throws Exception {
+  public void findShareForDashboardWithoutAuthentication() {
     //given
     String reportId = createReport();
     String dashboardWithReport = createDashboardWithReport(reportId);
@@ -264,6 +264,54 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
     //then
     assertThat(response.getStatus(), is(500));
+  }
+
+  @Test
+  public void checkSharingAuthorizationWithoutAuthentication() {
+    // when
+    Response response =
+      embeddedOptimizeRule.target(SHARE + "/" + DASHBOARD + "/1124/isAuthorizedToShare")
+        .request()
+        .get();
+
+    // then the status code is not authorized
+    assertThat(response.getStatus(), is(401));
+  }
+
+  @Test
+  public void checkSharingAuthorizationIsOkay() {
+    //given
+    String reportId = createReport();
+    String dashboardId = createDashboardWithReport(reportId);
+
+    // when
+    Response response =
+      embeddedOptimizeRule.target(SHARE + "/" + DASHBOARD + "/" + dashboardId + "/isAuthorizedToShare")
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
+        .get();
+
+    // then the status code is okay
+    assertThat(response.getStatus(), is(200));
+  }
+
+  @Test
+  public void checkSharingAuthorizationResultsInForbidden() {
+    //given
+    engineRule.addUser("kermit", "kermit");
+    engineRule.grantUserOptimizeAccess("kermit");
+    String reportId = createReport();
+    String dashboardId = createDashboardWithReport(reportId);
+
+    // when
+    Response response =
+      embeddedOptimizeRule.target(SHARE + "/" + DASHBOARD + "/" + dashboardId + "/isAuthorizedToShare")
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthenticationHeaderForUser("kermit", "kermit"))
+        .get();
+
+    // then the status code is okay
+    assertThat(response.getStatus(), is(403));
   }
 
   private Response findShareForDashboard(String dashboardId) {
