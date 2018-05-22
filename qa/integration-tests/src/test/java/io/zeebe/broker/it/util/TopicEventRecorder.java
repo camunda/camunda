@@ -89,6 +89,8 @@ public class TopicEventRecorder extends ExternalResource
     {
         if (subscription == null)
         {
+            clientRule.waitUntilTopicsExists(topicName);
+
             final SubscriptionClient client = clientRule.getClient().topicClient(topicName).subscriptionClient();
 
             subscription = client.newTopicSubscription()

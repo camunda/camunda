@@ -38,7 +38,7 @@ public class GossipClusteringTest
 
     public AutoCloseableRule closeables = new AutoCloseableRule();
     public Timeout testTimeout = Timeout.seconds(30);
-    public ClientRule clientRule = new ClientRule(false);
+    public ClientRule clientRule = new ClientRule();
     public ClusteringRule clusteringRule = new ClusteringRule(closeables, clientRule);
 
     @Rule

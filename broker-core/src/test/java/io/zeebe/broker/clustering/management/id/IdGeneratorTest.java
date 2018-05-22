@@ -34,7 +34,7 @@ import org.junit.Test;
 public class IdGeneratorTest
 {
     @Rule
-    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule("zeebe.no-default-topic.cfg.toml");
 
     private IdGenerator idGenerator;
 

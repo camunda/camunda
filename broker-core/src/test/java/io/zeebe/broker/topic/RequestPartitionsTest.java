@@ -37,7 +37,7 @@ import org.junit.rules.RuleChain;
 public class RequestPartitionsTest
 {
     public ClientApiRule apiRule = new ClientApiRule(false);
-    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule("zeebe.no-default-topic.cfg.toml");
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);

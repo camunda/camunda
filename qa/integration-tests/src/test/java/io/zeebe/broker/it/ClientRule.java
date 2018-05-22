@@ -18,91 +18,51 @@ package io.zeebe.broker.it;
 
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import org.junit.rules.ExternalResource;
+
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.clients.*;
-import io.zeebe.client.api.commands.*;
+import io.zeebe.client.api.clients.JobClient;
+import io.zeebe.client.api.clients.SubscriptionClient;
+import io.zeebe.client.api.clients.WorkflowClient;
+import io.zeebe.client.api.commands.Partition;
+import io.zeebe.client.api.commands.Topic;
+import io.zeebe.client.api.commands.Topics;
+import io.zeebe.client.api.commands.Topology;
 import io.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.sched.clock.ControlledActorClock;
-import org.junit.rules.ExternalResource;
 
 public class ClientRule extends ExternalResource
 {
     public static final String DEFAULT_TOPIC = "default-topic";
-    protected int defaultPartition;
 
     protected final Properties properties;
-    protected final boolean createDefaultTopic;
 
     protected ZeebeClient client;
     private ControlledActorClock actorClock = new ControlledActorClock();
 
     public ClientRule()
     {
-        this(true);
+        this(Properties::new);
     }
 
-    public ClientRule(boolean createDefaultTopic)
-    {
-        this(() -> new Properties(), createDefaultTopic);
-    }
-
-    public ClientRule(Supplier<Properties> propertiesProvider, boolean createDefaultTopic)
+    public ClientRule(Supplier<Properties> propertiesProvider)
     {
         this.properties = propertiesProvider.get();
-        this.createDefaultTopic = createDefaultTopic;
     }
 
     @Override
     protected void before()
     {
         client = ((ZeebeClientBuilderImpl) ZeebeClient.newClientBuilder().withProperties(properties)).setActorClock(actorClock).build();
-
-        if (createDefaultTopic)
-        {
-            createDefaultTopic();
-        }
-    }
-
-    private void createDefaultTopic()
-    {
-        client.newCreateTopicCommand()
-            .name(DEFAULT_TOPIC)
-            .partitions(1)
-            .replicationFactor(1)
-            .send()
-            .join();
-
-        waitUntilTopicsExists(DEFAULT_TOPIC);
-
-        final Topology topology = client.newTopologyRequest().send().join();
-
-        defaultPartition = -1;
-        final List<BrokerInfo> topologyBrokers = topology.getBrokers();
-
-        for (BrokerInfo leader : topologyBrokers)
-        {
-            final List<PartitionInfo> partitions = leader.getPartitions();
-            for (PartitionInfo brokerPartitionState : partitions)
-            {
-                if (DEFAULT_TOPIC.equals(brokerPartitionState.getTopicName())
-                    && brokerPartitionState.isLeader())
-                {
-                    defaultPartition = brokerPartitionState.getPartitionId();
-                    break;
-                }
-            }
-        }
-
-        if (defaultPartition < 0)
-        {
-            throw new RuntimeException("Could not detect leader for default partition");
-        }
     }
 
     @Override
@@ -145,7 +105,20 @@ public class ClientRule extends ExternalResource
 
     public int getDefaultPartition()
     {
-        return defaultPartition;
+        final List<Integer> defaultPartitions = doRepeatedly(() -> getPartitions(DEFAULT_TOPIC)).until(p -> !p.isEmpty());
+        return defaultPartitions.get(0);
+    }
+
+    private List<Integer> getPartitions(String topic)
+    {
+        final Topology topology = client.newTopologyRequest().send().join();
+
+        return topology.getBrokers().stream()
+            .flatMap(i -> i.getPartitions().stream())
+            .filter(p -> p.isLeader())
+            .filter(p -> p.getTopicName().equals(topic))
+            .map(p -> p.getPartitionId())
+            .collect(Collectors.toList());
     }
 
     public ControlledActorClock getActorClock()

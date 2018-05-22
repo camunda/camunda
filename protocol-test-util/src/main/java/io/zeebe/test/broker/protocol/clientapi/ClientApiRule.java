@@ -50,23 +50,23 @@ public class ClientApiRule extends ExternalResource
     private ControlledActorClock controlledActorClock = new ControlledActorClock();
     private ActorScheduler scheduler;
 
+    private final boolean usesDefaultTopic;
     protected int defaultPartitionId = -1;
-    protected boolean createDefaultTopic = true;
 
     public ClientApiRule()
     {
-        this("localhost", 51015);
+        this(true);
     }
 
-    public ClientApiRule(boolean createDefaultTopic)
+    public ClientApiRule(boolean usesDefaultTopic)
     {
-        this();
-        this.createDefaultTopic = createDefaultTopic;
+        this("localhost", 51015, usesDefaultTopic);
     }
 
-    public ClientApiRule(String host, int port)
+    public ClientApiRule(String host, int port, boolean usesDefaultTopic)
     {
         this.brokerAddress = new SocketAddress(host, port);
+        this.usesDefaultTopic = usesDefaultTopic;
     }
 
     @Override
@@ -89,15 +89,10 @@ public class ClientApiRule extends ExternalResource
         streamAddress = transport.registerRemoteAddress(brokerAddress);
         doRepeatedly(() -> getPartitionsFromTopology(Protocol.SYSTEM_TOPIC)).until(Objects::nonNull, Objects::isNull);
 
-        if (createDefaultTopic)
+        if (usesDefaultTopic)
         {
-            final ExecuteCommandResponse response = createTopic(DEFAULT_TOPIC_NAME, 1);
-            if (response.intent() != TopicIntent.CREATING)
-            {
-                throw new AssertionError("Failed to send request to create default topic: " + response.intent());
-            }
-
-            defaultPartitionId = getSinglePartitionId(DEFAULT_TOPIC_NAME);
+            List<Integer> partitionIds = doRepeatedly(() -> getPartitionsFromTopology(DEFAULT_TOPIC_NAME)).until(p -> !p.isEmpty());
+            defaultPartitionId = partitionIds.get(0);
         }
     }
 

@@ -39,7 +39,7 @@ public class BootstrapDefaultTopicsTest
 
     private AutoCloseableRule closeables = new AutoCloseableRule();
     private Timeout testTimeout = Timeout.seconds(30);
-    private ClientRule clientRule = new ClientRule(false);
+    private ClientRule clientRule = new ClientRule();
     private ClusteringRule clusteringRule = new ClusteringRule(closeables, clientRule, clusterAddresses, clusterConfigs);
 
     @Rule

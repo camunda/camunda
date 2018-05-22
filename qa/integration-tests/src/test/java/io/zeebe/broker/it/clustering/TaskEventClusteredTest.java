@@ -34,7 +34,7 @@ import io.zeebe.test.util.AutoCloseableRule;
 
 public class TaskEventClusteredTest
 {
-    public ClientRule clientRule = new ClientRule(false);
+    public ClientRule clientRule = new ClientRule();
     public AutoCloseableRule closeables = new AutoCloseableRule();
     public ClusteringRule clusteringRule = new ClusteringRule(closeables, clientRule);
 

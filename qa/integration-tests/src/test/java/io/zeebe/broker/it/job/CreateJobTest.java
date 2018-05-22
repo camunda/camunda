@@ -41,7 +41,7 @@ public class CreateJobTest
         final Properties p = new Properties();
         p.setProperty(ClientProperties.REQUEST_TIMEOUT_SEC, "3");
         return p;
-    }, true);
+    });
 
     @Rule
     public RuleChain ruleChain = RuleChain

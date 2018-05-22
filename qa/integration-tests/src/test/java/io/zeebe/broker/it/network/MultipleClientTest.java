@@ -35,7 +35,7 @@ public class MultipleClientTest
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
     public ClientRule client1 = new ClientRule();
-    public ClientRule client2 = new ClientRule(false);
+    public ClientRule client2 = new ClientRule();
 
     @Rule
     public RuleChain ruleChain = RuleChain
@@ -52,6 +52,8 @@ public class MultipleClientTest
         // given
         final List<JobEvent> jobEventsClient1 = new CopyOnWriteArrayList<>();
         final List<JobEvent> jobEventsClient2 = new CopyOnWriteArrayList<>();
+
+        client1.waitUntilTopicsExists(ClientRule.DEFAULT_TOPIC);
 
         client1.getSubscriptionClient()
             .newTopicSubscription()
@@ -82,6 +84,8 @@ public class MultipleClientTest
         // given
         final RecordingJobHandler handler1 = new RecordingJobHandler();
         final RecordingJobHandler handler2 = new RecordingJobHandler();
+
+        client1.waitUntilTopicsExists(ClientRule.DEFAULT_TOPIC);
 
         client1.getSubscriptionClient()
             .newJobSubscription()

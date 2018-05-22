@@ -36,7 +36,7 @@ public class GossipDifferentNodeJoinTest
 
     public AutoCloseableRule closeables = new AutoCloseableRule();
     public Timeout testTimeout = Timeout.seconds(30);
-    public ClientRule clientRule = new ClientRule(false);
+    public ClientRule clientRule = new ClientRule();
 
     private SocketAddress[] brokerAddresses = new SocketAddress[]{BROKER_1_CLIENT_ADDRESS, BROKER_2_CLIENT_ADDRESS, BROKER_4_CLIENT_ADDRESS};
     private String[] brokerConfigs = new String[]{BROKER_1_TOML, BROKER_2_TOML, BROKER_4_TOML};
