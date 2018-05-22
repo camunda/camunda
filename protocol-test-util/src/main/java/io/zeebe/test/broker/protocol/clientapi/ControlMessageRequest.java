@@ -15,8 +15,11 @@
  */
 package io.zeebe.test.broker.protocol.clientapi;
 
+import java.time.Duration;
 import java.util.Map;
 
+import io.zeebe.protocol.clientapi.ErrorCode;
+import io.zeebe.util.ZbLogger;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
@@ -30,6 +33,9 @@ import io.zeebe.util.sched.future.ActorFuture;
 
 public class ControlMessageRequest implements BufferWriter
 {
+    private static final ZbLogger LOG = new ZbLogger(ExecuteCommandResponse.class);
+    private static final Duration RESEND_DELAY = Duration.ofMillis(100);
+
     protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     protected final ControlMessageRequestEncoder requestEncoder = new ControlMessageRequestEncoder();
     protected final MsgPackHelper msgPackHelper;
@@ -41,6 +47,8 @@ public class ControlMessageRequest implements BufferWriter
     protected byte[] encodedData = new byte[0];
 
     protected ActorFuture<ClientResponse> responseFuture;
+
+    private int retries = 10;
 
     public ControlMessageRequest(ClientOutput output, RemoteAddress target, MsgPackHelper msgPackHelper)
     {
@@ -84,17 +92,79 @@ public class ControlMessageRequest implements BufferWriter
         final DirectBuffer responseBuffer = response.getResponseBuffer();
 
         final ControlMessageResponse result = new ControlMessageResponse(msgPackHelper);
-        result.wrap(responseBuffer, 0, responseBuffer.capacity());
+
+        try
+        {
+            result.wrap(responseBuffer, 0, responseBuffer.capacity());
+        }
+        catch (final Exception e)
+        {
+            if (shouldRetryRequest(responseBuffer))
+            {
+                return resend().await();
+            }
+            else
+            {
+                throw e;
+            }
+        }
+
         return result;
     }
 
     public ErrorResponse awaitError()
     {
         final ClientResponse response = responseFuture.join();
-        final ErrorResponse errorResponse = new ErrorResponse(msgPackHelper);
         final DirectBuffer responseBuffer = response.getResponseBuffer();
-        errorResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
-        return errorResponse;
+
+        if (shouldRetryRequest(responseBuffer))
+        {
+            return resend().awaitError();
+        }
+        else
+        {
+            final ErrorResponse errorResponse = new ErrorResponse(msgPackHelper);
+            errorResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
+            return errorResponse;
+        }
+
+    }
+
+    private boolean shouldRetryRequest(final DirectBuffer responseBuffer)
+    {
+        final ErrorResponse error = new ErrorResponse(msgPackHelper);
+        try
+        {
+            error.wrap(responseBuffer, 0, responseBuffer.capacity());
+            final ErrorCode errorCode = error.getErrorCode();
+            final String message = error.getErrorData();
+            return retries > 0 && errorCode == ErrorCode.REQUEST_PROCESSING_FAILURE && message.matches(".*Partition .* not found.*");
+        }
+        catch (final Exception e)
+        {
+            // ignore
+        }
+
+        return false;
+    }
+
+    private ControlMessageRequest resend()
+    {
+        retries--;
+
+        try
+        {
+            // lets wait a while
+            Thread.sleep(RESEND_DELAY.toMillis());
+        }
+        catch (final Exception e)
+        {
+            // ignore
+        }
+
+        LOG.info("Resending execute command request after error");
+        responseFuture = output.sendRequest(target, this);
+        return this;
     }
 
     @Override
