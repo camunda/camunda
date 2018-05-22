@@ -94,16 +94,15 @@ public interface ZeebeClientBuilder
     ZeebeClientBuilder tcpChannelKeepAlivePeriod(Duration tcpChannelKeepAlivePeriod);
 
     /**
-     * The lock owner which is used when no owner is set for the job
-     * subscription. Default is 'default'.
+     * The name of the worker which is used when none is set for a job worker. Default is 'default'.
      */
-    ZeebeClientBuilder defaultJobLockOwner(String jobOwner);
+    ZeebeClientBuilder defaultJobWorkerName(String workerName);
 
     /**
-     * The lock time which is used when no time is set for the job subscription.
+     * The timeout which is used when none is provided for a job worker.
      * Default is 5 minutes.
      */
-    ZeebeClientBuilder defaultJobLockTime(Duration lockTime);
+    ZeebeClientBuilder defaultJobTimeout(Duration timeout);
 
     /**
      * The name of the topic which is used for

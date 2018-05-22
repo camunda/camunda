@@ -23,9 +23,9 @@ public class StreamProcessorIds
 
     public static final int JOB_QUEUE_STREAM_PROCESSOR_ID = 10;
 
-    public static final int JOB_LOCK_STREAM_PROCESSOR_ID = 20;
+    public static final int JOB_ACTIVATE_STREAM_PROCESSOR_ID = 20;
 
-    public static final int JOB_EXPIRE_LOCK_STREAM_PROCESSOR_ID = 30;
+    public static final int JOB_TIME_OUT_STREAM_PROCESSOR_ID = 30;
 
     public static final int TOPIC_SUBSCRIPTION_PUSH_PROCESSOR_ID = 40;
 

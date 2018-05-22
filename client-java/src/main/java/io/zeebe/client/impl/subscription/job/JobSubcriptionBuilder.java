@@ -37,8 +37,8 @@ public class JobSubcriptionBuilder implements JobSubscriptionBuilderStep1, JobSu
 
         // apply defaults from configuration
         final ZeebeClientConfiguration configuration = client.getConfiguration();
-        this.subscriberBuilder.lockOwner(configuration.getDefaultJobLockOwner());
-        this.subscriberBuilder.lockTime(configuration.getDefaultJobLockTime().toMillis());
+        this.subscriberBuilder.worker(configuration.getDefaultJobWorkerName());
+        this.subscriberBuilder.timeout(configuration.getDefaultJobTimeout().toMillis());
         this.subscriberBuilder.bufferSize(configuration.getDefaultJobSubscriptionBufferSize());
     }
 
@@ -50,23 +50,23 @@ public class JobSubcriptionBuilder implements JobSubscriptionBuilderStep1, JobSu
     }
 
     @Override
-    public JobSubscriptionBuilderStep3 lockTime(long lockTime)
+    public JobSubscriptionBuilderStep3 timeout(long lockTime)
     {
-        subscriberBuilder.lockTime(lockTime);
+        subscriberBuilder.timeout(lockTime);
         return this;
     }
 
     @Override
-    public JobSubscriptionBuilderStep3 lockTime(Duration lockTime)
+    public JobSubscriptionBuilderStep3 timeout(Duration lockTime)
     {
-        subscriberBuilder.lockTime(lockTime.toMillis());
+        subscriberBuilder.timeout(lockTime.toMillis());
         return this;
     }
 
     @Override
-    public JobSubscriptionBuilderStep3 lockOwner(String lockOwner)
+    public JobSubscriptionBuilderStep3 name(String lockOwner)
     {
-        subscriberBuilder.lockOwner(lockOwner);
+        subscriberBuilder.worker(lockOwner);
         return this;
     }
 

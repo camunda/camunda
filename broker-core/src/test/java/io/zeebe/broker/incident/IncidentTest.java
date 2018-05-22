@@ -1022,7 +1022,7 @@ public class IncidentTest
     {
         apiRule.openJobSubscription("test").await();
 
-        final SubscribedRecord jobEvent = receiveFirstJobEvent(JobIntent.LOCKED);
+        final SubscribedRecord jobEvent = receiveFirstJobEvent(JobIntent.ACTIVATED);
 
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
             .key(jobEvent.key())
@@ -1030,7 +1030,7 @@ public class IncidentTest
             .command()
                 .put("retries", 0)
                 .put("type", "failingTask")
-                .put("lockOwner", jobEvent.value().get("lockOwner"))
+                .put("worker", jobEvent.value().get("worker"))
                 .put("headers", jobEvent.value().get("headers"))
                 .done()
             .sendAndAwait();
@@ -1063,7 +1063,7 @@ public class IncidentTest
             .command()
                 .put("retries", 1)
                 .put("type", "test")
-                .put("lockOwner", jobEvent.value().get("lockOwner"))
+                .put("worker", jobEvent.value().get("worker"))
                 .put("headers", jobEvent.value().get("headers"))
                 .done()
             .sendAndAwait();

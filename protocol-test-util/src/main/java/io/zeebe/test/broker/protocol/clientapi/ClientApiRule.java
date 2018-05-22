@@ -207,8 +207,8 @@ public class ClientApiRule extends ExternalResource
                 .partitionId(partitionId)
                 .data()
                     .put("jobType", type)
-                    .put("lockDuration", lockDuration)
-                    .put("lockOwner", "test")
+                    .put("timeout", lockDuration)
+                    .put("worker", "test")
                     .put("credits", credits)
                     .done()
                 .send();

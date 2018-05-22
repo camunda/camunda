@@ -64,10 +64,10 @@ public class JobCommandImpl extends JobRecordImpl implements JobCommand
         builder.append(getType());
         builder.append(", retries=");
         builder.append(getRetries());
-        builder.append(", lockOwner=");
-        builder.append(getLockOwner());
-        builder.append(", lockTime=");
-        builder.append(getLockExpirationTime());
+        builder.append(", worker=");
+        builder.append(getWorker());
+        builder.append(", deadline=");
+        builder.append(getDeadline());
         builder.append(", headers=");
         builder.append(getHeaders());
         builder.append(", customHeaders=");

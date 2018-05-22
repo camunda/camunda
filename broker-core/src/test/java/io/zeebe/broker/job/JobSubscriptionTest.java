@@ -78,8 +78,8 @@ public class JobSubscriptionTest
             .partitionId(apiRule.getDefaultPartitionId())
             .data()
                 .put("jobType", "foo")
-                .put("lockDuration", 10000L)
-                .put("lockOwner", "bar")
+                .put("timeout", 10000L)
+                .put("worker", "bar")
                 .put("credits", 5)
                 .done()
             .send();
@@ -90,7 +90,7 @@ public class JobSubscriptionTest
         // then
         final SubscribedRecord jobEvent = testClient.receiveEvents()
                 .ofTypeJob()
-                .withIntent(JobIntent.LOCKED)
+                .withIntent(JobIntent.ACTIVATED)
                 .getFirst();
         assertThat(jobEvent.key()).isEqualTo(response.key());
         assertThat(jobEvent.position()).isGreaterThan(response.position());
@@ -98,7 +98,7 @@ public class JobSubscriptionTest
         assertThat(jobEvent.value())
             .containsEntry("type", "foo")
             .containsEntry("retries", 3)
-            .containsEntry("lockOwner", "bar");
+            .containsEntry("worker", "bar");
 
         final List<Intent> jobStates = testClient
             .receiveRecords()
@@ -107,7 +107,7 @@ public class JobSubscriptionTest
             .map(e -> e.intent())
             .collect(Collectors.toList());
 
-        assertThat(jobStates).containsExactly(JobIntent.CREATE, JobIntent.CREATED, JobIntent.LOCK, JobIntent.LOCKED);
+        assertThat(jobStates).containsExactly(JobIntent.CREATE, JobIntent.CREATED, JobIntent.ACTIVATE, JobIntent.ACTIVATED);
     }
 
     @Test
@@ -132,7 +132,7 @@ public class JobSubscriptionTest
     }
 
     @Test
-    public void shouldNoLongerLockJobsAfterRemoval() throws InterruptedException
+    public void shouldNoLongerActivateJobsAfterRemoval() throws InterruptedException
     {
         // given
         final String jobType = "foo";
@@ -155,7 +155,7 @@ public class JobSubscriptionTest
         assertThat(receivedEvents).hasSize(2);
         assertThat(receivedEvents).allMatch(e -> e.subscriptionType() == SubscriptionType.TOPIC_SUBSCRIPTION);
         assertThat(receivedEvents).extracting(r -> r.intent())
-            .containsExactly(JobIntent.CREATE, JobIntent.CREATED); // no more LOCK etc.
+            .containsExactly(JobIntent.CREATE, JobIntent.CREATED); // no more ACTIVATE etc.
     }
 
     @Test
@@ -168,8 +168,8 @@ public class JobSubscriptionTest
             .partitionId(apiRule.getDefaultPartitionId())
             .data()
                 .put("jobType", "foo")
-                .put("lockDuration", 10000L)
-                .put("lockOwner", "bar")
+                .put("timeout", 10000L)
+                .put("worker", "bar")
                 .put("credits", 0)
                 .done();
         // when
@@ -193,8 +193,8 @@ public class JobSubscriptionTest
             .partitionId(apiRule.getDefaultPartitionId())
             .data()
                 .put("jobType", "foo")
-                .put("lockDuration", 10000L)
-                .put("lockOwner", "bar")
+                .put("timeout", 10000L)
+                .put("worker", "bar")
                 .put("credits", -1)
                 .done();
         // when
@@ -209,7 +209,7 @@ public class JobSubscriptionTest
     }
 
     @Test
-    public void shouldRejectSubscriptionWithoutLockOwner()
+    public void shouldRejectSubscriptionWithoutWorker()
     {
         // given
         final ControlMessageRequestBuilder request = apiRule
@@ -218,7 +218,7 @@ public class JobSubscriptionTest
             .partitionId(apiRule.getDefaultPartitionId())
             .data()
                 .put("jobType", "foo")
-                .put("lockDuration", 10000L)
+                .put("timeout", 10000L)
                 .put("credits", 5)
                 .done();
         // when
@@ -229,14 +229,14 @@ public class JobSubscriptionTest
         // then
         assertThat(errorResponse).isNotNull();
         assertThat(errorResponse.getErrorCode()).isEqualTo(ErrorCode.REQUEST_PROCESSING_FAILURE);
-        assertThat(errorResponse.getErrorData()).isEqualTo("Cannot add job subscription. lock owner must not be empty");
+        assertThat(errorResponse.getErrorData()).isEqualTo("Cannot add job subscription. worker must not be empty");
     }
 
     @Test
-    public void shouldRejectSubscriptionWithExcessiveLockOwnerName()
+    public void shouldRejectSubscriptionWithExcessiveWorkerName()
     {
         // given
-        final String lockOwner = StringUtil.stringOfLength(JobSubscription.LOCK_OWNER_MAX_LENGTH + 1);
+        final String worker = StringUtil.stringOfLength(JobSubscription.WORKER_MAX_LENGTH + 1);
 
         final ControlMessageRequestBuilder request = apiRule
             .createControlMessageRequest()
@@ -244,8 +244,8 @@ public class JobSubscriptionTest
             .partitionId(apiRule.getDefaultPartitionId())
             .data()
                 .put("jobType", "foo")
-                .put("lockDuration", 10000L)
-                .put("lockOwner", lockOwner)
+                .put("timeout", 10000L)
+                .put("worker", worker)
                 .put("credits", 5)
                 .done();
         // when
@@ -256,11 +256,11 @@ public class JobSubscriptionTest
         // then
         assertThat(errorResponse).isNotNull();
         assertThat(errorResponse.getErrorCode()).isEqualTo(ErrorCode.REQUEST_PROCESSING_FAILURE);
-        assertThat(errorResponse.getErrorData()).isEqualTo("Cannot add job subscription. length of lock owner must be less than or equal to 64");
+        assertThat(errorResponse.getErrorData()).isEqualTo("Cannot add job subscription. length of worker must be less than or equal to 64");
     }
 
     @Test
-    public void shouldRejectSubscriptionWithZeroLockDuration()
+    public void shouldRejectSubscriptionWithZeroTimeout()
     {
         // given
         final ControlMessageRequestBuilder request = apiRule
@@ -269,8 +269,8 @@ public class JobSubscriptionTest
             .partitionId(apiRule.getDefaultPartitionId())
             .data()
                 .put("jobType", "foo")
-                .put("lockDuration", 0)
-                .put("lockOwner", "bar")
+                .put("timeout", 0)
+                .put("worker", "bar")
                 .put("credits", 5)
                 .done();
         // when
@@ -281,11 +281,11 @@ public class JobSubscriptionTest
         // then
         assertThat(errorResponse).isNotNull();
         assertThat(errorResponse.getErrorCode()).isEqualTo(ErrorCode.REQUEST_PROCESSING_FAILURE);
-        assertThat(errorResponse.getErrorData()).isEqualTo("Cannot add job subscription. lock duration must be greater than 0");
+        assertThat(errorResponse.getErrorData()).isEqualTo("Cannot add job subscription. timeout must be greater than 0");
     }
 
     @Test
-    public void shouldRejectSubscriptionWithNegativeLockDuration()
+    public void shouldRejectSubscriptionWithNegativeTimeout()
     {
         // given
         final ControlMessageRequestBuilder request = apiRule
@@ -294,8 +294,8 @@ public class JobSubscriptionTest
             .partitionId(apiRule.getDefaultPartitionId())
             .data()
                 .put("jobType", "foo")
-                .put("lockDuration", -1)
-                .put("lockOwner", "bar")
+                .put("timeout", -1)
+                .put("worker", "bar")
                 .put("credits", 5)
                 .done();
         // when
@@ -306,7 +306,7 @@ public class JobSubscriptionTest
         // then
         assertThat(errorResponse).isNotNull();
         assertThat(errorResponse.getErrorCode()).isEqualTo(ErrorCode.REQUEST_PROCESSING_FAILURE);
-        assertThat(errorResponse.getErrorData()).isEqualTo("Cannot add job subscription. lock duration must be greater than 0");
+        assertThat(errorResponse.getErrorData()).isEqualTo("Cannot add job subscription. timeout must be greater than 0");
     }
 
     @Test
@@ -358,7 +358,7 @@ public class JobSubscriptionTest
         // when the transport channel is closed
         apiRule.interruptAllChannels();
 
-        // then the subscription has been closed, so we can create a new job and lock it for a new subscription
+        // then the subscription has been closed, so we can create a new job and activate it for a new subscription
         Thread.sleep(1000L); // closing subscriptions happens asynchronously
 
         final ExecuteCommandResponse response = testClient.createJob("foo");
@@ -467,8 +467,8 @@ public class JobSubscriptionTest
             .partitionId(apiRule.getDefaultPartitionId())
             .data()
                 .put("jobType", "foo")
-                .put("lockDuration", 1000L)
-                .put("lockOwner", "owner1")
+                .put("timeout", 1000L)
+                .put("worker", "owner1")
                 .put("credits", 5)
                 .done()
             .send();
@@ -479,8 +479,8 @@ public class JobSubscriptionTest
             .partitionId(apiRule.getDefaultPartitionId())
             .data()
                 .put("jobType", "bar")
-                .put("lockDuration", 1000L)
-                .put("lockOwner", "owner2")
+                .put("timeout", 1000L)
+                .put("worker", "owner2")
                 .put("credits", 5)
                 .done()
             .send();
@@ -492,7 +492,7 @@ public class JobSubscriptionTest
         // then
         final List<SubscribedRecord> jobEvents = testClient.receiveEvents()
                 .ofTypeJob()
-                .withIntent(JobIntent.LOCKED)
+                .withIntent(JobIntent.ACTIVATED)
                 .limit(2)
                 .collect(Collectors.toList());
 
@@ -500,15 +500,15 @@ public class JobSubscriptionTest
 
         assertThat(jobEvents.get(0).value())
             .containsEntry("type", "foo")
-            .containsEntry("lockOwner", "owner1");
+            .containsEntry("worker", "owner1");
 
         assertThat(jobEvents.get(1).value())
             .containsEntry("type", "bar")
-            .containsEntry("lockOwner", "owner2");
+            .containsEntry("worker", "owner2");
     }
 
     @Test
-    public void shouldLockJobsUntilCreditsAreExhausted() throws InterruptedException
+    public void shouldActivateJobsUntilCreditsAreExhausted() throws InterruptedException
     {
         // given
         apiRule
@@ -517,8 +517,8 @@ public class JobSubscriptionTest
             .partitionId(apiRule.getDefaultPartitionId())
             .data()
                 .put("jobType", "foo")
-                .put("lockDuration", 1000L)
-                .put("lockOwner", "bar")
+                .put("timeout", 1000L)
+                .put("worker", "bar")
                 .put("credits", 2)
                 .done()
             .send();
@@ -534,12 +534,12 @@ public class JobSubscriptionTest
 
         final List<SubscribedRecord> jobEvents = testClient.receiveEvents()
                 .ofTypeJob()
-                .withIntent(JobIntent.LOCKED)
+                .withIntent(JobIntent.ACTIVATED)
                 .limit(2)
                 .collect(Collectors.toList());
 
         assertThat(jobEvents)
-            .extracting(s -> s.value().get("lockOwner"))
+            .extracting(s -> s.value().get("worker"))
             .contains("bar");
     }
 
@@ -553,8 +553,8 @@ public class JobSubscriptionTest
             .partitionId(apiRule.getDefaultPartitionId())
             .data()
                 .put("jobType", "foo")
-                .put("lockDuration", 1000L)
-                .put("lockOwner", "bar")
+                .put("timeout", 1000L)
+                .put("worker", "bar")
                 .put("credits", 2)
                 .done()
             .sendAndAwait();

@@ -23,14 +23,14 @@ import org.agrona.DirectBuffer;
 
 public class JobSubscription
 {
-    public static final int LOCK_OWNER_MAX_LENGTH = 64;
+    public static final int WORKER_MAX_LENGTH = 64;
 
     private final int partitionId;
 
-    private final DirectBuffer lockJobType;
+    private final DirectBuffer jobType;
 
-    private final long lockDuration;
-    private final DirectBuffer lockOwner;
+    private final long timeout;
+    private final DirectBuffer worker;
 
     private final int streamId;
 
@@ -38,12 +38,12 @@ public class JobSubscription
 
     private int credits;
 
-    public JobSubscription(int partitionId, DirectBuffer lockJobType, long lockDuration, DirectBuffer lockOwner, int streamId)
+    public JobSubscription(int partitionId, DirectBuffer jobType, long timeout, DirectBuffer worker, int streamId)
     {
         this.partitionId = partitionId;
-        this.lockJobType = cloneBuffer(lockJobType);
-        this.lockDuration = lockDuration;
-        this.lockOwner = cloneBuffer(lockOwner);
+        this.jobType = cloneBuffer(jobType);
+        this.timeout = timeout;
+        this.worker = cloneBuffer(worker);
         this.streamId = streamId;
     }
 
@@ -62,19 +62,19 @@ public class JobSubscription
         return subscriberKey;
     }
 
-    public DirectBuffer getLockJobType()
+    public DirectBuffer getJobType()
     {
-        return lockJobType;
+        return jobType;
     }
 
-    public long getLockDuration()
+    public long getTimeout()
     {
-        return lockDuration;
+        return timeout;
     }
 
-    public DirectBuffer getLockOwner()
+    public DirectBuffer getWorker()
     {
-        return lockOwner;
+        return worker;
     }
 
     public int getStreamId()

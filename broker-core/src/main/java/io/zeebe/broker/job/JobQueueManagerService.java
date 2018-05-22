@@ -17,13 +17,13 @@
  */
 package io.zeebe.broker.job;
 
-import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.JOB_EXPIRE_LOCK_STREAM_PROCESSOR_ID;
+import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.JOB_TIME_OUT_STREAM_PROCESSOR_ID;
 import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.JOB_QUEUE_STREAM_PROCESSOR_ID;
 
 import java.time.Duration;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
-import io.zeebe.broker.job.processor.JobExpireLockStreamProcessor;
+import io.zeebe.broker.job.processor.JobTimeOutStreamProcessor;
 import io.zeebe.broker.job.processor.JobInstanceStreamProcessor;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
@@ -35,7 +35,7 @@ import io.zeebe.util.sched.ActorScheduler;
 public class JobQueueManagerService implements Service<JobQueueManagerService>
 {
     protected static final String NAME = "job.queue.manager";
-    public static final Duration LOCK_EXPIRATION_INTERVAL = Duration.ofSeconds(30);
+    public static final Duration TIME_OUT_INTERVAL = Duration.ofSeconds(30);
 
     private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
     private final Injector<JobSubscriptionManager> jobSubscriptionManagerInjector = new Injector<>();
@@ -63,17 +63,17 @@ public class JobQueueManagerService implements Service<JobQueueManagerService>
             .processorName("job-instance")
             .build();
 
-        startExpireLockService(name, partition, env);
+        startTimeOutService(name, partition, env);
     }
 
-    protected void startExpireLockService(ServiceName<Partition> partitionServiceName, Partition partition, TypedStreamEnvironment env)
+    protected void startTimeOutService(ServiceName<Partition> partitionServiceName, Partition partition, TypedStreamEnvironment env)
     {
-        final JobExpireLockStreamProcessor expireLockStreamProcessor = new JobExpireLockStreamProcessor();
+        final JobTimeOutStreamProcessor timeOutStreamProcessor = new JobTimeOutStreamProcessor();
 
         streamProcessorServiceFactory.createService(partition, partitionServiceName)
-            .processor(expireLockStreamProcessor.createStreamProcessor(env))
-            .processorId(JOB_EXPIRE_LOCK_STREAM_PROCESSOR_ID)
-            .processorName("job-expire-lock")
+            .processor(timeOutStreamProcessor.createStreamProcessor(env))
+            .processorId(JOB_TIME_OUT_STREAM_PROCESSOR_ID)
+            .processorName("job-time-out")
             .build();
     }
 

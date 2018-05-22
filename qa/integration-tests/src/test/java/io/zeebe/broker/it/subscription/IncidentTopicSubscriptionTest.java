@@ -124,8 +124,8 @@ public class IncidentTopicSubscriptionTest
             {
                 throw new RuntimeException("expected failure");
             })
-            .lockTime(Duration.ofMinutes(5))
-            .lockOwner("test")
+            .timeout(Duration.ofMinutes(5))
+            .name("test")
             .open();
 
         final RecordingIncidentEventHandler handler = new RecordingIncidentEventHandler();

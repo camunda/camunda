@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.job;
 
-import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.JOB_LOCK_STREAM_PROCESSOR_ID;
+import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.JOB_ACTIVATE_STREAM_PROCESSOR_ID;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import java.util.*;
@@ -25,7 +25,7 @@ import java.util.Map.Entry;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.Partition;
-import io.zeebe.broker.job.processor.LockJobStreamProcessor;
+import io.zeebe.broker.job.processor.ActivateJobStreamProcessor;
 import io.zeebe.broker.job.processor.JobSubscription;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
@@ -55,7 +55,7 @@ public class JobSubscriptionManager extends Actor implements TransportListener
     private final ServerTransport transport;
 
     protected final Int2ObjectHashMap<PartitionBucket> logStreamBuckets = new Int2ObjectHashMap<>();
-    protected final Long2ObjectHashMap<LockJobStreamProcessor> streamProcessorBySubscriptionId = new Long2ObjectHashMap<>();
+    protected final Long2ObjectHashMap<ActivateJobStreamProcessor> streamProcessorBySubscriptionId = new Long2ObjectHashMap<>();
 
     /*
      * For credits handling, we use two datastructures here:
@@ -104,7 +104,7 @@ public class JobSubscriptionManager extends Actor implements TransportListener
         final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
         actor.call(() ->
         {
-            final DirectBuffer jobType = subscription.getLockJobType();
+            final DirectBuffer jobType = subscription.getJobType();
             final int partitionId = subscription.getPartitionId();
 
             final PartitionBucket partitionBucket = logStreamBuckets.get(partitionId);
@@ -117,7 +117,7 @@ public class JobSubscriptionManager extends Actor implements TransportListener
             final long subscriptionId = nextSubscriptionId++;
             subscription.setSubscriberKey(subscriptionId);
 
-            final LockJobStreamProcessor streamProcessor = partitionBucket.getStreamProcessorByJobType(jobType);
+            final ActivateJobStreamProcessor streamProcessor = partitionBucket.getStreamProcessorByJobType(jobType);
             if (streamProcessor != null)
             {
                 streamProcessorBySubscriptionId.put(subscriptionId, streamProcessor);
@@ -139,7 +139,7 @@ public class JobSubscriptionManager extends Actor implements TransportListener
             }
             else
             {
-                final LockJobStreamProcessor processor = new LockJobStreamProcessor(jobType);
+                final ActivateJobStreamProcessor processor = new ActivateJobStreamProcessor(jobType);
 
                 final ActorFuture<StreamProcessorService> processorFuture = createStreamProcessorService(processor, partitionBucket, jobType);
 
@@ -177,7 +177,7 @@ public class JobSubscriptionManager extends Actor implements TransportListener
     }
 
     protected ActorFuture<StreamProcessorService> createStreamProcessorService(
-            final LockJobStreamProcessor factory,
+            final ActivateJobStreamProcessor factory,
             final PartitionBucket partitionBucket,
             final DirectBuffer jobType)
     {
@@ -185,7 +185,7 @@ public class JobSubscriptionManager extends Actor implements TransportListener
 
         return streamProcessorServiceFactory.createService(partitionBucket.getPartition(), partitionBucket.getPartitionServiceName())
             .processor(factory.createStreamProcessor(env))
-            .processorId(JOB_LOCK_STREAM_PROCESSOR_ID)
+            .processorId(JOB_ACTIVATE_STREAM_PROCESSOR_ID)
             .processorName(streamProcessorName(jobType))
             .build();
     }
@@ -195,7 +195,7 @@ public class JobSubscriptionManager extends Actor implements TransportListener
         final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
         actor.call(() ->
         {
-            final LockJobStreamProcessor streamProcessor = streamProcessorBySubscriptionId.remove(subscriptionId);
+            final ActivateJobStreamProcessor streamProcessor = streamProcessorBySubscriptionId.remove(subscriptionId);
             if (streamProcessor != null)
             {
                 final ActorFuture<Boolean> removeFuture = streamProcessor.removeSubscription(subscriptionId);
@@ -237,7 +237,7 @@ public class JobSubscriptionManager extends Actor implements TransportListener
         return future;
     }
 
-    protected ActorFuture<Void> removeStreamProcessorService(final LockJobStreamProcessor streamProcessor)
+    protected ActorFuture<Void> removeStreamProcessorService(final ActivateJobStreamProcessor streamProcessor)
     {
         final PartitionBucket partitionBucket = logStreamBuckets.get(streamProcessor.getLogStreamPartitionId());
 
@@ -267,7 +267,7 @@ public class JobSubscriptionManager extends Actor implements TransportListener
      */
     protected boolean dispatchSubscriptionCredits(CreditsRequest request)
     {
-        final LockJobStreamProcessor streamProcessor = streamProcessorBySubscriptionId.get(request.getSubscriberKey());
+        final ActivateJobStreamProcessor streamProcessor = streamProcessorBySubscriptionId.get(request.getSubscriberKey());
 
         if (streamProcessor != null)
         {
@@ -337,10 +337,10 @@ public class JobSubscriptionManager extends Actor implements TransportListener
 
     protected void removeSubscriptionsForLogStream(final int partitionId)
     {
-        final Set<Entry<Long, LockJobStreamProcessor>> entrySet = streamProcessorBySubscriptionId.entrySet();
-        for (Entry<Long, LockJobStreamProcessor> entry : entrySet)
+        final Set<Entry<Long, ActivateJobStreamProcessor>> entrySet = streamProcessorBySubscriptionId.entrySet();
+        for (Entry<Long, ActivateJobStreamProcessor> entry : entrySet)
         {
-            final LockJobStreamProcessor streamProcessor = entry.getValue();
+            final ActivateJobStreamProcessor streamProcessor = entry.getValue();
             if (partitionId == streamProcessor.getLogStreamPartitionId())
             {
                 entrySet.remove(entry);
@@ -352,10 +352,10 @@ public class JobSubscriptionManager extends Actor implements TransportListener
     {
         actor.call(() ->
         {
-            final Iterator<LockJobStreamProcessor> processorIt = streamProcessorBySubscriptionId.values().iterator();
+            final Iterator<ActivateJobStreamProcessor> processorIt = streamProcessorBySubscriptionId.values().iterator();
             while (processorIt.hasNext())
             {
-                final LockJobStreamProcessor processor = processorIt.next();
+                final ActivateJobStreamProcessor processor = processorIt.next();
                 final ActorFuture<Boolean> closeFuture = processor.onClientChannelCloseAsync(channelId);
 
                 actor.runOnCompletion(closeFuture, (hasSubscriptions, throwable) ->
@@ -370,7 +370,7 @@ public class JobSubscriptionManager extends Actor implements TransportListener
                     }
                     else
                     {
-                        Loggers.SYSTEM_LOGGER.debug("Problem on closing job locking stream processor.", throwable);
+                        Loggers.SYSTEM_LOGGER.debug("Problem on closing job activating stream processor.", throwable);
                     }
                 });
             }
@@ -379,7 +379,7 @@ public class JobSubscriptionManager extends Actor implements TransportListener
 
     private static String streamProcessorName(final DirectBuffer jobType)
     {
-        return String.format("job-lock.%s", bufferAsString(jobType));
+        return String.format("job-activate.%s", bufferAsString(jobType));
     }
 
 
@@ -388,7 +388,7 @@ public class JobSubscriptionManager extends Actor implements TransportListener
         protected final Partition partition;
         protected final ServiceName<Partition> partitionServiceName;
 
-        protected List<LockJobStreamProcessor> streamProcessors = new ArrayList<>();
+        protected List<ActivateJobStreamProcessor> streamProcessors = new ArrayList<>();
 
         PartitionBucket(Partition partition, ServiceName<Partition> partitionServiceName)
         {
@@ -416,16 +416,16 @@ public class JobSubscriptionManager extends Actor implements TransportListener
             return partitionServiceName;
         }
 
-        public LockJobStreamProcessor getStreamProcessorByJobType(DirectBuffer jobType)
+        public ActivateJobStreamProcessor getStreamProcessorByJobType(DirectBuffer jobType)
         {
-            LockJobStreamProcessor streamProcessorForType = null;
+            ActivateJobStreamProcessor streamProcessorForType = null;
 
             final int size = streamProcessors.size();
             int current = 0;
 
             while (current < size && streamProcessorForType == null)
             {
-                final LockJobStreamProcessor streamProcessor = streamProcessors.get(current);
+                final ActivateJobStreamProcessor streamProcessor = streamProcessors.get(current);
 
                 if (BufferUtil.equals(jobType, streamProcessor.getSubscriptedJobType()))
                 {
@@ -438,12 +438,12 @@ public class JobSubscriptionManager extends Actor implements TransportListener
             return streamProcessorForType;
         }
 
-        public void addStreamProcessor(LockJobStreamProcessor streamProcessor)
+        public void addStreamProcessor(ActivateJobStreamProcessor streamProcessor)
         {
             streamProcessors.add(streamProcessor);
         }
 
-        public void removeStreamProcessor(LockJobStreamProcessor streamProcessor)
+        public void removeStreamProcessor(ActivateJobStreamProcessor streamProcessor)
         {
             streamProcessors.remove(streamProcessor);
         }

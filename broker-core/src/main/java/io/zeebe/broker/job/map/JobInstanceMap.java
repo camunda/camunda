@@ -33,21 +33,21 @@ import io.zeebe.map.Long2BytesZbMap;
  * Maps <b>job instance key</b> to
  *
  * <li> state
- * <li> lock owner length
- * <li> lock owner (max 64 chars)
+ * <li> worker length
+ * <li> worker (max 64 chars)
  */
 public class JobInstanceMap
 {
-    private static final int MAP_VALUE_SIZE = SIZE_OF_SHORT + SIZE_OF_INT + SIZE_OF_CHAR * JobSubscription.LOCK_OWNER_MAX_LENGTH;
+    private static final int MAP_VALUE_SIZE = SIZE_OF_SHORT + SIZE_OF_INT + SIZE_OF_CHAR * JobSubscription.WORKER_MAX_LENGTH;
 
     private static final int STATE_OFFSET = 0;
-    private static final int LOCK_OWNER_LENGTH_OFFSET = STATE_OFFSET + SIZE_OF_SHORT;
-    private static final int LOCK_OWNER_OFFSET = LOCK_OWNER_LENGTH_OFFSET + SIZE_OF_INT;
+    private static final int WORKER_LENGTH_OFFSET = STATE_OFFSET + SIZE_OF_SHORT;
+    private static final int WORKER_OFFSET = WORKER_LENGTH_OFFSET + SIZE_OF_INT;
 
     private static final ByteOrder BYTE_ORDER = ByteOrder.LITTLE_ENDIAN;
 
     private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[MAP_VALUE_SIZE]);
-    private final UnsafeBuffer lockOwnerBuffer = new UnsafeBuffer(0, 0);
+    private final UnsafeBuffer workerBuffer = new UnsafeBuffer(0, 0);
 
     private final Long2BytesZbMap map;
 
@@ -93,18 +93,18 @@ public class JobInstanceMap
         return isRead ? buffer.getShort(STATE_OFFSET, BYTE_ORDER) : -1;
     }
 
-    public DirectBuffer getLockOwner()
+    public DirectBuffer getWorker()
     {
         if (isRead)
         {
-            final int length = buffer.getInt(LOCK_OWNER_LENGTH_OFFSET, BYTE_ORDER);
-            lockOwnerBuffer.wrap(buffer, LOCK_OWNER_OFFSET, length);
+            final int length = buffer.getInt(WORKER_LENGTH_OFFSET, BYTE_ORDER);
+            workerBuffer.wrap(buffer, WORKER_OFFSET, length);
         }
         else
         {
-            lockOwnerBuffer.wrap(0, 0);
+            workerBuffer.wrap(0, 0);
         }
-        return lockOwnerBuffer;
+        return workerBuffer;
     }
 
     public JobInstanceMap newJobInstance(long jobInstanceKey)
@@ -127,11 +127,11 @@ public class JobInstanceMap
         return this;
     }
 
-    public JobInstanceMap setLockOwner(DirectBuffer lockOwner)
+    public JobInstanceMap setWorker(DirectBuffer worker)
     {
         ensureRead();
-        buffer.putInt(LOCK_OWNER_LENGTH_OFFSET, lockOwner.capacity(), BYTE_ORDER);
-        buffer.putBytes(LOCK_OWNER_OFFSET, lockOwner, 0, lockOwner.capacity());
+        buffer.putInt(WORKER_LENGTH_OFFSET, worker.capacity(), BYTE_ORDER);
+        buffer.putBytes(WORKER_OFFSET, worker, 0, worker.capacity());
         return this;
     }
 

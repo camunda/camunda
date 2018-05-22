@@ -569,7 +569,7 @@ public class TopicSubscriptionTest
 
         // when pushing two events
         broker.pushRecord(clientAddress, 123L, 1L, 1L, expectedEventTimestamp, RecordType.EVENT, ValueType.JOB, JobIntent.CREATED);
-        broker.pushRecord(clientAddress, 123L, 1L, 2L, expectedEventTimestamp, RecordType.COMMAND, ValueType.JOB, JobIntent.LOCKED);
+        broker.pushRecord(clientAddress, 123L, 1L, 2L, expectedEventTimestamp, RecordType.COMMAND, ValueType.JOB, JobIntent.ACTIVATED);
 
         // then
         waitUntil(() -> eventHandler.numTopicEvents() == 2);
@@ -578,7 +578,7 @@ public class TopicSubscriptionTest
         final Record event2 = eventHandler.topicEvents.get(1);
 
         assertMetadata(event1, 1L, 1L, expectedEventTimestamp, RecordType.EVENT, ValueType.JOB, "CREATED");
-        assertMetadata(event2, 1L, 2L, expectedEventTimestamp, RecordType.COMMAND, ValueType.JOB, "LOCKED");
+        assertMetadata(event2, 1L, 2L, expectedEventTimestamp, RecordType.COMMAND, ValueType.JOB, "ACTIVATED");
 
         assertThat(eventHandler.numTopicEvents()).isEqualTo(2);
         assertThat(eventHandler.numJobEvents()).isEqualTo(0);
@@ -604,7 +604,7 @@ public class TopicSubscriptionTest
 
         // when pushing two events
         broker.pushRecord(clientAddress, 123L, 1L, 1L, expectedEventTimestamp, RecordType.EVENT, ValueType.JOB, JobIntent.CREATED);
-        broker.pushRecord(clientAddress, 123L, 1L, 2L, expectedEventTimestamp, RecordType.EVENT, ValueType.JOB, JobIntent.LOCKED);
+        broker.pushRecord(clientAddress, 123L, 1L, 2L, expectedEventTimestamp, RecordType.EVENT, ValueType.JOB, JobIntent.ACTIVATED);
 
         // then
         waitUntil(() -> eventHandler.numJobEvents() >= 2);
@@ -613,7 +613,7 @@ public class TopicSubscriptionTest
         final JobEvent event2 = eventHandler.jobEvents.get(1);
 
         assertMetadata(event1, 1L, 1L, expectedEventTimestamp, RecordType.EVENT, ValueType.JOB, "CREATED");
-        assertMetadata(event2, 1L, 2L, expectedEventTimestamp, RecordType.EVENT, ValueType.JOB, "LOCKED");
+        assertMetadata(event2, 1L, 2L, expectedEventTimestamp, RecordType.EVENT, ValueType.JOB, "ACTIVATED");
 
         assertThat(eventHandler.numTopicEvents()).isEqualTo(0);
         assertThat(eventHandler.numJobEvents()).isEqualTo(2);
@@ -639,7 +639,7 @@ public class TopicSubscriptionTest
 
         // when pushing two events
         broker.pushRecord(clientAddress, 123L, 1L, 1L, expectedEventTimestamp, RecordType.COMMAND, ValueType.JOB, JobIntent.CREATE);
-        broker.pushRecord(clientAddress, 123L, 1L, 2L, expectedEventTimestamp, RecordType.COMMAND, ValueType.JOB, JobIntent.LOCK);
+        broker.pushRecord(clientAddress, 123L, 1L, 2L, expectedEventTimestamp, RecordType.COMMAND, ValueType.JOB, JobIntent.ACTIVATE);
 
         // then
         waitUntil(() -> eventHandler.numJobCommands() >= 2);
@@ -648,7 +648,7 @@ public class TopicSubscriptionTest
         final JobCommand command2 = eventHandler.jobCommands.get(1);
 
         assertMetadata(command1, 1L, 1L, expectedEventTimestamp, RecordType.COMMAND, ValueType.JOB, "CREATE");
-        assertMetadata(command2, 1L, 2L, expectedEventTimestamp, RecordType.COMMAND, ValueType.JOB, "LOCK");
+        assertMetadata(command2, 1L, 2L, expectedEventTimestamp, RecordType.COMMAND, ValueType.JOB, "ACTIVATE");
 
         assertThat(eventHandler.numTopicEvents()).isEqualTo(0);
         assertThat(eventHandler.numJobEvents()).isEqualTo(0);

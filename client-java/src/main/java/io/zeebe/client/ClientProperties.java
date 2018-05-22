@@ -63,14 +63,14 @@ public class ClientProperties
     public static final String REQUEST_TIMEOUT_SEC = "zeebe.client.request.timeout";
 
     /**
-     * @see ZeebeClientBuilder#defaultJobLockOwner(String)
+     * @see ZeebeClientBuilder#defaultJobWorkerName(String)
      */
-    public static final String DEFAULT_JOB_LOCK_OWNER = "zeebe.client.job.lockOwner";
+    public static final String DEFAULT_JOB_WORKER_NAME = "zeebe.client.job.worker";
 
     /**
-     * @see ZeebeClientBuilder#defaultJobLockTime(java.time.Duration)
+     * @see ZeebeClientBuilder#defaultJobTimeout(java.time.Duration)
      */
-    public static final String DEFAULT_JOB_LOCK_TIME = "zeebe.client.job.lockTime";
+    public static final String DEFAULT_JOB_TIMEOUT = "zeebe.client.job.timeout";
 
     /**
      * @see ZeebeClientBuilder#defaultTopic(String)

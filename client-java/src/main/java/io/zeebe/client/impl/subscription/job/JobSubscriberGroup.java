@@ -64,8 +64,8 @@ public class JobSubscriberGroup extends SubscriberGroup<JobSubscriber> implement
     {
         return new CreateJobSubscriptionCommandImpl(client.getCommandManager(), partitionId)
                 .jobType(subscription.getJobType())
-                .lockDuration(subscription.getLockTime())
-                .lockOwner(subscription.getLockOwner())
+                .timeout(subscription.getTimeout())
+                .worker(subscription.getWorker())
                 .initialCredits(subscription.getCapacity())
                 .send();
     }

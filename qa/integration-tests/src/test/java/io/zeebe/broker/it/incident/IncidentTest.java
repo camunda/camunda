@@ -150,8 +150,8 @@ public class IncidentTest
             .newJobSubscription()
             .jobType("test")
             .handler(jobHandler)
-            .lockOwner("owner")
-            .lockTime(Duration.ofMinutes(5))
+            .name("owner")
+            .timeout(Duration.ofMinutes(5))
             .open();
 
         // then an incident is created

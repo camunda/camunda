@@ -23,23 +23,23 @@ public class JobSubscriptionSpec
     protected final String topic;
     protected final JobHandler jobHandler;
     protected final String jobType;
-    protected final long lockTime;
-    protected final String lockOwner;
+    protected final long timeout;
+    protected final String worker;
     protected final int capacity;
 
     public JobSubscriptionSpec(
             String topic,
             JobHandler jobHandler,
             String taskType,
-            long lockTime,
-            String lockOwner,
+            long timeout,
+            String worker,
             int capacity)
     {
         this.topic = topic;
         this.jobHandler = jobHandler;
         this.jobType = taskType;
-        this.lockTime = lockTime;
-        this.lockOwner = lockOwner;
+        this.timeout = timeout;
+        this.worker = worker;
         this.capacity = capacity;
     }
 
@@ -58,14 +58,14 @@ public class JobSubscriptionSpec
         return jobType;
     }
 
-    public long getLockTime()
+    public long getTimeout()
     {
-        return lockTime;
+        return timeout;
     }
 
-    public String getLockOwner()
+    public String getWorker()
     {
-        return lockOwner;
+        return worker;
     }
 
     public int getCapacity()
@@ -89,9 +89,9 @@ public class JobSubscriptionSpec
         builder.append(", jobType=");
         builder.append(jobType);
         builder.append(", lockTime=");
-        builder.append(lockTime);
+        builder.append(timeout);
         builder.append(", lockOwner=");
-        builder.append(lockOwner);
+        builder.append(worker);
         builder.append(", capacity=");
         builder.append(capacity);
         builder.append("]");

@@ -18,9 +18,9 @@ package io.zeebe.client.api.commands;
 public enum JobCommandName
 {
     CREATE,
-    LOCK,
+    ACTIVATE,
     COMPLETE,
-    EXPIRE_LOCK,
+    TIME_OUT,
     FAIL,
     UPDATE_RETRIES,
     CANCEL,

@@ -34,7 +34,7 @@ import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.util.buffer.BufferUtil;
 
-public class JobLockExpirationStreamProcessorTest
+public class JobTimeOutStreamProcessorTest
 {
     @Rule
     public StreamProcessorRule rule = new StreamProcessorRule();
@@ -49,25 +49,25 @@ public class JobLockExpirationStreamProcessorTest
     }
 
     @Test
-    public void shouldExpireLockIfAfterLockTimeForTwoJobs()
+    public void shouldTimeOutIfAfterDeadlineForTwoJobs()
     {
         // given
         rule.getClock().pinCurrentTime();
 
-        rule.runStreamProcessor(e -> new JobExpireLockStreamProcessor()
+        rule.runStreamProcessor(e -> new JobTimeOutStreamProcessor()
             .createStreamProcessor(e));
 
-        rule.writeEvent(1, JobIntent.LOCKED, job());
-        rule.writeEvent(2, JobIntent.LOCKED, job());
+        rule.writeEvent(1, JobIntent.ACTIVATED, job());
+        rule.writeEvent(2, JobIntent.ACTIVATED, job());
 
         // when
-        rule.getClock().addTime(JobQueueManagerService.LOCK_EXPIRATION_INTERVAL.plus(Duration.ofSeconds(1)));
+        rule.getClock().addTime(JobQueueManagerService.TIME_OUT_INTERVAL.plus(Duration.ofSeconds(1)));
 
         // then
         final List<TypedRecord<JobRecord>> expirationEvents = doRepeatedly(
             () -> rule.events()
                 .onlyJobRecords()
-                .withIntent(JobIntent.EXPIRE_LOCK)
+                .withIntent(JobIntent.TIME_OUT)
                 .collect(Collectors.toList()))
             .until(l -> l.size() == 2);
 

@@ -93,8 +93,8 @@ public class JobTopicSubscriptionTest
         assertThat(record1.getMetadata().getIntent()).isEqualTo("CREATE");
         assertThat(record1.getHeaders()).isEmpty();
         assertThat(record1.getCustomHeaders()).containsExactly(entry("key", "value"));
-        assertThat(record1.getLockExpirationTime()).isNull();
-        assertThat(record1.getLockOwner()).isNull();
+        assertThat(record1.getDeadline()).isNull();
+        assertThat(record1.getWorker()).isNull();
         assertThat(record1.getRetries()).isEqualTo(2);
         assertThat(record1.getType()).isEqualTo("foo");
         assertThat(record1.getPayload()).isEqualTo("{}");

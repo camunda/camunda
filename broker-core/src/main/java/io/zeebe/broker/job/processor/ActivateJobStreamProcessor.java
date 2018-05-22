@@ -45,7 +45,7 @@ import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 
-public class LockJobStreamProcessor implements TypedRecordProcessor<JobRecord>, StreamProcessorLifecycleAware
+public class ActivateJobStreamProcessor implements TypedRecordProcessor<JobRecord>, StreamProcessorLifecycleAware
 {
     protected final CreditsRequestBuffer creditsBuffer = new CreditsRequestBuffer(JobSubscriptionManager.NUM_CONCURRENT_REQUESTS, this::increaseSubscriptionCredits);
 
@@ -60,7 +60,7 @@ public class LockJobStreamProcessor implements TypedRecordProcessor<JobRecord>, 
 
     private JobSubscription selectedSubscriber;
 
-    public LockJobStreamProcessor(DirectBuffer jobType)
+    public ActivateJobStreamProcessor(DirectBuffer jobType)
     {
         this.subscribedJobType = jobType;
         this.jobDistributionIterator = subscriptions.iterator();
@@ -93,7 +93,7 @@ public class LockJobStreamProcessor implements TypedRecordProcessor<JobRecord>, 
 
         return env.newStreamProcessor()
                 .onEvent(ValueType.JOB, JobIntent.CREATED, this)
-                .onEvent(ValueType.JOB, JobIntent.LOCK_EXPIRED, this)
+                .onEvent(ValueType.JOB, JobIntent.TIMED_OUT, this)
                 .onEvent(ValueType.JOB, JobIntent.FAILED, this)
                 .onEvent(ValueType.JOB, JobIntent.RETRIES_UPDATED, this)
                 .build();
@@ -104,11 +104,11 @@ public class LockJobStreamProcessor implements TypedRecordProcessor<JobRecord>, 
         try
         {
             ensureNotNull("subscription", subscription);
-            ensureNotNullOrEmpty("lock job type", subscription.getLockJobType());
-            ensureNotNullOrEmpty("lock owner", subscription.getLockOwner());
-            ensureGreaterThan("length of lock owner", subscription.getLockOwner().capacity(), 0);
-            ensureLessThanOrEqual("length of lock owner", subscription.getLockOwner().capacity(), JobSubscription.LOCK_OWNER_MAX_LENGTH);
-            ensureGreaterThan("lock duration", subscription.getLockDuration(), 0);
+            ensureNotNullOrEmpty("job type", subscription.getJobType());
+            ensureNotNullOrEmpty("worker", subscription.getWorker());
+            ensureGreaterThan("length of worker", subscription.getWorker().capacity(), 0);
+            ensureLessThanOrEqual("length of worker", subscription.getWorker().capacity(), JobSubscription.WORKER_MAX_LENGTH);
+            ensureGreaterThan("timeout", subscription.getTimeout(), 0);
             ensureGreaterThan("subscription credits", subscription.getCredits(), 0);
         }
         catch (Exception e)
@@ -116,7 +116,7 @@ public class LockJobStreamProcessor implements TypedRecordProcessor<JobRecord>, 
             return CompletableActorFuture.completedExceptionally(e);
         }
 
-        if (!BufferUtil.equals(subscription.getLockJobType(), subscribedJobType))
+        if (!BufferUtil.equals(subscription.getJobType(), subscribedJobType))
         {
             final String errorMessage = String.format("Subscription job type is not equal to '%s'.", BufferUtil.bufferAsString(subscribedJobType));
             throw new RuntimeException(errorMessage);
@@ -231,11 +231,11 @@ public class LockJobStreamProcessor implements TypedRecordProcessor<JobRecord>, 
             selectedSubscriber = getNextAvailableSubscription();
             if (selectedSubscriber != null)
             {
-                final long lockTimeout = ActorClock.currentTimeMillis() + selectedSubscriber.getLockDuration();
+                final long deadline = ActorClock.currentTimeMillis() + selectedSubscriber.getTimeout();
 
                 jobEvent
-                    .setLockTime(lockTimeout)
-                    .setLockOwner(selectedSubscriber.getLockOwner());
+                    .setDeadline(deadline)
+                    .setWorker(selectedSubscriber.getWorker());
             }
         }
     }
@@ -249,7 +249,7 @@ public class LockJobStreamProcessor implements TypedRecordProcessor<JobRecord>, 
         {
             position = writer.writeFollowUpCommand(
                 event.getKey(),
-                JobIntent.LOCK,
+                JobIntent.ACTIVATE,
                 event.getValue(),
                 this::assignToSelectedSubscriber);
         }

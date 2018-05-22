@@ -35,8 +35,8 @@ public class JobRecord extends UnpackedObject
     protected static final DirectBuffer NO_PAYLOAD = new UnsafeBuffer(MsgPackHelper.NIL);
     protected static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
 
-    private final LongProperty lockTimeProp = new LongProperty("lockTime", Protocol.INSTANT_NULL_VALUE);
-    private final StringProperty lockOwnerProp = new StringProperty("lockOwner", "");
+    private final LongProperty deadlineProp = new LongProperty("deadline", Protocol.INSTANT_NULL_VALUE);
+    private final StringProperty workerProp = new StringProperty("worker", "");
     private final IntegerProperty retriesProp = new IntegerProperty("retries", -1);
     private final StringProperty typeProp = new StringProperty("type");
     private final ObjectProperty<JobHeaders> headersProp = new ObjectProperty<>("headers", new JobHeaders());
@@ -46,8 +46,8 @@ public class JobRecord extends UnpackedObject
     public JobRecord()
     {
         this
-            .declareProperty(lockTimeProp)
-            .declareProperty(lockOwnerProp)
+            .declareProperty(deadlineProp)
+            .declareProperty(workerProp)
             .declareProperty(retriesProp)
             .declareProperty(typeProp)
             .declareProperty(headersProp)
@@ -55,30 +55,30 @@ public class JobRecord extends UnpackedObject
             .declareProperty(payloadProp);
     }
 
-    public long getLockTime()
+    public long getDeadline()
     {
-        return lockTimeProp.getValue();
+        return deadlineProp.getValue();
     }
 
-    public JobRecord setLockTime(long val)
+    public JobRecord setDeadline(long val)
     {
-        lockTimeProp.setValue(val);
+        deadlineProp.setValue(val);
         return this;
     }
 
-    public DirectBuffer getLockOwner()
+    public DirectBuffer getWorker()
     {
-        return lockOwnerProp.getValue();
+        return workerProp.getValue();
     }
 
-    public JobRecord setLockOwner(DirectBuffer lockOwer)
+    public JobRecord setWorker(DirectBuffer worker)
     {
-        return setLockOwner(lockOwer, 0, lockOwer.capacity());
+        return setWorker(worker, 0, worker.capacity());
     }
 
-    public JobRecord setLockOwner(DirectBuffer lockOwer, int offset, int length)
+    public JobRecord setWorker(DirectBuffer worker, int offset, int length)
     {
-        lockOwnerProp.setValue(lockOwer, offset, length);
+        workerProp.setValue(worker, offset, length);
         return this;
     }
 

@@ -37,8 +37,8 @@ public abstract class JobRecordImpl extends RecordImpl implements JobRecord
     private Map<String, Object> headers = new HashMap<>();
     private Map<String, Object> customHeaders = new HashMap<>();
 
-    private long lockTime = Protocol.INSTANT_NULL_VALUE;
-    private String lockOwner;
+    private long deadline = Protocol.INSTANT_NULL_VALUE;
+    private String worker;
     private Integer retries;
     private String type;
     private final MsgPackField payload;
@@ -56,8 +56,8 @@ public abstract class JobRecordImpl extends RecordImpl implements JobRecord
 
         this.headers = new HashMap<>(base.headers);
         this.customHeaders = new HashMap<>(base.customHeaders);
-        this.lockTime = base.lockTime;
-        this.lockOwner = base.lockOwner;
+        this.deadline = base.deadline;
+        this.worker = base.worker;
         this.retries = base.retries;
         this.type = base.type;
         this.payload = new MsgPackField(base.payload);
@@ -75,27 +75,28 @@ public abstract class JobRecordImpl extends RecordImpl implements JobRecord
     }
 
     @Override
-    @JsonIgnore
-    public Instant getLockExpirationTime()
+//    @JsonIgnore
+    public Instant getDeadline()
     {
-        if (lockTime == Protocol.INSTANT_NULL_VALUE)
+        if (deadline == Protocol.INSTANT_NULL_VALUE)
         {
             return null;
         }
         else
         {
-            return Instant.ofEpochMilli(lockTime);
+            return Instant.ofEpochMilli(deadline);
         }
     }
 
-    public long getLockTime()
+    @JsonProperty("deadline")
+    public long getDeadlineAsLong()
     {
-        return lockTime;
+        return deadline;
     }
 
-    public void setLockTime(long lockTime)
+    public void setDeadline(long deadline)
     {
-        this.lockTime = lockTime;
+        this.deadline = deadline;
     }
 
     @Override
@@ -123,14 +124,14 @@ public abstract class JobRecordImpl extends RecordImpl implements JobRecord
     }
 
     @Override
-    public String getLockOwner()
+    public String getWorker()
     {
-        return lockOwner;
+        return worker;
     }
 
-    public void setLockOwner(String lockOwner)
+    public void setWorker(String worker)
     {
-        this.lockOwner = lockOwner;
+        this.worker = worker;
     }
 
     @Override

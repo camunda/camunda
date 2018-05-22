@@ -40,7 +40,7 @@ import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.util.sched.ScheduledTimer;
 import io.zeebe.util.sched.clock.ActorClock;
 
-public class JobExpireLockStreamProcessor implements StreamProcessorLifecycleAware
+public class JobTimeOutStreamProcessor implements StreamProcessorLifecycleAware
 {
     protected static final int MAP_VALUE_MAX_LENGTH = SIZE_OF_LONG + SIZE_OF_LONG;
 
@@ -55,7 +55,7 @@ public class JobExpireLockStreamProcessor implements StreamProcessorLifecycleAwa
     @Override
     public void onOpen(TypedStreamProcessor streamProcessor)
     {
-        timer = streamProcessor.getActor().runAtFixedRate(JobQueueManagerService.LOCK_EXPIRATION_INTERVAL, this::timeOutJobs);
+        timer = streamProcessor.getActor().runAtFixedRate(JobQueueManagerService.TIME_OUT_INTERVAL, this::timeOutJobs);
         this.writer = streamProcessor.getEnvironment().buildStreamWriter();
         this.reader = streamProcessor.getEnvironment().buildStreamReader();
     }
@@ -84,15 +84,15 @@ public class JobExpireLockStreamProcessor implements StreamProcessorLifecycleAwa
             final DirectBuffer value = entry.getValue();
 
             final long eventPosition = value.getLong(0);
-            final long lockExpirationTime = value.getLong(SIZE_OF_LONG);
+            final long deadline = value.getLong(SIZE_OF_LONG);
 
-            if (lockExpired(lockExpirationTime))
+            if (isExpired(deadline))
             {
                 // TODO: would be nicer to have a consumable channel for timed-out timers
                 //   that we can stop consuming/yield on backpressure
 
                 final TypedRecord<JobRecord> event = reader.readValue(eventPosition, JobRecord.class);
-                final long position = writer.writeFollowUpCommand(event.getKey(), JobIntent.EXPIRE_LOCK, event.getValue());
+                final long position = writer.writeFollowUpCommand(event.getKey(), JobIntent.TIME_OUT, event.getValue());
                 final boolean success = position >= 0;
 
                 if (!success)
@@ -103,9 +103,9 @@ public class JobExpireLockStreamProcessor implements StreamProcessorLifecycleAwa
         }
     }
 
-    private boolean lockExpired(long lockExpirationTime)
+    private boolean isExpired(long deadline)
     {
-        return lockExpirationTime <= ActorClock.currentTimeMillis();
+        return deadline <= ActorClock.currentTimeMillis();
     }
 
     public TypedStreamProcessor createStreamProcessor(TypedStreamEnvironment environment)
@@ -115,10 +115,10 @@ public class JobExpireLockStreamProcessor implements StreamProcessorLifecycleAwa
             @Override
             public void updateState(TypedRecord<JobRecord> event)
             {
-                final long lockTime = event.getValue().getLockTime();
+                final long deadline = event.getValue().getDeadline();
 
                 mapAccessBuffer.putLong(0, event.getPosition());
-                mapAccessBuffer.putLong(SIZE_OF_LONG, lockTime);
+                mapAccessBuffer.putLong(SIZE_OF_LONG, deadline);
 
                 expirationMap.put(event.getKey(), mapAccessBuffer);
             }
@@ -134,8 +134,8 @@ public class JobExpireLockStreamProcessor implements StreamProcessorLifecycleAwa
         };
 
         return environment.newStreamProcessor()
-            .onEvent(ValueType.JOB, JobIntent.LOCKED, registerJob)
-            .onEvent(ValueType.JOB, JobIntent.LOCK_EXPIRED, unregisterJob)
+            .onEvent(ValueType.JOB, JobIntent.ACTIVATED, registerJob)
+            .onEvent(ValueType.JOB, JobIntent.TIMED_OUT, unregisterJob)
             .onEvent(ValueType.JOB, JobIntent.COMPLETED, unregisterJob)
             .onEvent(ValueType.JOB, JobIntent.FAILED, unregisterJob)
             .withListener(this)

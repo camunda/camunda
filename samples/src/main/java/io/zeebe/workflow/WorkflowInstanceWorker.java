@@ -51,14 +51,14 @@ public class WorkflowInstanceWorker
                 System.out.println(String.format(">>> [type: %s, key: %s, lockExpirationTime: %s]\n[headers: %s]\n[payload: %s]\n===",
                         job.getType(),
                         job.getMetadata().getKey(),
-                        job.getLockExpirationTime().toString(),
+                        job.getDeadline().toString(),
                         job.getHeaders(),
                         job.getPayload()));
 
                 client.newCompleteCommand(job).withoutPayload().send().join();
             })
-            .lockOwner(lockOwner)
-            .lockTime(Duration.ofSeconds(10))
+            .name(lockOwner)
+            .timeout(Duration.ofSeconds(10))
             .open();
 
         System.out.println("> Opened.");

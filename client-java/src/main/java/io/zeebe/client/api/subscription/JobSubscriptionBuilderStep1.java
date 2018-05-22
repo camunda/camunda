@@ -77,14 +77,14 @@ public interface JobSubscriptionBuilderStep1
          * over then the job can be assigned again by this or other subscription
          * if it's not completed yet.
          * <p>
-         * If no time is set then the default is used from the configuration.
+         * If no timeout is set, then the default is used from the configuration.
          *
-         * @param lockTime
+         * @param timeout
          *            the time in milliseconds
          *
          * @return the builder for this subscription
          */
-        JobSubscriptionBuilderStep3 lockTime(long lockTime);
+        JobSubscriptionBuilderStep3 timeout(long timeout);
 
         /**
          * Set the time for how long a job is exclusively assigned for this
@@ -97,25 +97,25 @@ public interface JobSubscriptionBuilderStep1
          * <p>
          * If no time is set then the default is used from the configuration.
          *
-         * @param lockTime
+         * @param timeout
          *            the time as duration (e.g. "Duration.ofMinutes(5)")
          *
          * @return the builder for this subscription
          */
-        JobSubscriptionBuilderStep3 lockTime(Duration lockTime);
+        JobSubscriptionBuilderStep3 timeout(Duration timeout);
 
         /**
          * Set the name of the subscription owner.
          * <p>
-         * This name is used to identify the subscription which a job is exclusively assigned to.
+         * This name is used to identify the worker to which a job is exclusively assigned to.
          * <p>
          * If no name is set then the default is used from the configuration.
          *
-         * @param lockOwner the name of the subscription owner (e.g. "payment-service")
+         * @param workerName the name of the worker (e.g. "payment-service")
          *
          * @return the builder for this subscription
          */
-        JobSubscriptionBuilderStep3 lockOwner(String lockOwner);
+        JobSubscriptionBuilderStep3 name(String workerName);
 
         /**
          * Set the maximum number of jobs which will be exclusively assigned to
@@ -136,9 +136,9 @@ public interface JobSubscriptionBuilderStep1
          * <li>A greater value can avoid situations in which the client waits idle for the broker to
          * provide more jobs. This can improve the subscription's throughput.
          * <li>The memory used by the subscription is linear with respect to this value.
-         * <li>The job's lock time starts to run down as soon as the broker pushes the job.
+         * <li>The job's timeout starts to run down as soon as the broker pushes the job.
          * Keep in mind that the following must hold to ensure fluent job handling:
-         * <code>time spent in buffer + time job handler needs until job completion < job lock expiration time</code>.
+         * <code>time spent in buffer + time job handler needs until job completion < job timeout</code>.
          *
          * @param numberOfJobs
          *            the number of assigned jobs

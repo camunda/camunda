@@ -74,15 +74,15 @@ public class JobInstanceStreamProcessorTest
         rule.writeCommand(key, JobIntent.CREATE, job());
         waitForEventWithIntent(JobIntent.CREATED);
 
-        final JobRecord lockedJob = lockedJob(nowPlus(Duration.ofSeconds(30)));
-        rule.writeCommand(key, JobIntent.LOCK, lockedJob);
-        waitForEventWithIntent(JobIntent.LOCKED);
+        final JobRecord activatedJob = activatedJob(nowPlus(Duration.ofSeconds(30)));
+        rule.writeCommand(key, JobIntent.ACTIVATE, activatedJob);
+        waitForEventWithIntent(JobIntent.ACTIVATED);
 
-        rule.writeCommand(key, JobIntent.EXPIRE_LOCK, lockedJob);
-        waitForEventWithIntent(JobIntent.LOCK_EXPIRED);
+        rule.writeCommand(key, JobIntent.TIME_OUT, activatedJob);
+        waitForEventWithIntent(JobIntent.TIMED_OUT);
 
         // when
-        rule.writeCommand(key, JobIntent.COMPLETE, lockedJob);
+        rule.writeCommand(key, JobIntent.COMPLETE, activatedJob);
 
         // then
         waitForEventWithIntent(JobIntent.COMPLETED);
@@ -92,16 +92,16 @@ public class JobInstanceStreamProcessorTest
             .containsExactly(
                     tuple(RecordType.COMMAND, JobIntent.CREATE),
                     tuple(RecordType.EVENT, JobIntent.CREATED),
-                    tuple(RecordType.COMMAND, JobIntent.LOCK),
-                    tuple(RecordType.EVENT, JobIntent.LOCKED),
-                    tuple(RecordType.COMMAND, JobIntent.EXPIRE_LOCK),
-                    tuple(RecordType.EVENT, JobIntent.LOCK_EXPIRED),
+                    tuple(RecordType.COMMAND, JobIntent.ACTIVATE),
+                    tuple(RecordType.EVENT, JobIntent.ACTIVATED),
+                    tuple(RecordType.COMMAND, JobIntent.TIME_OUT),
+                    tuple(RecordType.EVENT, JobIntent.TIMED_OUT),
                     tuple(RecordType.COMMAND, JobIntent.COMPLETE),
                     tuple(RecordType.EVENT, JobIntent.COMPLETED));
     }
 
     @Test
-    public void shouldLockOnlyOnce()
+    public void shouldActivateOnlyOnce()
     {
         // given
         rule.getClock().pinCurrentTime();
@@ -114,26 +114,26 @@ public class JobInstanceStreamProcessorTest
         waitForEventWithIntent(JobIntent.CREATED);
 
         // when
-        rule.writeCommand(key, JobIntent.LOCK, lockedJob(nowPlus(Duration.ofSeconds(30))));
-        rule.writeCommand(key, JobIntent.LOCK, lockedJob(nowPlus(Duration.ofSeconds(30))));
+        rule.writeCommand(key, JobIntent.ACTIVATE, activatedJob(nowPlus(Duration.ofSeconds(30))));
+        rule.writeCommand(key, JobIntent.ACTIVATE, activatedJob(nowPlus(Duration.ofSeconds(30))));
         control.unblock();
 
         // then
-        waitForRejection(JobIntent.LOCK);
+        waitForRejection(JobIntent.ACTIVATE);
 
         final List<TypedRecord<JobRecord>> jobEvents = rule.events().onlyJobRecords().collect(Collectors.toList());
         assertThat(jobEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
                     tuple(RecordType.COMMAND, JobIntent.CREATE),
                     tuple(RecordType.EVENT, JobIntent.CREATED),
-                    tuple(RecordType.COMMAND, JobIntent.LOCK),
-                    tuple(RecordType.COMMAND, JobIntent.LOCK),
-                    tuple(RecordType.EVENT, JobIntent.LOCKED),
-                    tuple(RecordType.COMMAND_REJECTION, JobIntent.LOCK));
+                    tuple(RecordType.COMMAND, JobIntent.ACTIVATE),
+                    tuple(RecordType.COMMAND, JobIntent.ACTIVATE),
+                    tuple(RecordType.EVENT, JobIntent.ACTIVATED),
+                    tuple(RecordType.COMMAND_REJECTION, JobIntent.ACTIVATE));
     }
 
     @Test
-    public void shouldRejectLockIfJobNotFound()
+    public void shouldRejectActivationIfJobNotFound()
     {
         // given
         rule.getClock().pinCurrentTime();
@@ -142,20 +142,20 @@ public class JobInstanceStreamProcessorTest
         rule.runStreamProcessor(this::buildStreamProcessor);
 
         // when
-        rule.writeCommand(key, JobIntent.LOCK, lockedJob(nowPlus(Duration.ofSeconds(30))));
+        rule.writeCommand(key, JobIntent.ACTIVATE, activatedJob(nowPlus(Duration.ofSeconds(30))));
 
         // then
-        waitForRejection(JobIntent.LOCK);
+        waitForRejection(JobIntent.ACTIVATE);
 
         final List<TypedRecord<JobRecord>> jobEvents = rule.events().onlyJobRecords().collect(Collectors.toList());
         assertThat(jobEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
-                    tuple(RecordType.COMMAND, JobIntent.LOCK),
-                    tuple(RecordType.COMMAND_REJECTION, JobIntent.LOCK));
+                    tuple(RecordType.COMMAND, JobIntent.ACTIVATE),
+                    tuple(RecordType.COMMAND_REJECTION, JobIntent.ACTIVATE));
     }
 
     @Test
-    public void shouldExpireLockOnlyOnce()
+    public void shouldExpireActivationOnlyOnce()
     {
         // given
         final long key = 1;
@@ -164,31 +164,31 @@ public class JobInstanceStreamProcessorTest
         rule.writeCommand(key, JobIntent.CREATE, job());
         waitForEventWithIntent(JobIntent.CREATED);
 
-        control.blockAfterJobEvent(e -> e.getMetadata().getIntent() == JobIntent.LOCKED);
+        control.blockAfterJobEvent(e -> e.getMetadata().getIntent() == JobIntent.ACTIVATED);
 
-        final JobRecord lockedJob = lockedJob(nowPlus(Duration.ofSeconds(30)));
-        rule.writeCommand(key, JobIntent.LOCK, lockedJob);
-        waitForEventWithIntent(JobIntent.LOCKED);
+        final JobRecord activatedJob = activatedJob(nowPlus(Duration.ofSeconds(30)));
+        rule.writeCommand(key, JobIntent.ACTIVATE, activatedJob);
+        waitForEventWithIntent(JobIntent.ACTIVATED);
 
         // when
-        rule.writeCommand(key, JobIntent.EXPIRE_LOCK, lockedJob);
-        rule.writeCommand(key, JobIntent.EXPIRE_LOCK, lockedJob);
+        rule.writeCommand(key, JobIntent.TIME_OUT, activatedJob);
+        rule.writeCommand(key, JobIntent.TIME_OUT, activatedJob);
         control.unblock();
 
         // then
-        waitForRejection(JobIntent.EXPIRE_LOCK);
+        waitForRejection(JobIntent.TIME_OUT);
 
         final List<TypedRecord<JobRecord>> jobEvents = rule.events().onlyJobRecords().collect(Collectors.toList());
         assertThat(jobEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
                     tuple(RecordType.COMMAND, JobIntent.CREATE),
                     tuple(RecordType.EVENT, JobIntent.CREATED),
-                    tuple(RecordType.COMMAND, JobIntent.LOCK),
-                    tuple(RecordType.EVENT, JobIntent.LOCKED),
-                    tuple(RecordType.COMMAND, JobIntent.EXPIRE_LOCK),
-                    tuple(RecordType.COMMAND, JobIntent.EXPIRE_LOCK),
-                    tuple(RecordType.EVENT, JobIntent.LOCK_EXPIRED),
-                    tuple(RecordType.COMMAND_REJECTION, JobIntent.EXPIRE_LOCK));
+                    tuple(RecordType.COMMAND, JobIntent.ACTIVATE),
+                    tuple(RecordType.EVENT, JobIntent.ACTIVATED),
+                    tuple(RecordType.COMMAND, JobIntent.TIME_OUT),
+                    tuple(RecordType.COMMAND, JobIntent.TIME_OUT),
+                    tuple(RecordType.EVENT, JobIntent.TIMED_OUT),
+                    tuple(RecordType.COMMAND_REJECTION, JobIntent.TIME_OUT));
     }
 
     private Instant nowPlus(Duration duration)
@@ -207,18 +207,18 @@ public class JobInstanceStreamProcessorTest
         waitForEventWithIntent(JobIntent.CREATED);
 
         // when
-        rule.writeCommand(key, JobIntent.EXPIRE_LOCK, job());
+        rule.writeCommand(key, JobIntent.TIME_OUT, job());
 
         // then
-        waitForRejection(JobIntent.EXPIRE_LOCK);
+        waitForRejection(JobIntent.TIME_OUT);
 
         final List<TypedRecord<JobRecord>> jobEvents = rule.events().onlyJobRecords().collect(Collectors.toList());
         assertThat(jobEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
                     tuple(RecordType.COMMAND, JobIntent.CREATE),
                     tuple(RecordType.EVENT, JobIntent.CREATED),
-                    tuple(RecordType.COMMAND, JobIntent.EXPIRE_LOCK),
-                    tuple(RecordType.COMMAND_REJECTION, JobIntent.EXPIRE_LOCK));
+                    tuple(RecordType.COMMAND, JobIntent.TIME_OUT),
+                    tuple(RecordType.COMMAND_REJECTION, JobIntent.TIME_OUT));
     }
 
     /**
@@ -234,31 +234,31 @@ public class JobInstanceStreamProcessorTest
         rule.writeCommand(key, JobIntent.CREATE, job());
         waitForEventWithIntent(JobIntent.CREATED);
 
-        control.blockAfterJobEvent(e -> e.getMetadata().getIntent() == JobIntent.LOCKED);
+        control.blockAfterJobEvent(e -> e.getMetadata().getIntent() == JobIntent.ACTIVATED);
 
-        final JobRecord lockedJob = lockedJob(nowPlus(Duration.ofSeconds(30)));
-        rule.writeCommand(key, JobIntent.LOCK, lockedJob);
-        waitForEventWithIntent(JobIntent.LOCKED);
+        final JobRecord activatedJob = activatedJob(nowPlus(Duration.ofSeconds(30)));
+        rule.writeCommand(key, JobIntent.ACTIVATE, activatedJob);
+        waitForEventWithIntent(JobIntent.ACTIVATED);
 
         // when
-        rule.writeCommand(key, JobIntent.COMPLETE, lockedJob);
-        rule.writeCommand(key, JobIntent.EXPIRE_LOCK, lockedJob);
+        rule.writeCommand(key, JobIntent.COMPLETE, activatedJob);
+        rule.writeCommand(key, JobIntent.TIME_OUT, activatedJob);
         control.unblock();
 
         // then
-        waitForRejection(JobIntent.EXPIRE_LOCK);
+        waitForRejection(JobIntent.TIME_OUT);
 
         final List<TypedRecord<JobRecord>> jobEvents = rule.events().onlyJobRecords().collect(Collectors.toList());
         assertThat(jobEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
                     tuple(RecordType.COMMAND, JobIntent.CREATE),
                     tuple(RecordType.EVENT, JobIntent.CREATED),
-                    tuple(RecordType.COMMAND, JobIntent.LOCK),
-                    tuple(RecordType.EVENT, JobIntent.LOCKED),
+                    tuple(RecordType.COMMAND, JobIntent.ACTIVATE),
+                    tuple(RecordType.EVENT, JobIntent.ACTIVATED),
                     tuple(RecordType.COMMAND, JobIntent.COMPLETE),
-                    tuple(RecordType.COMMAND, JobIntent.EXPIRE_LOCK),
+                    tuple(RecordType.COMMAND, JobIntent.TIME_OUT),
                     tuple(RecordType.EVENT, JobIntent.COMPLETED),
-                    tuple(RecordType.COMMAND_REJECTION, JobIntent.EXPIRE_LOCK));
+                    tuple(RecordType.COMMAND_REJECTION, JobIntent.TIME_OUT));
     }
 
 
@@ -272,31 +272,31 @@ public class JobInstanceStreamProcessorTest
         rule.writeCommand(key, JobIntent.CREATE, job());
         waitForEventWithIntent(JobIntent.CREATED);
 
-        control.blockAfterJobEvent(e -> e.getMetadata().getIntent() == JobIntent.LOCKED);
+        control.blockAfterJobEvent(e -> e.getMetadata().getIntent() == JobIntent.ACTIVATED);
 
-        final JobRecord lockedJob = lockedJob(nowPlus(Duration.ofSeconds(30)));
-        rule.writeCommand(key, JobIntent.LOCK, lockedJob);
-        waitForEventWithIntent(JobIntent.LOCKED);
+        final JobRecord activatedJob = activatedJob(nowPlus(Duration.ofSeconds(30)));
+        rule.writeCommand(key, JobIntent.ACTIVATE, activatedJob);
+        waitForEventWithIntent(JobIntent.ACTIVATED);
 
         // when
-        rule.writeCommand(key, JobIntent.FAIL, lockedJob);
-        rule.writeCommand(key, JobIntent.EXPIRE_LOCK, lockedJob);
+        rule.writeCommand(key, JobIntent.FAIL, activatedJob);
+        rule.writeCommand(key, JobIntent.TIME_OUT, activatedJob);
         control.unblock();
 
         // then
-        waitForRejection(JobIntent.EXPIRE_LOCK);
+        waitForRejection(JobIntent.TIME_OUT);
 
         final List<TypedRecord<JobRecord>> jobEvents = rule.events().onlyJobRecords().collect(Collectors.toList());
         assertThat(jobEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
                     tuple(RecordType.COMMAND, JobIntent.CREATE),
                     tuple(RecordType.EVENT, JobIntent.CREATED),
-                    tuple(RecordType.COMMAND, JobIntent.LOCK),
-                    tuple(RecordType.EVENT, JobIntent.LOCKED),
+                    tuple(RecordType.COMMAND, JobIntent.ACTIVATE),
+                    tuple(RecordType.EVENT, JobIntent.ACTIVATED),
                     tuple(RecordType.COMMAND, JobIntent.FAIL),
-                    tuple(RecordType.COMMAND, JobIntent.EXPIRE_LOCK),
+                    tuple(RecordType.COMMAND, JobIntent.TIME_OUT),
                     tuple(RecordType.EVENT, JobIntent.FAILED),
-                    tuple(RecordType.COMMAND_REJECTION, JobIntent.EXPIRE_LOCK));
+                    tuple(RecordType.COMMAND_REJECTION, JobIntent.TIME_OUT));
     }
 
     @Test
@@ -307,16 +307,16 @@ public class JobInstanceStreamProcessorTest
         rule.runStreamProcessor(this::buildStreamProcessor);
 
         // when
-        rule.writeCommand(key, JobIntent.EXPIRE_LOCK, lockedJob(nowPlus(Duration.ofSeconds(30))));
+        rule.writeCommand(key, JobIntent.TIME_OUT, activatedJob(nowPlus(Duration.ofSeconds(30))));
 
         // then
-        waitForRejection(JobIntent.EXPIRE_LOCK);
+        waitForRejection(JobIntent.TIME_OUT);
 
         final List<TypedRecord<JobRecord>> jobEvents = rule.events().onlyJobRecords().collect(Collectors.toList());
         assertThat(jobEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
-                    tuple(RecordType.COMMAND, JobIntent.EXPIRE_LOCK),
-                    tuple(RecordType.COMMAND_REJECTION, JobIntent.EXPIRE_LOCK));
+                    tuple(RecordType.COMMAND, JobIntent.TIME_OUT),
+                    tuple(RecordType.COMMAND_REJECTION, JobIntent.TIME_OUT));
     }
 
     @Test
@@ -345,7 +345,7 @@ public class JobInstanceStreamProcessorTest
     }
 
     @Test
-    public void shouldCancelLockedJob()
+    public void shouldCancelActivatedJob()
     {
         // given
         final long key = 1;
@@ -354,12 +354,12 @@ public class JobInstanceStreamProcessorTest
         rule.writeCommand(key, JobIntent.CREATE, job());
         waitForEventWithIntent(JobIntent.CREATED);
 
-        final JobRecord lockedJob = lockedJob(nowPlus(Duration.ofSeconds(30)));
-        rule.writeCommand(key, JobIntent.LOCK, lockedJob);
-        waitForEventWithIntent(JobIntent.LOCKED);
+        final JobRecord activatedJob = activatedJob(nowPlus(Duration.ofSeconds(30)));
+        rule.writeCommand(key, JobIntent.ACTIVATE, activatedJob);
+        waitForEventWithIntent(JobIntent.ACTIVATED);
 
         // when
-        rule.writeCommand(key, JobIntent.CANCEL, lockedJob);
+        rule.writeCommand(key, JobIntent.CANCEL, activatedJob);
 
         // then
         waitForEventWithIntent(JobIntent.CANCELED);
@@ -369,8 +369,8 @@ public class JobInstanceStreamProcessorTest
             .containsExactly(
                 tuple(RecordType.COMMAND, JobIntent.CREATE),
                 tuple(RecordType.EVENT, JobIntent.CREATED),
-                tuple(RecordType.COMMAND, JobIntent.LOCK),
-                tuple(RecordType.EVENT, JobIntent.LOCKED),
+                tuple(RecordType.COMMAND, JobIntent.ACTIVATE),
+                tuple(RecordType.EVENT, JobIntent.ACTIVATED),
                 tuple(RecordType.COMMAND, JobIntent.CANCEL),
                 tuple(RecordType.EVENT, JobIntent.CANCELED));
     }
@@ -385,15 +385,15 @@ public class JobInstanceStreamProcessorTest
         rule.writeCommand(key, JobIntent.CREATE, job());
         waitForEventWithIntent(JobIntent.CREATED);
 
-        final JobRecord lockedJob = lockedJob(nowPlus(Duration.ofSeconds(30)));
-        rule.writeCommand(key, JobIntent.LOCK, lockedJob);
-        waitForEventWithIntent(JobIntent.LOCKED);
+        final JobRecord activatedJob = activatedJob(nowPlus(Duration.ofSeconds(30)));
+        rule.writeCommand(key, JobIntent.ACTIVATE, activatedJob);
+        waitForEventWithIntent(JobIntent.ACTIVATED);
 
-        rule.writeCommand(key, JobIntent.FAIL, lockedJob);
+        rule.writeCommand(key, JobIntent.FAIL, activatedJob);
         waitForEventWithIntent(JobIntent.FAILED);
 
         // when
-        rule.writeCommand(key, JobIntent.CANCEL, lockedJob);
+        rule.writeCommand(key, JobIntent.CANCEL, activatedJob);
 
         // then
         waitForEventWithIntent(JobIntent.CANCELED);
@@ -403,8 +403,8 @@ public class JobInstanceStreamProcessorTest
             .containsExactly(
                 tuple(RecordType.COMMAND, JobIntent.CREATE),
                 tuple(RecordType.EVENT, JobIntent.CREATED),
-                tuple(RecordType.COMMAND, JobIntent.LOCK),
-                tuple(RecordType.EVENT, JobIntent.LOCKED),
+                tuple(RecordType.COMMAND, JobIntent.ACTIVATE),
+                tuple(RecordType.EVENT, JobIntent.ACTIVATED),
                 tuple(RecordType.COMMAND, JobIntent.FAIL),
                 tuple(RecordType.EVENT, JobIntent.FAILED),
                 tuple(RecordType.COMMAND, JobIntent.CANCEL),
@@ -422,15 +422,15 @@ public class JobInstanceStreamProcessorTest
         rule.writeCommand(key, JobIntent.CREATE, job());
         waitForEventWithIntent(JobIntent.CREATED);
 
-        final JobRecord lockedJob = lockedJob(nowPlus(Duration.ofSeconds(30)));
-        rule.writeCommand(key, JobIntent.LOCK, lockedJob);
-        waitForEventWithIntent(JobIntent.LOCKED);
+        final JobRecord activatedJob = activatedJob(nowPlus(Duration.ofSeconds(30)));
+        rule.writeCommand(key, JobIntent.ACTIVATE, activatedJob);
+        waitForEventWithIntent(JobIntent.ACTIVATED);
 
-        rule.writeCommand(key, JobIntent.COMPLETE, lockedJob);
+        rule.writeCommand(key, JobIntent.COMPLETE, activatedJob);
         waitForEventWithIntent(JobIntent.COMPLETED);
 
         // when
-        rule.writeCommand(key, JobIntent.CANCEL, lockedJob);
+        rule.writeCommand(key, JobIntent.CANCEL, activatedJob);
 
         // then
         waitForRejection(JobIntent.CANCEL);
@@ -440,8 +440,8 @@ public class JobInstanceStreamProcessorTest
             .containsExactly(
                 tuple(RecordType.COMMAND, JobIntent.CREATE),
                 tuple(RecordType.EVENT, JobIntent.CREATED),
-                tuple(RecordType.COMMAND, JobIntent.LOCK),
-                tuple(RecordType.EVENT, JobIntent.LOCKED),
+                tuple(RecordType.COMMAND, JobIntent.ACTIVATE),
+                tuple(RecordType.EVENT, JobIntent.ACTIVATED),
                 tuple(RecordType.COMMAND, JobIntent.COMPLETE),
                 tuple(RecordType.EVENT, JobIntent.COMPLETED),
                 tuple(RecordType.COMMAND, JobIntent.CANCEL),
@@ -467,13 +467,13 @@ public class JobInstanceStreamProcessorTest
         return event;
     }
 
-    private JobRecord lockedJob(Instant lockTime)
+    private JobRecord activatedJob(Instant deadline)
     {
         final JobRecord event = new JobRecord();
 
         event.setType(BufferUtil.wrapString("foo"));
-        event.setLockOwner(BufferUtil.wrapString("bar"));
-        event.setLockTime(lockTime.toEpochMilli());
+        event.setWorker(BufferUtil.wrapString("bar"));
+        event.setDeadline(deadline.toEpochMilli());
 
         return event;
     }

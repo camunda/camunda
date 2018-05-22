@@ -196,7 +196,7 @@ public class TestTopicClient
 
         final SubscribedRecord jobEvent = apiRule
             .subscribedEvents()
-            .filter(jobRecords(JobIntent.LOCKED).and(jobType(jobType)).and(jobEventFilter))
+            .filter(jobRecords(JobIntent.ACTIVATED).and(jobType(jobType)).and(jobEventFilter))
             .findFirst()
             .orElseThrow(() -> new AssertionError("Expected job locked event but not found."));
 

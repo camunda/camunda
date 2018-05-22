@@ -27,8 +27,8 @@ public class JobSubscriptionRequest extends UnpackedObject
 
     protected StringProperty jobTypeProp = new StringProperty("jobType", "");
 
-    protected LongProperty lockDurationProp = new LongProperty("lockDuration", -1);
-    protected StringProperty lockOwnerProp = new StringProperty("lockOwner", "");
+    protected LongProperty timeoutProp = new LongProperty("timeout", -1);
+    protected StringProperty workerProp = new StringProperty("worker", "");
 
     protected IntegerProperty creditsProp = new IntegerProperty("credits", -1);
 
@@ -36,8 +36,8 @@ public class JobSubscriptionRequest extends UnpackedObject
     {
         this.declareProperty(subscriberKeyProp)
             .declareProperty(jobTypeProp)
-            .declareProperty(lockDurationProp)
-            .declareProperty(lockOwnerProp)
+            .declareProperty(timeoutProp)
+            .declareProperty(workerProp)
             .declareProperty(creditsProp);
     }
 
@@ -53,9 +53,9 @@ public class JobSubscriptionRequest extends UnpackedObject
         return this;
     }
 
-    public JobSubscriptionRequest setLockDuration(long lockDuration)
+    public JobSubscriptionRequest setTimeout(long timeout)
     {
-        this.lockDurationProp.setValue(lockDuration);
+        this.timeoutProp.setValue(timeout);
         return this;
     }
 
@@ -65,9 +65,9 @@ public class JobSubscriptionRequest extends UnpackedObject
         return this;
     }
 
-    public JobSubscriptionRequest setLockOwner(DirectBuffer lockOwner)
+    public JobSubscriptionRequest setWorker(DirectBuffer worker)
     {
-        this.lockOwnerProp.setValue(lockOwner);
+        this.workerProp.setValue(worker);
         return this;
     }
 
@@ -76,14 +76,14 @@ public class JobSubscriptionRequest extends UnpackedObject
         return subscriberKeyProp.getValue();
     }
 
-    public DirectBuffer getLockJobType()
+    public DirectBuffer getJobType()
     {
         return jobTypeProp.getValue();
     }
 
-    public long getLockDuration()
+    public long getTimeout()
     {
-        return lockDurationProp.getValue();
+        return timeoutProp.getValue();
     }
 
     public int getCredits()
@@ -91,9 +91,9 @@ public class JobSubscriptionRequest extends UnpackedObject
         return creditsProp.getValue();
     }
 
-    public DirectBuffer getLockOwner()
+    public DirectBuffer getWorker()
     {
-        return lockOwnerProp.getValue();
+        return workerProp.getValue();
     }
 
 }

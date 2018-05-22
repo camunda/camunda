@@ -83,8 +83,8 @@ public class CreateJobTest
             .intent(JobIntent.CREATED)
             .value()
               .allOf((r) -> r.getCommand())
-              .put("lockTime", Protocol.INSTANT_NULL_VALUE)
-              .put("lockOwner", "")
+              .put("deadline", Protocol.INSTANT_NULL_VALUE)
+              .put("worker", "")
               .done()
             .register();
 
@@ -112,7 +112,7 @@ public class CreateJobTest
                 entry("type", "fooType"),
                 entry("headers", new HashMap<>()),
                 entry("customHeaders", Maps.newHashMap("beverage", "apple juice")),
-                entry("lockTime", Protocol.INSTANT_NULL_VALUE),
+                entry("deadline", Protocol.INSTANT_NULL_VALUE),
                 entry("payload", converter.convertToMsgPack(payload)));
 
         assertThat(job.getKey()).isEqualTo(123L);
@@ -124,8 +124,8 @@ public class CreateJobTest
         assertThat(job.getState()).isEqualTo(JobState.CREATED);
         assertThat(job.getHeaders()).isEmpty();
         assertThat(job.getCustomHeaders()).containsOnly(entry("beverage", "apple juice"));
-        assertThat(job.getLockExpirationTime()).isNull();
-        assertThat(job.getLockOwner()).isEmpty();
+        assertThat(job.getDeadline()).isNull();
+        assertThat(job.getWorker()).isEmpty();
         assertThat(job.getRetries()).isEqualTo(3);
         assertThat(job.getType()).isEqualTo("fooType");
         assertThat(job.getPayload()).isEqualTo(payload);
@@ -175,8 +175,8 @@ public class CreateJobTest
             .intent(JobIntent.CREATED)
             .value()
               .allOf((r) -> r.getCommand())
-              .put("lockTime", Protocol.INSTANT_NULL_VALUE)
-              .put("lockOwner", "")
+              .put("deadline", Protocol.INSTANT_NULL_VALUE)
+              .put("worker", "")
               .done()
             .register();
 

@@ -102,8 +102,8 @@ public class JobSubscriptionTest
                 .newJobSubscription()
                 .jobType("bar")
                 .handler(DO_NOTHING)
-                .lockOwner("foo")
-                .lockTime(10000L)
+                .name("foo")
+                .timeout(10000L)
                 .bufferSize(456)
                 .open();
 
@@ -116,8 +116,8 @@ public class JobSubscriptionTest
         assertThat(subscriptionRequest.partitionId()).isEqualTo(clientRule.getDefaultPartitionId());
 
         assertThat(subscriptionRequest.getData()).contains(
-                entry("lockOwner", "foo"),
-                entry("lockDuration", 10000),
+                entry("worker", "foo"),
+                entry("timeout", 10000),
                 entry("jobType", "bar"),
                 entry("credits", 456));
     }
@@ -133,8 +133,8 @@ public class JobSubscriptionTest
                 .newJobSubscription()
                 .jobType("bar")
                 .handler(DO_NOTHING)
-                .lockOwner("foo")
-                .lockTime(10000L)
+                .name("foo")
+                .timeout(10000L)
                 .open();
 
         // when
@@ -166,8 +166,8 @@ public class JobSubscriptionTest
             .newJobSubscription()
             .jobType(null)
             .handler(DO_NOTHING)
-            .lockOwner("foo")
-            .lockTime(10000L)
+            .name("foo")
+            .timeout(10000L)
             .open();
     }
 
@@ -186,8 +186,8 @@ public class JobSubscriptionTest
             .newJobSubscription()
             .jobType("bar")
             .handler(null)
-            .lockOwner("foo")
-            .lockTime(10000L)
+            .name("foo")
+            .timeout(10000L)
             .open();
     }
 
@@ -209,8 +209,8 @@ public class JobSubscriptionTest
             .newJobSubscription()
             .jobType("bar")
             .handler(DO_NOTHING)
-            .lockOwner("foo")
-            .lockTime(10000L)
+            .name("foo")
+            .timeout(10000L)
             .open();
 
         // then
@@ -232,8 +232,8 @@ public class JobSubscriptionTest
             .newJobSubscription()
             .jobType("bar")
             .handler(DO_NOTHING)
-            .lockOwner("foo")
-            .lockTime(10000L)
+            .name("foo")
+            .timeout(10000L)
             .bufferSize(bufferSize)
             .open();
 
@@ -245,27 +245,27 @@ public class JobSubscriptionTest
     }
 
     @Test
-    public void shouldValidateLockTimePositive()
+    public void shouldValidateTimeoutPositive()
     {
         // given
         broker.stubJobSubscriptionApi(123L);
 
         // then
         exception.expect(RuntimeException.class);
-        exception.expectMessage("lockTime must be greater than 0");
+        exception.expectMessage("timeout must be greater than 0");
 
         // when
         clientRule.subscriptionClient()
             .newJobSubscription()
             .jobType("bar")
             .handler(DO_NOTHING)
-            .lockOwner("foo")
-            .lockTime(-1L)
+            .name("foo")
+            .timeout(-1L)
             .open();
     }
 
     @Test
-    public void shouldOpenSubscriptionWithLockTimeAsDuration()
+    public void shouldOpenSubscriptionWithTimeoutAsDuration()
     {
         // given
         broker.stubJobSubscriptionApi(123L);
@@ -275,15 +275,15 @@ public class JobSubscriptionTest
             .newJobSubscription()
             .jobType("bar")
             .handler(DO_NOTHING)
-            .lockOwner("foo")
-            .lockTime(Duration.ofDays(10))
+            .name("foo")
+            .timeout(Duration.ofDays(10))
             .open();
 
         // then
         final ControlMessageRequest subscriptionRequest = getSubscribeRequests().findFirst().get();
 
         assertThat(subscriptionRequest.getData()).contains(
-                entry("lockDuration", (int) TimeUnit.DAYS.toMillis(10L)));
+                entry("timeout", (int) TimeUnit.DAYS.toMillis(10L)));
     }
 
     @Test
@@ -305,8 +305,8 @@ public class JobSubscriptionTest
             .newJobSubscription()
             .jobType("bar")
             .handler(DO_NOTHING)
-            .lockOwner("foo")
-            .lockTime(Duration.ofDays(10))
+            .name("foo")
+            .timeout(Duration.ofDays(10))
             .open();
     }
 
@@ -322,8 +322,8 @@ public class JobSubscriptionTest
             .newJobSubscription()
             .jobType("bar")
             .handler(handler)
-            .lockOwner("foo")
-            .lockTime(Duration.ofDays(10))
+            .name("foo")
+            .timeout(Duration.ofDays(10))
             .open();
 
         final RemoteAddress clientAddress = getSubscribeRequests().findFirst().get().getSource();
@@ -334,7 +334,7 @@ public class JobSubscriptionTest
 
         final Map<String, Object> jobHeaders = new HashMap<>();
         jobPayload.put("headerKey", "headerValue");
-        final long lockTime = System.currentTimeMillis();
+        final long deadline = System.currentTimeMillis();
 
         // when
         broker.newSubscribedEvent()
@@ -343,12 +343,12 @@ public class JobSubscriptionTest
             .position(5L)
             .recordType(RecordType.EVENT)
             .valueType(ValueType.JOB)
-            .intent(JobIntent.LOCKED)
+            .intent(JobIntent.ACTIVATED)
             .subscriberKey(123L)
             .subscriptionType(SubscriptionType.JOB_SUBSCRIPTION)
             .value()
                 .put("type", "type")
-                .put("lockTime", lockTime)
+                .put("deadline", deadline)
                 .put("retries", 3)
                 .put("payload", msgPackHelper.encodeAsMsgPack(jobPayload))
                 .put("headers", jobHeaders)
@@ -365,7 +365,7 @@ public class JobSubscriptionTest
         assertThat(job.getMetadata().getKey()).isEqualTo(4L);
         assertThat(job.getType()).isEqualTo("type");
         assertThat(job.getHeaders()).isEqualTo(jobHeaders);
-        assertThat(job.getLockExpirationTime()).isEqualTo(Instant.ofEpochMilli(lockTime));
+        assertThat(job.getDeadline()).isEqualTo(Instant.ofEpochMilli(deadline));
 
         final ObjectMapper objectMapper = new ObjectMapper();
         @SuppressWarnings("unchecked")
@@ -385,8 +385,8 @@ public class JobSubscriptionTest
             .newJobSubscription()
             .jobType("bar")
             .handler(handler1)
-            .lockOwner("foo")
-            .lockTime(Duration.ofDays(10))
+            .name("foo")
+            .timeout(Duration.ofDays(10))
             .open();
 
         final RecordingJobHandler handler2 = new RecordingJobHandler();
@@ -395,15 +395,15 @@ public class JobSubscriptionTest
             .newJobSubscription()
             .jobType("bar")
             .handler(handler2)
-            .lockOwner("bar")
-            .lockTime(Duration.ofDays(10))
+            .name("bar")
+            .timeout(Duration.ofDays(10))
             .open();
 
         final RemoteAddress clientAddress = getSubscribeRequests().findFirst().get().getSource();
 
         // when
-        broker.pushLockedJob(clientAddress, 123L, 4L, 5L, "foo", "type1");
-        broker.pushLockedJob(clientAddress, 124L, 5L, 6L, "bar", "type2");
+        broker.pushActivatedJob(clientAddress, 123L, 4L, 5L, "foo", "type1");
+        broker.pushActivatedJob(clientAddress, 124L, 5L, 6L, "bar", "type2");
 
         // then
         TestUtil.waitUntil(() -> !handler1.getHandledJobs().isEmpty());
@@ -435,14 +435,14 @@ public class JobSubscriptionTest
             .newJobSubscription()
             .jobType("bar")
             .handler(handler)
-            .lockOwner("foo")
-            .lockTime(10000L)
+            .name("foo")
+            .timeout(10000L)
             .open();
 
         final RemoteAddress clientAddress = getSubscribeRequests().findFirst().get().getSource();
 
         // when
-        broker.pushLockedJob(clientAddress, 123L, 4L, 5L, "foo", "bar");
+        broker.pushActivatedJob(clientAddress, 123L, 4L, 5L, "foo", "bar");
 
         // then
         Thread.sleep(1000L);
@@ -463,14 +463,14 @@ public class JobSubscriptionTest
             .newJobSubscription()
             .jobType("bar")
             .handler((c, t) -> c.newCompleteCommand(t).payload("{\"a\": 1}").send().join())
-            .lockOwner("foo")
-            .lockTime(10000L)
+            .name("foo")
+            .timeout(10000L)
             .open();
 
         final RemoteAddress eventSource = getSubscribeRequests().findFirst().get().getSource();
 
         // when
-        broker.pushLockedJob(eventSource, 123L, 4L, 5L, "foo", "bar");
+        broker.pushActivatedJob(eventSource, 123L, 4L, 5L, "foo", "bar");
 
         // then
         final ExecuteCommandRequest jobRequest = TestUtil.doRepeatedly(() -> broker.getReceivedCommandRequests().stream()
@@ -484,7 +484,7 @@ public class JobSubscriptionTest
         assertThat(jobRequest.intent()).isEqualTo(JobIntent.COMPLETE);
         assertThat(jobRequest.getCommand())
             .containsEntry("type", "bar")
-            .containsEntry("lockOwner", "foo")
+            .containsEntry("worker", "foo")
             .containsEntry("payload", msgPackConverter.convertToMsgPack("{\"a\": 1}"));
     }
 
@@ -499,14 +499,14 @@ public class JobSubscriptionTest
             .newJobSubscription()
             .jobType("bar")
             .handler((c, t) -> c.newCompleteCommand(t).withoutPayload().send().join())
-            .lockOwner("foo")
-            .lockTime(10000L)
+            .name("foo")
+            .timeout(10000L)
             .open();
 
         final RemoteAddress eventSource = getSubscribeRequests().findFirst().get().getSource();
 
         // when
-        broker.pushLockedJob(eventSource, 123L, 4L, 5L, "foo", "bar");
+        broker.pushActivatedJob(eventSource, 123L, 4L, 5L, "foo", "bar");
 
         // then
         final ExecuteCommandRequest jobRequest = TestUtil.doRepeatedly(() -> broker.getReceivedCommandRequests().stream()
@@ -520,7 +520,7 @@ public class JobSubscriptionTest
         assertThat(jobRequest.intent()).isEqualTo(JobIntent.COMPLETE);
         assertThat(jobRequest.getCommand())
             .containsEntry("type", "bar")
-            .containsEntry("lockOwner", "foo")
+            .containsEntry("worker", "foo")
             .doesNotContainKey("payload");
     }
 
@@ -538,14 +538,14 @@ public class JobSubscriptionTest
             {
                 throw new RuntimeException("expected failure");
             })
-            .lockOwner("foo")
-            .lockTime(10000L)
+            .name("foo")
+            .timeout(10000L)
             .open();
 
         final RemoteAddress clientAddress = getSubscribeRequests().findFirst().get().getSource();
 
         // when
-        broker.pushLockedJob(clientAddress, 123L, 4L, 5L, "foo", "bar");
+        broker.pushActivatedJob(clientAddress, 123L, 4L, 5L, "foo", "bar");
 
         // then
         final ExecuteCommandRequest jobRequest = TestUtil.doRepeatedly(() -> broker.getReceivedCommandRequests().stream()
@@ -559,7 +559,7 @@ public class JobSubscriptionTest
         assertThat(jobRequest.intent()).isEqualTo(JobIntent.FAIL);
         assertThat(jobRequest.getCommand())
             .containsEntry("type", "bar")
-            .containsEntry("lockOwner", "foo");
+            .containsEntry("worker", "foo");
     }
 
     @Test
@@ -572,8 +572,8 @@ public class JobSubscriptionTest
             .newJobSubscription()
             .jobType("bar")
             .handler(DO_NOTHING)
-            .lockOwner("foo")
-            .lockTime(10000L)
+            .name("foo")
+            .timeout(10000L)
             .open();
 
         // when
@@ -616,21 +616,21 @@ public class JobSubscriptionTest
             .newJobSubscription()
             .jobType("foo")
             .handler(handler)
-            .lockOwner("owner")
-            .lockTime(10000L)
+            .name("owner")
+            .timeout(10000L)
             .open();
 
         final RemoteAddress clientAddress = broker.getReceivedControlMessageRequestsByType(ControlMessageType.ADD_JOB_SUBSCRIPTION).get(0).getSource();
 
         for (int i = 0; i < jobCapacity + numExecutionThreads; i++)
         {
-            broker.pushLockedJob(clientAddress, 123L, i, i, "owner", "foo");
+            broker.pushActivatedJob(clientAddress, 123L, i, i, "owner", "foo");
         }
 
         TestUtil.waitUntil(() -> handler.numWaitingThreads.get() > 0);
 
         // pushing one more event, exceeding client capacity
-        broker.pushLockedJob(clientAddress, 123L, Integer.MAX_VALUE, Integer.MAX_VALUE, "owner", "foo");
+        broker.pushActivatedJob(clientAddress, 123L, Integer.MAX_VALUE, Integer.MAX_VALUE, "owner", "foo");
 
         // waiting for the client to receive all pending jobs
         Thread.sleep(500L);
@@ -666,8 +666,8 @@ public class JobSubscriptionTest
             .newJobSubscription()
             .jobType("foo")
             .handler(jobHandler)
-            .lockOwner("owner")
-            .lockTime(10000L)
+            .name("owner")
+            .timeout(10000L)
             .bufferSize(subscriptionCapacity)
             .open();
 
@@ -675,7 +675,7 @@ public class JobSubscriptionTest
 
         for (int i = 0; i < subscriptionCapacity; i++)
         {
-            broker.pushLockedJob(clientAddress, 123L, i, i, "owner", "foo");
+            broker.pushActivatedJob(clientAddress, 123L, i, i, "owner", "foo");
         }
 
 
@@ -703,8 +703,8 @@ public class JobSubscriptionTest
             .newJobSubscription()
             .jobType("foo")
             .handler(DO_NOTHING)
-            .lockOwner("owner")
-            .lockTime(10000L)
+            .name("owner")
+            .timeout(10000L)
             .open();
 
         // when
@@ -715,8 +715,8 @@ public class JobSubscriptionTest
 
         final ControlMessageRequest reopenRequest = getSubscribeRequests().skip(1).findFirst().get();
         assertThat(reopenRequest.getData()).contains(
-            entry("lockOwner", "owner"),
-            entry("lockDuration", 10000),
+            entry("worker", "owner"),
+            entry("timeout", 10000),
             entry("jobType", "foo"));
     }
 
@@ -766,8 +766,8 @@ public class JobSubscriptionTest
             .newJobSubscription()
             .jobType("type")
             .handler(handler)
-            .lockOwner("owner")
-            .lockTime(10000L)
+            .name("owner")
+            .timeout(10000L)
             .bufferSize(subscriptionCapacity)
             .open();
 
@@ -776,14 +776,14 @@ public class JobSubscriptionTest
         // handling these jobs should not yet trigger replenishment; the next handled job would
         for (int i = 0; i < jobsToHandleBeforeReplenishment; i++)
         {
-            broker.pushLockedJob(clientAddress, 123L, 4L + i, 5L + i, "foo", "type");
+            broker.pushActivatedJob(clientAddress, 123L, 4L + i, 5L + i, "foo", "type");
         }
         waitUntil(() -> handler.numHandledEvents.get() == jobsToHandleBeforeReplenishment);
 
         handler.shouldWait = true;
         for (int i = 0; i < NUM_EXECUTION_THREADS; i++)
         {
-            broker.pushLockedJob(clientAddress, 123L, 4L + i, 5L + i, "foo", "type");
+            broker.pushActivatedJob(clientAddress, 123L, 4L + i, 5L + i, "foo", "type");
         }
         waitUntil(() -> handler.numWaitingThreads.get() == NUM_EXECUTION_THREADS);
 
@@ -809,7 +809,7 @@ public class JobSubscriptionTest
     }
 
     @Test
-    public void shouldApplyDefaultsToLockOwnerAndTime()
+    public void shouldApplyDefaultsToWorkerNameAndTimeout()
     {
         // given
         broker.stubJobSubscriptionApi(123L);
@@ -826,8 +826,8 @@ public class JobSubscriptionTest
         assertThat(subscriptionRequest.messageType()).isEqualByComparingTo(ControlMessageType.ADD_JOB_SUBSCRIPTION);
 
         assertThat(subscriptionRequest.getData())
-            .containsEntry("lockOwner", client.getConfiguration().getDefaultJobLockOwner())
-            .containsEntry("lockDuration", (int) client.getConfiguration().getDefaultJobLockTime().toMillis());
+            .containsEntry("worker", client.getConfiguration().getDefaultJobWorkerName())
+            .containsEntry("timeout", (int) client.getConfiguration().getDefaultJobTimeout().toMillis());
     }
 
     protected void failJobFailure()

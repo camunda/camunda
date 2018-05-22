@@ -92,8 +92,8 @@ public class JobSubscriptionTest
         subscriptionClient.newJobSubscription()
             .jobType("foo")
             .handler(jobHandler)
-            .lockTime(Duration.ofMinutes(5))
-            .lockOwner("test")
+            .timeout(Duration.ofMinutes(5))
+            .name("test")
             .open();
 
         // then
@@ -117,8 +117,8 @@ public class JobSubscriptionTest
         subscriptionClient.newJobSubscription()
             .jobType("foo")
             .handler(jobHandler)
-            .lockTime(Duration.ofMinutes(5))
-            .lockOwner("test")
+            .timeout(Duration.ofMinutes(5))
+            .name("test")
             .open();
 
         waitUntil(() -> !jobHandler.getHandledJobs().isEmpty());
@@ -134,15 +134,15 @@ public class JobSubscriptionTest
         waitUntil(() -> eventRecorder.hasJobEvent(state(JobState.COMPLETED)));
 
         final JobCommand createCommand = eventRecorder.getJobCommands(jobCommand(JobCommandName.CREATE)).get(0);
-        assertThat(createCommand.getLockExpirationTime()).isNull();
-        assertThat(createCommand.getLockOwner()).isNull();
+        assertThat(createCommand.getDeadline()).isNull();
+        assertThat(createCommand.getWorker()).isNull();
 
         final JobEvent createdEvent = eventRecorder.getJobEvents(JobState.CREATED).get(0);
-        assertThat(createdEvent.getLockExpirationTime()).isNull();
+        assertThat(createdEvent.getDeadline()).isNull();
 
-        final JobEvent lockedEvent = eventRecorder.getJobEvents(JobState.LOCKED).get(0);
-        assertThat(lockedEvent.getLockExpirationTime()).isNotNull();
-        assertThat(lockedEvent.getLockOwner()).isEqualTo("test");
+        final JobEvent lockedEvent = eventRecorder.getJobEvents(JobState.ACTIVATED).get(0);
+        assertThat(lockedEvent.getDeadline()).isNotNull();
+        assertThat(lockedEvent.getWorker()).isEqualTo("test");
     }
 
     @Test
@@ -168,8 +168,8 @@ public class JobSubscriptionTest
         subscriptionClient.newJobSubscription()
             .jobType("foo")
             .handler(jobHandler)
-            .lockTime(Duration.ofMinutes(5))
-            .lockOwner("test")
+            .timeout(Duration.ofMinutes(5))
+            .name("test")
             .open();
 
         // then
@@ -180,7 +180,7 @@ public class JobSubscriptionTest
         final JobEvent subscribedJob = jobHandler.getHandledJobs().get(0);
         assertThat(subscribedJob.getMetadata().getKey()).isEqualTo(createdEvent.getKey());
         assertThat(subscribedJob.getType()).isEqualTo("foo");
-        assertThat(subscribedJob.getLockExpirationTime()).isAfter(Instant.now());
+        assertThat(subscribedJob.getDeadline()).isAfter(Instant.now());
 
         waitUntil(() -> eventRecorder.hasJobEvent(state(JobState.COMPLETED)));
 
@@ -200,8 +200,8 @@ public class JobSubscriptionTest
         final JobSubscription subscription = subscriptionClient.newJobSubscription()
             .jobType("foo")
             .handler(jobHandler)
-            .lockTime(Duration.ofMinutes(5))
-            .lockOwner("test")
+            .timeout(Duration.ofMinutes(5))
+            .name("test")
             .open();
 
         // when
@@ -215,7 +215,7 @@ public class JobSubscriptionTest
         waitUntil(() -> eventRecorder.hasJobEvent(JobState.CREATED));
 
         assertThat(jobHandler.getHandledJobs()).isEmpty();
-        assertThat(eventRecorder.hasJobCommand(c -> c.getName() == JobCommandName.LOCK)).isFalse();
+        assertThat(eventRecorder.hasJobCommand(c -> c.getName() == JobCommandName.ACTIVATE)).isFalse();
     }
 
     @Test
@@ -236,8 +236,8 @@ public class JobSubscriptionTest
         subscriptionClient.newJobSubscription()
             .jobType("foo")
             .handler(handler)
-            .lockTime(Duration.ofMinutes(5))
-            .lockOwner("test")
+            .timeout(Duration.ofMinutes(5))
+            .name("test")
             .bufferSize(10)
             .open();
 
@@ -268,8 +268,8 @@ public class JobSubscriptionTest
         subscriptionClient.newJobSubscription()
             .jobType("foo")
             .handler(jobHandler)
-            .lockTime(Duration.ofMinutes(5))
-            .lockOwner("test")
+            .timeout(Duration.ofMinutes(5))
+            .name("test")
             .open();
 
         // then the subscription is not broken and other jobs are still handled
@@ -303,8 +303,8 @@ public class JobSubscriptionTest
         subscriptionClient.newJobSubscription()
             .jobType("foo")
             .handler(jobHandler)
-            .lockTime(Duration.ofMinutes(5))
-            .lockOwner("test")
+            .timeout(Duration.ofMinutes(5))
+            .name("test")
             .open();
 
         waitUntil(() -> eventRecorder.hasJobEvent(state(JobState.FAILED).and(jobRetries(0))));
@@ -334,8 +334,8 @@ public class JobSubscriptionTest
         subscriptionClient.newJobSubscription()
             .jobType("foo")
             .handler(jobHandler)
-            .lockTime(Duration.ofMinutes(5))
-            .lockOwner("test")
+            .timeout(Duration.ofMinutes(5))
+            .name("test")
             .open();
 
         waitUntil(() -> jobHandler.getHandledJobs().size() == 1);
@@ -370,8 +370,8 @@ public class JobSubscriptionTest
         subscriptionClient.newJobSubscription()
             .jobType("foo")
             .handler(jobHandler)
-            .lockTime(Duration.ofMinutes(5))
-            .lockOwner("test")
+            .timeout(Duration.ofMinutes(5))
+            .name("test")
             .open();
 
         waitUntil(() -> jobHandler.getHandledJobs().size() == 1);
@@ -385,7 +385,7 @@ public class JobSubscriptionTest
             .hasSize(2)
             .extracting("metadata.key").containsExactly(jobKey, jobKey);
 
-        assertThat(eventRecorder.hasJobEvent(state(JobState.LOCK_EXPIRED))).isTrue();
+        assertThat(eventRecorder.hasJobEvent(state(JobState.TIMED_OUT))).isTrue();
     }
 
     @Test
@@ -398,15 +398,15 @@ public class JobSubscriptionTest
         subscriptionClient.newJobSubscription()
             .jobType("foo")
             .handler(jobHandler)
-            .lockTime(Duration.ofMinutes(5))
-            .lockOwner("test")
+            .timeout(Duration.ofMinutes(5))
+            .name("test")
             .open();
 
         subscriptionClient.newJobSubscription()
             .jobType("foo")
             .handler(jobHandler)
-            .lockTime(Duration.ofMinutes(5))
-            .lockOwner("test")
+            .timeout(Duration.ofMinutes(5))
+            .name("test")
             .open();
 
         // when
@@ -430,15 +430,15 @@ public class JobSubscriptionTest
         subscriptionClient.newJobSubscription()
             .jobType("foo")
             .handler(jobHandler)
-            .lockTime(Duration.ofMinutes(5))
-            .lockOwner("test")
+            .timeout(Duration.ofMinutes(5))
+            .name("test")
             .open();
 
         subscriptionClient.newJobSubscription()
             .jobType("bar")
             .handler(jobHandler)
-            .lockTime(Duration.ofMinutes(5))
-            .lockOwner("test")
+            .timeout(Duration.ofMinutes(5))
+            .name("test")
             .open();
 
         waitUntil(() -> jobHandler.getHandledJobs().size() == 2);
@@ -460,8 +460,8 @@ public class JobSubscriptionTest
         subscriptionClient.newJobSubscription()
             .jobType("foo")
             .handler(jobHandler)
-            .lockTime(Duration.ofMinutes(5))
-            .lockOwner("test")
+            .timeout(Duration.ofMinutes(5))
+            .name("test")
             .open();
 
         // then
@@ -507,8 +507,8 @@ public class JobSubscriptionTest
             .newJobSubscription()
             .jobType(jobType)
             .handler(handler)
-            .lockTime(Duration.ofMinutes(5))
-            .lockOwner("test")
+            .timeout(Duration.ofMinutes(5))
+            .name("test")
             .open();
 
         // then

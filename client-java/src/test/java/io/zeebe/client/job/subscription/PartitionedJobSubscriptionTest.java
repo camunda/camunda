@@ -83,8 +83,8 @@ public class PartitionedJobSubscriptionTest
             .newJobSubscription()
             .jobType(JOB_TYPE)
             .handler(new RecordingJobHandler())
-            .lockOwner("bumbum")
-            .lockTime(Duration.ofSeconds(6))
+            .name("bumbum")
+            .timeout(Duration.ofSeconds(6))
             .open();
 
         // then
@@ -123,8 +123,8 @@ public class PartitionedJobSubscriptionTest
             .newJobSubscription()
             .jobType(JOB_TYPE)
             .handler(eventHandler)
-            .lockOwner("bumbum")
-            .lockTime(Duration.ofSeconds(6))
+            .name("bumbum")
+            .timeout(Duration.ofSeconds(6))
             .open();
 
         final RemoteAddress clientAddressFromBroker1 = broker1.getReceivedControlMessageRequestsByType(ControlMessageType.ADD_JOB_SUBSCRIPTION).get(0).getSource();
@@ -136,7 +136,7 @@ public class PartitionedJobSubscriptionTest
             .partitionId(PARTITION_1)
             .valueType(ValueType.JOB)
             .recordType(RecordType.EVENT)
-            .intent(JobIntent.LOCKED)
+            .intent(JobIntent.ACTIVATED)
             .subscriberKey(subscriberKey1)
             .key(key1)
             .subscriptionType(SubscriptionType.JOB_SUBSCRIPTION)
@@ -148,7 +148,7 @@ public class PartitionedJobSubscriptionTest
             .partitionId(PARTITION_1)
             .valueType(ValueType.JOB)
             .recordType(RecordType.EVENT)
-            .intent(JobIntent.LOCKED)
+            .intent(JobIntent.ACTIVATED)
             .subscriberKey(subscriberKey1)
             .key(key2)
             .subscriptionType(SubscriptionType.JOB_SUBSCRIPTION)

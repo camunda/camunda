@@ -26,8 +26,8 @@ public class JobSubscriptionImpl implements EventSubscriptionCreationResult, Rec
 
     private String jobType;
 
-    private long lockDuration;
-    private String lockOwner;
+    private long timeout;
+    private String worker;
     private int credits;
 
     protected RemoteAddress receiver;
@@ -54,14 +54,14 @@ public class JobSubscriptionImpl implements EventSubscriptionCreationResult, Rec
         this.jobType = jobType;
     }
 
-    public long getLockDuration()
+    public long getTimeout()
     {
-        return lockDuration;
+        return timeout;
     }
 
-    public void setLockDuration(final long lockDuration)
+    public void setTimeout(final long timeout)
     {
-        this.lockDuration = lockDuration;
+        this.timeout = timeout;
     }
 
     public int getCredits()
@@ -74,14 +74,14 @@ public class JobSubscriptionImpl implements EventSubscriptionCreationResult, Rec
         this.credits = credits;
     }
 
-    public String getLockOwner()
+    public String getWorker()
     {
-        return lockOwner;
+        return worker;
     }
 
-    public void setLockOwner(final String lockOwner)
+    public void setWorker(final String worker)
     {
-        this.lockOwner = lockOwner;
+        this.worker = worker;
     }
 
     @Override

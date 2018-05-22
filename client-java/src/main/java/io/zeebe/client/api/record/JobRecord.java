@@ -40,9 +40,9 @@ public interface JobRecord extends Record
     Map<String, Object> getCustomHeaders();
 
     /**
-     * @return the lock owner
+     * @return the assigned worker to complete the job
      */
-    String getLockOwner();
+    String getWorker();
 
     /**
      * @return remaining retries
@@ -51,9 +51,10 @@ public interface JobRecord extends Record
 
     /**
      * @return the time until when the job is exclusively assigned to this
-     *         client.
+     *         worker. If the deadline is exceeded, it can happen that the job
+     *         is handed to another worker and the work is performed twice.
      */
-    Instant getLockExpirationTime();
+    Instant getDeadline();
 
     /**
      * @return JSON-formatted payload

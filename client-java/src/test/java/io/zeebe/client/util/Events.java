@@ -34,8 +34,8 @@ public class Events
         baseEvent.setHeaders(Maps.newHashMap("defaultHeaderKey", "defaultHeaderVal"));
         baseEvent.setCustomHeaders(Maps.newHashMap("customHeaderKey", "customHeaderVal"));
         baseEvent.setKey(79);
-        baseEvent.setLockOwner("foo");
-        baseEvent.setLockTime(System.currentTimeMillis());
+        baseEvent.setWorker("foo");
+        baseEvent.setDeadline(System.currentTimeMillis());
         baseEvent.setPartitionId(StubBrokerRule.TEST_PARTITION_ID);
         baseEvent.setPayload("{\"key\":\"val\"}");
         baseEvent.setRetries(123);

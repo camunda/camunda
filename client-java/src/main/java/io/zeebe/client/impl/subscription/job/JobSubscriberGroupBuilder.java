@@ -24,8 +24,8 @@ import io.zeebe.util.EnsureUtil;
 public class JobSubscriberGroupBuilder
 {
     protected String jobType;
-    protected long lockTime = -1L;
-    protected String lockOwner;
+    protected long timeout = -1L;
+    protected String worker;
     protected JobHandler jobHandler;
     protected int bufferSize;
 
@@ -46,15 +46,15 @@ public class JobSubscriberGroupBuilder
         return this;
     }
 
-    public JobSubscriberGroupBuilder lockTime(long lockTime)
+    public JobSubscriberGroupBuilder timeout(long timeout)
     {
-        this.lockTime = lockTime;
+        this.timeout = timeout;
         return this;
     }
 
-    public JobSubscriberGroupBuilder lockOwner(String lockOwner)
+    public JobSubscriberGroupBuilder worker(String worker)
     {
-        this.lockOwner = lockOwner;
+        this.worker = worker;
         return this;
     }
 
@@ -73,12 +73,12 @@ public class JobSubscriberGroupBuilder
     public Future<JobSubscriberGroup> build()
     {
         EnsureUtil.ensureNotNullOrEmpty("jobType", jobType);
-        EnsureUtil.ensureGreaterThan("lockTime", lockTime, 0L);
-        EnsureUtil.ensureNotNullOrEmpty("lockOwner", lockOwner);
+        EnsureUtil.ensureGreaterThan("timeout", timeout, 0L);
+        EnsureUtil.ensureNotNullOrEmpty("worker", worker);
         EnsureUtil.ensureGreaterThan("jobFetchSize", bufferSize, 0);
 
         final JobSubscriptionSpec subscription =
-                new JobSubscriptionSpec(topic, jobHandler, jobType, lockTime, lockOwner, bufferSize);
+                new JobSubscriptionSpec(topic, jobHandler, jobType, timeout, worker, bufferSize);
 
         return jobAcquisition.openJobSubscription(subscription);
     }

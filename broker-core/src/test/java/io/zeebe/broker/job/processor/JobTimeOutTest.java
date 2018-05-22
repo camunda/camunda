@@ -39,7 +39,7 @@ import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
 
-public class JobLockExpirationTest
+public class JobTimeOutTest
 {
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
     public ClientApiRule apiRule = new ClientApiRule();
@@ -48,84 +48,84 @@ public class JobLockExpirationTest
     public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
     @Test
-    public void shouldNotExpireLockIfLockNotExceeded() throws InterruptedException
+    public void shouldNotTimeOutIfDeadlineNotExceeded() throws InterruptedException
     {
         // given
         brokerRule.getClock().pinCurrentTime();
-        final Duration lockTime = Duration.ofSeconds(60);
+        final Duration timeout = Duration.ofSeconds(60);
         final String jobType = "jobType";
 
         createJob(jobType);
 
-        apiRule.openJobSubscription(apiRule.getDefaultPartitionId(), jobType, lockTime.toMillis()).await();
-        apiRule.subscribedEvents().findFirst().get(); // => job is locked
+        apiRule.openJobSubscription(apiRule.getDefaultPartitionId(), jobType, timeout.toMillis()).await();
+        apiRule.subscribedEvents().findFirst().get(); // => job is activated
 
         // when
-        brokerRule.getClock().addTime(lockTime.minus(Duration.ofSeconds(1)));
+        brokerRule.getClock().addTime(timeout.minus(Duration.ofSeconds(1)));
 
         // then
         assertNoMoreJobsReceived();
     }
 
     @Test
-    public void shouldNotExpireLockIfJobCompleted() throws InterruptedException
+    public void shouldNotTimeOutIfJobCompleted() throws InterruptedException
     {
         // given
         brokerRule.getClock().pinCurrentTime();
-        final Duration lockTime = Duration.ofSeconds(60);
+        final Duration timeout = Duration.ofSeconds(60);
         final String jobType = "jobType";
 
         createJob(jobType);
 
-        apiRule.openJobSubscription(apiRule.getDefaultPartitionId(), jobType, lockTime.toMillis()).await();
-        final SubscribedRecord lockedJob = apiRule.subscribedEvents().findFirst().get(); // => job is locked
+        apiRule.openJobSubscription(apiRule.getDefaultPartitionId(), jobType, timeout.toMillis()).await();
+        final SubscribedRecord activatedJob = apiRule.subscribedEvents().findFirst().get(); // => job is activated
 
-        completeJob(lockedJob);
+        completeJob(activatedJob);
 
         // when
-        brokerRule.getClock().addTime(lockTime.plus(Duration.ofSeconds(1)));
+        brokerRule.getClock().addTime(timeout.plus(Duration.ofSeconds(1)));
 
         // then
         assertNoMoreJobsReceived();
     }
 
     @Test
-    public void shouldNotExpireLockIfJobFailed()
+    public void shouldNotTimeOutIfJobFailed()
     {
         // given
         brokerRule.getClock().pinCurrentTime();
-        final Duration lockTime = Duration.ofSeconds(60);
+        final Duration timeout = Duration.ofSeconds(60);
         final String jobType = "jobType";
 
         createJob(jobType);
 
-        apiRule.openJobSubscription(apiRule.getDefaultPartitionId(), jobType, lockTime.toMillis()).await();
-        final SubscribedRecord lockedJob = apiRule.subscribedEvents().findFirst().get(); // => job is locked
+        apiRule.openJobSubscription(apiRule.getDefaultPartitionId(), jobType, timeout.toMillis()).await();
+        final SubscribedRecord activatedJob = apiRule.subscribedEvents().findFirst().get(); // => job is activated
 
-        final Map<String, Object> event = new HashMap<>(lockedJob.value());
+        final Map<String, Object> event = new HashMap<>(activatedJob.value());
         event.put("retries", 0);
-        failJob(lockedJob.key(), event);
+        failJob(activatedJob.key(), event);
 
         // when
-        brokerRule.getClock().addTime(lockTime.plus(Duration.ofSeconds(1)));
+        brokerRule.getClock().addTime(timeout.plus(Duration.ofSeconds(1)));
 
         // then
         assertNoMoreJobsReceived();
     }
 
     @Test
-    public void shouldExpireLockedJob()
+    public void shouldTimeOutJob()
     {
         // given
         final String jobType = "foo";
         final long jobKey1 = createJob(jobType);
 
-        final long lockTime = 1000L;
+        final long timeout = 1000L;
 
         apiRule.openJobSubscription(
             apiRule.getDefaultPartitionId(),
             jobType,
-            lockTime);
+            timeout);
 
         waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 1);
         apiRule.moveMessageStreamToTail();
@@ -133,11 +133,11 @@ public class JobLockExpirationTest
         // when expired
         doRepeatedly(() ->
         {
-            brokerRule.getClock().addTime(JobQueueManagerService.LOCK_EXPIRATION_INTERVAL);
+            brokerRule.getClock().addTime(JobQueueManagerService.TIME_OUT_INTERVAL);
         }).until(v -> apiRule.numSubscribedEventsAvailable() == 1);
 
 
-        // then locked again
+        // then activated again
         final List<SubscribedRecord> events = apiRule.topic()
              .receiveRecords()
              .ofTypeJob()
@@ -149,36 +149,36 @@ public class JobLockExpirationTest
             .containsExactly(
                 JobIntent.CREATE,
                 JobIntent.CREATED,
-                JobIntent.LOCK,
-                JobIntent.LOCKED,
-                JobIntent.EXPIRE_LOCK,
-                JobIntent.LOCK_EXPIRED,
-                JobIntent.LOCK,
-                JobIntent.LOCKED);
+                JobIntent.ACTIVATE,
+                JobIntent.ACTIVATED,
+                JobIntent.TIME_OUT,
+                JobIntent.TIMED_OUT,
+                JobIntent.ACTIVATE,
+                JobIntent.ACTIVATED);
     }
 
     @Test
-    public void shouldExpireMultipleLockedJobsAtOnce()
+    public void shouldExpireMultipleActivatedJobsAtOnce()
     {
         // given
         final String jobType = "foo";
         final long jobKey1 = createJob(jobType);
         final long jobKey2 = createJob(jobType);
 
-        final long lockTime = 1000L;
+        final long timeout = 1000L;
 
         apiRule.openJobSubscription(
                 apiRule.getDefaultPartitionId(),
                 jobType,
-                lockTime);
+                timeout);
 
-        waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 2); // both jobs locked
+        waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 2); // both jobs activated
         apiRule.moveMessageStreamToTail();
 
         // when
         doRepeatedly(() ->
         {
-            brokerRule.getClock().addTime(JobQueueManagerService.LOCK_EXPIRATION_INTERVAL);
+            brokerRule.getClock().addTime(JobQueueManagerService.TIME_OUT_INTERVAL);
         }).until(v -> apiRule.numSubscribedEventsAvailable() == 2);
 
         // then
@@ -189,12 +189,12 @@ public class JobLockExpirationTest
                                                     .collect(Collectors.toList());
 
         assertThat(expiredEvents)
-            .filteredOn(e -> e.intent() == JobIntent.LOCKED)
+            .filteredOn(e -> e.intent() == JobIntent.ACTIVATED)
             .hasSize(4)
             .extracting(e -> e.key()).containsExactly(jobKey1, jobKey2, jobKey1, jobKey2);
 
         assertThat(expiredEvents)
-            .filteredOn(e -> e.intent() == JobIntent.LOCK_EXPIRED)
+            .filteredOn(e -> e.intent() == JobIntent.TIMED_OUT)
             .extracting(e -> e.key()).containsExactlyInAnyOrder(jobKey1, jobKey2);
     }
 
@@ -211,13 +211,13 @@ public class JobLockExpirationTest
         return resp.key();
     }
 
-    private void completeJob(SubscribedRecord lockedJob)
+    private void completeJob(SubscribedRecord activatedJob)
     {
         apiRule.createCmdRequest()
             .type(ValueType.JOB, JobIntent.COMPLETE)
-            .key(lockedJob.key())
+            .key(activatedJob.key())
             .command()
-                .putAll(lockedJob.value())
+                .putAll(activatedJob.value())
                 .done()
             .sendAndAwait();
     }

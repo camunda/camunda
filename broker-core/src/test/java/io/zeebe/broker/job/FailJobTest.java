@@ -102,12 +102,12 @@ public class FailJobTest
             .containsExactly(
                     tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.CREATE),
                     tuple(RecordType.EVENT, ValueType.JOB, JobIntent.CREATED),
-                    tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.LOCK),
-                    tuple(RecordType.EVENT, ValueType.JOB, JobIntent.LOCKED),
+                    tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.ACTIVATE),
+                    tuple(RecordType.EVENT, ValueType.JOB, JobIntent.ACTIVATED),
                     tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.FAIL),
                     tuple(RecordType.EVENT, ValueType.JOB, JobIntent.FAILED),
-                    tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.LOCK),
-                    tuple(RecordType.EVENT, ValueType.JOB, JobIntent.LOCKED));
+                    tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.ACTIVATE),
+                    tuple(RecordType.EVENT, ValueType.JOB, JobIntent.ACTIVATED));
     }
 
     @Test
@@ -186,10 +186,10 @@ public class FailJobTest
     }
 
     @Test
-    public void shouldRejectFailIfNotLockOwner()
+    public void shouldRejectFailIfNotWorker()
     {
         // given
-        final String lockOwner = "peter";
+        final String worker = "peter";
 
         client.createJob(JOB_TYPE);
 
@@ -198,15 +198,15 @@ public class FailJobTest
             .messageType(ControlMessageType.ADD_JOB_SUBSCRIPTION)
             .data()
                 .put("jobType", JOB_TYPE)
-                .put("lockDuration", Duration.ofSeconds(30).toMillis())
-                .put("lockOwner", lockOwner)
+                .put("timeout", Duration.ofSeconds(30).toMillis())
+                .put("worker", worker)
                 .put("credits", 10)
                 .done()
             .sendAndAwait();
 
         final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
         final Map<String, Object> event = subscribedEvent.value();
-        event.put("lockOwner", "jan");
+        event.put("worker", "jan");
 
         // when
         final ExecuteCommandResponse response = client.failJob(subscribedEvent.key(), event);

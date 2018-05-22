@@ -416,7 +416,7 @@ public class StubBrokerRule extends ExternalResource
 
     }
 
-    public void pushLockedJob(RemoteAddress remote, long subscriberKey, long key, long position, String lockOwner, String jobType)
+    public void pushActivatedJob(RemoteAddress remote, long subscriberKey, long key, long position, String worker, String jobType)
     {
         newSubscribedEvent()
             .partitionId(TEST_PARTITION_ID)
@@ -424,14 +424,14 @@ public class StubBrokerRule extends ExternalResource
             .position(position)
             .recordType(RecordType.EVENT)
             .valueType(ValueType.JOB)
-            .intent(JobIntent.LOCKED)
+            .intent(JobIntent.ACTIVATED)
             .subscriberKey(subscriberKey)
             .subscriptionType(SubscriptionType.JOB_SUBSCRIPTION)
             .timestamp(clock.getCurrentTime())
             .value()
                 .put("type", jobType)
-                .put("lockTime", 1000L)
-                .put("lockOwner", lockOwner)
+                .put("deadline", 1000L)
+                .put("worker", worker)
                 .put("retries", 3)
                 .put("payload", msgPackHelper.encodeAsMsgPack(new HashMap<>()))
                 .put("state", "LOCKED")

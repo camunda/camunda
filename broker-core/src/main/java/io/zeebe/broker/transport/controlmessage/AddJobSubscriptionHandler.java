@@ -54,8 +54,8 @@ public class AddJobSubscriptionHandler extends AbstractControlMessageHandler
         final long requestId = eventMetada.getRequestId();
         final int requestStreamId = eventMetada.getRequestStreamId();
 
-        final JobSubscription jobSubscription = new JobSubscription(partitionId, request.getLockJobType(),
-                request.getLockDuration(), request.getLockOwner(), requestStreamId);
+        final JobSubscription jobSubscription = new JobSubscription(partitionId, request.getJobType(),
+                request.getTimeout(), request.getWorker(), requestStreamId);
         jobSubscription.setCredits(request.getCredits());
 
         final ActorFuture<Void> future = manager.addSubscription(jobSubscription);

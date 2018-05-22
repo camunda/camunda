@@ -43,9 +43,9 @@ import io.zeebe.util.buffer.BufferUtil;
 public class JobInstanceStreamProcessor
 {
     protected static final short STATE_CREATED = 1;
-    protected static final short STATE_LOCKED = 2;
+    protected static final short STATE_ACTIVATED = 2;
     protected static final short STATE_FAILED = 3;
-    protected static final short STATE_LOCK_EXPIRED = 4;
+    protected static final short STATE_TIMED_OUT = 4;
 
     protected SubscribedRecordWriter subscribedEventWriter;
     protected final JobSubscriptionManager jobSubscriptionManager;
@@ -68,10 +68,10 @@ public class JobInstanceStreamProcessor
 
         return environment.newStreamProcessor()
             .onCommand(ValueType.JOB, JobIntent.CREATE, new CreateJobProcessor())
-            .onCommand(ValueType.JOB, JobIntent.LOCK, new LockJobProcessor())
+            .onCommand(ValueType.JOB, JobIntent.ACTIVATE, new ActivateJobProcessor())
             .onCommand(ValueType.JOB, JobIntent.COMPLETE, new CompleteJobProcessor())
             .onCommand(ValueType.JOB, JobIntent.FAIL, new FailJobProcessor())
-            .onCommand(ValueType.JOB, JobIntent.EXPIRE_LOCK, new ExpireLockJobProcessor())
+            .onCommand(ValueType.JOB, JobIntent.TIME_OUT, new TimeOutJobProcessor())
             .onCommand(ValueType.JOB, JobIntent.UPDATE_RETRIES, new UpdateRetriesJobProcessor())
             .onCommand(ValueType.JOB, JobIntent.CANCEL, new CancelJobProcessor())
             .withStateResource(jobIndex.getMap())
@@ -108,21 +108,21 @@ public class JobInstanceStreamProcessor
         }
     }
 
-    private class LockJobProcessor implements TypedRecordProcessor<JobRecord>
+    private class ActivateJobProcessor implements TypedRecordProcessor<JobRecord>
     {
-        protected boolean isLocked;
+        protected boolean canActivate;
         protected final CreditsRequest creditsRequest = new CreditsRequest();
 
         @Override
         public void processRecord(TypedRecord<JobRecord> command)
         {
-            isLocked = false;
+            canActivate = false;
 
             final short state = jobIndex.wrapJobInstanceKey(command.getKey()).getState();
 
-            if (state == STATE_CREATED || state == STATE_FAILED || state == STATE_LOCK_EXPIRED)
+            if (state == STATE_CREATED || state == STATE_FAILED || state == STATE_TIMED_OUT)
             {
-                isLocked = true;
+                canActivate = true;
             }
         }
 
@@ -131,13 +131,13 @@ public class JobInstanceStreamProcessor
         {
             boolean success = true;
 
-            if (isLocked)
+            if (canActivate)
             {
                 final RecordMetadata metadata = command.getMetadata();
 
                 success = subscribedEventWriter
                         .recordType(RecordType.EVENT)
-                        .intent(JobIntent.LOCKED)
+                        .intent(JobIntent.ACTIVATED)
                         .partitionId(logStreamPartitionId)
                         .position(command.getPosition())
                         .key(command.getKey())
@@ -163,9 +163,9 @@ public class JobInstanceStreamProcessor
         @Override
         public long writeRecord(TypedRecord<JobRecord> command, TypedStreamWriter writer)
         {
-            if (isLocked)
+            if (canActivate)
             {
-                return writer.writeFollowUpEvent(command.getKey(), JobIntent.LOCKED, command.getValue());
+                return writer.writeFollowUpEvent(command.getKey(), JobIntent.ACTIVATED, command.getValue());
             }
             else
             {
@@ -176,11 +176,11 @@ public class JobInstanceStreamProcessor
         @Override
         public void updateState(TypedRecord<JobRecord> command)
         {
-            if (isLocked)
+            if (canActivate)
             {
                 jobIndex
-                    .setState(STATE_LOCKED)
-                    .setLockOwner(command.getValue().getLockOwner())
+                    .setState(STATE_ACTIVATED)
+                    .setWorker(command.getValue().getWorker())
                     .write();
             }
         }
@@ -200,13 +200,13 @@ public class JobInstanceStreamProcessor
 
             final JobRecord value = event.getValue();
 
-            final boolean isCompletable = state == STATE_LOCKED || state == STATE_LOCK_EXPIRED;
+            final boolean isCompletable = state == STATE_ACTIVATED || state == STATE_TIMED_OUT;
             if (isCompletable)
             {
                 final DirectBuffer payload = value.getPayload();
                 if (isNilPayload(payload) || isValidPayload(payload))
                 {
-                    if (BufferUtil.contentsEqual(jobIndex.getLockOwner(), value.getLockOwner()))
+                    if (BufferUtil.contentsEqual(jobIndex.getWorker(), value.getWorker()))
                     {
                         isCompleted = true;
                     }
@@ -261,7 +261,7 @@ public class JobInstanceStreamProcessor
             final JobRecord value = command.getValue();
 
             jobIndex.wrapJobInstanceKey(command.getKey());
-            if (jobIndex.getState() == STATE_LOCKED && BufferUtil.contentsEqual(jobIndex.getLockOwner(), value.getLockOwner()))
+            if (jobIndex.getState() == STATE_ACTIVATED && BufferUtil.contentsEqual(jobIndex.getWorker(), value.getWorker()))
             {
                 isFailed = true;
             }
@@ -305,7 +305,7 @@ public class JobInstanceStreamProcessor
         }
     }
 
-    private class ExpireLockJobProcessor implements TypedRecordProcessor<JobRecord>
+    private class TimeOutJobProcessor implements TypedRecordProcessor<JobRecord>
     {
         protected boolean isExpired;
 
@@ -316,7 +316,7 @@ public class JobInstanceStreamProcessor
 
             jobIndex.wrapJobInstanceKey(command.getKey());
 
-            if (jobIndex.getState() == STATE_LOCKED)
+            if (jobIndex.getState() == STATE_ACTIVATED)
             {
                 isExpired = true;
             }
@@ -327,7 +327,7 @@ public class JobInstanceStreamProcessor
         {
             if (isExpired)
             {
-                return writer.writeFollowUpEvent(command.getKey(), JobIntent.LOCK_EXPIRED, command.getValue());
+                return writer.writeFollowUpEvent(command.getKey(), JobIntent.TIMED_OUT, command.getValue());
             }
             else
             {
@@ -341,7 +341,7 @@ public class JobInstanceStreamProcessor
             if (isExpired)
             {
                 jobIndex
-                    .setState(STATE_LOCK_EXPIRED)
+                    .setState(STATE_TIMED_OUT)
                     .write();
             }
         }

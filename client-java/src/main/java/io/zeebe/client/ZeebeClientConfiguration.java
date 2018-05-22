@@ -65,14 +65,14 @@ public interface ZeebeClientConfiguration
     Duration getTcpChannelKeepAlivePeriod();
 
     /**
-     * @see ZeebeClientBuilder#defaultJobLockOwner(String)
+     * @see ZeebeClientBuilder#defaultJobWorkerName(String)
      */
-    String getDefaultJobLockOwner();
+    String getDefaultJobWorkerName();
 
     /**
-     * @see ZeebeClientBuilder#defaultJobLockTime(Duration)
+     * @see ZeebeClientBuilder#defaultJobTimeout(Duration)
      */
-    Duration getDefaultJobLockTime();
+    Duration getDefaultJobTimeout();
 
     /**
      * @see ZeebeClientBuilder#defaultTopic(String)

@@ -35,8 +35,8 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
     private int jobSubscriptionBufferSize = 32;
     private Duration tcpChannelKeepAlivePeriod;
     private ActorClock actorClock;
-    private String defaultJobLockOwner = "default";
-    private Duration defaultJobLockTime = Duration.ofMinutes(5);
+    private String defaultJobWorkerName = "default";
+    private Duration defaultJobTimeout = Duration.ofMinutes(5);
     private String defaultTopic = "default-topic";
 
     @Override
@@ -168,28 +168,28 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
     }
 
     @Override
-    public String getDefaultJobLockOwner()
+    public String getDefaultJobWorkerName()
     {
-        return defaultJobLockOwner;
+        return defaultJobWorkerName;
     }
 
     @Override
-    public Duration getDefaultJobLockTime()
+    public Duration getDefaultJobTimeout()
     {
-        return defaultJobLockTime;
+        return defaultJobTimeout;
     }
 
     @Override
-    public ZeebeClientBuilder defaultJobLockOwner(String jobOwner)
+    public ZeebeClientBuilder defaultJobWorkerName(String workerName)
     {
-        this.defaultJobLockOwner = jobOwner;
+        this.defaultJobWorkerName = workerName;
         return this;
     }
 
     @Override
-    public ZeebeClientBuilder defaultJobLockTime(Duration lockTime)
+    public ZeebeClientBuilder defaultJobTimeout(Duration timeout)
     {
-        this.defaultJobLockTime = lockTime;
+        this.defaultJobTimeout = timeout;
         return this;
     }
 
@@ -250,13 +250,13 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
         {
             defaultJobSubscriptionBufferSize(Integer.parseInt(properties.getProperty(ClientProperties.JOB_SUBSCRIPTION_BUFFER_SIZE)));
         }
-        if (properties.containsKey(DEFAULT_JOB_LOCK_OWNER))
+        if (properties.containsKey(DEFAULT_JOB_WORKER_NAME))
         {
-            defaultJobLockOwner(properties.getProperty(DEFAULT_JOB_LOCK_OWNER));
+            defaultJobWorkerName(properties.getProperty(DEFAULT_JOB_WORKER_NAME));
         }
-        if (properties.containsKey(DEFAULT_JOB_LOCK_TIME))
+        if (properties.containsKey(DEFAULT_JOB_TIMEOUT))
         {
-            defaultJobLockTime(Duration.ofMillis(Integer.parseInt(properties.getProperty(DEFAULT_JOB_LOCK_TIME))));
+            defaultJobTimeout(Duration.ofMillis(Integer.parseInt(properties.getProperty(DEFAULT_JOB_TIMEOUT))));
         }
         if (properties.containsKey(DEFAULT_TOPIC))
         {
@@ -280,8 +280,8 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
         appendProperty(sb, "topicSubscriptionBufferSize", topicSubscriptionBufferSize);
         appendProperty(sb, "jobSubscriptionBufferSize", jobSubscriptionBufferSize);
         appendProperty(sb, "tcpChannelKeepAlivePeriod", tcpChannelKeepAlivePeriod);
-        appendProperty(sb, "defaultJobLockOwner", defaultJobLockOwner);
-        appendProperty(sb, "defaultJobLockTime", defaultJobLockTime);
+        appendProperty(sb, "defaultJobWorkerName", defaultJobWorkerName);
+        appendProperty(sb, "defaultJobTimeout", defaultJobTimeout);
         appendProperty(sb, "defaultTopic", defaultTopic);
 
         return sb.toString();

@@ -109,14 +109,14 @@ public class JobUpdateRetriesTest
             .containsExactly(
                 tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.CREATE),
                 tuple(RecordType.EVENT, ValueType.JOB, JobIntent.CREATED),
-                tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.LOCK),
-                tuple(RecordType.EVENT, ValueType.JOB, JobIntent.LOCKED),
+                tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.ACTIVATE),
+                tuple(RecordType.EVENT, ValueType.JOB, JobIntent.ACTIVATED),
                 tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.FAIL),
                 tuple(RecordType.EVENT, ValueType.JOB, JobIntent.FAILED),
                 tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.UPDATE_RETRIES),
                 tuple(RecordType.EVENT, ValueType.JOB, JobIntent.RETRIES_UPDATED),
-                tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.LOCK),
-                tuple(RecordType.EVENT, ValueType.JOB, JobIntent.LOCKED));
+                tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.ACTIVATE),
+                tuple(RecordType.EVENT, ValueType.JOB, JobIntent.ACTIVATED));
     }
 
     @Test
@@ -161,7 +161,7 @@ public class JobUpdateRetriesTest
     }
 
     @Test
-    public void shouldRejectUpdateRetriesIfJobLocked()
+    public void shouldRejectUpdateRetriesIfJobActivated()
     {
         // given
         client.createJob(JOB_TYPE);

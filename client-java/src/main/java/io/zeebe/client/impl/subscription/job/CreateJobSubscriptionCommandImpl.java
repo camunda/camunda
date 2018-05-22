@@ -37,9 +37,9 @@ public class CreateJobSubscriptionCommandImpl extends ControlMessageRequest<JobS
         this.subscription.setPartitionId(-1);
     }
 
-    public CreateJobSubscriptionCommandImpl lockOwner(final String lockOwner)
+    public CreateJobSubscriptionCommandImpl worker(final String worker)
     {
-        this.subscription.setLockOwner(lockOwner);
+        this.subscription.setWorker(worker);
         return this;
     }
 
@@ -49,9 +49,9 @@ public class CreateJobSubscriptionCommandImpl extends ControlMessageRequest<JobS
         return this;
     }
 
-    public CreateJobSubscriptionCommandImpl lockDuration(final long lockDuration)
+    public CreateJobSubscriptionCommandImpl timeout(final long timeout)
     {
-        this.subscription.setLockDuration(lockDuration);
+        this.subscription.setTimeout(timeout);
         return this;
     }
 

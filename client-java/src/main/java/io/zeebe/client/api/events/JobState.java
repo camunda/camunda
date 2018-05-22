@@ -18,9 +18,9 @@ package io.zeebe.client.api.events;
 public enum JobState
 {
     CREATED,
-    LOCKED,
+    ACTIVATED,
     COMPLETED,
-    LOCK_EXPIRED,
+    TIMED_OUT,
     FAILED,
     RETRIES_UPDATED,
     CANCELED,

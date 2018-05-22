@@ -124,7 +124,7 @@ public class CompleteJobTest
     }
 
     @Test
-    public void shouldRejectCompletionIfJobNotLocked()
+    public void shouldRejectCompletionIfJobNotActivated()
     {
         // given
         final ExecuteCommandResponse job = createJob(JOB_TYPE);
@@ -138,10 +138,10 @@ public class CompleteJobTest
     }
 
     @Test
-    public void shouldRejectCompletionIfNotLockOwner()
+    public void shouldRejectCompletionIfNotWorker()
     {
         // given
-        final String lockOwner = "kermit";
+        final String worker = "kermit";
 
         createJob(JOB_TYPE);
 
@@ -150,15 +150,15 @@ public class CompleteJobTest
             .messageType(ControlMessageType.ADD_JOB_SUBSCRIPTION)
             .data()
                 .put("jobType", JOB_TYPE)
-                .put("lockDuration", Duration.ofSeconds(30).toMillis())
-                .put("lockOwner", lockOwner)
+                .put("timeout", Duration.ofSeconds(30).toMillis())
+                .put("worker", worker)
                 .put("credits", 10)
                 .done()
             .sendAndAwait();
 
         final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
         final Map<String, Object> event = subscribedEvent.value();
-        event.put("lockOwner", "ms piggy");
+        event.put("worker", "ms piggy");
 
         // when
         final ExecuteCommandResponse response = completeJob(subscribedEvent.key(), event);

@@ -75,8 +75,8 @@ public class CompleteJobTest
         assertThat(request.position()).isEqualTo(baseEvent.getMetadata().getPosition());
 
         assertThat(request.getCommand()).containsOnly(
-                entry("lockTime", baseEvent.getLockExpirationTime().toEpochMilli()),
-                entry("lockOwner", baseEvent.getLockOwner()),
+                entry("deadline", baseEvent.getDeadline().toEpochMilli()),
+                entry("worker", baseEvent.getWorker()),
                 entry("retries", baseEvent.getRetries()),
                 entry("type", baseEvent.getType()),
                 entry("headers", baseEvent.getHeaders()),
@@ -89,8 +89,8 @@ public class CompleteJobTest
 
         assertThat(jobEvent.getState()).isEqualTo(JobState.COMPLETED);
         assertThat(jobEvent.getHeaders()).isEqualTo(baseEvent.getHeaders());
-        assertThat(jobEvent.getLockExpirationTime()).isEqualTo(baseEvent.getLockExpirationTime());
-        assertThat(jobEvent.getLockOwner()).isEqualTo(baseEvent.getLockOwner());
+        assertThat(jobEvent.getDeadline()).isEqualTo(baseEvent.getDeadline());
+        assertThat(jobEvent.getWorker()).isEqualTo(baseEvent.getWorker());
         assertThat(jobEvent.getRetries()).isEqualTo(baseEvent.getRetries());
         assertThat(jobEvent.getType()).isEqualTo(baseEvent.getType());
         assertThat(jobEvent.getPayload()).isEqualTo(updatedPayload);

@@ -267,15 +267,6 @@ public class ClusteringRule extends ExternalResource
         waitForTopology(topology -> topology.stream().anyMatch(topologyBroker -> topologyBroker.getSocketAddress().equals(socketAddress)));
     }
 
-    private List<BrokerInfo> requestBrokers()
-    {
-        return zeebeClient
-                .newTopologyRequest()
-                .send()
-                .join()
-                .getBrokers();
-    }
-
     /**
      * Returns for a given broker the leading partition id's.
      *

@@ -392,7 +392,7 @@ public class BrokerRestartTest
         {
             brokerRule.getClock().addTime(Duration.ofSeconds(60)); // retriggers lock expiration check in broker
             return null;
-        }).until(t -> eventRecorder.hasJobEvent(JobState.LOCK_EXPIRED));
+        }).until(t -> eventRecorder.hasJobEvent(JobState.TIMED_OUT));
         jobHandler.clear();
 
         clientRule.getSubscriptionClient()

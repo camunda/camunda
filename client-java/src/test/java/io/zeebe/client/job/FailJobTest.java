@@ -67,8 +67,8 @@ public class FailJobTest
         assertThat(request.intent()).isEqualTo(JobIntent.FAIL);
 
         assertThat(request.getCommand()).containsOnly(
-                entry("lockTime", baseEvent.getLockExpirationTime().toEpochMilli()),
-                entry("lockOwner", baseEvent.getLockOwner()),
+                entry("deadline", baseEvent.getDeadline().toEpochMilli()),
+                entry("worker", baseEvent.getWorker()),
                 entry("retries", 4),
                 entry("type", baseEvent.getType()),
                 entry("headers", baseEvent.getHeaders()),
@@ -81,8 +81,8 @@ public class FailJobTest
 
         assertThat(jobEvent.getState()).isEqualTo(JobState.FAILED);
         assertThat(jobEvent.getHeaders()).isEqualTo(baseEvent.getHeaders());
-        assertThat(jobEvent.getLockExpirationTime()).isEqualTo(baseEvent.getLockExpirationTime());
-        assertThat(jobEvent.getLockOwner()).isEqualTo(baseEvent.getLockOwner());
+        assertThat(jobEvent.getDeadline()).isEqualTo(baseEvent.getDeadline());
+        assertThat(jobEvent.getWorker()).isEqualTo(baseEvent.getWorker());
         assertThat(jobEvent.getType()).isEqualTo(baseEvent.getType());
         assertThat(jobEvent.getPayload()).isEqualTo(baseEvent.getPayload());
         assertThat(jobEvent.getRetries()).isEqualTo(4);

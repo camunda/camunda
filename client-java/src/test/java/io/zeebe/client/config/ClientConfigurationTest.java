@@ -58,33 +58,33 @@ public class ClientConfigurationTest
     }
 
     @Test
-    public void shouldConfigureDefaultJobLockOwner()
+    public void shouldConfigureDefaultJobWorker()
     {
         // given
         final Properties config = new Properties();
-        config.setProperty(ClientProperties.DEFAULT_JOB_LOCK_OWNER, "me");
+        config.setProperty(ClientProperties.DEFAULT_JOB_WORKER_NAME, "me");
 
         // when
         final ZeebeClient client = ZeebeClient.newClientBuilder().withProperties(config).build();
         closeables.manage(client);
 
         // then
-        assertThat(client.getConfiguration().getDefaultJobLockOwner()).isEqualTo("me");
+        assertThat(client.getConfiguration().getDefaultJobWorkerName()).isEqualTo("me");
     }
 
     @Test
-    public void shouldConfigureDefaultJobLockTime()
+    public void shouldConfigureDefaultJobTimeout()
     {
         // given
         final Properties config = new Properties();
-        config.setProperty(ClientProperties.DEFAULT_JOB_LOCK_TIME, "5000");
+        config.setProperty(ClientProperties.DEFAULT_JOB_TIMEOUT, "5000");
 
         // when
         final ZeebeClient client = ZeebeClient.newClientBuilder().withProperties(config).build();
         closeables.manage(client);
 
         // then
-        assertThat(client.getConfiguration().getDefaultJobLockTime()).isEqualTo(Duration.ofMillis(5000));
+        assertThat(client.getConfiguration().getDefaultJobTimeout()).isEqualTo(Duration.ofMillis(5000));
     }
 
     @Test
@@ -134,8 +134,8 @@ public class ClientConfigurationTest
         // then
         final ZeebeClientConfiguration configuration = client.getConfiguration();
 
-        assertThat(configuration.getDefaultJobLockOwner()).isEqualTo("default");
-        assertThat(configuration.getDefaultJobLockTime()).isEqualTo(Duration.ofMinutes(5));
+        assertThat(configuration.getDefaultJobWorkerName()).isEqualTo("default");
+        assertThat(configuration.getDefaultJobTimeout()).isEqualTo(Duration.ofMinutes(5));
         assertThat(configuration.getDefaultTopic()).isEqualTo("default-topic");
         assertThat(configuration.getDefaultTopicSubscriptionBufferSize()).isEqualTo(1024);
         assertThat(configuration.getDefaultJobSubscriptionBufferSize()).isEqualTo(32);
