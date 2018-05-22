@@ -3,10 +3,7 @@ package org.camunda.optimize.service.security;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
-import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.definition.ExtendedProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -14,7 +11,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
@@ -29,9 +25,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_REVOKE;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.READ_HISTORY_PERMISSION;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.READ_PERMISSION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
-import static org.camunda.optimize.test.util.ReportDataHelper.createReportDataViewRawAsTable;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -274,62 +268,6 @@ public class SessionServiceIT {
     assertThat(definitions.size(), is(1));
   }
 
-  @Test
-  public void evaluateUnauthorizedStoredReport() throws Exception {
-    // given
-    addKermitUserAndGrantAccessToOptimize();
-    deploySimpleProcessDefinition("aprocess");
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-    String reportId = createReportForDefinition("aprocess");
-
-    // when
-    Response response = embeddedOptimizeRule.target("report/" + reportId + "/evaluate")
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, createAuthenticationHeaderForKermit())
-      .get();
-
-    // then
-    assertThat(response.getStatus(), is(403));
-  }
-
-  @Test
-  public void deleteUnauthorizedStoredReport() throws Exception {
-    // given
-    addKermitUserAndGrantAccessToOptimize();
-    deploySimpleProcessDefinition("aprocess");
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-    String reportId = createReportForDefinition("aprocess");
-
-    // when
-    Response response = embeddedOptimizeRule.target("report/" + reportId)
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, createAuthenticationHeaderForKermit())
-      .delete();
-
-    // then
-    assertThat(response.getStatus(), is(403));
-  }
-
-  @Test
-  public void evaluateUnauthorizedOnTheFlyReport() throws Exception {
-    // given
-    addKermitUserAndGrantAccessToOptimize();
-    deploySimpleProcessDefinition("aprocess");
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    // when
-    ReportDefinitionDto definition = constructReportWithDefinition("aprocess");
-    Response response = embeddedOptimizeRule.target("report/evaluate")
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, createAuthenticationHeaderForKermit())
-      .post(Entity.json(definition));
-
-    // then
-    assertThat(response.getStatus(), is(403));
-  }
 
   @Test
   public void authorizationForOneGroupIsNotTransferredToOtherGroups() throws Exception {
@@ -383,7 +321,7 @@ public class SessionServiceIT {
     // given
     addKermitUserAndGrantAccessToOptimize();
     grantSingleDefinitionAuthorizationForKermit("aprocess");
-    String expectedDefinitionId = deploySimpleProcessDefinition("aprocess");
+    deploySimpleProcessDefinition("aprocess");
     deploySimpleProcessDefinition("aprocess");
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -393,39 +331,6 @@ public class SessionServiceIT {
 
     // then
     assertThat(definitions.size(), is(2));
-  }
-
-  private String createReportForDefinition(String definitionKey) {
-    Response response =
-      embeddedOptimizeRule.target("report")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .post(Entity.json(""));
-    assertThat(response.getStatus(), is(200));
-
-    String id = response.readEntity(IdDto.class).getId();
-    ReportDefinitionDto definition = constructReportWithDefinition(definitionKey);
-    updateReport(id, definition);
-    return id;
-  }
-
-  private void updateReport(String id, ReportDefinitionDto updatedReport) {
-    Response response = getUpdateReportResponse(id, updatedReport);
-    assertThat(response.getStatus(), is(204));
-  }
-
-  private ReportDefinitionDto constructReportWithDefinition(String processDefinitionKey) {
-    ReportDefinitionDto reportDefinitionDto = new ReportDefinitionDto();
-    ReportDataDto data = createReportDataViewRawAsTable(processDefinitionKey, "1");
-    reportDefinitionDto.setData(data);
-    return reportDefinitionDto;
-  }
-
-  private Response getUpdateReportResponse(String id, ReportDefinitionDto updatedReport) {
-    return embeddedOptimizeRule.target("report/" + id)
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-      .put(Entity.json(updatedReport));
   }
 
   private void addGlobalAuthorizationForAllDefinitions() {
@@ -494,8 +399,6 @@ public class SessionServiceIT {
     engineRule.createAuthorization(authorizationDto);
   }
 
-  // ----
-
   private void grantAllDefinitionAuthorizationsForKermit() {
     grantAllDefinitionAuthorizationsForUser("kermit");
   }
@@ -536,7 +439,6 @@ public class SessionServiceIT {
     AuthorizationDto authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(RESOURCE_TYPE_PROCESS_DEFINITION);
     List<String> permissions = new ArrayList<>();
-    permissions.add(READ_PERMISSION);
     permissions.add(READ_HISTORY_PERMISSION);
     authorizationDto.setPermissions(permissions);
     authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);

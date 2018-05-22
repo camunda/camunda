@@ -4,6 +4,7 @@ import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.ServerSetup;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
@@ -28,10 +29,14 @@ import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.util.ReportDataHelper.createAvgPiDurationAsNumberGroupByNone;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -89,7 +94,7 @@ public abstract class AbstractAlertIT {
     return OffsetDateTime.ofInstant(nextTimeReminderIsExecuted.toInstant(), ZoneId.systemDefault());
   }
 
-  protected ProcessInstanceEngineDto deployWithTimeShift(long daysToShift, long durationInSec) throws SQLException, InterruptedException {
+  protected ProcessInstanceEngineDto deployWithTimeShift(long daysToShift, long durationInSec) throws SQLException {
     OffsetDateTime startDate = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC);
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     adjustProcessInstanceDates(processInstance.getId(), startDate, daysToShift, durationInSec);
@@ -124,7 +129,7 @@ public abstract class AbstractAlertIT {
     return new JobKey(id + "-check-job", "statusCheck-job");
   }
 
-  protected AlertCreationDto createBasicAlertWithReminder() throws IOException, InterruptedException {
+  protected AlertCreationDto createBasicAlertWithReminder() throws IOException {
     AlertCreationDto simpleAlert = setupBasicAlert();
     AlertInterval reminderInterval = new AlertInterval();
     reminderInterval.setValue(1);
@@ -133,8 +138,12 @@ public abstract class AbstractAlertIT {
     return simpleAlert;
   }
 
-  protected AlertCreationDto setupBasicAlert() throws IOException, InterruptedException {
-    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess();
+  protected AlertCreationDto setupBasicAlert() throws IOException {
+    return setupBasicAlert("aProcess");
+  }
+
+  protected AlertCreationDto setupBasicAlert(String definitionKey) throws IOException {
+    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess(definitionKey);
     engineRule.startProcessInstance(processDefinition.getId());
 
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
@@ -213,7 +222,11 @@ public abstract class AbstractAlertIT {
   }
 
   protected ProcessDefinitionEngineDto deploySimpleServiceTaskProcess() throws IOException {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
+    return deploySimpleServiceTaskProcess("aProcess");
+  }
+
+  protected ProcessDefinitionEngineDto deploySimpleServiceTaskProcess(String definitionKey) throws IOException {
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess(definitionKey)
       .name("aProcessName")
         .startEvent()
           .serviceTask()
@@ -225,10 +238,6 @@ public abstract class AbstractAlertIT {
 
   protected String createAndStoreDurationNumberReport(ProcessInstanceEngineDto instanceEngineDto) {
     return createAndStoreDurationNumberReport(instanceEngineDto.getProcessDefinitionKey(), instanceEngineDto.getProcessDefinitionVersion());
-  }
-
-  protected String createAndStoreDurationNumberReport(ProcessDefinitionEngineDto definition) {
-    return createAndStoreDurationNumberReport(definition.getKey(), String.valueOf(definition.getVersion()));
   }
 
   protected String createAndStoreDurationNumberReport(String processDefinitionKey, String processDefinitionVersion) {
@@ -270,5 +279,15 @@ public abstract class AbstractAlertIT {
     greenMail.setUser("test@camunda.com", "test@camunda.com", "test@camunda.com");
     greenMail.start();
     return greenMail;
+  }
+
+  protected void grantSingleDefinitionAuthorizationsForUser(String userId, String definitionKey) {
+    AuthorizationDto authorizationDto = new AuthorizationDto();
+    authorizationDto.setResourceType(RESOURCE_TYPE_PROCESS_DEFINITION);
+    authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
+    authorizationDto.setResourceId(definitionKey);
+    authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
+    authorizationDto.setUserId(userId);
+    engineRule.createAuthorization(authorizationDto);
   }
 }

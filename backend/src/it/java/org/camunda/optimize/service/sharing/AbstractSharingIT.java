@@ -2,6 +2,7 @@ package org.camunda.optimize.service.sharing;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
@@ -21,10 +22,14 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -43,8 +48,12 @@ public abstract class AbstractSharingIT {
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
-  protected String createReport() throws InterruptedException {
-    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+  protected String createReport() {
+    return createReport("aProcess");
+  }
+
+  protected String createReport(String definitionKey) {
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess(definitionKey);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -66,12 +75,13 @@ public abstract class AbstractSharingIT {
     assertThat(errorMessage.getReportDefinition().getId(), is(notNullValue()));
   }
 
-  protected ProcessInstanceEngineDto deployAndStartSimpleProcess() {
-    return deployAndStartSimpleProcessWithVariables(new HashMap<>());
+  protected ProcessInstanceEngineDto deployAndStartSimpleProcess(String definitionKey) {
+    return deployAndStartSimpleProcessWithVariables(definitionKey, new HashMap<>());
   }
 
-  private ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(Map<String, Object> variables) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
+  private ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(String definitionKey,
+                                                                            Map<String, Object> variables) {
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess(definitionKey)
         .name("aProcessName")
           .startEvent()
           .endEvent()
@@ -180,7 +190,7 @@ public abstract class AbstractSharingIT {
     return sharingDto;
   }
 
-  private DashboardShareDto createDashboardShareDto(String dashboardId) {
+  protected DashboardShareDto createDashboardShareDto(String dashboardId) {
     DashboardShareDto sharingDto = new DashboardShareDto();
     sharingDto.setDashboardId(dashboardId);
     return sharingDto;
@@ -221,6 +231,16 @@ public abstract class AbstractSharingIT {
     assertThat(evaluatedReportAsMap, is(notNullValue()));
     assertThat(evaluatedReportAsMap.get("id"), is(reportId));
     assertThat(evaluatedReportAsMap.get("data"), is(notNullValue()));
+  }
+
+  protected void grantSingleDefinitionAuthorizationsForUser(String userId, String definitionKey) {
+    AuthorizationDto authorizationDto = new AuthorizationDto();
+    authorizationDto.setResourceType(RESOURCE_TYPE_PROCESS_DEFINITION);
+    authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
+    authorizationDto.setResourceId(definitionKey);
+    authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
+    authorizationDto.setUserId(userId);
+    engineRule.createAuthorization(authorizationDto);
   }
 
 }

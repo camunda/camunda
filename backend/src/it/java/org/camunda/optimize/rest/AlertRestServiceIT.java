@@ -178,6 +178,32 @@ public class AlertRestServiceIT extends AbstractAlertIT{
   }
 
   @Test
+  public void getAuthorizedAlertsOnly() throws Exception {
+    //given
+    engineRule.addUser("kermit", "kermit");
+    engineRule.grantUserOptimizeAccess("kermit");
+    AlertCreationDto alert1 = setupBasicAlert("processDefinition1");
+    AlertCreationDto alert2 = setupBasicAlert("processDefinition2");
+    addAlertToOptimize(alert1);
+    addAlertToOptimize(alert2);
+    grantSingleDefinitionAuthorizationsForUser("kermit", "processDefinition1");
+
+    // when
+    Response response =
+      embeddedOptimizeRule.target(ALERT)
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthenticationHeaderForUser("kermit", "kermit"))
+        .get();
+
+    assertThat(response.getStatus(), is(200));
+    List<AlertDefinitionDto> allAlerts = response.readEntity(new GenericType<List<AlertDefinitionDto>>() {
+    });
+
+    // then
+    assertThat(allAlerts.size(), is(1));
+  }
+
+  @Test
   public void deleteAlertWithoutAuthentication() {
     // when
     Response response =

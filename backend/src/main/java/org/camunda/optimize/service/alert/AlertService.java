@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.rest.util.AuthenticationUtil.getSessionIssuer;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_NONE_TYPE;
@@ -79,7 +80,7 @@ public class  AlertService {
 
       List<AlertDefinitionDto> alerts = new ArrayList<>();
       try {
-        alerts = this.getStoredAlerts();
+        alerts = alertReader.getStoredAlerts();
       } catch (Exception e) {
         logger.error("can't initialize alerts", e);
       }
@@ -174,23 +175,33 @@ public class  AlertService {
 
 
 
-  public List<AlertDefinitionDto> getStoredAlerts() {
-    return alertReader.getStoredAlerts();
+  public List<AlertDefinitionDto> getStoredAlerts(String userId) {
+    List<AlertDefinitionDto> alerts =  alertReader.getStoredAlerts();
+    List<String> authorizedReportIds = reportService
+      .findAndFilterReports(userId)
+      .stream()
+      .map(ReportDefinitionDto::getId)
+      .collect(Collectors.toList());
+
+    return alerts
+      .stream()
+      .filter(a -> authorizedReportIds.contains(a.getReportId()))
+      .collect(Collectors.toList());
   }
 
   public IdDto createAlert(AlertCreationDto toCreate, String token) {
-    validateAlert(toCreate);
     String userId = getSessionIssuer(token);
+    validateAlert(toCreate, userId);
     String alertId = this.createAlertForUser(toCreate, userId).getId();
     IdDto result = new IdDto();
     result.setId(alertId);
     return result;
   }
 
-  private void validateAlert(AlertCreationDto toCreate) {
+  private void validateAlert(AlertCreationDto toCreate, String userId) {
     ReportDefinitionDto report;
     try {
-      report = reportService.getReport(toCreate.getReportId());
+      report = reportService.getReportWithAuthorizationCheck(toCreate.getReportId(), userId);
     } catch (Exception e) {
       String errorMessage = "Could not create alert [" + toCreate.getName() + "]. Report id [" +
         toCreate.getReportId() + "] does not exist.";
@@ -234,8 +245,8 @@ public class  AlertService {
   }
 
   public void updateAlert(String alertId, AlertCreationDto toCreate, String token) {
-    validateAlert(toCreate);
     String userId = getSessionIssuer(token);
+    validateAlert(toCreate, userId);
     this.updateAlertForUser(alertId, toCreate, userId);
   }
 

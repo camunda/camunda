@@ -49,13 +49,9 @@ public class ReportService {
   @Autowired
   private SessionService sessionService;
 
-  public void deleteReport(String userId, String reportId) {
+  public void deleteReportWithAuthorizationCheck(String userId, String reportId) {
     ReportDefinitionDto reportDefinition = reportReader.getReport(reportId);
-    ReportDataDto reportData = reportDefinition.getData();
-    if (reportData != null && !isAuthorizedToPerformActionOnReport(userId, reportData)) {
-      throw new ForbiddenException("User [" + userId + "] is not authorized to delete report " +
-        "for process definition [" + reportData.getProcessDefinitionKey() + "].");
-    }
+    performAuthorizationCheck(userId, reportDefinition);
 
     alertService.deleteAlertsForReport(reportId);
     sharingService.deleteShareForReport(reportId);
@@ -66,8 +62,11 @@ public class ReportService {
     return reportWriter.createNewReportAndReturnId(userId);
   }
 
-  public void updateReport(String reportId, ReportDefinitionDto updatedReport, String userId) throws OptimizeException, JsonProcessingException {
+  public void updateReportWithAuthorizationCheck(String reportId,
+                                                 ReportDefinitionDto updatedReport,
+                                                 String userId) throws OptimizeException, JsonProcessingException {
     ValidationHelper.validateDefinition(updatedReport.getData());
+    getReportWithAuthorizationCheck(reportId, userId);
     ReportDefinitionUpdateDto reportUpdate = convertToReportUpdate(reportId, updatedReport, userId);
     reportWriter.updateReport(reportUpdate);
     alertService.deleteAlertsIfNeeded(reportId, updatedReport.getData());
@@ -88,10 +87,15 @@ public class ReportService {
   }
 
   public List<ReportDefinitionDto> findAndFilterReports(String userId,
-                                                        MultivaluedMap<String, String> queryParameters) throws IOException {
+                                                        MultivaluedMap<String, String> queryParameters) {
+    List<ReportDefinitionDto> reports = findAndFilterReports(userId);
+    reports = QueryParamAdjustmentUtil.adjustReportResultsToQueryParameters(reports, queryParameters);
+    return reports;
+  }
+
+  public List<ReportDefinitionDto> findAndFilterReports(String userId) {
     List<ReportDefinitionDto> reports = reportReader.getAllReports();
     reports = filterAuthorizedReports(userId, reports);
-    reports = QueryParamAdjustmentUtil.adjustReportResultsToQueryParameters(reports, queryParameters);
     return reports;
   }
 
@@ -106,8 +110,18 @@ public class ReportService {
     return reports;
   }
 
-  public ReportDefinitionDto getReport(String reportId) {
-    return reportReader.getReport(reportId);
+  public ReportDefinitionDto getReportWithAuthorizationCheck(String reportId, String userId) {
+    ReportDefinitionDto report = reportReader.getReport(reportId);
+    performAuthorizationCheck(userId, report);
+    return report;
+  }
+
+  public void performAuthorizationCheck(String userId, ReportDefinitionDto report) {
+    ReportDataDto reportData = report.getData();
+    if (reportData != null && !isAuthorizedToPerformActionOnReport(userId, reportData)) {
+      throw new ForbiddenException("User [" + userId + "] is not authorized to access or edit report [" +
+        report.getName() + "] with process definition [" + reportData.getProcessDefinitionKey() + "].");
+    }
   }
 
   public ReportResultDto evaluateSavedReportWithAuthorizationCheck(String userId, String reportId) {
@@ -119,11 +133,7 @@ public class ReportService {
 
   public ReportResultDto evaluateReportWithAuthorizationCheck(String userId,
                                                               ReportDefinitionDto reportDefinition) {
-    ReportDataDto reportData = reportDefinition.getData();
-    if (reportData != null && !isAuthorizedToPerformActionOnReport(userId, reportData)) {
-      throw new ForbiddenException("User [" + userId + "] is not authorized to evaluate report " +
-        "for process definition [" + reportData.getProcessDefinitionKey() + "].");
-    }
+    performAuthorizationCheck(userId, reportDefinition);
     return evaluateWithErrorCheck(reportDefinition);
   }
 

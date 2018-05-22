@@ -70,7 +70,7 @@ public class ReportReader {
     }
   }
 
-  public List<ReportDefinitionDto> getAllReports() throws IOException {
+  public List<ReportDefinitionDto> getAllReports() {
     logger.debug("Fetching all available reports");
     SearchResponse scrollResp = esclient
       .prepareSearch(configurationService.getOptimizeIndex(configurationService.getReportType()))
@@ -84,9 +84,17 @@ public class ReportReader {
     do {
       for (SearchHit hit : scrollResp.getHits().getHits()) {
         String responseAsString = hit.getSourceAsString();
-        ReportDefinitionDto report =
-          objectMapper.readValue(responseAsString, ReportDefinitionDto.class);
-        reportRequests.add(report);
+        try {
+          ReportDefinitionDto report =
+            objectMapper.readValue(responseAsString, ReportDefinitionDto.class);
+          reportRequests.add(report);
+        } catch (IOException e) {
+          String reason = "While retrieving all available reports "  +
+            "it was not possible to deserialize a report from Elasticsearch! " +
+            "Report response from Elasticsearch: " + responseAsString;
+          logger.error(reason, e);
+          throw new OptimizeRuntimeException(reason);
+        }
       }
 
       scrollResp = esclient

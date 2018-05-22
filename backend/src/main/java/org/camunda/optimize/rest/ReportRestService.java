@@ -65,7 +65,7 @@ public class ReportRestService {
                            @PathParam("id") String reportId,
                            ReportDefinitionDto updatedReport) throws OptimizeException, JsonProcessingException {
     String userId = getRequestUser(requestContext);
-    reportService.updateReport(reportId, updatedReport, userId);
+    reportService.updateReportWithAuthorizationCheck(reportId, updatedReport, userId);
   }
 
   /**
@@ -89,8 +89,10 @@ public class ReportRestService {
   @GET
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public ReportDefinitionDto getReport(@PathParam("id") String reportId) {
-    return reportService.getReport(reportId);
+  public ReportDefinitionDto getReport(@Context ContainerRequestContext requestContext,
+                                       @PathParam("id") String reportId) {
+    String userId = getRequestUser(requestContext);
+    return reportService.getReportWithAuthorizationCheck(reportId, userId);
   }
 
   /**
@@ -101,7 +103,7 @@ public class ReportRestService {
   public void deleteReport(@Context ContainerRequestContext requestContext,
                            @PathParam("id") String reportId) {
     String userId = getRequestUser(requestContext);
-    reportService.deleteReport(userId, reportId);
+    reportService.deleteReportWithAuthorizationCheck(userId, reportId);
   }
 
   /**
@@ -116,7 +118,7 @@ public class ReportRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   public ReportResultDto evaluateReport(@Context ContainerRequestContext requestContext,
-                                        @PathParam("id") String reportId) throws OptimizeException {
+                                        @PathParam("id") String reportId) {
     String userId = getRequestUser(requestContext);
     return reportService.evaluateSavedReportWithAuthorizationCheck(userId, reportId);
   }

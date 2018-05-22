@@ -9,7 +9,6 @@ import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchResultDto;
 import org.camunda.optimize.rest.providers.Secured;
-import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.security.SharingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -21,11 +20,12 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
-/**
- * @author Askar Akhmerov
- */
+import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUser;
+
 @Path("/share")
 @Component
 public class SharingRestService {
@@ -38,9 +38,10 @@ public class SharingRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   @Path("/report")
-  public IdDto createNewReportShare(ReportShareDto createSharingDto) {
-    sharingService.validateReportShare(createSharingDto);
-    return sharingService.createNewReportShareIfAbsent(createSharingDto);
+  public IdDto createNewReportShare(@Context ContainerRequestContext requestContext,
+                                    ReportShareDto createSharingDto) {
+    String userId = getRequestUser(requestContext);
+    return sharingService.createNewReportShareIfAbsent(createSharingDto, userId);
   }
 
   @POST
@@ -48,9 +49,10 @@ public class SharingRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   @Path("/dashboard")
-  public IdDto createNewDashboardShare (DashboardShareDto createSharingDto) {
-    sharingService.validateDashboardShare(createSharingDto);
-    return sharingService.crateNewDashboardShare(createSharingDto);
+  public IdDto createNewDashboardShare (@Context ContainerRequestContext requestContext,
+                                        DashboardShareDto createSharingDto) {
+    String userId = getRequestUser(requestContext);
+    return sharingService.crateNewDashboardShare(createSharingDto, userId);
   }
 
   @DELETE
@@ -96,7 +98,7 @@ public class SharingRestService {
   public ReportResultDto evaluateReport(
     @PathParam("shareId") String dashboardShareId,
     @PathParam("reportId") String reportId
-  ) throws OptimizeException {
+  ) {
     return sharingService.evaluateReportForSharedDashboard(dashboardShareId, reportId);
   }
 

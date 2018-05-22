@@ -57,7 +57,7 @@ public class SharingServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void dashboardsWithDuplicateReportsAreShared() throws Exception {
+  public void dashboardsWithDuplicateReportsAreShared() {
     //given
     String reportId = createReport();
     String dashboardId = addEmptyDashboardToOptimize();
@@ -79,7 +79,7 @@ public class SharingServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void individualReportShareIsNotAffectedByDashboard() throws Exception {
+  public void individualReportShareIsNotAffectedByDashboard() {
     //given
     String reportId = createReport();
     String reportId2 = createReport();
@@ -108,7 +108,7 @@ public class SharingServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void canEvaluateEveryReportOfSharedDashboard() throws Exception {
+  public void canEvaluateEveryReportOfSharedDashboard() {
     //given
     String reportId = createReport();
     String reportId2 = createReport();
@@ -144,7 +144,7 @@ public class SharingServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void sharedDashboardReportsCannotBeEvaluateViaSharedReport() throws Exception {
+  public void sharedDashboardReportsCannotBeEvaluateViaSharedReport() {
     //given
     String reportId = createReport();
     String dashboardId = addEmptyDashboardToOptimize();
@@ -162,7 +162,7 @@ public class SharingServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void evaluateUnknownReportOfSharedDashboardThrowsError() throws Exception {
+  public void evaluateUnknownReportOfSharedDashboardThrowsError() {
     //given
     String reportId = createReport();
     String dashboardId = addEmptyDashboardToOptimize();
@@ -180,7 +180,7 @@ public class SharingServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void evaluateUnknownSharedDashboardThrowsError() throws Exception {
+  public void evaluateUnknownSharedDashboardThrowsError() {
     //given
     String reportId = createReport();
     String dashboardId = addEmptyDashboardToOptimize();
@@ -198,7 +198,7 @@ public class SharingServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void reportSharesOfDashboardsAreIndependent() throws Exception {
+  public void reportSharesOfDashboardsAreIndependent() {
     //given
     String reportId = createReport();
     String reportId2 = createReport();
@@ -243,7 +243,7 @@ public class SharingServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void removingReportFromDashboardRemovesRespectiveShare() throws Exception {
+  public void removingReportFromDashboardRemovesRespectiveShare() {
     //given
     String reportId = createReport();
     String dashboardWithReport = createDashboardWithReport(reportId);
@@ -303,7 +303,7 @@ public class SharingServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void addingReportToDashboardAddsRespectiveShare() throws Exception {
+  public void addingReportToDashboardAddsRespectiveShare() {
     //given
     String dashboardId = addEmptyDashboardToOptimize();
     String dashboardShareId = addShareForDashboard(dashboardId);
@@ -322,7 +322,7 @@ public class SharingServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void unsharedDashboardRemovesNotStandaloneReportShares() throws Exception {
+  public void unsharedDashboardRemovesNotStandaloneReportShares() {
     //given
     String reportId = createReport();
     String dashboardWithReport = createDashboardWithReport(reportId);
@@ -361,7 +361,7 @@ public class SharingServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void cannotEvaluateDashboardOverReportsEndpoint() throws Exception {
+  public void cannotEvaluateDashboardOverReportsEndpoint() {
     //given
     String reportId = createReport();
     String dashboardWithReport = createDashboardWithReport(reportId);
@@ -414,7 +414,7 @@ public class SharingServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void shareIsNotCreatedForSameResourceTwice() throws Exception {
+  public void shareIsNotCreatedForSameResourceTwice() {
     //given
     String reportId = createReport();
     ReportShareDto share = createReportShare(reportId);
@@ -461,7 +461,7 @@ public class SharingServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void cantEvaluateUnsharedReport() throws Exception {
+  public void cantEvaluateUnsharedReport() {
     //given
     String reportId = createReport();
     String shareId = this.addShareForReport(reportId);
@@ -489,7 +489,7 @@ public class SharingServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void newIdGeneratedAfterDeletion() throws Exception {
+  public void newIdGeneratedAfterDeletion() {
     String reportId = createReport();
     String reportShareId = this.addShareForReport(reportId);
 
@@ -506,7 +506,7 @@ public class SharingServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void sharesRemovedOnReportDeletion() throws Exception {
+  public void sharesRemovedOnReportDeletion() {
     //given
     String reportId = createReport();
     this.addShareForReport(reportId);
@@ -523,7 +523,7 @@ public class SharingServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void canEvaluateSharedReportWithoutAuthentication() throws Exception {
+  public void canEvaluateSharedReportWithoutAuthentication() {
     // given
     String reportId = createReport();
 
@@ -542,7 +542,7 @@ public class SharingServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void canCheckDashboardSharingStatus() throws Exception {
+  public void canCheckDashboardSharingStatus() {
     String reportId = createReport();
     String dashboardWithReport = createDashboardWithReport(reportId);
 
@@ -575,7 +575,7 @@ public class SharingServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void canCheckReportSharingStatus() throws Exception {
+  public void canCheckReportSharingStatus() {
     String reportId = createReport();
     addShareForReport(reportId);
 
@@ -600,7 +600,7 @@ public class SharingServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void canCreateReportShareIfDashboardIsShared() throws Exception {
+  public void canCreateReportShareIfDashboardIsShared() {
     //given
     String reportId = createReport();
     String dashboardWithReport = createDashboardWithReport(reportId);
@@ -619,7 +619,7 @@ public class SharingServiceIT extends AbstractSharingIT {
   @Test
   public void errorMessageIsWellStructured () {
     //given
-    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess("aProcess");
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -657,6 +657,29 @@ public class SharingServiceIT extends AbstractSharingIT {
     //then
     assertThat(response.getStatus(), is(500));
     AbstractSharingIT.assertErrorFields(response.readEntity(ReportEvaluationException.class));
+  }
+
+  @Test
+  public void shareUnauthorizedDashboard() {
+    // given
+    engineRule.addUser("kermit", "kermit");
+    engineRule.grantUserOptimizeAccess("kermit");
+    String reportId1 = createReport("processDefinition1");
+    String reportId2 = createReport("processDefinition2");
+    String dashboardId = addEmptyDashboardToOptimize();
+    addReportToDashboard(dashboardId, reportId1, reportId2);
+
+    grantSingleDefinitionAuthorizationsForUser("kermit", "processDefinition1");
+
+    // when I want to share the dashboard as kermit and kermit has no access to report 2
+    DashboardShareDto share = createDashboardShareDto(dashboardId);
+    Response response = embeddedOptimizeRule.target(SHARE + "/" + DASHBOARD)
+      .request()
+      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthenticationHeaderForUser("kermit", "kermit"))
+      .post(Entity.json(share));
+
+    // then
+    assertThat(response.getStatus(), is(403));
   }
 
 }

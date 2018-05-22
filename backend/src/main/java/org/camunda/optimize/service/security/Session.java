@@ -12,7 +12,6 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_REVOKE;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.READ_HISTORY_PERMISSION;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.READ_PERMISSION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 
 public class Session {
@@ -30,6 +29,10 @@ public class Session {
   }
 
   public boolean isAuthorizedToSeeDefinition(String processDefinitionKey) {
+
+    if (processDefinitionKey == null || processDefinitionKey.isEmpty()) {
+      return true;
+    }
 
     // NOTE: the order is essential here to make sure that
     // the revoking of definition permissions works correctly
@@ -91,8 +94,7 @@ public class Session {
 
   private boolean hasCorrectPermissions(AuthorizationDto a) {
     List<String> permissions = a.getPermissions();
-    return permissions.contains(ALL_PERMISSION) ||
-      (permissions.contains(READ_PERMISSION)  && permissions.contains(READ_HISTORY_PERMISSION));
+    return permissions.contains(ALL_PERMISSION) || permissions.contains(READ_HISTORY_PERMISSION);
   }
 
   private void addAuthorizationForAllDefinitions(AuthorizationDto a,

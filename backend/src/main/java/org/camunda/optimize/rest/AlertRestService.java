@@ -24,9 +24,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
 
-/**
- * @author Askar Akhmerov
- */
+import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUser;
+
 @Path("/alert")
 @Component
 @Secured
@@ -37,8 +36,9 @@ public class AlertRestService {
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public List<AlertDefinitionDto> getStoredAlerts() {
-    return alertService.getStoredAlerts();
+  public List<AlertDefinitionDto> getStoredAlerts(@Context ContainerRequestContext requestContext) {
+    String userId = getRequestUser(requestContext);
+    return alertService.getStoredAlerts(userId);
   }
 
   @POST
