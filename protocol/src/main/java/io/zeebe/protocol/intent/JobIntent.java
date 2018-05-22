@@ -20,14 +20,14 @@ public enum JobIntent implements Intent
     CREATE((short) 0),
     CREATED((short) 1),
 
-    LOCK((short) 2),
-    LOCKED((short) 3),
+    ACTIVATE((short) 2),
+    ACTIVATED((short) 3),
 
     COMPLETE((short) 4),
     COMPLETED((short) 5),
 
-    EXPIRE_LOCK((short) 6),
-    LOCK_EXPIRED((short) 7),
+    TIME_OUT((short) 6),
+    TIMED_OUT((short) 7),
 
     FAIL((short) 8),
     FAILED((short) 9),
@@ -56,12 +56,12 @@ public enum JobIntent implements Intent
         {
             case 0: return CREATE;
             case 1: return CREATED;
-            case 2: return LOCK;
-            case 3: return LOCKED;
+            case 2: return ACTIVATE;
+            case 3: return ACTIVATED;
             case 4: return COMPLETE;
             case 5: return COMPLETED;
-            case 6: return EXPIRE_LOCK;
-            case 7: return LOCK_EXPIRED;
+            case 6: return TIME_OUT;
+            case 7: return TIMED_OUT;
             case 8: return FAIL;
             case 9: return FAILED;
             case 10: return UPDATE_RETRIES;
