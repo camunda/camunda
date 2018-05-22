@@ -49,7 +49,7 @@ public class POJOMappingContext
     public void setUp()
     {
 
-        jobRecord.setLockTime(System.currentTimeMillis());
+        jobRecord.setDeadline(System.currentTimeMillis());
         jobRecord.setType(BufferUtil.wrapString("someTaskType"));
 
         final DirectBuffer payload = write((w) ->
