@@ -91,7 +91,8 @@ public class ClientApiRule extends ExternalResource
 
         if (usesDefaultTopic)
         {
-            List<Integer> partitionIds = doRepeatedly(() -> getPartitionsFromTopology(DEFAULT_TOPIC_NAME)).until(p -> !p.isEmpty());
+            final List<Integer> partitionIds =
+                    doRepeatedly(() -> getPartitionsFromTopology(DEFAULT_TOPIC_NAME)).until(p -> !p.isEmpty());
             defaultPartitionId = partitionIds.get(0);
         }
     }
