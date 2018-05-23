@@ -100,11 +100,15 @@ public class ReplicationFactorService extends Actor implements Service<Replicati
     @Override
     public void topicCreated(final String topicName)
     {
-        // TODO(menski): limit to topic
-        actor.run(this::checkCurrentState);
+        actor.run(() -> checkCurrentState(topicName));
     }
 
     private void checkCurrentState()
+    {
+        checkCurrentState(null);
+    }
+
+    private void checkCurrentState(final String filterTopicName)
     {
         final ActorFuture<ClusterPartitionState> queryFuture = topologyManager.query(ClusterPartitionState::computeCurrentState);
 
@@ -112,7 +116,7 @@ public class ReplicationFactorService extends Actor implements Service<Replicati
         {
             if (error == null)
             {
-                computeStateDifferences(currentState);
+                computeStateDifferences(currentState, filterTopicName);
             }
             else
             {
@@ -121,9 +125,9 @@ public class ReplicationFactorService extends Actor implements Service<Replicati
         });
     }
 
-    private void computeStateDifferences(final ClusterPartitionState currentState)
+    private void computeStateDifferences(final ClusterPartitionState currentState, final String filterTopicName)
     {
-        final ActorFuture<List<PartitionNodes>> requiredInvitationsFuture = knownTopics.queryTopics(topics -> computeRequiredInvitations(topics, currentState));
+        final ActorFuture<List<PartitionNodes>> requiredInvitationsFuture = knownTopics.queryTopics(topics -> computeRequiredInvitations(topics, currentState, filterTopicName));
 
         actor.runOnCompletion(requiredInvitationsFuture, (requiredInvitations, error) ->
         {
@@ -145,25 +149,29 @@ public class ReplicationFactorService extends Actor implements Service<Replicati
         });
     }
 
-    private List<PartitionNodes> computeRequiredInvitations(final Iterable<TopicInfo> topics, final ClusterPartitionState currentState)
+    private List<PartitionNodes> computeRequiredInvitations(final Iterable<TopicInfo> topics, final ClusterPartitionState currentState, final String filterTopicName)
     {
         final List<PartitionNodes> requiredInvitations = new ArrayList<>();
 
         for (final TopicInfo topic : topics)
         {
-            final List<PartitionNodes> listOfPartitionNodes = currentState.getPartitions(topic.getTopicNameBuffer());
-            for (final PartitionNodes partitionNode : listOfPartitionNodes)
+            // limit invitations to topic name if specified
+            if (filterTopicName == null || filterTopicName.equals(topic.getTopicName()))
             {
-                final int missingReplications = partitionNode.getPartitionInfo().getReplicationFactor() - partitionNode.getNodes().size();
-                if (missingReplications > 0)
+                final List<PartitionNodes> listOfPartitionNodes = currentState.getPartitions(topic.getTopicNameBuffer());
+                for (final PartitionNodes partitionNode : listOfPartitionNodes)
                 {
-                    final int partitionId = partitionNode.getPartitionId();
-                    if (!pendingInvitations.contains(partitionId))
+                    final int missingReplications = partitionNode.getPartitionInfo().getReplicationFactor() - partitionNode.getNodes().size();
+                    if (missingReplications > 0)
                     {
-                        LOG.debug("Inviting {} members for partition {}", missingReplications, partitionNode.getPartitionInfo());
-                        for (int i = 0; i < missingReplications; i++)
+                        final int partitionId = partitionNode.getPartitionId();
+                        if (!pendingInvitations.contains(partitionId))
                         {
-                            requiredInvitations.add(partitionNode);
+                            LOG.debug("Inviting {} members for partition {}", missingReplications, partitionNode.getPartitionInfo());
+                            for (int i = 0; i < missingReplications; i++)
+                            {
+                                requiredInvitations.add(partitionNode);
+                            }
                         }
                     }
                 }

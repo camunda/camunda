@@ -117,18 +117,21 @@ public class TopicCreationService extends Actor implements Service<TopicCreation
     @Override
     public void topicAdded(final String topicName)
     {
-        // TODO(menski): limit to topic
-        actor.run(this::checkCurrentState);
+        actor.run(() -> checkCurrentState(topicName));
     }
 
     @Override
     public void onPartitionUpdated(final PartitionInfo partitionInfo, final NodeInfo member)
     {
-        // TODO(menski): limit to topic
-        actor.run(this::checkCurrentState);
+        actor.run(() -> checkCurrentState(partitionInfo.getTopicName()));
     }
 
     private void checkCurrentState()
+    {
+        checkCurrentState(null);
+    }
+
+    private void checkCurrentState(final String filterTopicName)
     {
         final ActorFuture<ClusterPartitionState> queryFuture = topologyManager.query(ClusterPartitionState::computeCurrentState);
 
@@ -136,7 +139,7 @@ public class TopicCreationService extends Actor implements Service<TopicCreation
         {
             if (error == null)
             {
-                computeStateDifferences(currentState);
+                computeStateDifferences(currentState, filterTopicName);
             }
             else
             {
@@ -145,7 +148,7 @@ public class TopicCreationService extends Actor implements Service<TopicCreation
         });
     }
 
-    private void computeStateDifferences(final ClusterPartitionState currentState)
+    private void computeStateDifferences(final ClusterPartitionState currentState, final String filterTopicName)
     {
         final ActorFuture<List<PendingTopic>> pendingTopicsFuture = knownTopics.queryTopics(topics -> computePendingTopics(topics, currentState));
 
@@ -157,41 +160,45 @@ public class TopicCreationService extends Actor implements Service<TopicCreation
                 {
                     final String topicName = pendingTopic.getTopicName();
 
-                    if (pendingTopic.getMissingPartitions() > 0)
+                    // limit partitions to topic name if specified
+                    if (filterTopicName == null || filterTopicName.equals(topicName))
                     {
-                        if (!pendingTopicCreationRequests.contains(topicName))
+                        if (pendingTopic.getMissingPartitions() > 0)
                         {
-                            LOG.debug("Creating {} partitions for topic {}", pendingTopic.getMissingPartitions(), topicName);
-                            for (int i = 0; i < pendingTopic.getMissingPartitions(); i++)
+                            if (!pendingTopicCreationRequests.contains(topicName))
                             {
-                                createPartition(pendingTopic);
+                                LOG.debug("Creating {} partitions for topic {}", pendingTopic.getMissingPartitions(), topicName);
+                                for (int i = 0; i < pendingTopic.getMissingPartitions(); i++)
+                                {
+                                    createPartition(pendingTopic);
+                                }
+                                pendingTopicCreationRequests.add(topicName);
+                                actor.runDelayed(PENDING_TIMEOUT, () -> pendingTopicCreationRequests.remove(topicName));
                             }
-                            pendingTopicCreationRequests.add(topicName);
-                            actor.runDelayed(PENDING_TIMEOUT, () -> pendingTopicCreationRequests.remove(topicName));
                         }
-                    }
-                    else
-                    {
-                        if (!pendingTopicCompletions.contains(topicName))
+                        else
                         {
-                            final int partitionCount = pendingTopic.getPartitionCount();
-                            final int replicationFactor = pendingTopic.getReplicationFactor();
+                            if (!pendingTopicCompletions.contains(topicName))
+                            {
+                                final int partitionCount = pendingTopic.getPartitionCount();
+                                final int replicationFactor = pendingTopic.getReplicationFactor();
 
-                            final TopicRecord topicEvent = new TopicRecord();
-                            topicEvent.setName(pendingTopic.getTopicNameBuffer());
-                            topicEvent.setPartitions(partitionCount);
-                            topicEvent.setReplicationFactor(replicationFactor);
+                                final TopicRecord topicEvent = new TopicRecord();
+                                topicEvent.setName(pendingTopic.getTopicNameBuffer());
+                                topicEvent.setPartitions(partitionCount);
+                                topicEvent.setReplicationFactor(replicationFactor);
 
-                            final ValueArray<IntegerValue> eventPartitionIds = topicEvent.getPartitionIds();
-                            pendingTopic.getPartitionIds().forEach(id -> eventPartitionIds.add().setValue(id));
+                                final ValueArray<IntegerValue> eventPartitionIds = topicEvent.getPartitionIds();
+                                pendingTopic.getPartitionIds().forEach(id -> eventPartitionIds.add().setValue(id));
 
-                            actor.runUntilDone(() -> writeEvent(pendingTopic.getKey(), TopicIntent.CREATE_COMPLETE, topicEvent));
+                                actor.runUntilDone(() -> writeEvent(pendingTopic.getKey(), TopicIntent.CREATE_COMPLETE, topicEvent));
 
-                            pendingTopicCreationRequests.remove(topicName);
-                            pendingTopicCompletions.add(topicName);
-                            actor.runDelayed(PENDING_TIMEOUT, () -> pendingTopicCompletions.remove(topicName));
-                            LOG.debug("Topic {} with {} partition(s) and replication factor {} created", topicName, partitionCount, replicationFactor);
+                                pendingTopicCreationRequests.remove(topicName);
+                                pendingTopicCompletions.add(topicName);
+                                actor.runDelayed(PENDING_TIMEOUT, () -> pendingTopicCompletions.remove(topicName));
+                                LOG.debug("Topic {} with {} partition(s) and replication factor {} created", topicName, partitionCount, replicationFactor);
 
+                            }
                         }
                     }
                 }
@@ -287,7 +294,7 @@ public class TopicCreationService extends Actor implements Service<TopicCreation
         });
     }
 
-    private void writeEvent(final long key, TopicIntent intent, final TopicRecord topicEvent)
+    private void writeEvent(final long key, final TopicIntent intent, final TopicRecord topicEvent)
     {
         if (streamWriter.writeFollowUpEvent(key, intent, topicEvent) >= 0)
         {
