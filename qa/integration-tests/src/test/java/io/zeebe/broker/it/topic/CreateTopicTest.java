@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -33,14 +33,11 @@ import org.junit.rules.Timeout;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.commands.Partition;
 import io.zeebe.client.api.commands.Topic;
 import io.zeebe.client.api.commands.Topics;
 import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.events.JobState;
-import io.zeebe.client.api.events.TopicEvent;
-import io.zeebe.client.api.events.TopicEvent.TopicState;
 
 public class CreateTopicTest
 {
@@ -92,37 +89,31 @@ public class CreateTopicTest
     }
 
     @Test
-    public void shouldCreateMultipleTopicsInParallel() throws Exception
+    public void shouldCreateMultipleTopicsInParallel()
     {
+        // given
+        final String[] topicNames = new String[] {"fooo", "bar", "bazzz"};
+        final int partitions = 3;
+
         // when
-        final ZeebeFuture<TopicEvent> fooFuture = client.newCreateTopicCommand()
-            .name("foo")
-            .partitions(2)
-            .replicationFactor(1)
-            .send();
-
-        final ZeebeFuture<TopicEvent> barFuture = client.newCreateTopicCommand()
-            .name("bar")
-            .partitions(2)
-            .replicationFactor(1)
-            .send();
-
-        // then
-        assertThat(fooFuture.get(10, TimeUnit.SECONDS).getState()).isEqualTo(TopicState.CREATING);
-        assertThat(barFuture.get(10, TimeUnit.SECONDS).getState()).isEqualTo(TopicState.CREATING);
-
-        // and
-        clientRule.waitUntilTopicsExists("foo", "bar");
+        for (final String topicName : topicNames)
+        {
+            client.newCreateTopicCommand()
+                .name(topicName)
+                .partitions(partitions)
+                .replicationFactor(1)
+                .send();
+        }
+        clientRule.waitUntilTopicsExists(topicNames);
 
         // then
         final Topics topics = client.newTopicsRequest().send().join();
+        final Function<String, Optional<Topic>> findTopic = (name) -> topics.getTopics().stream().filter(t -> name.equals(t.getName())).findFirst();
 
-        final Optional<Topic> fooTopic = topics.getTopics().stream().filter(t -> t.getName().equals("foo")).findFirst();
-        assertThat(fooTopic).hasValueSatisfying(t -> assertThat(t.getPartitions()).hasSize(2));
-
-        final Optional<Topic> barTopic = topics.getTopics().stream().filter(t -> t.getName().equals("bar")).findFirst();
-        assertThat(barTopic).hasValueSatisfying(t -> assertThat(t.getPartitions()).hasSize(2));
-
+        for (final String topicName : topicNames)
+        {
+            assertThat(findTopic.apply(topicName)).hasValueSatisfying(t -> assertThat(t.getPartitions()).hasSize(partitions));
+        }
     }
 
     @Test

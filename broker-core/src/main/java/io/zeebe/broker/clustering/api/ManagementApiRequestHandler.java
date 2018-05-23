@@ -122,7 +122,7 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
     {
         createPartitionRequest.wrap(buffer, offset, length);
 
-        final DirectBuffer topicName = createPartitionRequest.getTopicName();
+        final DirectBuffer topicName = BufferUtil.cloneBuffer(createPartitionRequest.getTopicName());
         final int partitionId = createPartitionRequest.getPartitionId();
         final int replicationFactor = createPartitionRequest.getReplicationFactor();
         final List<SocketAddress> members = Collections.emptyList();
@@ -137,7 +137,7 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
     {
         invitationRequest.wrap(buffer, offset, length);
 
-        final DirectBuffer topicName = invitationRequest.topicName();
+        final DirectBuffer topicName = BufferUtil.cloneBuffer(invitationRequest.topicName());
         final int partitionId = invitationRequest.partitionId();
         final int replicationFactor = invitationRequest.replicationFactor();
         final List<SocketAddress> members = new ArrayList<>(invitationRequest.members());
