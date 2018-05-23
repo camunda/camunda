@@ -23,8 +23,9 @@ public class FsSnapshotStorageConfiguration
 {
     protected static final String CHECKSUM_ALGORITHM = "SHA1";
 
-    protected static final String SNAPSHOT_FILE_NAME_TEMPLATE = "%s" + File.separatorChar + "%s-%d.snapshot";
-    protected static final String SNAPSHOT_FILE_NAME_PATTERN = "%s-(\\d+).snapshot";
+    protected static final String SNAPSHOT_FILE_NAME_TEMPLATE = "%s-%d.snapshot";
+    protected static final String SNAPSHOT_FILE_PATH_TEMPLATE = "%s" + File.separatorChar + SNAPSHOT_FILE_NAME_TEMPLATE;
+    protected static final String SNAPSHOT_FILE_NAME_PATTERN = "%s-(\\d+)\\.snapshot";
 
     protected static final String CHECKSUM_FILE_NAME_TEMPLATE = "%s" + File.separatorChar + "%s-%d." + CHECKSUM_ALGORITHM.toLowerCase();
 
@@ -50,7 +51,7 @@ public class FsSnapshotStorageConfiguration
 
     public String snapshotFileName(String name, long logPosition)
     {
-        return String.format(SNAPSHOT_FILE_NAME_TEMPLATE, rootPath, name, logPosition);
+        return String.format(SNAPSHOT_FILE_PATH_TEMPLATE, rootPath, name, logPosition);
     }
 
     public String checksumFileName(String name, long logPosition)
@@ -86,7 +87,7 @@ public class FsSnapshotStorageConfiguration
         return String.format(CHECKSUM_CONTENT_TEMPLATE, checksum, dataFileName);
     }
 
-    public String extractDigetsFromChecksumContent(String content)
+    public String extractDigestFromChecksumContent(String content)
     {
         final int indexOfSeparator = content.indexOf(CHECKSUM_CONTENT_SEPARATOR);
         if (indexOfSeparator < 0)
@@ -108,9 +109,18 @@ public class FsSnapshotStorageConfiguration
         return content.substring(indexOfSeparator + CHECKSUM_CONTENT_SEPARATOR.length());
     }
 
+    public String getSnapshotNameFromFileName(final String fileName)
+    {
+        final String suffixPattern = String.format(SNAPSHOT_FILE_NAME_PATTERN, "");
+        final Pattern pattern = Pattern.compile(suffixPattern);
+        final String[] parts = pattern.split(fileName);
+
+        return parts[0];
+    }
+
     public String getSnapshotFileNameTemplate()
     {
-        return SNAPSHOT_FILE_NAME_TEMPLATE;
+        return SNAPSHOT_FILE_PATH_TEMPLATE;
     }
 
     public String getChecksumFileNameTemplate()
