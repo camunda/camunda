@@ -110,7 +110,7 @@ public class FsReadableSnapshot implements ReadableSnapshot
 
     protected byte[] extractCheckum(String content)
     {
-        final String checksumString = config.extractDigetsFromChecksumContent(content);
+        final String checksumString = config.extractDigestFromChecksumContent(content);
         if (checksumString.isEmpty())
         {
             throw new RuntimeException("Read invalid checksum file, missing checksum.");
@@ -177,4 +177,21 @@ public class FsReadableSnapshot implements ReadableSnapshot
         return dataFile;
     }
 
+    @Override
+    public String getName()
+    {
+        return config.getSnapshotNameFromFileName(dataFile.getName());
+    }
+
+    @Override
+    public long getLength()
+    {
+        return dataFile.length();
+    }
+
+    @Override
+    public byte[] getChecksum()
+    {
+        return checksum;
+    }
 }

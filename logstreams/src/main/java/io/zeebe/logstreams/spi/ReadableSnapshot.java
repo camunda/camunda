@@ -69,4 +69,18 @@ public interface ReadableSnapshot
         validateAndClose();
     }
 
+    /**
+     * @return the initial snapshot name
+     */
+    String getName();
+
+    /**
+     * @return length in bytes of the snapshot contents
+     */
+    long getLength();
+
+    /**
+     * @return the checksum of the snapshot contents
+     */
+    byte[] getChecksum();
 }
