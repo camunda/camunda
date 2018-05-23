@@ -17,37 +17,29 @@
  */
 package io.zeebe.broker.job.processor;
 
-import static io.zeebe.util.EnsureUtil.ensureGreaterThan;
-import static io.zeebe.util.EnsureUtil.ensureLessThanOrEqual;
-import static io.zeebe.util.EnsureUtil.ensureNotNull;
-import static io.zeebe.util.EnsureUtil.ensureNotNullOrEmpty;
-
-import org.agrona.DirectBuffer;
+import static io.zeebe.util.EnsureUtil.*;
 
 import io.zeebe.broker.job.CreditsRequest;
 import io.zeebe.broker.job.CreditsRequestBuffer;
 import io.zeebe.broker.job.JobSubscriptionManager;
 import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.job.processor.JobSubscriptions.SubscriptionIterator;
-import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
-import io.zeebe.broker.logstreams.processor.TypedRecord;
-import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
-import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
-import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
-import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.channel.ChannelSubscription;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import org.agrona.DirectBuffer;
 
 public class ActivateJobStreamProcessor implements TypedRecordProcessor<JobRecord>, StreamProcessorLifecycleAware
 {
-    protected final CreditsRequestBuffer creditsBuffer = new CreditsRequestBuffer(JobSubscriptionManager.NUM_CONCURRENT_REQUESTS, this::increaseSubscriptionCredits);
+    protected final CreditsRequestBuffer creditsBuffer = new CreditsRequestBuffer(JobSubscriptionManager.NUM_CONCURRENT_REQUESTS);
 
     private final JobSubscriptions subscriptions = new JobSubscriptions(8);
     private final SubscriptionIterator jobDistributionIterator;
@@ -59,6 +51,7 @@ public class ActivateJobStreamProcessor implements TypedRecordProcessor<JobRecor
     private StreamProcessorContext context;
 
     private JobSubscription selectedSubscriber;
+    private ChannelSubscription creditsSubscription;
 
     public ActivateJobStreamProcessor(DirectBuffer jobType)
     {
@@ -82,9 +75,20 @@ public class ActivateJobStreamProcessor implements TypedRecordProcessor<JobRecor
     {
         this.context = streamProcessor.getStreamProcessorContext();
         this.actor = context.getActorControl();
+        creditsSubscription = actor.consume(creditsBuffer, this::consumeCreditsRequest);
 
         // activate the processor while adding the first subscription
         context.suspendController();
+    }
+
+    @Override
+    public void onClose()
+    {
+        if (creditsSubscription != null)
+        {
+            creditsSubscription.cancel();
+            creditsSubscription = null;
+        }
     }
 
     public TypedStreamProcessor createStreamProcessor(TypedStreamEnvironment env)
@@ -169,14 +173,19 @@ public class ActivateJobStreamProcessor implements TypedRecordProcessor<JobRecor
         });
     }
 
+    private void consumeCreditsRequest()
+    {
+        final CreditsRequest creditsRequest = new CreditsRequest();
+        creditsBuffer.read((msgTypeId, buffer, index, length) ->
+        {
+            creditsRequest.wrap(buffer, index, length);
+            increaseSubscriptionCredits(creditsRequest);
+        }, 1);
+    }
+
     public boolean increaseSubscriptionCreditsAsync(CreditsRequest request)
     {
-        actor.call(() ->
-        {
-            creditsBuffer.handleRequests();
-        });
-
-        return this.creditsBuffer.offerRequest(request);
+        return request.writeTo(creditsBuffer);
     }
 
     protected void increaseSubscriptionCredits(CreditsRequest request)

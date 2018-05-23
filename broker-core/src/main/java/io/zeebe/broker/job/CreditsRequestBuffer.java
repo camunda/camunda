@@ -17,61 +17,23 @@
  */
 package io.zeebe.broker.job;
 
+import io.zeebe.util.sched.channel.OneToOneRingBufferChannel;
 import org.agrona.BitUtil;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.MessageHandler;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.broadcast.RecordDescriptor;
-import org.agrona.concurrent.ringbuffer.OneToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
-import java.util.function.Consumer;
-
-public class CreditsRequestBuffer
+public class CreditsRequestBuffer extends OneToOneRingBufferChannel
 {
     protected final int capacityUpperBound;
-    protected final OneToOneRingBuffer ringBuffer;
-    protected final RequestHandler requestHandler;
 
-    public CreditsRequestBuffer(int capacityLowerBound, Consumer<CreditsRequest> requestConsumer)
+    public CreditsRequestBuffer(final int numRequests)
     {
-        final int bufferCapacity = requiredBufferCapacityForNumRequests(capacityLowerBound, CreditsRequest.LENGTH);
+        super(new UnsafeBuffer(new byte[requiredBufferCapacityForNumRequests(numRequests)]));
 
         // note: this is only an upper bound, because OneToOneRingBuffer alings the messages to a certain length
         // which we do not include in this calculation to avoid relying on agrona-internal concepts
-        this.capacityUpperBound = numRequestsFittingInto(bufferCapacity, CreditsRequest.LENGTH);
-
-        final UnsafeBuffer rawBuffer = new UnsafeBuffer(new byte[bufferCapacity]);
-        this.ringBuffer = new OneToOneRingBuffer(rawBuffer);
-        this.requestHandler = new RequestHandler(requestConsumer);
-    }
-
-    protected static int requiredBufferCapacityForNumRequests(int numRequests, int requestLength)
-    {
-        final int recordLength = RecordDescriptor.HEADER_LENGTH + requestLength;
-        final int allRecordsLength = numRequests * recordLength;
-        return BitUtil.findNextPositivePowerOfTwo(allRecordsLength) + RingBufferDescriptor.TRAILER_LENGTH;
-    }
-
-    protected static int numRequestsFittingInto(int bufferSize, int requestLength)
-    {
-        final int recordLength = RecordDescriptor.HEADER_LENGTH + requestLength;
-        return (bufferSize - RingBufferDescriptor.TRAILER_LENGTH) / recordLength;
-    }
-
-    public int handleRequests()
-    {
-        int read = 0;
-        while (ringBuffer.size() > 0)
-        {
-            read += ringBuffer.read(requestHandler);
-        }
-        return read;
-    }
-
-    public boolean offerRequest(CreditsRequest request)
-    {
-        return request.writeTo(ringBuffer);
+        this.capacityUpperBound = numRequestsFittingInto(numRequests);
     }
 
     public int getCapacityUpperBound()
@@ -79,23 +41,18 @@ public class CreditsRequestBuffer
         return capacityUpperBound;
     }
 
-    protected static class RequestHandler implements MessageHandler
+    protected static int requiredBufferCapacityForNumRequests(final int numRequests)
     {
-        protected final CreditsRequest request = new CreditsRequest();
-        protected final Consumer<CreditsRequest> requestConsumer;
+        final int recordLength = RecordDescriptor.HEADER_LENGTH + CreditsRequest.LENGTH;
+        final int allRecordsLength = numRequests * recordLength;
+        return BitUtil.findNextPositivePowerOfTwo(allRecordsLength) + RingBufferDescriptor.TRAILER_LENGTH;
+    }
 
-        public RequestHandler(Consumer<CreditsRequest> requestConsumer)
-        {
-            this.requestConsumer = requestConsumer;
-        }
-
-        @Override
-        public void onMessage(int msgTypeId, MutableDirectBuffer buffer, int index, int length)
-        {
-            request.wrap(buffer, index, length);
-            requestConsumer.accept(request);
-        }
-
+    protected static int numRequestsFittingInto(final int numRequests)
+    {
+        final int recordLength = RecordDescriptor.HEADER_LENGTH + CreditsRequest.LENGTH;
+        final int allRecordsLength = numRequests * recordLength;
+        return BitUtil.findNextPositivePowerOfTwo(allRecordsLength) / recordLength;
     }
 
 }

@@ -39,6 +39,7 @@ import io.zeebe.util.allocation.HeapBufferAllocator;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.collection.CompactList;
 import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.channel.ChannelSubscription;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
@@ -73,6 +74,7 @@ public class JobSubscriptionManager extends Actor implements TransportListener
     protected final CreditsRequest creditsRequest = new CreditsRequest();
 
     protected long nextSubscriptionId = 0;
+    private ChannelSubscription creditsSubscription;
 
     public JobSubscriptionManager(ServiceContainer serviceContainer, StreamProcessorServiceFactory streamProcessorServiceFactory, ServerTransport transport)
     {
@@ -80,16 +82,7 @@ public class JobSubscriptionManager extends Actor implements TransportListener
         this.serviceContext = serviceContainer;
         this.streamProcessorServiceFactory = streamProcessorServiceFactory;
 
-        this.creditRequestBuffer = new CreditsRequestBuffer(
-            NUM_CONCURRENT_REQUESTS,
-            (r) ->
-            {
-                final boolean dispatched = dispatchSubscriptionCredits(r);
-                if (!dispatched)
-                {
-                    backpressureRequest(r);
-                }
-            });
+        this.creditRequestBuffer = new CreditsRequestBuffer(NUM_CONCURRENT_REQUESTS);
         this.backPressuredCreditsRequests = new CompactList(CreditsRequest.LENGTH, creditRequestBuffer.getCapacityUpperBound(), new HeapBufferAllocator());
     }
 
@@ -127,7 +120,7 @@ public class JobSubscriptionManager extends Actor implements TransportListener
                 {
                     if (throwable == null)
                     {
-                        actor.submit(this::handleCreditRequests);
+                        creditsSubscription = actor.consume(creditRequestBuffer, this::consumeCreditsRequest);
 
                         future.complete(null);
                     }
@@ -155,7 +148,7 @@ public class JobSubscriptionManager extends Actor implements TransportListener
                         {
                             if (throwable == null)
                             {
-                                actor.submit(this::handleCreditRequests);
+                                creditsSubscription = actor.consume(creditRequestBuffer, this::consumeCreditsRequest);
 
                                 future.complete(null);
                             }
@@ -195,6 +188,12 @@ public class JobSubscriptionManager extends Actor implements TransportListener
         final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
         actor.call(() ->
         {
+            if (creditsSubscription != null)
+            {
+                creditsSubscription.cancel();
+                creditsSubscription = null;
+            }
+
             final ActivateJobStreamProcessor streamProcessor = streamProcessorBySubscriptionId.remove(subscriptionId);
             if (streamProcessor != null)
             {
@@ -251,14 +250,7 @@ public class JobSubscriptionManager extends Actor implements TransportListener
 
     public boolean increaseSubscriptionCreditsAsync(CreditsRequest request)
     {
-        final boolean success = creditRequestBuffer.offerRequest(request);
-
-        if (success)
-        {
-            actor.call(this::handleCreditRequests);
-        }
-
-        return success;
+        return request.writeTo(creditRequestBuffer);
     }
 
     /**
@@ -280,20 +272,23 @@ public class JobSubscriptionManager extends Actor implements TransportListener
         }
     }
 
+    public void consumeCreditsRequest()
+    {
+        dispatchBackpressuredSubscriptionCredits();
+        creditRequestBuffer.read((msgTypeId, buffer, index, length) ->
+        {
+            creditsRequest.wrap(buffer, index, length);
+            final boolean dispatched = dispatchSubscriptionCredits(creditsRequest);
+            if (!dispatched)
+            {
+                backpressureRequest(creditsRequest);
+            }
+        }, 1);
+    }
+
     protected void backpressureRequest(CreditsRequest request)
     {
         request.appendTo(backPressuredCreditsRequests);
-    }
-
-    private void handleCreditRequests()
-    {
-        dispatchBackpressuredSubscriptionCredits();
-        if (backPressuredCreditsRequests.size() == 0)
-        {
-            // only accept new requests when backpressured ones have been processed
-            // this is required to guarantee that backPressuredCreditsRequests won't overflow
-            creditRequestBuffer.handleRequests();
-        }
     }
 
     protected void dispatchBackpressuredSubscriptionCredits()
