@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.junit.Before;
@@ -498,13 +499,13 @@ public class JobSubscriptionTest
 
         assertThat(jobEvents).hasSize(2);
 
-        assertThat(jobEvents.get(0).value())
-            .containsEntry("type", "foo")
-            .containsEntry("worker", "owner1");
+        final Function<String, Optional<SubscribedRecord>> findJobRecordForType = (jobType) -> jobEvents.stream().filter(j -> jobType.equals(j.value().get("type"))).findFirst();
 
-        assertThat(jobEvents.get(1).value())
-            .containsEntry("type", "bar")
-            .containsEntry("worker", "owner2");
+        assertThat(findJobRecordForType.apply("foo"))
+            .hasValueSatisfying(record -> assertThat(record.value()).containsEntry("worker", "owner1"));
+
+        assertThat(findJobRecordForType.apply("bar"))
+            .hasValueSatisfying(record -> assertThat(record.value()).containsEntry("worker", "owner2"));
     }
 
     @Test
