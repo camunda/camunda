@@ -74,6 +74,7 @@ public class ClusterComponent implements Component
         baseLayerInstall.createService(MANAGEMENT_API_REQUEST_HANDLER_SERVICE_NAME, managementApiRequestHandlerService)
             .dependency(bufferingServerTransport(MANAGEMENT_API_SERVER_NAME), managementApiRequestHandlerService.getServerTransportInjector())
             .dependency(RAFT_CONFIGURATION_MANAGER, managementApiRequestHandlerService.getRaftPersistentConfigurationManagerInjector())
+            .groupReference(LEADER_PARTITION_GROUP_NAME, managementApiRequestHandlerService.getLeaderPartitionsGroupReference())
             .install();
 
         initGossip(baseLayerInstall, context);

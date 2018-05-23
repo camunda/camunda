@@ -26,14 +26,14 @@ public class PartitionInfo
 {
     private final String topicName;
     private final DirectBuffer topicNameBuffer;
-    private final int paritionId;
+    private final int partitionId;
     private final int replicationFactor;
 
-    public PartitionInfo(final DirectBuffer topicNameBuffer, final int paritionId, final int replicationFactor)
+    public PartitionInfo(final DirectBuffer topicNameBuffer, final int partitionId, final int replicationFactor)
     {
         this.topicName = BufferUtil.bufferAsString(topicNameBuffer);
         this.topicNameBuffer = topicNameBuffer;
-        this.paritionId = paritionId;
+        this.partitionId = partitionId;
         this.replicationFactor = replicationFactor;
     }
 
@@ -49,7 +49,7 @@ public class PartitionInfo
 
     public int getPartitionId()
     {
-        return paritionId;
+        return partitionId;
     }
 
     public int getReplicationFactor()
@@ -69,18 +69,18 @@ public class PartitionInfo
             return false;
         }
         final PartitionInfo that = (PartitionInfo) o;
-        return paritionId == that.paritionId && replicationFactor == that.replicationFactor && BufferUtil.equals(topicNameBuffer, that.topicNameBuffer);
+        return partitionId == that.partitionId && replicationFactor == that.replicationFactor && BufferUtil.equals(topicNameBuffer, that.topicNameBuffer);
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash(topicNameBuffer, paritionId, replicationFactor);
+        return Objects.hash(topicNameBuffer, partitionId, replicationFactor);
     }
 
     @Override
     public String toString()
     {
-        return String.format("Partition{topic=%s, partitionId=%d, replicationFactor=%d}", topicName, paritionId, replicationFactor);
+        return String.format("Partition{topic=%s, partitionId=%d, replicationFactor=%d}", topicName, partitionId, replicationFactor);
     }
 }

@@ -25,18 +25,25 @@ import static io.zeebe.broker.transport.TransportServiceNames.clientTransport;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import io.zeebe.broker.Loggers;
+import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.partitions.PartitionInstallService;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfiguration;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
 import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.broker.system.workflow.repository.api.management.NotLeaderResponse;
 import io.zeebe.clustering.management.*;
+import io.zeebe.logstreams.spi.ReadableSnapshot;
+import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.transport.*;
 import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.util.buffer.BufferWriter;
+import io.zeebe.util.buffer.DirectBufferWriter;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
@@ -45,29 +52,32 @@ import org.slf4j.Logger;
 
 public class ManagementApiRequestHandler implements ServerRequestHandler, ServerMessageHandler
 {
-    private static final DirectBuffer EMPTY_BUFFER = new UnsafeBuffer(new byte[0]);
-
+    private static final BufferWriter EMPTY_RESPONSE = new DirectBufferWriter().wrap(new UnsafeBuffer(new byte[0]));
     private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final CreatePartitionRequest createPartitionRequest = new CreatePartitionRequest();
     private final InvitationRequest invitationRequest = new InvitationRequest();
 
+    private final Map<Integer, Partition> trackedSnapshotPartitions;
+    private final ListSnapshotsRequest listSnapshotsRequest = new ListSnapshotsRequest();
+
     private final RaftPersistentConfigurationManager raftPersistentConfigurationManager;
     private final ActorControl actor;
     private final ServiceStartContext serviceStartContext;
-
     private final BrokerCfg brokerCfg;
 
     public ManagementApiRequestHandler(RaftPersistentConfigurationManager raftPersistentConfigurationManager,
         ActorControl actor,
         ServiceStartContext serviceStartContext,
-        BrokerCfg brokerCfg)
+        BrokerCfg brokerCfg,
+        Map<Integer, Partition> trackedSnapshotPartitions)
     {
         this.raftPersistentConfigurationManager = raftPersistentConfigurationManager;
         this.actor = actor;
         this.serviceStartContext = serviceStartContext;
         this.brokerCfg = brokerCfg;
+        this.trackedSnapshotPartitions = trackedSnapshotPartitions;
     }
 
     @Override
@@ -90,6 +100,10 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
                 case CreatePartitionRequestDecoder.TEMPLATE_ID:
                 {
                     return onCreatePartitionRequest(buffer, offset, length, output, remoteAddress, requestId);
+                }
+                case ListSnapshotsRequestDecoder.TEMPLATE_ID:
+                {
+                    return onListSnapshotsRequest(buffer, offset, length, output, remoteAddress, requestId);
                 }
                 default:
                 {
@@ -133,6 +147,28 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
         return true;
     }
 
+    private boolean onListSnapshotsRequest(DirectBuffer buffer, int offset, int length, ServerOutput output, RemoteAddress remoteAddress, long requestId)
+    {
+        listSnapshotsRequest.wrap(buffer, offset, length);
+
+        final int partitionId = listSnapshotsRequest.getPartitionId();
+        final Partition partition = trackedSnapshotPartitions.get(partitionId);
+        if (partition == null)
+        {
+            sendResponse(output, remoteAddress, requestId, new NotLeaderResponse());
+        }
+        else
+        {
+            final SnapshotStorage storage = partition.getSnapshotStorage();
+            final List<ReadableSnapshot> snapshots = storage.listSnapshots();
+            final ListSnapshotsResponse response = new ListSnapshotsResponse();
+            snapshots.forEach((s) -> response.addSnapshot(s.getName(), s.getChecksum(), s.getLength()));
+
+            sendResponse(output, remoteAddress, requestId, response);
+        }
+
+        return true;
+    }
 
     private void installPartition(final DirectBuffer topicName,
         final int partitionId,
@@ -149,7 +185,7 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
             if (throwable != null)
             {
                 LOG.error("Exception while creating partition", throwable);
-                sendEmptyRespone(output, remoteAddress, requestId);
+                sendResponse(output, remoteAddress, requestId, EMPTY_RESPONSE);
             }
             else
             {
@@ -167,29 +203,27 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
                 {
                     if (installThrowable == null)
                     {
-                        sendEmptyRespone(output, remoteAddress, requestId);
+                        sendResponse(output, remoteAddress, requestId, EMPTY_RESPONSE);
                     }
                     else
                     {
-                        LOG.error("Exception while creating partition", throwable);
+                        LOG.error("Exception while creating partition", installThrowable);
                     }
                 });
             }
         });
     }
 
-    protected void sendEmptyRespone(ServerOutput output, RemoteAddress remoteAddress, long requestId)
+    private void sendResponse(final ServerOutput output, final RemoteAddress remoteAddress, final long requestId, final BufferWriter responseWriter)
     {
-        final ServerResponse serverResponse = new ServerResponse();
-
         actor.runUntilDone(() ->
         {
-            serverResponse.reset()
-                .remoteAddress(remoteAddress)
-                .requestId(requestId)
-                .buffer(EMPTY_BUFFER);
+            final ServerResponse response = new ServerResponse().reset()
+                    .remoteAddress(remoteAddress)
+                    .requestId(requestId)
+                    .writer(responseWriter);
 
-            if (output.sendResponse(serverResponse))
+            if (output.sendResponse(response))
             {
                 actor.done();
             }
@@ -207,3 +241,4 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
         return true;
     }
 }
+

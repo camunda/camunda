@@ -24,6 +24,8 @@ import java.util.Arrays;
 
 import io.zeebe.broker.clustering.api.InvitationRequest;
 import io.zeebe.broker.clustering.api.InvitationResponse;
+import io.zeebe.broker.clustering.api.ListSnapshotsRequest;
+import io.zeebe.broker.clustering.api.ListSnapshotsResponse;
 import io.zeebe.transport.SocketAddress;
 import org.agrona.DirectBuffer;
 import org.junit.Test;
@@ -66,5 +68,22 @@ public class ManagementMessageTest
         );
     }
 
+    @Test
+    public void testListSnapshotsRequest()
+    {
+        final ListSnapshotsRequest request = new ListSnapshotsRequest().setPartitionId(111);
+        assertEqualFieldsAfterWriteAndRead(request, "partitionId");
+    }
+
+    @Test
+    public void testListSnapshotsResponse()
+    {
+        final String name = "test";
+        final byte[] checksum = "abc".getBytes();
+        final long length = 3;
+        final ListSnapshotsResponse response = new ListSnapshotsResponse().addSnapshot(name, checksum, length);
+
+        assertEqualFieldsAfterWriteAndRead(response, "snapshots");
+    }
 
 }

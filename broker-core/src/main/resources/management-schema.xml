@@ -62,7 +62,7 @@
         <data name="bpmnProcessId" id="4" type="varDataEncoding" />
         <data name="bpmnXml" id="5" type="varDataEncoding" />
     </sbe:message>
-    
+
     <sbe:message name="NotLeaderResponse" id="5">
     </sbe:message>
 
@@ -72,8 +72,8 @@
 
     <sbe:message name="ListSnapshotsResponse" id="7">
         <group name="snapshots" id="0" dimensionType="groupSizeEncoding">
-            <field name="filesize" id="1" type="uint64" />
-            <data name="filename" id="2" type="varDataEncoding" />
+            <field name="length" id="1" type="uint64" />
+            <data name="name" id="2" type="varDataEncoding" />
             <data name="checksum" id="3" type="varDataEncoding" />
         </group>
     </sbe:message>

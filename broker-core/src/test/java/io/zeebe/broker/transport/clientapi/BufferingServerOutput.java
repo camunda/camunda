@@ -21,11 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.io.DirectBufferInputStream;
-import org.agrona.sbe.MessageDecoderFlyweight;
-
 import io.zeebe.protocol.clientapi.ControlMessageResponseDecoder;
 import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
@@ -35,10 +30,15 @@ import io.zeebe.transport.ServerResponse;
 import io.zeebe.transport.TransportMessage;
 import io.zeebe.transport.impl.RequestResponseHeaderDescriptor;
 import io.zeebe.transport.impl.TransportHeaderDescriptor;
+import io.zeebe.util.buffer.BufferReader;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.io.DirectBufferInputStream;
+import org.agrona.sbe.MessageDecoderFlyweight;
 
 public class BufferingServerOutput implements ServerOutput
 {
-
+    public static final int MESSAGE_START_OFFSET = TransportHeaderDescriptor.HEADER_LENGTH + RequestResponseHeaderDescriptor.HEADER_LENGTH;;
     protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     protected final ErrorResponseDecoder errorDecoder = new ErrorResponseDecoder();
 
@@ -72,13 +72,25 @@ public class BufferingServerOutput implements ServerOutput
         return getAs(index, errorDecoder);
     }
 
+    public void wrapResponse(final int index, final BufferReader reader)
+    {
+        final DirectBuffer buffer = sentResponses.get(index);
+        reader.wrap(buffer, MESSAGE_START_OFFSET, buffer.capacity());
+    }
+
+    public int getTemplateId(final int index)
+    {
+        final DirectBuffer sentResponse = sentResponses.get(index);
+        headerDecoder.wrap(sentResponse, MESSAGE_START_OFFSET);
+
+        return headerDecoder.templateId();
+    }
+
     protected <T extends MessageDecoderFlyweight> T getAs(int index, T decoder)
     {
         final DirectBuffer sentResponse = sentResponses.get(index);
-        final int offset = TransportHeaderDescriptor.HEADER_LENGTH + RequestResponseHeaderDescriptor.HEADER_LENGTH;
-        headerDecoder.wrap(sentResponse, offset);
-
-        decoder.wrap(sentResponse, offset + headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
+        headerDecoder.wrap(sentResponse, MESSAGE_START_OFFSET);
+        decoder.wrap(sentResponse, MESSAGE_START_OFFSET + headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
 
         return decoder;
     }

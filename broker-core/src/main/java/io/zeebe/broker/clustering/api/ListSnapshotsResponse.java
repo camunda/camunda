@@ -21,7 +21,9 @@ import static io.zeebe.clustering.management.ListSnapshotsResponseDecoder.Snapsh
 import static io.zeebe.clustering.management.ListSnapshotsResponseEncoder.SnapshotsEncoder;
 import static io.zeebe.clustering.management.ListSnapshotsResponseEncoder.SnapshotsEncoder.*;
 
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import io.zeebe.clustering.management.ListSnapshotsResponseDecoder;
@@ -47,20 +49,14 @@ public class ListSnapshotsResponse implements BufferWriter, BufferReader
     {
     }
 
-    public ListSnapshotsResponse(final List<Snapshot> snapshots)
-    {
-        setSnapshots(snapshots);
-    }
-
     public List<Snapshot> getSnapshots()
     {
         return snapshots;
     }
 
-    public ListSnapshotsResponse setSnapshots(final List<Snapshot> snapshots)
+    public ListSnapshotsResponse addSnapshot(final String name, final byte[] checksum, final long length)
     {
-        this.snapshots.clear();
-        this.snapshots.addAll(snapshots);
+        this.snapshots.add(new Snapshot(name, checksum, length));
         return this;
     }
 
@@ -81,7 +77,7 @@ public class ListSnapshotsResponse implements BufferWriter, BufferReader
     public int getLength()
     {
         final int baseLength = headerEncoder.encodedLength() + bodyEncoder.sbeBlockLength() + sbeHeaderSize();
-        return baseLength + snapshots.stream().mapToInt(Snapshot::getLength).sum();
+        return baseLength + snapshots.stream().mapToInt(Snapshot::getEncodedLength).sum();
     }
 
     @Override
@@ -100,75 +96,114 @@ public class ListSnapshotsResponse implements BufferWriter, BufferReader
         snapshots.forEach((snapshot) -> snapshot.encode(encoder));
     }
 
-    static class Snapshot
+    public static class Snapshot
     {
-        private String filename;
-        private String checksum;
-        private long filesize;
+        private String name;
+        private byte[] checksum;
+        private long length;
 
-        Snapshot()
+        Snapshot(final String name, final byte[] checksum, final long length)
         {
+            this.name = name;
+            this.checksum = checksum;
+            this.length = length;
         }
 
         Snapshot(final SnapshotsDecoder decoder)
         {
-            this();
             decode(decoder);
         }
 
-        public String getFilename()
+        public String getName()
         {
-            return filename;
+            return name;
         }
 
-        public void setFilename(final String filename)
+        public void setName(final String name)
         {
-            this.filename = filename;
+            this.name = name;
         }
 
-        public String getChecksum()
+        public byte[] getChecksum()
         {
             return checksum;
         }
 
-        public void setChecksum(final String checksum)
+        public void setChecksum(final byte[] checksum)
         {
             this.checksum = checksum;
         }
 
-        public long getFilesize()
+        public long getLength()
         {
-            return filesize;
+            return length;
         }
 
-        public void setFilesize(final long filesize)
+        public void setLength(final long length)
         {
-            this.filesize = filesize;
+            this.length = length;
         }
 
-        public int getLength()
+        public int getEncodedLength()
         {
             return sbeBlockLength() +
-                    filenameHeaderLength() + filename.getBytes().length +
-                    checksumHeaderLength() + checksum.getBytes().length;
+                    nameHeaderLength() + name.getBytes().length +
+                    checksumHeaderLength() + checksum.length;
         }
 
-        public void encode(final SnapshotsEncoder encoder)
+        void encode(final SnapshotsEncoder encoder)
         {
-            final byte[] filenameBytes = filename.getBytes();
-            final byte[] checksumBytes = checksum.getBytes();
+            final byte[] nameBytes;
+            try
+            {
+                nameBytes = name.getBytes(SnapshotsEncoder.nameCharacterEncoding());
+            }
+            catch (final UnsupportedEncodingException ex)
+            {
+                throw new RuntimeException(ex);
+            }
 
             encoder.next()
-                    .filesize(filesize)
-                    .putFilename(filenameBytes, 0, filenameBytes.length)
-                    .putChecksum(checksumBytes, 0, checksumBytes.length);
+                    .length(length)
+                    .putName(nameBytes, 0, nameBytes.length)
+                    .putChecksum(checksum, 0, checksum.length);
         }
 
-        public void decode(final SnapshotsDecoder decoder)
+        void decode(final SnapshotsDecoder decoder)
         {
-            setFilesize(decoder.filesize());
-            setFilename(decoder.filename());
-            setChecksum(decoder.checksum());
+            setLength(decoder.length());
+            setName(decoder.name());
+
+            checksum = new byte[decoder.checksumLength()];
+            decoder.getChecksum(checksum, 0, checksum.length);
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Snapshot{" + "name='" + name + '\'' + ", checksum=" + Arrays.toString(checksum) + ", length=" + length + '}';
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return super.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object other)
+        {
+            if (other instanceof Snapshot)
+            {
+                final Snapshot snapshot = (Snapshot)other;
+                return name.equals(snapshot.getName()) &&
+                       Arrays.equals(checksum, snapshot.getChecksum()) &&
+                       length == snapshot.getLength();
+            }
+            else
+            {
+                return super.equals(other);
+            }
         }
     }
 }

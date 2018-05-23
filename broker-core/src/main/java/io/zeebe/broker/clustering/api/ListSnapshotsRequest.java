@@ -38,6 +38,10 @@ public class ListSnapshotsRequest implements BufferWriter, BufferReader
 
     private int partitionId = partitionIdNullValue();
 
+    public ListSnapshotsRequest()
+    {
+    }
+
     public ListSnapshotsRequest(final int partitionId)
     {
         this.partitionId = partitionId;

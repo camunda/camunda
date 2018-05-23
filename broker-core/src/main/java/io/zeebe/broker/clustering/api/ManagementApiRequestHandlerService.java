@@ -17,6 +17,10 @@
  */
 package io.zeebe.broker.clustering.api;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.servicecontainer.*;
@@ -31,10 +35,15 @@ public class ManagementApiRequestHandlerService extends Actor implements Service
     private final Injector<RaftPersistentConfigurationManager> raftPersistentConfigurationManagerInjector = new Injector<>();
 
     private final BrokerCfg brokerCfg;
-
     private BufferingServerTransport serverTransport;
     private ManagementApiRequestHandler managementApiRequestHandler;
     private RaftPersistentConfigurationManager raftPersistentConfigurationManager;
+
+    private final Map<Integer, Partition> trackedSnapshotPartitions = new ConcurrentHashMap<>();
+    private ServiceGroupReference<Partition> leaderPartitionsGroupReference = ServiceGroupReference.<Partition>create()
+            .onAdd((name, partition) -> trackedSnapshotPartitions.put(partition.getInfo().getPartitionId(), partition))
+            .onRemove((name, partition) -> trackedSnapshotPartitions.remove(partition.getInfo().getPartitionId()))
+            .build();
 
     public ManagementApiRequestHandlerService(BrokerCfg brokerCfg)
     {
@@ -49,7 +58,8 @@ public class ManagementApiRequestHandlerService extends Actor implements Service
         managementApiRequestHandler = new ManagementApiRequestHandler(raftPersistentConfigurationManager,
             actor,
             startContext,
-            brokerCfg);
+            brokerCfg,
+            trackedSnapshotPartitions);
 
         startContext.async(startContext.getScheduler().submitActor(this, true));
     }
@@ -98,5 +108,10 @@ public class ManagementApiRequestHandlerService extends Actor implements Service
     public Injector<RaftPersistentConfigurationManager> getRaftPersistentConfigurationManagerInjector()
     {
         return raftPersistentConfigurationManagerInjector;
+    }
+
+    public ServiceGroupReference<Partition> getLeaderPartitionsGroupReference()
+    {
+        return leaderPartitionsGroupReference;
     }
 }
