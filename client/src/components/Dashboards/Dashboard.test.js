@@ -2,13 +2,14 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import Dashboard from './Dashboard';
-import {loadDashboard, remove, update} from './service';
+import {loadDashboard, remove, update, isAuthorizedToShareDashboard} from './service';
 
 jest.mock('./service', () => {
   return {
     loadDashboard: jest.fn(),
     remove: jest.fn(),
-    update: jest.fn()
+    update: jest.fn(),
+    isAuthorizedToShareDashboard: jest.fn()
   };
 });
 
@@ -86,6 +87,7 @@ const sampleDashboard = {
 };
 
 loadDashboard.mockReturnValue(sampleDashboard);
+isAuthorizedToShareDashboard.mockReturnValue(true);
 
 beforeEach(() => {
   props.match.params.viewMode = 'view';
@@ -339,6 +341,34 @@ describe('edit mode', async () => {
 
     expect(node.find('Input').props()).toHaveProperty('isInvalid', true);
     expect(node.find('.Dashboard__save-button')).toBeDisabled();
+  });
+
+  it('should disable the share button if not authorized', () => {
+    const node = mount(<Dashboard {...props} />);
+    node.setState({
+      loaded: true,
+      name: '',
+      isAuthorizedToShare: false
+    });
+
+    const shareButton = node.find('.Dashboard__share-button');
+    expect(shareButton).toBeDisabled();
+    expect(shareButton.props()).toHaveProperty(
+      'buttonTitle',
+      "You are not authorized to share the dashboard,  because you don't have access to all reports on the dashboard!"
+    );
+  });
+
+  it('should enable share button if authorized', () => {
+    const node = mount(<Dashboard {...props} />);
+    node.setState({
+      loaded: true,
+      name: '',
+      isAuthorizedToShare: true
+    });
+
+    const shareButton = node.find('.Dashboard__share-button');
+    expect(shareButton).not.toBeDisabled();
   });
 
   // re-enable this test once https://github.com/airbnb/enzyme/issues/1604 is fixed

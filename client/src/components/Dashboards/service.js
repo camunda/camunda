@@ -59,6 +59,15 @@ export async function revokeDashboardSharing(id) {
   return await del(`/api/share/dashboard/${id}`);
 }
 
+export async function isAuthorizedToShareDashboard(dashboardId) {
+  try {
+    const response = await get(`/api/share/dashboard/${dashboardId}/isAuthorizedToShare`);
+    return response.status === 200;
+  } catch (error) {
+    return false;
+  }
+}
+
 export function getOccupiedTiles(reports) {
   const occupiedTiles = {};
 

@@ -25,7 +25,8 @@ import {
   loadReport,
   getSharedDashboard,
   shareDashboard,
-  revokeDashboardSharing
+  revokeDashboardSharing,
+  isAuthorizedToShareDashboard
 } from './service';
 
 import {AddButton} from './AddButton';
@@ -58,7 +59,8 @@ export default class Dashboard extends React.Component {
       addButtonVisible: true,
       autoRefreshInterval: null,
       fullScreenActive: false,
-      dashboardExists: true
+      dashboardExists: true,
+      isAuthorizedToShare: false
     };
   }
 
@@ -71,6 +73,7 @@ export default class Dashboard extends React.Component {
       });
       return;
     }
+    const isAuthorizedToShare = await isAuthorizedToShareDashboard(this.id);
     const {name, lastModifier, lastModified, reports} = response;
 
     this.setState({
@@ -80,7 +83,8 @@ export default class Dashboard extends React.Component {
       name,
       originalName: name,
       reports: reports || [],
-      originalReports: reports || []
+      originalReports: reports || [],
+      isAuthorizedToShare
     });
   };
 
@@ -269,8 +273,7 @@ export default class Dashboard extends React.Component {
   };
 
   renderViewMode = state => {
-    const {name, lastModifier, lastModified, deleteModalVisible} = state;
-
+    const {name, lastModifier, lastModified, deleteModalVisible, isAuthorizedToShare} = state;
     return (
       <Fullscreen
         enabled={this.state.fullScreenActive}
@@ -312,6 +315,8 @@ export default class Dashboard extends React.Component {
                     className="Dashboard__tool-button Dashboard__share-button"
                     icon="share"
                     title="Share"
+                    disabled={!isAuthorizedToShare}
+                    buttonTitle={this.createShareButtonTitle()}
                   >
                     <ShareEntity
                       type="dashboard"
@@ -388,6 +393,13 @@ export default class Dashboard extends React.Component {
         </div>
       </Fullscreen>
     );
+  };
+
+  createShareButtonTitle = () => {
+    return this.state.isAuthorizedToShare
+      ? ''
+      : 'You are not authorized to share the dashboard, ' +
+          " because you don't have access to all reports on the dashboard!";
   };
 
   inputRef = input => {
