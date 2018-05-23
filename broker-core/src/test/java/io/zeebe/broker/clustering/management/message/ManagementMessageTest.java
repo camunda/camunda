@@ -80,8 +80,9 @@ public class ManagementMessageTest
     {
         final String name = "test";
         final byte[] checksum = "abc".getBytes();
-        final long length = 3;
-        final ListSnapshotsResponse response = new ListSnapshotsResponse().addSnapshot(name, checksum, length);
+        final long length = 3L;
+        final long position = 2L;
+        final ListSnapshotsResponse response = new ListSnapshotsResponse().addSnapshot(name, position, checksum, length);
 
         assertEqualFieldsAfterWriteAndRead(response, "snapshots");
     }

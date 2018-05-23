@@ -73,8 +73,9 @@
     <sbe:message name="ListSnapshotsResponse" id="7">
         <group name="snapshots" id="0" dimensionType="groupSizeEncoding">
             <field name="length" id="1" type="uint64" />
-            <data name="name" id="2" type="varDataEncoding" />
-            <data name="checksum" id="3" type="varDataEncoding" />
+            <field name="logPosition" id="2" type="uint64" />
+            <data name="name" id="3" type="varDataEncoding" />
+            <data name="checksum" id="4" type="varDataEncoding" />
         </group>
     </sbe:message>
 

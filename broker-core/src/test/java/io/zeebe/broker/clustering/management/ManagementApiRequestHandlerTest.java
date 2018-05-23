@@ -67,8 +67,8 @@ public class ManagementApiRequestHandlerTest
         final int partitionId = 1;
         final Partition partition = createAndTrackPartition(partitionId);
         final ReadableSnapshot[] expectedSnapshots = new ReadableSnapshot[] {
-                createSnapshot(partition, "first", "something".getBytes()),
-                createSnapshot(partition, "second", "other stuff".getBytes())
+                createSnapshot(partition, "first", 1L, "something".getBytes()),
+                createSnapshot(partition, "second", 2L, "other stuff".getBytes())
         };
 
         // given
@@ -102,6 +102,7 @@ public class ManagementApiRequestHandlerTest
                 assertThat(snapshot.getName()).isEqualTo(expectedSnapshot.getName());
                 assertThat(snapshot.getLength()).isEqualTo(expectedSnapshot.getLength());
                 assertThat(snapshot.getChecksum()).isEqualTo(expectedSnapshot.getChecksum());
+                assertThat(snapshot.getLogPosition()).isEqualTo(expectedSnapshot.getPosition());
             }
         }
     }
@@ -112,7 +113,7 @@ public class ManagementApiRequestHandlerTest
         // given
         final int partitionId = 2;
         final Partition partition = createAndTrackPartition(partitionId);
-        createSnapshot(partition, "test", "something".getBytes());
+        createSnapshot(partition, "test", 1L, "something".getBytes());
 
         // given
         final ListSnapshotsRequest request = new ListSnapshotsRequest().setPartitionId(partitionId + 1);
@@ -168,7 +169,7 @@ public class ManagementApiRequestHandlerTest
         return partition;
     }
 
-    private ReadableSnapshot createSnapshot(final Partition partition, final String name, final byte[] contents)
+    private ReadableSnapshot createSnapshot(final Partition partition, final String name, final long logPosition, final byte[] contents)
     {
         final SnapshotStorage storage = partition.getSnapshotStorage();
         final SerializableWrapper<byte[]> value = new SerializableWrapper<>(contents);
@@ -177,7 +178,7 @@ public class ManagementApiRequestHandlerTest
 
         try
         {
-            writer = storage.createSnapshot(name, 1);
+            writer = storage.createSnapshot(name, logPosition);
             writer.writeSnapshot(value);
             writer.commit();
             createdSnapshot = storage.getLastSnapshot(name);

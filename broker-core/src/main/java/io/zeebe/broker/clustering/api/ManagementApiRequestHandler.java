@@ -162,7 +162,7 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
             final SnapshotStorage storage = partition.getSnapshotStorage();
             final List<ReadableSnapshot> snapshots = storage.listSnapshots();
             final ListSnapshotsResponse response = new ListSnapshotsResponse();
-            snapshots.forEach((s) -> response.addSnapshot(s.getName(), s.getChecksum(), s.getLength()));
+            snapshots.forEach((s) -> response.addSnapshot(s.getName(), s.getPosition(), s.getChecksum(), s.getLength()));
 
             sendResponse(output, remoteAddress, requestId, response);
         }

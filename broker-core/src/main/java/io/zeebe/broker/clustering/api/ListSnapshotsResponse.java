@@ -54,9 +54,9 @@ public class ListSnapshotsResponse implements BufferWriter, BufferReader
         return snapshots;
     }
 
-    public ListSnapshotsResponse addSnapshot(final String name, final byte[] checksum, final long length)
+    public ListSnapshotsResponse addSnapshot(final String name, final long logPosition, final byte[] checksum, final long length)
     {
-        this.snapshots.add(new Snapshot(name, checksum, length));
+        this.snapshots.add(new Snapshot(name, logPosition, checksum, length));
         return this;
     }
 
@@ -101,12 +101,14 @@ public class ListSnapshotsResponse implements BufferWriter, BufferReader
         private String name;
         private byte[] checksum;
         private long length;
+        private long logPosition;
 
-        Snapshot(final String name, final byte[] checksum, final long length)
+        Snapshot(final String name, final long logPosition, final byte[] checksum, final long length)
         {
             this.name = name;
             this.checksum = checksum;
             this.length = length;
+            this.logPosition = logPosition;
         }
 
         Snapshot(final SnapshotsDecoder decoder)
@@ -144,6 +146,16 @@ public class ListSnapshotsResponse implements BufferWriter, BufferReader
             this.length = length;
         }
 
+        public long getLogPosition()
+        {
+            return logPosition;
+        }
+
+        public void setLogPosition(long logPosition)
+        {
+            this.logPosition = logPosition;
+        }
+
         public int getEncodedLength()
         {
             return sbeBlockLength() +
@@ -165,6 +177,7 @@ public class ListSnapshotsResponse implements BufferWriter, BufferReader
 
             encoder.next()
                     .length(length)
+                    .logPosition(logPosition)
                     .putName(nameBytes, 0, nameBytes.length)
                     .putChecksum(checksum, 0, checksum.length);
         }
@@ -173,6 +186,7 @@ public class ListSnapshotsResponse implements BufferWriter, BufferReader
         {
             setLength(decoder.length());
             setName(decoder.name());
+            setLogPosition(decoder.logPosition());
 
             checksum = new byte[decoder.checksumLength()];
             decoder.getChecksum(checksum, 0, checksum.length);
@@ -181,7 +195,8 @@ public class ListSnapshotsResponse implements BufferWriter, BufferReader
         @Override
         public String toString()
         {
-            return "Snapshot{" + "name='" + name + '\'' + ", checksum=" + Arrays.toString(checksum) + ", length=" + length + '}';
+            return "Snapshot{" + "name='" + name + '\'' + ", checksum=" + Arrays.toString(checksum) + ", length=" + length + ", logPosition=" + logPosition
+                    + '}';
         }
 
         @Override
@@ -197,6 +212,7 @@ public class ListSnapshotsResponse implements BufferWriter, BufferReader
             {
                 final Snapshot snapshot = (Snapshot)other;
                 return name.equals(snapshot.getName()) &&
+                       logPosition == snapshot.getLogPosition() &&
                        Arrays.equals(checksum, snapshot.getChecksum()) &&
                        length == snapshot.getLength();
             }
