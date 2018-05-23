@@ -18,7 +18,6 @@
 package io.zeebe.broker.clustering.management.state;
 
 import static io.zeebe.broker.clustering.orchestration.ClusterOrchestrationLayerServiceNames.KNOWN_TOPICS_SERVICE_NAME;
-import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,7 +29,7 @@ import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.ServiceName;
-import org.junit.Before;
+import io.zeebe.test.util.TestUtil;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -41,12 +40,6 @@ public class KnownTopicsTest
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
     private KnownTopics knownTopics;
-
-    @Before
-    public void setUp() throws Exception
-    {
-        knownTopics = getKnownTopics();
-    }
 
     private KnownTopics getKnownTopics() throws Exception
     {
@@ -62,31 +55,36 @@ public class KnownTopicsTest
     @Test
     public void shouldContainSystemTopic() throws Exception
     {
-        // when
-        final List<String> topicNames = getTopicNames();
-
         // then
-        assertThat(topicNames).contains(Protocol.SYSTEM_TOPIC);
+        assertSystemTopicExists();
     }
 
     @Test
     public void shouldContainSystemTopicAfterRestart() throws Exception
     {
         // given
-        brokerRule.restartBroker();
-        knownTopics = getKnownTopics();
+        assertSystemTopicExists();
 
         // when
-        final List<String> topicNames = getTopicNames();
+        brokerRule.restartBroker();
 
         // then
-        assertThat(topicNames).contains(Protocol.SYSTEM_TOPIC);
+        assertSystemTopicExists();
     }
 
-
-    private List<String> getTopicNames() throws Exception
+    private void assertSystemTopicExists() throws Exception
     {
-        return knownTopics.queryTopics(this::collectTopicNames).get(10, TimeUnit.SECONDS);
+        knownTopics = getKnownTopics();
+        TestUtil.doRepeatedly(this::getTopicNames)
+            .until(topicNames -> {
+                System.out.println(topicNames);
+                return topicNames.contains(Protocol.SYSTEM_TOPIC);
+            });
+    }
+
+    private List<String> getTopicNames()
+    {
+        return knownTopics.queryTopics(this::collectTopicNames).join();
     }
 
     private List<String> collectTopicNames(final Iterable<TopicInfo> topicInfos)
