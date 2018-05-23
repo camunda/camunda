@@ -23,8 +23,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.junit.Before;
@@ -265,4 +267,39 @@ public class CreateTopicClusteredTest
             .hasMessageContaining("Request timed out (PT15S). Request was: [ topic = topicName, partition = 1, value type = JOB, command = CREATE ]")
             .hasCauseInstanceOf(ClientException.class);
     }
+
+    @Test
+    public void shouldCreateMultipleTopicsWithReplicationFactor()
+    {
+        // given
+        final String[] topicNames = new String[] {"fooo", "bar"};
+        final int partitions = 3;
+        final int replicationFactor = clusteringRule.getBrokersInCluster().size();
+
+        // when
+        for (final String topicName : topicNames)
+        {
+            client.newCreateTopicCommand()
+                .name(topicName)
+                .partitions(partitions)
+                .replicationFactor(replicationFactor)
+                .send();
+        }
+
+        for (final String topicName : topicNames)
+        {
+            clusteringRule.waitForTopicPartitionReplicationFactor(topicName, partitions, replicationFactor);
+        }
+
+        // then
+        final Topics topics = client.newTopicsRequest().send().join();
+        final
+        Function<String, Optional<Topic>> findTopic = (name) -> topics.getTopics().stream().filter(t -> name.equals(t.getName())).findFirst();
+
+        for (final String topicName : topicNames)
+        {
+            assertThat(findTopic.apply(topicName)).hasValueSatisfying(t -> assertThat(t.getPartitions()).hasSize(partitions));
+        }
+    }
+
 }
