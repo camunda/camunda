@@ -19,8 +19,8 @@ import static io.zeebe.broker.it.util.TopicEventRecorder.state;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -133,7 +133,7 @@ public class ZeebeObjectMapperTest
             .open();
 
         // when
-        final List<Record> records = new ArrayList<>();
+        final List<Record> records = new CopyOnWriteArrayList<>();
 
         clientRule.getTopicClient()
             .newSubscription()
