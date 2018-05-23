@@ -195,8 +195,10 @@ public class ListSnapshotsResponse implements BufferWriter, BufferReader
         @Override
         public String toString()
         {
-            return "Snapshot{" + "name='" + name + '\'' + ", checksum=" + Arrays.toString(checksum) + ", length=" + length + ", logPosition=" + logPosition
-                    + '}';
+            return "Snapshot{" + "name='" + name + '\'' +
+                    ", checksum=" + Arrays.toString(checksum) +
+                    ", length=" + length + ", logPosition=" + logPosition +
+                    '}';
         }
 
         @Override
