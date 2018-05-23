@@ -80,6 +80,9 @@ public class TopicSubscriptionTest
         this.client = clientRule.getClient().topicClient();
         this.recordingHandler = new RecordingEventHandler();
         this.objectMapper = new ObjectMapper();
+
+        final String defaultTopic = clientRule.getClient().getConfiguration().getDefaultTopic();
+        clientRule.waitUntilTopicsExists(defaultTopic);
     }
 
     @Test
