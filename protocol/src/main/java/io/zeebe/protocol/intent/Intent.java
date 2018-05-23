@@ -85,6 +85,38 @@ public interface Intent
         }
     }
 
+    static Intent fromProtocolValue(ValueType valueType, String intent)
+    {
+        switch (valueType)
+        {
+            case DEPLOYMENT:
+                return DeploymentIntent.valueOf(intent);
+            case ID:
+                return IdIntent.valueOf(intent);
+            case INCIDENT:
+                return IncidentIntent.valueOf(intent);
+            case NOOP:
+                return Intent.UNKNOWN;
+            case RAFT:
+                return Intent.UNKNOWN;
+            case SUBSCRIBER:
+                return SubscriberIntent.valueOf(intent);
+            case SUBSCRIPTION:
+                return SubscriptionIntent.valueOf(intent);
+            case JOB:
+                return JobIntent.valueOf(intent);
+            case TOPIC:
+                return TopicIntent.valueOf(intent);
+            case WORKFLOW_INSTANCE:
+                return WorkflowInstanceIntent.valueOf(intent);
+            case NULL_VAL:
+            case SBE_UNKNOWN:
+                return Intent.UNKNOWN;
+            default:
+                throw new RuntimeException("unknown type");
+        }
+    }
+
     static int maxCardinality()
     {
         return INTENT_CLASSES.stream()
