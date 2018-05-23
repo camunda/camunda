@@ -269,7 +269,11 @@ public class ActorControl
         job.setAutoCompleting(true);
         job.onJobAddedToTask(task);
         task.submit(job);
-        yield();
+
+        if (currentActorRunner.getCurrentJob().getActor() == this.actor)
+        {
+            yield();
+        }
     }
 
     /**
