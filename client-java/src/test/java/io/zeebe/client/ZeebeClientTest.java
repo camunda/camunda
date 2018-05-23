@@ -38,6 +38,7 @@ import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
+import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.*;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
@@ -50,6 +51,9 @@ public class ZeebeClientTest
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
+
+    @Rule
+    public AutoCloseableRule closeables = new AutoCloseableRule();
 
     @Rule
     public TestName testContext = new TestName();
@@ -470,6 +474,7 @@ public class ZeebeClientTest
                 .defaultTopicSubscriptionBufferSize(topicSubscriptionBufferSize)
                 .defaultJobSubscriptionBufferSize(jobSubscriptionBufferSize)
                 .build();
+        closeables.manage(client);
 
         // then
         final ZeebeClientConfiguration configuration = client.getConfiguration();

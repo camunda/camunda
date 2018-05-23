@@ -28,7 +28,10 @@ import io.zeebe.client.api.commands.*;
 import io.zeebe.client.api.events.*;
 import io.zeebe.client.api.record.Record;
 import io.zeebe.client.api.record.ZeebeObjectMapper;
+import io.zeebe.test.util.AutoCloseableRule;
+
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -63,6 +66,9 @@ public class ZeebeObjectMapperRecordSerializationTest
     @Parameter(1)
     public Class<? extends Record> recordClass;
 
+    @Rule
+    public AutoCloseableRule closeables = new AutoCloseableRule();
+
     private ZeebeObjectMapper objectMapper;
     private ObjectMapper testObjectMapper = new ObjectMapper();
 
@@ -70,6 +76,7 @@ public class ZeebeObjectMapperRecordSerializationTest
     public void init()
     {
         final ZeebeClient client = ZeebeClient.newClient();
+        closeables.manage(client);
 
         this.objectMapper = client.objectMapper();
     }

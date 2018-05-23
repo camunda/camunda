@@ -29,17 +29,25 @@ import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.event.JobEventImpl;
 import io.zeebe.client.impl.event.WorkflowInstanceEventImpl;
 import io.zeebe.client.util.Events;
+import io.zeebe.test.util.AutoCloseableRule;
+
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class ZeebeObjectMapperTest
 {
+
+    @Rule
+    public AutoCloseableRule closeables = new AutoCloseableRule();
+
     private ZeebeObjectMapper objectMapper;
 
     @Before
     public void init()
     {
         final ZeebeClient client = ZeebeClient.newClient();
+        closeables.manage(client);
 
         this.objectMapper = client.objectMapper();
     }
