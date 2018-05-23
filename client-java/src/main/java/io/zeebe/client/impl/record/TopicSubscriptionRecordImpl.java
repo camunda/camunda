@@ -15,7 +15,7 @@
  */
 package io.zeebe.client.impl.record;
 
-import io.zeebe.client.api.record.ZeebeObjectMapper;
+import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.event.TopicSubscriptionEventImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -25,7 +25,7 @@ public abstract class TopicSubscriptionRecordImpl extends RecordImpl
     private String name;
     private long ackPosition = -1L;
 
-    public TopicSubscriptionRecordImpl(ZeebeObjectMapper objectMapper, RecordType recordType)
+    public TopicSubscriptionRecordImpl(ZeebeObjectMapperImpl objectMapper, RecordType recordType)
     {
         super(objectMapper, recordType, ValueType.SUBSCRIPTION);
     }

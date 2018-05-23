@@ -17,14 +17,14 @@ package io.zeebe.client.impl.event;
 
 import com.fasterxml.jackson.annotation.*;
 import io.zeebe.client.api.events.TopicEvent;
-import io.zeebe.client.api.record.ZeebeObjectMapper;
+import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.record.TopicRecordImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 
 public class TopicEventImpl extends TopicRecordImpl implements TopicEvent
 {
     @JsonCreator
-    public TopicEventImpl(@JacksonInject ZeebeObjectMapper objectMapper)
+    public TopicEventImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper)
     {
         super(objectMapper, RecordType.EVENT);
     }

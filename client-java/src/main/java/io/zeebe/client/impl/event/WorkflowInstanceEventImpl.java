@@ -15,25 +15,20 @@
  */
 package io.zeebe.client.impl.event;
 
-import com.fasterxml.jackson.annotation.JacksonInject;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
+import com.fasterxml.jackson.annotation.*;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.api.events.WorkflowInstanceState;
-import io.zeebe.client.api.record.ZeebeObjectMapper;
 import io.zeebe.client.impl.data.MsgPackConverter;
+import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.record.WorkflowInstanceRecordImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 
 public class WorkflowInstanceEventImpl extends WorkflowInstanceRecordImpl implements WorkflowInstanceEvent
 {
-    private WorkflowInstanceState state;
-
     @JsonCreator
-    public WorkflowInstanceEventImpl(@JacksonInject ZeebeObjectMapper objectMapper, @JacksonInject MsgPackConverter converter)
+    public WorkflowInstanceEventImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper, @JacksonInject MsgPackConverter msgPackConverter)
     {
-        super(objectMapper, converter, RecordType.EVENT);
+        super(objectMapper, msgPackConverter, RecordType.EVENT);
     }
 
     @JsonIgnore
@@ -48,7 +43,7 @@ public class WorkflowInstanceEventImpl extends WorkflowInstanceRecordImpl implem
     {
         final StringBuilder builder = new StringBuilder();
         builder.append("WorkflowInstanceEvent [state=");
-        builder.append(state);
+        builder.append(getState());
         builder.append(", workflowInstanceKey=");
         builder.append(getWorkflowInstanceKey());
         builder.append(", workflowKey=");

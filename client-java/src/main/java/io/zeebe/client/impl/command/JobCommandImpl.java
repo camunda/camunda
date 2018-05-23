@@ -15,14 +15,11 @@
  */
 package io.zeebe.client.impl.command;
 
-import com.fasterxml.jackson.annotation.JacksonInject;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
+import com.fasterxml.jackson.annotation.*;
 import io.zeebe.client.api.commands.JobCommand;
 import io.zeebe.client.api.commands.JobCommandName;
-import io.zeebe.client.api.record.ZeebeObjectMapper;
 import io.zeebe.client.impl.data.MsgPackConverter;
+import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.record.JobRecordImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.intent.JobIntent;
@@ -31,14 +28,14 @@ public class JobCommandImpl extends JobRecordImpl implements JobCommand
 {
 
     @JsonCreator
-    public JobCommandImpl(@JacksonInject ZeebeObjectMapper objectMapper, @JacksonInject MsgPackConverter converter)
+    public JobCommandImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper, @JacksonInject MsgPackConverter msgPackConverter)
     {
-        super(objectMapper, converter, RecordType.COMMAND);
+        super(objectMapper, msgPackConverter, RecordType.COMMAND);
     }
 
-    public JobCommandImpl(MsgPackConverter converter, JobIntent intent)
+    public JobCommandImpl(ZeebeObjectMapperImpl objectMapper, MsgPackConverter msgPackConverter, JobIntent intent)
     {
-        super(null, converter, RecordType.COMMAND);
+        super(objectMapper, msgPackConverter, RecordType.COMMAND);
         setIntent(intent);
     }
 

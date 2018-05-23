@@ -25,6 +25,7 @@ import io.zeebe.client.api.record.ZeebeObjectMapper;
 import io.zeebe.client.impl.clustering.ClientTopologyManager;
 import io.zeebe.client.impl.clustering.TopologyRequestImpl;
 import io.zeebe.client.impl.data.MsgPackConverter;
+import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.subscription.SubscriptionManager;
 import io.zeebe.client.impl.topic.CreateTopicCommandImpl;
 import io.zeebe.client.impl.topic.TopicsRequestImpl;

@@ -71,7 +71,7 @@ public class UpdateJobRetriesTest
                 entry("type", baseEvent.getType()),
                 entry("headers", baseEvent.getHeaders()),
                 entry("customHeaders", baseEvent.getCustomHeaders()),
-                entry("payload", baseEvent.getPayloadMsgPack()));
+                entry("payload", baseEvent.getPayloadField().getMsgPack()));
 
         assertThat(jobEvent.getMetadata().getKey()).isEqualTo(baseEvent.getKey());
         assertThat(jobEvent.getMetadata().getTopicName()).isEqualTo(StubBrokerRule.TEST_TOPIC_NAME);

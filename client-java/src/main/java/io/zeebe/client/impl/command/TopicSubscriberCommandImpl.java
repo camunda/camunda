@@ -17,8 +17,7 @@ package io.zeebe.client.impl.command;
 
 import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
-
-import io.zeebe.client.api.record.ZeebeObjectMapper;
+import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.record.TopicSubscriberRecordImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.intent.SubscriberIntent;
@@ -26,7 +25,7 @@ import io.zeebe.protocol.intent.SubscriberIntent;
 public class TopicSubscriberCommandImpl extends TopicSubscriberRecordImpl
 {
     @JsonCreator
-    public TopicSubscriberCommandImpl(@JacksonInject ZeebeObjectMapper objectMapper)
+    public TopicSubscriberCommandImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper)
     {
         super(objectMapper, RecordType.COMMAND);
     }
@@ -42,7 +41,7 @@ public class TopicSubscriberCommandImpl extends TopicSubscriberRecordImpl
     {
         final StringBuilder builder = new StringBuilder();
         builder.append("TopicSubscriberCommand [command=");
-        builder.append(getName());
+        builder.append(getMetadata().getIntent());
         builder.append(", name=");
         builder.append(getName());
         builder.append(", startPosition=");

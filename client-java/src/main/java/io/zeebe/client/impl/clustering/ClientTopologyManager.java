@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import io.zeebe.client.api.commands.Topology;
 import io.zeebe.client.cmd.BrokerErrorException;
 import io.zeebe.client.impl.ControlMessageRequestHandler;
-import io.zeebe.client.impl.ZeebeObjectMapperImpl;
+import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.transport.*;

@@ -19,6 +19,7 @@ import io.zeebe.client.ZeebeClientConfiguration;
 import io.zeebe.client.api.clients.*;
 import io.zeebe.client.api.subscription.TopicSubscriptionBuilderStep1;
 import io.zeebe.client.impl.data.MsgPackConverter;
+import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.subscription.SubscriptionManager;
 import io.zeebe.client.impl.subscription.topic.TopicSubscriptionBuilderImpl;
 import io.zeebe.util.EnsureUtil;

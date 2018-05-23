@@ -15,14 +15,14 @@
  */
 package io.zeebe.client.impl.subscription.job;
 
-import io.zeebe.client.api.subscription.*;
+import io.zeebe.client.api.subscription.JobHandler;
+import io.zeebe.client.api.subscription.JobWorker;
 import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.client.impl.subscription.*;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 
-public class JobSubscriberGroup extends SubscriberGroup<JobSubscriber> implements
-    JobWorker
+public class JobSubscriberGroup extends SubscriberGroup<JobSubscriber> implements JobWorker
 {
     private final JobSubscriptionSpec subscription;
 
@@ -80,7 +80,6 @@ public class JobSubscriberGroup extends SubscriberGroup<JobSubscriber> implement
                 result.getEventPublisher(),
                 result.getPartitionId(),
                 this,
-                client.getObjectMapper(),
                 subscriptionManager);
     }
 

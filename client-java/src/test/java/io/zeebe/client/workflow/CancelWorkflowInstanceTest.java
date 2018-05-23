@@ -85,7 +85,7 @@ public class CancelWorkflowInstanceTest
               entry("workflowKey", (int) baseEvent.getWorkflowKey()),
               entry("workflowInstanceKey", (int) baseEvent.getWorkflowInstanceKey()),
               entry("activityId", baseEvent.getActivityId()),
-              entry("payload", baseEvent.getPayloadMsgPack()));
+              entry("payload", baseEvent.getPayloadField().getMsgPack()));
 
         assertThat(workflowInstanceEvent.getState()).isEqualTo(WorkflowInstanceState.CANCELED);
     }

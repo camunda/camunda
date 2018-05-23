@@ -38,7 +38,7 @@ public class WorkflowsClientImpl implements WorkflowClient
     @Override
     public CreateWorkflowInstanceCommandStep1 newCreateInstanceCommand()
     {
-        return new CreateWorkflowInstanceCommandImpl(client.getCommandManager(), client.getMsgPackConverter(), client.getTopic());
+        return new CreateWorkflowInstanceCommandImpl(client.getCommandManager(), client.getObjectMapper(), client.getMsgPackConverter(), client.getTopic());
     }
 
     @Override

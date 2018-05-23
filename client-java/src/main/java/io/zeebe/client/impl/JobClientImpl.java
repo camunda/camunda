@@ -34,7 +34,7 @@ public class JobClientImpl implements JobClient
     @Override
     public CreateJobCommandStep1 newCreateCommand()
     {
-        return new CreateJobCommandImpl(client.getCommandManager(), client.getMsgPackConverter(), client.getTopic());
+        return new CreateJobCommandImpl(client.getCommandManager(), client.getObjectMapper(), client.getMsgPackConverter(), client.getTopic());
     }
 
     @Override

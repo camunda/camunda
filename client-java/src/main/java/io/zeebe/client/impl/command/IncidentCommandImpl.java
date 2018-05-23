@@ -21,14 +21,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import io.zeebe.client.api.commands.IncidentCommand;
 import io.zeebe.client.api.commands.IncidentCommandName;
-import io.zeebe.client.api.record.ZeebeObjectMapper;
+import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.record.IncidentRecordImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 
 public class IncidentCommandImpl extends IncidentRecordImpl implements IncidentCommand
 {
     @JsonCreator
-    public IncidentCommandImpl(@JacksonInject ZeebeObjectMapper objectMapper)
+    public IncidentCommandImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper)
     {
         super(objectMapper, RecordType.COMMAND);
     }

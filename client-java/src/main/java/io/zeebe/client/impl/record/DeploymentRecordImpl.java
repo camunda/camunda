@@ -19,11 +19,10 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-
 import io.zeebe.client.api.commands.DeploymentResource;
 import io.zeebe.client.api.record.DeploymentRecord;
-import io.zeebe.client.api.record.ZeebeObjectMapper;
 import io.zeebe.client.impl.command.DeploymentResourceImpl;
+import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.event.DeploymentEventImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -35,7 +34,7 @@ public abstract class DeploymentRecordImpl extends RecordImpl implements Deploym
 
     private List<DeploymentResource> resources;
 
-    public DeploymentRecordImpl(ZeebeObjectMapper objectMapper, RecordType recordType)
+    public DeploymentRecordImpl(ZeebeObjectMapperImpl objectMapper, RecordType recordType)
     {
         super(objectMapper, recordType, ValueType.DEPLOYMENT);
     }

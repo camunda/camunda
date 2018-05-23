@@ -57,7 +57,7 @@ public class CompleteJobCommandImpl extends CommandImpl<JobEvent> implements Com
     @Override
     public CompleteJobCommandStep1 withoutPayload()
     {
-        command.setPayload((byte[]) null);
+        command.clearPayload();
         return this;
     }
 

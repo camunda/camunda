@@ -19,31 +19,32 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
-
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.zeebe.client.api.events.RaftEvent;
-import io.zeebe.client.api.record.ZeebeObjectMapper;
+import io.zeebe.client.api.events.RaftMember;
+import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.record.RecordImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.transport.SocketAddress;
 
 public class RaftEventImpl extends RecordImpl implements RaftEvent
 {
-    private List<SocketAddress> members;
+    private List<RaftMember> members;
 
     @JsonCreator
-    public RaftEventImpl(@JacksonInject ZeebeObjectMapper objectMapper)
+    public RaftEventImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper)
     {
         super(objectMapper, RecordType.EVENT, ValueType.RAFT);
     }
 
     @Override
-    public List<SocketAddress> getMembers()
+    @JsonDeserialize(contentAs = RaftMemberImpl.class)
+    public List<RaftMember> getMembers()
     {
         return members;
     }
 
-    public void setMembers(final List<SocketAddress> members)
+    public void setMembers(final List<RaftMember> members)
     {
         this.members = members;
     }
@@ -58,7 +59,7 @@ public class RaftEventImpl extends RecordImpl implements RaftEvent
     public String toString()
     {
         final StringBuilder builder = new StringBuilder();
-        builder.append("RaftEventImpl [members=");
+        builder.append("RaftEvent [members=");
         builder.append(members);
         builder.append("]");
         return builder.toString();

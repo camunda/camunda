@@ -21,6 +21,7 @@ import java.util.function.BiFunction;
 import io.zeebe.client.api.record.Record;
 import io.zeebe.client.api.record.RecordMetadata;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
+import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.record.RecordImpl;
 import io.zeebe.client.impl.record.RecordMetadataImpl;
 import io.zeebe.protocol.clientapi.*;
@@ -44,7 +45,7 @@ public class CommandRequestHandler implements RequestResponseHandler
     protected ExpandableArrayBuffer serializedCommand = new ExpandableArrayBuffer();
     protected int serializedCommandLength = 0;
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings("rawtypes")
     public CommandRequestHandler(ZeebeObjectMapperImpl objectMapper, CommandImpl command)
     {
         this.objectMapper = objectMapper;
@@ -90,7 +91,7 @@ public class CommandRequestHandler implements RequestResponseHandler
 
         final ExpandableDirectBufferOutputStream out = new ExpandableDirectBufferOutputStream(serializedCommand, serializedCommandOffset);
 
-        objectMapper.toJson(out, event);
+        objectMapper.toMsgpack(out, event);
 
         // can only write the header after we have written the command, as we don't know the length beforehand
         final short commandLength = (short) out.position();
@@ -141,7 +142,7 @@ public class CommandRequestHandler implements RequestResponseHandler
 
         final Class<? extends RecordImpl> resultClass = recordType == RecordType.EVENT ? command.getEventClass() : command.getClass();
 
-        final RecordImpl result = objectMapper.fromJson(inStream, resultClass);
+        final RecordImpl result = objectMapper.fromMsgpack(inStream, resultClass);
 
         final RecordMetadataImpl metadata = result.getMetadata();
         metadata.setKey(key);

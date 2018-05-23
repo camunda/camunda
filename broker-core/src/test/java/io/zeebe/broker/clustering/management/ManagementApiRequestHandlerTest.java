@@ -17,15 +17,11 @@
  */
 package io.zeebe.broker.clustering.management;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
-import io.zeebe.broker.clustering.api.ListSnapshotsRequest;
-import io.zeebe.broker.clustering.api.ListSnapshotsResponse;
-import io.zeebe.broker.clustering.api.ManagementApiRequestHandler;
+import io.zeebe.broker.clustering.api.*;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
@@ -35,15 +31,10 @@ import io.zeebe.clustering.management.NotLeaderResponseDecoder;
 import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotStorage;
 import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotStorageConfiguration;
 import io.zeebe.logstreams.snapshot.SerializableWrapper;
-import io.zeebe.logstreams.spi.ReadableSnapshot;
-import io.zeebe.logstreams.spi.SnapshotStorage;
-import io.zeebe.logstreams.spi.SnapshotWriter;
+import io.zeebe.logstreams.spi.*;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.ServerOutput;
-import io.zeebe.transport.ServerRequestHandler;
-import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.*;
 import io.zeebe.transport.impl.RemoteAddressImpl;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.BufferWriter;
@@ -52,9 +43,7 @@ import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 
 public class ManagementApiRequestHandlerTest
@@ -174,7 +163,8 @@ public class ManagementApiRequestHandlerTest
     {
         final SnapshotStorage storage = createSnapshotStorage();
         final PartitionInfo info = new PartitionInfo(BufferUtil.wrapString("test"), id, 1);
-        final Partition partition = new Partition(info, RaftState.LEADER) {
+        final Partition partition = new Partition(info, RaftState.LEADER)
+        {
             @Override
             public SnapshotStorage getSnapshotStorage()
             {

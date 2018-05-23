@@ -17,7 +17,7 @@ package io.zeebe.client.api.commands;
 
 public enum WorkflowInstanceCommandName
 {
-    CREATE_WORKFLOW_INSTANCE,
-    CANCEL_WORKFLOW_INSTANCE,
+    CREATE,
+    CANCEL,
     UPDATE_PAYLOAD,
 }

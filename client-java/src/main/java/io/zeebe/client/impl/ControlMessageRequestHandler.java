@@ -15,6 +15,7 @@
  */
 package io.zeebe.client.impl;
 
+import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.protocol.clientapi.*;
 import org.agrona.*;
 import org.agrona.io.DirectBufferInputStream;
@@ -64,7 +65,7 @@ public class ControlMessageRequestHandler implements RequestResponseHandler
 
         final ExpandableDirectBufferOutputStream out = new ExpandableDirectBufferOutputStream(serializedMessage, serializedMessageOffset);
 
-        objectMapper.toJson(out, message.getRequest());
+        objectMapper.toMsgpack(out, message.getRequest());
 
         // can only write the header after we have written the message, as we don't know the length beforehand
         final short commandLength = (short)out.position();
@@ -103,7 +104,7 @@ public class ControlMessageRequestHandler implements RequestResponseHandler
                 decoder.limit() + ControlMessageRequestDecoder.dataHeaderLength(),
                 dataLength);
 
-        final Object response = objectMapper.fromJson(inStream, message.getResponseClass());
+        final Object response = objectMapper.fromMsgpack(inStream, message.getResponseClass());
 
         message.onResponse(response);
 

@@ -17,15 +17,12 @@ package io.zeebe.client.impl.event;
 
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JacksonInject;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-
 import io.zeebe.client.api.commands.Workflow;
 import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.api.events.DeploymentState;
-import io.zeebe.client.api.record.ZeebeObjectMapper;
+import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.record.DeploymentRecordImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 
@@ -34,7 +31,7 @@ public class DeploymentEventImpl extends DeploymentRecordImpl implements Deploym
     private List<Workflow> deployedWorkflows;
 
     @JsonCreator
-    public DeploymentEventImpl(@JacksonInject ZeebeObjectMapper objectMapper)
+    public DeploymentEventImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper)
     {
         super(objectMapper, RecordType.EVENT);
     }

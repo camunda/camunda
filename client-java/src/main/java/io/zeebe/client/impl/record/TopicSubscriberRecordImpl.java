@@ -15,7 +15,7 @@
  */
 package io.zeebe.client.impl.record;
 
-import io.zeebe.client.api.record.ZeebeObjectMapper;
+import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.event.TopicSubscriberEventImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -27,7 +27,7 @@ public abstract class TopicSubscriberRecordImpl extends RecordImpl
     private int bufferSize = -1;
     private boolean forceStart;
 
-    public TopicSubscriberRecordImpl(ZeebeObjectMapper objectMapper, RecordType recordType)
+    public TopicSubscriberRecordImpl(ZeebeObjectMapperImpl objectMapper, RecordType recordType)
     {
         super(objectMapper, recordType, ValueType.SUBSCRIBER);
     }

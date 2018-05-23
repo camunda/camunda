@@ -16,7 +16,7 @@
 package io.zeebe.client.impl.record;
 
 import io.zeebe.client.api.record.TopicRecord;
-import io.zeebe.client.api.record.ZeebeObjectMapper;
+import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.event.TopicEventImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -27,7 +27,7 @@ public abstract class TopicRecordImpl extends RecordImpl implements TopicRecord
     private int partitions;
     private int replicationFactor;
 
-    public TopicRecordImpl(ZeebeObjectMapper objectMapper, RecordType recordType)
+    public TopicRecordImpl(ZeebeObjectMapperImpl objectMapper, RecordType recordType)
     {
         super(objectMapper, recordType, ValueType.TOPIC);
     }

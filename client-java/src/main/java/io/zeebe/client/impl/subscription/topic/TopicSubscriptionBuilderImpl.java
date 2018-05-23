@@ -18,42 +18,18 @@ package io.zeebe.client.impl.subscription.topic;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import io.zeebe.client.api.commands.IncidentCommand;
-import io.zeebe.client.api.commands.JobCommand;
-import io.zeebe.client.api.commands.WorkflowInstanceCommand;
-import io.zeebe.client.api.events.IncidentEvent;
-import io.zeebe.client.api.events.JobEvent;
-import io.zeebe.client.api.events.RaftEvent;
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.commands.*;
+import io.zeebe.client.api.events.*;
 import io.zeebe.client.api.record.RecordType;
 import io.zeebe.client.api.record.ValueType;
-import io.zeebe.client.api.subscription.IncidentCommandHandler;
-import io.zeebe.client.api.subscription.IncidentEventHandler;
-import io.zeebe.client.api.subscription.JobCommandHandler;
-import io.zeebe.client.api.subscription.JobEventHandler;
-import io.zeebe.client.api.subscription.RaftEventHandler;
-import io.zeebe.client.api.subscription.RecordHandler;
-import io.zeebe.client.api.subscription.TopicSubscription;
-import io.zeebe.client.api.subscription.TopicSubscriptionBuilderStep1;
+import io.zeebe.client.api.subscription.*;
 import io.zeebe.client.api.subscription.TopicSubscriptionBuilderStep1.TopicSubscriptionBuilderStep2;
 import io.zeebe.client.api.subscription.TopicSubscriptionBuilderStep1.TopicSubscriptionBuilderStep3;
-import io.zeebe.client.api.subscription.WorkflowInstanceCommandHandler;
-import io.zeebe.client.api.subscription.WorkflowInstanceEventHandler;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.impl.TopicClientImpl;
-import io.zeebe.client.impl.ZeebeObjectMapperImpl;
-import io.zeebe.client.impl.command.IncidentCommandImpl;
-import io.zeebe.client.impl.command.JobCommandImpl;
-import io.zeebe.client.impl.command.TopicCommandImpl;
-import io.zeebe.client.impl.command.WorkflowInstanceCommandImpl;
-import io.zeebe.client.impl.event.IncidentEventImpl;
-import io.zeebe.client.impl.event.JobEventImpl;
-import io.zeebe.client.impl.event.RaftEventImpl;
-import io.zeebe.client.impl.event.TopicEventImpl;
-import io.zeebe.client.impl.event.WorkflowInstanceEventImpl;
-import io.zeebe.client.impl.record.RecordImpl;
-import io.zeebe.client.impl.record.RecordMetadataImpl;
-import io.zeebe.client.impl.record.UntypedRecordImpl;
+import io.zeebe.client.impl.command.*;
+import io.zeebe.client.impl.event.*;
+import io.zeebe.client.impl.record.*;
 import io.zeebe.util.CheckedConsumer;
 import io.zeebe.util.EnsureUtil;
 
@@ -90,12 +66,9 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilderSte
             new BiEnumMap<>(RecordType.class, ValueType.class, CheckedConsumer.class);
 
     private final TopicSubscriberGroupBuilder builder;
-    private final ZeebeObjectMapperImpl objectMapper;
 
     public TopicSubscriptionBuilderImpl(TopicClientImpl client)
     {
-        this.objectMapper = client.getObjectMapper();
-
         final int bufferSize = client.getConfiguration().getDefaultTopicSubscriptionBufferSize();
         this.builder = new TopicSubscriberGroupBuilder(client.getTopic(), client.getSubscriptionManager(),
                 bufferSize);
@@ -249,7 +222,7 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilderSte
             throw new ClientException("Cannot deserialize record " + recordType + "/" + valueType + ": No POJO class registered");
         }
 
-        final T typedRecord = objectMapper.fromJson(record.getAsMsgPack(), targetClass);
+        final T typedRecord = record.asRecordType(targetClass);
         typedRecord.updateMetadata(record.getMetadata());
 
         final CheckedConsumer<T> handler = (CheckedConsumer<T>) handlers.get(recordType, valueType);

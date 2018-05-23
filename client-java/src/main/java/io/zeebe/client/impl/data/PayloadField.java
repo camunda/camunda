@@ -13,33 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.impl.record;
+package io.zeebe.client.impl.data;
 
 import java.io.InputStream;
 
-import io.zeebe.client.impl.data.MsgPackConverter;
-
-public class MsgPackField
+public class PayloadField
 {
     private final MsgPackConverter msgPackConverter;
 
     private String json;
     private byte[] msgPack;
 
-    public MsgPackField(MsgPackConverter msgPackConverter)
+    public PayloadField(MsgPackConverter msgPackConverter)
     {
         this.msgPackConverter = msgPackConverter;
     }
 
-    public MsgPackField(MsgPackField other)
+    public PayloadField(PayloadField other)
     {
         this.msgPackConverter = other.msgPackConverter;
         this.msgPack = other.msgPack;
         this.json = other.json;
     }
 
-
-    public String getAsJson()
+    public String getAsJsonString()
     {
         return json;
     }
@@ -85,6 +82,12 @@ public class MsgPackField
     public byte[] getMsgPack()
     {
         return msgPack;
+    }
+
+    public void clear()
+    {
+        this.msgPack = null;
+        this.json = null;
     }
 
 }

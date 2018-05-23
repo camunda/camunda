@@ -17,7 +17,8 @@ package io.zeebe.client.impl.subscription.job;
 
 import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.api.subscription.JobHandler;
-import io.zeebe.client.impl.*;
+import io.zeebe.client.impl.Loggers;
+import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.client.impl.event.JobEventImpl;
 import io.zeebe.client.impl.subscription.*;
 import io.zeebe.transport.RemoteAddress;
@@ -31,7 +32,6 @@ public class JobSubscriber extends Subscriber
     private final ZeebeClientImpl client;
     private final JobClient jobClient;
     private final JobSubscriptionSpec subscription;
-    private final ZeebeObjectMapperImpl objectMapper;
 
     public JobSubscriber(
             ZeebeClientImpl client,
@@ -40,21 +40,19 @@ public class JobSubscriber extends Subscriber
             RemoteAddress eventSource,
             int partition,
             SubscriberGroup<JobSubscriber> group,
-            ZeebeObjectMapperImpl objectMapper,
             SubscriptionManager acquisition)
     {
         super(subscriberKey, partition, subscription.getCapacity(), eventSource, group, acquisition);
         this.client = client;
         this.jobClient = client.topicClient(subscription.getTopic()).jobClient();
         this.subscription = subscription;
-        this.objectMapper = objectMapper;
     }
 
     public int pollEvents(JobHandler jobHandler)
     {
         final int polledEvents = pollEvents((e) ->
         {
-            final JobEventImpl jobEvent = objectMapper.fromJson(e.getAsMsgPack(), JobEventImpl.class);
+            final JobEventImpl jobEvent = e.asRecordType(JobEventImpl.class);
             jobEvent.updateMetadata(e.getMetadata());
 
             try

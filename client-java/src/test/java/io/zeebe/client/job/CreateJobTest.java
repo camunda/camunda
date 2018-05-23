@@ -112,7 +112,6 @@ public class CreateJobTest
                 entry("type", "fooType"),
                 entry("headers", new HashMap<>()),
                 entry("customHeaders", Maps.newHashMap("beverage", "apple juice")),
-                entry("deadline", Protocol.INSTANT_NULL_VALUE),
                 entry("payload", converter.convertToMsgPack(payload)));
 
         assertThat(job.getKey()).isEqualTo(123L);

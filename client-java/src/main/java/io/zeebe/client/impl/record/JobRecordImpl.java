@@ -20,34 +20,32 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import io.zeebe.client.api.record.JobRecord;
-import io.zeebe.client.api.record.ZeebeObjectMapper;
-import io.zeebe.client.impl.data.MsgPackConverter;
+import io.zeebe.client.impl.data.*;
 import io.zeebe.client.impl.event.JobEventImpl;
-import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
 
 public abstract class JobRecordImpl extends RecordImpl implements JobRecord
 {
+    private final MsgPackConverter msgPackConverter;
+
     private Map<String, Object> headers = new HashMap<>();
     private Map<String, Object> customHeaders = new HashMap<>();
 
-    private long deadline = Protocol.INSTANT_NULL_VALUE;
+    private Instant deadline;
     private String worker;
     private Integer retries;
     private String type;
-    private final MsgPackField payload;
+    private PayloadField payload;
 
-    public JobRecordImpl(ZeebeObjectMapper objectMapper, MsgPackConverter msgPackConverter, RecordType recordType)
+    public JobRecordImpl(ZeebeObjectMapperImpl objectMapper, MsgPackConverter msgPackConverter, RecordType recordType)
     {
         super(objectMapper, recordType, ValueType.JOB);
 
-        this.payload = new MsgPackField(msgPackConverter);
+        this.msgPackConverter = msgPackConverter;
     }
 
     public JobRecordImpl(JobRecordImpl base, JobIntent intent)
@@ -60,7 +58,12 @@ public abstract class JobRecordImpl extends RecordImpl implements JobRecord
         this.worker = base.worker;
         this.retries = base.retries;
         this.type = base.type;
-        this.payload = new MsgPackField(base.payload);
+        this.msgPackConverter = base.msgPackConverter;
+
+        if (base.payload != null)
+        {
+            this.payload = new PayloadField(base.payload);
+        }
     }
 
     @Override
@@ -75,26 +78,12 @@ public abstract class JobRecordImpl extends RecordImpl implements JobRecord
     }
 
     @Override
-//    @JsonIgnore
     public Instant getDeadline()
-    {
-        if (deadline == Protocol.INSTANT_NULL_VALUE)
-        {
-            return null;
-        }
-        else
-        {
-            return Instant.ofEpochMilli(deadline);
-        }
-    }
-
-    @JsonProperty("deadline")
-    public long getDeadlineAsLong()
     {
         return deadline;
     }
 
-    public void setDeadline(long deadline)
+    public void setDeadline(Instant deadline)
     {
         this.deadline = deadline;
     }
@@ -134,33 +123,54 @@ public abstract class JobRecordImpl extends RecordImpl implements JobRecord
         this.worker = worker;
     }
 
+    @JsonProperty("payload")
+    public PayloadField getPayloadField()
+    {
+        return payload;
+    }
+
+    @JsonProperty("payload")
+    public void setPayloadField(PayloadField payload)
+    {
+        this.payload = payload;
+    }
+
     @Override
-    @JsonIgnore
     public String getPayload()
     {
-        return payload.getAsJson();
+        if (payload == null)
+        {
+            return null;
+        }
+        else
+        {
+            return payload.getAsJsonString();
+        }
     }
 
-    @JsonProperty("payload")
-    public byte[] getPayloadMsgPack()
+    public void setPayload(String jsonString)
     {
-        return payload.getMsgPack();
-    }
-
-    @JsonProperty("payload")
-    public void setPayload(byte[] msgPack)
-    {
-        this.payload.setMsgPack(msgPack);
-    }
-
-    public void setPayload(String json)
-    {
-        this.payload.setJson(json);
+        if (payload == null)
+        {
+            payload = new PayloadField(msgPackConverter);
+        }
+        this.payload.setJson(jsonString);
     }
 
     public void setPayload(InputStream jsonStream)
     {
+        if (payload == null)
+        {
+            payload = new PayloadField(msgPackConverter);
+        }
         this.payload.setJson(jsonStream);
+    }
+
+    public void clearPayload()
+    {
+        // set field to null so that it is not serialized to Msgpack
+        // - currently, the broker doesn't support null as payload
+        payload = null;
     }
 
     @Override

@@ -15,17 +15,17 @@
  */
 package io.zeebe.client.impl.record;
 
-import io.zeebe.client.api.record.ZeebeObjectMapper;
-import io.zeebe.client.impl.data.MsgPackConverter;
+import io.zeebe.client.api.record.Record;
+import io.zeebe.client.impl.data.*;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 
 public class UntypedRecordImpl extends RecordImpl
 {
-    private final MsgPackField content;
+    private final PayloadField content;
 
     public UntypedRecordImpl(
-            final ZeebeObjectMapper objectMapper,
+            final ZeebeObjectMapperImpl objectMapper,
             final MsgPackConverter converter,
             final RecordType recordType,
             final ValueType valueType,
@@ -33,13 +33,18 @@ public class UntypedRecordImpl extends RecordImpl
     {
         super(objectMapper, recordType, valueType);
 
-        this.content = new MsgPackField(converter);
+        this.content = new PayloadField(converter);
         this.content.setMsgPack(rawContent);
     }
 
     public byte[] getAsMsgPack()
     {
         return content.getMsgPack();
+    }
+
+    public <T extends Record> T asRecordType(Class<T> recordClass)
+    {
+        return objectMapper.asRecordType(this, recordClass);
     }
 
     @Override
@@ -51,7 +56,14 @@ public class UntypedRecordImpl extends RecordImpl
     @Override
     public Class<? extends RecordImpl> getEventClass()
     {
-        // not available for a general record
+        // not available for an untyped record
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String toJson()
+    {
+        // not available for an untyped record
         throw new UnsupportedOperationException();
     }
 

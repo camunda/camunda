@@ -24,6 +24,7 @@ import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.record.Record;
 import io.zeebe.client.cmd.*;
 import io.zeebe.client.impl.clustering.*;
+import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.transport.*;

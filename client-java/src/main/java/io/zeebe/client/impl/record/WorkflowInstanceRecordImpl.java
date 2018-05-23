@@ -17,12 +17,9 @@ package io.zeebe.client.impl.record;
 
 import java.io.InputStream;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import io.zeebe.client.api.record.WorkflowInstanceRecord;
-import io.zeebe.client.api.record.ZeebeObjectMapper;
-import io.zeebe.client.impl.data.MsgPackConverter;
+import io.zeebe.client.impl.data.*;
 import io.zeebe.client.impl.event.WorkflowInstanceEventImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -30,18 +27,20 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public abstract class WorkflowInstanceRecordImpl extends RecordImpl implements WorkflowInstanceRecord
 {
+    private final MsgPackConverter msgPackConverter;
+
     private String bpmnProcessId;
     private int version = -1;
     private long workflowKey = -1L;
     private long workflowInstanceKey = -1L;
     private String activityId;
-    private final MsgPackField payload;
+    private PayloadField payload;
 
-    public WorkflowInstanceRecordImpl(ZeebeObjectMapper objectMapper, MsgPackConverter converter, RecordType recordType)
+    public WorkflowInstanceRecordImpl(ZeebeObjectMapperImpl objectMapper, MsgPackConverter msgPackConverter, RecordType recordType)
     {
         super(objectMapper, recordType, ValueType.WORKFLOW_INSTANCE);
 
-        this.payload = new MsgPackField(converter);
+        this.msgPackConverter = msgPackConverter;
     }
 
     public WorkflowInstanceRecordImpl(WorkflowInstanceRecordImpl base, WorkflowInstanceIntent intent)
@@ -53,7 +52,12 @@ public abstract class WorkflowInstanceRecordImpl extends RecordImpl implements W
         this.workflowKey = base.getWorkflowKey();
         this.workflowInstanceKey = base.getWorkflowInstanceKey();
         this.activityId = base.getActivityId();
-        this.payload = new MsgPackField(base.payload);
+        this.msgPackConverter = base.msgPackConverter;
+
+        if (base.payload != null)
+        {
+            this.payload = new PayloadField(base.payload);
+        }
     }
 
     @Override
@@ -100,33 +104,54 @@ public abstract class WorkflowInstanceRecordImpl extends RecordImpl implements W
         this.activityId = activityId;
     }
 
+    @JsonProperty("payload")
+    public PayloadField getPayloadField()
+    {
+        return payload;
+    }
+
+    @JsonProperty("payload")
+    public void setPayloadField(PayloadField payload)
+    {
+        this.payload = payload;
+    }
+
     @Override
-    @JsonIgnore
     public String getPayload()
     {
-        return payload.getAsJson();
+        if (payload == null)
+        {
+            return null;
+        }
+        else
+        {
+            return payload.getAsJsonString();
+        }
     }
 
-    @JsonProperty("payload")
-    public byte[] getPayloadMsgPack()
+    public void setPayload(String jsonString)
     {
-        return this.payload.getMsgPack();
+        if (payload == null)
+        {
+            payload = new PayloadField(msgPackConverter);
+        }
+        this.payload.setJson(jsonString);
     }
 
-    @JsonProperty("payload")
-    public void setPayload(byte[] msgpack)
+    public void setPayload(InputStream jsonStream)
     {
-        this.payload.setMsgPack(msgpack);
+        if (payload == null)
+        {
+            payload = new PayloadField(msgPackConverter);
+        }
+        this.payload.setJson(jsonStream);
     }
 
-    public void setPayloadAsJson(String json)
+    public void clearPayload()
     {
-        this.payload.setJson(json);
-    }
-
-    public void setPayloadAsJson(InputStream json)
-    {
-        this.payload.setJson(json);
+        // set field to null so that it is not serialized to Msgpack
+        // - currently, the broker doesn't support null as payload
+        payload = null;
     }
 
     @Override

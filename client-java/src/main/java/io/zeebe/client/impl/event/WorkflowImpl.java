@@ -22,7 +22,6 @@ public class WorkflowImpl implements Workflow
     private String bpmnProcessId;
     private int version;
     private long workflowKey;
-    private byte[] bpmnXml;
 
     @Override
     public String getBpmnProcessId()
@@ -59,16 +58,6 @@ public class WorkflowImpl implements Workflow
         return workflowKey;
     }
 
-    public byte[] getBpmnXml()
-    {
-        return bpmnXml;
-    }
-
-    public void setBpmnXml(byte[] bpmnXml)
-    {
-        this.bpmnXml = bpmnXml;
-    }
-
     @Override
     public String toString()
     {
@@ -77,7 +66,10 @@ public class WorkflowImpl implements Workflow
         builder.append(bpmnProcessId);
         builder.append(", version=");
         builder.append(version);
+        builder.append(", workflowKey=");
+        builder.append(workflowKey);
         builder.append("]");
         return builder.toString();
     }
+
 }

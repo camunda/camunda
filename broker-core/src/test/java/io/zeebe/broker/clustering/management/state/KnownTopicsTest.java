@@ -76,7 +76,8 @@ public class KnownTopicsTest
     {
         knownTopics = getKnownTopics();
         TestUtil.doRepeatedly(this::getTopicNames)
-            .until(topicNames -> {
+            .until(topicNames ->
+            {
                 System.out.println(topicNames);
                 return topicNames.contains(Protocol.SYSTEM_TOPIC);
             });

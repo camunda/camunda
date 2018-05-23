@@ -16,7 +16,7 @@
 package io.zeebe.client.impl.record;
 
 import io.zeebe.client.api.record.IncidentRecord;
-import io.zeebe.client.api.record.ZeebeObjectMapper;
+import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.event.IncidentEventImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -33,7 +33,7 @@ public abstract class IncidentRecordImpl extends RecordImpl implements IncidentR
 
     private Long jobKey;
 
-    public IncidentRecordImpl(ZeebeObjectMapper objectMapper, RecordType recordType)
+    public IncidentRecordImpl(ZeebeObjectMapperImpl objectMapper, RecordType recordType)
     {
         super(objectMapper, recordType, ValueType.INCIDENT);
     }

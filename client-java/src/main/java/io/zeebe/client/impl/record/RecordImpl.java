@@ -19,7 +19,7 @@ import java.time.Instant;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.client.api.record.Record;
-import io.zeebe.client.api.record.ZeebeObjectMapper;
+import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.Intent;
@@ -27,10 +27,10 @@ import io.zeebe.protocol.intent.Intent;
 public abstract class RecordImpl implements Record
 {
     private final RecordMetadataImpl metadata = new RecordMetadataImpl();
-    private final ZeebeObjectMapper objectMapper;
+    protected final ZeebeObjectMapperImpl objectMapper;
 
     public RecordImpl(
-            ZeebeObjectMapper objectMapper,
+            ZeebeObjectMapperImpl objectMapper,
             RecordType recordType,
             ValueType valueType)
     {
@@ -48,7 +48,6 @@ public abstract class RecordImpl implements Record
     }
 
     @Override
-    @JsonIgnore
     public RecordMetadataImpl getMetadata()
     {
         return metadata;

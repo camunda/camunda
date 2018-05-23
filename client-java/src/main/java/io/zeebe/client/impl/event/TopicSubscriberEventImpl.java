@@ -15,12 +15,9 @@
  */
 package io.zeebe.client.impl.event;
 
-import com.fasterxml.jackson.annotation.JacksonInject;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
-import io.zeebe.client.api.record.ZeebeObjectMapper;
+import com.fasterxml.jackson.annotation.*;
 import io.zeebe.client.impl.ReceiverAwareResponseResult;
+import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.record.TopicSubscriberRecordImpl;
 import io.zeebe.client.impl.subscription.EventSubscriptionCreationResult;
 import io.zeebe.protocol.clientapi.RecordType;
@@ -31,7 +28,7 @@ public class TopicSubscriberEventImpl extends TopicSubscriberRecordImpl implemen
     private RemoteAddress remote;
 
     @JsonCreator
-    public TopicSubscriberEventImpl(@JacksonInject ZeebeObjectMapper objectMapper)
+    public TopicSubscriberEventImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper)
     {
         super(objectMapper, RecordType.EVENT);
     }

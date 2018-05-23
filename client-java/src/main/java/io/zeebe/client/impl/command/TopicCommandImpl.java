@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import io.zeebe.client.api.commands.TopicCommand;
 import io.zeebe.client.api.commands.TopicCommandName;
-import io.zeebe.client.api.record.ZeebeObjectMapper;
+import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.record.TopicRecordImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.intent.TopicIntent;
@@ -29,7 +29,7 @@ import io.zeebe.protocol.intent.TopicIntent;
 public class TopicCommandImpl extends TopicRecordImpl implements TopicCommand
 {
     @JsonCreator
-    public TopicCommandImpl(@JacksonInject ZeebeObjectMapper objectMapper)
+    public TopicCommandImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper)
     {
         super(objectMapper, RecordType.COMMAND);
     }

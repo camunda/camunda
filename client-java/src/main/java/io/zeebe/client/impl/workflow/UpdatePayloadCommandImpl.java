@@ -45,14 +45,14 @@ public class UpdatePayloadCommandImpl extends CommandImpl<WorkflowInstanceEvent>
     @Override
     public UpdatePayloadWorkflowInstanceCommandStep2 payload(InputStream payload)
     {
-        command.setPayloadAsJson(payload);
+        command.setPayload(payload);
         return this;
     }
 
     @Override
     public UpdatePayloadWorkflowInstanceCommandStep2 payload(String payload)
     {
-        command.setPayloadAsJson(payload);
+        command.setPayload(payload);
         return this;
     }
 

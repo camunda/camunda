@@ -17,9 +17,8 @@ package io.zeebe.client.impl.record;
 
 import java.time.Instant;
 
-import io.zeebe.client.api.record.RecordMetadata;
-import io.zeebe.client.api.record.RecordType;
-import io.zeebe.client.api.record.ValueType;
+import com.fasterxml.jackson.annotation.*;
+import io.zeebe.client.api.record.*;
 import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
 import io.zeebe.protocol.intent.Intent;
 
@@ -32,7 +31,25 @@ public class RecordMetadataImpl implements RecordMetadata
     private io.zeebe.protocol.clientapi.RecordType recordType;
     private io.zeebe.protocol.clientapi.ValueType valueType;
     private Intent intent;
-    private Instant timestamp = null;
+    private Instant timestamp;
+
+    public RecordMetadataImpl()
+    {
+        // default constructor
+    }
+
+    @JsonCreator
+    public RecordMetadataImpl(
+            @JsonProperty("intent") String intent,
+            @JsonProperty("valueType") io.zeebe.protocol.clientapi.ValueType valueType,
+            @JsonProperty("recordType") io.zeebe.protocol.clientapi.RecordType recordType)
+    {
+        // is used by Jackson to de-serialize a JSON String
+        // resolve the intent from the given String and the value type
+        this.valueType = valueType;
+        this.recordType = recordType;
+        this.intent = Intent.fromProtocolValue(valueType, intent);
+    }
 
     @Override
     public String getTopicName()
@@ -100,6 +117,7 @@ public class RecordMetadataImpl implements RecordMetadata
         return RecordType.valueOf(recordType.name());
     }
 
+    @JsonIgnore
     public io.zeebe.protocol.clientapi.RecordType getProtocolRecordType()
     {
         return recordType;
@@ -116,6 +134,7 @@ public class RecordMetadataImpl implements RecordMetadata
         return ValueType.valueOf(valueType.name());
     }
 
+    @JsonIgnore
     public io.zeebe.protocol.clientapi.ValueType getProtocolValueType()
     {
         return valueType;
@@ -132,6 +151,7 @@ public class RecordMetadataImpl implements RecordMetadata
         return intent.name();
     }
 
+    @JsonIgnore
     public Intent getProtocolIntent()
     {
         return intent;
@@ -145,8 +165,25 @@ public class RecordMetadataImpl implements RecordMetadata
     @Override
     public String toString()
     {
-        return "EventMetadata [topicName=" + topicName + ", partitionId=" + partitionId + ", key=" +
-                key + ", position=" + position + ", eventType=" + recordType + ", timestamp=" + timestamp + "]";
+        final StringBuilder builder = new StringBuilder();
+        builder.append("RecordMetadata [recordType=");
+        builder.append(recordType);
+        builder.append(", valueType=");
+        builder.append(valueType);
+        builder.append(", intent=");
+        builder.append(intent);
+        builder.append(", topicName=");
+        builder.append(topicName);
+        builder.append(", partitionId=");
+        builder.append(partitionId);
+        builder.append(", position=");
+        builder.append(position);
+        builder.append(", key=");
+        builder.append(key);
+        builder.append(", timestamp=");
+        builder.append(timestamp);
+        builder.append("]");
+        return builder.toString();
     }
 
 }

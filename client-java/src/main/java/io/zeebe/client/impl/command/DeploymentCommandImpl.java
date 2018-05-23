@@ -15,13 +15,10 @@
  */
 package io.zeebe.client.impl.command;
 
-import com.fasterxml.jackson.annotation.JacksonInject;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
+import com.fasterxml.jackson.annotation.*;
 import io.zeebe.client.api.commands.DeploymentCommand;
 import io.zeebe.client.api.commands.DeploymentCommandName;
-import io.zeebe.client.api.record.ZeebeObjectMapper;
+import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.record.DeploymentRecordImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.intent.DeploymentIntent;
@@ -33,7 +30,7 @@ public class DeploymentCommandImpl extends DeploymentRecordImpl implements Deplo
     private String errorMessage;
 
     @JsonCreator
-    public DeploymentCommandImpl(@JacksonInject ZeebeObjectMapper objectMapper)
+    public DeploymentCommandImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper)
     {
         super(objectMapper, RecordType.COMMAND);
     }
