@@ -15,6 +15,8 @@
  */
 package io.zeebe.logstreams.spi;
 
+import java.util.List;
+
 /**
  * Storage for log snapshots.
  */
@@ -53,4 +55,10 @@ public interface SnapshotStorage
      */
     boolean purgeSnapshot(String name);
 
+    /**
+     * Returns a list of available snapshots; for each snapshot item, it returns the latest
+     * file.
+     * @return all available snapshots
+     */
+    List<ReadableSnapshot> listSnapshots();
 }

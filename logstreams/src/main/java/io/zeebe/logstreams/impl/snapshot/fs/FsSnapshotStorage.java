@@ -17,12 +17,14 @@ package io.zeebe.logstreams.impl.snapshot.fs;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import io.zeebe.logstreams.impl.Loggers;
-import org.agrona.LangUtil;
+import io.zeebe.logstreams.spi.ReadableSnapshot;
 import io.zeebe.logstreams.spi.SnapshotStorage;
+import org.agrona.LangUtil;
 import org.slf4j.Logger;
 
 public class FsSnapshotStorage implements SnapshotStorage
@@ -37,7 +39,7 @@ public class FsSnapshotStorage implements SnapshotStorage
     }
 
     @Override
-    public FsReadableSnapshot getLastSnapshot(String name) throws Exception
+    public FsReadableSnapshot getLastSnapshot(String name)
     {
         final File rootFile = new File(cfg.getRootPath());
         final List<File> snapshotFiles = Arrays.asList(rootFile.listFiles(file -> cfg.matchesSnapshotFileNamePattern(file, name)));
@@ -132,5 +134,25 @@ public class FsSnapshotStorage implements SnapshotStorage
         }
 
         return new FsSnapshotWriter(cfg, snapshotFile, checksumFile, lastSnapshot);
+    }
+
+    @Override
+    public List<ReadableSnapshot> listSnapshots()
+    {
+        final File rootFile = new File(cfg.getRootPath());
+        final File[] snapshotFiles = rootFile.listFiles(file -> cfg.matchesSnapshotFileNamePattern(file, ".+"));
+        final ArrayList<ReadableSnapshot> snapshots = new ArrayList<>();
+
+        if (snapshotFiles != null)
+        {
+            snapshots.ensureCapacity(snapshotFiles.length);
+            for (final File snapshotFile : snapshotFiles)
+            {
+                final String snapshotName = cfg.getSnapshotNameFromFileName(snapshotFile.getName());
+                snapshots.add(getLastSnapshot(snapshotName));
+            }
+        }
+
+        return snapshots;
     }
 }

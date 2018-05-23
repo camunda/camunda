@@ -21,11 +21,13 @@ import static io.zeebe.util.StringUtil.getBytes;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.List;
 
 import io.zeebe.logstreams.impl.snapshot.fs.FsReadableSnapshot;
 import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotStorage;
 import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotStorageConfiguration;
 import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotWriter;
+import io.zeebe.logstreams.spi.ReadableSnapshot;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -187,9 +189,50 @@ public class FsSnapshotStorageTest
         assertThat(snapshot.getPosition()).isEqualTo(100);
     }
 
+    @Test
+    public void shouldReturnEmptyListIfNoSnapshotsAvailable()
+    {
+        // given
+        final List<ReadableSnapshot> snapshots = fsSnapshotStorage.listSnapshots();
+
+        // then
+        assertThat(snapshots).isEmpty();
+    }
+
+    @Test
+    public void shouldListLatestVersionOfExistingSnapshots() throws Exception
+    {
+        // given
+        final List<ReadableSnapshot> snapshots;
+        final String firstName = "first";
+        final String secondName = "second";
+
+        // when
+        writeSnapshot(firstName, 1);
+        writeSnapshot(firstName, 3);
+        writeSnapshot(secondName, 1);
+        snapshots = fsSnapshotStorage.listSnapshots();
+
+        // then
+        assertThat(snapshots.size()).isEqualTo(2);
+
+        // when
+        final ReadableSnapshot first = snapshots.stream().filter((s) -> s.getName().equals("first")).findFirst().get();
+        assertThat(first.getPosition()).isEqualTo(3);
+
+        final ReadableSnapshot second = snapshots.stream().filter((s) -> s.getName().equals("second")).findFirst().get();
+        assertThat(second.getPosition()).isEqualTo(1);
+    }
+
     protected String getFileName(String absolutePath)
     {
         return new File(absolutePath).getName();
     }
 
+    private void writeSnapshot(final String name, final long position) throws Exception
+    {
+        final FsSnapshotWriter fsSnapshotWriter = fsSnapshotStorage.createSnapshot(name, position);
+        fsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
+        fsSnapshotWriter.commit();
+    }
 }
