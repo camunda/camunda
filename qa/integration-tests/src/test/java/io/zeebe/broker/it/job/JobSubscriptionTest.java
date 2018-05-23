@@ -78,6 +78,9 @@ public class JobSubscriptionTest
     {
         jobClient = clientRule.getClient().topicClient().jobClient();
         subscriptionClient = clientRule.getClient().topicClient().subscriptionClient();
+
+        final String defaultTopic = clientRule.getClient().getConfiguration().getDefaultTopic();
+        clientRule.waitUntilTopicsExists(defaultTopic);
     }
 
     @Test
