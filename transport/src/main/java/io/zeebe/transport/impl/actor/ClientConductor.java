@@ -73,7 +73,8 @@ public class ClientConductor extends Conductor
     @Override
     public void onChannelClosed(TransportChannel channel, boolean wasConnected)
     {
-        actor.run(() ->
+        // #submit is better than #run here => ensures we yield and make progress on other jobs
+        actor.submit(() ->
         {
             final RemoteAddressImpl remoteAddress = channel.getRemoteAddress();
 

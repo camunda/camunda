@@ -20,11 +20,15 @@ import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Mockito.*;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.*;
 import java.util.function.*;
 
@@ -741,6 +745,23 @@ public class ClientTransportTest
 
         assertThat(closeFuture).isDone();
         assertThat(responseFuture).isDone();
+    }
+
+    @Test
+    public void shouldCloseTransportWithUnreachableRemote()
+    {
+        // given
+        clientTransport.registerRemoteAddress(SocketAddress.from("foo:123"));
+
+        // when
+        try
+        {
+            clientTransport.closeAsync().get(10, TimeUnit.SECONDS);
+        }
+        catch (InterruptedException | ExecutionException | TimeoutException e)
+        {
+            fail("Could not close transport in time", e);
+        }
     }
 
     protected class CountFragmentsHandler implements FragmentHandler
