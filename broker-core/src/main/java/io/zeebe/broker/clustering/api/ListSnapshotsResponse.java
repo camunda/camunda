@@ -26,28 +26,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import io.zeebe.broker.util.SbeBufferWriterReader;
 import io.zeebe.clustering.management.ListSnapshotsResponseDecoder;
 import io.zeebe.clustering.management.ListSnapshotsResponseEncoder;
-import io.zeebe.clustering.management.MessageHeaderDecoder;
-import io.zeebe.clustering.management.MessageHeaderEncoder;
-import io.zeebe.util.buffer.BufferReader;
-import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class ListSnapshotsResponse implements BufferWriter, BufferReader
+public class ListSnapshotsResponse extends SbeBufferWriterReader<ListSnapshotsResponseEncoder, ListSnapshotsResponseDecoder>
 {
-    private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     private final ListSnapshotsResponseDecoder bodyDecoder = new ListSnapshotsResponseDecoder();
-
-    private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     private final ListSnapshotsResponseEncoder bodyEncoder = new ListSnapshotsResponseEncoder();
 
     private final List<Snapshot> snapshots = new ArrayList<>();
-
-    public ListSnapshotsResponse()
-    {
-    }
 
     public List<Snapshot> getSnapshots()
     {
@@ -61,14 +51,21 @@ public class ListSnapshotsResponse implements BufferWriter, BufferReader
     }
 
     @Override
+    protected ListSnapshotsResponseEncoder getBodyEncoder()
+    {
+        return bodyEncoder;
+    }
+
+    @Override
+    protected ListSnapshotsResponseDecoder getBodyDecoder()
+    {
+        return bodyDecoder;
+    }
+
+    @Override
     public void wrap(DirectBuffer buffer, int offset, int length)
     {
-        headerDecoder.wrap(buffer, offset);
-        bodyDecoder.wrap(buffer,
-                offset + headerDecoder.encodedLength(),
-                headerDecoder.blockLength(),
-                headerDecoder.version());
-
+        super.wrap(buffer, offset, length);
         snapshots.clear();
         bodyDecoder.snapshots().forEach((decoder) -> snapshots.add(new Snapshot(decoder)));
     }
@@ -76,23 +73,17 @@ public class ListSnapshotsResponse implements BufferWriter, BufferReader
     @Override
     public int getLength()
     {
-        final int baseLength = headerEncoder.encodedLength() + bodyEncoder.sbeBlockLength() + sbeHeaderSize();
-        return baseLength + snapshots.stream().mapToInt(Snapshot::getEncodedLength).sum();
+        final int length = super.getLength() + sbeHeaderSize();
+        return length + snapshots.stream().mapToInt(Snapshot::getEncodedLength).sum();
     }
 
     @Override
     public void write(MutableDirectBuffer buffer, int offset)
     {
-        headerEncoder.wrap(buffer, offset)
-                .blockLength(bodyEncoder.sbeBlockLength())
-                .templateId(bodyEncoder.sbeTemplateId())
-                .schemaId(bodyEncoder.sbeSchemaId())
-                .version(bodyEncoder.sbeSchemaVersion());
+        super.write(buffer, offset);
 
         final int snapshotsCount = snapshots.size();
-        final SnapshotsEncoder encoder = bodyEncoder.wrap(buffer, offset + headerEncoder.encodedLength())
-                .snapshotsCount(snapshotsCount);
-
+        final SnapshotsEncoder encoder = bodyEncoder.snapshotsCount(snapshotsCount);
         snapshots.forEach((snapshot) -> snapshot.encode(encoder));
     }
 

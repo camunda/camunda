@@ -19,33 +19,18 @@ package io.zeebe.broker.clustering.api;
 
 import static io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder.partitionIdNullValue;
 
+import io.zeebe.broker.util.SbeBufferWriterReader;
 import io.zeebe.clustering.management.ListSnapshotsRequestDecoder;
 import io.zeebe.clustering.management.ListSnapshotsRequestEncoder;
-import io.zeebe.clustering.management.MessageHeaderDecoder;
-import io.zeebe.clustering.management.MessageHeaderEncoder;
-import io.zeebe.util.buffer.BufferReader;
-import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class ListSnapshotsRequest implements BufferWriter, BufferReader
+public class ListSnapshotsRequest extends SbeBufferWriterReader<ListSnapshotsRequestEncoder, ListSnapshotsRequestDecoder>
 {
-    private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     private final ListSnapshotsRequestDecoder bodyDecoder = new ListSnapshotsRequestDecoder();
-
-    private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     private final ListSnapshotsRequestEncoder bodyEncoder = new ListSnapshotsRequestEncoder();
 
     private int partitionId = partitionIdNullValue();
-
-    public ListSnapshotsRequest()
-    {
-    }
-
-    public ListSnapshotsRequest(final int partitionId)
-    {
-        this.partitionId = partitionId;
-    }
 
     public int getPartitionId()
     {
@@ -59,33 +44,28 @@ public class ListSnapshotsRequest implements BufferWriter, BufferReader
     }
 
     @Override
-    public void wrap(DirectBuffer buffer, int offset, int length)
+    protected ListSnapshotsRequestEncoder getBodyEncoder()
     {
-        headerDecoder.wrap(buffer, offset);
-        bodyDecoder.wrap(buffer,
-                offset + headerDecoder.encodedLength(),
-                headerDecoder.blockLength(),
-                headerDecoder.version());
-
-        partitionId = bodyDecoder.partitionId();
+        return bodyEncoder;
     }
 
     @Override
-    public int getLength()
+    protected ListSnapshotsRequestDecoder getBodyDecoder()
     {
-        return headerEncoder.encodedLength() + bodyEncoder.sbeBlockLength();
+        return bodyDecoder;
+    }
+
+    @Override
+    public void wrap(DirectBuffer buffer, int offset, int length)
+    {
+        super.wrap(buffer, offset, length);
+        partitionId = bodyDecoder.partitionId();
     }
 
     @Override
     public void write(MutableDirectBuffer buffer, int offset)
     {
-        headerEncoder.wrap(buffer, offset)
-                .blockLength(bodyEncoder.sbeBlockLength())
-                .templateId(bodyEncoder.sbeTemplateId())
-                .schemaId(bodyEncoder.sbeSchemaId())
-                .version(bodyEncoder.sbeSchemaVersion());
-
-        bodyEncoder.wrap(buffer, offset + headerEncoder.encodedLength())
-                .partitionId(partitionId);
+        super.write(buffer, offset);
+        bodyEncoder.partitionId(partitionId);
     }
 }
