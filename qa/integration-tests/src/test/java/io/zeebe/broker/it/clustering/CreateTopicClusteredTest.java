@@ -293,8 +293,7 @@ public class CreateTopicClusteredTest
 
         // then
         final Topics topics = client.newTopicsRequest().send().join();
-        final
-        Function<String, Optional<Topic>> findTopic = (name) -> topics.getTopics().stream().filter(t -> name.equals(t.getName())).findFirst();
+        final Function<String, Optional<Topic>> findTopic = (name) -> topics.getTopics().stream().filter(t -> name.equals(t.getName())).findFirst();
 
         for (final String topicName : topicNames)
         {
