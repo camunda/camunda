@@ -27,7 +27,7 @@ public class CreateTopic
     public static void main(final String[] args)
     {
         final String broker = "localhost:51015";
-        final String topic = "default-topic";
+        final String topic = "test";
         final int partitions = 1;
 
         final Properties clientProperties = new Properties();

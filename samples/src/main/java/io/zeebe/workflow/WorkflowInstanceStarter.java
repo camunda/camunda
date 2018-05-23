@@ -29,12 +29,13 @@ public class WorkflowInstanceStarter
     {
         final String brokerContactPoint = "127.0.0.1:51015";
         final String bpmnProcessId = "demoProcess";
-        final String topicName = "default-topic";
         final int partitionId = 0;
 
         final ZeebeClient zeebeClient = ZeebeClient.newClientBuilder()
             .brokerContactPoint(brokerContactPoint)
             .build();
+
+        final String topicName = zeebeClient.getConfiguration().getDefaultTopic();
 
         System.out.println(String.format("> Connecting to %s", brokerContactPoint));
 

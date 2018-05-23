@@ -42,8 +42,6 @@ import io.zeebe.util.sched.clock.ControlledActorClock;
 
 public class ClientRule extends ExternalResource
 {
-    public static final String DEFAULT_TOPIC = "default-topic";
-
     protected final Properties properties;
 
     protected ZeebeClient client;
@@ -100,12 +98,12 @@ public class ClientRule extends ExternalResource
 
     public String getDefaultTopic()
     {
-        return DEFAULT_TOPIC;
+        return client.getConfiguration().getDefaultTopic();
     }
 
     public int getDefaultPartition()
     {
-        final List<Integer> defaultPartitions = doRepeatedly(() -> getPartitions(DEFAULT_TOPIC)).until(p -> !p.isEmpty());
+        final List<Integer> defaultPartitions = doRepeatedly(() -> getPartitions(getDefaultTopic())).until(p -> !p.isEmpty());
         return defaultPartitions.get(0);
     }
 

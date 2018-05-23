@@ -53,7 +53,7 @@ public class MultipleClientTest
         final List<JobEvent> jobEventsClient1 = new CopyOnWriteArrayList<>();
         final List<JobEvent> jobEventsClient2 = new CopyOnWriteArrayList<>();
 
-        client1.waitUntilTopicsExists(ClientRule.DEFAULT_TOPIC);
+        client1.waitUntilTopicsExists(client1.getDefaultTopic());
 
         client1.getSubscriptionClient()
             .newTopicSubscription()
@@ -85,7 +85,7 @@ public class MultipleClientTest
         final RecordingJobHandler handler1 = new RecordingJobHandler();
         final RecordingJobHandler handler2 = new RecordingJobHandler();
 
-        client1.waitUntilTopicsExists(ClientRule.DEFAULT_TOPIC);
+        client1.waitUntilTopicsExists(client1.getDefaultTopic());
 
         client1.getSubscriptionClient()
             .newJobSubscription()

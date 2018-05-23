@@ -28,7 +28,6 @@ public class WorkflowInstanceWorker
     public static void main(String[] args)
     {
         final String brokerContactPoint = "127.0.0.1:51015";
-        final String topicName = "default-topic";
         final int partitionId = 0;
         final String taskType = "foo";
         final String lockOwner = "worker-1";
@@ -36,6 +35,8 @@ public class WorkflowInstanceWorker
         final ZeebeClient zeebeClient = ZeebeClient.newClientBuilder()
             .brokerContactPoint(brokerContactPoint)
             .build();
+
+        final String topicName = zeebeClient.getConfiguration().getDefaultTopic();
 
         System.out.println(String.format("> Connecting to %s", brokerContactPoint));
 

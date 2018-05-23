@@ -45,7 +45,7 @@ public class TopicEventRecorder extends ExternalResource
     private final List<IncidentEvent> incidentEvents = new CopyOnWriteArrayList<>();
 
     private final ClientRule clientRule;
-    private final String topicName;
+    private String topicName;
 
     protected TopicSubscription subscription;
     protected final boolean autoRecordEvents;
@@ -57,7 +57,7 @@ public class TopicEventRecorder extends ExternalResource
 
     public TopicEventRecorder(final ClientRule clientRule, boolean autoRecordEvents)
     {
-        this(clientRule, clientRule.getDefaultTopic(), autoRecordEvents);
+        this(clientRule, null, autoRecordEvents);
     }
 
     public TopicEventRecorder(
@@ -73,6 +73,11 @@ public class TopicEventRecorder extends ExternalResource
     @Override
     protected void before() throws Throwable
     {
+        if (topicName == null)
+        {
+            topicName = clientRule.getDefaultTopic();
+        }
+
         if (autoRecordEvents)
         {
             startRecordingEvents();

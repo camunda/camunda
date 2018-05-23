@@ -36,7 +36,7 @@ public class TypedEventLogger
 
         System.out.println(String.format("> Connecting to %s", brokerContactPoint));
 
-        final String topicName = "default-topic";
+        final String topicName = zeebeClient.getConfiguration().getDefaultTopic();
 
         System.out.println(String.format("> Open event subscription from topic '%s'", topicName));
 
