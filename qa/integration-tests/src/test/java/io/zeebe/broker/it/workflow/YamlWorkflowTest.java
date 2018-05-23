@@ -89,8 +89,8 @@ public class YamlWorkflowTest
             .join();
 
         // when
-        clientRule.getSubscriptionClient()
-            .newJobSubscription()
+        clientRule.getJobClient()
+            .newWorker()
             .jobType("foo")
             .handler((client, job) -> client.newCompleteCommand(job).withoutPayload().send())
             .open();
@@ -120,8 +120,8 @@ public class YamlWorkflowTest
         // when
         final RecordingJobHandler recordingJobHandler = new RecordingJobHandler();
 
-        clientRule.getSubscriptionClient()
-            .newJobSubscription()
+        clientRule.getJobClient()
+            .newWorker()
             .jobType("foo")
             .handler(recordingJobHandler)
             .open();
@@ -159,8 +159,8 @@ public class YamlWorkflowTest
             .payload("{\"result\":3}")
             .send());
 
-        clientRule.getSubscriptionClient()
-            .newJobSubscription()
+        clientRule.getJobClient()
+            .newWorker()
             .jobType("foo")
             .handler(recordingTaskHandler)
             .open();

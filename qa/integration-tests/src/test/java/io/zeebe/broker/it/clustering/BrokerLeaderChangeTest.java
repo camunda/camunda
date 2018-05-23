@@ -31,7 +31,7 @@ import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.api.commands.BrokerInfo;
 import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.events.JobState;
-import io.zeebe.client.api.subscription.JobSubscription;
+import io.zeebe.client.api.subscription.JobWorker;
 import io.zeebe.client.api.subscription.TopicSubscription;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
@@ -82,15 +82,15 @@ public class BrokerLeaderChangeTest
     {
 
         private final AtomicBoolean isJobCompleted = new AtomicBoolean(false);
-        private final JobSubscription jobSubscription;
+        private final JobWorker jobSubscription;
         private final TopicSubscription topicSubscription;
 
         JobCompleter(JobEvent jobEvent)
         {
             final long eventKey = jobEvent.getMetadata().getKey();
 
-            jobSubscription = doRepeatedly(() -> clientRule.getSubscriptionClient()
-                .newJobSubscription()
+            jobSubscription = doRepeatedly(() -> clientRule.getJobClient()
+                .newWorker()
                 .jobType(JOB_TYPE)
                 .handler((client, job) ->
                 {
@@ -103,8 +103,8 @@ public class BrokerLeaderChangeTest
             )
                 .until(Objects::nonNull, "Failed to open job subscription for job completion");
 
-            topicSubscription = doRepeatedly(() -> clientRule.getSubscriptionClient()
-                 .newTopicSubscription()
+            topicSubscription = doRepeatedly(() -> clientRule.getTopicClient()
+                 .newSubscription()
                  .name("jobObserver")
                  .jobEventHandler(e ->
                  {

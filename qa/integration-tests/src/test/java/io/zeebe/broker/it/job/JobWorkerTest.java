@@ -39,18 +39,17 @@ import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.clients.JobClient;
-import io.zeebe.client.api.clients.SubscriptionClient;
 import io.zeebe.client.api.commands.JobCommand;
 import io.zeebe.client.api.commands.JobCommandName;
 import io.zeebe.client.api.commands.Topic;
 import io.zeebe.client.api.commands.Topics;
 import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.events.JobState;
-import io.zeebe.client.api.subscription.JobSubscription;
+import io.zeebe.client.api.subscription.JobWorker;
 import io.zeebe.client.impl.job.CreateJobCommandImpl;
 import io.zeebe.test.util.TestUtil;
 
-public class JobSubscriptionTest
+public class JobWorkerTest
 {
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
@@ -71,13 +70,11 @@ public class JobSubscriptionTest
     public Timeout timeout = Timeout.seconds(20);
 
     private JobClient jobClient;
-    private SubscriptionClient subscriptionClient;
 
     @Before
     public void setUp()
     {
         jobClient = clientRule.getClient().topicClient().jobClient();
-        subscriptionClient = clientRule.getClient().topicClient().subscriptionClient();
 
         final String defaultTopic = clientRule.getClient().getConfiguration().getDefaultTopic();
         clientRule.waitUntilTopicsExists(defaultTopic);
@@ -92,7 +89,7 @@ public class JobSubscriptionTest
         // when
         final RecordingJobHandler jobHandler = new RecordingJobHandler();
 
-        subscriptionClient.newJobSubscription()
+        jobClient.newWorker()
             .jobType("foo")
             .handler(jobHandler)
             .timeout(Duration.ofMinutes(5))
@@ -117,7 +114,7 @@ public class JobSubscriptionTest
 
         final RecordingJobHandler jobHandler = new RecordingJobHandler();
 
-        subscriptionClient.newJobSubscription()
+        jobClient.newWorker()
             .jobType("foo")
             .handler(jobHandler)
             .timeout(Duration.ofMinutes(5))
@@ -168,7 +165,7 @@ public class JobSubscriptionTest
                 .payload("{\"a\":3}")
                 .send());
 
-        subscriptionClient.newJobSubscription()
+        jobClient.newWorker()
             .jobType("foo")
             .handler(jobHandler)
             .timeout(Duration.ofMinutes(5))
@@ -200,7 +197,7 @@ public class JobSubscriptionTest
 
         final RecordingJobHandler jobHandler = new RecordingJobHandler();
 
-        final JobSubscription subscription = subscriptionClient.newJobSubscription()
+        final JobWorker subscription = jobClient.newWorker()
             .jobType("foo")
             .handler(jobHandler)
             .timeout(Duration.ofMinutes(5))
@@ -236,7 +233,7 @@ public class JobSubscriptionTest
             c.newCompleteCommand(j).send().join();
         });
 
-        subscriptionClient.newJobSubscription()
+        jobClient.newWorker()
             .jobType("foo")
             .handler(handler)
             .timeout(Duration.ofMinutes(5))
@@ -268,7 +265,7 @@ public class JobSubscriptionTest
             );
 
         // when
-        subscriptionClient.newJobSubscription()
+        jobClient.newWorker()
             .jobType("foo")
             .handler(jobHandler)
             .timeout(Duration.ofMinutes(5))
@@ -303,7 +300,7 @@ public class JobSubscriptionTest
             });
 
         // when
-        subscriptionClient.newJobSubscription()
+        jobClient.newWorker()
             .jobType("foo")
             .handler(jobHandler)
             .timeout(Duration.ofMinutes(5))
@@ -334,7 +331,7 @@ public class JobSubscriptionTest
             },
             (c, j) -> c.newCompleteCommand(j).withoutPayload().send().join());
 
-        subscriptionClient.newJobSubscription()
+        jobClient.newWorker()
             .jobType("foo")
             .handler(jobHandler)
             .timeout(Duration.ofMinutes(5))
@@ -370,7 +367,7 @@ public class JobSubscriptionTest
             // don't complete the job - just wait for lock expiration
         });
 
-        subscriptionClient.newJobSubscription()
+        jobClient.newWorker()
             .jobType("foo")
             .handler(jobHandler)
             .timeout(Duration.ofMinutes(5))
@@ -398,14 +395,14 @@ public class JobSubscriptionTest
         final RecordingJobHandler jobHandler = new RecordingJobHandler(
             (c, t) -> c.newCompleteCommand(t).withoutPayload().send().join());
 
-        subscriptionClient.newJobSubscription()
+        jobClient.newWorker()
             .jobType("foo")
             .handler(jobHandler)
             .timeout(Duration.ofMinutes(5))
             .name("test")
             .open();
 
-        subscriptionClient.newJobSubscription()
+        jobClient.newWorker()
             .jobType("foo")
             .handler(jobHandler)
             .timeout(Duration.ofMinutes(5))
@@ -430,14 +427,14 @@ public class JobSubscriptionTest
 
         final RecordingJobHandler jobHandler = new RecordingJobHandler();
 
-        subscriptionClient.newJobSubscription()
+        jobClient.newWorker()
             .jobType("foo")
             .handler(jobHandler)
             .timeout(Duration.ofMinutes(5))
             .name("test")
             .open();
 
-        subscriptionClient.newJobSubscription()
+        jobClient.newWorker()
             .jobType("bar")
             .handler(jobHandler)
             .timeout(Duration.ofMinutes(5))
@@ -460,7 +457,7 @@ public class JobSubscriptionTest
         final RecordingJobHandler jobHandler = new RecordingJobHandler();
 
         // when
-        subscriptionClient.newJobSubscription()
+        jobClient.newWorker()
             .jobType("foo")
             .handler(jobHandler)
             .timeout(Duration.ofMinutes(5))
@@ -506,8 +503,8 @@ public class JobSubscriptionTest
         createJobOfTypeOnPartition(jobType, topicName, partitionIds[1]);
 
         // when
-        clientRule.getClient().topicClient(topicName).subscriptionClient()
-            .newJobSubscription()
+        clientRule.getClient().topicClient(topicName).jobClient()
+            .newWorker()
             .jobType(jobType)
             .handler(handler)
             .timeout(Duration.ofMinutes(5))

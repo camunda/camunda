@@ -15,6 +15,8 @@
  */
 package io.zeebe.client.api.clients;
 
+import io.zeebe.client.api.subscription.TopicSubscriptionBuilderStep1;
+
 /**
  * A client to operate on workflows, jobs and subscriptions.
  */
@@ -43,12 +45,33 @@ public interface TopicClient
     JobClient jobClient();
 
     /**
-     * A client to
-     * <li>open a topic subscription (e.g. for event processing)
-     * <li>open a job subscription (i.e. to work on jobs)
+     * Open a new subscription to receive all records (events and commands) of this topic.
+     * <p>
+     * While the subscription is open, the broker continuously publishes records to the client.
+     * The client delegates the events/commands to the provided
+     * handlers. The client periodically acknowledges that records have been received and handled.
+     * When a subscription with the same name is (re-)opened,
+     * then the broker resumes the subscription from the last acknowledged record and
+     * starts publishing at the next event/command.
      *
-     * @return a client with access to all subscription-related operations.
+     * <pre>
+     * TopicSubscription subscription = subscriptionClient
+     *  .newTopicSubscription()
+     *  .name("my-app")
+     *  .workflowInstanceEventHandler(wfEventHandler)
+     *  .open();
+     *
+     * ...
+     * subscription.close();
+     * </pre>
+     *
+     * Per partition it is guaranteed that handlers are called per record in the order of occurrence.
+     * For example: for a given workflow instance, a handler will always receive the CREATED event before
+     * the COMPLETED event. Records from different partitions are handled sequentially, but
+     * in arbitrary order.
+     *
+     * @return a builder for the subscription
      */
-    SubscriptionClient subscriptionClient();
+    TopicSubscriptionBuilderStep1 newSubscription();
 
 }

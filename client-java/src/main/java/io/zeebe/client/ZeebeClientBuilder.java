@@ -81,7 +81,7 @@ public interface ZeebeClientBuilder
 
     /**
      * @param numberOfJobs Default value for
-     * {@link io.zeebe.client.api.subscription.JobSubscriptionBuilderStep1.JobSubscriptionBuilderStep3#bufferSize(int)}.
+     * {@link io.zeebe.client.api.subscription.JobWorkerBuilderStep1.JobWorkerBuilderStep3#bufferSize(int)}.
      * Default value is 32.
      */
     ZeebeClientBuilder defaultJobSubscriptionBufferSize(int numberOfJobs);

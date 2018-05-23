@@ -18,7 +18,9 @@ package io.zeebe.client.impl;
 import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.api.commands.*;
 import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.client.api.subscription.JobWorkerBuilderStep1;
 import io.zeebe.client.impl.job.*;
+import io.zeebe.client.impl.subscription.job.JobSubcriptionBuilder;
 
 public class JobClientImpl implements JobClient
 {
@@ -53,4 +55,9 @@ public class JobClientImpl implements JobClient
         return new UpdateRetriesJobCommandImpl(client.getCommandManager(), event);
     }
 
+    @Override
+    public JobWorkerBuilderStep1 newWorker()
+    {
+        return new JobSubcriptionBuilder(client);
+    }
 }

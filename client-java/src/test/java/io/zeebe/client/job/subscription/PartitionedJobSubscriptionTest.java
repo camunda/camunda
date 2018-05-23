@@ -22,18 +22,24 @@ import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.subscription.JobSubscription;
+import io.zeebe.client.api.subscription.JobWorker;
 import io.zeebe.client.util.ClientRule;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.*;
+import io.zeebe.protocol.clientapi.ControlMessageType;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.SubscriptionType;
+import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.brokerapi.ControlMessageRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.broker.protocol.brokerapi.data.Topology;
 import io.zeebe.transport.RemoteAddress;
-import org.junit.*;
-import org.junit.rules.RuleChain;
 
 public class PartitionedJobSubscriptionTest
 {
@@ -78,9 +84,9 @@ public class PartitionedJobSubscriptionTest
         broker2.stubJobSubscriptionApi(789);
 
         // when
-        final JobSubscription subscription = client.topicClient(TOPIC)
-            .subscriptionClient()
-            .newJobSubscription()
+        final JobWorker subscription = client.topicClient(TOPIC)
+            .jobClient()
+            .newWorker()
             .jobType(JOB_TYPE)
             .handler(new RecordingJobHandler())
             .name("bumbum")
@@ -119,8 +125,8 @@ public class PartitionedJobSubscriptionTest
         broker2.stubJobSubscriptionApi(subscriberKey2);
 
         final RecordingJobHandler eventHandler = new RecordingJobHandler();
-        client.topicClient(TOPIC).subscriptionClient()
-            .newJobSubscription()
+        client.topicClient(TOPIC).jobClient()
+            .newWorker()
             .jobType(JOB_TYPE)
             .handler(eventHandler)
             .name("bumbum")

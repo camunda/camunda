@@ -93,8 +93,8 @@ public class UpdatePayloadTest
         // then
         waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.PAYLOAD_UPDATED));
 
-        clientRule.getSubscriptionClient()
-            .newJobSubscription()
+        clientRule.getJobClient()
+            .newWorker()
             .jobType("task-1")
             .handler((client, job) -> client.newCompleteCommand(job).payload("{\"result\": \"ok\"}").send())
             .open();
@@ -116,8 +116,8 @@ public class UpdatePayloadTest
             .send()
             .join();
 
-        clientRule.getSubscriptionClient()
-            .newJobSubscription()
+        clientRule.getJobClient()
+            .newWorker()
             .jobType("task-1")
             .handler((client, job) -> client.newCompleteCommand(job).payload("{\"result\": \"done\"}").send())
             .open();

@@ -21,13 +21,13 @@ import java.util.concurrent.Future;
 
 import io.zeebe.client.ZeebeClientConfiguration;
 import io.zeebe.client.api.subscription.*;
-import io.zeebe.client.api.subscription.JobSubscriptionBuilderStep1.JobSubscriptionBuilderStep2;
-import io.zeebe.client.api.subscription.JobSubscriptionBuilderStep1.JobSubscriptionBuilderStep3;
+import io.zeebe.client.api.subscription.JobWorkerBuilderStep1.JobWorkerBuilderStep2;
+import io.zeebe.client.api.subscription.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.impl.TopicClientImpl;
 import io.zeebe.util.EnsureUtil;
 
-public class JobSubcriptionBuilder implements JobSubscriptionBuilderStep1, JobSubscriptionBuilderStep2, JobSubscriptionBuilderStep3
+public class JobSubcriptionBuilder implements JobWorkerBuilderStep1, JobWorkerBuilderStep2, JobWorkerBuilderStep3
 {
     private final JobSubscriberGroupBuilder subscriberBuilder;
 
@@ -43,42 +43,42 @@ public class JobSubcriptionBuilder implements JobSubscriptionBuilderStep1, JobSu
     }
 
     @Override
-    public JobSubscriptionBuilderStep2 jobType(String type)
+    public JobWorkerBuilderStep2 jobType(String type)
     {
         subscriberBuilder.jobType(type);
         return this;
     }
 
     @Override
-    public JobSubscriptionBuilderStep3 timeout(long lockTime)
+    public JobWorkerBuilderStep3 timeout(long lockTime)
     {
         subscriberBuilder.timeout(lockTime);
         return this;
     }
 
     @Override
-    public JobSubscriptionBuilderStep3 timeout(Duration lockTime)
+    public JobWorkerBuilderStep3 timeout(Duration lockTime)
     {
         subscriberBuilder.timeout(lockTime.toMillis());
         return this;
     }
 
     @Override
-    public JobSubscriptionBuilderStep3 name(String lockOwner)
+    public JobWorkerBuilderStep3 name(String lockOwner)
     {
         subscriberBuilder.worker(lockOwner);
         return this;
     }
 
     @Override
-    public JobSubscriptionBuilderStep3 bufferSize(int fetchSize)
+    public JobWorkerBuilderStep3 bufferSize(int fetchSize)
     {
         subscriberBuilder.bufferSize(fetchSize);
         return this;
     }
 
     @Override
-    public JobSubscriptionBuilderStep3 handler(JobHandler handler)
+    public JobWorkerBuilderStep3 handler(JobHandler handler)
     {
         EnsureUtil.ensureNotNull("handler", handler);
         subscriberBuilder.jobHandler(handler);
@@ -86,7 +86,7 @@ public class JobSubcriptionBuilder implements JobSubscriptionBuilderStep1, JobSu
     }
 
     @Override
-    public JobSubscription open()
+    public JobWorker open()
     {
         final Future<JobSubscriberGroup> subscriberGroup = subscriberBuilder.build();
 

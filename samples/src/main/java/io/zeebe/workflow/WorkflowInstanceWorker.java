@@ -19,8 +19,8 @@ import java.time.Duration;
 import java.util.Scanner;
 
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.clients.SubscriptionClient;
-import io.zeebe.client.api.subscription.JobSubscription;
+import io.zeebe.client.api.clients.JobClient;
+import io.zeebe.client.api.subscription.JobWorker;
 
 public class WorkflowInstanceWorker
 {
@@ -42,10 +42,10 @@ public class WorkflowInstanceWorker
 
         System.out.println(String.format("> Open task subscription for topic '%s', partition '%d' and type '%s'", topicName, partitionId, taskType));
 
-        final SubscriptionClient subscriptionClient = zeebeClient.topicClient(topicName).subscriptionClient();
+        final JobClient jobClient = zeebeClient.topicClient(topicName).jobClient();
 
-        final JobSubscription subscription = subscriptionClient
-            .newJobSubscription()
+        final JobWorker workerRegistration = jobClient
+            .newWorker()
             .jobType(taskType)
             .handler((client, job) ->
             {
@@ -74,7 +74,7 @@ public class WorkflowInstanceWorker
                 {
                     System.out.println("> Closing...");
 
-                    subscription.close();
+                    workerRegistration.close();
                     zeebeClient.close();
 
                     System.out.println("> Closed.");

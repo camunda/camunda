@@ -29,7 +29,7 @@ import org.junit.rules.ExternalResource;
 
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.clients.JobClient;
-import io.zeebe.client.api.clients.SubscriptionClient;
+import io.zeebe.client.api.clients.TopicClient;
 import io.zeebe.client.api.clients.WorkflowClient;
 import io.zeebe.client.api.commands.Partition;
 import io.zeebe.client.api.commands.Topic;
@@ -134,8 +134,8 @@ public class ClientRule extends ExternalResource
         return getClient().topicClient().jobClient();
     }
 
-    public SubscriptionClient getSubscriptionClient()
+    public TopicClient getTopicClient()
     {
-        return getClient().topicClient().subscriptionClient();
+        return getClient().topicClient();
     }
 }

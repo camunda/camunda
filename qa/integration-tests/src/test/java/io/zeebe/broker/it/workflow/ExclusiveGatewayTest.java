@@ -138,8 +138,8 @@ public class ExclusiveGatewayTest
             .send()
             .join();
 
-        clientRule.getSubscriptionClient()
-            .newJobSubscription()
+        clientRule.getJobClient()
+            .newWorker()
             .jobType("inc")
             .handler((client, job) ->
             {

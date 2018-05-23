@@ -22,7 +22,7 @@ import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 
 public class JobSubscriberGroup extends SubscriberGroup<JobSubscriber> implements
-    JobSubscription
+    JobWorker
 {
     private final JobSubscriptionSpec subscription;
 

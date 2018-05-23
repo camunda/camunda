@@ -17,6 +17,7 @@ package io.zeebe.client.api.clients;
 
 import io.zeebe.client.api.commands.*;
 import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.client.api.subscription.JobWorkerBuilderStep1;
 
 /**
  * A client with access to all job-related operation:
@@ -121,5 +122,47 @@ public interface JobClient
      * @return a builder for the command
      */
     UpdateRetriesJobCommandStep1 newUpdateRetriesCommand(JobEvent event);
+
+    /**
+     * Registers a new job worker for jobs of a given type.
+     * <p>
+     * After registration, the broker activates available jobs
+     * and assigns them to this worker. It then publishes them to the client. The given worker
+     * is called for every received job, works on them and eventually completes them.
+     *
+     * <pre>
+     * JobWorker worker = jobClient
+     *  .newWorker()
+     *  .jobType("payment")
+     *  .handler(paymentHandler)
+     *  .open();
+     *
+     * ...
+     * worker.close();
+     * </pre>
+     *
+     * Example JobHandler implementation:
+     * <pre>
+     * public class PaymentHandler implements JobHandler
+     * {
+     *   &#64;Override
+     *   public void handle(JobClient client, JobEvent jobEvent)
+     *   {
+     *     String json = jobEvent.getPayload();
+     *     // modify payload
+     *
+     *     client
+     *      .newCompleteCommand()
+     *      .event(jobEvent)
+     *      .payload(json)
+     *      .send();
+     *   }
+     * };
+     * </pre>
+     *
+     *
+     * @return a builder for the worker registration
+     */
+    JobWorkerBuilderStep1 newWorker();
 
 }

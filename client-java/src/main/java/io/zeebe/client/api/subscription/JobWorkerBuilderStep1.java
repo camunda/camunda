@@ -19,7 +19,7 @@ import java.time.Duration;
 
 import io.zeebe.client.ZeebeClientConfiguration;
 
-public interface JobSubscriptionBuilderStep1
+public interface JobWorkerBuilderStep1
 {
     /**
      * Set the type of jobs to work on.
@@ -29,9 +29,9 @@ public interface JobSubscriptionBuilderStep1
      *
      * @return the builder for this subscription
      */
-    JobSubscriptionBuilderStep2 jobType(String type);
+    JobWorkerBuilderStep2 jobType(String type);
 
-    interface JobSubscriptionBuilderStep2
+    interface JobWorkerBuilderStep2
     {
         /**
          * Set the handler to process the jobs. At the end of the processing,
@@ -63,10 +63,10 @@ public interface JobSubscriptionBuilderStep1
          *
          * @return the builder for this subscription
          */
-        JobSubscriptionBuilderStep3 handler(JobHandler handler);
+        JobWorkerBuilderStep3 handler(JobHandler handler);
     }
 
-    interface JobSubscriptionBuilderStep3
+    interface JobWorkerBuilderStep3
     {
         /**
          * Set the time for how long a job is exclusively assigned for this
@@ -84,7 +84,7 @@ public interface JobSubscriptionBuilderStep1
          *
          * @return the builder for this subscription
          */
-        JobSubscriptionBuilderStep3 timeout(long timeout);
+        JobWorkerBuilderStep3 timeout(long timeout);
 
         /**
          * Set the time for how long a job is exclusively assigned for this
@@ -102,7 +102,7 @@ public interface JobSubscriptionBuilderStep1
          *
          * @return the builder for this subscription
          */
-        JobSubscriptionBuilderStep3 timeout(Duration timeout);
+        JobWorkerBuilderStep3 timeout(Duration timeout);
 
         /**
          * Set the name of the subscription owner.
@@ -115,7 +115,7 @@ public interface JobSubscriptionBuilderStep1
          *
          * @return the builder for this subscription
          */
-        JobSubscriptionBuilderStep3 name(String workerName);
+        JobWorkerBuilderStep3 name(String workerName);
 
         /**
          * Set the maximum number of jobs which will be exclusively assigned to
@@ -145,14 +145,14 @@ public interface JobSubscriptionBuilderStep1
          *
          * @return the builder for this subscription
          */
-        JobSubscriptionBuilderStep3 bufferSize(int numberOfJobs);
+        JobWorkerBuilderStep3 bufferSize(int numberOfJobs);
 
         /**
          * Open the subscription and start to work on available tasks.
          *
          * @return the subscription
          */
-        JobSubscription open();
+        JobWorker open();
     }
 
 }

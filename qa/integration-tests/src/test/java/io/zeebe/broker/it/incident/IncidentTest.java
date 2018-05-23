@@ -146,8 +146,8 @@ public class IncidentTest
         final ControllableJobHandler jobHandler = new ControllableJobHandler();
         jobHandler.failJob = true;
 
-        clientRule.getClient().topicClient().subscriptionClient()
-            .newJobSubscription()
+        clientRule.getJobClient()
+            .newWorker()
             .jobType("test")
             .handler(jobHandler)
             .name("owner")

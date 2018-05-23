@@ -82,8 +82,8 @@ public class PartitionedTopicSubscriptionTest
         broker2.stubTopicSubscriptionApi(789);
 
         // when
-        final TopicSubscription subscription = clientRule.subscriptionClient()
-            .newTopicSubscription()
+        final TopicSubscription subscription = clientRule.topicClient()
+            .newSubscription()
             .name("hohoho")
             .recordHandler(new RecordingHandler())
             .open();
@@ -121,8 +121,8 @@ public class PartitionedTopicSubscriptionTest
         broker2.stubTopicSubscriptionApi(subscriberKey2);
 
         final RecordingHandler eventHandler = new RecordingHandler();
-        clientRule.subscriptionClient()
-            .newTopicSubscription()
+        clientRule.topicClient()
+            .newSubscription()
             .name("hohoho")
             .recordHandler(eventHandler)
             .open();
@@ -150,8 +150,8 @@ public class PartitionedTopicSubscriptionTest
         final int subscriberKey2 = 789;
         broker2.stubTopicSubscriptionApi(subscriberKey2);
 
-        final TopicSubscription subscription = clientRule.subscriptionClient()
-            .newTopicSubscription()
+        final TopicSubscription subscription = clientRule.topicClient()
+            .newSubscription()
             .name("hohoho")
             .recordHandler(new RecordingHandler())
             .open();
@@ -182,8 +182,8 @@ public class PartitionedTopicSubscriptionTest
             .errorData("foo")
             .register();
 
-        final TopicSubscriptionBuilderStep3 builder = clientRule.subscriptionClient()
-            .newTopicSubscription()
+        final TopicSubscriptionBuilderStep3 builder = clientRule.topicClient()
+            .newSubscription()
             .name("hohoho")
             .recordHandler(new RecordingHandler());
 
@@ -213,8 +213,8 @@ public class PartitionedTopicSubscriptionTest
             .registerControlled();
 
         // assuming that subscription to broker 1 is successful
-        final TopicSubscriptionBuilderImpl builder = (TopicSubscriptionBuilderImpl) clientRule.subscriptionClient()
-            .newTopicSubscription()
+        final TopicSubscriptionBuilderImpl builder = (TopicSubscriptionBuilderImpl) clientRule.topicClient()
+            .newSubscription()
             .name("hohoho")
             .recordHandler(new RecordingHandler());
 
@@ -241,8 +241,8 @@ public class PartitionedTopicSubscriptionTest
         final int subscriberKey2 = 789;
         broker2.stubTopicSubscriptionApi(subscriberKey2);
 
-        final TopicSubscription subscription = clientRule.subscriptionClient()
-            .newTopicSubscription()
+        final TopicSubscription subscription = clientRule.topicClient()
+            .newSubscription()
             .name("hohoho")
             .recordHandler(new RecordingHandler())
             .open();
@@ -268,8 +268,8 @@ public class PartitionedTopicSubscriptionTest
         broker2.stubTopicSubscriptionApi(789);
 
         final String subscriptionName = "hohoho";
-        final TopicSubscription subscription = clientRule.subscriptionClient()
-            .newTopicSubscription()
+        final TopicSubscription subscription = clientRule.topicClient()
+            .newSubscription()
             .name(subscriptionName)
             .recordHandler(new RecordingHandler())
             .open();
@@ -300,8 +300,8 @@ public class PartitionedTopicSubscriptionTest
             .errorData("foo")
             .register();
 
-        final TopicSubscriptionBuilderStep3 builder = clientRule.subscriptionClient()
-            .newTopicSubscription()
+        final TopicSubscriptionBuilderStep3 builder = clientRule.topicClient()
+            .newSubscription()
             .name("hohoho")
             .recordHandler(new RecordingHandler());
 
@@ -326,8 +326,8 @@ public class PartitionedTopicSubscriptionTest
         // given
         final String nonExistingTopic = "jj";
 
-        final TopicSubscriptionBuilderStep3 builder = client.topicClient(nonExistingTopic).subscriptionClient()
-            .newTopicSubscription()
+        final TopicSubscriptionBuilderStep3 builder = client.topicClient(nonExistingTopic)
+            .newSubscription()
             .name("hohoho")
             .recordHandler(new RecordingHandler());
 
@@ -358,8 +358,8 @@ public class PartitionedTopicSubscriptionTest
 
         final ParallelismDetectionHandler eventHandler = new ParallelismDetectionHandler(Duration.ofMillis(500));
 
-        clientRule.subscriptionClient()
-            .newTopicSubscription()
+        clientRule.topicClient()
+            .newSubscription()
             .name("hohoho")
             .recordHandler(eventHandler)
             .open();
@@ -386,8 +386,8 @@ public class PartitionedTopicSubscriptionTest
         final int position1 = 987;
         final int position2 = 546;
 
-        clientRule.subscriptionClient()
-            .newTopicSubscription()
+        clientRule.topicClient()
+            .newSubscription()
             .name("hohoho")
             .recordHandler(new RecordingHandler())
             .startAtPosition(PARTITION_1, position1)
@@ -411,8 +411,8 @@ public class PartitionedTopicSubscriptionTest
 
         final int position1 = 987;
 
-        clientRule.subscriptionClient()
-            .newTopicSubscription()
+        clientRule.topicClient()
+            .newSubscription()
             .name("hohoho")
             .recordHandler(new RecordingHandler())
             .startAtTailOfTopic()

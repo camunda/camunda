@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 import org.junit.rules.ExternalResource;
 
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.client.api.clients.SubscriptionClient;
+import io.zeebe.client.api.clients.TopicClient;
 import io.zeebe.client.api.commands.JobCommand;
 import io.zeebe.client.api.commands.JobCommandName;
 import io.zeebe.client.api.events.IncidentEvent;
@@ -96,9 +96,9 @@ public class TopicEventRecorder extends ExternalResource
         {
             clientRule.waitUntilTopicsExists(topicName);
 
-            final SubscriptionClient client = clientRule.getClient().topicClient(topicName).subscriptionClient();
+            final TopicClient client = clientRule.getClient().topicClient(topicName);
 
-            subscription = client.newTopicSubscription()
+            subscription = client.newSubscription()
                 .name(SUBSCRIPTION_NAME)
                 .jobEventHandler(e -> jobEvents.add(e))
                 .jobCommandHandler(jobCommands::add)

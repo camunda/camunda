@@ -81,7 +81,7 @@ public class WorkflowInstanceTopicSubscriptionTest
         final RecordingWorkflowEventHandler handler = new RecordingWorkflowEventHandler();
 
         // when
-        client.subscriptionClient().newTopicSubscription()
+        client.newSubscription()
             .name("test")
             .workflowInstanceEventHandler(handler)
             .startAtHeadOfTopic()
@@ -112,7 +112,7 @@ public class WorkflowInstanceTopicSubscriptionTest
         final RecordingEventHandler handler = new RecordingEventHandler();
 
         // when no POJO handler is registered
-        client.subscriptionClient().newTopicSubscription()
+        client.newSubscription()
             .name("sub-2")
             .recordHandler(handler)
             .startAtHeadOfTopic()

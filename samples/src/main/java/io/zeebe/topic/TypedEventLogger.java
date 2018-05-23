@@ -19,7 +19,7 @@ import java.util.Scanner;
 import java.util.function.Consumer;
 
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.clients.SubscriptionClient;
+import io.zeebe.client.api.clients.TopicClient;
 import io.zeebe.client.api.record.Record;
 import io.zeebe.client.api.subscription.TopicSubscription;
 
@@ -47,11 +47,11 @@ public class TypedEventLogger
             System.out.println();
         };
 
-        final SubscriptionClient subscriptionClient = zeebeClient.topicClient(topicName).subscriptionClient();
+        final TopicClient topicClient = zeebeClient.topicClient(topicName);
 
         final TopicSubscription subscription =
-            subscriptionClient
-                .newTopicSubscription()
+            topicClient
+                .newSubscription()
                 .name("logger")
                 .workflowInstanceEventHandler(logger::accept)
                 .jobEventHandler(logger::accept)

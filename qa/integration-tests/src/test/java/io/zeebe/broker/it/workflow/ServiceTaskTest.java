@@ -112,8 +112,8 @@ public class ServiceTaskTest
         // when
         final RecordingJobHandler recordingJobHandler = new RecordingJobHandler();
 
-        clientRule.getSubscriptionClient()
-            .newJobSubscription()
+        clientRule.getJobClient()
+            .newWorker()
             .jobType("foo")
             .handler(recordingJobHandler)
             .open();
@@ -162,8 +162,8 @@ public class ServiceTaskTest
             .join();
 
         // when
-        clientRule.getSubscriptionClient()
-            .newJobSubscription()
+        clientRule.getJobClient()
+            .newWorker()
             .jobType("foo")
             .handler((client, job) -> client.newCompleteCommand(job).send())
             .open();
@@ -201,8 +201,8 @@ public class ServiceTaskTest
         // when
         final RecordingJobHandler recordingJobHandler = new RecordingJobHandler();
 
-        clientRule.getSubscriptionClient()
-            .newJobSubscription()
+        clientRule.getJobClient()
+            .newWorker()
             .jobType("foo")
             .handler(recordingJobHandler)
             .open();
@@ -239,8 +239,8 @@ public class ServiceTaskTest
             .join();
 
         // when
-        clientRule.getSubscriptionClient()
-            .newJobSubscription()
+        clientRule.getJobClient()
+            .newWorker()
             .jobType("foo")
             .handler((client, job) ->  client.newCompleteCommand(job).payload("{\"foo\":2}").send())
             .open();
@@ -278,8 +278,8 @@ public class ServiceTaskTest
             .join();
 
         // when
-        clientRule.getSubscriptionClient()
-            .newJobSubscription()
+        clientRule.getJobClient()
+            .newWorker()
             .jobType("foo")
             .handler((client, job) ->
             {
@@ -325,8 +325,8 @@ public class ServiceTaskTest
                 .join();
         }
 
-        clientRule.getSubscriptionClient()
-            .newJobSubscription()
+        clientRule.getJobClient()
+            .newWorker()
             .jobType("foo")
             .handler((client, job) -> client.newCompleteCommand(job).payload("{\"foo\":2}").send())
             .open();

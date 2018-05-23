@@ -86,8 +86,7 @@ public class SubscriptionClusteredTest
         final RecordingEventHandler recordHandler = new RecordingEventHandler();
         final List<Integer> receivedPartitionIds = new ArrayList<>();
         client.topicClient(topicName)
-              .subscriptionClient()
-              .newTopicSubscription()
+              .newSubscription()
               .name("SubscriptionName")
               .recordHandler(recordHandler)
               .jobEventHandler(e ->

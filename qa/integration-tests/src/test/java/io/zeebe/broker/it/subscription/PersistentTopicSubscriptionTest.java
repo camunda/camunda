@@ -66,8 +66,7 @@ public class PersistentTopicSubscriptionTest
 
         final String subscriptionName = "foo";
 
-        final TopicSubscription subscription = client.subscriptionClient()
-            .newTopicSubscription()
+        final TopicSubscription subscription = client.newSubscription()
             .name(subscriptionName)
             .recordHandler(recordingHandler)
             .startAtHeadOfTopic()
@@ -96,7 +95,7 @@ public class PersistentTopicSubscriptionTest
         // when
         restartBroker();
 
-        client.subscriptionClient().newTopicSubscription()
+        client.newSubscription()
             .name(subscriptionName)
             .recordHandler(recordingHandler)
             .startAtHeadOfTopic()

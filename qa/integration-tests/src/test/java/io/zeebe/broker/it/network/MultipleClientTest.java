@@ -55,14 +55,14 @@ public class MultipleClientTest
 
         client1.waitUntilTopicsExists(client1.getDefaultTopic());
 
-        client1.getSubscriptionClient()
-            .newTopicSubscription()
+        client1.getTopicClient()
+            .newSubscription()
             .name("client-1")
             .jobEventHandler(e -> jobEventsClient1.add(e))
             .open();
 
-        client2.getSubscriptionClient()
-            .newTopicSubscription()
+        client2.getTopicClient()
+            .newSubscription()
             .name("client-2")
             .jobEventHandler(e -> jobEventsClient2.add(e))
             .open();
@@ -87,14 +87,14 @@ public class MultipleClientTest
 
         client1.waitUntilTopicsExists(client1.getDefaultTopic());
 
-        client1.getSubscriptionClient()
-            .newJobSubscription()
+        client1.getJobClient()
+            .newWorker()
             .jobType("foo")
             .handler(handler1)
             .open();
 
-        client2.getSubscriptionClient()
-            .newJobSubscription()
+        client2.getJobClient()
+            .newWorker()
             .jobType("bar")
             .handler(handler2)
             .open();

@@ -36,7 +36,7 @@ import io.zeebe.client.ZeebeClientConfiguration;
 import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.subscription.JobHandler;
-import io.zeebe.client.api.subscription.JobSubscription;
+import io.zeebe.client.api.subscription.JobWorker;
 import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.impl.subscription.Subscriber;
@@ -53,7 +53,7 @@ import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
-public class JobSubscriptionTest
+public class JobWorkerTest
 {
     private static final int NUM_EXECUTION_THREADS = 2;
 
@@ -97,9 +97,9 @@ public class JobSubscriptionTest
         broker.stubJobSubscriptionApi(123L);
 
         // when
-        final JobSubscription subscription =
-            clientRule.subscriptionClient()
-                .newJobSubscription()
+        final JobWorker subscription =
+            clientRule.jobClient()
+                .newWorker()
                 .jobType("bar")
                 .handler(DO_NOTHING)
                 .name("foo")
@@ -128,9 +128,9 @@ public class JobSubscriptionTest
         // given
         broker.stubJobSubscriptionApi(123L);
 
-        final JobSubscription subscription =
-            clientRule.subscriptionClient()
-                .newJobSubscription()
+        final JobWorker subscription =
+            clientRule.jobClient()
+                .newWorker()
                 .jobType("bar")
                 .handler(DO_NOTHING)
                 .name("foo")
@@ -162,8 +162,8 @@ public class JobSubscriptionTest
         exception.expectMessage("jobType must not be null");
 
         // when
-        clientRule.subscriptionClient()
-            .newJobSubscription()
+        clientRule.jobClient()
+            .newWorker()
             .jobType(null)
             .handler(DO_NOTHING)
             .name("foo")
@@ -182,8 +182,8 @@ public class JobSubscriptionTest
         exception.expectMessage("handler must not be null");
 
         // when
-        clientRule.subscriptionClient()
-            .newJobSubscription()
+        clientRule.jobClient()
+            .newWorker()
             .jobType("bar")
             .handler(null)
             .name("foo")
@@ -205,8 +205,8 @@ public class JobSubscriptionTest
         broker.stubJobSubscriptionApi(123L);
 
         // when
-        configuredClient.topicClient().subscriptionClient()
-            .newJobSubscription()
+        configuredClient.topicClient().jobClient()
+            .newWorker()
             .jobType("bar")
             .handler(DO_NOTHING)
             .name("foo")
@@ -228,8 +228,8 @@ public class JobSubscriptionTest
         broker.stubJobSubscriptionApi(123L);
 
         // when
-        clientRule.subscriptionClient()
-            .newJobSubscription()
+        clientRule.jobClient()
+            .newWorker()
             .jobType("bar")
             .handler(DO_NOTHING)
             .name("foo")
@@ -255,8 +255,8 @@ public class JobSubscriptionTest
         exception.expectMessage("timeout must be greater than 0");
 
         // when
-        clientRule.subscriptionClient()
-            .newJobSubscription()
+        clientRule.jobClient()
+            .newWorker()
             .jobType("bar")
             .handler(DO_NOTHING)
             .name("foo")
@@ -271,8 +271,8 @@ public class JobSubscriptionTest
         broker.stubJobSubscriptionApi(123L);
 
         // when
-        clientRule.subscriptionClient()
-            .newJobSubscription()
+        clientRule.jobClient()
+            .newWorker()
             .jobType("bar")
             .handler(DO_NOTHING)
             .name("foo")
@@ -301,8 +301,8 @@ public class JobSubscriptionTest
         exception.expectMessage("Could not open subscription");
 
         // when
-        clientRule.subscriptionClient()
-            .newJobSubscription()
+        clientRule.jobClient()
+            .newWorker()
             .jobType("bar")
             .handler(DO_NOTHING)
             .name("foo")
@@ -318,8 +318,8 @@ public class JobSubscriptionTest
         broker.jobs().registerCompleteCommand();
 
         final RecordingJobHandler handler = new RecordingJobHandler();
-        clientRule.subscriptionClient()
-            .newJobSubscription()
+        clientRule.jobClient()
+            .newWorker()
             .jobType("bar")
             .handler(handler)
             .name("foo")
@@ -381,8 +381,8 @@ public class JobSubscriptionTest
         broker.jobs().registerCompleteCommand();
 
         final RecordingJobHandler handler1 = new RecordingJobHandler();
-        clientRule.subscriptionClient()
-            .newJobSubscription()
+        clientRule.jobClient()
+            .newWorker()
             .jobType("bar")
             .handler(handler1)
             .name("foo")
@@ -391,8 +391,8 @@ public class JobSubscriptionTest
 
         final RecordingJobHandler handler2 = new RecordingJobHandler();
 
-        clientRule.subscriptionClient()
-            .newJobSubscription()
+        clientRule.jobClient()
+            .newWorker()
             .jobType("bar")
             .handler(handler2)
             .name("bar")
@@ -431,8 +431,8 @@ public class JobSubscriptionTest
         broker.jobs().registerCompleteCommand();
 
         final RecordingJobHandler handler = new RecordingJobHandler();
-        clientRule.subscriptionClient()
-            .newJobSubscription()
+        clientRule.jobClient()
+            .newWorker()
             .jobType("bar")
             .handler(handler)
             .name("foo")
@@ -459,8 +459,8 @@ public class JobSubscriptionTest
         broker.stubJobSubscriptionApi(123L);
         broker.jobs().registerCompleteCommand();
 
-        clientRule.subscriptionClient()
-            .newJobSubscription()
+        clientRule.jobClient()
+            .newWorker()
             .jobType("bar")
             .handler((c, t) -> c.newCompleteCommand(t).payload("{\"a\": 1}").send().join())
             .name("foo")
@@ -495,8 +495,8 @@ public class JobSubscriptionTest
         broker.stubJobSubscriptionApi(123L);
         broker.jobs().registerCompleteCommand();
 
-        clientRule.subscriptionClient()
-            .newJobSubscription()
+        clientRule.jobClient()
+            .newWorker()
             .jobType("bar")
             .handler((c, t) -> c.newCompleteCommand(t).withoutPayload().send().join())
             .name("foo")
@@ -531,8 +531,8 @@ public class JobSubscriptionTest
         broker.stubJobSubscriptionApi(123L);
         broker.jobs().registerFailCommand();
 
-        clientRule.subscriptionClient()
-            .newJobSubscription()
+        clientRule.jobClient()
+            .newWorker()
             .jobType("bar")
             .handler((c, t) ->
             {
@@ -568,8 +568,8 @@ public class JobSubscriptionTest
         // given
         broker.stubJobSubscriptionApi(123L);
 
-        final JobSubscription subscription = clientRule.subscriptionClient()
-            .newJobSubscription()
+        final JobWorker subscription = clientRule.jobClient()
+            .newWorker()
             .jobType("bar")
             .handler(DO_NOTHING)
             .name("foo")
@@ -612,8 +612,8 @@ public class JobSubscriptionTest
         final int numExecutionThreads = clientConfig.getNumSubscriptionExecutionThreads();
         final int jobCapacity = 4;
 
-        clientRule.subscriptionClient()
-            .newJobSubscription()
+        clientRule.jobClient()
+            .newWorker()
             .jobType("foo")
             .handler(handler)
             .name("owner")
@@ -662,8 +662,8 @@ public class JobSubscriptionTest
             throw new RuntimeException("foo");
         };
 
-        clientRule.subscriptionClient()
-            .newJobSubscription()
+        clientRule.jobClient()
+            .newWorker()
             .jobType("foo")
             .handler(jobHandler)
             .name("owner")
@@ -699,8 +699,8 @@ public class JobSubscriptionTest
         // given
         broker.stubJobSubscriptionApi(123L);
 
-        clientRule.subscriptionClient()
-            .newJobSubscription()
+        clientRule.jobClient()
+            .newWorker()
             .jobType("foo")
             .handler(DO_NOTHING)
             .name("owner")
@@ -762,8 +762,8 @@ public class JobSubscriptionTest
         final WaitingJobHandler handler = new WaitingJobHandler();
         handler.shouldWait = false;
 
-        clientRule.subscriptionClient()
-            .newJobSubscription()
+        clientRule.jobClient()
+            .newWorker()
             .jobType("type")
             .handler(handler)
             .name("owner")
@@ -815,8 +815,8 @@ public class JobSubscriptionTest
         broker.stubJobSubscriptionApi(123L);
 
         // when
-        clientRule.subscriptionClient()
-            .newJobSubscription()
+        clientRule.jobClient()
+            .newWorker()
             .jobType("bar")
             .handler(DO_NOTHING)
             .open();

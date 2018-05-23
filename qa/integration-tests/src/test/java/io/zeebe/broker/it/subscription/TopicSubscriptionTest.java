@@ -89,7 +89,7 @@ public class TopicSubscriptionTest
     public void shouldOpenSubscription()
     {
         // when
-        final TopicSubscription subscription = client.subscriptionClient().newTopicSubscription()
+        final TopicSubscription subscription = client.newSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(recordingHandler)
             .open();
@@ -103,7 +103,7 @@ public class TopicSubscriptionTest
     public void shouldReceiveEventsCreatedAfterSubscription() throws IOException
     {
         // given
-        client.subscriptionClient().newTopicSubscription()
+        client.newSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(recordingHandler)
             .open();
@@ -134,7 +134,7 @@ public class TopicSubscriptionTest
                 .join();
 
         // when
-        client.subscriptionClient().newTopicSubscription()
+        client.newSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(recordingHandler)
             .startAtHeadOfTopic()
@@ -158,7 +158,7 @@ public class TopicSubscriptionTest
             .send()
             .join();
 
-        client.subscriptionClient().newTopicSubscription()
+        client.newSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(recordingHandler)
             .startAtTailOfTopic()
@@ -190,7 +190,7 @@ public class TopicSubscriptionTest
             .send()
             .join();
 
-        client.subscriptionClient().newTopicSubscription()
+        client.newSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(recordingHandler)
             .startAtHeadOfTopic()
@@ -206,7 +206,7 @@ public class TopicSubscriptionTest
         final long secondTaskEventPosition = recordedTaskEvents.get(1).getMetadata().getPosition();
 
         // when
-        client.subscriptionClient().newTopicSubscription()
+        client.newSubscription()
             .name("another" + SUBSCRIPTION_NAME)
             .recordHandler(subscription2Handler)
             .startAtPosition(clientRule.getDefaultPartition(), secondTaskEventPosition)
@@ -225,7 +225,7 @@ public class TopicSubscriptionTest
     public void shouldReceiveEventsFromPositionBeyondTail()
     {
         // given
-        client.subscriptionClient().newTopicSubscription()
+        client.newSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(recordingHandler)
             .startAtPosition(clientRule.getDefaultPartition(), Long.MAX_VALUE)
@@ -247,7 +247,7 @@ public class TopicSubscriptionTest
     public void shouldCloseSubscription() throws InterruptedException
     {
         // given
-        final TopicSubscription subscription = client.subscriptionClient().newTopicSubscription()
+        final TopicSubscription subscription = client.newSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(recordingHandler)
             .open();
@@ -273,7 +273,7 @@ public class TopicSubscriptionTest
         for (int i = 0; i < 100; i++)
         {
             // given
-            final TopicSubscription subscription = client.subscriptionClient().newTopicSubscription()
+            final TopicSubscription subscription = client.newSubscription()
                     .name(SUBSCRIPTION_NAME)
                     .recordHandler(recordingHandler)
                     .open();
@@ -305,7 +305,7 @@ public class TopicSubscriptionTest
             .send()
             .join();
 
-        client.subscriptionClient().newTopicSubscription()
+        client.newSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(recordingHandler)
             .startAtHeadOfTopic()
@@ -313,7 +313,7 @@ public class TopicSubscriptionTest
 
         final RecordingEventHandler secondEventHandler = new RecordingEventHandler();
 
-        client.subscriptionClient().newTopicSubscription()
+        client.newSubscription()
             .name("another" + SUBSCRIPTION_NAME)
             .recordHandler(secondEventHandler)
             .startAtHeadOfTopic()
@@ -343,7 +343,7 @@ public class TopicSubscriptionTest
         final ParallelismDetectionHandler handler = new ParallelismDetectionHandler(handlingIntervalLength);
 
         // when
-        client.subscriptionClient().newTopicSubscription()
+        client.newSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(handler)
             .startAtHeadOfTopic()
@@ -366,7 +366,7 @@ public class TopicSubscriptionTest
             .send()
             .join();
 
-        final TopicSubscription subscription = client.subscriptionClient().newTopicSubscription()
+        final TopicSubscription subscription = client.newSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(recordingHandler)
             .startAtHeadOfTopic()
@@ -391,7 +391,7 @@ public class TopicSubscriptionTest
             .join();
 
         // when
-        client.subscriptionClient().newTopicSubscription()
+        client.newSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(recordingHandler)
             .startAtHeadOfTopic()
@@ -458,7 +458,7 @@ public class TopicSubscriptionTest
     public void testNameUniqueness()
     {
         // given
-        client.subscriptionClient().newTopicSubscription()
+        client.newSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(recordingHandler)
             .open();
@@ -468,7 +468,7 @@ public class TopicSubscriptionTest
         exception.expectMessage("Could not open subscriber group");
 
         // when
-        client.subscriptionClient().newTopicSubscription()
+        client.newSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(recordingHandler)
             .open();
@@ -490,15 +490,15 @@ public class TopicSubscriptionTest
 
         clientRule.waitUntilTopicsExists(anotherTopicName);
 
-        zeebeClient.topicClient(clientRule.getDefaultTopic()).subscriptionClient()
-            .newTopicSubscription()
+        zeebeClient.topicClient(clientRule.getDefaultTopic())
+            .newSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(recordingHandler)
             .open();
 
         // when
-        final TopicSubscription topic2Subscription = zeebeClient.topicClient(anotherTopicName).subscriptionClient()
-            .newTopicSubscription()
+        final TopicSubscription topic2Subscription = zeebeClient.topicClient(anotherTopicName)
+            .newSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(recordingHandler)
             .open();
@@ -525,8 +525,8 @@ public class TopicSubscriptionTest
         final TopicClient topicClient0 = zeebeClient.topicClient(clientRule.getDefaultTopic());
         final TopicClient topicClient1 = zeebeClient.topicClient(anotherTopicName);
 
-        final TopicSubscription topic0Subscription = topicClient0.subscriptionClient()
-            .newTopicSubscription()
+        final TopicSubscription topic0Subscription = topicClient0
+            .newSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(recordingHandler)
             .startAtHeadOfTopic()
@@ -534,8 +534,8 @@ public class TopicSubscriptionTest
 
         final RecordingEventHandler anotherRecordingHandler = new RecordingEventHandler();
 
-        final TopicSubscription topic1Subscription = topicClient1.subscriptionClient()
-            .newTopicSubscription()
+        final TopicSubscription topic1Subscription = topicClient1
+            .newSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(anotherRecordingHandler)
             .startAtHeadOfTopic()
@@ -595,7 +595,7 @@ public class TopicSubscriptionTest
     public void shouldNotPushAnySubscriptionEvents()
     {
         // given
-        client.subscriptionClient().newTopicSubscription()
+        client.newSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(recordingHandler)
             .open();
@@ -628,7 +628,7 @@ public class TopicSubscriptionTest
         }
 
         // when
-        client.subscriptionClient().newTopicSubscription()
+        client.newSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(recordingHandler)
             .startAtHeadOfTopic()
@@ -672,8 +672,8 @@ public class TopicSubscriptionTest
         final List<Integer> receivedPartitionIds = new ArrayList<>();
 
         // when
-        zeebeClient.topicClient(topicName).subscriptionClient()
-            .newTopicSubscription()
+        zeebeClient.topicClient(topicName)
+            .newSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(recordingHandler)
             .jobCommandHandler(c ->

@@ -17,8 +17,10 @@ package io.zeebe.client.impl;
 
 import io.zeebe.client.ZeebeClientConfiguration;
 import io.zeebe.client.api.clients.*;
+import io.zeebe.client.api.subscription.TopicSubscriptionBuilderStep1;
 import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.impl.subscription.SubscriptionManager;
+import io.zeebe.client.impl.subscription.topic.TopicSubscriptionBuilderImpl;
 import io.zeebe.util.EnsureUtil;
 
 public class TopicClientImpl implements TopicClient
@@ -47,9 +49,9 @@ public class TopicClientImpl implements TopicClient
     }
 
     @Override
-    public SubscriptionClient subscriptionClient()
+    public TopicSubscriptionBuilderStep1 newSubscription()
     {
-        return new SubscriptionClientImpl(this);
+        return new TopicSubscriptionBuilderImpl(this);
     }
 
     public String getTopic()

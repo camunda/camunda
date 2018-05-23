@@ -79,7 +79,7 @@ public class JobTopicSubscriptionTest
         final RecordingJobPOJOEventHandler handler = new RecordingJobPOJOEventHandler();
 
         // when
-        client.subscriptionClient().newTopicSubscription()
+        client.newSubscription()
             .name("sub-1")
             .jobEventHandler(handler)
             .jobCommandHandler(handler)
@@ -118,7 +118,7 @@ public class JobTopicSubscriptionTest
         final RecordingEventHandler handler = new RecordingEventHandler();
 
         // when no POJO handler is registered
-        client.subscriptionClient().newTopicSubscription()
+        client.newSubscription()
             .name("sub-2")
             .recordHandler(handler)
             .startAtHeadOfTopic()

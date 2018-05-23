@@ -181,19 +181,19 @@ public class CreateTopicClusteredTest
 
         final CompletableFuture<JobEvent> jobCompleted = new CompletableFuture<>();
         client.topicClient(topicName)
-              .subscriptionClient()
-              .newJobSubscription()
-              .jobType("bar")
-              .handler((client, event) ->
-              {
-                  final JobEvent completedJob = client
-                          .newCompleteCommand(event)
-                          .send()
-                          .join();
+            .jobClient()
+            .newWorker()
+            .jobType("bar")
+            .handler((client, event) ->
+            {
+                final JobEvent completedJob = client
+                    .newCompleteCommand(event)
+                    .send()
+                    .join();
 
-                  jobCompleted.complete(completedJob);
-              })
-              .open();
+                jobCompleted.complete(completedJob);
+            })
+            .open();
 
         waitUntil(jobCompleted::isDone);
 

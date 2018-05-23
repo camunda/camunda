@@ -41,8 +41,8 @@ public class EventLogger
 
         final TopicClient topicClient = zeebeClient.topicClient(topicName);
 
-        final TopicSubscription subscription = topicClient.subscriptionClient()
-            .newTopicSubscription()
+        final TopicSubscription subscription = topicClient
+            .newSubscription()
             .name("logger")
             .recordHandler(record ->
             {

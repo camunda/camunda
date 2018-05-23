@@ -104,9 +104,8 @@ public class CancelWorkflowInstanceTest
 
         final List<JobEvent> jobEvents = new ArrayList<>();
 
-        clientRule.getClient().topicClient()
-            .subscriptionClient()
-            .newJobSubscription()
+        clientRule.getJobClient()
+            .newWorker()
             .jobType("test")
             .handler((c, job) -> jobEvents.add(job))
             .open();

@@ -515,8 +515,7 @@ public class ZeebeClientTest
     protected TopicSubscription openSubscription()
     {
         return client.topicClient(ClientApiRule.DEFAULT_TOPIC_NAME)
-                .subscriptionClient()
-                .newTopicSubscription()
+                .newSubscription()
                 .name("foo")
                 .recordHandler(r ->
                 {

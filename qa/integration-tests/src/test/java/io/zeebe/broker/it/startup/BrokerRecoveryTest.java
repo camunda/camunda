@@ -48,7 +48,7 @@ import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.events.JobState;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.api.events.WorkflowInstanceState;
-import io.zeebe.client.api.subscription.JobSubscription;
+import io.zeebe.client.api.subscription.JobWorker;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
@@ -143,8 +143,8 @@ public class BrokerRecoveryTest
         // when
         deleteSnapshotsAndRestart();
 
-        clientRule.getSubscriptionClient()
-            .newJobSubscription()
+        clientRule.getJobClient()
+            .newWorker()
             .jobType("foo")
             .handler((client, job) -> client.newCompleteCommand(job).withoutPayload().send())
             .open();
@@ -172,8 +172,8 @@ public class BrokerRecoveryTest
             .join();
 
         final RecordingJobHandler recordingJobHandler = new RecordingJobHandler();
-        clientRule.getSubscriptionClient()
-            .newJobSubscription()
+        clientRule.getJobClient()
+            .newWorker()
             .jobType("foo")
             .handler(recordingJobHandler)
             .open();
@@ -212,8 +212,8 @@ public class BrokerRecoveryTest
             .send()
             .join();
 
-        clientRule.getSubscriptionClient()
-            .newJobSubscription()
+        clientRule.getJobClient()
+            .newWorker()
             .jobType("foo")
             .handler((client, job) -> client.newCompleteCommand(job).withoutPayload().send())
             .open();
@@ -223,8 +223,8 @@ public class BrokerRecoveryTest
         // when
         deleteSnapshotsAndRestart();
 
-        clientRule.getSubscriptionClient()
-            .newJobSubscription()
+        clientRule.getJobClient()
+            .newWorker()
             .jobType("bar")
             .handler((client, job) -> client.newCompleteCommand(job).withoutPayload().send())
             .open();
@@ -292,8 +292,8 @@ public class BrokerRecoveryTest
         // when
         deleteSnapshotsAndRestart();
 
-        clientRule.getSubscriptionClient()
-            .newJobSubscription()
+        clientRule.getJobClient()
+            .newWorker()
             .jobType("foo")
             .handler((client, job) -> client.newCompleteCommand(job).withoutPayload().send())
             .open();
@@ -313,8 +313,8 @@ public class BrokerRecoveryTest
             .join();
 
         final RecordingJobHandler recordingJobHandler = new RecordingJobHandler();
-        clientRule.getSubscriptionClient()
-            .newJobSubscription()
+        clientRule.getJobClient()
+            .newWorker()
             .jobType("foo")
             .handler(recordingJobHandler)
             .open();
@@ -345,8 +345,8 @@ public class BrokerRecoveryTest
             .join();
 
         final RecordingJobHandler jobHandler = new RecordingJobHandler();
-        clientRule.getSubscriptionClient()
-            .newJobSubscription()
+        clientRule.getJobClient()
+            .newWorker()
             .jobType("foo")
             .handler(jobHandler)
             .open();
@@ -358,8 +358,8 @@ public class BrokerRecoveryTest
 
         jobHandler.clear();
 
-        clientRule.getSubscriptionClient()
-            .newJobSubscription()
+        clientRule.getJobClient()
+            .newWorker()
             .jobType("foo")
             .handler(jobHandler)
             .open();
@@ -382,8 +382,8 @@ public class BrokerRecoveryTest
             .join();
 
         final RecordingJobHandler jobHandler = new RecordingJobHandler();
-        final JobSubscription subscription = clientRule.getSubscriptionClient()
-            .newJobSubscription()
+        final JobWorker subscription = clientRule.getJobClient()
+            .newWorker()
             .jobType("foo")
             .handler(jobHandler)
             .open();
@@ -401,8 +401,8 @@ public class BrokerRecoveryTest
         }).until(t -> eventRecorder.hasJobEvent(JobState.TIMED_OUT));
         jobHandler.clear();
 
-        clientRule.getSubscriptionClient()
-            .newJobSubscription()
+        clientRule.getJobClient()
+            .newWorker()
             .jobType("foo")
             .handler(jobHandler)
             .open();

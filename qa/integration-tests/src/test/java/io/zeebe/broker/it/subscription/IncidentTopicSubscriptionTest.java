@@ -86,8 +86,8 @@ public class IncidentTopicSubscriptionTest
         final RecordingIncidentEventHandler handler = new RecordingIncidentEventHandler();
 
         // when
-        client.subscriptionClient()
-            .newTopicSubscription()
+        client
+            .newSubscription()
             .name("test")
             .incidentEventHandler(handler)
             .startAtHeadOfTopic()
@@ -117,8 +117,8 @@ public class IncidentTopicSubscriptionTest
             .send()
             .join();
 
-        client.subscriptionClient()
-            .newJobSubscription()
+        client.jobClient()
+            .newWorker()
             .jobType("test")
             .handler((c, t) ->
             {
@@ -131,8 +131,8 @@ public class IncidentTopicSubscriptionTest
         final RecordingIncidentEventHandler handler = new RecordingIncidentEventHandler();
 
         // when
-        client.subscriptionClient()
-            .newTopicSubscription()
+        client
+            .newSubscription()
             .name("test")
             .incidentEventHandler(handler)
             .startAtHeadOfTopic()
@@ -165,7 +165,7 @@ public class IncidentTopicSubscriptionTest
         final RecordingEventHandler handler = new RecordingEventHandler();
 
         // when no POJO handler is registered
-        client.subscriptionClient().newTopicSubscription()
+        client.newSubscription()
             .name("sub-2")
             .recordHandler(handler)
             .startAtHeadOfTopic()

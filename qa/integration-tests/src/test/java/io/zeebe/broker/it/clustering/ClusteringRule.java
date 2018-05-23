@@ -373,7 +373,8 @@ public class ClusteringRule extends ExternalResource
     {
         waitUntil(() ->
             brokers.keySet().stream()
-               .allMatch(socketAddress -> {
+               .allMatch(socketAddress ->
+               {
                    final List<BrokerInfo> topology = topologyClient.requestTopologyFromBroker(socketAddress);
                    return topologyPredicate.apply(topology);
                }), 250
