@@ -15,9 +15,7 @@ import javax.ws.rs.core.Response;
 
 import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUser;
 
-/**
- * @author Askar Akhmerov
- */
+
 
 @Path("/export")
 @Secured

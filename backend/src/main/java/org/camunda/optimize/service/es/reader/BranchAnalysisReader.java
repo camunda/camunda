@@ -35,9 +35,7 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-/**
- * @author Askar Akhmerov
- */
+
 @Component
 public class BranchAnalysisReader {
 

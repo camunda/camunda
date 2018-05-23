@@ -32,9 +32,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNot.not;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class ExportRestServiceIT {
   protected static final String CSV_EXPORT = "export/csv";
 

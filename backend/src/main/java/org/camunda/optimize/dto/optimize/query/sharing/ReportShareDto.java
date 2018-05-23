@@ -2,9 +2,7 @@ package org.camunda.optimize.dto.optimize.query.sharing;
 
 import java.io.Serializable;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class ReportShareDto implements Serializable {
   private String id;
   private String reportId;

@@ -2,9 +2,7 @@ package org.camunda.optimize;
 
 import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class Main {
 
   private static EmbeddedCamundaOptimize jettyCamundaOptimize;

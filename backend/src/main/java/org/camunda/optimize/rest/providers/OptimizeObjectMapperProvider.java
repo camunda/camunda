@@ -10,10 +10,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.Provider;
 
-/**
- *
- * @author Askar Akhmerov
- */
 @Provider
 @Produces(MediaType.APPLICATION_JSON)
 @Component

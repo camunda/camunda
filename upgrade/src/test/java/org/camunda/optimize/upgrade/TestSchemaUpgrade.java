@@ -12,9 +12,7 @@ import org.camunda.optimize.upgrade.steps.RenameIndexStep;
 import org.camunda.optimize.upgrade.steps.UpdateDataStep;
 import org.camunda.optimize.upgrade.util.SchemaUpgradeUtil;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class TestSchemaUpgrade extends AbstractUpgradePlan {
 
   private static final String TEST_INDEX = "test-index";

@@ -9,9 +9,7 @@ import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class CustomSerializer extends JsonSerializer<OffsetDateTime> {
 
   private DateTimeFormatter formatter;

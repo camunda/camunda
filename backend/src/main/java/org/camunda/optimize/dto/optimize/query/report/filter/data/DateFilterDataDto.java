@@ -2,9 +2,7 @@ package org.camunda.optimize.dto.optimize.query.report.filter.data;
 
 import java.time.OffsetDateTime;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class DateFilterDataDto implements FilterDataDto {
 
   public static String START_DATE = "start_date";

@@ -24,9 +24,7 @@ import java.util.Map;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
-/**
- * @author Askar Akhmerov
- */
+
 @Component
 public class AlertWriter {
   private final Logger logger = LoggerFactory.getLogger(getClass());

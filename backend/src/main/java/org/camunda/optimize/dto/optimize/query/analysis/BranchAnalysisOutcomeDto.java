@@ -1,8 +1,6 @@
 package org.camunda.optimize.dto.optimize.query.analysis;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class BranchAnalysisOutcomeDto {
   protected Long activitiesReached;
   protected Long activityCount;

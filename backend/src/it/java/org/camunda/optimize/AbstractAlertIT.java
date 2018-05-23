@@ -41,9 +41,7 @@ import static org.camunda.optimize.test.util.ReportDataHelper.createAvgPiDuratio
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-/**
- * @author Askar Akhmerov
- */
+
 public abstract class AbstractAlertIT {
 
   protected static final String ALERT = "alert";

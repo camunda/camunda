@@ -1,9 +1,5 @@
 package org.camunda.optimize.rest.engine.dto;
 
-/**
- * @author Daniel Meyer
- * 
- */
 public class UserDto {
 
   protected UserProfileDto profile;

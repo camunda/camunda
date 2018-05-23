@@ -4,9 +4,7 @@ import org.camunda.optimize.upgrade.plan.AbstractUpgradePlan;
 import org.camunda.optimize.upgrade.steps.UpdateDataStep;
 import org.camunda.optimize.upgrade.util.SchemaUpgradeUtil;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class UpgradePlan extends AbstractUpgradePlan {
 
   private static final String DOC_TYPE = "_doc";

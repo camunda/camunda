@@ -1,7 +1,6 @@
 package org.camunda.bpm.platform.servlet.purge;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.bpm.engine.ManagementService;
 import org.camunda.bpm.engine.impl.ManagementServiceImpl;
 import org.camunda.bpm.engine.impl.management.PurgeReport;
 
@@ -15,10 +14,7 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- *
  * Servlet that deployes
- * 
- * @author Askar Akhmerov
  */
 @WebServlet(name="DeployBasicProcessServlet", urlPatterns={"/*"})
 public class PurgeServlet extends HttpServlet {

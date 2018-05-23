@@ -14,9 +14,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class CSVUtils {
   private static final String MAP = "java.util.Map";
   private static final String VARIABLE_PREFIX = "variable:";

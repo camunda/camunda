@@ -70,8 +70,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
  *
  * Relies on expectation of /purge endpoint available in Tomcat for HTTP GET
  * requests and performing actual purge.
- *
- * @author Askar Akhmerov
  */
 public class EngineIntegrationRule extends TestWatcher {
 

@@ -10,9 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * @author Askar Akhmerov
- */
+
 public abstract class AbstractReindexExecutor<H extends ReindexStep>
   extends AbstractRESTExecutor
   implements UpgradeStepExecutor<H> {

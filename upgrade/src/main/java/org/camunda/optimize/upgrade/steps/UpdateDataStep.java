@@ -2,9 +2,7 @@ package org.camunda.optimize.upgrade.steps;
 
 import org.camunda.optimize.upgrade.UpgradeStep;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class UpdateDataStep implements UpgradeStep {
   public static final String NAME = "update-data";
   private final String index;

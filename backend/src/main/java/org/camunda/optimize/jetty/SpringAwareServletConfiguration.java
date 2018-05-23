@@ -20,8 +20,6 @@ import java.util.EnumSet;
 /**
  * Wrapper around all Camunda Optimize components, specifically JAX-RS configuration
  * which can be used to be loaded by different implementations of embedded web containers
- *
- * @author Askar Akhmerov
  */
 public class SpringAwareServletConfiguration implements ApplicationContextAware {
 

@@ -19,9 +19,7 @@ import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.GRE
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN;
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN_EQUALS;
 
-/**
- * @author Askar Akhmerov
- */
+
 @Component
 public class DurationQueryFilter implements QueryFilter<DurationFilterDataDto> {
 

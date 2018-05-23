@@ -3,9 +3,7 @@ package org.camunda.optimize.dto.optimize.query.analysis;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class BranchAnalysisDto {
   protected String endEvent;
   protected Long total;

@@ -19,8 +19,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
  *
  * 1. import status is false
  * 2. more then one message is received
- *
- * @author Askar Akhmerov
  */
 @ClientEndpoint
 public class StatusClientSocket {

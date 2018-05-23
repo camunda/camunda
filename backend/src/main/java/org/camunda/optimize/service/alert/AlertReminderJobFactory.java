@@ -5,9 +5,7 @@ import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.quartz.Job;
 import org.springframework.stereotype.Component;
 
-/**
- * @author Askar Akhmerov
- */
+
 @Component
 public class AlertReminderJobFactory extends AbstractAlertFactory {
   private static final Class<? extends Job> ALERT_JOB_CLASS = AlertJob.class;

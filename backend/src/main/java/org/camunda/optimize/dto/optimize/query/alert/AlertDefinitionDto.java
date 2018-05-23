@@ -2,9 +2,7 @@ package org.camunda.optimize.dto.optimize.query.alert;
 
 import java.time.OffsetDateTime;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class AlertDefinitionDto extends AlertCreationDto {
   public static final String GRATER = ">";
   public static final String LESS = "<";

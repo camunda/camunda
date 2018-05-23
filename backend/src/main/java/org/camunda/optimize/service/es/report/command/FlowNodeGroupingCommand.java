@@ -7,9 +7,7 @@ import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * @author Askar Akhmerov
- */
+
 public abstract class FlowNodeGroupingCommand extends ReportCommand<MapReportResultDto> {
 
   @Override

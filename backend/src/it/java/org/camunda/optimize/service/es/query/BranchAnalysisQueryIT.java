@@ -38,9 +38,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.Assert.assertThat;
 
-/**
- * @author Askar Akhmerov
- */
+
 
 public class BranchAnalysisQueryIT {
   public static final String PROCESS_DEFINITION_KEY = "aProcessDefinitionKey";

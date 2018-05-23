@@ -12,9 +12,7 @@ import javax.ws.rs.core.HttpHeaders;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class AuthenticationUtilTest {
   @Rule
   public ExpectedException thrown = ExpectedException.none();

@@ -39,9 +39,7 @@ import static org.camunda.optimize.service.es.report.command.util.ReportConstant
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-/**
- * @author Askar Akhmerov
- */
+
 @RunWith(Parameterized.class)
 @Category(Engine78.class)
 public class ExportServiceIT {

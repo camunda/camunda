@@ -22,8 +22,6 @@ import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LES
 /**
  * Helper class that defines mapping rules between FE Dto and ES filters used
  * on event type
- *
- * @author Askar Akhmerov
  */
 @Component
 public class DateQueryFilter implements QueryFilter<DateFilterDataDto> {

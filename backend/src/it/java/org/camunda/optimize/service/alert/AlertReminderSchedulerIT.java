@@ -24,9 +24,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class AlertReminderSchedulerIT extends AbstractAlertIT {
 
   @Rule

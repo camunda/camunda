@@ -12,9 +12,7 @@ import java.util.Map;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class CSVUtilsTest {
 
   @Test

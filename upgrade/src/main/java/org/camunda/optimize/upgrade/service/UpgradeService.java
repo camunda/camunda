@@ -33,9 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class UpgradeService {
 
   public static final String HTTP = "http";

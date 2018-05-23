@@ -13,9 +13,7 @@ import java.util.List;
 import static org.camunda.optimize.test.util.ReportDataHelper.createReportDataViewRawAsTable;
 import static org.hamcrest.CoreMatchers.is;
 
-/**
- * @author Askar Akhmerov
- */
+
 
 public class DurationFilterIT extends AbstractDurationFilterIT {
 

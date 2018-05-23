@@ -34,9 +34,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-/**
- * @author Askar Akhmerov
- */
+
 public abstract class AbstractSharingIT {
   protected static final String SHARE = "share";
   protected static final String FAKE_REPORT_ID = "fake";

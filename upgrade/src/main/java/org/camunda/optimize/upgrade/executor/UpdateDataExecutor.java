@@ -12,9 +12,7 @@ import org.elasticsearch.client.RestClient;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class UpdateDataExecutor extends  AbstractRESTExecutor implements UpgradeStepExecutor<UpdateDataStep> {
 
   private static final String UPDATE_BY_QUERY = "/_update_by_query";

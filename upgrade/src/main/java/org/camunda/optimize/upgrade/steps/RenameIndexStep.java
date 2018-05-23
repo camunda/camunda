@@ -2,9 +2,7 @@ package org.camunda.optimize.upgrade.steps;
 
 import org.camunda.optimize.upgrade.ReindexStep;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class RenameIndexStep implements ReindexStep {
 
   public static final String NAME = "index-rename";

@@ -8,9 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class RawDataHelper {
   public static final String FIXED_TIME = "2018-02-23T14:31:08.048+01:00";
   public static final String FIXED_TIME_VARIABLE = "2018-02-23T12:31:08.048+01:00";

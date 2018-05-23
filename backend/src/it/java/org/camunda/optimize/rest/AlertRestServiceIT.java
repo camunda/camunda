@@ -20,9 +20,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-/**
- * @author Askar Akhmerov
- */
+
 
 public class AlertRestServiceIT extends AbstractAlertIT{
 

@@ -2,9 +2,7 @@ package org.camunda.optimize.dto.optimize.query.dashboard;
 
 import java.time.OffsetDateTime;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class BaseDashboardDefinitionDto {
   protected String id;
   protected String name;

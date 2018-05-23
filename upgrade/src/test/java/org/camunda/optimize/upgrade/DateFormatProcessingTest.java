@@ -5,16 +5,18 @@ import org.camunda.optimize.upgrade.service.UpgradeService;
 import org.camunda.optimize.upgrade.steps.CreateIndexStep;
 import org.camunda.optimize.upgrade.steps.DeleteIndexStep;
 import org.camunda.optimize.upgrade.util.SchemaUpgradeUtil;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
-/**
- * @author Askar Akhmerov
- */
+import static org.camunda.optimize.upgrade.service.ValidationServiceTest.OPTIMIZE_METADATA;
+
 public class DateFormatProcessingTest extends AbstractUpgradeTest {
 
   private static final String TEST_INDEX = "test-index";
@@ -43,6 +45,15 @@ public class DateFormatProcessingTest extends AbstractUpgradeTest {
     };
   }
 
+  @After
+  public void tearDown() {
+    try {
+      restClient.performRequest("DELETE", OPTIMIZE_METADATA, Collections.emptyMap());
+    } catch (IOException e) {
+      //nothing to do
+    }
+  }
+
   @Test
   public void verifyDateFormatEnhancedFromConfig() {
     UpgradeService toTest = new UpgradeService(upgradeSchema, args);
@@ -52,7 +63,9 @@ public class DateFormatProcessingTest extends AbstractUpgradeTest {
 
   private void assertDateFormatsWithConfig(UpgradeStep upgradeStep) {
     if (upgradeStep instanceof CreateIndexStep) {
-      String expectedMapping = SchemaUpgradeUtil.readClasspathFileAsString("steps/date_field/expected_mapping_with_config.json");
+      String expectedMapping =
+        SchemaUpgradeUtil.readClasspathFileAsString("steps/date_field/expected_mapping_with_config.json");
+      expectedMapping = expectedMapping.replaceAll("\\s", "");
       assertMappingAfterReindex(expectedMapping, ((CreateIndexStep) upgradeStep).getIndexName());
     }
   }

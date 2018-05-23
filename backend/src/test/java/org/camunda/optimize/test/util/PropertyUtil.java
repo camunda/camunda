@@ -6,9 +6,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Properties;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class PropertyUtil {
 
   private static Logger logger = LoggerFactory.getLogger(PropertyUtil.class);

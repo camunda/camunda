@@ -6,9 +6,7 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class SpyTokenServiceFactory implements FactoryBean<SessionService> {
   private SessionService sessionService;
 

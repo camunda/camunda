@@ -13,9 +13,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Collections;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class ValidationService {
   private static final String ENVIRONMENT_CONFIG_YAML_REL_PATH = "/../environment/environment-config.yaml";
   protected Logger logger = LoggerFactory.getLogger(getClass());

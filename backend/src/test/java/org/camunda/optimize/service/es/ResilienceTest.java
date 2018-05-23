@@ -37,8 +37,6 @@ import static org.junit.Assert.assertThat;
 /**
  * Verify that optimize is basically working even if ES connection
  * is not present or lost
- *
- * @author Askar Akhmerov
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/unit/applicationContext.xml"})

@@ -1,8 +1,6 @@
 package org.camunda.optimize.dto.optimize.query.report.filter.data;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class DurationFilterDataDto implements FilterDataDto {
   public static final String DURATION = "durationInMs";
 

@@ -29,8 +29,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 /**
  * This test assumes that optimize-users index exists and
  * contains at least one user.
- *
- * @author Askar Akhmerov
  */
 public class UpgradeServiceTest extends AbstractUpgradeTest {
 

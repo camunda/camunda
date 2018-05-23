@@ -12,15 +12,12 @@ import org.junit.rules.RuleChain;
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 import java.net.URI;
-import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class StatusWebSocketIT {
 
   private static final String PROCESS_ID = "aProcessId";

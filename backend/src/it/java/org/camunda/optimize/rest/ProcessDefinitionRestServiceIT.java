@@ -34,9 +34,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-/**
- * @author Askar Akhmerov
- */
+
 
 public class ProcessDefinitionRestServiceIT {
   private static final String DIAGRAM = "org/camunda/optimize/service/es/reader/gateway_process.bpmn";

@@ -5,9 +5,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.web.context.support.WebApplicationContextUtils;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class SpringContextInterceptingListener implements LifeCycle.Listener {
   private ApplicationContextAware contextAware;
 

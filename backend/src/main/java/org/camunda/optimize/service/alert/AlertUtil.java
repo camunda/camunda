@@ -5,9 +5,7 @@ import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 
 import java.time.OffsetDateTime;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class AlertUtil {
 
   public static void mapBasicFields(AlertCreationDto toCreate, AlertDefinitionDto result) {

@@ -9,9 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-/**
- * @author Askar Akhmerov
- */
+
 @Component
 public class EmailNotificationService implements NotificationService {
   private final Logger logger = LoggerFactory.getLogger(getClass());

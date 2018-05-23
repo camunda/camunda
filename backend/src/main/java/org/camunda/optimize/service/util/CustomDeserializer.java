@@ -12,9 +12,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class CustomDeserializer extends JsonDeserializer<OffsetDateTime> {
 
   private DateTimeFormatter formatter;

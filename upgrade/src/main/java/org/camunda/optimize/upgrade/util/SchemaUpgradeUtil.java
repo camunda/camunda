@@ -3,18 +3,13 @@ package org.camunda.optimize.upgrade.util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.file.Path;
 
 /**
  * Bunch of utility methods that might be required during upgrade
  * operation.
- *
- * @author Askar Akhmerov
  */
 public class SchemaUpgradeUtil {
   public static final String CREATE_SNAPSHOT = "create-snapshot";

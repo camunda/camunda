@@ -11,9 +11,7 @@ import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
 
-/**
- * @author Askar Akhmerov
- */
+
 @Provider
 public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
   private final Logger logger = LoggerFactory.getLogger(getClass());

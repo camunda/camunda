@@ -14,9 +14,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class DateUtilHelper {
 
   public static void addDateFilter(String operator, String type, OffsetDateTime dateValue, ReportDataDto dto) {

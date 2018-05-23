@@ -2,9 +2,7 @@ package org.camunda.optimize.upgrade.steps;
 
 import org.camunda.optimize.upgrade.ReindexStep;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class DeleteFieldStep implements ReindexStep {
   public static final String NAME = "delete-field";
   private final String indexName;

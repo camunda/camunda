@@ -3,9 +3,7 @@ package org.camunda.optimize.service.util;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class NamedThreadFactory implements ThreadFactory {
   private final ThreadGroup group;
   private final AtomicInteger threadNumber = new AtomicInteger(1);

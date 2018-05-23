@@ -10,9 +10,7 @@ import java.io.IOException;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-/**
- * @author Askar Akhmerov
- */
+
 public abstract class AbstractUpgradeTest {
   protected RestClient restClient;
 

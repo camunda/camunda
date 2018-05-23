@@ -14,9 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.net.InetAddress;
 import java.util.concurrent.TimeUnit;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class TransportClientFactory implements FactoryBean<Client> {
   private final Logger logger = LoggerFactory.getLogger(TransportClientFactory.class);
   private SchemaInitializingClient instance;

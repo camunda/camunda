@@ -9,9 +9,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.ext.Provider;
 import java.io.IOException;
 
-/**
- * @author Askar Akhmerov
- */
+
 @Provider
 @Component
 public class NoCacheFilter implements ContainerResponseFilter {

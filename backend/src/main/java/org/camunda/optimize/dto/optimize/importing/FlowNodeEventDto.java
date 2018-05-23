@@ -5,9 +5,7 @@ import org.camunda.optimize.dto.optimize.OptimizeDto;
 import java.io.Serializable;
 import java.time.OffsetDateTime;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class FlowNodeEventDto implements Serializable,OptimizeDto {
 
   protected String id;

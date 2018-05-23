@@ -1,8 +1,6 @@
 package org.camunda.optimize.dto.optimize.query.alert;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class AlertInterval {
   protected int value;
   protected String unit;

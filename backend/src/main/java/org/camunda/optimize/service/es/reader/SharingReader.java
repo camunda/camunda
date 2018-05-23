@@ -27,9 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * @author Askar Akhmerov
- */
+
 @Component
 public class SharingReader {
 

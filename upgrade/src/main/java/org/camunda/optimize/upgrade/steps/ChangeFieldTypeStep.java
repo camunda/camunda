@@ -2,9 +2,6 @@ package org.camunda.optimize.upgrade.steps;
 
 import org.camunda.optimize.upgrade.ReindexStep;
 
-/**
- * @author Askar Akhmerov
- */
 public class ChangeFieldTypeStep implements ReindexStep {
   private final String initialIndexName;
   private final String finalIndexName;

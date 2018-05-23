@@ -37,8 +37,6 @@ import java.util.concurrent.CountDownLatch;
 
 /**
  * Helper rule to start embedded jetty with Camunda Optimize on bord.
- *
- * @author Askar Akhmerov
  */
 public class EmbeddedOptimizeRule extends TestWatcher {
 

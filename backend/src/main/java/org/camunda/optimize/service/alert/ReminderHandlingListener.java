@@ -10,9 +10,7 @@ import org.quartz.TriggerKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class ReminderHandlingListener implements JobListener {
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private static final String LISTENER_NAME = "alert-reminder-handler";

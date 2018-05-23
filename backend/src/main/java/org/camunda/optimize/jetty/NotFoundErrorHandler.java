@@ -14,9 +14,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class NotFoundErrorHandler extends ErrorHandler {
   private static final String INDEX_PAGE = "/index.html";
   private static final String API_PATH = "/api";

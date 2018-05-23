@@ -2,9 +2,6 @@ package org.camunda.optimize.upgrade.steps;
 
 import org.camunda.optimize.upgrade.ReindexStep;
 
-/**
- * @author Askar Akhmerov
- */
 public class AddFieldStep implements ReindexStep {
   public static final String NAME = "add-field";
   private final String indexName;

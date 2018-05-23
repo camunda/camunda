@@ -6,9 +6,7 @@ import org.quartz.JobListener;
 
 import java.util.concurrent.CountDownLatch;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class SyncListener implements JobListener{
 
   private CountDownLatch done;

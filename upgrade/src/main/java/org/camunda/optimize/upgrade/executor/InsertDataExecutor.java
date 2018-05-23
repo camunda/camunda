@@ -7,9 +7,7 @@ import org.camunda.optimize.upgrade.UpgradeStepExecutor;
 import org.camunda.optimize.upgrade.steps.InsertDataStep;
 import org.elasticsearch.client.RestClient;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class InsertDataExecutor
   extends AbstractRESTExecutor
   implements UpgradeStepExecutor<InsertDataStep> {

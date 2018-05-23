@@ -32,9 +32,7 @@ import static org.camunda.optimize.service.es.report.command.util.ReportConstant
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class ExportLimitsIT {
   protected static final String CSV_EXPORT = "export/csv";
 

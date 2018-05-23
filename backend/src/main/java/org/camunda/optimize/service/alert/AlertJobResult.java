@@ -2,9 +2,7 @@ package org.camunda.optimize.service.alert;
 
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class AlertJobResult {
 
   private boolean statusChanged;

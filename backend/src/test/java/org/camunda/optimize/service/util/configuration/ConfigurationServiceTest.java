@@ -8,9 +8,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class ConfigurationServiceTest {
 
   @Test

@@ -21,9 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * @author Askar Akhmerov
- */
+
 @Component
 public class AlertReader {
   private final Logger logger = LoggerFactory.getLogger(getClass());

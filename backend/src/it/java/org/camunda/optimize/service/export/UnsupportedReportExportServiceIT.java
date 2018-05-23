@@ -27,9 +27,7 @@ import java.util.Map;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class UnsupportedReportExportServiceIT {
   protected static final String CSV_EXPORT = "export/csv";
 

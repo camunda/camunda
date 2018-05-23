@@ -31,9 +31,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class ConfigurationService {
   private static final String ENVIRONMENT_CONFIG_YAML_REL_PATH = "/../environment/environment-config.yaml";
   private static final String[] DEFAULT_LOCATIONS = { ENVIRONMENT_CONFIG_YAML_REL_PATH };

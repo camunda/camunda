@@ -36,8 +36,6 @@ import java.util.Properties;
 /**
  * Jetty embedded server wrapping jersey servlet handler and loading properties from
  * service and environment property files.
- *
- * @author Askar Akhmerov
  */
 public class EmbeddedCamundaOptimize implements CamundaOptimize {
 

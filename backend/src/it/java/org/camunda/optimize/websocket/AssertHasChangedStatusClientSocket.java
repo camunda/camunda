@@ -5,13 +5,10 @@ import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.OnMessage;
-import javax.websocket.OnOpen;
 import javax.websocket.Session;
-import java.util.concurrent.CountDownLatch;
 
 import static org.camunda.optimize.rest.StatusRestServiceIT.ENGINE_ALIAS;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -21,8 +18,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
  *
  * 1. import status has changed
  * 2. more then one message is received
- *
- * @author Askar Akhmerov
  */
 @ClientEndpoint
 public class AssertHasChangedStatusClientSocket {

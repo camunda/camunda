@@ -5,9 +5,7 @@ import org.camunda.optimize.upgrade.service.ValidationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class Main {
 
   protected static Logger logger = LoggerFactory.getLogger(Main.class);

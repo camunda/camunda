@@ -23,9 +23,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class ValidationServiceTest {
   public static final String OPTIMIZE_METADATA = "optimize-metadata";
   public static final String PUT = "PUT";

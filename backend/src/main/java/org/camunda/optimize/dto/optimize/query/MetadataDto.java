@@ -4,9 +4,7 @@ import org.camunda.optimize.dto.optimize.OptimizeDto;
 
 import java.io.Serializable;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class MetadataDto implements OptimizeDto, Serializable {
 
   private String schemaVersion;

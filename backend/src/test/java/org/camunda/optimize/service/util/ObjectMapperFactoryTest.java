@@ -21,9 +21,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.Assert.assertThat;
 
-/**
- * @author Askar Akhmerov
- */
+
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/unit/applicationContext.xml"})
 public class ObjectMapperFactoryTest {

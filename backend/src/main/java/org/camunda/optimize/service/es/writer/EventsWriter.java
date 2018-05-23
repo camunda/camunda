@@ -23,9 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * @author Askar Akhmerov
- */
+
 @Component
 public class EventsWriter {
   private final Logger logger = LoggerFactory.getLogger(EventsWriter.class);

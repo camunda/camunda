@@ -14,8 +14,6 @@ import org.slf4j.LoggerFactory;
  * Wrapper client that performs schema initialization before any action towards ES is
  * executed. Please note that this client cannot be used for schema initialization mechanism
  * itself as it will cause infinite loop.
- *
- * @author Askar Akhmerov
  */
 public class SchemaInitializingClient extends FilterClient {
   private final Logger logger = LoggerFactory.getLogger(SchemaInitializingClient.class);

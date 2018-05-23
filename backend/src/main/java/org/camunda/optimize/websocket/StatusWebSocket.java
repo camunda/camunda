@@ -18,9 +18,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * @author Askar Akhmerov
- */
+
 @ServerEndpoint(value = "/ws/status", configurator = SpringConfigurator.class)
 public class StatusWebSocket {
 

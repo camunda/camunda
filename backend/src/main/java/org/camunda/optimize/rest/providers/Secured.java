@@ -14,8 +14,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  *
  * I.e. this annotation should be used to demarcate methods that require valid authentication token in
  * request header in order to be invoked.
- * 
- * @author Askar Akhmerov
  */
 @NameBinding
 @Retention(RUNTIME)

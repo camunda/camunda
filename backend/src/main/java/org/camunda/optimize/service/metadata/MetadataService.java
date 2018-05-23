@@ -11,9 +11,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import java.util.Optional;
 
-/**
- * @author Askar Akhmerov
- */
+
 @Component
 public class MetadataService {
 

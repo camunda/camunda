@@ -19,9 +19,7 @@ import static org.camunda.optimize.service.es.report.command.util.ReportConstant
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_PROCESS_INSTANCE_ENTITY;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_RAW_DATA_OPERATION;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class ReportDataHelper {
 
   public static ReportDataDto createReportRawDataGroupByFlowNodesAsTable(String processDefinitionKey, String processDefinitionVersion) {

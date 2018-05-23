@@ -1,8 +1,6 @@
 package org.camunda.optimize.upgrade.to;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class DestinationWrapper {
   private String index;
 

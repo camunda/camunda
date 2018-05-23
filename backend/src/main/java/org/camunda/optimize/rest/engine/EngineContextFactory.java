@@ -21,9 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/**
- * @author Askar Akhmerov
- */
+
 @Component
 public class EngineContextFactory {
 

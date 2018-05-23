@@ -13,9 +13,7 @@ import java.util.Collection;
 
 import static org.camunda.optimize.test.util.ReportDataHelper.createReportDataViewRawAsTable;
 
-/**
- * @author Askar Akhmerov
- */
+
 
 @RunWith(Parameterized.class)
 public class DurationFilterParametrizedIT extends AbstractDurationFilterIT {

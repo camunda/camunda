@@ -20,8 +20,6 @@ import java.util.List;
 /**
  * Helper class that defines mapping rules between FE Dto and ES filters used
  * on event type
- *
- * @author Askar Akhmerov
  */
 @Component
 public class RollingDateQueryFilter implements QueryFilter<RollingDateFilterDataDto> {

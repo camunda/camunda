@@ -10,9 +10,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.time.OffsetDateTime;
 
-/**
- * @author Askar Akhmerov
- */
+
 
 public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
 

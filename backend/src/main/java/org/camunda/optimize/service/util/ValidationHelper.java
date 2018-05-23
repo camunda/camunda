@@ -12,9 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.filter.data.ExecutedFlowNo
 import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class ValidationHelper {
 
   public static void validate(BranchAnalysisQueryDto dto) throws OptimizeValidationException {

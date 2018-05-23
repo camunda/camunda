@@ -4,9 +4,7 @@ import org.camunda.optimize.upgrade.UpgradeStepExecutor;
 import org.camunda.optimize.upgrade.steps.CreateIndexStep;
 import org.elasticsearch.client.RestClient;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class CreateIndexExecutor
   extends AbstractRESTExecutor
   implements UpgradeStepExecutor<CreateIndexStep> {

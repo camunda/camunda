@@ -3,9 +3,7 @@ package org.camunda.optimize.dto.optimize.query.sharing;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * @author Askar Akhmerov
- */
+
 public class ShareSearchResultDto {
   private Map<String, Boolean> reports = new HashMap<>();
   private Map<String, Boolean> dashboards = new HashMap<>();

@@ -12,9 +12,7 @@ import org.springframework.test.context.TestContextManager;
 import java.util.Arrays;
 import java.util.Collection;
 
-/**
- * @author Askar Akhmerov
- */
+
 @RunWith(Parameterized.class)
 public class RollingDateFilterUnitsIT extends AbstractRollingDateFilterIT {
 

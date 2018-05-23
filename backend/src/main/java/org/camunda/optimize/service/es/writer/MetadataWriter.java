@@ -16,9 +16,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * @author Askar Akhmerov
- */
+
 @Component
 public class MetadataWriter {
   public static final String ID = "1";
