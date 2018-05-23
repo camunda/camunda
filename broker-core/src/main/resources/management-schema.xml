@@ -79,4 +79,16 @@
         </group>
     </sbe:message>
 
+    <sbe:message name="FetchSnapshotChunkRequest" id="8">
+        <field name="partitionId" id="0" type="uint16" />
+        <field name="logPosition" id="1" type="uint64" />
+        <field name="chunkOffset" id="2" type="uint64" />
+        <field name="chunkLength" id="3" type="uint64" />
+        <data name="name" id="4" type="varDataEncoding" />
+    </sbe:message>
+
+    <sbe:message name="FetchSnapshotChunkResponse" id="9">
+        <data name="data" id="0" type="varDataEncoding" />
+    </sbe:message>
+
 </sbe:messageSchema>

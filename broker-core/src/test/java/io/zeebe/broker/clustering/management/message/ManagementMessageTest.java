@@ -22,11 +22,9 @@ import static io.zeebe.util.buffer.BufferUtil.*;
 
 import java.util.Arrays;
 
-import io.zeebe.broker.clustering.api.InvitationRequest;
-import io.zeebe.broker.clustering.api.InvitationResponse;
-import io.zeebe.broker.clustering.api.ListSnapshotsRequest;
-import io.zeebe.broker.clustering.api.ListSnapshotsResponse;
+import io.zeebe.broker.clustering.api.*;
 import io.zeebe.transport.SocketAddress;
+import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.junit.Test;
 
@@ -87,4 +85,26 @@ public class ManagementMessageTest
         assertEqualFieldsAfterWriteAndRead(response, "snapshots");
     }
 
+    @Test
+    public void testFetchSnapshotChunkRequest()
+    {
+        final FetchSnapshotChunkRequest request = new FetchSnapshotChunkRequest()
+                .setPartitionId(1)
+                .setName("snapshot")
+                .setLogPosition(200L)
+                .setChunkOffset(30L)
+                .setChunkLength(1024L);
+
+        assertEqualFieldsAfterWriteAndRead(request,
+                "partitionId", "name", "logPosition", "chunkOffset", "chunkLength");
+    }
+
+    @Test
+    public void testFetchSnapshotChunkResponse()
+    {
+        final DirectBuffer data = BufferUtil.wrapString("somethingOrOther");
+        final FetchSnapshotChunkResponse response = new FetchSnapshotChunkResponse().setData(data);
+
+        assertEqualFieldsAfterWriteAndRead(response, "data");
+    }
 }
