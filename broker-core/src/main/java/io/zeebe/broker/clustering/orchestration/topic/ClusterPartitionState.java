@@ -25,7 +25,6 @@ import org.agrona.DirectBuffer;
 
 public class ClusterPartitionState
 {
-    private int nodeCount;
     final Map<DirectBuffer, List<PartitionNodes>> state = new HashMap<>();
 
     public static ClusterPartitionState computeCurrentState(final ReadableTopology topology)
@@ -33,7 +32,6 @@ public class ClusterPartitionState
         final ClusterPartitionState currentState = new ClusterPartitionState();
         topology.getPartitions().forEach(partition -> currentState.addPartition(partition, topology));
 
-        currentState.nodeCount = topology.getMembers().size();
         return currentState;
     }
 
@@ -53,8 +51,4 @@ public class ClusterPartitionState
         return state.getOrDefault(topicName, Collections.emptyList());
     }
 
-    public int getNodeCount()
-    {
-        return nodeCount;
-    }
 }
