@@ -54,12 +54,6 @@ public class JobSubscriberGroup extends SubscriberGroup<JobSubscriber> implement
     }
 
     @Override
-    public boolean isManagedGroup()
-    {
-        return subscription.isManaged();
-    }
-
-    @Override
     protected ActorFuture<? extends EventSubscriptionCreationResult> requestNewSubscriber(int partitionId)
     {
         return new CreateJobSubscriptionCommandImpl(client.getCommandManager(), partitionId)

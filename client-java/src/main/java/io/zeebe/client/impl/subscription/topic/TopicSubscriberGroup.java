@@ -77,12 +77,6 @@ public class TopicSubscriberGroup extends SubscriberGroup<TopicSubscriber> imple
     }
 
     @Override
-    public boolean isManagedGroup()
-    {
-        return subscription.isManaged();
-    }
-
-    @Override
     protected ActorFuture<? extends EventSubscriptionCreationResult> requestNewSubscriber(int partitionId)
     {
         return new CreateTopicSubscriptionCommandImpl(client.getCommandManager(), subscription.getTopic(), partitionId)

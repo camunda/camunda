@@ -446,8 +446,6 @@ public abstract class SubscriberGroup<T extends Subscriber>
 
     protected abstract T buildSubscriber(EventSubscriptionCreationResult result);
 
-    public abstract boolean isManagedGroup();
-
     enum SubscriberState
     {
         NOT_SUBSCRIBED, UNSUBSCRIBING, SUBSCRIBING, SUBSCRIBED;

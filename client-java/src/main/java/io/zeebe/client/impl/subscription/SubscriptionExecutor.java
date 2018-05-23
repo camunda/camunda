@@ -21,10 +21,10 @@ public class SubscriptionExecutor implements Agent
 {
     public static final String ROLE_NAME = "subscription-executor";
 
-    protected final EventSubscribers topicSubscriptions;
-    protected final EventSubscribers taskSubscriptions;
+    protected final SubscriberGroups topicSubscriptions;
+    protected final SubscriberGroups taskSubscriptions;
 
-    public SubscriptionExecutor(EventSubscribers topicSubscriptions, EventSubscribers taskSubscriptions)
+    public SubscriptionExecutor(SubscriberGroups topicSubscriptions, SubscriberGroups taskSubscriptions)
     {
         this.topicSubscriptions = topicSubscriptions;
         this.taskSubscriptions = taskSubscriptions;
@@ -33,8 +33,8 @@ public class SubscriptionExecutor implements Agent
     @Override
     public int doWork() throws Exception
     {
-        int workCount = topicSubscriptions.pollManagedSubscribers();
-        workCount += taskSubscriptions.pollManagedSubscribers();
+        int workCount = topicSubscriptions.pollSubscribers();
+        workCount += taskSubscriptions.pollSubscribers();
         return workCount;
     }
 

@@ -25,55 +25,65 @@ import io.zeebe.client.api.subscription.JobWorkerBuilderStep1.JobWorkerBuilderSt
 import io.zeebe.client.api.subscription.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.impl.TopicClientImpl;
+import io.zeebe.client.impl.subscription.SubscriptionManager;
 import io.zeebe.util.EnsureUtil;
 
 public class JobSubcriptionBuilder implements JobWorkerBuilderStep1, JobWorkerBuilderStep2, JobWorkerBuilderStep3
 {
-    private final JobSubscriberGroupBuilder subscriberBuilder;
+    private final SubscriptionManager subscriptionManager;
+    private final String topic;
+
+    private String jobType;
+    private long timeout = -1L;
+    private String worker;
+    private JobHandler jobHandler;
+    private int bufferSize;
+
 
     public JobSubcriptionBuilder(TopicClientImpl client)
     {
-        this.subscriberBuilder = new JobSubscriberGroupBuilder(client.getTopic(), client.getSubscriptionManager());
+        this.topic = client.getTopic();
+        this.subscriptionManager = client.getSubscriptionManager();
 
         // apply defaults from configuration
         final ZeebeClientConfiguration configuration = client.getConfiguration();
-        this.subscriberBuilder.worker(configuration.getDefaultJobWorkerName());
-        this.subscriberBuilder.timeout(configuration.getDefaultJobTimeout().toMillis());
-        this.subscriberBuilder.bufferSize(configuration.getDefaultJobSubscriptionBufferSize());
+        this.worker = configuration.getDefaultJobWorkerName();
+        this.timeout = configuration.getDefaultJobTimeout().toMillis();
+        this.bufferSize = configuration.getDefaultJobSubscriptionBufferSize();
     }
 
     @Override
-    public JobWorkerBuilderStep2 jobType(String type)
+    public JobWorkerBuilderStep2 jobType(String jobType)
     {
-        subscriberBuilder.jobType(type);
+        this.jobType = jobType;
         return this;
     }
 
     @Override
-    public JobWorkerBuilderStep3 timeout(long lockTime)
+    public JobWorkerBuilderStep3 timeout(long timeout)
     {
-        subscriberBuilder.timeout(lockTime);
+        this.timeout = timeout;
         return this;
     }
 
     @Override
-    public JobWorkerBuilderStep3 timeout(Duration lockTime)
+    public JobWorkerBuilderStep3 timeout(Duration timeout)
     {
-        subscriberBuilder.timeout(lockTime.toMillis());
+        this.timeout = timeout.toMillis();
         return this;
     }
 
     @Override
-    public JobWorkerBuilderStep3 name(String lockOwner)
+    public JobWorkerBuilderStep3 name(String name)
     {
-        subscriberBuilder.worker(lockOwner);
+        this.worker = name;
         return this;
     }
 
     @Override
-    public JobWorkerBuilderStep3 bufferSize(int fetchSize)
+    public JobWorkerBuilderStep3 bufferSize(int bufferSize)
     {
-        subscriberBuilder.bufferSize(fetchSize);
+        this.bufferSize = bufferSize;
         return this;
     }
 
@@ -81,18 +91,26 @@ public class JobSubcriptionBuilder implements JobWorkerBuilderStep1, JobWorkerBu
     public JobWorkerBuilderStep3 handler(JobHandler handler)
     {
         EnsureUtil.ensureNotNull("handler", handler);
-        subscriberBuilder.jobHandler(handler);
+        this.jobHandler = handler;
         return this;
     }
 
     @Override
     public JobWorker open()
     {
-        final Future<JobSubscriberGroup> subscriberGroup = subscriberBuilder.build();
+        EnsureUtil.ensureNotNullOrEmpty("jobType", jobType);
+        EnsureUtil.ensureGreaterThan("timeout", timeout, 0L);
+        EnsureUtil.ensureNotNullOrEmpty("worker", worker);
+        EnsureUtil.ensureGreaterThan("jobFetchSize", bufferSize, 0);
+
+        final JobSubscriptionSpec subscription =
+                new JobSubscriptionSpec(topic, jobHandler, jobType, timeout, worker, bufferSize);
+
+        final Future<JobSubscriberGroup> group = subscriptionManager.openJobSubscription(subscription);
 
         try
         {
-            return subscriberGroup.get();
+            return group.get();
         }
         catch (InterruptedException | ExecutionException e)
         {

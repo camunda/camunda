@@ -17,7 +17,6 @@ package io.zeebe.client.impl.subscription;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Consumer;
 import java.util.function.ToIntFunction;
 
 import org.agrona.collections.Int2ObjectHashMap;
@@ -28,42 +27,23 @@ import io.zeebe.client.impl.Loggers;
 import io.zeebe.transport.RemoteAddress;
 
 @SuppressWarnings("rawtypes")
-public class EventSubscribers
+public class SubscriberGroups
 {
     protected static final Logger LOGGER = Loggers.SUBSCRIPTION_LOGGER;
 
     // partitionId => subscriberKey => subscription (subscriber keys are not guaranteed to be globally unique)
     protected Int2ObjectHashMap<Long2ObjectHashMap<Subscriber>> subscribers = new Int2ObjectHashMap<>();
 
-    protected final List<SubscriberGroup> pollableSubscriberGroups = new CopyOnWriteArrayList<>();
-    protected final List<SubscriberGroup> managedSubscriberGroups = new CopyOnWriteArrayList<>();
+    protected final List<SubscriberGroup> subscriberGroups = new CopyOnWriteArrayList<>();
 
-    public void addGroup(final SubscriberGroup subscription)
+    public void addGroup(final SubscriberGroup group)
     {
-        if (subscription.isManagedGroup())
-        {
-            addManagedGroup(subscription);
-        }
-        else
-        {
-            addPollableGroup(subscription);
-        }
-    }
-
-    private void addPollableGroup(final SubscriberGroup subscription)
-    {
-        this.pollableSubscriberGroups.add(subscription);
-    }
-
-    private void addManagedGroup(final SubscriberGroup subscription)
-    {
-        this.managedSubscriberGroups.add(subscription);
+        this.subscriberGroups.add(group);
     }
 
     public void closeAllGroups(String reason)
     {
-        forAllDoConsume(pollableSubscriberGroups, group -> group.initClose(reason, null));
-        forAllDoConsume(managedSubscriberGroups, group -> group.initClose(reason, null));
+        subscriberGroups.forEach(g -> g.initClose(reason, null));
     }
 
     public void add(Subscriber subscriber)
@@ -92,8 +72,7 @@ public class EventSubscribers
 
     public void removeGroup(SubscriberGroup group)
     {
-        pollableSubscriberGroups.remove(group);
-        managedSubscriberGroups.remove(group);
+        subscriberGroups.remove(group);
     }
 
     public Subscriber getSubscriber(final int partitionId, final long subscriberKey)
@@ -108,6 +87,11 @@ public class EventSubscribers
         return null;
     }
 
+    public void reopenSubscribersForRemote(RemoteAddress remote)
+    {
+        subscriberGroups.forEach(g -> g.reopenSubscriptionsForRemoteAsync(remote));
+    }
+
     private int forAllDo(List<SubscriberGroup> groups, ToIntFunction<SubscriberGroup> action)
     {
         int workCount = 0;
@@ -120,34 +104,14 @@ public class EventSubscribers
         return workCount;
     }
 
-    private void forAllDoConsume(List<SubscriberGroup> groups, Consumer<SubscriberGroup> action)
+    public int pollSubscribers()
     {
-        for (SubscriberGroup subscription : groups)
-        {
-            action.accept(subscription);
-        }
-    }
-
-    public void reopenSubscribersForRemote(RemoteAddress remote)
-    {
-        forAllDoConsume(managedSubscriberGroups, s -> s.reopenSubscriptionsForRemoteAsync(remote));
-        forAllDoConsume(pollableSubscriberGroups, s -> s.reopenSubscriptionsForRemoteAsync(remote));
-    }
-
-    public int pollManagedSubscribers()
-    {
-        return forAllDo(managedSubscriberGroups, s -> s.poll());
+        return forAllDo(subscriberGroups, s -> s.poll());
     }
 
     public boolean isAnySubscriberOpeningOn(int partitionId)
     {
-        return isAnySubscriberOpeningOn(managedSubscriberGroups, partitionId)
-                || isAnySubscriberOpeningOn(pollableSubscriberGroups, partitionId);
-    }
-
-    private boolean isAnySubscriberOpeningOn(List<SubscriberGroup> groups, int partitionId)
-    {
-        for (SubscriberGroup group : groups)
+        for (SubscriberGroup group : subscriberGroups)
         {
             if (group.isSubscribingTo(partitionId))
             {
@@ -157,4 +121,5 @@ public class EventSubscribers
 
         return false;
     }
+
 }

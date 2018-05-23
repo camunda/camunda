@@ -52,13 +52,10 @@ public class TopicSubscriptionSpec
     {
         return topic;
     }
+
     public CheckedConsumer<UntypedRecordImpl> getHandler()
     {
         return handler;
-    }
-    public boolean isManaged()
-    {
-        return handler != null;
     }
 
     public long getStartPosition(int partitionId)

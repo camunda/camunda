@@ -56,20 +56,10 @@ public class TopicSubscriber extends Subscriber
         this.lastProcessedEventPosition = subscription.getStartPosition(partitionId);
         this.lastAcknowledgedPosition = subscription.getStartPosition(partitionId);
 
-        if (subscription.isManaged())
-        {
-            eventHandlerAdapter = h -> h
-                .andThen(this::recordProcessedEvent)
-                .andOnExceptionRetry(MAX_HANDLING_RETRIES, this::logRetry)
-                .andOnException(this::logExceptionAndClose);
-        }
-        else
-        {
-            eventHandlerAdapter = h -> h
-                .andThen(this::recordProcessedEvent)
-                .andOnException(this::logExceptionAndPropagate);
-        }
-
+        eventHandlerAdapter = h -> h
+            .andThen(this::recordProcessedEvent)
+            .andOnExceptionRetry(MAX_HANDLING_RETRIES, this::logRetry)
+            .andOnException(this::logExceptionAndClose);
     }
 
     @Override
@@ -84,12 +74,6 @@ public class TopicSubscriber extends Subscriber
         disable();
 
         acquisition.closeGroup(group, "Event handling failed");
-    }
-
-    protected void logExceptionAndPropagate(UntypedRecordImpl event, Exception e)
-    {
-        logEventHandlingError(e, event, "Propagating exception to caller.");
-        throw new RuntimeException(e);
     }
 
     protected void logRetry(UntypedRecordImpl event, Exception e)

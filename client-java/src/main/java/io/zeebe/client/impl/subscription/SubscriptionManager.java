@@ -41,8 +41,8 @@ public class SubscriptionManager extends Actor implements SubscribedEventHandler
 
     protected final ZeebeClientImpl client;
 
-    private final EventSubscribers taskSubscribers = new EventSubscribers();
-    private final EventSubscribers topicSubscribers = new EventSubscribers();
+    private final SubscriberGroups taskSubscribers = new SubscriberGroups();
+    private final SubscriberGroups topicSubscribers = new SubscriberGroups();
 
     final IdleStrategy idleStrategy = new BackoffIdleStrategy(1000, 100, 1, TimeUnit.MILLISECONDS.toNanos(1));
     final ErrorHandler errorHandler = Throwable::printStackTrace;
@@ -211,7 +211,7 @@ public class SubscriptionManager extends Actor implements SubscribedEventHandler
     {
         final RecordMetadataImpl eventMetadata = event.getMetadata();
 
-        final EventSubscribers subscribers;
+        final SubscriberGroups subscribers;
 
         if (type == SubscriptionType.JOB_SUBSCRIPTION)
         {

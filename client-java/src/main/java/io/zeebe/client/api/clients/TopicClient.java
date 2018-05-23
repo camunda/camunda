@@ -56,7 +56,7 @@ public interface TopicClient
      *
      * <pre>
      * TopicSubscription subscription = subscriptionClient
-     *  .newTopicSubscription()
+     *  .newSubscription()
      *  .name("my-app")
      *  .workflowInstanceEventHandler(wfEventHandler)
      *  .open();

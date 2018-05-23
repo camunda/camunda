@@ -39,9 +39,8 @@ public interface TopicSubscriptionBuilderStep1
      * <p>
      * Example:
      * <pre>
-     * TopicSubscription subscription = subscriptionClient
-     *  .newTopicSubscription()
-     *  .managed()
+     * TopicSubscription subscription = topicClient
+     *  .newSubscription()
      *  .name("my-app")
      *  .workflowInstanceEventHandler(wfEventHandler)
      *  .startAtPosition(0)

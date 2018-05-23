@@ -22,7 +22,7 @@ import static org.mockito.Mockito.when;
 
 import org.junit.Test;
 
-import io.zeebe.client.impl.subscription.EventSubscribers;
+import io.zeebe.client.impl.subscription.SubscriberGroups;
 import io.zeebe.client.impl.subscription.SubscriptionExecutor;
 import io.zeebe.client.impl.subscription.job.JobSubscriberGroup;
 
@@ -32,14 +32,13 @@ public class JobExecutorTest
     public void shouldExecuteJobs() throws Exception
     {
         // given
-        final EventSubscribers subscriptions = new EventSubscribers();
+        final SubscriberGroups subscriptions = new SubscriberGroups();
 
         final JobSubscriberGroup subscription = mock(JobSubscriberGroup.class);
-        when(subscription.isManagedGroup()).thenReturn(true);
         when(subscription.poll()).thenReturn(34);
         subscriptions.addGroup(subscription);
 
-        final SubscriptionExecutor executor = new SubscriptionExecutor(subscriptions, new EventSubscribers());
+        final SubscriptionExecutor executor = new SubscriptionExecutor(subscriptions, new SubscriberGroups());
 
         // when
         final int workCount = executor.doWork();

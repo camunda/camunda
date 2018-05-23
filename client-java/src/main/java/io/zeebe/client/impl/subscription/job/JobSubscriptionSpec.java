@@ -73,11 +73,6 @@ public class JobSubscriptionSpec
         return capacity;
     }
 
-    public boolean isManaged()
-    {
-        return jobHandler != null;
-    }
-
     @Override
     public String toString()
     {

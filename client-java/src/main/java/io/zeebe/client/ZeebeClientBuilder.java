@@ -66,8 +66,8 @@ public interface ZeebeClientBuilder
     ZeebeClientBuilder numManagementThreads(int numManagementThreads);
 
     /**
-     * @param numSubscriptionThreads The number of threads for invocation of managed task and
-     * topic subscriptions. Setting this value to 0 effectively disables managed subscriptions.
+     * @param numSubscriptionThreads The number of threads for invocation of job workers and
+     * topic subscriptions. Setting this value to 0 effectively disables subscriptions and workers.
      * Default value is 1.
      */
     ZeebeClientBuilder numSubscriptionExecutionThreads(int numSubscriptionThreads);
