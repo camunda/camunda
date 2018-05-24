@@ -1,11 +1,11 @@
 # Control Flow
 
-A workflow can contain multiple tasks.
-The control flow defines when these tasks are executed (e.g., sequentially, in parallel, exclusively, etc.).
+A workflow can contain many tasks.
+Control flow defines the order in which these tasks are executed (e.g., sequentially, in parallel, exclusively, etc.).
 
 ## Sequences
 
-In a sequence, a task is created after the previous one is completed.
+In a sequence, a task is executed after the previous one is completed.
 The order of the sequence is implicitly defined by the order in the YAML file.
 
 ```yaml
@@ -22,7 +22,7 @@ tasks:
       type: shipment-service
 ```
 
-For example, the order-process starts with _collect-money_, followed by _fetch-items_ and ends with _ship-parcel_.
+For example, this workflow starts with _collect-money_, followed by _fetch-items_ and ends with _ship-parcel_.
 
 ## Conditional Flows
 

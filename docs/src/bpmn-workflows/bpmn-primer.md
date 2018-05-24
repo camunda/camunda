@@ -8,7 +8,7 @@ This is the corresponding XML: <a href="/bpmn-workflows/workflow.bpmn" target="_
 
 This duality makes BPMN very powerful. The XML document contains all the necessary information to be interpreted by workflow engines and modelling tools like Zeebe. At the same time, the visual representation contains just enough information to be quickly understood by humans, even when they are non-technical people. The BPMN model is source code and documentation in one artifact.
 
-The following is an introduction to BPMN 2.0, its elements and their execution semantics. It tries to briefly provide an intuitive understanding of BPMN's power, but does not cover the entire feature set. For more exhaustive BPMN resources, see the [reference links] at the end of this section.
+The following is an introduction to BPMN 2.0, its elements and their execution semantics. It tries to briefly provide an intuitive understanding of BPMN's power, but does not cover the entire feature set. For more exhaustive BPMN resources, see the [reference links](#additional-resources) at the end of this section.
 
 ## Modeling BPMN Diagrams
 
@@ -24,7 +24,7 @@ A core concept of BPMN is *sequence flow* that defines the order in which steps 
 ![workflow](/bpmn-workflows/sequenceflow.png)
 </center>
 
-You can think of workflow execution as tokens running through the workflow model. When a workflow is started, a token is spawned at the beginning of the model. It advances with every completed step. When the token reaches the end of the workflow, it is consumed and the workflow instance ends. Zeebe's job is to drive the token and to make sure that the task workers are invoked whenever necessary.
+You can think of workflow execution as tokens running through the workflow model. When a workflow is started, a token is spawned at the beginning of the model. It advances with every completed step. When the token reaches the end of the workflow, it is consumed and the workflow instance ends. Zeebe's task is to drive the token and to make sure that the job workers are invoked whenever necessary.
 
 <center>
 <video src="/bpmn-workflows/sequenceflow.mp4" autoplay muted loop height="200px"></video>
@@ -32,7 +32,7 @@ You can think of workflow execution as tokens running through the workflow model
 
 ### Tasks: Units of Work
 
-The basic elements of BPMN workflows are *tasks*, atomic units of work that are composed to create a meaningful result. Whenever a token reaches a task, the token stops and Zeebe notifies a registered task worker to perform work. When that handler signals completion, then the token continues on the outgoing sequence flow.
+The basic elements of BPMN workflows are *tasks*, atomic units of work that are composed to create a meaningful result. Whenever a token reaches a task, the token stops and Zeebe creates a job and notifies a registered worker to perform work. When that handler signals completion, then the token continues on the outgoing sequence flow.
 
 <center>
 <video src="/bpmn-workflows/tasks.mp4" autoplay muted loop height="300px"></video>
@@ -40,7 +40,7 @@ The basic elements of BPMN workflows are *tasks*, atomic units of work that are 
 
 Choosing the granularity of a task is up to the person modeling the workflow. For example, the activity of processing an order can be modeled as a single *Process Order* task, or as three individual tasks *Collect Money*, *Fetch Items*, *Ship Parcel*. If you use Zeebe to orchestrate microservices, one task can represent one microservice invocation.
 
-See the [Tasks](/bpmn-workflows/tasks.html) section on which types of gateways are currently supported and how to use them.
+See the [Tasks](/bpmn-workflows/tasks.html) section on which types of tasks are currently supported and how to use them.
 
 ### Gateways: Steering Flow
 

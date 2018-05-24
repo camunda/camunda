@@ -1,6 +1,6 @@
 # Logging
 
-The client uses SLF4J for logging. It logs useful things, such as exception stack traces when a task handler fails execution. Using SLF4J, any SLF4J implementation can be used. The following uses Log4J 2.
+The client uses SLF4J for logging. It logs useful things, such as exception stack traces when a job handler fails execution. Using the SLF4J API, any SLF4J implementation can be plugged in. The following example uses Log4J 2.
 
 ## Maven dependencies
 

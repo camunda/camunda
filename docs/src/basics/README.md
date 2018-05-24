@@ -4,8 +4,8 @@ This section provides an overview of Zeebe's core concepts. Understanding them h
 
 * [Client / Server](basics/client-server.html)
 * [Workflows](basics/workflows.html)
-* [Task Workers](basics/task-workers.html)
-* [Event Consumers](basics/event-consumers.html)
+* [Job Workers](basics/job-workers.html)
+* [Record Consumers](basics/record-consumers.html)
 * [Topics & Partitions](basics/topics-and-logs.html)
 * [Protocols](basics/apis.html)
 * [Internal Processing](basics/internal-processing.html)

@@ -4,7 +4,7 @@
 
 ![create-task](/bpmn-modeler/tasks/tasks4.png)
 
-## Configure Task Type
+## Configure Job Type
 
 ![task-type](/bpmn-modeler/tasks/tasks1.png)
 

@@ -30,6 +30,6 @@ Each broker in the cluster may be both leader and follower at the same time for 
 
 ## Commit
 
-Before a new event on a partition can be processed, it must be replicated to a quorum (typically majority) of followers. This procedure is called *commit*. Committing ensures that an event is durable even in case of complete data loss on an individual broker. The exact semantics of committing are defined by the raft protocol.
+Before a new record on a partition can be processed, it must be replicated to a quorum (typically majority) of followers. This procedure is called *commit*. Committing ensures that a record is durable even in case of complete data loss on an individual broker. The exact semantics of committing are defined by the raft protocol.
 
 ![cluster](/basics/commit.png)

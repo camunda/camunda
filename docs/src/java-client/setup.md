@@ -24,10 +24,9 @@ The version of the client should always match the broker's version.
 In Java code, instantiate the client as follows:
 
 ```java
-Properties clientProperties = new Properties();
-clientProperties.put(ClientProperties.BROKER_CONTACTPOINT, "127.0.0.1:51015");
-
-ZeebeClient client = ZeebeClient.create(clientProperties);
+ZeebeClient client = ZeebeClient.newClientBuilder()
+  .brokerContactPoint("127.0.0.1:51015")
+  .build();
 ```
 
-See the class `io.zeebe.ClientProperties` for a description of all client configuration properties.
+See the class `io.zeebe.client.ZeebeClientBuilder` for a description of all available configuration properties.

@@ -1,8 +1,6 @@
 # YAML Workflows
 
-Zeebe provides a YAML format to define plain workflows. It's an alternative to BPMN 2.0, but doesn't provide the same flexibility or a visual representation. Internally, a YAML workflow is transformed into a BPMN workflow.
-
-The targeted user group has a technical background and has no need for BPMN 2.0.
+In addition to BPMN, Zeebe provides a YAML format to define workflows. Creating a YAML workflow can be done with a regular text editor and does not require a graphical modelling tool. Internally, Zeebe transforms a deployed YAML file to BPMN.
 
 ```yaml
 name: order-process

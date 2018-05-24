@@ -1,30 +1,30 @@
 # Workflows
 
-Workflows are flow-chart-like blueprints that you can use to define the orchestration of loosely coupled *task workers*.
+Workflows are flow-chart-like blueprints that define the orchestration of *tasks*. Every task represents a piece of business logic such that their ordered execution produces a meaningful result.
 
-A task worker is your implementation of the business logic of a step in a workflow. It must embed a Zeebe client to connect to the broker but other than that there are no restrictions on its implementation. You can choose to write a worker as a microservice, as part of a classical three-tier application, as a \(lambda\) function, via command line tools, etc.
+A *job worker* is your implementation of the business logic of a task. It must embed a Zeebe client library to connect to the broker but other than that there are no restrictions on its implementation. You can choose to write a worker as a microservice, as part of a classical three-tier application, as a \(lambda\) function, via command line tools, etc.
 
-Running a workflow then requires two steps: Submitting the workflow to Zeebe and connecting the required task workers.
+Running a workflow then requires two steps: Submitting the workflow to Zeebe and connecting the required workers.
 
 ## Sequences
 
-The simplest kind of workflow is an ordered sequence of steps. Each step represents an invocation of a task worker.
+The simplest kind of workflow is an ordered sequence of tasks. Whenever workflow execution reaches a task, Zeebe creates a job and triggers the invocation of a job worker.
 
 ![workflow-sequence](/basics/workflow-sequence.png)
 
-You can think of Zeebe's workflow orchestration as a state machine. It starts at a particular step, triggers the worker and then waits for the worker to complete its work. Once the work is completed, it continues to the next step. If the worker fails to complete the work, it remains at the current step, potentially retrying until it eventually succeeds.
+You can think of Zeebe's workflow orchestration as a state machine. Orchestration reaches a task, triggers the worker and then waits for the worker to complete its work. Once the work is completed, the flow continues with the next step. If the worker fails to complete the work, the workflow remains at the current step, potentially retrying the job until it eventually succeeds.
 
 ## Data Flow
 
-As Zeebe progresses from one step to the next in a workflow, it can move custom data in the form of a JSON document along. This data is called the *workflow payload* and is created whenever a workflow is started.
+As Zeebe progresses from one task to the next in a workflow, it can move custom data in the form of a JSON document along. This data is called the *workflow payload* and is created whenever a workflow is started.
 
 ![data-flow](/basics/workflow-data-flow.png)
 
-Each task worker can read the current payload and modify it when completing a task so that data can be shared between different steps in a workflow. A workflow model can contain simple, yet powerful payload transformation instructions to keep task workers decoupled from each other.
+Every job worker can read the current payload and modify it when completing a job so that data can be shared between different tasks in a workflow. A workflow model can contain simple, yet powerful payload transformation instructions to keep workers decoupled from each other.
 
 ## Data-based Conditions
 
-Some workflows do not always execute the same steps but need to choose different steps based on payload and conditions:
+Some workflows do not always execute the same tasks but need to choose different tasks based on payload and conditions:
 
 ![data-conditions](/basics/workflow-conditions.png)
 
@@ -36,7 +36,7 @@ Conditions use [JSON Path](http://goessner.net/articles/JsonPath/) to extract pr
 
 > Coming soon
 
-In many cases, it is also useful to perform multiple steps in parallel. This can be achieved with Fork / Join concurrency.
+In many cases, it is also useful to perform multiple tasks in parallel. This can be achieved with Fork / Join concurrency.
 
 ## BPMN 2.0
 
