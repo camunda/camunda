@@ -22,7 +22,6 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import io.zeebe.transport.Loggers;
 import io.zeebe.util.ByteValue;
-import io.zeebe.util.sched.ActorThread;
 import org.slf4j.Logger;
 
 /**
@@ -59,11 +58,6 @@ public class BlockingMemoryPool implements TransportMemoryPool
     @Override
     public ByteBuffer allocate(int requestedCapacity)
     {
-        if (ActorThread.current() != null)
-        {
-            throw new RuntimeException("Cannot block actor thread. Please use different memory pool.");
-        }
-
         LOG.trace("Attempting to allocate {} bytes", requestedCapacity);
 
         final long deadline = System.currentTimeMillis() + maxBlockTimeMs;
