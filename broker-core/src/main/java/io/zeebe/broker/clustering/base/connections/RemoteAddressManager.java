@@ -17,37 +17,39 @@
  */
 package io.zeebe.broker.clustering.base.connections;
 
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.remoteAddressServiceName;
-import static io.zeebe.broker.transport.TransportServiceNames.*;
-
 import io.zeebe.broker.clustering.base.topology.*;
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.servicecontainer.*;
-import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.ClientTransport;
 
 /**
  * Listens to topology member changes and adds / removes the remote addresses of the member's
  * management and replication apis on the corresponding client transports.
  */
-public class RemoteAddressManager implements Service<Object>
+public class RemoteAddressManager implements Service<Object>, TopologyMemberListener
 {
     private final Injector<TopologyManager> topologyManagerInjector = new Injector<>();
-    private BrokerMembershipListener membershipListener;
+    private final Injector<ClientTransport> managementClientTransportInjector = new Injector<>();
+    private final Injector<ClientTransport> replicationClientTransportInjector = new Injector<>();
+
+    private TopologyManager topologyManager;
+    private ClientTransport managementClientTransport;
+    private ClientTransport replicationClientTransport;
 
     @Override
     public void start(ServiceStartContext startContext)
     {
-        membershipListener = new BrokerMembershipListener(startContext);
+        topologyManager = topologyManagerInjector.getValue();
+        managementClientTransport = managementClientTransportInjector.getValue();
+        replicationClientTransport = replicationClientTransportInjector.getValue();
 
-        topologyManagerInjector.getValue()
-            .addTopologyMemberListener(membershipListener);
+        topologyManager.addTopologyMemberListener(this);
     }
 
     @Override
     public void stop(ServiceStopContext stopContext)
     {
-        topologyManagerInjector.getValue()
-            .removeTopologyMemberListener(membershipListener);
+        topologyManager.removeTopologyMemberListener(this);
     }
 
     @Override
@@ -56,45 +58,38 @@ public class RemoteAddressManager implements Service<Object>
         return null;
     }
 
+    @Override
+    public void onMemberAdded(final NodeInfo memberInfo, final Topology topology)
+    {
+        managementClientTransport.registerRemoteAddress(memberInfo.getManagementApiAddress());
+        replicationClientTransport.registerRemoteAddress(memberInfo.getReplicationApiAddress());
+    }
+
+    @Override
+    public void onMemberRemoved(final NodeInfo memberInfo, final Topology topology)
+    {
+        managementClientTransport.deactivateRemoteAddress(
+            managementClientTransport.getRemoteAddress(memberInfo.getManagementApiAddress())
+        );
+
+        replicationClientTransport.deactivateRemoteAddress(
+            replicationClientTransport.getRemoteAddress(memberInfo.getReplicationApiAddress())
+        );
+    }
+
     public Injector<TopologyManager> getTopologyManagerInjector()
     {
         return topologyManagerInjector;
     }
 
-    class BrokerMembershipListener implements TopologyMemberListener
+    public Injector<ClientTransport> getManagementClientTransportInjector()
     {
-        private final ServiceStartContext serviceContext;
+        return managementClientTransportInjector;
+    }
 
-        BrokerMembershipListener(ServiceStartContext serviceContext)
-        {
-            this.serviceContext = serviceContext;
-        }
-
-        @Override
-        public void onMemberAdded(NodeInfo memberInfo, Topology topology)
-        {
-            final ServiceName<RemoteAddress> managementRemoteAddrServiceName = remoteAddressServiceName(memberInfo.getManagementApiAddress());
-            final RemoteAddressService managementRemoteAddrService = new RemoteAddressService(memberInfo.getManagementApiAddress());
-            serviceContext.createService(managementRemoteAddrServiceName, managementRemoteAddrService)
-                .dependency(clientTransport(MANAGEMENT_API_CLIENT_NAME), managementRemoteAddrService.getClientTransportInjector())
-                .install();
-
-            final ServiceName<RemoteAddress> replicationRemoteAddrServiceName = remoteAddressServiceName(memberInfo.getReplicationApiAddress());
-            final RemoteAddressService replicationRemoteAddrService = new RemoteAddressService(memberInfo.getReplicationApiAddress());
-            serviceContext.createService(replicationRemoteAddrServiceName, replicationRemoteAddrService)
-                .dependency(clientTransport(REPLICATION_API_CLIENT_NAME), replicationRemoteAddrService.getClientTransportInjector())
-                .install();
-        }
-
-        @Override
-        public void onMemberRemoved(NodeInfo memberInfo, Topology topology)
-        {
-            final ServiceName<RemoteAddress> managementRemoteAddrServiceName = remoteAddressServiceName(memberInfo.getManagementApiAddress());
-            serviceContext.removeService(managementRemoteAddrServiceName);
-
-            final ServiceName<RemoteAddress> replicationRemoteAddrServiceName = remoteAddressServiceName(memberInfo.getReplicationApiAddress());
-            serviceContext.removeService(replicationRemoteAddrServiceName);
-        }
+    public Injector<ClientTransport> getReplicationClientTransportInjector()
+    {
+        return replicationClientTransportInjector;
     }
 
 }

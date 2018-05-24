@@ -68,6 +68,8 @@ public class ClusterComponent implements Component
         final RemoteAddressManager remoteAddressManager = new RemoteAddressManager();
         baseLayerInstall.createService(REMOTE_ADDRESS_MANAGER_SERVICE, remoteAddressManager)
             .dependency(TOPOLOGY_MANAGER_SERVICE, remoteAddressManager.getTopologyManagerInjector())
+            .dependency(clientTransport(MANAGEMENT_API_CLIENT_NAME), remoteAddressManager.getManagementClientTransportInjector())
+            .dependency(clientTransport(REPLICATION_API_CLIENT_NAME), remoteAddressManager.getReplicationClientTransportInjector())
             .install();
 
         final ManagementApiRequestHandlerService managementApiRequestHandlerService = new ManagementApiRequestHandlerService(context.getBrokerConfiguration());

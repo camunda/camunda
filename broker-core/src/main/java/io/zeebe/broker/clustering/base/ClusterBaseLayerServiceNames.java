@@ -24,8 +24,6 @@ import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.gossip.Gossip;
 import io.zeebe.raft.Raft;
 import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.SocketAddress;
 
 public class ClusterBaseLayerServiceNames
 {
@@ -43,11 +41,6 @@ public class ClusterBaseLayerServiceNames
     public static final ServiceName<Object> RAFT_BOOTSTRAP_SERVICE = ServiceName.newServiceName("cluster.base.raft.bootstrap", Object.class);
     public static final ServiceName<RaftPersistentConfigurationManager> RAFT_CONFIGURATION_MANAGER = ServiceName.newServiceName("cluster.base.raft.configurationManager", RaftPersistentConfigurationManager.class);
     public static final ServiceName<Raft> RAFT_SERVICE_GROUP = ServiceName.newServiceName("cluster.base.raft.service", Raft.class);
-
-    public static ServiceName<RemoteAddress> remoteAddressServiceName(SocketAddress socketAddress)
-    {
-        return ServiceName.newServiceName(String.format("cluster.base.remoteAddress.%s", socketAddress.toString()), RemoteAddress.class);
-    }
 
     public static ServiceName<Void> raftInstallServiceName(final String topicName, int partitionId)
     {
