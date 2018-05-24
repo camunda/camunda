@@ -546,22 +546,26 @@ public class IncidentTest
         updatePayload(workflowInstanceKey, failureEvent.key(), asMsgPack("foo", 7).byteArray());
 
         // then
-        final List<SubscribedRecord> records = testClient
+        final List<SubscribedRecord> incidentRecords = testClient
+            .receiveRecords()
+            .limit(r -> r.valueType() == ValueType.INCIDENT && r.intent() == IncidentIntent.RESOLVED)
+            .collect(Collectors.toList());
+
+        final List<SubscribedRecord> workflowInstanceRecords = testClient
                 .receiveRecords()
                 .limit(r -> r.valueType() == ValueType.WORKFLOW_INSTANCE && r.intent() == WorkflowInstanceIntent.COMPLETED)
                 .collect(Collectors.toList());
 
-        // RESOLVE triggers GATEWAY_ACTIVATED, SEQUENCE_FLOW_TAKEN and RESOLVED
-        assertThat(records).extracting(r -> r.recordType(), r -> r.valueType(), r -> r.intent())
+        // RESOLVE triggers RESOLVED
+        assertThat(incidentRecords).extracting(r -> r.recordType(), r -> r.valueType(), r -> r.intent())
             .containsSubsequence(
                 tuple(RecordType.COMMAND, ValueType.INCIDENT, IncidentIntent.RESOLVE),
-                tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.GATEWAY_ACTIVATED),
-                tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
                 tuple(RecordType.EVENT, ValueType.INCIDENT, IncidentIntent.RESOLVED));
 
-        // SEQUENCE_FLOW_TAKEN triggers the rest of the process
-        assertThat(records).extracting(r -> r.recordType(), r -> r.valueType(), r -> r.intent())
+        // GATEWAY_ACTIVATED triggers SEQUENCE_FLOW_TAKEN, END_EVENT_OCCURED and COMPLETED
+        assertThat(workflowInstanceRecords).extracting(r -> r.recordType(), r -> r.valueType(), r -> r.intent())
             .containsSubsequence(
+                tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.GATEWAY_ACTIVATED),
                 tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
                 tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.END_EVENT_OCCURRED),
                 tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.COMPLETED));
