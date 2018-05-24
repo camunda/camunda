@@ -179,13 +179,14 @@ public class ClientTopologyManager extends Actor
 
     private void onNewTopology(Topology response)
     {
-        this.topology.set(new ClusterStateImpl(response, transport::registerRemoteAddress));
-        completeRefreshFutures();
+        final ClusterStateImpl newClusterState = new ClusterStateImpl(response, transport::registerRemoteAddress);
+        this.topology.set(newClusterState);
+        completeRefreshFutures(newClusterState);
     }
 
-    private void completeRefreshFutures()
+    private void completeRefreshFutures(ClusterStateImpl newClusterState)
     {
-        nextTopologyFutures.forEach(f -> f.complete(topology.get()));
+        nextTopologyFutures.forEach(f -> f.complete(newClusterState));
         nextTopologyFutures.clear();
     }
 

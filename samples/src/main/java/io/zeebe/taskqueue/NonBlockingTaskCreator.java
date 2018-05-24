@@ -15,20 +15,10 @@
  */
 package io.zeebe.taskqueue;
 
-import java.util.Enumeration;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map.Entry;
 import java.util.Properties;
-import java.util.TreeMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.clients.JobClient;
-import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 
 public class NonBlockingTaskCreator
@@ -70,87 +60,17 @@ public class NonBlockingTaskCreator
 
             long tasksCreated = 0;
 
-            final List<Future<JobEvent>> inFlightRequests = new LinkedList<>();
-
             while (tasksCreated < tasks)
             {
-
-                final ZeebeFuture<JobEvent> responseFuture = jobClient
-                    .newCreateCommand()
+                jobClient.newCreateCommand()
                     .jobType("greeting")
                     .addCustomHeader("some", "value")
                     .payload(payload)
                     .send();
-
-                inFlightRequests.add(responseFuture);
                 tasksCreated++;
-
-                poll(inFlightRequests);
             }
-
-            awaitAll(inFlightRequests);
 
             System.out.println("Took: " + (System.currentTimeMillis() - time));
-
-        }
-
-    }
-
-    private static void awaitAll(List<Future<JobEvent>> inFlightRequests)
-    {
-        while (!inFlightRequests.isEmpty())
-        {
-            poll(inFlightRequests);
         }
     }
-
-    private static void poll(List<Future<JobEvent>> inFlightRequests)
-    {
-        final Iterator<Future<JobEvent>> iterator = inFlightRequests.iterator();
-        while (iterator.hasNext())
-        {
-            final Future<JobEvent> future = iterator.next();
-            if (future.isDone())
-            {
-                try
-                {
-                    future.get();
-                }
-                catch (InterruptedException e)
-                {
-                    e.printStackTrace();
-                }
-                catch (ExecutionException e)
-                {
-                    e.printStackTrace();
-                }
-                finally
-                {
-                    iterator.remove();
-                }
-            }
-        }
-    }
-
-    private static void printProperties(Properties properties)
-    {
-        System.out.println("Client configuration:");
-
-        final TreeMap<String, String> sortedProperties = new TreeMap<>();
-
-        final Enumeration<?> propertyNames = properties.propertyNames();
-        while (propertyNames.hasMoreElements())
-        {
-            final String key = (String) propertyNames.nextElement();
-            final String value = properties.getProperty(key);
-            sortedProperties.put(key, value);
-        }
-
-        for (Entry<String, String> property : sortedProperties.entrySet())
-        {
-            System.out.println(String.format("%s: %s", property.getKey(), property.getValue()));
-        }
-
-    }
-
 }

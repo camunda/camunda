@@ -121,7 +121,7 @@ public class ZeebeClientImpl implements ZeebeClient
         }
 
         transport = transportBuilder.build();
-        internalTransport = transportBuilder.build();
+        internalTransport = internalTransportBuilder.build();
 
         this.msgPackConverter = new MsgPackConverter();
         this.objectMapper = new ZeebeObjectMapperImpl(msgPackConverter);
