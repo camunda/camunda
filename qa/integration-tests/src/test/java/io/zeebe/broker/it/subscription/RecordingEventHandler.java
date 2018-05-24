@@ -22,8 +22,6 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.zeebe.client.api.record.Record;
 import io.zeebe.client.api.record.RecordMetadata;
 import io.zeebe.client.api.record.ValueType;
@@ -33,8 +31,6 @@ public class RecordingEventHandler implements RecordHandler
 {
 
     protected List<Record> records = new CopyOnWriteArrayList<>();
-    protected ObjectMapper objectMapper = new ObjectMapper();
-
 
     @Override
     public void onRecord(Record event)

@@ -20,7 +20,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import io.zeebe.client.api.commands.Partition;
+import io.zeebe.client.api.record.Record;
+import io.zeebe.client.api.record.RecordMetadata;
+import io.zeebe.client.api.record.RecordType;
+import io.zeebe.client.api.record.ValueType;
+import io.zeebe.protocol.intent.RaftIntent;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -72,7 +79,7 @@ public class SubscriptionClusteredTest
 
         // when
         final Integer[] partitionIds = topic.getPartitions().stream()
-                                            .mapToInt(p -> p.getId())
+                                            .mapToInt(Partition::getId)
                                             .boxed()
                                             .toArray(Integer[]::new);
 
@@ -83,12 +90,10 @@ public class SubscriptionClusteredTest
         createJobOnPartition(topicName, partitionIds[4]);
 
         // and
-        final RecordingEventHandler recordHandler = new RecordingEventHandler();
         final List<Integer> receivedPartitionIds = new ArrayList<>();
         client.topicClient(topicName)
               .newSubscription()
               .name("SubscriptionName")
-              .recordHandler(recordHandler)
               .jobEventHandler(e ->
               {
                   if (e.getState() == JobState.CREATED)
@@ -104,6 +109,46 @@ public class SubscriptionClusteredTest
         waitUntil(() -> receivedPartitionIds.size() == PARTITION_COUNT);
 
         assertThat(receivedPartitionIds).containsExactlyInAnyOrder(partitionIds);
+    }
+
+    @Test
+    public void shouldReceiveRaftEvents()
+    {
+        // given
+        final String topicName = "test";
+        final int partitions = 1;
+        final int replicationFactor = clusteringRule.getBrokersInCluster().size();
+
+        clusteringRule.createTopic(topicName, partitions, replicationFactor);
+
+        // when
+        final RecordingEventHandler eventRecorder = new RecordingEventHandler();
+        client.topicClient(topicName)
+            .newSubscription()
+            .name("test-subscription")
+            .recordHandler(eventRecorder)
+            .startAtHeadOfTopic()
+            .open();
+
+        // then we should receive two raft add member events
+        waitUntil(() -> eventRecorder.numRaftRecords() == 2);
+
+        final List<RecordMetadata> raftRecords = eventRecorder.getRecords()
+            .stream()
+            .map(Record::getMetadata)
+            .filter(m -> m.getValueType() == ValueType.RAFT)
+            .collect(Collectors.toList());
+
+        assertThat(raftRecords.size()).isEqualTo(2);
+        for (final RecordMetadata raftRecord : raftRecords)
+        {
+            assertThat(raftRecord)
+                .hasFieldOrPropertyWithValue("valueType", ValueType.RAFT)
+                .hasFieldOrPropertyWithValue("recordType", RecordType.EVENT)
+                .hasFieldOrPropertyWithValue("intent", RaftIntent.ADD_MEMBER.name());
+        }
+
+        // TODO: extend test to contain remove member event, this is currently not possible
     }
 
     protected void createJobOnPartition(String topic, int partition)
