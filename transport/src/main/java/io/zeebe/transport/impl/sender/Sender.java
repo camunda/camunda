@@ -40,6 +40,8 @@ import org.slf4j.Logger;
 
 public class Sender extends Actor implements TimerHandler
 {
+    private static final int MAX_REQUEST_CONSUME_BATCH_SIZE = 10_000;
+
     private static final int DEFAULT_BATCH_SIZE = (int) ByteValue.ofKilobytes(128).toBytes();
 
     private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
@@ -117,11 +119,13 @@ public class Sender extends Actor implements TimerHandler
                 onResponseReceived(response);
             }
         }
+
+        sendNext();
     }
 
     private void processSubmittedRequests()
     {
-        while (!submittedRequests.isEmpty())
+        for (int i = 0; i < MAX_REQUEST_CONSUME_BATCH_SIZE && !submittedRequests.isEmpty(); i++)
         {
             final OutgoingRequest request = submittedRequests.poll();
 
