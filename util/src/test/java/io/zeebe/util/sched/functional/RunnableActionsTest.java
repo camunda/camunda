@@ -15,18 +15,28 @@
  */
 package io.zeebe.util.sched.functional;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-import io.zeebe.util.sched.*;
-import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.InOrder;
+
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.ActorThread;
+import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 
 public class RunnableActionsTest
 {
@@ -182,6 +192,50 @@ public class RunnableActionsTest
         inOrder.verify(runUntilDoneAction, times(5)).accept(any());
         inOrder.verify(otherAction, times(5)).run();
         inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    public void shouldSubmitFromAnotherActor()
+    {
+        // given
+        final AtomicInteger invocations = new AtomicInteger();
+        final AtomicBoolean exceptionOnSubmit = new AtomicBoolean(false);
+
+        final Submitter submitter = new Submitter();
+
+        final Actor actor = new Actor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                try
+                {
+                    submitter.submit(invocations::incrementAndGet);
+                }
+                catch (Exception e)
+                {
+                    exceptionOnSubmit.set(true);
+                }
+            }
+        };
+
+        scheduler.submitActor(submitter);
+        scheduler.submitActor(actor);
+
+        // when
+        scheduler.workUntilDone();
+
+        // then
+        assertThat(invocations).hasValue(1);
+        assertThat(exceptionOnSubmit).isFalse();
+    }
+
+    class Submitter extends Actor
+    {
+        public void submit(Runnable r)
+        {
+            this.actor.submit(r);
+        }
     }
 
     class Runner extends Actor

@@ -263,14 +263,24 @@ public class ActorControl
     public void submit(Runnable action)
     {
         final ActorThread currentActorRunner = ensureCalledFromActorThread("run(...)");
+        final ActorTask currentTask = currentActorRunner.getCurrentTask();
 
-        final ActorJob job = currentActorRunner.newJob();
+        final ActorJob job;
+        if (currentTask == this.task)
+        {
+            job = currentActorRunner.newJob();
+        }
+        else
+        {
+            job = new ActorJob();
+        }
+
         job.setRunnable(action);
         job.setAutoCompleting(true);
         job.onJobAddedToTask(task);
         task.submit(job);
 
-        if (currentActorRunner.getCurrentJob().getActor() == this.actor)
+        if (currentTask == this.task)
         {
             yield();
         }
