@@ -16,9 +16,7 @@
 package io.zeebe.client;
 
 import io.zeebe.client.api.clients.TopicClient;
-import io.zeebe.client.api.commands.CreateTopicCommandStep1;
-import io.zeebe.client.api.commands.TopicsRequestStep1;
-import io.zeebe.client.api.commands.TopologyRequestStep1;
+import io.zeebe.client.api.commands.*;
 import io.zeebe.client.api.record.ZeebeObjectMapper;
 import io.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
@@ -115,7 +113,7 @@ public interface ZeebeClient extends AutoCloseable
      * of which partition.
      *
      * <pre>
-     * List&#60;BrokerInfo&#62; topics = zeebeClient
+     * List&#60;BrokerInfo&#62; brokers = zeebeClient
      *  .newTopologyRequest()
      *  .send()
      *  .join()

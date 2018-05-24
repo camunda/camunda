@@ -26,7 +26,7 @@ public class GetWorkflowControlRequest extends UnpackedObject
     private LongProperty workflowKeyProp = new LongProperty("workflowKey", -1);
     private IntegerProperty versionProp = new IntegerProperty("version", -1);
     private StringProperty topicNameProp = new StringProperty("topicName");
-    private StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId");
+    private StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
 
     public GetWorkflowControlRequest()
     {

@@ -24,6 +24,8 @@ import io.zeebe.client.api.events.WorkflowInstanceEvent;
  * <li>create a workflow instance
  * <li>cancel a workflow instance
  * <li>update the payload of a workflow instance
+ * <li>request a workflow resource
+ * <li>request all deployed workflows
  */
 public interface WorkflowClient
 {
@@ -104,4 +106,44 @@ public interface WorkflowClient
      * @return a builder for the command
      */
     UpdatePayloadWorkflowInstanceCommandStep1 newUpdatePayloadCommand(WorkflowInstanceEvent event);
+
+    /**
+     * Request to get the resource of a workflow (i.e. the XML representation).
+     *
+     * <pre>
+     * WorkflowResource resource = workflowClient
+     *  .newResourceRequest()
+     *  .bpmnProcessId("my-process")
+     *  .lastestVersion()
+     *  .send()
+     *  .join();
+     *
+     * String bpmnXml = resoure.getBpmnXml();
+     * </pre>
+     *
+     * @return a builder of the request
+     */
+    WorkflowResourceRequestStep1 newResourceRequest();
+
+    /**
+     * Request to get all deployed workflows.
+     *
+     * <pre>
+     * List&#60;Workflow&#62; workflows = workflowClient
+     *  .newWorkflowRequest()
+     *  .send()
+     *  .join()
+     *  .getWorkflows();
+     *
+     * String bpmnProcessId = workflow.getBpmnProcessId();
+     * </pre>
+     *
+     * The response does not contain the resources of the workflows. Use
+     * {@link #newWorkflowResourceRequest()} to get the resource of a workflow.
+     *
+     * @see #newWorkflowResourceRequest()
+     *
+     * @return a builder of the request
+     */
+    WorkflowRequestStep1 newWorkflowRequest();
 }

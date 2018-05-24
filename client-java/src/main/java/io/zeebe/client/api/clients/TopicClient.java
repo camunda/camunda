@@ -28,6 +28,8 @@ public interface TopicClient
      * <li>create a workflow instance
      * <li>cancel a workflow instance
      * <li>update the payload of a workflow instance
+     * <li>request a workflow resource
+     * <li>request all deployed workflows
      *
      * @return a client with access to all workflow-related operations.
      */
@@ -55,7 +57,8 @@ public interface TopicClient
      * starts publishing at the next event/command.
      *
      * <pre>
-     * TopicSubscription subscription = subscriptionClient
+     * TopicSubscription subscription = zeebeClient
+     *  .topicClient()
      *  .newSubscription()
      *  .name("my-app")
      *  .workflowInstanceEventHandler(wfEventHandler)

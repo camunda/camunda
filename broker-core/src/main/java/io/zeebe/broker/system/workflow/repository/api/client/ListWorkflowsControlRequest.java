@@ -24,7 +24,7 @@ import org.agrona.DirectBuffer;
 public class ListWorkflowsControlRequest extends UnpackedObject
 {
     private StringProperty topicNameProp = new StringProperty("topicName");
-    private StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId");
+    private StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
 
     public ListWorkflowsControlRequest()
     {

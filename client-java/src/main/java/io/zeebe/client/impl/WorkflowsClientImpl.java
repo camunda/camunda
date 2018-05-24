@@ -53,4 +53,16 @@ public class WorkflowsClientImpl implements WorkflowClient
         return new UpdatePayloadCommandImpl(client.getCommandManager(), event);
     }
 
+    @Override
+    public WorkflowResourceRequestStep1 newResourceRequest()
+    {
+        return new WorkflowResourceRequestImpl(client.getCommandManager(), client.getTopic());
+    }
+
+    @Override
+    public WorkflowRequestStep1 newWorkflowRequest()
+    {
+        return new WorkflowRequestImpl(client.getCommandManager(), client.getTopic());
+    }
+
 }

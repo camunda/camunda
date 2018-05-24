@@ -102,7 +102,7 @@ public class WorkflowRepositoryClientApiTest
     public void shouldNotGetWorkflowByNonExistingBpmnProcessKey()
     {
         expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage("NOT_FOUND - No workflow found with bpmnProcessId 'notExisting'");
+        expectedException.expectMessage("NOT_FOUND - No workflow found with BPMN process id 'notExisting'");
 
         apiRule.createControlMessageRequest()
             .messageType(ControlMessageType.GET_WORKFLOW)
@@ -119,7 +119,7 @@ public class WorkflowRepositoryClientApiTest
     public void shouldNotGetWorkflowByNonExistingBpmnProcessKeyAndVersion()
     {
         expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage("NOT_FOUND - No workflow found with bpmnProcessId 'notExisting' and version '99'");
+        expectedException.expectMessage("NOT_FOUND - No workflow found with BPMN process id 'notExisting' and version '99'");
 
         apiRule.createControlMessageRequest()
             .messageType(ControlMessageType.GET_WORKFLOW)
@@ -138,7 +138,7 @@ public class WorkflowRepositoryClientApiTest
         apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, WORKFLOW);
 
         expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage("NOT_FOUND - No workflow found with bpmnProcessId 'process' and version '99'");
+        expectedException.expectMessage("NOT_FOUND - No workflow found with BPMN process id 'process' and version '99'");
 
         apiRule.createControlMessageRequest()
             .messageType(ControlMessageType.GET_WORKFLOW)

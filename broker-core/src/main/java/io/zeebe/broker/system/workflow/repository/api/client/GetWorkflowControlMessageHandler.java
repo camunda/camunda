@@ -19,8 +19,6 @@ package io.zeebe.broker.system.workflow.repository.api.client;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.agrona.DirectBuffer;
-
 import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex.WorkflowMetadata;
 import io.zeebe.broker.system.workflow.repository.service.WorkflowRepositoryService;
 import io.zeebe.broker.transport.controlmessage.AbstractControlMessageHandler;
@@ -33,6 +31,7 @@ import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.collection.Tuple;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
+import org.agrona.DirectBuffer;
 
 public class GetWorkflowControlMessageHandler extends AbstractControlMessageHandler
 {
@@ -83,12 +82,12 @@ public class GetWorkflowControlMessageHandler extends AbstractControlMessageHand
                 if (version == -1)
                 {
                     future = repository.getLatestWorkflowByBpmnProcessId(topicName, bpmnProcessId);
-                    errorMessage = String.format("No workflow found with bpmnProcessId '%s'", bpmnProcessId);
+                    errorMessage = String.format("No workflow found with BPMN process id '%s'", bpmnProcessId);
                 }
                 else
                 {
                     future = repository.getWorkflowByBpmnProcessIdAndVersion(topicName, bpmnProcessId, version);
-                    errorMessage = String.format("No workflow found with bpmnProcessId '%s' and version '%d'", bpmnProcessId, version);
+                    errorMessage = String.format("No workflow found with BPMN process id '%s' and version '%d'", bpmnProcessId, version);
                 }
             }
 
