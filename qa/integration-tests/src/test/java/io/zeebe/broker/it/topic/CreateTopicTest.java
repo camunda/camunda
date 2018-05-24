@@ -126,7 +126,7 @@ public class CreateTopicTest
             .replicationFactor(1)
             .send();
 
-        clientRule.waitUntilTopicsExists("foo");
+        clientRule.waitUntilTopicsExists("default-topic", "foo");
 
         // when
         final Map<String, List<Partition>> topics = clientRule.topicsByName();
