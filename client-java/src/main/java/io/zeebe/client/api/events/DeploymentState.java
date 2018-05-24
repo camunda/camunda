@@ -17,10 +17,5 @@ package io.zeebe.client.api.events;
 
 public enum DeploymentState
 {
-    CREATED,
-
-    VALIDATED,
-    DISTRIBUTED,
-
-    TIMED_OUT
+    CREATED
 }
