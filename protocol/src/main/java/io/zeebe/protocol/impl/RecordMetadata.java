@@ -235,8 +235,7 @@ public class RecordMetadata implements BufferWriter, BufferReader
     @Override
     public String toString()
     {
-        return "BrokerEventMetadata{" + "requestStreamId=" + requestStreamId + ", requestId=" + requestId +
-            ", subscriberKey=" + subscriberKey + ", protocolVersion=" + protocolVersion + ", eventType=" + valueType +
-            ", incidentKey=" + incidentKey + '}';
+        return "RecordMetadata{" + "recordType=" + recordType + ", intentValue=" + intentValue + ", intent=" + intent + ", requestStreamId=" + requestStreamId +
+            ", requestId=" + requestId + ", subscriberKey=" + subscriberKey + ", valueType=" + valueType + ", incidentKey=" + incidentKey + '}';
     }
 }
