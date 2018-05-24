@@ -102,13 +102,16 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
 
         final CompositeServiceBuilder partitionInstall = startContext.createComposite(raftInstallServiceName);
 
+        final String snapshotPath = configuration.getSnapshotsDirectory().getAbsolutePath();
+
         logStreamServiceName = LogStreams.createFsLogStream(topicName, partitionId)
             .logDirectory(configuration.getLogDirectory().getAbsolutePath())
             .logSegmentSize((int) configuration.getLogSegmentSize())
             .logName(logName)
+            .snapshotStorage(LogStreams.createFsSnapshotStore(snapshotPath).build())
             .buildWith(partitionInstall);
 
-        final SnapshotStorageService snapshotStorageService = new SnapshotStorageService(configuration.getSnapshotsDirectory().getAbsolutePath());
+        final SnapshotStorageService snapshotStorageService = new SnapshotStorageService(snapshotPath);
         snapshotStorageServiceName = snapshotStorageServiceName(logName);
         partitionInstall.createService(snapshotStorageServiceName, snapshotStorageService)
             .install();
