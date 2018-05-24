@@ -12,6 +12,11 @@ the need to write a single line of code.
 1. [Deploy a workflow](#step-7-deploy-a-workflow)
 1. [Create a workflow instance](#step-8-create-a-workflow-instance)
 1. [Complete the workflow instance](#step-9-complete-the-workflow-instance)
+1. [Next steps](#next-steps)
+
+> **Note:** Some command examples might not work on Windows if you use cmd or
+> Powershell. For Windows users we recommend to use a bash-like shell, i.e. Git
+> Bash, Cygwin or MinGW for this guide.
 
 ## Step 1: Download the Zeebe distribution
 
@@ -112,6 +117,11 @@ execute the action required for this work item. In this example we will set the
 payload to contain the key `zeebe` and the value `2018`. When we create the
 task we have to specify on which topic the task should be created.
 
+> **Note:** Windows users who want to execute this command using cmd or Powershell
+> have to escape the payload differently.
+> - cmd: `"{\"zeebe\": 2018}"`
+> - Powershell: `'{"\"zeebe"\": 2018}'`
+
 ```
 $ ./bin/zbctl --topic quickstart create task step4 --payload '{"zeebe": 2018}'
 {
@@ -145,6 +155,10 @@ on standard input. And has to return the updated payload on standard output.
 The simplest task handler is `cat`, which is a unix command that just outputs
 its input without modifying it.
 
+> **Note:** For Windows users this command does not work with cmd as the `cat`
+> command does not exist. We recommend to use Powershell or a bash-like shell
+> to execute this command.
+
 ```
 $ ./bin/zbctl --topic quickstart subscribe task --taskType step4 cat
 {
@@ -171,6 +185,11 @@ This command creates a task subscription on the topic `quickstart` for the task
 type `step4`. So whenever a new task of this type is created the broker will
 push the task to this worker. You can try it out by opening another terminal
 and repeat the command from [step 4](#step-4-create-a-task) multiple times.
+
+> **Note:** Windows users who want to execute this command using cmd or Powershell
+> have to escape the payload differently.
+> - cmd: `"{\"zeebe\": 2018}"`
+> - Powershell: `'{"\"zeebe"\": 2018}'`
 
 ```
 $ ./bin/zbctl --topic quickstart create task step4 --payload '{"zeebe": 2018}'
@@ -258,7 +277,9 @@ To stop the topic subscription press CTRL-C.
 A [workflow](basics/workflows.html) is used to orchestrate loosely coupled task
 workers and the flow of data between them.
 
-In this guide we will use an example process [order-process.bpmn](introduction/order-process.bpmn).
+In this guide we will use an example process `order-process.bpmn`. You can
+download it with the following link:
+[order-process.bpmn](introduction/order-process.bpmn).
 
 ![order-process](introduction/order-process.png)
 
@@ -324,6 +345,11 @@ our case the ID is `order-process`.
 Every instance of a workflow normaly processes some kind of data. We can
 specify the initial data of the instance as payload when we start the instance.
 
+> **Note:** Windows users who want to execute this command using cmd or Powershell
+> have to escape the payload differently.
+> - cmd: `"{\"orderId\": 1234}"`
+> - Powershell: `'{"\"orderId"\": 1234}'`
+
 ```
 $ ./bin/zbctl --topic quickstart create instance order-process --payload '{"orderId": 1234}'
 {
@@ -341,6 +367,10 @@ To complete the instance all three tasks have to be completed. Therefore we
 need three task workers. Let's again use our simple `cat` worker for all three
 task types. Start a task worker for all three task types as a background process
 (`&`).
+
+> **Note:** For Windows users these commands do not work with cmd as the `cat`
+> command does not exist. We recommend to use Powershell or a bash-like shell
+> to execute these commands.
 
 ```
 $ ./bin/zbctl --topic quickstart subscribe task --taskType payment-service cat &
@@ -381,6 +411,11 @@ we started in [step 8](#step-8-create-a-workflow-instance) was now completed.
 We can now start new instances in another terminal with the command from [step
 8](#step-8-create-a-workflow-instance).
 
+> **Note:** Windows users who want to execute this command using cmd or Powershell
+> have to escape the payload differently.
+> - cmd: `"{\"orderId\": 1234}"`
+> - Powershell: `'{"\"orderId"\": 1234}'`
+
 ```
 $ ./bin/zbctl --topic quickstart create instance order-process --payload '{"orderId": 1234}'
 ```
@@ -392,3 +427,16 @@ subscriptions.
 ```
 kill %1 %2 %3
 ```
+
+## Next steps
+
+To continue working with Zeebe we recommend to get more familiar with the basic
+concepts of Zeebe, see the [Basics chapter](basics/README.html) of the
+documentation.
+
+In the [BPMN Workflows chapter](bpmn-workflows/README.html) you can find an
+introduction to creating Workflows with BPMN. And the [BPMN Modeler
+chapter](bpmn-modeler/README.html) shows you how to model them by yourself.
+
+The documentation also provides getting started guides for implementing job
+workers using [Java](java-client/README.html) or [Go](go-client/README.html).
