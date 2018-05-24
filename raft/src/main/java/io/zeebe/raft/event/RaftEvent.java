@@ -20,8 +20,10 @@ import java.util.List;
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.value.ValueArray;
+import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.intent.RaftIntent;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftMember;
 
@@ -30,6 +32,8 @@ public class RaftEvent
     public final LogStreamWriter logStreamWriter = new LogStreamWriterImpl();
     public final RecordMetadata metadata = new RecordMetadata();
     public final RaftConfigurationEvent configuration = new RaftConfigurationEvent();
+
+    public RaftIntent intent;
 
     public RaftEvent reset()
     {
@@ -40,11 +44,20 @@ public class RaftEvent
         return this;
     }
 
+    public RaftEvent setIntent(final RaftIntent intent)
+    {
+        this.intent = intent;
+        return this;
+    }
+
     public long tryWrite(final Raft raft)
     {
         logStreamWriter.wrap(raft.getLogStream());
 
-        metadata.reset().valueType(ValueType.RAFT);
+        metadata.reset()
+            .valueType(ValueType.RAFT)
+            .recordType(RecordType.EVENT)
+            .intent(intent);
 
         configuration.reset();
 

@@ -16,6 +16,7 @@
 package io.zeebe.raft.controller;
 
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.protocol.intent.RaftIntent;
 import io.zeebe.raft.Loggers;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.event.RaftEvent;
@@ -68,12 +69,13 @@ public class AppendRaftEventController
         }
     }
 
-    public void prepare(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId)
+    public void prepare(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId, final RaftIntent intent)
     {
         this.serverOutput = serverOutput;
         this.remoteAddress = remoteAddress;
         this.requestId = requestId;
         this.isHandlingConfigurationChange = true;
+        this.raftEvent.setIntent(intent);
     }
 
     public void reset()
