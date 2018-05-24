@@ -92,6 +92,22 @@ public class JobSubscriptionManager extends Actor implements TransportListener
         return NAME;
     }
 
+    @Override
+    protected void onActorStarted()
+    {
+        creditsSubscription = actor.consume(creditRequestBuffer, this::consumeCreditsRequest);
+    }
+
+    @Override
+    protected void onActorClosing()
+    {
+        if (creditsSubscription != null)
+        {
+            creditsSubscription.cancel();
+            creditsSubscription = null;
+        }
+    }
+
     public ActorFuture<Void> addSubscription(final JobSubscription subscription)
     {
         final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
@@ -120,8 +136,6 @@ public class JobSubscriptionManager extends Actor implements TransportListener
                 {
                     if (throwable == null)
                     {
-                        creditsSubscription = actor.consume(creditRequestBuffer, this::consumeCreditsRequest);
-
                         future.complete(null);
                     }
                     else
@@ -148,8 +162,6 @@ public class JobSubscriptionManager extends Actor implements TransportListener
                         {
                             if (throwable == null)
                             {
-                                creditsSubscription = actor.consume(creditRequestBuffer, this::consumeCreditsRequest);
-
                                 future.complete(null);
                             }
                             else
@@ -188,12 +200,6 @@ public class JobSubscriptionManager extends Actor implements TransportListener
         final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
         actor.call(() ->
         {
-            if (creditsSubscription != null)
-            {
-                creditsSubscription.cancel();
-                creditsSubscription = null;
-            }
-
             final ActivateJobStreamProcessor streamProcessor = streamProcessorBySubscriptionId.remove(subscriptionId);
             if (streamProcessor != null)
             {
@@ -275,15 +281,18 @@ public class JobSubscriptionManager extends Actor implements TransportListener
     public void consumeCreditsRequest()
     {
         dispatchBackpressuredSubscriptionCredits();
-        creditRequestBuffer.read((msgTypeId, buffer, index, length) ->
+        if (backPressuredCreditsRequests.size() == 0)
         {
-            creditsRequest.wrap(buffer, index, length);
-            final boolean dispatched = dispatchSubscriptionCredits(creditsRequest);
-            if (!dispatched)
+            creditRequestBuffer.read((msgTypeId, buffer, index, length) ->
             {
-                backpressureRequest(creditsRequest);
-            }
-        }, 1);
+                creditsRequest.wrap(buffer, index, length);
+                final boolean dispatched = dispatchSubscriptionCredits(creditsRequest);
+                if (!dispatched)
+                {
+                    backpressureRequest(creditsRequest);
+                }
+            }, 1);
+        }
     }
 
     protected void backpressureRequest(CreditsRequest request)
@@ -293,9 +302,14 @@ public class JobSubscriptionManager extends Actor implements TransportListener
 
     protected void dispatchBackpressuredSubscriptionCredits()
     {
-        int nextRequestToConsume = backPressuredCreditsRequests.size() - 1;
+        actor.runUntilDone(this::dispatchNextBackpressuredSubscriptionCredit);
+    }
 
-        while (nextRequestToConsume >= 0)
+    protected void dispatchNextBackpressuredSubscriptionCredit()
+    {
+        final int nextRequestToConsume = backPressuredCreditsRequests.size() - 1;
+
+        if (nextRequestToConsume >= 0)
         {
             creditsRequest.wrapListElement(backPressuredCreditsRequests, nextRequestToConsume);
             final boolean success = dispatchSubscriptionCredits(creditsRequest);
@@ -303,12 +317,16 @@ public class JobSubscriptionManager extends Actor implements TransportListener
             if (success)
             {
                 backPressuredCreditsRequests.remove(nextRequestToConsume);
-                nextRequestToConsume--;
+                actor.run(this::dispatchNextBackpressuredSubscriptionCredit);
             }
             else
             {
-                break;
+                actor.yield();
             }
+        }
+        else
+        {
+            actor.done();
         }
     }
 
