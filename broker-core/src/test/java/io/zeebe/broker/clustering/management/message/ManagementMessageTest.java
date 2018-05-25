@@ -17,12 +17,13 @@
  */
 package io.zeebe.broker.clustering.management.message;
 
-import static io.zeebe.test.util.BufferWriterUtil.*;
-import static io.zeebe.util.buffer.BufferUtil.*;
+import static io.zeebe.test.util.BufferWriterUtil.assertEqualFieldsAfterWriteAndRead;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import java.util.Arrays;
 
 import io.zeebe.broker.clustering.api.*;
+import io.zeebe.clustering.management.ErrorResponseCode;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
@@ -92,8 +93,8 @@ public class ManagementMessageTest
                 .setPartitionId(1)
                 .setName("snapshot")
                 .setLogPosition(200L)
-                .setChunkOffset(30L)
-                .setChunkLength(1024L);
+                .setChunkOffset(30)
+                .setChunkLength(1024);
 
         assertEqualFieldsAfterWriteAndRead(request,
                 "partitionId", "name", "logPosition", "chunkOffset", "chunkLength");
@@ -106,5 +107,14 @@ public class ManagementMessageTest
         final FetchSnapshotChunkResponse response = new FetchSnapshotChunkResponse().setData(data);
 
         assertEqualFieldsAfterWriteAndRead(response, "data");
+    }
+
+    @Test
+    public void testErrorResponse()
+    {
+        final ErrorResponseCode code = ErrorResponseCode.INVALID_PARAMETERS;
+        final ErrorResponse response = new ErrorResponse().setCode(code).setData("invalid params");
+
+        assertEqualFieldsAfterWriteAndRead(response, "code", "data");
     }
 }

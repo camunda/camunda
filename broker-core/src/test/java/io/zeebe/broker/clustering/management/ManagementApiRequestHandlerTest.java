@@ -18,8 +18,17 @@
 package io.zeebe.broker.clustering.management;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.*;
 
-import java.util.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 import io.zeebe.broker.clustering.api.*;
 import io.zeebe.broker.clustering.base.partitions.Partition;
@@ -27,14 +36,18 @@ import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.transport.clientapi.BufferingServerOutput;
-import io.zeebe.clustering.management.NotLeaderResponseDecoder;
+import io.zeebe.clustering.management.ErrorResponseCode;
 import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotStorage;
 import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotStorageConfiguration;
 import io.zeebe.logstreams.snapshot.SerializableWrapper;
-import io.zeebe.logstreams.spi.*;
+import io.zeebe.logstreams.spi.ReadableSnapshot;
+import io.zeebe.logstreams.spi.SnapshotStorage;
+import io.zeebe.logstreams.spi.SnapshotSupport;
+import io.zeebe.logstreams.spi.SnapshotWriter;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
-import io.zeebe.transport.*;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.impl.RemoteAddressImpl;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.BufferWriter;
@@ -43,13 +56,17 @@ import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public class ManagementApiRequestHandlerTest
 {
-    private final Map<Integer, Partition> trackedSnapshotPartitions = new HashMap<>();
-    private final TestActor actor = new TestActor();
+    private Map<Integer, Partition> trackedSnapshotPartitions;
+    private TestActor actor = new TestActor();
+    private BufferingServerOutput output = new BufferingServerOutput();
+    private ManagementApiRequestHandler handler = createHandler();
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -63,7 +80,10 @@ public class ManagementApiRequestHandlerTest
     @Before
     public void setup()
     {
+        trackedSnapshotPartitions = new ConcurrentHashMap<>();
         actorSchedulerRule.submitActor(actor);
+        output = new BufferingServerOutput();
+        handler = createHandler();
     }
 
     @Test
@@ -73,18 +93,16 @@ public class ManagementApiRequestHandlerTest
         final int partitionId = 1;
         final Partition partition = createAndTrackPartition(partitionId);
         final ReadableSnapshot[] expectedSnapshots = new ReadableSnapshot[] {
-                createSnapshot(partition, "first", 1L, "something".getBytes()),
-                createSnapshot(partition, "second", 2L, "other stuff".getBytes())
+                createSnapshot(partition, "first", 1L, new SerializableWrapper<>("foo")),
+                createSnapshot(partition, "second", 2L, new SerializableWrapper<>("bar"))
         };
 
         // given
         final ListSnapshotsResponse response = new ListSnapshotsResponse();
         final ListSnapshotsRequest request = new ListSnapshotsRequest().setPartitionId(1);
-        final BufferingServerOutput output = new BufferingServerOutput();
-        final ManagementApiRequestHandler handler = createHandler();
 
         // when
-        sendRequest(request, handler, output);
+        sendRequest(request);
 
         // then
         assertThat(output.getSentResponses().size()).isEqualTo(1);
@@ -114,27 +132,229 @@ public class ManagementApiRequestHandlerTest
     }
 
     @Test
-    public void shouldReturnNotLeaderResponseWhenListingForNotTrackedPartition()
+    public void shouldListSnapshotsAndReceiveErrorWhenRequestingNotTrackedPartition()
     {
         // given
-        final int partitionId = 2;
-        final Partition partition = createAndTrackPartition(partitionId);
-        createSnapshot(partition, "test", 1L, "something".getBytes());
+        final int partitionId = 1;
+        createThrowawayPartitionWithSnapshot(partitionId);
 
         // given
         final ListSnapshotsRequest request = new ListSnapshotsRequest().setPartitionId(partitionId + 1);
-        final BufferingServerOutput output = new BufferingServerOutput();
-        final ManagementApiRequestHandler handler = createHandler();
 
         // when
-        sendRequest(request, handler, output);
+        sendRequest(request);
+
+        // then
+        assertError(output, ErrorResponseCode.PARTITION_NOT_FOUND, SnapshotReplicationRequestHandler.PARTITION_NOT_FOUND_MESSAGE);
+    }
+
+    @Test
+    public void shouldFetchSnapshotChunkAndReceiveErrorWhenRequestingNotTrackedPartition()
+    {
+        // given
+        final int partitionId = 3;
+        createThrowawayPartitionWithSnapshot(partitionId);
+
+        // given
+        final FetchSnapshotChunkRequest request = new FetchSnapshotChunkRequest().setPartitionId(partitionId + 1);
+
+        // when
+        sendRequest(request);
+
+        // then
+        assertError(output, ErrorResponseCode.PARTITION_NOT_FOUND, SnapshotReplicationRequestHandler.PARTITION_NOT_FOUND_MESSAGE);
+    }
+
+    @Test
+    public void shouldFetchSnapshotChunkAndReceiveErrorWhenChunkOffsetIsNegative()
+    {
+        // given
+        final int partitionId = 5;
+        final ReadableSnapshot snapshot = createAndTrackPartitionWithSnapshot(partitionId);
+        final FetchSnapshotChunkRequest request = getFetchSnapshotChunkRequest(partitionId, snapshot).setChunkOffset(-1);
+
+        // when
+        sendRequest(request);
+
+        // then
+        assertError(output, ErrorResponseCode.INVALID_PARAMETERS, SnapshotReplicationRequestHandler.INVALID_CHUNK_OFFSET_MESSAGE);
+    }
+
+    @Test
+    public void shouldFetchSnapshotChunkAndReceiveErrorWhenChunkLengthIsNotPositive()
+    {
+        // given
+        final int partitionId = 2;
+        final ReadableSnapshot snapshot = createAndTrackPartitionWithSnapshot(partitionId);
+        final FetchSnapshotChunkRequest request = getFetchSnapshotChunkRequest(partitionId, snapshot).setChunkLength(0);
+
+        // when
+        sendRequest(request);
+
+        // then
+        assertError(output, ErrorResponseCode.INVALID_PARAMETERS, SnapshotReplicationRequestHandler.INVALID_CHUNK_LENGTH_MESSAGE);
+    }
+
+    @Test
+    public void shouldFetchSnapshotChunkAndReceiveErrorOnSkipError() throws Exception
+    {
+        // given
+        final int partitionId = 3;
+        final ReadableSnapshot mockSnapshot = createAndTrackPartitionWithMockSnapshot(partitionId);
+        final FetchSnapshotChunkRequest request = getFetchSnapshotChunkRequest(partitionId, mockSnapshot).setChunkOffset(1);
+        final InputStream mockInputStream = spy(mockSnapshot.getData());
+
+        // when
+        doAnswer((i) -> mockInputStream).when(mockSnapshot).getData();
+        doAnswer((i) -> -1L).when(mockInputStream).skip(anyLong());
+        sendRequest(request);
+
+        // then
+        assertError(output, ErrorResponseCode.READ_ERROR, SnapshotReplicationRequestHandler.SEEK_ERROR_MESSAGE);
+    }
+
+    @Test
+    public void shouldFetchSnapshotChunkAndReceiveErrorOnNoBytesRead() throws Exception
+    {
+        // given
+        final int partitionId = 3;
+        final ReadableSnapshot mockSnapshot = createAndTrackPartitionWithMockSnapshot(partitionId);
+        final FetchSnapshotChunkRequest request = getFetchSnapshotChunkRequest(partitionId, mockSnapshot).setChunkOffset(1);
+        final InputStream mockInputStream = spy(mockSnapshot.getData());
+
+        // when
+        doAnswer((i) -> mockInputStream).when(mockSnapshot).getData();
+        doAnswer((i) -> -1).when(mockInputStream).read(any(), anyInt(), anyInt());
+        sendRequest(request);
+
+        // then
+        assertError(output, ErrorResponseCode.READ_ERROR, SnapshotReplicationRequestHandler.INVALID_READ_ERROR_MESSAGE);
+    }
+
+    @Test
+    public void shouldFetchSnapshotChunkAndReceiveErrorOnReadError() throws Exception
+    {
+        // given
+        final int partitionId = 3;
+        final ReadableSnapshot mockSnapshot = createAndTrackPartitionWithMockSnapshot(partitionId);
+        final FetchSnapshotChunkRequest request = getFetchSnapshotChunkRequest(partitionId, mockSnapshot).setChunkOffset(1);
+        final InputStream mockInputStream = spy(mockSnapshot.getData());
+
+        // when
+        doAnswer((i) -> mockInputStream).when(mockSnapshot).getData();
+        doThrow(new IOException()).when(mockInputStream).read(any(), anyInt(), anyInt());
+        sendRequest(request);
+
+        // then
+        assertError(output, ErrorResponseCode.READ_ERROR, SnapshotReplicationRequestHandler.READ_ERROR_MESSAGE);
+    }
+
+    @Test
+    public void shouldFetchSnapshotChunkAndReceiveErrorOnOpenSnapshotError() throws Exception
+    {
+        // given
+        final int partitionId = 3;
+        final SnapshotStorage storage = spy(createSnapshotStorage());
+        final Partition partition = createAndTrackPartition(partitionId, storage);
+        final ReadableSnapshot snapshot = createSnapshot(partition);
+        final FetchSnapshotChunkRequest request = getFetchSnapshotChunkRequest(partitionId, snapshot);
+
+        // when
+        doThrow(new RuntimeException()).when(storage).getLastSnapshot(any());
+        sendRequest(request);
+
+        // then
+        assertError(output, ErrorResponseCode.READ_ERROR, SnapshotReplicationRequestHandler.GET_SNAPSHOT_ERROR_MESSAGE);
+    }
+
+    @Test
+    public void shouldFetchSnapshotChunkAndReceiveErrorOnSnapshotNotFound() throws Exception
+    {
+        // given
+        final int partitionId = 3;
+
+        // given
+        final FetchSnapshotChunkRequest request = new FetchSnapshotChunkRequest()
+                .setPartitionId(partitionId)
+                .setChunkLength(32)
+                .setChunkOffset(1)
+                .setName("something")
+                .setLogPosition(1L);
+
+        // when
+        createAndTrackPartition(partitionId);
+        sendRequest(request);
+
+        // then
+        assertError(output, ErrorResponseCode.INVALID_PARAMETERS, SnapshotReplicationRequestHandler.NO_SNAPSHOT_ERROR_MESSAGE);
+    }
+
+    @Test
+    public void shouldFetchSnapshotChunkWithEnoughDataForChunk() throws IOException
+    {
+        // given
+        final int partitionId = 2;
+        final SerializableWrapper<String> contents = new SerializableWrapper<>("foo");
+        final ReadableSnapshot snapshot = createAndTrackPartitionWithSnapshotContents(partitionId, contents);
+        final byte[] snapshotBytes = new byte[(int)snapshot.getLength()];
+        final FetchSnapshotChunkRequest request = getFetchSnapshotChunkRequest(partitionId, snapshot).setChunkLength(1);
+        final FetchSnapshotChunkResponse response = new FetchSnapshotChunkResponse();
+
+        // when
+        snapshot.getData().read(snapshotBytes);
+        sendRequest(request);
 
         // then
         assertThat(output.getSentResponses().size()).isEqualTo(1);
-        assertThat(output.getTemplateId(0)).isEqualTo(NotLeaderResponseDecoder.TEMPLATE_ID);
+
+        // when
+        output.wrapResponse(0, response);
+
+        // then
+        assertThat(response.getData().capacity()).isEqualTo(1);
+        assertThat(response.getData().getByte(0)).isEqualTo(snapshotBytes[0]);
     }
 
-    private void sendRequest(final BufferWriter request, final ServerRequestHandler handler, final ServerOutput output)
+    @Test
+    public void shouldFetchSnapshotChunkRecursively() throws Exception
+    {
+        // given
+        final int partitionId = 2;
+        final SerializableWrapper<String> contents = new SerializableWrapper<>("foo");
+        final ReadableSnapshot snapshot = createAndTrackPartitionWithSnapshotContents(partitionId, contents);
+        final byte[] snapshotBytes = new byte[(int)snapshot.getLength()];
+        final FetchSnapshotChunkRequest request = getFetchSnapshotChunkRequest(partitionId, snapshot).setChunkLength(1);
+        final FetchSnapshotChunkResponse response = new FetchSnapshotChunkResponse();
+
+        final byte[] bufferedChunk = new byte[(int)snapshot.getLength()];
+        snapshot.getData().read(snapshotBytes);
+        for (int i = 0; i < snapshotBytes.length; i++)
+        {
+            // when
+            sendRequest(request.setChunkOffset(i));
+
+            // then
+            assertThat(output.getSentResponses().size()).isEqualTo(i + 1);
+
+            // when
+            output.wrapResponse(i, response);
+
+            // then
+            assertThat(response.getData().capacity()).isEqualTo(1);
+            assertThat(response.getData().getByte(0)).isEqualTo(snapshotBytes[i]);
+
+            bufferedChunk[i] = response.getData().getByte(0);
+        }
+
+        // when
+        final SerializableWrapper<String> received = new SerializableWrapper<>("");
+        received.recoverFromSnapshot(new ByteArrayInputStream(bufferedChunk));
+
+        // then
+        assertThat(received.getObject()).isEqualTo(contents.getObject());
+    }
+
+    private void sendRequest(final BufferWriter request)
     {
         final RemoteAddress address = new RemoteAddressImpl(1, new SocketAddress("0.0.0.0", 8080));
         final MutableDirectBuffer requestBuffer = new ExpandableDirectByteBuffer();
@@ -159,9 +379,8 @@ public class ManagementApiRequestHandlerTest
         );
     }
 
-    private Partition createAndTrackPartition(final int id)
+    private Partition createAndTrackPartition(final int id, final SnapshotStorage storage)
     {
-        final SnapshotStorage storage = createSnapshotStorage();
         final PartitionInfo info = new PartitionInfo(BufferUtil.wrapString("test"), id, 1);
         final Partition partition = new Partition(info, RaftState.LEADER)
         {
@@ -176,17 +395,22 @@ public class ManagementApiRequestHandlerTest
         return partition;
     }
 
-    private ReadableSnapshot createSnapshot(final Partition partition, final String name, final long logPosition, final byte[] contents)
+    private Partition createAndTrackPartition(final int id)
+    {
+        final SnapshotStorage storage = createSnapshotStorage();
+        return createAndTrackPartition(id, storage);
+    }
+
+    private ReadableSnapshot createSnapshot(final Partition partition, final String name, final long logPosition, final SnapshotSupport contents)
     {
         final SnapshotStorage storage = partition.getSnapshotStorage();
-        final SerializableWrapper<byte[]> value = new SerializableWrapper<>(contents);
         final SnapshotWriter writer;
         final ReadableSnapshot createdSnapshot;
 
         try
         {
             writer = storage.createSnapshot(name, logPosition);
-            writer.writeSnapshot(value);
+            writer.writeSnapshot(contents);
             writer.commit();
             createdSnapshot = storage.getLastSnapshot(name);
         }
@@ -205,6 +429,62 @@ public class ManagementApiRequestHandlerTest
         config.setRootPath(snapshotRootPath);
 
         return new FsSnapshotStorage(config);
+    }
+
+    private void createThrowawayPartitionWithSnapshot(final int id)
+    {
+        createAndTrackPartitionWithSnapshot(id);
+    }
+
+    private ReadableSnapshot createAndTrackPartitionWithSnapshot(final int id)
+    {
+        final Partition partition = createAndTrackPartition(id);
+        return createSnapshot(partition);
+    }
+
+    private ReadableSnapshot createAndTrackPartitionWithMockSnapshot(final int id) throws Exception
+    {
+        final SnapshotStorage storage = spy(createSnapshotStorage());
+        final Partition partition = createAndTrackPartition(id, storage);
+        final ReadableSnapshot snapshot = createSnapshot(partition);
+        final ReadableSnapshot mockSnapshot = spy(snapshot);
+
+        doAnswer((i) -> mockSnapshot).when(storage).getLastSnapshot(snapshot.getName());
+
+        return mockSnapshot;
+    }
+
+    private ReadableSnapshot createSnapshot(final Partition partition)
+    {
+        final SerializableWrapper<String> contents = new SerializableWrapper<>("snapshot contents");
+        return createSnapshot(partition, "something", 10L, contents);
+    }
+
+    private ReadableSnapshot createAndTrackPartitionWithSnapshotContents(final int id, final SnapshotSupport contents)
+    {
+        final Partition partition = createAndTrackPartition(id);
+        return createSnapshot(partition, "something", 30L, contents);
+    }
+
+    private FetchSnapshotChunkRequest getFetchSnapshotChunkRequest(final int partitionId, final ReadableSnapshot snapshot)
+    {
+        return new FetchSnapshotChunkRequest()
+                .setPartitionId(partitionId)
+                .setName(snapshot.getName())
+                .setLogPosition(snapshot.getPosition())
+                .setChunkOffset(0)
+                .setChunkLength((int)snapshot.getLength());
+    }
+
+    private void assertError(final BufferingServerOutput output, final ErrorResponseCode code, final String message)
+    {
+        final ErrorResponse response = new ErrorResponse();
+
+        assertThat(output.getSentResponses().size()).isEqualTo(1);
+
+        output.wrapResponse(0, response);
+        assertThat(response.getCode()).isEqualTo(code);
+        assertThat(response.getMessage()).isEqualTo(message);
     }
 
     private class TestActor extends Actor
