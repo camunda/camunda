@@ -30,7 +30,8 @@ import io.zeebe.util.sched.ActorScheduler;
 
 public class ServerTransportBuilder
 {
-    private int messageMaxLength = 1024 * 512;
+    public static final int DEFAULT_MAX_MESSAGE_LENGTH = 1024 * 512;
+    private int messageMaxLength = DEFAULT_MAX_MESSAGE_LENGTH;
 
     private String name = "server";
     private ServerOutput output;
