@@ -194,8 +194,6 @@ public class ClusteringRule extends ExternalResource
         final AtomicLong leaders = new AtomicLong();
         final AtomicLong followers = new AtomicLong();
 
-        printTopology(brokers);
-
         brokers.stream()
                .flatMap(b -> b.getPartitions().stream())
                .filter(p -> p.getTopicName().equals(topicName))
@@ -385,6 +383,7 @@ public class ClusteringRule extends ExternalResource
                .allMatch(socketAddress ->
                {
                    final List<BrokerInfo> topology = topologyClient.requestTopologyFromBroker(socketAddress);
+                   printTopology(topology);
                    return topologyPredicate.apply(topology);
                }), 250
         );
