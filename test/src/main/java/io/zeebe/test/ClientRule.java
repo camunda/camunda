@@ -24,15 +24,15 @@ import java.util.Properties;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import io.zeebe.client.TasksClient;
-import io.zeebe.client.TopicsClient;
-import io.zeebe.client.WorkflowsClient;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.clustering.impl.BrokerPartitionState;
-import io.zeebe.client.clustering.impl.TopologyBroker;
-import io.zeebe.client.clustering.impl.TopologyResponse;
-import io.zeebe.client.topic.Partition;
-import io.zeebe.client.topic.Topic;
+import io.zeebe.client.api.clients.JobClient;
+import io.zeebe.client.api.clients.TopicClient;
+import io.zeebe.client.api.clients.WorkflowClient;
+import io.zeebe.client.api.commands.BrokerInfo;
+import io.zeebe.client.api.commands.Partition;
+import io.zeebe.client.api.commands.PartitionInfo;
+import io.zeebe.client.api.commands.Topic;
+import io.zeebe.client.api.commands.Topology;
 import org.junit.rules.ExternalResource;
 
 public class ClientRule extends ExternalResource
@@ -66,19 +66,19 @@ public class ClientRule extends ExternalResource
         return client;
     }
 
-    public TopicsClient topics()
+    public TopicClient topicClient()
     {
-        return client.topics();
+        return client.topicClient();
     }
 
-    public TasksClient tasks()
+    public JobClient jobClient()
     {
-        return client.tasks();
+        return client.topicClient().jobClient();
     }
 
-    public WorkflowsClient workflows()
+    public WorkflowClient workflowClient()
     {
-        return client.workflows();
+        return client.topicClient().workflowClient();
     }
 
     public String getDefaultTopic()
@@ -94,7 +94,9 @@ public class ClientRule extends ExternalResource
     @Override
     protected void before()
     {
-        client = ZeebeClient.create(properties);
+        client = ZeebeClient.newClientBuilder()
+            .withProperties(properties)
+            .build();
 
         if (createDefaultTopic)
         {
@@ -104,18 +106,23 @@ public class ClientRule extends ExternalResource
 
     private void createDefaultTopic()
     {
-        client.topics().create(DEFAULT_TOPIC, 1).execute();
+        client.newCreateTopicCommand()
+            .name(DEFAULT_TOPIC)
+            .partitions(1)
+            .replicationFactor(1)
+            .send()
+            .join();
         waitUntilTopicsExists(DEFAULT_TOPIC);
 
-        final TopologyResponse topology = client.requestTopology().execute();
+        final Topology topology = client.newTopologyRequest().send().join();
 
         defaultPartition = -1;
-        final List<TopologyBroker> topologyBrokers = topology.getBrokers();
+        final List<BrokerInfo> topologyBrokers = topology.getBrokers();
 
-        for (TopologyBroker leader : topologyBrokers)
+        for (BrokerInfo leader : topologyBrokers)
         {
-            final List<BrokerPartitionState> partitions = leader.getPartitions();
-            for (BrokerPartitionState brokerPartitionState : partitions)
+            final List<PartitionInfo> partitions = leader.getPartitions();
+            for (PartitionInfo brokerPartitionState : partitions)
             {
                 if (DEFAULT_TOPIC.equals(brokerPartitionState.getTopicName())
                     && brokerPartitionState.isLeader())
@@ -142,10 +149,12 @@ public class ClientRule extends ExternalResource
 
     public Map<String, List<Partition>> topicsByName()
     {
-        return topics().getTopics().execute()
-                       .getTopics()
-                       .stream()
-                       .collect(Collectors.toMap(Topic::getName, Topic::getPartitions));
+        return client.newTopicsRequest()
+            .send()
+            .join()
+            .getTopics()
+            .stream()
+            .collect(Collectors.toMap(Topic::getName, Topic::getPartitions));
     }
 
     @Override

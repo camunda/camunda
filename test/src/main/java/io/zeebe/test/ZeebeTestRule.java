@@ -16,7 +16,7 @@
 package io.zeebe.test;
 
 import static io.zeebe.test.EmbeddedBrokerRule.DEFAULT_CONFIG_SUPPLIER;
-import static io.zeebe.test.TopicEventRecorder.taskKey;
+import static io.zeebe.test.TopicEventRecorder.jobKey;
 import static io.zeebe.test.TopicEventRecorder.wfInstanceKey;
 import static org.assertj.core.api.Assertions.fail;
 
@@ -28,8 +28,10 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.event.TaskEvent;
-import io.zeebe.client.event.WorkflowInstanceEvent;
+import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.client.api.events.JobState;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.events.WorkflowInstanceState;
 import org.junit.rules.ExternalResource;
 
 public class ZeebeTestRule extends ExternalResource
@@ -79,19 +81,19 @@ public class ZeebeTestRule extends ExternalResource
         waitUntil(() ->
         {
             final WorkflowInstanceEvent event = topicEventRecorder.getLastWorkflowInstanceEvent(wfInstanceKey(key));
-            return event.getState().equals("WORKFLOW_INSTANCE_COMPLETED");
+            return event.getState().equals(WorkflowInstanceState.COMPLETED);
         }, "workflow instance is not completed");
     }
 
-    public void waitUntilTaskCompleted(final long key)
+    public void waitUntilJobCompleted(final long key)
     {
-        waitUntil(() -> !topicEventRecorder.getTaskEvents(taskKey(key)).isEmpty(), "no task found with key " + key);
+        waitUntil(() -> !topicEventRecorder.getJobEvents(jobKey(key)).isEmpty(), "no job found with key " + key);
 
         waitUntil(() ->
         {
-            final TaskEvent event = topicEventRecorder.getLastTaskEvent(taskKey(key));
-            return event.getState().equals("COMPLETED");
-        }, "task is not completed");
+            final JobEvent event = topicEventRecorder.getLastJobEvent(jobKey(key));
+            return event.getState().equals(JobState.COMPLETED);
+        }, "job is not completed");
     }
 
     public void printWorkflowInstanceEvents(final long key)

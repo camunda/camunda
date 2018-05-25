@@ -22,17 +22,18 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import io.zeebe.client.TopicsClient;
-import io.zeebe.client.event.TaskEvent;
-import io.zeebe.client.event.TopicSubscription;
-import io.zeebe.client.event.WorkflowInstanceEvent;
+import io.zeebe.client.api.clients.TopicClient;
+import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.events.WorkflowInstanceState;
+import io.zeebe.client.api.subscription.TopicSubscription;
 import org.junit.rules.ExternalResource;
 
 public class TopicEventRecorder extends ExternalResource
 {
     private static final String SUBSCRIPTION_NAME = "event-recorder";
 
-    private final List<TaskEvent> taskEvents = new CopyOnWriteArrayList<>();
+    private final List<JobEvent> jobEvents = new CopyOnWriteArrayList<>();
     private final List<WorkflowInstanceEvent> wfInstanceEvents = new CopyOnWriteArrayList<>();
 
     private final ClientRule clientRule;
@@ -63,11 +64,11 @@ public class TopicEventRecorder extends ExternalResource
 
     private void startRecordingEvents()
     {
-        final TopicsClient client = clientRule.getClient().topics();
+        final TopicClient client = clientRule.getClient().topicClient(topicName);
 
-        subscription = client.newSubscription(topicName)
+        subscription = client.newSubscription()
             .name(SUBSCRIPTION_NAME)
-            .taskEventHandler(taskEvents::add)
+            .jobEventHandler(jobEvents::add)
             .workflowInstanceEventHandler(wfInstanceEvents::add)
             .open();
     }
@@ -102,19 +103,19 @@ public class TopicEventRecorder extends ExternalResource
         return getLastEvent(wfInstanceEvents.stream().filter(matcher)).orElseThrow(() -> new AssertionError("no event found"));
     }
 
-    public List<TaskEvent> getTaskEvents(final Predicate<TaskEvent> matcher)
+    public List<JobEvent> getJobEvents(final Predicate<JobEvent> matcher)
     {
-        return taskEvents.stream().filter(matcher).collect(Collectors.toList());
+        return jobEvents.stream().filter(matcher).collect(Collectors.toList());
     }
 
-    public TaskEvent getLastTaskEvent(final Predicate<TaskEvent> matcher)
+    public JobEvent getLastJobEvent(final Predicate<JobEvent> matcher)
     {
-        return getLastEvent(taskEvents.stream().filter(matcher)).orElseThrow(() -> new AssertionError("no event found"));
+        return getLastEvent(jobEvents.stream().filter(matcher)).orElseThrow(() -> new AssertionError("no event found"));
     }
 
-    public static Predicate<WorkflowInstanceEvent> wfInstance(final String eventType)
+    public static Predicate<WorkflowInstanceEvent> wfInstance(final WorkflowInstanceState eventState)
     {
-        return e -> e.getState().equals(eventType);
+        return e -> e.getState().equals(eventState);
     }
 
     public static Predicate<WorkflowInstanceEvent> wfInstanceKey(final long key)
@@ -122,12 +123,12 @@ public class TopicEventRecorder extends ExternalResource
         return e -> e.getWorkflowInstanceKey() == key;
     }
 
-    public static Predicate<TaskEvent> taskKey(final long key)
+    public static Predicate<JobEvent> jobKey(final long key)
     {
         return e -> e.getMetadata().getKey() == key;
     }
 
-    public static Predicate<TaskEvent> taskType(final String type)
+    public static Predicate<JobEvent> jobType(final String type)
     {
         return e -> e.getType().equals(type);
     }

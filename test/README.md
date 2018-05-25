@@ -52,10 +52,8 @@ Add `zeebe-test` as test dependency to your project.
 Use the `ZeebeTestRule` in your test case to start an embedded broker and client.
 
 ```java
-import java.time.Duration;
-
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.event.WorkflowInstanceEvent;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -74,27 +72,34 @@ public class WorkflowTest
         client = testRule.getClient();
         topic = testRule.getDefaultTopic();
 
-        client.workflows().deploy(topic)
-                .resourceFromClasspath("process.bpmn")
-                .execute();
+        client.topicClient(topic)
+            .workflowClient()
+            .newDeployCommand()
+            .addResourceFromClasspath("process.bpmn")
+            .send()
+            .join();
     }
 
     @Test
     public void shouldCompleteWorkflowInstance()
     {
-        final WorkflowInstanceEvent workflowInstance = client.workflows().create(topic)
-                                                             .bpmnProcessId("process")
-                                                             .latestVersion()
-                                                             .execute();
+        final WorkflowInstanceEvent workflowInstance = client.topicClient(topic)
+            .workflowClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId("process")
+            .latestVersion()
+            .send()
+            .join();
 
-        client.tasks().newTaskSubscription(topic)
-            .taskType("task")
-            .lockOwner("test")
-            .lockTime(Duration.ofSeconds(30))
-            .handler((c, t) -> c.complete(t).withoutPayload().execute())
+        client.topicClient(topic)
+            .jobClient()
+            .newWorker()
+            .jobType("task")
+            .handler((c, j) -> c.newCompleteCommand(j).withoutPayload().send().join())
+            .name("test")
             .open();
 
-        testRule.waitUntilWorklowInstanceCompleted(workflowInstance.getWorkflowInstanceKey());
+        testRule.waitUntilWorkflowInstanceCompleted(workflowInstance.getWorkflowInstanceKey());
     }
 
 }
