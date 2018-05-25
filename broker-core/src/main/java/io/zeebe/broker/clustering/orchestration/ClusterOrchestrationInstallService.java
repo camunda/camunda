@@ -47,12 +47,13 @@ public class ClusterOrchestrationInstallService implements Service<Void>
     private final Injector<ServerTransport> transportInjector = new Injector<>();
 
     private final ServiceGroupReference<Partition> systemLeaderGroupReference = ServiceGroupReference.<Partition>create()
-        .onAdd(this::installCreateTopicStateService)
+        .onAdd(this::installClusterOrchestrationServices)
+        .onRemove(this::removeClusterOrchestrationServices)
         .build();
 
     private ServiceStartContext startContext;
-    private RequestPartitionsMessageHandler requestPartitionsMessageHandler;
 
+    private RequestPartitionsMessageHandler requestPartitionsMessageHandler;
     private final ServiceContainer serviceContainer;
 
     public ClusterOrchestrationInstallService(ServiceContainer serviceContainer)
@@ -72,7 +73,7 @@ public class ClusterOrchestrationInstallService implements Service<Void>
         controlMessageHandlerManager.registerHandler(requestPartitionsMessageHandler);
     }
 
-    private void installCreateTopicStateService(final ServiceName<Partition> partitionServiceName, final Partition partition)
+    private void installClusterOrchestrationServices(final ServiceName<Partition> partitionServiceName, final Partition partition)
     {
         final CompositeServiceBuilder compositeInstall = startContext.createComposite(CLUSTER_ORCHESTRATION_COMPOSITE_SERVICE_NAME);
 
@@ -120,7 +121,13 @@ public class ClusterOrchestrationInstallService implements Service<Void>
 
         compositeInstall.install();
 
-        LOG.debug("Installing cluster topic state service");
+        LOG.debug("Installing cluster orchestration services");
+    }
+
+    private void removeClusterOrchestrationServices(final ServiceName<Partition> partitionServiceName, final Partition partition)
+    {
+        startContext.removeService(CLUSTER_ORCHESTRATION_COMPOSITE_SERVICE_NAME);
+        LOG.debug("Removing cluster orchestration services");
     }
 
     @Override
