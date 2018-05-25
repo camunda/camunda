@@ -1,12 +1,11 @@
 # Control Flow
 
-A workflow can contain many tasks.
-Control flow defines the order in which these tasks are executed (e.g., sequentially, in parallel, exclusively, etc.).
+*Control flow* is about the order in which tasks are executed. The YAML format provides tools to decide which task is executed when.
 
 ## Sequences
 
 In a sequence, a task is executed after the previous one is completed.
-The order of the sequence is implicitly defined by the order in the YAML file.
+By default, tasks are executed top-down as they are declared in the YAML file.
 
 ```yaml
 name: order-process
@@ -22,18 +21,34 @@ tasks:
       type: shipment-service
 ```
 
-For example, this workflow starts with _collect-money_, followed by _fetch-items_ and ends with _ship-parcel_.
+In the example above, the workflow starts with `collect-money`, followed by `fetch-items` and ends with `ship-parcel`.
 
-## Conditional Flows
+We can use the `goto` and `end` attributes to define a different order:
+
+```yaml
+name: order-process
+
+tasks:
+    - id: collect-money
+      type: payment-service
+      goto: ship-parcel
+
+    - id: fetch-items
+      type: inventory-service
+      end: true
+
+    - id: ship-parcel
+      type: shipment-service
+      goto: fetch-items
+```
+
+In the above example, we have reversed the order of `fetch-items` and `ship-parcel`. Note that the `end` attribute is required so that workflow execution stops after `fetch-items`.
+
+## Data-based Conditions
 
 Some workflows do not always execute the same tasks but need to pick and choose different tasks, based on workflow instance payload.
 
-In this case, a task can define the next task explicitly by conditional flows (switch-case construct).
-Each flow has a condition and a reference to the following task.
-The workflow instance takes the first flow of which the condition is fulfilled.
-
-If no condition is fulfilled, then it takes the default flow.
-In case no default flow exists (not recommended), the execution stops and an incident is created.
+To achieve this, the `switch` attribute together with JSON-Path-based conditions can be used.
 
 ```yaml
 name: order-process
@@ -58,13 +73,11 @@ tasks:
       type: shipment-service
 ```
 
-For example, the order-process starts with _collect-money_, followed by _fetch-items_.
-If the _totalPrice_ is greater than 100, then it continues with _ship-parcel-with-insurance_.
-Otherwise, with _ship-parcel_.
-In both cases, the workflow instance ends because no following task is defined.
+In the above example, the order-process starts with `collect-money`, followed by `fetch-items`.
+If the `totalPrice` value in the workflow instance payload is greater than 100, then it continues with `ship-parcel-with-insurance`. Otherwise, `ship-parcel` is chosen. In either case, the workflow instance ends after that.
 
-By default, a task after a conditional flow (e.g. _ship-parcel-with-insurance_) is followed by the next task in the sequence (_ship-parcel_).
-If the workflow instance should end after the task then the task must have the property `end: true`.
-In case that the workflow instance should continue with another task, the task must define the next task using the property `goto`.
+In the `switch` element, there is one `case` element per alternative to choose from. If none of the conditions evaluates to `true`, then the `default` element is evaluated. While `default` is not required, it is best practice to include to avoid errors at workflow runtime. Should such an error occur (i.e. no case is fulfilled and there is no default), then workflow execution stops and an incident is raised.
 
-Read more about [conditions](reference/json-conditions.html).
+Related resources:
+
+* [JSON Condition Reference](reference/json-conditions.html)

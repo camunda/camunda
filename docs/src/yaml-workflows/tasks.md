@@ -1,6 +1,6 @@
 # Tasks
 
-A workflow can contain multiple tasks which represents the work that should be done.
+A workflow can contain multiple tasks, where each represents a step in the workflow.
 
 ```yaml
 name: order-process
@@ -23,8 +23,13 @@ tasks:
 Each task has the following properties:
 
 * `id` (*required*): the unique identifier of the task.
-* `type` (*required*): the name which job workers can subscribe to.
-* `retries`: the amount of times the job is retried if a failure occurs. (default = 3)
-* `headers`: a list of additional metadata or configuration which can be read by the worker.
+* `type` (*required*): the name to which job workers can subscribe.
+* `retries`: the amount of times the job is retried in case of failure. (default = 3)
+* `headers`: a list of metadata in the form of key-value pairs that can be accessed by a worker.
 
-Read more about the concept of [jobs](basics/task-workers.html).
+When Zeebe executes a task, it creates a job that is handed to a job worker. The worker can perform the business logic and complete the job eventually to trigger continuation in the workflow.
+
+Related resources:
+
+* [Introduction to Jobs and Job Workers](basics/job-workers.html)
+

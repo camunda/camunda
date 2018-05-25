@@ -1,8 +1,6 @@
 # Data Flow
 
-Data flow makes it possible to share data between different tasks in a workflow instance.
-
-A task can have one or more input and output mappings to control the data which is mapped into and out of the task.
+Zeebe carries a JSON document from task to task. This is called the *workflow instance payload*. For every task, we can define input and output mappings in order to transform the workflow instance payload JSON to a JSON document that the job worker can work with.
 
 ```yaml
 name: order-process
@@ -10,21 +8,24 @@ name: order-process
 tasks:
     - id: collect-money
       type: payment-service
-      outputs:
+      inputs:
           - source: $.totalPrice
-            target: $.totalPrice
+            target: $.price
+      outputs:
+          - source: $.success
+            target: $.paymentSuccess
 
     - id: fetch-items
       type: inventory-service
 
     - id: ship-parcel
       type: shipment-service
-      inputs:
-          - source: $.shippingAddress
-            target: $.address
 ```
 
-Each mapping has a source and a target property in form of a JSON path expression.
-The source property defines how the value is extracted and the target property defines how the value is inserted in the payload.
+Every mapping element has a `source` and a `target` element which must be a JSON Path expression. `source` defines which data is extracted from the source payload and `target` defines how the value is inserted into the target payload.
 
-Read more about [input and output mappings](bpmn-workflows/data-flow.html#input-and-output-mapping).
+Related resources:
+
+* [More detailed introduction on data flow in the BPMN reference](bpmn-workflows/data-flow.html)
+* [JSON Path Reference](reference/json-path.html)
+* [Payload Mapping Reference](reference/json-payload-mapping.html)
