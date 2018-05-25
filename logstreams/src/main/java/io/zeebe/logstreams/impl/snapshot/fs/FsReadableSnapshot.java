@@ -62,7 +62,7 @@ public class FsReadableSnapshot implements ReadableSnapshot
 
             final String checksumFileContent = readChecksumContent(checksumFile);
 
-            this.checksum = extractCheckum(checksumFileContent);
+            this.checksum = extractChecksum(checksumFileContent);
             final String dataFileName = extractDataFileName(checksumFileContent);
 
             if (!dataFileName.equals(dataFile.getName()))
@@ -108,7 +108,7 @@ public class FsReadableSnapshot implements ReadableSnapshot
         return checksumLine;
     }
 
-    protected byte[] extractCheckum(String content)
+    protected byte[] extractChecksum(String content)
     {
         final String checksumString = config.extractDigestFromChecksumContent(content);
         if (checksumString.isEmpty())
