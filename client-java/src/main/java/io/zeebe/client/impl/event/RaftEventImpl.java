@@ -17,11 +17,9 @@ package io.zeebe.client.impl.event;
 
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JacksonInject;
-import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.zeebe.client.api.events.RaftEvent;
-import io.zeebe.client.api.events.RaftMember;
+import io.zeebe.client.api.events.*;
 import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.record.RecordImpl;
 import io.zeebe.protocol.clientapi.RecordType;
@@ -49,6 +47,13 @@ public class RaftEventImpl extends RecordImpl implements RaftEvent
         this.members = members;
     }
 
+    @JsonIgnore
+    @Override
+    public RaftState getState()
+    {
+        return RaftState.valueOf(getMetadata().getIntent());
+    }
+
     @Override
     public Class<? extends RecordImpl> getEventClass()
     {
@@ -59,7 +64,9 @@ public class RaftEventImpl extends RecordImpl implements RaftEvent
     public String toString()
     {
         final StringBuilder builder = new StringBuilder();
-        builder.append("RaftEvent [members=");
+        builder.append("RaftEvent [state=");
+        builder.append(getState());
+        builder.append(", members=");
         builder.append(members);
         builder.append("]");
         return builder.toString();

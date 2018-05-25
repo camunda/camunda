@@ -15,19 +15,8 @@
  */
 package io.zeebe.client.api.events;
 
-import java.util.List;
-
-import io.zeebe.client.api.record.Record;
-
-public interface RaftEvent extends Record
+public enum RaftState
 {
-    /**
-     * @return the list of members, can be null
-     */
-    List<RaftMember> getMembers();
-
-    /**
-     * @return the current state
-     */
-    RaftState getState();
+    ADD_MEMBER,
+    REMOVE_MEMBER;
 }

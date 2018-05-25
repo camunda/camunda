@@ -1,6 +1,6 @@
 {
    "metadata":{
-      "intent":"UNKNOWN",
+      "intent":"ADD_MEMBER",
       "valueType":"RAFT",
       "recordType":"EVENT",
       "topicName":"default-topic",

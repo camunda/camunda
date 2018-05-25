@@ -20,28 +20,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-
-import io.zeebe.client.api.commands.Partition;
-import io.zeebe.client.api.record.Record;
-import io.zeebe.client.api.record.RecordMetadata;
-import io.zeebe.client.api.record.RecordType;
-import io.zeebe.client.api.record.ValueType;
-import io.zeebe.protocol.intent.RaftIntent;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
 
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.subscription.RecordingEventHandler;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.commands.Partition;
 import io.zeebe.client.api.commands.Topic;
-import io.zeebe.client.api.events.JobState;
+import io.zeebe.client.api.events.*;
 import io.zeebe.client.impl.job.CreateJobCommandImpl;
 import io.zeebe.test.util.AutoCloseableRule;
+import org.junit.*;
+import org.junit.rules.*;
 
 public class SubscriptionClusteredTest
 {
@@ -122,31 +110,20 @@ public class SubscriptionClusteredTest
         clusteringRule.createTopic(topicName, partitions, replicationFactor);
 
         // when
-        final RecordingEventHandler eventRecorder = new RecordingEventHandler();
+        final List<RaftEvent> raftEvents = new ArrayList<>();
         client.topicClient(topicName)
             .newSubscription()
             .name("test-subscription")
-            .recordHandler(eventRecorder)
+            .raftEventHandler(raftEvents::add)
             .startAtHeadOfTopic()
             .open();
 
         // then we should receive two raft add member events
-        waitUntil(() -> eventRecorder.numRaftRecords() == 2);
+        waitUntil(() -> raftEvents.size() == 2);
 
-        final List<RecordMetadata> raftRecords = eventRecorder.getRecords()
-            .stream()
-            .map(Record::getMetadata)
-            .filter(m -> m.getValueType() == ValueType.RAFT)
-            .collect(Collectors.toList());
-
-        assertThat(raftRecords.size()).isEqualTo(2);
-        for (final RecordMetadata raftRecord : raftRecords)
-        {
-            assertThat(raftRecord)
-                .hasFieldOrPropertyWithValue("valueType", ValueType.RAFT)
-                .hasFieldOrPropertyWithValue("recordType", RecordType.EVENT)
-                .hasFieldOrPropertyWithValue("intent", RaftIntent.ADD_MEMBER.name());
-        }
+        assertThat(raftEvents).hasSize(2);
+        assertThat(raftEvents).extracting(RaftEvent::getState).contains(RaftState.ADD_MEMBER);
+        assertThat(raftEvents.get(1).getMembers()).hasSize(clusteringRule.getBrokersInCluster().size());
 
         // TODO: extend test to contain remove member event, this is currently not possible
     }
