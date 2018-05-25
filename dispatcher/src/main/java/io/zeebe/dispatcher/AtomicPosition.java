@@ -38,12 +38,7 @@ public class AtomicPosition
 
     public void set(final long value)
     {
-        boolean updated = false;
-        while (!updated)
-        {
-            final long currentPosition = position.get();
-            updated = position.compareAndSet(currentPosition, value);
-        }
+        position.set(value);
     }
 
     public boolean proposeMaxOrdered(long newValue)

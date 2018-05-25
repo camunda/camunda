@@ -100,7 +100,7 @@ public class Dispatcher extends Actor implements AutoCloseable
 
     private void runBackgroundTask()
     {
-        final int updateSuccessful = updatePublisherLimit();
+        updatePublisherLimit();
         logBuffer.cleanPartitions();
     }
 
