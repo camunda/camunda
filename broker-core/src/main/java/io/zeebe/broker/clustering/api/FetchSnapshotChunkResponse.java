@@ -24,6 +24,7 @@ import io.zeebe.clustering.management.FetchSnapshotChunkResponseDecoder;
 import io.zeebe.clustering.management.FetchSnapshotChunkResponseEncoder;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class FetchSnapshotChunkResponse extends SbeBufferWriterReader<FetchSnapshotChunkResponseEncoder, FetchSnapshotChunkResponseDecoder>
@@ -38,10 +39,21 @@ public class FetchSnapshotChunkResponse extends SbeBufferWriterReader<FetchSnaps
         return data;
     }
 
+    public FetchSnapshotChunkResponse setData(final byte[] data, final int offset, final int length)
+    {
+        this.data.wrap(data, offset, length);
+        return this;
+    }
+
     public FetchSnapshotChunkResponse setData(final DirectBuffer data)
     {
         this.data = data;
         return this;
+    }
+
+    public void reset()
+    {
+        this.data.wrap(ArrayUtil.EMPTY_BYTE_ARRAY);
     }
 
     @Override

@@ -18,11 +18,11 @@
 package io.zeebe.broker.clustering.api;
 
 import static io.zeebe.clustering.management.FetchSnapshotChunkRequestEncoder.nameHeaderLength;
+import static io.zeebe.util.StringUtil.getBytes;
 
 import io.zeebe.broker.util.SbeBufferWriterReader;
 import io.zeebe.clustering.management.FetchSnapshotChunkRequestDecoder;
 import io.zeebe.clustering.management.FetchSnapshotChunkRequestEncoder;
-import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -33,10 +33,10 @@ public class FetchSnapshotChunkRequest extends SbeBufferWriterReader<FetchSnapsh
     private final FetchSnapshotChunkRequestEncoder bodyEncoder = new FetchSnapshotChunkRequestEncoder();
 
     private int partitionId;
-    private DirectBuffer name = new UnsafeBuffer(0, 0);
+    private UnsafeBuffer name = new UnsafeBuffer(0, 0);
     private long logPosition;
-    private long chunkOffset;
-    private long chunkLength;
+    private int chunkOffset;
+    private int chunkLength;
 
     public int getPartitionId()
     {
@@ -56,12 +56,13 @@ public class FetchSnapshotChunkRequest extends SbeBufferWriterReader<FetchSnapsh
 
     public FetchSnapshotChunkRequest setName(final String name)
     {
-        return setName(BufferUtil.wrapString(name));
+        this.name.wrap(getBytes(name));
+        return this;
     }
 
     public FetchSnapshotChunkRequest setName(final DirectBuffer name)
     {
-        this.name = name;
+        this.name.wrap(name);
         return this;
     }
 
@@ -76,23 +77,23 @@ public class FetchSnapshotChunkRequest extends SbeBufferWriterReader<FetchSnapsh
         return this;
     }
 
-    public long getChunkOffset()
+    public int getChunkOffset()
     {
         return chunkOffset;
     }
 
-    public FetchSnapshotChunkRequest setChunkOffset(final long chunkOffset)
+    public FetchSnapshotChunkRequest setChunkOffset(final int chunkOffset)
     {
         this.chunkOffset = chunkOffset;
         return this;
     }
 
-    public long getChunkLength()
+    public int getChunkLength()
     {
         return chunkLength;
     }
 
-    public FetchSnapshotChunkRequest setChunkLength(final long chunkLength)
+    public FetchSnapshotChunkRequest setChunkLength(final int chunkLength)
     {
         this.chunkLength = chunkLength;
         return this;

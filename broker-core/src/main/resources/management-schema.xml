@@ -18,10 +18,21 @@
             <type name="varData" primitiveType="uint8" length="0" characterEncoding="UTF-8" />
         </composite>
 
+        <composite name="blob">
+            <type name="length" primitiveType="uint32" maxValue="524288" />
+            <type name="varData" primitiveType="uint8" length="0" />
+        </composite>
+
         <composite name="groupSizeEncoding">
             <type name="blockLength" primitiveType="uint16" />
             <type name="numInGroup" primitiveType="uint8" semanticType="NumInGroup" />
         </composite>
+
+        <enum name="errorResponseCode" encodingType="uint8" semanticType="String">
+            <validValue name="PARTITION_NOT_FOUND">0</validValue>
+            <validValue name="INVALID_PARAMETERS">1</validValue>
+            <validValue name="READ_ERROR">2</validValue>
+        </enum>
 
     </types>
 
@@ -82,13 +93,18 @@
     <sbe:message name="FetchSnapshotChunkRequest" id="8">
         <field name="partitionId" id="0" type="uint16" />
         <field name="logPosition" id="1" type="uint64" />
-        <field name="chunkOffset" id="2" type="uint64" />
-        <field name="chunkLength" id="3" type="uint64" />
+        <field name="chunkOffset" id="2" type="int32" />
+        <field name="chunkLength" id="3" type="int32" />
         <data name="name" id="4" type="varDataEncoding" />
     </sbe:message>
 
     <sbe:message name="FetchSnapshotChunkResponse" id="9">
-        <data name="data" id="0" type="varDataEncoding" />
+        <data name="data" id="0" type="blob" />
+    </sbe:message>
+
+    <sbe:message name="ErrorResponse" id="10">
+        <field name="code" id="1" type="errorResponseCode" />
+        <data name="data" id="2" type="varDataEncoding" />
     </sbe:message>
 
 </sbe:messageSchema>
