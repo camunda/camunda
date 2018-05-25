@@ -98,7 +98,7 @@ public interface Intent
             case NOOP:
                 return Intent.UNKNOWN;
             case RAFT:
-                return Intent.UNKNOWN;
+                return RaftIntent.valueOf(intent);
             case SUBSCRIBER:
                 return SubscriberIntent.valueOf(intent);
             case SUBSCRIPTION:
