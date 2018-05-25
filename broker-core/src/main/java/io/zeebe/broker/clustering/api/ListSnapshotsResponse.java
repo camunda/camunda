@@ -50,6 +50,11 @@ public class ListSnapshotsResponse extends SbeBufferWriterReader<ListSnapshotsRe
         return this;
     }
 
+    public void reset()
+    {
+        this.snapshots.clear();
+    }
+
     @Override
     protected ListSnapshotsResponseEncoder getBodyEncoder()
     {

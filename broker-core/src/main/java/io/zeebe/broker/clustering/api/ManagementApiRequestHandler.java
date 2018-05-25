@@ -33,10 +33,8 @@ import io.zeebe.broker.clustering.base.partitions.PartitionInstallService;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfiguration;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
 import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.broker.system.workflow.repository.api.management.NotLeaderResponse;
+import io.zeebe.clustering.gossip.MessageHeaderDecoder;
 import io.zeebe.clustering.management.*;
-import io.zeebe.logstreams.spi.ReadableSnapshot;
-import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
@@ -59,13 +57,12 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
     private final CreatePartitionRequest createPartitionRequest = new CreatePartitionRequest();
     private final InvitationRequest invitationRequest = new InvitationRequest();
 
-    private final Map<Integer, Partition> trackedSnapshotPartitions;
-    private final ListSnapshotsRequest listSnapshotsRequest = new ListSnapshotsRequest();
-
     private final RaftPersistentConfigurationManager raftPersistentConfigurationManager;
     private final ActorControl actor;
     private final ServiceStartContext serviceStartContext;
     private final BrokerCfg brokerCfg;
+
+    private final SnapshotReplicationRequestHandler snapshotReplicationRequestHandler;
 
     public ManagementApiRequestHandler(RaftPersistentConfigurationManager raftPersistentConfigurationManager,
         ActorControl actor,
@@ -77,7 +74,7 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
         this.actor = actor;
         this.serviceStartContext = serviceStartContext;
         this.brokerCfg = brokerCfg;
-        this.trackedSnapshotPartitions = trackedSnapshotPartitions;
+        this.snapshotReplicationRequestHandler = new SnapshotReplicationRequestHandler(LOG, trackedSnapshotPartitions, ServerTransportBuilder.DEFAULT_MAX_MESSAGE_LENGTH);
     }
 
     @Override
@@ -103,19 +100,20 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
                 }
                 case ListSnapshotsRequestDecoder.TEMPLATE_ID:
                 {
-                    return onListSnapshotsRequest(buffer, offset, length, output, remoteAddress, requestId);
+                    sendResponse(output, remoteAddress, requestId,
+                            snapshotReplicationRequestHandler.handleListSnapshots(buffer, offset, length));
+                    break;
                 }
-                default:
+                case FetchSnapshotChunkRequestDecoder.TEMPLATE_ID:
                 {
-                    // ignore
-                    return true;
+                    sendResponse(output, remoteAddress, requestId,
+                            snapshotReplicationRequestHandler.handleFetchSnapshotChunk(buffer, offset, length));
+                    break;
                 }
             }
         }
-        else
-        {
-            return true;
-        }
+
+        return true;
     }
 
     private boolean onCreatePartitionRequest(DirectBuffer buffer, int offset, int length, ServerOutput output, RemoteAddress remoteAddress, long requestId)
@@ -143,29 +141,6 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
         final List<SocketAddress> members = new ArrayList<>(invitationRequest.members());
 
         installPartition(topicName, partitionId, replicationFactor, members, output, remoteAddress, requestId);
-
-        return true;
-    }
-
-    private boolean onListSnapshotsRequest(DirectBuffer buffer, int offset, int length, ServerOutput output, RemoteAddress remoteAddress, long requestId)
-    {
-        listSnapshotsRequest.wrap(buffer, offset, length);
-
-        final int partitionId = listSnapshotsRequest.getPartitionId();
-        final Partition partition = trackedSnapshotPartitions.get(partitionId);
-        if (partition == null)
-        {
-            sendResponse(output, remoteAddress, requestId, new NotLeaderResponse());
-        }
-        else
-        {
-            final SnapshotStorage storage = partition.getSnapshotStorage();
-            final List<ReadableSnapshot> snapshots = storage.listSnapshots();
-            final ListSnapshotsResponse response = new ListSnapshotsResponse();
-            snapshots.forEach((s) -> response.addSnapshot(s.getName(), s.getPosition(), s.getChecksum(), s.getLength()));
-
-            sendResponse(output, remoteAddress, requestId, response);
-        }
 
         return true;
     }
