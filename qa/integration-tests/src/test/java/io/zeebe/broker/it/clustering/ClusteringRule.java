@@ -138,6 +138,12 @@ public class ClusteringRule extends ExternalResource
                 .get();
     }
 
+    public SocketAddress getFollowerForPartition(int partitionId)
+    {
+        final SocketAddress leader = getLeaderForPartition(partitionId).getSocketAddress();
+        return getOtherBrokers(leader)[0];
+    }
+
     private Optional<BrokerInfo> extractPartitionLeader(List<BrokerInfo> brokers, int partition)
     {
         return brokers.stream()
@@ -188,6 +194,8 @@ public class ClusteringRule extends ExternalResource
         final AtomicLong leaders = new AtomicLong();
         final AtomicLong followers = new AtomicLong();
 
+        printTopology(brokers);
+
         brokers.stream()
                .flatMap(b -> b.getPartitions().stream())
                .filter(p -> p.getTopicName().equals(topicName))
@@ -203,7 +211,8 @@ public class ClusteringRule extends ExternalResource
                    }
                });
 
-        return leaders.get() >= partitionCount && followers.get() >= partitionCount * (replicationFactor - 1);
+        // relaxed condition as some topologies might contain multiple leaders at the moment
+        return leaders.get() >= partitionCount && followers.get() + leaders.get() >= partitionCount * replicationFactor;
     }
 
     public void waitForTopicPartitionReplicationFactor(String topicName, int partitionCount, int replicationFactor)
@@ -379,6 +388,17 @@ public class ClusteringRule extends ExternalResource
                    return topologyPredicate.apply(topology);
                }), 250
         );
+    }
+
+    private void printTopology(final List<BrokerInfo> topology)
+    {
+        System.out.println("Topology of " + topology.get(0).getSocketAddress());
+        topology.forEach(b -> {
+            final List<String> partitions = b.getPartitions().stream().sorted(Comparator.comparingInt(PartitionInfo::getPartitionId))
+                .map(p -> String.format("%d (%-8s)", p.getPartitionId(), p.getRole()))
+                .collect(Collectors.toList());
+            System.out.println("\t" + b.getSocketAddress() + ": " + partitions);
+        });
     }
 
 }
