@@ -262,7 +262,7 @@ public class TopologyManagerImpl extends Actor implements TopologyManager, RaftS
 
                 for (NodeInfo member : topology.getMembers())
                 {
-                    final int length = writeTopology(topology, writeBuffer, 0);
+                    final int length = writePartitions(member, writeBuffer, 0);
                     request.addPayload(member.getManagementApiAddress(), writeBuffer, 0, length);
                 }
 

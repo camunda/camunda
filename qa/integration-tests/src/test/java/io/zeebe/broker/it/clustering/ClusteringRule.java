@@ -209,8 +209,7 @@ public class ClusteringRule extends ExternalResource
                    }
                });
 
-        // relaxed condition as some topologies might contain multiple leaders at the moment
-        return leaders.get() >= partitionCount && followers.get() + leaders.get() >= partitionCount * replicationFactor;
+        return leaders.get() >= partitionCount && followers.get() >= partitionCount * (replicationFactor - 1);
     }
 
     public void waitForTopicPartitionReplicationFactor(String topicName, int partitionCount, int replicationFactor)
@@ -383,7 +382,7 @@ public class ClusteringRule extends ExternalResource
                .allMatch(socketAddress ->
                {
                    final List<BrokerInfo> topology = topologyClient.requestTopologyFromBroker(socketAddress);
-                   printTopology(topology);
+                   //printTopology(topology);
                    return topologyPredicate.apply(topology);
                }), 250
         );
