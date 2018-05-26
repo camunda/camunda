@@ -144,6 +144,22 @@ public class ClusteringRule extends ExternalResource
         return getOtherBrokers(leader)[0];
     }
 
+    /**
+     * @return a node which is not leader of any partition, or null if none exist
+     */
+    public SocketAddress getFollowerOnly()
+    {
+        for (final SocketAddress brokerAddress : brokerAddresses)
+        {
+            if (getBrokersLeadingPartitions(brokerAddress).isEmpty())
+            {
+                return brokerAddress;
+            }
+        }
+
+        return null;
+    }
+
     private Optional<BrokerInfo> extractPartitionLeader(List<BrokerInfo> brokers, int partition)
     {
         return brokers.stream()

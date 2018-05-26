@@ -108,6 +108,7 @@ public class SubscriptionClusteredTest
         final int replicationFactor = clusteringRule.getBrokersInCluster().size();
 
         clusteringRule.createTopic(topicName, partitions, replicationFactor);
+        clusteringRule.restartBroker(clusteringRule.getFollowerOnly());
 
         // when
         final List<RaftEvent> raftEvents = new ArrayList<>();
@@ -119,13 +120,12 @@ public class SubscriptionClusteredTest
             .open();
 
         // then we should receive two raft add member events
-        waitUntil(() -> raftEvents.size() == 2);
+        waitUntil(() -> raftEvents.size() == 4);
 
-        assertThat(raftEvents).hasSize(2);
-        assertThat(raftEvents).extracting(RaftEvent::getState).contains(RaftState.ADD_MEMBER);
+        assertThat(raftEvents).hasSize(4);
+        assertThat(raftEvents).extracting(RaftEvent::getState)
+            .containsExactly(RaftState.ADD_MEMBER, RaftState.ADD_MEMBER, RaftState.REMOVE_MEMBER, RaftState.ADD_MEMBER);
         assertThat(raftEvents.get(1).getMembers()).hasSize(clusteringRule.getBrokersInCluster().size());
-
-        // TODO: extend test to contain remove member event, this is currently not possible
     }
 
     protected void createJobOnPartition(String topic, int partition)
