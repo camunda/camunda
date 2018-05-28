@@ -139,9 +139,9 @@ public interface WorkflowClient
      * </pre>
      *
      * The response does not contain the resources of the workflows. Use
-     * {@link #newWorkflowResourceRequest()} to get the resource of a workflow.
+     * {@link #newResourceRequest()} to get the resource of a workflow.
      *
-     * @see #newWorkflowResourceRequest()
+     * @see #newResourceRequest()
      *
      * @return a builder of the request
      */
