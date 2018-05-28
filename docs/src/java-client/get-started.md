@@ -8,7 +8,7 @@ You will be guided through the following steps:
 * [Model a workflow](#model-a-workflow)
 * [Deploy a workflow](#deploy-a-workflow)
 * [Create a workflow instance](#create-a-workflow-instance)
-* [Work on a task](#work-on-a-task)
+* [Work on a job](#work-on-a-job)
 * [Work with data](#work-with-data)
 * [Open a topic subscription](#open-a-topic-subscription)
 
@@ -23,22 +23,22 @@ You will be guided through the following steps:
 * [Zeebe Modeler](https://github.com/zeebe-io/zeebe-modeler/releases)
 * [Zeebe Monitor](https://github.com/zeebe-io/zeebe-simple-monitor/releases)
 
-Now, start the Zeebe broker.
+Now, start the Zeebe broker. This guide uses the `default-topic`, which is created
+when the broker is started.
 
-Create a [topic](../basics/topics-and-logs.html) named `default-topic`. If you have done this already for your Zeebe installation, you can skip this step.
-
+In case you want to create another topic you can use `zbctl` from the `bin` folder.
 Create the topic with zbctl by executing the following command on the command line:
 
 ```
-zbctl create topic default-topic --partitions 1
+zbctl create topic my-topic --partitions 1
 ```
 
 You should see the output:
 
 ```
 {
-  "Name": "default-topic",
-  "State": "CREATED",
+  "Name": "my-topic",
+  "State": "CREATING",
   "Partitions": 1
 }
 ```
@@ -87,7 +87,9 @@ public class Application
         // change the contact point if needed
         clientProperties.put(ClientProperties.BROKER_CONTACTPOINT, "127.0.0.1:51015");
 
-        final ZeebeClient client = ZeebeClient.create(clientProperties);
+        final ZeebeClient client = ZeebeClient.newClientBuilder()
+            .withProperties(clientProperties)
+            .build();
 
         System.out.println("Connected.");
 
@@ -135,7 +137,7 @@ Add the following deploy command to the main class:
 ```java
 package io.zeebe;
 
-import io.zeebe.client.event.DeploymentEvent;
+import io.zeebe.client.api.events.DeploymentEvent;
 
 public class Application
 {
@@ -145,10 +147,11 @@ public class Application
     {
         // after the client is connected
 
-        final DeploymentEvent deployment = client.workflows()
-            .deploy(TOPIC)
+        final DeploymentEvent deployment = client.topicClient().workflowClient()
+            .newDeployCommand()
             .addResourceFromClasspath("order-process.bpmn")
-            .execute();
+            .send()
+            .join();
 
         final int version = deployment.getDeployedWorkflows().get(0).getVersion();
         System.out.println("Workflow deployed. Version: " + version);
@@ -175,7 +178,7 @@ Add the following create command to the main class:
 ```java
 package io.zeebe;
 
-import io.zeebe.client.event.WorkflowInstanceEvent;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
 
 public class Application
 {
@@ -183,11 +186,12 @@ public class Application
     {
         // after the workflow is deployed
 
-        final WorkflowInstanceEvent wfInstance = client.workflows()
-            .create(TOPIC)
+        final WorkflowInstanceEvent wfInstance = client.topicClient().workflowClient()
+            .newCreateInstanceCommand()
             .bpmnProcessId("order-process")
             .latestVersion()
-            .execute();
+            .send()
+            .join();
 
         final long workflowInstanceKey = wfInstance.getWorkflowInstanceKey();
 
@@ -211,15 +215,15 @@ Start the Zeebe Monitor using `java -jar zeebe-simple-monitor.jar`.
 Open a web browser and go to <http://localhost:8080/>.
 
 Connect to the broker and switch to the workflow instances view.
-Here, you see the current state of the workflow instance which includes active tasks, completed activities, the payload and open incidents.
+Here, you see the current state of the workflow instance which includes active jobs, completed activities, the payload and open incidents.
 
 ![zeebe-monitor-step-1](/java-client/zeebe-monitor-1.png)
 
-## Work on a task
+## Work on a job
 
 Now we want to do some work within your workflow.
-First, add a few service tasks to the BPMN diagram and set the required attributes.
-Then extend your main class and open a task subscription to process tasks which are created when the workflow instance reaches a service task.
+First, add a few service jobs to the BPMN diagram and set the required attributes.
+Then extend your main class and create a job worker to process jobs which are created when the workflow instance reaches a service task.
 
 Open the BPMN diagram in the Zeebe Modeler.
 Insert a few service tasks between the start and the end event.
@@ -234,12 +238,12 @@ Add the header `method = VISA` to the first task.
 
 Save the BPMN diagram and switch back to the main class.
 
-Add the following lines to open a [task subscription] for the first tasks type:
+Add the following lines to create a [job worker][] for the first jobs type:
 
 ```java
 package io.zeebe;
 
-import io.zeebe.client.task.TaskSubscription;
+import io.zeebe.client.api.subscription.JobWorker;
 
 public class Application
 {
@@ -247,37 +251,37 @@ public class Application
     {
         // after the workflow instance is created
 
-        final TaskSubscription taskSubscription = client.tasks()
-            .newTaskSubscription(TOPIC)
-            .taskType("payment-service")
-            .lockOwner("sample-app")
-            .lockTime(Duration.ofMinutes(5))
-            .handler((tasksClient, task) ->
+        final JobWorker jobWorker = client.topicClient().jobClient()
+            .newWorker()
+            .jobType("payment-service")
+            .handler((jobClient, job) ->
             {
-                final Map<String, Object> headers = task.getCustomHeaders();
+                final Map<String, Object> headers = job.getCustomHeaders();
                 final String method = (String) headers.get("method");
 
                 System.out.println("Collect money using payment method: " + method);
 
                 // ...
 
-                tasksClient
-                    .complete(task)
+                jobClient.newCompleteCommand(job)
                     .withoutPayload()
-                    .execute();
+                    .send()
+                    .join();
             })
+            .name("sample-app")
+            .timeout(Duration.ofMinutes(5))
             .open();
 
-        // waiting for the tasks
+        // waiting for the jobs
 
-        taskSubscription.close();
+        jobWorker.close();
 
         // ...
     }
 }
 ```
 
-Run the program and verify that the task is processed. You should see the output:
+Run the program and verify that the job is processed. You should see the output:
 
 ```
 Collect money using payment method: VISA
@@ -313,7 +317,7 @@ Add the input mapping `$.orderId : $.orderId` and the output mapping `$.totalPri
 Save the BPMN diagram and go back to the main class.
 
 Modify the create command and pass the data as payload.
-Also, modify the task subscription to read the tasks payload and complete the task with payload.
+Also, modify the job worker to read the jobs payload and complete the job with payload.
 
 ```java
 package io.zeebe;
@@ -324,37 +328,38 @@ public class Application
     {
         // after the workflow is deployed
 
-        final WorkflowInstanceEvent wfInstance = client.workflows()
-            .create(TOPIC)
+        final WorkflowInstanceEvent wfInstance = client.topicClient().workflowClient()
+            .newCreateInstanceCommand()
             .bpmnProcessId("order-process")
             .latestVersion()
             .payload(data)
-            .execute();
+            .send()
+            .join();
 
         // ...
 
-        final TaskSubscription taskSubscription = client.tasks()
-            .newTaskSubscription(TOPIC)
-            .taskType("payment-service")
-            .lockOwner("sample-app")
-            .lockTime(Duration.ofMinutes(5))
-            .handler((tasksClient, task) ->
+        final JobWorker jobWorker = client.topicClient().jobClient()
+            .newWorker()
+            .jobType("payment-service")
+            .handler((jobClient, job) ->
             {
-                final Map<String, Object> headers = task.getCustomHeaders();
+                final Map<String, Object> headers = job.getCustomHeaders();
                 final String method = (String) headers.get("method");
 
-                final String orderId = task.getPayload();
+                final String orderId = job.getPayload();
 
                 System.out.println("Process order: " + orderId);
                 System.out.println("Collect money using payment method: " + method);
 
                 // ...
 
-                tasksClient
-                     .complete(task)
-                     .payload("{ \"totalPrice\": 46.50 }")
-                     .execute();
+                jobClient.newCompleteCommand(job)
+                    .payload("{ \"totalPrice\": 46.50 }")
+                    .send()
+                    .join();
             })
+            .name("sample-app")
+            .timeout(Duration.ofMinutes(5))
             .open();
 
         // ...
@@ -362,7 +367,7 @@ public class Application
 }
 ```
 
-Run the program and verify that the payload is mapped into the task. You should see the output:
+Run the program and verify that the payload is mapped into the job. You should see the output:
 
 ```
 Process order: {"orderId":31243}
@@ -387,7 +392,7 @@ Add the following lines to the main class:
 ```java
 package io.zeebe;
 
-import io.zeebe.client.event.TopicSubscription;
+import io.zeebe.client.api.subscription.TopicSubscription;
 
 public class Application
 {
@@ -395,14 +400,11 @@ public class Application
     {
         // after the workflow instance is created
 
-        final TopicSubscription topicSubscription = client.topics()
-            .newSubscription(TOPIC)
+        final TopicSubscription topicSubscription = client.topicClient()
+            .newSubscription()
             .name("app-monitoring")
+            .workflowInstanceEventHandler(System.out::println)
             .startAtHeadOfTopic()
-            .workflowInstanceEventHandler(event ->
-            {
-                System.out.println("> " + event);
-            })
             .open();
 
         // waiting for the events
@@ -417,30 +419,33 @@ public class Application
 Run the program. You should see the output:
 
 ```
-> WorkflowInstanceEvent [state=CREATE_WORKFLOW_INSTANCE,
-    workflowInstanceKey=-1,
-    workflowKey=-1,
-    bpmnProcessId=order-process,
-    version=-1,
-    activityId=null,
-    payload=null]
-
-> WorkflowInstanceEvent [state=WORKFLOW_INSTANCE_CREATED,
-    workflowInstanceKey=4294986840,
-    workflowKey=4294972072,
+WorkflowInstanceEvent [state=CREATED,
+    workflowInstanceKey=4294967400,
+    workflowKey=1,
     bpmnProcessId=order-process,
     version=1,
     activityId=,
-    payload=null]
+    payload={"orderId":31243,"orderItems":[435,182,376]}
+]
 
-> WorkflowInstanceEvent [state=START_EVENT_OCCURRED,
-    workflowInstanceKey=4294986840,
-    workflowKey=4294972072,
+WorkflowInstanceEvent [
+    state=START_EVENT_OCCURRED,
+    workflowInstanceKey=4294967400,
+    workflowKey=1,
+    bpmnProcessId=order-process,
+    version=1, activityId=order-placed,
+    payload={"orderId":31243,"orderItems":[435,182,376]}
+]
+
+WorkflowInstanceEvent [
+    state=SEQUENCE_FLOW_TAKEN,
+    workflowInstanceKey=4294967400,
+    workflowKey=1,
     bpmnProcessId=order-process,
     version=1,
-    activityId=order-placed,
-    payload=null]
-
+    activityId=SequenceFlow_18tqka5,
+    payload={"orderId":31243,"orderItems":[435,182,376]}
+]
 ...
 ```
 
@@ -454,4 +459,4 @@ Next steps:
 * Take a deeper look into the [Java client](java-client/README.html)
 
 [topic subscription]: ../basics/topics-and-logs.html
-[task subscription]: ../basics/task-workers.html
+[job worker]: ../basics/job-workers.html
