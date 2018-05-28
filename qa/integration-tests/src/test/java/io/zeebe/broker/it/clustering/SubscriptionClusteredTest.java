@@ -124,7 +124,7 @@ public class SubscriptionClusteredTest
 
         assertThat(raftEvents).hasSize(4);
         assertThat(raftEvents).extracting(RaftEvent::getState)
-            .containsExactly(RaftState.ADD_MEMBER, RaftState.ADD_MEMBER, RaftState.REMOVE_MEMBER, RaftState.ADD_MEMBER);
+            .containsExactly(RaftState.MEMBER_ADDED, RaftState.MEMBER_ADDED, RaftState.MEMBER_REMOVED, RaftState.MEMBER_ADDED);
         assertThat(raftEvents.get(1).getMembers()).hasSize(clusteringRule.getBrokersInCluster().size());
     }
 
