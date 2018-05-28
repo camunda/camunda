@@ -1,0 +1,11 @@
+sudo: false
+
+language: java
+jdk: oraclejdk8
+
+branches:
+    only:
+        - master
+
+notifications:
+    email: false
