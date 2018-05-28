@@ -26,11 +26,11 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import io.zeebe.protocol.Protocol;
 
-public class MsgpackIntentModule extends SimpleModule
+public class MsgpackInstantModule extends SimpleModule
 {
     private static final long serialVersionUID = 1L;
 
-    public MsgpackIntentModule()
+    public MsgpackInstantModule()
     {
         addSerializer(Instant.class, new MsgpackInstantSerializer());
         addDeserializer(Instant.class, new MsgpackInstantDeserializer());

@@ -24,11 +24,11 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
-public class PayloadModule extends SimpleModule
+public class JsonPayloadModule extends SimpleModule
 {
     private static final long serialVersionUID = 1L;
 
-    public PayloadModule(MsgPackConverter msgPackConverter)
+    public JsonPayloadModule(MsgPackConverter msgPackConverter)
     {
         addSerializer(PayloadField.class, new PayloadSerializer());
         addDeserializer(PayloadField.class, new PayloadDeserializer(msgPackConverter));

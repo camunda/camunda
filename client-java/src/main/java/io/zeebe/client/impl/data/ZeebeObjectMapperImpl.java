@@ -36,7 +36,7 @@ import org.msgpack.jackson.dataformat.MessagePackFactory;
 public class ZeebeObjectMapperImpl implements ZeebeObjectMapper
 {
     private final ObjectMapper msgpackObjectMapper;
-    private final ObjectMapper defaultObjectMapper;
+    private final ObjectMapper jsonObjectMapper;
 
     private static final Map<Class<?>, Class<?>> RECORD_IMPL_CLASS_MAPPING;
 
@@ -61,7 +61,7 @@ public class ZeebeObjectMapperImpl implements ZeebeObjectMapper
         injectableValues.addValue(ZeebeObjectMapperImpl.class, this);
 
         msgpackObjectMapper = createMsgpackObjectMapper(msgPackConverter, injectableValues);
-        defaultObjectMapper = createDefaultObjectMapper(msgPackConverter, injectableValues);
+        jsonObjectMapper = createDefaultObjectMapper(msgPackConverter, injectableValues);
     }
 
     private ObjectMapper createDefaultObjectMapper(MsgPackConverter msgPackConverter, InjectableValues injectableValues)
@@ -73,7 +73,7 @@ public class ZeebeObjectMapperImpl implements ZeebeObjectMapper
         objectMapper.setInjectableValues(injectableValues);
 
         objectMapper.registerModule(new JavaTimeModule()); // to serialize INSTANT
-        objectMapper.registerModule(new PayloadModule(msgPackConverter));
+        objectMapper.registerModule(new JsonPayloadModule(msgPackConverter));
 
         return objectMapper;
     }
@@ -90,7 +90,7 @@ public class ZeebeObjectMapperImpl implements ZeebeObjectMapper
 
         objectMapper.setInjectableValues(injectableValues);
 
-        objectMapper.registerModule(new MsgpackIntentModule());
+        objectMapper.registerModule(new MsgpackInstantModule());
         objectMapper.registerModule(new MsgpackPayloadModule(msgPackConverter));
 
         return objectMapper;
@@ -101,7 +101,7 @@ public class ZeebeObjectMapperImpl implements ZeebeObjectMapper
     {
         try
         {
-            return defaultObjectMapper.writeValueAsString(record);
+            return jsonObjectMapper.writeValueAsString(record);
         }
         catch (JsonProcessingException e)
         {
@@ -116,7 +116,7 @@ public class ZeebeObjectMapperImpl implements ZeebeObjectMapper
 
         try
         {
-            return defaultObjectMapper.readValue(json, implClass);
+            return jsonObjectMapper.readValue(json, implClass);
         }
         catch (IOException e)
         {
