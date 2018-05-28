@@ -11,9 +11,10 @@ jest.mock('components', () => {
 
   return {
     Modal,
-    Input: props => <input {...props}>{props.children}</input>,
+    Input: ({isInvalid, ...props}) => <input {...props}>{props.children}</input>,
     Button: props => <button {...props}>{props.children}</button>,
-    ControlGroup: props => <div>{props.children}</div>
+    ControlGroup: props => <div>{props.children}</div>,
+    ErrorMessage: ({children}) => <div>{children}</div>
   };
 });
 
@@ -28,7 +29,7 @@ it('should call the callback when adding an external source', () => {
   const node = mount(<ExternalModal confirm={spy} />);
 
   node.setState({
-    source: 'externalStuff'
+    source: 'http://localhost'
   });
 
   node.find('button[type="primary"]').simulate('click');
@@ -36,7 +37,18 @@ it('should call the callback when adding an external source', () => {
   expect(spy).toHaveBeenCalledWith({
     id: '',
     configuration: {
-      external: 'externalStuff'
+      external: 'http://localhost'
     }
   });
+});
+
+it('should show error and disable dubmit button if the url does not start with http or https', () => {
+  const node = mount(<ExternalModal />);
+
+  node.setState({
+    source: 'Dear computer, please show me a report. Thanks.'
+  });
+
+  expect(node.find('button[type="primary"]')).toBeDisabled();
+  expect(node).toIncludeText('URL has to start with http:// or https://');
 });
