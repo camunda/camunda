@@ -158,7 +158,7 @@ public class MetricsTests
     private static String dumpAsString(MetricsManager metricsManager, long now)
     {
         final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
-        final int length = metricsManager.dump(buffer, 0, 100);
+        final int length = metricsManager.dump(buffer, 0, now);
 
         return BufferUtil.bufferAsString(buffer, 0, length);
     }
