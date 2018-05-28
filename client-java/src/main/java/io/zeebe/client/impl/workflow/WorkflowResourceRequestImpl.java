@@ -27,6 +27,8 @@ import io.zeebe.protocol.clientapi.ControlMessageType;
 public class WorkflowResourceRequestImpl extends ControlMessageRequest<WorkflowResource>
         implements WorkflowResourceRequestStep1, WorkflowResourceRequestStep2, WorkflowResourceRequestStep3
 {
+    private static final int LATEST_VERSION = -1;
+
     private final Request request;
 
     public WorkflowResourceRequestImpl(RequestManager client, String topic)
@@ -48,7 +50,7 @@ public class WorkflowResourceRequestImpl extends ControlMessageRequest<WorkflowR
     @Override
     public WorkflowResourceRequestStep3 latestVersion()
     {
-        request.setVersion(WorkflowResourceRequestStep1.LATEST_VERSION);
+        request.setVersion(LATEST_VERSION);
         return this;
     }
 
