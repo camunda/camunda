@@ -123,7 +123,7 @@ public class LeaderState extends AbstractRaftState
             // create new socket address object as it is stored in a map
             if (raft.joinMember(new SocketAddress(newMember)))
             {
-                configurationChangeController.prepare(serverOutput, remoteAddress, requestId, RaftIntent.ADD_MEMBER);
+                configurationChangeController.prepare(serverOutput, remoteAddress, requestId, RaftIntent.MEMBER_ADDED);
                 configurationChangeController.appendEvent();
 
                 // remove condition
@@ -140,7 +140,7 @@ public class LeaderState extends AbstractRaftState
         }
         else
         {
-            configurationChangeController.prepare(serverOutput, remoteAddress, requestId, RaftIntent.REMOVE_MEMBER);
+            configurationChangeController.prepare(serverOutput, remoteAddress, requestId, RaftIntent.MEMBER_REMOVED);
 
             raftActor.runOnCompletion(raft.memberLeaves(member), (canLeave, t) ->
             {
