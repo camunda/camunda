@@ -11,16 +11,17 @@ jest.mock('components', () => {
   Modal.Content = props => <div id="modal_content">{props.children}</div>;
   Modal.Actions = props => <div id="modal_actions">{props.children}</div>;
 
-  const Select = props => (
-    <select {...props} id="select">
-      {props.children}
-    </select>
-  );
-  Select.Option = props => <option {...props}>{props.children}</option>;
+  const Typeahead = props => {
+    const allowedProps = {...props};
+    delete allowedProps.selectValue;
+    delete allowedProps.getValues;
+    delete allowedProps.nameRenderer;
+    return <div {...allowedProps}>{props.children}</div>;
+  };
 
   return {
     Modal,
-    Select,
+    Typeahead,
     Button: props => <button {...props}>{props.children}</button>,
     Input: props => {
       const allowedProps = {...props};
@@ -63,63 +64,37 @@ it('should contain a modal', () => {
   expect(node.find('#modal')).toBePresent();
 });
 
-it('should initially load available variables', () => {
-  mount(<VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />);
-
-  expect(loadVariables).toHaveBeenCalledWith('procDefKey', '1');
-});
-
-it('should display available variables', () => {
-  const node = mount(<VariableFilter processDefinitionKey="procDefKey" />);
-
-  node.setState({
-    variables: [{name: 'foo', type: 'String'}, {name: 'bar', type: 'String'}]
-  });
-
-  expect(node.find('option').at(1)).toIncludeText('foo');
-  expect(node.find('option').at(2)).toIncludeText('bar');
-});
-
 it('should disable add filter button if no variable is selected', () => {
   const node = mount(
     <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
   );
-
-  node.setState({
-    variables: [{name: 'foo', type: 'String'}, {name: 'bar', type: 'String'}]
-  });
 
   const buttons = node.find('#modal_actions button');
   expect(buttons.at(0).prop('disabled')).toBeFalsy(); // abort
   expect(buttons.at(1).prop('disabled')).toBeTruthy(); // create filter
 });
 
-it('should enable add filter button if variable selection is valid', () => {
+it('should enable add filter button if variable selection is valid', async () => {
   const node = mount(
     <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
   );
 
-  node.setState({
-    variables: [{name: 'foo', type: 'String'}, {name: 'bar', type: 'String'}],
+  await node.setState({
     values: ['bar'],
-    selectedVariableIdx: 1
+    selectedVariable: {type: 'String', name: 'StrVar'}
   });
-
   const buttons = node.find('#modal_actions button');
   expect(buttons.at(0).prop('disabled')).toBeFalsy(); // abort
   expect(buttons.at(1).prop('disabled')).toBeFalsy(); // create filter
 });
 
 describe('boolean variables', () => {
-  it('should assume variable value true per default', () => {
+  it('should assume variable value true per default', async () => {
     const node = mount(
       <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
     );
-    node.setState({
-      variables: [{name: 'foo', type: 'Boolean'}]
-    });
 
-    node.find('select').simulate('change', {target: {value: '0'}});
+    await node.instance().selectVariable({type: 'Boolean', name: 'BoolVar'});
 
     expect(node.state().values).toEqual([true]);
   });
@@ -129,8 +104,7 @@ describe('boolean variables', () => {
       <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
     );
     node.setState({
-      variables: [{name: 'foo', type: 'Boolean'}],
-      selectedVariableIdx: 0
+      selectedVariable: {name: 'foo', type: 'Boolean'}
     });
 
     expect(node.find('button').at(0)).toIncludeText('true');
@@ -142,8 +116,7 @@ describe('boolean variables', () => {
       <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
     );
     node.setState({
-      variables: [{name: 'foo', type: 'Boolean'}],
-      selectedVariableIdx: 0
+      selectedVariable: {name: 'foo', type: 'Boolean'}
     });
 
     node
@@ -156,15 +129,12 @@ describe('boolean variables', () => {
 });
 
 describe('number variables', () => {
-  it('should be initialized with an empty variable value', () => {
+  it('should be initialized with an empty variable value', async () => {
     const node = mount(
       <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
     );
-    node.setState({
-      variables: [{name: 'foo', type: 'Float'}]
-    });
 
-    node.find('select').simulate('change', {target: {value: '0'}});
+    await node.instance().selectVariable({name: 'foo', type: 'Float'});
 
     expect(node.state().values).toEqual(['']);
   });
@@ -174,8 +144,7 @@ describe('number variables', () => {
       <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
     );
     node.setState({
-      variables: [{name: 'foo', type: 'Float'}],
-      selectedVariableIdx: 0,
+      selectedVariable: {name: 'foo', type: 'Float'},
       values: ['value0', 'value1', 'value2']
     });
 
@@ -194,8 +163,7 @@ describe('number variables', () => {
       <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
     );
     node.setState({
-      variables: [{name: 'foo', type: 'Float'}],
-      selectedVariableIdx: 0,
+      selectedVariable: {name: 'foo', type: 'Float'},
       values: ['value0']
     });
 
@@ -207,8 +175,7 @@ describe('number variables', () => {
       <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
     );
     node.setState({
-      variables: [{name: 'foo', type: 'Float'}],
-      selectedVariableIdx: 0,
+      selectedVariable: {name: 'foo', type: 'Float'},
       values: ['value0']
     });
 
@@ -222,8 +189,7 @@ describe('number variables', () => {
       <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
     );
     node.setState({
-      variables: [{name: 'foo', type: 'Float'}],
-      selectedVariableIdx: 0,
+      selectedVariable: {name: 'foo', type: 'Float'},
       values: ['value0']
     });
 
@@ -235,8 +201,7 @@ describe('number variables', () => {
       <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
     );
     node.setState({
-      variables: [{name: 'foo', type: 'Float'}],
-      selectedVariableIdx: 0,
+      selectedVariable: {name: 'foo', type: 'Float'},
       values: ['value0', 'value1']
     });
 
@@ -247,11 +212,12 @@ describe('number variables', () => {
     const node = await mount(
       <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
     );
+
     await node.setState({
-      variables: [{name: 'foo', type: 'Float'}],
-      selectedVariableIdx: 0,
+      selectVariable: {name: 'foo', type: 'Float'},
       values: ['123', '12', '17']
     });
+
     await node.instance().selectOperator({
       preventDefault: () => null,
       target: {
@@ -269,8 +235,7 @@ describe('number variables', () => {
     );
 
     node.setState({
-      variables: [{name: 'foo', type: 'Float'}],
-      selectedVariableIdx: 0,
+      selectedVariable: {name: 'foo', type: 'Float'},
       values: ['123xxxx']
     });
 
@@ -285,8 +250,7 @@ describe('number variables', () => {
     );
 
     node.setState({
-      variables: [{name: 'foo', type: 'Float'}],
-      selectedVariableIdx: 0,
+      selectedVariable: {name: 'foo', type: 'Float'},
       values: ['not a number']
     });
 
@@ -304,8 +268,7 @@ describe('number variables', () => {
     );
 
     node.setState({
-      variables: [{name: 'foo', type: 'Integer'}],
-      selectedVariableIdx: 0,
+      selectedVariable: {name: 'foo', type: 'Integer'},
       values: ['123.23']
     });
 
@@ -316,15 +279,12 @@ describe('number variables', () => {
 });
 
 describe('string variables', () => {
-  it('should load 20 values initially', () => {
+  it('should load 20 values initially', async () => {
     const node = mount(
       <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
     );
-    node.setState({
-      variables: [{name: 'foo', type: 'String'}]
-    });
 
-    node.find('select').simulate('change', {target: {value: '0'}});
+    await node.instance().selectVariable({name: 'foo', type: 'String'});
 
     expect(loadValues).toHaveBeenCalledWith('procDefKey', '1', 'foo', 'String', 0, 21);
   });
@@ -334,8 +294,7 @@ describe('string variables', () => {
       <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
     );
     node.setState({
-      variables: [{name: 'foo', type: 'String'}],
-      selectedVariableIdx: 0,
+      selectedVariable: {name: 'foo', type: 'String'},
       availableValues: ['value1', 'value2', 'value3']
     });
 
@@ -349,8 +308,7 @@ describe('string variables', () => {
       <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
     );
     node.setState({
-      variables: [{name: 'foo', type: 'String'}],
-      selectedVariableIdx: 0,
+      selectedVariable: {name: 'foo', type: 'String'},
       availableValues: ['value1', 'value2', 'value3']
     });
 
@@ -367,8 +325,7 @@ describe('string variables', () => {
       <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
     );
     node.setState({
-      variables: [{name: 'foo', type: 'String'}],
-      selectedVariableIdx: 0,
+      selectedVariable: {name: 'foo', type: 'String'},
       availableValues: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
       valuesAreComplete: false
     });
@@ -390,8 +347,7 @@ it('should create a new filter', () => {
   );
 
   node.setState({
-    variables: [{name: 'foo', type: 'String'}],
-    selectedVariableIdx: 0,
+    selectedVariable: {name: 'foo', type: 'String'},
     operator: 'not in',
     values: ['value1', 'value2']
   });
@@ -414,8 +370,7 @@ it('should create a new filter', () => {
     );
 
     node.setState({
-      variables: [{name: 'foo', type: 'String'}],
-      selectedVariableIdx: 0,
+      selectedVariable: {name: 'foo', type: 'String'},
       availableValues: []
     });
 

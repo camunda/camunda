@@ -1,6 +1,6 @@
 import React from 'react';
 import classnames from 'classnames';
-import {Modal, Button, Select, Input, ControlGroup, ButtonGroup, ErrorMessage} from 'components';
+import {Modal, Button, Input, ControlGroup, ButtonGroup, ErrorMessage, Typeahead} from 'components';
 
 import {loadVariables, loadValues} from './service';
 import {numberParser} from 'services';
@@ -14,8 +14,7 @@ export default class VariableFilter extends React.Component {
     super(props);
 
     this.state = {
-      variables: [],
-      selectedVariableIdx: -1,
+      selectedVariable: null,
       operator: 'in',
       values: [],
       availableValues: [],
@@ -25,24 +24,14 @@ export default class VariableFilter extends React.Component {
   }
 
   componentDidMount = async () => {
-    const variables = await loadVariables(
-      this.props.processDefinitionKey,
-      this.props.processDefinitionVersion
-    );
-
     if (this.props.filterData) {
       const filterData = this.props.filterData[0].data;
       this.setState({
-        variables,
-        selectedVariableIdx: variables.findIndex(v => v.name === filterData.name),
+        selectedVariable: {name: filterData.name, type: filterData.type},
         operator: filterData.operator,
         values: filterData.values
       });
       this.loadAvailableValues({name: filterData.name, type: filterData.type});
-    } else {
-      this.setState({
-        variables
-      });
     }
   };
 
@@ -75,12 +64,10 @@ export default class VariableFilter extends React.Component {
 
   loadMore = evt => {
     evt.preventDefault();
-    this.loadAvailableValues(this.state.variables[this.state.selectedVariableIdx]);
+    this.loadAvailableValues(this.state.selectedVariable);
   };
 
-  selectVariable = ({target: {value}}) => {
-    const variable = this.state.variables[value];
-
+  selectVariable = async variable => {
     let values = [''];
     if (variable.type === 'Boolean') {
       values = [true];
@@ -89,24 +76,18 @@ export default class VariableFilter extends React.Component {
       values = [];
     }
 
-    this.setState(
-      {
-        selectedVariableIdx: value,
-        operator: variable.type === 'Boolean' ? '=' : 'in',
-        values,
-        availableValues: [],
-        valuesAreComplete: false
-      },
-      () => {
-        if (variable.type === 'String') {
-          this.loadAvailableValues(variable);
-        }
-      }
-    );
+    await this.loadAvailableValues(variable);
+
+    this.setState({
+      selectedVariable: variable,
+      operator: variable.type === 'Boolean' ? '=' : 'in',
+      values,
+      valuesAreComplete: false
+    });
   };
 
   render() {
-    const {variables, selectedVariableIdx, operator, values, availableValues} = this.state;
+    const {selectedVariable, operator, values, availableValues} = this.state;
 
     return (
       <Modal open={true} onClose={this.props.close} className="VariableFilter__modal">
@@ -115,36 +96,24 @@ export default class VariableFilter extends React.Component {
           <form>
             <ControlGroup layout="horizontal">
               <label htmlFor="VariableFilter__variables">Variable Name</label>
-              <Select
-                value={selectedVariableIdx}
-                onChange={this.selectVariable}
-                name="VariableFilter__variables"
-              >
-                <Select.Option disabled value={-1}>
-                  Please Select Variable
-                </Select.Option>
-                {variables.map(({name}, idx) => {
-                  return (
-                    <Select.Option value={idx} key={idx}>
-                      {name}
-                    </Select.Option>
-                  );
-                })}
-              </Select>
+              <Typeahead
+                getValues={loadVariables(
+                  this.props.processDefinitionKey,
+                  this.props.processDefinitionVersion
+                )}
+                selectValue={this.selectVariable}
+                nameRenderer={this.getVariableName}
+              />
             </ControlGroup>
             <div className="VariableFilter__buttonRow">
               <ButtonGroup className="VariableFilter__operatorButtons">
                 {this.variableIsSelected() &&
-                  this.renderOperatorButtons(variables[selectedVariableIdx].type, operator)}
+                  this.renderOperatorButtons(selectedVariable.type, operator)}
               </ButtonGroup>
             </div>
             <div className="VariableFilter__valueFields">
               {this.variableIsSelected() &&
-                this.renderValueFields(
-                  variables[selectedVariableIdx].type,
-                  availableValues,
-                  values
-                )}
+                this.renderValueFields(selectedVariable.type, availableValues, values)}
             </div>
           </form>
         </Modal.Content>
@@ -163,9 +132,13 @@ export default class VariableFilter extends React.Component {
     );
   }
 
+  getVariableName = variable => {
+    return variable.name;
+  };
+
   selectionIsValid = () => {
     let isValid = true;
-    const variable = this.state.variables[this.state.selectedVariableIdx];
+    const variable = this.state.selectedVariable;
 
     if (variable && this.typeIsNumeric(variable.type)) {
       const containsOnlyValidNumbers = this.state.values.every(value => this.isValidInput(value));
@@ -189,13 +162,13 @@ export default class VariableFilter extends React.Component {
   };
 
   variableIsSelected = () => {
-    return this.state.selectedVariableIdx !== -1;
+    return this.state.selectedVariable !== null;
   };
 
   createFilter = evt => {
     evt.preventDefault();
 
-    const variable = this.state.variables[this.state.selectedVariableIdx];
+    const variable = this.state.selectedVariable;
 
     let values;
     if (variable.type === 'String' || variable.type === 'Boolean') {
@@ -422,7 +395,7 @@ export default class VariableFilter extends React.Component {
   };
 
   isValidInput = value => {
-    const type = this.state.variables[this.state.selectedVariableIdx].type;
+    const type = this.state.selectedVariable.type;
 
     return this.typeIsFloating(type)
       ? numberParser.isFloatNumber(value)

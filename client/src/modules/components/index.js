@@ -24,3 +24,4 @@ export {ProcessDefinitionSelection} from './ProcessDefinitionSelection';
 export {TargetValueBadge} from './TargetValueBadge';
 export {ErrorPage} from './ErrorPage';
 export {ErrorMessage} from './ErrorMessage';
+export {Typeahead} from './Typeahead';
