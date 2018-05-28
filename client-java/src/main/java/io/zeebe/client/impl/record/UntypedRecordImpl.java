@@ -48,12 +48,6 @@ public class UntypedRecordImpl extends RecordImpl
     }
 
     @Override
-    public String toString()
-    {
-        return "Record [metadata=" + getMetadata() + ", content=" + toJson() + "]";
-    }
-
-    @Override
     public Class<? extends RecordImpl> getEventClass()
     {
         // not available for an untyped record
@@ -65,6 +59,12 @@ public class UntypedRecordImpl extends RecordImpl
     {
         // not available for an untyped record
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String toString()
+    {
+        return "UntypedRecord [metadata=" + getMetadata() + "]";
     }
 
 }
