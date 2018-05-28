@@ -17,8 +17,8 @@ package io.zeebe.protocol.intent;
 
 public enum RaftIntent implements Intent
 {
-    ADD_MEMBER((short) 0),
-    REMOVE_MEMBER((short) 1);
+    MEMBER_ADDED((short) 0),
+    MEMBER_REMOVED((short) 1);
 
     private short value;
 
@@ -36,8 +36,8 @@ public enum RaftIntent implements Intent
     {
         switch (value)
         {
-            case 0: return ADD_MEMBER;
-            case 1: return REMOVE_MEMBER;
+            case 0: return MEMBER_ADDED;
+            case 1: return MEMBER_REMOVED;
             default: return Intent.UNKNOWN;
         }
     }
