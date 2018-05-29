@@ -93,7 +93,7 @@ beforeEach(() => {
   props.match.params.viewMode = 'view';
 });
 
-it.only("should show an error page if dashboard doesn't exist", async () => {
+it("should show an error page if dashboard doesn't exist", async () => {
   const node = await mount(shallow(<Dashboard {...props} />).get(0));
 
   await node.setState({
