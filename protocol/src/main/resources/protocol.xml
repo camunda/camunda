@@ -62,6 +62,12 @@
         <validValue name="COMMAND">1</validValue>
         <validValue name="COMMAND_REJECTION">2</validValue>
     </enum>
+
+    <enum name="RejectionType" encodingType="uint8">
+        <validValue name="BAD_VALUE">0</validValue> <!-- Command contains a value that is not allowed/cannot be processed -->
+        <validValue name="NOT_APPLICABLE">1</validValue> <!-- Command is not applicable in current state of addressed state machine -->
+        <validValue name="PROCESSING_ERROR">2</validValue> <!-- Command could not be processed for broker-internal reasons -->
+    </enum>
   </types>
 
   <!-- L1 General Messages 0 - 99 -->
@@ -98,7 +104,9 @@
     <field name="valueType" id="5" type="ValueType" />
     <field name="intent" id="6" type="uint8" />
     <field name="timestamp" id="7" type="uint64" />
-    <data name="value" id="8" type="varDataEncoding" />
+    <field name="rejectionType" id="8" type="RejectionType" /> <!-- populated when RecordType is COMMAND_REJECTION -->
+    <data name="value" id="9" type="varDataEncoding" />
+    <data name="rejectionReason" id="10" type="varDataEncoding" />  <!-- populated when RecordType is COMMAND_REJECTION; UTF-8-encoded String -->
   </sbe:message>
 
   <sbe:message name="SubscribedRecord" id="30">
@@ -111,7 +119,9 @@
     <field name="valueType" id="7" type="ValueType" />
     <field name="intent" id="8" type="uint8" />
     <field name="timestamp" id="9" type="uint64" />
-    <data name="value" id="10" type="varDataEncoding" />
+    <field name="rejectionType" id="10" type="RejectionType" /> <!-- populated when RecordType is COMMAND_REJECTION -->
+    <data name="value" id="11" type="varDataEncoding" />
+    <data name="rejectionReason" id="12" type="varDataEncoding" />  <!-- populated when RecordType is COMMAND_REJECTION; UTF-8 encoded String -->
   </sbe:message>
 
   <!-- L2 Common Messages 200 - 399 -->
@@ -125,6 +135,8 @@
     <field name="valueType" id="6" type="ValueType" />
     <field name="intent" id="7" type="uint8" />
     <field name="incidentKey" id="8" type="uint64" />
+    <field name="rejectionType" id="9" type="RejectionType" /> <!-- populated when RecordType is COMMAND_REJECTION -->
+    <data name="rejectionReason" id="10" type="varDataEncoding" />  <!-- populated when RecordType is COMMAND_REJECTION, UTF-8-encoded String -->
   </sbe:message>
 
 </sbe:messageSchema>

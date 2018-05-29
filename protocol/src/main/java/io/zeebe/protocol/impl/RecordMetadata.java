@@ -15,8 +15,11 @@
  */
 package io.zeebe.protocol.impl;
 
+import java.nio.charset.StandardCharsets;
+
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
@@ -24,6 +27,7 @@ import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.protocol.clientapi.RecordMetadataDecoder;
 import io.zeebe.protocol.clientapi.RecordMetadataEncoder;
 import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.util.buffer.BufferReader;
@@ -31,7 +35,7 @@ import io.zeebe.util.buffer.BufferWriter;
 
 public class RecordMetadata implements BufferWriter, BufferReader
 {
-    public static final int ENCODED_LENGTH = MessageHeaderEncoder.ENCODED_LENGTH +
+    public static final int BLOCK_LENGTH = MessageHeaderEncoder.ENCODED_LENGTH +
             RecordMetadataEncoder.BLOCK_LENGTH;
 
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
@@ -49,6 +53,8 @@ public class RecordMetadata implements BufferWriter, BufferReader
     protected int protocolVersion = Protocol.PROTOCOL_VERSION; // always the current version by default
     protected ValueType valueType = ValueType.NULL_VAL;
     protected long incidentKey;
+    private RejectionType rejectionType;
+    private UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
 
     public RecordMetadata()
     {
@@ -74,12 +80,22 @@ public class RecordMetadata implements BufferWriter, BufferReader
         valueType = decoder.valueType();
         intent = Intent.fromProtocolValue(valueType, decoder.intent());
         incidentKey = decoder.incidentKey();
+        rejectionType = decoder.rejectionType();
+
+        final int rejectionReasonLength = decoder.rejectionReasonLength();
+
+        offset += headerDecoder.blockLength();
+        offset += RecordMetadataDecoder.rejectionReasonHeaderLength();
+
+        rejectionReason.wrap(buffer, offset, rejectionReasonLength);
     }
 
     @Override
     public int getLength()
     {
-        return ENCODED_LENGTH;
+        return BLOCK_LENGTH +
+            RecordMetadataEncoder.rejectionReasonHeaderLength() +
+            rejectionReason.capacity();
     }
 
     @Override
@@ -104,7 +120,19 @@ public class RecordMetadata implements BufferWriter, BufferReader
             .protocolVersion(protocolVersion)
             .valueType(valueType)
             .intent(intentValue)
-            .incidentKey(incidentKey);
+            .incidentKey(incidentKey)
+            .rejectionType(rejectionType);
+
+        offset += RecordMetadataEncoder.BLOCK_LENGTH;
+
+        if (rejectionReason.capacity() > 0)
+        {
+            encoder.putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
+        }
+        else
+        {
+            buffer.putShort(offset, (short) 0);
+        }
     }
 
     public long getRequestId()
@@ -207,6 +235,35 @@ public class RecordMetadata implements BufferWriter, BufferReader
         return recordType;
     }
 
+    public RecordMetadata rejectionType(RejectionType rejectionType)
+    {
+        this.rejectionType = rejectionType;
+        return this;
+    }
+
+    public RejectionType getRejectionType()
+    {
+        return rejectionType;
+    }
+
+    public RecordMetadata rejectionReason(String rejectionReason)
+    {
+        final byte[] bytes = rejectionReason.getBytes(StandardCharsets.UTF_8);
+        this.rejectionReason.wrap(bytes);
+        return this;
+    }
+
+    public RecordMetadata rejectionReason(DirectBuffer buffer)
+    {
+        this.rejectionReason.wrap(buffer);
+        return this;
+    }
+
+    public DirectBuffer getRejectionReason()
+    {
+        return rejectionReason;
+    }
+
     public RecordMetadata reset()
     {
         recordType = RecordType.NULL_VAL;
@@ -218,6 +275,8 @@ public class RecordMetadata implements BufferWriter, BufferReader
         incidentKey = RecordMetadataEncoder.incidentKeyNullValue();
         intentValue = Intent.NULL_VAL;
         intent = null;
+        rejectionType = RejectionType.NULL_VAL;
+        rejectionReason.wrap(0, 0);
         return this;
     }
 
