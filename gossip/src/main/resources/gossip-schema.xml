@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<sbe:messageSchema xmlns:sbe="http://www.fixprotocol.org/ns/simple/RC3"
+<sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
   package="io.zeebe.clustering.gossip" id="3" version="1"
   semanticVersion="0.1.0" description="Zeebe Management Gossip Protocol"
   byteOrder="littleEndian">
@@ -47,7 +47,7 @@
     <field name="senderPort" id="1" type="uint16" />
     <field name="probeMemberPort" id="2" type="uint16" />
     <group name="membershipEvents" id="3" dimensionType="groupSizeEncoding">
-      <field name="eventType" id="4" type="membershipEventType" />  
+      <field name="eventType" id="4" type="membershipEventType" />
       <field name="gossipEpoch" id="5" type="uint64" />
       <field name="gossipHeartbeat" id="6" type="uint64" />
       <field name="port" id="7" type="uint16"/>
@@ -62,7 +62,7 @@
       <data name="payload" id="15" type="varDataEncoding" />
     </group>
     <data name="senderHost" id="16" type="varDataEncoding" />
-    <data name="probeMemberHost" id="17" type="varDataEncoding" />    
+    <data name="probeMemberHost" id="17" type="varDataEncoding" />
   </sbe:message>
 
 </sbe:messageSchema>
