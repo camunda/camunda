@@ -40,7 +40,7 @@ import org.slf4j.Logger;
 
 public class Sender extends Actor implements TimerHandler
 {
-    private static final int MAX_REQUEST_CONSUME_BATCH_SIZE = 10_000;
+    private static final int MAX_REQUEST_CONSUME_BATCH_SIZE = 100;
 
     private static final int DEFAULT_BATCH_SIZE = (int) ByteValue.ofKilobytes(128).toBytes();
 
