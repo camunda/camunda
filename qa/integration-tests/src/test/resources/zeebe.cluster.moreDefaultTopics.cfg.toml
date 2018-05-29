@@ -1,0 +1,36 @@
+# Broker with default topic
+# based on zeebe.cluster.1.cfg.toml
+
+bootstrap = 3
+
+[[topics]]
+name = "default-topic-1"
+partitions = 1
+replicationFactor = 1
+
+[[topics]]
+name = "other-topic"
+partitions = 2
+replicationFactor = 2
+
+[[topics]]
+name = "theOneAndOnlyTopic"
+partitions = 3
+replicationFactor = 2
+
+[[topics]]
+name = "thisTopic"
+partitions = 4
+replicationFactor = 1
+
+[network.client]
+port = 51015
+
+[network.management]
+port = 51016
+
+[network.replication]
+port = 51017
+
+[cluster]
+initialContactPoints = []
