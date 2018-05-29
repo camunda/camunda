@@ -114,14 +114,14 @@ public class ManagementApiRequestHandlerTest
         assertThat(response.getSnapshots().size()).isEqualTo(2);
         for (final ReadableSnapshot expectedSnapshot : expectedSnapshots)
         {
-            final Optional<ListSnapshotsResponse.Snapshot> found = response.getSnapshots().stream()
+            final Optional<ListSnapshotsResponse.SnapshotMetadata> found = response.getSnapshots().stream()
                     .filter((s) -> s.getName().equals(expectedSnapshot.getName()))
                     .findFirst();
 
             assertThat(found.isPresent()).isTrue();
             if (found.isPresent())
             {
-                final ListSnapshotsResponse.Snapshot snapshot = found.get();
+                final ListSnapshotsResponse.SnapshotMetadata snapshot = found.get();
 
                 assertThat(snapshot.getName()).isEqualTo(expectedSnapshot.getName());
                 assertThat(snapshot.getLength()).isEqualTo(expectedSnapshot.getLength());

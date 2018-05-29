@@ -146,7 +146,7 @@ public class SnapshotReplicationRequestHandler
         }
 
         int bytesRead = 0;
-        try (final InputStream snapshotData = snapshot.getData())
+        try (InputStream snapshotData = snapshot.getData())
         {
             final int bytesSkipped = (int) snapshotData.skip(chunkOffset);
             if (bytesSkipped < chunkOffset)

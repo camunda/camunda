@@ -37,16 +37,16 @@ public class ListSnapshotsResponse extends SbeBufferWriterReader<ListSnapshotsRe
     private final ListSnapshotsResponseDecoder bodyDecoder = new ListSnapshotsResponseDecoder();
     private final ListSnapshotsResponseEncoder bodyEncoder = new ListSnapshotsResponseEncoder();
 
-    private final List<Snapshot> snapshots = new ArrayList<>();
+    private final List<SnapshotMetadata> snapshots = new ArrayList<>();
 
-    public List<Snapshot> getSnapshots()
+    public List<SnapshotMetadata> getSnapshots()
     {
         return snapshots;
     }
 
     public ListSnapshotsResponse addSnapshot(final String name, final long logPosition, final byte[] checksum, final long length)
     {
-        this.snapshots.add(new Snapshot(name, logPosition, checksum, length));
+        this.snapshots.add(new SnapshotMetadata(name, logPosition, checksum, length));
         return this;
     }
 
@@ -72,14 +72,14 @@ public class ListSnapshotsResponse extends SbeBufferWriterReader<ListSnapshotsRe
     {
         super.wrap(buffer, offset, length);
         snapshots.clear();
-        bodyDecoder.snapshots().forEach((decoder) -> snapshots.add(new Snapshot(decoder)));
+        bodyDecoder.snapshots().forEach((decoder) -> snapshots.add(new SnapshotMetadata(decoder)));
     }
 
     @Override
     public int getLength()
     {
         final int length = super.getLength() + sbeHeaderSize();
-        return length + snapshots.stream().mapToInt(Snapshot::getEncodedLength).sum();
+        return length + snapshots.stream().mapToInt(SnapshotMetadata::getEncodedLength).sum();
     }
 
     @Override
@@ -92,14 +92,14 @@ public class ListSnapshotsResponse extends SbeBufferWriterReader<ListSnapshotsRe
         snapshots.forEach((snapshot) -> snapshot.encode(encoder));
     }
 
-    public static class Snapshot
+    public static class SnapshotMetadata
     {
         private String name;
         private byte[] checksum;
         private long length;
         private long logPosition;
 
-        Snapshot(final String name, final long logPosition, final byte[] checksum, final long length)
+        SnapshotMetadata(final String name, final long logPosition, final byte[] checksum, final long length)
         {
             this.name = name;
             this.checksum = checksum;
@@ -107,7 +107,7 @@ public class ListSnapshotsResponse extends SbeBufferWriterReader<ListSnapshotsRe
             this.logPosition = logPosition;
         }
 
-        Snapshot(final SnapshotsDecoder decoder)
+        SnapshotMetadata(final SnapshotsDecoder decoder)
         {
             decode(decoder);
         }
@@ -155,8 +155,8 @@ public class ListSnapshotsResponse extends SbeBufferWriterReader<ListSnapshotsRe
         public int getEncodedLength()
         {
             return sbeBlockLength() +
-                    nameHeaderLength() + name.getBytes().length +
-                    checksumHeaderLength() + checksum.length;
+                nameHeaderLength() + name.getBytes().length +
+                checksumHeaderLength() + checksum.length;
         }
 
         void encode(final SnapshotsEncoder encoder)
@@ -172,10 +172,10 @@ public class ListSnapshotsResponse extends SbeBufferWriterReader<ListSnapshotsRe
             }
 
             encoder.next()
-                    .length(length)
-                    .logPosition(logPosition)
-                    .putName(nameBytes, 0, nameBytes.length)
-                    .putChecksum(checksum, 0, checksum.length);
+                .length(length)
+                .logPosition(logPosition)
+                .putName(nameBytes, 0, nameBytes.length)
+                .putChecksum(checksum, 0, checksum.length);
         }
 
         void decode(final SnapshotsDecoder decoder)
@@ -192,9 +192,9 @@ public class ListSnapshotsResponse extends SbeBufferWriterReader<ListSnapshotsRe
         public String toString()
         {
             return "Snapshot{" + "name='" + name + '\'' +
-                    ", checksum=" + Arrays.toString(checksum) +
-                    ", length=" + length + ", logPosition=" + logPosition +
-                    '}';
+                ", checksum=" + Arrays.toString(checksum) +
+                ", length=" + length + ", logPosition=" + logPosition +
+                '}';
         }
 
         @Override
@@ -206,13 +206,13 @@ public class ListSnapshotsResponse extends SbeBufferWriterReader<ListSnapshotsRe
         @Override
         public boolean equals(Object other)
         {
-            if (other instanceof Snapshot)
+            if (other instanceof SnapshotMetadata)
             {
-                final Snapshot snapshot = (Snapshot)other;
+                final SnapshotMetadata snapshot = (SnapshotMetadata)other;
                 return name.equals(snapshot.getName()) &&
-                       logPosition == snapshot.getLogPosition() &&
-                       Arrays.equals(checksum, snapshot.getChecksum()) &&
-                       length == snapshot.getLength();
+                    logPosition == snapshot.getLogPosition() &&
+                    Arrays.equals(checksum, snapshot.getChecksum()) &&
+                    length == snapshot.getLength();
             }
             else
             {
