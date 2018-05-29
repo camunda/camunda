@@ -1,5 +1,5 @@
 import React from 'react';
-import {mount} from 'enzyme';
+import {mount, shallow} from 'enzyme';
 
 import Dashboard from './Dashboard';
 import {loadDashboard, remove, update, isAuthorizedToShareDashboard} from './service';
@@ -93,16 +93,18 @@ beforeEach(() => {
   props.match.params.viewMode = 'view';
 });
 
-it("should show an error page if dashboard doesn't exist", async () => {
-  loadDashboard.mockReturnValueOnce(404);
+it.only("should show an error page if dashboard doesn't exist", async () => {
+  const node = await mount(shallow(<Dashboard {...props} />).get(0));
 
-  const node = await mount(<Dashboard {...props} />);
+  await node.setState({
+    serverError: 404
+  });
 
   expect(node).toIncludeText('error page');
 });
 
 it('should display a loading indicator', () => {
-  const node = mount(<Dashboard {...props} />);
+  const node = mount(shallow(<Dashboard {...props} />).get(0));
 
   expect(node.find('.dashboard-loading-indicator')).toBePresent();
 });
@@ -114,7 +116,7 @@ it('should initially load data', () => {
 });
 
 it('should display the key properties of a dashboard', () => {
-  const node = mount(<Dashboard {...props} />);
+  const node = mount(shallow(<Dashboard {...props} />).get(0));
 
   node.setState({
     loaded: true,
@@ -127,14 +129,14 @@ it('should display the key properties of a dashboard', () => {
 });
 
 it('should provide a link to edit mode in view mode', () => {
-  const node = mount(<Dashboard {...props} />);
+  const node = mount(shallow(<Dashboard {...props} />).get(0));
   node.setState({loaded: true});
 
   expect(node.find('.Dashboard__edit-button')).toBePresent();
 });
 
 it('should remove a dashboard when delete button is clicked', () => {
-  const node = mount(<Dashboard {...props} />);
+  const node = mount(shallow(<Dashboard {...props} />).get(0));
   node.setState({
     loaded: true,
     deleteModalVisible: true
@@ -149,7 +151,7 @@ it('should remove a dashboard when delete button is clicked', () => {
 });
 
 it('should redirect to the dashboard list on dashboard deletion', async () => {
-  const node = mount(<Dashboard {...props} />);
+  const node = mount(shallow(<Dashboard {...props} />).get(0));
   node.setState({
     loaded: true,
     deleteModalVisible: true
@@ -164,14 +166,14 @@ it('should redirect to the dashboard list on dashboard deletion', async () => {
 });
 
 it('should render a sharing popover', () => {
-  const node = mount(<Dashboard {...props} />);
+  const node = mount(shallow(<Dashboard {...props} />).get(0));
   node.setState({loaded: true});
 
   expect(node.find('.Dashboard__share-button').first()).toIncludeText('Share');
 });
 
 it('should enter fullscreen mode', () => {
-  const node = mount(<Dashboard {...props} />);
+  const node = mount(shallow(<Dashboard {...props} />).get(0));
   node.setState({loaded: true});
 
   node
@@ -183,7 +185,7 @@ it('should enter fullscreen mode', () => {
 });
 
 it('should leave fullscreen mode', () => {
-  const node = mount(<Dashboard {...props} />);
+  const node = mount(shallow(<Dashboard {...props} />).get(0));
   node.setState({loaded: true, fullScreenActive: true});
 
   node
@@ -195,7 +197,7 @@ it('should leave fullscreen mode', () => {
 });
 
 it('should activate auto refresh mode and set it to numeric value', () => {
-  const node = mount(<Dashboard {...props} />);
+  const node = mount(shallow(<Dashboard {...props} />).get(0));
   node.setState({loaded: true});
 
   node
@@ -207,7 +209,7 @@ it('should activate auto refresh mode and set it to numeric value', () => {
 });
 
 it('should deactivate autorefresh mode', () => {
-  const node = mount(<Dashboard {...props} />);
+  const node = mount(shallow(<Dashboard {...props} />).get(0));
   node.setState({loaded: true, autoRefreshInterval: 1000});
 
   node
@@ -219,7 +221,7 @@ it('should deactivate autorefresh mode', () => {
 });
 
 it('should add an autorefresh addon when autorefresh mode is active', () => {
-  const node = mount(<Dashboard {...props} />);
+  const node = mount(shallow(<Dashboard {...props} />).get(0));
   node.setState({loaded: true, autoRefreshInterval: 1000});
 
   expect(node).toIncludeText('Addons: AutoRefreshBehavior');
@@ -229,7 +231,7 @@ describe('edit mode', async () => {
   it('should provide a link to view mode', () => {
     props.match.params.viewMode = 'edit';
 
-    const node = mount(<Dashboard {...props} />);
+    const node = mount(shallow(<Dashboard {...props} />).get(0));
     node.setState({loaded: true});
 
     expect(node.find('.Dashboard__save-button')).toBePresent();
@@ -239,7 +241,7 @@ describe('edit mode', async () => {
 
   it('should provide name edit input', async () => {
     props.match.params.viewMode = 'edit';
-    const node = mount(<Dashboard {...props} />);
+    const node = mount(shallow(<Dashboard {...props} />).get(0));
     node.setState({loaded: true, name: 'test name'});
 
     expect(node.find('input#name')).toBePresent();
@@ -247,7 +249,7 @@ describe('edit mode', async () => {
 
   it('should invoke update on save click', async () => {
     props.match.params.viewMode = 'edit';
-    const node = mount(<Dashboard {...props} />);
+    const node = mount(shallow(<Dashboard {...props} />).get(0));
     node.setState({loaded: true, name: 'test name'});
 
     node.find('.Dashboard__save-button').simulate('click');
@@ -257,7 +259,7 @@ describe('edit mode', async () => {
 
   it('should update name on input change', async () => {
     props.match.params.viewMode = 'edit';
-    const node = mount(<Dashboard {...props} />);
+    const node = mount(shallow(<Dashboard {...props} />).get(0));
     node.setState({loaded: true, name: 'test name'});
 
     const input = 'asdf';
@@ -267,7 +269,7 @@ describe('edit mode', async () => {
 
   it('should reset name on cancel', () => {
     props.match.params.viewMode = 'edit';
-    const node = mount(<Dashboard {...props} />);
+    const node = mount(shallow(<Dashboard {...props} />).get(0));
     node.setState({loaded: true, name: 'test name', originalName: 'test name'});
 
     const input = 'asdf';
@@ -280,7 +282,7 @@ describe('edit mode', async () => {
   it('should contain a Grid', () => {
     props.match.params.viewMode = 'edit';
 
-    const node = mount(<Dashboard {...props} />);
+    const node = mount(shallow(<Dashboard {...props} />).get(0));
     node.setState({loaded: true});
 
     expect(node).toIncludeText('Grid');
@@ -289,7 +291,7 @@ describe('edit mode', async () => {
   it('should contain an AddButton', () => {
     props.match.params.viewMode = 'edit';
 
-    const node = mount(<Dashboard {...props} />);
+    const node = mount(shallow(<Dashboard {...props} />).get(0));
     node.setState({loaded: true});
 
     expect(node).toIncludeText('AddButton');
@@ -298,7 +300,7 @@ describe('edit mode', async () => {
   it('should contain a DeleteButton', () => {
     props.match.params.viewMode = 'edit';
 
-    const node = mount(<Dashboard {...props} />);
+    const node = mount(shallow(<Dashboard {...props} />).get(0));
     node.setState({loaded: true});
 
     expect(node).toIncludeText('DeleteButton');
@@ -307,7 +309,7 @@ describe('edit mode', async () => {
   it('should hide the AddButton based on the state', () => {
     props.match.params.viewMode = 'edit';
 
-    const node = mount(<Dashboard {...props} />);
+    const node = mount(shallow(<Dashboard {...props} />).get(0));
     node.setState({loaded: true, addButtonVisible: false});
 
     expect(node).toIncludeText('AddButton visible: false');
@@ -316,7 +318,7 @@ describe('edit mode', async () => {
   it('should add DragBehavior', () => {
     props.match.params.viewMode = 'edit';
 
-    const node = mount(<Dashboard {...props} />);
+    const node = mount(shallow(<Dashboard {...props} />).get(0));
     node.setState({loaded: true});
 
     expect(node).toIncludeText('DragBehavior');
@@ -325,7 +327,7 @@ describe('edit mode', async () => {
   it('should add a resize handle', () => {
     props.match.params.viewMode = 'edit';
 
-    const node = mount(<Dashboard {...props} />);
+    const node = mount(shallow(<Dashboard {...props} />).get(0));
     node.setState({loaded: true});
 
     expect(node).toIncludeText('ResizeHandle');
@@ -333,7 +335,7 @@ describe('edit mode', async () => {
 
   it('should disable the save button and highlight the input if name empty', () => {
     props.match.params.viewMode = 'edit';
-    const node = mount(<Dashboard {...props} />);
+    const node = mount(shallow(<Dashboard {...props} />).get(0));
     node.setState({
       loaded: true,
       name: ''
@@ -344,7 +346,7 @@ describe('edit mode', async () => {
   });
 
   it('should disable the share button if not authorized', () => {
-    const node = mount(<Dashboard {...props} />);
+    const node = mount(shallow(<Dashboard {...props} />).get(0));
     node.setState({
       loaded: true,
       name: '',
@@ -360,7 +362,7 @@ describe('edit mode', async () => {
   });
 
   it('should enable share button if authorized', () => {
-    const node = mount(<Dashboard {...props} />);
+    const node = mount(shallow(<Dashboard {...props} />).get(0));
     node.setState({
       loaded: true,
       name: '',
@@ -376,7 +378,7 @@ describe('edit mode', async () => {
   //   props.match.params.viewMode = 'edit';
   //   props.location.search = '?new';
 
-  //   const node = mount(<Dashboard {...props} />);
+  //   const node = mount(shallow(<Dashboard {...props} />).get(0))
 
   //   node.setState({
   //     loaded: true,

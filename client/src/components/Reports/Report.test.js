@@ -1,5 +1,5 @@
 import React from 'react';
-import {mount} from 'enzyme';
+import {mount, shallow} from 'enzyme';
 
 import Report from './Report';
 import {
@@ -81,33 +81,34 @@ beforeEach(() => {
 });
 
 it('should display a loading indicator', () => {
-  const node = mount(<Report {...props} />);
+  const node = mount(shallow(<Report {...props} />).get(0));
 
   expect(node.find('.report-loading-indicator')).toBePresent();
 });
 
 it("should show an error page if report doesn't exist", async () => {
-  loadSingleReport.mockReturnValueOnce(404);
-
-  const node = await mount(<Report {...props} />);
+  const node = await mount(shallow(<Report {...props} />).get(0));
+  node.setState({
+    serverError: 404
+  });
 
   expect(node).toIncludeText('error page');
 });
 
 it('should initially load data', () => {
-  mount(<Report {...props} />);
+  mount(shallow(<Report {...props} />).get(0));
 
   expect(loadSingleReport).toHaveBeenCalled();
 });
 
 it('should initially evaluate the report', () => {
-  mount(<Report {...props} />);
+  mount(shallow(<Report {...props} />).get(0));
 
   expect(getReportData).toHaveBeenCalled();
 });
 
 it('should display the key properties of a report', () => {
-  const node = mount(<Report {...props} />);
+  const node = mount(shallow(<Report {...props} />).get(0));
 
   node.setState({
     loaded: true,
@@ -121,14 +122,14 @@ it('should display the key properties of a report', () => {
 });
 
 it('should provide a link to edit mode in view mode', () => {
-  const node = mount(<Report {...props} />);
+  const node = mount(shallow(<Report {...props} />).get(0));
   node.setState({loaded: true, reportResult, ...sampleReport});
 
   expect(node.find('.Report__edit-button')).toBePresent();
 });
 
 it('should open a deletion modal on delete button click', async () => {
-  const node = mount(<Report {...props} />);
+  const node = mount(shallow(<Report {...props} />).get(0));
   node.setState({
     loaded: true,
     reportResult,
@@ -144,7 +145,7 @@ it('should open a deletion modal on delete button click', async () => {
 });
 
 it('should remove a report when delete button is clicked', () => {
-  const node = mount(<Report {...props} />);
+  const node = mount(shallow(<Report {...props} />).get(0));
   node.setState({
     loaded: true,
     reportResult,
@@ -161,7 +162,7 @@ it('should remove a report when delete button is clicked', () => {
 });
 
 it('should redirect to the report list on report deletion', async () => {
-  const node = mount(<Report {...props} />);
+  const node = mount(shallow(<Report {...props} />).get(0));
   node.setState({
     loaded: true,
     reportResult,
@@ -178,7 +179,7 @@ it('should redirect to the report list on report deletion', async () => {
 });
 
 it('should contain a ReportView with the report evaluation result', () => {
-  const node = mount(<Report {...props} />);
+  const node = mount(shallow(<Report {...props} />).get(0));
   node.setState({loaded: true, reportResult, ...sampleReport});
 
   expect(node).toIncludeText('ReportView');
@@ -187,21 +188,21 @@ it('should contain a ReportView with the report evaluation result', () => {
 it('should contain a Control Panel in edit mode', () => {
   props.match.params.viewMode = 'edit';
 
-  const node = mount(<Report {...props} />);
+  const node = mount(shallow(<Report {...props} />).get(0));
   node.setState({loaded: true, reportResult, ...sampleReport});
 
   expect(node).toIncludeText('ControlPanel');
 });
 
 it('should not contain a Control Panel in non-edit mode', () => {
-  const node = mount(<Report {...props} />);
+  const node = mount(shallow(<Report {...props} />).get(0));
   node.setState({loaded: true, reportResult, ...sampleReport});
 
   expect(node).not.toIncludeText('ControlPanel');
 });
 
 it('should update the report', async () => {
-  const node = mount(<Report {...props} />);
+  const node = mount(shallow(<Report {...props} />).get(0));
 
   await node.instance().componentDidMount();
   await node.instance().updateReport({visualization: 'customTestVis'});
@@ -210,7 +211,7 @@ it('should update the report', async () => {
 });
 
 it('should evaluate the report after updating', async () => {
-  const node = mount(<Report {...props} />);
+  const node = mount(shallow(<Report {...props} />).get(0));
 
   node.setState({
     data: {
@@ -234,7 +235,7 @@ it('should evaluate the report after updating', async () => {
 });
 
 it('should reset the report data to its original state after canceling', async () => {
-  const node = mount(<Report {...props} />);
+  const node = mount(shallow(<Report {...props} />).get(0));
 
   await node.instance().componentDidMount();
 
@@ -247,7 +248,7 @@ it('should reset the report data to its original state after canceling', async (
 });
 
 it('should save a changed report', async () => {
-  const node = mount(<Report {...props} />);
+  const node = mount(shallow(<Report {...props} />).get(0));
 
   node.instance().save();
 
@@ -255,14 +256,14 @@ it('should save a changed report', async () => {
 });
 
 it('should render a sharing popover', () => {
-  const node = mount(<Report {...props} />);
+  const node = mount(shallow(<Report {...props} />).get(0));
   node.setState({loaded: true, reportResult, ...sampleReport});
 
   expect(node.find('.Report__share-button').first()).toIncludeText('Share');
 });
 
 it('should show a download csv button with the correct link when report is a table', () => {
-  const node = mount(<Report {...props} />);
+  const node = mount(shallow(<Report {...props} />).get(0));
   node.setState({loaded: true, reportResult, ...sampleReport});
 
   expect(node.find('.Report__csv-download-button')).toBePresent();
@@ -277,7 +278,7 @@ it('should show a download csv button with the correct link when report is a tab
 });
 
 it('should not show a csv download button when report is not a table', () => {
-  const node = mount(<Report {...props} />);
+  const node = mount(shallow(<Report {...props} />).get(0));
   node.setState({
     loaded: true,
     reportResult: {
@@ -295,7 +296,7 @@ it('should not show a csv download button when report is not a table', () => {
 describe('edit mode', async () => {
   it('should remove flow node and variable filter after changing ProcDef', async () => {
     props.match.params.viewMode = 'edit';
-    const node = await mount(<Report {...props} />);
+    const node = await mount(shallow(<Report {...props} />).get(0));
 
     node.setState(prevState => ({
       loaded: true,
@@ -334,7 +335,7 @@ describe('edit mode', async () => {
 
   it('should add isInvalid prop to the name input is name is empty', async () => {
     props.match.params.viewMode = 'edit';
-    const node = await mount(<Report {...props} />);
+    const node = await mount(shallow(<Report {...props} />).get(0));
     await node.instance().componentDidMount();
 
     await node.setState({
@@ -347,7 +348,7 @@ describe('edit mode', async () => {
 
   it('should store xml if process definition is changed', async () => {
     props.match.params.viewMode = 'edit';
-    const node = await mount(<Report {...props} />);
+    const node = await mount(shallow(<Report {...props} />).get(0));
 
     await node.instance().componentDidMount();
     await node
@@ -360,7 +361,7 @@ describe('edit mode', async () => {
   it('should provide a link to view mode', async () => {
     props.match.params.viewMode = 'edit';
 
-    const node = mount(<Report {...props} />);
+    const node = mount(shallow(<Report {...props} />).get(0));
     node.setState({loaded: true});
 
     expect(node.find('.Report__save-button')).toBePresent();
@@ -370,7 +371,7 @@ describe('edit mode', async () => {
 
   it('should provide name edit input', async () => {
     props.match.params.viewMode = 'edit';
-    const node = mount(<Report {...props} />);
+    const node = mount(shallow(<Report {...props} />).get(0));
     node.setState({loaded: true, name: 'test name'});
 
     expect(node.find('input#name')).toBePresent();
@@ -378,7 +379,7 @@ describe('edit mode', async () => {
 
   it('should invoke update on save click', async () => {
     props.match.params.viewMode = 'edit';
-    const node = mount(<Report {...props} />);
+    const node = mount(shallow(<Report {...props} />).get(0));
     node.setState({loaded: true, name: 'test name'});
 
     node.find('.Report__save-button').simulate('click');
@@ -388,7 +389,7 @@ describe('edit mode', async () => {
 
   it('should disable save button if report name is empty', async () => {
     props.match.params.viewMode = 'edit';
-    const node = mount(<Report {...props} />);
+    const node = mount(shallow(<Report {...props} />).get(0));
     node.setState({loaded: true, name: ''});
 
     expect(node.find('.Report__save-button')).toBeDisabled();
@@ -396,7 +397,7 @@ describe('edit mode', async () => {
 
   it('should update name on input change', async () => {
     props.match.params.viewMode = 'edit';
-    const node = mount(<Report {...props} />);
+    const node = mount(shallow(<Report {...props} />).get(0));
     node.setState({loaded: true, name: 'test name'});
 
     const input = 'asdf';
@@ -406,7 +407,7 @@ describe('edit mode', async () => {
 
   it('should reset name on cancel', async () => {
     props.match.params.viewMode = 'edit';
-    const node = await mount(<Report {...props} />);
+    const node = await mount(shallow(<Report {...props} />).get(0));
     node.setState({loaded: true});
 
     const input = 'asdf';
@@ -420,7 +421,7 @@ describe('edit mode', async () => {
 
   it('should invoke cancel', async () => {
     props.match.params.viewMode = 'edit';
-    const node = mount(<Report {...props} />);
+    const node = mount(shallow(<Report {...props} />).get(0));
 
     const spy = jest.spyOn(node.instance(), 'cancel');
     node.setState({loaded: true});
@@ -435,7 +436,7 @@ describe('edit mode', async () => {
   });
 
   it('should use original data as result data if report cant be evaluated on cancel', async () => {
-    const node = mount(<Report {...props} />);
+    const node = mount(shallow(<Report {...props} />).get(0));
 
     await node.instance().componentDidMount();
 
@@ -456,7 +457,7 @@ describe('edit mode', async () => {
   //   props.match.params.viewMode = 'edit';
   //   props.location.search = '?new';
 
-  //   const node = mount(<Report {...props} />);
+  //   const node = mount(shallow(<Report {...props} />).get(0));
 
   //   node.setState({
   //     loaded: true,
@@ -474,7 +475,7 @@ describe('edit mode', async () => {
   it("should select the only procDef and it's latest version by default", async () => {
     props.match.params.viewMode = 'edit';
 
-    const node = mount(<Report {...props} />);
+    const node = mount(shallow(<Report {...props} />).get(0));
     await node.instance().componentDidMount();
 
     expect(node.state().data.processDefinitionKey).toBe('key');

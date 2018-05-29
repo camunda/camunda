@@ -1,13 +1,8 @@
 import {get, del, put, post} from 'request';
 
 export async function loadSingleReport(id) {
-  let response;
+  const response = await get('/api/report/' + id);
 
-  try {
-    response = await get('/api/report/' + id);
-  } catch (e) {
-    return e.status;
-  }
   return await response.json();
 }
 
