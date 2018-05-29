@@ -36,15 +36,12 @@ public class DeploymentRecord extends UnpackedObject
             "deployedWorkflows",
             new DeployedWorkflow());
 
-    private final StringProperty errorMessageProp = new StringProperty("errorMessage", "");
-
     public DeploymentRecord()
     {
         this
             .declareProperty(topicNameProp)
             .declareProperty(resourcesProp)
-            .declareProperty(deployedWorkflowsProp)
-            .declareProperty(errorMessageProp);
+            .declareProperty(deployedWorkflowsProp);
     }
 
     public ValueArray<DeployedWorkflow> deployedWorkflows()
@@ -55,23 +52,6 @@ public class DeploymentRecord extends UnpackedObject
     public ValueArray<DeploymentResource> resources()
     {
         return resourcesProp;
-    }
-
-    public DirectBuffer getErrorMessage()
-    {
-        return errorMessageProp.getValue();
-    }
-
-    public DeploymentRecord setErrorMessage(String errorMessage)
-    {
-        this.errorMessageProp.setValue(errorMessage);
-        return this;
-    }
-
-    public DeploymentRecord setErrorMessage(DirectBuffer errorMessage, int offset, int length)
-    {
-        this.errorMessageProp.setValue(errorMessage, offset, length);
-        return this;
     }
 
     public DirectBuffer getTopicName()

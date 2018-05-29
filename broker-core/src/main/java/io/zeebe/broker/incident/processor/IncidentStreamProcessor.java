@@ -31,6 +31,7 @@ import io.zeebe.broker.logstreams.processor.TypedStreamReader;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.map.Long2LongZbMap;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.protocol.intent.IncidentIntent;
@@ -118,7 +119,7 @@ public class IncidentStreamProcessor
             }
             else
             {
-                return writer.writeRejection(command);
+                return writer.writeRejection(command, RejectionType.NOT_APPLICABLE, "Job is not failed");
             }
         }
 
@@ -234,7 +235,7 @@ public class IncidentStreamProcessor
             }
             else
             {
-                position = writer.writeRejection(command);
+                position = writer.writeRejection(command, RejectionType.NOT_APPLICABLE, "Incident is not in state CREATED");
             }
             return position;
         }
@@ -327,7 +328,7 @@ public class IncidentStreamProcessor
             }
             else
             {
-                return writer.writeRejection(command);
+                return writer.writeRejection(command, RejectionType.NOT_APPLICABLE, "Incident does not exist");
             }
         }
 

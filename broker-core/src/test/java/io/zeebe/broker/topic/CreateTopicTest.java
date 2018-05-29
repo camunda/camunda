@@ -40,6 +40,7 @@ import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.TopicIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ControlMessageResponse;
@@ -98,6 +99,8 @@ public class CreateTopicTest
             );
 
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
+        assertThat(response.rejectionReason()).isEqualTo("Topic exists already");
         assertThat(response.intent()).isEqualTo(TopicIntent.CREATE);
     }
 
@@ -121,6 +124,8 @@ public class CreateTopicTest
             );
 
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
+        assertThat(response.rejectionReason()).isEqualTo("Topic exists already");
         assertThat(response.intent()).isEqualTo(TopicIntent.CREATE);
     }
 
@@ -144,6 +149,8 @@ public class CreateTopicTest
             );
 
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+        assertThat(response.rejectionReason()).isEqualTo("Topic must have at least one partition");
         assertThat(response.intent()).isEqualTo(TopicIntent.CREATE);
     }
 
@@ -178,6 +185,8 @@ public class CreateTopicTest
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+        assertThat(response.rejectionReason()).isEqualTo("Topic must have at least one replica");
         assertThat(response.intent()).isEqualTo(TopicIntent.CREATE);
 
         assertThat(response.getValue())
@@ -211,6 +220,8 @@ public class CreateTopicTest
             );
 
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+        assertThat(response.rejectionReason()).isEqualTo("Topic must have at least one replica");
         assertThat(response.intent()).isEqualTo(TopicIntent.CREATE);
     }
 

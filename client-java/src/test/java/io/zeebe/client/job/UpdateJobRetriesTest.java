@@ -96,7 +96,7 @@ public class UpdateJobRetriesTest
 
         // then
         exception.expect(ClientCommandRejectedException.class);
-        exception.expectMessage("Command for event with key 79 was rejected by broker (UPDATE_RETRIES)");
+        exception.expectMessage("Command (UPDATE_RETRIES) for event with key 79 was rejected");
 
         // when
         clientRule.jobClient()

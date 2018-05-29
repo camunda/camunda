@@ -135,6 +135,8 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
             .position(event.getPosition())
             .subscriberKey(subscriberKey)
             .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION)
+            .rejectionType(metadata.getRejectionType())
+            .rejectionReason(metadata.getRejectionReason())
             .value(event.getValueBuffer(), event.getValueOffset(), event.getValueLength())
             .tryWriteMessage(clientStreamId);
 

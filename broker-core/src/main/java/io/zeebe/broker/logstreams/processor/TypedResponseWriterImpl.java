@@ -17,8 +17,14 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
+import java.nio.charset.StandardCharsets;
+
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
 import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.transport.ServerOutput;
@@ -28,6 +34,8 @@ public class TypedResponseWriterImpl implements TypedResponseWriter
     protected CommandResponseWriter writer;
     protected int partitionId;
 
+    private final UnsafeBuffer stringWrapper = new UnsafeBuffer(0, 0);
+
     public TypedResponseWriterImpl(ServerOutput output, int partitionId)
     {
         this.writer = new CommandResponseWriter(output);
@@ -35,18 +43,32 @@ public class TypedResponseWriterImpl implements TypedResponseWriter
     }
 
     @Override
-    public boolean writeRejection(TypedRecord<?> record)
+    public boolean writeRejection(TypedRecord<?> record, RejectionType rejectionType, String rejectionReason)
     {
-        return write(RecordType.COMMAND_REJECTION, record.getMetadata().getIntent(), record);
+        final byte[] bytes = rejectionReason.getBytes(StandardCharsets.UTF_8);
+        stringWrapper.wrap(bytes);
+        return write(RecordType.COMMAND_REJECTION, record.getMetadata().getIntent(), rejectionType, stringWrapper, record);
+    }
+
+    @Override
+    public boolean writeRejection(TypedRecord<?> record, RejectionType type, DirectBuffer reason)
+    {
+        return write(RecordType.COMMAND_REJECTION, record.getMetadata().getIntent(), type, reason, record);
     }
 
     @Override
     public boolean writeEvent(Intent intent, TypedRecord<?> record)
     {
-        return write(RecordType.EVENT, intent, record);
+        stringWrapper.wrap(0, 0);
+        return write(RecordType.EVENT, intent, RejectionType.NULL_VAL, stringWrapper, record);
     }
 
-    private boolean write(RecordType type, Intent intent, TypedRecord<?> record)
+    private boolean write(
+            RecordType type,
+            Intent intent,
+            RejectionType rejectionType,
+            DirectBuffer rejectionReason,
+            TypedRecord<?> record)
     {
         final RecordMetadata metadata = record.getMetadata();
 
@@ -58,6 +80,8 @@ public class TypedResponseWriterImpl implements TypedResponseWriter
             .intent(intent)
             .recordType(type)
             .valueType(metadata.getValueType())
+            .rejectionType(rejectionType)
+            .rejectionReason(rejectionReason)
             .valueWriter(record.getValue())
             .tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId());
     }

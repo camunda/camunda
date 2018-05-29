@@ -20,6 +20,7 @@ package io.zeebe.broker.logstreams.processor;
 import java.util.function.Consumer;
 
 import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.protocol.intent.Intent;
 
@@ -28,12 +29,12 @@ public interface TypedStreamWriter
     /**
      * @return position of new event, negative value on failure
      */
-    long writeRejection(TypedRecord<? extends UnpackedObject> command);
+    long writeRejection(TypedRecord<? extends UnpackedObject> command, RejectionType type, String reason);
 
     /**
      * @return position of new event, negative value on failure
      */
-    long writeRejection(TypedRecord<? extends UnpackedObject> command, Consumer<RecordMetadata> metadata);
+    long writeRejection(TypedRecord<? extends UnpackedObject> command, RejectionType type, String reason, Consumer<RecordMetadata> metadata);
 
     /**
      * @return position of new event, negative value on failure

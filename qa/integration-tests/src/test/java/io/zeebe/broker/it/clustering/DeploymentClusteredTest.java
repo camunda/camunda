@@ -238,7 +238,7 @@ public class DeploymentClusteredTest
 
         // expect
         expectedException.expect(ClientCommandRejectedException.class);
-        expectedException.expectMessage("Command was rejected by broker");
+        expectedException.expectMessage("Command (CREATE) was rejected");
         expectedException.expectMessage("Failed to deploy resource 'invalid.bpmn'");
         expectedException.expectMessage("Failed to read BPMN model");
 
@@ -256,7 +256,7 @@ public class DeploymentClusteredTest
     {
         // expect
         expectedException.expect(ClientCommandRejectedException.class);
-        expectedException.expectMessage("Command was rejected by broker (CREATE)");
+        expectedException.expectMessage("Command (CREATE) was rejected");
 
         // when
         client.topicClient("test")

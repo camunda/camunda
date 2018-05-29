@@ -23,10 +23,12 @@ import java.util.Objects;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.SubscribedRecordEncoder;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -52,6 +54,8 @@ public class SubscribedRecordWriter implements BufferWriter
     private RecordType recordType = RecordType.NULL_VAL;
     private short intent = Intent.NULL_VAL;
     protected long timestamp = timestampNullValue();
+    private RejectionType rejectionType = RejectionType.NULL_VAL;
+    private UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
 
     protected final ServerOutput output;
     protected final TransportMessage message = new TransportMessage();
@@ -128,13 +132,27 @@ public class SubscribedRecordWriter implements BufferWriter
         return this;
     }
 
+    public SubscribedRecordWriter rejectionType(RejectionType rejectionType)
+    {
+        this.rejectionType = rejectionType;
+        return this;
+    }
+
+    public SubscribedRecordWriter rejectionReason(DirectBuffer rejectionReason)
+    {
+        this.rejectionReason.wrap(rejectionReason, 0, rejectionReason.capacity());
+        return this;
+    }
+
     @Override
     public int getLength()
     {
         return MessageHeaderEncoder.ENCODED_LENGTH +
                 SubscribedRecordEncoder.BLOCK_LENGTH +
                 SubscribedRecordEncoder.valueHeaderLength() +
-                valueWriter.getLength();
+                valueWriter.getLength() +
+                SubscribedRecordEncoder.rejectionReasonHeaderLength() +
+                rejectionReason.capacity();
     }
 
     @Override
@@ -159,7 +177,8 @@ public class SubscribedRecordWriter implements BufferWriter
             .subscriberKey(subscriberKey)
             .subscriptionType(subscriptionType)
             .valueType(valueType)
-            .intent(intent);
+            .intent(intent)
+            .rejectionType(rejectionType);
 
         offset += SubscribedRecordEncoder.BLOCK_LENGTH;
 
@@ -168,6 +187,14 @@ public class SubscribedRecordWriter implements BufferWriter
 
         offset += SubscribedRecordEncoder.valueHeaderLength();
         valueWriter.write(buffer, offset);
+
+        offset += eventLength;
+        final int rejectionReasonLength = rejectionReason.capacity();
+        buffer.putShort(offset, (short) rejectionReasonLength, Protocol.ENDIANNESS);
+
+        offset += SubscribedRecordEncoder.rejectionReasonHeaderLength();
+        buffer.putBytes(offset, rejectionReason, 0, rejectionReasonLength);
+
     }
 
     public boolean tryWriteMessage(int remoteStreamId)

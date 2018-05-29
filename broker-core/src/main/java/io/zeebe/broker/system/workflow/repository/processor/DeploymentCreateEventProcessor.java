@@ -31,6 +31,7 @@ import io.zeebe.model.bpmn.BpmnModelApi;
 import io.zeebe.model.bpmn.ValidationResult;
 import io.zeebe.model.bpmn.instance.Workflow;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
@@ -42,6 +43,8 @@ public class DeploymentCreateEventProcessor implements TypedRecordProcessor<Depl
     private final WorkflowRepositoryIndex index;
 
     private boolean accepted;
+    private RejectionType rejectionType;
+    private String rejectionReason;
 
     public DeploymentCreateEventProcessor(WorkflowRepositoryIndex index)
     {
@@ -60,8 +63,9 @@ public class DeploymentCreateEventProcessor implements TypedRecordProcessor<Depl
         }
         else
         {
-            deploymentEvent.setErrorMessage("No topic found with name " + topicName);
             accepted = false;
+            rejectionType = RejectionType.BAD_VALUE;
+            rejectionReason = "Topic does not exist";
         }
     }
 
@@ -80,6 +84,8 @@ public class DeploymentCreateEventProcessor implements TypedRecordProcessor<Depl
         else
         {
             return writer.writeRejection(event,
+                rejectionType,
+                rejectionReason,
                 m -> m.requestId(event.getMetadata().getRequestId())
                     .requestStreamId(event.getMetadata().getRequestStreamId()));
         }
@@ -100,7 +106,7 @@ public class DeploymentCreateEventProcessor implements TypedRecordProcessor<Depl
 
         if (!resourceIterator.hasNext())
         {
-            validationErrors.append("Deployment doesn't contain a resource to deploy.");
+            validationErrors.append("Deployment doesn't contain a resource to deploy");
 
             success = false;
         }
@@ -156,7 +162,11 @@ public class DeploymentCreateEventProcessor implements TypedRecordProcessor<Depl
             }
         }
 
-        deploymentEvent.setErrorMessage(validationErrors.toString());
+        if (!success)
+        {
+            rejectionType = RejectionType.BAD_VALUE;
+            rejectionReason = validationErrors.toString();
+        }
 
         return success;
     }

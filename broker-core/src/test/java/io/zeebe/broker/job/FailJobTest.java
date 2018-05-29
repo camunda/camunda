@@ -36,6 +36,7 @@ import org.junit.rules.RuleChain;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
@@ -124,6 +125,8 @@ public class FailJobTest
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
+        assertThat(response.rejectionReason()).isEqualTo("Job is not in state ACTIVATED");
         assertThat(response.intent()).isEqualTo(JobIntent.FAIL);
     }
 
@@ -146,6 +149,8 @@ public class FailJobTest
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
+        assertThat(response.rejectionReason()).isEqualTo("Job is not in state ACTIVATED");
         assertThat(response.intent()).isEqualTo(JobIntent.FAIL);
     }
 
@@ -161,6 +166,8 @@ public class FailJobTest
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
+        assertThat(response.rejectionReason()).isEqualTo("Job is not in state ACTIVATED");
         assertThat(response.intent()).isEqualTo(JobIntent.FAIL);
     }
 
@@ -182,6 +189,8 @@ public class FailJobTest
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
+        assertThat(response.rejectionReason()).isEqualTo("Job is not in state ACTIVATED");
         assertThat(response.intent()).isEqualTo(JobIntent.FAIL);
     }
 

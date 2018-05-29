@@ -34,6 +34,7 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.commands.CreateJobCommandStep1;
 import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.events.JobState;
+import io.zeebe.client.api.record.RecordMetadata;
 import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.util.ClientRule;
 import io.zeebe.protocol.Protocol;
@@ -115,10 +116,14 @@ public class CreateJobTest
                 entry("payload", converter.convertToMsgPack(payload)));
 
         assertThat(job.getKey()).isEqualTo(123L);
-        assertThat(job.getMetadata().getTopicName()).isEqualTo(StubBrokerRule.TEST_TOPIC_NAME);
-        assertThat(job.getMetadata().getPartitionId()).isEqualTo(StubBrokerRule.TEST_PARTITION_ID);
-        assertThat(job.getMetadata().getPosition()).isEqualTo(456);
-        assertThat(job.getMetadata().getTimestamp()).isEqualTo(expectedTimestamp);
+
+        final RecordMetadata metadata = job.getMetadata();
+        assertThat(metadata.getTopicName()).isEqualTo(StubBrokerRule.TEST_TOPIC_NAME);
+        assertThat(metadata.getPartitionId()).isEqualTo(StubBrokerRule.TEST_PARTITION_ID);
+        assertThat(metadata.getPosition()).isEqualTo(456);
+        assertThat(metadata.getTimestamp()).isEqualTo(expectedTimestamp);
+        assertThat(metadata.getRejectionType()).isEqualTo(null);
+        assertThat(metadata.getRejectionReason()).isEqualTo(null);
 
         assertThat(job.getState()).isEqualTo(JobState.CREATED);
         assertThat(job.getHeaders()).isEmpty();

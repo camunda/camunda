@@ -17,6 +17,7 @@ package io.zeebe.client.event;
 
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.fail;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -41,6 +42,25 @@ import io.zeebe.protocol.clientapi.*;
 import io.zeebe.protocol.intent.*;
 import io.zeebe.test.broker.protocol.brokerapi.*;
 import io.zeebe.test.util.*;
+import io.zeebe.protocol.clientapi.ControlMessageType;
+import io.zeebe.protocol.clientapi.ErrorCode;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.protocol.clientapi.SubscriptionType;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.IncidentIntent;
+import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.intent.SubscriberIntent;
+import io.zeebe.protocol.intent.SubscriptionIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.test.broker.protocol.brokerapi.ControlMessageRequest;
+import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
+import io.zeebe.test.broker.protocol.brokerapi.ResponseController;
+import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
+import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.test.util.Conditions;
+import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.junit.*;
@@ -1141,6 +1161,51 @@ public class TopicSubscriptionTest
         assertThat(numCloseRequests).isEqualTo(1); // did not attempt to close more than once
     }
 
+    @Test
+    public void shouldExposeRejectionReason()
+    {
+        // given
+        final long subscriberKey = 123L;
+        broker.stubTopicSubscriptionApi(subscriberKey);
+
+        final RecordingTopicEventHandler eventHandler = new RecordingTopicEventHandler();
+
+        clientRule.topicClient()
+            .newSubscription()
+            .name(SUBSCRIPTION_NAME)
+            .jobCommandHandler(eventHandler)
+            .startAtHeadOfTopic()
+            .open();
+
+        final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
+
+        // when pushing a rejection record
+        final String rejectionReason = "foooo";
+        broker.newSubscribedEvent()
+            .partitionId(StubBrokerRule.TEST_PARTITION_ID)
+            .key(123)
+            .position(345)
+            .recordType(RecordType.COMMAND_REJECTION)
+            .valueType(ValueType.JOB)
+            .intent(JobIntent.COMPLETE)
+            .subscriberKey(subscriberKey)
+            .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION)
+            .rejectionType(RejectionType.NOT_APPLICABLE)
+            .rejectionReason(rejectionReason)
+            .value()
+                .done()
+            .push(clientAddress);
+
+        // then
+        waitUntil(() -> eventHandler.jobCommandRejections.size() == 1);
+
+        final Record record = eventHandler.jobCommandRejections.get(0);
+
+        final RecordMetadata metadata = record.getMetadata();
+        assertThat(metadata.getRejectionType()).isEqualByComparingTo(io.zeebe.client.api.record.RejectionType.NOT_APPLICABLE);
+        assertThat(metadata.getRejectionReason()).isEqualTo(rejectionReason);
+    }
+
     protected void assertMetadata(
             Record actualRecord,
             long expectedKey,
@@ -1163,6 +1228,8 @@ public class TopicSubscriptionTest
         assertThat(metadata.getPartitionId()).isEqualTo(clientRule.getDefaultPartitionId());
         assertThat(metadata.getRecordType()).isEqualTo(clientRecordType);
         assertThat(metadata.getIntent()).isEqualTo(expectedIntent);
+        assertThat(metadata.getRejectionReason()).isNull();
+        assertThat(metadata.getRejectionType()).isNull();
     }
 
     protected Stream<ExecuteCommandRequest> receivedSubscribeCommands()
@@ -1185,6 +1252,7 @@ public class TopicSubscriptionTest
         protected List<Record> topicEvents = new CopyOnWriteArrayList<>();
         protected List<JobEvent> jobEvents = new CopyOnWriteArrayList<>();
         protected List<JobCommand> jobCommands = new CopyOnWriteArrayList<>();
+        protected List<JobCommand> jobCommandRejections = new CopyOnWriteArrayList<>();
         protected List<WorkflowInstanceEvent> workflowInstanceEvents = new CopyOnWriteArrayList<>();
         protected List<WorkflowInstanceCommand> workflowInstanceCommands = new CopyOnWriteArrayList<>();
         protected List<IncidentEvent> incidentEvents = new CopyOnWriteArrayList<>();
@@ -1207,6 +1275,12 @@ public class TopicSubscriptionTest
         public void onJobCommand(JobCommand jobCommand)
         {
             jobCommands.add(jobCommand);
+        }
+
+        @Override
+        public void onJobCommandRejection(JobCommand jobCommand) throws Exception
+        {
+            this.jobCommandRejections.add(jobCommand);
         }
 
         @Override

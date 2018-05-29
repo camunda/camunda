@@ -16,19 +16,26 @@
 package io.zeebe.client.impl;
 
 import java.time.Instant;
-import java.util.function.BiFunction;
 
-import io.zeebe.client.api.record.Record;
+import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.io.DirectBufferInputStream;
+import org.agrona.io.ExpandableDirectBufferOutputStream;
+
 import io.zeebe.client.api.record.RecordMetadata;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.record.RecordImpl;
 import io.zeebe.client.impl.record.RecordMetadataImpl;
-import io.zeebe.protocol.clientapi.*;
+import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
+import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
+import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
+import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.Intent;
-import org.agrona.*;
-import org.agrona.io.DirectBufferInputStream;
-import org.agrona.io.ExpandableDirectBufferOutputStream;
 
 public class CommandRequestHandler implements RequestResponseHandler
 {
@@ -38,7 +45,6 @@ public class CommandRequestHandler implements RequestResponseHandler
     protected ExecuteCommandResponseDecoder decoder = new ExecuteCommandResponseDecoder();
 
     protected RecordImpl command;
-    protected BiFunction<Record, String, String> errorFunction;
 
     protected final ZeebeObjectMapperImpl objectMapper;
 
@@ -50,7 +56,6 @@ public class CommandRequestHandler implements RequestResponseHandler
     {
         this.objectMapper = objectMapper;
         this.command = command.getCommand();
-        this.errorFunction = command::generateError;
         serialize(command.getCommand());
     }
 
@@ -123,7 +128,6 @@ public class CommandRequestHandler implements RequestResponseHandler
     {
         decoder.wrap(buffer, offset, blockLength, version);
 
-
         final int partitionId = decoder.partitionId();
         final long position = decoder.position();
         final long key = decoder.key();
@@ -132,6 +136,7 @@ public class CommandRequestHandler implements RequestResponseHandler
 
         final ValueType valueType = decoder.valueType();
         final Intent intent = Intent.fromProtocolValue(valueType, decoder.intent());
+        final RejectionType rejectionType = decoder.rejectionType();
 
         final int valueLength = decoder.valueLength();
 
@@ -144,6 +149,19 @@ public class CommandRequestHandler implements RequestResponseHandler
 
         final RecordImpl result = objectMapper.fromMsgpack(inStream, resultClass);
 
+
+        decoder.limit(offset +
+                ExecuteCommandResponseDecoder.BLOCK_LENGTH +
+                ExecuteCommandResponseDecoder.valueHeaderLength() +
+                valueLength);
+        final String rejectionReason = decoder.rejectionReason();
+
+        if (recordType == RecordType.COMMAND_REJECTION)
+        {
+            final String exceptionMessage = buildRejectionMessage(command, rejectionType, rejectionReason);
+            throw new ClientCommandRejectedException(exceptionMessage);
+        }
+
         final RecordMetadataImpl metadata = result.getMetadata();
         metadata.setKey(key);
         metadata.setPartitionId(partitionId);
@@ -154,16 +172,46 @@ public class CommandRequestHandler implements RequestResponseHandler
         metadata.setIntent(intent);
         metadata.setTimestamp(timestamp);
 
-        if (recordType == RecordType.COMMAND_REJECTION)
+        return result;
+    }
+
+    private String buildRejectionMessage(RecordImpl command, RejectionType rejectionType, String rejectionReason)
+    {
+        final long key = command.getMetadata().getKey();
+        final StringBuilder sb = new StringBuilder();
+        sb.append("Command (");
+        sb.append(command.getMetadata().getIntent());
+        sb.append(") ");
+
+        if (key >= 0)
         {
-            metadata.setKey(command.getKey());
-
-            final String rejectionReason = "unknown";
-
-            throw new ClientCommandRejectedException(errorFunction.apply(result, rejectionReason));
+            sb.append("for event with key ");
+            sb.append(key);
+            sb.append(" ");
         }
 
-        return result;
+        sb.append("was rejected. ");
+        sb.append(describeRejectionType(rejectionType));
+        sb.append(" ");
+        sb.append(rejectionReason);
+
+        return sb.toString();
+    }
+
+    private String describeRejectionType(RejectionType rejectionType)
+    {
+        switch (rejectionType)
+        {
+            case BAD_VALUE:
+                return "It has an invalid value.";
+            case NOT_APPLICABLE:
+                return "It is not applicable in the current state.";
+            case PROCESSING_ERROR:
+                return "The broker could not process it for internal reasons.";
+            default:
+                // Nothing
+                return "";
+        }
     }
 
     @Override

@@ -27,6 +27,7 @@ import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
@@ -41,6 +42,7 @@ public class ExecuteCommandResponse implements BufferReader
     protected final MsgPackHelper msgPackHelper;
 
     protected Map<String, Object> value;
+    private String rejectionReason;
 
     public ExecuteCommandResponse(MsgPackHelper msgPackHelper)
     {
@@ -88,6 +90,16 @@ public class ExecuteCommandResponse implements BufferReader
         return responseDecoder.recordType();
     }
 
+    public RejectionType rejectionType()
+    {
+        return responseDecoder.rejectionType();
+    }
+
+    public String rejectionReason()
+    {
+        return rejectionReason;
+    }
+
     @Override
     public void wrap(DirectBuffer responseBuffer, int offset, int length)
     {
@@ -120,6 +132,9 @@ public class ExecuteCommandResponse implements BufferReader
         {
             LangUtil.rethrowUnchecked(e);
         }
+
+        responseDecoder.limit(eventOffset + eventLength);
+        rejectionReason = responseDecoder.rejectionReason();
     }
 
 }

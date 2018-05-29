@@ -30,12 +30,14 @@ import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.TopicIntent;
 import io.zeebe.util.buffer.BufferUtil;
 
 public class TopicCreatedProcessor implements TypedRecordProcessor<TopicRecord>
 {
     private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
+    private static final String REJECTION_REASON = "Topic exists already";
 
     private final Predicate<DirectBuffer> topicAlreadyCreated;
     private final Consumer<DirectBuffer> notifyListeners;
@@ -85,7 +87,7 @@ public class TopicCreatedProcessor implements TypedRecordProcessor<TopicRecord>
         }
         else
         {
-            return writer.writeRejection(event);
+            return writer.writeRejection(event, RejectionType.NOT_APPLICABLE, REJECTION_REASON);
         }
     }
 

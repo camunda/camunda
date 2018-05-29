@@ -113,7 +113,7 @@ public class UpdatePayloadTest
 
         // then
         thrown.expect(ClientCommandRejectedException.class);
-        thrown.expectMessage("Command for event with key 2 was rejected by broker (UPDATE_PAYLOAD)");
+        thrown.expectMessage("Command (UPDATE_PAYLOAD) for event with key 2 was rejected");
 
         // when
         workflowTopicClient.newUpdatePayloadCommand(event)

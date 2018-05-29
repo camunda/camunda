@@ -36,6 +36,7 @@ import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
@@ -189,6 +190,8 @@ public class CancelWorkflowInstanceTest
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
+        assertThat(response.rejectionReason()).isEqualTo("Workflow instance is not running");
 
         final SubscribedRecord cancelRejection = testClient
             .receiveRejections()
@@ -221,6 +224,8 @@ public class CancelWorkflowInstanceTest
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
+        assertThat(response.rejectionReason()).isEqualTo("Workflow instance is not running");
 
         final SubscribedRecord cancelRejection = testClient
             .receiveRejections()

@@ -32,6 +32,8 @@ public class RecordMetadataImpl implements RecordMetadata
     private io.zeebe.protocol.clientapi.ValueType valueType;
     private Intent intent;
     private Instant timestamp;
+    private io.zeebe.protocol.clientapi.RejectionType rejectionType = io.zeebe.protocol.clientapi.RejectionType.NULL_VAL;
+    private String rejectionReason;
 
     public RecordMetadataImpl()
     {
@@ -42,13 +44,22 @@ public class RecordMetadataImpl implements RecordMetadata
     public RecordMetadataImpl(
             @JsonProperty("intent") String intent,
             @JsonProperty("valueType") io.zeebe.protocol.clientapi.ValueType valueType,
-            @JsonProperty("recordType") io.zeebe.protocol.clientapi.RecordType recordType)
+            @JsonProperty("recordType") io.zeebe.protocol.clientapi.RecordType recordType,
+            @JsonProperty("rejectionType") io.zeebe.protocol.clientapi.RejectionType rejectionType)
     {
         // is used by Jackson to de-serialize a JSON String
         // resolve the intent from the given String and the value type
         this.valueType = valueType;
         this.recordType = recordType;
         this.intent = Intent.fromProtocolValue(valueType, intent);
+        if (rejectionType != null)
+        {
+            this.rejectionType = rejectionType;
+        }
+        else
+        {
+            this.rejectionType = io.zeebe.protocol.clientapi.RejectionType.NULL_VAL;
+        }
     }
 
     @Override
@@ -163,6 +174,41 @@ public class RecordMetadataImpl implements RecordMetadata
     }
 
     @Override
+    public RejectionType getRejectionType()
+    {
+        if (rejectionType == io.zeebe.protocol.clientapi.RejectionType.NULL_VAL)
+        {
+            return null;
+        }
+        else
+        {
+            return RejectionType.valueOf(rejectionType.name());
+        }
+    }
+
+    @JsonIgnore
+    public io.zeebe.protocol.clientapi.RejectionType getProtocolRejectionType()
+    {
+        return rejectionType;
+    }
+
+    @Override
+    public String getRejectionReason()
+    {
+        return rejectionReason;
+    }
+
+    public void setRejectionReason(String rejectionReason)
+    {
+        this.rejectionReason = rejectionReason;
+    }
+
+    public void setRejectionType(io.zeebe.protocol.clientapi.RejectionType rejectionType)
+    {
+        this.rejectionType = rejectionType;
+    }
+
+    @Override
     public String toString()
     {
         final StringBuilder builder = new StringBuilder();
@@ -185,5 +231,6 @@ public class RecordMetadataImpl implements RecordMetadata
         builder.append("]");
         return builder.toString();
     }
+
 
 }

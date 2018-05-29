@@ -7,7 +7,9 @@
       "partitionId":1,
       "key":4294967400,
       "position":4294967400,
-      "timestamp":"2018-05-22T13:11:01.915Z"
+      "timestamp":"2018-05-22T13:11:01.915Z",
+      "rejectionType": null,
+      "rejectionReason": null
    },
    "members":[
       {

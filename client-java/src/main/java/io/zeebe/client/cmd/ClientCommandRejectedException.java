@@ -32,6 +32,8 @@ public class ClientCommandRejectedException extends ClientException
         super(errorMessage, cause);
     }
 
+
+
     @Override
     public ClientException newInCurrentContext()
     {

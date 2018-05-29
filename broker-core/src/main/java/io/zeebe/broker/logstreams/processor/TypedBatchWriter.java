@@ -25,10 +25,6 @@ import io.zeebe.protocol.intent.Intent;
 
 public interface TypedBatchWriter
 {
-
-    TypedBatchWriter addRejection(TypedRecord<? extends UnpackedObject> command);
-    TypedBatchWriter addRejection(TypedRecord<? extends UnpackedObject> command, Consumer<RecordMetadata> metadata);
-
     TypedBatchWriter addNewCommand(Intent intent, UnpackedObject value);
     TypedBatchWriter addFollowUpCommand(long key, Intent intent, UnpackedObject value);
 

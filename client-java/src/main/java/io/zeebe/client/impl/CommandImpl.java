@@ -34,26 +34,6 @@ public abstract class CommandImpl<R extends Record>
         return client.send(this);
     }
 
-    public String generateError(Record command, String reason)
-    {
-        final long requestEventKey = command.getMetadata().getKey();
-        final StringBuilder sb = new StringBuilder();
-        sb.append("Command ");
-
-        if (requestEventKey >= 0)
-        {
-            sb.append("for event with key ");
-            sb.append(requestEventKey);
-            sb.append(" ");
-        }
-
-        sb.append("was rejected by broker (");
-        sb.append(command.getMetadata().getIntent());
-        sb.append(")");
-
-        return sb.toString();
-    }
-
     public abstract RecordImpl getCommand();
 
 }

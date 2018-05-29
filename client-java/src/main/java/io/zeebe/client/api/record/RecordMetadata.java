@@ -67,4 +67,16 @@ public interface RecordMetadata
      *         an event or a command (rejection)
      */
     String getIntent();
+
+    /**
+     * @return the type of rejection if {@link #getRecordType()} returns {@link RecordType#COMMAND_REJECTION}
+     * or else <code>null</code>.
+     */
+    RejectionType getRejectionType();
+
+    /**
+     * @return the reason why a command was rejected if {@link #getRecordType()} returns {@link RecordType#COMMAND_REJECTION}
+     * or else <code>null</code>.
+     */
+    String getRejectionReason();
 }

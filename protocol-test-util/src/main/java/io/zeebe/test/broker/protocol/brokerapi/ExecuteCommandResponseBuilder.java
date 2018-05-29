@@ -21,6 +21,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.util.collection.MapFactoryBuilder;
@@ -79,13 +80,22 @@ public class ExecuteCommandResponseBuilder
         return this;
     }
 
-    public ExecuteCommandResponseBuilder rejection()
+    public ExecuteCommandResponseBuilder rejection(RejectionType rejectionType, String reason)
     {
         commandResponseWriter.setRecordType(RecordType.COMMAND_REJECTION);
         commandResponseWriter.setIntentFunction(r -> r.intent());
+        commandResponseWriter.setRejectionType(rejectionType);
+        commandResponseWriter.setRejectionReason(reason);
 
         return this;
     }
+
+
+    public ExecuteCommandResponseBuilder rejection()
+    {
+        return rejection(RejectionType.NULL_VAL, "");
+    }
+
 
     public ExecuteCommandResponseBuilder event()
     {

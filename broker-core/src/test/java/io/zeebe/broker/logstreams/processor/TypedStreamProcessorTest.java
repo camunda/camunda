@@ -98,7 +98,7 @@ public class TypedStreamProcessorTest
         streamProcessorControl.unblock();
 
         final LoggedEvent writtenEvent = doRepeatedly(() -> streams.events(STREAM_NAME)
-                .filter(e -> Records.isRejection(e, ValueType.TOPIC, TopicIntent.CREATE))
+                .filter(e -> Records.isEvent(e, ValueType.TOPIC, TopicIntent.CREATED))
                 .findFirst())
             .until(o -> o.isPresent())
             .get();
@@ -125,7 +125,7 @@ public class TypedStreamProcessorTest
         @Override
         public long writeRecord(TypedRecord<TopicRecord> event, TypedStreamWriter writer)
         {
-            return writer.newBatch().addRejection(event).write();
+            return writer.newBatch().addNewEvent(TopicIntent.CREATED, event.getValue()).write();
         }
 
     }

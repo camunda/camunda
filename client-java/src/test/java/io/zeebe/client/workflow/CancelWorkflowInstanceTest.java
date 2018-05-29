@@ -113,7 +113,7 @@ public class CancelWorkflowInstanceTest
         brokerRule.workflowInstances().registerCancelCommand(b -> b.rejection());
 
         thrown.expect(ClientCommandRejectedException.class);
-        thrown.expectMessage("Command for event with key 2 was rejected by broker (CANCEL)");
+        thrown.expectMessage("Command (CANCEL) for event with key 2 was rejected");
 
         // when
         clientRule.workflowClient()

@@ -34,6 +34,7 @@ import io.zeebe.client.impl.clustering.ClientTopologyManager;
 import io.zeebe.client.impl.event.JobEventImpl;
 import io.zeebe.client.util.Events;
 import io.zeebe.protocol.clientapi.ControlMessageType;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
@@ -515,6 +516,76 @@ public class ZeebeClientTest
                 .jobType("foo")
                 .send()
                 .join();
+    }
+
+
+    @Test
+    public void shouldThrowExceptionOnRejectionWithBadValue()
+    {
+        // given
+        final JobEventImpl baseEvent = Events.exampleJob();
+
+        broker.jobs().registerCompleteCommand(b -> b.rejection(RejectionType.BAD_VALUE, "foo"));
+
+        final String updatedPayload = "{\"fruit\":\"cherry\"}";
+
+        // then
+        exception.expect(ClientCommandRejectedException.class);
+        exception.expectMessage("Command (COMPLETE) for event with key 79 was rejected. It has an invalid value. foo");
+
+        // when
+        client.topicClient().jobClient()
+            .newCompleteCommand(baseEvent)
+            .payload(updatedPayload)
+            .send()
+            .join();
+    }
+
+
+    @Test
+    public void shouldThrowExceptionOnRejectionWhenNotApplicable()
+    {
+        // given
+        final JobEventImpl baseEvent = Events.exampleJob();
+
+        broker.jobs().registerCompleteCommand(b -> b.rejection(RejectionType.NOT_APPLICABLE, "foo"));
+
+        final String updatedPayload = "{\"fruit\":\"cherry\"}";
+
+        // then
+        exception.expect(ClientCommandRejectedException.class);
+        exception.expectMessage("Command (COMPLETE) for event with key 79 was rejected. It is not applicable in the current state. foo");
+
+        // when
+        client.topicClient().jobClient()
+            .newCompleteCommand(baseEvent)
+            .payload(updatedPayload)
+            .send()
+            .join();
+    }
+
+
+    @Test
+    public void shouldThrowExceptionOnRejectionOnProcessingError()
+    {
+        // given
+        final JobEventImpl baseEvent = Events.exampleJob();
+
+        broker.jobs().registerCompleteCommand(b -> b.rejection(RejectionType.PROCESSING_ERROR, "foo"));
+
+        final String updatedPayload = "{\"fruit\":\"cherry\"}";
+
+        // then
+        exception.expect(ClientCommandRejectedException.class);
+        exception.expectMessage("Command (COMPLETE) for event with key 79 was rejected. " +
+                "The broker could not process it for internal reasons. foo");
+
+        // when
+        client.topicClient().jobClient()
+            .newCompleteCommand(baseEvent)
+            .payload(updatedPayload)
+            .send()
+            .join();
     }
 
     protected TopicSubscription openSubscription()

@@ -98,7 +98,7 @@ public class FailJobTest
 
         // then
         exception.expect(ClientCommandRejectedException.class);
-        exception.expectMessage("Command for event with key 79 was rejected by broker (FAIL)");
+        exception.expectMessage("Command (FAIL) for event with key 79 was rejected");
 
         // when
         clientRule.jobClient()

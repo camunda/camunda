@@ -51,6 +51,7 @@ public class ZeebeObjectMapperRecordSerializationTest
                 { "WorkflowInstanceCommand.json", WorkflowInstanceCommand.class },
                 { "DeploymentEvent.json", DeploymentEvent.class },
                 { "DeploymentCommand.json", DeploymentCommand.class },
+                { "DeploymentCommandRejection.json", DeploymentCommand.class },
                 { "IncidentEvent.json", IncidentEvent.class },
                 { "IncidentCommand.json", IncidentCommand.class },
                 { "TopicEvent.json", TopicEvent.class },

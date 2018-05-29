@@ -30,6 +30,7 @@ import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.protocol.intent.Intent;
@@ -84,6 +85,18 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
             UnpackedObject value,
             Consumer<RecordMetadata> additionalMetadata)
     {
+        return writeRecord(key, type, intent, RejectionType.NULL_VAL, "", value, additionalMetadata);
+    }
+
+    private long writeRecord(
+            long key,
+            RecordType type,
+            Intent intent,
+            RejectionType rejectionType,
+            String rejectionReason,
+            UnpackedObject value,
+            Consumer<RecordMetadata> additionalMetadata)
+    {
         writer.reset();
         writer.producerId(producerId);
 
@@ -93,6 +106,8 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
         }
 
         initMetadata(type, intent, value);
+        metadata.rejectionType(rejectionType);
+        metadata.rejectionReason(rejectionReason);
         additionalMetadata.accept(metadata);
 
         if (key >= 0)
@@ -147,21 +162,28 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
     }
 
     @Override
-    public long writeRejection(TypedRecord<? extends UnpackedObject> command)
+    public long writeRejection(TypedRecord<? extends UnpackedObject> command, RejectionType rejectionType, String reason)
     {
         return writeRecord(command.getKey(),
                 RecordType.COMMAND_REJECTION,
                 command.getMetadata().getIntent(),
+                rejectionType,
+                reason,
                 command.getValue(),
                 noop);
     }
 
     @Override
-    public long writeRejection(TypedRecord<? extends UnpackedObject> command, Consumer<RecordMetadata> metadata)
+    public long writeRejection(TypedRecord<? extends UnpackedObject> command,
+            RejectionType rejectionType,
+            String reason,
+            Consumer<RecordMetadata> metadata)
     {
         return writeRecord(command.getKey(),
                 RecordType.COMMAND_REJECTION,
                 command.getMetadata().getIntent(),
+                rejectionType,
+                reason,
                 command.getValue(),
                 metadata);
     }
@@ -194,27 +216,6 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
     public TypedBatchWriter addFollowUpEvent(long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata)
     {
         return addRecord(key, RecordType.EVENT, intent, value, metadata);
-    }
-
-    @Override
-    public TypedBatchWriter addRejection(TypedRecord<? extends UnpackedObject> command)
-    {
-        return addRecord(command.getKey(),
-                RecordType.COMMAND_REJECTION,
-                command.getMetadata().getIntent(),
-                command.getValue(),
-                noop);
-    }
-
-    @Override
-    public TypedBatchWriter addRejection(TypedRecord<? extends UnpackedObject> command,
-            Consumer<RecordMetadata> metadata)
-    {
-        return addRecord(command.getKey(),
-                RecordType.COMMAND_REJECTION,
-                command.getMetadata().getIntent(),
-                command.getValue(),
-                metadata);
     }
 
     private TypedBatchWriter addRecord(

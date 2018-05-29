@@ -144,7 +144,7 @@ public class CreateDeploymentTest
 
         // then
         thrown.expect(ClientCommandRejectedException.class);
-        thrown.expectMessage("Command was rejected by broker (CREATE)");
+        thrown.expectMessage("Command (CREATE) was rejected");
 
         // when
         clientRule.workflowClient()

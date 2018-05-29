@@ -31,6 +31,7 @@ import org.junit.rules.RuleChain;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
@@ -80,6 +81,8 @@ public class CompleteJobTest
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
         assertThat(response.intent()).isEqualTo(JobIntent.COMPLETE);
+        assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
+        assertThat(response.rejectionReason()).isEqualTo("Job is not in state: ACTIVATED, TIMED_OUT");
     }
 
     @Test
@@ -100,6 +103,8 @@ public class CompleteJobTest
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+        assertThat(response.rejectionReason()).isEqualTo("Payload is not a valid msgpack-encoded JSON object or nil");
         assertThat(response.intent()).isEqualTo(JobIntent.COMPLETE);
     }
 
@@ -120,6 +125,8 @@ public class CompleteJobTest
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
+        assertThat(response.rejectionReason()).isEqualTo("Job is not in state: ACTIVATED, TIMED_OUT");
         assertThat(response.intent()).isEqualTo(JobIntent.COMPLETE);
     }
 
@@ -134,6 +141,8 @@ public class CompleteJobTest
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
+        assertThat(response.rejectionReason()).isEqualTo("Job is not in state: ACTIVATED, TIMED_OUT");
         assertThat(response.intent()).isEqualTo(JobIntent.COMPLETE);
     }
 

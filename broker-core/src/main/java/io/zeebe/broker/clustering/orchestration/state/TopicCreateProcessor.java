@@ -32,6 +32,7 @@ import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.TopicIntent;
 
 public class TopicCreateProcessor implements TypedRecordProcessor<TopicRecord>
@@ -43,6 +44,8 @@ public class TopicCreateProcessor implements TypedRecordProcessor<TopicRecord>
     private final BiConsumer<Long, TopicRecord> addTopic;
 
     private boolean isCreating;
+    private String rejectionReason;
+    private RejectionType rejectionType;
 
     public TopicCreateProcessor(final Predicate<DirectBuffer> topicExists, final Consumer<DirectBuffer> notifyListeners, final BiConsumer<Long, TopicRecord> addTopic)
     {
@@ -61,14 +64,20 @@ public class TopicCreateProcessor implements TypedRecordProcessor<TopicRecord>
 
         if (topicExists.test(topicName))
         {
+            rejectionReason = "Topic exists already";
+            rejectionType = RejectionType.NOT_APPLICABLE;
             LOG.warn("Rejecting topic {} creation as a topic with the same name already exists", bufferAsString(topicName));
         }
         else if (topicEvent.getPartitions() < 1)
         {
+            rejectionReason = "Topic must have at least one partition";
+            rejectionType = RejectionType.BAD_VALUE;
             LOG.warn("Rejecting topic {} creation as a topic has to have at least one partition", bufferAsString(topicName));
         }
         else if (topicEvent.getReplicationFactor() < 1)
         {
+            rejectionReason = "Topic must have at least one replica";
+            rejectionType = RejectionType.BAD_VALUE;
             LOG.warn("Rejecting topic {} creation as a topic has to have at least one replication", bufferAsString(topicName));
         }
         else
@@ -94,7 +103,7 @@ public class TopicCreateProcessor implements TypedRecordProcessor<TopicRecord>
         }
         else
         {
-            return responseWriter.writeRejection(command);
+            return responseWriter.writeRejection(command, rejectionType, rejectionReason);
         }
     }
 
@@ -107,7 +116,7 @@ public class TopicCreateProcessor implements TypedRecordProcessor<TopicRecord>
         }
         else
         {
-            return writer.writeRejection(command);
+            return writer.writeRejection(command, rejectionType, rejectionReason);
         }
     }
 

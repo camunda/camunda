@@ -7,7 +7,9 @@
       "partitionId":1,
       "key":4294968720,
       "position":4294971040,
-      "timestamp":"2018-05-22T12:53:40.679Z"
+      "timestamp":"2018-05-22T12:53:40.679Z",
+      "rejectionType": null,
+      "rejectionReason": null
    },
    "headers":{
       "activityId":"task",

@@ -17,16 +17,23 @@
  */
 package io.zeebe.broker.transport.clientapi;
 
-import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.*;
+import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.keyNullValue;
+import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.partitionIdNullValue;
+import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.positionNullValue;
+import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.timestampNullValue;
+import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.valueHeaderLength;
 
 import java.util.Objects;
 
+import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.transport.ServerOutput;
@@ -45,8 +52,11 @@ public class CommandResponseWriter implements BufferWriter
     private RecordType recordType = RecordType.NULL_VAL;
     private ValueType valueType = ValueType.NULL_VAL;
     private short intent = Intent.NULL_VAL;
+    private RejectionType rejectionType = RejectionType.NULL_VAL;
 
     protected BufferWriter valueWriter;
+    private UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
+
     protected final ServerResponse response = new ServerResponse();
     protected final ServerOutput output;
 
@@ -82,6 +92,18 @@ public class CommandResponseWriter implements BufferWriter
     public CommandResponseWriter position(final long position)
     {
         this.position = position;
+        return this;
+    }
+
+    public CommandResponseWriter rejectionType(RejectionType rejectionType)
+    {
+        this.rejectionType = rejectionType;
+        return this;
+    }
+
+    public CommandResponseWriter rejectionReason(DirectBuffer rejectionReason)
+    {
+        this.rejectionReason.wrap(rejectionReason);
         return this;
     }
 
@@ -144,7 +166,8 @@ public class CommandResponseWriter implements BufferWriter
             .valueType(valueType)
             .intent(intent)
             .key(key)
-            .timestamp(timestamp);
+            .timestamp(timestamp)
+            .rejectionType(rejectionType);
 
         offset = responseEncoder.limit();
 
@@ -153,6 +176,11 @@ public class CommandResponseWriter implements BufferWriter
 
         offset += valueHeaderLength();
         valueWriter.write(buffer, offset);
+
+        offset += eventLength;
+
+        responseEncoder.limit(offset);
+        responseEncoder.putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
     }
 
     @Override
@@ -161,7 +189,9 @@ public class CommandResponseWriter implements BufferWriter
         return MessageHeaderEncoder.ENCODED_LENGTH +
                 ExecuteCommandResponseEncoder.BLOCK_LENGTH +
                 valueHeaderLength() +
-                valueWriter.getLength();
+                valueWriter.getLength() +
+                ExecuteCommandResponseEncoder.rejectionReasonHeaderLength() +
+                rejectionReason.capacity();
     }
 
     protected void reset()
@@ -173,6 +203,8 @@ public class CommandResponseWriter implements BufferWriter
         intent = Intent.NULL_VAL;
         valueType = ValueType.NULL_VAL;
         timestamp = timestampNullValue();
+        rejectionType = RejectionType.NULL_VAL;
+        rejectionReason.wrap(0, 0);
     }
 
 }

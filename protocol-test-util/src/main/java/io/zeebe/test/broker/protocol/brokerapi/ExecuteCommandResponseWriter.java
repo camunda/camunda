@@ -15,15 +15,18 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Map;
 import java.util.function.Function;
 
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
@@ -49,6 +52,8 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
     private Intent intent;
     private ValueType valueType;
     private long timestamp = ExecuteCommandResponseEncoder.timestampNullValue();
+    private RejectionType rejectionType = RejectionType.NULL_VAL;
+    private UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
 
     public ExecuteCommandResponseWriter(MsgPackHelper msgPackHelper)
     {
@@ -108,13 +113,26 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
         this.timestamp = timestamp;
     }
 
+    public void setRejectionType(RejectionType rejectionType)
+    {
+        this.rejectionType = rejectionType;
+    }
+
+    public void setRejectionReason(String rejectionReason)
+    {
+        final byte[] bytes = rejectionReason.getBytes(StandardCharsets.UTF_8);
+        this.rejectionReason = new UnsafeBuffer(bytes);
+    }
+
     @Override
     public int getLength()
     {
         return MessageHeaderEncoder.ENCODED_LENGTH +
                 ExecuteCommandResponseEncoder.BLOCK_LENGTH +
                 ExecuteCommandResponseEncoder.valueHeaderLength() +
-                value.length;
+                value.length +
+                ExecuteCommandResponseEncoder.rejectionReasonHeaderLength() +
+                rejectionReason.capacity();
     }
 
     @Override
@@ -144,7 +162,9 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
             .key(key)
             .timestamp(timestamp)
             .position(position)
-            .putValue(value, 0, value.length);
+            .rejectionType(rejectionType)
+            .putValue(value, 0, value.length)
+            .putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
 
     }
 

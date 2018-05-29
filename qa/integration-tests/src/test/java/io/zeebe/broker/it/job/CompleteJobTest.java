@@ -17,7 +17,6 @@ package io.zeebe.broker.it.job;
 
 import java.util.Properties;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -29,7 +28,7 @@ import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.client.ClientProperties;
 import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.api.events.JobEvent;
-import io.zeebe.client.cmd.BrokerErrorException;
+import io.zeebe.client.cmd.ClientCommandRejectedException;
 
 public class CompleteJobTest
 {
@@ -55,8 +54,7 @@ public class CompleteJobTest
     public Timeout testTimeout = Timeout.seconds(15);
 
     @Test
-    @Ignore
-    public void testCannotCompleteUnlockedJob()
+    public void shouldProvideReasonInExceptionMessageOnRejection()
     {
         // given
         final JobClient jobClient = clientRule.getClient().topicClient().jobClient();
@@ -68,8 +66,11 @@ public class CompleteJobTest
             .join();
 
         // then
-        thrown.expect(BrokerErrorException.class);
-        thrown.expectMessage("Job does not exist or is not locked");
+        thrown.expect(ClientCommandRejectedException.class);
+        thrown.expectMessage("Command (COMPLETE) for event with key " +
+                job.getKey() +
+                " was rejected. It is not applicable in the current state. " +
+                "Job is not in state: ACTIVATED, TIMED_OUT");
 
         // when
         jobClient.newCompleteCommand(job)

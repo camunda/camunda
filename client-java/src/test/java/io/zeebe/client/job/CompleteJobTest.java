@@ -129,7 +129,7 @@ public class CompleteJobTest
 
         // then
         exception.expect(ClientCommandRejectedException.class);
-        exception.expectMessage("Command for event with key 79 was rejected by broker (COMPLETE)");
+        exception.expectMessage("Command (COMPLETE) for event with key 79 was rejected");
 
         // when
         clientRule.jobClient()

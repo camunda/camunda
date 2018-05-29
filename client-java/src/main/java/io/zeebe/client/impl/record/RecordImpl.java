@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.client.api.record.Record;
 import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.Intent;
 
@@ -95,6 +96,16 @@ public abstract class RecordImpl implements Record
         setTimestamp(Instant.ofEpochMilli(timestamp));
     }
 
+    public void setRejectioReason(String reason)
+    {
+        this.metadata.setRejectionReason(reason);
+    }
+
+    public void setRejectionType(RejectionType rejectionType)
+    {
+        this.metadata.setRejectionType(rejectionType);
+    }
+
     public void updateMetadata(RecordMetadataImpl other)
     {
         this.metadata.setKey(other.getKey());
@@ -105,6 +116,8 @@ public abstract class RecordImpl implements Record
         this.metadata.setValueType(other.getProtocolValueType());
         this.metadata.setIntent(other.getProtocolIntent());
         this.metadata.setTimestamp(other.getTimestamp());
+        this.metadata.setRejectionType(other.getProtocolRejectionType());
+        this.metadata.setRejectionReason(other.getRejectionReason());
     }
 
     @Override

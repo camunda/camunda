@@ -35,6 +35,7 @@ import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.JobIntent;
@@ -90,7 +91,8 @@ public class WorkflowTaskIOMappingTest
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-        assertThat(response.getValue().get(PROP_ERRO_MSG).toString())
+        assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+        assertThat(response.rejectionReason())
             .contains("Source mapping: JSON path '$.*' contains prohibited expression");
     }
 
@@ -111,7 +113,8 @@ public class WorkflowTaskIOMappingTest
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-        assertThat(response.getValue().get(PROP_ERRO_MSG).toString())
+        assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+        assertThat(response.rejectionReason())
             .contains("Target mapping: root mapping is not allowed because it would override other mapping.");
     }
 
@@ -241,6 +244,8 @@ public class WorkflowTaskIOMappingTest
         final ExecuteCommandResponse response = apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, definition);
 
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+        assertThat(response.rejectionReason()).contains("JSON path query 'string' is not valid");
     }
 
     @Test
@@ -499,7 +504,8 @@ public class WorkflowTaskIOMappingTest
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-        assertThat(response.getValue().get(PROP_ERRO_MSG).toString())
+        assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+        assertThat(response.rejectionReason())
             .contains("Target mapping: root mapping is not allowed because it would override other mapping.");
     }
 

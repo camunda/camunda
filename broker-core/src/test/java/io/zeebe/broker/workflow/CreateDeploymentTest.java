@@ -31,6 +31,7 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
@@ -137,7 +138,8 @@ public class CreateDeploymentTest
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
         assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
         assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATE);
-        assertThat((String) resp.getValue().get("errorMessage")).isEqualTo("No topic found with name not-existing");
+        assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+        assertThat(resp.rejectionReason()).isEqualTo("Topic does not exist");
     }
 
     @Test
@@ -153,7 +155,8 @@ public class CreateDeploymentTest
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
         assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
         assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATE);
-        assertThat((String) resp.getValue().get("errorMessage")).contains("The process must contain at least one none start event.");
+        assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+        assertThat(resp.rejectionReason()).contains("The process must contain at least one none start event.");
     }
 
     @Test
@@ -177,10 +180,11 @@ public class CreateDeploymentTest
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
         assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-        assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATE);
-        assertThat((String) resp.getValue().get("errorMessage"))
+        assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+        assertThat(resp.rejectionReason())
             .contains("Resource 'process2.bpmn':")
             .contains("The process must contain at least one none start event.");
+        assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATE);
     }
 
     @Test
@@ -200,7 +204,8 @@ public class CreateDeploymentTest
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
         assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
         assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATE);
-        assertThat((String) resp.getValue().get("errorMessage")).isEqualTo("Deployment doesn't contain a resource to deploy.");
+        assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+        assertThat(resp.rejectionReason()).isEqualTo("Deployment doesn't contain a resource to deploy");
     }
 
     @Test
@@ -217,7 +222,8 @@ public class CreateDeploymentTest
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
         assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
         assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATE);
-        assertThat((String) resp.getValue().get("errorMessage"))
+        assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+        assertThat(resp.rejectionReason())
             .contains("Failed to deploy resource 'invalid.bpmn':")
             .contains("Failed to read BPMN model");
     }
@@ -241,7 +247,8 @@ public class CreateDeploymentTest
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
         assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
         assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATE);
-        assertThat((String) resp.getValue().get("errorMessage")).contains("The condition 'foobar' is not valid");
+        assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+        assertThat(resp.rejectionReason()).contains("The condition 'foobar' is not valid");
     }
 
     @Test

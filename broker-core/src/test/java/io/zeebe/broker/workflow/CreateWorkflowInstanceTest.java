@@ -46,6 +46,7 @@ import io.zeebe.broker.workflow.map.WorkflowCache;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.JobIntent;
@@ -89,6 +90,8 @@ public class CreateWorkflowInstanceTest
         assertThat(resp.position()).isGreaterThanOrEqualTo(0L);
         assertThat(resp.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
         assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+        assertThat(resp.rejectionReason()).isEqualTo("Workflow is not deployed");
         assertThat(resp.getValue())
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process");
 
@@ -328,6 +331,8 @@ public class CreateWorkflowInstanceTest
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
         assertThat(resp.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
         assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+        assertThat(resp.rejectionReason()).isEqualTo("Payload is not a valid msgpack-encoded JSON object or nil");
         assertThat(resp.getValue())
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process");
     }

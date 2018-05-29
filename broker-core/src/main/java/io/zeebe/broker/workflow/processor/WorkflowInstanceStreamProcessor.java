@@ -69,6 +69,7 @@ import io.zeebe.msgpack.el.JsonConditionInterpreter;
 import io.zeebe.msgpack.mapping.Mapping;
 import io.zeebe.msgpack.mapping.MappingException;
 import io.zeebe.msgpack.mapping.MappingProcessor;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.protocol.intent.IncidentIntent;
@@ -204,6 +205,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         private boolean accepted;
         private final WorkflowInstanceRecord startEventRecord = new WorkflowInstanceRecord();
 
+        private RejectionType rejectionType;
+        private String rejectionReason;
         private long requestId;
         private int requestStreamId;
 
@@ -224,6 +227,11 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
             {
                 accepted = true;
                 resolveWorkflowDefinition(workflowInstanceCommand, ctx);
+            }
+            else
+            {
+                rejectionType = RejectionType.BAD_VALUE;
+                rejectionReason = "Payload is not a valid msgpack-encoded JSON object or nil";
             }
         }
 
@@ -304,6 +312,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
                     if (err != null)
                     {
                         accepted = false;
+                        rejectionType = RejectionType.PROCESSING_ERROR;
+                        rejectionReason = "Could not fetch workflow: " + err.getMessage();
                     }
                     else
                     {
@@ -319,8 +329,9 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
                         }
                         else
                         {
-                            // workflow not deployed
                             accepted = false;
+                            rejectionType = RejectionType.BAD_VALUE;
+                            rejectionReason = "Workflow is not deployed";
                         }
                     }
 
@@ -346,7 +357,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
             }
             else
             {
-                return writer.writeRejection(command, this::addRequestMetadata);
+                return writer.writeRejection(command, rejectionType, rejectionReason, this::addRequestMetadata);
             }
         }
 
@@ -393,7 +404,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         @Override
         public boolean executeSideEffects(TypedRecord<WorkflowInstanceRecord> record, TypedResponseWriter responseWriter)
         {
-            return responseWriter.writeRejection(record);
+            final RecordMetadata metadata = record.getMetadata();
+            return responseWriter.writeRejection(record, metadata.getRejectionType(), metadata.getRejectionReason());
         }
     }
 
@@ -897,6 +909,9 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         private final JobRecord jobRecord = new JobRecord();
 
         private boolean isCanceled;
+        private RejectionType rejectionType;
+        private String rejectionReason;
+
         private long activityInstanceKey;
         private long jobKey;
 
@@ -930,6 +945,11 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
                 activityInstanceKey = workflowInstance.getActivityInstanceKey();
                 jobKey = activityInstanceMap.wrapActivityInstanceKey(activityInstanceKey).getJobKey();
+            }
+            else
+            {
+                rejectionType = RejectionType.NOT_APPLICABLE;
+                rejectionReason = "Workflow instance is not running";
             }
         }
 
@@ -976,7 +996,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
             }
             else
             {
-                return writer.writeRejection(command);
+                return writer.writeRejection(command, rejectionType, rejectionReason);
             }
         }
 
@@ -989,7 +1009,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
             }
             else
             {
-                return responseWriter.writeRejection(record);
+                return responseWriter.writeRejection(record, rejectionType, rejectionReason);
             }
         }
 
@@ -1008,6 +1028,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
     private final class UpdatePayloadProcessor implements TypedRecordProcessor<WorkflowInstanceRecord>
     {
         private boolean isUpdated;
+        private RejectionType rejectionType;
+        private String rejectionReason;
 
         @Override
         public void processRecord(TypedRecord<WorkflowInstanceRecord> command)
@@ -1016,6 +1038,26 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
             final WorkflowInstance workflowInstance = workflowInstanceIndex.get(workflowInstanceEvent.getWorkflowInstanceKey());
             final boolean isActive = workflowInstance != null && workflowInstance.getTokenCount() > 0;
+
+            if (isActive)
+            {
+                if (isValidPayload(workflowInstanceEvent.getPayload()))
+                {
+                    isUpdated = true;
+                }
+                else
+                {
+                    isUpdated = false;
+                    rejectionType = RejectionType.BAD_VALUE;
+                    rejectionReason = "Payload is not a valid msgpack-encoded JSON object";
+                }
+            }
+            else
+            {
+                isUpdated = false;
+                rejectionType = RejectionType.NOT_APPLICABLE;
+                rejectionReason = "Workflow instance is not running";
+            }
 
             isUpdated = isActive && isValidPayload(workflowInstanceEvent.getPayload());
         }
@@ -1029,7 +1071,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
             }
             else
             {
-                return responseWriter.writeRejection(command);
+                return responseWriter.writeRejection(command, rejectionType, rejectionReason);
             }
         }
 
@@ -1042,7 +1084,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
             }
             else
             {
-                return writer.writeRejection(command);
+                return writer.writeRejection(command, rejectionType, rejectionReason);
             }
         }
 

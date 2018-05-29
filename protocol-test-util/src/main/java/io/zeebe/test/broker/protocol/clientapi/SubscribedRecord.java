@@ -38,6 +38,8 @@ public class SubscribedRecord implements BufferReader
 
     protected MsgPackHelper msgPackHelper = new MsgPackHelper();
 
+    private String rejectionReason;
+
     public SubscribedRecord(RawMessage rawMessage)
     {
         this.rawMessage = rawMessage;
@@ -90,6 +92,11 @@ public class SubscribedRecord implements BufferReader
         return bodyDecoder.timestamp();
     }
 
+    public RejectionType rejectionType()
+    {
+        return bodyDecoder.rejectionType();
+    }
+
     public Map<String, Object> value()
     {
         return value;
@@ -98,6 +105,11 @@ public class SubscribedRecord implements BufferReader
     public RawMessage getRawMessage()
     {
         return rawMessage;
+    }
+
+    public String rejectionReason()
+    {
+        return rejectionReason;
     }
 
     @Override
@@ -121,9 +133,11 @@ public class SubscribedRecord implements BufferReader
         }
         catch (IOException e)
         {
-            LangUtil.rethrowUnchecked(e);
+            throw new RuntimeException(e);
         }
 
+        bodyDecoder.limit(eventOffset + eventLength);
+        rejectionReason = bodyDecoder.rejectionReason();
     }
 
 }

@@ -15,6 +15,7 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Map;
 
@@ -22,6 +23,7 @@ import org.agrona.MutableDirectBuffer;
 
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.SubscribedRecordEncoder;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -52,6 +54,8 @@ public class SubscribedRecordBuilder implements BufferWriter
     private Intent intent;
     protected byte[] event;
     protected Instant timestamp = Instant.ofEpochMilli(0);
+    private RejectionType rejectionType = RejectionType.NULL_VAL;
+    private byte[] rejectionReason = new byte[0];
 
     public SubscribedRecordBuilder(MsgPackHelper msgPackHelper, ServerTransport transport)
     {
@@ -124,6 +128,18 @@ public class SubscribedRecordBuilder implements BufferWriter
         return this;
     }
 
+    public SubscribedRecordBuilder rejectionType(RejectionType rejectionType)
+    {
+        this.rejectionType = rejectionType;
+        return this;
+    }
+
+    public SubscribedRecordBuilder rejectionReason(String rejectionReason)
+    {
+        this.rejectionReason = rejectionReason.getBytes(StandardCharsets.UTF_8);
+        return this;
+    }
+
     public void push(RemoteAddress target)
     {
         message.reset()
@@ -144,7 +160,9 @@ public class SubscribedRecordBuilder implements BufferWriter
         return MessageHeaderEncoder.ENCODED_LENGTH +
                 SubscribedRecordEncoder.BLOCK_LENGTH +
                 SubscribedRecordEncoder.valueHeaderLength() +
-                event.length;
+                event.length +
+                SubscribedRecordEncoder.rejectionReasonHeaderLength() +
+                rejectionReason.length;
     }
 
     @Override
@@ -166,7 +184,9 @@ public class SubscribedRecordBuilder implements BufferWriter
             .subscriptionType(subscriptionType)
             .partitionId(partitionId)
             .timestamp(timestamp.toEpochMilli())
-            .putValue(event, 0, event.length);
+            .rejectionType(rejectionType)
+            .putValue(event, 0, event.length)
+            .putRejectionReason(rejectionReason, 0, rejectionReason.length);
     }
 
 

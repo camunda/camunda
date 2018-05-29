@@ -201,7 +201,7 @@ public class CreateWorkflowInstanceTest
 
         // expect exception
         expectedException.expect(ClientCommandRejectedException.class);
-        expectedException.expectMessage("Command was rejected by broker (CREATE)");
+        expectedException.expectMessage("Command (CREATE) was rejected");
 
         // when
         clientRule.workflowClient()

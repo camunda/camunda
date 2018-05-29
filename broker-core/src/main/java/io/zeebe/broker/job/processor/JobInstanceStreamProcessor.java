@@ -34,6 +34,7 @@ import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.transport.clientapi.SubscribedRecordWriter;
 import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
@@ -165,7 +166,9 @@ public class JobInstanceStreamProcessor
             }
             else
             {
-                return writer.writeRejection(command);
+                return writer.writeRejection(command,
+                        RejectionType.NOT_APPLICABLE,
+                        "Job is not in one of these states: CREATED, FAILED, TIMED_OUT");
             }
         }
 
@@ -182,6 +185,8 @@ public class JobInstanceStreamProcessor
     private class CompleteJobProcessor implements TypedRecordProcessor<JobRecord>
     {
         protected boolean isCompleted;
+        private String rejectionReason;
+        private RejectionType rejectionType;
 
         @Override
         public void processRecord(TypedRecord<JobRecord> event)
@@ -200,6 +205,16 @@ public class JobInstanceStreamProcessor
                 {
                     isCompleted = true;
                 }
+                else
+                {
+                    rejectionType = RejectionType.BAD_VALUE;
+                    rejectionReason = "Payload is not a valid msgpack-encoded JSON object or nil";
+                }
+            }
+            else
+            {
+                rejectionReason = "Job is not in state: ACTIVATED, TIMED_OUT";
+                rejectionType = RejectionType.NOT_APPLICABLE;
             }
         }
 
@@ -212,7 +227,7 @@ public class JobInstanceStreamProcessor
             }
             else
             {
-                return responseWriter.writeRejection(event);
+                return responseWriter.writeRejection(event, rejectionType, rejectionReason);
             }
         }
 
@@ -225,7 +240,7 @@ public class JobInstanceStreamProcessor
             }
             else
             {
-                return writer.writeRejection(event);
+                return writer.writeRejection(event, rejectionType, rejectionReason);
             }
         }
 
@@ -241,6 +256,7 @@ public class JobInstanceStreamProcessor
 
     private class FailJobProcessor implements TypedRecordProcessor<JobRecord>
     {
+        private static final String REJECTION_REASON = "Job is not in state ACTIVATED";
         protected boolean isFailed;
 
         public void processRecord(TypedRecord<JobRecord> command)
@@ -264,7 +280,7 @@ public class JobInstanceStreamProcessor
             }
             else
             {
-                return responseWriter.writeRejection(command);
+                return responseWriter.writeRejection(command, RejectionType.NOT_APPLICABLE, REJECTION_REASON);
             }
         }
 
@@ -277,7 +293,7 @@ public class JobInstanceStreamProcessor
             }
             else
             {
-                return writer.writeRejection(command);
+                return writer.writeRejection(command, RejectionType.NOT_APPLICABLE, REJECTION_REASON);
             }
         }
 
@@ -293,6 +309,7 @@ public class JobInstanceStreamProcessor
 
     private class TimeOutJobProcessor implements TypedRecordProcessor<JobRecord>
     {
+        private static final String REJECTION_REASON = "Job is not in state ACTIVATED";
         protected boolean isExpired;
 
         @Override
@@ -317,7 +334,7 @@ public class JobInstanceStreamProcessor
             }
             else
             {
-                return writer.writeRejection(command);
+                return writer.writeRejection(command, RejectionType.NOT_APPLICABLE, REJECTION_REASON);
             }
         }
 
@@ -334,13 +351,32 @@ public class JobInstanceStreamProcessor
     private class UpdateRetriesJobProcessor implements TypedRecordProcessor<JobRecord>
     {
         private boolean success;
+        private RejectionType rejectionType;
+        private String rejectionReason;
 
         @Override
         public void processRecord(TypedRecord<JobRecord> command)
         {
             final short state = jobIndex.getJobState(command.getKey());
             final JobRecord value = command.getValue();
-            success = state == STATE_FAILED && value.getRetries() > 0;
+
+            if (state == STATE_FAILED)
+            {
+                if (value.getRetries() > 0)
+                {
+                    success = true;
+                }
+                else
+                {
+                    rejectionType = RejectionType.BAD_VALUE;
+                    rejectionReason = "Retries must be greater than 0";
+                }
+            }
+            else
+            {
+                this.rejectionType = RejectionType.NOT_APPLICABLE;
+                this.rejectionReason = "Job is not in state FAILED";
+            }
         }
 
         @Override
@@ -352,7 +388,7 @@ public class JobInstanceStreamProcessor
             }
             else
             {
-                return responseWriter.writeRejection(command);
+                return responseWriter.writeRejection(command, rejectionType, rejectionReason);
             }
         }
 
@@ -365,7 +401,7 @@ public class JobInstanceStreamProcessor
             }
             else
             {
-                return writer.writeRejection(command);
+                return writer.writeRejection(command, rejectionType, rejectionReason);
             }
         }
     }
@@ -390,7 +426,7 @@ public class JobInstanceStreamProcessor
             }
             else
             {
-                return writer.writeRejection(command);
+                return writer.writeRejection(command, RejectionType.NOT_APPLICABLE, "Job does not exist");
             }
         }
 

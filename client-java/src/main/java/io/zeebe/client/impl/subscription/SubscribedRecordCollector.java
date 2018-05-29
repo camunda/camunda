@@ -17,6 +17,9 @@ package io.zeebe.client.impl.subscription;
 
 import static io.zeebe.util.VarDataUtil.readBytes;
 
+import java.nio.charset.StandardCharsets;
+
+import io.zeebe.client.api.record.RejectionType;
 import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.record.UntypedRecordImpl;
 import io.zeebe.protocol.clientapi.*;
@@ -66,8 +69,22 @@ public class SubscribedRecordCollector implements ClientMessageHandler
             final ValueType valueType = subscribedRecordDecoder.valueType();
             final Intent intent = Intent.fromProtocolValue(valueType, subscribedRecordDecoder.intent());
             final long timestamp = subscribedRecordDecoder.timestamp();
+            final RejectionType rejectionType = subscribedRecordDecoder.rejectionType();
 
             final byte[] valueBuffer = readBytes(subscribedRecordDecoder::getValue, subscribedRecordDecoder::valueLength);
+
+            final int rejectionReasonLength = subscribedRecordDecoder.rejectionReasonLength();
+            final String rejectionReason;
+            if (rejectionReasonLength > 0)
+            {
+                rejectionReason = new String(
+                    readBytes(subscribedRecordDecoder::getRejectionReason, rejectionReasonLength),
+                    StandardCharsets.UTF_8);
+            }
+            else
+            {
+                rejectionReason = null;
+            }
 
             final UntypedRecordImpl event = new UntypedRecordImpl(
                     objectMapper,
@@ -80,6 +97,8 @@ public class SubscribedRecordCollector implements ClientMessageHandler
             event.setKey(key);
             event.setIntent(intent);
             event.setTimestamp(timestamp);
+            event.setRejectionType(rejectionType);
+            event.setRejectioReason(rejectionReason);
 
             messageHandled = eventHandler.onEvent(subscriptionType, subscriberKey, event);
         }

@@ -31,6 +31,7 @@ import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
@@ -145,6 +146,8 @@ public class UpdatePayloadTest
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+        assertThat(response.rejectionReason()).isEqualTo("Payload is not a valid msgpack-encoded JSON object");
 
         final SubscribedRecord rejection = testClient.receiveRejections()
             .withIntent(WorkflowInstanceIntent.UPDATE_PAYLOAD)
@@ -161,6 +164,8 @@ public class UpdatePayloadTest
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
+        assertThat(response.rejectionReason()).isEqualTo("Workflow instance is not running");
 
         final SubscribedRecord rejection = testClient.receiveRejections()
             .withIntent(WorkflowInstanceIntent.UPDATE_PAYLOAD)
@@ -191,6 +196,8 @@ public class UpdatePayloadTest
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
+        assertThat(response.rejectionReason()).isEqualTo("Workflow instance is not running");
 
         final SubscribedRecord rejection = testClient.receiveRejections()
             .withIntent(WorkflowInstanceIntent.UPDATE_PAYLOAD)

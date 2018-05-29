@@ -34,6 +34,7 @@ import org.junit.rules.RuleChain;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
@@ -134,6 +135,8 @@ public class JobUpdateRetriesTest
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
         assertThat(response.intent()).isEqualTo(JobIntent.UPDATE_RETRIES);
+        assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
+        assertThat(response.rejectionReason()).isEqualTo("Job is not in state FAILED");
     }
 
     @Test
@@ -158,6 +161,8 @@ public class JobUpdateRetriesTest
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
         assertThat(response.intent()).isEqualTo(JobIntent.UPDATE_RETRIES);
+        assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
+        assertThat(response.rejectionReason()).isEqualTo("Job is not in state FAILED");
     }
 
     @Test
@@ -179,6 +184,8 @@ public class JobUpdateRetriesTest
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
         assertThat(response.intent()).isEqualTo(JobIntent.UPDATE_RETRIES);
+        assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
+        assertThat(response.rejectionReason()).isEqualTo("Job is not in state FAILED");
     }
 
 
@@ -205,6 +212,8 @@ public class JobUpdateRetriesTest
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
         assertThat(response.intent()).isEqualTo(JobIntent.UPDATE_RETRIES);
+        assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+        assertThat(response.rejectionReason()).isEqualTo("Retries must be greater than 0");
     }
 
     @Test
@@ -230,6 +239,8 @@ public class JobUpdateRetriesTest
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
         assertThat(response.intent()).isEqualTo(JobIntent.UPDATE_RETRIES);
+        assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+        assertThat(response.rejectionReason()).isEqualTo("Retries must be greater than 0");
     }
 
     private SubscribedRecord receiveSingleSubscribedEvent()
