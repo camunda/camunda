@@ -37,7 +37,6 @@ public class TransportContext
     private RemoteAddressListImpl remoteAddressList;
 
     private FragmentHandler receiveHandler;
-    private SendFailureHandler sendFailureHandler;
 
     private ServerSocketBinding serverSocketBinding;
 
@@ -101,16 +100,6 @@ public class TransportContext
     public FragmentHandler getReceiveHandler()
     {
         return receiveHandler;
-    }
-
-    public SendFailureHandler getSendFailureHandler()
-    {
-        return sendFailureHandler;
-    }
-
-    public void setSendFailureHandler(SendFailureHandler sendFailureHandler)
-    {
-        this.sendFailureHandler = sendFailureHandler;
     }
 
     public ServerSocketBinding getServerSocketBinding()
