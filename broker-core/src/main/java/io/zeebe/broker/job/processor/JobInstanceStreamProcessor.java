@@ -38,7 +38,6 @@ import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.protocol.intent.JobIntent;
-import io.zeebe.util.buffer.BufferUtil;
 
 public class JobInstanceStreamProcessor
 {
@@ -101,10 +100,7 @@ public class JobInstanceStreamProcessor
 
         public void updateState(TypedRecord<JobRecord> command)
         {
-            jobIndex
-                .newJobInstance(command.getKey())
-                .setState(STATE_CREATED)
-                .write();
+            jobIndex.putJobInstance(command.getKey(), STATE_CREATED);
         }
     }
 
@@ -118,7 +114,7 @@ public class JobInstanceStreamProcessor
         {
             canActivate = false;
 
-            final short state = jobIndex.wrapJobInstanceKey(command.getKey()).getState();
+            final short state = jobIndex.getJobState(command.getKey());
 
             if (state == STATE_CREATED || state == STATE_FAILED || state == STATE_TIMED_OUT)
             {
@@ -178,10 +174,7 @@ public class JobInstanceStreamProcessor
         {
             if (canActivate)
             {
-                jobIndex
-                    .setState(STATE_ACTIVATED)
-                    .setWorker(command.getValue().getWorker())
-                    .write();
+                jobIndex.putJobInstance(command.getKey(), STATE_ACTIVATED);
             }
         }
     }
@@ -195,8 +188,7 @@ public class JobInstanceStreamProcessor
         {
             isCompleted = false;
 
-            jobIndex.wrapJobInstanceKey(event.getKey());
-            final short state = jobIndex.getState();
+            final short state = jobIndex.getJobState(event.getKey());
 
             final JobRecord value = event.getValue();
 
@@ -206,10 +198,7 @@ public class JobInstanceStreamProcessor
                 final DirectBuffer payload = value.getPayload();
                 if (isNilPayload(payload) || isValidPayload(payload))
                 {
-                    if (BufferUtil.contentsEqual(jobIndex.getWorker(), value.getWorker()))
-                    {
-                        isCompleted = true;
-                    }
+                    isCompleted = true;
                 }
             }
         }
@@ -258,10 +247,9 @@ public class JobInstanceStreamProcessor
         {
             isFailed = false;
 
-            final JobRecord value = command.getValue();
+            final short state = jobIndex.getJobState(command.getKey());
 
-            jobIndex.wrapJobInstanceKey(command.getKey());
-            if (jobIndex.getState() == STATE_ACTIVATED && BufferUtil.contentsEqual(jobIndex.getWorker(), value.getWorker()))
+            if (state == STATE_ACTIVATED)
             {
                 isFailed = true;
             }
@@ -298,9 +286,7 @@ public class JobInstanceStreamProcessor
         {
             if (isFailed)
             {
-                jobIndex
-                    .setState(STATE_FAILED)
-                    .write();
+                jobIndex.putJobInstance(command.getKey(), STATE_FAILED);
             }
         }
     }
@@ -314,9 +300,9 @@ public class JobInstanceStreamProcessor
         {
             isExpired = false;
 
-            jobIndex.wrapJobInstanceKey(command.getKey());
+            final short state = jobIndex.getJobState(command.getKey());
 
-            if (jobIndex.getState() == STATE_ACTIVATED)
+            if (state == STATE_ACTIVATED)
             {
                 isExpired = true;
             }
@@ -340,9 +326,7 @@ public class JobInstanceStreamProcessor
         {
             if (isExpired)
             {
-                jobIndex
-                    .setState(STATE_TIMED_OUT)
-                    .write();
+                jobIndex.putJobInstance(command.getKey(), STATE_TIMED_OUT);
             }
         }
     }
@@ -354,7 +338,7 @@ public class JobInstanceStreamProcessor
         @Override
         public void processRecord(TypedRecord<JobRecord> command)
         {
-            final short state = jobIndex.wrapJobInstanceKey(command.getKey()).getState();
+            final short state = jobIndex.getJobState(command.getKey());
             final JobRecord value = command.getValue();
             success = state == STATE_FAILED && value.getRetries() > 0;
         }
@@ -393,7 +377,7 @@ public class JobInstanceStreamProcessor
         @Override
         public void processRecord(TypedRecord<JobRecord> command)
         {
-            final short state = jobIndex.wrapJobInstanceKey(command.getKey()).getState();
+            final short state = jobIndex.getJobState(command.getKey());
             isCanceled = state > 0;
         }
 

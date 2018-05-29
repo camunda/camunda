@@ -17,8 +17,6 @@
  */
 package io.zeebe.broker.job.map;
 
-import static org.agrona.BitUtil.SIZE_OF_CHAR;
-import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_SHORT;
 
 import java.nio.ByteOrder;
@@ -26,7 +24,6 @@ import java.nio.ByteOrder;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import io.zeebe.broker.job.processor.JobSubscription;
 import io.zeebe.map.Long2BytesZbMap;
 
 /**
@@ -38,30 +35,18 @@ import io.zeebe.map.Long2BytesZbMap;
  */
 public class JobInstanceMap
 {
-    private static final int MAP_VALUE_SIZE = SIZE_OF_SHORT + SIZE_OF_INT + SIZE_OF_CHAR * JobSubscription.WORKER_MAX_LENGTH;
-
+    private static final int MAP_VALUE_SIZE = SIZE_OF_SHORT;
     private static final int STATE_OFFSET = 0;
-    private static final int WORKER_LENGTH_OFFSET = STATE_OFFSET + SIZE_OF_SHORT;
-    private static final int WORKER_OFFSET = WORKER_LENGTH_OFFSET + SIZE_OF_INT;
 
     private static final ByteOrder BYTE_ORDER = ByteOrder.LITTLE_ENDIAN;
 
     private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[MAP_VALUE_SIZE]);
-    private final UnsafeBuffer workerBuffer = new UnsafeBuffer(0, 0);
 
     private final Long2BytesZbMap map;
-
-    private long key;
-    private boolean isRead = false;
 
     public JobInstanceMap()
     {
         this.map = new Long2BytesZbMap(MAP_VALUE_SIZE);
-    }
-
-    public void reset()
-    {
-        isRead = false;
     }
 
     public void remove(long workflowInstanceKey)
@@ -74,73 +59,24 @@ public class JobInstanceMap
         return map;
     }
 
-    public JobInstanceMap wrapJobInstanceKey(long key)
+    public short getJobState(long key)
     {
         final DirectBuffer result = map.get(key);
+
         if (result != null)
         {
-            buffer.putBytes(0, result, 0, result.capacity());
-        }
-
-        this.isRead = result != null;
-        this.key = key;
-
-        return this;
-    }
-
-    public short getState()
-    {
-        return isRead ? buffer.getShort(STATE_OFFSET, BYTE_ORDER) : -1;
-    }
-
-    public DirectBuffer getWorker()
-    {
-        if (isRead)
-        {
-            final int length = buffer.getInt(WORKER_LENGTH_OFFSET, BYTE_ORDER);
-            workerBuffer.wrap(buffer, WORKER_OFFSET, length);
+            return result.getShort(STATE_OFFSET, BYTE_ORDER);
         }
         else
         {
-            workerBuffer.wrap(0, 0);
+            return -1;
         }
-        return workerBuffer;
     }
 
-    public JobInstanceMap newJobInstance(long jobInstanceKey)
+    public void putJobInstance(long jobInstanceKey, short state)
     {
-        key = jobInstanceKey;
-        isRead = true;
-        return this;
-    }
-
-    public void write()
-    {
-        ensureRead();
-        map.put(key, buffer);
-    }
-
-    public JobInstanceMap setState(short state)
-    {
-        ensureRead();
         buffer.putShort(STATE_OFFSET, state, BYTE_ORDER);
-        return this;
-    }
-
-    public JobInstanceMap setWorker(DirectBuffer worker)
-    {
-        ensureRead();
-        buffer.putInt(WORKER_LENGTH_OFFSET, worker.capacity(), BYTE_ORDER);
-        buffer.putBytes(WORKER_OFFSET, worker, 0, worker.capacity());
-        return this;
-    }
-
-    private void ensureRead()
-    {
-        if (!isRead)
-        {
-            throw new IllegalStateException("must call wrapJobInstanceKey() before");
-        }
+        map.put(jobInstanceKey, buffer);
     }
 
     public void close()

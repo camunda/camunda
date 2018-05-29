@@ -138,7 +138,7 @@ public class CompleteJobTest
     }
 
     @Test
-    public void shouldRejectCompletionIfNotWorker()
+    public void shouldCompleteIfNotWorker()
     {
         // given
         final String worker = "kermit";
@@ -164,8 +164,8 @@ public class CompleteJobTest
         final ExecuteCommandResponse response = completeJob(subscribedEvent.key(), event);
 
         // then
-        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-        assertThat(response.intent()).isEqualTo(JobIntent.COMPLETE);
+        assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
+        assertThat(response.intent()).isEqualTo(JobIntent.COMPLETED);
     }
 
 

@@ -186,7 +186,7 @@ public class FailJobTest
     }
 
     @Test
-    public void shouldRejectFailIfNotWorker()
+    public void shouldFailIfNotWorker()
     {
         // given
         final String worker = "peter";
@@ -212,8 +212,8 @@ public class FailJobTest
         final ExecuteCommandResponse response = client.failJob(subscribedEvent.key(), event);
 
         // then
-        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-        assertThat(response.intent()).isEqualTo(JobIntent.FAIL);
+        assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
+        assertThat(response.intent()).isEqualTo(JobIntent.FAILED);
     }
 
     private SubscribedRecord receiveSingleSubscribedEvent()
