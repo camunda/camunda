@@ -49,7 +49,8 @@ public class MappingMergeBenchmark
 
         final byte[] json = outStream.toByteArray();
 
-        final Mapping[] mappings = generateMappings(MAPPING_COUNT, LEVELS_OF_NESTING, NUM_VALUES_PER_LEVEL);
+        final Mapping[] mappings = //new Mapping(new JsonPathQueryCompiler().compile("$"), BufferUtil.wrapString("$.B"));
+        generateMappings(MAPPING_COUNT, LEVELS_OF_NESTING, NUM_VALUES_PER_LEVEL);
         final byte[] msgPack = converter.convertToMsgPack(new ByteArrayInputStream(json));
         System.out.println(String.format("Message pack document size %d bytes.", msgPack.length));
         final DirectBuffer sourceDocument = new UnsafeBuffer(msgPack);

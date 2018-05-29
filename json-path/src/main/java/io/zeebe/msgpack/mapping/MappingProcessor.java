@@ -15,10 +15,10 @@
  */
 package io.zeebe.msgpack.mapping;
 
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
 import io.zeebe.msgpack.spec.MsgPackFormat;
 import io.zeebe.msgpack.spec.MsgPackType;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 
 /**
  * <p>
@@ -136,10 +136,12 @@ public class MappingProcessor
     protected final MsgPackDocumentIndexer documentIndexer;
     protected final MsgPackDocumentExtractor documentExtractor;
     protected final MsgPackDocumentTreeWriter treeWriter;
+    private final MsgPackDocumentIndexer sourceDocumentIndexer;
 
     public MappingProcessor(int initialDocumentSize)
     {
         this.documentIndexer = new MsgPackDocumentIndexer();
+        this.sourceDocumentIndexer = new MsgPackDocumentIndexer();
         this.documentExtractor = new MsgPackDocumentExtractor();
         this.treeWriter = new MsgPackDocumentTreeWriter(initialDocumentSize);
     }
@@ -151,9 +153,11 @@ public class MappingProcessor
      * The target is used to determine which content should be available in the result, with help of the mapping
      * the target can be modified. Objects can be added or replaced.
      *
+     * If no mappings are given an top-level merge will be executed.
+     *
      * @param sourceDocument the document which is used as source of the mapping
      * @param targetDocument the targetPayload which should be merged with the source document with help of the mappings
-     * @param mappings      one or more mappings, which should be executed
+     * @param mappings      zero or more mappings, which should be executed
      * @return the resulting length of the message pack
      */
     public int merge(DirectBuffer sourceDocument, DirectBuffer targetDocument, Mapping... mappings)
@@ -163,17 +167,29 @@ public class MappingProcessor
             throw new IllegalArgumentException("Target document must not be null!");
         }
 
-        if (targetDocument.capacity() > 1)
+        if (targetDocument.capacity() > 0)
         {
-            ensureValidParameter(sourceDocument, mappings);
+            ensureSourceDocumentIsNotNull(sourceDocument);
 
             documentIndexer.wrap(targetDocument);
             final MsgPackTree targetTree = documentIndexer.index();
 
-            documentExtractor.wrap(targetTree, sourceDocument);
-            final MsgPackTree mergedDocumentTree = documentExtractor.extract(mappings);
+            final MsgPackTree treeToWrite;
+            if (mappings == null || mappings.length == 0)
+            {
+                sourceDocumentIndexer.wrap(sourceDocument);
+                final MsgPackTree sourceTree = sourceDocumentIndexer.index();
+                targetTree.merge(sourceTree);
 
-            return writeMsgPackTree(mergedDocumentTree);
+                treeToWrite = targetTree;
+            }
+            else
+            {
+                documentExtractor.wrap(targetTree, sourceDocument);
+                treeToWrite = documentExtractor.extract(mappings);
+            }
+
+            return writeMsgPackTree(treeToWrite);
         }
         else
         {
@@ -192,31 +208,32 @@ public class MappingProcessor
      */
     public int extract(DirectBuffer sourceDocument, Mapping... mappings)
     {
-        ensureValidParameter(sourceDocument, mappings);
+        ensureSourceDocumentIsNotNull(sourceDocument);
+        final MsgPackTree treeToWrite;
+        if (mappings == null || mappings.length == 0)
+        {
+            sourceDocumentIndexer.wrap(sourceDocument);
+            treeToWrite = sourceDocumentIndexer.index();
+        }
+        else
+        {
+            documentExtractor.wrap(sourceDocument);
+            treeToWrite = documentExtractor.extract(mappings);
+        }
 
-        documentExtractor.wrap(sourceDocument);
-        final MsgPackTree extractedDocumentTree = documentExtractor.extract(mappings);
-
-        return writeMsgPackTree(extractedDocumentTree);
+        return writeMsgPackTree(treeToWrite);
     }
 
     /**
-     * Ensures if the given parameters are valid.
+     * Ensures if the given source document is not null.
      *
      * @param sourceDocument the source document which should not be null
-     * @param mappings the mappings which must not be neither null nor empty
-     *                 is should also not more mappings than one if an root mapping exist
      */
-    private void ensureValidParameter(DirectBuffer sourceDocument, Mapping[] mappings)
+    private void ensureSourceDocumentIsNotNull(DirectBuffer sourceDocument)
     {
         if (sourceDocument == null)
         {
             throw new IllegalArgumentException("Source document must not be null!");
-        }
-
-        if (mappings == null || mappings.length == 0)
-        {
-            throw new IllegalArgumentException(EXCEPTION_MSG_MAPPING_NULL_NOR_EMPTY);
         }
     }
 
@@ -224,7 +241,7 @@ public class MappingProcessor
     {
         final byte b = document.getByte(0);
         final MsgPackFormat format = MsgPackFormat.valueOf(b);
-        if (format.getType() != MsgPackType.MAP)
+        if (format.getType() != MsgPackType.MAP && format.getType() != MsgPackType.NIL)
         {
             throw new MappingException(exceptionMsg);
         }
@@ -261,5 +278,6 @@ public class MappingProcessor
     {
         documentIndexer.clear();
         documentExtractor.clear();
+        sourceDocumentIndexer.clear();
     }
 }

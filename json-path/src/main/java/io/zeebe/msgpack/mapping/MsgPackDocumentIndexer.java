@@ -134,7 +134,6 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor
      */
     private final MsgPackTraverser traverser = new MsgPackTraverser();
 
-
     public MsgPackDocumentIndexer()
     {
         msgPackTree = new MsgPackTree();
@@ -158,25 +157,28 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor
     public void visitElement(int position, MsgPackToken currentValue)
     {
         final MsgPackType currentValueType = currentValue.getType();
-        lastType = getLastNodeType();
+        if (position != 0 || currentValueType != MsgPackType.NIL)
+        {
+            lastType = getLastNodeType();
 
-        if (lastType == MsgPackType.MAP)
-        {
-            final DirectBuffer valueBuffer = currentValue.getValueBuffer();
-            lastKeyLen = valueBuffer.capacity();
-            valueBuffer.getBytes(0, lastKey, 0, lastKeyLen);
-            lastTypeStack.push(MsgPackType.EXTENSION);
-        }
-        else
-        {
-            if (currentValueType == MsgPackType.MAP || currentValueType == MsgPackType.ARRAY)
+            if (lastType == MsgPackType.MAP)
             {
-                final int childSize = currentValue.getSize();
-                addNewParent(childSize, currentValueType);
+                final DirectBuffer valueBuffer = currentValue.getValueBuffer();
+                lastKeyLen = valueBuffer.capacity();
+                valueBuffer.getBytes(0, lastKey, 0, lastKeyLen);
+                lastTypeStack.push(MsgPackType.EXTENSION);
             }
             else
             {
-                processValueNode(position, currentValue);
+                if (currentValueType == MsgPackType.MAP || currentValueType == MsgPackType.ARRAY)
+                {
+                    final int childSize = currentValue.getSize();
+                    addNewParent(childSize, currentValueType);
+                }
+                else
+                {
+                    processValueNode(position, currentValue);
+                }
             }
         }
     }

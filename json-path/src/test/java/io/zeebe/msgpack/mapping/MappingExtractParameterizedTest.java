@@ -61,6 +61,13 @@ public class MappingExtractParameterizedTest
                 "{'foo':'bar','int':1,'obj':{'test':'ok'},'array':[1,2,3]}" },
             {
                 // source
+                "{'foo':'bar','int':1,'obj':{'test':'ok'},'array':[1,2,3]}",
+                // mapping
+                null,
+                // expected result
+                "{'foo':'bar','int':1,'obj':{'test':'ok'},'array':[1,2,3]}" },
+            {
+                // source
                 "{'foo':'bar','int':1}",
                 // mapping
                 createMapping("$.foo", "$.newFoo"),

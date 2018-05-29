@@ -59,10 +59,18 @@ public class MsgPackDocumentTreeWriter
     public int write(MsgPackTree documentTree)
     {
         this.documentTree = documentTree;
-        final String startNode = Mapping.JSON_ROOT_PATH;
         msgPackWriter.wrap(resultingBuffer, 0);
 
-        writeNode("", startNode, false);
+        if (documentTree.size() > 0)
+        {
+            final String startNode = Mapping.JSON_ROOT_PATH;
+            writeNode("", startNode, false);
+        }
+        else
+        {
+            msgPackWriter.writeNil();
+        }
+
         return msgPackWriter.getOffset();
     }
 

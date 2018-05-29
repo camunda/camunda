@@ -54,35 +54,6 @@ public class MappingExtractTest
     }
 
     @Test
-    public void shouldThrowExceptionIfMappingIsEmpty() throws Throwable
-    {
-        // given payload
-        final DirectBuffer sourceDocument = new UnsafeBuffer(EMTPY_OBJECT);
-        final Mapping[] mapping = createMappings().build();
-
-        // expect
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("Mapping must be neither null nor empty!");
-
-        // when
-        processor.extract(sourceDocument, mapping);
-    }
-
-    @Test
-    public void shouldThrowExceptionIfMappingIsNull() throws Throwable
-    {
-        // given payload
-        final DirectBuffer sourceDocument = new UnsafeBuffer(EMTPY_OBJECT);
-
-        // expect
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("Mapping must be neither null nor empty!");
-
-        // when
-        processor.extract(sourceDocument);
-    }
-
-    @Test
     public void shouldThrowExceptionIfMappingDoesNotMatch() throws Throwable
     {
         // given payload
@@ -145,5 +116,37 @@ public class MappingExtractTest
         // then expect result
         assertThat(MSGPACK_MAPPER.readTree(result))
             .isEqualTo(JSON_MAPPER.readTree("{'value':123}"));
+    }
+
+    @Test
+    public void shouldExtractTwiceWithoutMapping() throws Throwable
+    {
+        // given documents
+        final DirectBuffer sourceDocument = new UnsafeBuffer(
+            MSGPACK_MAPPER.writeValueAsBytes(
+                JSON_MAPPER.readTree("{'arr':[{'deepObj':{'value':123}}, 1], 'obj':{'int':1}, 'test':'value'}")));
+
+        // when merge
+        int resultLength = processor.extract(sourceDocument);
+        MutableDirectBuffer resultBuffer = processor.getResultBuffer();
+        byte result[] = new byte[resultLength];
+        resultBuffer.getBytes(0, result, 0, resultLength);
+
+        // then expect result
+        assertThat(MSGPACK_MAPPER.readTree(result))
+            .isEqualTo(JSON_MAPPER.readTree("{'arr':[{'deepObj':{'value':123}}, 1], 'obj':{'int':1}, 'test':'value'}}"));
+
+        // new source and mappings
+        sourceDocument.wrap(MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'foo':'bar'}")));
+
+        // when again merge after that
+        resultLength = processor.extract(sourceDocument);
+        resultBuffer = processor.getResultBuffer();
+        result = new byte[resultLength];
+        resultBuffer.getBytes(0, result, 0, resultLength);
+
+        // then expect result
+        assertThat(MSGPACK_MAPPER.readTree(result))
+            .isEqualTo(JSON_MAPPER.readTree("{'foo':'bar'}"));
     }
 }

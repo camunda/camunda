@@ -18,10 +18,7 @@ package io.zeebe.msgpack.mapping;
 import static io.zeebe.msgpack.mapping.MsgPackNodeType.EXISTING_LEAF_NODE;
 import static io.zeebe.msgpack.mapping.MsgPackNodeType.EXTRACTED_LEAF_NODE;
 
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -63,6 +60,11 @@ public class MsgPackTree
         nodeTypeMap = new HashMap<>();
         nodeChildsMap = new HashMap<>();
         leafMap = new HashMap<>();
+    }
+
+    public int size()
+    {
+        return nodeTypeMap.size();
     }
 
     public void wrap(DirectBuffer underlyingDocument)
@@ -152,5 +154,38 @@ public class MsgPackTree
             relatedBuffer = extractDocument;
         }
         writer.writeRaw(relatedBuffer, position, length);
+    }
+
+    public void merge(MsgPackTree sourceTree)
+    {
+        extractDocument = sourceTree.underlyingDocument;
+        for (Map.Entry<String, MsgPackNodeType> leafMapEntry : sourceTree.nodeTypeMap.entrySet())
+        {
+            final String key = leafMapEntry.getKey();
+            MsgPackNodeType nodeType = leafMapEntry.getValue();
+            if (nodeType == EXISTING_LEAF_NODE)
+            {
+                nodeType = EXTRACTED_LEAF_NODE;
+            }
+            nodeTypeMap.put(key, nodeType);
+        }
+        leafMap.putAll(sourceTree.leafMap);
+
+        for (Map.Entry<String, Set<String>> nodeChildsEntry : sourceTree.nodeChildsMap.entrySet())
+        {
+            final String key = nodeChildsEntry.getKey();
+
+            // if we change the following condition to if (nodeChildsMap.containsKey(key))
+            // we get a deep merge
+            if (key.equals(Mapping.JSON_ROOT_PATH))
+            {
+                nodeChildsMap.computeIfAbsent(key, (k) -> new LinkedHashSet<>())
+                    .addAll(nodeChildsEntry.getValue());
+            }
+            else
+            {
+                nodeChildsMap.put(key, nodeChildsEntry.getValue());
+            }
+        }
     }
 }

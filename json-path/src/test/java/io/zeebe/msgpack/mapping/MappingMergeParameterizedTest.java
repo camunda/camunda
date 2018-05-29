@@ -55,13 +55,22 @@ public class MappingMergeParameterizedTest
                 "{}" },
             {
                 // source
-                "{}",
+                "{'hallo':'twsewas','int':1}",
                 // target
-                "{'foo':'bar','int':1}",
+                "{'foo':'bar','int':3}",
                 // mapping
                 createMapping("$", "$"),
                 // expected result
-                "{}" },
+                "{'hallo':'twsewas','int':1}" },
+            {
+                // source
+                "{'hallo':'twsewas','int':1}",
+                // target
+                "{'foo':'bar','int':3}",
+                // mapping
+                null,
+                // expected result
+                "{'hallo':'twsewas','foo':'bar','int':1}" },
             {
                 // source
                 "{'foo':'bar','int':1}",
@@ -75,7 +84,7 @@ public class MappingMergeParameterizedTest
                 // source
                 "{'foo':'bar','int':1}",
                 // target
-                "{'foo':'bar','int':1}",
+                "{'foo':'bar','int':2}",
                 // mapping
                 createMapping("$", "$"),
                 // expected result
@@ -98,6 +107,68 @@ public class MappingMergeParameterizedTest
                 createMapping("$", "$"),
                 // expected result
                 "{'foo':'bar','int':1,'obj':{'test':'ok'},'array':[1,2,3]}" },
+            {
+                // source
+                "{'foo':'bar','int':1,'obj':{'test':'ok'},'array':[1,2,3]}",
+                // target
+                "{'foo':'bar','int':3,'obj':{'test':'ok'},'array':[1],'test':'value'}",
+                // mapping
+                null,
+                // expected result
+                "{'foo':'bar','int':1,'obj':{'test':'ok'},'array':[1,2,3],'test':'value'}" },
+
+            {
+                // source
+                "{'arr':[" +
+                    "{'obj':{'value':'x'," +
+                    " 'otherArr':[{'test':'hallo'}, {'obj':{'arr':[0, 1]}} ]}" +
+                    "}, {'otherValue':1}]," +
+                    " 'ab':{'b':{'value':'y'}}}",
+                // target
+                "{'foo':'bar','int':3,'obj':{'test':'ok'},'array':[1],'test':'value'}",
+                // mapping
+                null,
+                // expected result
+                "{'arr':[" + "{'obj':{'value':'x'," +
+                    " 'otherArr':[{'test':'hallo'}, {'obj':{'arr':[0, 1]}} ]}" +
+                    "}, {'otherValue':1}], " +
+                    "'ab':{'b':{'value':'y'}}," +
+                    "'foo':'bar','int':3,'obj':{'test':'ok'},'array':[1],'test':'value'}"},
+            {
+                // source
+                "{'arr':[" +
+                    "{'obj':{'value':'x'," +
+                    " 'otherArr':[{'test':'hallo'}, {'obj':{'arr':[0, 1]}} ]}" +
+                    "}, {'otherValue':1}]," +
+                    " 'ab':{'b':{'value':'y'}}}",
+                // target
+                "{'foo':'bar','int':3,'obj':{'test':'ok'},'array':[1],'test':'value'}",
+                // mapping
+                createMapping("$", "$"),
+                // expected result
+                "{'arr':[" +
+                    "{'obj':{'value':'x'," +
+                    " 'otherArr':[{'test':'hallo'}, {'obj':{'arr':[0, 1]}} ]}" +
+                    "}, {'otherValue':1}]," +
+                    " 'ab':{'b':{'value':'y'}}}"},
+            {
+                // source
+                "{'arr':[" +
+                    "{'obj':{'value':'x'," +
+                    " 'otherArr':[{'test':'hallo'}, {'obj':{'arr':[0, 1]}} ]}" +
+                    "}, {'otherValue':1}]," +
+                    " 'ab':{'b':{'value':'y'}}}",
+                // target
+                "{'foo':'bar','int':3,'ab':{'c':{'value':'z'}},'array':[1],'test':'value'}",
+                // mapping
+                null,
+                // expected result
+                "{'arr':[" +
+                    "{'obj':{'value':'x'," +
+                    " 'otherArr':[{'test':'hallo'}, {'obj':{'arr':[0, 1]}} ]}" +
+                    "}, {'otherValue':1}]," +
+                    " 'ab':{'b':{'value':'y'}}," +
+                    "'foo':'bar','int':3,'array':[1],'test':'value'}"},
             {
                 // source
                 "{'foo':'bar','int':2}",
@@ -511,6 +582,15 @@ public class MappingMergeParameterizedTest
                 "null",
                 // mapping
                 createMapping("$", "$"),
+                // expected result
+                "{}" },
+            {
+                // source
+                "{}",
+                // target
+                "null",
+                // mapping
+                null,
                 // expected result
                 "{}" },
             {

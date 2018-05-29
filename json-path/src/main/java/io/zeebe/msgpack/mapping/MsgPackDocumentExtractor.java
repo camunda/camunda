@@ -269,7 +269,10 @@ public final class MsgPackDocumentExtractor
 
     public void clear()
     {
-        this.documentTreeReference.clear();
+        if (documentTreeReference != null)
+        {
+            this.documentTreeReference.clear();
+        }
         this.traverser.reset();
     }
 }
