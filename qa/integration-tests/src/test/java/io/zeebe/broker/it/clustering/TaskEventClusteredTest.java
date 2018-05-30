@@ -17,19 +17,14 @@ package io.zeebe.broker.it.clustering;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.commands.BrokerInfo;
-import io.zeebe.client.api.commands.Topic;
-import io.zeebe.client.api.commands.Topics;
+import io.zeebe.client.api.commands.*;
 import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.events.JobState;
 import io.zeebe.test.util.AutoCloseableRule;
+import org.junit.*;
+import org.junit.rules.RuleChain;
 
 
 public class TaskEventClusteredTest
@@ -64,7 +59,7 @@ public class TaskEventClusteredTest
         final BrokerInfo leader = clusteringRule.getLeaderForPartition(topic.getPartitions().get(0).getId());
 
         // choosing a new leader in a raft group where the previously leading broker is no longer available
-        clusteringRule.stopBroker(leader.getSocketAddress());
+        clusteringRule.stopBroker(leader.getAddress());
 
         // when
         final JobEvent jobEvent = client.topicClient(topicName).jobClient()

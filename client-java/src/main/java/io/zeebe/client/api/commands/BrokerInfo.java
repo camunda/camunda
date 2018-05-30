@@ -17,14 +17,22 @@ package io.zeebe.client.api.commands;
 
 import java.util.List;
 
-import io.zeebe.transport.SocketAddress;
-
 public interface BrokerInfo
 {
     /**
-     * @return the address (host + port) of the broker
+     * @return the address host of the broker
      */
-    SocketAddress getSocketAddress();
+    String getHost();
+
+    /**
+     * @return the address port of the broker
+     */
+    int getPort();
+
+    /**
+     * @return the address (host+port) of the broker
+     */
+    String getAddress();
 
     /**
      * @return all partitions of the broker

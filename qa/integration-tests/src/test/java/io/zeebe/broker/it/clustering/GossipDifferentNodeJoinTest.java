@@ -97,10 +97,10 @@ public class GossipDifferentNodeJoinTest
     {
         // given
         final BrokerInfo leaderForPartition = clusteringRule.getLeaderForPartition(0);
-        final SocketAddress[] otherBrokers = clusteringRule.getOtherBrokers(leaderForPartition.getSocketAddress());
+        final SocketAddress[] otherBrokers = clusteringRule.getOtherBrokers(leaderForPartition.getAddress());
 
         // when
-        clusteringRule.stopBroker(leaderForPartition.getSocketAddress());
+        clusteringRule.stopBroker(leaderForPartition.getAddress());
 
         // then
         final List<SocketAddress> topologyBrokers = clusteringRule.getBrokersInCluster();

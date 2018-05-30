@@ -21,12 +21,6 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
-
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.api.commands.BrokerInfo;
 import io.zeebe.client.api.events.JobEvent;
@@ -34,7 +28,9 @@ import io.zeebe.client.api.events.JobState;
 import io.zeebe.client.api.subscription.JobWorker;
 import io.zeebe.client.api.subscription.TopicSubscription;
 import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.transport.SocketAddress;
+import org.junit.*;
+import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
 
 public class BrokerLeaderChangeTest
 {
@@ -60,7 +56,7 @@ public class BrokerLeaderChangeTest
         clusteringRule.createTopic(clientRule.getDefaultTopic(), 1, 3);
 
         final BrokerInfo leaderForPartition = clusteringRule.getLeaderForPartition(1);
-        final SocketAddress leaderAddress = leaderForPartition.getSocketAddress();
+        final String leaderAddress = leaderForPartition.getAddress();
 
         final JobEvent jobEvent = clientRule.getJobClient()
                 .newCreateCommand()

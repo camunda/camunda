@@ -44,8 +44,8 @@ public class TopologyViewer
                 System.out.println("  Topology:");
                 topology.getBrokers().forEach(b ->
                 {
-                    System.out.println("    " + b.getSocketAddress());
-                    b.getPartitions().forEach(p -> System.out.println("      " + p.getTopicName() + "." + p.getPartitionId() + " - " + (p.isLeader() ? "LEADER" : "FOLLOWER")));
+                    System.out.println("    " + b.getAddress());
+                    b.getPartitions().forEach(p -> System.out.println("      " + p.getTopicName() + "." + p.getPartitionId() + " - " + p.getRole()));
                 });
             }
             catch (final Exception e)

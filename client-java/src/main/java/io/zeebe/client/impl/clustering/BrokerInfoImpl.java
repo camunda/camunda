@@ -19,10 +19,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-
 import io.zeebe.client.api.commands.BrokerInfo;
 import io.zeebe.client.api.commands.PartitionInfo;
-import io.zeebe.transport.SocketAddress;
 
 public class BrokerInfoImpl implements BrokerInfo
 {
@@ -56,9 +54,21 @@ public class BrokerInfoImpl implements BrokerInfo
     }
 
     @Override
-    public SocketAddress getSocketAddress()
+    public String getHost()
     {
-        return new SocketAddress(host, port);
+        return host;
+    }
+
+    @Override
+    public int getPort()
+    {
+        return port;
+    }
+
+    @Override
+    public String getAddress()
+    {
+        return String.format("%s:%d", host, port);
     }
 
     @Override

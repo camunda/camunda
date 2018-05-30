@@ -21,33 +21,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
-
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.commands.BrokerInfo;
-import io.zeebe.client.api.commands.Partition;
-import io.zeebe.client.api.commands.Topic;
-import io.zeebe.client.api.commands.Topics;
+import io.zeebe.client.api.commands.*;
 import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.events.JobState;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
+import org.junit.*;
+import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
 
 public class CreateTopicClusteredTest
 {
@@ -141,14 +132,14 @@ public class CreateTopicClusteredTest
         final int partitionId = jobEvent.getMetadata().getPartitionId();
 
         final BrokerInfo leaderForPartition = clusteringRule.getLeaderForPartition(partitionId);
-        final SocketAddress currentLeaderAddress = leaderForPartition.getSocketAddress();
+        final String currentLeaderAddress = leaderForPartition.getAddress();
 
         // when
         clusteringRule.stopBroker(currentLeaderAddress);
 
         // then
         final BrokerInfo newLeader = clusteringRule.getLeaderForPartition(partitionId);
-        assertThat(newLeader.getSocketAddress()).isNotEqualTo(leaderForPartition.getSocketAddress());
+        assertThat(newLeader.getAddress()).isNotEqualTo(leaderForPartition.getAddress());
     }
 
     @Test
@@ -170,14 +161,14 @@ public class CreateTopicClusteredTest
         final int partitionId = jobEvent.getMetadata().getPartitionId();
 
         final BrokerInfo leaderForPartition = clusteringRule.getLeaderForPartition(partitionId);
-        final SocketAddress currentLeaderAddress = leaderForPartition.getSocketAddress();
+        final String currentLeaderAddress = leaderForPartition.getAddress();
 
         // when
         clusteringRule.stopBroker(currentLeaderAddress);
 
         // then
         final BrokerInfo newLeader = clusteringRule.getLeaderForPartition(partitionId);
-        assertThat(newLeader.getSocketAddress()).isNotEqualTo(leaderForPartition.getSocketAddress());
+        assertThat(newLeader.getAddress()).isNotEqualTo(leaderForPartition.getAddress());
 
         final CompletableFuture<JobEvent> jobCompleted = new CompletableFuture<>();
         client.topicClient(topicName)
@@ -207,7 +198,7 @@ public class CreateTopicClusteredTest
     {
         // given
         final BrokerInfo leaderForSystemPartition = clusteringRule.getLeaderForPartition(Protocol.SYSTEM_PARTITION);
-        final SocketAddress[] otherBrokers = clusteringRule.getOtherBrokers(leaderForSystemPartition.getSocketAddress());
+        final SocketAddress[] otherBrokers = clusteringRule.getOtherBrokers(leaderForSystemPartition.getAddress());
 
         // when
         // stop broker which is no leader to decrement member size correctly
@@ -240,11 +231,11 @@ public class CreateTopicClusteredTest
         final BrokerInfo leaderForSystemPartition = clusteringRule.getLeaderForPartition(Protocol.SYSTEM_PARTITION);
         final int partitionId = topic.getPartitions().get(0).getId();
         final BrokerInfo leaderForTopicPartition = clusteringRule.getLeaderForPartition(partitionId);
-        final SocketAddress[] otherBrokers = clusteringRule.getOtherBrokers(leaderForTopicPartition.getSocketAddress());
+        final SocketAddress[] otherBrokers = clusteringRule.getOtherBrokers(leaderForTopicPartition.getAddress());
 
         // when
         // stop broker which is no leader to decrement member size correctly
-        final SocketAddress brokerWhichIsNoLeader = Arrays.stream(otherBrokers).filter(broker -> !broker.equals(leaderForSystemPartition.getSocketAddress())).findAny().get();
+        final SocketAddress brokerWhichIsNoLeader = Arrays.stream(otherBrokers).filter(broker -> !broker.equals(leaderForSystemPartition.getAddress())).findAny().get();
         clusteringRule.stopBroker(brokerWhichIsNoLeader);
 
         // then topology contains still topic

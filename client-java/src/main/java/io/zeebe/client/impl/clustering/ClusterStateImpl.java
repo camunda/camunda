@@ -48,7 +48,7 @@ public class ClusterStateImpl implements ClusterState
             .stream()
             .forEach(b ->
             {
-                final RemoteAddress remoteAddress = remoteAddressProvider.apply(b.getSocketAddress());
+                final RemoteAddress remoteAddress = remoteAddressProvider.apply(new SocketAddress(b.getHost(), b.getPort()));
                 brokers.add(remoteAddress);
 
                 b.getPartitions().forEach(p ->

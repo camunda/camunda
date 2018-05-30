@@ -109,7 +109,7 @@ public class ClusteringRule extends ExternalResource
         waitForTopology(topology ->
             topology
                 .stream()
-                .map(BrokerInfo::getSocketAddress)
+                .map(b -> new SocketAddress(b.getHost(), b.getPort()))
                 .collect(Collectors.toSet())
                 .containsAll(addresses)
         );
@@ -140,8 +140,8 @@ public class ClusteringRule extends ExternalResource
 
     public SocketAddress getFollowerForPartition(int partitionId)
     {
-        final SocketAddress leader = getLeaderForPartition(partitionId).getSocketAddress();
-        return getOtherBrokers(leader)[0];
+        final BrokerInfo leader = getLeaderForPartition(partitionId);
+        return getOtherBrokers(new SocketAddress(leader.getHost(), leader.getPort()))[0];
     }
 
     /**
@@ -286,7 +286,7 @@ public class ClusteringRule extends ExternalResource
 
     private void waitUntilBrokerIsAddedToTopology(SocketAddress socketAddress)
     {
-        waitForTopology(topology -> topology.stream().anyMatch(topologyBroker -> topologyBroker.getSocketAddress().equals(socketAddress)));
+        waitForTopology(topology -> topology.stream().anyMatch(b -> b.getHost().equals(socketAddress.host()) && b.getPort() == socketAddress.port()));
     }
 
     /**
@@ -302,7 +302,7 @@ public class ClusteringRule extends ExternalResource
                           .join()
                           .getBrokers()
                           .stream()
-                          .filter(broker -> broker.getSocketAddress().equals(socketAddress))
+                          .filter(b -> b.getHost().equals(socketAddress.host()) && b.getPort() == socketAddress.port())
                           .flatMap(broker -> broker.getPartitions().stream())
                           .filter(PartitionInfo::isLeader)
                           .map(PartitionInfo::getPartitionId)
@@ -320,9 +320,14 @@ public class ClusteringRule extends ExternalResource
                           .join()
                           .getBrokers()
                           .stream()
-                          .map(BrokerInfo::getSocketAddress)
+                          .map(b -> new SocketAddress(b.getHost(), b.getPort()))
                           .collect(Collectors.toList());
 
+    }
+
+    public SocketAddress[] getOtherBrokers(String address)
+    {
+        return getOtherBrokers(SocketAddress.from(address));
     }
 
     public SocketAddress[] getOtherBrokers(SocketAddress address)
@@ -361,6 +366,11 @@ public class ClusteringRule extends ExternalResource
      *
      * @param socketAddress
      */
+    public void stopBroker(String address)
+    {
+        stopBroker(SocketAddress.from(address));
+    }
+
     public void stopBroker(SocketAddress socketAddress)
     {
         final List<Integer> brokersLeadingPartitions = getBrokersLeadingPartitions(socketAddress);
@@ -375,14 +385,14 @@ public class ClusteringRule extends ExternalResource
 
     private void waitUntilBrokerIsRemovedFromTopology(SocketAddress socketAddress)
     {
-        waitForTopology(topology -> topology.stream().noneMatch(b -> b.getSocketAddress().equals(socketAddress)));
+        waitForTopology(topology -> topology.stream().noneMatch(b -> b.getHost().equals(socketAddress.host()) && b.getPort() == socketAddress.port()));
     }
 
     private void waitForNewLeaderOfPartitions(List<Integer> partitions, SocketAddress oldLeader)
     {
         waitForTopology(topology ->
             topology.stream()
-                .filter(broker -> !broker.getSocketAddress().equals(oldLeader))
+                .filter(b -> !(b.getHost().equals(oldLeader.host()) && b.getPort() == oldLeader.port()))
                 .flatMap(broker -> broker.getPartitions().stream())
                 .filter(PartitionInfo::isLeader)
                 .map(PartitionInfo::getPartitionId)
@@ -402,18 +412,6 @@ public class ClusteringRule extends ExternalResource
                    return topologyPredicate.apply(topology);
                }), 250
         );
-    }
-
-    private void printTopology(final List<BrokerInfo> topology)
-    {
-        System.out.println("Topology of " + topology.get(0).getSocketAddress());
-        topology.forEach(b ->
-        {
-            final List<String> partitions = b.getPartitions().stream().sorted(Comparator.comparingInt(PartitionInfo::getPartitionId))
-                .map(p -> String.format("%d (%-8s)", p.getPartitionId(), p.getRole()))
-                .collect(Collectors.toList());
-            System.out.println("\t" + b.getSocketAddress() + ": " + partitions);
-        });
     }
 
 }
