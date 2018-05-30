@@ -45,6 +45,7 @@ public class FinishedProcessInstanceFetcher extends
 
   private List<HistoricProcessInstanceDto> fetchHistoricFinishedProcessInstances(OffsetDateTime timeStamp,
                                                                                  long pageSize) {
+    logger.debug("Fetching completed historic process instances...");
     long requestStart = System.currentTimeMillis();
     List<HistoricProcessInstanceDto> entries =
       fetchWithRetry(() -> performFinishedHistoricProcessInstanceRequest(timeStamp, pageSize));
@@ -75,6 +76,7 @@ public class FinishedProcessInstanceFetcher extends
   }
 
   public List<HistoricProcessInstanceDto> fetchHistoricFinishedProcessInstances(OffsetDateTime endTimeOfLastInstance) {
+    logger.debug("Fetching completed historic process instances...");
     long requestStart = System.currentTimeMillis();
     List<HistoricProcessInstanceDto> secondEntries =
       fetchWithRetry(() -> performFinishedHistoricProcessInstanceRequest(endTimeOfLastInstance));

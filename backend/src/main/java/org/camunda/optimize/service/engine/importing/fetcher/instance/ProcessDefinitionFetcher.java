@@ -32,7 +32,7 @@ public class ProcessDefinitionFetcher
 
   private List<ProcessDefinitionEngineDto> fetchProcessDefinitions(long indexOfFirstResult, long maxPageSize) {
     List<ProcessDefinitionEngineDto> entries;
-
+    logger.debug("Fetching process definitions ...");
     long requestStart = System.currentTimeMillis();
     entries =
       fetchWithRetry(() -> performProcessDefinitionRequest(indexOfFirstResult, maxPageSize));

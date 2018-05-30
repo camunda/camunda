@@ -47,6 +47,7 @@ public class VariableUpdateInstanceFetcher extends
 
   private List<HistoricVariableUpdateInstanceDto> fetchVariableInstanceUpdates(OffsetDateTime timeStamp,
                                                                                long pageSize) {
+    logger.debug("Fetching historic variable instances ...");
     long requestStart = System.currentTimeMillis();
     List<HistoricVariableUpdateInstanceDto> entries =
       fetchWithRetry(() -> performGetVariableInstanceUpdateRequest(timeStamp, pageSize));
@@ -78,6 +79,7 @@ public class VariableUpdateInstanceFetcher extends
   }
 
   public List<HistoricVariableUpdateInstanceDto> fetchVariableInstanceUpdates(OffsetDateTime endTimeOfLastInstance) {
+    logger.debug("Fetching historic variable instances ...");
     long requestStart = System.currentTimeMillis();
     List<HistoricVariableUpdateInstanceDto> secondEntries =
       fetchWithRetry(() -> performGetVariableInstanceUpdateRequest(endTimeOfLastInstance));

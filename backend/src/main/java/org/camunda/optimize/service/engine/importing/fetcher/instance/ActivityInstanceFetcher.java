@@ -45,8 +45,8 @@ public class ActivityInstanceFetcher
 
   private List<HistoricActivityInstanceEngineDto> fetchHistoricActivityInstances(OffsetDateTime timeStamp,
                                                                                  long pageSize) {
+    logger.debug("Fetching historic activity instances ...");
     long requestStart = System.currentTimeMillis();
-
     List<HistoricActivityInstanceEngineDto> entries =
       fetchWithRetry(() -> performHistoricActivityInstanceRequest(timeStamp, pageSize));
     long requestEnd = System.currentTimeMillis();
@@ -77,6 +77,7 @@ public class ActivityInstanceFetcher
 
   public List<HistoricActivityInstanceEngineDto> fetchHistoricActivityInstancesForTimestamp(
     OffsetDateTime endTimeOfLastInstance) {
+    logger.debug("Fetching historic activity instances ...");
     long requestStart = System.currentTimeMillis();
     List<HistoricActivityInstanceEngineDto> secondEntries =
       fetchWithRetry(() -> performHistoricActivityInstanceRequest(endTimeOfLastInstance));

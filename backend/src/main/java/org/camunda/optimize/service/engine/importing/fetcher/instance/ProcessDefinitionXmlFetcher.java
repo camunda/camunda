@@ -35,6 +35,7 @@ public class ProcessDefinitionXmlFetcher
 
   private List<ProcessDefinitionXmlEngineDto> fetchXmlsForDefinitions(List<String> processDefinitionIds) {
     List<ProcessDefinitionXmlEngineDto> xmls = new ArrayList<>(processDefinitionIds.size());
+    logger.debug("Fetching process definition xml ...");
     long requestStart = System.currentTimeMillis();
     for (String processDefinitionId : processDefinitionIds) {
       List<ProcessDefinitionXmlEngineDto> singleXml =
