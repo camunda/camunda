@@ -15,6 +15,10 @@
  */
 package io.zeebe.client.impl.workflow;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+
 import io.zeebe.client.api.commands.WorkflowResource;
 
 public class WorkflowResourceImpl implements WorkflowResource
@@ -68,6 +72,13 @@ public class WorkflowResourceImpl implements WorkflowResource
     public void setBpmnXml(String bpmnXml)
     {
         this.bpmnXml = bpmnXml;
+    }
+
+    @Override
+    public InputStream getBpmnXmlAsStream()
+    {
+        final byte[] bytes = bpmnXml.getBytes(StandardCharsets.UTF_8);
+        return new ByteArrayInputStream(bytes);
     }
 
     @Override

@@ -407,7 +407,8 @@ public class ClusteringRule extends ExternalResource
     private void printTopology(final List<BrokerInfo> topology)
     {
         System.out.println("Topology of " + topology.get(0).getSocketAddress());
-        topology.forEach(b -> {
+        topology.forEach(b ->
+        {
             final List<String> partitions = b.getPartitions().stream().sorted(Comparator.comparingInt(PartitionInfo::getPartitionId))
                 .map(p -> String.format("%d (%-8s)", p.getPartitionId(), p.getRole()))
                 .collect(Collectors.toList());

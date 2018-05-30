@@ -15,10 +15,17 @@
  */
 package io.zeebe.client.api.commands;
 
+import java.io.InputStream;
+
 public interface WorkflowResource extends Workflow
 {
     /**
      * @return the BPMN XML resource of the workflow
      */
     String getBpmnXml();
+
+    /**
+     * @return the BPMN XML resource of the workflow as stream
+     */
+    InputStream getBpmnXmlAsStream();
 }

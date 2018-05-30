@@ -18,6 +18,7 @@ package io.zeebe.client.workflow;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import io.zeebe.client.ZeebeClient;
@@ -26,6 +27,7 @@ import io.zeebe.client.util.ClientRule;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.test.broker.protocol.brokerapi.ControlMessageRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
+import io.zeebe.util.StreamUtil;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
@@ -120,7 +122,7 @@ public class WorkflowRepositoryTest
     }
 
     @Test
-    public void shouldGetResourceResponse()
+    public void shouldGetResourceResponse() throws Exception
     {
         // when
         final WorkflowResource workflowResource = client
@@ -137,6 +139,7 @@ public class WorkflowRepositoryTest
         assertThat(workflowResource.getVersion()).isEqualTo(1);
         assertThat(workflowResource.getWorkflowKey()).isEqualTo(123L);
         assertThat(workflowResource.getBpmnXml()).isEqualTo("xml");
+        assertThat(StreamUtil.read(workflowResource.getBpmnXmlAsStream())).isEqualTo(workflowResource.getBpmnXml().getBytes(StandardCharsets.UTF_8));
     }
 
     @Test

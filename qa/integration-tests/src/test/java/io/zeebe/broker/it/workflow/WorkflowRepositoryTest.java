@@ -18,6 +18,7 @@ package io.zeebe.broker.it.workflow;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,6 +33,7 @@ import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.cmd.BrokerErrorException;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.util.StreamUtil;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
@@ -116,7 +118,7 @@ public class WorkflowRepositoryTest
     }
 
     @Test
-    public void shouldGetResourceByWorkflowKey()
+    public void shouldGetResourceByWorkflowKey() throws Exception
     {
         final WorkflowResource workflowResource = clientRule.getWorkflowClient()
             .newResourceRequest()
@@ -128,6 +130,7 @@ public class WorkflowRepositoryTest
         assertThat(workflowResource.getVersion()).isEqualTo(1);
         assertThat(workflowResource.getWorkflowKey()).isEqualTo(getWorkflowKey("wf2", 1));
         assertThat(workflowResource.getBpmnXml()).isEqualTo(Bpmn.convertToString(workflow2));
+        assertThat(StreamUtil.read(workflowResource.getBpmnXmlAsStream())).isEqualTo(Bpmn.convertToString(workflow2).getBytes(StandardCharsets.UTF_8));
     }
 
     @Test
