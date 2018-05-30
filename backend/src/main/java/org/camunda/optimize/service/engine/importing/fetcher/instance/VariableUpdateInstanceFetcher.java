@@ -15,10 +15,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.camunda.optimize.service.util.VariableHelper.ALL_SUPPORTED_VARIABLE_TYPES;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.DESERIALIZE_VALUES;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.HISTORY_DETAIL_ENDPOINT;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.INCLUDE_VARIABLE_TYPE_IN;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.MAX_RESULTS_TO_RETURN;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.OCCURRED_AFTER;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.OCCURRED_BEFORE;
@@ -70,7 +68,6 @@ public class VariableUpdateInstanceFetcher extends
       .queryParam(SORT_BY, SORT_BY_TIME)
       .queryParam(SORT_ORDER, SORT_ORDER_TYPE_ASCENDING)
       .queryParam(DESERIALIZE_VALUES, false)
-      .queryParam(INCLUDE_VARIABLE_TYPE_IN, String.join(",", ALL_SUPPORTED_VARIABLE_TYPES))
       .queryParam(VARIABLE_UPDATES, true)
       .queryParam(OCCURRED_AFTER, dateTimeFormatter.format(timeStamp))
       .queryParam(MAX_RESULTS_TO_RETURN, pageSize)
@@ -100,7 +97,6 @@ public class VariableUpdateInstanceFetcher extends
       .queryParam(OCCURRED_AFTER, dateTimeFormatter.format(endTimeOfLastInstance))
       .queryParam(OCCURRED_BEFORE, dateTimeFormatter.format(endTimeOfLastInstance))
       .queryParam(DESERIALIZE_VALUES, false)
-      .queryParam(INCLUDE_VARIABLE_TYPE_IN, Arrays.asList(ALL_SUPPORTED_VARIABLE_TYPES))
       .queryParam(VARIABLE_UPDATES, true)
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
