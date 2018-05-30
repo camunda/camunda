@@ -66,8 +66,9 @@ engines:
 engine-commons:
   connection:
     #Maximum time without connection to the engine, Optimize should wait
-    #until a time out is triggered.
-    timeout: 10000
+    #until a time out is triggered. A value of zero means to wait an
+    # infinite amount of time.
+    timeout: 0
   hai:
     #The engine endpoint to the historic activity instances.
     resource: '/history/activity-instance'
@@ -81,9 +82,10 @@ engine-commons:
     #The engine endpoint to the process definition xml.
     xml: '/xml'
   read:
-    #Maximum time a request to the engine should last,
-    #before a timeout triggers.
-    timeout: 15000
+    # Maximum time a request to the engine should last,
+    # before a timeout triggers. A value of zero means to wait an
+    # infinite amount of time.
+    timeout: 0
   user:
     validation:
       #The engine endpoint for the user validation.
