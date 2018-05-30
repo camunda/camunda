@@ -48,7 +48,7 @@
         <activeByDefault>true</activeByDefault>
       </activation>
       <properties>
-        <camunda.engine.version>7.9.0-SNAPSHOT</camunda.engine.version>
+        <camunda.engine.version>7.9.0</camunda.engine.version>
         <version.tomcat>9.0.5</version.tomcat>
         <it.test.excludedGroups>org.camunda.optimize.test.it.Engine77</it.test.excludedGroups>
       </properties>
