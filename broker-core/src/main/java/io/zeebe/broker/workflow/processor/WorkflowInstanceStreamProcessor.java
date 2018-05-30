@@ -371,6 +371,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         @Override
         public boolean executeSideEffects(TypedRecord<WorkflowInstanceRecord> record, TypedResponseWriter responseWriter)
         {
+            workflowInstanceEventCreate.incrementOrdered();
             return responseWriter.writeEvent(WorkflowInstanceIntent.CREATED, record);
         }
 
