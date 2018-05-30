@@ -141,8 +141,6 @@ import io.zeebe.client.api.events.DeploymentEvent;
 
 public class Application
 {
-    private static final String TOPIC = "default-topic";
-
     public static void main(String[] args)
     {
         // after the client is connected
@@ -268,8 +266,6 @@ public class Application
                     .send()
                     .join();
             })
-            .name("sample-app")
-            .timeout(Duration.ofMinutes(5))
             .open();
 
         // waiting for the jobs
@@ -358,8 +354,6 @@ public class Application
                     .send()
                     .join();
             })
-            .name("sample-app")
-            .timeout(Duration.ofMinutes(5))
             .open();
 
         // ...
@@ -403,7 +397,7 @@ public class Application
         final TopicSubscription topicSubscription = client.topicClient()
             .newSubscription()
             .name("app-monitoring")
-            .workflowInstanceEventHandler(System.out::println)
+            .workflowInstanceEventHandler(e -> System.out.println(e.toJson()))
             .startAtHeadOfTopic()
             .open();
 
@@ -419,33 +413,83 @@ public class Application
 Run the program. You should see the output:
 
 ```
-WorkflowInstanceEvent [state=CREATED,
-    workflowInstanceKey=4294967400,
-    workflowKey=1,
-    bpmnProcessId=order-process,
-    version=1,
-    activityId=,
-    payload={"orderId":31243,"orderItems":[435,182,376]}
-]
+{
+  "metadata": {
+    "intent": "CREATED",
+    "valueType": "WORKFLOW_INSTANCE",
+    "recordType": "EVENT",
+    "topicName": "default-topic",
+    "partitionId": 1,
+    "key": 4294967400,
+    "position": 4294967616,
+    "timestamp": "2018-05-30T11:40:40.599Z"
+  },
+  "bpmnProcessId": "order-process",
+  "version": 1,
+  "workflowKey": 1,
+  "workflowInstanceKey": 4294967400,
+  "activityId": "",
+  "payload": {
+    "orderId": 31243,
+    "orderItems": [
+      435,
+      182,
+      376
+    ]
+  }
+}
 
-WorkflowInstanceEvent [
-    state=START_EVENT_OCCURRED,
-    workflowInstanceKey=4294967400,
-    workflowKey=1,
-    bpmnProcessId=order-process,
-    version=1, activityId=order-placed,
-    payload={"orderId":31243,"orderItems":[435,182,376]}
-]
+{
+  "metadata": {
+    "intent": "START_EVENT_OCCURRED",
+    "valueType": "WORKFLOW_INSTANCE",
+    "recordType": "EVENT",
+    "topicName": "default-topic",
+    "partitionId": 1,
+    "key": 4294967856,
+    "position": 4294967856,
+    "timestamp": "2018-05-30T11:40:40.599Z"
+  },
+  "bpmnProcessId": "order-process",
+  "version": 1,
+  "workflowKey": 1,
+  "workflowInstanceKey": 4294967400,
+  "activityId": "order-placed",
+  "payload": {
+    "orderId": 31243,
+    "orderItems": [
+      435,
+      182,
+      376
+    ]
+  }
+}
 
-WorkflowInstanceEvent [
-    state=SEQUENCE_FLOW_TAKEN,
-    workflowInstanceKey=4294967400,
-    workflowKey=1,
-    bpmnProcessId=order-process,
-    version=1,
-    activityId=SequenceFlow_18tqka5,
-    payload={"orderId":31243,"orderItems":[435,182,376]}
-]
+{
+  "metadata": {
+    "intent": "SEQUENCE_FLOW_TAKEN",
+    "valueType": "WORKFLOW_INSTANCE",
+    "recordType": "EVENT",
+    "topicName": "default-topic",
+    "partitionId": 1,
+    "key": 4294968128,
+    "position": 4294968128,
+    "timestamp": "2018-05-30T11:40:40.621Z"
+  },
+  "bpmnProcessId": "order-process",
+  "version": 1,
+  "workflowKey": 1,
+  "workflowInstanceKey": 4294967400,
+  "activityId": "SequenceFlow_18tqka5",
+  "payload": {
+    "orderId": 31243,
+    "orderItems": [
+      435,
+      182,
+      376
+    ]
+  }
+}
 ...
 ```
 

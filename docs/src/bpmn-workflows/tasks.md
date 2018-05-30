@@ -14,7 +14,7 @@ When the workflow instance arrives a service task then it creates a correspondin
 A worker can subscribe to these jobs and complete them when the work is done.
 When a job is completed, the token flow continues.
 
-Read more about [job handling](basics/task-workers.html).
+Read more about [job handling](basics/job-workers.html).
 
 XML representation:
 
@@ -42,7 +42,7 @@ Optionally, a task definition can specify the amount of times the job is retried
 <zeebe:taskDefinition type="payment-service" retries="5" />
 ```
 
-BPMN Modeler: [Click Here](/bpmn-modeler/tasks.html#configure-task-type)
+BPMN Modeler: [Click Here](/bpmn-modeler/tasks.html#configure-job-type)
 
 ### Task Headers
 
