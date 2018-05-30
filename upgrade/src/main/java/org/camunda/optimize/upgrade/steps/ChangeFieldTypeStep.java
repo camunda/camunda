@@ -1,13 +1,12 @@
 package org.camunda.optimize.upgrade.steps;
 
-import org.camunda.optimize.upgrade.ReindexStep;
+import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
 
-public class ChangeFieldTypeStep implements ReindexStep {
+public class ChangeFieldTypeStep extends ReindexStep {
   private final String initialIndexName;
   private final String finalIndexName;
   private final String mappingAndSettings;
   private final String mappingScript;
-  public static final String NAME = "field-type-change";
 
   public ChangeFieldTypeStep(
     String initialIndexName,
@@ -19,6 +18,11 @@ public class ChangeFieldTypeStep implements ReindexStep {
     this.finalIndexName = finalIndexName;
     this.mappingAndSettings = mappingAndSettings;
     this.mappingScript = mappingScript;
+  }
+
+  @Override
+  public void execute(ESIndexAdjuster ESIndexAdjuster) {
+    transformCompleteMapping(ESIndexAdjuster);
   }
 
   public String getInitialIndexName() {
@@ -37,7 +41,4 @@ public class ChangeFieldTypeStep implements ReindexStep {
     return mappingScript;
   }
 
-  public String getName() {
-    return NAME;
-  }
 }

@@ -186,6 +186,9 @@ public class ConfigurationService {
   }
 
   public static JsonNode merge(JsonNode mainNode, JsonNode updateNode) {
+    if (updateNode == null) {
+      return mainNode;
+    }
 
     Iterator<String> fieldNames = updateNode.fieldNames();
     while (fieldNames.hasNext()) {

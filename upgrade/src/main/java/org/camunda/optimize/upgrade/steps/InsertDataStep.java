@@ -1,10 +1,9 @@
 package org.camunda.optimize.upgrade.steps;
 
-import org.camunda.optimize.upgrade.UpgradeStep;
+import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
 
 
 public class InsertDataStep implements UpgradeStep {
-  public static final String NAME = "insert-data";
   private final String indexName;
   private final String data;
   private final String type;
@@ -15,8 +14,9 @@ public class InsertDataStep implements UpgradeStep {
     this.data = data;
   }
 
-  public String getName() {
-    return NAME;
+  @Override
+  public void execute(ESIndexAdjuster ESIndexAdjuster) {
+    ESIndexAdjuster.insertData(indexName, type, data);
   }
 
   public String getIndexName() {

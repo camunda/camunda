@@ -27,6 +27,15 @@
         <exclude>*/**</exclude>
       </excludes>
     </fileSet>
+
+    <fileSet>
+      <!--create empty upgrade directory-->
+      <directory>src/</directory>
+      <outputDirectory>/upgrade</outputDirectory>
+      <excludes>
+        <exclude>*/**</exclude>
+      </excludes>
+    </fileSet>
   </fileSets>
 
   <files>

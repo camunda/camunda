@@ -2,6 +2,8 @@ package org.camunda.optimize.upgrade.service;
 
 import com.jayway.jsonpath.JsonPath;
 import org.apache.http.util.EntityUtils;
+import org.camunda.optimize.service.es.schema.type.MetadataType;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
@@ -17,24 +19,28 @@ import java.util.Collections;
 public class ValidationService {
   private static final String ENVIRONMENT_CONFIG_YAML_REL_PATH = "/../environment/environment-config.yaml";
   protected Logger logger = LoggerFactory.getLogger(getClass());
-  protected String FROM_VERSION = org.camunda.optimize.upgrade.metadata.TargetSchemaVersion.VERSION;
 
-  public void validate() {
-    validateExecutionPath();
+  private ConfigurationService configurationService;
+
+  public ValidationService(ConfigurationService configurationService) {
+    this.configurationService = configurationService;
   }
 
-  protected void validateVersions(RestClient restClient) {
+  public void validateVersions(RestClient restClient, String fromVersion, String toVersion) {
+
     try {
+      String metaDataIndex = configurationService.getOptimizeIndex(configurationService.getMetaDataType());
       Response metadataResponse = restClient
-        .performRequest("GET", "optimize-metadata/_search", Collections.emptyMap());
+        .performRequest("GET", metaDataIndex + "/_search", Collections.emptyMap());
 
       boolean schemaMatches = false;
       if (metadataResponse.getStatusLine().getStatusCode() == 200) {
         String entityString = EntityUtils.toString(metadataResponse.getEntity());
         Integer readTotal = JsonPath.read(entityString, "$.hits.total");
         if (readTotal == 1) {
-          String schemaVersion = JsonPath.read(entityString, "$.hits.hits[0]._source.schemaVersion");
-          if (FROM_VERSION.equals(schemaVersion)) {
+          String schemaVersion =
+            JsonPath.read(entityString, "$.hits.hits[0]._source." + MetadataType.SCHEMA_VERSION);
+          if (fromVersion.equals(schemaVersion)) {
             schemaMatches = true;
           }
         }
@@ -42,18 +48,29 @@ public class ValidationService {
 
       if (!schemaMatches) {
         throw new UpgradeRuntimeException(
-          "SchemaVersion saved in Metadata does not match required [" + FROM_VERSION + "]") ;
+          "Schema version saved in Metadata does not match required [" + fromVersion + "]") ;
       }
     } catch (IOException e) {
       logger.error("can't get metadata", e);
       throw new UpgradeRuntimeException("can't get metadata");
     }
+
+    if (toVersion == null || toVersion.isEmpty()) {
+      throw new UpgradeRuntimeException(
+          "New schema version is not allowed to be empty or null!") ;
+    }
   }
 
-  private void validateExecutionPath() {
+  public void validateExecutionPath() {
     File config = null;
     try {
-      String executionFolderPath = ValidationService.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
+      String executionFolderPath =
+        ValidationService.class.
+          getProtectionDomain()
+          .getCodeSource()
+          .getLocation()
+          .toURI()
+          .getPath();
       executionFolderPath = executionFolderPath.substring(0, executionFolderPath.lastIndexOf("/"));
       executionFolderPath = executionFolderPath.replaceAll("%20"," ");
       String fullPath = executionFolderPath + ENVIRONMENT_CONFIG_YAML_REL_PATH;

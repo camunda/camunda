@@ -2,13 +2,8 @@
   "mappings": {
     "users": {
       "properties": {
-        "new_password": {
-          "type": "nested",
-          "properties": {
-            "renamed_pw": {
-              "type": "keyword"
-            }
-          }
+        "password": {
+          "type": "keyword"
         },
         "username": {
           "type": "keyword"

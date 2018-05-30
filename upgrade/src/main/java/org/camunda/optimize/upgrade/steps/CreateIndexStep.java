@@ -1,10 +1,9 @@
 package org.camunda.optimize.upgrade.steps;
 
-import org.camunda.optimize.upgrade.UpgradeStep;
+import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
 
 
 public class CreateIndexStep implements UpgradeStep {
-  public static final String NAME = "create-index";
   private final String indexName;
   private final String mapping;
 
@@ -13,8 +12,9 @@ public class CreateIndexStep implements UpgradeStep {
     this.mapping = mapping;
   }
 
-  public String getName() {
-    return NAME;
+  @Override
+  public void execute(ESIndexAdjuster ESIndexAdjuster) {
+    ESIndexAdjuster.createIndex(indexName, mapping);
   }
 
   public String getIndexName() {

@@ -10,7 +10,7 @@ import java.io.IOException;
 @Component
 public class MetadataType extends StrictTypeMappingCreator {
 
-  private static final String SCHEMA_VERSION = "schemaVersion";
+  public static final String SCHEMA_VERSION = "schemaVersion";
 
   @Override
   public String getType() {

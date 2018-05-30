@@ -1,4 +1,4 @@
-package org.camunda.optimize.upgrade.to;
+package org.camunda.optimize.upgrade.wrapper;
 
 
 public class ScriptWrapper {

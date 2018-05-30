@@ -1,11 +1,10 @@
 package org.camunda.optimize.upgrade.steps;
 
-import org.camunda.optimize.upgrade.ReindexStep;
 
+import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
 
-public class RenameIndexStep implements ReindexStep {
+public class RenameIndexStep extends ReindexStep {
 
-  public static final String NAME = "index-rename";
   private final String originalIndexName;
   private final String resultIndexName;
   private final String mapping;
@@ -16,8 +15,9 @@ public class RenameIndexStep implements ReindexStep {
     this.mapping = mapping;
   }
 
-  public String getName() {
-    return NAME;
+  @Override
+  public void execute(ESIndexAdjuster ESIndexAdjuster) {
+    transformCompleteMapping(ESIndexAdjuster);
   }
 
   public String getOriginalIndexName() {
