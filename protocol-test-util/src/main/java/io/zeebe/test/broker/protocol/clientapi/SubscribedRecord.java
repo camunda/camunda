@@ -24,7 +24,6 @@ import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.util.buffer.BufferReader;
 import org.agrona.DirectBuffer;
-import org.agrona.LangUtil;
 import org.agrona.io.DirectBufferInputStream;
 
 public class SubscribedRecord implements BufferReader

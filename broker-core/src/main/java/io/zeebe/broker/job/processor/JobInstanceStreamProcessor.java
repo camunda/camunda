@@ -26,6 +26,7 @@ import io.zeebe.broker.job.CreditsRequest;
 import io.zeebe.broker.job.JobSubscriptionManager;
 import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.job.map.JobInstanceMap;
+import io.zeebe.broker.logstreams.processor.CommandProcessor;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
@@ -78,28 +79,17 @@ public class JobInstanceStreamProcessor
             .build();
     }
 
-    private class CreateJobProcessor implements TypedRecordProcessor<JobRecord>
+    private class CreateJobProcessor implements CommandProcessor<JobRecord>
     {
 
         @Override
-        public boolean executeSideEffects(TypedRecord<JobRecord> command, TypedResponseWriter responseWriter)
+        public CommandResult onCommand(TypedRecord<JobRecord> command, CommandControl commandControl)
         {
-            boolean success = true;
-
-            if (command.getMetadata().hasRequestMetadata())
-            {
-                success = responseWriter.writeEvent(JobIntent.CREATED, command);
-            }
-
-            return success;
+            return commandControl.accept(JobIntent.CREATED);
         }
 
-        public long writeRecord(TypedRecord<JobRecord> command, TypedStreamWriter writer)
-        {
-            return writer.writeFollowUpEvent(command.getKey(), JobIntent.CREATED, command.getValue());
-        }
-
-        public void updateState(TypedRecord<JobRecord> command)
+        @Override
+        public void updateStateOnAccept(TypedRecord<JobRecord> command)
         {
             jobIndex.putJobInstance(command.getKey(), STATE_CREATED);
         }
@@ -182,20 +172,14 @@ public class JobInstanceStreamProcessor
         }
     }
 
-    private class CompleteJobProcessor implements TypedRecordProcessor<JobRecord>
+    private class CompleteJobProcessor implements CommandProcessor<JobRecord>
     {
-        protected boolean isCompleted;
-        private String rejectionReason;
-        private RejectionType rejectionType;
-
         @Override
-        public void processRecord(TypedRecord<JobRecord> event)
+        public CommandResult onCommand(TypedRecord<JobRecord> command, CommandControl commandControl)
         {
-            isCompleted = false;
+            final short state = jobIndex.getJobState(command.getKey());
 
-            final short state = jobIndex.getJobState(event.getKey());
-
-            final JobRecord value = event.getValue();
+            final JobRecord value = command.getValue();
 
             final boolean isCompletable = state == STATE_ACTIVATED || state == STATE_TIMED_OUT;
             if (isCompletable)
@@ -203,159 +187,80 @@ public class JobInstanceStreamProcessor
                 final DirectBuffer payload = value.getPayload();
                 if (isNilPayload(payload) || isValidPayload(payload))
                 {
-                    isCompleted = true;
+                    return commandControl.accept(JobIntent.COMPLETED);
                 }
                 else
                 {
-                    rejectionType = RejectionType.BAD_VALUE;
-                    rejectionReason = "Payload is not a valid msgpack-encoded JSON object or nil";
+                    return commandControl.reject(RejectionType.BAD_VALUE, "Payload is not a valid msgpack-encoded JSON object or nil");
                 }
             }
             else
             {
-                rejectionReason = "Job is not in state: ACTIVATED, TIMED_OUT";
-                rejectionType = RejectionType.NOT_APPLICABLE;
+                return commandControl.reject(RejectionType.NOT_APPLICABLE, "Job is not in state: ACTIVATED, TIMED_OUT");
             }
         }
 
         @Override
-        public boolean executeSideEffects(TypedRecord<JobRecord> event, TypedResponseWriter responseWriter)
+        public void updateStateOnAccept(TypedRecord<JobRecord> command)
         {
-            if (isCompleted)
-            {
-                return responseWriter.writeEvent(JobIntent.COMPLETED, event);
-            }
-            else
-            {
-                return responseWriter.writeRejection(event, rejectionType, rejectionReason);
-            }
-        }
-
-        @Override
-        public long writeRecord(TypedRecord<JobRecord> event, TypedStreamWriter writer)
-        {
-            if (isCompleted)
-            {
-                return writer.writeFollowUpEvent(event.getKey(), JobIntent.COMPLETED, event.getValue());
-            }
-            else
-            {
-                return writer.writeRejection(event, rejectionType, rejectionReason);
-            }
-        }
-
-        @Override
-        public void updateState(TypedRecord<JobRecord> event)
-        {
-            if (isCompleted)
-            {
-                jobIndex.remove(event.getKey());
-            }
+            jobIndex.remove(command.getKey());
         }
     }
 
-    private class FailJobProcessor implements TypedRecordProcessor<JobRecord>
+    private class FailJobProcessor implements CommandProcessor<JobRecord>
     {
-        private static final String REJECTION_REASON = "Job is not in state ACTIVATED";
-        protected boolean isFailed;
-
-        public void processRecord(TypedRecord<JobRecord> command)
+        @Override
+        public CommandResult onCommand(TypedRecord<JobRecord> command, CommandControl commandControl)
         {
-            isFailed = false;
-
             final short state = jobIndex.getJobState(command.getKey());
 
             if (state == STATE_ACTIVATED)
             {
-                isFailed = true;
-            }
-        }
-
-        @Override
-        public boolean executeSideEffects(TypedRecord<JobRecord> command, TypedResponseWriter responseWriter)
-        {
-            if (isFailed)
-            {
-                return responseWriter.writeEvent(JobIntent.FAILED, command);
+                return commandControl.accept(JobIntent.FAILED);
             }
             else
             {
-                return responseWriter.writeRejection(command, RejectionType.NOT_APPLICABLE, REJECTION_REASON);
+                return commandControl.reject(RejectionType.NOT_APPLICABLE, "Job is not in state ACTIVATED");
             }
         }
 
         @Override
-        public long writeRecord(TypedRecord<JobRecord> command, TypedStreamWriter writer)
+        public void updateStateOnAccept(TypedRecord<JobRecord> command)
         {
-            if (isFailed)
-            {
-                return writer.writeFollowUpEvent(command.getKey(), JobIntent.FAILED, command.getValue());
-            }
-            else
-            {
-                return writer.writeRejection(command, RejectionType.NOT_APPLICABLE, REJECTION_REASON);
-            }
-        }
-
-        @Override
-        public void updateState(TypedRecord<JobRecord> command)
-        {
-            if (isFailed)
-            {
-                jobIndex.putJobInstance(command.getKey(), STATE_FAILED);
-            }
+            jobIndex.putJobInstance(command.getKey(), STATE_FAILED);
         }
     }
 
-    private class TimeOutJobProcessor implements TypedRecordProcessor<JobRecord>
+    private class TimeOutJobProcessor implements CommandProcessor<JobRecord>
     {
         private static final String REJECTION_REASON = "Job is not in state ACTIVATED";
-        protected boolean isExpired;
 
         @Override
-        public void processRecord(TypedRecord<JobRecord> command)
+        public CommandResult onCommand(TypedRecord<JobRecord> command, CommandControl commandControl)
         {
-            isExpired = false;
-
             final short state = jobIndex.getJobState(command.getKey());
 
             if (state == STATE_ACTIVATED)
             {
-                isExpired = true;
-            }
-        }
-
-        @Override
-        public long writeRecord(TypedRecord<JobRecord> command, TypedStreamWriter writer)
-        {
-            if (isExpired)
-            {
-                return writer.writeFollowUpEvent(command.getKey(), JobIntent.TIMED_OUT, command.getValue());
+                return commandControl.accept(JobIntent.TIMED_OUT);
             }
             else
             {
-                return writer.writeRejection(command, RejectionType.NOT_APPLICABLE, REJECTION_REASON);
+                return commandControl.reject(RejectionType.NOT_APPLICABLE, REJECTION_REASON);
             }
         }
 
         @Override
-        public void updateState(TypedRecord<JobRecord> command)
+        public void updateStateOnAccept(TypedRecord<JobRecord> command)
         {
-            if (isExpired)
-            {
-                jobIndex.putJobInstance(command.getKey(), STATE_TIMED_OUT);
-            }
+            jobIndex.putJobInstance(command.getKey(), STATE_TIMED_OUT);
         }
     }
 
-    private class UpdateRetriesJobProcessor implements TypedRecordProcessor<JobRecord>
+    private class UpdateRetriesJobProcessor implements CommandProcessor<JobRecord>
     {
-        private boolean success;
-        private RejectionType rejectionType;
-        private String rejectionReason;
-
         @Override
-        public void processRecord(TypedRecord<JobRecord> command)
+        public CommandResult onCommand(TypedRecord<JobRecord> command, CommandControl commandControl)
         {
             final short state = jobIndex.getJobState(command.getKey());
             final JobRecord value = command.getValue();
@@ -364,79 +269,41 @@ public class JobInstanceStreamProcessor
             {
                 if (value.getRetries() > 0)
                 {
-                    success = true;
+                    return commandControl.accept(JobIntent.RETRIES_UPDATED);
                 }
                 else
                 {
-                    rejectionType = RejectionType.BAD_VALUE;
-                    rejectionReason = "Retries must be greater than 0";
+                    return commandControl.reject(RejectionType.BAD_VALUE, "Retries must be greater than 0");
                 }
             }
             else
             {
-                this.rejectionType = RejectionType.NOT_APPLICABLE;
-                this.rejectionReason = "Job is not in state FAILED";
-            }
-        }
-
-        @Override
-        public boolean executeSideEffects(TypedRecord<JobRecord> command, TypedResponseWriter responseWriter)
-        {
-            if (success)
-            {
-                return responseWriter.writeEvent(JobIntent.RETRIES_UPDATED, command);
-            }
-            else
-            {
-                return responseWriter.writeRejection(command, rejectionType, rejectionReason);
-            }
-        }
-
-        @Override
-        public long writeRecord(TypedRecord<JobRecord> command, TypedStreamWriter writer)
-        {
-            if (success)
-            {
-                return writer.writeFollowUpEvent(command.getKey(), JobIntent.RETRIES_UPDATED, command.getValue());
-            }
-            else
-            {
-                return writer.writeRejection(command, rejectionType, rejectionReason);
+                return commandControl.reject(RejectionType.NOT_APPLICABLE, "Job is not in state FAILED");
             }
         }
     }
 
-    private class CancelJobProcessor implements TypedRecordProcessor<JobRecord>
+    private class CancelJobProcessor implements CommandProcessor<JobRecord>
     {
-        private boolean isCanceled;
-
         @Override
-        public void processRecord(TypedRecord<JobRecord> command)
+        public CommandResult onCommand(TypedRecord<JobRecord> command, CommandControl commandControl)
         {
+
             final short state = jobIndex.getJobState(command.getKey());
-            isCanceled = state > 0;
-        }
-
-        @Override
-        public long writeRecord(TypedRecord<JobRecord> command, TypedStreamWriter writer)
-        {
-            if (isCanceled)
+            if (state > 0)
             {
-                return writer.writeFollowUpEvent(command.getKey(), JobIntent.CANCELED, command.getValue());
+                return commandControl.accept(JobIntent.CANCELED);
             }
             else
             {
-                return writer.writeRejection(command, RejectionType.NOT_APPLICABLE, "Job does not exist");
+                return commandControl.reject(RejectionType.NOT_APPLICABLE, "Job does not exist");
             }
         }
 
         @Override
-        public void updateState(TypedRecord<JobRecord> command)
+        public void updateStateOnAccept(TypedRecord<JobRecord> command)
         {
-            if (isCanceled)
-            {
-                jobIndex.remove(command.getKey());
-            }
+            jobIndex.remove(command.getKey());
         }
     }
 }

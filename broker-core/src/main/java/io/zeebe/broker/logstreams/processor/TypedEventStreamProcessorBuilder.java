@@ -61,11 +61,6 @@ public class TypedEventStreamProcessorBuilder
         return onEvent(valueType, intent, new DelegatingEventProcessor<T>(r -> activationFunction.test(r.getValue()) ? processor : null));
     }
 
-    public <T extends UnpackedObject> TypedEventStreamProcessorBuilder onEvent(ValueType valueType, Intent intent, Function<T, TypedRecordProcessor<T>> dispatcher)
-    {
-        return onEvent(valueType, intent, new DelegatingEventProcessor<T>(r -> dispatcher.apply(r.getValue())));
-    }
-
     public TypedEventStreamProcessorBuilder onEvent(ValueType valueType, Intent intent, Consumer<? extends UnpackedObject> consumer)
     {
         return onEvent(valueType, intent, new ConsumerProcessor<>(consumer));
@@ -83,9 +78,9 @@ public class TypedEventStreamProcessorBuilder
         return onRecord(RecordType.COMMAND, valueType, intent, processor);
     }
 
-    public <T extends UnpackedObject> TypedEventStreamProcessorBuilder onCommand(ValueType valueType, Intent intent, Predicate<T> activationFunction, TypedRecordProcessor<T> processor)
+    public <T extends UnpackedObject> TypedEventStreamProcessorBuilder onCommand(ValueType valueType, Intent intent, CommandProcessor<T> commandProcessor)
     {
-        return onCommand(valueType, intent, new DelegatingEventProcessor<T>(r -> activationFunction.test(r.getValue()) ? processor : null));
+        return onCommand(valueType, intent, new CommandProcessorImpl<>(commandProcessor));
     }
 
     public TypedEventStreamProcessorBuilder onRejection(ValueType valueType, Intent intent, TypedRecordProcessor<?> processor)

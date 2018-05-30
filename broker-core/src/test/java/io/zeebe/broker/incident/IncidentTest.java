@@ -35,8 +35,10 @@ import org.agrona.MutableDirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.RuleChain;
 
+import io.zeebe.UnstableTest;
 import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.model.bpmn.Bpmn;
@@ -775,6 +777,7 @@ public class IncidentTest
     }
 
     @Test
+    @Category(UnstableTest.class)
     public void shouldProcessIncidentsAfterMultipleTerminations()
     {
         // given

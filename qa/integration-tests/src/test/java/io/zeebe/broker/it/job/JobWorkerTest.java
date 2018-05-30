@@ -18,7 +18,6 @@ package io.zeebe.broker.it.job;
 import static io.zeebe.broker.it.util.TopicEventRecorder.jobCommand;
 import static io.zeebe.broker.it.util.TopicEventRecorder.jobRetries;
 import static io.zeebe.broker.it.util.TopicEventRecorder.state;
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -377,8 +376,8 @@ public class JobWorkerTest
         waitUntil(() -> jobHandler.getHandledJobs().size() == 1);
 
         // then
-        doRepeatedly(() -> brokerRule.getClock().addTime(Duration.ofMinutes(5)))
-            .until((v) -> jobHandler.getHandledJobs().size() == 2);
+        brokerRule.getClock().addTime(Duration.ofMinutes(6));
+        waitUntil(() -> jobHandler.getHandledJobs().size() == 2);
 
         final long jobKey = job.getKey();
         assertThat(jobHandler.getHandledJobs())

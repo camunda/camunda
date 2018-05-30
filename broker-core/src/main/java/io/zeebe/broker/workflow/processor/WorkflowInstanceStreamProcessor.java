@@ -34,6 +34,7 @@ import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.job.data.JobHeaders;
 import io.zeebe.broker.job.data.JobRecord;
+import io.zeebe.broker.logstreams.processor.CommandProcessor;
 import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
 import io.zeebe.broker.logstreams.processor.TypedBatchWriter;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
@@ -1025,14 +1026,10 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         }
     }
 
-    private final class UpdatePayloadProcessor implements TypedRecordProcessor<WorkflowInstanceRecord>
+    private final class UpdatePayloadProcessor implements CommandProcessor<WorkflowInstanceRecord>
     {
-        private boolean isUpdated;
-        private RejectionType rejectionType;
-        private String rejectionReason;
-
         @Override
-        public void processRecord(TypedRecord<WorkflowInstanceRecord> command)
+        public CommandResult onCommand(TypedRecord<WorkflowInstanceRecord> command, CommandControl commandControl)
         {
             final WorkflowInstanceRecord workflowInstanceEvent = command.getValue();
 
@@ -1043,59 +1040,24 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
             {
                 if (isValidPayload(workflowInstanceEvent.getPayload()))
                 {
-                    isUpdated = true;
+                    return commandControl.accept(WorkflowInstanceIntent.PAYLOAD_UPDATED);
                 }
                 else
                 {
-                    isUpdated = false;
-                    rejectionType = RejectionType.BAD_VALUE;
-                    rejectionReason = "Payload is not a valid msgpack-encoded JSON object";
+                    return commandControl.reject(RejectionType.BAD_VALUE, "Payload is not a valid msgpack-encoded JSON object");
                 }
             }
             else
             {
-                isUpdated = false;
-                rejectionType = RejectionType.NOT_APPLICABLE;
-                rejectionReason = "Workflow instance is not running";
-            }
-
-            isUpdated = isActive && isValidPayload(workflowInstanceEvent.getPayload());
-        }
-
-        @Override
-        public boolean executeSideEffects(TypedRecord<WorkflowInstanceRecord> command, TypedResponseWriter responseWriter)
-        {
-            if (isUpdated)
-            {
-                return responseWriter.writeEvent(WorkflowInstanceIntent.PAYLOAD_UPDATED, command);
-            }
-            else
-            {
-                return responseWriter.writeRejection(command, rejectionType, rejectionReason);
+                return commandControl.reject(RejectionType.NOT_APPLICABLE, "Workflow instance is not running");
             }
         }
 
         @Override
-        public long writeRecord(TypedRecord<WorkflowInstanceRecord> command, TypedStreamWriter writer)
+        public void updateStateOnAccept(TypedRecord<WorkflowInstanceRecord> command)
         {
-            if (isUpdated)
-            {
-                return writer.writeFollowUpEvent(command.getKey(), WorkflowInstanceIntent.PAYLOAD_UPDATED, command.getValue());
-            }
-            else
-            {
-                return writer.writeRejection(command, rejectionType, rejectionReason);
-            }
-        }
-
-        @Override
-        public void updateState(TypedRecord<WorkflowInstanceRecord> command)
-        {
-            if (isUpdated)
-            {
-                final WorkflowInstanceRecord workflowInstanceEvent = command.getValue();
-                payloadCache.addPayload(workflowInstanceEvent.getWorkflowInstanceKey(), command.getPosition(), workflowInstanceEvent.getPayload());
-            }
+            final WorkflowInstanceRecord workflowInstanceEvent = command.getValue();
+            payloadCache.addPayload(workflowInstanceEvent.getWorkflowInstanceKey(), command.getPosition(), workflowInstanceEvent.getPayload());
         }
     }
 

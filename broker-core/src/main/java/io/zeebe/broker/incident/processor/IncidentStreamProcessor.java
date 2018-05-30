@@ -22,6 +22,7 @@ import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.incident.index.IncidentMap;
 import io.zeebe.broker.job.data.JobHeaders;
 import io.zeebe.broker.job.data.JobRecord;
+import io.zeebe.broker.logstreams.processor.CommandProcessor;
 import io.zeebe.broker.logstreams.processor.TypedEventStreamProcessorBuilder;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
@@ -95,55 +96,52 @@ public class IncidentStreamProcessor
         return builder.build();
     }
 
-    private final class CreateIncidentProcessor implements TypedRecordProcessor<IncidentRecord>
+    private final class CreateIncidentProcessor implements CommandProcessor<IncidentRecord>
     {
-        private boolean isCreated;
         private boolean isJobIncident;
 
         @Override
-        public void processRecord(TypedRecord<IncidentRecord> command)
+        public CommandResult onCommand(TypedRecord<IncidentRecord> command, CommandControl commandControl)
         {
             final IncidentRecord incidentEvent = command.getValue();
 
             isJobIncident = incidentEvent.getJobKey() > 0;
-            // ensure that the job is not resolved yet
-            isCreated = isJobIncident ? failedJobMap.get(incidentEvent.getJobKey(), -1L) == NON_PERSISTENT_INCIDENT : true;
-        }
 
-        @Override
-        public long writeRecord(TypedRecord<IncidentRecord> command, TypedStreamWriter writer)
-        {
-            if (isCreated)
+            if (isJobIncident)
             {
-                return writer.writeFollowUpEvent(command.getKey(), IncidentIntent.CREATED, command.getValue());
-            }
-            else
-            {
-                return writer.writeRejection(command, RejectionType.NOT_APPLICABLE, "Job is not failed");
-            }
-        }
-
-        @Override
-        public void updateState(TypedRecord<IncidentRecord> command)
-        {
-            if (isCreated)
-            {
-                final IncidentRecord incidentEvent = command.getValue();
-                incidentMap
-                    .newIncident(command.getKey())
-                    .setState(STATE_CREATED)
-                    .setIncidentEventPosition(command.getPosition())
-                    .setFailureEventPosition(incidentEvent.getFailureEventPosition())
-                    .write();
-
-                if (isJobIncident)
+                if (failedJobMap.get(incidentEvent.getJobKey(), -1L) == NON_PERSISTENT_INCIDENT)
                 {
-                    failedJobMap.put(incidentEvent.getJobKey(), command.getKey());
+                    return commandControl.accept(IncidentIntent.CREATED);
                 }
                 else
                 {
-                    activityInstanceMap.put(incidentEvent.getActivityInstanceKey(), command.getKey());
+                    return commandControl.reject(RejectionType.NOT_APPLICABLE, "Job is not failed");
                 }
+            }
+            else
+            {
+                return commandControl.accept(IncidentIntent.CREATED);
+            }
+        }
+
+        @Override
+        public void updateStateOnAccept(TypedRecord<IncidentRecord> command)
+        {
+            final IncidentRecord incidentEvent = command.getValue();
+            incidentMap
+                .newIncident(command.getKey())
+                .setState(STATE_CREATED)
+                .setIncidentEventPosition(command.getPosition())
+                .setFailureEventPosition(incidentEvent.getFailureEventPosition())
+                .write();
+
+            if (isJobIncident)
+            {
+                failedJobMap.put(incidentEvent.getJobKey(), command.getKey());
+            }
+            else
+            {
+                activityInstanceMap.put(incidentEvent.getActivityInstanceKey(), command.getKey());
             }
         }
     }

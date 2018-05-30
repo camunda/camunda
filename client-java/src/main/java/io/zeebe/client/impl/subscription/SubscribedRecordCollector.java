@@ -19,13 +19,20 @@ import static io.zeebe.util.VarDataUtil.readBytes;
 
 import java.nio.charset.StandardCharsets;
 
-import io.zeebe.client.api.record.RejectionType;
+import org.agrona.DirectBuffer;
+
 import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.record.UntypedRecordImpl;
-import io.zeebe.protocol.clientapi.*;
+import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.protocol.clientapi.SubscribedRecordDecoder;
+import io.zeebe.protocol.clientapi.SubscriptionType;
+import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.Intent;
-import io.zeebe.transport.*;
-import org.agrona.DirectBuffer;
+import io.zeebe.transport.ClientMessageHandler;
+import io.zeebe.transport.ClientOutput;
+import io.zeebe.transport.RemoteAddress;
 
 public class SubscribedRecordCollector implements ClientMessageHandler
 {
