@@ -16,7 +16,8 @@
 package io.zeebe.client.impl.record;
 
 import io.zeebe.client.api.record.Record;
-import io.zeebe.client.impl.data.*;
+import io.zeebe.client.impl.data.PayloadField;
+import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 
@@ -26,14 +27,13 @@ public class UntypedRecordImpl extends RecordImpl
 
     public UntypedRecordImpl(
             final ZeebeObjectMapperImpl objectMapper,
-            final MsgPackConverter converter,
             final RecordType recordType,
             final ValueType valueType,
             final byte[] rawContent)
     {
         super(objectMapper, recordType, valueType);
 
-        this.content = new PayloadField(converter);
+        this.content = new PayloadField(objectMapper.getMsgPackConverter());
         this.content.setMsgPack(rawContent);
     }
 

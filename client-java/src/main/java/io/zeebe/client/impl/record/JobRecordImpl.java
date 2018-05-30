@@ -22,7 +22,8 @@ import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.zeebe.client.api.record.JobRecord;
-import io.zeebe.client.impl.data.*;
+import io.zeebe.client.impl.data.PayloadField;
+import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.event.JobEventImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -30,8 +31,6 @@ import io.zeebe.protocol.intent.JobIntent;
 
 public abstract class JobRecordImpl extends RecordImpl implements JobRecord
 {
-    private final MsgPackConverter msgPackConverter;
-
     private Map<String, Object> headers = new HashMap<>();
     private Map<String, Object> customHeaders = new HashMap<>();
 
@@ -41,11 +40,9 @@ public abstract class JobRecordImpl extends RecordImpl implements JobRecord
     private String type;
     private PayloadField payload;
 
-    public JobRecordImpl(ZeebeObjectMapperImpl objectMapper, MsgPackConverter msgPackConverter, RecordType recordType)
+    public JobRecordImpl(ZeebeObjectMapperImpl objectMapper, RecordType recordType)
     {
         super(objectMapper, recordType, ValueType.JOB);
-
-        this.msgPackConverter = msgPackConverter;
     }
 
     public JobRecordImpl(JobRecordImpl base, JobIntent intent)
@@ -58,7 +55,6 @@ public abstract class JobRecordImpl extends RecordImpl implements JobRecord
         this.worker = base.worker;
         this.retries = base.retries;
         this.type = base.type;
-        this.msgPackConverter = base.msgPackConverter;
 
         if (base.payload != null)
         {
@@ -152,7 +148,7 @@ public abstract class JobRecordImpl extends RecordImpl implements JobRecord
     {
         if (payload == null)
         {
-            payload = new PayloadField(msgPackConverter);
+            payload = new PayloadField(objectMapper.getMsgPackConverter());
         }
         this.payload.setJson(jsonString);
     }
@@ -161,7 +157,7 @@ public abstract class JobRecordImpl extends RecordImpl implements JobRecord
     {
         if (payload == null)
         {
-            payload = new PayloadField(msgPackConverter);
+            payload = new PayloadField(objectMapper.getMsgPackConverter());
         }
         this.payload.setJson(jsonStream);
     }

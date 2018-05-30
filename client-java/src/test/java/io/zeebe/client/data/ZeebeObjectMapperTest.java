@@ -24,16 +24,13 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.api.record.ZeebeObjectMapper;
-import io.zeebe.client.impl.data.MsgPackConverter;
+import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.event.JobEventImpl;
 import io.zeebe.client.impl.event.WorkflowInstanceEventImpl;
 import io.zeebe.client.util.Events;
 import io.zeebe.test.util.AutoCloseableRule;
-
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 
 public class ZeebeObjectMapperTest
 {
@@ -57,7 +54,7 @@ public class ZeebeObjectMapperTest
     {
         // given
         final ZeebeObjectMapperImpl mockMapper = mock(ZeebeObjectMapperImpl.class);
-        final JobEvent jobEvent = new JobEventImpl(mockMapper, new MsgPackConverter());
+        final JobEvent jobEvent = new JobEventImpl(mockMapper);
 
         // when
         jobEvent.toJson();
@@ -130,8 +127,28 @@ public class ZeebeObjectMapperTest
     public void shouldThrowExceptionIfDeserializationFails()
     {
         assertThatThrownBy(() -> objectMapper.fromJson("invalid", JobEvent.class))
-            .isInstanceOf(RuntimeException.class)
+            .isInstanceOf(ClientException.class)
             .hasMessage("Failed deserialize JSON 'invalid' to object of type 'io.zeebe.client.api.events.JobEvent'");
+    }
+
+    @Test
+    public void shouldThrowExceptionIfDeserializeToWrongRecord()
+    {
+        final String json = Events.exampleJob().toJson();
+
+        assertThatThrownBy(() ->  objectMapper.fromJson(json, WorkflowInstanceEvent.class))
+            .isInstanceOf(ClientException.class)
+            .hasMessage("Cannot deserialize JSON to object of type 'io.zeebe.client.api.events.WorkflowInstanceEvent'. Incompatible type for record 'EVENT - JOB'.");
+    }
+
+    @Test
+    public void shouldThrowExceptionIfDeserializeToImplClass()
+    {
+        final String json = Events.exampleJob().toJson();
+
+        assertThatThrownBy(() -> objectMapper.fromJson(json, JobEventImpl.class))
+            .isInstanceOf(ClientException.class)
+            .hasMessage("Cannot deserialize JSON: unknown record class 'io.zeebe.client.impl.event.JobEventImpl'");
     }
 
 }

@@ -17,7 +17,7 @@ package io.zeebe.client.util;
 
 import java.time.Instant;
 
-import io.zeebe.client.impl.data.MsgPackConverter;
+import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.event.JobEventImpl;
 import io.zeebe.client.impl.event.WorkflowInstanceEventImpl;
 import io.zeebe.protocol.intent.JobIntent;
@@ -31,7 +31,7 @@ public class Events
 
     public static JobEventImpl exampleJob()
     {
-        final JobEventImpl baseEvent = new JobEventImpl(null, new MsgPackConverter());
+        final JobEventImpl baseEvent = new JobEventImpl(new ZeebeObjectMapperImpl());
         baseEvent.setIntent(JobIntent.CREATED);
         baseEvent.setHeaders(Maps.newHashMap("defaultHeaderKey", "defaultHeaderVal"));
         baseEvent.setCustomHeaders(Maps.newHashMap("customHeaderKey", "customHeaderVal"));
@@ -50,7 +50,7 @@ public class Events
 
     public static WorkflowInstanceEventImpl exampleWorfklowInstance()
     {
-        final WorkflowInstanceEventImpl baseEvent = new WorkflowInstanceEventImpl(null, new MsgPackConverter());
+        final WorkflowInstanceEventImpl baseEvent = new WorkflowInstanceEventImpl(new ZeebeObjectMapperImpl());
         baseEvent.setIntent(WorkflowInstanceIntent.CREATED);
         baseEvent.setActivityId("some_activity");
         baseEvent.setBpmnProcessId("some_proceess");

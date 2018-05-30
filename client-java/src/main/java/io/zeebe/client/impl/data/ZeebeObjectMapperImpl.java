@@ -16,20 +16,14 @@
 package io.zeebe.client.impl.data;
 
 import java.io.*;
-import java.util.HashMap;
-import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.zeebe.client.api.commands.*;
-import io.zeebe.client.api.events.*;
-import io.zeebe.client.api.record.Record;
-import io.zeebe.client.api.record.ZeebeObjectMapper;
-import io.zeebe.client.impl.command.*;
-import io.zeebe.client.impl.event.*;
+import io.zeebe.client.api.record.*;
+import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.impl.record.*;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
@@ -38,26 +32,13 @@ public class ZeebeObjectMapperImpl implements ZeebeObjectMapper
     private final ObjectMapper msgpackObjectMapper;
     private final ObjectMapper jsonObjectMapper;
 
-    private static final Map<Class<?>, Class<?>> RECORD_IMPL_CLASS_MAPPING;
+    private final MsgPackConverter msgPackConverter;
 
-    static
+    public ZeebeObjectMapperImpl()
     {
-        RECORD_IMPL_CLASS_MAPPING = new HashMap<>();
-        RECORD_IMPL_CLASS_MAPPING.put(JobEvent.class, JobEventImpl.class);
-        RECORD_IMPL_CLASS_MAPPING.put(JobCommand.class, JobCommandImpl.class);
-        RECORD_IMPL_CLASS_MAPPING.put(WorkflowInstanceEvent.class, WorkflowInstanceEventImpl.class);
-        RECORD_IMPL_CLASS_MAPPING.put(WorkflowInstanceCommand.class, WorkflowInstanceCommandImpl.class);
-        RECORD_IMPL_CLASS_MAPPING.put(IncidentEvent.class, IncidentEventImpl.class);
-        RECORD_IMPL_CLASS_MAPPING.put(IncidentCommand.class, IncidentCommandImpl.class);
-        RECORD_IMPL_CLASS_MAPPING.put(RaftEvent.class, RaftEventImpl.class);
-        RECORD_IMPL_CLASS_MAPPING.put(DeploymentEvent.class, DeploymentEventImpl.class);
-        RECORD_IMPL_CLASS_MAPPING.put(DeploymentCommand.class, DeploymentCommandImpl.class);
-    }
+        this.msgPackConverter = new MsgPackConverter();
 
-    public ZeebeObjectMapperImpl(MsgPackConverter msgPackConverter)
-    {
         final InjectableValues.Std injectableValues = new InjectableValues.Std();
-        injectableValues.addValue(MsgPackConverter.class, msgPackConverter);
         injectableValues.addValue(ZeebeObjectMapperImpl.class, this);
 
         msgpackObjectMapper = createMsgpackObjectMapper(msgPackConverter, injectableValues);
@@ -105,39 +86,40 @@ public class ZeebeObjectMapperImpl implements ZeebeObjectMapper
         }
         catch (JsonProcessingException e)
         {
-            throw new RuntimeException(String.format("Failed to serialize object '%s' to JSON", record), e);
+            throw new ClientException(String.format("Failed to serialize object '%s' to JSON", record), e);
         }
     }
 
     @Override
     public <T extends Record> T fromJson(String json, Class<T> recordClass)
     {
-        final Class<T> implClass = getRecordImplClass(recordClass);
+        final Class<T> implClass = RecordClassMapping.getRecordImplClass(recordClass);
+        if (implClass == null)
+        {
+            throw new ClientException(String.format("Cannot deserialize JSON: unknown record class '%s'", recordClass.getName()));
+        }
 
         try
         {
-            return jsonObjectMapper.readValue(json, implClass);
+            final T record = jsonObjectMapper.readValue(json, implClass);
+
+            // verify that the record is de-serialized into the correct type
+            final RecordMetadata metadata = record.getMetadata();
+            final Class<RecordImpl> recordImplClass = RecordClassMapping.getRecordImplClass(metadata.getRecordType(), metadata.getValueType());
+            if (!implClass.equals(recordImplClass))
+            {
+                throw new ClientException(
+                        String.format("Cannot deserialize JSON to object of type '%s'. Incompatible type for record '%s - %s'.",
+                                      recordClass.getName(),
+                                      metadata.getRecordType(),
+                                      metadata.getValueType()));
+            }
+
+            return record;
         }
         catch (IOException e)
         {
-            throw new RuntimeException(String.format("Failed deserialize JSON '%s' to object of type '%s'", json, recordClass.getName()), e);
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private <T extends Record> Class<T> getRecordImplClass(Class<T> recordClass)
-    {
-        if (RECORD_IMPL_CLASS_MAPPING.containsKey(recordClass))
-        {
-            return (Class<T>) RECORD_IMPL_CLASS_MAPPING.get(recordClass);
-        }
-        else if (RECORD_IMPL_CLASS_MAPPING.containsValue(recordClass))
-        {
-            return recordClass;
-        }
-        else
-        {
-            throw new RuntimeException(String.format("Cannot deserialize JSON: unknown record class '%s'", recordClass.getName()));
+            throw new ClientException(String.format("Failed deserialize JSON '%s' to object of type '%s'", json, recordClass.getName()), e);
         }
     }
 
@@ -175,6 +157,11 @@ public class ZeebeObjectMapperImpl implements ZeebeObjectMapper
         {
             throw new RuntimeException(String.format("Failed deserialize Msgpack JSON stream to object of type '%s'", valueType), e);
         }
+    }
+
+    public MsgPackConverter getMsgPackConverter()
+    {
+        return msgPackConverter;
     }
 
     abstract class MsgpackRecordMixin

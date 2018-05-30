@@ -31,6 +31,7 @@ import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.client.api.events.*;
 import io.zeebe.client.api.record.Record;
 import io.zeebe.client.api.record.ValueType;
+import io.zeebe.client.impl.record.RecordClassMapping;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import org.junit.Rule;
@@ -172,7 +173,7 @@ public class ZeebeObjectMapperTest
 
             final Record deserizaliedRecord = clientRule
                     .getClient()
-                    .objectMapper().fromJson(serializedRecord, r.getClass());
+                    .objectMapper().fromJson(serializedRecord, RecordClassMapping.getRecordOfImplClass(r.getClass()));
 
             assertThat(deserizaliedRecord.getMetadata().getValueType()).isEqualTo(r.getMetadata().getValueType());
             assertThat(deserizaliedRecord.getMetadata().getRecordType()).isEqualTo(r.getMetadata().getRecordType());

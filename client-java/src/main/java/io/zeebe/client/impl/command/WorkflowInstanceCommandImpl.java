@@ -18,7 +18,6 @@ package io.zeebe.client.impl.command;
 import com.fasterxml.jackson.annotation.*;
 import io.zeebe.client.api.commands.WorkflowInstanceCommand;
 import io.zeebe.client.api.commands.WorkflowInstanceCommandName;
-import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.record.WorkflowInstanceRecordImpl;
 import io.zeebe.protocol.clientapi.RecordType;
@@ -27,14 +26,14 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 public class WorkflowInstanceCommandImpl extends WorkflowInstanceRecordImpl implements WorkflowInstanceCommand
 {
     @JsonCreator
-    public WorkflowInstanceCommandImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper, @JacksonInject MsgPackConverter msgPackConverter)
+    public WorkflowInstanceCommandImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper)
     {
-        super(objectMapper, msgPackConverter, RecordType.COMMAND);
+        super(objectMapper, RecordType.COMMAND);
     }
 
-    public WorkflowInstanceCommandImpl(ZeebeObjectMapperImpl objectMapper, MsgPackConverter msgPackConverter, WorkflowInstanceIntent intent)
+    public WorkflowInstanceCommandImpl(ZeebeObjectMapperImpl objectMapper, WorkflowInstanceIntent intent)
     {
-        super(objectMapper, msgPackConverter, RecordType.COMMAND);
+        super(objectMapper, RecordType.COMMAND);
         setIntent(intent);
     }
 

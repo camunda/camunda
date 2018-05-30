@@ -24,7 +24,6 @@ import io.zeebe.client.api.commands.*;
 import io.zeebe.client.api.record.ZeebeObjectMapper;
 import io.zeebe.client.impl.clustering.ClientTopologyManager;
 import io.zeebe.client.impl.clustering.TopologyRequestImpl;
-import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.subscription.SubscriptionManager;
 import io.zeebe.client.impl.topic.CreateTopicCommandImpl;
@@ -59,7 +58,6 @@ public class ZeebeClientImpl implements ZeebeClient
     protected ClientTransport transport;
 
     protected final ZeebeObjectMapperImpl objectMapper;
-    protected final MsgPackConverter msgPackConverter;
 
     protected final ClientTopologyManager topologyManager;
     protected final RequestManager apiCommandManager;
@@ -123,8 +121,7 @@ public class ZeebeClientImpl implements ZeebeClient
         transport = transportBuilder.build();
         internalTransport = internalTransportBuilder.build();
 
-        this.msgPackConverter = new MsgPackConverter();
-        this.objectMapper = new ZeebeObjectMapperImpl(msgPackConverter);
+        this.objectMapper = new ZeebeObjectMapperImpl();
 
         final RemoteAddress initialContactPoint = transport.registerRemoteAddress(contactPoint);
 
@@ -217,11 +214,6 @@ public class ZeebeClientImpl implements ZeebeClient
     public ClientTransport getTransport()
     {
         return transport;
-    }
-
-    public MsgPackConverter getMsgPackConverter()
-    {
-        return msgPackConverter;
     }
 
     public ActorScheduler getScheduler()

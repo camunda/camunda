@@ -18,75 +18,24 @@ package io.zeebe.client.impl.subscription.topic;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import org.agrona.collections.Long2LongHashMap;
-
-import io.zeebe.client.api.commands.IncidentCommand;
-import io.zeebe.client.api.commands.JobCommand;
-import io.zeebe.client.api.commands.WorkflowInstanceCommand;
-import io.zeebe.client.api.events.IncidentEvent;
-import io.zeebe.client.api.events.JobEvent;
-import io.zeebe.client.api.events.RaftEvent;
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.commands.*;
+import io.zeebe.client.api.events.*;
 import io.zeebe.client.api.record.RecordType;
 import io.zeebe.client.api.record.ValueType;
-import io.zeebe.client.api.subscription.IncidentCommandHandler;
-import io.zeebe.client.api.subscription.IncidentEventHandler;
-import io.zeebe.client.api.subscription.JobCommandHandler;
-import io.zeebe.client.api.subscription.JobEventHandler;
-import io.zeebe.client.api.subscription.RaftEventHandler;
-import io.zeebe.client.api.subscription.RecordHandler;
-import io.zeebe.client.api.subscription.TopicSubscription;
-import io.zeebe.client.api.subscription.TopicSubscriptionBuilderStep1;
+import io.zeebe.client.api.subscription.*;
 import io.zeebe.client.api.subscription.TopicSubscriptionBuilderStep1.TopicSubscriptionBuilderStep2;
 import io.zeebe.client.api.subscription.TopicSubscriptionBuilderStep1.TopicSubscriptionBuilderStep3;
-import io.zeebe.client.api.subscription.WorkflowInstanceCommandHandler;
-import io.zeebe.client.api.subscription.WorkflowInstanceEventHandler;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.impl.TopicClientImpl;
-import io.zeebe.client.impl.command.IncidentCommandImpl;
-import io.zeebe.client.impl.command.JobCommandImpl;
-import io.zeebe.client.impl.command.TopicCommandImpl;
-import io.zeebe.client.impl.command.WorkflowInstanceCommandImpl;
-import io.zeebe.client.impl.event.IncidentEventImpl;
-import io.zeebe.client.impl.event.JobEventImpl;
-import io.zeebe.client.impl.event.RaftEventImpl;
-import io.zeebe.client.impl.event.TopicEventImpl;
-import io.zeebe.client.impl.event.WorkflowInstanceEventImpl;
-import io.zeebe.client.impl.record.RecordImpl;
-import io.zeebe.client.impl.record.RecordMetadataImpl;
-import io.zeebe.client.impl.record.UntypedRecordImpl;
+import io.zeebe.client.impl.record.*;
 import io.zeebe.client.impl.subscription.SubscriptionManager;
 import io.zeebe.util.CheckedConsumer;
 import io.zeebe.util.EnsureUtil;
+import org.agrona.collections.Long2LongHashMap;
 
 public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilderStep1, TopicSubscriptionBuilderStep2, TopicSubscriptionBuilderStep3
 {
     private RecordHandler defaultRecordHandler;
-
-    private static final BiEnumMap<RecordType, ValueType, Class<? extends RecordImpl>> RECORD_CLASSES =
-            new BiEnumMap<>(RecordType.class, ValueType.class, Class.class);
-    static
-    {
-        RECORD_CLASSES.put(RecordType.COMMAND, ValueType.JOB, JobCommandImpl.class);
-        RECORD_CLASSES.put(RecordType.EVENT, ValueType.JOB, JobEventImpl.class);
-
-        RECORD_CLASSES.put(RecordType.COMMAND, ValueType.INCIDENT, IncidentCommandImpl.class);
-        RECORD_CLASSES.put(RecordType.EVENT, ValueType.INCIDENT, IncidentEventImpl.class);
-
-        RECORD_CLASSES.put(RecordType.EVENT, ValueType.RAFT, RaftEventImpl.class);
-
-        RECORD_CLASSES.put(RecordType.COMMAND, ValueType.TOPIC, TopicCommandImpl.class);
-        RECORD_CLASSES.put(RecordType.EVENT, ValueType.TOPIC, TopicEventImpl.class);
-
-        RECORD_CLASSES.put(RecordType.COMMAND, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceCommandImpl.class);
-        RECORD_CLASSES.put(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceEventImpl.class);
-
-        for (ValueType valueType : ValueType.values())
-        {
-            final Class<? extends RecordImpl> commandClass = RECORD_CLASSES.get(RecordType.COMMAND, valueType);
-            RECORD_CLASSES.put(RecordType.COMMAND_REJECTION, valueType, commandClass);
-        }
-    }
 
     private BiEnumMap<RecordType, ValueType, CheckedConsumer<RecordImpl>> handlers =
             new BiEnumMap<>(RecordType.class, ValueType.class, CheckedConsumer.class);
@@ -258,7 +207,7 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilderSte
         final ValueType valueType = metadata.getValueType();
         final RecordType recordType = metadata.getRecordType();
 
-        final Class<T> targetClass = (Class<T>) RECORD_CLASSES.get(recordType, valueType);
+        final Class<T> targetClass = RecordClassMapping.getRecordImplClass(recordType, valueType);
 
         if (targetClass == null)
         {

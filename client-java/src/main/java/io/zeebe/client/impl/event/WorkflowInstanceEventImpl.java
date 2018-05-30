@@ -18,7 +18,6 @@ package io.zeebe.client.impl.event;
 import com.fasterxml.jackson.annotation.*;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.api.events.WorkflowInstanceState;
-import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.record.WorkflowInstanceRecordImpl;
 import io.zeebe.protocol.clientapi.RecordType;
@@ -26,9 +25,9 @@ import io.zeebe.protocol.clientapi.RecordType;
 public class WorkflowInstanceEventImpl extends WorkflowInstanceRecordImpl implements WorkflowInstanceEvent
 {
     @JsonCreator
-    public WorkflowInstanceEventImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper, @JacksonInject MsgPackConverter msgPackConverter)
+    public WorkflowInstanceEventImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper)
     {
-        super(objectMapper, msgPackConverter, RecordType.EVENT);
+        super(objectMapper, RecordType.EVENT);
     }
 
     @JsonIgnore

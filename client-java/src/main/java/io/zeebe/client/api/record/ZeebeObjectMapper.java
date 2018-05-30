@@ -15,6 +15,8 @@
  */
 package io.zeebe.client.api.record;
 
+import io.zeebe.client.cmd.ClientException;
+
 /**
  * (De-) Serialize records from/to JSON.
  */
@@ -35,6 +37,9 @@ public interface ZeebeObjectMapper
      * @return a canonical JSON representation of the record. This
      *         representation (without modifications) can be used to
      *         de-serialize the event via {@link #fromJson(String, Class)}.
+     *
+     * @throws ClientException
+     *             if fail to serialize to JSON
      */
     String toJson(Record record);
 
@@ -55,6 +60,9 @@ public interface ZeebeObjectMapper
      *            the type of record to de-serialize it to. Must match the
      *            records's entity type.
      * @return the de-serialized record
+     *
+     * @throws ClientException
+     *             if fail to de-serialize from JSON, or the record type doesn't match
      */
     <T extends Record> T fromJson(String json, Class<T> recordClass);
 }

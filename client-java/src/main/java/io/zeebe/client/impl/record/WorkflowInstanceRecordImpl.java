@@ -19,7 +19,8 @@ import java.io.InputStream;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.zeebe.client.api.record.WorkflowInstanceRecord;
-import io.zeebe.client.impl.data.*;
+import io.zeebe.client.impl.data.PayloadField;
+import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.event.WorkflowInstanceEventImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -27,8 +28,6 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public abstract class WorkflowInstanceRecordImpl extends RecordImpl implements WorkflowInstanceRecord
 {
-    private final MsgPackConverter msgPackConverter;
-
     private String bpmnProcessId;
     private int version = -1;
     private long workflowKey = -1L;
@@ -36,11 +35,9 @@ public abstract class WorkflowInstanceRecordImpl extends RecordImpl implements W
     private String activityId;
     private PayloadField payload;
 
-    public WorkflowInstanceRecordImpl(ZeebeObjectMapperImpl objectMapper, MsgPackConverter msgPackConverter, RecordType recordType)
+    public WorkflowInstanceRecordImpl(ZeebeObjectMapperImpl objectMapper, RecordType recordType)
     {
         super(objectMapper, recordType, ValueType.WORKFLOW_INSTANCE);
-
-        this.msgPackConverter = msgPackConverter;
     }
 
     public WorkflowInstanceRecordImpl(WorkflowInstanceRecordImpl base, WorkflowInstanceIntent intent)
@@ -52,7 +49,6 @@ public abstract class WorkflowInstanceRecordImpl extends RecordImpl implements W
         this.workflowKey = base.getWorkflowKey();
         this.workflowInstanceKey = base.getWorkflowInstanceKey();
         this.activityId = base.getActivityId();
-        this.msgPackConverter = base.msgPackConverter;
 
         if (base.payload != null)
         {
@@ -133,7 +129,7 @@ public abstract class WorkflowInstanceRecordImpl extends RecordImpl implements W
     {
         if (payload == null)
         {
-            payload = new PayloadField(msgPackConverter);
+            payload = new PayloadField(objectMapper.getMsgPackConverter());
         }
         this.payload.setJson(jsonString);
     }
@@ -142,7 +138,7 @@ public abstract class WorkflowInstanceRecordImpl extends RecordImpl implements W
     {
         if (payload == null)
         {
-            payload = new PayloadField(msgPackConverter);
+            payload = new PayloadField(objectMapper.getMsgPackConverter());
         }
         this.payload.setJson(jsonStream);
     }
