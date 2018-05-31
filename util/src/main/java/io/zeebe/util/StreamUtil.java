@@ -35,7 +35,6 @@ import java.security.NoSuchAlgorithmException;
 import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class StreamUtil
 {
