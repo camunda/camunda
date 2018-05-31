@@ -124,7 +124,7 @@ public class StreamUtilTest
         // when
         final int offset = 1;
         outputStream.reset();
-        StreamUtil.write(buffer, outputStream, offset, value.length);
+        StreamUtil.write(buffer, outputStream, offset, value.length - offset);
 
         // then
         assertThat(outputStream.toByteArray()).isEqualTo(Arrays.copyOfRange(value, offset, value.length));
@@ -143,15 +143,15 @@ public class StreamUtilTest
         StreamUtil.write(buffer, outputStream, 0, bufferLength);
 
         // then
-        assertThat(outputStream.toByteArray()).isEqualTo(Arrays.copyOfRange(value, bufferOffset, bufferLength));
+        assertThat(outputStream.toByteArray()).isEqualTo(Arrays.copyOfRange(value, bufferOffset, value.length));
 
         // when
         final int offset = 1;
         outputStream.reset();
-        StreamUtil.write(buffer, outputStream, offset, bufferLength);
+        StreamUtil.write(buffer, outputStream, offset, bufferLength - offset);
 
         // then
-        assertThat(outputStream.toByteArray()).isEqualTo(Arrays.copyOfRange(value, offset, bufferLength - offset));
+        assertThat(outputStream.toByteArray()).isEqualTo(Arrays.copyOfRange(value, offset, value.length - offset));
     }
 
     @Test
@@ -173,7 +173,7 @@ public class StreamUtilTest
         // when
         final int offset = 1;
         outputStream.reset();
-        StreamUtil.write(buffer, outputStream, offset, value.length);
+        StreamUtil.write(buffer, outputStream, offset, value.length - offset);
 
         // then
         assertThat(outputStream.toByteArray()).isEqualTo(Arrays.copyOfRange(value, offset, value.length));
@@ -194,14 +194,14 @@ public class StreamUtilTest
         StreamUtil.write(buffer, outputStream, 0, bufferLength);
 
         // then
-        assertThat(outputStream.toByteArray()).isEqualTo(Arrays.copyOfRange(value, bufferOffset, bufferLength));
+        assertThat(outputStream.toByteArray()).isEqualTo(Arrays.copyOfRange(value, bufferOffset, value.length));
 
         // when
         final int offset = 1;
         outputStream.reset();
-        StreamUtil.write(buffer, outputStream, offset, bufferLength);
+        StreamUtil.write(buffer, outputStream, offset, bufferLength - offset);
 
         // then
-        assertThat(outputStream.toByteArray()).isEqualTo(Arrays.copyOfRange(value, offset, bufferLength - offset));
+        assertThat(outputStream.toByteArray()).isEqualTo(Arrays.copyOfRange(value, offset, value.length - 1));
     }
 }

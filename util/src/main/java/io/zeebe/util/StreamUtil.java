@@ -264,7 +264,7 @@ public class StreamUtil
         final int realOffset = source.wrapAdjustment() + offset;
         if (source.byteArray() != null)
         {
-            destination.write(source.byteArray(), realOffset, length - realOffset);
+            destination.write(source.byteArray(), realOffset, length);
         }
         else
         {
@@ -272,7 +272,7 @@ public class StreamUtil
             final ByteBuffer writeBuffer = source.byteBuffer().asReadOnlyBuffer();
 
             writeBuffer.position(realOffset);
-            writeBuffer.limit(length);
+            writeBuffer.limit(realOffset + length);
             channel.write(writeBuffer);
         }
     }
