@@ -26,11 +26,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import io.zeebe.util.sched.clock.ControlledActorClock;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.junit.rules.RuleChain;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
@@ -39,9 +37,9 @@ import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.SubscriberIntent;
 import io.zeebe.protocol.intent.SubscriptionIntent;
-import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
@@ -52,6 +50,7 @@ import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.RawMessage;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
 import io.zeebe.test.util.TestUtil;
+import io.zeebe.util.sched.clock.ControlledActorClock;
 
 
 public class TopicSubscriptionTest
@@ -451,8 +450,6 @@ public class TopicSubscriptionTest
     }
 
     @Test
-    // FIXME: https://github.com/zeebe-io/zeebe/issues/560
-    @Category(io.zeebe.UnstableTest.class)
     public void shouldCloseSubscriptionOnTransportChannelClose()
     {
         // given
