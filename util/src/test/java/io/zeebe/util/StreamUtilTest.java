@@ -20,9 +20,13 @@ import static io.zeebe.util.StreamUtil.writeLong;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 
+import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.ExpandableDirectByteBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -101,5 +105,103 @@ public class StreamUtilTest
 
         // when
         StreamUtil.read(stream, buffer, 4);
+    }
+
+    @Test
+    public void shouldWriteByteArrayBackedDirectBufferToStream() throws Exception
+    {
+        // given
+        final byte[] value = "foo".getBytes();
+        final DirectBuffer buffer = new UnsafeBuffer(value);
+        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream(buffer.capacity());
+
+        // when
+        StreamUtil.write(buffer, outputStream);
+
+        // then
+        assertThat(outputStream.toByteArray()).isEqualTo(value);
+
+        // when
+        final int offset = 1;
+        outputStream.reset();
+        StreamUtil.write(buffer, outputStream, offset, value.length);
+
+        // then
+        assertThat(outputStream.toByteArray()).isEqualTo(Arrays.copyOfRange(value, offset, value.length));
+    }
+
+    @Test
+    public void shouldWriteByteArrayBackedDirectBufferToStreamWithWrapAdjustement() throws Exception
+    {
+        final byte[] value = "foo".getBytes();
+        final int bufferOffset = 1;
+        final int bufferLength = value.length - bufferOffset;
+        final DirectBuffer buffer = new UnsafeBuffer(value, bufferOffset, bufferLength);
+        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream(buffer.capacity());
+
+        // when
+        StreamUtil.write(buffer, outputStream, 0, bufferLength);
+
+        // then
+        assertThat(outputStream.toByteArray()).isEqualTo(Arrays.copyOfRange(value, bufferOffset, bufferLength));
+
+        // when
+        final int offset = 1;
+        outputStream.reset();
+        StreamUtil.write(buffer, outputStream, offset, bufferLength);
+
+        // then
+        assertThat(outputStream.toByteArray()).isEqualTo(Arrays.copyOfRange(value, offset, bufferLength - offset));
+    }
+
+    @Test
+    public void shouldWriteByteBufferBackedDirectBufferToStream() throws Exception
+    {
+        // given
+        final byte[] value = "foo".getBytes();
+        final ByteBuffer underlyingBuffer = ByteBuffer.allocateDirect(value.length);
+        final DirectBuffer buffer = new UnsafeBuffer(underlyingBuffer);
+        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream(buffer.capacity());
+
+        // when
+        underlyingBuffer.put(value);
+        StreamUtil.write(buffer, outputStream);
+
+        // then
+        assertThat(outputStream.toByteArray()).isEqualTo(value);
+
+        // when
+        final int offset = 1;
+        outputStream.reset();
+        StreamUtil.write(buffer, outputStream, offset, value.length);
+
+        // then
+        assertThat(outputStream.toByteArray()).isEqualTo(Arrays.copyOfRange(value, offset, value.length));
+    }
+
+    @Test
+    public void shouldWriteByteBufferBackedDirectBufferToStreamWithWrapAdjustement() throws Exception
+    {
+        final byte[] value = "foo".getBytes();
+        final int bufferOffset = 1;
+        final int bufferLength = value.length - bufferOffset;
+        final ByteBuffer underlyingBuffer = ByteBuffer.allocateDirect(value.length);
+        final DirectBuffer buffer = new UnsafeBuffer(underlyingBuffer, bufferOffset, bufferLength);
+        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream(buffer.capacity());
+
+        // when
+        underlyingBuffer.put(value);
+        StreamUtil.write(buffer, outputStream, 0, bufferLength);
+
+        // then
+        assertThat(outputStream.toByteArray()).isEqualTo(Arrays.copyOfRange(value, bufferOffset, bufferLength));
+
+        // when
+        final int offset = 1;
+        outputStream.reset();
+        StreamUtil.write(buffer, outputStream, offset, bufferLength);
+
+        // then
+        assertThat(outputStream.toByteArray()).isEqualTo(Arrays.copyOfRange(value, offset, bufferLength - offset));
     }
 }

@@ -25,6 +25,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.WritableByteChannel;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -235,19 +238,43 @@ public class StreamUtil
         }
     }
 
-    public static void write(final DirectBuffer source, final OutputStream output) throws IOException
+    /**
+     * Writes the {@link DirectBuffer#capacity} bytes given buffer to the destination output.
+     *
+     * @param source buffer to write
+     * @param destination output to write to
+     * @throws IOException
+     */
+    public static void write(final DirectBuffer source, final OutputStream destination) throws IOException
     {
-        final UnsafeBuffer readBuffer = new UnsafeBuffer(source);
-        final int size = readBuffer.capacity();
+        write(source, destination, 0, source.capacity());
+    }
 
-        for (int offset = 0; offset < size; offset += DEFAULT_BUFFER_SIZE)
+    /**
+     * Writes length bytes from source buffer, starting at the given offset, into
+     * the given destination.
+     *
+     * @param source buffer to write
+     * @param destination output to write to
+     * @param offset offset at which to start writing from buffer
+     * @param length number of bytes to write
+     * @throws IOException
+     */
+    public static void write(final DirectBuffer source, final OutputStream destination, final int offset, final int length) throws IOException
+    {
+        final int realOffset = source.wrapAdjustment() + offset;
+        if (source.byteArray() != null)
         {
-            final int readSize = Math.min(DEFAULT_BUFFER_SIZE, size - offset);
-            final byte[] writeBuffer = new byte[readSize];
+            destination.write(source.byteArray(), realOffset, length - realOffset);
+        }
+        else
+        {
+            final WritableByteChannel channel = Channels.newChannel(destination);
+            final ByteBuffer writeBuffer = source.byteBuffer().asReadOnlyBuffer();
 
-            readBuffer.getBytes(offset, writeBuffer);
-
-            output.write(writeBuffer);
+            writeBuffer.position(realOffset);
+            writeBuffer.limit(length);
+            channel.write(writeBuffer);
         }
     }
 
