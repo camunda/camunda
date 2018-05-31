@@ -13,7 +13,6 @@
   </parent>
 
   <dependencies>
-
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zb-protocol</artifactId>

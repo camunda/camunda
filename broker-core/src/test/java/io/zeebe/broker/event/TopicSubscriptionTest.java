@@ -218,7 +218,14 @@ public class TopicSubscriptionTest
     public void shouldNotOpenSubscriptionForNonExistingPartition()
     {
         // given
-        final ExecuteCommandRequest request = apiRule.openTopicSubscription(999, "foo", 0);
+        final ExecuteCommandRequest request = apiRule.createCmdRequest()
+            .partitionId(999)
+            .type(ValueType.SUBSCRIBER, SubscriberIntent.SUBSCRIBE)
+            .command()
+                .put("startPosition", 0)
+                .put("name", "foo")
+                .done()
+            .sendWithoutRetries();
 
         // when
         final ErrorResponse errorResponse = request.awaitError();
@@ -241,7 +248,7 @@ public class TopicSubscriptionTest
             .data()
                 .put("subscriberKey", 0L)
                 .done()
-            .send().awaitError();
+            .sendWithoutRetries().awaitError();
 
         // then
         final String expectedMessage = String.format("Cannot close topic subscription. No subscription management " +

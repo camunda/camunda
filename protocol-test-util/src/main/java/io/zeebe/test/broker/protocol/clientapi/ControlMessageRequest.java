@@ -17,25 +17,24 @@ package io.zeebe.test.broker.protocol.clientapi;
 
 import java.time.Duration;
 import java.util.Map;
+import java.util.function.Predicate;
 
-import io.zeebe.protocol.clientapi.ErrorCode;
-import io.zeebe.util.ZbLogger;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
 import io.zeebe.protocol.clientapi.ControlMessageRequestEncoder;
 import io.zeebe.protocol.clientapi.ControlMessageType;
+import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.transport.*;
+import io.zeebe.transport.ClientOutput;
+import io.zeebe.transport.ClientResponse;
+import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.future.ActorFuture;
 
 public class ControlMessageRequest implements BufferWriter
 {
-    private static final ZbLogger LOG = new ZbLogger(ExecuteCommandResponse.class);
-    private static final Duration RESEND_DELAY = Duration.ofMillis(100);
-
     protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     protected final ControlMessageRequestEncoder requestEncoder = new ControlMessageRequestEncoder();
     protected final MsgPackHelper msgPackHelper;
@@ -47,8 +46,6 @@ public class ControlMessageRequest implements BufferWriter
     protected byte[] encodedData = new byte[0];
 
     protected ActorFuture<ClientResponse> responseFuture;
-
-    private int retries = 10;
 
     public ControlMessageRequest(ClientOutput output, RemoteAddress target, MsgPackHelper msgPackHelper)
     {
@@ -77,12 +74,18 @@ public class ControlMessageRequest implements BufferWriter
 
     public ControlMessageRequest send()
     {
+        return send(this::shouldRetryRequest);
+    }
+
+
+    public ControlMessageRequest send(Predicate<DirectBuffer> retryFunction)
+    {
         if (responseFuture != null)
         {
             throw new RuntimeException("Cannot send request more than once");
         }
 
-        responseFuture = output.sendRequest(target, this);
+        responseFuture = output.sendRequestWithRetry(() -> target, retryFunction, this, Duration.ofSeconds(5));
         return this;
     }
 
@@ -93,21 +96,7 @@ public class ControlMessageRequest implements BufferWriter
 
         final ControlMessageResponse result = new ControlMessageResponse(msgPackHelper);
 
-        try
-        {
-            result.wrap(responseBuffer, 0, responseBuffer.capacity());
-        }
-        catch (final Exception e)
-        {
-            if (shouldRetryRequest(responseBuffer))
-            {
-                return resend().await();
-            }
-            else
-            {
-                throw e;
-            }
-        }
+        result.wrap(responseBuffer, 0, responseBuffer.capacity());
 
         return result;
     }
@@ -117,17 +106,9 @@ public class ControlMessageRequest implements BufferWriter
         final ClientResponse response = responseFuture.join();
         final DirectBuffer responseBuffer = response.getResponseBuffer();
 
-        if (shouldRetryRequest(responseBuffer))
-        {
-            return resend().awaitError();
-        }
-        else
-        {
-            final ErrorResponse errorResponse = new ErrorResponse(msgPackHelper);
-            errorResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
-            return errorResponse;
-        }
-
+        final ErrorResponse errorResponse = new ErrorResponse(msgPackHelper);
+        errorResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
+        return errorResponse;
     }
 
     private boolean shouldRetryRequest(final DirectBuffer responseBuffer)
@@ -138,7 +119,7 @@ public class ControlMessageRequest implements BufferWriter
             error.wrap(responseBuffer, 0, responseBuffer.capacity());
             final ErrorCode errorCode = error.getErrorCode();
             final String message = error.getErrorData();
-            return retries > 0 && errorCode == ErrorCode.REQUEST_PROCESSING_FAILURE &&
+            return errorCode == ErrorCode.REQUEST_PROCESSING_FAILURE &&
                 (
                     message.matches(".*Partition .* not found.*") ||
                     message.matches(".*No subscription management processor registered for partition.*")
@@ -147,28 +128,9 @@ public class ControlMessageRequest implements BufferWriter
         catch (final Exception e)
         {
             // ignore
+            return false;
         }
 
-        return false;
-    }
-
-    private ControlMessageRequest resend()
-    {
-        retries--;
-
-        try
-        {
-            // lets wait a while
-            Thread.sleep(RESEND_DELAY.toMillis());
-        }
-        catch (final Exception e)
-        {
-            // ignore
-        }
-
-        LOG.info("Resending execute command request after error");
-        responseFuture = output.sendRequest(target, this);
-        return this;
     }
 
     @Override

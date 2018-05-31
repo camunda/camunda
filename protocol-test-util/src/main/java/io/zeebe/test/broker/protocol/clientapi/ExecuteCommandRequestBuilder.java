@@ -45,6 +45,11 @@ public class ExecuteCommandRequestBuilder
         return request.send();
     }
 
+    public ExecuteCommandRequest sendWithoutRetries()
+    {
+        return request.send(r -> false);
+    }
+
     public ExecuteCommandRequestBuilder partitionId(int partitionId)
     {
         request.partitionId(partitionId);

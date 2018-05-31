@@ -37,6 +37,11 @@ public class ControlMessageRequestBuilder
         return request.send();
     }
 
+    public ControlMessageRequest sendWithoutRetries()
+    {
+        return request.send(b -> false);
+    }
+
     public ControlMessageResponse sendAndAwait()
     {
         return send().await();

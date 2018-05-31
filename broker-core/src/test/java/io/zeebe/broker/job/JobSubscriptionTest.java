@@ -530,7 +530,6 @@ public class JobSubscriptionTest
         testClient.createJob("foo");
 
         // then
-        Thread.sleep(500);
         waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 2);
 
         final List<SubscribedRecord> jobEvents = testClient.receiveEvents()

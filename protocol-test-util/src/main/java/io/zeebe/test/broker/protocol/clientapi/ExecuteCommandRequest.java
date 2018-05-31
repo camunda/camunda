@@ -20,6 +20,7 @@ import static io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder.partition
 
 import java.time.Duration;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
@@ -30,7 +31,6 @@ import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.ClientResponse;
 import io.zeebe.transport.RemoteAddress;
-import io.zeebe.util.ZbLogger;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
@@ -38,9 +38,6 @@ import org.agrona.MutableDirectBuffer;
 
 public class ExecuteCommandRequest implements BufferWriter
 {
-    private static final ZbLogger LOG = new ZbLogger(ExecuteCommandResponse.class);
-    private static final Duration RESEND_DELAY = Duration.ofMillis(100);
-
     protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     protected final ExecuteCommandRequestEncoder requestEncoder = new ExecuteCommandRequestEncoder();
     protected final MsgPackHelper msgPackHelper;
@@ -55,8 +52,6 @@ public class ExecuteCommandRequest implements BufferWriter
     protected byte[] encodedCmd;
 
     protected ActorFuture<ClientResponse> responseFuture;
-
-    private int retries = 10;
 
     public ExecuteCommandRequest(ClientOutput output, RemoteAddress target, final MsgPackHelper msgPackHelper)
     {
@@ -97,12 +92,17 @@ public class ExecuteCommandRequest implements BufferWriter
 
     public ExecuteCommandRequest send()
     {
+        return send(this::shouldRetryRequest);
+    }
+
+    public ExecuteCommandRequest send(Predicate<DirectBuffer> retryFunction)
+    {
         if (responseFuture != null)
         {
             throw new RuntimeException("Cannot send request more than once");
         }
 
-        responseFuture = output.sendRequest(target, this);
+        responseFuture = output.sendRequestWithRetry(() -> target, retryFunction, this, Duration.ofSeconds(5));
         return this;
     }
 
@@ -113,21 +113,7 @@ public class ExecuteCommandRequest implements BufferWriter
 
         final ExecuteCommandResponse result = new ExecuteCommandResponse(msgPackHelper);
 
-        try
-        {
-            result.wrap(responseBuffer, 0, responseBuffer.capacity());
-        }
-        catch (final Exception e)
-        {
-            if (shouldRetryRequest(responseBuffer))
-            {
-                return resend().await();
-            }
-            else
-            {
-                throw e;
-            }
-        }
+        result.wrap(responseBuffer, 0, responseBuffer.capacity());
 
         return result;
     }
@@ -137,16 +123,9 @@ public class ExecuteCommandRequest implements BufferWriter
         final ClientResponse response = responseFuture.join();
         final DirectBuffer responseBuffer = response.getResponseBuffer();
 
-        if (shouldRetryRequest(responseBuffer))
-        {
-            return resend().awaitError();
-        }
-        else
-        {
-            final ErrorResponse result = new ErrorResponse(msgPackHelper);
-            result.wrap(responseBuffer, 0, responseBuffer.capacity());
-            return result;
-        }
+        final ErrorResponse result = new ErrorResponse(msgPackHelper);
+        result.wrap(responseBuffer, 0, responseBuffer.capacity());
+        return result;
     }
 
     private boolean shouldRetryRequest(final DirectBuffer responseBuffer)
@@ -155,33 +134,13 @@ public class ExecuteCommandRequest implements BufferWriter
         try
         {
             error.wrap(responseBuffer, 0, responseBuffer.capacity());
-            return retries > 0 && error.getErrorCode() == ErrorCode.PARTITION_NOT_FOUND;
+            return error.getErrorCode() == ErrorCode.PARTITION_NOT_FOUND;
         }
         catch (final Exception e)
         {
             // ignore
+            return false;
         }
-
-        return false;
-    }
-
-    private ExecuteCommandRequest resend()
-    {
-        retries--;
-
-        try
-        {
-            // lets wait a while
-            Thread.sleep(RESEND_DELAY.toMillis());
-        }
-        catch (final Exception e)
-        {
-            // ignore
-        }
-
-        LOG.info("Resending execute command request after error");
-        responseFuture = output.sendRequest(target, this);
-        return this;
     }
 
     @Override
