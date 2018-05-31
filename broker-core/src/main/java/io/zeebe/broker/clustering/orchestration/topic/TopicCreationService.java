@@ -242,7 +242,6 @@ public class TopicCreationService extends Actor implements Service<TopicCreation
         {
             if (error == null)
             {
-                LOG.debug("Creating partition with id {} for topic {}", id, pendingTopic.getTopicName());
                 sendCreatePartitionRequest(pendingTopic, id);
             }
             else
@@ -260,7 +259,6 @@ public class TopicCreationService extends Actor implements Service<TopicCreation
         {
             if (error == null)
             {
-                LOG.debug("Send create partition request for topic {} to node {} with partition id {}", pendingTopic.getTopicName(), nodeInfo.getManagementApiAddress(), partitionId);
                 sendCreatePartitionRequest(pendingTopic, partitionId, nodeInfo);
             }
             else
@@ -277,6 +275,8 @@ public class TopicCreationService extends Actor implements Service<TopicCreation
             .topicName(pendingTopic.getTopicNameBuffer())
             .partitionId(partitionId)
             .replicationFactor(pendingTopic.getReplicationFactor());
+
+        LOG.debug("Send create partition request for topic {} to node {} with partitionId={}", pendingTopic.getTopicName(), nodeInfo.getManagementApiAddress(), partitionId);
 
         final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(nodeInfo.getManagementApiAddress());
         final ActorFuture<ClientResponse> responseFuture = clientTransport.getOutput().sendRequest(remoteAddress, request);

@@ -192,7 +192,7 @@ public class Topology implements ReadableTopology
             partitions.put(paritionId, partition);
         }
 
-        LOG.debug("Updating partition information for partition {} and state {}", partition, state);
+        LOG.debug("Updating partition information for partition {} on {} with state {}", partition, member, state);
 
         if (state != null)
         {

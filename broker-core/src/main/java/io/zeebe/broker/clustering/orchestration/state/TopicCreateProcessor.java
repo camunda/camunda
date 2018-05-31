@@ -73,7 +73,7 @@ public class TopicCreateProcessor implements TypedRecordProcessor<TopicRecord>
         }
         else
         {
-            LOG.info("Creating topic {} with partition count {} and replication factor {}", bufferAsString(topicName), topicEvent.getPartitions(), topicEvent.getReplicationFactor());
+            LOG.info("Creating topic {}", topicEvent);
             isCreating = true;
         }
     }
