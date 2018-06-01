@@ -25,6 +25,7 @@ import java.util.Properties;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import io.zeebe.client.ClientProperties;
 import org.junit.rules.ExternalResource;
 
 import io.zeebe.client.ZeebeClient;
@@ -50,6 +51,15 @@ public class ClientRule extends ExternalResource
     public ClientRule()
     {
         this(Properties::new);
+    }
+
+    public ClientRule(final String contactPoint)
+    {
+        this(() -> {
+            final Properties properties = new Properties();
+            properties.put(ClientProperties.BROKER_CONTACTPOINT, contactPoint);
+            return properties;
+        });
     }
 
     public ClientRule(Supplier<Properties> propertiesProvider)
