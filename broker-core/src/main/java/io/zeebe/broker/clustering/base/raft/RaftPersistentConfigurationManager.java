@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.clustering.base.raft;
 
+import io.zeebe.broker.clustering.base.partitions.PartitionAlreadyExistsException;
 import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.ByteValue;
@@ -105,7 +106,7 @@ public class RaftPersistentConfigurationManager extends Actor
 
             if (partitionExists)
             {
-                future.completeExceptionally(new RuntimeException(String.format("Partition with with %d already exists", partitionId)));
+                future.completeExceptionally(new PartitionAlreadyExistsException(partitionId));
             }
             else
             {

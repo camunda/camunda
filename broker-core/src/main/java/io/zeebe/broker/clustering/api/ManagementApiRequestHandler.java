@@ -29,6 +29,7 @@ import java.util.Map;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.Partition;
+import io.zeebe.broker.clustering.base.partitions.PartitionAlreadyExistsException;
 import io.zeebe.broker.clustering.base.partitions.PartitionInstallService;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfiguration;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
@@ -163,7 +164,15 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
         {
             if (throwable != null)
             {
-                LOG.error("Exception while creating partition", throwable);
+                if (throwable instanceof PartitionAlreadyExistsException)
+                {
+                    LOG.info(throwable.getMessage());
+                }
+                else
+                {
+                    LOG.error("Exception while creating partition", throwable);
+                }
+
                 sendResponse(output, remoteAddress, requestId, EMPTY_RESPONSE);
             }
             else
