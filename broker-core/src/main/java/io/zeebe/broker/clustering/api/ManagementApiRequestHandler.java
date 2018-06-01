@@ -125,6 +125,8 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
         final int replicationFactor = createPartitionRequest.getReplicationFactor();
         final List<SocketAddress> members = Collections.emptyList();
 
+        LOG.info("Received create partition request for topic={}, partitionId={} and replicationFactor={}", BufferUtil.bufferAsString(topicName), partitionId, replicationFactor);
+
         installPartition(topicName, partitionId, replicationFactor, members, output, remoteAddress, requestId);
 
         return true;
@@ -139,6 +141,8 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
         final int partitionId = invitationRequest.partitionId();
         final int replicationFactor = invitationRequest.replicationFactor();
         final List<SocketAddress> members = new ArrayList<>(invitationRequest.members());
+
+        LOG.info("Received invitation request for topicName={}, partitionId={}, replicationFactor={} with members={}", BufferUtil.bufferAsString(topicName), partitionId, replicationFactor, members);
 
         installPartition(topicName, partitionId, replicationFactor, members, output, remoteAddress, requestId);
 
