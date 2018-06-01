@@ -108,7 +108,7 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
 
         raftStateListeners.addAll(Arrays.asList(listeners));
 
-        LOG.info("Created raft with configuration: " + this.configuration);
+        LOG.info("Created raft {} with configuration {}", raftName, configuration);
     }
 
     @Override
