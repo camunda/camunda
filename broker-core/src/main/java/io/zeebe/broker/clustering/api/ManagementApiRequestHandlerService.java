@@ -51,6 +51,12 @@ public class ManagementApiRequestHandlerService extends Actor implements Service
     }
 
     @Override
+    public String getName()
+    {
+        return "management-api";
+    }
+
+    @Override
     public void start(ServiceStartContext startContext)
     {
         serverTransport = serverTransportInjector.getValue();
