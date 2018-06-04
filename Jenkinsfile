@@ -108,7 +108,7 @@ pipeline {
   }
 
   stages {
-    stage('JS-Unit') {
+    stage('Frontend') {
       steps {
         container('node') {
           sh '''
@@ -120,12 +120,12 @@ pipeline {
         }
       }
     }
-    stage('Maven') {
+    stage('Backend') {
       steps {
         container('maven') {
           sh '''
             cd ./backend
-            mvn clean install
+            mvn clean install -B
           '''
         }
       }
