@@ -120,6 +120,16 @@ pipeline {
         }
       }
     }
+    stage('Maven') {
+      steps {
+        container('maven') {
+          sh '''
+            cd ./backend
+            mvn clean install
+          '''
+        }
+      }
+    }
   }
 
   post {
