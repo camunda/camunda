@@ -82,6 +82,7 @@ public interface ZeebeClient extends AutoCloseable
      *  .newCreateTopicCommand()
      *  .name("my-topic")
      *  .partitions(3)
+     *  .replicationFactor(1)
      *  .send();
      * </pre>
      *
