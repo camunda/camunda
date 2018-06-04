@@ -1,0 +1,34 @@
+
+    @font-face {
+      font-family: "IBMPlexSans";
+      src: url("fonts/IBMPlexSans-Bold.woff2");
+      font-weight: bold;
+    }
+
+    @font-face {
+      font-family: "IBMPlexSans";
+      src: url("fonts/IBMPlexSans-Italic.woff2");
+      font-style: italic;
+    }
+
+    @font-face {
+      font-family: "IBMPlexSans";
+      src: url("fonts/IBMPlexSans-Medium.woff2");
+      font-weight: 500;
+    }
+
+    @font-face {
+      font-family: "IBMPlexSans";
+      src: url("fonts/IBMPlexSans-Regular.woff2");
+    }
+
+    @font-face {
+      font-family: "IBMPlexSans";
+      src: url("fonts/IBMPlexSans-SemiBold.woff2");
+      font-weight: 600;
+    }
+
+    body {
+      background-color: #1c1f23;
+      font-family: IBMPlexSans;
+    }
