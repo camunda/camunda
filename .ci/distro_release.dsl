@@ -73,6 +73,11 @@ def releaseProperties = [
     arguments: '--settings=${NEXUS_SETTINGS} -DskipTests=true -Dgpg.passphrase="${GPG_PASSPHRASE}" -Dskip.central.release=${SKIP_DEPLOY_TO_MAVEN_CENTRAL} -Dskip.camunda.release=${SKIP_DEPLOY_TO_CAMUNDA_NEXUS}',
 ]
 
+def joinJmhResults = '''\
+#!/bin/bash -x
+
+cat **/*/jmh-result.json | jq -s add > target/jmh-result.json
+'''
 
 mavenJob(jobName)
 {
@@ -109,6 +114,11 @@ mavenJob(jobName)
     localRepository LocalRepositoryLocation.LOCAL_TO_WORKSPACE
     providedSettings mavenSettingsId
     mavenInstallation mavenVersion
+
+    postBuildSteps
+    {
+        shell joinJmhResults
+    }
 
     wrappers
     {
@@ -216,6 +226,11 @@ mavenJob(jobName)
         archiveJunit('**/target/surefire-reports/*.xml')
         {
             retainLongStdout()
+        }
+
+        jmhReport
+        {
+            resultPath 'target/jmh-result.json'
         }
 
         extendedEmail
