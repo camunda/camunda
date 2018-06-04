@@ -1,0 +1,109 @@
+def githubOrga = 'camunda'
+def gitRepository = 'camunda-operate'
+def gitBranch = 'master'
+
+def dslScriptsToExecute = '''\
+'''
+
+def dslScriptPathToMonitor = '''\
+.ci/views/.*\\.dsl
+'''
+
+def setBrokenViewAsDefault = '''\
+import jenkins.model.Jenkins
+
+def jenkins = Jenkins.instance
+def broken = jenkins.getView('Broken')
+if (broken) {
+  jenkins.setPrimaryView(broken)
+}
+'''
+
+def seedJob = job('seed-job-operate') {
+
+  displayName 'Seed Job Operate'
+  description 'JobDSL Seed Job for Camunda Operate'
+
+  scm {
+    git {
+      remote {
+        github "${githubOrga}/${gitRepository}", 'ssh'
+        credentials 'camunda-jenkins-github-ssh'
+      }
+      branch gitBranch
+      extensions {
+        localBranch gitBranch
+        pathRestriction {
+          includedRegions(dslScriptPathToMonitor)
+          excludedRegions('')
+        }
+      }
+    }
+  }
+
+  triggers {
+    githubPush()
+  }
+
+  label 'master'
+  jdk '(Default)'
+
+  steps {
+    jobDsl {
+      targets(dslScriptsToExecute)
+      removedJobAction('DELETE')
+      removedViewAction('DELETE')
+      failOnMissingPlugin(true)
+      ignoreMissingFiles(false)
+      unstableOnDeprecation(true)
+      sandbox(true)
+    }
+    systemGroovyCommand(setBrokenViewAsDefault)
+  }
+
+  wrappers {
+    timestamps()
+    timeout {
+      absolute 5
+    }
+  }
+
+  publishers {
+    extendedEmail {
+      triggers {
+        statusChanged {
+          sendTo {
+            culprits()
+            requester()
+          }
+        }
+      }
+    }
+  }
+
+  logRotator(-1, 5, -1, 1)
+
+}
+
+queue(seedJob)
+
+
+multibranchPipelineJob('camunda-operate') {
+
+  displayName 'Camunda Operate'
+  description 'MultiBranchJob for Camunda Operate'
+
+  branchSources {
+    github {
+      repoOwner githubOrga
+      repository gitRepository
+      scanCredentialsId 'camunda-jenkins-github'
+    }
+  }
+
+  orphanedItemStrategy {
+    discardOldItems {
+      daysToKeep(0)
+    }
+  }
+}
