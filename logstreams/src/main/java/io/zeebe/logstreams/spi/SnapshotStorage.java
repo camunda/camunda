@@ -61,4 +61,21 @@ public interface SnapshotStorage
      * @return all available snapshots
      */
     List<ReadableSnapshot> listSnapshots();
+
+    /**
+     * Returns whether or not there already exists a snapshot for the given
+     * name + position.
+     */
+    boolean snapshotExists(String name, long logPosition);
+
+    /**
+     * Returns a writer to create a temporary snapshot.
+     *
+     * @param prefix a short prefix which indicates that the temporary snapshot is used for, e.g. "repl" for replication
+     * @param name the snapshot name
+     * @param logPosition the logPosition
+     * @return pre-configured SnapshotWriter
+     * @throws Exception if it fails to prepare the necessary resources for the temporary snapshot
+     */
+    SnapshotWriter createTemporarySnapshot(String prefix, String name, long logPosition) throws Exception;
 }

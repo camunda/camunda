@@ -17,6 +17,8 @@ package io.zeebe.logstreams.impl.snapshot.fs;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -154,5 +156,46 @@ public class FsSnapshotStorage implements SnapshotStorage
         }
 
         return snapshots;
+    }
+
+    @Override
+    public FsTemporarySnapshotWriter createTemporarySnapshot(final String prefix, final String name, final long logPosition) throws Exception
+    {
+        final File destinationFile = new File(cfg.snapshotFileName(name, logPosition));
+        final File checksumFile = new File(cfg.checksumFileName(name, logPosition));
+        final File temporaryFile = File.createTempFile(prefix, null, new File(cfg.getRootPath()));
+
+        temporaryFile.deleteOnExit();
+
+        try
+        {
+            Files.createFile(destinationFile.toPath());
+
+            try
+            {
+                Files.createFile(checksumFile.toPath());
+            }
+            catch (final IOException ex)
+            {
+                //noinspection ResultOfMethodCallIgnored
+                destinationFile.delete();
+                throw ex;
+            }
+        }
+        catch (final Exception ex)
+        {
+            //noinspection ResultOfMethodCallIgnored
+            temporaryFile.delete();
+            throw ex;
+        }
+
+        return new FsTemporarySnapshotWriter(cfg, temporaryFile, checksumFile, destinationFile);
+    }
+
+    // TODO: is it enough to check only for the snapshot file? or also the sha1 file?
+    @Override
+    public boolean snapshotExists(String name, long logPosition)
+    {
+        return Files.exists(Paths.get(cfg.snapshotFileName(name, logPosition)));
     }
 }

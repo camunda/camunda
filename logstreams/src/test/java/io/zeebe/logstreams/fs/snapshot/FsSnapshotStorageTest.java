@@ -15,19 +15,18 @@
  */
 package io.zeebe.logstreams.fs.snapshot;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.util.StringUtil.getBytes;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
 
-import io.zeebe.logstreams.impl.snapshot.fs.FsReadableSnapshot;
-import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotStorage;
-import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotStorageConfiguration;
-import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotWriter;
+import io.zeebe.logstreams.impl.snapshot.fs.*;
 import io.zeebe.logstreams.spi.ReadableSnapshot;
+import org.assertj.core.api.Condition;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -222,6 +221,64 @@ public class FsSnapshotStorageTest
 
         final ReadableSnapshot second = snapshots.stream().filter((s) -> s.getName().equals("second")).findFirst().get();
         assertThat(second.getPosition()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldIdentifyExistingSnapshotsIfFileIsPresent() throws Exception
+    {
+        // given
+        final String firstName = "first";
+
+        // when
+        writeSnapshot(firstName, 1);
+        writeSnapshot(firstName, 3);
+
+        // then
+        assertThat(fsSnapshotStorage.snapshotExists(firstName, 3L)).isTrue();
+        assertThat(fsSnapshotStorage.snapshotExists(firstName, 1L)).isFalse();
+        assertThat(fsSnapshotStorage.snapshotExists("something weird that should not exist", 2L)).isFalse();
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    @Test
+    public void shouldFailToCreateTemporarySnapshotWriterIfSnapshotAlreadyExists() throws Exception
+    {
+        // given
+        final String prefix = "test";
+        final String name = "snapshot";
+        final long logPosition = 3L;
+
+        // when
+        writeSnapshot(name, logPosition);
+
+        // then
+        // assert that allocated resources were removed in case of exception
+        final int expectedFilesCount = tempFolder.getRoot().listFiles().length;
+        assertThatThrownBy(() -> fsSnapshotStorage.createTemporarySnapshot(prefix, name, logPosition))
+            .isInstanceOf(Exception.class);
+        assertThat(tempFolder.getRoot().listFiles().length).isEqualTo(expectedFilesCount);
+    }
+
+    @Test
+    public void shouldCreateTemporarySnapshotWriter() throws Exception
+    {
+        // given
+        final String prefix = "test";
+        final String name = "snapshot";
+        final long logPosition = 4L;
+
+        // when
+        final FsTemporarySnapshotWriter temporarySnapshotWriter = fsSnapshotStorage.createTemporarySnapshot(prefix, name, logPosition);
+
+        // then
+        assertThat(temporarySnapshotWriter).isNotNull();
+
+        final File[] files = tempFolder.getRoot().listFiles();
+        assertThat(files).isNotNull();
+        assertThat(files.length).isEqualTo(3);
+        assertThat(files).haveExactly(1, new Condition<>(f -> f.getName().matches("test.+\\.tmp"), "temporary file"));
+        assertThat(files).haveExactly(1, new Condition<>(f -> f.getAbsolutePath().equals(config.snapshotFileName(name, logPosition)), "snapshot file"));
+        assertThat(files).haveExactly(1, new Condition<>(f -> f.getAbsolutePath().equals(config.checksumFileName(name, logPosition)), "checksum file"));
     }
 
     protected String getFileName(String absolutePath)

@@ -27,6 +27,7 @@ import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
+import java.util.Arrays;
 
 import static io.zeebe.util.StringUtil.getBytes;
 
@@ -90,7 +91,7 @@ public class FsSnapshotWriter implements SnapshotWriter
 
             final byte[] digestBytes = digest.digest();
             final String digestString = BitUtil.toHex(digestBytes);
-            final String checksumFileContents = config.checksumContent(digestString, dataFile.getName());
+            final String checksumFileContents = config.checksumContent(digestString, getDataFileName());
 
             checksumOutputStream.write(getBytes(checksumFileContents));
             checksumOutputStream.close();
@@ -125,5 +126,36 @@ public class FsSnapshotWriter implements SnapshotWriter
     public File getDataFile()
     {
         return dataFile;
+    }
+
+    protected String getDataFileName()
+    {
+        return dataFile.getName();
+    }
+
+    @Override
+    public void validateAndCommit(final byte[] checksum) throws Exception
+    {
+        try
+        {
+            dataOutputStream.close();
+        }
+        catch (final Exception ex)
+        {
+            abort();
+            throw ex;
+        }
+
+        final byte[] writtenChecksum = dataOutputStream.getMessageDigest().digest();
+        if (Arrays.equals(writtenChecksum, checksum))
+        {
+            commit();
+        }
+        else
+        {
+            abort();
+            throw new RuntimeException(String.format("Mismatched checksums, expected %s, got %s",
+                BitUtil.toHex(checksum), BitUtil.toHex(writtenChecksum)));
+        }
     }
 }

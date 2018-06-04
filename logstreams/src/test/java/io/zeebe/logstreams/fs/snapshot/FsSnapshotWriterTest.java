@@ -15,20 +15,19 @@
  */
 package io.zeebe.logstreams.fs.snapshot;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.util.StringUtil.getBytes;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.security.MessageDigest;
 
-import org.agrona.BitUtil;
 import io.zeebe.logstreams.impl.snapshot.fs.FsReadableSnapshot;
 import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotStorageConfiguration;
 import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotWriter;
+import org.agrona.BitUtil;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -125,4 +124,42 @@ public class FsSnapshotWriterTest
         verify(lastSnapshot, never()).delete();
     }
 
+
+    @Test
+    public void shouldAbortIfCannotValidateChecksum() throws Exception
+    {
+        // given
+        final FsSnapshotWriter fsSnapshotWriter = new FsSnapshotWriter(config, snapshotFile, checksumFile, lastSnapshot);
+        final byte[] fakeChecksum = new byte[]{ 1 };
+
+        // when
+        fsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
+
+        // then
+        assertThatThrownBy(() -> fsSnapshotWriter.validateAndCommit(fakeChecksum))
+            .isInstanceOf(RuntimeException.class);
+
+        // assert aborted
+        assertThat(snapshotFile).doesNotExist();
+        assertThat(checksumFile).doesNotExist();
+        verify(lastSnapshot, never()).delete();
+    }
+
+    @Test
+    public void shouldCommitIfChecksumMatchesExpected() throws Exception
+    {
+        // given
+        final FsSnapshotWriter fsSnapshotWriter = new FsSnapshotWriter(config, snapshotFile, checksumFile, lastSnapshot);
+        final MessageDigest digest = MessageDigest.getInstance(config.getChecksumAlgorithm());
+        final byte[] checksum = digest.digest(SNAPSHOT_DATA);
+
+        // when
+        fsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
+        fsSnapshotWriter.validateAndCommit(checksum);
+
+        // then
+        verify(lastSnapshot).delete();
+        assertThat(snapshotFile).exists();
+        assertThat(checksumFile).exists();
+    }
 }

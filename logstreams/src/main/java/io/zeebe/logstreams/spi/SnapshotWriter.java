@@ -61,4 +61,14 @@ public interface SnapshotWriter
         return snapshotSupport.writeSnapshot(getOutputStream());
     }
 
+    /**
+     * Completes the snapshot by closing the output stream and writing its checksum,
+     * iff the checksum is equal to the given checksum.
+     *
+     * It will call abort on exception, or if the checksums do not match.
+     *
+     * @param checksum checksum to check against
+     * @throws Exception
+     */
+    void validateAndCommit(byte[] checksum) throws Exception;
 }
