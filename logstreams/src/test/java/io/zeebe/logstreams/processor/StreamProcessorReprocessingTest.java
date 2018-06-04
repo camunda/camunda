@@ -22,12 +22,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.logstreams.util.LogStreamWriterRule;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -55,11 +57,9 @@ public class StreamProcessorReprocessingTest
                  .around(logStreamRule)
                  .around(writer);
 
-    private StreamProcessorBuilder builder;
     private RecordingStreamProcessor streamProcessor;
     private EventProcessor eventProcessor;
     private EventFilter eventFilter;
-    private int partitionId;
 
     @Before
     public void init()
@@ -67,22 +67,35 @@ public class StreamProcessorReprocessingTest
         streamProcessor = RecordingStreamProcessor.createSpy();
         eventProcessor = streamProcessor.getEventProcessorSpy();
 
-        partitionId = logStreamRule.getLogStream().getPartitionId();
-
         eventFilter = mock(EventFilter.class);
         when(eventFilter.applies(any())).thenReturn(true);
-
-        builder = LogStreams.createStreamProcessor(PROCESSOR_NAME, PROCESSOR_ID, streamProcessor)
-            .logStream(logStreamRule.getLogStream())
-            .snapshotStorage(logStreamRule.getSnapshotStorage())
-            .actorScheduler(logStreamRule.getActorScheduler())
-            .serviceContainer(logStreamRule.getServiceContainer())
-            .eventFilter(eventFilter);
     }
 
     private void openStreamProcessorController()
     {
-        builder.build().join();
+        openStreamProcessorController(streamProcessor);
+    }
+
+
+    private ActorFuture<StreamProcessorService> openStreamProcessorControllerAsync()
+    {
+        return openStreamProcessorControllerAsync(streamProcessor);
+    }
+
+    private void openStreamProcessorController(StreamProcessor streamProcessor)
+    {
+        openStreamProcessorControllerAsync(streamProcessor).join();
+    }
+
+    private ActorFuture<StreamProcessorService> openStreamProcessorControllerAsync(StreamProcessor streamProcessor)
+    {
+        return LogStreams.createStreamProcessor(PROCESSOR_NAME, PROCESSOR_ID, streamProcessor)
+            .logStream(logStreamRule.getLogStream())
+            .snapshotStorage(logStreamRule.getSnapshotStorage())
+            .actorScheduler(logStreamRule.getActorScheduler())
+            .serviceContainer(logStreamRule.getServiceContainer())
+            .eventFilter(eventFilter)
+            .build();
     }
 
     /**
@@ -300,7 +313,7 @@ public class StreamProcessorReprocessingTest
         doThrow(new RuntimeException("expected")).when(eventProcessor).processEvent();
 
         // when
-        final ActorFuture<StreamProcessorService> future = builder.build();
+        final ActorFuture<StreamProcessorService> future = openStreamProcessorControllerAsync();
 
         waitUntil(() -> future.isDone());
 
@@ -328,7 +341,7 @@ public class StreamProcessorReprocessingTest
         }).when(eventProcessor).processEvent(any());
 
         // when
-        final ActorFuture<StreamProcessorService> future = builder.build();
+        final ActorFuture<StreamProcessorService> future = openStreamProcessorControllerAsync();
 
         waitUntil(() -> future.isDone());
 
@@ -343,7 +356,7 @@ public class StreamProcessorReprocessingTest
     @Test
     public void shouldNotReprocessEventsIfReadOnly()
     {
-        builder = LogStreams.createStreamProcessor("read-only", PROCESSOR_ID, streamProcessor)
+        final StreamProcessorBuilder builder = LogStreams.createStreamProcessor("read-only", PROCESSOR_ID, streamProcessor)
                 .logStream(logStreamRule.getLogStream())
                 .snapshotStorage(logStreamRule.getSnapshotStorage())
                 .actorScheduler(logStreamRule.getActorScheduler())
@@ -355,7 +368,7 @@ public class StreamProcessorReprocessingTest
         final long eventPosition2 = writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition1));
 
         // when
-        openStreamProcessorController();
+        builder.build().join();
 
         waitUntil(() -> streamProcessor.getProcessedEventCount() == 2);
 
@@ -368,6 +381,74 @@ public class StreamProcessorReprocessingTest
         verify(eventProcessor, times(2)).executeSideEffects();
         verify(eventProcessor, times(2)).writeEvent(any());
         verify(eventProcessor, times(2)).updateState();
+    }
+
+    @Test
+    public void shouldReprocessRecursively()
+    {
+        // given
+        final int numberOfRecords = 250;
+
+        for (int i = 0; i < numberOfRecords; i++)
+        {
+            while (writer.tryWrite(EVENT) == -1)
+            {
+            }
+        }
+
+        // indicating stream processor reached recordPosition1
+        final long recordPosition1 = writeEvent();
+        final long recordPosition2 = writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(recordPosition1));
+
+        logStreamRule.getLogStream().setCommitPosition(recordPosition2);
+
+        final AtomicInteger stackDepthAtRecord1 = new AtomicInteger();
+        final AtomicInteger processedRecords = new AtomicInteger(0);
+
+        final FunctionProcessor processor = new FunctionProcessor(e ->
+        {
+            processedRecords.incrementAndGet();
+            if (e.getPosition() == recordPosition1)
+            {
+                // This does not reliably work for greater stack sizes. Javadoc also says
+                // the result is JVM-dependent and can be anything.
+                // We assume that with the rather low numberOfRecords used, we do not hit an exceptional case.
+                final int stackDepth = Thread.currentThread().getStackTrace().length;
+                stackDepthAtRecord1.set(stackDepth);
+            }
+        });
+
+
+        // when
+        openStreamProcessorController(processor);
+
+        // then
+        waitUntil(() -> processedRecords.get() == numberOfRecords + 2);
+        assertThat(stackDepthAtRecord1.get()).isLessThan(numberOfRecords); // ie not linear in number of records
+    }
+
+    private class FunctionProcessor implements StreamProcessor, EventProcessor
+    {
+
+        private Consumer<LoggedEvent> function;
+
+        FunctionProcessor(Consumer<LoggedEvent> function)
+        {
+            this.function = function;
+        }
+
+        @Override
+        public SnapshotSupport getStateResource()
+        {
+            return new StringValueSnapshot();
+        }
+
+        @Override
+        public EventProcessor onEvent(LoggedEvent event)
+        {
+            function.accept(event);
+            return this;
+        }
     }
 
     private long writeEvent()

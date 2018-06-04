@@ -227,27 +227,23 @@ public class StreamProcessorController extends Actor
         {
             if (logStreamReader.hasNext())
             {
-                final LoggedEvent currentEvent = logStreamReader.next();
-                final long currentEventPosition = currentEvent.getPosition();
-
-                if (currentEventPosition <= lastSourceEventPosition)
-                {
-                    reprocessEvent(currentEvent);
-                }
-                else
+                currentEvent = logStreamReader.next();
+                if (currentEvent.getPosition() > lastSourceEventPosition)
                 {
                     throw new IllegalStateException(String.format(ERROR_MESSAGE_REPROCESSING_NO_SOURCE_EVENT, getName(), lastSourceEventPosition));
                 }
+
+                reprocessEvent(currentEvent);
             }
             else
             {
                 throw new IllegalStateException(String.format(ERROR_MESSAGE_REPROCESSING_NO_SOURCE_EVENT, getName(), lastSourceEventPosition));
             }
         }
-        catch (Exception e)
+        catch (RuntimeException e)
         {
             onFailure();
-            LangUtil.rethrowUnchecked(e);
+            throw e;
         }
     }
 
@@ -272,7 +268,7 @@ public class StreamProcessorController extends Actor
                             if (err == null)
                             {
                                 eventProcessor.updateState();
-                                continueRepocessing(currentEvent);
+                                onRecordReprocessed(currentEvent);
                             }
                             else
                             {
@@ -284,12 +280,12 @@ public class StreamProcessorController extends Actor
                     else
                     {
                         eventProcessor.updateState();
-                        continueRepocessing(currentEvent);
+                        onRecordReprocessed(currentEvent);
                     }
                 }
                 else
                 {
-                    continueRepocessing(currentEvent);
+                    onRecordReprocessed(currentEvent);
                 }
             }
             catch (Exception e)
@@ -299,11 +295,11 @@ public class StreamProcessorController extends Actor
         }
         else
         {
-            continueRepocessing(currentEvent);
+            onRecordReprocessed(currentEvent);
         }
     }
 
-    private void continueRepocessing(LoggedEvent currentEvent)
+    private void onRecordReprocessed(LoggedEvent currentEvent)
     {
         if (currentEvent.getPosition() == lastSourceEventPosition)
         {
@@ -311,7 +307,7 @@ public class StreamProcessorController extends Actor
         }
         else
         {
-            reprocessNextEvent();
+            actor.submit(this::reprocessNextEvent);
         }
     }
 
