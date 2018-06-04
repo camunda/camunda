@@ -6,6 +6,7 @@ import {mount} from 'enzyme';
 
 it('should initially load available options with empty string as query', () => {
   const spy = jest.fn();
+  spy.mockReturnValue([{name: 'foo', type: 'Boolean'}, {name: 'bar', type: 'Integer'}]);
   mount(<Typeahead getValues={spy} />);
   expect(spy).toHaveBeenCalledWith('');
 });

@@ -1,11 +1,15 @@
+.Typeahead {
+  width: 200px;
+}
+
 .Typeahead__search-result-list {
-  max-height: 300px;
-  overflow: scroll;
+  min-width: 200px;
   border: 1px solid #bbb;
   border-radius: 3px;
   z-index: 99999;
   position: absolute;
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+  background-color: white;
 }
 
 .Typeahead__search-result {

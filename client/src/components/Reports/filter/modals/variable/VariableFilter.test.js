@@ -14,6 +14,7 @@ jest.mock('components', () => {
   const Typeahead = props => {
     const allowedProps = {...props};
     delete allowedProps.selectValue;
+    delete allowedProps.initialValue;
     delete allowedProps.getValues;
     delete allowedProps.nameRenderer;
     return <div {...allowedProps}>{props.children}</div>;

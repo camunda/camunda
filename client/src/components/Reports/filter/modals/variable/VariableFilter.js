@@ -88,7 +88,6 @@ export default class VariableFilter extends React.Component {
 
   render() {
     const {selectedVariable, operator, values, availableValues} = this.state;
-
     return (
       <Modal open={true} onClose={this.props.close} className="VariableFilter__modal">
         <Modal.Header>Add Variable Filter</Modal.Header>
@@ -97,6 +96,7 @@ export default class VariableFilter extends React.Component {
             <ControlGroup layout="horizontal">
               <label htmlFor="VariableFilter__variables">Variable Name</label>
               <Typeahead
+                initialValue={this.getVariableName(selectedVariable)}
                 getValues={loadVariables(
                   this.props.processDefinitionKey,
                   this.props.processDefinitionVersion
@@ -133,7 +133,10 @@ export default class VariableFilter extends React.Component {
   }
 
   getVariableName = variable => {
-    return variable.name;
+    if (variable) {
+      return variable.name;
+    }
+    return null;
   };
 
   selectionIsValid = () => {

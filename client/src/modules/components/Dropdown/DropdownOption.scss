@@ -13,9 +13,13 @@ button.DropdownOption {
   width: 100%;
   text-align: left;
   border-radius: 0;
-  
+
   &.is-active {
     border: none;
+  }
+
+  &.Typeahead__search-result {
+    font-size: 0.875em;
   }
 
   &:hover {
