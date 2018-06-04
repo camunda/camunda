@@ -2,6 +2,8 @@ import React, {Component} from 'react';
 
 import {Input} from 'components';
 
+import * as Styled from './styled.js';
+
 class Dashboard extends Component {
   state = {
     username: '',
@@ -11,7 +13,7 @@ class Dashboard extends Component {
   render() {
     return (
       <form>
-        <h1>Camunda Operate</h1>
+        <Styled.Header>Camunda Operate</Styled.Header>
         <Input
           value={this.state.username}
           onChange={({target: {value}}) => this.setState({username: value})}
