@@ -94,7 +94,7 @@ public class RaftRule extends ExternalResource implements RaftStateListener
 
     public RaftRule(final ServiceContainerRule serviceContainerRule, final String host, final int port, final String topicName, final int partition, final RaftRule... members)
     {
-        this(serviceContainerRule, new RaftConfiguration(), host, port, topicName, partition, members);
+        this(serviceContainerRule, new RaftConfiguration().setLeaveTimeout("10s"), host, port, topicName, partition, members);
     }
 
     public RaftRule(final ServiceContainerRule serviceContainerRule, final RaftConfiguration configuration, final String host, final int port, final String topicName, final int partition, final RaftRule... members)
