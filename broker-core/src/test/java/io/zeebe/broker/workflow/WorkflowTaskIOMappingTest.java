@@ -17,10 +17,7 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.broker.test.MsgPackUtil.JSON_DOCUMENT;
-import static io.zeebe.broker.test.MsgPackUtil.JSON_MAPPER;
-import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_MAPPER;
-import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_PAYLOAD;
+import static io.zeebe.broker.test.MsgPackUtil.*;
 import static io.zeebe.msgpack.spec.MsgPackHelper.NIL;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -247,7 +244,7 @@ public class WorkflowTaskIOMappingTest
     }
 
     @Test
-    public void shouldUseDefaultOutputMappingIfNoMappingIsSpecified() throws Throwable
+    public void shouldUseDefaultOutputMapping() throws Throwable
     {
         // given
         testClient.deploy(Bpmn.createExecutableWorkflow("process")
@@ -259,7 +256,7 @@ public class WorkflowTaskIOMappingTest
         testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
         // when
-        testClient.completeJobOfType("external", MSGPACK_PAYLOAD);
+        testClient.completeJobOfType("external", OTHER_PAYLOAD);
 
         // then
         final SubscribedRecord activityCompletedEvent = receiveFirstWorkflowInstanceEvent(
@@ -267,7 +264,55 @@ public class WorkflowTaskIOMappingTest
 
         final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(result))
+            .isEqualTo(JSON_MAPPER.readTree(MERGED_OTHER_WITH_JSON_DOCUMENT));
+    }
+
+    @Test
+    public void shouldUseDefaultOutputMappingWithNoCompletePayload() throws Throwable
+    {
+        // given
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
+            .startEvent()
+            .serviceTask("service", t -> t.taskType("external"))
+            .endEvent()
+            .done());
+
+        testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
+
+        // when
+        testClient.completeJobOfType("external");
+
+        // then
+        final SubscribedRecord activityCompletedEvent = receiveFirstWorkflowInstanceEvent(
+            WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+
+        final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
+        assertThat(MSGPACK_MAPPER.readTree(result))
             .isEqualTo(JSON_MAPPER.readTree(JSON_DOCUMENT));
+    }
+
+    @Test
+    public void shouldUseDefaultOutputMappingWithNoCreatedPayload() throws Throwable
+    {
+        // given
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
+            .startEvent()
+            .serviceTask("service", t -> t.taskType("external"))
+            .endEvent()
+            .done());
+
+        testClient.createWorkflowInstance("process");
+
+        // when
+        testClient.completeJobOfType("external", OTHER_PAYLOAD);
+
+        // then
+        final SubscribedRecord activityCompletedEvent = receiveFirstWorkflowInstanceEvent(
+            WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+
+        final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
+        assertThat(MSGPACK_MAPPER.readTree(result))
+            .isEqualTo(JSON_MAPPER.readTree(OTHER_DOCUMENT));
     }
 
     @Test
@@ -335,7 +380,7 @@ public class WorkflowTaskIOMappingTest
     }
 
     @Test
-    public void shouldUseDefaultOutputMappingIfNullSpecified() throws Throwable
+    public void shouldUseDefaultOutputMappingIfOnlyInputMappingSpecified() throws Throwable
     {
         // given
         final Map<String, String> inputMapping = new HashMap<>();
@@ -350,7 +395,7 @@ public class WorkflowTaskIOMappingTest
         testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
         // when
-        testClient.completeJobOfType("external", MSGPACK_PAYLOAD);
+        testClient.completeJobOfType("external", OTHER_PAYLOAD);
 
         // then
         final SubscribedRecord activityCompletedEvent =
@@ -358,7 +403,7 @@ public class WorkflowTaskIOMappingTest
 
         final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(result))
-            .isEqualTo(JSON_MAPPER.readTree(JSON_DOCUMENT));
+            .isEqualTo(JSON_MAPPER.readTree(MERGED_OTHER_WITH_JSON_DOCUMENT));
     }
 
     @Test

@@ -825,42 +825,34 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
             final DirectBuffer taskPayload = activityEvent.getPayload();
             final boolean isNilPayload = isNilPayload(taskPayload);
 
-            if (outputMappings.length > 0)
+            if (outputMappings != null && outputMappings.length > 0 && isNilPayload)
             {
-                if (isNilPayload)
+                incidentCommand.reset();
+                incidentCommand
+                    .initFromWorkflowInstanceFailure(event)
+                    .setErrorType(ErrorType.IO_MAPPING_ERROR)
+                    .setErrorMessage("Could not apply output mappings: Task was completed without payload");
+
+                hasIncident = true;
+            }
+            else
+            {
+                try
+                {
+                    final int resultLen = payloadMappingProcessor.merge(taskPayload, workflowInstancePayload, outputMappings);
+                    final MutableDirectBuffer mergedPayload = payloadMappingProcessor.getResultBuffer();
+                    activityEvent.setPayload(mergedPayload, 0, resultLen);
+                }
+                catch (MappingException e)
                 {
                     incidentCommand.reset();
                     incidentCommand
                         .initFromWorkflowInstanceFailure(event)
                         .setErrorType(ErrorType.IO_MAPPING_ERROR)
-                        .setErrorMessage("Could not apply output mappings: Task was completed without payload");
+                        .setErrorMessage(e.getMessage());
 
                     hasIncident = true;
                 }
-                else
-                {
-                    try
-                    {
-                        final int resultLen = payloadMappingProcessor.merge(taskPayload, workflowInstancePayload, outputMappings);
-                        final MutableDirectBuffer mergedPayload = payloadMappingProcessor.getResultBuffer();
-                        activityEvent.setPayload(mergedPayload, 0, resultLen);
-                    }
-                    catch (MappingException e)
-                    {
-                        incidentCommand.reset();
-                        incidentCommand
-                            .initFromWorkflowInstanceFailure(event)
-                            .setErrorType(ErrorType.IO_MAPPING_ERROR)
-                            .setErrorMessage(e.getMessage());
-
-                        hasIncident = true;
-                    }
-                }
-            }
-            else if (isNilPayload)
-            {
-                // no payload from task complete
-                activityEvent.setPayload(workflowInstancePayload);
             }
         }
 

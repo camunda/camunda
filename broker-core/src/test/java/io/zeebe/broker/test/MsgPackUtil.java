@@ -31,15 +31,20 @@ public class MsgPackUtil
     public static final ObjectMapper MSGPACK_MAPPER = new ObjectMapper(new MessagePackFactory());
     public static final ObjectMapper JSON_MAPPER = new ObjectMapper();
     public static final String JSON_DOCUMENT = "{'string':'value', 'jsonObject':{'testAttr':'test'}}";
+    public static final String OTHER_DOCUMENT = "{'string':'bar', 'otherObject':{'testAttr':'test'}}";
+    public static final String MERGED_OTHER_WITH_JSON_DOCUMENT = "{'string':'bar', 'jsonObject':{'testAttr':'test'}, 'otherObject':{'testAttr':'test'}}";
     public static final byte[] MSGPACK_PAYLOAD;
+    public static final byte[] OTHER_PAYLOAD;
 
     static
     {
         JSON_MAPPER.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
         byte[] bytes = null;
+        byte[] otherBytes = null;
         try
         {
             bytes = MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree(JSON_DOCUMENT));
+            otherBytes = MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree(OTHER_DOCUMENT));
         }
         catch (Exception e)
         {
@@ -48,6 +53,7 @@ public class MsgPackUtil
         finally
         {
             MSGPACK_PAYLOAD = bytes;
+            OTHER_PAYLOAD = otherBytes;
         }
     }
 
