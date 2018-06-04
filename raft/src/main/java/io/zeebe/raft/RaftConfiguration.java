@@ -76,7 +76,6 @@ public class RaftConfiguration
     @Override
     public String toString()
     {
-        return "RaftConfiguration{" + "heartbeatIntervalMs=" + heartbeatInterval +
-            ", electionIntervalMs=" + electionInterval + '}';
+        return "RaftConfiguration{" + "heartbeatInterval='" + heartbeatInterval + '\'' + ", electionInterval='" + electionInterval + '\'' + ", leaveTimeout='" + leaveTimeout + '\'' + '}';
     }
 }
