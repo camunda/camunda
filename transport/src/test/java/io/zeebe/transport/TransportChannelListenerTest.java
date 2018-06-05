@@ -22,6 +22,7 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
+import io.zeebe.UnstableTest;
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
@@ -36,6 +37,7 @@ import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.*;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.RuleChain;
 
 public class TransportChannelListenerTest
@@ -113,6 +115,7 @@ public class TransportChannelListenerTest
     }
 
     @Test
+    @Category(UnstableTest.class)
     public void shouldInvokeRegisteredListenerOnChannelOpened() throws InterruptedException
     {
         // given
