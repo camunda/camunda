@@ -1,7 +1,12 @@
 import React from 'react';
+import {ThemeProvider} from './ThemeContext';
 
 import {Dashboard} from './Dashboard';
 
 export default function App() {
-  return <Dashboard />;
+  return (
+    <ThemeProvider>
+      <Dashboard />
+    </ThemeProvider>
+  );
 }
