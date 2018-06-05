@@ -26,7 +26,7 @@ def stopAllOptimizeComponents() {
 
 def copySnapshots() {
   script {
-    sh 'sh ./.ci/scripts/copy_snapshots.sh'
+    sh 'sh ./.ci/scripts/copy-snapshots.sh'
   }
 }
 
