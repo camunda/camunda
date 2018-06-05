@@ -31,6 +31,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -719,6 +720,32 @@ public class JobSubscriptionTest
 
         final SubscribedRecord subscribedEvent = apiRule.subscribedEvents().findFirst().get();
         assertThat(subscribedEvent.subscriberKey()).isEqualTo(secondSubscriber);
+    }
+
+    @Test
+    @Ignore("https://github.com/zeebe-io/zeebe/issues/927")
+    public void shouldActivateJobsOfDifferentTypeLocatedInFrontOfAlreadyActivatedJob()
+    {
+        // given
+        final String jobType1 = "foo";
+        final String jobType2 = "bar";
+
+        testClient.createJob(jobType1);
+        testClient.createJob(jobType2);
+
+        apiRule.openJobSubscription(apiRule.getDefaultPartitionId(), jobType2, 10000, 32).await();
+        waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 1);
+
+        // when
+        apiRule.openJobSubscription(apiRule.getDefaultPartitionId(), jobType1, 10000, 32).await();
+
+        // then
+        waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 2);
+
+        final SubscribedRecord secondSubscribedJob = apiRule.subscribedEvents().skip(1).findFirst().get();
+        final Object secondJobType = secondSubscribedJob.value().get("type");
+        assertThat(secondJobType).isEqualTo(jobType2);
+
     }
 
 }
