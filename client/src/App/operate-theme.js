@@ -1,13 +1,14 @@
 // temporary file to illustrate passing down theme with context
+import {Colors} from 'theme';
 const operateTheme = {
   dark: {
     colors: {
-      primary: 'red'
+      primary: Colors.uiDark01
     }
   },
   light: {
     colors: {
-      primary: 'blue'
+      primary: Colors.uiDark02
     }
   }
 };
