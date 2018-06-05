@@ -20,8 +20,15 @@ package io.zeebe.broker.job;
 import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.JOB_ACTIVATE_STREAM_PROCESSOR_ID;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import java.util.*;
-import java.util.Map.Entry;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.agrona.DirectBuffer;
+import org.agrona.collections.Int2ObjectHashMap;
+import org.agrona.collections.Long2ObjectHashMap;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.Partition;
@@ -34,29 +41,28 @@ import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.transport.*;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.ServerTransport;
+import io.zeebe.transport.TransportListener;
 import io.zeebe.util.allocation.HeapBufferAllocator;
-import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.collection.CompactList;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.channel.ChannelSubscription;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import org.agrona.DirectBuffer;
-import org.agrona.collections.Int2ObjectHashMap;
-import org.agrona.collections.Long2ObjectHashMap;
 
 public class JobSubscriptionManager extends Actor implements TransportListener
 {
     protected static final String NAME = "jobqueue.subscription.manager";
     public static final int NUM_CONCURRENT_REQUESTS = 1_024;
 
-    protected final StreamProcessorServiceFactory streamProcessorServiceFactory;
+    protected final StreamProcessorServiceFactory factory;
     protected final ServiceContainer serviceContext;
     private final ServerTransport transport;
 
     protected final Int2ObjectHashMap<PartitionBucket> logStreamBuckets = new Int2ObjectHashMap<>();
-    protected final Long2ObjectHashMap<ActivateJobStreamProcessor> streamProcessorBySubscriptionId = new Long2ObjectHashMap<>();
+    private final Subscriptions subscriptions = new Subscriptions();
+    private final Long2ObjectHashMap<ActivateJobStreamProcessor> streamProcessorBySubscriptionId = new Long2ObjectHashMap<>();
 
     /*
      * For credits handling, we use two datastructures here:
@@ -76,11 +82,11 @@ public class JobSubscriptionManager extends Actor implements TransportListener
     protected long nextSubscriptionId = 0;
     private ChannelSubscription creditsSubscription;
 
-    public JobSubscriptionManager(ServiceContainer serviceContainer, StreamProcessorServiceFactory streamProcessorServiceFactory, ServerTransport transport)
+    public JobSubscriptionManager(ServiceContainer serviceContainer, StreamProcessorServiceFactory factory, ServerTransport transport)
     {
         this.transport = transport;
         this.serviceContext = serviceContainer;
-        this.streamProcessorServiceFactory = streamProcessorServiceFactory;
+        this.factory = factory;
 
         this.creditRequestBuffer = new CreditsRequestBuffer(NUM_CONCURRENT_REQUESTS);
         this.backPressuredCreditsRequests = new CompactList(CreditsRequest.LENGTH, creditRequestBuffer.getCapacityUpperBound(), new HeapBufferAllocator());
@@ -125,53 +131,27 @@ public class JobSubscriptionManager extends Actor implements TransportListener
 
             final long subscriptionId = nextSubscriptionId++;
             subscription.setSubscriberKey(subscriptionId);
+            subscriptions.addSubscription(subscription);
 
-            final ActivateJobStreamProcessor streamProcessor = partitionBucket.getStreamProcessorByJobType(jobType);
+            final ActivateJobStreamProcessor streamProcessor = partitionBucket.getActiveStreamProcessor(jobType);
             if (streamProcessor != null)
             {
-                streamProcessorBySubscriptionId.put(subscriptionId, streamProcessor);
-
-                final ActorFuture<Void> addFuture = streamProcessor.addSubscription(subscription);
-                actor.runOnCompletion(addFuture, (aVoid, throwable) ->
-                {
-                    if (throwable == null)
-                    {
-                        future.complete(null);
-                    }
-                    else
-                    {
-                        future.completeExceptionally(throwable);
-                    }
-                });
+                addSubscriptionToStreamProcessor(subscription, future, streamProcessor);
             }
             else
             {
-                final ActivateJobStreamProcessor processor = new ActivateJobStreamProcessor(jobType);
+                final ActorFuture<StreamProcessorService> openFuture = partitionBucket.startStreamProcessor(jobType);
 
-                final ActorFuture<StreamProcessorService> processorFuture = createStreamProcessorService(processor, partitionBucket, jobType);
-
-                actor.runOnCompletion(processorFuture, (service, t) ->
+                actor.runOnCompletion(openFuture, (service, t) ->
                 {
-                    if (t == null)
+                    final ActivateJobStreamProcessor startedStreamProcessor = partitionBucket.getActiveStreamProcessor(jobType);
+                    if (t == null && startedStreamProcessor != null)
                     {
-                        streamProcessorBySubscriptionId.put(subscriptionId, processor);
-
-                        partitionBucket.addStreamProcessor(processor);
-                        final ActorFuture<Void> addFuture = processor.addSubscription(subscription);
-                        actor.runOnCompletion(addFuture, ((aVoid, throwable) ->
-                        {
-                            if (throwable == null)
-                            {
-                                future.complete(null);
-                            }
-                            else
-                            {
-                                future.completeExceptionally(throwable);
-                            }
-                        }));
+                        addSubscriptionToStreamProcessor(subscription, future, startedStreamProcessor);
                     }
                     else
                     {
+                        subscriptions.removeSubscription(subscription.getSubscriberKey());
                         future.completeExceptionally(t);
                     }
                 });
@@ -181,18 +161,25 @@ public class JobSubscriptionManager extends Actor implements TransportListener
         return future;
     }
 
-    protected ActorFuture<StreamProcessorService> createStreamProcessorService(
-            final ActivateJobStreamProcessor factory,
-            final PartitionBucket partitionBucket,
-            final DirectBuffer jobType)
+    private void addSubscriptionToStreamProcessor(final JobSubscription subscription, final CompletableActorFuture<Void> future,
+            final ActivateJobStreamProcessor streamProcessor)
     {
-        final TypedStreamEnvironment env = new TypedStreamEnvironment(partitionBucket.getLogStream(), transport.getOutput());
 
-        return streamProcessorServiceFactory.createService(partitionBucket.getPartition(), partitionBucket.getPartitionServiceName())
-            .processor(factory.createStreamProcessor(env))
-            .processorId(JOB_ACTIVATE_STREAM_PROCESSOR_ID)
-            .processorName(streamProcessorName(jobType))
-            .build();
+        streamProcessorBySubscriptionId.put(subscription.getSubscriberKey(), streamProcessor);
+
+        final ActorFuture<Void> addFuture = streamProcessor.addSubscription(subscription);
+        actor.runOnCompletion(addFuture, (aVoid, throwable) ->
+        {
+            if (throwable == null)
+            {
+                future.complete(null);
+            }
+            else
+            {
+                subscriptions.removeSubscription(subscription.getSubscriberKey());
+                future.completeExceptionally(throwable);
+            }
+        });
     }
 
     public ActorFuture<Void> removeSubscription(long subscriptionId)
@@ -200,58 +187,42 @@ public class JobSubscriptionManager extends Actor implements TransportListener
         final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
         actor.call(() ->
         {
-            final ActivateJobStreamProcessor streamProcessor = streamProcessorBySubscriptionId.remove(subscriptionId);
-            if (streamProcessor != null)
+            final JobSubscription subscription = subscriptions.getSubscription(subscriptionId);
+            final PartitionBucket partitions = logStreamBuckets.get(subscription.getPartitionId());
+
+            final ActivateJobStreamProcessor jobStreamProcessor = partitions.getActiveStreamProcessor(subscription.getJobType());
+
+            if (jobStreamProcessor != null)
             {
-                final ActorFuture<Boolean> removeFuture = streamProcessor.removeSubscription(subscriptionId);
-                actor.runOnCompletion(removeFuture, (hasSubscriptions, throwable) ->
+                final ActorFuture<Void> removalFuture = jobStreamProcessor.removeSubscription(subscriptionId);
+                actor.runOnCompletion(removalFuture, (result, exception) ->
                 {
-                    if (throwable == null)
+                    if (exception == null)
                     {
-                        if (!hasSubscriptions)
-                        {
-                            final ActorFuture<Void> removeProcessorFuture = removeStreamProcessorService(streamProcessor);
-                            actor.runOnCompletion(removeProcessorFuture, (b, t) ->
-                            {
-                                if (t == null)
-                                {
-                                    future.complete(null);
-                                }
-                                else
-                                {
-                                    future.completeExceptionally(t);
-                                }
-                            });
-                        }
-                        else
-                        {
-                            future.complete(null);
-                        }
+                        future.complete(null);
                     }
                     else
                     {
-                        future.completeExceptionally(throwable);
+                        future.completeExceptionally(exception);
+                    }
+
+                    subscriptions.removeSubscription(subscriptionId);
+                    streamProcessorBySubscriptionId.remove(subscriptionId);
+                    if (subscriptions.getSubscriptionsForPartitionAndType(subscription.getPartitionId(), subscription.getJobType()) == 0)
+                    {
+                        partitions.stopStreamProcessor(subscription.getJobType());
                     }
                 });
             }
             else
             {
+                // not caring about the case where the stream processor is still opening;
+                // we assume we never receive a removal request in this situation
                 future.complete(null);
             }
         });
+
         return future;
-    }
-
-    protected ActorFuture<Void> removeStreamProcessorService(final ActivateJobStreamProcessor streamProcessor)
-    {
-        final PartitionBucket partitionBucket = logStreamBuckets.get(streamProcessor.getLogStreamPartitionId());
-
-        partitionBucket.removeStreamProcessor(streamProcessor);
-
-        final String logName = partitionBucket.getLogStreamName();
-        final DirectBuffer jobType = streamProcessor.getSubscriptedJobType();
-
-        return serviceContext.removeService(LogStreamServiceNames.streamProcessorService(logName, streamProcessorName(jobType)));
     }
 
     public boolean increaseSubscriptionCreditsAsync(CreditsRequest request)
@@ -344,50 +315,43 @@ public class JobSubscriptionManager extends Actor implements TransportListener
         {
             final int partitionId = leaderPartition.getInfo().getPartitionId();
             logStreamBuckets.remove(partitionId);
-            removeSubscriptionsForLogStream(partitionId);
+            subscriptions.removeSubscriptionsForPartition(partitionId);
         });
-    }
-
-    protected void removeSubscriptionsForLogStream(final int partitionId)
-    {
-        final Set<Entry<Long, ActivateJobStreamProcessor>> entrySet = streamProcessorBySubscriptionId.entrySet();
-        for (Entry<Long, ActivateJobStreamProcessor> entry : entrySet)
-        {
-            final ActivateJobStreamProcessor streamProcessor = entry.getValue();
-            if (partitionId == streamProcessor.getLogStreamPartitionId())
-            {
-                entrySet.remove(entry);
-            }
-        }
     }
 
     public void onClientChannelCloseAsync(int channelId)
     {
         actor.call(() ->
         {
-            final Iterator<ActivateJobStreamProcessor> processorIt = streamProcessorBySubscriptionId.values().iterator();
-            while (processorIt.hasNext())
+            final List<JobSubscription> affectedSubscriptions = subscriptions.getSubscriptionsForChannel(channelId);
+
+            for (JobSubscription subscription : affectedSubscriptions)
             {
-                final ActivateJobStreamProcessor processor = processorIt.next();
-                final ActorFuture<Boolean> closeFuture = processor.onClientChannelCloseAsync(channelId);
+                subscriptions.removeSubscription(subscription.getSubscriberKey());
 
-                actor.runOnCompletion(closeFuture, (hasSubscriptions, throwable) ->
+                final PartitionBucket partitions = logStreamBuckets.get(subscription.getPartitionId());
+
+                final ActivateJobStreamProcessor streamProcessor = partitions.getActiveStreamProcessor(subscription.getJobType());
+                streamProcessor.removeSubscription(subscription.getSubscriberKey());
+
+                if (subscriptions.getSubscriptionsForPartitionAndType(subscription.getPartitionId(), subscription.getJobType()) == 0)
                 {
-                    if (throwable == null)
-                    {
-
-                        if (!hasSubscriptions)
-                        {
-                            removeStreamProcessorService(processor);
-                        }
-                    }
-                    else
-                    {
-                        Loggers.SYSTEM_LOGGER.debug("Problem on closing job activating stream processor.", throwable);
-                    }
-                });
+                    partitions.stopStreamProcessor(subscription.getJobType());
+                }
             }
         });
+    }
+
+
+    @Override
+    public void onConnectionEstablished(RemoteAddress remoteAddress)
+    {
+    }
+
+    @Override
+    public void onConnectionClosed(RemoteAddress remoteAddress)
+    {
+        onClientChannelCloseAsync(remoteAddress.getStreamId());
     }
 
     private static String streamProcessorName(final DirectBuffer jobType)
@@ -396,17 +360,230 @@ public class JobSubscriptionManager extends Actor implements TransportListener
     }
 
 
-    static class PartitionBucket
-    {
-        protected final Partition partition;
-        protected final ServiceName<Partition> partitionServiceName;
+    /*
+     * credits: subscription id => activate processor
+     * client channel close: stream id => subscriptions
+     * remove subscription: subscription id => activate processor
+     */
 
-        protected List<ActivateJobStreamProcessor> streamProcessors = new ArrayList<>();
+    static class Subscriptions
+    {
+        private final Long2ObjectHashMap<JobSubscription> subscriptions = new Long2ObjectHashMap<>();
+
+        public void addSubscription(JobSubscription subscription)
+        {
+            subscriptions.put(subscription.getSubscriberKey(), subscription);
+        }
+
+        public void removeSubscription(long subscriberKey)
+        {
+            subscriptions.remove(subscriberKey);
+        }
+
+        public void removeSubscriptionsForPartition(int partitionId)
+        {
+            final Iterator<JobSubscription> iterator = subscriptions.values().iterator();
+
+            while (iterator.hasNext())
+            {
+                if (iterator.next().getPartitionId() == partitionId)
+                {
+                    iterator.remove();
+                }
+            }
+        }
+
+        public JobSubscription getSubscription(long subscriberKey)
+        {
+            return subscriptions.get(subscriberKey);
+        }
+
+        public List<JobSubscription> getSubscriptionsForChannel(int channel)
+        {
+            return subscriptions.values().stream()
+                .filter(s -> s.getStreamId() == channel)
+                .collect(Collectors.toList());
+        }
+
+        public int getSubscriptionsForPartitionAndType(int partition, DirectBuffer type)
+        {
+            return (int) subscriptions.values()
+                .stream()
+                .filter(s -> s.getPartitionId() == partition && type.equals(s.getJobType()))
+                .count();
+        }
+    }
+
+    class PartitionBucket
+    {
+        private final Partition partition;
+        private final ServiceName<Partition> partitionServiceName;
+        private final TypedStreamEnvironment env;
+
+        private final Map<DirectBuffer, ActivateJobStreamProcessor> streamProcessors = new HashMap<>();
+        private final Map<DirectBuffer, ActorFuture<StreamProcessorService>> openFutures = new HashMap<>();
+        private final Map<DirectBuffer, ActorFuture<Void>> closeFutures = new HashMap<>();
 
         PartitionBucket(Partition partition, ServiceName<Partition> partitionServiceName)
         {
             this.partition = partition;
             this.partitionServiceName = partitionServiceName;
+            this.env = new TypedStreamEnvironment(partition.getLogStream(), transport.getOutput());
+        }
+
+        public ActivateJobStreamProcessor getActiveStreamProcessor(DirectBuffer type)
+        {
+            if (!closeFutures.containsKey(type))
+            {
+                return streamProcessors.get(type);
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        public ActorFuture<StreamProcessorService> startStreamProcessor(DirectBuffer type)
+        {
+            if (openFutures.containsKey(type))
+            {
+                return openFutures.get(type);
+            }
+            else
+            {
+                if (!closeFutures.containsKey(type))
+                {
+                    return createStreamProcessor(type);
+                }
+                else
+                {
+                    final ActorFuture<Void> closeFuture = closeFutures.get(type);
+                    final CompletableActorFuture<StreamProcessorService> future = new CompletableActorFuture<>();
+
+                    actor.runOnCompletion(closeFuture, (closeResult, closeException) ->
+                    {
+                        if (closeException == null)
+                        {
+                            final ActorFuture<StreamProcessorService> openFuture = createStreamProcessor(type);
+                            actor.runOnCompletion(openFuture, (openResult, openException) ->
+                            {
+                                if (openException == null)
+                                {
+                                    future.complete(openResult);
+                                }
+                                else
+                                {
+                                    future.completeExceptionally(openException);
+                                }
+                            });
+                        }
+                        else
+                        {
+                            future.completeExceptionally(closeException);
+                        }
+                    });
+
+                    return future;
+                }
+            }
+        }
+
+        private ActorFuture<StreamProcessorService> createStreamProcessor(DirectBuffer type)
+        {
+            final ActivateJobStreamProcessor processor = new ActivateJobStreamProcessor(type);
+
+            final ActorFuture<StreamProcessorService> openFuture = factory.createService(partition, partitionServiceName)
+                .processor(processor.createStreamProcessor(env))
+                .processorId(JOB_ACTIVATE_STREAM_PROCESSOR_ID)
+                .processorName(streamProcessorName(type))
+                .build();
+
+            openFutures.put(type, openFuture);
+
+            actor.runOnCompletion(openFuture, (result, throwable) ->
+            {
+                openFutures.remove(type);
+                if (throwable == null)
+                {
+                    streamProcessors.put(type, processor);
+                }
+                else
+                {
+                    Loggers.SYSTEM_LOGGER.debug("Problem on starting job activating stream processor.", throwable);
+                }
+            });
+
+            return openFuture;
+        }
+
+        private ActorFuture<Void> stopStreamProcessor(DirectBuffer type)
+        {
+            if (closeFutures.containsKey(type))
+            {
+                return closeFutures.get(type);
+            }
+            else if (openFutures.containsKey(type))
+            {
+                final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+                final ActorFuture<StreamProcessorService> openFuture = openFutures.get(type);
+
+                actor.runOnCompletion(openFuture, (openResult, openException) ->
+                {
+                    if (openException == null)
+                    {
+                        final ActorFuture<Void> closeFuture = destroyStreamProcessor(type);
+                        actor.runOnCompletion(closeFuture, (closeResult, closeException) ->
+                        {
+                            if (closeException == null)
+                            {
+                                future.complete(closeResult);
+                            }
+                            else
+                            {
+                                future.completeExceptionally(closeException);
+                            }
+                        });
+                    }
+                    else
+                    {
+                        future.completeExceptionally(openException);
+                    }
+                });
+
+                return future;
+            }
+            else if (streamProcessors.containsKey(type))
+            {
+                return destroyStreamProcessor(type);
+            }
+            else
+            {
+                return CompletableActorFuture.completed(null);
+            }
+
+        }
+
+        private ActorFuture<Void> destroyStreamProcessor(DirectBuffer type)
+        {
+            final ActorFuture<Void> closeFuture = serviceContext.removeService(LogStreamServiceNames.streamProcessorService(
+                    partition.getLogStream().getLogName(),
+                    streamProcessorName(type)));
+            closeFutures.put(type, closeFuture);
+
+            actor.runOnCompletion(closeFuture, (result, throwable) ->
+            {
+                closeFutures.remove(type);
+                if (throwable == null)
+                {
+                    streamProcessors.remove(type);
+                }
+                else
+                {
+                    Loggers.SYSTEM_LOGGER.debug("Problem on closing job activating stream processor.", throwable);
+                }
+            });
+
+            return closeFuture;
         }
 
         public LogStream getLogStream()
@@ -428,48 +605,6 @@ public class JobSubscriptionManager extends Actor implements TransportListener
         {
             return partitionServiceName;
         }
-
-        public ActivateJobStreamProcessor getStreamProcessorByJobType(DirectBuffer jobType)
-        {
-            ActivateJobStreamProcessor streamProcessorForType = null;
-
-            final int size = streamProcessors.size();
-            int current = 0;
-
-            while (current < size && streamProcessorForType == null)
-            {
-                final ActivateJobStreamProcessor streamProcessor = streamProcessors.get(current);
-
-                if (BufferUtil.equals(jobType, streamProcessor.getSubscriptedJobType()))
-                {
-                    streamProcessorForType = streamProcessor;
-                }
-
-                current += 1;
-            }
-
-            return streamProcessorForType;
-        }
-
-        public void addStreamProcessor(ActivateJobStreamProcessor streamProcessor)
-        {
-            streamProcessors.add(streamProcessor);
-        }
-
-        public void removeStreamProcessor(ActivateJobStreamProcessor streamProcessor)
-        {
-            streamProcessors.remove(streamProcessor);
-        }
     }
 
-    @Override
-    public void onConnectionEstablished(RemoteAddress remoteAddress)
-    {
-    }
-
-    @Override
-    public void onConnectionClosed(RemoteAddress remoteAddress)
-    {
-        onClientChannelCloseAsync(remoteAddress.getStreamId());
-    }
 }
