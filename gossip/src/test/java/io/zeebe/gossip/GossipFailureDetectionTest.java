@@ -17,12 +17,14 @@ package io.zeebe.gossip;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.UnstableTest;
 import io.zeebe.clustering.gossip.GossipEventType;
 import io.zeebe.clustering.gossip.MembershipEventType;
 import io.zeebe.gossip.protocol.MembershipEvent;
 import io.zeebe.gossip.util.GossipClusterRule;
 import io.zeebe.gossip.util.GossipRule;
 import org.junit.*;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.Timeout;
 
 public class GossipFailureDetectionTest
@@ -92,6 +94,7 @@ public class GossipFailureDetectionTest
     }
 
     @Test
+    @Category(UnstableTest.class)
     public void shouldSpreadSuspectEvent()
     {
         // given
@@ -107,6 +110,7 @@ public class GossipFailureDetectionTest
     }
 
     @Test
+    @Category(UnstableTest.class)
     public void shouldSpreadConfirmEvent()
     {
         // given
@@ -122,6 +126,7 @@ public class GossipFailureDetectionTest
     }
 
     @Test
+    @Category(UnstableTest.class)
     public void shouldCounterSuspectEventIfAlive()
     {
         // given
