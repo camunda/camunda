@@ -1,7 +1,7 @@
 import styled from 'styled-components';
-import operateTheme from './../operate-theme';
+import {themed, operateTheme} from 'theme';
 
-export const Header = styled.h1`
+export const Header = themed(styled.h1`
   font-size: 18px;
-  color: ${props => operateTheme[props.theme].colors.primary};
-`;
+  color: ${({theme}) => operateTheme[theme].colors.primary};
+`);

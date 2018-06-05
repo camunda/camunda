@@ -1,5 +1,5 @@
 // temporary file to illustrate passing down theme with context
-import {Colors} from 'theme';
+import Colors from './colors';
 const operateTheme = {
   dark: {
     colors: {

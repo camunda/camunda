@@ -1,5 +1,5 @@
 import React from 'react';
-import {ThemeProvider} from './ThemeContext';
+import {ThemeProvider} from 'theme';
 
 import {Dashboard} from './Dashboard';
 

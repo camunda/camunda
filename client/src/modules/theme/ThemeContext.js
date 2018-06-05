@@ -33,4 +33,10 @@ class ThemeProvider extends React.Component {
   }
 }
 
-export {ThemeConsumer, ThemeProvider};
+const themed = StyledComponent => props => (
+  <ThemeConsumer>
+    {({theme}) => <StyledComponent theme={theme} {...props} />}
+  </ThemeConsumer>
+);
+
+export {ThemeConsumer, ThemeProvider, themed};

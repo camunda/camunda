@@ -1,6 +1,5 @@
 import React, {Component} from 'react';
 import {Input} from 'components';
-import {ThemeConsumer} from './../ThemeContext';
 
 import * as Styled from './styled.js';
 
@@ -13,11 +12,7 @@ class Dashboard extends Component {
   render() {
     return (
       <form>
-        <ThemeConsumer>
-          {({theme}) => (
-            <Styled.Header theme={theme}>Camunda Operate</Styled.Header>
-          )}
-        </ThemeConsumer>
+        <Styled.Header>Camunda Operate</Styled.Header>
         <Input
           value={this.state.username}
           onChange={({target: {value}}) => this.setState({username: value})}
