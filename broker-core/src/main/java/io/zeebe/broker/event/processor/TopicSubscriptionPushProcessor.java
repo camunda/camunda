@@ -131,11 +131,6 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
     }
 
     @Override
-    public void processEvent()
-    {
-    }
-
-    @Override
     public boolean executeSideEffects()
     {
         event.readMetadata(metadata);

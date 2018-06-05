@@ -172,12 +172,6 @@ public class TypedStreamProcessor implements StreamProcessor
         }
 
         @Override
-        public void processEvent()
-        {
-            eventProcessor.processRecord(event);
-        }
-
-        @Override
         public void processEvent(EventLifecycleContext ctx)
         {
             eventProcessor.processRecord(event, ctx);

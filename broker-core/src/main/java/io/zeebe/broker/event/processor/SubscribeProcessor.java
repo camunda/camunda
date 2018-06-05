@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.event.processor;
 
+import io.zeebe.logstreams.processor.EventLifecycleContext;
 import org.agrona.DirectBuffer;
 
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
@@ -59,7 +60,7 @@ public class SubscribeProcessor implements EventProcessor
     }
 
     @Override
-    public void processEvent()
+    public void processEvent(EventLifecycleContext ctx)
     {
         final DirectBuffer subscriptionName = subscriberEvent.getName();
 
@@ -98,11 +99,6 @@ public class SubscribeProcessor implements EventProcessor
         }
 
         @Override
-        public void processEvent()
-        {
-        }
-
-        @Override
         public boolean executeSideEffects()
         {
             return manager.writeRequestResponseError(metadata, error);
@@ -120,11 +116,6 @@ public class SubscribeProcessor implements EventProcessor
 
     protected class CreateSubscriptionServiceProcessor implements EventProcessor
     {
-
-        @Override
-        public void processEvent()
-        {
-        }
 
         @Override
         public boolean executeSideEffects()
@@ -163,11 +154,6 @@ public class SubscribeProcessor implements EventProcessor
         }
 
         @Override
-        public void processEvent()
-        {
-        }
-
-        @Override
         public boolean executeSideEffects()
         {
             if (!streamProcessorServiceFuture.isDone())
@@ -197,11 +183,6 @@ public class SubscribeProcessor implements EventProcessor
         public void wrap(TopicSubscriptionPushProcessor processor)
         {
             this.processor = processor;
-        }
-
-        @Override
-        public void processEvent()
-        {
         }
 
         @Override

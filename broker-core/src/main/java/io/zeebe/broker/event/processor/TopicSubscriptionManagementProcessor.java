@@ -311,11 +311,6 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
     protected class AckProcessor implements EventProcessor
     {
         @Override
-        public void processEvent()
-        {
-        }
-
-        @Override
         public long writeEvent(LogStreamWriter writer)
         {
             metadata
@@ -368,11 +363,6 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
 
     protected class SubscribedProcessor implements EventProcessor
     {
-
-        @Override
-        public void processEvent()
-        {
-        }
 
         @Override
         public boolean executeSideEffects()

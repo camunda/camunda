@@ -45,10 +45,7 @@ import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.processor.EventProcessor;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorContext;
-import io.zeebe.logstreams.processor.StreamProcessorController;
+import io.zeebe.logstreams.processor.*;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.msgpack.UnpackedObject;
@@ -386,11 +383,11 @@ public class TestStreams
             {
 
                 @Override
-                public void processEvent()
+                public void processEvent(EventLifecycleContext ctx)
                 {
                     if (actualProcessor != null)
                     {
-                        actualProcessor.processEvent();
+                        actualProcessor.processEvent(ctx);
                     }
                 }
 
