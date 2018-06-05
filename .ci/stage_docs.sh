@@ -1,6 +1,6 @@
 #!/bin/bash -xue
 
-MDBOOK_VERSION=0.1.15
+MDBOOK_VERSION=0.1.5
 
 # go to docs folder
 cd docs/
