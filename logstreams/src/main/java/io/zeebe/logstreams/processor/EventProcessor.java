@@ -29,15 +29,6 @@ public interface EventProcessor
      */
     default void processEvent(EventLifecycleContext ctx)
     {
-        processEvent();
-    }
-
-    /**
-     * use {@link #processEvent(EventLifecycleContext)}
-     */
-    @Deprecated
-    default void processEvent()
-    {
 
     }
 

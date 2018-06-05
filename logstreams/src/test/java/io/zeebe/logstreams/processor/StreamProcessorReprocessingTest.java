@@ -122,7 +122,7 @@ public class StreamProcessorReprocessingTest
             .extracting(LoggedEvent::getPosition)
             .containsExactly(eventPosition1, eventPosition2);
 
-        verify(eventProcessor, times(2)).processEvent();
+        verify(eventProcessor, times(2)).processEvent(any());
         verify(eventProcessor, times(1)).executeSideEffects();
         verify(eventProcessor, times(1)).writeEvent(any());
         verify(eventProcessor, times(2)).updateState();
@@ -196,7 +196,7 @@ public class StreamProcessorReprocessingTest
             .extracting(LoggedEvent::getPosition)
             .containsExactly(eventPosition1, eventPosition2);
 
-        verify(eventProcessor, times(2)).processEvent();
+        verify(eventProcessor, times(2)).processEvent(any());
         verify(eventProcessor, times(2)).executeSideEffects();
         verify(eventProcessor, times(2)).writeEvent(any());
         verify(eventProcessor, times(2)).updateState();
@@ -220,7 +220,7 @@ public class StreamProcessorReprocessingTest
             .extracting(LoggedEvent::getPosition)
             .containsExactly(eventPosition1, eventPosition2, eventPosition3);
 
-        verify(eventProcessor, times(3)).processEvent();
+        verify(eventProcessor, times(3)).processEvent(any());
         verify(eventProcessor, times(1)).executeSideEffects();
         verify(eventProcessor, times(1)).writeEvent(any());
         verify(eventProcessor, times(3)).updateState();
@@ -244,7 +244,7 @@ public class StreamProcessorReprocessingTest
             .extracting(LoggedEvent::getPosition)
             .containsExactly(eventPosition1, eventPosition2, eventPosition3);
 
-        verify(eventProcessor, times(3)).processEvent();
+        verify(eventProcessor, times(3)).processEvent(any());
         verify(eventProcessor, times(1)).executeSideEffects();
         verify(eventProcessor, times(1)).writeEvent(any());
         verify(eventProcessor, times(3)).updateState();
@@ -271,7 +271,7 @@ public class StreamProcessorReprocessingTest
             .extracting(LoggedEvent::getPosition)
             .containsExactly(eventPosition2, eventPosition3);
 
-        verify(eventProcessor, times(2)).processEvent();
+        verify(eventProcessor, times(2)).processEvent(any());
         verify(eventProcessor, times(1)).executeSideEffects();
         verify(eventProcessor, times(1)).writeEvent(any());
         verify(eventProcessor, times(2)).updateState();
@@ -297,7 +297,7 @@ public class StreamProcessorReprocessingTest
             .extracting(LoggedEvent::getPosition)
             .containsExactly(eventPosition2, eventPosition3);
 
-        verify(eventProcessor, times(2)).processEvent();
+        verify(eventProcessor, times(2)).processEvent(any());
         verify(eventProcessor, times(1)).executeSideEffects();
         verify(eventProcessor, times(1)).writeEvent(any());
         verify(eventProcessor, times(2)).updateState();
@@ -310,7 +310,7 @@ public class StreamProcessorReprocessingTest
         final long eventPosition1 = writeEvent();
         writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition1));
 
-        doThrow(new RuntimeException("expected")).when(eventProcessor).processEvent();
+        doThrow(new RuntimeException("expected")).when(eventProcessor).processEvent(any());
 
         // when
         final ActorFuture<StreamProcessorService> future = openStreamProcessorControllerAsync();
@@ -377,7 +377,7 @@ public class StreamProcessorReprocessingTest
             .extracting(LoggedEvent::getPosition)
             .containsExactly(eventPosition1, eventPosition2);
 
-        verify(eventProcessor, times(2)).processEvent();
+        verify(eventProcessor, times(2)).processEvent(any());
         verify(eventProcessor, times(2)).executeSideEffects();
         verify(eventProcessor, times(2)).writeEvent(any());
         verify(eventProcessor, times(2)).updateState();

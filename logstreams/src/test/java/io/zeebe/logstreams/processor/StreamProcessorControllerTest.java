@@ -109,7 +109,7 @@ public class StreamProcessorControllerTest
         inOrder.verify(streamProcessor, times(1)).onOpen(any());
         inOrder.verify(streamProcessor, times(1)).onEvent(any());
 
-        inOrder.verify(eventProcessor, times(1)).processEvent();
+        inOrder.verify(eventProcessor, times(1)).processEvent(any());
         inOrder.verify(eventProcessor, times(1)).executeSideEffects();
         inOrder.verify(eventProcessor, times(1)).writeEvent(any());
         inOrder.verify(eventProcessor, times(1)).updateState();
@@ -250,7 +250,7 @@ public class StreamProcessorControllerTest
 
         // then
         final InOrder inOrder = inOrder(eventProcessor);
-        inOrder.verify(eventProcessor, times(1)).processEvent();
+        inOrder.verify(eventProcessor, times(1)).processEvent(any());
         inOrder.verify(eventProcessor, times(3)).executeSideEffects();
         inOrder.verify(eventProcessor, times(1)).writeEvent(any());
         inOrder.verify(eventProcessor, times(1)).updateState();
@@ -268,7 +268,7 @@ public class StreamProcessorControllerTest
 
         // then
         final InOrder inOrder = inOrder(eventProcessor);
-        inOrder.verify(eventProcessor, times(1)).processEvent();
+        inOrder.verify(eventProcessor, times(1)).processEvent(any());
         inOrder.verify(eventProcessor, times(1)).executeSideEffects();
         inOrder.verify(eventProcessor, times(3)).writeEvent(any());
         inOrder.verify(eventProcessor, times(1)).updateState();
@@ -294,7 +294,7 @@ public class StreamProcessorControllerTest
 
         final InOrder inOrder = inOrder(streamProcessor, eventProcessor);
         inOrder.verify(streamProcessor, times(2)).onEvent(any());
-        inOrder.verify(eventProcessor, times(1)).processEvent();
+        inOrder.verify(eventProcessor, times(1)).processEvent(any());
     }
 
     @Test
@@ -315,7 +315,7 @@ public class StreamProcessorControllerTest
 
         final InOrder inOrder = inOrder(streamProcessor, eventProcessor);
         inOrder.verify(streamProcessor, times(1)).onEvent(any());
-        inOrder.verify(eventProcessor, times(1)).processEvent();
+        inOrder.verify(eventProcessor, times(1)).processEvent(any());
     }
 
     @Test
@@ -506,7 +506,7 @@ public class StreamProcessorControllerTest
     public void shouldFailOnProcessEvent()
     {
         // given
-        doThrow(new RuntimeException("expected")).when(eventProcessor).processEvent();
+        doThrow(new RuntimeException("expected")).when(eventProcessor).processEvent(any());
 
         // when
         writer.writeEvents(2, EVENT_1, true);
@@ -515,7 +515,7 @@ public class StreamProcessorControllerTest
         waitUntil(() -> controller.isFailed());
 
         final InOrder inOrder = inOrder(eventProcessor);
-        inOrder.verify(eventProcessor, times(1)).processEvent();
+        inOrder.verify(eventProcessor, times(1)).processEvent(any());
         inOrder.verifyNoMoreInteractions();
     }
 
@@ -532,7 +532,7 @@ public class StreamProcessorControllerTest
         waitUntil(() -> controller.isFailed());
 
         final InOrder inOrder = inOrder(eventProcessor);
-        inOrder.verify(eventProcessor, times(1)).processEvent();
+        inOrder.verify(eventProcessor, times(1)).processEvent(any());
         inOrder.verify(eventProcessor, times(1)).executeSideEffects();
         inOrder.verifyNoMoreInteractions();
     }
@@ -550,7 +550,7 @@ public class StreamProcessorControllerTest
         waitUntil(() -> controller.isFailed());
 
         final InOrder inOrder = inOrder(eventProcessor);
-        inOrder.verify(eventProcessor, times(1)).processEvent();
+        inOrder.verify(eventProcessor, times(1)).processEvent(any());
         inOrder.verify(eventProcessor, times(1)).executeSideEffects();
         inOrder.verify(eventProcessor, times(1)).writeEvent(any());
         inOrder.verifyNoMoreInteractions();
@@ -569,7 +569,7 @@ public class StreamProcessorControllerTest
         waitUntil(() -> controller.isFailed());
 
         final InOrder inOrder = inOrder(eventProcessor);
-        inOrder.verify(eventProcessor, times(1)).processEvent();
+        inOrder.verify(eventProcessor, times(1)).processEvent(any());
         inOrder.verify(eventProcessor, times(1)).executeSideEffects();
         inOrder.verify(eventProcessor, times(1)).writeEvent(any());
         inOrder.verify(eventProcessor, times(1)).updateState();
@@ -610,7 +610,7 @@ public class StreamProcessorControllerTest
         waitUntil(() -> controller.isFailed());
 
         final InOrder inOrder = inOrder(eventProcessor);
-        inOrder.verify(eventProcessor, times(1)).processEvent();
+        inOrder.verify(eventProcessor, times(1)).processEvent(any());
         inOrder.verify(eventProcessor, times(1)).executeSideEffects();
         inOrder.verify(eventProcessor, times(1)).writeEvent(any());
         inOrder.verifyNoMoreInteractions();

@@ -39,10 +39,6 @@ public class RecordingStreamProcessor implements StreamProcessor
     private EventProcessor eventProcessor = spy(new EventProcessor()
     {
         @Override
-        public void processEvent()
-        { }
-
-        @Override
         public void updateState()
         {
             processedEvents.incrementAndGet();
