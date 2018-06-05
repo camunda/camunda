@@ -378,6 +378,49 @@ public class JobSubscriptionTest
         assertThat(jobEvent.get().subscriberKey()).isEqualTo(secondSubscriberKey);
     }
 
+    /**
+     * This tries to provoke a race condition in JobSubscriptionManager with respect to
+     * stream processor management. The concurrent behavior is:
+     *
+     * <ul>
+     * <li>Close subscription => closes job activation stream processor asynchronously because
+     *   this is the last subscription for the job type
+     * <li>Open subscription => Registers subscription with job activation stream processor
+     *
+     * <p>Expected behavior: There is a running stream processor for the opened subscription.
+     *
+     * <p>Current behavior: Due to a race condition, it is possible that the opened subscription
+     *   is still registered with the closing stream processor. The result is a confirmed open subscription
+     *   that receives no jobs.
+     */
+    @Test
+    public void shouldOpenSubscriptionConcurrentWithRemoval() throws InterruptedException
+    {
+        // given
+        final ControlMessageResponse openResponse = apiRule
+            .openJobSubscription("foo")
+            .await();
+        final int subscriberKey = (int) openResponse.getData().get("subscriberKey");
+
+        // when doing concurrent close and open
+        apiRule.closeJobSubscription(subscriberKey); // async important to reproduce race condition
+        final ControlMessageResponse reopenResponse = apiRule.openJobSubscription("foo").await();
+
+        // then the open response should be success
+        assertThat(reopenResponse.getData()).containsKey("subscriberKey");
+        final int secondSubscriberKey = (int) reopenResponse.getData().get("subscriberKey");
+
+        // and we should be able to receive jobs for the new subscription
+        final ExecuteCommandResponse response = testClient.createJob("foo");
+        final Optional<SubscribedRecord> jobEvent = apiRule.subscribedEvents()
+            .filter((s) -> s.subscriptionType() == SubscriptionType.JOB_SUBSCRIPTION
+                && s.key() == response.key())
+            .findFirst();
+
+        assertThat(jobEvent).isPresent();
+        assertThat(jobEvent.get().subscriberKey()).isEqualTo(secondSubscriberKey);
+    }
+
     @Test
     public void shouldContinueRoundRobinJobDistributionAfterClientChannelClose()
     {

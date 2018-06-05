@@ -134,7 +134,7 @@ public class ActivateJobStreamProcessor implements TypedRecordProcessor<JobRecor
         });
     }
 
-    public ActorFuture<Boolean> removeSubscription(long subscriberKey)
+    public ActorFuture<Void> removeSubscription(long subscriberKey)
     {
         return actor.call(() ->
         {
@@ -144,8 +144,6 @@ public class ActivateJobStreamProcessor implements TypedRecordProcessor<JobRecor
             {
                 context.suspendController();
             }
-
-            return !isSuspended;
         });
     }
 
