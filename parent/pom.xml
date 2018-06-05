@@ -163,6 +163,23 @@
 
     </dependencies>
   </dependencyManagement>
+  
+  <profiles>
+    <profile>
+      <id>skip-unstable-tests</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <excludedGroups>io.zeebe.UnstableTest</excludedGroups>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
   <build>
     <pluginManagement>
@@ -390,5 +407,4 @@
     <developerConnection>scm:git:git@github.com:zeebe-io/zb-parent.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
-
 </project>
