@@ -1,7 +1,7 @@
 package org.camunda.operate.rest;
 
 import org.camunda.operate.rest.dto.HealthStateDto;
-import org.camunda.operate.util.WebSecurityDisabledConfig;
+import org.camunda.operate.security.WebSecurityConfig;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,20 +17,19 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-  classes = {TestApplication.class, WebSecurityDisabledConfig.class},
+  classes = {TestApplication.class, WebSecurityConfig.class},
   webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
-public class HealthCheckRestServiceTest {
+public class HealthCheckRestServiceAuthenticationTest {
 
   @Autowired
   private TestRestTemplate testRestTemplate;
 
   @Test
-  public void testHealthState() {
+  public void testHealthStateEndpointIsSecured() {
     final ResponseEntity<HealthStateDto> response = testRestTemplate.getForEntity(HealthCheckRestService.HEALTH_CHECK_URL, HealthStateDto.class);
 
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(response.getBody().getState()).isEqualTo("OK");
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
   }
 
 }

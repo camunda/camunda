@@ -10,7 +10,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class HealthCheckRestService {
 
-  @RequestMapping(value = "/check")
+  public static final String HEALTH_CHECK_URL = "/check";
+
+  @RequestMapping(value = HEALTH_CHECK_URL)
   public HealthStateDto status() {
     return new HealthStateDto("OK");
   }
