@@ -1,12 +1,12 @@
 #!/bin/bash -xue
 
-MDBOOK_VERSION=0.1.5
+MDBOOK_VERSION=v0.1.5
 
 # go to docs folder
 cd docs/
 
 # dowload mdbook
-curl -sL https://github.com/azerupi/mdBook/releases/download/${MDBOOK_VERSION}/mdBook-${MDBOOK_VERSION}-x86_64-unknown-linux-gnu.tar.gz | tar xzvf -
+curl -sL https://github.com/rust-lang-nursery/mdBook/releases/download/${MDBOOK_VERSION}/mdbook-${MDBOOK_VERSION}-x86_64-unknown-linux-gnu.tar.gz | tar xzvf -
 
 # build docs
 ./mdbook build
