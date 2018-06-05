@@ -48,6 +48,8 @@ jest.mock('./service', () => {
   };
 });
 
+jest.mock('debounce', () => foo => foo);
+
 jest.mock('services', () => {
   return {
     numberParser: {
@@ -280,14 +282,14 @@ describe('number variables', () => {
 });
 
 describe('string variables', () => {
-  it('should load 20 values initially', async () => {
+  it('should load 10 values initially', async () => {
     const node = mount(
       <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
     );
 
     await node.instance().selectVariable({name: 'foo', type: 'String'});
 
-    expect(loadValues).toHaveBeenCalledWith('procDefKey', '1', 'foo', 'String', 0, 21);
+    expect(loadValues).toHaveBeenCalledWith('procDefKey', '1', 'foo', 'String', 0, 11, '');
   });
 
   it('should show available values', () => {
@@ -321,19 +323,36 @@ describe('string variables', () => {
     expect(node.state().values).toEqual(['value2']);
   });
 
-  it('should load 20 more values if the user wants more', () => {
+  it('should load 10 more values if the user wants more', () => {
     const node = mount(
       <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
     );
     node.setState({
       selectedVariable: {name: 'foo', type: 'String'},
-      availableValues: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+      availableValues: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
       valuesAreComplete: false
     });
 
     node.find('.VariableFilter__valueFields button').simulate('click');
 
-    expect(loadValues).toHaveBeenCalledWith('procDefKey', '1', 'foo', 'String', 0, 41);
+    expect(loadValues).toHaveBeenCalledWith('procDefKey', '1', 'foo', 'String', 0, 21, '');
+  });
+
+  it('should request the values filtered by prefix entered in the input', () => {
+    const node = mount(
+      <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
+    );
+
+    node.setState({
+      selectedVariable: {name: 'foo', type: 'String'}
+    });
+
+    node
+      .find('.VariableFilter__string-value-input')
+      .first()
+      .simulate('change', {target: {value: 'eeeee'}});
+
+    expect(loadValues).toHaveBeenCalledWith('procDefKey', '1', 'foo', 'String', 0, 11, 'eeeee');
   });
 });
 

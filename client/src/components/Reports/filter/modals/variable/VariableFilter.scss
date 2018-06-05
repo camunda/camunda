@@ -11,10 +11,26 @@
   padding: 0;
   margin: 0;
   max-width: 90%;
-
+  text-align: center;
   input[type='checkbox'] {
     margin-right: 0.75em;
   }
+}
+
+.VariableFilter__string-value-input {
+  margin-bottom: 10px;
+  width: 50%;
+}
+
+.VariableFilter__string-value-selection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.VariableFilter__load-more-button {
+  width: 100%;
 }
 
 .VariableFilter__valueList--inputs {

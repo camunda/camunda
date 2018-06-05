@@ -1,5 +1,6 @@
 import React from 'react';
 import classnames from 'classnames';
+import debounce from 'debounce';
 import {Modal, Button, Input, ControlGroup, ButtonGroup, ErrorMessage, Typeahead} from 'components';
 
 import {loadVariables, loadValues} from './service';
@@ -7,7 +8,7 @@ import {numberParser} from 'services';
 
 import './VariableFilter.css';
 
-const valuesToLoad = 20;
+const valuesToLoad = 10;
 
 export default class VariableFilter extends React.Component {
   constructor(props) {
@@ -19,7 +20,8 @@ export default class VariableFilter extends React.Component {
       values: [],
       availableValues: [],
       valuesAreComplete: false,
-      loading: false
+      loading: false,
+      valuePrefix: ''
     };
   }
 
@@ -35,7 +37,13 @@ export default class VariableFilter extends React.Component {
     }
   };
 
-  loadAvailableValues = async ({name, type}) => {
+  componentDidUpdate = (_, prevState) => {
+    if (prevState.valuePrefix !== this.state.valuePrefix) {
+      this.loadAvailableValues(this.state.selectedVariable);
+    }
+  };
+
+  loadAvailableValues = debounce(async ({name, type}, more) => {
     this.setState(
       {
         loading: true
@@ -47,11 +55,12 @@ export default class VariableFilter extends React.Component {
           name,
           type,
           0,
-          this.state.availableValues.length + valuesToLoad + 1
+          valuesToLoad + 1 + (more ? this.state.availableValues.length : 0),
+          this.state.valuePrefix
         );
 
         const valuesAreComplete =
-          values.length !== this.state.availableValues.length + valuesToLoad + 1;
+          values.length !== valuesToLoad + 1 + (more ? this.state.availableValues.length : 0);
 
         this.setState({
           availableValues: valuesAreComplete ? values : values.splice(0, values.length - 1),
@@ -60,11 +69,11 @@ export default class VariableFilter extends React.Component {
         });
       }
     );
-  };
+  }, 300);
 
   loadMore = evt => {
     evt.preventDefault();
-    this.loadAvailableValues(this.state.selectedVariable);
+    this.loadAvailableValues(this.state.selectedVariable, true);
   };
 
   selectVariable = async variable => {
@@ -317,37 +326,89 @@ export default class VariableFilter extends React.Component {
     }
   };
 
+  setValuePrefix = evt => {
+    this.setState({
+      valuePrefix: evt.target.value
+    });
+  };
+
+  mapSelectedValues = values => {
+    return (
+      values.length > 0 && (
+        <div>
+          {values.map((value, idx) => {
+            return (
+              <li key={idx} className="VariableFilter__valueListItem">
+                <label>
+                  <Input type="checkbox" checked value={value} onChange={this.toggleValue} />
+                  {value}
+                </label>
+              </li>
+            );
+          })}
+          <hr />
+        </div>
+      )
+    );
+  };
+
+  mapAvaliableValues = (availableValues, selectedValues) => {
+    return availableValues.map((value, idx) => {
+      if (!selectedValues.includes(value))
+        return (
+          <li key={idx} className="VariableFilter__valueListItem">
+            <label>
+              <Input
+                type="checkbox"
+                checked={selectedValues.includes(value)}
+                value={value}
+                onChange={this.toggleValue}
+              />
+              {value}
+            </label>
+          </li>
+        );
+      return null;
+    });
+  };
+
   renderValueFields = (type, availableValues, values) => {
     switch (type) {
       case 'String':
+        const input = (
+          <Input className="VariableFilter__string-value-input" onChange={this.setValuePrefix} />
+        );
+
         if (availableValues.length === 0) {
-          return 'loading...';
+          return (
+            <div className="VariableFilter__string-value-selection">
+              {input}
+              <ul className="VariableFilter__valueList">
+                {this.mapSelectedValues(values)}
+                <li>No values match the query</li>
+              </ul>
+            </div>
+          );
         }
         return (
-          <ul className="VariableFilter__valueList">
-            {availableValues.map((value, idx) => {
-              return (
-                <li key={idx} className="VariableFilter__valueListItem">
-                  <label>
-                    <Input
-                      type="checkbox"
-                      checked={values.includes(value)}
-                      value={value}
-                      onChange={this.toggleValue}
-                    />
-                    {value}
-                  </label>
+          <div className="VariableFilter__string-value-selection">
+            {input}
+            <ul className="VariableFilter__valueList">
+              {this.mapSelectedValues(values)}
+              {this.mapAvaliableValues(availableValues, values)}
+              {!this.state.valuesAreComplete && (
+                <li>
+                  <Button
+                    className="VariableFilter__load-more-button"
+                    onClick={this.loadMore}
+                    disabled={this.state.loading}
+                  >
+                    {this.state.loading ? 'loading...' : 'Load More'}
+                  </Button>
                 </li>
-              );
-            })}
-            {!this.state.valuesAreComplete && (
-              <li>
-                <Button onClick={this.loadMore} disabled={this.state.loading}>
-                  {this.state.loading ? 'loading...' : 'Load More'}
-                </Button>
-              </li>
-            )}
-          </ul>
+              )}
+            </ul>
+          </div>
         );
       case 'Boolean':
         return null;
