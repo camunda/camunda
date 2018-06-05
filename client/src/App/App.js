@@ -3,11 +3,13 @@ import {BrowserRouter as Router, Route} from 'react-router-dom';
 
 import {ThemeProvider} from 'theme';
 
+import {Authentication} from './Authentication';
+import {Login} from './Login';
 import {Header} from './Header';
 import {Dashboard} from './Dashboard';
 
 const Home = () => (
-  <ThemeProvider>
+  <React.Fragment>
     <Header
       active="dashboard"
       instances={14576}
@@ -16,19 +18,18 @@ const Home = () => (
       incidents={328}
     />
     <Dashboard />
-  </ThemeProvider>
+  </React.Fragment>
 );
 
-class App extends React.Component {
-  render() {
-    return (
+export default function App(props) {
+  return (
+    <ThemeProvider>
       <Router>
-        <React.Fragment>
+        <Authentication>
+          <Route path="/login" component={Login} />
           <Route exact path="/" component={Home} />
-        </React.Fragment>
+        </Authentication>
       </Router>
-    );
-  }
+    </ThemeProvider>
+  );
 }
-
-export default App;

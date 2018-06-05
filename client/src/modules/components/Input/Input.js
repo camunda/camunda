@@ -1,5 +1,7 @@
 import React from 'react';
 
+import * as Styled from './styled';
+
 export default function Input(props) {
-  return <input {...props} />;
+  return <Styled.Input {...props} />;
 }
