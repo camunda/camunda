@@ -747,5 +747,4 @@ public class JobSubscriptionTest
         assertThat(secondJobType).isEqualTo(jobType2);
 
     }
-
 }
