@@ -392,6 +392,7 @@ public final class BpmnConstants
 
     public static final String ZEEBE_ATTRIBUTE_MAPPING_SOURCE = "source";
     public static final String ZEEBE_ATTRIBUTE_MAPPING_TARGET = "target";
+    public static final String ZEEBE_ATTRIBUTE_MAPPING_DEFAULT_BEHAVIOR = "outputBehavior";
 
     public static final String ZEEBE_ATTRIBUTE_TASK_TYPE = "type";
     public static final String ZEEBE_ATTRIBUTES_TASK_RETRIES = "retries";

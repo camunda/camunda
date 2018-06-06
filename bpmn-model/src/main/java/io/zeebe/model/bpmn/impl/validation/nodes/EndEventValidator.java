@@ -13,25 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.model.bpmn.instance;
+package io.zeebe.model.bpmn.impl.validation.nodes;
 
-import java.util.Map;
+import io.zeebe.model.bpmn.impl.instance.EndEventImpl;
+import io.zeebe.model.bpmn.impl.validation.ValidationResultImpl;
 
-import io.zeebe.msgpack.mapping.Mapping;
-
-public interface InputOutputMapping
+public class EndEventValidator
 {
-    String DEFAULT_MAPPING = "$";
-
-    OutputBehavior getOutputBehavior();
-    String getOutputBehaviorString();
-
-    Mapping[] getInputMappings();
-
-    Mapping[] getOutputMappings();
-
-    Map<String, String> getInputMappingsAsMap();
-
-    Map<String, String> getOutputMappingsAsMap();
-
+    public void validate(ValidationResultImpl validationResult, EndEventImpl endEvent)
+    {
+        if (!endEvent.getOutgoingSequenceFlows().isEmpty())
+        {
+            validationResult.addError(endEvent, "An end event must not have an outgoing sequence flow.");
+        }
+    }
 }

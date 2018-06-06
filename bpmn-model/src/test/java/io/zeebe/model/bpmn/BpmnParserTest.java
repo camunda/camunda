@@ -15,18 +15,18 @@
  */
 package io.zeebe.model.bpmn;
 
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.assertj.core.api.Assertions.assertThat;
+import io.zeebe.model.bpmn.instance.*;
+import org.assertj.core.util.Files;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.List;
 
-import io.zeebe.model.bpmn.instance.*;
-import org.assertj.core.util.Files;
-import org.junit.Test;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class BpmnParserTest
 {
@@ -46,7 +46,7 @@ public class BpmnParserTest
     }
 
     @Test
-    public void shouldReadFromStream() throws Exception
+    public void shouldReadFromStream()
     {
         final InputStream stream = getClass().getResourceAsStream(BPMN_FILE);
 
@@ -70,19 +70,16 @@ public class BpmnParserTest
     }
 
     @Test
-    public void shouldTransformValidWorkflow() throws Exception
+    public void shouldTransformValidWorkflow()
     {
         final InputStream stream = getClass().getResourceAsStream(BPMN_FILE);
         final WorkflowDefinition workflowDefinition = Bpmn.readFromXmlStream(stream);
 
         assertThat(workflowDefinition).isNotNull();
-
-        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
-        assertThat(validationResult.hasErrors()).isFalse();
     }
 
     @Test
-    public void shouldTransformWorkflow() throws Exception
+    public void shouldTransformWorkflow()
     {
         final InputStream stream = getClass().getResourceAsStream(BPMN_FILE);
         final WorkflowDefinition workflowDefinition = Bpmn.readFromXmlStream(stream);
@@ -95,7 +92,7 @@ public class BpmnParserTest
     }
 
     @Test
-    public void shouldTransformStartEvent() throws Exception
+    public void shouldTransformStartEvent()
     {
         final InputStream stream = getClass().getResourceAsStream(BPMN_FILE);
         final WorkflowDefinition workflowDefinition = Bpmn.readFromXmlStream(stream);
@@ -108,7 +105,7 @@ public class BpmnParserTest
     }
 
     @Test
-    public void shouldTransformSequenceFlows() throws Exception
+    public void shouldTransformSequenceFlows()
     {
         final InputStream stream = getClass().getResourceAsStream(BPMN_FILE);
         final WorkflowDefinition workflowDefinition = Bpmn.readFromXmlStream(stream);
@@ -137,7 +134,7 @@ public class BpmnParserTest
     }
 
     @Test
-    public void shouldTransformServiceTask() throws Exception
+    public void shouldTransformServiceTask()
     {
         final InputStream stream = getClass().getResourceAsStream(BPMN_FILE);
         final WorkflowDefinition workflowDefinition = Bpmn.readFromXmlStream(stream);

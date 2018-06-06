@@ -15,25 +15,29 @@
  */
 package io.zeebe.model.bpmn;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
-import java.io.*;
-
 import io.zeebe.model.bpmn.builder.BpmnBuilder;
-import io.zeebe.model.bpmn.impl.*;
+import io.zeebe.model.bpmn.impl.BpmnParser;
 import io.zeebe.model.bpmn.impl.instance.DefinitionsImpl;
+import io.zeebe.model.bpmn.impl.transformation.BpmnTransformer;
+import io.zeebe.model.bpmn.impl.validation.BpmnValidator;
+import io.zeebe.model.bpmn.impl.validation.ValidationException;
 import io.zeebe.model.bpmn.impl.yaml.BpmnYamlParser;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import org.agrona.DirectBuffer;
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.InputStream;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 public class BpmnModelApi
 {
-
     private final BpmnParser parser = new BpmnParser();
     private final BpmnTransformer transformer = new BpmnTransformer();
-    private final BpmnBuilder builder = new BpmnBuilder(transformer);
-    private final BpmnYamlParser yamlParser = new BpmnYamlParser(builder);
     private final BpmnValidator validator = new BpmnValidator();
+    private final BpmnBuilder builder = new BpmnBuilder(transformer, validator);
+    private final BpmnYamlParser yamlParser = new BpmnYamlParser(builder);
 
     public BpmnBuilder createExecutableWorkflow(String bpmnProcessId)
     {
@@ -42,18 +46,39 @@ public class BpmnModelApi
 
     public WorkflowDefinition readFromXmlFile(File file)
     {
+        // lexer and parser
         final DefinitionsImpl definitions = parser.readFromFile(file);
-        final WorkflowDefinition workflowDefinition = transformer.transform(definitions);
 
-        return workflowDefinition;
+        // semantic analyzer
+        final ValidationResult validationResult = validator.validate(definitions);
+
+        if (validationResult.hasErrors())
+        {
+            throw new ValidationException(validationResult.format());
+        }
+        else
+        {
+            // generator/transformer
+            return transformer.transform(definitions);
+        }
     }
 
     public WorkflowDefinition readFromXmlStream(InputStream stream)
     {
         final DefinitionsImpl definitions = parser.readFromStream(stream);
-        final WorkflowDefinition workflowDefinition = transformer.transform(definitions);
 
-        return workflowDefinition;
+        // semantic analyzer
+        final ValidationResult validationResult = validator.validate(definitions);
+
+        if (validationResult.hasErrors())
+        {
+            throw new ValidationException(validationResult.format());
+        }
+        else
+        {
+            // generator/transformer
+            return transformer.transform(definitions);
+        }
     }
 
     public WorkflowDefinition readFromXmlBuffer(DirectBuffer buffer)
@@ -90,11 +115,6 @@ public class BpmnModelApi
     public WorkflowDefinition readFromYamlString(String workflow)
     {
         return yamlParser.readFromStream(new ByteArrayInputStream(workflow.getBytes(UTF_8)));
-    }
-
-    public ValidationResult validate(WorkflowDefinition definition)
-    {
-        return validator.validate(definition);
     }
 
     public String convertToString(WorkflowDefinition definition)

@@ -15,23 +15,9 @@
  */
 package io.zeebe.model.bpmn.instance;
 
-import java.util.Map;
-
-import io.zeebe.msgpack.mapping.Mapping;
-
-public interface InputOutputMapping
+public enum OutputBehavior
 {
-    String DEFAULT_MAPPING = "$";
-
-    OutputBehavior getOutputBehavior();
-    String getOutputBehaviorString();
-
-    Mapping[] getInputMappings();
-
-    Mapping[] getOutputMappings();
-
-    Map<String, String> getInputMappingsAsMap();
-
-    Map<String, String> getOutputMappingsAsMap();
-
+    MERGE,
+    OVERWRITE,
+    NONE;
 }

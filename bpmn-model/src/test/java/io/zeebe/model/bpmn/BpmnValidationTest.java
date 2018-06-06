@@ -15,113 +15,115 @@
  */
 package io.zeebe.model.bpmn;
 
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
-import static org.assertj.core.api.Assertions.assertThat;
+import io.zeebe.model.bpmn.impl.validation.ValidationException;
+import io.zeebe.model.bpmn.instance.OutputBehavior;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.io.File;
 import java.net.URL;
 
-import io.zeebe.model.bpmn.impl.instance.ExclusiveGatewayImpl;
-import io.zeebe.model.bpmn.impl.instance.SequenceFlowImpl;
-import io.zeebe.model.bpmn.instance.Workflow;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
-import org.junit.Test;
-
 public class BpmnValidationTest
 {
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void shouldValidateBpmnFile() throws Exception
     {
+        // given
         final URL resource = getClass().getResource("/invalid_process-activity-id.bpmn");
         final File bpmnFile = new File(resource.toURI());
 
-        final WorkflowDefinition workflowDefinition = Bpmn.readFromXmlFile(bpmnFile);
+        // expect
+        expectedException.expect(ValidationException.class);
+        expectedException.expectMessage("[ERROR] [line:4] (bpmn:startEvent) Activity id is required.");
 
-        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
-
-        assertThat(validationResult.hasErrors()).isTrue();
-        assertThat(validationResult.toString()).contains("[ERROR] [line:4] (bpmn:startEvent) Activity id is required.");
+        // when
+        Bpmn.readFromXmlFile(bpmnFile);
     }
 
     @Test
     public void testMissingStartEvent()
     {
-        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("process")
-            .done();
+        // expect
+        expectedException.expect(ValidationException.class);
+        expectedException.expectMessage("The process must contain at least one none start event.");
 
-        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
-
-        assertThat(validationResult.hasErrors()).isTrue();
-        assertThat(validationResult.toString()).contains("The process must contain at least one none start event.");
+        // when
+        Bpmn.createExecutableWorkflow("process").done();
     }
 
     @Test
     public void testMissingActivityId()
     {
-        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("process")
-            .startEvent("")
-            .done();
+        // expect
+        expectedException.expect(ValidationException.class);
+        expectedException.expectMessage("Activity id is required.");
 
-        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
-
-        assertThat(validationResult.hasErrors()).isTrue();
-        assertThat(validationResult.toString()).contains("Activity id is required.");
+        // when
+        Bpmn.createExecutableWorkflow("process").startEvent("").done();
     }
 
     @Test
     public void testMissingTaskDefinition()
     {
-        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("process")
+        // expect
+        expectedException.expect(ValidationException.class);
+        expectedException.expectMessage("A service task must contain a 'taskDefinition' extension element.");
+
+        // when
+        Bpmn.createExecutableWorkflow("process")
             .startEvent()
             .serviceTask()
                 .done()
             .endEvent()
             .done();
-
-        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
-
-        assertThat(validationResult.hasErrors()).isTrue();
-        assertThat(validationResult.toString()).contains("A service task must contain a 'taskDefinition' extension element.");
     }
 
     @Test
     public void testMissingTaskType()
     {
-        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("process")
+        // expect
+        expectedException.expect(ValidationException.class);
+        expectedException.expectMessage("A task definition must contain a 'type' attribute which specifies the type of the task.");
+
+        // when
+        Bpmn.createExecutableWorkflow("process")
             .startEvent()
             .serviceTask()
                 .taskRetries(3)
                 .done()
             .endEvent()
             .done();
-
-        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
-
-        assertThat(validationResult.hasErrors()).isTrue();
-        assertThat(validationResult.toString()).contains("A task definition must contain a 'type' attribute which specifies the type of the task.");
     }
 
     @Test
     public void testInvalidElement() throws Exception
     {
+        // given
         final URL resource = getClass().getResource("/invalid_process-task-type.bpmn");
         final File bpmnFile = new File(resource.toURI());
 
-        final WorkflowDefinition workflowDefinition = Bpmn.readFromXmlFile(bpmnFile);
+        // expect
+        expectedException.expect(ValidationException.class);
+        expectedException.expectMessage("Cannot find task as target of sequence flow.");
+        expectedException.expectMessage("Cannot find task as source of sequence flow.");
 
-        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
-
-        assertThat(validationResult.hasErrors()).isTrue();
-        assertThat(validationResult.toString())
-            .contains("Cannot find target of sequence flow.")
-            .contains("Cannot find source of sequence flow.");
+        // when
+        Bpmn.readFromXmlFile(bpmnFile);
     }
 
     @Test
     public void testProhibitedInputOutputMapping()
     {
-        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("process")
+        // expect
+        expectedException.expect(ValidationException.class);
+        expectedException.expectMessage("Source mapping: JSON path '$.*' contains prohibited expression");
+
+        // when
+        Bpmn.createExecutableWorkflow("process")
             .startEvent()
             .serviceTask()
                 .taskType("test")
@@ -129,18 +131,17 @@ public class BpmnValidationTest
                     .output("$.bar", "$.a[0,1]")
                 .done()
             .done();
-
-        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
-
-        assertThat(validationResult.hasErrors()).isTrue();
-        assertThat(validationResult.toString()).contains("Source mapping: JSON path '$.*' contains prohibited expression");
-        assertThat(validationResult.toString()).contains("Target mapping: JSON path '$.a[0,1]' contains prohibited expression");
     }
 
     @Test
     public void testInvalidInputOutputMapping()
     {
-        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("process")
+        // expect
+        expectedException.expect(ValidationException.class);
+        expectedException.expectMessage("JSON path query 'foo' is not valid!");
+
+        // when
+        Bpmn.createExecutableWorkflow("process")
             .startEvent()
             .serviceTask()
                 .taskType("test")
@@ -148,18 +149,87 @@ public class BpmnValidationTest
                     .output("bar", "$")
                 .done()
             .done();
+    }
 
-        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
+    @Test
+    public void testInvalidInputRootAndSpecificMapping()
+    {
+        // expect
+        expectedException.expect(ValidationException.class);
+        expectedException.expectMessage("Target mapping: root mapping is not allowed because it would override other mapping.");
 
-        assertThat(validationResult.hasErrors()).isTrue();
-        assertThat(validationResult.toString()).contains("JSON path query 'foo' is not valid!");
-        assertThat(validationResult.toString()).contains("JSON path query 'bar' is not valid!");
+        // when
+        Bpmn.createExecutableWorkflow("process")
+            .startEvent()
+            .serviceTask()
+                .taskType("test")
+                .input("$", "$")
+                .input("$.bar", "$.bar")
+            .done()
+            .done();
+    }
+
+    @Test
+    public void testInvalidOutputRootAndSpecificMapping()
+    {
+        // expect
+        expectedException.expect(ValidationException.class);
+        expectedException.expectMessage("Target mapping: root mapping is not allowed because it would override other mapping.");
+
+        // when
+        Bpmn.createExecutableWorkflow("process")
+            .startEvent()
+            .serviceTask()
+            .taskType("test")
+                .input("$", "$")
+                .output("$", "$")
+                .output("$.bar", "$.bar")
+            .done()
+            .done();
+    }
+
+    @Test
+    public void testInvalidOutputBehaviorWithOutputMapping()
+    {
+        // expect
+        expectedException.expect(ValidationException.class);
+        expectedException.expectMessage("Output behavior 'NONE' is not supported in combination with output mappings.");
+
+        // when
+        Bpmn.createExecutableWorkflow("process")
+            .startEvent()
+            .serviceTask()
+                .taskType("test")
+                .outputBehavior(OutputBehavior.NONE)
+                .output("$", "$")
+            .done()
+            .done();
+    }
+
+    @Test
+    public void testInvalidOutputBehavior() throws Exception
+    {
+        // given
+        final URL resource = getClass().getResource("/invalid_output_behavior.bpmn");
+        final File bpmnFile = new File(resource.toURI());
+
+        // expect
+        expectedException.expect(ValidationException.class);
+        expectedException.expectMessage("Output behavior 'asdf' is not supported. Valid values are [MERGE, OVERWRITE, NONE].");
+
+        // when
+        Bpmn.readFromXmlFile(bpmnFile);
     }
 
     @Test
     public void testMissingConditionOnSequenceFlow()
     {
-        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("workflow")
+        // expect
+        expectedException.expect(ValidationException.class);
+        expectedException.expectMessage("A sequence flow on an exclusive gateway must have a condition, if it is not the default flow.");
+
+        // when
+        Bpmn.createExecutableWorkflow("workflow")
             .startEvent()
             .exclusiveGateway("xor")
             .sequenceFlow("s1")
@@ -167,17 +237,17 @@ public class BpmnValidationTest
             .sequenceFlow("s2")
                 .endEvent()
                 .done();
-
-        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
-
-        assertThat(validationResult.hasErrors()).isTrue();
-        assertThat(validationResult.toString()).contains("A sequence flow on an exclusive gateway must have a condition, if it is not the default flow.");
     }
 
     @Test
     public void testDefaultSequenceFlowWithCondtion()
     {
-        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("workflow")
+        // expect
+        expectedException.expect(ValidationException.class);
+        expectedException.expectMessage("A default sequence flow must not have a condition.");
+
+        // when
+        Bpmn.createExecutableWorkflow("workflow")
                 .startEvent()
                 .exclusiveGateway("xor")
                 .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
@@ -185,59 +255,32 @@ public class BpmnValidationTest
                 .sequenceFlow("s2", s -> s.defaultFlow().condition("$.foo >= 5"))
                     .endEvent()
                     .done();
-
-        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
-
-        assertThat(validationResult.hasErrors()).isTrue();
-        assertThat(validationResult.toString()).contains("A default sequence flow must not have a condition.");
     }
 
     @Test
-    public void testInvalidDefaultSequenceFlow()
+    public void testInvalidDefaultSequenceFlow() throws Exception
     {
-        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("workflow")
-            .startEvent()
-            .sequenceFlow("s1")
-            .exclusiveGateway("xor")
-            .sequenceFlow("s2", s -> s.condition("$.foo < 5"))
-            .endEvent()
-            .done();
+        // given
+        final URL resource = getClass().getResource("/invalid_xor_default_flow.bpmn");
+        final File bpmnFile = new File(resource.toURI());
 
-        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("workflow"));
+        // expect
+        expectedException.expect(ValidationException.class);
+        expectedException.expectMessage("The default sequence flow must be an outgoing sequence flow of the exclusive gateway.");
 
-        final SequenceFlowImpl incomingSequenceFlow = workflow.findFlowElementById(wrapString("s1"));
-        final ExclusiveGatewayImpl exclusiveGateway = workflow.findFlowElementById(wrapString("xor"));
-        exclusiveGateway.setDefaultFlow(incomingSequenceFlow);
-
-        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
-
-        assertThat(validationResult.hasErrors()).isTrue();
-        assertThat(validationResult.toString()).contains("The default sequence flow must be an outgoing sequence flow of the exclusive gateway.");
-    }
-
-    @Test
-    public void testNoDefaultSequenceFlow()
-    {
-        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("workflow")
-                .startEvent()
-                .exclusiveGateway("xor")
-                .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
-                    .endEvent()
-                .sequenceFlow("s2", s -> s.condition("$.foo >= 5"))
-                    .endEvent()
-                    .done();
-
-        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
-
-        assertThat(validationResult.hasErrors()).isFalse();
-        assertThat(validationResult.hasWarnings()).isTrue();
-        assertThat(validationResult.toString()).contains("An exclusive gateway should have a default sequence flow without condition.");
+        // when
+        Bpmn.readFromXmlFile(bpmnFile);
     }
 
     @Test
     public void testInvalidConditionOnSequenceFlow()
     {
-        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("workflow")
+        // expect
+        expectedException.expect(ValidationException.class);
+        expectedException.expectMessage("The condition 'foobar' is not valid");
+
+        // when
+        Bpmn.createExecutableWorkflow("workflow")
                 .startEvent()
                 .exclusiveGateway("xor")
                 .sequenceFlow("s1", s -> s.condition("foobar"))
@@ -245,11 +288,6 @@ public class BpmnValidationTest
                 .sequenceFlow("s2", s -> s.defaultFlow())
                     .endEvent()
                     .done();
-
-        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
-
-        assertThat(validationResult.hasErrors()).isTrue();
-        assertThat(validationResult.toString()).contains("The condition 'foobar' is not valid");
     }
 
 }

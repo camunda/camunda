@@ -17,12 +17,14 @@ package io.zeebe.model.bpmn.impl.metadata;
 
 import java.util.*;
 
+import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlTransient;
 
 import io.zeebe.model.bpmn.BpmnConstants;
 import io.zeebe.model.bpmn.impl.instance.BaseElement;
 import io.zeebe.model.bpmn.instance.InputOutputMapping;
+import io.zeebe.model.bpmn.instance.OutputBehavior;
 import io.zeebe.msgpack.mapping.Mapping;
 
 public class InputOutputMappingImpl extends BaseElement implements InputOutputMapping
@@ -32,6 +34,32 @@ public class InputOutputMappingImpl extends BaseElement implements InputOutputMa
 
     private Mapping[] inputMappings;
     private Mapping[] outputMappings;
+
+    private String outputBehaviorString = OutputBehavior.MERGE.name();
+    private OutputBehavior outputBehavior;
+
+    @Override
+    public OutputBehavior getOutputBehavior()
+    {
+        return outputBehavior;
+    }
+
+    public void setOutputBehavior(OutputBehavior outputBehavior)
+    {
+        this.outputBehavior = outputBehavior;
+    }
+
+    @Override
+    public String getOutputBehaviorString()
+    {
+        return outputBehaviorString;
+    }
+
+    @XmlAttribute(name = BpmnConstants.ZEEBE_ATTRIBUTE_MAPPING_DEFAULT_BEHAVIOR)
+    public void setOutputBehaviorString(String outputBehavior)
+    {
+        this.outputBehaviorString = outputBehavior;
+    }
 
     @XmlElement(name = BpmnConstants.ZEEBE_ELEMENT_MAPPING_INPUT, namespace = BpmnConstants.ZEEBE_NS)
     public void setInputs(List<MappingImpl> inputs)

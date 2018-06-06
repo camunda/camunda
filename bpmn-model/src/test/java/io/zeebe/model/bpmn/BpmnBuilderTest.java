@@ -15,13 +15,13 @@
  */
 package io.zeebe.model.bpmn;
 
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
-import static org.assertj.core.api.Assertions.assertThat;
+import io.zeebe.model.bpmn.instance.*;
+import org.junit.Test;
 
 import java.util.List;
 
-import io.zeebe.model.bpmn.instance.*;
-import org.junit.Test;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class BpmnBuilderTest
 {
@@ -35,10 +35,6 @@ public class BpmnBuilderTest
             .done();
 
         assertThat(workflowDefinition).isNotNull();
-
-        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
-        assertThat(validationResult.hasErrors()).isFalse();
-
         assertThat(workflowDefinition.getWorkflows()).hasSize(1);
 
         final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
@@ -72,10 +68,6 @@ public class BpmnBuilderTest
             .sequenceFlow()
             .endEvent()
             .done();
-
-        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
-        assertThat(validationResult.hasErrors()).isFalse();
-
         final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
 
         final ServiceTask serviceTask = workflow.findFlowElementById(wrapString("task"));
@@ -112,9 +104,6 @@ public class BpmnBuilderTest
             .endEvent()
             .done();
 
-        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
-        assertThat(validationResult.hasErrors()).isFalse();
-
         final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
 
         final ServiceTask serviceTask = workflow.findFlowElementById(wrapString("task"));
@@ -134,9 +123,6 @@ public class BpmnBuilderTest
             .serviceTask("task3", s -> s.taskType("c"))
             .endEvent()
             .done();
-
-        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
-        assertThat(validationResult.hasErrors()).isFalse();
 
         final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
 
@@ -159,9 +145,6 @@ public class BpmnBuilderTest
                 .sequenceFlow("s3", s -> s.defaultFlow())
                     .endEvent("c")
                 .done();
-
-        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
-        assertThat(validationResult.hasErrors()).isFalse();
 
         final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
 
@@ -194,9 +177,6 @@ public class BpmnBuilderTest
                 .endEvent("end")
                 .done();
 
-        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
-        assertThat(validationResult.hasErrors()).isFalse();
-
         final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
 
         final ExclusiveGateway exclusiveGateway = workflow.findFlowElementById(wrapString("join"));
@@ -228,10 +208,7 @@ public class BpmnBuilderTest
 
         final String workflowAsString = Bpmn.convertToString(workflowDefinition);
 
-        final WorkflowDefinition deserializedWorkflowDefinition = Bpmn.readFromXmlString(workflowAsString);
-
-        final ValidationResult validationResult = Bpmn.validate(deserializedWorkflowDefinition);
-        assertThat(validationResult.hasErrors()).isFalse();
+        Bpmn.readFromXmlString(workflowAsString);
 
         final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
         final ServiceTask serviceTask = workflow.findFlowElementById(wrapString("task"));

@@ -54,17 +54,19 @@ public class BpmnYamlParser
 
     public WorkflowDefinition readFromStream(InputStream inputStream)
     {
+        YamlDefinitionImpl definition = null;
         try
         {
-            final YamlDefinitionImpl definition = mapper.readValue(inputStream, YamlDefinitionImpl.class);
-            final WorkflowDefinition workflowDefinition = createWorkflow(definition);
-
-            return workflowDefinition;
+            definition = mapper.readValue(inputStream, YamlDefinitionImpl.class);
         }
         catch (Exception e)
         {
             throw new RuntimeException("Failed to read YAML model", e);
         }
+
+        final WorkflowDefinition workflowDefinition = createWorkflow(definition);
+
+        return workflowDefinition;
     }
 
     private WorkflowDefinition createWorkflow(final YamlDefinitionImpl definition)

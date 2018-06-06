@@ -15,22 +15,26 @@
  */
 package io.zeebe.model.bpmn.impl;
 
-import static io.zeebe.util.EnsureUtil.ensureNotNull;
-
-import java.io.*;
-import java.net.URL;
-
-import javax.xml.XMLConstants;
-import javax.xml.bind.*;
-import javax.xml.bind.Unmarshaller.Listener;
-import javax.xml.stream.*;
-import javax.xml.validation.Schema;
-import javax.xml.validation.SchemaFactory;
-
 import io.zeebe.model.bpmn.BpmnConstants;
 import io.zeebe.model.bpmn.impl.instance.BaseElement;
 import io.zeebe.model.bpmn.impl.instance.DefinitionsImpl;
 import org.xml.sax.SAXException;
+
+import javax.xml.XMLConstants;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.bind.Unmarshaller.Listener;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
+import javax.xml.validation.Schema;
+import javax.xml.validation.SchemaFactory;
+import java.io.*;
+import java.net.URL;
+
+import static io.zeebe.util.EnsureUtil.ensureNotNull;
 
 public class BpmnParser
 {

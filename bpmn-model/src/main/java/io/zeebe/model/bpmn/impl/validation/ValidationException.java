@@ -13,25 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.model.bpmn.instance;
+package io.zeebe.model.bpmn.impl.validation;
 
-import java.util.Map;
-
-import io.zeebe.msgpack.mapping.Mapping;
-
-public interface InputOutputMapping
+public class ValidationException extends RuntimeException
 {
-    String DEFAULT_MAPPING = "$";
-
-    OutputBehavior getOutputBehavior();
-    String getOutputBehaviorString();
-
-    Mapping[] getInputMappings();
-
-    Mapping[] getOutputMappings();
-
-    Map<String, String> getInputMappingsAsMap();
-
-    Map<String, String> getOutputMappingsAsMap();
-
+    public ValidationException(String message)
+    {
+        super(message);
+    }
 }

@@ -72,11 +72,6 @@ public class Bpmn
         return INSTANCE.readFromYamlString(workflow);
     }
 
-    public static ValidationResult validate(WorkflowDefinition definition)
-    {
-        return INSTANCE.validate(definition);
-    }
-
     public static String convertToString(WorkflowDefinition definition)
     {
         return INSTANCE.convertToString(definition);

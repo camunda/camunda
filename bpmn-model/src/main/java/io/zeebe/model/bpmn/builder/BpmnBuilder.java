@@ -20,14 +20,18 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
-import io.zeebe.model.bpmn.impl.BpmnTransformer;
+import io.zeebe.model.bpmn.ValidationResult;
+import io.zeebe.model.bpmn.impl.transformation.BpmnTransformer;
 import io.zeebe.model.bpmn.impl.instance.*;
 import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
+import io.zeebe.model.bpmn.impl.validation.BpmnValidator;
+import io.zeebe.model.bpmn.impl.validation.ValidationException;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 
 public class BpmnBuilder
 {
     private final BpmnTransformer transformer;
+    private final BpmnValidator validator;
 
     private final AtomicLong nextId = new AtomicLong();
 
@@ -38,9 +42,10 @@ public class BpmnBuilder
     private SequenceFlowImpl sequenceFlow;
     private ExclusiveGatewayImpl exclusiveGateway;
 
-    public BpmnBuilder(BpmnTransformer transformer)
+    public BpmnBuilder(BpmnTransformer transformer, BpmnValidator validator)
     {
         this.transformer = transformer;
+        this.validator = validator;
     }
 
     public BpmnBuilder wrap(String bpmnProcessId)
@@ -238,10 +243,18 @@ public class BpmnBuilder
     public WorkflowDefinition done()
     {
         final DefinitionsImpl definitionsImpl = new DefinitionsImpl();
-
         definitionsImpl.getProcesses().add(process);
 
-        return transformer.transform(definitionsImpl);
+        final ValidationResult validationResult = validator.validate(definitionsImpl);
+
+        if (validationResult.hasErrors())
+        {
+            throw new ValidationException(validationResult.format());
+        }
+        else
+        {
+            return transformer.transform(definitionsImpl);
+        }
     }
 
 }

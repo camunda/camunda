@@ -15,9 +15,9 @@
  */
 package io.zeebe.model.bpmn;
 
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
-import static org.assertj.core.api.Assertions.assertThat;
+import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
+import io.zeebe.model.bpmn.instance.*;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.InputStream;
@@ -25,9 +25,10 @@ import java.net.URL;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
-import io.zeebe.model.bpmn.instance.*;
-import org.junit.Test;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class BpmnYamlParserTest
 {
@@ -46,13 +47,10 @@ public class BpmnYamlParserTest
 
         assertThat(workflowDefinition).isNotNull();
         assertThat(workflowDefinition.getWorkflows()).hasSize(1);
-
-        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
-        assertThat(validationResult.hasErrors()).isFalse();
     }
 
     @Test
-    public void shouldReadFromStream() throws Exception
+    public void shouldReadFromStream()
     {
         final InputStream stream = getClass().getResourceAsStream(WORKFLOW_WITH_TASK_SEQUENCE);
 
@@ -60,13 +58,10 @@ public class BpmnYamlParserTest
 
         assertThat(workflowDefinition).isNotNull();
         assertThat(workflowDefinition.getWorkflows()).hasSize(1);
-
-        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
-        assertThat(validationResult.hasErrors()).isFalse();
     }
 
     @Test
-    public void shouldTransformTask() throws Exception
+    public void shouldTransformTask()
     {
         final WorkflowDefinition workflowDefinition = parseWorkflow(WORKFLOW_WITH_TASK_SEQUENCE);
 
@@ -101,7 +96,7 @@ public class BpmnYamlParserTest
     }
 
     @Test
-    public void shouldTransformMultipleTasks() throws Exception
+    public void shouldTransformMultipleTasks()
     {
         final WorkflowDefinition workflowDefinition = parseWorkflow(WORKFLOW_WITH_TASK_SEQUENCE);
 
@@ -128,7 +123,7 @@ public class BpmnYamlParserTest
     }
 
     @Test
-    public void shouldTransformExclusiveSplit() throws Exception
+    public void shouldTransformExclusiveSplit()
     {
         final WorkflowDefinition workflowDefinition = parseWorkflow(WORKFLOW_WITH_SPLIT);
 
@@ -167,42 +162,38 @@ public class BpmnYamlParserTest
     }
 
     @Test
-    public void shouldReadInvalidFile() throws Exception
+    public void shouldThrowExceptionOnInvalidFile() throws Exception
     {
+        // given
         final URL resource = getClass().getResource(INVALID_WORKFLOW);
         final File bpmnFile = new File(resource.toURI());
 
-        final WorkflowDefinition workflowDefinition = Bpmn.readFromYamlFile(bpmnFile);
-
-        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
-        assertThat(validationResult.hasErrors()).isTrue();
-        assertThat(validationResult.toString())
-            .contains("BPMN process id is required.")
-            .contains("A task definition must contain a 'type' attribute which specifies the type of the task.");
+        // when
+        assertThatThrownBy(() ->
+        {
+            Bpmn.readFromYamlFile(bpmnFile);
+        }).hasMessageContaining("BPMN process id is required.")
+            .hasMessageContaining("A task definition must contain a 'type' attribute which specifies the type of the task.");
     }
 
     @Test
-    public void shouldReadWorkflowWithInvalidExclusiveSplit() throws Exception
+    public void shouldThrowExceptionOnInvalidExclusiveSplit() throws Exception
     {
+        // given
         final URL resource = getClass().getResource(INVALID_WORKFLOW_WITH_SPLIT);
         final File yamlFile = new File(resource.toURI());
 
-        final WorkflowDefinition workflowDefinition = Bpmn.readFromYamlFile(yamlFile);
-
-        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
-        assertThat(validationResult.hasErrors()).isTrue();
-        assertThat(validationResult.toString())
-                .contains("A sequence flow on an exclusive gateway must have a condition, if it is not the default flow.");
+        // when
+        assertThatThrownBy(() ->
+        {
+            Bpmn.readFromYamlFile(yamlFile);
+        }).hasMessageContaining("A sequence flow on an exclusive gateway must have a condition, if it is not the default flow.");
     }
 
     private WorkflowDefinition parseWorkflow(String path)
     {
         final InputStream stream = getClass().getResourceAsStream(path);
         final WorkflowDefinition workflowDefinition = Bpmn.readFromYamlStream(stream);
-
-        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
-        assertThat(validationResult.hasErrors()).isFalse();
-
         return workflowDefinition;
     }
 

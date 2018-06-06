@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.model.bpmn.impl;
+package io.zeebe.model.bpmn.impl.transformation;
 
 import static io.zeebe.msgpack.mapping.Mapping.JSON_ROOT_PATH;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import java.util.*;
@@ -25,6 +26,7 @@ import io.zeebe.model.bpmn.BpmnAspect;
 import io.zeebe.model.bpmn.impl.instance.*;
 import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
 import io.zeebe.model.bpmn.impl.metadata.*;
+import io.zeebe.model.bpmn.impl.validation.ValidationException;
 import io.zeebe.model.bpmn.instance.*;
 import io.zeebe.msgpack.el.CompiledJsonCondition;
 import io.zeebe.msgpack.el.JsonConditionFactory;
@@ -141,6 +143,13 @@ public class BpmnTransformer
     {
         final CompiledJsonCondition condition = JsonConditionFactory.createCondition(conditionExpression.getText());
 
+        if (!condition.isValid())
+        {
+            throw new ValidationException(
+                String.format("The condition '%s' is not valid: %s",
+                    condition.getExpression(), condition.getErrorMessage()));
+        }
+
         conditionExpression.setCondition(condition);
     }
 
@@ -206,6 +215,10 @@ public class BpmnTransformer
 
     private void transformInputOutputMappings(InputOutputMappingImpl inputOutputMapping)
     {
+        final String outputBehaviorString = inputOutputMapping.getOutputBehaviorString();
+        final OutputBehavior outputBehavior = OutputBehavior.valueOf(outputBehaviorString);
+        inputOutputMapping.setOutputBehavior(outputBehavior);
+
         final Mapping[] inputMappings = createMappings(inputOutputMapping.getInputs());
         inputOutputMapping.setInputMappings(inputMappings);
 
@@ -245,9 +258,15 @@ public class BpmnTransformer
 
     private Mapping createMapping(MappingImpl mapping)
     {
-        // TODO make JSON path compiler re-usable!
         final JsonPathQueryCompiler queryCompiler = new JsonPathQueryCompiler();
         final JsonPathQuery query = queryCompiler.compile(mapping.getSource());
+
+        if (!query.isValid())
+        {
+            throw new ValidationException(
+                String.format("JSON path query '%s' is not valid! Reason: %s",
+                    bufferAsString(query.getExpression()), query.getErrorReason()));
+        }
 
         return new Mapping(query, wrapString(mapping.getTarget()));
     }

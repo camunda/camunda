@@ -18,6 +18,7 @@ package io.zeebe.model.bpmn.builder;
 import io.zeebe.model.bpmn.impl.instance.ExtensionElementsImpl;
 import io.zeebe.model.bpmn.impl.instance.ServiceTaskImpl;
 import io.zeebe.model.bpmn.impl.metadata.*;
+import io.zeebe.model.bpmn.instance.OutputBehavior;
 
 public class BpmnServiceTaskBuilder
 {
@@ -77,6 +78,14 @@ public class BpmnServiceTaskBuilder
 
         final InputOutputMappingImpl inputOutputMappings = getInputOutputMappings();
         inputOutputMappings.getInputs().add(inputMapping);
+
+        return this;
+    }
+
+    public BpmnServiceTaskBuilder outputBehavior(OutputBehavior behavior)
+    {
+        final InputOutputMappingImpl inputOutputMappings = getInputOutputMappings();
+        inputOutputMappings.setOutputBehaviorString(behavior.name());
 
         return this;
     }
