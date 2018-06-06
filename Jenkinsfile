@@ -125,7 +125,7 @@ pipeline {
         container('maven') {
           sh '''
             cd ./backend
-            mvn clean install -B
+            mvn clean install -P -docker -B
           '''
         }
       }

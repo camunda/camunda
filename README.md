@@ -1,6 +1,26 @@
 # Camunda Operate
 
+**[Backend Documentation](./client)**
+
 **[Frontend Documentation](./client)**
+
+## Running locally
+
+To run the application locally you can use `docker` and `docker-compose`.
+Make sure to have a recent version of these tools installed locally: you
+should be able to run these two commands on your shell without `sudo`.
+
+If you need support to configure these tools please contact Andrea
+
+To spawn a local environment, run this command in the root folder:
+
+```
+docker-compose up -d
+```
+
+This command should pull/build the necessary containers to run the
+application locally, the first run might take a while. This includes
+a local elasticsearch, zeebe, operate backend and frontend.
 
 ## Commit Message Guidelines
 

@@ -24,6 +24,21 @@ yarn start
 yarn test
 ```
 
+### Run operate without frontend
+
+While developing the frontend, you might need to have Elasticsearch, Zeebe and the backend up and running.
+In this case you can run the following command in the root of this project:
+
+```sh
+docker-compose up -d elasticsearch zeebe operate_backend
+```
+
+You can then destroy the environment using:
+
+```sh
+docker-compose down
+```
+
 ## Writing Components
 
 Related files should be close to each other. React components usually consist of a directory with the following files:
