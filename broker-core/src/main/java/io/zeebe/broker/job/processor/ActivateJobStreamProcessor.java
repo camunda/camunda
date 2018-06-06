@@ -43,10 +43,8 @@ public class ActivateJobStreamProcessor implements TypedRecordProcessor<JobRecor
 
     private final JobSubscriptions subscriptions = new JobSubscriptions(8);
     private final SubscriptionIterator jobDistributionIterator;
-    private final SubscriptionIterator managementIterator;
 
     private final DirectBuffer subscribedJobType;
-    private int partitionId;
     private ActorControl actor;
     private StreamProcessorContext context;
 
@@ -57,17 +55,11 @@ public class ActivateJobStreamProcessor implements TypedRecordProcessor<JobRecor
     {
         this.subscribedJobType = jobType;
         this.jobDistributionIterator = subscriptions.iterator();
-        this.managementIterator = subscriptions.iterator();
     }
 
     public DirectBuffer getSubscriptedJobType()
     {
         return subscribedJobType;
-    }
-
-    public int getLogStreamPartitionId()
-    {
-        return partitionId;
     }
 
     @Override
@@ -93,8 +85,6 @@ public class ActivateJobStreamProcessor implements TypedRecordProcessor<JobRecor
 
     public TypedStreamProcessor createStreamProcessor(TypedStreamEnvironment env)
     {
-        this.partitionId = env.getStream().getPartitionId();
-
         return env.newStreamProcessor()
                 .onEvent(ValueType.JOB, JobIntent.CREATED, this)
                 .onEvent(ValueType.JOB, JobIntent.TIMED_OUT, this)
@@ -144,30 +134,6 @@ public class ActivateJobStreamProcessor implements TypedRecordProcessor<JobRecor
             {
                 context.suspendController();
             }
-        });
-    }
-
-    public ActorFuture<Boolean> onClientChannelCloseAsync(int channelId)
-    {
-        return actor.call(() ->
-        {
-            managementIterator.reset();
-
-            while (managementIterator.hasNext())
-            {
-                final JobSubscription subscription = managementIterator.next();
-                if (subscription.getStreamId() == channelId)
-                {
-                    managementIterator.remove();
-                }
-            }
-
-            final boolean isSuspended = subscriptions.isEmpty();
-            if (isSuspended)
-            {
-                context.suspendController();
-            }
-            return !isSuspended;
         });
     }
 
