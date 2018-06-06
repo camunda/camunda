@@ -2,12 +2,11 @@ import React from 'react';
 import {mount} from 'enzyme';
 import Dashboard from './Dashboard';
 
-jest.mock('components', () => {
-  return {Input: props => <input {...props} />};
+jest.mock('./StatsPanel', () => {
+  return {StatsPanel: () => <div>StatsPanel</div>};
 });
-
-it('contains an input', () => {
+it('contains an statistics panel', () => {
   const node = mount(<Dashboard />);
 
-  expect(node.find('input')).toExist();
+  expect(node).toIncludeText('StatsPanel');
 });
