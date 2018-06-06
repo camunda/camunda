@@ -20,6 +20,8 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
  * @author Svetlana Dorokhova.
@@ -47,8 +49,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
   public void configure(HttpSecurity http) throws Exception {
     http
       .csrf().disable()
-      .cors()
-      .and()
+      .cors().and()
       .authorizeRequests()
         .antMatchers("/workflow-instance/**").permitAll()
         .antMatchers("/**").authenticated()
@@ -65,6 +66,16 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         .deleteCookies("JSESSIONID")
       .and()
         .exceptionHandling().authenticationEntryPoint(authenticationEntryPoint());
+  }
+
+  @Bean
+  public WebMvcConfigurer corsConfigurer() {
+    return new WebMvcConfigurer() {
+      @Override
+      public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**").allowedOrigins("*");
+      }
+    };
   }
 
   private LogoutSuccessHandler logoutSuccessHandler() {
