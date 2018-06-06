@@ -17,7 +17,9 @@
  */
 package io.zeebe.broker.system.workflow.repository.processor;
 
-import io.zeebe.broker.logstreams.processor.*;
+import io.zeebe.broker.logstreams.processor.TypedRecord;
+import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
+import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.system.workflow.repository.data.DeployedWorkflow;
 import io.zeebe.broker.system.workflow.repository.data.DeploymentRecord;
 import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex;

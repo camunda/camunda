@@ -17,24 +17,28 @@
  */
 package io.zeebe.broker.system.workflow.repository.processor;
 
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
-
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.Iterator;
-
-import io.zeebe.broker.logstreams.processor.*;
-import io.zeebe.broker.system.workflow.repository.data.*;
+import io.zeebe.broker.logstreams.processor.TypedRecord;
+import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
+import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.broker.system.workflow.repository.data.DeploymentRecord;
+import io.zeebe.broker.system.workflow.repository.data.DeploymentResource;
+import io.zeebe.broker.system.workflow.repository.data.ResourceType;
 import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex;
 import io.zeebe.model.bpmn.BpmnModelApi;
-import io.zeebe.model.bpmn.ValidationResult;
+import io.zeebe.model.bpmn.impl.validation.ValidationException;
 import io.zeebe.model.bpmn.instance.Workflow;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Iterator;
+
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 public class DeploymentCreateEventProcessor implements TypedRecordProcessor<DeploymentRecord>
 {
@@ -119,39 +123,30 @@ public class DeploymentCreateEventProcessor implements TypedRecordProcessor<Depl
             try
             {
                 final WorkflowDefinition definition = readWorkflowDefinition(deploymentResource);
-                final ValidationResult validationResult = bpmn.validate(definition);
 
-                final boolean isValid = !validationResult.hasErrors();
-
-                if (isValid)
+                for (Workflow workflow : definition.getWorkflows())
                 {
-                    for (Workflow workflow : definition.getWorkflows())
+                    if (workflow.isExecutable())
                     {
-                        if (workflow.isExecutable())
-                        {
-                            final String bpmnProcessId = BufferUtil.bufferAsString(workflow.getBpmnProcessId());
+                        final String bpmnProcessId = BufferUtil.bufferAsString(workflow.getBpmnProcessId());
+                        final long key = index.getNextKey();
+                        final int version = index.getNextVersion(topicName, bpmnProcessId);
 
-                            final long key = index.getNextKey();
-                            final int version = index.getNextVersion(topicName, bpmnProcessId);
-
-                            deploymentEvent.deployedWorkflows().add()
-                                .setBpmnProcessId(workflow.getBpmnProcessId())
-                                .setVersion(version)
-                                .setKey(key)
-                                .setResourceName(deploymentResource.getResourceName());
-                        }
+                        deploymentEvent.deployedWorkflows().add()
+                            .setBpmnProcessId(workflow.getBpmnProcessId())
+                            .setVersion(version)
+                            .setKey(key)
+                            .setResourceName(deploymentResource.getResourceName());
                     }
-
-                    transformWorkflowResource(deploymentResource, definition);
                 }
 
-                if (validationResult.hasErrors() || validationResult.hasWarnings())
-                {
-                    validationErrors.append(String.format("Resource '%s':\n", bufferAsString(deploymentResource.getResourceName())));
-                    validationErrors.append(validationResult.format());
-
-                    success = !validationResult.hasErrors();
-                }
+                transformWorkflowResource(deploymentResource, definition);
+            }
+            catch (ValidationException validationException)
+            {
+                validationErrors.append(String.format("Resource '%s':\n", bufferAsString(deploymentResource.getResourceName())));
+                validationErrors.append(validationException.getMessage());
+                success = false;
             }
             catch (Exception e)
             {
@@ -188,16 +183,13 @@ public class DeploymentCreateEventProcessor implements TypedRecordProcessor<Depl
         }
     }
 
-    private boolean transformWorkflowResource(final DeploymentResource deploymentResource, final WorkflowDefinition definition)
+    private void transformWorkflowResource(final DeploymentResource deploymentResource, final WorkflowDefinition definition)
     {
         if (deploymentResource.getResourceType() != ResourceType.BPMN_XML)
         {
             final DirectBuffer bpmnXml = wrapString(bpmn.convertToString(definition));
             deploymentResource.setResource(bpmnXml);
-
-            return true;
         }
-        return false;
     }
 
     private String generateErrorMessage(final Exception e)

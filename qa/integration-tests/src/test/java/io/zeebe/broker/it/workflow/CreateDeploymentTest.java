@@ -15,13 +15,12 @@
  */
 package io.zeebe.broker.it.workflow;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
-import io.zeebe.client.api.commands.*;
+import io.zeebe.client.api.commands.DeploymentResource;
+import io.zeebe.client.api.commands.ResourceType;
+import io.zeebe.client.api.commands.Workflow;
 import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.model.bpmn.Bpmn;
@@ -31,6 +30,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class CreateDeploymentTest
 {
@@ -96,7 +98,7 @@ public class CreateDeploymentTest
     }
 
     @Test
-    public void shouldNotDeployInvalidModel()
+    public void shouldNotDeployInvalidModel() throws Exception
     {
         // then
         exception.expect(ClientCommandRejectedException.class);
@@ -105,7 +107,7 @@ public class CreateDeploymentTest
         // when
         clientRule.getWorkflowClient()
             .newDeployCommand()
-            .addWorkflowModel(Bpmn.createExecutableWorkflow("no-start-event").done(), "invalid.bpmn") // does not have a start event
+            .addResourceFile(getClass().getResource("/workflows/invalid_process.bpmn").getFile()) // does not have a start event
             .send()
             .join();
     }

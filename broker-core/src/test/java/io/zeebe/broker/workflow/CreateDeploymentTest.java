@@ -17,13 +17,6 @@
  */
 package io.zeebe.broker.workflow;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
-
-import java.io.*;
-import java.util.*;
-
 import io.zeebe.broker.system.workflow.repository.data.ResourceType;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
@@ -37,10 +30,20 @@ import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.util.StreamUtil;
-import org.assertj.core.util.Files;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 public class CreateDeploymentTest
 {
@@ -142,14 +145,18 @@ public class CreateDeploymentTest
         assertThat(resp.rejectionReason()).isEqualTo("Topic does not exist");
     }
 
+
+
     @Test
-    public void shouldRejectDeploymentIfNotValid()
+    public void shouldRejectDeploymentIfNotValid() throws Exception
     {
         // given
-        final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("process").done();
+        final Path path = Paths.get(getClass().getResource("/workflows/invalid_process.bpmn").toURI());
+        final byte[] resource = Files.readAllBytes(path);
 
         // when
-        final ExecuteCommandResponse resp = apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, definition);
+        final ExecuteCommandResponse resp =
+            apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, resource);
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
@@ -160,12 +167,13 @@ public class CreateDeploymentTest
     }
 
     @Test
-    public void shouldRejectDeploymentIfOneResourceIsNotValid()
+    public void shouldRejectDeploymentIfOneResourceIsNotValid() throws Exception
     {
         // given
-        final WorkflowDefinition invalidDefinition = Bpmn.createExecutableWorkflow("process").done();
+        final Path path = Paths.get(getClass().getResource("/workflows/invalid_process.bpmn").toURI());
+        final byte[] resource = Files.readAllBytes(path);
 
-        final List<Map<String, Object>> resources = Arrays.asList(deploymentResource(bpmnXml(invalidDefinition), "process2.bpmn"));
+        final List<Map<String, Object>> resources = Arrays.asList(deploymentResource(resource, "process2.bpmn"));
 
         // when
         final ExecuteCommandResponse resp = apiRule.createCmdRequest()
@@ -229,39 +237,16 @@ public class CreateDeploymentTest
     }
 
     @Test
-    public void shouldRejectDeploymentIfConditionIsInvalid()
-    {
-        final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("workflow")
-                                     .startEvent()
-                                     .exclusiveGateway()
-                                     .sequenceFlow(s -> s.condition("foobar"))
-                                         .endEvent()
-                                     .sequenceFlow(s -> s.defaultFlow())
-                                         .endEvent()
-                                         .done();
-
-        // when
-        final ExecuteCommandResponse resp = apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, definition);
-
-        // then
-        assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-        assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATE);
-        assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-        assertThat(resp.rejectionReason()).contains("The condition 'foobar' is not valid");
-    }
-
-    @Test
     public void shouldCreateDeploymentWithYamlWorfklow() throws Exception
     {
         // given
-        final File yamlFile = new File(getClass().getResource("/workflows/simple-workflow.yaml").toURI());
-        final String yamlWorkflow = Files.contentOf(yamlFile, UTF_8);
+        final Path yamlFile = Paths.get(getClass().getResource("/workflows/simple-workflow.yaml").toURI());
+        final byte[] yamlWorkflow = Files.readAllBytes(yamlFile);
 
         // when
         final ExecuteCommandResponse resp = apiRule.topic()
                 .deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME,
-                                    yamlWorkflow.getBytes(UTF_8),
+                                    yamlWorkflow,
                                     ResourceType.YAML_WORKFLOW.name(),
                                     "simple-workflow.yaml");
 

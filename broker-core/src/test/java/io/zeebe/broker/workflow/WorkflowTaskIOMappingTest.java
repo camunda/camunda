@@ -17,33 +17,29 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.broker.test.MsgPackUtil.*;
-import static io.zeebe.msgpack.spec.MsgPackHelper.NIL;
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-
 import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.model.bpmn.instance.OutputBehavior;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
 import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import static io.zeebe.broker.test.MsgPackUtil.*;
+import static io.zeebe.msgpack.spec.MsgPackHelper.NIL;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Represents a test class to test the input and output mappings for
@@ -52,9 +48,6 @@ import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
 public class WorkflowTaskIOMappingTest
 {
     private static final String PROP_JOB_PAYLOAD = "payload";
-    private static final String PROP_ERRO_MSG = "errorMessage";
-
-    private static final String NODE_STRING_KEY = "string";
 
     private static final String NODE_STRING_PATH = "$.string";
     private static final String NODE_JSON_OBJECT_PATH = "$.jsonObject";
@@ -73,49 +66,6 @@ public class WorkflowTaskIOMappingTest
     public void init()
     {
         testClient = apiRule.topic();
-    }
-
-    @Test
-    public void shouldNotDeployIfInputMappingIsNotValid() throws Throwable
-    {
-        // given
-        final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("process")
-                .startEvent()
-                .serviceTask("service", t -> t.taskType("external")
-                             .input("$.*", NODE_ROOT_PATH))
-                .endEvent()
-                .done();
-
-        // when
-        final ExecuteCommandResponse response = apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, definition);
-
-        // then
-        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-        assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-        assertThat(response.rejectionReason())
-            .contains("Source mapping: JSON path '$.*' contains prohibited expression");
-    }
-
-    @Test
-    public void shouldNotDeployIfInputMappingMapsRootAndOtherObject() throws Throwable
-    {
-        // given
-        final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("process")
-                .startEvent()
-                .serviceTask("service", t -> t.taskType("external")
-                             .input(NODE_STRING_PATH, NODE_ROOT_PATH)
-                             .input(NODE_JSON_OBJECT_PATH, NODE_JSON_OBJECT_PATH))
-                .endEvent()
-                .done();
-
-        // when
-        final ExecuteCommandResponse response = apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, definition);
-
-        // then
-        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-        assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-        assertThat(response.rejectionReason())
-            .contains("Target mapping: root mapping is not allowed because it would override other mapping.");
     }
 
     @Test
@@ -231,24 +181,6 @@ public class WorkflowTaskIOMappingTest
     }
 
     @Test
-    public void shouldNotDeployIfOutputMappingIsNotValid() throws Throwable
-    {
-        // given
-        final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("process")
-                .startEvent()
-                .serviceTask("service", t -> t.taskType("external")
-                             .output(NODE_STRING_KEY, ""))
-                .endEvent()
-                .done();
-
-        final ExecuteCommandResponse response = apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, definition);
-
-        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-        assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-        assertThat(response.rejectionReason()).contains("JSON path query 'string' is not valid");
-    }
-
-    @Test
     public void shouldUseDefaultOutputMapping() throws Throwable
     {
         // given
@@ -270,6 +202,207 @@ public class WorkflowTaskIOMappingTest
         final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(result))
             .isEqualTo(JSON_MAPPER.readTree(MERGED_OTHER_WITH_JSON_DOCUMENT));
+    }
+
+    @Test
+    public void shouldUseDefaultOutputMappingWithNoWorkflowPayload() throws Throwable
+    {
+        // given
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
+            .startEvent()
+            .serviceTask("service", t -> t.taskType("external"))
+            .endEvent()
+            .done());
+
+        testClient.createWorkflowInstance("process");
+
+        // when
+        testClient.completeJobOfType("external", OTHER_PAYLOAD);
+
+        // then
+        final SubscribedRecord activityCompletedEvent = receiveFirstWorkflowInstanceEvent(
+            WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+
+        final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
+        assertThat(MSGPACK_MAPPER.readTree(result))
+            .isEqualTo(JSON_MAPPER.readTree(OTHER_DOCUMENT));
+    }
+
+    @Test
+    public void shouldUseOutputMappingWithNoWorkflowPayload() throws Throwable
+    {
+        // given
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
+            .startEvent()
+            .serviceTask("service", t -> t.taskType("external").output("$.string", "$.foo"))
+            .endEvent()
+            .done());
+
+        testClient.createWorkflowInstance("process");
+
+        // when
+        testClient.completeJobOfType("external", OTHER_PAYLOAD);
+
+        // then
+        final SubscribedRecord activityCompletedEvent = receiveFirstWorkflowInstanceEvent(
+            WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+
+        final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
+        assertThat(MSGPACK_MAPPER.readTree(result))
+            .isEqualTo(JSON_MAPPER.readTree("{'foo':'bar'}"));
+    }
+
+    @Test
+    public void shouldUseNoneOutputBehaviorWithoutCompletePayload() throws Throwable
+    {
+        // given
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
+            .startEvent()
+            .serviceTask("service", t -> t.taskType("external")
+                .outputBehavior(OutputBehavior.NONE))
+            .endEvent()
+            .done());
+
+        testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
+
+        // when
+        testClient.completeJobOfType("external");
+
+        // then
+        final SubscribedRecord activityCompletedEvent = receiveFirstWorkflowInstanceEvent(
+            WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+
+        final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
+        assertThat(MSGPACK_MAPPER.readTree(result))
+            .isEqualTo(JSON_MAPPER.readTree(JSON_DOCUMENT));
+    }
+
+    @Test
+    public void shouldUseNoneOutputBehaviorAndCompletePayload() throws Throwable
+    {
+        // given
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
+            .startEvent()
+            .serviceTask("service", t -> t.taskType("external")
+                .outputBehavior(OutputBehavior.NONE))
+            .endEvent()
+            .done());
+
+        testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
+
+        // when
+        testClient.completeJobOfType("external", OTHER_PAYLOAD);
+
+        // then
+        final SubscribedRecord activityCompletedEvent = receiveFirstWorkflowInstanceEvent(
+            WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+
+        final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
+        assertThat(MSGPACK_MAPPER.readTree(result))
+            .isEqualTo(JSON_MAPPER.readTree(JSON_DOCUMENT));
+    }
+
+
+    @Test
+    public void shouldUseOverwriteOutputBehaviorWithoutCompletePayload() throws Throwable
+    {
+        // given
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
+            .startEvent()
+            .serviceTask("service", t -> t.taskType("external")
+                .outputBehavior(OutputBehavior.OVERWRITE))
+            .endEvent()
+            .done());
+
+        testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
+
+        // when
+        testClient.completeJobOfType("external");
+
+        // then
+        final SubscribedRecord activityCompletedEvent = receiveFirstWorkflowInstanceEvent(
+            WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+
+        final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
+        assertThat(MSGPACK_MAPPER.readTree(result))
+            .isEqualTo(JSON_MAPPER.readTree("null"));
+    }
+
+    @Test
+    public void shouldUseOverwriteOutputBehaviorAndCompletePayload() throws Throwable
+    {
+        // given
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
+            .startEvent()
+            .serviceTask("service", t -> t.taskType("external")
+                .outputBehavior(OutputBehavior.OVERWRITE))
+            .endEvent()
+            .done());
+
+        testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
+
+        // when
+        testClient.completeJobOfType("external", OTHER_PAYLOAD);
+
+        // then
+        final SubscribedRecord activityCompletedEvent = receiveFirstWorkflowInstanceEvent(
+            WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+
+        final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
+        assertThat(MSGPACK_MAPPER.readTree(result))
+            .isEqualTo(JSON_MAPPER.readTree(OTHER_DOCUMENT));
+    }
+
+    @Test
+    public void shouldUseOverwriteOutputBehaviorWithOutputMappingAndCompletePayload() throws Throwable
+    {
+        // given
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
+            .startEvent()
+            .serviceTask("service", t -> t.taskType("external")
+                .outputBehavior(OutputBehavior.OVERWRITE)
+                .output("$.string", "$.foo"))
+            .endEvent()
+            .done());
+
+        testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
+
+        // when
+        testClient.completeJobOfType("external", OTHER_PAYLOAD);
+
+        // then
+        final SubscribedRecord activityCompletedEvent = receiveFirstWorkflowInstanceEvent(
+            WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+
+        final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
+        assertThat(MSGPACK_MAPPER.readTree(result))
+            .isEqualTo(JSON_MAPPER.readTree("{'foo':'bar'}"));
+    }
+
+    @Test
+    public void shouldCreateIncidentOnOverwriteOutputBehaviorWithOutputMappingAndWithoutCompletedPayload() throws Throwable
+    {
+        // given
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
+            .startEvent()
+            .serviceTask("service", t -> t.taskType("external")
+                .outputBehavior(OutputBehavior.OVERWRITE)
+                .output("$.string", "$.foo"))
+            .endEvent()
+            .done());
+
+        testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
+
+        // when
+        testClient.completeJobOfType("external");
+
+        // then incident is created
+        final SubscribedRecord incidentEvent = receiveFirstIncidentCommand(IncidentIntent.CREATE);
+
+        assertThat(incidentEvent.key()).isGreaterThan(0);
+        assertThat(incidentEvent.value())
+            .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
+            .containsEntry("errorMessage", "Could not apply output mappings: Job was completed without payload");
     }
 
     @Test
@@ -485,28 +618,6 @@ public class WorkflowTaskIOMappingTest
         assertThat(incidentEvent.value())
             .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
             .containsEntry("errorMessage", "No data found for query $.notExisting.");
-    }
-
-    @Test
-    public void shouldNotMapPayloadToWorkflowIfOutMappingMapsRootAndOtherPath() throws Throwable
-    {
-        // given
-        final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("process")
-                .startEvent()
-                .serviceTask("service", t -> t.taskType("external")
-                    .output(NODE_STRING_PATH, NODE_ROOT_PATH)
-                    .output(NODE_JSON_OBJECT_PATH, NODE_JSON_OBJECT_PATH))
-                .endEvent()
-                .done();
-
-        // when
-        final ExecuteCommandResponse response = apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, definition);
-
-        // then
-        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-        assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-        assertThat(response.rejectionReason())
-            .contains("Target mapping: root mapping is not allowed because it would override other mapping.");
     }
 
     @Test

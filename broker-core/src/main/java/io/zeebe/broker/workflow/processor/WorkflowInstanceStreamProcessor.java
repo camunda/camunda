@@ -17,53 +17,20 @@
  */
 package io.zeebe.broker.workflow.processor;
 
-import static io.zeebe.broker.util.PayloadUtil.isNilPayload;
-import static io.zeebe.broker.util.PayloadUtil.isValidPayload;
-
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
-
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.job.data.JobHeaders;
 import io.zeebe.broker.job.data.JobRecord;
-import io.zeebe.broker.logstreams.processor.CommandProcessor;
-import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
-import io.zeebe.broker.logstreams.processor.TypedBatchWriter;
-import io.zeebe.broker.logstreams.processor.TypedRecord;
-import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
-import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
-import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
-import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
-import io.zeebe.broker.logstreams.processor.TypedStreamReader;
-import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
-import io.zeebe.broker.workflow.map.ActivityInstanceMap;
-import io.zeebe.broker.workflow.map.DeployedWorkflow;
-import io.zeebe.broker.workflow.map.PayloadCache;
-import io.zeebe.broker.workflow.map.WorkflowCache;
-import io.zeebe.broker.workflow.map.WorkflowInstanceIndex;
+import io.zeebe.broker.workflow.map.*;
 import io.zeebe.broker.workflow.map.WorkflowInstanceIndex.WorkflowInstance;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.model.bpmn.BpmnAspect;
-import io.zeebe.model.bpmn.instance.EndEvent;
-import io.zeebe.model.bpmn.instance.ExclusiveGateway;
-import io.zeebe.model.bpmn.instance.FlowElement;
-import io.zeebe.model.bpmn.instance.FlowNode;
-import io.zeebe.model.bpmn.instance.SequenceFlow;
-import io.zeebe.model.bpmn.instance.ServiceTask;
-import io.zeebe.model.bpmn.instance.StartEvent;
-import io.zeebe.model.bpmn.instance.TaskDefinition;
-import io.zeebe.model.bpmn.instance.Workflow;
+import io.zeebe.model.bpmn.instance.*;
 import io.zeebe.msgpack.el.CompiledJsonCondition;
 import io.zeebe.msgpack.el.JsonConditionException;
 import io.zeebe.msgpack.el.JsonConditionInterpreter;
@@ -84,6 +51,17 @@ import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+
+import static io.zeebe.broker.util.PayloadUtil.isNilPayload;
+import static io.zeebe.broker.util.PayloadUtil.isValidPayload;
 
 public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycleAware
 {
@@ -831,42 +809,61 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
             isResolvingIncident = event.getMetadata().hasIncidentKey();
 
             final WorkflowInstanceRecord activityEvent = event.getValue();
-
-            final Mapping[] outputMappings = serviceTask.getInputOutputMapping().getOutputMappings();
-
             final DirectBuffer workflowInstancePayload = payloadCache.getPayload(activityEvent.getWorkflowInstanceKey());
-            final DirectBuffer taskPayload = activityEvent.getPayload();
-            final boolean isNilPayload = isNilPayload(taskPayload);
 
-            if (outputMappings != null && outputMappings.length > 0 && isNilPayload)
+            final InputOutputMapping inputOutputMapping = serviceTask.getInputOutputMapping();
+            tryToExecuteOutputBehavior(event, activityEvent, workflowInstancePayload, inputOutputMapping);
+        }
+
+        private void tryToExecuteOutputBehavior(TypedRecord<WorkflowInstanceRecord> event,
+                                                WorkflowInstanceRecord activityEvent,
+                                                DirectBuffer workflowInstancePayload,
+                                                InputOutputMapping inputOutputMapping)
+        {
+            final OutputBehavior outputBehavior = inputOutputMapping.getOutputBehavior();
+
+            if (outputBehavior == OutputBehavior.NONE)
             {
-                incidentCommand.reset();
-                incidentCommand
-                    .initFromWorkflowInstanceFailure(event)
-                    .setErrorType(ErrorType.IO_MAPPING_ERROR)
-                    .setErrorMessage("Could not apply output mappings: Task was completed without payload");
-
-                hasIncident = true;
+                activityEvent.setPayload(workflowInstancePayload);
             }
             else
             {
-                try
+                if (outputBehavior == OutputBehavior.OVERWRITE)
                 {
-                    final int resultLen = payloadMappingProcessor.merge(taskPayload, workflowInstancePayload, outputMappings);
-                    final MutableDirectBuffer mergedPayload = payloadMappingProcessor.getResultBuffer();
-                    activityEvent.setPayload(mergedPayload, 0, resultLen);
+                    workflowInstancePayload = WorkflowInstanceRecord.NO_PAYLOAD;
                 }
-                catch (MappingException e)
-                {
-                    incidentCommand.reset();
-                    incidentCommand
-                        .initFromWorkflowInstanceFailure(event)
-                        .setErrorType(ErrorType.IO_MAPPING_ERROR)
-                        .setErrorMessage(e.getMessage());
 
+                final Mapping[] outputMappings = inputOutputMapping.getOutputMappings();
+                final DirectBuffer jobPayload = activityEvent.getPayload();
+                if (outputMappings != null && outputMappings.length > 0 && isNilPayload(jobPayload))
+                {
+                    createIncident(event, "Could not apply output mappings: Job was completed without payload");
                     hasIncident = true;
                 }
+                else
+                {
+                    try
+                    {
+                        final int resultLen = payloadMappingProcessor.merge(jobPayload, workflowInstancePayload, outputMappings);
+                        final MutableDirectBuffer mergedPayload = payloadMappingProcessor.getResultBuffer();
+                        activityEvent.setPayload(mergedPayload, 0, resultLen);
+                    }
+                    catch (MappingException e)
+                    {
+                        createIncident(event, e.getMessage());
+                        hasIncident = true;
+                    }
+                }
             }
+        }
+
+        private void createIncident(TypedRecord<WorkflowInstanceRecord> event, String s)
+        {
+            incidentCommand.reset();
+            incidentCommand
+                .initFromWorkflowInstanceFailure(event)
+                .setErrorType(ErrorType.IO_MAPPING_ERROR)
+                .setErrorMessage(s);
         }
 
         @Override
