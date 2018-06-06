@@ -108,25 +108,29 @@ pipeline {
   }
 
   stages {
-    stage('Frontend') {
-      steps {
-        container('node') {
-          sh '''
-            cd ./client
-            yarn
-            yarn build
-            CI=true yarn test
-          '''
+    stage('Unit tests') {
+      parallel {
+        stage('Backend') {
+          steps {
+            container('maven') {
+              sh '''
+                cd ./backend
+                mvn clean install -P -docker -B
+              '''
+            }
+          }
         }
-      }
-    }
-    stage('Backend') {
-      steps {
-        container('maven') {
-          sh '''
-            cd ./backend
-            mvn clean install -P -docker -B
-          '''
+        stage('Frontend') {
+          steps {
+            container('node') {
+              sh '''
+                cd ./client
+                yarn
+                yarn build
+                CI=true yarn test
+              '''
+            }
+          }
         }
       }
     }
