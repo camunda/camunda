@@ -2,10 +2,10 @@ import React from 'react';
 
 import * as Styled from './styled.js';
 
-export default function StatsTile({name, value, valueColor, themed}) {
+export default function StatsTile({name, value, valueColor}) {
   return (
     <div>
-      {themed ? (
+      {valueColor === 'themed' ? (
         <Styled.themedValue>{value}</Styled.themedValue>
       ) : (
         <Styled.Value valueColor={valueColor}>{value}</Styled.Value>
