@@ -7,7 +7,7 @@ def static NODE_POOL() { return "slaves" }
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.5.3-jdk-8-alpine" }
 def static NODEJS_DOCKER_IMAGE() { return "node:8.11.2-alpine" }
 def static DIND_DOCKER_IMAGE() { return "docker:18.03.1-ce-dind" }
-def static OPTIMIZE_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-operate" }
+def static OPERATE_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-operate" }
 
 String getGitCommitMsg() {
   return sh(script: 'git log --format=%B -n 1 HEAD', returnStdout: true).trim()
