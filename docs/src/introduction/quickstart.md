@@ -25,14 +25,16 @@ You can download the latest distribution from the [Zeebe release page](https://g
 Extract the archive and enter the Zeebe directory.
 
 ```
-$ tar -xzvf zeebe-distribution-X.Y.Z.tar.gz
-$ cd zeebe-broker-X.Y.Z/
+tar -xzvf zeebe-distribution-X.Y.Z.tar.gz
+cd zeebe-broker-X.Y.Z/
 ```
 
 Inside the Zeebe directory you will find multiple directories.
 
 ```
-$ tree -d
+tree -d
+```
+```
 .
 ├── bin     - Binaries and start scripts of the distribution
 ├── conf    - Zeebe and logging configuration
@@ -46,8 +48,10 @@ Linux or MacOS, or the `broker.bat` file if you are using Windows. This will
 start a new Zeebe broker.
 
 ```
-$ cd bin/
-$ ./broker
+cd bin/
+./broker
+```
+```
 16:18:37.836 [] [main] INFO  io.zeebe.broker.system - Using config file quickstart/zeebe-broker-X.Y.Z/bin/../conf/zeebe.cfg.toml
 16:18:37.888 [] [main] INFO  io.zeebe.broker.system - Using data directory: quickstart/zeebe-broker-X.Y.Z/data/
 16:18:37.949 [] [main] INFO  io.zeebe.broker.system - Scheduler configuration: Threads{cpu-bound: 1, io-bound: 2}.
@@ -73,7 +77,9 @@ distribution. In the following examples we will use `zbctl`, replace this based
 on the operation system you are using.
 
 ```
-$ tree bin/
+tree bin/
+```
+```
 bin/
 ├── broker        - Zeebe broker startup script for Linux & MacOS
 ├── broker.bat    - Zeebe broker startup script for Windows
@@ -86,7 +92,9 @@ To create a topic we have to specify a name, for this guide we will use the
 topic name `quickstart`.
 
 ```
-$ ./bin/zbctl create topic quickstart
+./bin/zbctl create topic quickstart
+```
+```
 {
   "Name": "quickstart",
   "State": "CREATING",
@@ -98,7 +106,9 @@ $ ./bin/zbctl create topic quickstart
 We can now see our new topic in the topology of the Zeebe broker.
 
 ```
-$ ./bin/zbctl describe topology
+./bin/zbctl describe topology
+```
+```
 +-----------------+--------------+----------------+---------+
 |   TOPIC NAME    | PARTITION ID | BROKER ADDRESS |  STATE  |
 +-----------------+--------------+----------------+---------+
@@ -123,12 +133,13 @@ task we have to specify on which topic the task should be created.
 > - Powershell: `'{"\"zeebe"\": 2018}'`
 
 ```
-$ ./bin/zbctl --topic quickstart create task step4 --payload '{"zeebe": 2018}'
+./bin/zbctl --topic quickstart create job step4 --payload '{"zeebe": 2018}'
+```
+```
 {
-  "State": "CREATED",
-  "LockTime": 0,
-  "LockOwner": "",
-  "Headers": {
+  "deadline": 0,
+  "worker": "",
+  "headers": {
     "activityId": "",
     "activityInstanceKey": -1,
     "bpmnProcessId": "",
@@ -136,10 +147,10 @@ $ ./bin/zbctl --topic quickstart create task step4 --payload '{"zeebe": 2018}'
     "workflowInstanceKey": -1,
     "workflowKey": -1
   },
-  "CustomHeader": {},
-  "Retries": 3,
-  "Type": "step4",
-  "Payload": "gaV6ZWViZctAn4gAAAAAAA=="
+  "customHeaders": {},
+  "retries": 3,
+  "type": "step4",
+  "payload": "gaV6ZWViZctAn4gAAAAAAA=="
 }
 ```
 
@@ -160,12 +171,13 @@ its input without modifying it.
 > to execute this command.
 
 ```
-$ ./bin/zbctl --topic quickstart subscribe task --taskType step4 cat
+./bin/zbctl --topic quickstart subscribe task --taskType step4 cat
+```
+```
 {
-  "State": "LOCKED",
-  "LockTime": 1522659897723,
-  "LockOwner": "zbctl-AKVtEPLotx",
-  "Headers": {
+  "deadline": 1528283995362,
+  "worker": "zbctl-lkUROjjips",
+  "headers": {
     "activityId": "",
     "activityInstanceKey": -1,
     "bpmnProcessId": "",
@@ -173,10 +185,10 @@ $ ./bin/zbctl --topic quickstart subscribe task --taskType step4 cat
     "workflowInstanceKey": -1,
     "workflowKey": -1
   },
-  "CustomHeader": {},
-  "Retries": 3,
-  "Type": "step4",
-  "Payload": "gaV6ZWViZctAn4gAAAAAAA=="
+  "customHeaders": {},
+  "retries": 3,
+  "type": "step4",
+  "payload": "gaV6ZWViZctAn4gAAAAAAA=="
 }
 Completing Task
 ```
@@ -192,7 +204,7 @@ and repeat the command from [step 4](#step-4-create-a-task) multiple times.
 > - Powershell: `'{"\"zeebe"\": 2018}'`
 
 ```
-$ ./bin/zbctl --topic quickstart create task step4 --payload '{"zeebe": 2018}'
+./bin/zbctl --topic quickstart create job step4 --payload '{"zeebe": 2018}'
 ```
 
 In the terminal with the running worker you will see that it processes every
@@ -206,7 +218,9 @@ You can see all events which are published to a topic by creating a topic
 subscription. You have to specify the topic name.
 
 ```
-$ ./bin/zbctl --topic quickstart subscribe topic
+./bin/zbctl --topic quickstart subscribe topic
+```
+```
 [...]
 Metadata [topic=quickstart, partition=1, key=4294969248, position=4294970096, type=Task]
 {
@@ -317,7 +331,9 @@ the topic to deploy to and the resource we want to deploy, in our case the
 `order-process.bpmn`.
 
 ```
-$ ./bin/zbctl --topic quickstart create workflow order-process.bpmn
+./bin/zbctl --topic quickstart create workflow order-process.bpmn
+```
+```
 {
   "State": "CREATED",
   "TopicName": "quickstart",
@@ -351,7 +367,9 @@ specify the initial data of the instance as payload when we start the instance.
 > - Powershell: `'{"\"orderId"\": 1234}'`
 
 ```
-$ ./bin/zbctl --topic quickstart create instance order-process --payload '{"orderId": 1234}'
+./bin/zbctl --topic quickstart create instance order-process --payload '{"orderId": 1234}'
+```
+```
 {
   "BPMNProcessID": "order-process",
   "Payload": "gadvcmRlcklky0CTSAAAAAAA",
@@ -373,9 +391,9 @@ task types. Start a task worker for all three task types as a background process
 > to execute these commands.
 
 ```
-$ ./bin/zbctl --topic quickstart subscribe task --taskType payment-service cat &
-$ ./bin/zbctl --topic quickstart subscribe task --taskType inventory-service cat &
-$ ./bin/zbctl --topic quickstart subscribe task --taskType shipment-service cat &
+./bin/zbctl --topic quickstart subscribe task --taskType payment-service cat &
+./bin/zbctl --topic quickstart subscribe task --taskType inventory-service cat &
+./bin/zbctl --topic quickstart subscribe task --taskType shipment-service cat &
 ```
 
 To verify that our workflow instance was completed after all tasks were
@@ -383,7 +401,9 @@ processed we can again open a topic subscription. The last event should
 indicate that the workflow instance was completed.
 
 ```
-$ ./bin/zbctl --topic quickstart subscribe topic
+./bin/zbctl --topic quickstart subscribe topic
+```
+```
 Metadata [topic=quickstart, partition=1, key=4294996328, position=4294996328, type=Workflow Instance]
 {
   "ActivityID": "",
@@ -417,7 +437,7 @@ We can now start new instances in another terminal with the command from [step
 > - Powershell: `'{"\"orderId"\": 1234}'`
 
 ```
-$ ./bin/zbctl --topic quickstart create instance order-process --payload '{"orderId": 1234}'
+./bin/zbctl --topic quickstart create instance order-process --payload '{"orderId": 1234}'
 ```
 
 To close all subscriptions you can press CTRL-C to stop the topic subscription
