@@ -5,8 +5,6 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
 import org.camunda.operate.util.WebSecurityDisabledConfig;
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
 import org.hamcrest.core.IsNot;
 import org.hamcrest.text.IsEmptyString;
 import org.junit.Before;
@@ -23,8 +21,9 @@ import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.context.WebApplicationContext;
 import static org.junit.Assert.assertNotNull;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
 
 /**
@@ -64,7 +63,7 @@ public class WorkflowInstanceRestServiceTest {
   }
 
   @Test
-  public void userNotFound() throws Exception {
+  public void testWorkflowInstanceCount() throws Exception {
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setRunning(true);
     workflowInstanceQueryDto.setWithIncidents(true);
