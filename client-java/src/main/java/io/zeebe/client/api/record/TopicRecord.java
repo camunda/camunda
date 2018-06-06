@@ -18,12 +18,18 @@ package io.zeebe.client.api.record;
 public interface TopicRecord extends Record
 {
     /**
-     * @return the name of the subscription
+     * @return the name of the topic
      */
     String getName();
 
+    /**
+     * @return the amount of partitions of the topic
+     */
     int getPartitions();
 
+    /**
+     * @return the replication factor of the topic
+     */
     int getReplicationFactor();
 
 }

@@ -19,20 +19,11 @@ package io.zeebe.broker.workflow;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.*;
+import java.util.*;
 
-import org.assertj.core.util.Files;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
 import io.zeebe.broker.system.workflow.repository.data.ResourceType;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
@@ -45,6 +36,10 @@ import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.util.StreamUtil;
+import org.assertj.core.util.Files;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 public class CreateDeploymentTest
 {
@@ -86,22 +81,26 @@ public class CreateDeploymentTest
     public void shouldReturnDeployedWorkflowDefinitions()
     {
         // when
-        ExecuteCommandResponse resp = apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, WORKFLOW);
+        final ExecuteCommandResponse firstDeployment = apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, WORKFLOW, "wf1.bpmn");
+        final ExecuteCommandResponse secondDeployment = apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, WORKFLOW, "wf2.bpmn");
 
         // then
-        List<Map<String, Object>> deployedWorkflows = (List<Map<String, Object>>) resp.getValue().get("deployedWorkflows");
+        List<Map<String, Object>> deployedWorkflows = (List<Map<String, Object>>) firstDeployment.getValue().get("deployedWorkflows");
         assertThat(deployedWorkflows).hasSize(1);
-        assertThat(deployedWorkflows.get(0)).containsEntry(WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID, "process");
-        assertThat(deployedWorkflows.get(0)).containsEntry(WorkflowInstanceRecord.PROP_WORKFLOW_VERSION, 1);
+        assertThat(deployedWorkflows.get(0))
+            .containsExactly(entry("bpmnProcessId", "process"),
+                             entry("version", 1),
+                             entry("workflowKey", 1),
+                             entry("resourceName", "wf1.bpmn"));
 
-        // when deploy the workflow definition a second time
-        resp = apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, WORKFLOW);
 
-        // then the workflow definition version is increased
-        deployedWorkflows = (List<Map<String, Object>>) resp.getValue().get("deployedWorkflows");
+        deployedWorkflows = (List<Map<String, Object>>) secondDeployment.getValue().get("deployedWorkflows");
         assertThat(deployedWorkflows).hasSize(1);
-        assertThat(deployedWorkflows.get(0)).containsEntry(WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID, "process");
-        assertThat(deployedWorkflows.get(0)).containsEntry(WorkflowInstanceRecord.PROP_WORKFLOW_VERSION, 2);
+        assertThat(deployedWorkflows.get(0))
+            .containsExactly(entry("bpmnProcessId", "process"),
+                             entry("version", 2),
+                             entry("workflowKey", 2),
+                             entry("resourceName", "wf2.bpmn"));
     }
 
     @Test

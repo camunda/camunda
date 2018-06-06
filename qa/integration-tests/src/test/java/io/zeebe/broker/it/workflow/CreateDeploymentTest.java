@@ -73,10 +73,11 @@ public class CreateDeploymentTest
 
         assertThat(result.getDeployedWorkflows()).hasSize(1);
 
-        final Workflow deployedWorkflow = result.getDeployedWorkflows().get(0);
+        final DeployedWorkflow deployedWorkflow = result.getDeployedWorkflows().get(0);
         assertThat(deployedWorkflow.getBpmnProcessId()).isEqualTo("process");
         assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
-        assertThat(deployedWorkflow.getWorkflowKey()).isGreaterThan(0);
+        assertThat(deployedWorkflow.getWorkflowKey()).isEqualTo(1L);
+        assertThat(deployedWorkflow.getResourceName()).isEqualTo("workflow.bpmn");
     }
 
     @Test

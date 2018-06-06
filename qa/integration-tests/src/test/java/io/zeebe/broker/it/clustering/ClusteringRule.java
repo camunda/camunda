@@ -32,7 +32,7 @@ import io.zeebe.broker.it.util.TopologyClient;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.commands.*;
 import io.zeebe.client.api.events.TopicEvent;
-import io.zeebe.client.api.events.TopicEvent.TopicState;
+import io.zeebe.client.api.events.TopicState;
 import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;

@@ -1,0 +1,15 @@
+{
+  "metadata": {
+    "intent": "CREATE",
+    "valueType": "TOPIC",
+    "recordType": "COMMAND",
+    "topicName": "internal-system",
+    "partitionId": 0,
+    "key": 4294968552,
+    "position": 4294968552,
+    "timestamp": "2018-06-04T08:43:25.344Z"
+  },
+  "name": "my-topic",
+  "partitions": 1,
+  "replicationFactor": 1
+}

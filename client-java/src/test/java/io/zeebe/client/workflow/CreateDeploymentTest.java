@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.*;
 
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.commands.DeployedWorkflow;
 import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.client.util.ClientRule;
@@ -94,11 +95,15 @@ public class CreateDeploymentTest
         Map<String, Object> deployedWorkflow = new HashMap<>();
         deployedWorkflow.put("bpmnProcessId", "foo");
         deployedWorkflow.put("version", 1);
+        deployedWorkflow.put("workflowKey", 2);
+        deployedWorkflow.put("resourceName", "foo.bpmn");
         deployedWorkflows.add(deployedWorkflow);
 
         deployedWorkflow = new HashMap<>();
         deployedWorkflow.put("bpmnProcessId", "bar");
         deployedWorkflow.put("version", 2);
+        deployedWorkflow.put("workflowKey", 3);
+        deployedWorkflow.put("resourceName", "bar.bpmn");
         deployedWorkflows.add(deployedWorkflow);
 
         brokerRule.deployments().registerCreateCommand(b -> b
@@ -125,8 +130,10 @@ public class CreateDeploymentTest
         assertThat(deployment.getMetadata().getPartitionId()).isEqualTo(Protocol.SYSTEM_PARTITION);
 
         assertThat(deployment.getDeployedWorkflows()).hasSize(2);
-        assertThat(deployment.getDeployedWorkflows()).extracting("bpmnProcessId").contains("foo", "bar");
-        assertThat(deployment.getDeployedWorkflows()).extracting("version").contains(1, 2);
+        assertThat(deployment.getDeployedWorkflows()).extracting(DeployedWorkflow::getBpmnProcessId).contains("foo", "bar");
+        assertThat(deployment.getDeployedWorkflows()).extracting(DeployedWorkflow::getVersion).contains(1, 2);
+        assertThat(deployment.getDeployedWorkflows()).extracting(DeployedWorkflow::getWorkflowKey).contains(2L, 3L);
+        assertThat(deployment.getDeployedWorkflows()).extracting(DeployedWorkflow::getResourceName).contains("foo.bpmn", "bar.bpmn");
     }
 
     @Test

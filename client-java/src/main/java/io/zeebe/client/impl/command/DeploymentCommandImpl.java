@@ -25,8 +25,6 @@ import io.zeebe.protocol.intent.DeploymentIntent;
 
 public class DeploymentCommandImpl extends DeploymentRecordImpl implements DeploymentCommand
 {
-    private DeploymentCommandName name;
-
     private String errorMessage;
 
     @JsonCreator
@@ -45,7 +43,7 @@ public class DeploymentCommandImpl extends DeploymentRecordImpl implements Deplo
     @Override
     public DeploymentCommandName getName()
     {
-        return name;
+        return DeploymentCommandName.valueOf(getMetadata().getIntent());
     }
 
     public String getErrorMessage()
@@ -63,7 +61,7 @@ public class DeploymentCommandImpl extends DeploymentRecordImpl implements Deplo
     {
         final StringBuilder builder = new StringBuilder();
         builder.append("DeploymentCommand [command=");
-        builder.append(name);
+        builder.append(getName());
         builder.append(", topic=");
         builder.append(getDeploymentTopic());
         builder.append(", resource=");

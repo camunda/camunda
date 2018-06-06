@@ -20,13 +20,9 @@ import static org.assertj.core.api.Assertions.entry;
 
 import java.time.Instant;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.events.TopicEvent;
+import io.zeebe.client.api.events.TopicState;
 import io.zeebe.client.util.ClientRule;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
@@ -34,6 +30,10 @@ import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.TopicIntent;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
 public class CreateTopicTest
 {
@@ -91,7 +91,7 @@ public class CreateTopicTest
         assertThat(responseEvent.getMetadata().getPartitionId()).isEqualTo(Protocol.SYSTEM_PARTITION);
         assertThat(responseEvent.getMetadata().getPosition()).isEqualTo(456);
         assertThat(responseEvent.getMetadata().getTimestamp()).isEqualTo(expectedTimestamp);
-        assertThat(responseEvent.getState()).isEqualTo(TopicEvent.TopicState.CREATING);
+        assertThat(responseEvent.getState()).isEqualTo(TopicState.CREATING);
     }
 
     @Test

@@ -29,10 +29,7 @@ import io.zeebe.client.api.events.*;
 import io.zeebe.client.api.record.Record;
 import io.zeebe.client.api.record.ZeebeObjectMapper;
 import io.zeebe.test.util.AutoCloseableRule;
-
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
@@ -56,6 +53,8 @@ public class ZeebeObjectMapperRecordSerializationTest
                 { "DeploymentCommand.json", DeploymentCommand.class },
                 { "IncidentEvent.json", IncidentEvent.class },
                 { "IncidentCommand.json", IncidentCommand.class },
+                { "TopicEvent.json", TopicEvent.class },
+                { "TopicCommand.json", TopicCommand.class },
                 { "RaftEvent.json", RaftEvent.class }
         });
     }

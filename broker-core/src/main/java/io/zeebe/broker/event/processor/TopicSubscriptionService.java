@@ -19,10 +19,10 @@ package io.zeebe.broker.event.processor;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.Partition;
-import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
-import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
+import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.broker.transport.clientapi.*;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
+import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.*;
 import io.zeebe.util.sched.Actor;
@@ -34,6 +34,19 @@ import org.slf4j.Logger;
 public class TopicSubscriptionService extends Actor implements Service<TopicSubscriptionService>, TransportListener
 {
     private static final Logger LOG = Loggers.SERVICES_LOGGER;
+
+    protected static final MetadataFilter TOPIC_SUBSCRIPTION_EVENT_FILTER = m ->
+    {
+        final ValueType valueType = m.getValueType();
+        return
+                // don't push subscription or subscriber events;
+                // this may lead to infinite loops of pushing events that in turn trigger creation of more such events (e.g. ACKs)
+                valueType != ValueType.SUBSCRIPTION &&
+                valueType != ValueType.SUBSCRIBER &&
+                // don't push internal events
+                valueType != ValueType.ID &&
+                valueType != ValueType.NOOP;
+    };
 
     protected final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
     protected final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector = new Injector<>();
@@ -49,6 +62,11 @@ public class TopicSubscriptionService extends Actor implements Service<TopicSubs
         .onAdd(this::onPartitionAdded)
         .onRemove(this::onPartitionRemoved)
         .build();
+
+    protected final ServiceGroupReference<Partition> systemPartitionGroupReference = ServiceGroupReference.<Partition>create()
+            .onAdd(this::onPartitionAdded)
+            .onRemove(this::onPartitionRemoved)
+            .build();
 
     public TopicSubscriptionService(ServiceContainer serviceContainer)
     {
@@ -74,6 +92,11 @@ public class TopicSubscriptionService extends Actor implements Service<TopicSubs
     public ServiceGroupReference<Partition> getPartitionsGroupReference()
     {
         return partitionsGroupReference;
+    }
+
+    public ServiceGroupReference<Partition> getSystemPartitionGroupReference()
+    {
+        return systemPartitionGroupReference;
     }
 
     @Override
@@ -102,6 +125,7 @@ public class TopicSubscriptionService extends Actor implements Service<TopicSubs
         {
             final TopicSubscriptionManagementProcessor ackProcessor = new TopicSubscriptionManagementProcessor(partition,
                 partitionServiceName,
+                TOPIC_SUBSCRIPTION_EVENT_FILTER,
                 new CommandResponseWriter(serverOutput),
                 new ErrorResponseWriter(serverOutput),
                 () -> new SubscribedRecordWriter(serverOutput),

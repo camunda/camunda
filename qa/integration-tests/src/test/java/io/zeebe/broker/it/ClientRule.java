@@ -18,28 +18,19 @@ package io.zeebe.broker.it;
 
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import io.zeebe.client.ClientProperties;
-import org.junit.rules.ExternalResource;
-
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.clients.JobClient;
-import io.zeebe.client.api.clients.TopicClient;
-import io.zeebe.client.api.clients.WorkflowClient;
-import io.zeebe.client.api.commands.Partition;
-import io.zeebe.client.api.commands.Topic;
-import io.zeebe.client.api.commands.Topics;
-import io.zeebe.client.api.commands.Topology;
+import io.zeebe.client.api.clients.*;
+import io.zeebe.client.api.commands.*;
 import io.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.sched.clock.ControlledActorClock;
+import org.junit.rules.ExternalResource;
 
 public class ClientRule extends ExternalResource
 {
@@ -55,7 +46,8 @@ public class ClientRule extends ExternalResource
 
     public ClientRule(final String contactPoint)
     {
-        this(() -> {
+        this(() ->
+        {
             final Properties properties = new Properties();
             properties.put(ClientProperties.BROKER_CONTACTPOINT, contactPoint);
             return properties;

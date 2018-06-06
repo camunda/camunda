@@ -15,18 +15,30 @@
  */
 package io.zeebe.client.impl.event;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.*;
 import io.zeebe.client.api.events.TopicEvent;
+import io.zeebe.client.api.events.TopicState;
 import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.record.TopicRecordImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 
 public class TopicEventImpl extends TopicRecordImpl implements TopicEvent
 {
+    private final List<Integer> partitionIds = new ArrayList<>();
+
     @JsonCreator
     public TopicEventImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper)
     {
         super(objectMapper, RecordType.EVENT);
+    }
+
+    @Override
+    public List<Integer> getPartitionIds()
+    {
+        return partitionIds;
     }
 
     @JsonIgnore
@@ -44,8 +56,8 @@ public class TopicEventImpl extends TopicRecordImpl implements TopicEvent
         builder.append(getState());
         builder.append(", name=");
         builder.append(getName());
-        builder.append(", partitions=");
-        builder.append(getPartitions());
+        builder.append(", partitionIds=");
+        builder.append(partitionIds);
         builder.append("]");
         return builder.toString();
     }

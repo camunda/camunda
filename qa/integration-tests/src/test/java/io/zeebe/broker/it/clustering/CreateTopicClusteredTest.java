@@ -235,7 +235,7 @@ public class CreateTopicClusteredTest
 
         // when
         // stop broker which is no leader to decrement member size correctly
-        final SocketAddress brokerWhichIsNoLeader = Arrays.stream(otherBrokers).filter(broker -> !broker.equals(leaderForSystemPartition.getAddress())).findAny().get();
+        final SocketAddress brokerWhichIsNoLeader = Arrays.stream(otherBrokers).filter(broker -> !broker.equals(SocketAddress.from(leaderForSystemPartition.getAddress()))).findAny().get();
         clusteringRule.stopBroker(brokerWhichIsNoLeader);
 
         // then topology contains still topic

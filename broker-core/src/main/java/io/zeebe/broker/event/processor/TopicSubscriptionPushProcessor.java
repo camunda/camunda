@@ -19,14 +19,12 @@ package io.zeebe.broker.event.processor;
 
 import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
-import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.logstreams.processor.NoopSnapshotSupport;
 import io.zeebe.broker.transport.clientapi.SubscribedRecordWriter;
 import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.processor.*;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.protocol.clientapi.SubscriptionType;
-import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.util.collection.LongRingBuffer;
 import org.agrona.DirectBuffer;
@@ -177,21 +175,6 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
                 this.context.resumeController();
             }
         });
-    }
-
-    public static MetadataFilter eventFilter()
-    {
-        return m ->
-        {
-            final ValueType eventType = m.getValueType();
-            return
-                    // don't push subscription or subscriber events;
-                    // this may lead to infinite loops of pushing events that in turn trigger creation of more such events (e.g. ACKs)
-                    eventType != ValueType.SUBSCRIPTION &&
-                    eventType != ValueType.SUBSCRIBER &&
-                    // don't push noop events as they are rather an implementation detail of raft
-                    eventType != ValueType.NOOP;
-        };
     }
 
     public DirectBuffer getName()

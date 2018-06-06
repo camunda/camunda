@@ -49,6 +49,9 @@ public class RecordClassMapping
         RECORD_CLASSES.put(RecordType.COMMAND, ValueType.DEPLOYMENT, DeploymentCommandImpl.class);
         RECORD_CLASSES.put(RecordType.EVENT, ValueType.DEPLOYMENT, DeploymentEventImpl.class);
 
+        RECORD_CLASSES.put(RecordType.COMMAND, ValueType.TOPIC, TopicCommandImpl.class);
+        RECORD_CLASSES.put(RecordType.EVENT, ValueType.TOPIC, TopicEventImpl.class);
+
         for (ValueType valueType : ValueType.values())
         {
             final Class<? extends RecordImpl> commandClass = RECORD_CLASSES.get(RecordType.COMMAND, valueType);
@@ -70,6 +73,8 @@ public class RecordClassMapping
         RECORD_IMPL_CLASS_MAPPING.put(RaftEvent.class, RaftEventImpl.class);
         RECORD_IMPL_CLASS_MAPPING.put(DeploymentEvent.class, DeploymentEventImpl.class);
         RECORD_IMPL_CLASS_MAPPING.put(DeploymentCommand.class, DeploymentCommandImpl.class);
+        RECORD_IMPL_CLASS_MAPPING.put(TopicEvent.class, TopicEventImpl.class);
+        RECORD_IMPL_CLASS_MAPPING.put(TopicCommand.class, TopicCommandImpl.class);
     }
 
     @SuppressWarnings("unchecked")

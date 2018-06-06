@@ -131,7 +131,8 @@ public class DeploymentCreateEventProcessor implements TypedRecordProcessor<Depl
                             deploymentEvent.deployedWorkflows().add()
                                 .setBpmnProcessId(workflow.getBpmnProcessId())
                                 .setVersion(version)
-                                .setKey(key);
+                                .setKey(key)
+                                .setResourceName(deploymentResource.getResourceName());
                         }
                     }
 

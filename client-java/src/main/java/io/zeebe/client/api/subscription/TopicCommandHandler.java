@@ -13,22 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.api.events;
+package io.zeebe.client.api.subscription;
 
-import java.util.List;
+import io.zeebe.client.api.commands.TopicCommand;
 
-import io.zeebe.client.api.commands.DeployedWorkflow;
-import io.zeebe.client.api.record.DeploymentRecord;
-
-public interface DeploymentEvent extends DeploymentRecord
+@FunctionalInterface
+public interface TopicCommandHandler
 {
-    /**
-     * @return the current state
-     */
-    DeploymentState getState();
+    void onTopicCommand(TopicCommand topicCommand);
 
-    /**
-     * @return the workflows which are deployed
-     */
-    List<DeployedWorkflow> getDeployedWorkflows();
+    default void onTopicCommandRejection(TopicCommand topicCommand)
+    {
+    };
+
 }

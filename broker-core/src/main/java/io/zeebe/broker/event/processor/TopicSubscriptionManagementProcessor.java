@@ -20,31 +20,19 @@ package io.zeebe.broker.event.processor;
 import java.util.Iterator;
 import java.util.function.Supplier;
 
-import org.agrona.DirectBuffer;
-
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.Partition;
-import io.zeebe.broker.logstreams.processor.MetadataFilter;
-import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
-import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
-import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
-import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
-import io.zeebe.broker.transport.clientapi.SubscribedRecordWriter;
+import io.zeebe.broker.logstreams.processor.*;
+import io.zeebe.broker.transport.clientapi.*;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.processor.EventProcessor;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.processor.*;
 import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.map.Bytes2LongZbMap;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.ErrorCode;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.clientapi.*;
 import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.protocol.intent.SubscriberIntent;
 import io.zeebe.protocol.intent.SubscriptionIntent;
@@ -53,6 +41,7 @@ import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import org.agrona.DirectBuffer;
 
 public class TopicSubscriptionManagementProcessor implements StreamProcessor
 {
@@ -66,6 +55,8 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
 
     protected final Partition partition;
     protected final ServiceName<Partition> partitionServiceName;
+
+    protected final MetadataFilter pushProcessorEventFilter;
 
     protected final SubscriptionRegistry subscriptionRegistry = new SubscriptionRegistry();
 
@@ -90,6 +81,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
 
     public TopicSubscriptionManagementProcessor(Partition partition,
             ServiceName<Partition> partitionServiceName,
+            MetadataFilter pushProcessorEventFilter,
             CommandResponseWriter responseWriter,
             ErrorResponseWriter errorWriter,
             Supplier<SubscribedRecordWriter> eventWriterFactory,
@@ -98,6 +90,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
     {
         this.partition = partition;
         this.partitionServiceName = partitionServiceName;
+        this.pushProcessorEventFilter = pushProcessorEventFilter;
         this.responseWriter = responseWriter;
         this.errorWriter = errorWriter;
         this.eventWriterFactory = eventWriterFactory;
@@ -265,7 +258,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
                 .processor(processor)
                 .processorId(StreamProcessorIds.TOPIC_SUBSCRIPTION_PUSH_PROCESSOR_ID)
                 .processorName(pushProcessorName(processor))
-                .eventFilter(TopicSubscriptionPushProcessor.eventFilter())
+                .eventFilter(pushProcessorEventFilter)
                 .additionalDependencies(partitionServiceName)
                 .readOnly(true)
                 .build();

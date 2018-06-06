@@ -15,37 +15,78 @@
  */
 package io.zeebe.client.impl.subscription.topic;
 
-import org.agrona.collections.Long2LongHashMap;
-import io.zeebe.client.impl.record.UntypedRecordImpl;
+import io.zeebe.client.api.record.RecordType;
+import io.zeebe.client.api.record.ValueType;
+import io.zeebe.client.api.subscription.RecordHandler;
+import io.zeebe.client.cmd.ClientException;
+import io.zeebe.client.impl.record.*;
 import io.zeebe.util.CheckedConsumer;
+import org.agrona.collections.Long2LongHashMap;
 
 public class TopicSubscriptionSpec
 {
 
     protected final String topic;
-    protected final CheckedConsumer<UntypedRecordImpl> handler;
     protected final boolean forceStart;
     protected final String name;
     protected final int bufferSize;
     protected final long defaultStartPosition;
     protected final Long2LongHashMap startPositions;
 
+    protected final CheckedConsumer<UntypedRecordImpl> handler;
+    protected final BiEnumMap<RecordType, ValueType, CheckedConsumer<RecordImpl>> handlers;
+    protected final RecordHandler defaultHandler;
+
     public TopicSubscriptionSpec(
             String topic,
-            CheckedConsumer<UntypedRecordImpl> handler,
             long defaultStartPosition,
             Long2LongHashMap startPositions,
             boolean forceStart,
             String name,
-            int bufferSize)
+            int bufferSize,
+            BiEnumMap<RecordType, ValueType, CheckedConsumer<RecordImpl>> handlers,
+            RecordHandler defaultHandler)
     {
         this.topic = topic;
-        this.handler = handler;
         this.defaultStartPosition = defaultStartPosition;
         this.startPositions = startPositions;
         this.forceStart = forceStart;
         this.name = name;
         this.bufferSize = bufferSize;
+
+        this.handlers = handlers;
+        this.defaultHandler = defaultHandler;
+
+        this.handler = this::dispatchRecord;
+    }
+
+    @SuppressWarnings("unchecked")
+    protected <T extends RecordImpl> void dispatchRecord(UntypedRecordImpl record) throws Exception
+    {
+        final RecordMetadataImpl metadata = record.getMetadata();
+        final ValueType valueType = metadata.getValueType();
+        final RecordType recordType = metadata.getRecordType();
+
+        final Class<T> targetClass = RecordClassMapping.getRecordImplClass(recordType, valueType);
+
+        if (targetClass == null)
+        {
+            throw new ClientException("Cannot deserialize record " + recordType + "/" + valueType + ": No POJO class registered");
+        }
+
+        final T typedRecord = record.asRecordType(targetClass);
+        typedRecord.updateMetadata(record.getMetadata());
+
+        final CheckedConsumer<T> handler = (CheckedConsumer<T>) handlers.get(recordType, valueType);
+
+        if (handler != null)
+        {
+            handler.accept(typedRecord);
+        }
+        else if (defaultHandler != null)
+        {
+            defaultHandler.onRecord(typedRecord);
+        }
     }
 
     public String getTopic()

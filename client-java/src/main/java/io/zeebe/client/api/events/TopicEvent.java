@@ -15,6 +15,8 @@
  */
 package io.zeebe.client.api.events;
 
+import java.util.List;
+
 import io.zeebe.client.api.record.TopicRecord;
 
 public interface TopicEvent extends TopicRecord
@@ -24,8 +26,9 @@ public interface TopicEvent extends TopicRecord
      */
     TopicState getState();
 
-    enum TopicState
-    {
-        CREATING
-    }
+    /**
+     * @return the ids of the created partitions
+     */
+    List<Integer> getPartitionIds();
+
 }

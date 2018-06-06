@@ -18,6 +18,7 @@
 package io.zeebe.broker.logstreams;
 
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_SYSTEM_GROUP_NAME;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY;
 
 import io.zeebe.broker.event.TopicSubscriptionServiceNames;
@@ -40,6 +41,7 @@ public class LogStreamsComponent implements Component
             .dependency(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME), topicSubscriptionService.getClientApiTransportInjector())
             .dependency(LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY, topicSubscriptionService.getStreamProcessorServiceFactoryInjector())
             .groupReference(LEADER_PARTITION_GROUP_NAME, topicSubscriptionService.getPartitionsGroupReference())
+            .groupReference(LEADER_PARTITION_SYSTEM_GROUP_NAME, topicSubscriptionService.getSystemPartitionGroupReference())
             .install();
 
         final StreamProcessorServiceFactory streamProcessorFactory = new StreamProcessorServiceFactory(serviceContainer);

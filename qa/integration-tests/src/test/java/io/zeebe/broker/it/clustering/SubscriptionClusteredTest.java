@@ -128,6 +128,30 @@ public class SubscriptionClusteredTest
         assertThat(raftEvents.get(1).getMembers()).hasSize(clusteringRule.getBrokersInCluster().size());
     }
 
+    @Test
+    public void shouldReceiveRaftEventsFromSystemTopic()
+    {
+        // given
+        clusteringRule.restartBroker(clusteringRule.getFollowerOnly());
+
+        // when
+        final List<RaftEvent> raftEvents = new ArrayList<>();
+        client
+            .newManagementSubscription()
+            .name("test-subscription")
+            .raftEventHandler(raftEvents::add)
+            .startAtHeadOfTopic()
+            .open();
+
+        // then we should receive two raft add member events
+        waitUntil(() -> raftEvents.size() == 4);
+
+        assertThat(raftEvents).hasSize(4);
+        assertThat(raftEvents).extracting(RaftEvent::getState)
+            .containsExactly(RaftState.MEMBER_ADDED, RaftState.MEMBER_ADDED, RaftState.MEMBER_REMOVED, RaftState.MEMBER_ADDED);
+        assertThat(raftEvents.get(1).getMembers()).hasSize(clusteringRule.getBrokersInCluster().size());
+    }
+
     protected void createJobOnPartition(String topic, int partition)
     {
         final CreateJobCommandImpl command = (CreateJobCommandImpl) client.topicClient(topic).jobClient()

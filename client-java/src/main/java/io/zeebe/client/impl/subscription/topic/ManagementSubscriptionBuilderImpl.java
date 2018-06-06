@@ -18,22 +18,24 @@ package io.zeebe.client.impl.subscription.topic;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import io.zeebe.client.api.commands.*;
+import io.zeebe.client.ZeebeClientConfiguration;
+import io.zeebe.client.api.commands.DeploymentCommand;
+import io.zeebe.client.api.commands.TopicCommand;
 import io.zeebe.client.api.events.*;
 import io.zeebe.client.api.record.RecordType;
 import io.zeebe.client.api.record.ValueType;
 import io.zeebe.client.api.subscription.*;
-import io.zeebe.client.api.subscription.TopicSubscriptionBuilderStep1.TopicSubscriptionBuilderStep2;
-import io.zeebe.client.api.subscription.TopicSubscriptionBuilderStep1.TopicSubscriptionBuilderStep3;
+import io.zeebe.client.api.subscription.ManagementSubscriptionBuilderStep1.ManagementSubscriptionBuilderStep2;
+import io.zeebe.client.api.subscription.ManagementSubscriptionBuilderStep1.ManagementSubscriptionBuilderStep3;
 import io.zeebe.client.cmd.ClientException;
-import io.zeebe.client.impl.TopicClientImpl;
 import io.zeebe.client.impl.record.RecordImpl;
 import io.zeebe.client.impl.subscription.SubscriptionManager;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.util.CheckedConsumer;
 import io.zeebe.util.EnsureUtil;
 import org.agrona.collections.Long2LongHashMap;
 
-public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilderStep1, TopicSubscriptionBuilderStep2, TopicSubscriptionBuilderStep3
+public class ManagementSubscriptionBuilderImpl implements ManagementSubscriptionBuilderStep1, ManagementSubscriptionBuilderStep2, ManagementSubscriptionBuilderStep3
 {
     private RecordHandler defaultRecordHandler;
 
@@ -41,22 +43,20 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilderSte
             new BiEnumMap<>(RecordType.class, ValueType.class, CheckedConsumer.class);
 
     private int bufferSize;
-    private final String topic;
     private final SubscriptionManager subscriptionManager;
     private String name;
     private boolean forceStart;
     private long defaultStartPosition;
     private final Long2LongHashMap startPositions = new Long2LongHashMap(-1);
 
-    public TopicSubscriptionBuilderImpl(TopicClientImpl client)
+    public ManagementSubscriptionBuilderImpl(SubscriptionManager subscriptionManager, ZeebeClientConfiguration configuration)
     {
-        this.topic = client.getTopic();
-        this.subscriptionManager = client.getSubscriptionManager();
-        this.bufferSize = client.getConfiguration().getDefaultTopicSubscriptionBufferSize();
+        this.subscriptionManager = subscriptionManager;
+        this.bufferSize = configuration.getDefaultTopicSubscriptionBufferSize();
     }
 
     @Override
-    public TopicSubscriptionBuilderStep3 recordHandler(RecordHandler handler)
+    public ManagementSubscriptionBuilderStep3 recordHandler(RecordHandler handler)
     {
         EnsureUtil.ensureNotNull("recordHandler", handler);
         this.defaultRecordHandler = handler;
@@ -64,60 +64,45 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilderSte
     }
 
     @Override
-    public TopicSubscriptionBuilderStep3 jobEventHandler(JobEventHandler handler)
+    public ManagementSubscriptionBuilderStep3 deploymentEventHandler(DeploymentEventHandler handler)
     {
-        EnsureUtil.ensureNotNull("jobEventHandler", handler);
-        handlers.put(RecordType.EVENT, ValueType.JOB, e -> handler.onJobEvent((JobEvent) e));
+        EnsureUtil.ensureNotNull("deploymentEventHandler", handler);
+        handlers.put(RecordType.EVENT, ValueType.DEPLOYMENT, e -> handler.onDeploymentEvent((DeploymentEvent) e));
 
         return this;
     }
 
     @Override
-    public TopicSubscriptionBuilderStep3 jobCommandHandler(JobCommandHandler handler)
+    public ManagementSubscriptionBuilderStep3 deploymentCommandHandler(DeploymentCommandHandler handler)
     {
-        EnsureUtil.ensureNotNull("jobCommandHandler", handler);
-        handlers.put(RecordType.COMMAND, ValueType.JOB, e -> handler.onJobCommand((JobCommand) e));
-        handlers.put(RecordType.COMMAND_REJECTION, ValueType.JOB, e -> handler.onJobCommandRejection((JobCommand) e));
+        EnsureUtil.ensureNotNull("deploymentCommandHandler", handler);
+        handlers.put(RecordType.COMMAND, ValueType.DEPLOYMENT, e -> handler.onDeploymentCommand((DeploymentCommand) e));
+        handlers.put(RecordType.COMMAND_REJECTION, ValueType.DEPLOYMENT, e -> handler.onDeploymentCommandRejection((DeploymentCommand) e));
 
         return this;
     }
 
     @Override
-    public TopicSubscriptionBuilderStep3 workflowInstanceEventHandler(WorkflowInstanceEventHandler handler)
+    public ManagementSubscriptionBuilderStep3 topicEventHandler(TopicEventHandler handler)
     {
-        EnsureUtil.ensureNotNull("workflowInstanceEventHandler", handler);
-        handlers.put(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, e -> handler.onWorkflowInstanceEvent((WorkflowInstanceEvent) e));
+        EnsureUtil.ensureNotNull("topicEventHandler", handler);
+        handlers.put(RecordType.EVENT, ValueType.TOPIC, e -> handler.onTopicEvent((TopicEvent) e));
+
         return this;
     }
 
     @Override
-    public TopicSubscriptionBuilderStep3 workflowInstanceCommandHandler(WorkflowInstanceCommandHandler handler)
+    public ManagementSubscriptionBuilderStep3 topicCommandHandler(TopicCommandHandler handler)
     {
-        EnsureUtil.ensureNotNull("workflowInstanceCommandHandler", handler);
-        handlers.put(RecordType.COMMAND, ValueType.WORKFLOW_INSTANCE, e -> handler.onWorkflowInstanceCommand((WorkflowInstanceCommand) e));
-        handlers.put(RecordType.COMMAND_REJECTION, ValueType.WORKFLOW_INSTANCE, e -> handler.onWorkflowInstanceCommand((WorkflowInstanceCommand) e));
+        EnsureUtil.ensureNotNull("topicCommandHandler", handler);
+        handlers.put(RecordType.COMMAND, ValueType.TOPIC, e -> handler.onTopicCommand((TopicCommand) e));
+        handlers.put(RecordType.COMMAND_REJECTION, ValueType.TOPIC, e -> handler.onTopicCommandRejection((TopicCommand) e));
+
         return this;
     }
 
     @Override
-    public TopicSubscriptionBuilderStep3 incidentEventHandler(IncidentEventHandler handler)
-    {
-        EnsureUtil.ensureNotNull("incidentEventHandler", handler);
-        handlers.put(RecordType.EVENT, ValueType.INCIDENT, e -> handler.onIncidentEvent((IncidentEvent) e));
-        return this;
-    }
-
-    @Override
-    public TopicSubscriptionBuilderStep3 incidentCommandHandler(IncidentCommandHandler handler)
-    {
-        EnsureUtil.ensureNotNull("incidentCommandHandler", handler);
-        handlers.put(RecordType.COMMAND, ValueType.INCIDENT, e -> handler.onIncidentCommand((IncidentCommand) e));
-        handlers.put(RecordType.COMMAND_REJECTION, ValueType.INCIDENT, e -> handler.onIncidentCommand((IncidentCommand) e));
-        return this;
-    }
-
-    @Override
-    public TopicSubscriptionBuilderImpl raftEventHandler(final RaftEventHandler handler)
+    public ManagementSubscriptionBuilderImpl raftEventHandler(final RaftEventHandler handler)
     {
         EnsureUtil.ensureNotNull("raftEventHandler", handler);
         handlers.put(RecordType.EVENT, ValueType.RAFT, e -> handler.onRaftEvent((RaftEvent) e));
@@ -125,32 +110,32 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilderSte
     }
 
     @Override
-    public TopicSubscriptionBuilderStep3 startAtPosition(int partitionId, long position)
+    public ManagementSubscriptionBuilderStep3 startAtPosition(long position)
     {
-        this.startPositions.put(partitionId, position);
+        this.startPositions.put(Protocol.SYSTEM_PARTITION, position);
         return this;
     }
 
     @Override
-    public TopicSubscriptionBuilderStep3 startAtTailOfTopic()
+    public ManagementSubscriptionBuilderStep3 startAtTailOfTopic()
     {
         return defaultStartPosition(-1L);
     }
 
     @Override
-    public TopicSubscriptionBuilderStep3 startAtHeadOfTopic()
+    public ManagementSubscriptionBuilderStep3 startAtHeadOfTopic()
     {
         return defaultStartPosition(0L);
     }
 
-    private TopicSubscriptionBuilderImpl defaultStartPosition(long position)
+    private ManagementSubscriptionBuilderImpl defaultStartPosition(long position)
     {
         this.defaultStartPosition = position;
         return this;
     }
 
     @Override
-    public TopicSubscriptionBuilderStep3 name(String name)
+    public ManagementSubscriptionBuilderStep3 name(String name)
     {
         EnsureUtil.ensureNotNull("name", name);
         this.name = name;
@@ -158,14 +143,14 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilderSte
     }
 
     @Override
-    public TopicSubscriptionBuilderStep3 forcedStart()
+    public ManagementSubscriptionBuilderStep3 forcedStart()
     {
         this.forceStart = true;
         return this;
     }
 
     @Override
-    public TopicSubscriptionBuilderStep3 bufferSize(int bufferSize)
+    public ManagementSubscriptionBuilderStep3 bufferSize(int bufferSize)
     {
         EnsureUtil.ensureGreaterThan("bufferSize", bufferSize, 0);
 
@@ -191,7 +176,7 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilderSte
     public Future<TopicSubscriberGroup> buildSubscriberGroup()
     {
         final TopicSubscriptionSpec subscription = new TopicSubscriptionSpec(
-                topic,
+                Protocol.SYSTEM_TOPIC,
                 defaultStartPosition,
                 startPositions,
                 forceStart,

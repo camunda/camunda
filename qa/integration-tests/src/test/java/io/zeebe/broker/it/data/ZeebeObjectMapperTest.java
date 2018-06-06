@@ -139,12 +139,14 @@ public class ZeebeObjectMapperTest
         clientRule.getTopicClient()
             .newSubscription()
             .name("test")
-            .jobEventHandler(records::add)
-            .jobCommandHandler(records::add)
-            .workflowInstanceEventHandler(records::add)
-            .workflowInstanceCommandHandler(records::add)
-            .incidentEventHandler(records::add)
-            .incidentCommandHandler(records::add)
+            .recordHandler(records::add)
+            .startAtHeadOfTopic()
+            .open();
+
+        clientRule.getClient()
+            .newManagementSubscription()
+            .name("test")
+            .recordHandler(records::add)
             .startAtHeadOfTopic()
             .open();
 
@@ -165,6 +167,7 @@ public class ZeebeObjectMapperTest
             .join();
 
         waitUntil(() -> records.stream().anyMatch(recordFilter(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceState.COMPLETED.name())));
+        waitUntil(() -> records.stream().anyMatch(recordFilter(ValueType.DEPLOYMENT, DeploymentState.CREATED.name())));
 
         // then
         records.forEach(r ->

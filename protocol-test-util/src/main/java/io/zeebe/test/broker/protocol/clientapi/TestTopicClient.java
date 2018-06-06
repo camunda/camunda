@@ -19,25 +19,15 @@ import static io.zeebe.util.buffer.BufferUtil.bufferAsArray;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Predicate;
-
-import org.agrona.DirectBuffer;
 
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.SubscriptionType;
-import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.intent.DeploymentIntent;
-import io.zeebe.protocol.intent.Intent;
-import io.zeebe.protocol.intent.JobIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.clientapi.*;
+import io.zeebe.protocol.intent.*;
+import org.agrona.DirectBuffer;
 
 public class TestTopicClient
 {
@@ -79,9 +69,14 @@ public class TestTopicClient
 
     public ExecuteCommandResponse deployWithResponse(String topic, final WorkflowDefinition workflow)
     {
+        return deployWithResponse(topic, workflow, "process.bpmn");
+    }
+
+    public ExecuteCommandResponse deployWithResponse(String topic, final WorkflowDefinition workflow, String resourceName)
+    {
         final byte[] resource = Bpmn.convertToString(workflow).getBytes(UTF_8);
 
-        return deployWithResponse(topic, resource, "BPMN_XML", "process.bpmn");
+        return deployWithResponse(topic, resource, "BPMN_XML", resourceName);
     }
 
     public ExecuteCommandResponse deployWithResponse(String topic, final byte[] resource, final String resourceType, final String resourceName)
