@@ -165,9 +165,11 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilderSte
     }
 
     @Override
-    public TopicSubscriptionBuilderStep3 bufferSize(int numberOfRecords)
+    public TopicSubscriptionBuilderStep3 bufferSize(int bufferSize)
     {
-        this.bufferSize = numberOfRecords;
+        EnsureUtil.ensureGreaterThan("bufferSize", bufferSize, 0);
+
+        this.bufferSize = bufferSize;
         return this;
     }
 

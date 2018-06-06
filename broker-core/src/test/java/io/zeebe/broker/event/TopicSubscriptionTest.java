@@ -20,37 +20,19 @@ package io.zeebe.broker.event;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.ErrorCode;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.SubscriptionType;
-import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.intent.JobIntent;
-import io.zeebe.protocol.intent.SubscriberIntent;
-import io.zeebe.protocol.intent.SubscriptionIntent;
+import io.zeebe.protocol.clientapi.*;
+import io.zeebe.protocol.intent.*;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ControlMessageResponse;
-import io.zeebe.test.broker.protocol.clientapi.ErrorResponse;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandRequest;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.RawMessage;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
+import io.zeebe.test.broker.protocol.clientapi.*;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.sched.clock.ControlledActorClock;
+import org.junit.*;
+import org.junit.rules.RuleChain;
 
 
 public class TopicSubscriptionTest
@@ -303,8 +285,45 @@ public class TopicSubscriptionTest
 
         // then
         assertThat(errorResponse.getErrorCode()).isEqualTo(ErrorCode.REQUEST_PROCESSING_FAILURE);
-        assertThat(errorResponse.getErrorData()).isEqualTo("Cannot open topic subscription " + subscriptionName +
-                ". Subscription name must be " + MAXIMUM_SUBSCRIPTION_NAME_LENGTH + " characters or shorter.");
+        assertThat(errorResponse.getErrorData()).isEqualTo("Cannot open topic subscription '" + subscriptionName +
+                "'. Subscription name must be " + MAXIMUM_SUBSCRIPTION_NAME_LENGTH + " characters or shorter.");
+    }
+
+    @Test
+    public void shouldNotOpenSubscriptionWithNegativeBufferSize()
+    {
+        // when
+        final ErrorResponse errorResponse = apiRule.createCmdRequest()
+                .type(ValueType.SUBSCRIBER, SubscriberIntent.SUBSCRIBE)
+                .command()
+                    .put("startPosition", -1)
+                    .put("name", "foo")
+                    .put("bufferSize", -1)
+                .done()
+                .send()
+                .awaitError();
+
+        // then
+        assertThat(errorResponse.getErrorCode()).isEqualTo(ErrorCode.REQUEST_PROCESSING_FAILURE);
+        assertThat(errorResponse.getErrorData()).isEqualTo("Cannot open topic subscription 'foo'. Buffer size must be greater than 0.");
+    }
+
+    @Test
+    public void shouldNotOpenSubscriptionWithMissingBufferSize()
+    {
+        // when
+        final ErrorResponse errorResponse = apiRule.createCmdRequest()
+                .type(ValueType.SUBSCRIBER, SubscriberIntent.SUBSCRIBE)
+                .command()
+                    .put("startPosition", -1)
+                    .put("name", "foo")
+                .done()
+                .send()
+                .awaitError();
+
+        // then
+        assertThat(errorResponse.getErrorCode()).isEqualTo(ErrorCode.INVALID_MESSAGE);
+        assertThat(errorResponse.getErrorData()).contains("Property 'bufferSize' has no valid value");
     }
 
     @Test
@@ -356,6 +375,7 @@ public class TopicSubscriptionTest
             .command()
                 .put("startPosition", jobEvents.get(0))
                 .put("name", "foo")
+                .put("bufferSize", 32)
                 .put("forceStart", true)
                 .done()
             .sendAndAwait();

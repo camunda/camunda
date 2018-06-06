@@ -17,17 +17,16 @@
  */
 package io.zeebe.broker.event.processor;
 
-import io.zeebe.logstreams.processor.EventLifecycleContext;
-import org.agrona.DirectBuffer;
-
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.logstreams.processor.EventProcessor;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.protocol.intent.SubscriberIntent;
 import io.zeebe.util.sched.future.ActorFuture;
+import org.agrona.DirectBuffer;
 
 public class SubscribeProcessor implements EventProcessor
 {
@@ -66,10 +65,15 @@ public class SubscribeProcessor implements EventProcessor
 
         if (subscriptionName.capacity() > maximumNameLength)
         {
-            failedRequestState.wrapError("Cannot open topic subscription " + subscriberEvent.getNameAsString() +
-                    ". Subscription name must be " + maximumNameLength + " characters or shorter.");
+            failedRequestState.wrapError("Cannot open topic subscription '" + subscriberEvent.getNameAsString() +
+                    "'. Subscription name must be " + maximumNameLength + " characters or shorter.");
             state = failedRequestState;
-            return;
+        }
+        else if (subscriberEvent.getBufferSize() <= 0)
+        {
+            failedRequestState.wrapError("Cannot open topic subscription '" + subscriberEvent.getNameAsString() +
+                                         "'. Buffer size must be greater than 0.");
+            state = failedRequestState;
         }
         else
         {

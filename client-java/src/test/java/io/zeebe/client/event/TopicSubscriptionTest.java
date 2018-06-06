@@ -20,67 +20,32 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.commands.IncidentCommand;
-import io.zeebe.client.api.commands.JobCommand;
-import io.zeebe.client.api.commands.WorkflowInstanceCommand;
-import io.zeebe.client.api.events.IncidentEvent;
-import io.zeebe.client.api.events.JobEvent;
-import io.zeebe.client.api.events.RaftEvent;
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.commands.*;
+import io.zeebe.client.api.events.*;
 import io.zeebe.client.api.record.Record;
 import io.zeebe.client.api.record.RecordMetadata;
-import io.zeebe.client.api.subscription.IncidentCommandHandler;
-import io.zeebe.client.api.subscription.IncidentEventHandler;
-import io.zeebe.client.api.subscription.JobCommandHandler;
-import io.zeebe.client.api.subscription.JobEventHandler;
-import io.zeebe.client.api.subscription.RaftEventHandler;
-import io.zeebe.client.api.subscription.RecordHandler;
-import io.zeebe.client.api.subscription.TopicSubscription;
-import io.zeebe.client.api.subscription.WorkflowInstanceCommandHandler;
-import io.zeebe.client.api.subscription.WorkflowInstanceEventHandler;
+import io.zeebe.client.api.subscription.*;
 import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.client.impl.subscription.SubscriptionManager;
 import io.zeebe.client.impl.subscription.topic.TopicSubscriberGroup;
 import io.zeebe.client.impl.subscription.topic.TopicSubscriptionBuilderImpl;
 import io.zeebe.client.util.ClientRule;
-import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.ErrorCode;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.intent.IncidentIntent;
-import io.zeebe.protocol.intent.Intent;
-import io.zeebe.protocol.intent.JobIntent;
-import io.zeebe.protocol.intent.SubscriberIntent;
-import io.zeebe.protocol.intent.SubscriptionIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.test.broker.protocol.brokerapi.ControlMessageRequest;
-import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
-import io.zeebe.test.broker.protocol.brokerapi.ResponseController;
-import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
-import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.test.util.Conditions;
-import io.zeebe.test.util.TestUtil;
+import io.zeebe.protocol.clientapi.*;
+import io.zeebe.protocol.intent.*;
+import io.zeebe.test.broker.protocol.brokerapi.*;
+import io.zeebe.test.util.*;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.sched.future.ActorFuture;
+import org.junit.*;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
 public class TopicSubscriptionTest
 {
@@ -225,7 +190,7 @@ public class TopicSubscriptionTest
     }
 
     @Test
-    public void shouldValidateEventHandlerNotNullForManagedSubscription()
+    public void shouldValidateEventHandlerNotNull()
     {
         // then
         exception.expect(RuntimeException.class);
@@ -240,7 +205,7 @@ public class TopicSubscriptionTest
     }
 
     @Test
-    public void shouldValidateNameNotNullForManagedSubscription()
+    public void shouldValidateNameNotNull()
     {
         // then
         exception.expect(RuntimeException.class);
@@ -251,6 +216,22 @@ public class TopicSubscriptionTest
             .newSubscription()
             .name(null)
             .recordHandler(DO_NOTHING)
+            .open();
+    }
+
+    @Test
+    public void shouldValidateBufferSizeGreaterThanZero()
+    {
+        // then
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("bufferSize must be greater than 0");
+
+        // when
+        clientRule.topicClient()
+            .newSubscription()
+            .name("foo")
+            .recordHandler(DO_NOTHING)
+            .bufferSize(-1)
             .open();
     }
 

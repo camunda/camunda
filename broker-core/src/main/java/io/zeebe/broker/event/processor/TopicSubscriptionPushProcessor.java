@@ -19,22 +19,17 @@ package io.zeebe.broker.event.processor;
 
 import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
-import org.agrona.DirectBuffer;
-
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.logstreams.processor.NoopSnapshotSupport;
 import io.zeebe.broker.transport.clientapi.SubscribedRecordWriter;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.processor.EventProcessor;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.processor.*;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.util.collection.LongRingBuffer;
+import org.agrona.DirectBuffer;
 
 public class TopicSubscriptionPushProcessor implements StreamProcessor, EventProcessor
 {
@@ -71,10 +66,7 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
         this.name = cloneBuffer(name);
         this.nameString = name.getStringWithoutLengthUtf8(0, name.capacity());
 
-        if (bufferSize > 0)
-        {
-            this.pendingEvents = new LongRingBuffer(bufferSize);
-        }
+        this.pendingEvents = new LongRingBuffer(bufferSize);
     }
 
     @Override
@@ -148,7 +140,7 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
             .value(event.getValueBuffer(), event.getValueOffset(), event.getValueLength())
             .tryWriteMessage(clientStreamId);
 
-        if (success && recordsPendingEvents())
+        if (success)
         {
             final boolean elementAdded = pendingEvents.addElementToHead(event.getPosition());
             if (!elementAdded)
@@ -179,23 +171,12 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
     {
         context.getActorControl().call(() ->
         {
-            if (recordsPendingEvents())
+            pendingEvents.consumeAscendingUntilInclusive(eventPosition);
+            if (!pendingEvents.isSaturated())
             {
-                pendingEvents.consumeAscendingUntilInclusive(eventPosition);
-                if (!pendingEvents.isSaturated())
-                {
-                    this.context.resumeController();
-                }
+                this.context.resumeController();
             }
         });
-    }
-
-    /**
-     * @return true if this subscription requires throttling
-     */
-    protected boolean recordsPendingEvents()
-    {
-        return pendingEvents != null;
     }
 
     public static MetadataFilter eventFilter()

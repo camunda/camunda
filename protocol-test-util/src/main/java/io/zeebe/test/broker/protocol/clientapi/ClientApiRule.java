@@ -165,6 +165,7 @@ public class ClientApiRule extends ExternalResource
             .command()
                 .put("startPosition", startPosition)
                 .put("name", name)
+                .put("bufferSize", 32)
                 .done()
             .send();
     }

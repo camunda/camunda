@@ -22,17 +22,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.*;
+import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
+import io.zeebe.test.util.TestUtil;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-
-import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.intent.SubscriberIntent;
-import io.zeebe.protocol.intent.SubscriptionIntent;
-import io.zeebe.protocol.intent.JobIntent;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.util.TestUtil;
 
 public class TopicSubscriptionThrottlingTest
 {
@@ -113,24 +110,6 @@ public class TopicSubscriptionThrottlingTest
 
         assertThat(eventPositionsAfterAck.get(0)).isGreaterThan(eventPositions.get(2));
         assertThat(eventPositionsAfterAck.get(1)).isGreaterThan(eventPositions.get(2));
-    }
-
-    @Test
-    public void shouldPushAllEventsWithoutBufferSize() throws InterruptedException
-    {
-        // given
-        final int nrOfJobs = 5;
-        final int bufferSize = -1;
-
-        createJobs(nrOfJobs);
-
-        // when
-        openSubscription(bufferSize);
-
-        // then
-        final int expectedNumberOfEvents = nrOfJobs * 2; // CREATE and CREATED
-
-        TestUtil.waitUntil(() -> apiRule.numSubscribedEventsAvailable() == expectedNumberOfEvents);
     }
 
     protected void createJobs(int nrOfJobs)

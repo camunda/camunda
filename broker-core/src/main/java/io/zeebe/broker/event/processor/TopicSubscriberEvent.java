@@ -25,7 +25,9 @@ public class TopicSubscriberEvent extends UnpackedObject
 {
     // negative value for end of log
     protected LongProperty startPositionProp = new LongProperty("startPosition", -1L);
-    protected IntegerProperty bufferSizeProp = new IntegerProperty("bufferSize", -1);
+
+    protected IntegerProperty bufferSizeProp = new IntegerProperty("bufferSize");
+
     protected StringProperty nameProp = new StringProperty("name");
 
     // true if startPosition should override any previously acknowledged position
