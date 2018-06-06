@@ -1,5 +1,6 @@
 import React, {Component} from 'react';
 import {Input} from 'components';
+import {StatsPanel} from './StatsPanel';
 
 import * as Styled from './styled.js';
 
@@ -13,6 +14,7 @@ class Dashboard extends Component {
     return (
       <form>
         <Styled.Header>Camunda Operate</Styled.Header>
+        <StatsPanel />
         <Input
           value={this.state.username}
           onChange={({target: {value}}) => this.setState({username: value})}
