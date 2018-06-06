@@ -54,7 +54,7 @@ public class StreamProcessorController extends Actor
 
     private final ActorScheduler actorScheduler;
     private final AtomicBoolean isOpened = new AtomicBoolean(false);
-    private final AtomicBoolean isFailed = new AtomicBoolean(false);
+    private Phase phase = Phase.REPROCESSING;
 
     private final EventFilter eventFilter;
     private final boolean isReadOnlyProcessor;
@@ -158,10 +158,10 @@ public class StreamProcessorController extends Actor
                 onRecovered();
             }
         }
-        catch (Exception e)
+        catch (RuntimeException e)
         {
             onFailure();
-            LangUtil.rethrowUnchecked(e);
+            throw e;
         }
     }
 
@@ -313,6 +313,8 @@ public class StreamProcessorController extends Actor
 
     private void onRecovered()
     {
+        phase = Phase.PROCESSING;
+
         onCommitPositionUpdatedCondition = actor.onCondition(getName() + "-on-commit-position-updated", readNextEvent);
         streamProcessorContext.logStream.registerOnCommitPositionUpdatedCondition(onCommitPositionUpdatedCondition);
 
@@ -583,12 +585,11 @@ public class StreamProcessorController extends Actor
 
     private void onFailure()
     {
-        if (isFailed.compareAndSet(false, true))
-        {
-            isOpened.set(false);
+        phase = Phase.FAILED;
 
-            actor.close();
-        }
+        isOpened.set(false);
+
+        actor.close();
     }
 
     public boolean isOpened()
@@ -598,7 +599,7 @@ public class StreamProcessorController extends Actor
 
     public boolean isFailed()
     {
-        return isFailed.get();
+        return phase == Phase.FAILED;
     }
 
     public boolean isSuspended()
@@ -614,6 +615,19 @@ public class StreamProcessorController extends Actor
     private void resume()
     {
         suspended = false;
-        actor.submit(readNextEvent);
+
+        // if state is REPROCESSING, we do nothing, because
+        // processing will be triggered once reprocessing is finished anyway
+        if (phase == Phase.PROCESSING)
+        {
+            actor.submit(readNextEvent);
+        }
+    }
+
+    private enum Phase
+    {
+        REPROCESSING,
+        PROCESSING,
+        FAILED
     }
 }

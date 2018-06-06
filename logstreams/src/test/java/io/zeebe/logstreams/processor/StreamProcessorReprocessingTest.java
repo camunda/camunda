@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -29,7 +30,6 @@ import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.logstreams.util.LogStreamWriterRule;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -71,20 +71,19 @@ public class StreamProcessorReprocessingTest
         when(eventFilter.applies(any())).thenReturn(true);
     }
 
-    private void openStreamProcessorController()
+    private StreamProcessorService openStreamProcessorController()
     {
-        openStreamProcessorController(streamProcessor);
+        return openStreamProcessorController(streamProcessor);
     }
-
 
     private ActorFuture<StreamProcessorService> openStreamProcessorControllerAsync()
     {
         return openStreamProcessorControllerAsync(streamProcessor);
     }
 
-    private void openStreamProcessorController(StreamProcessor streamProcessor)
+    private StreamProcessorService openStreamProcessorController(StreamProcessor streamProcessor)
     {
-        openStreamProcessorControllerAsync(streamProcessor).join();
+        return openStreamProcessorControllerAsync(streamProcessor).join();
     }
 
     private ActorFuture<StreamProcessorService> openStreamProcessorControllerAsync(StreamProcessor streamProcessor)
@@ -427,27 +426,80 @@ public class StreamProcessorReprocessingTest
         assertThat(stackDepthAtRecord1.get()).isLessThan(numberOfRecords); // ie not linear in number of records
     }
 
-    private class FunctionProcessor implements StreamProcessor, EventProcessor
+    @Test
+    public void shouldNotResumeProcessingDuringReprocessing() throws Exception
     {
+        // given
+        final long recordPosition1 = writeEvent();
+        writeEvent();
+        writeEvent();
 
-        private Consumer<LoggedEvent> function;
+        final long recordPosition3 = writeEvent();
+        // indicating stream processor reached recordPosition1
+        final long recordPosition4 = writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(recordPosition3));
 
-        FunctionProcessor(Consumer<LoggedEvent> function)
+        final CyclicBarrier barrier = new CyclicBarrier(2);
+
+        final ResumableProcessor processor = new ResumableProcessor(e ->
         {
-            this.function = function;
-        }
+            if (e.getPosition() == recordPosition1)
+            {
+                try
+                {
+                    barrier.await();
+                }
+                catch (InterruptedException | BrokenBarrierException ex)
+                {
+                    throw new RuntimeException(ex);
+                }
+            }
+        });
+        openStreamProcessorController(processor);
 
-        @Override
-        public SnapshotSupport getStateResource()
+        // when
+        waitUntil(() -> barrier.getNumberWaiting() == 1);
+        processor.triggerResume();
+        barrier.await();
+
+        // then
+        waitUntil(() -> processor.processedRecords.contains(recordPosition4));
+        assertThat(processor.processedRecords).containsExactly(recordPosition4);
+    }
+
+    public class ResumableProcessor extends FunctionProcessor
+    {
+        private StreamProcessorContext context;
+        private LoggedEvent currentEvent;
+        private List<Long> processedRecords = new CopyOnWriteArrayList(); // i.e. not reprocessed
+
+        ResumableProcessor(Consumer<LoggedEvent> function)
         {
-            return new StringValueSnapshot();
+            super(function);
         }
 
         @Override
         public EventProcessor onEvent(LoggedEvent event)
         {
-            function.accept(event);
-            return this;
+            currentEvent = event;
+            return super.onEvent(event);
+        }
+
+        @Override
+        public boolean executeSideEffects()
+        {
+            processedRecords.add(currentEvent.getPosition());
+            return true;
+        }
+
+        @Override
+        public void onOpen(StreamProcessorContext context)
+        {
+            this.context = context;
+        }
+
+        public void triggerResume()
+        {
+            context.getActorControl().call(() -> context.resumeController());
         }
     }
 
