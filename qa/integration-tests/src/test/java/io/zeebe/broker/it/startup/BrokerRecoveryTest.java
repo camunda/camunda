@@ -28,6 +28,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Duration;
 import java.util.List;
 
+import io.zeebe.UnstableTest;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -60,6 +61,8 @@ import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.FileUtil;
 
+// related to https://github.com/zeebe-io/zeebe/issues/929
+@Category(UnstableTest.class)
 public class BrokerRecoveryTest
 {
     private static final WorkflowDefinition WORKFLOW = Bpmn.createExecutableWorkflow("process")
