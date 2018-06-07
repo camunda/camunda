@@ -559,13 +559,13 @@ public class IncidentTest
                 .collect(Collectors.toList());
 
         // RESOLVE triggers RESOLVED
-        assertThat(incidentRecords).extracting(r -> r.recordType(), r -> r.valueType(), r -> r.intent())
+        assertThat(incidentRecords).extracting(SubscribedRecord::recordType, SubscribedRecord::valueType, SubscribedRecord::intent)
             .containsSubsequence(
                 tuple(RecordType.COMMAND, ValueType.INCIDENT, IncidentIntent.RESOLVE),
                 tuple(RecordType.EVENT, ValueType.INCIDENT, IncidentIntent.RESOLVED));
 
         // GATEWAY_ACTIVATED triggers SEQUENCE_FLOW_TAKEN, END_EVENT_OCCURED and COMPLETED
-        assertThat(workflowInstanceRecords).extracting(r -> r.recordType(), r -> r.valueType(), r -> r.intent())
+        assertThat(workflowInstanceRecords).extracting(SubscribedRecord::recordType, SubscribedRecord::valueType, SubscribedRecord::intent)
             .containsSubsequence(
                 tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.GATEWAY_ACTIVATED),
                 tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
@@ -598,37 +598,48 @@ public class IncidentTest
         updatePayload(workflowInstanceKey, failureEvent.key(), asMsgPack("foo", 10).byteArray());
 
         // then
-        List<SubscribedRecord> records = testClient
+        List<SubscribedRecord> incidentRecords = testClient
             .receiveRecords()
             .limit(r -> r.valueType() == ValueType.INCIDENT && r.intent() == IncidentIntent.RESOLVE_FAILED)
             .collect(Collectors.toList());
 
-        assertThat(records).extracting(r -> r.recordType(), r -> r.valueType(), r -> r.intent())
+        List<SubscribedRecord> workflowInstanceRecords = testClient
+            .receiveRecords()
+            .limit(r -> r.valueType() == ValueType.WORKFLOW_INSTANCE && r.intent() == WorkflowInstanceIntent.GATEWAY_ACTIVATED)
+            .collect(Collectors.toList());
+
+        assertThat(incidentRecords).extracting(SubscribedRecord::recordType, SubscribedRecord::valueType, SubscribedRecord::intent)
             .containsSubsequence(
                 tuple(RecordType.COMMAND, ValueType.INCIDENT, IncidentIntent.RESOLVE),
-                tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.GATEWAY_ACTIVATED),
                 tuple(RecordType.EVENT, ValueType.INCIDENT, IncidentIntent.RESOLVE_FAILED));
+        assertThat(workflowInstanceRecords).extracting(SubscribedRecord::recordType, SubscribedRecord::valueType, SubscribedRecord::intent)
+            .containsSubsequence(
+                tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.GATEWAY_ACTIVATED));
 
         // when correct payload is used
         updatePayload(workflowInstanceKey, failureEvent.key(), asMsgPack("foo", 7).byteArray());
 
         // then
-        records = testClient
+        incidentRecords = testClient
             .receiveRecords()
             .skipUntil(r -> r.valueType() == ValueType.INCIDENT && r.intent() == IncidentIntent.RESOLVE_FAILED)
+            .limit(r -> r.valueType() == ValueType.INCIDENT && r.intent() == IncidentIntent.RESOLVED)
+            .collect(Collectors.toList());
+
+        workflowInstanceRecords = testClient
+            .receiveRecords()
+            .skipUntil(r -> r.valueType() == ValueType.WORKFLOW_INSTANCE && r.intent() == WorkflowInstanceIntent.GATEWAY_ACTIVATED)
             .limit(r -> r.valueType() == ValueType.WORKFLOW_INSTANCE && r.intent() == WorkflowInstanceIntent.COMPLETED)
             .collect(Collectors.toList());
 
-        // RESOLVE triggers GATEWAY_ACTIVATED, SEQUENCE_FLOW_TAKEN and RESOLVED
-        assertThat(records).extracting(r -> r.recordType(), r -> r.valueType(), r -> r.intent())
+        // RESOLVE triggers  RESOLVED
+        assertThat(incidentRecords).extracting(SubscribedRecord::recordType, SubscribedRecord::valueType, SubscribedRecord::intent)
             .containsSubsequence(
                 tuple(RecordType.COMMAND, ValueType.INCIDENT, IncidentIntent.RESOLVE),
-                tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.GATEWAY_ACTIVATED),
-                tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
                 tuple(RecordType.EVENT, ValueType.INCIDENT, IncidentIntent.RESOLVED));
 
         // SEQUENCE_FLOW_TAKEN triggers the rest of the process
-        assertThat(records).extracting(r -> r.recordType(), r -> r.valueType(), r -> r.intent())
+        assertThat(workflowInstanceRecords).extracting(SubscribedRecord::recordType, SubscribedRecord::valueType, SubscribedRecord::intent)
             .containsSubsequence(
                 tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
                 tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.END_EVENT_OCCURRED),
