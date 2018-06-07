@@ -188,6 +188,13 @@ public class JobSubscriptionManager extends Actor implements TransportListener
         actor.call(() ->
         {
             final JobSubscription subscription = subscriptions.getSubscription(subscriptionId);
+
+            if (subscription == null)
+            {
+                future.completeExceptionally(new RuntimeException("Subscription does not exist"));
+                return;
+            }
+
             final PartitionBucket partitions = logStreamBuckets.get(subscription.getPartitionId());
 
             final ActivateJobStreamProcessor jobStreamProcessor = partitions.getActiveStreamProcessor(subscription.getJobType());
@@ -359,13 +366,6 @@ public class JobSubscriptionManager extends Actor implements TransportListener
         return String.format("job-activate.%s", bufferAsString(jobType));
     }
 
-
-    /*
-     * credits: subscription id => activate processor
-     * client channel close: stream id => subscriptions
-     * remove subscription: subscription id => activate processor
-     */
-
     static class Subscriptions
     {
         private final Long2ObjectHashMap<JobSubscription> subscriptions = new Long2ObjectHashMap<>();
@@ -516,51 +516,30 @@ public class JobSubscriptionManager extends Actor implements TransportListener
             return openFuture;
         }
 
-        private ActorFuture<Void> stopStreamProcessor(DirectBuffer type)
+        private void stopStreamProcessor(DirectBuffer type)
         {
             if (closeFutures.containsKey(type))
             {
-                return closeFutures.get(type);
+                // already closing
+                return;
             }
             else if (openFutures.containsKey(type))
             {
-                final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
                 final ActorFuture<StreamProcessorService> openFuture = openFutures.get(type);
 
                 actor.runOnCompletion(openFuture, (openResult, openException) ->
                 {
                     if (openException == null)
                     {
-                        final ActorFuture<Void> closeFuture = destroyStreamProcessor(type);
-                        actor.runOnCompletion(closeFuture, (closeResult, closeException) ->
-                        {
-                            if (closeException == null)
-                            {
-                                future.complete(closeResult);
-                            }
-                            else
-                            {
-                                future.completeExceptionally(closeException);
-                            }
-                        });
+                        destroyStreamProcessor(type);
                     }
-                    else
-                    {
-                        future.completeExceptionally(openException);
-                    }
+                    // else no need to close stream processor
                 });
-
-                return future;
             }
             else if (streamProcessors.containsKey(type))
             {
-                return destroyStreamProcessor(type);
+                destroyStreamProcessor(type);
             }
-            else
-            {
-                return CompletableActorFuture.completed(null);
-            }
-
         }
 
         private ActorFuture<Void> destroyStreamProcessor(DirectBuffer type)

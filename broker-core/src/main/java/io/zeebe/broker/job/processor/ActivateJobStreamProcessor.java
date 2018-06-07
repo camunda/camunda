@@ -110,12 +110,6 @@ public class ActivateJobStreamProcessor implements TypedRecordProcessor<JobRecor
             return CompletableActorFuture.completedExceptionally(e);
         }
 
-        if (!BufferUtil.equals(subscription.getJobType(), subscribedJobType))
-        {
-            final String errorMessage = String.format("Subscription job type is not equal to '%s'.", BufferUtil.bufferAsString(subscribedJobType));
-            throw new RuntimeException(errorMessage);
-        }
-
         return actor.call(() ->
         {
             subscriptions.addSubscription(subscription);

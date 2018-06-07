@@ -747,4 +747,25 @@ public class JobSubscriptionTest
         assertThat(secondJobType).isEqualTo(jobType2);
 
     }
+
+    @Test
+    public void shouldRejectRemovingNonExistingJobSubscription()
+    {
+        // when
+        final ControlMessageRequestBuilder request = apiRule
+            .createControlMessageRequest()
+            .messageType(ControlMessageType.REMOVE_JOB_SUBSCRIPTION)
+            .partitionId(apiRule.getDefaultPartitionId())
+            .data()
+            .put("subscriberKey", 123)
+            .done();
+
+        final ErrorResponse errorResponse = request.send()
+            .awaitError();
+
+        assertThat(errorResponse).isNotNull();
+        assertThat(errorResponse.getErrorCode()).isEqualTo(ErrorCode.REQUEST_PROCESSING_FAILURE);
+        assertThat(errorResponse.getErrorData()).isEqualTo("Cannot remove job subscription. Subscription does not exist");
+    }
+
 }
