@@ -1,9 +1,6 @@
 import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'theme';
 
-const muteInactive = amount => ({active}) =>
-  active ? '' : `opacity: ${amount}; font-weight: 500;`;
-
 const separator = themeStyle({
   dark: 'rgba(246, 252, 251, 0.5)',
   light: 'rgba(98, 98, 110, 0.25)'
@@ -15,9 +12,7 @@ export const Header = themed(styled.header`
     dark: Colors.uiDark01,
     light: Colors.uiLight01
   })}
-  padding-top: 9px;
-  padding-left: 20px;
-  padding-right: 20px;
+  padding: 9px 20px 0 20px;
   font-size: 15px;
   font-weight: 600;
   color: ${themeStyle({
@@ -32,16 +27,15 @@ export const Header = themed(styled.header`
 `);
 
 export const DashboardLink = themed(styled.span`
-  padding-left: 20px;
-  padding-right: 20px;
+  padding: 0 20px;
   border-right: 1px solid ${separator};
-  ${muteInactive(0.5)};
+  ${({active}) => (active ? '' : `opacity: 0.5; font-weight: 500`)};
 `);
 
 export const ListLink = themed(styled.span`
   margin-left: 20px;
   & > :first-child {
-    ${muteInactive(0.5)};
+    ${({active}) => (active ? '' : `opacity: 0.5; font-weight: 500`)};
   }
   & > :last-child {
     opacity: ${themeStyle({
@@ -53,8 +47,8 @@ export const ListLink = themed(styled.span`
 
 export const Detail = styled.span`
   padding-left: 20px;
-  border-left: 1px solid ${separator};
   margin-left: 20px;
+  border-left: 1px solid ${separator};
 `;
 
 export const ProfileDropdown = styled.span`
