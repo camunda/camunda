@@ -18,12 +18,15 @@
 package io.zeebe.broker.job.processor;
 
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import io.zeebe.broker.topic.StreamProcessorControl;
+import io.zeebe.util.sched.clock.ControlledActorClock;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -52,16 +55,20 @@ public class JobTimeOutStreamProcessorTest
     public void shouldTimeOutIfAfterDeadlineForTwoJobs()
     {
         // given
-        rule.getClock().pinCurrentTime();
+        final ControlledActorClock clock = rule.getClock();
+        clock.pinCurrentTime();
 
-        rule.runStreamProcessor(e -> new JobTimeOutStreamProcessor()
-            .createStreamProcessor(e));
+        final JobRecord job = job().setDeadline(clock.getCurrentTimeInMillis() + 100);
+        rule.writeEvent(1, JobIntent.ACTIVATED, job);
+        final long position = rule.writeEvent(2, JobIntent.ACTIVATED, job);
 
-        rule.writeEvent(1, JobIntent.ACTIVATED, job());
-        rule.writeEvent(2, JobIntent.ACTIVATED, job());
+        // wait til stream processor has processed second event
+        final StreamProcessorControl streamProcessorControl = rule.runStreamProcessor(e -> new JobTimeOutStreamProcessor().createStreamProcessor(e));
+        streamProcessorControl.blockAfterEvent(e -> e.getPosition() == position);
+        waitUntil(streamProcessorControl::isBlocked);
 
         // when
-        rule.getClock().addTime(JobQueueManagerService.TIME_OUT_INTERVAL.plus(Duration.ofSeconds(1)));
+        clock.addTime(JobQueueManagerService.TIME_OUT_INTERVAL.plus(Duration.ofSeconds(1)));
 
         // then
         final List<TypedRecord<JobRecord>> expirationEvents = doRepeatedly(
