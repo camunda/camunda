@@ -346,6 +346,32 @@ public class VariableValueRetrievalIT {
   }
 
   @Test
+  public void variableValueFromDifferentVariablesDoNotAffectPrefixQueryParam() throws Exception {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("var", "callThem");
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
+    variables.put("var", "doSomething");
+    variables.put("foo", "oooo");
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    Map<String, Object> queryParams = new HashMap<>();
+    queryParams.put("valuePrefix", "o");
+    queryParams.put(PROCESS_DEFINITION_KEY, processDefinition.getKey());
+    queryParams.put(PROCESS_DEFINITION_VERSION, processDefinition.getVersion());
+    queryParams.put("name", "var");
+    queryParams.put("type", "String");
+    List<String> variableResponse = getVariableValues(queryParams);
+
+    // then
+    assertThat(variableResponse.size(), is(0));
+  }
+
+  @Test
   public void unknownPrefixReturnsEmptyResult() throws Exception {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();

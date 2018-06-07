@@ -1,6 +1,5 @@
 package org.camunda.optimize.service.es.reader;
 
-import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 import org.camunda.optimize.service.util.VariableHelper;
@@ -30,10 +29,11 @@ import java.util.List;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DATE_VARIABLES;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_VERSION;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.STRING_VARIABLES;
 import static org.camunda.optimize.service.util.VariableHelper.getAllVariableTypeFieldLabels;
 import static org.camunda.optimize.service.util.VariableHelper.getNestedVariableNameFieldLabel;
 import static org.camunda.optimize.service.util.VariableHelper.getNestedVariableValueFieldLabel;
-import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.prefixQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
@@ -77,7 +77,8 @@ public class VariableReader {
     return extractVariables(aggregations);
   }
 
-  public BoolQueryBuilder buildProcessDefinitionBaseQuery(String processDefinitionKey, String processDefinitionVersion) {
+  public BoolQueryBuilder buildProcessDefinitionBaseQuery(String processDefinitionKey,
+                                                          String processDefinitionVersion) {
     BoolQueryBuilder query;
     query =
       QueryBuilders.boolQuery()
@@ -150,31 +151,17 @@ public class VariableReader {
     String variableFieldLabel = VariableHelper.variableTypeToFieldLabel(type);
 
     BoolQueryBuilder query = buildProcessDefinitionBaseQuery(processDefinitionKey, processDefinitionVersion);
-    mustStartWithValuePrefix(query, valuePrefix, type);
 
     SearchResponse response =
       esclient
           .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
           .setTypes(configurationService.getProcessInstanceType())
           .setQuery(query)
-          .addAggregation(getVariableValueAggregation(name, variableFieldLabel))
+          .addAggregation(getVariableValueAggregation(name, variableFieldLabel, valuePrefix))
           .get();
 
     Aggregations aggregations = response.getAggregations();
     return extractVariableValues(aggregations, variableFieldLabel);
-  }
-
-  private void mustStartWithValuePrefix(BoolQueryBuilder query, String valuePrefix, String type) {
-    if(valuePrefix != null && !valuePrefix.isEmpty() && VariableHelper.isStringType(type)) {
-      String variableFieldLabel = VariableHelper.variableTypeToFieldLabel(type);
-      query.must(
-        nestedQuery(
-          variableFieldLabel,
-          prefixQuery(getNestedVariableValueFieldLabel(variableFieldLabel), valuePrefix),
-          ScoreMode.None
-        )
-      );
-    }
   }
 
   private List<String> extractVariableValues(Aggregations aggregations, String variableFieldLabel) {
@@ -188,7 +175,7 @@ public class VariableReader {
     return allValues;
   }
 
-  private AggregationBuilder getVariableValueAggregation(String name, String variableFieldLabel) {
+  private AggregationBuilder getVariableValueAggregation(String name, String variableFieldLabel, String namePrefix) {
     TermsAggregationBuilder collectAllVariableValues =
       terms(VALUE_AGGREGATION)
         .field(getNestedVariableValueFieldLabel(variableFieldLabel))
@@ -197,20 +184,39 @@ public class VariableReader {
     if (DATE_VARIABLES.equals(variableFieldLabel)) {
       collectAllVariableValues.format(configurationService.getOptimizeDateFormat());
     }
-    FilterAggregationBuilder filterForVariableWithGivenName = filter(
-      FILTER_FOR_NAME_AGGREGATION,
-      termQuery(getNestedVariableNameFieldLabel(variableFieldLabel), name)
-    );
-    NestedAggregationBuilder checkoutVariables = nested(variableFieldLabel, variableFieldLabel);
+    FilterAggregationBuilder filterForVariableWithGivenNameAndPrefix =
+      getVariableValueFilterAggregation(name, variableFieldLabel, namePrefix);
+    NestedAggregationBuilder checkoutVariables =
+      nested(variableFieldLabel, variableFieldLabel);
     
     return
       checkoutVariables
         .subAggregation(
-          filterForVariableWithGivenName
+          filterForVariableWithGivenNameAndPrefix
             .subAggregation(
               collectAllVariableValues
             )
         );
+  }
+
+  private FilterAggregationBuilder getVariableValueFilterAggregation(String name,
+                                                                     String variableFieldLabel,
+                                                                     String namePrefix) {
+    BoolQueryBuilder filterQuery = boolQuery()
+        .must(termQuery(getNestedVariableNameFieldLabel(variableFieldLabel), name));
+    addPrefixFilter(variableFieldLabel, namePrefix, filterQuery);
+    return filter(
+      FILTER_FOR_NAME_AGGREGATION,
+      filterQuery
+    );
+  }
+
+  private void addPrefixFilter(String variableFieldLabel, String namePrefix, BoolQueryBuilder filterQuery) {
+    String securedNamePrefix = namePrefix == null ? "" : namePrefix;
+    if (STRING_VARIABLES.equals(variableFieldLabel)) {
+      filterQuery
+         .must(prefixQuery(getNestedVariableValueFieldLabel(variableFieldLabel), securedNamePrefix));
+    }
   }
 
 }
