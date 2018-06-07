@@ -1,5 +1,7 @@
 package org.camunda.optimize.rest.engine;
 
+import org.camunda.optimize.plugin.EngineRestFilterProvider;
+import org.camunda.optimize.plugin.engine.rest.EngineRestFilter;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperProvider;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -35,6 +37,9 @@ public class EngineContextFactory {
   @Autowired
   protected OptimizeObjectMapperProvider optimizeObjectMapperProvider;
 
+  @Autowired
+  private EngineRestFilterProvider engineRestFilterProvider;
+
   @PostConstruct
   public void init() {
     configuredEngines = new ArrayList();
@@ -59,6 +64,16 @@ public class EngineContextFactory {
             configurationService.getDefaultEngineAuthenticationPassword(config.getKey())
           )
       );
+    }
+    for (EngineRestFilter engineRestFilter : engineRestFilterProvider.getPlugins()) {
+      client.register(new ClientRequestFilter() {
+
+        @Override
+        public void filter(ClientRequestContext requestContext) throws IOException {
+          engineRestFilter.filter(requestContext, config.getKey(), config.getValue().getName());
+        }
+        
+      });
     }
     client.register(optimizeObjectMapperProvider);
     return client;

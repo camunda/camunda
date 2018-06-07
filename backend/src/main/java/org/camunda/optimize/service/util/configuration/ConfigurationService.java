@@ -93,6 +93,7 @@ public class ConfigurationService {
   private Integer importIndexAutoStorageIntervalInSec;
   private Long samplerInterval;
   private List<String> variableImportPluginBasePackages;
+  private List<String> engineRestFilterPluginBasePackages;
 
   private Integer numberOfRetriesOnConflict;
   private Long engineImportActivityInstanceMaxPageSize;
@@ -549,6 +550,15 @@ public class ConfigurationService {
     }
     return variableImportPluginBasePackages;
   }
+  
+  public List<String> getEngineRestFilterPluginBasePackages() {
+    if (engineRestFilterPluginBasePackages == null) {
+      TypeRef<List<String>> typeRef = new TypeRef<List<String>>() {};
+      engineRestFilterPluginBasePackages =
+        jsonContext.read(ConfigurationServiceConstants.ENGINE_REST_FILTER_PLUGIN_BASE_PACKAGES, typeRef);
+    }
+    return engineRestFilterPluginBasePackages;
+  }
 
   public String getFinishedProcessInstanceIdTrackingType() {
     if (finishedPiIdTrackingType == null) {
@@ -771,6 +781,10 @@ public class ConfigurationService {
 
   public void setVariableImportPluginBasePackages(List<String> variableImportPluginBasePackages) {
     this.variableImportPluginBasePackages = variableImportPluginBasePackages;
+  }
+  
+  public void setEngineRestFilterPluginBasePackages(List<String> engineRestFilterPluginBasePackages) {
+    this.engineRestFilterPluginBasePackages = engineRestFilterPluginBasePackages;
   }
 
   public void setConfiguredEngines(Map<String, EngineConfiguration> configuredEngines) {

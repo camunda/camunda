@@ -45,7 +45,7 @@ public class VariableImportAdapterPluginIT {
   @After
   public void resetBasePackage() {
     configurationService.setVariableImportPluginBasePackages(new ArrayList<>());
-    pluginProvider.resetAdapters();
+    pluginProvider.resetPlugins();
   }
 
   @Rule
@@ -56,7 +56,7 @@ public class VariableImportAdapterPluginIT {
   public void variableImportCanBeAdaptedByPlugin() throws Exception {
     // given
     addVariableImportPluginBasePackagesToConfiguration("org.camunda.optimize.plugin.adapter.variable.util1");
-    pluginProvider.resetAdapters();
+    pluginProvider.resetPlugins();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var1", 1);
     variables.put("var2", 1);
@@ -79,7 +79,7 @@ public class VariableImportAdapterPluginIT {
     addVariableImportPluginBasePackagesToConfiguration(
       "org.camunda.optimize.plugin.adapter.variable.util1",
       "org.camunda.optimize.plugin.adapter.variable.util2");
-    pluginProvider.resetAdapters();
+    pluginProvider.resetPlugins();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var1", "bar");
     variables.put("var2", "bar");
@@ -100,7 +100,7 @@ public class VariableImportAdapterPluginIT {
   public void adapterWithoutDefaultConstructorIsNotAdded() throws Exception {
     // given
     addVariableImportPluginBasePackagesToConfiguration("org.camunda.optimize.plugin.adapter.variable.error1");
-    pluginProvider.resetAdapters();
+    pluginProvider.resetPlugins();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var1", 1);
     variables.put("var2", 1);
@@ -119,7 +119,7 @@ public class VariableImportAdapterPluginIT {
   public void notExistingAdapterDoesNotStopImportProcess() throws Exception {
     // given
     addVariableImportPluginBasePackagesToConfiguration("foo.bar");
-    pluginProvider.resetAdapters();
+    pluginProvider.resetPlugins();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var1", 1);
     variables.put("var2", 1);
@@ -138,7 +138,7 @@ public class VariableImportAdapterPluginIT {
   public void adapterWithDefaultConstructorThrowingErrorDoesNotStopImportProcess() throws Exception {
     // given
     addVariableImportPluginBasePackagesToConfiguration("org.camunda.optimize.plugin.adapter.variable.error2");
-    pluginProvider.resetAdapters();
+    pluginProvider.resetPlugins();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var1", 1);
     variables.put("var2", 1);
@@ -157,7 +157,7 @@ public class VariableImportAdapterPluginIT {
   public void adapterCanBeUsedToEnrichVariableImport() throws Exception {
     // given
     addVariableImportPluginBasePackagesToConfiguration("org.camunda.optimize.plugin.adapter.variable.util3");
-    pluginProvider.resetAdapters();
+    pluginProvider.resetPlugins();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var1", 1);
     variables.put("var2", 1);
@@ -176,7 +176,7 @@ public class VariableImportAdapterPluginIT {
   public void invalidPluginVariablesAreNotAddedToVariableImport() throws Exception {
     // given
     addVariableImportPluginBasePackagesToConfiguration("org.camunda.optimize.plugin.adapter.variable.util4");
-    pluginProvider.resetAdapters();
+    pluginProvider.resetPlugins();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", 1);
     ProcessInstanceEngineDto processDefinition = deploySimpleServiceTaskWithVariables(variables);

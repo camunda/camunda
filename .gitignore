@@ -3,6 +3,11 @@
 target/
 **/dependency-reduced-pom.xml
 
+# eclipse
+.classpath
+.settings
+.project
+
 # terraform
 *.tfvars
 terraform.tfstate

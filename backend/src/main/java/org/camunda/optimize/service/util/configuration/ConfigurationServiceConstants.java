@@ -28,6 +28,7 @@ public interface ConfigurationServiceConstants {
   String ENGINE_IMPORT_VARIABLE_INSTANCE_MAX_PAGE_SIZE = "$.import.data.variable.maxPageSize";
 
   String VARIABLE_IMPORT_PLUGIN_BASE_PACKAGES = "$.plugin.variableImport.basePackages";
+  String ENGINE_REST_FILTER_PLUGIN_BASE_PACKAGES = "$.plugin.engineRestFilter.basePackages";
   String ELASTIC_SEARCH_HOST = "$.es.host";
   String ELASTIC_SEARCH_PORT = "$.es.port";
   String ELASTIC_SEARCH_CONNECTION_TIMEOUT = "$.es.connection.timeout";

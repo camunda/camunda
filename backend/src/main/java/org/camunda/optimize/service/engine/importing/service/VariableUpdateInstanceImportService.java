@@ -64,7 +64,7 @@ public class VariableUpdateInstanceImportService {
     List<? extends PluginVariableDto> result = mapEngineVariablesToOptimizeVariables(engineEntities);
     List<PluginVariableDto> pluginVariableList = new ArrayList<>(result.size());
     pluginVariableList.addAll(result);
-    for (VariableImportAdapter variableImportAdapter : importAdapterProvider.getAdapters()) {
+    for (VariableImportAdapter variableImportAdapter : importAdapterProvider.getPlugins()) {
       pluginVariableList = variableImportAdapter.adaptVariables(pluginVariableList);
     }
     return convertPluginListToImportList(pluginVariableList);

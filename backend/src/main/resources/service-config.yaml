@@ -225,6 +225,10 @@ plugin:
     #Look in the given base package list for variable import adaption plugins.
     #If empty, the import is not influenced.
     basePackages: []
+  engineRestFilter:
+    #Look in the given base package list for engine rest filter plugins.
+    #If empty, the REST calls are not influenced.
+    basePackages: []
 serialization:
   #Define a custom date format that should be used
   #(should be the same as in the engine)
