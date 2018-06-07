@@ -62,9 +62,11 @@ public class JobTimeOutStreamProcessorTest
         rule.writeEvent(1, JobIntent.ACTIVATED, job);
         final long position = rule.writeEvent(2, JobIntent.ACTIVATED, job);
 
-        // wait til stream processor has processed second event
-        final StreamProcessorControl streamProcessorControl = rule.runStreamProcessor(e -> new JobTimeOutStreamProcessor().createStreamProcessor(e));
+        final StreamProcessorControl streamProcessorControl = rule.initStreamProcessor(e -> new JobTimeOutStreamProcessor().createStreamProcessor(e));
         streamProcessorControl.blockAfterEvent(e -> e.getPosition() == position);
+        streamProcessorControl.start();
+
+        // wait til stream processor has processed second event
         waitUntil(streamProcessorControl::isBlocked);
 
         // when
