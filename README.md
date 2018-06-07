@@ -1,6 +1,6 @@
 # Camunda Operate
 
-**[Backend Documentation](./client)**
+**[Backend Documentation](./backend)**
 
 **[Frontend Documentation](./client)**
 
