@@ -161,6 +161,19 @@ public class LogBlockIndexWriterTest
     }
 
     @Test
+    public void shouldNotWriteEmptySnapshot() throws InterruptedException
+    {
+        // given
+        logStreamRule.getClock().addTime(SNAPSHOT_INTERVAL);
+
+        // when
+        Thread.sleep(100);
+
+        // then
+        assertThat(getLatestSnapshot()).isNull();
+    }
+
+    @Test
     public void shouldRecoverBlockIndex()
     {
         // given

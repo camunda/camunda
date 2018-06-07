@@ -320,7 +320,7 @@ public class LogBlockIndexWriter extends Actor
         SnapshotWriter snapshotWriter = null;
         try
         {
-            if (lastBlockEventPosition > snapshotEventPosition)
+            if (lastBlockEventPosition > 0 && lastBlockEventPosition > snapshotEventPosition)
             {
                 // flush the log to ensure that the snapshot doesn't contains indexes of unwritten events
                 logStorage.flush();
