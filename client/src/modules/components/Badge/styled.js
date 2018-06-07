@@ -6,6 +6,7 @@ export const Badge = styled.div`
   height: 17px;
   line-height: 19px;
   border-radius: 8.5px;
+  font-weight: 600;
   background-color: ${({type}) => {
     switch (type) {
       case 'filters':

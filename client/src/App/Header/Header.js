@@ -5,8 +5,8 @@ import * as Styled from './styled.js';
 
 import {Badge} from 'components';
 
-export default function Header({active, ...props}) {
-  function createEntry(label) {
+export default function Header({active, detail, ...props}) {
+  function createBadgeEntry(label) {
     const type = label.toLowerCase();
     return (
       <Styled.ListLink active={active === 'instances'}>
@@ -19,12 +19,13 @@ export default function Header({active, ...props}) {
   return (
     <Styled.Header>
       <Styled.DashboardLink active={active === 'dashboard'}>
-        <span>Dashboard</span>
+        Dashboard
       </Styled.DashboardLink>
-      {createEntry('Instances')}
-      {props.filters > 0 && createEntry('Filters')}
-      {props.selections > 0 && createEntry('Selections')}
-      {props.incidents > 0 && createEntry('Incidents')}
+      {createBadgeEntry('Instances')}
+      {props.filters > 0 && createBadgeEntry('Filters')}
+      {props.selections > 0 && createBadgeEntry('Selections')}
+      {props.incidents > 0 && createBadgeEntry('Incidents')}
+      {detail && <Styled.Detail>Instance {detail}</Styled.Detail>}
       <Styled.ProfileDropdown>User Name</Styled.ProfileDropdown>
     </Styled.Header>
   );
@@ -35,5 +36,6 @@ Header.propTypes = {
   instances: PropTypes.number,
   filters: PropTypes.number,
   selections: PropTypes.number,
-  incidents: PropTypes.number
+  incidents: PropTypes.number,
+  detail: PropTypes.string
 };

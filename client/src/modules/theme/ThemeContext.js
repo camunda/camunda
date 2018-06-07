@@ -39,4 +39,6 @@ const themed = StyledComponent => props => (
   </ThemeConsumer>
 );
 
-export {ThemeConsumer, ThemeProvider, themed};
+const themeStyle = config => ({theme}) => config[theme];
+
+export {ThemeConsumer, ThemeProvider, themed, themeStyle};
