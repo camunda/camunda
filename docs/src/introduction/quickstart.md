@@ -6,8 +6,8 @@ the need to write a single line of code.
 1. [Download the Zeebe distribution](#step-1-download-the-zeebe-distribution)
 1. [Start the Zeebe broker](#step-2-start-the-zeebe-broker)
 1. [Create a topic](#step-3-create-a-topic)
-1. [Create a task](#step-4-create-a-task)
-1. [Complete a task](#step-5-complete-a-task)
+1. [Create a job](#step-4-create-a-job)
+1. [Complete a job](#step-5-complete-a-job)
 1. [Create a topic subscription](#step-6-create-a-topic-subscription)
 1. [Deploy a workflow](#step-7-deploy-a-workflow)
 1. [Create a workflow instance](#step-8-create-a-workflow-instance)
@@ -52,14 +52,17 @@ cd bin/
 ./broker
 ```
 ```
-16:18:37.836 [] [main] INFO  io.zeebe.broker.system - Using config file quickstart/zeebe-broker-X.Y.Z/bin/../conf/zeebe.cfg.toml
-16:18:37.888 [] [main] INFO  io.zeebe.broker.system - Using data directory: quickstart/zeebe-broker-X.Y.Z/data/
-16:18:37.949 [] [main] INFO  io.zeebe.broker.system - Scheduler configuration: Threads{cpu-bound: 1, io-bound: 2}.
-16:18:37.982 [] [main] INFO  io.zeebe.broker.system - Version: X.Y.Z
-16:18:38.268 [io.zeebe.servicecontainer.impl.ServiceController] [0.0.0.0:51015-zb-actors-0] INFO  io.zeebe.broker.transport - Bound replicationApi.server to localhost/127.0.0.1:51017
-16:18:38.269 [io.zeebe.servicecontainer.impl.ServiceController] [0.0.0.0:51015-zb-actors-0] INFO  io.zeebe.broker.transport - Bound managementApi.server to localhost/127.0.0.1:51016
-16:18:38.297 [io.zeebe.servicecontainer.impl.ServiceController] [0.0.0.0:51015-zb-actors-0] INFO  io.zeebe.transport - Bound clientApi.server to /0.0.0.0:51015
-16:18:38.412 [io.zeebe.broker.clustering.raft.RaftService] [0.0.0.0:51015-zb-actors-0] INFO  io.zeebe.raft - Created raft with configuration: RaftConfiguration{heartbeatIntervalMs=250, electionIntervalMs=1000, getFlushIntervalMs=10}
+09:04:17.700 [] [main] INFO  io.zeebe.broker.system - Using configuration file quickstart/zeebe-broker-X.Y.Z/conf/zeebe.cfg.toml
+09:04:17.776 [] [main] INFO  io.zeebe.broker.system - Scheduler configuration: Threads{cpu-bound: 2, io-bound: 2}.
+09:04:17.815 [] [main] INFO  io.zeebe.broker.system - Version: X.Y.Z
+09:04:17.861 [] [main] INFO  io.zeebe.broker.clustering - Starting standalone broker.
+09:04:17.865 [service-controller] [0.0.0.0:51015-zb-actors-1] INFO  io.zeebe.broker.transport - Bound managementApi.server to /0.0.0.0:51016
+09:04:17.887 [service-controller] [0.0.0.0:51015-zb-actors-0] INFO  io.zeebe.transport - Bound clientApi.server to /0.0.0.0:51015
+09:04:17.888 [service-controller] [0.0.0.0:51015-zb-actors-0] INFO  io.zeebe.transport - Bound replicationApi.server to /0.0.0.0:51017
+09:04:17.911 [io.zeebe.broker.clustering.base.bootstrap.BootstrapSystemTopic] [0.0.0.0:51015-zb-actors-1] INFO  io.zeebe.broker.clustering - Boostrapping internal system topic 'internal-system' with replication factor 1.
+09:04:18.065 [service-controller] [0.0.0.0:51015-zb-actors-0] INFO  io.zeebe.raft - Created raft internal-system-0 with configuration RaftConfiguration{heartbeatInterval='250ms', electionInterval='1s', leaveTimeout='1s'}
+09:04:18.069 [io.zeebe.broker.clustering.base.bootstrap.BootstrapSystemTopic] [0.0.0.0:51015-zb-actors-0] INFO  io.zeebe.broker.clustering - Bootstrapping default topics [TopicCfg{name='default-topic', partitions=1, replicationFactor=1}]
+09:04:18.122 [internal-system-0] [0.0.0.0:51015-zb-actors-1] INFO  io.zeebe.raft - Joined raft in term 0
 ```
 
 You will see some output which contains the version of the broker, or different
@@ -97,7 +100,6 @@ topic name `quickstart`.
 ```
 {
   "Name": "quickstart",
-  "State": "CREATING",
   "Partitions": 1,
   "ReplicationFactor": 1
 }
@@ -114,18 +116,20 @@ We can now see our new topic in the topology of the Zeebe broker.
 +-----------------+--------------+----------------+---------+
 | internal-system |            0 | 0.0.0.0:51015  | LEADER  |
 +-----------------+--------------+----------------+---------+
-| quickstart      |            1 | 0.0.0.0:51015  | LEADER  |
+| default-topic   |            1 | 0.0.0.0:51015  | LEADER  |
++-----------------+--------------+----------------+---------+
+| quickstart      |            2 | 0.0.0.0:51015  | LEADER  |
 +-----------------+--------------+----------------+---------+
 ```
 
-## Step 4: Create a task
+## Step 4: Create a job
 
-A work item in Zeebe is called a [task](basics/task-workers.html#what-is-a-task). To identify a category of work items
-the task has a type specified by the user. For this example we will use the
-task type `step4`. A task can have a payload which can then be used to
+A work item in Zeebe is called a [job](basics/job-workers.html#what-is-a-job). To identify a category of work items
+the job has a type specified by the user. For this example we will use the
+job type `step4`. A job can have a payload which can then be used to
 execute the action required for this work item. In this example we will set the
 payload to contain the key `zeebe` and the value `2018`. When we create the
-task we have to specify on which topic the task should be created.
+job we have to specify on which topic the job should be created.
 
 > **Note:** Windows users who want to execute this command using cmd or Powershell
 > have to escape the payload differently.
@@ -154,16 +158,16 @@ task we have to specify on which topic the task should be created.
 }
 ```
 
-## Step 5: Complete a task
+## Step 5: Complete a job
 
-A [task worker](basics/task-workers.html#task-workers) is able to subscribe to
-a specific task type to work on tasks created for this type. To create a task
-worker we need to specify the topic, task type and a task handler. The task
-handler is processing the work item and completes the task after it is
+A [job worker](basics/job-workers.html#job-workers) is able to subscribe to
+a specific job type to work on jobs created for this type. To create a job
+worker we need to specify the topic, job type and a job handler. The job
+handler is processing the work item and completes the job after it is
 finished. `zbctl` allows us to specify a simple script or another external
-application to handle a task. The handler will receive the payload of the task
+application to handle a job. The handler will receive the payload of the job
 on standard input. And has to return the updated payload on standard output.
-The simplest task handler is `cat`, which is a unix command that just outputs
+The simplest job handler is `cat`, which is a unix command that just outputs
 its input without modifying it.
 
 > **Note:** For Windows users this command does not work with cmd as the `cat`
@@ -171,12 +175,12 @@ its input without modifying it.
 > to execute this command.
 
 ```
-./bin/zbctl --topic quickstart subscribe task --taskType step4 cat
+./bin/zbctl --topic quickstart subscribe job --jobType step4 cat
 ```
 ```
 {
-  "deadline": 1528283995362,
-  "worker": "zbctl-lkUROjjips",
+  "deadline": 1528355391412,
+  "worker": "zbctl-rzXWdBARGH",
   "headers": {
     "activityId": "",
     "activityInstanceKey": -1,
@@ -190,13 +194,13 @@ its input without modifying it.
   "type": "step4",
   "payload": "gaV6ZWViZctAn4gAAAAAAA=="
 }
-Completing Task
+Completing Job
 ```
 
-This command creates a task subscription on the topic `quickstart` for the task
-type `step4`. So whenever a new task of this type is created the broker will
-push the task to this worker. You can try it out by opening another terminal
-and repeat the command from [step 4](#step-4-create-a-task) multiple times.
+This command creates a job worker on the topic `quickstart` for the job
+type `step4`. So whenever a new job of this type is created the broker will
+push the job to this worker. You can try it out by opening another terminal
+and repeat the command from [step 4](#step-4-create-a-job) multiple times.
 
 > **Note:** Windows users who want to execute this command using cmd or Powershell
 > have to escape the payload differently.
@@ -208,7 +212,7 @@ and repeat the command from [step 4](#step-4-create-a-task) multiple times.
 ```
 
 In the terminal with the running worker you will see that it processes every
-new task.
+new job.
 
 To stop the worker press CTRL-C.
 
@@ -222,12 +226,11 @@ subscription. You have to specify the topic name.
 ```
 ```
 [...]
-Metadata [topic=quickstart, partition=1, key=4294969248, position=4294970096, type=Task]
+{"Intent":"ACTIVATED","Key":4294969208,"PartitionID":2,"Position":4294970032,"Type":"JOB"}
 {
-  "State": "LOCKED",
-  "LockTime": 1525797756019,
-  "LockOwner": "zbctl-mdSDPzXmCq",
-  "Headers": {
+  "deadline": 1528355441349,
+  "worker": "zbctl-rzXWdBARGH",
+  "headers": {
     "activityId": "",
     "activityInstanceKey": -1,
     "bpmnProcessId": "",
@@ -235,18 +238,17 @@ Metadata [topic=quickstart, partition=1, key=4294969248, position=4294970096, ty
     "workflowInstanceKey": -1,
     "workflowKey": -1
   },
-  "CustomHeader": {},
-  "Retries": 3,
-  "Type": "step4",
-  "Payload": "gaV6ZWViZctAn4gAAAAAAA=="
+  "customHeaders": {},
+  "retries": 3,
+  "type": "step4",
+  "payload": "gaV6ZWViZctAn4gAAAAAAA=="
 }
 
-Metadata [topic=quickstart, partition=1, key=4294969248, position=4294970432, type=Task]
+{"Intent":"COMPLETE","Key":4294969208,"PartitionID":2,"Position":4294970360,"Type":"JOB"}
 {
-  "State": "COMPLETE",
-  "LockTime": 1525797756019,
-  "LockOwner": "zbctl-mdSDPzXmCq",
-  "Headers": {
+  "deadline": 1528355441349,
+  "worker": "zbctl-rzXWdBARGH",
+  "headers": {
     "activityId": "",
     "activityInstanceKey": -1,
     "bpmnProcessId": "",
@@ -254,18 +256,17 @@ Metadata [topic=quickstart, partition=1, key=4294969248, position=4294970432, ty
     "workflowInstanceKey": -1,
     "workflowKey": -1
   },
-  "CustomHeader": {},
-  "Retries": 3,
-  "Type": "step4",
-  "Payload": "gaV6ZWViZctAn4gAAAAAAA=="
+  "customHeaders": {},
+  "retries": 3,
+  "type": "step4",
+  "payload": "gaV6ZWViZctAn4gAAAAAAA=="
 }
 
-Metadata [topic=quickstart, partition=1, key=4294969248, position=4294970768, type=Task]
+{"Intent":"COMPLETED","Key":4294969208,"PartitionID":2,"Position":4294970688,"Type":"JOB"}
 {
-  "State": "COMPLETED",
-  "LockTime": 1525797756019,
-  "LockOwner": "zbctl-mdSDPzXmCq",
-  "Headers": {
+  "deadline": 1528355441349,
+  "worker": "zbctl-rzXWdBARGH",
+  "headers": {
     "activityId": "",
     "activityInstanceKey": -1,
     "bpmnProcessId": "",
@@ -273,22 +274,22 @@ Metadata [topic=quickstart, partition=1, key=4294969248, position=4294970768, ty
     "workflowInstanceKey": -1,
     "workflowKey": -1
   },
-  "CustomHeader": {},
-  "Retries": 3,
-  "Type": "step4",
-  "Payload": "gaV6ZWViZctAn4gAAAAAAA=="
+  "customHeaders": {},
+  "retries": 3,
+  "type": "step4",
+  "payload": "gaV6ZWViZctAn4gAAAAAAA=="
 }
 ```
 
 The event stream will now contain events which describe the lifecycle of our
-example tasks from type `step4`, which starts with the `CREATE` state and ends
+example jobs from type `step4`, which starts with the `CREATE` state and ends
 in the `COMPLETED` state.
 
 To stop the topic subscription press CTRL-C.
 
 ## Step 7: Deploy a workflow
 
-A [workflow](basics/workflows.html) is used to orchestrate loosely coupled task
+A [workflow](basics/workflows.html) is used to orchestrate loosely coupled job
 workers and the flow of data between them.
 
 In this guide we will use an example process `order-process.bpmn`. You can
@@ -299,7 +300,8 @@ download it with the following link:
 
 The process describes a sequential flow of three tasks *Collect Money*, *Fetch
 Items* and *Ship Parcel*. If you open the `order-process.bpmn` file in a text
-editor you will see that every task has type defined in the XML.
+editor you will see that every task has type defined in the XML which is later
+used as job type.
 
 ```
 <!-- [...] -->
@@ -323,7 +325,7 @@ editor you will see that every task has type defined in the XML.
 <!-- [...] -->
 ```
 
-To complete an instance of this workflow we would need three task workers for
+To complete an instance of this workflow we would need three job workers for
 the types `payment-service`, `inventory-service` and `shipment-service`.
 
 But first let's deploy the workflow to the Zeebe broker. We have to specify
@@ -335,13 +337,20 @@ the topic to deploy to and the resource we want to deploy, in our case the
 ```
 ```
 {
-  "State": "CREATED",
   "TopicName": "quickstart",
   "Resources": [
     {
       "Resource": "[...]",
       "ResourceType": "BPMN_XML",
       "ResourceName": "order-process.bpmn"
+    }
+  ],
+  "DeployedWorkflows": [
+    {
+      "BpmnProcessId": "order-process",
+      "Version": 1,
+      "WorkflowKey": 1,
+      "ResourceName": ""
     }
   ]
 }
@@ -358,7 +367,7 @@ our case the ID is `order-process`.
 <bpmn:process id="order-process" isExecutable="true">
 ```
 
-Every instance of a workflow normaly processes some kind of data. We can
+Every instance of a workflow normally processes some kind of data. We can
 specify the initial data of the instance as payload when we start the instance.
 
 > **Note:** Windows users who want to execute this command using cmd or Powershell
@@ -373,17 +382,16 @@ specify the initial data of the instance as payload when we start the instance.
 {
   "BPMNProcessID": "order-process",
   "Payload": "gadvcmRlcklky0CTSAAAAAAA",
-  "State": "WORKFLOW_INSTANCE_CREATED",
   "Version": 1,
-  "WorkflowInstanceKey": 4294972120
+  "WorkflowInstanceKey": 4294971952
 }
 ```
 
 ## Step 9: Complete the workflow instance
 
-To complete the instance all three tasks have to be completed. Therefore we
-need three task workers. Let's again use our simple `cat` worker for all three
-task types. Start a task worker for all three task types as a background process
+To complete the instance all three jobs have to be completed. Therefore we
+need three job workers. Let's again use our simple `cat` worker for all three
+job types. Start a job worker for all three job types as a background process
 (`&`).
 
 > **Note:** For Windows users these commands do not work with cmd as the `cat`
@@ -391,12 +399,12 @@ task types. Start a task worker for all three task types as a background process
 > to execute these commands.
 
 ```
-./bin/zbctl --topic quickstart subscribe task --taskType payment-service cat &
-./bin/zbctl --topic quickstart subscribe task --taskType inventory-service cat &
-./bin/zbctl --topic quickstart subscribe task --taskType shipment-service cat &
+./bin/zbctl --topic quickstart subscribe job --jobType payment-service cat &
+./bin/zbctl --topic quickstart subscribe job --jobType inventory-service cat &
+./bin/zbctl --topic quickstart subscribe job --jobType shipment-service cat &
 ```
 
-To verify that our workflow instance was completed after all tasks were
+To verify that our workflow instance was completed after all jobs were
 processed we can again open a topic subscription. The last event should
 indicate that the workflow instance was completed.
 
@@ -404,29 +412,29 @@ indicate that the workflow instance was completed.
 ./bin/zbctl --topic quickstart subscribe topic
 ```
 ```
-Metadata [topic=quickstart, partition=1, key=4294996328, position=4294996328, type=Workflow Instance]
+{"Intent":"END_EVENT_OCCURRED","Key":4294983224,"PartitionID":2,"Position":4294983224,"Type":"WORKFLOW_INSTANCE"}
 {
   "ActivityID": "",
   "BPMNProcessID": "order-process",
   "Payload": "gadvcmRlcklky0CTSAAAAAAA",
-  "State": "END_EVENT_OCCURRED",
   "Version": 1,
-  "WorkflowInstanceKey": 4294974384
+  "WorkflowInstanceKey": 4294971952,
+  "WorkflowKey": 1
 }
 
-Metadata [topic=quickstart, partition=1, key=4294974384, position=4294996584, type=Workflow Instance]
+{"Intent":"COMPLETED","Key":4294971952,"PartitionID":2,"Position":4294983464,"Type":"WORKFLOW_INSTANCE"}
 {
   "ActivityID": "",
   "BPMNProcessID": "order-process",
   "Payload": "gadvcmRlcklky0CTSAAAAAAA",
-  "State": "WORKFLOW_INSTANCE_COMPLETED",
   "Version": 1,
-  "WorkflowInstanceKey": 4294974384
+  "WorkflowInstanceKey": 4294971952,
+  "WorkflowKey": 1
 }
 ```
 
 As you can see in the event log the last event was a workflow instance event
-with the state `WORKFLOW_INSTANCE_COMPLETED`, which indicates that the instance
+with the intent `COMPLETED`, which indicates that the instance
 we started in [step 8](#step-8-create-a-workflow-instance) was now completed.
 We can now start new instances in another terminal with the command from [step
 8](#step-8-create-a-workflow-instance).
@@ -441,8 +449,7 @@ We can now start new instances in another terminal with the command from [step
 ```
 
 To close all subscriptions you can press CTRL-C to stop the topic subscription
-and use the `kill` command to stop the background jobs of the tasks
-subscriptions.
+and use the `kill` command to stop the background processes of the job workers.
 
 ```
 kill %1 %2 %3
