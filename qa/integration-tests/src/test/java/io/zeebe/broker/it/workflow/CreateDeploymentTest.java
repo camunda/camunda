@@ -18,6 +18,7 @@ package io.zeebe.broker.it.workflow;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.client.api.commands.DeployedWorkflow;
 import io.zeebe.client.api.commands.DeploymentResource;
 import io.zeebe.client.api.commands.ResourceType;
 import io.zeebe.client.api.commands.Workflow;
