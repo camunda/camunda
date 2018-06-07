@@ -19,15 +19,25 @@ export const DashboardLink = styled.span`
   border-right: 1px solid rgba(246, 252, 251, 0.5);
   display: inline-block;
   vertical-align: text-bottom;
+  & > :first-child {
+    ${({active}) => (active ? '' : 'opacity: 0.5;')};
+  }
 `;
 
 export const ListLink = styled.span`
   margin-left: 20px;
   vertical-align: text-bottom;
+  & > :first-child {
+    ${({active}) => (active ? '' : 'opacity: 0.5;')};
+  }
+  & > :last-child {
+    ${({active}) => (active ? '' : 'opacity: 0.8;')};
+  }
 `;
 
 export const ProfileDropdown = styled.span`
   margin-right: 8px;
   vertical-align: text-bottom;
   float: right;
+  opacity: 0.9;
 `;

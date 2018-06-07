@@ -8,7 +8,13 @@ import {Dashboard} from './Dashboard';
 
 const Home = () => (
   <ThemeProvider>
-    <Header />
+    <Header
+      active="dashboard"
+      instances={14576}
+      filters={9263}
+      selections={24}
+      incidents={328}
+    />
     <Dashboard />
   </ThemeProvider>
 );
