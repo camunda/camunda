@@ -17,7 +17,7 @@ You will be guided through the following steps:
 
 ## Prerequisites
 
-* Go v1.5+ environment installed
+* Go v1.9+ environment installed
 * [Zeebe distribution](../introduction/install.html)
 * [Zeebe Modeler](https://github.com/zeebe-io/zeebe-modeler/releases)
 * [Zeebe Monitor](https://github.com/zeebe-io/zeebe-simple-monitor/releases)
@@ -25,21 +25,20 @@ You will be guided through the following steps:
 
 Now, start the Zeebe broker.
 
-Create a [topic](../basics/topics-and-logs.html) named `default-topic`. If you have done this already for your Zeebe installation, you can skip this step.
-
+In case you want to create another topic you can use `zbctl` from the `bin` folder.
 Create the topic with zbctl by executing the following command on the command line:
 
 ```
-zbctl create topic default-topic --partitions 1
+zbctl create topic my-topic --partitions 1
 ```
 
 You should see the output:
 
 ```
 {
-  "Name": "default-topic",
-  "State": "CREATED",
-  "Partitions": 1
+  "Name": "my-topic",
+  "Partitions": 1,
+  "ReplicationFactor": 1
 }
 ```
 
@@ -105,33 +104,38 @@ You should see similar output:
 ```json
 {
     "AddrByPartitionID": {
-        "0": "localhost:51015",
-        "1": "localhost:51015"
+        "0": "0.0.0.0:51015",
+        "1": "0.0.0.0:51015"
     },
     "PartitionIDByTopicName": {
         "default-topic": [
             1
+        ],
+        "internal-system": [
+            0
         ]
     },
     "Brokers": [
         {
-            "Host": "localhost",
+            "Host": "0.0.0.0",
             "Port": 51015,
             "Partitions": [
                 {
                     "State": "LEADER",
                     "TopicName": "internal-system",
-                    "PartitionID": 0
+                    "PartitionID": 0,
+                    "ReplicationFactor": 1
                 },
                 {
                     "State": "LEADER",
                     "TopicName": "default-topic",
-                    "PartitionID": 1
+                    "PartitionID": 1,
+                    "ReplicationFactor": 1
                 }
             ]
         }
     ],
-    "UpdatedAt": "2018-03-29T11:26:32.961365972+02:00"
+    "UpdatedAt": "2018-06-07T13:23:44.442722715+02:00"
 }
 ```
 
@@ -190,16 +194,24 @@ You should see similar the output:
 
 ```json
 {
-  "State": "CREATED",
   "TopicName": "default-topic",
   "Resources": [
     {
-      "Resource": "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPGJwbW46ZGVmaW5pdGlvbnMgeG1sbnM6YnBtbj0iaHR0cDovL3d3dy5vbWcub3JnL3NwZWMvQlBNTi8yMDEwMDUyNC9NT0RFTCIgeG1sbnM6YnBtbmRpPSJodHRwOi8vd3d3Lm9tZy5vcmcvc3BlYy9CUE1OLzIwMTAwNTI0L0RJIiB4bWxuczpkaT0iaHR0cDovL3d3dy5vbWcub3JnL3NwZWMvREQvMjAxMDA1MjQvREkiIHhtbG5zOmRjPSJodHRwOi8vd3d3Lm9tZy5vcmcvc3BlYy9ERC8yMDEwMDUyNC9EQyIgeG1sbnM6eHNpPSJodHRwOi8vd3d3LnczLm9yZy8yMDAxL1hNTFNjaGVtYS1pbnN0YW5jZSIgaWQ9IkRlZmluaXRpb25zXzEiIHRhcmdldE5hbWVzcGFjZT0iaHR0cDovL2JwbW4uaW8vc2NoZW1hL2JwbW4iIGV4cG9ydGVyPSJaZWViZSBNb2RlbGVyIiBleHBvcnRlclZlcnNpb249IjAuMS4wIj4KICAgIDxicG1uOnByb2Nlc3MgaWQ9Im9yZGVyLXByb2Nlc3MiIGlzRXhlY3V0YWJsZT0idHJ1ZSI+CiAgICAgICAgPGJwbW46c3RhcnRFdmVudCBpZD0ib3JkZXItcGxhY2VkIiBuYW1lPSJPcmRlciBQbGFjZWQiPgogICAgICAgICAgICA8YnBtbjpvdXRnb2luZz5TZXF1ZW5jZUZsb3dfMTh0cWthNTwvYnBtbjpvdXRnb2luZz4KICAgICAgICA8L2JwbW46c3RhcnRFdmVudD4KICAgICAgICA8YnBtbjplbmRFdmVudCBpZD0ib3JkZXItZGVsaXZlcmVkIiBuYW1lPSJPcmRlciBEZWxpdmVyZWQiPgogICAgICAgICAgICA8YnBtbjppbmNvbWluZz5TZXF1ZW5jZUZsb3dfMTh0cWthNTwvYnBtbjppbmNvbWluZz4KICAgICAgICA8L2JwbW46ZW5kRXZlbnQ+CiAgICAgICAgPGJwbW46c2VxdWVuY2VGbG93IGlkPSJTZXF1ZW5jZUZsb3dfMTh0cWthNSIgc291cmNlUmVmPSJvcmRlci1wbGFjZWQiIHRhcmdldFJlZj0ib3JkZXItZGVsaXZlcmVkIiAvPgogICAgPC9icG1uOnByb2Nlc3M+CiAgICA8YnBtbmRpOkJQTU5EaWFncmFtIGlkPSJCUE1ORGlhZ3JhbV8xIj4KICAgICAgICA8YnBtbmRpOkJQTU5QbGFuZSBpZD0iQlBNTlBsYW5lXzEiIGJwbW5FbGVtZW50PSJvcmRlci1wcm9jZXNzIj4KICAgICAgICAgICAgPGJwbW5kaTpCUE1OU2hhcGUgaWQ9Il9CUE1OU2hhcGVfU3RhcnRFdmVudF8yIiBicG1uRWxlbWVudD0ib3JkZXItcGxhY2VkIj4KICAgICAgICAgICAgICAgIDxkYzpCb3VuZHMgeD0iMTczIiB5PSIxMDIiIHdpZHRoPSIzNiIgaGVpZ2h0PSIzNiIgLz4KICAgICAgICAgICAgICAgIDxicG1uZGk6QlBNTkxhYmVsPgogICAgICAgICAgICAgICAgICAgIDxkYzpCb3VuZHMgeD0iMTU5IiB5PSIxMzgiIHdpZHRoPSI2NSIgaGVpZ2h0PSIxMiIgLz4KICAgICAgICAgICAgICAgIDwvYnBtbmRpOkJQTU5MYWJlbD4KICAgICAgICAgICAgPC9icG1uZGk6QlBNTlNoYXBlPgogICAgICAgICAgICA8YnBtbmRpOkJQTU5TaGFwZSBpZD0iRW5kRXZlbnRfMTI1M3N0cV9kaSIgYnBtbkVsZW1lbnQ9Im9yZGVyLWRlbGl2ZXJlZCI+CiAgICAgICAgICAgICAgICA8ZGM6Qm91bmRzIHg9IjM2MyIgeT0iMTAyIiB3aWR0aD0iMzYiIGhlaWdodD0iMzYiIC8+CiAgICAgICAgICAgICAgICA8YnBtbmRpOkJQTU5MYWJlbD4KICAgICAgICAgICAgICAgICAgICA8ZGM6Qm91bmRzIHg9IjM0MiIgeT0iMTQxIiB3aWR0aD0iNzgiIGhlaWdodD0iMTIiIC8+CiAgICAgICAgICAgICAgICA8L2JwbW5kaTpCUE1OTGFiZWw+CiAgICAgICAgICAgIDwvYnBtbmRpOkJQTU5TaGFwZT4KICAgICAgICAgICAgPGJwbW5kaTpCUE1ORWRnZSBpZD0iU2VxdWVuY2VGbG93XzE4dHFrYTVfZGkiIGJwbW5FbGVtZW50PSJTZXF1ZW5jZUZsb3dfMTh0cWthNSI+CiAgICAgICAgICAgICAgICA8ZGk6d2F5cG9pbnQgeHNpOnR5cGU9ImRjOlBvaW50IiB4PSIyMDkiIHk9IjEyMCIgLz4KICAgICAgICAgICAgICAgIDxkaTp3YXlwb2ludCB4c2k6dHlwZT0iZGM6UG9pbnQiIHg9IjM2MyIgeT0iMTIwIiAvPgogICAgICAgICAgICAgICAgPGJwbW5kaTpCUE1OTGFiZWw+CiAgICAgICAgICAgICAgICAgICAgPGRjOkJvdW5kcyB4PSIyODYiIHk9Ijk4IiB3aWR0aD0iMCIgaGVpZ2h0PSIxMyIgLz4KICAgICAgICAgICAgICAgIDwvYnBtbmRpOkJQTU5MYWJlbD4KICAgICAgICAgICAgPC9icG1uZGk6QlBNTkVkZ2U+CiAgICAgICAgPC9icG1uZGk6QlBNTlBsYW5lPgogICAgPC9icG1uZGk6QlBNTkRpYWdyYW0+CjwvYnBtbjpkZWZpbml0aW9ucz4=",
+      "Resource": "[...]",
       "ResourceType": "BPMN_XML",
+      "ResourceName": "order-process.bpmn"
+    }
+  ],
+  "DeployedWorkflows": [
+    {
+      "BpmnProcessId": "order-process",
+      "Version": 1,
+      "WorkflowKey": 1,
       "ResourceName": "order-process.bpmn"
     }
   ]
 }
+
 ```
 
 We can also deploy the workflow using command line utility:
@@ -255,12 +267,10 @@ Run the program and verify that the workflow instance is created. You should see
 
 ```json
 {
-  "State": "WORKFLOW_INSTANCE_CREATED",
   "BPMNProcessID": "order-process",
-  "Version": 2,
   "Payload": "gadvcmRlcklkpTMxMjQz",
-  "PayloadJSON": null,
-  "WorkflowInstanceKey": 4294976896
+  "Version": 1,
+  "WorkflowInstanceKey": 4294967400
 }
 ```
 
@@ -376,56 +386,56 @@ When you have a look at the Zeebe Monitor, then you can see that the workflow in
 
 When you run the above example you should see similar output:
 
-
 ```json
 {
-  "Task": {
-    "State": "LOCKED",
-    "LockTime": 1522316110702,
-    "LockOwner": "sample-app",
-    "Headers": {
+  "Event": {
+    "deadline": 1528370870456,
+    "worker": "sample-app",
+    "headers": {
       "activityId": "collect-money",
-      "activityInstanceKey": 4294990088,
+      "activityInstanceKey": 4294969624,
       "bpmnProcessId": "order-process",
-      "workflowDefinitionVersion": 3,
-      "workflowInstanceKey": 4294989104,
-      "workflowKey": 4295003848
+      "workflowDefinitionVersion": 2,
+      "workflowInstanceKey": 4294968744,
+      "workflowKey": 2
     },
-    "CustomHeader": {
+    "customHeaders": {
       "method": "VISA"
     },
-    "Retries": 3,
-    "Type": "payment-service",
-    "Payload": "gadvcmRlcklkpTMxMjQz"
+    "retries": 3,
+    "type": "payment-service",
+    "payload": "gadvcmRlcklkpTMxMjQz"
   },
-  "Event": {
+  "Metadata": {
     "PartitionId": 1,
-    "Position": 4294991392,
-    "Key": 4294990608,
+    "Position": 4294970840,
+    "Key": 4294970088,
     "SubscriberKey": 0,
+    "RecordType": 0,
     "SubscriptionType": 0,
-    "EventType": 0,
-    "Event": "iKVzdGF0ZaZMT0NLRUSobG9ja1RpbWXPAAABYnEca26pbG9ja093bmVyqnNhbXBsZS1hcHCncmV0cmllcwOkdHlwZa9wYXltZW50LXNlcnZpY2WnaGVhZGVyc4atYnBtblByb2Nlc3NJZK1vcmRlci1wcm9jZXNzuXdvcmtmbG93RGVmaW5pdGlvblZlcnNpb24Dq3dvcmtmbG93S2V5zwAAAAEAAI7Is3dvcmtmbG93SW5zdGFuY2VLZXnPAAAAAQAAVTCqYWN0aXZpdHlJZK1jb2xsZWN0LW1vbmV5s2FjdGl2aXR5SW5zdGFuY2VLZXnPAAAAAQAAWQitY3VzdG9tSGVhZGVyc4GmbWV0aG9kpFZJU0GncGF5bG9hZMQPgadvcmRlcklkpTMxMjQz"
+    "ValueType": 0,
+    "Intent": 3,
+    "Timestamp": 1528370869456,
+    "Value": "[...]"
   }
 }
 {
-  "State": "COMPLETED",
-  "LockTime": 1522316110702,
-  "LockOwner": "sample-app",
-  "Headers": {
+  "deadline": 1528370870456,
+  "worker": "sample-app",
+  "headers": {
     "activityId": "collect-money",
-    "activityInstanceKey": 4294990088,
+    "activityInstanceKey": 4294969624,
     "bpmnProcessId": "order-process",
-    "workflowDefinitionVersion": 3,
-    "workflowInstanceKey": 4294989104,
-    "workflowKey": 4295003848
+    "workflowDefinitionVersion": 2,
+    "workflowInstanceKey": 4294968744,
+    "workflowKey": 2
   },
-  "CustomHeader": {
+  "customHeaders": {
     "method": "VISA"
   },
-  "Retries": 3,
-  "Type": "payment-service",
-  "Payload": "gadvcmRlcklkpTMxMjQz"
+  "retries": 3,
+  "type": "payment-service",
+  "payload": "gadvcmRlcklkpTMxMjQz"
 }
 ```
 
@@ -498,39 +508,63 @@ Run the program. You should see the similar output with more events which happen
 
 ```json
 Event: {
-  "Task": null,
   "Event": {
+    "deadline": 9223372036854775808,
+    "worker": "",
+    "headers": {
+      "activityId": "fetch-items",
+      "activityInstanceKey": 4294973080,
+      "bpmnProcessId": "order-process",
+      "workflowDefinitionVersion": 2,
+      "workflowInstanceKey": 4294968744,
+      "workflowKey": 2
+    },
+    "customHeaders": {},
+    "retries": 3,
+    "type": "inventory-service",
+    "payload": "gadvcmRlcklkpTMxMjQz"
+  },
+  "Metadata": {
     "PartitionId": 1,
-    "Position": 4295008568,
-    "Key": 4295005656,
-    "SubscriberKey": 4295009536,
+    "Position": 4294973544,
+    "Key": 4294973544,
+    "SubscriberKey": 4294974264,
+    "RecordType": 1,
     "SubscriptionType": 1,
-    "EventType": 5,
-    "Event": "h6VzdGF0ZbNBQ1RJVklUWV9DT01QTEVUSU5HrWJwbW5Qcm9jZXNzSWStb3JkZXItcHJvY2Vzc6d2ZXJzaW9uBKt3b3JrZmxvd0tlec8AAAABAAD4wLN3b3JrZmxvd0luc3RhbmNlS2V5zwAAAAEAAJIAqmFjdGl2aXR5SWStY29sbGVjdC1tb25leadwYXlsb2FkxA+Bp29yZGVySWSlMzEyNDM="
+    "ValueType": 0,
+    "Intent": 0,
+    "Timestamp": 1528370869461,
+    "Value": "[...]"
   }
 }
 Event: {
-  "Task": null,
   "Event": {
+    "deadline": 9223372036854775808,
+    "worker": "",
+    "headers": {
+      "activityId": "fetch-items",
+      "activityInstanceKey": 4294973080,
+      "bpmnProcessId": "order-process",
+      "workflowDefinitionVersion": 2,
+      "workflowInstanceKey": 4294968744,
+      "workflowKey": 2
+    },
+    "customHeaders": {},
+    "retries": 3,
+    "type": "inventory-service",
+    "payload": "gadvcmRlcklkpTMxMjQz"
+  },
+  "Metadata": {
     "PartitionId": 1,
-    "Position": 4295008832,
-    "Key": 4295008832,
-    "SubscriberKey": 4295009536,
+    "Position": 4294973904,
+    "Key": 4294973544,
+    "SubscriberKey": 4294974264,
+    "RecordType": 0,
     "SubscriptionType": 1,
-    "EventType": 6,
-    "Event": "iqVzdGF0ZaZDUkVBVEWpZXJyb3JUeXBlsElPX01BUFBJTkdfRVJST1KsZXJyb3JNZXNzYWdl2SVObyBkYXRhIGZvdW5kIGZvciBxdWVyeSAkLnRvdGFsUHJpY2UutGZhaWx1cmVFdmVudFBvc2l0aW9uzwAAAAEAAKE4rWJwbW5Qcm9jZXNzSWStb3JkZXItcHJvY2Vzc7N3b3JrZmxvd0luc3RhbmNlS2V5zwAAAAEAAJIAqmFjdGl2aXR5SWStY29sbGVjdC1tb25lebNhY3Rpdml0eUluc3RhbmNlS2V5zwAAAAEAAJXYp3Rhc2tLZXn/p3BheWxvYWTEAYA="
-  }
-}
-Event: {
-  "Task": null,
-  "Event": {
-    "PartitionId": 1,
-    "Position": 4295009184,
-    "Key": 4295008832,
-    "SubscriberKey": 4295009536,
-    "SubscriptionType": 1,
-    "EventType": 6,
-    "Event": "iqVzdGF0ZadDUkVBVEVEqWVycm9yVHlwZbBJT19NQVBQSU5HX0VSUk9SrGVycm9yTWVzc2FnZdklTm8gZGF0YSBmb3VuZCBmb3IgcXVlcnkgJC50b3RhbFByaWNlLrRmYWlsdXJlRXZlbnRQb3NpdGlvbs8AAAABAAChOK1icG1uUHJvY2Vzc0lkrW9yZGVyLXByb2Nlc3Ozd29ya2Zsb3dJbnN0YW5jZUtlec8AAAABAACSAKphY3Rpdml0eUlkrWNvbGxlY3QtbW9uZXmzYWN0aXZpdHlJbnN0YW5jZUtlec8AAAABAACV2Kd0YXNrS2V5/6dwYXlsb2FkxAGA"
+    "ValueType": 0,
+    "Intent": 1,
+    "Timestamp": 1528370869462,
+    "Value": "[...]"
   }
 }
 ```

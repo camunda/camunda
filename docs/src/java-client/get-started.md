@@ -38,8 +38,8 @@ You should see the output:
 ```
 {
   "Name": "my-topic",
-  "State": "CREATING",
-  "Partitions": 1
+  "Partitions": 1,
+  "ReplicationFactor": 1
 }
 ```
 
