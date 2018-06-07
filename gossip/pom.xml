@@ -184,6 +184,23 @@
       </snapshots>
     </repository>
   </repositories>
+  
+  <profiles>
+    <profile>
+      <id>skip-unstable-tests</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <excludedGroups>io.zeebe.UnstableTest</excludedGroups>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
   <scm>
     <url>https://github.com/zeebe-io/zb-gossip</url>
