@@ -174,7 +174,7 @@ public class YamlWorkflowTest
         waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_COMPLETED));
 
         final WorkflowInstanceEvent workflowEvent = eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_COMPLETED);
-        assertThat(workflowEvent.getPayload()).isEqualTo("{\"result\":3}");
+        assertThat(workflowEvent.getPayload()).isEqualTo("{\"foo\":1,\"result\":3}");
     }
 
 }
