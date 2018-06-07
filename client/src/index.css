@@ -27,6 +27,10 @@
   font-weight: 600;
 }
 
+* {
+  box-sizing: border-box;
+}
+
 html {
   font-smoothing: antialiased;
   -webkit-font-smoothing: antialiased;
