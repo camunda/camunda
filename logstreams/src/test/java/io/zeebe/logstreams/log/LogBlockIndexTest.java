@@ -21,7 +21,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.mockito.MockitoAnnotations;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -41,8 +40,6 @@ public class LogBlockIndexTest
     @Before
     public void setup()
     {
-        MockitoAnnotations.initMocks(this);
-
         blockIndex = createNewBlockIndex(CAPACITY);
     }
 
