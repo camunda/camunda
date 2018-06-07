@@ -21,10 +21,8 @@ import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.JOB_ACTIVA
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
@@ -364,54 +362,6 @@ public class JobSubscriptionManager extends Actor implements TransportListener
     private static String streamProcessorName(final DirectBuffer jobType)
     {
         return String.format("job-activate.%s", bufferAsString(jobType));
-    }
-
-    static class Subscriptions
-    {
-        private final Long2ObjectHashMap<JobSubscription> subscriptions = new Long2ObjectHashMap<>();
-
-        public void addSubscription(JobSubscription subscription)
-        {
-            subscriptions.put(subscription.getSubscriberKey(), subscription);
-        }
-
-        public void removeSubscription(long subscriberKey)
-        {
-            subscriptions.remove(subscriberKey);
-        }
-
-        public void removeSubscriptionsForPartition(int partitionId)
-        {
-            final Iterator<JobSubscription> iterator = subscriptions.values().iterator();
-
-            while (iterator.hasNext())
-            {
-                if (iterator.next().getPartitionId() == partitionId)
-                {
-                    iterator.remove();
-                }
-            }
-        }
-
-        public JobSubscription getSubscription(long subscriberKey)
-        {
-            return subscriptions.get(subscriberKey);
-        }
-
-        public List<JobSubscription> getSubscriptionsForChannel(int channel)
-        {
-            return subscriptions.values().stream()
-                .filter(s -> s.getStreamId() == channel)
-                .collect(Collectors.toList());
-        }
-
-        public int getSubscriptionsForPartitionAndType(int partition, DirectBuffer type)
-        {
-            return (int) subscriptions.values()
-                .stream()
-                .filter(s -> s.getPartitionId() == partition && type.equals(s.getJobType()))
-                .count();
-        }
     }
 
     class PartitionBucket
