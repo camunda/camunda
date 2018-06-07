@@ -27,6 +27,11 @@
   font-weight: 600;
 }
 
+html {
+  font-smoothing: antialiased;
+  -webkit-font-smoothing: antialiased;
+}
+
 body {
   background-color: #1c1f23;
   font-family: IBMPlexSans;
