@@ -271,7 +271,7 @@ Start the Zeebe Monitor using `java -jar zeebe-simple-monitor.jar`.
 Open a web browser and go to <http://localhost:8080/>.
 
 Connect to the broker and switch to the workflow instances view.
-Here, you see the current state of the workflow instance which includes active tasks, completed activities, the payload and open incidents.
+Here, you see the current state of the workflow instance which includes active jobs, completed activities, the payload and open incidents.
 
 ![zeebe-monitor-step-1](/java-client/zeebe-monitor-1.png)
 
@@ -280,7 +280,7 @@ Here, you see the current state of the workflow instance which includes active t
 
 Now we want to do some work within your workflow.  First, add a few service
 tasks to the BPMN diagram and set the required attributes.  Then extend your
-`main.go` file and open a task subscription to process tasks which are created
+`main.go` file and open a job subscription to process jobs which are created
 when the workflow instance reaches a service task.
 
 Open the BPMN diagram in the Zeebe Modeler.
@@ -291,7 +291,7 @@ Insert a few service tasks between the start and the end event.
 You need to set the type of each task, which identifies the nature of the work to be performed.
 Set the type of the first task to `payment-service`.
 
-Add the following lines to redeploy the modified process and open a task
+Add the following lines to redeploy the modified process and open a job
 subscription for the first tasks type:
 
 ```go
@@ -340,11 +340,11 @@ func main() {
 
 	fmt.Println(msg.String())
 
-	subscription, err := zbClient.TaskSubscription(topicName, "sample-app", "payment-service", 1000, 32, func(client zbsubscribe.ZeebeAPI, event *zbsubscriptions.SubscriptionEvent) {
+	subscription, err := zbClient.JobSubscription(topicName, "sample-app", "payment-service", 1000, 32, func(client zbsubscribe.ZeebeAPI, event *zbsubscriptions.SubscriptionEvent) {
 		fmt.Println(event.String())
 
-		// complete task after processing
-		response, _ := client.CompleteTask(event)
+		// complete job after processing
+		response, _ := client.CompleteJob(event)
 		fmt.Println(response)
 	})
 
@@ -369,7 +369,7 @@ func main() {
 }
 ```
 
-In this example we shall open a task subscription for the previously created workflow instance, consume the task and complete it. Before completing it it shall print the data to the standard output.
+In this example we shall open a job subscription for the previously created workflow instance, consume the job and complete it. Before completing it it shall print the data to the standard output.
 When you have a look at the Zeebe Monitor, then you can see that the workflow instance moved from the first service task to the next one:
 
 ![zeebe-monitor-step-2](/go-client/zeebe-monitor-2.png)
@@ -554,4 +554,4 @@ Next steps:
 * Learn more about [BPMN workflows](/bpmn-workflows/README.html)
 
 [topic subscription]: ../basics/topics-and-logs.html
-[task subscription]: ../basics/task-workers.html
+[job subscription]: ../basics/job-workers.html
