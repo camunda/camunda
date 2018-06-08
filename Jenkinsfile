@@ -17,7 +17,9 @@ pipeline {
 
     post {
         always {
-            setGitHubPullRequestStatus
+            steps {
+                setGitHubPullRequestStatus
+            }
         }
     }
 }
