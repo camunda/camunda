@@ -23,8 +23,8 @@ You can always download the latest Zeebe release from the [Github release page](
 Once you have downloaded a distribution, extract it into a folder of your choice. To extract the Zeebe distribution and start the broker, **Linux users** can type:
 
 ```bash
-$ tar -xzf zeebe-distribution-X.Y.Z.tar.gz -C zeebe/
-$ ./bin/broker
+tar -xzf zeebe-distribution-X.Y.Z.tar.gz -C zeebe/
+./bin/broker
 ```
 
 **Windows users** can download the `.zip`package and extract it using their favorite unzip tool. They can then open the extracted folder, navigate to the `bin` folder and start the broker by double-clicking on the `broker.bat` file.
@@ -115,7 +115,9 @@ docker-machine create --driver virtualbox --virtualbox-memory 4000 zeebe
 Verify that the Docker Machine is running correctly:
 
 ```
-$ docker-machine ls
+docker-machine ls
+```
+```
 NAME        ACTIVE   DRIVER       STATE     URL                         SWARM   DOCKER        ERRORS
 zeebe     *        virtualbox   Running   tcp://192.168.99.100:2376           v17.03.1-ce
 ```
@@ -134,11 +136,13 @@ docker run --rm -p 51015:51015 -p 51016:51016 -p 51017:51017 camunda/zeebe:lates
 
 To get the ip of Zeebe:
 ```
-$ docker-machine ip zeebe
+docker-machine ip zeebe
+```
+```
 192.168.99.100
 ```
 
 Verify that you can connect to Zeebe:
 ```
-$ telnet 192.168.99.100 51015
+telnet 192.168.99.100 51015
 ```
