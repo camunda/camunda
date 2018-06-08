@@ -120,8 +120,13 @@ pipeline {
             container('maven') {
               sh '''
                 cd ./backend
-                mvn clean install -P -docker -B
+                mvn install -P -docker -B -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
               '''
+            }
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/surefire-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
             }
           }
         }
@@ -132,8 +137,13 @@ pipeline {
                 cd ./client
                 yarn
                 yarn build
-                CI=true yarn test --maxWorkers=$LIMITS_CPU
+                yarn test:ci
               '''
+            }
+          }
+          post {
+            always {
+              junit testResults: 'client/jest-test-results.xml', keepLongStdio: true, allowEmptyResults: true
             }
           }
         }

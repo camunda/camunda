@@ -13,9 +13,18 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
+    "test:ci": "CI=true react-scripts test --env=jsdom --maxWorkers=$LIMITS_CPU --ci --testResultsProcessor='jest-junit'",
     "eject": "react-scripts eject",
     "postinstall": "node scripts/wireModules",
     "precommit": "lint-staged"
+  },
+  "jest-junit": {
+    "suiteName": "client",
+    "output": "./jest-test-results.xml",
+    "suiteNameTemplate": "{filename}",
+    "classNameTemplate": "client.{filename}",
+    "titleTemplate": "{title}",
+    "ancestorSeparator": " @ "
   },
   "devDependencies": {
     "enzyme": "^3.3.0",
@@ -23,6 +32,7 @@
     "eslint-plugin-prettier": "^2.6.0",
     "husky": "^0.14.3",
     "jest-enzyme": "^6.0.1",
+    "jest-junit": "^5.0.0",
     "lint-staged": "^7.1.3",
     "prettier": "^1.13.4",
     "react-scripts": "1.1.4"
