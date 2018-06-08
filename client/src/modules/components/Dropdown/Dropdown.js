@@ -1,8 +1,15 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 import * as Styled from './styled';
 
 export default class Dropdown extends React.Component {
+  static propTypes = {
+    /** The content that is visible on the dropdown trigger. Must be non-interactive phrasing content. */
+    label: PropTypes.node.isRequired,
+    /** The options of this dropdown. Each child should be a `Dropdown.Option` instance */
+    children: PropTypes.node.isRequired
+  };
   state = {open: false};
 
   toggleOpen = () => {
