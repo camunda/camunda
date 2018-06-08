@@ -60,6 +60,11 @@ spec:
     image: ${NODEJS_DOCKER_IMAGE()}
     command: ["cat"]
     tty: true
+    env:
+      - name: LIMITS_CPU
+        valueFrom:
+          resourceFieldRef:
+            resource: limits.cpu
     resources:
       limits:
         cpu: 1
@@ -127,7 +132,7 @@ pipeline {
                 cd ./client
                 yarn
                 yarn build
-                CI=true yarn test
+                CI=true yarn test --maxWorkers=$LIMITS_CPU
               '''
             }
           }
