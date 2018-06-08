@@ -3,7 +3,8 @@ import PropTypes from 'prop-types';
 
 import * as Styled from './styled.js';
 
-import {Badge} from 'components';
+import {Badge, Dropdown} from 'components';
+import {logout} from './api';
 
 export default function Header({active, detail, ...props}) {
   function createBadgeEntry(label) {
@@ -26,7 +27,11 @@ export default function Header({active, detail, ...props}) {
       {props.selections > 0 && createBadgeEntry('Selections')}
       {props.incidents > 0 && createBadgeEntry('Incidents')}
       {detail && <Styled.Detail>Instance {detail}</Styled.Detail>}
-      <Styled.ProfileDropdown>User Name</Styled.ProfileDropdown>
+      <Styled.ProfileDropdown>
+        <Dropdown label="User Name">
+          <Dropdown.Option onClick={logout}>Logout</Dropdown.Option>
+        </Dropdown>
+      </Styled.ProfileDropdown>
     </Styled.Header>
   );
 }
