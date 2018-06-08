@@ -4,8 +4,12 @@ import {mount} from 'enzyme';
 import Header from './Header';
 
 jest.mock('components', () => {
+  const Dropdown = ({children}) => <div>{children}</div>;
+  Dropdown.Option = props => <button {...props} />;
+
   return {
-    Badge: ({children}) => <span>{children}</span>
+    Badge: ({children}) => <span>{children}</span>,
+    Dropdown
   };
 });
 
