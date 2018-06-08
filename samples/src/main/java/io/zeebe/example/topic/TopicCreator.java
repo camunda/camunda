@@ -13,15 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.topic;
+package io.zeebe.example.topic;
 
-import java.util.Properties;
-
-import io.zeebe.client.ClientProperties;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.client.api.events.TopicEvent;
 
-public class CreateTopic
+public class TopicCreator
 {
 
     public static void main(final String[] args)
@@ -29,18 +27,22 @@ public class CreateTopic
         final String broker = "localhost:51015";
         final String topic = "test";
         final int partitions = 1;
+        final int replicationFactor = 1;
 
-        final Properties clientProperties = new Properties();
-        clientProperties.put(ClientProperties.BROKER_CONTACTPOINT, broker);
+        final ZeebeClientBuilder clientBuilder = ZeebeClient
+            .newClientBuilder()
+            .brokerContactPoint(broker);
 
-        try (ZeebeClient client = ZeebeClient.newClientBuilder().withProperties(clientProperties).build())
+        try (ZeebeClient client = clientBuilder.build())
         {
-            System.out.println("Creating topic " + topic + " with " + partitions + " partition(s) with contact point " + broker);
+            System.out.println("Creating topic " + topic +
+                " with " + partitions + " partition(s) " +
+                "with contact point " + broker);
 
             final TopicEvent topicEvent = client.newCreateTopicCommand()
                 .name(topic)
                 .partitions(partitions)
-                .replicationFactor(1)
+                .replicationFactor(replicationFactor)
                 .send()
                 .join();
 
