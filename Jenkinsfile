@@ -15,11 +15,4 @@ pipeline {
         }
     }
 
-    post {
-        always {
-            steps {
-                setGitHubPullRequestStatus
-            }
-        }
-    }
 }
