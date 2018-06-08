@@ -4,18 +4,17 @@ This page guides you through the initial installation of your Zeebe broker. In c
 
 There are different ways to install Zeebe:
 
-* Download a distribution
-* Use Docker
-* Use a Linux Distribution package manager _\(coming soon\)_
+* [Download a distribution](#download-a-distribution)
+* [Using Docker](#using-docker)
 
 ## Prerequisites
 
 * Operating System:
-  * Windows \(development only, not supported for production\)
-  * Linux \(TODO: more details on distros and filesystems\)
+  * Linux
+  * Windows/MacOS (development only, not supported for production)
 * Java Virtual Machine:
-  * Oracle Hotspot v1.8+
-  * Open JDK v1.8+
+  * Oracle Hotspot v1.8
+  * Open JDK v1.8
 
 ## Download a distribution
 
@@ -24,9 +23,8 @@ You can always download the latest Zeebe release from the [Github release page](
 Once you have downloaded a distribution, extract it into a folder of your choice. To extract the Zeebe distribution and start the broker, **Linux users** can type:
 
 ```bash
-$ tar -xzf zeebe-distribution-0.2.0.tar.gz -C zeebe/
-$ cd zeebe/bin
-$ ./broker
+$ tar -xzf zeebe-distribution-X.Y.Z.tar.gz -C zeebe/
+$ ./bin/broker
 ```
 
 **Windows users** can download the `.zip`package and extract it using their favorite unzip tool. They can then open the extracted folder, navigate to the `bin` folder and start the broker by double-clicking on the `broker.bat` file.
@@ -34,12 +32,13 @@ $ ./broker
 Once the Zeebe broker has started, it should produce the following output:
 
 ```bash
-10:48:51.153 [main] INFO  io.zeebe.broker.system - Using config file conf/zeebe.cfg.toml
-10:48:51.224 [main] INFO  io.zeebe.broker.system - Using data directory: data/
-10:48:51.335 [service-container-action-0] INFO  io.zeebe.broker.services - Using data/metrics/metrics.zeebe for counters
-10:48:51.690 [actor-runner-service-container] INFO  io.zeebe.broker.transport - Bound replicationApi.server to localhost/127.0.0.1:51017
-10:48:51.692 [actor-runner-service-container] INFO  io.zeebe.broker.transport - Bound managementApi.server to localhost/127.0.0.1:51016
-10:48:51.755 [actor-runner-service-container] INFO  io.zeebe.transport - Bound clientApi.server to /0.0.0.0:51015
+10:49:52.264 [] [main] INFO  io.zeebe.broker.system - Using configuration file zeebe-broker-X.Y.Z/conf/zeebe.cfg.toml
+10:49:52.342 [] [main] INFO  io.zeebe.broker.system - Scheduler configuration: Threads{cpu-bound: 2, io-bound: 2}.
+10:49:52.383 [] [main] INFO  io.zeebe.broker.system - Version: X.Y.Z
+10:49:52.430 [] [main] INFO  io.zeebe.broker.clustering - Starting standalone broker.
+10:49:52.435 [service-controller] [0.0.0.0:51015-zb-actors-1] INFO  io.zeebe.broker.transport - Bound managementApi.server to /0.0.0.0:51016
+10:49:52.460 [service-controller] [0.0.0.0:51015-zb-actors-1] INFO  io.zeebe.transport - Bound clientApi.server to /0.0.0.0:51015
+10:49:52.460 [service-controller] [0.0.0.0:51015-zb-actors-1] INFO  io.zeebe.transport - Bound replicationApi.server to /0.0.0.0:51017
 ```
 
 ## Using Docker
@@ -47,7 +46,7 @@ Once the Zeebe broker has started, it should produce the following output:
 You can run Zeebe with Docker:
 
 ```bash
-docker run -p 51015:51015 camunda/zeebe:0.2.0
+docker run --name zeebe -p 51015:51015 camunda/zeebe:latest
 ```
 
 ### Exposed Ports
@@ -63,30 +62,27 @@ all data which should be persisted.
 
 ### Configuration
 
-The Zeebe configuration is located at 
-`/usr/local/zeebe/conf/zeebe.cfg.toml`. The logging configuration is located
-at `/usr/local/zeebe/conf/log4j2.xml`.
+The Zeebe configuration is located at `/usr/local/zeebe/conf/zeebe.cfg.toml`.
+The logging configuration is located at `/usr/local/zeebe/conf/log4j2.xml`.
 
 The configuration of the docker image can also be changed by using environment
 variables.
 
 Available environment variables:
 
- - `ZEEBE_LOG_LEVEL`
-
-Sets the log level of the Zeebe Logger (default: `info`).
-
- - `DEPLOY_ON_KUBERNETES`
-
-If set to `true`, it applies some configuration changes in order to run Zeebe
-in a Kubernetes environment. Please note that the recommended method to
-run Zeebe on Kubernetes is by using the
-[zeebe-operator](https://github.com/zeebe-io/zeebe-operator).
+ - `ZEEBE_LOG_LEVEL`: Sets the log level of the Zeebe Logger (default: `info`).
+ - `ZEEBE_HOST`: Sets the host address to bind to instead of the IP of the container.
+ - `BOOTSTRAP`: Sets the replication factor of the `internal-system` partition.
+ - `INITIAL_CONTACT_POINT`: Sets the contact points of other brokers in a cluster setup.
+ - `DEPLOY_ON_KUBERNETES`: If set to `true`, it applies some configuration changes in order to run Zeebe
+ in a Kubernetes environment. Please note that the recommended method to
+ run Zeebe on Kubernetes is by using the
+ [zeebe-operator](https://github.com/zeebe-io/zeebe-operator).
 
 ### Mac and Windows users
 
 **Note**: On systems which use a VM to run Docker containers like Mac and
-Windows, the VM needs at least 4GB of memory, otherwise Zeebe fails to start
+Windows, the VM needs at least 4GB of memory, otherwise Zeebe might fail to start
 with an error similar to:
 
 ```
@@ -146,7 +142,3 @@ Verify that you can connect to Zeebe:
 ```
 $ telnet 192.168.99.100 51015
 ```
-
-## Linux Distribution Packages
-
-Coming Soon!
