@@ -7,4 +7,10 @@ pipeline {
             }
         }
     }
+
+    post {
+        always {
+            setGitHubPullRequestStatus
+        }
+    }
 }
