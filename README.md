@@ -10,9 +10,21 @@ To run the application locally you can use `docker` and `docker-compose`.
 Make sure to have a recent version of these tools installed locally: you
 should be able to run these two commands on your shell without `sudo`.
 
-If you need support to configure these tools please contact Andrea
+If you need support to configure these tools please contact Andrea.
 
-To spawn a local environment, run this command in the root folder:
+To spawn Operate backend use this command:
+
+```
+docker-compose up --force-recreate --build -d elasticsearch operate_backend
+```
+
+To stop:
+
+```
+docker-compose down
+```
+
+To spawn the full local environment, run this command in the root folder:
 
 ```
 docker-compose up -d

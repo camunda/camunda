@@ -1,5 +1,23 @@
-#spring:
-#  security:
-#    user:
-#      name: demo
-#      password: demo
+camunda.bpm.operate:
+  elasticsearch:
+    clusterName: docker-cluster
+    host: localhost
+    port: 9300
+    dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
+  demoData: true
+logging:
+  level:
+    ROOT: INFO
+---
+spring:
+  profiles: dev
+camunda.bpm.operate:
+  elasticsearch:
+    clusterName: docker-cluster
+    host: elasticsearch
+    port: 9300
+    dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
+  demoData: true
+logging:
+  level:
+    ROOT: INFO

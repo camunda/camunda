@@ -1,17 +1,12 @@
 package org.camunda.operate.security;
 
-import static org.apache.http.entity.ContentType.APPLICATION_JSON;
-import static org.springframework.http.HttpStatus.NO_CONTENT;
-import static org.springframework.http.HttpStatus.UNAUTHORIZED;
-
-import java.io.IOException;
-import java.io.PrintWriter;
-
 import javax.json.Json;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
+import java.io.IOException;
+import java.io.PrintWriter;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -25,10 +20,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import static org.apache.http.entity.ContentType.APPLICATION_JSON;
+import static org.springframework.http.HttpStatus.NO_CONTENT;
+import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 /**
  * @author Svetlana Dorokhova.
  */
+
+@Profile("auth")
 @EnableWebSecurity
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
@@ -83,8 +83,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
       @Override
       public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-          .allowedOrigins("*")
-          .allowedOrigins("http://localhost:3000")
+          .allowedOrigins("*", "http://localhost:3000")
           .allowedMethods("GET", "POST", "PUT", "DELETE")
           .allowedHeaders("content-type")
           .allowCredentials(true);
