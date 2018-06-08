@@ -51,7 +51,7 @@ public class LoginLogoutTest {
 
     ResponseEntity<Object> response = testRestTemplate.postForEntity("/login", request, Object.class);
 
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     assertThat(response.getHeaders()).containsKey("Set-Cookie");
     assertThat(response.getHeaders().get("Set-Cookie").get(0)).contains(SESSION_ID_HEADER);
 
