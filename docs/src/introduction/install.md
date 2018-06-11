@@ -1,7 +1,5 @@
 # Install
 
-Hello {{commit}}
-
 This page guides you through the initial installation of your Zeebe broker. In case you are looking for more detailed information on how to set up and operate Zeebe, make sure to check out the [Operations Guide](/operations/README.html) as well.
 
 There are different ways to install Zeebe:
