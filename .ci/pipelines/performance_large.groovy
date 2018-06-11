@@ -35,6 +35,8 @@ pipeline {
     DISPLAY = ":0"
     NODE_ENV = "ci"
     MAVEN_OPTS = "-Xmx2048m -Xms512m -XX:PermSize=256m -XX:MaxPermSize=1024m"
+    CAMBPM_VERSION = "7.10.0"
+    SNAPSHOT = "true"
   }
 
   options {
