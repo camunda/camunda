@@ -2,6 +2,7 @@ package org.camunda.optimize.rest.queryparam.adjustment;
 
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.rest.queryparam.adjustment.decorator.OffsetResultListDecorator;
 import org.camunda.optimize.rest.queryparam.adjustment.decorator.OrderByQueryParamResultListDecorator;
 import org.camunda.optimize.rest.queryparam.adjustment.decorator.OriginalResultList;
@@ -19,26 +20,20 @@ public class QueryParamAdjustmentUtil {
 
 
   private static final String ORDER_BY = "orderBy";
-  private static final Map<String, Map <String, Comparator>> reportComparators = new HashMap();
+  private static final Map<String, Comparator> reportComparators = new HashMap();
+  private static final Map<String, Comparator> variableComparators = new HashMap();
 
   private static final String LAST_MODIFIED = "lastModified";
   private static final String NAME = "name";
-
-  private static final String DESC = "desc";
-  private static final String ASC = "asc";
-  private static final String SORT_ORDER = "sortOrder";
+  private static final String TYPE = "type";
 
   static {
-    Map <String, Comparator> desComparators = new HashMap<>();
-    desComparators.put(LAST_MODIFIED, Comparator.comparing(ReportDefinitionDto::getLastModified).reversed());
-    desComparators.put(NAME, Comparator.comparing(ReportDefinitionDto::getName).reversed());
+    Map <String, Comparator> reportDescComparators = new HashMap<>();
+    reportComparators.put(LAST_MODIFIED, Comparator.comparing(ReportDefinitionDto::getLastModified).reversed());
+    reportComparators.put(NAME, Comparator.comparing(ReportDefinitionDto::getName));
 
-    Map <String, Comparator> ascComparators = new HashMap<>();
-    ascComparators.put(LAST_MODIFIED, Comparator.comparing(ReportDefinitionDto::getLastModified));
-    ascComparators.put(NAME, Comparator.comparing(ReportDefinitionDto::getName));
-
-    reportComparators.put(DESC, desComparators);
-    reportComparators.put(ASC, ascComparators);
+    variableComparators.put(NAME, Comparator.comparing(VariableRetrievalDto::getName));
+    variableComparators.put(TYPE, Comparator.comparing(VariableRetrievalDto::getType));
   }
 
   public static List<ReportDefinitionDto> adjustReportResultsToQueryParameters(
@@ -50,9 +45,7 @@ public class QueryParamAdjustmentUtil {
     List<String> key = queryParameters.get(ORDER_BY);
     String queryParam = (key == null || key.isEmpty()) ? LAST_MODIFIED : key.get(0);
 
-    key = queryParameters.get(SORT_ORDER);
-    String order = (key == null || key.isEmpty()) ? DESC : key.get(0);
-    sorting = reportComparators.get(order).get(queryParam);
+    sorting = reportComparators.get(queryParam);
 
     return adjustResultListAccordingToQueryParameters(resultList, queryParameters, sorting, queryParam);
   }
@@ -103,5 +96,17 @@ public class QueryParamAdjustmentUtil {
             )
         );
     return adjustedResultList.adjustList();
+  }
+
+  public static List<VariableRetrievalDto> adjustVariablesToQueryParameters(
+      List<VariableRetrievalDto> variables,
+      MultivaluedMap<String, String> queryParameters
+  ) {
+    List<String> key = queryParameters.get(ORDER_BY);
+    String queryParam = (key == null || key.isEmpty()) ? NAME : key.get(0);
+
+    Comparator<VariableRetrievalDto> sorting = variableComparators.get(queryParam);
+
+    return adjustResultListAccordingToQueryParameters(variables, queryParameters, sorting, queryParam);
   }
 }

@@ -6,6 +6,8 @@ import java.util.List;
 
 public class ReverseResultListDecorator<T> extends AdjustedResultListDecorator<T> {
 
+  private static final String DESC = "desc";
+  private static final String SORT_ORDER = "sortOrder";
   public ReverseResultListDecorator(QueryParameterAdjustedResultList<T> decoratedList) {
     super(decoratedList);
   }
@@ -14,9 +16,9 @@ public class ReverseResultListDecorator<T> extends AdjustedResultListDecorator<T
   public List<T> adjustList() {
     List<T> resultList = decoratedList.adjustList();
     MultivaluedMap<String, String> queryParameters = decoratedList.getQueryParameters();
-    if (queryParameters.containsKey("reverseOrder")) {
-      String reverseOrder = queryParameters.getFirst("reverseOrder");
-      if (reverseOrder.equals("true")) {
+    if (queryParameters.containsKey(SORT_ORDER)) {
+      String sortOrder = queryParameters.getFirst(SORT_ORDER);
+      if (sortOrder.equals(DESC)) {
         Collections.reverse(resultList);
       }
     }

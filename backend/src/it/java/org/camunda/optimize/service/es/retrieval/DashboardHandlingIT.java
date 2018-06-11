@@ -206,7 +206,7 @@ public class DashboardHandlingIT {
     // when
     Map<String, Object> queryParam = new HashMap<>();
     queryParam.put("orderBy", "lastModified");
-    queryParam.put("reverseOrder", true);
+    queryParam.put("sortOrder", "desc");
     List<DashboardDefinitionDto> dashboards = getAllDashboardsWithQueryParam(queryParam);
 
     // then

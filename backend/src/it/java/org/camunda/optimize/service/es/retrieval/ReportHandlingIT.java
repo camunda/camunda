@@ -334,19 +334,19 @@ public class ReportHandlingIT {
 
     // then
     assertThat(reports.size(), is(3));
-    assertThat(reports.get(0).getId(), is(id3));
+    assertThat(reports.get(0).getId(), is(id2));
     assertThat(reports.get(1).getId(), is(id1));
-    assertThat(reports.get(2).getId(), is(id2));
+    assertThat(reports.get(2).getId(), is(id3));
 
     // when
-    queryParam.put("sortOrder", "asc");
+    queryParam.put("sortOrder", "desc");
     reports = getAllReportsWithQueryParam(queryParam);
 
     // then
     assertThat(reports.size(), is(3));
-    assertThat(reports.get(0).getId(), is(id2));
+    assertThat(reports.get(0).getId(), is(id3));
     assertThat(reports.get(1).getId(), is(id1));
-    assertThat(reports.get(2).getId(), is(id3));
+    assertThat(reports.get(2).getId(), is(id2));
   }
 
   @Test
@@ -372,7 +372,7 @@ public class ReportHandlingIT {
     assertThat(reports.get(2).getId(), is(id2));
 
     //when
-    queryParam.put("sortOrder", "asc");
+    queryParam.put("sortOrder", "desc");
     reports = getAllReportsWithQueryParam(queryParam);
     // then
     assertThat(reports.size(), is(3));
@@ -395,7 +395,7 @@ public class ReportHandlingIT {
     // when
     Map<String, Object> queryParam = new HashMap<>();
     queryParam.put("orderBy", "lastModified");
-    queryParam.put("reverseOrder", true);
+    queryParam.put("sortOrder", "desc");
     List<ReportDefinitionDto> reports = getAllReportsWithQueryParam(queryParam);
 
     // then

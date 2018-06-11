@@ -57,7 +57,8 @@ public class VariableReader {
 
   public List<VariableRetrievalDto> getVariables(String processDefinitionKey,
                                                  String processDefinitionVersion,
-                                                 String namePrefix) {
+                                                 String namePrefix,
+                                                 String sortOrder) {
     logger.debug("Fetching variables for process definition with key [{}] and version [{}]",
       processDefinitionKey,
       processDefinitionVersion);
@@ -188,7 +189,7 @@ public class VariableReader {
       getVariableValueFilterAggregation(name, variableFieldLabel, namePrefix);
     NestedAggregationBuilder checkoutVariables =
       nested(variableFieldLabel, variableFieldLabel);
-    
+
     return
       checkoutVariables
         .subAggregation(
