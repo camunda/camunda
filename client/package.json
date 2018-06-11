@@ -13,10 +13,12 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
-    "test:ci": "CI=true react-scripts test --env=jsdom --maxWorkers=$LIMITS_CPU --ci --testResultsProcessor='jest-junit'",
+    "test:ci":
+      "CI=true react-scripts test --env=jsdom --maxWorkers=$LIMITS_CPU --ci --testResultsProcessor='jest-junit'",
     "eject": "react-scripts eject",
     "postinstall": "node scripts/wireModules",
-    "precommit": "lint-staged"
+    "precommit": "lint-staged",
+    "styleguide": "styleguidist server"
   },
   "jest-junit": {
     "suiteName": "client",
@@ -39,9 +41,6 @@
     "react-styleguidist": "^7.0.17"
   },
   "lint-staged": {
-    "src/**/*.js": [
-      "prettier --write",
-      "git add"
-    ]
+    "src/**/*.js": ["prettier --write", "git add"]
   }
 }
