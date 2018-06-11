@@ -28,9 +28,9 @@ public class ControlledActorThread extends ActorThread
     private CyclicBarrier barrier = new CyclicBarrier(2);
 
     public ControlledActorThread(String name, int id, ActorThreadGroup threadGroup, TaskScheduler taskScheduler, ActorClock clock,
-            ActorThreadMetrics metrics)
+            ActorThreadMetrics metrics, ActorTimerQueue timerQueue)
     {
-        super(name, id, threadGroup, taskScheduler, clock, metrics);
+        super(name, id, threadGroup, taskScheduler, clock, metrics, timerQueue);
         idleStrategy = new ControlledIdleStartegy();
     }
 

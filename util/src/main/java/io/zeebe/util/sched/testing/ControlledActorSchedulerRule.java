@@ -40,15 +40,16 @@ public class ControlledActorSchedulerRule extends ExternalResource
     public ControlledActorSchedulerRule()
     {
         final ControlledActorThreadFactory actorTaskRunnerFactory = new ControlledActorThreadFactory();
+        final ActorTimerQueue timerQueue = new ActorTimerQueue(clock, 1);
         final ActorSchedulerBuilder builder = ActorScheduler.newActorScheduler()
             .setActorClock(clock)
             .setCpuBoundActorThreadCount(1)
             .setIoBoundActorThreadCount(0)
             .setActorThreadFactory(actorTaskRunnerFactory)
-            .setBlockingTasksShutdownTime(Duration.ofSeconds(0));
+            .setBlockingTasksShutdownTime(Duration.ofSeconds(0))
+            .setActorTimerQueue(timerQueue);
 
         actorScheduler = builder.build();
-
         controlledActorTaskRunner = actorTaskRunnerFactory.controlledThread;
         blockingTasksRunner = builder.getBlockingTasksRunner();
     }
@@ -96,6 +97,12 @@ public class ControlledActorSchedulerRule extends ExternalResource
         controlledActorTaskRunner.workUntilDone();
     }
 
+    public void waitForTimer(final Duration timeToWait)
+    {
+        clock.addTime(timeToWait);
+        workUntilDone();
+    }
+
     public <T> ActorFuture<T> call(Callable<T> callable)
     {
         final ActorFuture<T> future = new CompletableActorFuture<>();
@@ -133,9 +140,10 @@ public class ControlledActorSchedulerRule extends ExternalResource
                 ActorThreadGroup threadGroup,
                 TaskScheduler taskScheduler,
                 ActorClock clock,
-                ActorThreadMetrics metrics)
+                ActorThreadMetrics metrics,
+                ActorTimerQueue timerQueue)
         {
-            controlledThread = new ControlledActorThread(name, id, threadGroup, taskScheduler, clock, metrics);
+            controlledThread = new ControlledActorThread(name, id, threadGroup, taskScheduler, clock, metrics, timerQueue);
             return controlledThread;
         }
     }

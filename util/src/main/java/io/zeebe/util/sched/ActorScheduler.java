@@ -197,6 +197,14 @@ public class ActorScheduler
         private Duration blockingTasksShutdownTime = Duration.ofSeconds(15);
         private ActorExecutor actorExecutor;
 
+        private ActorTimerQueue actorTimerQueue;
+
+        public ActorSchedulerBuilder setActorTimerQueue(ActorTimerQueue actorTimerQueue)
+        {
+            this.actorTimerQueue = actorTimerQueue;
+            return this;
+        }
+
         public ActorSchedulerBuilder setActorClock(ActorClock actorClock)
         {
             this.actorClock = actorClock;
@@ -271,6 +279,11 @@ public class ActorScheduler
         public ActorClock getActorClock()
         {
             return actorClock;
+        }
+
+        public ActorTimerQueue getActorTimerQueue()
+        {
+            return actorTimerQueue;
         }
 
         public MetricsManager getMetricsManager()
@@ -402,7 +415,8 @@ public class ActorScheduler
                 ActorThreadGroup threadGroup,
                 TaskScheduler taskScheduler,
                 ActorClock clock,
-                ActorThreadMetrics metrics);
+                ActorThreadMetrics metrics,
+                ActorTimerQueue timerQueue);
     }
 
     public static class DefaultActorThreadFactory implements ActorThreadFactory
@@ -414,9 +428,10 @@ public class ActorScheduler
                 ActorThreadGroup threadGroup,
                 TaskScheduler taskScheduler,
                 ActorClock clock,
-                ActorThreadMetrics metrics)
+                ActorThreadMetrics metrics,
+                ActorTimerQueue timerQueue)
         {
-            return new ActorThread(name, id, threadGroup, taskScheduler, clock, metrics);
+            return new ActorThread(name, id, threadGroup, taskScheduler, clock, metrics, timerQueue);
         }
     }
 

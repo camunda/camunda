@@ -23,6 +23,7 @@ import org.agrona.collections.Long2ObjectHashMap;
 
 public class ActorTimerQueue extends DeadlineTimerWheel
 {
+    private static final int DEFAULT_TICKS_PER_WHEEL = 32;
     private final Long2ObjectHashMap<TimerSubscription> timerJobMap = new Long2ObjectHashMap<>();
 
     private final TimerHandler timerHandler = new TimerHandler()
@@ -43,7 +44,12 @@ public class ActorTimerQueue extends DeadlineTimerWheel
 
     public ActorTimerQueue(ActorClock clock)
     {
-        super(TimeUnit.MILLISECONDS, clock.getTimeMillis(), 1, 32);
+        this(clock, DEFAULT_TICKS_PER_WHEEL);
+    }
+
+    public ActorTimerQueue(ActorClock clock, int ticksPerWheel)
+    {
+        super(TimeUnit.MILLISECONDS, clock.getTimeMillis(), 1, ticksPerWheel);
     }
 
     public void processExpiredTimers(ActorClock clock)

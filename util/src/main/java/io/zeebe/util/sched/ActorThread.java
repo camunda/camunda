@@ -79,7 +79,7 @@ public class ActorThread extends Thread implements Consumer<Runnable>
 
     private final TaskScheduler taskScheduler;
 
-    private final ActorTimerQueue timerJobQueue;
+    protected final ActorTimerQueue timerJobQueue;
 
     private final ActorJobPool jobPool = new ActorJobPool();
 
@@ -95,13 +95,14 @@ public class ActorThread extends Thread implements Consumer<Runnable>
             ActorThreadGroup threadGroup,
             TaskScheduler taskScheduler,
             ActorClock clock,
-            ActorThreadMetrics metrics)
+            ActorThreadMetrics metrics,
+            ActorTimerQueue timerQueue)
     {
         setName(name);
         this.state = ActorThreadState.NEW;
         this.threadId = id;
         this.clock = clock != null ? clock : new DefaultActorClock();
-        this.timerJobQueue = new ActorTimerQueue(this.clock);
+        this.timerJobQueue = timerQueue != null ? timerQueue : new ActorTimerQueue(this.clock);
         this.actorThreadGroup = threadGroup;
         this.metrics = metrics;
         this.taskScheduler = taskScheduler;
