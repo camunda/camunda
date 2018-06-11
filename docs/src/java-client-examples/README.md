@@ -7,7 +7,7 @@ Instructions to access code locally:
 ```
 git clone https://github.com/zeebe-io/zeebe.git
 git checkout {{commit}}
-cd samples
+cd zeebe/samples
 ```
 
 Import the Maven project in the `samples` directory into your IDE to start hacking.
