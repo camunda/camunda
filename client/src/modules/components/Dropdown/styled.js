@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import {Colors} from 'theme';
+import {Colors, themed, themeStyle} from 'theme';
 
 export const Label = styled.button`
   background: none;
@@ -17,8 +17,8 @@ export const Dropdown = styled.div`
   position: relative;
 `;
 
-export const DropdownMenu = styled.div`
-  background-color: ${Colors.uiDark04};
+export const DropdownMenu = themed(styled.div`
+  background-color: ${themeStyle({dark: Colors.uiDark04, light: '#ffffff'})};
   border: 1px solid ${Colors.uiDark06};
   border-radius: 3px;
   box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.5);
@@ -47,7 +47,7 @@ export const DropdownMenu = styled.div`
     border-width: 8px;
     margin-right: -8px;
   }
-`;
+`);
 
 export const Option = styled.button`
   height: 36px;
