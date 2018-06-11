@@ -12,6 +12,7 @@ import org.camunda.optimize.test.util.PropertyUtil;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.metrics.valuecount.ValueCount;
 import org.junit.Before;
 import org.junit.Rule;
@@ -71,7 +72,7 @@ public class ImportPerformanceTest {
   public void setUp() {
     Properties properties = PropertyUtil.loadProperties("import-performance-test.properties");
     NUMBER_OF_PROCESS_DEFINITIONS =
-      Long.parseLong(properties.getProperty("import.test.number.of.process-definitions", "288"));
+      Long.parseLong(properties.getProperty("import.test.number.of.process-definitions", "289"));
     NUMBER_OF_PROCESS_INSTANCES =
       Long.parseLong(properties.getProperty("import.test.number.of.process-instances", "2000000"));
     NUMBER_OF_VARIABLE_INSTANCES =
@@ -176,8 +177,10 @@ public class ImportPerformanceTest {
       .setFetchSource(false)
       .get();
 
+    Nested nested = response.getAggregations()
+      .get(EVENTS);
     ValueCount countAggregator =
-      response.getAggregations()
+      nested.getAggregations()
       .get(EVENTS +"_count");
      return countAggregator.getValue();
   }
@@ -204,7 +207,8 @@ public class ImportPerformanceTest {
 
     long totalVariableCount = 0L;
     for (String variableTypeFieldLabel : VariableHelper.allVariableTypeFieldLabels) {
-      ValueCount countAggregator = response.getAggregations()
+      Nested nestedAgg = response.getAggregations().get(variableTypeFieldLabel);
+      ValueCount countAggregator = nestedAgg.getAggregations()
         .get(variableTypeFieldLabel + "_count");
       totalVariableCount += countAggregator.getValue();
     }
