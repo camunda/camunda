@@ -18,11 +18,7 @@ package io.zeebe.client.workflow;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
+import java.util.Collections;
 
 import io.zeebe.client.api.clients.WorkflowClient;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
@@ -36,11 +32,14 @@ import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
+import org.junit.*;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
 
 public class UpdatePayloadTest
 {
-    private static final String PAYLOAD = "{ \"foo\" : \"bar\" }";
+    private static final String PAYLOAD = "{\"foo\":\"bar\"}";
 
     private static final byte[] ENCODED_PAYLOAD = new MsgPackConverter().convertToMsgPack(PAYLOAD);
 
@@ -62,6 +61,8 @@ public class UpdatePayloadTest
                 .getClient()
                 .topicClient()
                 .workflowClient();
+
+        brokerRule.workflowInstances().registerUpdatedPayloadCommand();
     }
 
     @Test
@@ -71,8 +72,6 @@ public class UpdatePayloadTest
         final WorkflowInstanceEventImpl baseEvent = Events.exampleWorfklowInstance();
         baseEvent.setKey(2L);
         baseEvent.setWorkflowInstanceKey(1L);
-
-        brokerRule.workflowInstances().registerUpdatedPayloadCommand();
 
         // when
         final WorkflowInstanceEvent workflowInstanceEvent = workflowTopicClient.newUpdatePayloadCommand(baseEvent)
@@ -98,7 +97,26 @@ public class UpdatePayloadTest
                 entry("activityId", baseEvent.getActivityId()),
                 entry("payload", ENCODED_PAYLOAD));
 
-        assertThat(workflowInstanceEvent.getState()).isEqualByComparingTo(WorkflowInstanceState.PAYLOAD_UPDATED);
+        assertThat(workflowInstanceEvent.getState()).isEqualTo(WorkflowInstanceState.PAYLOAD_UPDATED);
+    }
+
+    @Test
+    public void shouldUpdatePayloadAsMap()
+    {
+        // given
+        final WorkflowInstanceEventImpl baseEvent = Events.exampleWorfklowInstance();
+
+        // when
+        workflowTopicClient.newUpdatePayloadCommand(baseEvent)
+            .payload(Collections.singletonMap("foo", "bar"))
+            .send()
+            .join();
+
+        // then
+        assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
+
+        final ExecuteCommandRequest request = brokerRule.getReceivedCommandRequests().get(0);
+        assertThat(request.getCommand()).contains(entry("payload", ENCODED_PAYLOAD));
     }
 
     @Test

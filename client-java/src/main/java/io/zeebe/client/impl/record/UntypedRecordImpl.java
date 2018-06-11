@@ -33,7 +33,7 @@ public class UntypedRecordImpl extends RecordImpl
     {
         super(objectMapper, recordType, valueType);
 
-        this.content = new PayloadField(objectMapper.getMsgPackConverter());
+        this.content = new PayloadField(objectMapper);
         this.content.setMsgPack(rawContent);
     }
 

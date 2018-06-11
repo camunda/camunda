@@ -16,7 +16,9 @@
 package io.zeebe.client.impl.record;
 
 import java.io.InputStream;
+import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.zeebe.client.api.record.WorkflowInstanceRecord;
 import io.zeebe.client.impl.data.PayloadField;
@@ -125,22 +127,44 @@ public abstract class WorkflowInstanceRecordImpl extends RecordImpl implements W
         }
     }
 
-    public void setPayload(String jsonString)
+    @JsonIgnore
+    @Override
+    public Map<String, Object> getPayloadAsMap()
     {
         if (payload == null)
         {
-            payload = new PayloadField(objectMapper.getMsgPackConverter());
+            return null;
         }
+        else
+        {
+            return payload.getAsMap();
+        }
+    }
+
+    public void setPayload(String jsonString)
+    {
+        initializePayloadField();
         this.payload.setJson(jsonString);
     }
 
     public void setPayload(InputStream jsonStream)
     {
+        initializePayloadField();
+        this.payload.setJson(jsonStream);
+    }
+
+    public void setPayload(Map<String, Object> payload)
+    {
+        initializePayloadField();
+        this.payload.setAsMap(payload);
+    }
+
+    private void initializePayloadField()
+    {
         if (payload == null)
         {
-            payload = new PayloadField(objectMapper.getMsgPackConverter());
+            payload = new PayloadField(objectMapper);
         }
-        this.payload.setJson(jsonStream);
     }
 
     public void clearPayload()

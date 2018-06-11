@@ -28,10 +28,10 @@ public class MsgpackPayloadModule extends SimpleModule
 {
     private static final long serialVersionUID = 1L;
 
-    public MsgpackPayloadModule(MsgPackConverter msgPackConverter)
+    public MsgpackPayloadModule(ZeebeObjectMapperImpl objectMapper)
     {
         addSerializer(PayloadField.class, new MsgpackPayloadSerializer());
-        addDeserializer(PayloadField.class, new MsgpackPayloadDeserializer(msgPackConverter));
+        addDeserializer(PayloadField.class, new MsgpackPayloadDeserializer(objectMapper));
     }
 
     class MsgpackPayloadSerializer extends StdSerializer<PayloadField>
@@ -70,12 +70,12 @@ public class MsgpackPayloadModule extends SimpleModule
     {
         private static final long serialVersionUID = 1L;
 
-        private MsgPackConverter msgPackConverter;
+        private ZeebeObjectMapperImpl objectMapper;
 
-        protected MsgpackPayloadDeserializer(MsgPackConverter msgPackConverter)
+        protected MsgpackPayloadDeserializer(ZeebeObjectMapperImpl objectMapper)
         {
             this((Class<?>) null);
-            this.msgPackConverter = msgPackConverter;
+            this.objectMapper = objectMapper;
         }
 
         protected MsgpackPayloadDeserializer(Class<?> vc)
@@ -88,7 +88,7 @@ public class MsgpackPayloadModule extends SimpleModule
         {
             final byte[] msgpackPayload = p.getBinaryValue();
 
-            final PayloadField payload = new PayloadField(msgPackConverter);
+            final PayloadField payload = new PayloadField(objectMapper);
             payload.setMsgPack(msgpackPayload);
 
             return payload;

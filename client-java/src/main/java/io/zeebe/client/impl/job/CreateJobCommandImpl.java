@@ -79,6 +79,13 @@ public class CreateJobCommandImpl extends CommandImpl<JobEvent> implements Creat
     }
 
     @Override
+    public CreateJobCommandStep2 payload(Map<String, Object> payload)
+    {
+        command.setPayload(payload);
+        return this;
+    }
+
+    @Override
     public CreateJobCommandStep2 jobType(String type)
     {
         EnsureUtil.ensureNotNullOrEmpty("type", type);

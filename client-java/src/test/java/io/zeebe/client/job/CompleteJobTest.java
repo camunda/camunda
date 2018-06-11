@@ -20,11 +20,7 @@ import static org.assertj.core.api.Assertions.entry;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
+import java.util.Collections;
 
 import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.events.JobState;
@@ -36,9 +32,14 @@ import io.zeebe.client.util.Events;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
+import org.junit.*;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
 public class CompleteJobTest
 {
+    private static final String PAYLOAD = "{\"fruit\":\"cherry\"}";
+    private static final byte[] MSGPACK_PAYLOAD = new MsgPackConverter().convertToMsgPack(PAYLOAD);
 
     public ClientRule clientRule = new ClientRule();
     public StubBrokerRule brokerRule = new StubBrokerRule();
@@ -49,7 +50,11 @@ public class CompleteJobTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    protected final MsgPackConverter converter = new MsgPackConverter();
+    @Before
+    public void init()
+    {
+        brokerRule.jobs().registerCompleteCommand();
+    }
 
     @Test
     public void shouldCompleteJob()
@@ -57,14 +62,10 @@ public class CompleteJobTest
         // given
         final JobEventImpl baseEvent = Events.exampleJob();
 
-        brokerRule.jobs().registerCompleteCommand();
-
-        final String updatedPayload = "{\"fruit\":\"cherry\"}";
-
         // when
         final JobEvent jobEvent = clientRule.jobClient()
             .newCompleteCommand(baseEvent)
-            .payload(updatedPayload)
+            .payload(PAYLOAD)
             .send()
             .join();
 
@@ -81,7 +82,7 @@ public class CompleteJobTest
                 entry("type", baseEvent.getType()),
                 entry("headers", baseEvent.getHeaders()),
                 entry("customHeaders", baseEvent.getCustomHeaders()),
-                entry("payload", converter.convertToMsgPack(updatedPayload)));
+                entry("payload", MSGPACK_PAYLOAD));
 
         assertThat(jobEvent.getMetadata().getKey()).isEqualTo(baseEvent.getKey());
         assertThat(jobEvent.getMetadata().getTopicName()).isEqualTo(StubBrokerRule.TEST_TOPIC_NAME);
@@ -93,16 +94,14 @@ public class CompleteJobTest
         assertThat(jobEvent.getWorker()).isEqualTo(baseEvent.getWorker());
         assertThat(jobEvent.getRetries()).isEqualTo(baseEvent.getRetries());
         assertThat(jobEvent.getType()).isEqualTo(baseEvent.getType());
-        assertThat(jobEvent.getPayload()).isEqualTo(updatedPayload);
+        assertThat(jobEvent.getPayload()).isEqualTo(PAYLOAD);
     }
 
     @Test
-    public void shouldClearPayload()
+    public void shouldCompleteWithoutPayload()
     {
         // given
         final JobEventImpl baseEvent = Events.exampleJob();
-
-        brokerRule.jobs().registerCompleteCommand();
 
         // when
         clientRule.jobClient()
@@ -125,8 +124,6 @@ public class CompleteJobTest
 
         brokerRule.jobs().registerCompleteCommand(b -> b.rejection());
 
-        final String updatedPayload = "{\"fruit\":\"cherry\"}";
-
         // then
         exception.expect(ClientCommandRejectedException.class);
         exception.expectMessage("Command (COMPLETE) for event with key 79 was rejected");
@@ -134,7 +131,7 @@ public class CompleteJobTest
         // when
         clientRule.jobClient()
             .newCompleteCommand(baseEvent)
-            .payload(updatedPayload)
+            .payload(PAYLOAD)
             .send()
             .join();
     }
@@ -142,9 +139,6 @@ public class CompleteJobTest
     @Test
     public void shouldThrowExceptionIfBaseEventIsNull()
     {
-        // given
-        final String updatedPayload = "{\"fruit\":\"cherry\"}";
-
         // then
         exception.expect(RuntimeException.class);
         exception.expectMessage("base event must not be null");
@@ -152,7 +146,7 @@ public class CompleteJobTest
         // when
         clientRule.jobClient()
             .newCompleteCommand(null)
-            .payload(updatedPayload)
+            .payload(PAYLOAD)
             .send()
             .join();
     }
@@ -163,11 +157,8 @@ public class CompleteJobTest
         // given
         final JobEventImpl baseEvent = Events.exampleJob();
 
-        brokerRule.jobs().registerCompleteCommand();
-
-        final String updatedPayload = "{\"fruit\":\"cherry\"}";
         final ByteArrayInputStream inStream =
-                new ByteArrayInputStream(updatedPayload.getBytes(StandardCharsets.UTF_8));
+                new ByteArrayInputStream(PAYLOAD.getBytes(StandardCharsets.UTF_8));
 
         // when
         clientRule.jobClient()
@@ -180,7 +171,25 @@ public class CompleteJobTest
         final ExecuteCommandRequest request = brokerRule.getReceivedCommandRequests().get(0);
 
         assertThat(request.getCommand()).contains(
-                entry("payload", converter.convertToMsgPack(updatedPayload)));
+                entry("payload", MSGPACK_PAYLOAD));
+    }
+
+    @Test
+    public void shouldSetPayloadAsMap()
+    {
+        // given
+        final JobEventImpl baseEvent = Events.exampleJob();
+
+        // when
+        clientRule.jobClient()
+            .newCompleteCommand(baseEvent)
+            .payload(Collections.singletonMap("fruit", "cherry"))
+            .send()
+            .join();
+
+        // then
+        final ExecuteCommandRequest request = brokerRule.getReceivedCommandRequests().get(0);
+        assertThat(request.getCommand()).contains(entry("payload", MSGPACK_PAYLOAD));
     }
 
 }

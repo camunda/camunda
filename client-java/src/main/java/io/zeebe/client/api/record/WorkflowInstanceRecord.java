@@ -15,6 +15,8 @@
  */
 package io.zeebe.client.api.record;
 
+import java.util.Map;
+
 public interface WorkflowInstanceRecord extends Record
 {
     /**
@@ -47,4 +49,9 @@ public interface WorkflowInstanceRecord extends Record
      * @return the payload of the workflow instance as JSON-formatted string.
      */
     String getPayload();
+
+    /**
+     * @return the de-serialized payload of the workflow instance as map
+     */
+    Map<String, Object> getPayloadAsMap();
 }

@@ -16,6 +16,7 @@
 package io.zeebe.client.impl.workflow;
 
 import java.io.InputStream;
+import java.util.Map;
 
 import io.zeebe.client.api.commands.UpdatePayloadWorkflowInstanceCommandStep1;
 import io.zeebe.client.api.commands.UpdatePayloadWorkflowInstanceCommandStep1.UpdatePayloadWorkflowInstanceCommandStep2;
@@ -51,6 +52,13 @@ public class UpdatePayloadCommandImpl extends CommandImpl<WorkflowInstanceEvent>
 
     @Override
     public UpdatePayloadWorkflowInstanceCommandStep2 payload(String payload)
+    {
+        command.setPayload(payload);
+        return this;
+    }
+
+    @Override
+    public UpdatePayloadWorkflowInstanceCommandStep2 payload(Map<String, Object> payload)
     {
         command.setPayload(payload);
         return this;

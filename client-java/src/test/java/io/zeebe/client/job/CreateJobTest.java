@@ -21,33 +21,30 @@ import static org.assertj.core.api.Assertions.entry;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.HashMap;
 
-import org.assertj.core.util.Maps;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-
-import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.commands.CreateJobCommandStep1;
 import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.events.JobState;
 import io.zeebe.client.api.record.RecordMetadata;
 import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.util.ClientRule;
-import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
-import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import org.assertj.core.util.Maps;
+import org.junit.*;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
 public class CreateJobTest
 {
+    private static final String PAYLOAD = "{\"foo\":\"bar\"}";
+    private static final byte[] MSGPACK_PAYLOAD = new MsgPackConverter().convertToMsgPack(PAYLOAD);
 
     public ActorSchedulerRule schedulerRule = new ActorSchedulerRule();
     public ClientRule clientRule = new ClientRule();
@@ -59,45 +56,33 @@ public class CreateJobTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    protected ZeebeClient client;
-
-    protected final MsgPackConverter converter = new MsgPackConverter();
-
+    private final Instant now = Instant.now();
 
     @Before
     public void setUp()
     {
-        this.client = clientRule.getClient();
+        brokerRule
+            .jobs()
+            .registerCreateCommand(c -> c
+                                   .key(123)
+                                   .position(456)
+                                   .timestamp(now)
+                                   .value()
+                                       .allOf(r -> r.getCommand())
+                                       .put("worker", "")
+                                       .done());
     }
 
     @Test
     public void shouldCreateJob()
     {
-        // given
-        final Instant expectedTimestamp = Instant.now();
-        brokerRule.onExecuteCommandRequest(ValueType.JOB, JobIntent.CREATE)
-            .respondWith()
-            .event()
-            .key(123)
-            .position(456)
-            .timestamp(expectedTimestamp)
-            .intent(JobIntent.CREATED)
-            .value()
-              .allOf((r) -> r.getCommand())
-              .put("deadline", Protocol.INSTANT_NULL_VALUE)
-              .put("worker", "")
-              .done()
-            .register();
-
-        final String payload = "{\"foo\":\"bar\"}";
-
         // when
         final JobEvent job = clientRule.jobClient()
             .newCreateCommand()
             .jobType("fooType")
             .retries(3)
             .addCustomHeader("beverage", "apple juice")
-            .payload(payload)
+            .payload(PAYLOAD)
             .send()
             .join();
 
@@ -113,7 +98,7 @@ public class CreateJobTest
                 entry("type", "fooType"),
                 entry("headers", new HashMap<>()),
                 entry("customHeaders", Maps.newHashMap("beverage", "apple juice")),
-                entry("payload", converter.convertToMsgPack(payload)));
+                entry("payload", MSGPACK_PAYLOAD));
 
         assertThat(job.getKey()).isEqualTo(123L);
 
@@ -121,7 +106,7 @@ public class CreateJobTest
         assertThat(metadata.getTopicName()).isEqualTo(StubBrokerRule.TEST_TOPIC_NAME);
         assertThat(metadata.getPartitionId()).isEqualTo(StubBrokerRule.TEST_PARTITION_ID);
         assertThat(metadata.getPosition()).isEqualTo(456);
-        assertThat(metadata.getTimestamp()).isEqualTo(expectedTimestamp);
+        assertThat(metadata.getTimestamp()).isEqualTo(now);
         assertThat(metadata.getRejectionType()).isEqualTo(null);
         assertThat(metadata.getRejectionReason()).isEqualTo(null);
 
@@ -132,71 +117,58 @@ public class CreateJobTest
         assertThat(job.getWorker()).isEmpty();
         assertThat(job.getRetries()).isEqualTo(3);
         assertThat(job.getType()).isEqualTo("fooType");
-        assertThat(job.getPayload()).isEqualTo(payload);
+        assertThat(job.getPayload()).isEqualTo(PAYLOAD);
     }
 
     @Test
     public void shouldCreateJobWithDefaultValues()
     {
-        // given
-        brokerRule.onExecuteCommandRequest(ValueType.JOB, JobIntent.CREATE)
-            .respondWith()
-            .event()
-            .key(123)
-            .intent(JobIntent.CREATED)
-            .value()
-              .allOf((r) -> r.getCommand())
-              .put("headers", new HashMap<>())
-              .put("payload", MsgPackUtil.encodeMsgPack(w -> w.packNil()).byteArray())
-              .done()
-            .register();
-
         // when
-        final JobEvent job = clientRule.jobClient()
+        clientRule.jobClient()
             .newCreateCommand()
             .jobType("fooType")
             .send()
             .join();
 
         // then
-        assertThat(job.getMetadata().getKey()).isEqualTo(123L);
-        assertThat(job.getMetadata().getTopicName()).isEqualTo(StubBrokerRule.TEST_TOPIC_NAME);
-        assertThat(job.getMetadata().getPartitionId()).isEqualTo(StubBrokerRule.TEST_PARTITION_ID);
-
-        assertThat(job.getRetries()).isEqualTo(CreateJobCommandStep1.DEFAULT_RETRIES);
-        assertThat(job.getHeaders()).isEmpty();
-        assertThat(job.getPayload()).isEqualTo("null");
+        final ExecuteCommandRequest request = brokerRule.getReceivedCommandRequests().get(0);
+        assertThat(request.getCommand()).containsOnly(
+                entry("retries", CreateJobCommandStep1.DEFAULT_RETRIES),
+                entry("type", "fooType"),
+                entry("headers", Collections.emptyMap()),
+                entry("customHeaders", Collections.emptyMap()));
     }
 
     @Test
     public void shouldSetPayloadAsStream()
     {
-        // given
-        brokerRule.onExecuteCommandRequest(ValueType.JOB, JobIntent.CREATE)
-            .respondWith()
-            .event()
-            .key(123)
-            .intent(JobIntent.CREATED)
-            .value()
-              .allOf((r) -> r.getCommand())
-              .put("deadline", Protocol.INSTANT_NULL_VALUE)
-              .put("worker", "")
-              .done()
-            .register();
-
-        final String payload = "{\"foo\":\"bar\"}";
-
         // when
         clientRule.jobClient()
             .newCreateCommand()
             .jobType("fooType")
-            .payload(new ByteArrayInputStream(payload.getBytes(StandardCharsets.UTF_8)))
+            .payload(new ByteArrayInputStream(PAYLOAD.getBytes(StandardCharsets.UTF_8)))
             .send().join();
 
         // then
         final ExecuteCommandRequest request = brokerRule.getReceivedCommandRequests().get(0);
-        assertThat(request.getCommand()).contains(
-                entry("payload", converter.convertToMsgPack(payload)));
+        assertThat(request.getCommand()).contains(entry("payload", MSGPACK_PAYLOAD));
+    }
+
+    @Test
+    public void shouldSetPayloadAsMap()
+    {
+        // when
+        clientRule
+            .jobClient()
+            .newCreateCommand()
+            .jobType("foo")
+            .payload(Collections.singletonMap("foo", "bar"))
+            .send()
+            .join();
+
+        // then
+        final ExecuteCommandRequest request = brokerRule.getReceivedCommandRequests().get(0);
+        assertThat(request.getCommand()).contains(entry("payload", MSGPACK_PAYLOAD));
     }
 
     @Test

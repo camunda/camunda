@@ -17,12 +17,9 @@ package io.zeebe.broker.it.workflow;
 
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
+import java.util.Collections;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
@@ -32,10 +29,13 @@ import io.zeebe.client.api.events.WorkflowInstanceState;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import org.junit.*;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
 public class UpdatePayloadTest
 {
-    private static final String PAYLOAD = "{\"foo\": \"bar\"}";
+    private static final String PAYLOAD = "{\"foo\":\"bar\"}";
 
     private static final WorkflowDefinition WORKFLOW = Bpmn
             .createExecutableWorkflow("process")
@@ -66,12 +66,7 @@ public class UpdatePayloadTest
             .addWorkflowModel(WORKFLOW, "workflow.bpmn")
             .send()
             .join();
-    }
 
-    @Test
-    public void shouldUpdatePayloadWhenActivityIsActivated()
-    {
-        // given
         clientRule.getWorkflowClient()
             .newCreateInstanceCommand()
             .bpmnProcessId("process")
@@ -79,12 +74,18 @@ public class UpdatePayloadTest
             .send()
             .join();
 
+    }
+
+    @Test
+    public void shouldUpdatePayloadWhenActivityIsActivated()
+    {
+        // given
         waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED));
 
         final WorkflowInstanceEvent activtyInstance = eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED);
 
         // when
-        clientRule.getWorkflowClient()
+        final WorkflowInstanceEvent event = clientRule.getWorkflowClient()
             .newUpdatePayloadCommand(activtyInstance)
             .payload(PAYLOAD)
             .send()
@@ -93,29 +94,38 @@ public class UpdatePayloadTest
         // then
         waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.PAYLOAD_UPDATED));
 
-        clientRule.getJobClient()
-            .newWorker()
-            .jobType("task-1")
-            .handler((client, job) -> client.newCompleteCommand(job).payload("{\"result\": \"ok\"}").send())
-            .open();
+        assertThat(event.getState()).isEqualTo(WorkflowInstanceState.PAYLOAD_UPDATED);
+        assertThat(event.getPayload()).isEqualTo(PAYLOAD);
+        assertThat(event.getPayloadAsMap()).contains(entry("foo", "bar"));
+    }
 
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED));
+    @Test
+    public void shouldUpdatePayloadWithMap()
+    {
+        // given
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED));
 
-        final WorkflowInstanceEvent wfEvent = eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED);
-        assertThat(wfEvent.getPayload()).isEqualTo("{\"foo\":\"bar\",\"result\":\"ok\"}");
+        final WorkflowInstanceEvent activtyInstance = eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED);
+
+        // when
+        final WorkflowInstanceEvent event = clientRule.getWorkflowClient()
+            .newUpdatePayloadCommand(activtyInstance)
+            .payload(Collections.singletonMap("foo", "bar"))
+            .send()
+            .join();
+
+        // then
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.PAYLOAD_UPDATED));
+
+        assertThat(event.getState()).isEqualTo(WorkflowInstanceState.PAYLOAD_UPDATED);
+        assertThat(event.getPayload()).isEqualTo(PAYLOAD);
+        assertThat(event.getPayloadAsMap()).contains(entry("foo", "bar"));
     }
 
     @Test
     public void shouldFailUpdatePayloadIfWorkflowInstanceIsCompleted()
     {
         // given
-        clientRule.getWorkflowClient()
-            .newCreateInstanceCommand()
-            .bpmnProcessId("process")
-            .latestVersion()
-            .send()
-            .join();
-
         clientRule.getJobClient()
             .newWorker()
             .jobType("task-1")

@@ -28,10 +28,10 @@ public class JsonPayloadModule extends SimpleModule
 {
     private static final long serialVersionUID = 1L;
 
-    public JsonPayloadModule(MsgPackConverter msgPackConverter)
+    public JsonPayloadModule(ZeebeObjectMapperImpl objectMapper)
     {
         addSerializer(PayloadField.class, new PayloadSerializer());
-        addDeserializer(PayloadField.class, new PayloadDeserializer(msgPackConverter));
+        addDeserializer(PayloadField.class, new PayloadDeserializer(objectMapper));
     }
 
     class PayloadSerializer extends StdSerializer<PayloadField>
@@ -70,12 +70,12 @@ public class JsonPayloadModule extends SimpleModule
     {
         private static final long serialVersionUID = 1L;
 
-        private MsgPackConverter msgPackConverter;
+        private ZeebeObjectMapperImpl objectMapper;
 
-        protected PayloadDeserializer(MsgPackConverter msgPackConverter)
+        protected PayloadDeserializer(ZeebeObjectMapperImpl objectMapper)
         {
             this((Class<?>) null);
-            this.msgPackConverter = msgPackConverter;
+            this.objectMapper = objectMapper;
         }
 
         protected PayloadDeserializer(Class<?> vc)
@@ -89,7 +89,7 @@ public class JsonPayloadModule extends SimpleModule
             final TreeNode node = p.readValueAsTree();
             final String json = node.toString();
 
-            final PayloadField payload = new PayloadField(msgPackConverter);
+            final PayloadField payload = new PayloadField(objectMapper);
             payload.setJson(json);
 
             return payload;

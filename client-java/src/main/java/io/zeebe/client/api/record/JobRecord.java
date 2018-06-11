@@ -60,4 +60,9 @@ public interface JobRecord extends Record
      * @return JSON-formatted payload
      */
     String getPayload();
+
+    /**
+     * @return de-serialized payload as map
+     */
+    Map<String, Object> getPayloadAsMap();
 }

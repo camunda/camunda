@@ -16,6 +16,7 @@
 package io.zeebe.client.impl.job;
 
 import java.io.InputStream;
+import java.util.Map;
 
 import io.zeebe.client.api.commands.CompleteJobCommandStep1;
 import io.zeebe.client.api.events.JobEvent;
@@ -49,6 +50,13 @@ public class CompleteJobCommandImpl extends CommandImpl<JobEvent> implements Com
 
     @Override
     public CompleteJobCommandStep1 payload(String payload)
+    {
+        command.setPayload(payload);
+        return this;
+    }
+
+    @Override
+    public CompleteJobCommandStep1 payload(Map<String, Object> payload)
     {
         command.setPayload(payload);
         return this;

@@ -16,6 +16,7 @@
 package io.zeebe.client.api.commands;
 
 import java.io.InputStream;
+import java.util.Map;
 
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 
@@ -112,6 +113,17 @@ public interface CreateWorkflowInstanceCommandStep1
          *         complete the command and send it to the broker.
          */
         CreateWorkflowInstanceCommandStep3 payload(String payload);
+
+        /**
+         * Set the initial payload of the workflow instance.
+         *
+         * @param payload
+         *            the payload as map
+         *
+         * @return the builder for this command. Call {@link #send()} to
+         *         complete the command and send it to the broker.
+         */
+        CreateWorkflowInstanceCommandStep3 payload(Map<String, Object> payload);
     }
 
 }

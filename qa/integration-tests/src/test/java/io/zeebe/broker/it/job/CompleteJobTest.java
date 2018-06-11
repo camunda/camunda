@@ -15,32 +15,27 @@
  */
 package io.zeebe.broker.it.job;
 
-import java.util.Properties;
+import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
+import java.util.Collections;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.client.ClientProperties;
+import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.client.api.events.JobState;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
+import org.junit.*;
+import org.junit.rules.*;
 
 public class CompleteJobTest
 {
 
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-
-    public ClientRule clientRule = new ClientRule(() ->
-    {
-        final Properties p = new Properties();
-        p.setProperty(ClientProperties.REQUEST_TIMEOUT_SEC, "3");
-        return p;
-    });
+    public ClientRule clientRule = new ClientRule();
 
     @Rule
     public RuleChain ruleChain = RuleChain
@@ -53,6 +48,78 @@ public class CompleteJobTest
     @Rule
     public Timeout testTimeout = Timeout.seconds(15);
 
+    private JobEvent jobEvent;
+
+    @Before
+    public void init()
+    {
+        clientRule
+            .getJobClient()
+            .newCreateCommand()
+            .jobType("test")
+            .send()
+            .join();
+
+        final RecordingJobHandler jobHandler = new RecordingJobHandler();
+        clientRule
+            .getJobClient()
+            .newWorker()
+            .jobType("test")
+            .handler(jobHandler)
+            .open();
+
+        waitUntil(() -> !jobHandler.getHandledJobs().isEmpty());
+        jobEvent = jobHandler.getHandledJobs().get(0);
+    }
+
+    @Test
+    public void shouldCompleteJob()
+    {
+        // when
+        final JobEvent job = clientRule
+            .getJobClient()
+            .newCompleteCommand(jobEvent)
+            .send()
+            .join();
+
+        // then
+        assertThat(job.getState()).isEqualTo(JobState.COMPLETED);
+        assertThat(job.getPayload()).isEqualTo("null");
+        assertThat(job.getPayloadAsMap()).isNull();
+    }
+
+    @Test
+    public void shouldCompleteJobWithPayload()
+    {
+        // when
+        final JobEvent job = clientRule
+            .getJobClient()
+            .newCompleteCommand(jobEvent)
+            .payload("{\"foo\":\"bar\"}")
+            .send()
+            .join();
+
+        // then
+        assertThat(job.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
+        assertThat(job.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+    }
+
+    @Test
+    public void shouldCompleteJobWithPayloadAsMap()
+    {
+        // when
+        final JobEvent job = clientRule
+            .getJobClient()
+            .newCompleteCommand(jobEvent)
+            .payload(Collections.singletonMap("foo", "bar"))
+            .send()
+            .join();
+
+        // then
+        assertThat(job.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
+        assertThat(job.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+    }
+
     @Test
     public void shouldProvideReasonInExceptionMessageOnRejection()
     {
@@ -61,7 +128,6 @@ public class CompleteJobTest
 
         final JobEvent job = jobClient.newCreateCommand()
             .jobType("bar")
-            .payload("{}")
             .send()
             .join();
 

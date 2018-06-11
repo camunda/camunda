@@ -16,10 +16,12 @@
 package io.zeebe.client.impl.data;
 
 import java.io.*;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.zeebe.client.api.record.*;
@@ -29,6 +31,9 @@ import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 public class ZeebeObjectMapperImpl implements ZeebeObjectMapper
 {
+    private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE = new TypeReference<Map<String, Object>>()
+    { };
+
     private final ObjectMapper msgpackObjectMapper;
     private final ObjectMapper jsonObjectMapper;
 
@@ -41,11 +46,11 @@ public class ZeebeObjectMapperImpl implements ZeebeObjectMapper
         final InjectableValues.Std injectableValues = new InjectableValues.Std();
         injectableValues.addValue(ZeebeObjectMapperImpl.class, this);
 
-        msgpackObjectMapper = createMsgpackObjectMapper(msgPackConverter, injectableValues);
-        jsonObjectMapper = createDefaultObjectMapper(msgPackConverter, injectableValues);
+        msgpackObjectMapper = createMsgpackObjectMapper(injectableValues);
+        jsonObjectMapper = createDefaultObjectMapper(injectableValues);
     }
 
-    private ObjectMapper createDefaultObjectMapper(MsgPackConverter msgPackConverter, InjectableValues injectableValues)
+    private ObjectMapper createDefaultObjectMapper(InjectableValues injectableValues)
     {
         final ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
@@ -54,12 +59,12 @@ public class ZeebeObjectMapperImpl implements ZeebeObjectMapper
         objectMapper.setInjectableValues(injectableValues);
 
         objectMapper.registerModule(new JavaTimeModule()); // to serialize INSTANT
-        objectMapper.registerModule(new JsonPayloadModule(msgPackConverter));
+        objectMapper.registerModule(new JsonPayloadModule(this));
 
         return objectMapper;
     }
 
-    private ObjectMapper createMsgpackObjectMapper(MsgPackConverter msgPackConverter, InjectableValues injectableValues)
+    private ObjectMapper createMsgpackObjectMapper(InjectableValues injectableValues)
     {
         final MessagePackFactory msgpackFactory = new MessagePackFactory().setReuseResourceInGenerator(false).setReuseResourceInParser(false);
         final ObjectMapper objectMapper = new ObjectMapper(msgpackFactory);
@@ -72,7 +77,7 @@ public class ZeebeObjectMapperImpl implements ZeebeObjectMapper
         objectMapper.setInjectableValues(injectableValues);
 
         objectMapper.registerModule(new MsgpackInstantModule());
-        objectMapper.registerModule(new MsgpackPayloadModule(msgPackConverter));
+        objectMapper.registerModule(new MsgpackPayloadModule(this));
 
         return objectMapper;
     }
@@ -147,6 +152,18 @@ public class ZeebeObjectMapperImpl implements ZeebeObjectMapper
         }
     }
 
+    public byte[] toMsgpack(Object value)
+    {
+        try
+        {
+            return msgpackObjectMapper.writeValueAsBytes(value);
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(String.format("Failed to serialize object '%s' to Msgpack JSON", value), e);
+        }
+    }
+
     public <T> T fromMsgpack(InputStream inputStream, Class<T> valueType)
     {
         try
@@ -156,6 +173,18 @@ public class ZeebeObjectMapperImpl implements ZeebeObjectMapper
         catch (IOException e)
         {
             throw new RuntimeException(String.format("Failed deserialize Msgpack JSON stream to object of type '%s'", valueType), e);
+        }
+    }
+
+    public Map<String, Object> fromMsgpackAsMap(byte[] msgpack)
+    {
+        try
+        {
+            return msgpackObjectMapper.readValue(msgpack, MAP_TYPE_REFERENCE);
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException("Failed deserialize Msgpack JSON to map", e);
         }
     }
 
