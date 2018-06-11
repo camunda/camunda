@@ -5,8 +5,6 @@ import org.camunda.optimize.service.es.schema.type.AlertType;
 import org.camunda.optimize.service.es.schema.type.DashboardShareType;
 import org.camunda.optimize.service.es.schema.type.DashboardType;
 import org.camunda.optimize.service.es.schema.type.DurationHeatmapTargetValueType;
-import org.camunda.optimize.service.es.schema.type.EventType;
-import org.camunda.optimize.service.es.schema.type.FinishedProcessInstanceIdTrackingType;
 import org.camunda.optimize.service.es.schema.type.LicenseType;
 import org.camunda.optimize.service.es.schema.type.MetadataType;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
@@ -15,8 +13,6 @@ import org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.es.schema.type.ReportShareType;
 import org.camunda.optimize.service.es.schema.type.ReportType;
-import org.camunda.optimize.service.es.schema.type.RunningProcessInstanceIdTrackingType;
-import org.camunda.optimize.service.es.schema.type.VariableType;
 import org.camunda.optimize.service.es.schema.type.index.ImportIndexType;
 import org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -37,12 +33,6 @@ public class ElasticSearchSchemaInitializer {
   private ElasticSearchSchemaManager schemaManager;
 
   @Autowired
-  private EventType eventType;
-
-  @Autowired
-  private VariableType variableType;
-
-  @Autowired
   private DurationHeatmapTargetValueType targetValueType;
 
   @Autowired
@@ -59,12 +49,6 @@ public class ElasticSearchSchemaInitializer {
 
   @Autowired
   private ImportIndexType importIndexType;
-
-  @Autowired
-  private FinishedProcessInstanceIdTrackingType finishedProcessInstanceIdTrackingType;
-
-  @Autowired
-  private RunningProcessInstanceIdTrackingType runningProcessInstanceIdTrackingType;
 
   @Autowired
   private ProcessDefinitionXmlTrackingType processDefinitionXmlTrackingType;
@@ -107,11 +91,7 @@ public class ElasticSearchSchemaInitializer {
 
   @PostConstruct
   public void initializeMappings() {
-    schemaManager.addMapping(eventType);
-    schemaManager.addMapping(finishedProcessInstanceIdTrackingType);
-    schemaManager.addMapping(runningProcessInstanceIdTrackingType);
     schemaManager.addMapping(processDefinitionXmlTrackingType);
-    schemaManager.addMapping(variableType);
     schemaManager.addMapping(processDefinitionType);
     schemaManager.addMapping(processDefinitionXmlType);
     schemaManager.addMapping(importIndexType);

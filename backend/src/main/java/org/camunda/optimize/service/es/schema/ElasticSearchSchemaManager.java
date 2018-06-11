@@ -80,6 +80,20 @@ public class ElasticSearchSchemaManager {
 
       esclient.admin().indices().prepareRefresh().get();
     }
+    disableAutomaticIndexCreation();
+  }
+
+  private void disableAutomaticIndexCreation() {
+    Settings settings =
+      Settings.builder()
+        .put("action.auto_create_index", false)
+        .build();
+    esclient
+      .admin()
+      .cluster()
+      .prepareUpdateSettings()
+      .setPersistentSettings(settings)
+      .get();
   }
 
   public void updateMappings() {

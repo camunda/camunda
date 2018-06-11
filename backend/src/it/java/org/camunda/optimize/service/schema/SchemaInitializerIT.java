@@ -64,13 +64,12 @@ public class SchemaInitializerIT {
     embeddedOptimizeRule.getSchemaInitializer().initializeSchema();
 
     // then
-    assertTypeExists(embeddedOptimizeRule.getConfigurationService().getEventType());
+    assertTypeExists(embeddedOptimizeRule.getConfigurationService().getMetaDataType());
     assertTypeExists(embeddedOptimizeRule.getConfigurationService().getProcessInstanceType());
     assertTypeExists(embeddedOptimizeRule.getConfigurationService().getDurationHeatmapTargetValueType());
     assertTypeExists(embeddedOptimizeRule.getConfigurationService().getImportIndexType());
     assertTypeExists(embeddedOptimizeRule.getConfigurationService().getProcessDefinitionType());
     assertTypeExists(embeddedOptimizeRule.getConfigurationService().getProcessDefinitionXmlType());
-    assertTypeExists(embeddedOptimizeRule.getConfigurationService().getVariableType());
   }
 
   private void assertTypeExists(String type) {
@@ -102,15 +101,15 @@ public class SchemaInitializerIT {
 
   private void assertThatNewFieldExists() {
     GetFieldMappingsResponse response = embeddedOptimizeRule.getTransportClient().admin().indices()
-        .prepareGetFieldMappings(embeddedOptimizeRule.getConfigurationService().getOptimizeIndex(embeddedOptimizeRule.getConfigurationService().getEventType()))
-        .setTypes(embeddedOptimizeRule.getConfigurationService().getEventType())
+        .prepareGetFieldMappings(embeddedOptimizeRule.getConfigurationService().getOptimizeIndex(embeddedOptimizeRule.getConfigurationService().getMetaDataType()))
+        .setTypes(embeddedOptimizeRule.getConfigurationService().getMetaDataType())
         .setFields(MyUpdatedEventType.MY_NEW_FIELD)
         .get();
 
     FieldMappingMetaData fieldEntry =
         response.fieldMappings(
-            embeddedOptimizeRule.getConfigurationService().getOptimizeIndex(embeddedOptimizeRule.getConfigurationService().getEventType()),
-            embeddedOptimizeRule.getConfigurationService().getEventType(),
+            embeddedOptimizeRule.getConfigurationService().getOptimizeIndex(embeddedOptimizeRule.getConfigurationService().getMetaDataType()),
+            embeddedOptimizeRule.getConfigurationService().getMetaDataType(),
             MyUpdatedEventType.MY_NEW_FIELD
         );
 
@@ -118,7 +117,7 @@ public class SchemaInitializerIT {
   }
 
   @Test
-  public void newTypeIsNotAddedDynamically() {
+  public void newIndexIsNotAddedDynamically() {
     // given schema is created
     embeddedOptimizeRule.getSchemaInitializer().initializeSchema();
 
@@ -127,7 +126,7 @@ public class SchemaInitializerIT {
 
     // when I add a document to an unknown type
     FlowNodeEventDto flowNodeEventDto = new FlowNodeEventDto();
-    elasticSearchRule.addEntryToElasticsearch("myAwesomeNewType", "12312412", flowNodeEventDto);
+    elasticSearchRule.addEntryToElasticsearch("myAwesomeNewIndex", "12312412", flowNodeEventDto);
   }
 
   @Test
@@ -140,7 +139,7 @@ public class SchemaInitializerIT {
 
     // when we add an event with an undefined type in schema
     ExtendedFlowNodeEventDto extendedEventDto = new ExtendedFlowNodeEventDto();
-    elasticSearchRule.addEntryToElasticsearch(embeddedOptimizeRule.getConfigurationService().getEventType(), "12312412", extendedEventDto);
+    elasticSearchRule.addEntryToElasticsearch(embeddedOptimizeRule.getConfigurationService().getMetaDataType(), "12312412", extendedEventDto);
   }
 
 }

@@ -18,7 +18,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,14 +38,12 @@ public class EventsWriter {
     logger.debug("Writing [{}] events to elasticsearch", events.size());
 
     BulkRequestBuilder addEventToProcessInstanceBulkRequest = esclient.prepareBulk();
-    BulkRequestBuilder eventBulkRequest = esclient.prepareBulk();
     Map<String, List<FlowNodeEventDto>> processInstanceToEvents = new HashMap<>();
     for (FlowNodeEventDto e : events) {
       if (!processInstanceToEvents.containsKey(e.getProcessInstanceId())) {
         processInstanceToEvents.put(e.getProcessInstanceId(), new ArrayList<>());
       }
       processInstanceToEvents.get(e.getProcessInstanceId()).add(e);
-      addEventRequest(eventBulkRequest, e);
     }
 
     for (Map.Entry<String, List<FlowNodeEventDto>> entry : processInstanceToEvents.entrySet()) {
@@ -56,18 +53,6 @@ public class EventsWriter {
     if (response.hasFailures()) {
       logger.warn("There were failures while writing events with message: {}", response.buildFailureMessage());
     }
-    eventBulkRequest.get();
-  }
-
-  private void addEventRequest(BulkRequestBuilder eventBulkRequest, FlowNodeEventDto e) {
-    eventBulkRequest.add(
-      esclient.prepareIndex(
-        configurationService.getOptimizeIndex(configurationService.getEventType()),
-        configurationService.getEventType(),
-        e.getId()
-      )
-        .setSource(Collections.emptyMap())
-    );
   }
 
   private void addEventsToProcessInstanceRequest(

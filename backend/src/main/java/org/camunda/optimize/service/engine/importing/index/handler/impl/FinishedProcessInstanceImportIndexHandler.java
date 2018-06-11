@@ -15,7 +15,7 @@ public class FinishedProcessInstanceImportIndexHandler extends TimestampBasedImp
   }
 
   @Override
-  protected String getElasticsearchType() {
+  protected String getElasticsearchDocID() {
     return configurationService.getProcessInstanceType();
   }
 

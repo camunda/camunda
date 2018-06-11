@@ -62,7 +62,6 @@ public abstract class VariableWriter {
     logger.debug("Writing [{}] variables to elasticsearch", variables.size());
 
     BulkRequestBuilder addVariablesToProcessInstanceBulkRequest = esclient.prepareBulk();
-    BulkRequestBuilder variableBulkRequest = esclient.prepareBulk();
 
     //build map first
     Map<String, Map <String, List<VariableDto>>> processInstanceIdToTypedVariables =
@@ -84,9 +83,6 @@ public abstract class VariableWriter {
       }
     } catch (NullPointerException e) {
       logger.error("NPE for PID [{}]" , e);
-    }
-    if (variableBulkRequest.numberOfActions() != 0) {
-      variableBulkRequest.get();
     }
   }
 

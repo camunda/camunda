@@ -51,14 +51,14 @@ public abstract class TimestampBasedImportIndexHandler
   }
 
   /**
-   * States the Elasticsearch type where the index information should be stored.
+   * States the Elasticsearch document name where the index information should be stored.
    */
-  protected abstract String getElasticsearchType();
+  protected abstract String getElasticsearchDocID();
 
   @Override
   public void readIndexFromElasticsearch() {
     Optional<TimestampBasedImportIndexDto> dto =
-      importIndexReader.getImportIndex(getElasticsearchType(), engineContext.getEngineAlias());
+      importIndexReader.getImportIndex(getElasticsearchDocID(), engineContext.getEngineAlias());
     if (dto.isPresent()) {
       TimestampBasedImportIndexDto loadedImportIndex = dto.get();
       timestampOfLastEntity = loadedImportIndex.getTimestampOfLastEntity();
@@ -79,7 +79,7 @@ public abstract class TimestampBasedImportIndexHandler
     TimestampBasedImportIndexDto indexToStore = new TimestampBasedImportIndexDto();
     indexToStore.setTimestampOfLastEntity(timestampOfLastEntity);
     indexToStore.setEngine(this.engineContext.getEngineAlias());
-    indexToStore.setEsTypeIndexRefersTo(getElasticsearchType());
+    indexToStore.setEsTypeIndexRefersTo(getElasticsearchDocID());
     return indexToStore;
   }
 
@@ -98,7 +98,7 @@ public abstract class TimestampBasedImportIndexHandler
    * all the once again, but starting from the last point we stopped at.
    */
   public void executeAfterMaxBackoffIsReached() {
-    logger.debug("Restarting import cycle for type [{}]", getElasticsearchType());
+    logger.debug("Restarting import cycle for document id [{}]", getElasticsearchDocID());
   }
 
   public void updateImportIndex() {

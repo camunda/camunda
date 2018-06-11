@@ -36,11 +36,7 @@ public interface ConfigurationServiceConstants {
   String SAMPLER_INTERVAL = "$.es.sampler.interval";
 
   String OPTIMIZE_INDEX = "$.es.index";
-  String EVENT_TYPE = "$.import.data.activity-instance.elasticsearchType";
   String PROCESS_INSTANCE_TYPE = "$.import.data.process-instance.elasticsearchType";
-  String FINISHED_PROCESS_INSTANCE_ID_TRACKING_TYPE = "$.import.data.process-instance.finishedIdTrackingType";
-  String UNFINISHED_PROCESS_INSTANCE_ID_TRACKING_TYPE = "$.import.data.process-instance.unfinishedIdTrackingType";
-  String VARIABLE_TYPE = "$.import.data.variable.elasticsearchType";
   String DURATION_HEATMAP_TARGET_VALUE_TYPE = "$.es.heatmap.duration.targetValueType";
   String PROCESS_DEFINITION_TYPE = "$.import.data.process-definition.elasticsearchType";
   String PROCESS_DEFINITION_XML_TYPE = "$.import.data.process-definition-xml.elasticsearchType";
@@ -56,10 +52,8 @@ public interface ConfigurationServiceConstants {
 
   String ENGINE_CONNECT_TIMEOUT = "$.engine-commons.connection.timeout";
   String ENGINE_READ_TIMEOUT = "$.engine-commons.read.timeout";
-  String HAI_ENDPOINT = "$.engine-commons.hai.resource";
   String PROCESS_DEFINITION_ENDPOINT = "$.engine-commons.procdef.resource";
   String PROCESS_DEFINITION_XML_ENDPOINT = "$.engine-commons.procdef.xml";
-  String HPI_ENDPOINT = "$.engine-commons.history.procinst.resource";
   String USER_VALIDATION_ENDPOINT = "$.engine-commons.user.validation.resource";
 
   String ANALYZER_NAME = "$.es.analyzer.name";

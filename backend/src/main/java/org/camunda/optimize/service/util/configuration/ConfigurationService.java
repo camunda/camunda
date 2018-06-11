@@ -47,22 +47,18 @@ public class ConfigurationService {
   private String elasticSearchHost;
   private Integer elasticSearchPort;
   private String optimizeIndex;
-  private String haiEndpoint;
   private String userValidationEndpoint;
   private String processDefinitionEndpoint;
 
-  private String eventType;
   private String processDefinitionType;
   private String processDefinitionXmlType;
   private String importIndexType;
   private String durationHeatmapTargetValueType;
-  private String variableType;
   private String processInstanceType;
   private String licenseType;
   private String reportType;
   private String dashboardType;
   private String finishedPiIdTrackingType;
-  private String unfinishedPiIdTrackingType;
   private String alertType;
   private String reportShareType;
   private String dashboardShareType;
@@ -78,7 +74,6 @@ public class ConfigurationService {
   private Boolean backoffEnabled;
   private Integer elasticsearchJobExecutorQueueSize;
   private Integer elasticsearchJobExecutorThreadCount;
-  private String hpiEndpoint;
   private Integer elasticsearchScrollTimeout;
   private Integer elasticsearchConnectionTimeout;
   private Integer engineConnectTimeout;
@@ -272,20 +267,6 @@ public class ConfigurationService {
     return result;
   }
 
-  public String getHistoricActivityInstanceEndpoint() {
-    if (haiEndpoint == null) {
-      haiEndpoint = jsonContext.read(ConfigurationServiceConstants.HAI_ENDPOINT);
-    }
-    return haiEndpoint;
-  }
-
-  public String getEventType() {
-    if (eventType == null) {
-      eventType = jsonContext.read(ConfigurationServiceConstants.EVENT_TYPE);
-    }
-    return eventType;
-  }
-
   public String getUserValidationEndpoint() {
     if (userValidationEndpoint == null) {
       userValidationEndpoint = jsonContext.read(ConfigurationServiceConstants.USER_VALIDATION_ENDPOINT);
@@ -399,13 +380,6 @@ public class ConfigurationService {
     return elasticsearchJobExecutorThreadCount;
   }
 
-  public String getHistoricProcessInstanceEndpoint() {
-    if (hpiEndpoint == null) {
-      hpiEndpoint = jsonContext.read(ConfigurationServiceConstants.HPI_ENDPOINT);
-    }
-    return hpiEndpoint;
-  }
-
   public int getElasticsearchScrollTimeout() {
     if (elasticsearchScrollTimeout == null) {
       elasticsearchScrollTimeout = jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SCROLL_TIMEOUT, Integer.class);
@@ -446,13 +420,6 @@ public class ConfigurationService {
       durationHeatmapTargetValueType = jsonContext.read(ConfigurationServiceConstants.DURATION_HEATMAP_TARGET_VALUE_TYPE);
     }
     return durationHeatmapTargetValueType;
-  }
-
-  public String getVariableType() {
-    if (variableType == null) {
-      variableType = jsonContext.read(ConfigurationServiceConstants.VARIABLE_TYPE);
-    }
-    return variableType;
   }
 
   public String getProcessInstanceType() {
@@ -558,20 +525,6 @@ public class ConfigurationService {
         jsonContext.read(ConfigurationServiceConstants.ENGINE_REST_FILTER_PLUGIN_BASE_PACKAGES, typeRef);
     }
     return engineRestFilterPluginBasePackages;
-  }
-
-  public String getFinishedProcessInstanceIdTrackingType() {
-    if (finishedPiIdTrackingType == null) {
-      finishedPiIdTrackingType = jsonContext.read(ConfigurationServiceConstants.FINISHED_PROCESS_INSTANCE_ID_TRACKING_TYPE);
-    }
-    return finishedPiIdTrackingType;
-  }
-
-  public String getUnfinishedProcessInstanceIdTrackingType() {
-    if (unfinishedPiIdTrackingType == null) {
-      unfinishedPiIdTrackingType = jsonContext.read(ConfigurationServiceConstants.UNFINISHED_PROCESS_INSTANCE_ID_TRACKING_TYPE);
-    }
-    return unfinishedPiIdTrackingType;
   }
 
   public int getNumberOfRetriesOnConflict() {
@@ -847,14 +800,6 @@ public class ConfigurationService {
     this.optimizeIndex = optimizeIndex;
   }
 
-  public void setHaiEndpoint(String haiEndpoint) {
-    this.haiEndpoint = haiEndpoint;
-  }
-
-  public void setEventType(String eventType) {
-    this.eventType = eventType;
-  }
-
   public void setUserValidationEndpoint(String userValidationEndpoint) {
     this.userValidationEndpoint = userValidationEndpoint;
   }
@@ -911,10 +856,6 @@ public class ConfigurationService {
     this.elasticsearchJobExecutorThreadCount = elasticsearchJobExecutorThreadCount;
   }
 
-  public void setHpiEndpoint(String hpiEndpoint) {
-    this.hpiEndpoint = hpiEndpoint;
-  }
-
   public void setElasticsearchScrollTimeout(Integer elasticsearchScrollTimeout) {
     this.elasticsearchScrollTimeout = elasticsearchScrollTimeout;
   }
@@ -937,10 +878,6 @@ public class ConfigurationService {
 
   public void setDurationHeatmapTargetValueType(String durationHeatmapTargetValueType) {
     this.durationHeatmapTargetValueType = durationHeatmapTargetValueType;
-  }
-
-  public void setVariableType(String variableType) {
-    this.variableType = variableType;
   }
 
   public void setProcessInstanceType(String processInstanceType) {

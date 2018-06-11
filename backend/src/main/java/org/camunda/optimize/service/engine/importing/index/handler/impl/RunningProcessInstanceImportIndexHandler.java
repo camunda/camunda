@@ -11,14 +11,15 @@ import org.springframework.stereotype.Component;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class RunningProcessInstanceImportIndexHandler extends TimestampBasedImportIndexHandler {
 
+  public static final String RUNNING_PROCESS_INSTANCE_IMPORT_INDEX_DOC_ID = "runningProcessInstanceImportIndex";
 
   public RunningProcessInstanceImportIndexHandler(EngineContext engineContext) {
     super(engineContext);
   }
 
   @Override
-  protected String getElasticsearchType() {
-    return configurationService.getUnfinishedProcessInstanceIdTrackingType();
+  protected String getElasticsearchDocID() {
+    return RUNNING_PROCESS_INSTANCE_IMPORT_INDEX_DOC_ID;
   }
 
 }

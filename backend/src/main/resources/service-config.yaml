@@ -69,13 +69,6 @@ engine-commons:
     #until a time out is triggered. A value of zero means to wait an
     # infinite amount of time.
     timeout: 0
-  hai:
-    #The engine endpoint to the historic activity instances.
-    resource: '/history/activity-instance'
-  history:
-    procinst:
-      #The engine endpoint to the historic process instances.
-      resource: '/history/process-instance'
   procdef:
     #The engine endpoint to the process definition.
     resource: '/process-definition'
@@ -96,8 +89,6 @@ import:
       #Overwrites the maximum page size for historic activity instance
       #fetching.
       maxPageSize: 10000
-      #The name of the event type.
-      elasticsearchType: event
     process-definition:
       #Overwrites the minimum page size for process definitions fetching.
       maxPageSize: 1000
@@ -114,18 +105,12 @@ import:
       #Overwrites the maximum page size for historic process instance
       #fetching.
       maxPageSize: 1000
-      #The name of the process instance (pi) tracking type that is used
-      #to find pi’s that were already imported.
-      finishedIdTrackingType: finished-process-instance-id-tracking
-      unfinishedIdTrackingType: unfinished-process-instance-id-tracking
       #The name of the process instance type.
       elasticsearchType: process-instance
     variable:
       #Overwrites the maximum page size for historic variable instance
       #fetching.
       maxPageSize: 10000
-      #The name of the variable type.
-      elasticsearchType: variable
   # Number of threads being used to process the import jobs that are writing data to elasticsearch.
   elasticsearchJobExecutorThreadCount: 2
   #Adjust the queue size of the import jobs that store data to elasticsearch.

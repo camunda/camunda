@@ -1,14 +1,18 @@
 package org.camunda.optimize.test.performance;
 
+import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.NamedThreadFactory;
+import org.camunda.optimize.service.util.VariableHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.performance.data.generation.DataGenerator;
 import org.camunda.optimize.test.performance.data.generation.DataGeneratorProvider;
 import org.camunda.optimize.test.util.PropertyUtil;
+import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.aggregations.metrics.valuecount.ValueCount;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,6 +36,10 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VARIABLE_ID;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.count;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -62,14 +70,14 @@ public class ImportPerformanceTest {
   @Before
   public void setUp() {
     Properties properties = PropertyUtil.loadProperties("import-performance-test.properties");
-    NUMBER_OF_PROCESS_INSTANCES =
-      Long.parseLong(properties.getProperty("import.test.number.of.process-instances", "2000000"));
-    NUMBER_OF_ACTIVITY_INSTANCES =
-      Long.parseLong(properties.getProperty("import.test.number.of.activity-instances", "21932786"));
-    NUMBER_OF_VARIABLE_INSTANCES =
-      Long.parseLong(properties.getProperty("import.test.number.of.variable-instances", "6913889"));
     NUMBER_OF_PROCESS_DEFINITIONS =
       Long.parseLong(properties.getProperty("import.test.number.of.process-definitions", "288"));
+    NUMBER_OF_PROCESS_INSTANCES =
+      Long.parseLong(properties.getProperty("import.test.number.of.process-instances", "2000000"));
+    NUMBER_OF_VARIABLE_INSTANCES =
+      Long.parseLong(properties.getProperty("import.test.number.of.variable-instances", "6913889"));
+    NUMBER_OF_ACTIVITY_INSTANCES =
+      Long.parseLong(properties.getProperty("import.test.number.of.activity-instances", "21932786"));
 
     shouldGenerateData = Boolean.parseBoolean(properties.getProperty("import.test.generate.data", "false"));
     maxImportDurationInMin = Long.parseLong(properties.getProperty("import.test.max.duration.in.min", "240"));
@@ -99,10 +107,10 @@ public class ImportPerformanceTest {
     logger.info("Import took [ " + importDurationInMinutes + " ] min");
 
     // then all data from the engine should be in Elasticsearch
-    assertThat(getImportedCountOf(configurationService.getProcessInstanceType()), is(NUMBER_OF_PROCESS_INSTANCES));
-    assertThat(getImportedCountOf(configurationService.getEventType()), is(NUMBER_OF_ACTIVITY_INSTANCES));
-    assertThat(getImportedCountOf(configurationService.getVariableType()), is(NUMBER_OF_VARIABLE_INSTANCES));
     assertThat(getImportedCountOf(configurationService.getProcessDefinitionType()), is(NUMBER_OF_PROCESS_DEFINITIONS));
+    assertThat(getImportedCountOf(configurationService.getProcessInstanceType()), is(NUMBER_OF_PROCESS_INSTANCES));
+    assertThat(getVariableInstanceCount(), is(NUMBER_OF_VARIABLE_INSTANCES));
+    assertThat(getActivityCount(), is(NUMBER_OF_ACTIVITY_INSTANCES));
   }
 
   private void importEngineData() throws InterruptedException, TimeoutException {
@@ -146,6 +154,58 @@ public class ImportPerformanceTest {
       .setFetchSource(false)
       .get();
     return searchResponse.getHits().getTotalHits();
+  }
+
+  private Long getActivityCount() {
+    SearchResponse response = elasticSearchRule.getClient()
+      .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
+      .setTypes(configurationService.getProcessInstanceType())
+      .setQuery(QueryBuilders.matchAllQuery())
+      .setSize(0)
+      .addAggregation(
+        nested(EVENTS, EVENTS)
+          .subAggregation(
+            count(EVENTS + "_count")
+              .field(EVENTS + "." + ProcessInstanceType.EVENT_ID)
+          )
+      )
+      .setFetchSource(false)
+      .get();
+
+    ValueCount countAggregator =
+      response.getAggregations()
+      .get(EVENTS +"_count");
+     return countAggregator.getValue();
+  }
+
+  private Long getVariableInstanceCount() {
+    SearchRequestBuilder searchRequestBuilder = elasticSearchRule.getClient()
+      .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
+      .setTypes(configurationService.getProcessInstanceType())
+      .setQuery(QueryBuilders.matchAllQuery())
+      .setSize(0)
+      .setFetchSource(false);
+
+    for (String variableTypeFieldLabel : VariableHelper.allVariableTypeFieldLabels) {
+      searchRequestBuilder.addAggregation(
+        nested(variableTypeFieldLabel, variableTypeFieldLabel)
+          .subAggregation(
+            count(variableTypeFieldLabel + "_count")
+              .field(variableTypeFieldLabel + "." + VARIABLE_ID)
+          )
+      );
+    }
+
+    SearchResponse response = searchRequestBuilder.get();
+
+    long totalVariableCount = 0L;
+    for (String variableTypeFieldLabel : VariableHelper.allVariableTypeFieldLabels) {
+      ValueCount countAggregator = response.getAggregations()
+        .get(variableTypeFieldLabel + "_count");
+      totalVariableCount += countAggregator.getValue();
+    }
+
+    return totalVariableCount;
   }
 
   public void generateData() throws InterruptedException {

@@ -17,7 +17,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,31 +39,16 @@ public class RunningProcessInstanceWriter {
     logger.debug("Writing [{}] unfinished process instances to elasticsearch", processInstances.size());
 
     BulkRequestBuilder processInstanceBulkRequest = esclient.prepareBulk();
-    BulkRequestBuilder processInstanceIdTrackerBulkRequest = esclient.prepareBulk();
 
     for (ProcessInstanceDto procInst : processInstances) {
-      addProcessInstanceIdTrackingRequest(processInstanceIdTrackerBulkRequest, procInst);
       addImportProcessInstanceRequest(processInstanceBulkRequest, procInst);
     }
-    logger.debug("writing to [{}]", configurationService.getOptimizeIndex(configurationService.getUnfinishedProcessInstanceIdTrackingType()));
     BulkResponse response = processInstanceBulkRequest.get();
     if (response.hasFailures()) {
       logger.warn("There were failures while writing process instances with message: {}",
         response.buildFailureMessage()
       );
     }
-    processInstanceIdTrackerBulkRequest.get();
-  }
-
-  private void addProcessInstanceIdTrackingRequest(BulkRequestBuilder processInstanceIdTrackerBulkRequest, ProcessInstanceDto dto) {
-    processInstanceIdTrackerBulkRequest.add(
-        esclient.prepareIndex(
-            configurationService.getOptimizeIndex(configurationService.getUnfinishedProcessInstanceIdTrackingType()),
-            configurationService.getUnfinishedProcessInstanceIdTrackingType(),
-            dto.getProcessInstanceId()
-        )
-        .setSource(Collections.emptyMap())
-    );
   }
 
   private void addImportProcessInstanceRequest(BulkRequestBuilder bulkRequest, ProcessInstanceDto procInst) throws JsonProcessingException {

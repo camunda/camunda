@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
+import static org.camunda.optimize.service.es.schema.type.MetadataType.SCHEMA_VERSION;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 public class MyUpdatedEventType implements TypeMappingCreator{
@@ -24,7 +25,7 @@ public class MyUpdatedEventType implements TypeMappingCreator{
 
   @Override
   public String getType() {
-    return configurationService.getEventType();
+    return configurationService.getMetaDataType();
   }
 
   @Override
@@ -34,6 +35,9 @@ public class MyUpdatedEventType implements TypeMappingCreator{
       XContentBuilder content = jsonBuilder()
         .startObject()
           .startObject("properties")
+            .startObject(SCHEMA_VERSION)
+              .field("type", "keyword")
+            .endObject()
             .startObject(MY_NEW_FIELD)
               .field("type", "keyword")
             .endObject()

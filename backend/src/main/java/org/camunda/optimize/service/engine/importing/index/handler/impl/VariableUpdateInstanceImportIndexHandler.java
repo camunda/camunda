@@ -12,14 +12,14 @@ import org.springframework.stereotype.Component;
 public class VariableUpdateInstanceImportIndexHandler extends TimestampBasedImportIndexHandler {
 
 
-  public static final String VARIABLE_UPDATE_IMPORT_INDEX_TYPE = "variableUpdateImportIndex";
+  public static final String VARIABLE_UPDATE_IMPORT_INDEX_DOC_ID = "variableUpdateImportIndex";
 
   public VariableUpdateInstanceImportIndexHandler(EngineContext engineContext) {
     super(engineContext);
   }
 
   @Override
-  protected String getElasticsearchType() {
-    return VARIABLE_UPDATE_IMPORT_INDEX_TYPE;
+  protected String getElasticsearchDocID() {
+    return VARIABLE_UPDATE_IMPORT_INDEX_DOC_ID;
   }
 }
