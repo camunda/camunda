@@ -5,7 +5,9 @@ export function loadVariables(processDefinitionKey, processDefinitionVersion) {
     const response = await get(`/api/variables`, {
       processDefinitionKey,
       processDefinitionVersion,
-      namePrefix
+      namePrefix,
+      sortOrder: 'asc',
+      orderBy: 'name'
     });
 
     return await response.json();
