@@ -4,7 +4,7 @@ import {Colors} from 'theme';
 export const Badge = styled.div`
   display: inline-block;
   height: 17px;
-  line-height: 19px;
+  line-height: 17px;
   border-radius: 8.5px;
   font-weight: 600;
   background-color: ${({type}) => {
