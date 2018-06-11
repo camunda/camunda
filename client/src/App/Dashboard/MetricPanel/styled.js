@@ -1,13 +1,15 @@
 import styled from 'styled-components';
-import {Colors, themed} from 'theme';
+import {Colors, themed, themeStyle} from 'theme';
 
 export const Panel = themed(styled.div`
   padding: 66px 0;
   border-radius: 3px;
   border: solid 1px
-    ${({theme}) => (theme === 'dark' ? Colors.uiDark04 : Colors.uiLight05)};
-  background-color: ${({theme}) =>
-    theme === 'dark' ? Colors.uiDark02 : Colors.uiLight04};
+    ${themeStyle({dark: Colors.uiDark04, light: Colors.uiLight05})};
+  background-color: ${themeStyle({
+    dark: Colors.uiDark02,
+    light: Colors.uiLight04
+  })};
 `);
 
 export const Ul = themed(styled.ul`
@@ -20,7 +22,10 @@ export const Ul = themed(styled.ul`
     width: 100%;
     &:not(:last-child) {
       border-right: solid 1px
-        ${({theme}) => (theme === 'dark' ? Colors.uiDark05 : Colors.uiLight05)};
+        ${themeStyle({
+          dark: Colors.uiDark05,
+          light: Colors.uiLight05
+        })};
     }
   }
 `);
