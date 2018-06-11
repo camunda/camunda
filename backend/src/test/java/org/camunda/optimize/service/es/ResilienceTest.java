@@ -167,8 +167,7 @@ public class ResilienceTest {
         classpathPlugins);
     node.start();
 
-    while (!ClusterHealthStatus.GREEN.equals(node.client().admin().cluster()
-        .prepareHealth().setWaitForGreenStatus().get().getStatus())) {
+    while (!elasticsearchIsUpRunning(node)) {
       Thread.sleep(1000);
     }
 
@@ -176,6 +175,18 @@ public class ResilienceTest {
 
 
     return node;
+  }
+
+  public boolean elasticsearchIsUpRunning(Node node) {
+    ClusterHealthStatus status = node
+        .client()
+        .admin()
+        .cluster()
+        .prepareHealth()
+        .setWaitForYellowStatus()
+        .get()
+        .getStatus();
+    return ClusterHealthStatus.YELLOW.equals(status) || ClusterHealthStatus.GREEN.equals(status);
   }
 
   private static class MyNode extends Node {
