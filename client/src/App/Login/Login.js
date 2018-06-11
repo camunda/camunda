@@ -2,13 +2,20 @@ import React from 'react';
 import {Redirect} from 'react-router-dom';
 
 import {login} from './api';
+import {resetResponseInterceptor} from 'request';
 import * as Styled from './styled';
 
 class Login extends React.Component {
+  constructor(props) {
+    super(props);
+    resetResponseInterceptor();
+  }
+
   state = {
     username: '',
     password: '',
-    forceRedirect: false
+    forceRedirect: false,
+    error: null
   };
 
   login = async e => {
@@ -17,8 +24,8 @@ class Login extends React.Component {
     try {
       await login({username, password});
       this.setState({forceRedirect: true});
-    } catch (e) {
-      console.log('login failed: ', e);
+    } catch (error) {
+      this.setState({error});
     }
   };
 
@@ -41,6 +48,7 @@ class Login extends React.Component {
           onChange={this.handleInputChange}
           placeholder="Username"
           name="username"
+          error={this.state.error}
           required
         />
         <Styled.LoginInput

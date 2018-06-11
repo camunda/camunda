@@ -6,6 +6,8 @@ export const Label = styled.button`
   border: none;
   color: currentColor;
   outline: none;
+  font-family: IBMPlexSans;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
 `;

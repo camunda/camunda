@@ -1,12 +1,12 @@
 import React from 'react';
 import {Redirect} from 'react-router-dom';
 
-import {addResponseInterceptor} from 'request';
+import {setResponseInterceptor} from 'request';
 
 class Authentication extends React.Component {
   constructor(props) {
     super(props);
-    addResponseInterceptor(this.interceptResponse);
+    setResponseInterceptor(this.interceptResponse);
   }
 
   state = {

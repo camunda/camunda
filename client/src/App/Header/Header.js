@@ -44,6 +44,7 @@ export default class Header extends React.Component {
 
   render() {
     const {active, detail, ...props} = this.props;
+    const {firstname, lastname} = this.state.user || {};
     return this.state.forceRedirect ? (
       <Redirect to="/login" />
     ) : (
@@ -57,7 +58,7 @@ export default class Header extends React.Component {
         {props.incidents > 0 && this.createBadgeEntry('Incidents')}
         {detail && <Styled.Detail>Instance {detail}</Styled.Detail>}
         <Styled.ProfileDropdown>
-          <Dropdown label="User Name">
+          <Dropdown label={`${firstname} ${lastname}`}>
             <Dropdown.Option onClick={this.logout}>Logout</Dropdown.Option>
           </Dropdown>
         </Styled.ProfileDropdown>

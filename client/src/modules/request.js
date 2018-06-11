@@ -39,11 +39,11 @@ export function del(url, query, options = {}) {
   });
 }
 
-export function addResponseInterceptor(fct) {
+export function setResponseInterceptor(fct) {
   responseInterceptor = fct;
 }
 
-export function removeResponseInterceptor(fct) {
+export function resetResponseInterceptor() {
   responseInterceptor = null;
 }
 

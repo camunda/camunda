@@ -6,5 +6,5 @@ export const logout = async () => {
 
 export const user = async () => {
   const response = await get('/authentications/user');
-  await response.json();
+  return await response.json();
 };
