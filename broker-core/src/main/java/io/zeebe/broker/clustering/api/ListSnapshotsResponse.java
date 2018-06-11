@@ -20,8 +20,9 @@ package io.zeebe.broker.clustering.api;
 import static io.zeebe.clustering.management.ListSnapshotsResponseDecoder.SnapshotsDecoder;
 import static io.zeebe.clustering.management.ListSnapshotsResponseEncoder.SnapshotsEncoder;
 import static io.zeebe.clustering.management.ListSnapshotsResponseEncoder.SnapshotsEncoder.*;
+import static io.zeebe.util.StringUtil.getBytes;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -50,8 +51,10 @@ public class ListSnapshotsResponse extends SbeBufferWriterReader<ListSnapshotsRe
         return this;
     }
 
+    @Override
     public void reset()
     {
+        super.reset();
         this.snapshots.clear();
     }
 
@@ -71,7 +74,6 @@ public class ListSnapshotsResponse extends SbeBufferWriterReader<ListSnapshotsRe
     public void wrap(DirectBuffer buffer, int offset, int length)
     {
         super.wrap(buffer, offset, length);
-        snapshots.clear();
         bodyDecoder.snapshots().forEach((decoder) -> snapshots.add(new SnapshotMetadata(decoder)));
     }
 
@@ -122,6 +124,12 @@ public class ListSnapshotsResponse extends SbeBufferWriterReader<ListSnapshotsRe
             this.name = name;
         }
 
+        public byte[] getNameBytes()
+        {
+            final Charset encoding = Charset.forName(SnapshotsEncoder.nameCharacterEncoding());
+            return getBytes(name, encoding);
+        }
+
         public byte[] getChecksum()
         {
             return checksum;
@@ -155,21 +163,13 @@ public class ListSnapshotsResponse extends SbeBufferWriterReader<ListSnapshotsRe
         public int getEncodedLength()
         {
             return sbeBlockLength() +
-                nameHeaderLength() + name.getBytes().length +
+                nameHeaderLength() + getNameBytes().length +
                 checksumHeaderLength() + checksum.length;
         }
 
         void encode(final SnapshotsEncoder encoder)
         {
-            final byte[] nameBytes;
-            try
-            {
-                nameBytes = name.getBytes(SnapshotsEncoder.nameCharacterEncoding());
-            }
-            catch (final UnsupportedEncodingException ex)
-            {
-                throw new RuntimeException(ex);
-            }
+            final byte[] nameBytes = getNameBytes();
 
             encoder.next()
                 .length(length)

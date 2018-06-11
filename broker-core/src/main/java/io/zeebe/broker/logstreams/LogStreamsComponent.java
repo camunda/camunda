@@ -21,6 +21,8 @@ import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADE
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_SYSTEM_GROUP_NAME;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY;
 
+import java.time.Duration;
+
 import io.zeebe.broker.event.TopicSubscriptionServiceNames;
 import io.zeebe.broker.event.processor.TopicSubscriptionService;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
@@ -28,6 +30,7 @@ import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.servicecontainer.ServiceContainer;
+import io.zeebe.util.DurationUtil;
 
 public class LogStreamsComponent implements Component
 {
@@ -44,7 +47,8 @@ public class LogStreamsComponent implements Component
             .groupReference(LEADER_PARTITION_SYSTEM_GROUP_NAME, topicSubscriptionService.getSystemPartitionGroupReference())
             .install();
 
-        final StreamProcessorServiceFactory streamProcessorFactory = new StreamProcessorServiceFactory(serviceContainer);
+        final Duration snapshotPeriod = DurationUtil.parse(context.getBrokerConfiguration().getData().getSnapshotPeriod());
+        final StreamProcessorServiceFactory streamProcessorFactory = new StreamProcessorServiceFactory(serviceContainer, snapshotPeriod);
         serviceContainer.createService(STREAM_PROCESSOR_SERVICE_FACTORY, streamProcessorFactory)
             .install();
     }

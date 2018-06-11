@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.clustering.api;
 
-import static io.zeebe.clustering.management.FetchSnapshotChunkRequestEncoder.nameHeaderLength;
+import static io.zeebe.clustering.management.FetchSnapshotChunkRequestEncoder.*;
 import static io.zeebe.util.StringUtil.getBytes;
 
 import io.zeebe.broker.util.SbeBufferWriterReader;
@@ -25,6 +25,7 @@ import io.zeebe.clustering.management.FetchSnapshotChunkRequestDecoder;
 import io.zeebe.clustering.management.FetchSnapshotChunkRequestEncoder;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class FetchSnapshotChunkRequest extends SbeBufferWriterReader<FetchSnapshotChunkRequestEncoder, FetchSnapshotChunkRequestDecoder>
@@ -32,11 +33,22 @@ public class FetchSnapshotChunkRequest extends SbeBufferWriterReader<FetchSnapsh
     private final FetchSnapshotChunkRequestDecoder bodyDecoder = new FetchSnapshotChunkRequestDecoder();
     private final FetchSnapshotChunkRequestEncoder bodyEncoder = new FetchSnapshotChunkRequestEncoder();
 
-    private int partitionId;
-    private UnsafeBuffer name = new UnsafeBuffer(0, 0);
-    private long logPosition;
-    private int chunkOffset;
-    private int chunkLength;
+    private int partitionId = partitionIdNullValue();
+    private final UnsafeBuffer name = new UnsafeBuffer(0, 0);
+    private long logPosition = logPositionNullValue();
+    private int chunkOffset = chunkOffsetNullValue();
+    private int chunkLength = chunkLengthNullValue();
+
+    @Override
+    public void reset()
+    {
+        super.reset();
+        this.setPartitionId(partitionIdNullValue());
+        this.setLogPosition(logPositionNullValue());
+        this.name.wrap(ArrayUtil.EMPTY_BYTE_ARRAY);
+        this.setChunkLength(chunkLengthNullValue());
+        this.setChunkOffset(chunkOffsetNullValue());
+    }
 
     public int getPartitionId()
     {

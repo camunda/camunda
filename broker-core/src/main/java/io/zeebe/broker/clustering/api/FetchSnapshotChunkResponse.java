@@ -32,7 +32,7 @@ public class FetchSnapshotChunkResponse extends SbeBufferWriterReader<FetchSnaps
     private final FetchSnapshotChunkResponseDecoder bodyDecoder = new FetchSnapshotChunkResponseDecoder();
     private final FetchSnapshotChunkResponseEncoder bodyEncoder = new FetchSnapshotChunkResponseEncoder();
 
-    private DirectBuffer data = new UnsafeBuffer(0, 0);
+    private final DirectBuffer data = new UnsafeBuffer(0, 0);
 
     public DirectBuffer getData()
     {
@@ -47,12 +47,14 @@ public class FetchSnapshotChunkResponse extends SbeBufferWriterReader<FetchSnaps
 
     public FetchSnapshotChunkResponse setData(final DirectBuffer data)
     {
-        this.data = data;
+        this.data.wrap(data);
         return this;
     }
 
+    @Override
     public void reset()
     {
+        super.reset();
         this.data.wrap(ArrayUtil.EMPTY_BYTE_ARRAY);
     }
 

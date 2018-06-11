@@ -30,6 +30,7 @@ import io.zeebe.broker.clustering.base.gossip.GossipService;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManagerService;
 import io.zeebe.broker.clustering.base.topology.TopologyManagerService;
 import io.zeebe.broker.clustering.orchestration.ClusterOrchestrationInstallService;
+import io.zeebe.broker.clustering.base.snapshots.SnapshotReplicationInstallService;
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.system.configuration.BrokerCfg;
@@ -57,9 +58,10 @@ public class ClusterComponent implements Component
 
     private void initClusterBaseLayer(final SystemContext context, final ServiceContainer serviceContainer)
     {
+        final BrokerCfg brokerConfig = context.getBrokerConfiguration();
         final CompositeServiceBuilder baseLayerInstall = serviceContainer.createComposite(CLUSTERING_BASE_LAYER);
 
-        final TopologyManagerService topologyManagerService = new TopologyManagerService(context.getBrokerConfiguration().getNetwork());
+        final TopologyManagerService topologyManagerService = new TopologyManagerService(brokerConfig.getNetwork());
         baseLayerInstall.createService(TOPOLOGY_MANAGER_SERVICE, topologyManagerService)
             .dependency(GOSSIP_SERVICE, topologyManagerService.getGossipInjector())
             .groupReference(RAFT_SERVICE_GROUP, topologyManagerService.getRaftReference())
@@ -72,12 +74,18 @@ public class ClusterComponent implements Component
             .dependency(clientTransport(REPLICATION_API_CLIENT_NAME), remoteAddressManager.getReplicationClientTransportInjector())
             .install();
 
-        final ManagementApiRequestHandlerService managementApiRequestHandlerService = new ManagementApiRequestHandlerService(context.getBrokerConfiguration());
+        final ManagementApiRequestHandlerService managementApiRequestHandlerService = new ManagementApiRequestHandlerService(brokerConfig);
         baseLayerInstall.createService(MANAGEMENT_API_REQUEST_HANDLER_SERVICE_NAME, managementApiRequestHandlerService)
             .dependency(bufferingServerTransport(MANAGEMENT_API_SERVER_NAME), managementApiRequestHandlerService.getServerTransportInjector())
             .dependency(RAFT_CONFIGURATION_MANAGER, managementApiRequestHandlerService.getRaftPersistentConfigurationManagerInjector())
             .groupReference(LEADER_PARTITION_GROUP_NAME, managementApiRequestHandlerService.getLeaderPartitionsGroupReference())
+            .groupReference(LEADER_PARTITION_SYSTEM_GROUP_NAME, managementApiRequestHandlerService.getLeaderPartitionsGroupReference())
             .install();
+
+        final SnapshotReplicationInstallService snapshotReplicationInstallService = new SnapshotReplicationInstallService(brokerConfig);
+        baseLayerInstall.createService(SNAPSHOT_REPLICATION_INSTALL_SERVICE_NAME, snapshotReplicationInstallService)
+                .groupReference(FOLLOWER_PARTITION_GROUP_NAME, snapshotReplicationInstallService.getFollowerPartitionsGroupReference())
+                .install();
 
         initGossip(baseLayerInstall, context);
         initRaft(baseLayerInstall, context);

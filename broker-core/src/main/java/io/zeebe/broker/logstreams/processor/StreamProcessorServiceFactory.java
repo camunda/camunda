@@ -38,15 +38,14 @@ import io.zeebe.util.sched.future.ActorFuture;
 
 public class StreamProcessorServiceFactory implements Service<StreamProcessorServiceFactory>
 {
-    private static final Duration SNAPSHOT_INTERVAL = Duration.ofMinutes(15);
-
     private final ServiceContainer serviceContainer;
-
+    private final Duration snapshotPeriod;
     private ActorScheduler actorScheduler;
 
-    public StreamProcessorServiceFactory(ServiceContainer serviceContainer)
+    public StreamProcessorServiceFactory(ServiceContainer serviceContainer, Duration snapshotPeriod)
     {
         this.serviceContainer = serviceContainer;
+        this.snapshotPeriod = snapshotPeriod;
     }
 
     @Override
@@ -150,7 +149,7 @@ public class StreamProcessorServiceFactory implements Service<StreamProcessorSer
                 .actorScheduler(actorScheduler)
                 .serviceContainer(serviceContainer)
                 .snapshotStorage(snapshotStorage)
-                .snapshotPeriod(SNAPSHOT_INTERVAL)
+                .snapshotPeriod(snapshotPeriod)
                 .logStream(logStream)
                 .eventFilter(eventFilter)
                 .readOnly(readOnly)

@@ -124,7 +124,7 @@ public class ManagementApiRequestHandlerTest
                 final ListSnapshotsResponse.SnapshotMetadata snapshot = found.get();
 
                 assertThat(snapshot.getName()).isEqualTo(expectedSnapshot.getName());
-                assertThat(snapshot.getLength()).isEqualTo(expectedSnapshot.getLength());
+                assertThat(snapshot.getLength()).isEqualTo(expectedSnapshot.getSize());
                 assertThat(snapshot.getChecksum()).isEqualTo(expectedSnapshot.getChecksum());
                 assertThat(snapshot.getLogPosition()).isEqualTo(expectedSnapshot.getPosition());
             }
@@ -296,7 +296,7 @@ public class ManagementApiRequestHandlerTest
         final int partitionId = 2;
         final SerializableWrapper<String> contents = new SerializableWrapper<>("foo");
         final ReadableSnapshot snapshot = createAndTrackPartitionWithSnapshotContents(partitionId, contents);
-        final byte[] snapshotBytes = new byte[(int)snapshot.getLength()];
+        final byte[] snapshotBytes = new byte[(int)snapshot.getSize()];
         final FetchSnapshotChunkRequest request = getFetchSnapshotChunkRequest(partitionId, snapshot).setChunkLength(1);
         final FetchSnapshotChunkResponse response = new FetchSnapshotChunkResponse();
 
@@ -322,11 +322,11 @@ public class ManagementApiRequestHandlerTest
         final int partitionId = 2;
         final SerializableWrapper<String> contents = new SerializableWrapper<>("foo");
         final ReadableSnapshot snapshot = createAndTrackPartitionWithSnapshotContents(partitionId, contents);
-        final byte[] snapshotBytes = new byte[(int)snapshot.getLength()];
+        final byte[] snapshotBytes = new byte[(int)snapshot.getSize()];
         final FetchSnapshotChunkRequest request = getFetchSnapshotChunkRequest(partitionId, snapshot).setChunkLength(1);
         final FetchSnapshotChunkResponse response = new FetchSnapshotChunkResponse();
 
-        final byte[] bufferedChunk = new byte[(int)snapshot.getLength()];
+        final byte[] bufferedChunk = new byte[(int)snapshot.getSize()];
         snapshot.getData().read(snapshotBytes);
         for (int i = 0; i < snapshotBytes.length; i++)
         {
@@ -473,7 +473,7 @@ public class ManagementApiRequestHandlerTest
                 .setName(snapshot.getName())
                 .setLogPosition(snapshot.getPosition())
                 .setChunkOffset(0)
-                .setChunkLength((int)snapshot.getLength());
+                .setChunkLength((int)snapshot.getSize());
     }
 
     private void assertError(final BufferingServerOutput output, final ErrorResponseCode code, final String message)

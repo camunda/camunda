@@ -37,5 +37,4 @@ public class ClusterOrchestrationLayerServiceNames
     public static final ServiceName<RequestPartitionsMessageHandler> REQUEST_PARTITIONS_MESSAGE_HANDLER_SERVICE_NAME = ServiceName.newServiceName("cluster.orchestration.requestsPartitionsMessageHandler", RequestPartitionsMessageHandler.class);
     public static final ServiceName<IdGenerator> ID_GENERATOR_SERVICE_NAME = ServiceName.newServiceName("cluster.orchestration.idGenerator", IdGenerator.class);
     public static final ServiceName<NodeSelector> NODE_SELECTOR_SERVICE_NAME = ServiceName.newServiceName("cluster.orchestration.nodeSelector", NodeSelector.class);
-
 }

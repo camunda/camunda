@@ -17,6 +17,11 @@
  */
 package io.zeebe.broker.clustering.orchestration;
 
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.TOPOLOGY_MANAGER_SERVICE;
+import static io.zeebe.broker.clustering.orchestration.ClusterOrchestrationLayerServiceNames.*;
+import static io.zeebe.broker.logstreams.LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY;
+import static io.zeebe.broker.transport.TransportServiceNames.*;
+
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.orchestration.id.IdGenerator;
@@ -30,13 +35,6 @@ import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerTransport;
 import org.slf4j.Logger;
-
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.TOPOLOGY_MANAGER_SERVICE;
-import static io.zeebe.broker.clustering.orchestration.ClusterOrchestrationLayerServiceNames.*;
-import static io.zeebe.broker.logstreams.LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY;
-import static io.zeebe.broker.transport.TransportServiceNames.CLIENT_API_SERVER_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.clientTransport;
-import static io.zeebe.broker.transport.TransportServiceNames.serverTransport;
 
 public class ClusterOrchestrationInstallService implements Service<Void>
 {

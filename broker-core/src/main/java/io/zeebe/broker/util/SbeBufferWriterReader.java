@@ -35,6 +35,15 @@ public abstract class SbeBufferWriterReader<E extends MessageEncoderFlyweight, D
     protected abstract E getBodyEncoder();
     protected abstract D getBodyDecoder();
 
+    public void reset()
+    {
+    }
+
+    public void wrap(final DirectBuffer buffer)
+    {
+        wrap(buffer, 0, buffer.capacity());
+    }
+
     @Override
     public int getLength()
     {
@@ -42,8 +51,10 @@ public abstract class SbeBufferWriterReader<E extends MessageEncoderFlyweight, D
     }
 
     @Override
-    public void wrap(DirectBuffer buffer, int offset, int length)
+    public void wrap(final DirectBuffer buffer, final int offset, final int length)
     {
+        reset();
+
         headerDecoder.wrap(buffer, offset);
         getBodyDecoder().wrap(buffer,
                 offset + headerDecoder.encodedLength(),
@@ -52,7 +63,7 @@ public abstract class SbeBufferWriterReader<E extends MessageEncoderFlyweight, D
     }
 
     @Override
-    public void write(MutableDirectBuffer buffer, int offset)
+    public void write(final MutableDirectBuffer buffer, final int offset)
     {
         headerEncoder.wrap(buffer, offset)
                 .blockLength(getBodyEncoder().sbeBlockLength())

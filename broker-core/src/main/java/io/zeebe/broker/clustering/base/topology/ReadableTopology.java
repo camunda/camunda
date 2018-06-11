@@ -34,7 +34,7 @@ public interface ReadableTopology
 
     List<NodeInfo> getMembers();
 
-    PartitionInfo getParition(int partitionId);
+    PartitionInfo getPartition(int partitionId);
 
     NodeInfo getLeader(int partitionId);
 

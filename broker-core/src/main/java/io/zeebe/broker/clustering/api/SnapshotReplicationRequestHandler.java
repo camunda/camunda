@@ -25,8 +25,8 @@ import java.util.Map;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.clustering.management.ErrorResponseCode;
 import io.zeebe.logstreams.spi.ReadableSnapshot;
+import io.zeebe.logstreams.spi.SnapshotMetadata;
 import io.zeebe.logstreams.spi.SnapshotStorage;
-import io.zeebe.util.FileUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
@@ -68,8 +68,8 @@ public class SnapshotReplicationRequestHandler
 
     BufferWriter handleListSnapshots(final DirectBuffer buffer, final int offset, final int length)
     {
-        listSnapshotsResponse.reset();
         listSnapshotsRequest.wrap(buffer, offset, length);
+        listSnapshotsResponse.reset();
 
         final int partitionId = listSnapshotsRequest.getPartitionId();
         final Partition partition = trackedPartitions.get(partitionId);
@@ -80,14 +80,18 @@ public class SnapshotReplicationRequestHandler
         }
 
         final SnapshotStorage storage = partition.getSnapshotStorage();
-        final List<ReadableSnapshot> snapshots = storage.listSnapshots();
-        for (final ReadableSnapshot snapshot : snapshots)
+        final List<SnapshotMetadata> snapshots = storage.listSnapshots();
+        for (final SnapshotMetadata snapshot : snapshots)
         {
-            FileUtil.closeSilently(snapshot.getData());
-            listSnapshotsResponse.addSnapshot(snapshot.getName(),
-                    snapshot.getPosition(),
-                    snapshot.getChecksum(),
-                    snapshot.getLength());
+            // TODO: who should decide whether a snapshot is replicable or not? the handler? the storage? the snapshot?
+            if (snapshot.isReplicable())
+            {
+                listSnapshotsResponse.addSnapshot(
+                        snapshot.getName(),
+                        snapshot.getPosition(),
+                        snapshot.getChecksum(),
+                        snapshot.getSize());
+            }
         }
 
         return listSnapshotsResponse;
@@ -95,7 +99,6 @@ public class SnapshotReplicationRequestHandler
 
     BufferWriter handleFetchSnapshotChunk(final DirectBuffer buffer, final int offset, final int length)
     {
-        fetchSnapshotChunkResponse.reset();
         fetchSnapshotChunkRequest.wrap(buffer, offset, length);
 
         final int partitionId = fetchSnapshotChunkRequest.getPartitionId();
@@ -135,7 +138,7 @@ public class SnapshotReplicationRequestHandler
             return prepareError(ErrorResponseCode.INVALID_PARAMETERS, INVALID_CHUNK_OFFSET_MESSAGE);
         }
 
-        final long snapshotLength = snapshot.getLength();
+        final long snapshotLength = snapshot.getSize();
         final int chunkLength = (int) Math.min(
                 Math.min(snapshotLength - chunkOffset, fetchSnapshotChunkRequest.getChunkLength()),
                 chunkReadBuffer.length);

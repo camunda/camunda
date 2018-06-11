@@ -34,6 +34,7 @@ import io.zeebe.client.api.commands.*;
 import io.zeebe.client.api.events.TopicEvent;
 import io.zeebe.client.api.events.TopicState;
 import io.zeebe.client.impl.ZeebeClientImpl;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.FileUtil;
@@ -138,10 +139,25 @@ public class ClusteringRule extends ExternalResource
                 .get();
     }
 
-    public SocketAddress getFollowerForPartition(int partitionId)
+    public SocketAddress getLeaderAddressForPartition(final int partition)
     {
-        final BrokerInfo leader = getLeaderForPartition(partitionId);
-        return getOtherBrokers(new SocketAddress(leader.getHost(), leader.getPort()))[0];
+        final BrokerInfo info = getLeaderForPartition(partition);
+        return new SocketAddress(info.getHost(), info.getPort());
+    }
+
+    public BrokerInfo getFollowerForPartition(int partitionId)
+    {
+        return doRepeatedly(() ->
+        {
+            final List<BrokerInfo> brokers = zeebeClient.newTopologyRequest().send().join().getBrokers();
+            return extractPartitionFollower(brokers, partitionId);
+        }).until(Optional::isPresent).orElse(null);
+    }
+
+    public SocketAddress getFollowerAddressForPartition(final int partition)
+    {
+        final BrokerInfo info = getFollowerForPartition(partition);
+        return new SocketAddress(info.getHost(), info.getPort());
     }
 
     /**
@@ -166,6 +182,16 @@ public class ClusteringRule extends ExternalResource
             .filter(b -> b.getPartitions()
                     .stream()
                     .anyMatch(p -> p.getPartitionId() == partition && p.isLeader())
+            )
+            .findFirst();
+    }
+
+    private Optional<BrokerInfo> extractPartitionFollower(List<BrokerInfo> brokers, int partition)
+    {
+        return brokers.stream()
+            .filter(b -> b.getPartitions()
+                .stream()
+                .anyMatch(p -> p.getPartitionId() == partition && !p.isLeader())
             )
             .findFirst();
     }
@@ -231,6 +257,11 @@ public class ClusteringRule extends ExternalResource
     public void waitForTopicPartitionReplicationFactor(String topicName, int partitionCount, int replicationFactor)
     {
         waitForTopology(topology -> hasPartitionsWithReplicationFactor(topology, topicName, partitionCount, replicationFactor));
+    }
+
+    public Topic getInternalSystemTopic()
+    {
+        return waitForTopicAvailability(Protocol.SYSTEM_TOPIC);
     }
 
     private Topic waitForTopicAvailability(String topicName)

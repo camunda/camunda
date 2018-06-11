@@ -41,8 +41,10 @@ public class ErrorResponse extends SbeBufferWriterReader<ErrorResponseEncoder, E
     private ErrorResponseCode code = ErrorResponseCode.NULL_VAL;
     private final DirectBuffer data = new UnsafeBuffer();
 
+    @Override
     public void reset()
     {
+        super.reset();
         data.wrap(ArrayUtil.EMPTY_BYTE_ARRAY);
         code = ErrorResponseCode.NULL_VAL;
     }

@@ -44,6 +44,13 @@ public class ListSnapshotsRequest extends SbeBufferWriterReader<ListSnapshotsReq
     }
 
     @Override
+    public void reset()
+    {
+        super.reset();
+        this.partitionId = partitionIdNullValue();
+    }
+
+    @Override
     protected ListSnapshotsRequestEncoder getBodyEncoder()
     {
         return bodyEncoder;

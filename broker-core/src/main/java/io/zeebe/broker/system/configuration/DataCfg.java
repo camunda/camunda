@@ -23,6 +23,10 @@ public class DataCfg implements ConfigurationEntry
 
     private String defaultLogSegmentSize = "512M";
 
+    private String snapshotPeriod = "15m";
+
+    private String snapshotReplicationPeriod = "5m";
+
     @Override
     public void init(BrokerCfg globalConfig, String brokerBase)
     {
@@ -50,5 +54,25 @@ public class DataCfg implements ConfigurationEntry
     public void setDefaultLogSegmentSize(String defaultLogSegmentSize)
     {
         this.defaultLogSegmentSize = defaultLogSegmentSize;
+    }
+
+    public String getSnapshotPeriod()
+    {
+        return snapshotPeriod;
+    }
+
+    public void setSnapshotPeriod(final String snapshotPeriod)
+    {
+        this.snapshotPeriod = snapshotPeriod;
+    }
+
+    public String getSnapshotReplicationPeriod()
+    {
+        return snapshotReplicationPeriod;
+    }
+
+    public void setSnapshotReplicationPeriod(String snapshotReplicationPeriod)
+    {
+        this.snapshotReplicationPeriod = snapshotReplicationPeriod;
     }
 }

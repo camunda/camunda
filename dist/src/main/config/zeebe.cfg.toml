@@ -147,6 +147,15 @@ replicationFactor = 1
 # The default size of data segments.
 # defaultSegmentSize = "512M"
 
+# How often we take snapshots of streams (time unit)
+# snapshotPeriod = "15m"
+
+# How often follower partitions will check for new snapshots to replicate from
+# the leader partitions. Snapshot replication enables faster failover by
+# reducing how many log entries must be reprocessed in case of leader change.
+# snapshotReplicationPeriod = "5m"
+
+
 [cluster]
 
 # Allows to specify a list of known other nodes to connect to on startup

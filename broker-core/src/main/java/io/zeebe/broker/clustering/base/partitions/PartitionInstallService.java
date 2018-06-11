@@ -19,6 +19,7 @@ package io.zeebe.broker.clustering.base.partitions;
 
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.*;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.snapshotStorageServiceName;
+import static io.zeebe.raft.RaftServiceNames.followerServiceName;
 import static io.zeebe.raft.RaftServiceNames.leaderInitialEventCommittedServiceName;
 import static io.zeebe.raft.RaftServiceNames.raftServiceName;
 
@@ -176,9 +177,19 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
     @Override
     public void onStateChange(Raft raft, RaftState raftState)
     {
-        if (raftState == RaftState.LEADER)
+        switch (raft.getState())
         {
-            installLeaderPartition(raft);
+            case LEADER:
+                removeFollowerPartitionService(raft);
+                installLeaderPartition(raft);
+                break;
+            case FOLLOWER:
+                installFollowerPartition(raft);
+                break;
+            case CANDIDATE:
+            default:
+                removeFollowerPartitionService(raft);
+                break;
         }
     }
 
@@ -208,6 +219,34 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
             {
                 LOG.debug("Not installing partition service for {}. Replication factor not reached, got {}/{}.", partitionInfo, raftMemberSize, replicationFactor);
             }
+        }
+    }
+
+    private void installFollowerPartition(Raft raft)
+    {
+        final Partition partition = new Partition(partitionInfo, RaftState.FOLLOWER);
+        final ServiceName<Partition> partitionServiceName = followerPartitionServiceName(raft.getName());
+
+        if (!startContext.hasService(partitionServiceName))
+        {
+            LOG.debug("Installing follower partition service for {}", partitionInfo);
+            startContext.createService(partitionServiceName, partition)
+                    .dependency(followerServiceName(raft.getName(), raft.getTerm()))
+                    .dependency(logStreamServiceName, partition.getLogStreamInjector())
+                    .dependency(snapshotStorageServiceName, partition.getSnapshotStorageInjector())
+                    .group(FOLLOWER_PARTITION_GROUP_NAME)
+                    .install();
+        }
+    }
+
+    private void removeFollowerPartitionService(Raft raft)
+    {
+        final ServiceName<Partition> partitionServiceName = followerPartitionServiceName(raft.getName());
+
+        if (startContext.hasService(partitionServiceName))
+        {
+            LOG.debug("Removing follower partition {}", partitionInfo);
+            startContext.removeService(partitionServiceName);
         }
     }
 

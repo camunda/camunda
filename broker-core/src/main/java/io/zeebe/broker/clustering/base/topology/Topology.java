@@ -99,7 +99,7 @@ public class Topology implements ReadableTopology
     }
 
     @Override
-    public PartitionInfo getParition(int partitionId)
+    public PartitionInfo getPartition(int partitionId)
     {
         return partitions.get(partitionId);
     }
@@ -181,15 +181,15 @@ public class Topology implements ReadableTopology
         }
     }
 
-    public PartitionInfo updatePartition(int paritionId, DirectBuffer topicName, int replicationFactor, NodeInfo member, RaftState state)
+    public PartitionInfo updatePartition(int partitionId, DirectBuffer topicName, int replicationFactor, NodeInfo member, RaftState state)
     {
-        List<NodeInfo> followers = partitionFollowers.get(paritionId);
+        List<NodeInfo> followers = partitionFollowers.get(partitionId);
 
-        PartitionInfo partition = partitions.get(paritionId);
+        PartitionInfo partition = partitions.get(partitionId);
         if (partition == null)
         {
-            partition = new PartitionInfo(topicName, paritionId, replicationFactor);
-            partitions.put(paritionId, partition);
+            partition = new PartitionInfo(topicName, partitionId, replicationFactor);
+            partitions.put(partitionId, partition);
         }
 
         LOG.debug("Updating partition information for partition {} on {} with state {}", partition, member, state);
@@ -203,21 +203,21 @@ public class Topology implements ReadableTopology
                     {
                         followers.remove(member);
                     }
-                    partitionLeaders.put(paritionId, member);
+                    partitionLeaders.put(partitionId, member);
 
                     member.removeFollower(partition);
                     member.addLeader(partition);
                     break;
 
                 case FOLLOWER:
-                    if (member.equals(partitionLeaders.get(paritionId)))
+                    if (member.equals(partitionLeaders.get(partitionId)))
                     {
-                        partitionLeaders.remove(paritionId);
+                        partitionLeaders.remove(partitionId);
                     }
                     if (followers == null)
                     {
                         followers = new ArrayList<>();
-                        partitionFollowers.put(paritionId, followers);
+                        partitionFollowers.put(partitionId, followers);
                     }
                     if (!followers.contains(member))
                     {
