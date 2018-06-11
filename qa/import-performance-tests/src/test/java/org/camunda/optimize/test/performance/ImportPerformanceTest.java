@@ -107,6 +107,10 @@ public class ImportPerformanceTest {
     logger.info("Import took [ " + importDurationInMinutes + " ] min");
 
     // then all data from the engine should be in Elasticsearch
+    logger.info("Imported process definition count: {}", getImportedCountOf(configurationService.getProcessDefinitionType()));
+    logger.info("Imported process instance count: {}", getImportedCountOf(configurationService.getProcessInstanceType()));
+    logger.info("Imported variable count: {}", getVariableInstanceCount());
+    logger.info("Imported activity count: {}", getActivityCount());
     assertThat(getImportedCountOf(configurationService.getProcessDefinitionType()), is(NUMBER_OF_PROCESS_DEFINITIONS));
     assertThat(getImportedCountOf(configurationService.getProcessInstanceType()), is(NUMBER_OF_PROCESS_INSTANCES));
     assertThat(getVariableInstanceCount(), is(NUMBER_OF_VARIABLE_INSTANCES));
