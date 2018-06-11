@@ -78,7 +78,7 @@ public class TopicCreateProcessor implements TypedRecordProcessor<TopicRecord>
         {
             rejectionReason = "Topic must have at least one replica";
             rejectionType = RejectionType.BAD_VALUE;
-            LOG.warn("Rejecting topic {} creation as a topic has to have at least one replication", bufferAsString(topicName));
+            LOG.warn("Rejecting topic {} creation as a topic has to have at least one replica", bufferAsString(topicName));
         }
         else
         {
