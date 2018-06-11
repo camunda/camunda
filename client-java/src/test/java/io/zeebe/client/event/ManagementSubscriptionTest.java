@@ -120,6 +120,30 @@ public class ManagementSubscriptionTest
     }
 
     @Test
+    public void shouldOpenSubscriptionAtHeadOfTopic()
+    {
+        // when
+        client
+            .newManagementSubscription()
+            .name(SUBSCRIPTION_NAME)
+            .recordHandler(DO_NOTHING)
+            .startAtHeadOfTopic()
+            .open();
+
+        // then
+        final ExecuteCommandRequest subscribeRequest = broker.getReceivedCommandRequests()
+            .stream()
+            .filter((e) -> e.valueType() == ValueType.SUBSCRIBER)
+            .findFirst()
+            .get();
+
+        assertThat(subscribeRequest.intent()).isEqualTo(SubscriberIntent.SUBSCRIBE);
+        assertThat(subscribeRequest.partitionId()).isEqualTo(Protocol.SYSTEM_PARTITION);
+        assertThat(subscribeRequest.getCommand())
+            .containsEntry("startPosition", 0);
+    }
+
+    @Test
     public void shouldOpenSubscriptionAtTailOfTopic()
     {
         // when

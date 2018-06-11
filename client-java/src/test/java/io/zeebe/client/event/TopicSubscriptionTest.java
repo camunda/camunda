@@ -123,7 +123,6 @@ public class TopicSubscriptionTest
             .newSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(DO_NOTHING)
-            .startAtHeadOfTopic()
             .open();
 
         // then
@@ -136,7 +135,7 @@ public class TopicSubscriptionTest
         assertThat(subscribeRequest.intent()).isEqualTo(SubscriberIntent.SUBSCRIBE);
 
         assertThat(subscribeRequest.getCommand())
-            .containsEntry("startPosition", 0)
+            .containsEntry("startPosition", 0) // default start position
             .containsEntry("bufferSize", 1024)
             .containsEntry("name", SUBSCRIPTION_NAME)
             .doesNotContainEntry("forceStart", true);
@@ -164,6 +163,33 @@ public class TopicSubscriptionTest
             .get();
 
         assertThat(subscribeRequest.getCommand()).containsEntry("forceStart", true);
+    }
+
+    @Test
+    public void shouldOpenSubscriptionAtHeadOfTopic()
+    {
+        // given
+        broker.stubTopicSubscriptionApi(123L);
+
+        // when
+        clientRule.topicClient()
+            .newSubscription()
+            .name(SUBSCRIPTION_NAME)
+            .recordHandler(DO_NOTHING)
+            .startAtHeadOfTopic()
+            .open();
+
+
+        // then
+        final ExecuteCommandRequest subscribeRequest = broker.getReceivedCommandRequests()
+            .stream()
+            .filter((e) -> e.valueType() == ValueType.SUBSCRIBER)
+            .findFirst()
+            .get();
+
+        assertThat(subscribeRequest.intent()).isEqualTo(SubscriberIntent.SUBSCRIBE);
+        assertThat(subscribeRequest.getCommand())
+            .containsEntry("startPosition", 0);
     }
 
     @Test
