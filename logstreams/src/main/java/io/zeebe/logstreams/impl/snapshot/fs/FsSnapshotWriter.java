@@ -25,6 +25,7 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.util.Arrays;
@@ -62,10 +63,6 @@ public class FsSnapshotWriter implements SnapshotWriter
             final FileOutputStream dataFileOutputStream = new FileOutputStream(snapshotFile);
             final BufferedOutputStream bufferedDataOutputStream = new BufferedOutputStream(dataFileOutputStream);
             dataOutputStream = new DigestOutputStream(bufferedDataOutputStream, messageDigest);
-
-            final FileOutputStream checksumFileOutputStream = new FileOutputStream(checksumFile);
-            checksumOutputStream = new BufferedOutputStream(checksumFileOutputStream);
-
         }
         catch (Exception e)
         {
@@ -83,29 +80,22 @@ public class FsSnapshotWriter implements SnapshotWriter
     @Override
     public void commit() throws Exception
     {
-        try
+        writeToDisk(closeAndGetChecksum());
+    }
+
+    @Override
+    public void validateAndCommit(final byte[] checksum) throws Exception
+    {
+        final byte[] writtenChecksum = closeAndGetChecksum();
+        if (Arrays.equals(writtenChecksum, checksum))
         {
-            dataOutputStream.close();
-
-            final MessageDigest digest = dataOutputStream.getMessageDigest();
-
-            final byte[] digestBytes = digest.digest();
-            final String digestString = BitUtil.toHex(digestBytes);
-            final String checksumFileContents = config.checksumContent(digestString, getDataFileName());
-
-            checksumOutputStream.write(getBytes(checksumFileContents));
-            checksumOutputStream.close();
-
-            if (lastSnapshot != null)
-            {
-                LOG.info("Delete last snapshot file {}.", lastSnapshot.getDataFile());
-                lastSnapshot.delete();
-            }
+            writeToDisk(checksum);
         }
-        catch (Exception e)
+        else
         {
             abort();
-            LangUtil.rethrowUnchecked(e);
+            throw new RuntimeException(String.format("Mismatched checksums, expected %s, got %s",
+                BitUtil.toHex(checksum), BitUtil.toHex(writtenChecksum)));
         }
     }
 
@@ -133,12 +123,15 @@ public class FsSnapshotWriter implements SnapshotWriter
         return dataFile.getName();
     }
 
-    @Override
-    public void validateAndCommit(final byte[] checksum) throws Exception
+    protected byte[] closeAndGetChecksum() throws Exception
     {
+        final byte[] checksum;
+
         try
         {
             dataOutputStream.close();
+            final MessageDigest digest = dataOutputStream.getMessageDigest();
+            checksum = digest.digest();
         }
         catch (final Exception ex)
         {
@@ -146,16 +139,34 @@ public class FsSnapshotWriter implements SnapshotWriter
             throw ex;
         }
 
-        final byte[] writtenChecksum = dataOutputStream.getMessageDigest().digest();
-        if (Arrays.equals(writtenChecksum, checksum))
+        return checksum;
+    }
+
+    protected void writeToDisk(final byte[] checksum) throws Exception
+    {
+        try
         {
-            commit();
+            Files.createFile(checksumFile.toPath());
+
+            final FileOutputStream checksumFileOutputStream = new FileOutputStream(checksumFile);
+            checksumOutputStream = new BufferedOutputStream(checksumFileOutputStream);
+
+            final String checksumHex = BitUtil.toHex(checksum);
+            final String checksumFileContents = config.checksumContent(checksumHex, getDataFileName());
+
+            checksumOutputStream.write(getBytes(checksumFileContents));
+            checksumOutputStream.close();
+
+            if (lastSnapshot != null)
+            {
+                LOG.info("Delete last snapshot file {}.", lastSnapshot.getDataFile());
+                lastSnapshot.delete();
+            }
         }
-        else
+        catch (final Exception ex)
         {
             abort();
-            throw new RuntimeException(String.format("Mismatched checksums, expected %s, got %s",
-                BitUtil.toHex(checksum), BitUtil.toHex(writtenChecksum)));
+            throw ex;
         }
     }
 }

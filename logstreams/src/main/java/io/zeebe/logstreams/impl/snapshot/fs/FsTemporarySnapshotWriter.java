@@ -34,21 +34,23 @@ public class FsTemporarySnapshotWriter extends FsSnapshotWriter
     public FsTemporarySnapshotWriter(final FsSnapshotStorageConfiguration config,
         final File temporaryFile,
         final File checksumFile,
-        final File snapshotFile)
+        final File snapshotFile,
+        final FsReadableSnapshot lastSnapshot)
     {
-        super(config, temporaryFile, checksumFile, null);
+        super(config, temporaryFile, checksumFile, lastSnapshot);
         this.snapshotFile = snapshotFile;
     }
 
     @Override
-    public void commit() throws Exception
+    protected void writeToDisk(byte[] checksum) throws Exception
     {
         try
         {
-            super.commit();
+            super.writeToDisk(checksum);
 
             // TODO: evaluate if REPLACE_EXISTING is safe here
             Files.move(dataFile.toPath(), snapshotFile.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+
             //noinspection ResultOfMethodCallIgnored
             dataFile.delete();
         }
