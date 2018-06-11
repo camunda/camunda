@@ -65,6 +65,11 @@ public class FsSnapshotStorageConfiguration
         return file.getName().matches(pattern);
     }
 
+    public boolean isSnapshotFile(final File file)
+    {
+        return matchesSnapshotFileNamePattern(file, ".+");
+    }
+
     public Long getPositionOfSnapshotFile(File file, String name)
     {
         final String fileName = file.getName();
@@ -133,4 +138,9 @@ public class FsSnapshotStorageConfiguration
         return CHECKSUM_CONTENT_TEMPLATE;
     }
 
+    // TODO: make this not terrible
+    public boolean isReplicable(final String snapshotName)
+    {
+        return !snapshotName.matches(".*blockIdx.*");
+    }
 }
