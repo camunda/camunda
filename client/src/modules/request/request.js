@@ -1,51 +1,7 @@
 let responseInterceptor = null;
 
-const BASE_URL =
+export const BASE_URL =
   process.env.NODE_ENV === 'development' ? 'http://localhost:8080' : '';
-
-export function get(url, query, options = {}) {
-  return request({
-    url,
-    query,
-    method: 'GET',
-    ...options
-  });
-}
-
-export function post(url, body, options = {}) {
-  return request({
-    url,
-    body,
-    method: 'POST',
-    ...options
-  });
-}
-
-export function put(url, body, options = {}) {
-  return request({
-    url,
-    body,
-    method: 'PUT',
-    ...options
-  });
-}
-
-export function del(url, query, options = {}) {
-  return request({
-    url,
-    query,
-    method: 'DELETE',
-    ...options
-  });
-}
-
-export function setResponseInterceptor(fct) {
-  responseInterceptor = fct;
-}
-
-export function resetResponseInterceptor() {
-  responseInterceptor = null;
-}
 
 export async function request({url, method, body, query, headers}) {
   const resourceUrl = query
@@ -84,4 +40,12 @@ export function stringifyQuery(query) {
 
     return `${queryStr}&${key}=${encodeURIComponent(value)}`;
   }, '');
+}
+
+export function setResponseInterceptor(fct) {
+  responseInterceptor = fct;
+}
+
+export function resetResponseInterceptor() {
+  responseInterceptor = null;
 }
