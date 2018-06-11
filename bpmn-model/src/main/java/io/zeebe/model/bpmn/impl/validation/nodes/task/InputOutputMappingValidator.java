@@ -27,8 +27,11 @@ import java.util.regex.Pattern;
 
 public class InputOutputMappingValidator
 {
+    public static final String OUTPUT_BEHAVIOR_IS_NOT_SUPPORTED_MSG = "Output behavior '%s' is not supported. Valid values are %s.";
+
     private static final String PROHIBITED_EXPRESSIONS_REGEX = "(\\.\\*)|(\\[.*,.*\\])";
     private static final Pattern PROHIBITED_EXPRESSIONS = Pattern.compile(PROHIBITED_EXPRESSIONS_REGEX);
+
 
     public void validate(ValidationResultImpl validationResult, InputOutputMappingImpl inputOutputMapping)
     {
@@ -47,7 +50,7 @@ public class InputOutputMappingValidator
         }
         catch (Exception exception)
         {
-            validationResult.addError(element, String.format("Output behavior '%s' is not supported. Valid values are %s.", outputBehavior, Arrays.toString(OutputBehavior.values())));
+            validationResult.addError(element, String.format(OUTPUT_BEHAVIOR_IS_NOT_SUPPORTED_MSG, outputBehavior, Arrays.toString(OutputBehavior.values())));
         }
 
         final boolean hasOutputMapping = element.getOutputMappingsAsMap().size() > 0;

@@ -16,6 +16,7 @@
 package io.zeebe.model.bpmn;
 
 import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
+import io.zeebe.model.bpmn.impl.validation.ValidationException;
 import io.zeebe.model.bpmn.instance.*;
 import org.junit.Test;
 
@@ -34,6 +35,9 @@ public class BpmnYamlParserTest
 {
     private static final String INVALID_WORKFLOW = "/invalid_process.yaml";
     private static final String WORKFLOW_WITH_TASK_SEQUENCE = "/process.yaml";
+    private static final String WORKFLOW_WITH_OVERWRITE_BEHAVIOR = "/overwrite_output_process.yaml";
+    private static final String WORKFLOW_WITH_NONE_BEHAVIOR = "/none_behavior_process.yaml";
+    private static final String WORKFLOW_WITH_INVALID_BEHAVIOR = "/invalid_output_behavior.yaml";
     private static final String WORKFLOW_WITH_SPLIT = "/process-conditions.yaml";
     private static final String INVALID_WORKFLOW_WITH_SPLIT = "/invalid_process-conditions.yaml";
 
@@ -86,6 +90,8 @@ public class BpmnYamlParserTest
         final InputOutputMapping inputOutputMapping = serviceTask.getInputOutputMapping();
         assertThat(inputOutputMapping).isNotNull();
 
+        assertThat(inputOutputMapping.getOutputBehavior()).isEqualTo(OutputBehavior.MERGE);
+
         assertThat(inputOutputMapping.getInputMappingsAsMap())
             .hasSize(1)
             .containsEntry("$.a", "$.b");
@@ -120,6 +126,49 @@ public class BpmnYamlParserTest
         assertThat(taskDefinition2.getRetries()).isEqualTo(5);
 
         assertThat(getFlows(workflow)).contains("task1 -> task2");
+    }
+
+    @Test
+    public void shouldTransformOverwriteOutputBehavior()
+    {
+        // given
+        final WorkflowDefinition workflowDefinition = parseWorkflow(WORKFLOW_WITH_OVERWRITE_BEHAVIOR);
+        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("test"));
+        final ServiceTask serviceTask = workflow.findFlowElementById(wrapString("task1"));
+
+        // when
+        final InputOutputMapping inputOutputMapping = serviceTask.getInputOutputMapping();
+
+        // then
+        assertThat(inputOutputMapping).isNotNull();
+        assertThat(inputOutputMapping.getOutputBehavior()).isEqualTo(OutputBehavior.OVERWRITE);
+    }
+
+    @Test
+    public void shouldTransformNoneOutputBehavior()
+    {
+        // given
+        final WorkflowDefinition workflowDefinition = parseWorkflow(WORKFLOW_WITH_NONE_BEHAVIOR);
+        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("test"));
+        final ServiceTask serviceTask = workflow.findFlowElementById(wrapString("task1"));
+
+        // when
+        final InputOutputMapping inputOutputMapping = serviceTask.getInputOutputMapping();
+
+        // then
+        assertThat(inputOutputMapping).isNotNull();
+        assertThat(inputOutputMapping.getOutputBehavior()).isEqualTo(OutputBehavior.NONE);
+    }
+
+    @Test
+    public void shouldThrowExceptionOnInvalidBehavior()
+    {
+        // expect - when
+        assertThatThrownBy(() ->
+        {
+            parseWorkflow(WORKFLOW_WITH_INVALID_BEHAVIOR);
+        }).hasMessage("Output behavior 'asdf' is not supported. Valid values are [MERGE, OVERWRITE, NONE].")
+            .isExactlyInstanceOf(ValidationException.class);
     }
 
     @Test

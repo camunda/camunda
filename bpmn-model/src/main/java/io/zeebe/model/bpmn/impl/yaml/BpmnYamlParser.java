@@ -15,15 +15,22 @@
  */
 package io.zeebe.model.bpmn.impl.yaml;
 
-import java.io.*;
-import java.util.*;
-import java.util.Map.Entry;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.zeebe.model.bpmn.builder.BpmnBuilder;
 import io.zeebe.model.bpmn.builder.BpmnServiceTaskBuilder;
+import io.zeebe.model.bpmn.impl.validation.ValidationException;
+import io.zeebe.model.bpmn.instance.OutputBehavior;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.util.*;
+import java.util.Map.Entry;
+
+import static io.zeebe.model.bpmn.impl.validation.nodes.task.InputOutputMappingValidator.OUTPUT_BEHAVIOR_IS_NOT_SUPPORTED_MSG;
 
 public class BpmnYamlParser
 {
@@ -184,6 +191,31 @@ public class BpmnYamlParser
             serviceTaskBuilder.taskHeader(header.getKey(), header.getValue());
         }
 
+        addInputOutputMappingToTask(task, serviceTaskBuilder);
+
+        serviceTaskBuilder.done();
+    }
+
+    private void addInputOutputMappingToTask(YamlTask task, BpmnServiceTaskBuilder serviceTaskBuilder)
+    {
+        final String outputBehaviorString = task.getOutputBehavior();
+        OutputBehavior outputBehavior = null;
+        try
+        {
+            outputBehavior = OutputBehavior.valueOf(outputBehaviorString.toUpperCase());
+        }
+        catch (IllegalArgumentException ilae)
+        {
+            throw new ValidationException(
+                String.format(OUTPUT_BEHAVIOR_IS_NOT_SUPPORTED_MSG,
+                    outputBehaviorString,
+                    Arrays.toString(OutputBehavior.values())));
+        }
+        if (outputBehavior != null)
+        {
+            serviceTaskBuilder.outputBehavior(outputBehavior);
+        }
+
         for (YamlMapping inputMapping : task.getInputs())
         {
             serviceTaskBuilder.input(inputMapping.getSource(), inputMapping.getTarget());
@@ -193,8 +225,6 @@ public class BpmnYamlParser
         {
             serviceTaskBuilder.output(outputMapping.getSource(), outputMapping.getTarget());
         }
-
-        serviceTaskBuilder.done();
     }
 
 }

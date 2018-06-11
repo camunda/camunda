@@ -29,6 +29,7 @@ public class YamlTask
 
     private Map<String, String> headers = new HashMap<>();
 
+    private String outputBehavior = "MERGE";
     private List<YamlMapping> inputs = new ArrayList<>();
     private List<YamlMapping> outputs = new ArrayList<>();
 
@@ -131,4 +132,13 @@ public class YamlTask
         this.end = end;
     }
 
+    public String getOutputBehavior()
+    {
+        return outputBehavior;
+    }
+
+    public void setOutputBehavior(String outputBehavior)
+    {
+        this.outputBehavior = outputBehavior;
+    }
 }
