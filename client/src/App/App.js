@@ -7,6 +7,7 @@ import {Authentication} from './Authentication';
 import {Login} from './Login';
 import {Header} from './Header';
 import {Dashboard} from './Dashboard';
+import {Filter} from './Filter';
 
 const Home = () => (
   <React.Fragment>
@@ -21,6 +22,12 @@ const Home = () => (
   </React.Fragment>
 );
 
+const FilterPage = () => (
+  <React.Fragment>
+    <Filter />
+  </React.Fragment>
+);
+
 export default function App(props) {
   return (
     <ThemeProvider>
@@ -28,6 +35,7 @@ export default function App(props) {
         <Authentication>
           <Route path="/login" component={Login} />
           <Route exact path="/" component={Home} />
+          <Route exact path="/filter" component={FilterPage} />
         </Authentication>
       </Router>
     </ThemeProvider>
