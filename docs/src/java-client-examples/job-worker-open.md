@@ -8,6 +8,8 @@
 
 ## JobWorkerCreator.java
 
+[Source on github](https://github.com/zeebe-io/zeebe/tree/{{commit}}/samples/src/main/java/io/zeebe/example/job/JobWorkerCreator.java)
+
 ```java
 {{#include ../../../samples/src/main/java/io/zeebe/example/job/JobWorkerCreator.java}}
 ```

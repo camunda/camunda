@@ -1,5 +1,17 @@
 # Example Code using the Zeebe Java Client
 
+These examples are accessible in the [zeebe-io github repository](https://github.com/zeebe-io/zeebe/) at commit `{{commit}}`. [Link to browse code on github](https://github.com/zeebe-io/zeebe/tree/{{commit}}/samples).
+
+Instructions to access code locally:
+
+```
+git clone https://github.com/zeebe-io/zeebe.git
+git checkout {{commit}}
+cd samples
+```
+
+Import the Maven project in the `samples` directory into your IDE to start hacking.
+
 ## Workflow
 
 * [Deploy a Workflow](java-client-examples/workflow-deploy.html)

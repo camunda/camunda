@@ -6,6 +6,8 @@
 
 ## TopicSubscriber.java
 
+[Source on github](https://github.com/zeebe-io/zeebe/tree/{{commit}}/samples/src/main/java/io/zeebe/example/topic/TopicSubscriber.java)
+
 ```java
 {{#include ../../../samples/src/main/java/io/zeebe/example/topic/TopicSubscriber.java}}
 ```
