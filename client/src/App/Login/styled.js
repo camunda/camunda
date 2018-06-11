@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import {Input} from 'components';
+import {Colors} from 'theme';
 
 export const H1 = styled.h1`
   align-self: center;
@@ -22,5 +23,13 @@ export const Login = styled.form`
 `;
 
 export const LoginInput = styled(Input)`
+  margin-bottom: 10px;
+`;
+
+export const FormError = styled.span`
+  font-family: IBMPlexSans;
+  font-size: 15px;
+  font-weight: 500;
+  color: ${Colors.incidentsAndErrors};
   margin-bottom: 10px;
 `;

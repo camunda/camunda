@@ -25,7 +25,7 @@ class Login extends React.Component {
       await login({username, password});
       this.setState({forceRedirect: true});
     } catch (error) {
-      this.setState({error});
+      this.setState({error: 'Username and Password do not match'});
     }
   };
 
@@ -34,8 +34,9 @@ class Login extends React.Component {
   };
 
   render() {
+    const {username, password, forceRedirect, error} = this.state;
     // case of successful login
-    if (this.state.forceRedirect) {
+    if (forceRedirect) {
       return <Redirect to={'/'} />;
     }
 
@@ -43,16 +44,16 @@ class Login extends React.Component {
     return (
       <Styled.Login onSubmit={this.login}>
         <Styled.H1>Operate</Styled.H1>
+        {error && <Styled.FormError>{error}</Styled.FormError>}
         <Styled.LoginInput
-          value={this.state.username}
+          value={username}
           onChange={this.handleInputChange}
           placeholder="Username"
           name="username"
-          error={this.state.error}
           required
         />
         <Styled.LoginInput
-          value={this.state.password}
+          value={password}
           type="password"
           onChange={this.handleInputChange}
           placeholder="Password"
