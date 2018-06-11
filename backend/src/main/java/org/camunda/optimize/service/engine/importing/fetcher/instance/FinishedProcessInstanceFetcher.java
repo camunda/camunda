@@ -14,15 +14,10 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.COMPLETED_PROCESS_INSTANCE_ENDPOINT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.FINISHED_AFTER;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.FINISHED_BEFORE;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.INCLUDE_ONLY_FINISHED_INSTANCES;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.FINISHED_AT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.MAX_RESULTS_TO_RETURN;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_BY;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_ORDER;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_ORDER_TYPE_ASCENDING;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_TYPE_END_TIME;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.TRUE;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -63,12 +58,9 @@ public class FinishedProcessInstanceFetcher extends
   private List<HistoricProcessInstanceDto> performFinishedHistoricProcessInstanceRequest(OffsetDateTime timeStamp, long pageSize) {
     return getEngineClient()
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-      .path(configurationService.getHistoricProcessInstanceEndpoint())
-      .queryParam(SORT_BY, SORT_TYPE_END_TIME)
-      .queryParam(SORT_ORDER, SORT_ORDER_TYPE_ASCENDING)
+      .path(COMPLETED_PROCESS_INSTANCE_ENDPOINT)
       .queryParam(FINISHED_AFTER, dateTimeFormatter.format(timeStamp))
       .queryParam(MAX_RESULTS_TO_RETURN, pageSize)
-      .queryParam(INCLUDE_ONLY_FINISHED_INSTANCES, TRUE)
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
       .get(new GenericType<List<HistoricProcessInstanceDto>>() {
@@ -92,10 +84,8 @@ public class FinishedProcessInstanceFetcher extends
   private List<HistoricProcessInstanceDto> performFinishedHistoricProcessInstanceRequest(OffsetDateTime endTimeOfLastInstance) {
     return getEngineClient()
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-      .path(configurationService.getHistoricProcessInstanceEndpoint())
-      .queryParam(FINISHED_AFTER, dateTimeFormatter.format(endTimeOfLastInstance))
-      .queryParam(FINISHED_BEFORE, dateTimeFormatter.format(endTimeOfLastInstance))
-      .queryParam(INCLUDE_ONLY_FINISHED_INSTANCES, TRUE)
+      .path(COMPLETED_PROCESS_INSTANCE_ENDPOINT)
+      .queryParam(FINISHED_AT, dateTimeFormatter.format(endTimeOfLastInstance))
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
       .get(new GenericType<List<HistoricProcessInstanceDto>>() {
