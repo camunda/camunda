@@ -88,8 +88,10 @@ public class DeploymentManager implements Service<DeploymentManager>
             {
                 private BufferedLogStreamReader reader;
 
+                // Only expose the fetch workflow and workflow repository APIs after reprocessing to avoid that we
+                // cannot (yet) return a workflow that we were previously able to return
                 @Override
-                public void onOpen(TypedStreamProcessor streamProcessor)
+                public void onRecovered(TypedStreamProcessor streamProcessor)
                 {
                     final StreamProcessorContext ctx = streamProcessor.getStreamProcessorContext();
 

@@ -17,25 +17,36 @@
  */
 package io.zeebe.broker.test;
 
-import java.io.*;
-import java.util.concurrent.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
+
+import org.assertj.core.util.Files;
+import org.junit.rules.ExternalResource;
+import org.slf4j.Logger;
 
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.TestLoggers;
 import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceContainer;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.allocation.DirectBufferAllocator;
 import io.zeebe.util.sched.clock.ControlledActorClock;
-import org.assertj.core.util.Files;
-import org.junit.rules.ExternalResource;
-import org.slf4j.Logger;
 
 public class EmbeddedBrokerRule extends ExternalResource
 {
+    private static final String SNAPSHOTS_DIRECTORY = "snapshots";
+
     protected static final Logger LOG = TestLoggers.TEST_LOGGER;
 
     protected Broker broker;
@@ -62,6 +73,7 @@ public class EmbeddedBrokerRule extends ExternalResource
     protected long startTime;
 
     private File newTemporaryFolder;
+    private String[] dataDirectories;
 
     @Override
     protected void before()
@@ -150,11 +162,44 @@ public class EmbeddedBrokerRule extends ExternalResource
                 .dependency(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME))
                 .install()
                 .get(25, TimeUnit.SECONDS);
+
         }
         catch (InterruptedException | ExecutionException | TimeoutException e)
         {
             stopBroker();
             throw new RuntimeException("System patition not installed into the container withing 25 seconds.");
+        }
+
+        dataDirectories = broker.getBrokerContext()
+            .getBrokerConfiguration()
+            .getData()
+            .getDirectories();
+    }
+
+    public void purgeSnapshots()
+    {
+        for (String dataDirectoryName : dataDirectories)
+        {
+            final File dataDirectory = new File(dataDirectoryName);
+
+            final File[] partitionDirectories = dataDirectory.listFiles((d, f) -> new File(d, f).isDirectory());
+
+            for (File partitionDirectory : partitionDirectories)
+            {
+                final File snapshotDirectory = new File(partitionDirectory, SNAPSHOTS_DIRECTORY);
+
+                if (snapshotDirectory.exists())
+                {
+                    try
+                    {
+                        FileUtil.deleteFolder(snapshotDirectory.getAbsolutePath());
+                    }
+                    catch (IOException e)
+                    {
+                        throw new RuntimeException("Could not delete snapshot directory " + snapshotDirectory.getAbsolutePath(), e);
+                    }
+                }
+            }
         }
     }
 

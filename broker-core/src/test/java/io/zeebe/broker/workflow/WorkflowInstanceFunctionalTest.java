@@ -539,6 +539,38 @@ public class WorkflowInstanceFunctionalTest
             .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "");
     }
 
+    /**
+     * Scenario: When system partition stream processor is reprocessing after restart, it may
+     * not be able to return a workflow that it already returned successfully before restart.
+     */
+    @Test
+    public void shouldReprocessWorkflowInstanceRecordsWhenWorkflowIsTemporarilyUnavailable()
+    {
+        // given
+        // make a couple of deployments to ensure that the deployment stream processor will need some time for reprocessing
+        final int numDeployments = 100;
+        for (int i = 0; i < numDeployments; i++)
+        {
+            testClient.deploy(Bpmn.createExecutableWorkflow("process")
+                    .startEvent()
+                    .serviceTask("foo", t -> t.taskType("bar"))
+                    .endEvent()
+                    .done());
+        }
+
+        testClient.createWorkflowInstance("process");
+
+        brokerRule.stopBroker();
+        brokerRule.purgeSnapshots();
+
+        // when
+        brokerRule.startBroker();
+
+        // then I can still start workflow instance (i.e. stream processor did not crash
+        final long newWorkflowInstancekey = testClient.createWorkflowInstance("process");
+        assertThat(newWorkflowInstancekey).isGreaterThan(0);
+    }
+
     private SubscribedRecord receiveWorkflowInstanceEvent(long key, Intent intent)
     {
         return testClient.receiveEvents()
