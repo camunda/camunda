@@ -18,13 +18,14 @@ package io.zeebe.logstreams.impl.snapshot.fs;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import io.zeebe.logstreams.impl.Loggers;
-import io.zeebe.logstreams.spi.ReadableSnapshot;
+import io.zeebe.logstreams.spi.SnapshotMetadata;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import org.agrona.LangUtil;
 import org.slf4j.Logger;
@@ -34,40 +35,33 @@ public class FsSnapshotStorage implements SnapshotStorage
     public static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
 
     protected final FsSnapshotStorageConfiguration cfg;
-
     public FsSnapshotStorage(FsSnapshotStorageConfiguration cfg)
     {
         this.cfg = cfg;
     }
 
     @Override
-    public FsReadableSnapshot getLastSnapshot(String name)
+    public FsReadableSnapshot getLastSnapshot(final String name)
     {
         final File rootFile = new File(cfg.getRootPath());
         final List<File> snapshotFiles = Arrays.asList(rootFile.listFiles(file -> cfg.matchesSnapshotFileNamePattern(file, name)));
-
         FsReadableSnapshot snapshot = null;
 
-        if (snapshotFiles.size() > 0)
+        if (!snapshotFiles.isEmpty())
         {
-            snapshotFiles.sort((f1, f2) -> Long.compare(position(f1, name), position(f2, name)));
+            final List<File> committedSortedSnapshotFiles = snapshotFiles.stream()
+                .filter((f) -> isCommitted(f, name))
+                .sorted(Comparator.comparingLong((f) -> position(f, name)))
+                .collect(Collectors.toList());
 
-            final File snapshotFile = snapshotFiles.get(0);
-            final long logPosition = position(snapshotFile, name);
-
-            final String checksumFileName = cfg.checksumFileName(name, logPosition);
-            final File checksumFile = new File(checksumFileName);
-
-            if (checksumFile.exists())
+            if (!committedSortedSnapshotFiles.isEmpty())
             {
+                final File snapshotFile = committedSortedSnapshotFiles.get(0);
+                final long logPosition = position(snapshotFile, name);
+                final String checksumFileName = cfg.checksumFileName(name, logPosition);
+                final File checksumFile = new File(checksumFileName);
+
                 snapshot = new FsReadableSnapshot(cfg, snapshotFile, checksumFile, logPosition);
-            }
-            else
-            {
-                // delete snapshot file since checksum does not exist anymore
-                LOG.error("Delete snapshot {}, no checksum file exists.", snapshotFile.getAbsolutePath());
-
-                snapshotFile.delete();
             }
         }
 
@@ -85,21 +79,13 @@ public class FsSnapshotStorage implements SnapshotStorage
         {
             for (File snapshotFile : snapshotFiles)
             {
-                final long logPosition = position(snapshotFile, name);
-                final String checksumFileName = cfg.checksumFileName(name, logPosition);
-                final File checksumFile = new File(checksumFileName);
-
-                checksumFile.delete();
+                getChecksumFile(snapshotFile, name).delete();
                 snapshotFile.delete();
             }
+
             deletionSuccessful = true;
         }
         return deletionSuccessful;
-    }
-
-    protected long position(File file, String snapshotName)
-    {
-        return cfg.getPositionOfSnapshotFile(file, snapshotName);
     }
 
     @Override
@@ -118,19 +104,12 @@ public class FsSnapshotStorage implements SnapshotStorage
             throw new RuntimeException(String.format("Cannot write snapshot %s, file already exists.", snapshotFile.getAbsolutePath()));
         }
 
-        if (checksumFile.exists())
-        {
-            throw new RuntimeException(String.format("Cannot write snapshot checksum %s, file already exists.", checksumFile.getAbsolutePath()));
-        }
-
         try
         {
-            checksumFile.createNewFile();
             snapshotFile.createNewFile();
         }
         catch (IOException e)
         {
-            checksumFile.delete();
             snapshotFile.delete();
             LangUtil.rethrowUnchecked(e);
         }
@@ -139,11 +118,11 @@ public class FsSnapshotStorage implements SnapshotStorage
     }
 
     @Override
-    public List<ReadableSnapshot> listSnapshots()
+    public List<SnapshotMetadata> listSnapshots()
     {
         final File rootFile = new File(cfg.getRootPath());
-        final File[] snapshotFiles = rootFile.listFiles(file -> cfg.matchesSnapshotFileNamePattern(file, ".+"));
-        final ArrayList<ReadableSnapshot> snapshots = new ArrayList<>();
+        final File[] snapshotFiles = rootFile.listFiles(cfg::isSnapshotFile);
+        final ArrayList<SnapshotMetadata> snapshots = new ArrayList<>();
 
         if (snapshotFiles != null)
         {
@@ -151,7 +130,12 @@ public class FsSnapshotStorage implements SnapshotStorage
             for (final File snapshotFile : snapshotFiles)
             {
                 final String snapshotName = cfg.getSnapshotNameFromFileName(snapshotFile.getName());
-                snapshots.add(getLastSnapshot(snapshotName));
+
+                if (isCommitted(snapshotFile, snapshotName))
+                {
+                    final File checksumFile = getChecksumFile(snapshotFile, snapshotName);
+                    snapshots.add(new FsSnapshotMetadata(cfg, snapshotFile, checksumFile));
+                }
             }
         }
 
@@ -159,43 +143,51 @@ public class FsSnapshotStorage implements SnapshotStorage
     }
 
     @Override
-    public FsTemporarySnapshotWriter createTemporarySnapshot(final String prefix, final String name, final long logPosition) throws Exception
+    public FsTemporarySnapshotWriter createTemporarySnapshot(final String name, final long logPosition) throws Exception
     {
-        final File destinationFile = new File(cfg.snapshotFileName(name, logPosition));
-        final File checksumFile = new File(cfg.checksumFileName(name, logPosition));
-        final File temporaryFile = File.createTempFile(prefix, null, new File(cfg.getRootPath()));
+        final String snapshotName = cfg.snapshotFileName(name, logPosition);
 
+        if (snapshotExists(name, logPosition))
+        {
+            throw new RuntimeException(String.format("snapshot %s-%d already exists", name, logPosition));
+        }
+
+        final FsReadableSnapshot lastSnapshot = getLastSnapshot(name);
+        final File destinationFile = new File(snapshotName);
+        final File checksumFile = new File(cfg.checksumFileName(name, logPosition));
+        final File temporaryFile = File.createTempFile(snapshotName, null, new File(cfg.getRootPath()));
         temporaryFile.deleteOnExit();
 
-        try
-        {
-            Files.createFile(destinationFile.toPath());
 
-            try
-            {
-                Files.createFile(checksumFile.toPath());
-            }
-            catch (final IOException ex)
-            {
-                //noinspection ResultOfMethodCallIgnored
-                destinationFile.delete();
-                throw ex;
-            }
-        }
-        catch (final Exception ex)
-        {
-            //noinspection ResultOfMethodCallIgnored
-            temporaryFile.delete();
-            throw ex;
-        }
-
-        return new FsTemporarySnapshotWriter(cfg, temporaryFile, checksumFile, destinationFile);
+        return new FsTemporarySnapshotWriter(cfg, temporaryFile, checksumFile, destinationFile, lastSnapshot);
     }
 
-    // TODO: is it enough to check only for the snapshot file? or also the sha1 file?
     @Override
     public boolean snapshotExists(String name, long logPosition)
     {
-        return Files.exists(Paths.get(cfg.snapshotFileName(name, logPosition)));
+        final File snapshotFile = new File(cfg.snapshotFileName(name, logPosition));
+        return Files.exists(snapshotFile.toPath()) && isCommitted(snapshotFile, name);
+    }
+
+    protected long position(File file, String snapshotName)
+    {
+        return cfg.getPositionOfSnapshotFile(file, snapshotName);
+    }
+
+    private File getChecksumFile(final File snapshotFile, final String snapshotName)
+    {
+        final long logPosition = position(snapshotFile, snapshotName);
+        final String checksumFileName = cfg.checksumFileName(snapshotName, logPosition);
+        return new File(checksumFileName);
+    }
+
+    private boolean isCommitted(final File snapshotFile, final String name)
+    {
+        final long logPosition = position(snapshotFile, name);
+        final String checksumFileName = cfg.checksumFileName(name, logPosition);
+        final File checksumFile = new File(checksumFileName);
+
+        // TODO: is this the best way?
+        return checksumFile.exists();
     }
 }

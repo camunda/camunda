@@ -53,10 +53,10 @@ public class FsTemporarySnapshotWriterTest
         config.setRootPath(snapshotRootPath);
 
         temporaryFile = tempFolder.newFile("test1239489485.tmp");
-        snapshotFile = tempFolder.newFile("snapshot.snapshot");
-        checksumFile = tempFolder.newFile("checksum.sha1");
+        snapshotFile = new File(tempFolder.getRoot(), "snapshot.snapshot");
+        checksumFile = new File(tempFolder.getRoot(), "checksum.sha1");
 
-        writer = new FsTemporarySnapshotWriter(config, temporaryFile, checksumFile, snapshotFile);
+        writer = new FsTemporarySnapshotWriter(config, temporaryFile, checksumFile, snapshotFile, null);
     }
 
     @Test
@@ -77,7 +77,6 @@ public class FsTemporarySnapshotWriterTest
 
         // then
         assertThat(Files.readAllBytes(temporaryFile.toPath())).isEqualTo(SNAPSHOT_DATA);
-        assertThat(Files.readAllBytes(snapshotFile.toPath())).isEmpty();
     }
 
     @Test

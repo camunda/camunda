@@ -60,7 +60,7 @@ public class FsSnapshotWriterTest
         config.setRootPath(snapshotRootPath);
 
         snapshotFile = tempFolder.newFile("snapshot.snapshot");
-        checksumFile = tempFolder.newFile("checksum.sha1");
+        checksumFile = new File(tempFolder.getRoot(), "checksum.sha1");
 
         lastSnapshot = mock(FsReadableSnapshot.class);
     }

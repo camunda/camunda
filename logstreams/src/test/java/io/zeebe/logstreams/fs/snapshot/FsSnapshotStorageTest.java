@@ -25,8 +25,7 @@ import java.io.OutputStream;
 import java.util.List;
 
 import io.zeebe.logstreams.impl.snapshot.fs.*;
-import io.zeebe.logstreams.spi.ReadableSnapshot;
-import org.assertj.core.api.Condition;
+import io.zeebe.logstreams.spi.SnapshotMetadata;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -99,21 +98,6 @@ public class FsSnapshotStorageTest
     }
 
     @Test
-    public void shoulNotCreateSnapshotIfChecksumAlreadyExists() throws Exception
-    {
-        final FsSnapshotWriter fsSnapshotWriter = fsSnapshotStorage.createSnapshot("test", 100);
-        fsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
-        fsSnapshotWriter.commit();
-
-        fsSnapshotWriter.getDataFile().delete();
-
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("Cannot write snapshot checksum");
-
-        fsSnapshotStorage.createSnapshot("test", 100);
-    }
-
-    @Test
     public void shouldNotGetLatestSnapshotIfNotExists() throws Exception
     {
         final FsReadableSnapshot lastSnapshot = fsSnapshotStorage.getLastSnapshot("not-existing");
@@ -168,9 +152,6 @@ public class FsSnapshotStorageTest
 
         final FsReadableSnapshot snapshot = fsSnapshotStorage.getLastSnapshot("test");
         assertThat(snapshot).isNull();
-
-        // should delete snapshot if no checksum exists
-        assertThat(fsSnapshotWriter.getDataFile()).doesNotExist();
     }
 
     @Test
@@ -192,7 +173,7 @@ public class FsSnapshotStorageTest
     public void shouldReturnEmptyListIfNoSnapshotsAvailable()
     {
         // given
-        final List<ReadableSnapshot> snapshots = fsSnapshotStorage.listSnapshots();
+        final List<SnapshotMetadata> snapshots = fsSnapshotStorage.listSnapshots();
 
         // then
         assertThat(snapshots).isEmpty();
@@ -202,7 +183,7 @@ public class FsSnapshotStorageTest
     public void shouldListLatestVersionOfExistingSnapshots() throws Exception
     {
         // given
-        final List<ReadableSnapshot> snapshots;
+        final List<SnapshotMetadata> snapshots;
         final String firstName = "first";
         final String secondName = "second";
 
@@ -216,10 +197,10 @@ public class FsSnapshotStorageTest
         assertThat(snapshots.size()).isEqualTo(2);
 
         // when
-        final ReadableSnapshot first = snapshots.stream().filter((s) -> s.getName().equals("first")).findFirst().get();
+        final SnapshotMetadata first = snapshots.stream().filter((s) -> s.getName().equals("first")).findFirst().get();
         assertThat(first.getPosition()).isEqualTo(3);
 
-        final ReadableSnapshot second = snapshots.stream().filter((s) -> s.getName().equals("second")).findFirst().get();
+        final SnapshotMetadata second = snapshots.stream().filter((s) -> s.getName().equals("second")).findFirst().get();
         assertThat(second.getPosition()).isEqualTo(1);
     }
 
@@ -244,7 +225,6 @@ public class FsSnapshotStorageTest
     public void shouldFailToCreateTemporarySnapshotWriterIfSnapshotAlreadyExists() throws Exception
     {
         // given
-        final String prefix = "test";
         final String name = "snapshot";
         final long logPosition = 3L;
 
@@ -254,7 +234,7 @@ public class FsSnapshotStorageTest
         // then
         // assert that allocated resources were removed in case of exception
         final int expectedFilesCount = tempFolder.getRoot().listFiles().length;
-        assertThatThrownBy(() -> fsSnapshotStorage.createTemporarySnapshot(prefix, name, logPosition))
+        assertThatThrownBy(() -> fsSnapshotStorage.createTemporarySnapshot(name, logPosition))
             .isInstanceOf(Exception.class);
         assertThat(tempFolder.getRoot().listFiles().length).isEqualTo(expectedFilesCount);
     }
@@ -263,22 +243,19 @@ public class FsSnapshotStorageTest
     public void shouldCreateTemporarySnapshotWriter() throws Exception
     {
         // given
-        final String prefix = "test";
         final String name = "snapshot";
         final long logPosition = 4L;
 
         // when
-        final FsTemporarySnapshotWriter temporarySnapshotWriter = fsSnapshotStorage.createTemporarySnapshot(prefix, name, logPosition);
+        final FsTemporarySnapshotWriter temporarySnapshotWriter = fsSnapshotStorage.createTemporarySnapshot(name, logPosition);
 
         // then
         assertThat(temporarySnapshotWriter).isNotNull();
 
         final File[] files = tempFolder.getRoot().listFiles();
         assertThat(files).isNotNull();
-        assertThat(files.length).isEqualTo(3);
-        assertThat(files).haveExactly(1, new Condition<>(f -> f.getName().matches("test.+\\.tmp"), "temporary file"));
-        assertThat(files).haveExactly(1, new Condition<>(f -> f.getAbsolutePath().equals(config.snapshotFileName(name, logPosition)), "snapshot file"));
-        assertThat(files).haveExactly(1, new Condition<>(f -> f.getAbsolutePath().equals(config.checksumFileName(name, logPosition)), "checksum file"));
+        assertThat(files.length).isEqualTo(1);
+        assertThat(files[0].getName()).matches(".+\\.tmp");
     }
 
     protected String getFileName(String absolutePath)

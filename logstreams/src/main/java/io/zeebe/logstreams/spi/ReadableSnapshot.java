@@ -22,13 +22,8 @@ import io.zeebe.logstreams.snapshot.InvalidSnapshotException;
 /**
  * Represents a snapshot of the log.
  */
-public interface ReadableSnapshot
+public interface ReadableSnapshot extends SnapshotMetadata
 {
-    /**
-     * The log position at which the snapshot was taken.
-     */
-    long getPosition();
-
     /**
      * Input stream to read the snapshot data.
      *
@@ -68,19 +63,4 @@ public interface ReadableSnapshot
         snapshotSupport.recoverFromSnapshot(getData());
         validateAndClose();
     }
-
-    /**
-     * @return the initial snapshot name
-     */
-    String getName();
-
-    /**
-     * @return length in bytes of the snapshot contents
-     */
-    long getLength();
-
-    /**
-     * @return the checksum of the snapshot contents
-     */
-    byte[] getChecksum();
 }

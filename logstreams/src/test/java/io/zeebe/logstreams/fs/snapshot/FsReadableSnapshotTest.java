@@ -169,7 +169,7 @@ public class FsReadableSnapshotTest
         final FsReadableSnapshot snapshot = new FsReadableSnapshot(config, dataFile, checksumFile, 100);
 
         // then
-        assertThat(snapshot.getLength()).isEqualTo(SNAPSHOT_DATA.length);
+        assertThat(snapshot.getSize()).isEqualTo(SNAPSHOT_DATA.length);
     }
 
     @Test

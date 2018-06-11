@@ -39,6 +39,8 @@ public class FsReadableSnapshot implements ReadableSnapshot
     protected final File dataFile;
     protected final File checksumFile;
 
+    protected final String name;
+    protected final boolean replicable;
     protected final long position;
 
     protected byte[] checksum;
@@ -50,6 +52,8 @@ public class FsReadableSnapshot implements ReadableSnapshot
         this.dataFile = dataFile;
         this.checksumFile = checksumFile;
         this.position = position;
+        this.name = config.getSnapshotNameFromFileName(dataFile.getName());
+        this.replicable = config.isReplicable(this.name);
 
         tryInit();
     }
@@ -180,11 +184,11 @@ public class FsReadableSnapshot implements ReadableSnapshot
     @Override
     public String getName()
     {
-        return config.getSnapshotNameFromFileName(dataFile.getName());
+        return name;
     }
 
     @Override
-    public long getLength()
+    public long getSize()
     {
         return dataFile.length();
     }
@@ -193,5 +197,11 @@ public class FsReadableSnapshot implements ReadableSnapshot
     public byte[] getChecksum()
     {
         return checksum;
+    }
+
+    @Override
+    public boolean isReplicable()
+    {
+        return replicable;
     }
 }
