@@ -1,0 +1,253 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Login should display an error on unsuccessful login 1`] = `
+<Login>
+  <styled.form
+    onSubmit={[Function]}
+  >
+    <form
+      className="sc-gzVnrw ebLYyw"
+      onSubmit={[Function]}
+    >
+      <styled.h1>
+        <h1
+          className="sc-bZQynM bTLgOj"
+        >
+          Operate
+        </h1>
+      </styled.h1>
+      <styled.span>
+        <span
+          className="sc-dnqmqq fBdfkl"
+        >
+          Username and Password do not match
+        </span>
+      </styled.span>
+      <Styled(Input)
+        name="username"
+        onChange={[Function]}
+        placeholder="Username"
+        required={true}
+        type="text"
+        value=""
+      >
+        <Input
+          className="sc-htoDjs biKrUb"
+          name="username"
+          onChange={[Function]}
+          placeholder="Username"
+          required={true}
+          type="text"
+          value=""
+        >
+          <styled.input
+            className="sc-htoDjs biKrUb"
+            name="username"
+            onChange={[Function]}
+            placeholder="Username"
+            required={true}
+            type="text"
+            value=""
+          >
+            <input
+              className="sc-htoDjs biKrUb sc-bdVaJa fEQlyH"
+              name="username"
+              onChange={[Function]}
+              placeholder="Username"
+              required={true}
+              type="text"
+              value=""
+            />
+          </styled.input>
+        </Input>
+      </Styled(Input)>
+      <Styled(Input)
+        name="password"
+        onChange={[Function]}
+        placeholder="Password"
+        required={true}
+        type="password"
+        value=""
+      >
+        <Input
+          className="sc-htoDjs biKrUb"
+          name="password"
+          onChange={[Function]}
+          placeholder="Password"
+          required={true}
+          type="password"
+          value=""
+        >
+          <styled.input
+            className="sc-htoDjs biKrUb"
+            name="password"
+            onChange={[Function]}
+            placeholder="Password"
+            required={true}
+            type="password"
+            value=""
+          >
+            <input
+              className="sc-htoDjs biKrUb sc-bdVaJa fEQlyH"
+              name="password"
+              onChange={[Function]}
+              placeholder="Password"
+              required={true}
+              type="password"
+              value=""
+            />
+          </styled.input>
+        </Input>
+      </Styled(Input)>
+      <Styled(Input)
+        placeholder="Password"
+        type="submit"
+      >
+        <Input
+          className="sc-htoDjs biKrUb"
+          placeholder="Password"
+          type="submit"
+        >
+          <styled.input
+            className="sc-htoDjs biKrUb"
+            placeholder="Password"
+            type="submit"
+          >
+            <input
+              className="sc-htoDjs biKrUb sc-bdVaJa iDLlQf"
+              placeholder="Password"
+              type="submit"
+            />
+          </styled.input>
+        </Input>
+      </Styled(Input)>
+    </form>
+  </styled.form>
+</Login>
+`;
+
+exports[`Login should redirect to home page on successful login 1`] = `
+<Redirect
+  push={false}
+  to="/"
+/>
+`;
+
+exports[`Login should render login form by default 1`] = `
+<Login>
+  <styled.form
+    onSubmit={[Function]}
+  >
+    <form
+      className="sc-gzVnrw ebLYyw"
+      onSubmit={[Function]}
+    >
+      <styled.h1>
+        <h1
+          className="sc-bZQynM bTLgOj"
+        >
+          Operate
+        </h1>
+      </styled.h1>
+      <Styled(Input)
+        name="username"
+        onChange={[Function]}
+        placeholder="Username"
+        required={true}
+        type="text"
+        value=""
+      >
+        <Input
+          className="sc-htoDjs biKrUb"
+          name="username"
+          onChange={[Function]}
+          placeholder="Username"
+          required={true}
+          type="text"
+          value=""
+        >
+          <styled.input
+            className="sc-htoDjs biKrUb"
+            name="username"
+            onChange={[Function]}
+            placeholder="Username"
+            required={true}
+            type="text"
+            value=""
+          >
+            <input
+              className="sc-htoDjs biKrUb sc-bdVaJa fEQlyH"
+              name="username"
+              onChange={[Function]}
+              placeholder="Username"
+              required={true}
+              type="text"
+              value=""
+            />
+          </styled.input>
+        </Input>
+      </Styled(Input)>
+      <Styled(Input)
+        name="password"
+        onChange={[Function]}
+        placeholder="Password"
+        required={true}
+        type="password"
+        value=""
+      >
+        <Input
+          className="sc-htoDjs biKrUb"
+          name="password"
+          onChange={[Function]}
+          placeholder="Password"
+          required={true}
+          type="password"
+          value=""
+        >
+          <styled.input
+            className="sc-htoDjs biKrUb"
+            name="password"
+            onChange={[Function]}
+            placeholder="Password"
+            required={true}
+            type="password"
+            value=""
+          >
+            <input
+              className="sc-htoDjs biKrUb sc-bdVaJa fEQlyH"
+              name="password"
+              onChange={[Function]}
+              placeholder="Password"
+              required={true}
+              type="password"
+              value=""
+            />
+          </styled.input>
+        </Input>
+      </Styled(Input)>
+      <Styled(Input)
+        placeholder="Password"
+        type="submit"
+      >
+        <Input
+          className="sc-htoDjs biKrUb"
+          placeholder="Password"
+          type="submit"
+        >
+          <styled.input
+            className="sc-htoDjs biKrUb"
+            placeholder="Password"
+            type="submit"
+          >
+            <input
+              className="sc-htoDjs biKrUb sc-bdVaJa iDLlQf"
+              placeholder="Password"
+              type="submit"
+            />
+          </styled.input>
+        </Input>
+      </Styled(Input)>
+    </form>
+  </styled.form>
+</Login>
+`;

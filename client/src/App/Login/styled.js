@@ -1,6 +1,6 @@
 import styled from 'styled-components';
-import {Input} from 'components';
-import {Colors} from 'theme';
+import {Input} from 'modules/components';
+import {Colors} from 'modules/theme';
 
 export const H1 = styled.h1`
   align-self: center;

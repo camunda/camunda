@@ -1,4 +1,4 @@
-import {post, get} from 'modules/request';
+import {post} from 'modules/request';
 
 export const login = async data => {
   const body = `username=${data.username}&password=${data.password}`;
@@ -7,11 +7,4 @@ export const login = async data => {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
   });
-};
-
-export const users = async userId => {
-  const response = await get(`/users/${userId}`);
-  const data = response.json();
-
-  return data;
 };

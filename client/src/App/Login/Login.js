@@ -2,7 +2,7 @@ import React from 'react';
 import {Redirect} from 'react-router-dom';
 
 import {login} from './api';
-import {resetResponseInterceptor} from 'request';
+import {resetResponseInterceptor} from 'modules/request';
 import * as Styled from './styled';
 
 class Login extends React.Component {
@@ -24,7 +24,7 @@ class Login extends React.Component {
     try {
       await login({username, password});
       this.setState({forceRedirect: true});
-    } catch (error) {
+    } catch (e) {
       this.setState({error: 'Username and Password do not match'});
     }
   };
@@ -47,6 +47,7 @@ class Login extends React.Component {
         {error && <Styled.FormError>{error}</Styled.FormError>}
         <Styled.LoginInput
           value={username}
+          type="text"
           onChange={this.handleInputChange}
           placeholder="Username"
           name="username"
