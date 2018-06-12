@@ -1,13 +1,16 @@
 import styled from 'styled-components';
-import {Colors} from 'theme';
-// import {Colors, themed, themeStyle} from 'theme';
+import {Colors, themed, themeStyle} from 'theme';
 
-export const Table = styled.table`
+export const Table = themed(styled.table`
   width: 100%;
   font-size: 14px;
   border-spacing: 0;
   border-collapse: collapse;
-`;
+  color: ${themeStyle({
+    dark: '#ffffff',
+    light: Colors.uiLight06
+  })};
+`);
 
 export const TableHead = styled.thead`
   text-align: left;

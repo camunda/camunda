@@ -8,5 +8,5 @@ export default function PanelFooter({children}) {
 }
 
 PanelFooter.propTypes = {
-  children: PropTypes.element
+  children: PropTypes.node
 };

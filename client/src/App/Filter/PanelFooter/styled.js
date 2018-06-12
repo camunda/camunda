@@ -18,4 +18,8 @@ export const Footer = themed(styled.div`
     dark: Colors.uiDark03,
     light: Colors.uiLight06
   })};
+  color: ${themeStyle({
+    dark: '#ffffff',
+    light: Colors.uiLight06
+  })};
 `);

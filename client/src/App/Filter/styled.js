@@ -3,7 +3,7 @@ import styled from 'styled-components';
 export const Filter = styled.div`
   display: flex;
   flex-direction: row;
-  height: 994px;
+  height: calc(100vh - 56px);
 `;
 
 export const Left = styled.div`

@@ -6,6 +6,7 @@ import {Panel} from './Panel';
 import {PanelHeader} from './PanelHeader';
 import {PanelFooter} from './PanelFooter';
 import {InstancesFilter} from './InstancesFilter';
+import {InstancesListView} from './InstancesListView';
 
 import * as Styled from './styled.js';
 
@@ -32,10 +33,7 @@ class Filter extends Component {
             <Panel>
               <PanelHeader headline="Process Definition Name" />
             </Panel>
-            <Panel>
-              <PanelHeader headline="Process Instances" />
-              <PanelFooter />
-            </Panel>
+            <InstancesListView instancesInFilter={9263} />
           </Styled.Right>
         </Styled.Filter>
       </div>
