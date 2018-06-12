@@ -38,6 +38,13 @@ metadata:
 spec:
   nodeSelector:
     cloud.google.com/gke-nodepool: ${NODE_POOL()}
+  initContainers:
+  - name: init-sysctl
+    image: busybox
+    imagePullPolicy: IfNotPresent
+    command: ["sysctl", "-w", "vm.max_map_count=262144"]
+    securityContext:
+      privileged: true
   containers:
   - name: maven
     image: ${MAVEN_DOCKER_IMAGE()}
@@ -52,10 +59,10 @@ spec:
     resources:
       limits:
         cpu: 1
-        memory: 1Gi
+        memory: 2Gi
       requests:
         cpu: 1
-        memory: 1Gi
+        memory: 2Gi
   - name: node
     image: ${NODEJS_DOCKER_IMAGE()}
     command: ["cat"]
@@ -72,6 +79,38 @@ spec:
       requests:
         cpu: 1
         memory: 512Mi
+  - name: elasticsearch
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.2.4
+    env:
+    - name: ES_JAVA_OPTS
+      value: "-Xms2g -Xmx2g"
+    - name: cluster.name
+      value: docker-cluster
+    - name: discovery.type
+      value: single-node
+    - name: action.auto_create_index
+      value: false
+    - name: bootstrap.memory_lock
+      value: true
+    securityContext:
+      privileged: true
+      capabilities:
+        add:
+          - IPC_LOCK
+    ports:
+    - containerPort: 9200
+      name: es-http
+      protocol: TCP
+    - containerPort: 9300
+      name: es-transport
+      protocol: TCP
+    resources:
+      limits:
+        cpu: 1
+        memory: 4Gi
+      requests:
+        cpu: 1
+        memory: 4Gi
   - name: docker
     image: ${DIND_DOCKER_IMAGE()}
     args: ["--storage-driver=overlay2"]
@@ -126,7 +165,7 @@ pipeline {
           }
           post {
             always {
-              junit testResults: 'backend/target/surefire-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
+              junit testResults: 'backend/target/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
             }
           }
         }
