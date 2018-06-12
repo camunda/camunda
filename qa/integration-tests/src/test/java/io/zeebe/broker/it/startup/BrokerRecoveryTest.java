@@ -61,8 +61,6 @@ import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.FileUtil;
 
-// related to https://github.com/zeebe-io/zeebe/issues/929
-@Category(UnstableTest.class)
 public class BrokerRecoveryTest
 {
     private static final WorkflowDefinition WORKFLOW = Bpmn.createExecutableWorkflow("process")
