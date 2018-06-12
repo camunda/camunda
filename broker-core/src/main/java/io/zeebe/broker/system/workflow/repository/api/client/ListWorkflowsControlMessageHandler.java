@@ -93,6 +93,7 @@ public class ListWorkflowsControlMessageHandler extends AbstractControlMessageHa
                             .setTopicName(workflow.getTopicName())
                             .setBpmnProcessId(workflow.getBpmnProcessId())
                             .setWorkflowKey(workflow.getKey())
+                            .setResourceName(workflow.getResourceName())
                             .setVersion(workflow.getVersion()));
 
                     sendResponse(actor, metadata.getRequestStreamId(), metadata.getRequestId(), response);

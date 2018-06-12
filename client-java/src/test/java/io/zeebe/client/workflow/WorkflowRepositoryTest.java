@@ -138,6 +138,7 @@ public class WorkflowRepositoryTest
         assertThat(workflowResource.getBpmnProcessId()).isEqualTo("wf");
         assertThat(workflowResource.getVersion()).isEqualTo(1);
         assertThat(workflowResource.getWorkflowKey()).isEqualTo(123L);
+        assertThat(workflowResource.getResourceName()).isEqualTo("wf.bpmn");
         assertThat(workflowResource.getBpmnXml()).isEqualTo("xml");
         assertThat(StreamUtil.read(workflowResource.getBpmnXmlAsStream())).isEqualTo(workflowResource.getBpmnXml().getBytes(StandardCharsets.UTF_8));
     }
@@ -198,6 +199,7 @@ public class WorkflowRepositoryTest
         assertThat(workflows.getWorkflows()).extracting(Workflow::getBpmnProcessId).contains("wf1", "wf1");
         assertThat(workflows.getWorkflows()).extracting(Workflow::getVersion).contains(1, 2);
         assertThat(workflows.getWorkflows()).extracting(Workflow::getWorkflowKey).contains(123L, 456L);
+        assertThat(workflows.getWorkflows()).extracting(Workflow::getResourceName).contains("wf1.bpmn", "wf2.bpmn");
     }
 
     private void registerGetResourceRequest()
@@ -208,6 +210,7 @@ public class WorkflowRepositoryTest
                 .put("bpmnProcessId", "wf")
                 .put("version", 1)
                 .put("workflowKey", 123L)
+                .put("resourceName", "wf.bpmn")
                 .put("bpmnXml", "xml")
                 .done()
             .register();
@@ -219,11 +222,13 @@ public class WorkflowRepositoryTest
         workflow1.put("bpmnProcessId", "wf1");
         workflow1.put("version", 1);
         workflow1.put("workflowKey", 123L);
+        workflow1.put("resourceName", "wf1.bpmn");
 
         final Map<String, Object> workflow2 = new HashMap<>();
         workflow2.put("bpmnProcessId", "wf1");
         workflow2.put("version", 2);
         workflow2.put("workflowKey", 456L);
+        workflow2.put("resourceName", "wf2.bpmn");
 
         brokerRule.onControlMessageRequest(r -> r.messageType() == ControlMessageType.LIST_WORKFLOWS)
             .respondWith()

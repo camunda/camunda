@@ -22,6 +22,7 @@ public class WorkflowImpl implements Workflow
     private String bpmnProcessId;
     private int version;
     private long workflowKey;
+    private String resourceName;
 
     @Override
     public String getBpmnProcessId()
@@ -59,6 +60,17 @@ public class WorkflowImpl implements Workflow
     }
 
     @Override
+    public String getResourceName()
+    {
+        return resourceName;
+    }
+
+    public void setResourceName(String resourceName)
+    {
+        this.resourceName = resourceName;
+    }
+
+    @Override
     public String toString()
     {
         final StringBuilder builder = new StringBuilder();
@@ -68,6 +80,8 @@ public class WorkflowImpl implements Workflow
         builder.append(version);
         builder.append(", workflowKey=");
         builder.append(workflowKey);
+        builder.append(", resourceName=");
+        builder.append(resourceName);
         builder.append("]");
         return builder.toString();
     }

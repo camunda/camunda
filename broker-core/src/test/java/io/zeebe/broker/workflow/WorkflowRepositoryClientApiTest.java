@@ -58,7 +58,7 @@ public class WorkflowRepositoryClientApiTest
     @Test
     public void shouldRequestWorkflowByKey()
     {
-        final ExecuteCommandResponse deployment = apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, WORKFLOW);
+        final ExecuteCommandResponse deployment = apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, WORKFLOW, "wf.bpmn");
 
         final Map<String, Object> deployedWorkflow = getDeployedWorkflow(deployment, 0);
 
@@ -77,6 +77,7 @@ public class WorkflowRepositoryClientApiTest
         assertThat(data.get(PROP_WORKFLOW_KEY)).isEqualTo(deployedWorkflow.get(PROP_WORKFLOW_KEY));
         assertThat(data.get(PROP_WORKFLOW_VERSION)).isEqualTo(deployedWorkflow.get(PROP_WORKFLOW_VERSION));
         assertThat(data.get(PROP_WORKFLOW_BPMN_PROCESS_ID)).isEqualTo(deployedWorkflow.get(PROP_WORKFLOW_BPMN_PROCESS_ID));
+        assertThat(data.get("resourceName")).isEqualTo("wf.bpmn");
         assertThat(data.get("topicName")).isEqualTo(ClientApiRule.DEFAULT_TOPIC_NAME);
         assertThat((String) data.get("bpmnXml")).isNotEmpty();
     }
@@ -280,7 +281,7 @@ public class WorkflowRepositoryClientApiTest
     @SuppressWarnings("unchecked")
     public void shouldListWorkflowByTopic()
     {
-        final ExecuteCommandResponse deployment = apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, WORKFLOW);
+        final ExecuteCommandResponse deployment = apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, WORKFLOW, "wf.bpmn");
 
         final Map<String, Object> deployedWorkflow = getDeployedWorkflow(deployment, 0);
 
@@ -301,6 +302,7 @@ public class WorkflowRepositoryClientApiTest
         assertThat(theWorkflow.get(PROP_WORKFLOW_KEY)).isEqualTo(deployedWorkflow.get(PROP_WORKFLOW_KEY));
         assertThat(theWorkflow.get(PROP_WORKFLOW_VERSION)).isEqualTo(deployedWorkflow.get(PROP_WORKFLOW_VERSION));
         assertThat(theWorkflow.get(PROP_WORKFLOW_BPMN_PROCESS_ID)).isEqualTo(deployedWorkflow.get(PROP_WORKFLOW_BPMN_PROCESS_ID));
+        assertThat(theWorkflow.get("resourceName")).isEqualTo("wf.bpmn");
         assertThat(theWorkflow.get("topicName")).isEqualTo(ClientApiRule.DEFAULT_TOPIC_NAME);
         assertThat(theWorkflow.containsKey("bpmnXml")).isFalse();
     }

@@ -117,6 +117,7 @@ public class WorkflowRepositoryIndex extends JsonSnapshotSupport<WorkflowReposit
         private long key;
         private int version;
         private String bpmnProcessId;
+        private String resourceName;
         private String topicName;
         private long eventPosition;
 
@@ -172,6 +173,17 @@ public class WorkflowRepositoryIndex extends JsonSnapshotSupport<WorkflowReposit
         public WorkflowMetadata setEventPosition(long eventPosition)
         {
             this.eventPosition = eventPosition;
+            return this;
+        }
+
+        public String getResourceName()
+        {
+            return resourceName;
+        }
+
+        public WorkflowMetadata setResourceName(String resourceName)
+        {
+            this.resourceName = resourceName;
             return this;
         }
     }

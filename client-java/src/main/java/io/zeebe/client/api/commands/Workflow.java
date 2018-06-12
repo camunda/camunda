@@ -32,4 +32,8 @@ public interface Workflow
      */
     long getWorkflowKey();
 
+    /**
+     * @return the name of the deployment resource which contains the workflow
+     */
+    String getResourceName();
 }

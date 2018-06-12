@@ -15,13 +15,13 @@
  */
 package io.zeebe.broker.it.workflow;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
-import io.zeebe.client.api.commands.DeployedWorkflow;
-import io.zeebe.client.api.commands.DeploymentResource;
-import io.zeebe.client.api.commands.ResourceType;
-import io.zeebe.client.api.commands.Workflow;
+import io.zeebe.client.api.commands.*;
 import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.model.bpmn.Bpmn;
@@ -31,9 +31,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class CreateDeploymentTest
 {
@@ -76,7 +73,7 @@ public class CreateDeploymentTest
 
         assertThat(result.getDeployedWorkflows()).hasSize(1);
 
-        final DeployedWorkflow deployedWorkflow = result.getDeployedWorkflows().get(0);
+        final Workflow deployedWorkflow = result.getDeployedWorkflows().get(0);
         assertThat(deployedWorkflow.getBpmnProcessId()).isEqualTo("process");
         assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
         assertThat(deployedWorkflow.getWorkflowKey()).isEqualTo(1L);

@@ -17,7 +17,7 @@ package io.zeebe.client.api.events;
 
 import java.util.List;
 
-import io.zeebe.client.api.commands.DeployedWorkflow;
+import io.zeebe.client.api.commands.Workflow;
 import io.zeebe.client.api.record.DeploymentRecord;
 
 public interface DeploymentEvent extends DeploymentRecord
@@ -30,5 +30,5 @@ public interface DeploymentEvent extends DeploymentRecord
     /**
      * @return the workflows which are deployed
      */
-    List<DeployedWorkflow> getDeployedWorkflows();
+    List<Workflow> getDeployedWorkflows();
 }

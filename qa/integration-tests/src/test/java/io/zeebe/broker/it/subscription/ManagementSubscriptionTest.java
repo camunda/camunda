@@ -114,7 +114,7 @@ public class ManagementSubscriptionTest
         assertThat(event.getDeploymentTopic()).isEqualTo(clientRule.getDefaultTopic());
 
         assertThat(event.getDeployedWorkflows()).hasSize(1);
-        final DeployedWorkflow deployedWorkflow = event.getDeployedWorkflows().get(0);
+        final Workflow deployedWorkflow = event.getDeployedWorkflows().get(0);
         assertThat(deployedWorkflow.getBpmnProcessId()).isEqualTo("wf");
         assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
         assertThat(deployedWorkflow.getWorkflowKey()).isEqualTo(1L);

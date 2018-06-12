@@ -107,9 +107,10 @@ public class GetWorkflowControlMessageHandler extends AbstractControlMessageHand
 
                         controlResponse.setBpmnXml(workflowAndResource.getRight())
                             .setWorkflowKey(workflow.getKey())
-                            .setTopicName(BufferUtil.wrapString(topicName))
+                            .setTopicName(topicName)
                             .setVersion(workflow.getVersion())
-                            .setBpmnProcessId(BufferUtil.wrapString(workflow.getBpmnProcessId()));
+                            .setBpmnProcessId(workflow.getBpmnProcessId())
+                            .setResourceName(workflow.getResourceName());
 
                         sendResponse(actor, metadata.getRequestStreamId(), metadata.getRequestId(), controlResponse);
                     }

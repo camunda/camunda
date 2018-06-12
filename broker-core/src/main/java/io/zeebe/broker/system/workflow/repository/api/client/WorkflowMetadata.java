@@ -27,13 +27,15 @@ public class WorkflowMetadata extends UnpackedObject
     private IntegerProperty versionProp = new IntegerProperty("version", -1);
     private StringProperty topicNameProp = new StringProperty("topicName");
     private StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId");
+    private StringProperty resourceNameProp = new StringProperty("resourceName");
 
     public WorkflowMetadata()
     {
         declareProperty(workflowKeyProp)
             .declareProperty(topicNameProp)
             .declareProperty(versionProp)
-            .declareProperty(bpmnProcessIdProp);
+            .declareProperty(bpmnProcessIdProp)
+            .declareProperty(resourceNameProp);
     }
 
     public long getWorkflowKey()
@@ -89,6 +91,23 @@ public class WorkflowMetadata extends UnpackedObject
     public WorkflowMetadata setTopicName(String topicName)
     {
         this.topicNameProp.setValue(topicName);
+        return this;
+    }
+
+    public DirectBuffer getResourceName()
+    {
+        return resourceNameProp.getValue();
+    }
+
+    public WorkflowMetadata setResourceName(DirectBuffer resourceName)
+    {
+        resourceNameProp.setValue(resourceName);
+        return this;
+    }
+
+    public WorkflowMetadata setResourceName(String resourceName)
+    {
+        resourceNameProp.setValue(resourceName);
         return this;
     }
 }

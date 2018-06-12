@@ -19,7 +19,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.zeebe.client.api.commands.DeployedWorkflow;
+import io.zeebe.client.api.commands.Workflow;
 import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.api.events.DeploymentState;
 import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
@@ -28,7 +28,7 @@ import io.zeebe.protocol.clientapi.RecordType;
 
 public class DeploymentEventImpl extends DeploymentRecordImpl implements DeploymentEvent
 {
-    private List<DeployedWorkflow> deployedWorkflows;
+    private List<Workflow> deployedWorkflows;
 
     @JsonCreator
     public DeploymentEventImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper)
@@ -37,13 +37,13 @@ public class DeploymentEventImpl extends DeploymentRecordImpl implements Deploym
     }
 
     @Override
-    @JsonDeserialize(contentAs = DeployedWorkflowImpl.class)
-    public List<DeployedWorkflow> getDeployedWorkflows()
+    @JsonDeserialize(contentAs = WorkflowImpl.class)
+    public List<Workflow> getDeployedWorkflows()
     {
         return deployedWorkflows;
     }
 
-    public void setDeployedWorkflows(List<DeployedWorkflow> deployedWorkflows)
+    public void setDeployedWorkflows(List<Workflow> deployedWorkflows)
     {
         this.deployedWorkflows = deployedWorkflows;
     }

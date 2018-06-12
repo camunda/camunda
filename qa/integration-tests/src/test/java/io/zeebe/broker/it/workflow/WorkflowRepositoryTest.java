@@ -98,6 +98,7 @@ public class WorkflowRepositoryTest
         assertThat(workflowResource.getBpmnProcessId()).isEqualTo("wf1");
         assertThat(workflowResource.getVersion()).isEqualTo(2);
         assertThat(workflowResource.getWorkflowKey()).isEqualTo(getWorkflowKey("wf1", 2));
+        assertThat(workflowResource.getResourceName()).isEqualTo("workflow1.bpmn");
         assertThat(workflowResource.getBpmnXml()).isEqualTo(Bpmn.convertToString(workflow1v2));
     }
 
@@ -114,6 +115,7 @@ public class WorkflowRepositoryTest
         assertThat(workflowResource.getBpmnProcessId()).isEqualTo("wf1");
         assertThat(workflowResource.getVersion()).isEqualTo(1);
         assertThat(workflowResource.getWorkflowKey()).isEqualTo(getWorkflowKey("wf1", 1));
+        assertThat(workflowResource.getResourceName()).isEqualTo("workflow1.bpmn");
         assertThat(workflowResource.getBpmnXml()).isEqualTo(Bpmn.convertToString(workflow1v1));
     }
 
@@ -129,6 +131,7 @@ public class WorkflowRepositoryTest
         assertThat(workflowResource.getBpmnProcessId()).isEqualTo("wf2");
         assertThat(workflowResource.getVersion()).isEqualTo(1);
         assertThat(workflowResource.getWorkflowKey()).isEqualTo(getWorkflowKey("wf2", 1));
+        assertThat(workflowResource.getResourceName()).isEqualTo("workflow2.bpmn");
         assertThat(workflowResource.getBpmnXml()).isEqualTo(Bpmn.convertToString(workflow2));
         assertThat(StreamUtil.read(workflowResource.getBpmnXmlAsStream())).isEqualTo(Bpmn.convertToString(workflow2).getBytes(StandardCharsets.UTF_8));
     }
@@ -172,6 +175,7 @@ public class WorkflowRepositoryTest
         assertThat(workflows).hasSize(3);
         assertThat(workflows).extracting(Workflow::getBpmnProcessId).contains("wf1", "wf1", "wf2");
         assertThat(workflows).extracting(Workflow::getVersion).contains(1, 2, 1);
+        assertThat(workflows).extracting(Workflow::getResourceName).contains("workflow1.bpmn", "workflow2.bpmn");
         assertThat(workflows)
                 .extracting(Workflow::getWorkflowKey)
                 .containsAll(deployedWorkflows.stream().map(Workflow::getWorkflowKey).collect(Collectors.toList()));
@@ -190,6 +194,7 @@ public class WorkflowRepositoryTest
         assertThat(workflows).hasSize(2);
         assertThat(workflows).extracting(Workflow::getBpmnProcessId).contains("wf1", "wf1");
         assertThat(workflows).extracting(Workflow::getVersion).contains(1, 2);
+        assertThat(workflows).extracting(Workflow::getResourceName).contains("workflow1.bpmn");
         assertThat(workflows).extracting(Workflow::getWorkflowKey).contains(getWorkflowKey("wf1", 1), getWorkflowKey("wf1", 2));
     }
 
