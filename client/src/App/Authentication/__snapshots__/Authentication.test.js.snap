@@ -1,10 +1,10 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Authentication should render children by default 1`] = `<Child />`;
-
-exports[`Authentication should set forceRedirect to true on failed response 1`] = `
+exports[`Authentication should redirect to login when forceRedirect is true 1`] = `
 <Redirect
   push={false}
   to="/login"
 />
 `;
+
+exports[`Authentication should render children by default 1`] = `<Child />`;

@@ -30,13 +30,11 @@ describe('Authentication', () => {
     expect(node).toMatchSnapshot();
   });
 
-  it('should set forceRedirect to true on failed response', () => {
+  it('should redirect to login when forceRedirect is true', () => {
     // when
-    node.instance().interceptResponse({status: 401});
-    node.update();
+    node.setState({forceRedirect: true});
 
     // then
-    expect(node.state('forceRedirect')).toBe(true);
     expect(node.find(Child)).toHaveLength(0);
     const RedirectNode = node.find(Redirect);
     expect(RedirectNode).toHaveLength(1);
@@ -44,9 +42,22 @@ describe('Authentication', () => {
     expect(node).toMatchSnapshot();
   });
 
-  it("should reset falseRedirect to false once it's set", () => {
+  it('should set forceRedirect to true on failed response', () => {
+    // given
+    const setStateSpy = jest.spyOn(Authentication.prototype, 'setState');
+
+    // when
+    node.instance().interceptResponse({status: 401});
+
+    // then
+    expect(setStateSpy.mock.calls[0][0]).toEqual({forceRedirect: true});
+    expect(setStateSpy.mock.calls[0][1]).toBe(node.instance().resetState);
+  });
+
+  it('should reset falseRedirect to false when resetState is called', () => {
     // when
     node.setState({forceRedirect: true});
+    node.instance().resetState();
 
     // then
     expect(node.state('forceRedirect')).toBe(false);

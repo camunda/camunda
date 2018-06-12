@@ -10,6 +10,7 @@ import {
 } from 'modules/testUtils';
 
 import Login from './Login';
+import * as Styled from './styled';
 import * as api from './api';
 
 jest.mock('modules/request');
@@ -17,7 +18,7 @@ jest.mock('modules/request');
 describe('Login', () => {
   it('should reset the response interceptor', () => {
     // given
-    mount(<Login />);
+    shallow(<Login />);
 
     // then
     expect(resetResponseInterceptor).toBeCalled();
@@ -25,17 +26,30 @@ describe('Login', () => {
 
   it('should render login form by default', () => {
     // given
-    const node = mount(<Login />);
+    const node = shallow(<Login />);
+    const usernameInput = node.findWhere(
+      element =>
+        element.prop('type') === 'text' && element.prop('name') === 'username'
+    );
+    const passwordInput = node.findWhere(
+      element =>
+        element.prop('type') === 'password' &&
+        element.prop('name') === 'password'
+    );
+    const submitInput = node.findWhere(
+      element => element.prop('type') === 'submit'
+    );
 
     // then
     expect(node.state('username')).toEqual('');
     expect(node.state('password')).toEqual('');
     expect(node.state('forceRedirect')).toBe(false);
     expect(node.state('error')).toBeNull();
-    expect(node.find('form')).toHaveLength(1);
-    expect(node.find('input[type="text"]')).toHaveLength(1);
-    expect(node.find('input[type="password"]')).toHaveLength(1);
-    expect(node.find('input[type="submit"]')).toHaveLength(1);
+    expect(node.find(Styled.Login)).toHaveLength(1);
+    expect(node.find(Styled.LoginInput)).toHaveLength(3);
+    expect(usernameInput).toHaveLength(1);
+    expect(passwordInput).toHaveLength(1);
+    expect(submitInput).toHaveLength(1);
     expect(node).toMatchSnapshot();
   });
 

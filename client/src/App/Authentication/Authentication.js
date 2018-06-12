@@ -9,16 +9,24 @@ class Authentication extends React.Component {
     setResponseInterceptor(this.interceptResponse);
   }
 
-  state = {
-    forceRedirect: false
+  defaultState = {forceRedirect: false};
+
+  state = {...this.defaultState};
+
+  resetState = () => {
+    this.setState(this.defaultState);
   };
 
   interceptResponse = ({status}) => {
     if (status === 401) {
-      // redirect to login
-      this.setState({
-        forceRedirect: true
-      });
+      // redirect to login then make sure to reset the state
+      // in order to be able to render the children (i.e. the Routes)
+      this.setState(
+        {
+          forceRedirect: true
+        },
+        this.resetState
+      );
     }
   };
 
@@ -28,14 +36,6 @@ class Authentication extends React.Component {
     ) : (
       this.props.children
     );
-  }
-
-  componentDidUpdate() {
-    const {forceRedirect} = this.state;
-
-    // if foreceRedirect is true we reset it to false
-    // this prevents from always redirecting to Login
-    forceRedirect && this.setState({forceRedirect: false});
   }
 }
 

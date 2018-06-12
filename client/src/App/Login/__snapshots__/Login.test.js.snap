@@ -134,120 +134,31 @@ exports[`Login should redirect to home page on successful login 1`] = `
 `;
 
 exports[`Login should render login form by default 1`] = `
-<Login>
-  <styled.form
-    onSubmit={[Function]}
-  >
-    <form
-      className="sc-VigVT jetKjb"
-      onSubmit={[Function]}
-    >
-      <styled.h1>
-        <h1
-          className="sc-gqjmRU cSGEyB"
-        >
-          Operate
-        </h1>
-      </styled.h1>
-      <Styled(Input)
-        name="username"
-        onChange={[Function]}
-        placeholder="Username"
-        required={true}
-        type="text"
-        value=""
-      >
-        <Input
-          className="sc-jTzLTM kUdgcZ"
-          name="username"
-          onChange={[Function]}
-          placeholder="Username"
-          required={true}
-          type="text"
-          value=""
-        >
-          <styled.input
-            className="sc-jTzLTM kUdgcZ"
-            name="username"
-            onChange={[Function]}
-            placeholder="Username"
-            required={true}
-            type="text"
-            value=""
-          >
-            <input
-              className="sc-jTzLTM kUdgcZ sc-bdVaJa fEQlyH"
-              name="username"
-              onChange={[Function]}
-              placeholder="Username"
-              required={true}
-              type="text"
-              value=""
-            />
-          </styled.input>
-        </Input>
-      </Styled(Input)>
-      <Styled(Input)
-        name="password"
-        onChange={[Function]}
-        placeholder="Password"
-        required={true}
-        type="password"
-        value=""
-      >
-        <Input
-          className="sc-jTzLTM kUdgcZ"
-          name="password"
-          onChange={[Function]}
-          placeholder="Password"
-          required={true}
-          type="password"
-          value=""
-        >
-          <styled.input
-            className="sc-jTzLTM kUdgcZ"
-            name="password"
-            onChange={[Function]}
-            placeholder="Password"
-            required={true}
-            type="password"
-            value=""
-          >
-            <input
-              className="sc-jTzLTM kUdgcZ sc-bdVaJa fEQlyH"
-              name="password"
-              onChange={[Function]}
-              placeholder="Password"
-              required={true}
-              type="password"
-              value=""
-            />
-          </styled.input>
-        </Input>
-      </Styled(Input)>
-      <Styled(Input)
-        placeholder="Password"
-        type="submit"
-      >
-        <Input
-          className="sc-jTzLTM kUdgcZ"
-          placeholder="Password"
-          type="submit"
-        >
-          <styled.input
-            className="sc-jTzLTM kUdgcZ"
-            placeholder="Password"
-            type="submit"
-          >
-            <input
-              className="sc-jTzLTM kUdgcZ sc-bdVaJa iDLlQf"
-              placeholder="Password"
-              type="submit"
-            />
-          </styled.input>
-        </Input>
-      </Styled(Input)>
-    </form>
-  </styled.form>
-</Login>
+<styled.form
+  onSubmit={[Function]}
+>
+  <styled.h1>
+    Operate
+  </styled.h1>
+  <Styled(Input)
+    name="username"
+    onChange={[Function]}
+    placeholder="Username"
+    required={true}
+    type="text"
+    value=""
+  />
+  <Styled(Input)
+    name="password"
+    onChange={[Function]}
+    placeholder="Password"
+    required={true}
+    type="password"
+    value=""
+  />
+  <Styled(Input)
+    placeholder="Password"
+    type="submit"
+  />
+</styled.form>
 `;
