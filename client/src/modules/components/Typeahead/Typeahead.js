@@ -6,7 +6,7 @@ import {Input, Dropdown} from 'components';
 import './Typeahead.css';
 
 const valuesShownInBox = 10;
-const valueHeight = 29;
+const valueHeight = 30;
 
 export default class Typeahead extends React.Component {
   constructor(props) {
@@ -49,10 +49,12 @@ export default class Typeahead extends React.Component {
   };
 
   showOptions = () => {
-    this.input.select();
-    this.setState({
-      optionsVisible: true
-    });
+    if (!this.state.optionsVisible) {
+      this.input.select();
+      this.setState({
+        optionsVisible: true
+      });
+    }
   };
 
   close = evt => {
@@ -126,8 +128,6 @@ export default class Typeahead extends React.Component {
       }
       this.close();
     } else {
-      const options = this.state.values;
-
       let selectedValueIdx = this.state.selectedValueIdx;
 
       if (evt.key === 'ArrowDown') {
@@ -135,15 +135,13 @@ export default class Typeahead extends React.Component {
         if (!this.state.optionsVisible) {
           this.showOptions();
         } else {
-          selectedValueIdx++;
-          selectedValueIdx = selectedValueIdx % options.length;
+          selectedValueIdx = (selectedValueIdx + 1) % values.length;
         }
       }
 
       if (evt.key === 'ArrowUp') {
         evt.preventDefault();
-        selectedValueIdx--;
-        selectedValueIdx = Math.max(selectedValueIdx, 0);
+        selectedValueIdx = selectedValueIdx - 1 < 0 ? values.length - 1 : selectedValueIdx - 1;
       }
 
       const firstShownOptionIdx = this.scrollIntoView(selectedValueIdx);
@@ -156,22 +154,30 @@ export default class Typeahead extends React.Component {
   };
 
   scrollIntoView = selectedValueIdx => {
-    let {firstShownOptionIdx} = this.state;
+    let {firstShownOptionIdx, values} = this.state;
+
     if (this.optionsList) {
+      if (selectedValueIdx === 0) {
+        this.optionsList.scrollTop = 0;
+        firstShownOptionIdx = 0;
+      }
+
+      if (selectedValueIdx === values.length - 1) {
+        this.optionsList.scrollTop = this.optionsList.scrollHeight;
+        firstShownOptionIdx = values.length - valuesShownInBox;
+      }
+
       if (selectedValueIdx >= firstShownOptionIdx + valuesShownInBox) {
-        this.optionsList.scrollTo(0, (firstShownOptionIdx + 1) * valueHeight);
+        this.optionsList.scrollTop = (firstShownOptionIdx + 1) * valueHeight;
         firstShownOptionIdx++;
       }
 
       if (selectedValueIdx < firstShownOptionIdx) {
-        if (selectedValueIdx === 0) {
-          firstShownOptionIdx = 0;
-        } else {
-          firstShownOptionIdx--;
-        }
-        this.optionsList.scrollTo(0, selectedValueIdx * valueHeight);
+        firstShownOptionIdx--;
+        this.optionsList.scrollTop = selectedValueIdx * valueHeight;
       }
     }
+
     return firstShownOptionIdx;
   };
 
@@ -194,10 +200,12 @@ export default class Typeahead extends React.Component {
     const {query, values, selectedValueIdx, optionsVisible} = this.state;
 
     const searchResultContainerStyle = {
-      overflowX: 'hidden',
-      overflowY: values.length > valuesShownInBox ? 'scroll' : 'hidden',
-      maxHeight: valuesShownInBox * valueHeight,
-      maxWidth: this.optionsList && this.optionsList.highestWidth
+      maxHeight: valueHeight * valuesShownInBox + 'px',
+      maxWidth: this.optionsList && this.optionsList.highestWidth + 'px'
+    };
+
+    const valueStyle = {
+      height: valueHeight + 'px'
     };
 
     return (
@@ -224,6 +232,7 @@ export default class Typeahead extends React.Component {
                     className={classnames('Typeahead__search-result', {
                       'is-active': index === selectedValueIdx
                     })}
+                    style={valueStyle}
                     onClick={this.selectValue(value)}
                     key={this.props.nameRenderer(value)}
                   >

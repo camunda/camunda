@@ -16,11 +16,13 @@ export default class Modal extends React.Component {
     this.setFocus();
     new MutationObserver(this.fixPositioning).observe(this.el, {childList: true, subtree: true});
     window.addEventListener('resize', this.fixPositioning);
+    window.addEventListener('keydown', this.handleKeyPress);
   }
 
   componentWillUnmount() {
     document.body.removeChild(this.el);
     window.removeEventListener('resize', this.fixPositioning);
+    window.removeEventListener('keydown', this.handleKeyPress);
   }
 
   storeContainer = node => {
@@ -78,7 +80,6 @@ export default class Modal extends React.Component {
               tabIndex="-1"
               ref={this.storeContainer}
               onClick={this.catchClick}
-              onKeyDown={this.handleKeyPress}
             >
               {children}
             </div>

@@ -141,12 +141,7 @@ export default class VariableFilter extends React.Component {
     );
   }
 
-  getVariableName = variable => {
-    if (variable) {
-      return variable.name;
-    }
-    return null;
-  };
+  getVariableName = variable => (variable ? variable.name : null);
 
   selectionIsValid = () => {
     let isValid = true;

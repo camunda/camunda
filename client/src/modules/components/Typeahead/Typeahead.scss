@@ -3,6 +3,8 @@
 }
 
 .Typeahead__search-result-list {
+  overflow-y: auto;
+  overflow-x: hidden;
   min-width: 200px;
   border: 1px solid #bbb;
   border-radius: 3px;
