@@ -1,4 +1,5 @@
 import React from 'react';
+import {Redirect} from 'react-router-dom';
 import {shallow} from 'enzyme';
 
 import {setResponseInterceptor} from 'modules/request';
@@ -40,6 +41,9 @@ describe('Authentication', () => {
     // then
     expect(wrapper.state('forceRedirect')).toBe(true);
     expect(wrapper.find(Child)).toHaveLength(0);
+    const RedirectNode = wrapper.find(Redirect);
+    expect(RedirectNode).toHaveLength(1);
+    expect(RedirectNode.prop('to')).toBe('/login');
     expect(wrapper).toMatchSnapshot();
   });
 
