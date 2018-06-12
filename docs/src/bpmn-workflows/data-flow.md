@@ -13,7 +13,7 @@ Without additional configuration, Zeebe assumes *tightly* coupled workers. That 
 
 ![payload](/bpmn-workflows/payload2.png)
 
-When the worker modifies the payload, the result replaces the workflow instance payload.
+When the worker modifies the payload, the result is merged on top-level into the workflow instance payload.
 
 In order to use *loosely* coupled job workers, the workflow can be extended by *payload mappings* based on [JSONPath](http://goessner.net/articles/JsonPath/). Before providing the job to the worker, Zeebe applies the mappings to the payload and generates a new JSON document. Upon job completion, the same principle is applied to map the result back into the workflow instance payload:
 

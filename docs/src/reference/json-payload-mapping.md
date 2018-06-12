@@ -9,9 +9,9 @@ This section describes the semantics when mapping JSON payloads. Mappings map se
 
 Payload mapping follows these rules:
 
-* When **no mapping** is defined and **source payload** is available: **Success**. Source payload is used as target payload.
+* When **no mapping** is defined and **source payload** is available: **Success**. Source payload is merged on top-level into target payload.
 * When **no mapping** is defined and **no source payload** is available: **Success**. Target payload remains unchanged.
-* When a **mapping** is defined and **source payload** is available: **Success**. Source payload is merged into target payload.
+* When a **mapping** is defined and **source payload** is available: **Success**. Mapping is used to merge source payload into target payload.
 * When a **mapping** is defined and **no source payload** is available: **Failure**. A task-related incident is raised.
 
 Note that source payload is only unavailable when a task is completed without payload.
@@ -266,6 +266,59 @@ For more examples see the [extract mapping tests](https://github.com/zeebe-io/zb
     <th>Workflow Instance Payload</th>
     <th>Output Mapping</th>
     <th>Result</th>
+  </tr>
+<!-- NEW ROW -->
+  <tr>
+  <td>Merge top level</td>
+  <td><pre>
+{
+ "sum": 234.97
+}
+  </pre></td>
+
+  <td><pre>
+{
+ "prices": [
+   199.99,
+   29.99,
+   4.99]
+}
+  </pre></td>
+
+  <td><pre> none </pre></td>
+
+  <td><pre>
+{
+ "prices": [
+   199.99,
+   29.99,
+   4.99],
+ "sum": 234.97
+}
+  </pre></td>
+  </tr>
+
+<!-- NEW ROW -->
+  <tr>
+  <td>Merge top level without workflow payload</td>
+  <td><pre>
+{
+ "sum": 234.97
+}
+  </pre></td>
+
+  <td><pre>
+{
+}
+  </pre></td>
+
+  <td><pre> none </pre></td>
+
+  <td><pre>
+{
+ "sum": 234.97
+}
+  </pre></td>
   </tr>
 
 <!-- NEW ROW -->
