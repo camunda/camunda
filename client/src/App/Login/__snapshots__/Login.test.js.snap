@@ -6,19 +6,19 @@ exports[`Login should display an error on unsuccessful login 1`] = `
     onSubmit={[Function]}
   >
     <form
-      className="sc-VigVT jetKjb"
+      className="sc-fjdhpX fuFiXT"
       onSubmit={[Function]}
     >
       <styled.h1>
         <h1
-          className="sc-gqjmRU cSGEyB"
+          className="sc-jTzLTM gcjyOT"
         >
           Operate
         </h1>
       </styled.h1>
       <styled.span>
         <span
-          className="sc-fjdhpX bBJvXg"
+          className="sc-cSHVUG jgrGPI"
         >
           Username and Password do not match
         </span>
@@ -32,7 +32,7 @@ exports[`Login should display an error on unsuccessful login 1`] = `
         value=""
       >
         <Input
-          className="sc-jTzLTM kUdgcZ"
+          className="sc-jzJRlG dUREXQ"
           name="username"
           onChange={[Function]}
           placeholder="Username"
@@ -41,7 +41,7 @@ exports[`Login should display an error on unsuccessful login 1`] = `
           value=""
         >
           <styled.input
-            className="sc-jTzLTM kUdgcZ"
+            className="sc-jzJRlG dUREXQ"
             name="username"
             onChange={[Function]}
             placeholder="Username"
@@ -50,7 +50,7 @@ exports[`Login should display an error on unsuccessful login 1`] = `
             value=""
           >
             <input
-              className="sc-jTzLTM kUdgcZ sc-bdVaJa fEQlyH"
+              className="sc-jzJRlG dUREXQ sc-bdVaJa fEQlyH"
               name="username"
               onChange={[Function]}
               placeholder="Username"
@@ -70,7 +70,7 @@ exports[`Login should display an error on unsuccessful login 1`] = `
         value=""
       >
         <Input
-          className="sc-jTzLTM kUdgcZ"
+          className="sc-jzJRlG dUREXQ"
           name="password"
           onChange={[Function]}
           placeholder="Password"
@@ -79,7 +79,7 @@ exports[`Login should display an error on unsuccessful login 1`] = `
           value=""
         >
           <styled.input
-            className="sc-jTzLTM kUdgcZ"
+            className="sc-jzJRlG dUREXQ"
             name="password"
             onChange={[Function]}
             placeholder="Password"
@@ -88,7 +88,7 @@ exports[`Login should display an error on unsuccessful login 1`] = `
             value=""
           >
             <input
-              className="sc-jTzLTM kUdgcZ sc-bdVaJa fEQlyH"
+              className="sc-jzJRlG dUREXQ sc-bdVaJa fEQlyH"
               name="password"
               onChange={[Function]}
               placeholder="Password"
@@ -104,17 +104,17 @@ exports[`Login should display an error on unsuccessful login 1`] = `
         type="submit"
       >
         <Input
-          className="sc-jTzLTM kUdgcZ"
+          className="sc-jzJRlG dUREXQ"
           placeholder="Password"
           type="submit"
         >
           <styled.input
-            className="sc-jTzLTM kUdgcZ"
+            className="sc-jzJRlG dUREXQ"
             placeholder="Password"
             type="submit"
           >
             <input
-              className="sc-jTzLTM kUdgcZ sc-bdVaJa iDLlQf"
+              className="sc-jzJRlG dUREXQ sc-bdVaJa iDLlQf"
               placeholder="Password"
               type="submit"
             />
