@@ -71,7 +71,7 @@ public class EventsWriter {
     Script updateScript = new Script(
       ScriptType.INLINE,
       Script.DEFAULT_SCRIPT_LANG,
-      "ctx._source.events.addAll(params.events)",
+      createInlineUpdateScript(),
       params
     );
 
@@ -94,6 +94,15 @@ public class EventsWriter {
       .setUpsert(newEntryIfAbsent, XContentType.JSON)
       .setRetryOnConflict(configurationService.getNumberOfRetriesOnConflict())
     );
+  }
+
+  private String createInlineUpdateScript() {
+    String builder =
+      "for (def newEvent : params.events) {" +
+        "ctx._source.events.removeIf(item -> item.id.equals(newEvent.id)) ;" +
+      "}" +
+      "ctx._source.events.addAll(params.events)";
+    return builder;
   }
 
   private FlowNodeEventDto getFirst(List<FlowNodeEventDto> processEvents) {

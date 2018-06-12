@@ -4,6 +4,8 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EngineConfiguration;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -11,7 +13,10 @@ import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.aggregations.bucket.nested.Nested;
+import org.elasticsearch.search.aggregations.metrics.valuecount.ValueCount;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -29,6 +34,8 @@ import java.util.Map.Entry;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.END_DATE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.count;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -334,6 +341,23 @@ public class ImportIT  {
   }
 
   @Test
+  public void afterRestartOfOptimizeOnlyNewActivitiesAreImported() throws Exception {
+    // given
+    deployAndStartSimpleServiceTask();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    embeddedOptimizeRule.stopOptimize();
+    embeddedOptimizeRule.startOptimize();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // then
+    assertThat(getImportedActivityCount(), is(3L));
+  }
+
+  @Test
   public void itIsPossibleToResetTheImportIndex() throws Exception {
     // given
     deployAndStartSimpleServiceTask();
@@ -368,6 +392,31 @@ public class ImportIT  {
     // then
     allEntriesInElasticsearchHaveAllDataWithCount(elasticSearchRule.getProcessInstanceType(), 2L);
     embeddedOptimizeRule.getConfigurationService().setEngineImportProcessInstanceMaxPageSize(originalMaxPageSize);
+  }
+
+  private Long getImportedActivityCount() {
+    ConfigurationService configurationService = embeddedOptimizeRule.getConfigurationService();
+    SearchResponse response = elasticSearchRule.getClient()
+      .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
+      .setTypes(configurationService.getProcessInstanceType())
+      .setQuery(QueryBuilders.matchAllQuery())
+      .setSize(0)
+      .addAggregation(
+        nested(EVENTS, EVENTS)
+          .subAggregation(
+            count(EVENTS + "_count")
+              .field(EVENTS + "." + ProcessInstanceType.EVENT_ID)
+          )
+      )
+      .setFetchSource(false)
+      .get();
+
+    Nested nested = response.getAggregations()
+      .get(EVENTS);
+    ValueCount countAggregator =
+      nested.getAggregations()
+      .get(EVENTS +"_count");
+     return countAggregator.getValue();
   }
 
   private void startTwoProcessInstancesWithSameEndTime() throws SQLException {
