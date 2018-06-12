@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 
 import * as Styled from './styled.js';
 
-import {Badge, Dropdown} from 'components';
+import {Badge, Dropdown} from 'modules/components';
 import * as api from './api';
 
 export default class Header extends React.Component {
@@ -22,8 +22,12 @@ export default class Header extends React.Component {
     user: {}
   };
 
+  fetchUser = async () => {
+    return await api.user();
+  };
+
   componentDidMount = async () => {
-    const user = await api.user();
+    const user = await this.fetchUser();
     this.setState({user});
   };
 
@@ -37,7 +41,7 @@ export default class Header extends React.Component {
     );
   };
 
-  logout = async () => {
+  handleLogout = async () => {
     await api.logout();
     this.setState({forceRedirect: true});
   };
@@ -59,7 +63,12 @@ export default class Header extends React.Component {
         {detail && <Styled.Detail>Instance {detail}</Styled.Detail>}
         <Styled.ProfileDropdown>
           <Dropdown label={`${firstname} ${lastname}`}>
-            <Dropdown.Option onClick={this.logout}>Logout</Dropdown.Option>
+            <Dropdown.Option
+              data-test="logout-button"
+              onClick={this.handleLogout}
+            >
+              Logout
+            </Dropdown.Option>
           </Dropdown>
         </Styled.ProfileDropdown>
       </Styled.Header>
