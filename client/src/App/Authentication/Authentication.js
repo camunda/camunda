@@ -1,7 +1,7 @@
 import React from 'react';
 import {Redirect} from 'react-router-dom';
 
-import {setResponseInterceptor} from 'request';
+import {setResponseInterceptor} from 'modules/request';
 
 class Authentication extends React.Component {
   constructor(props) {
@@ -13,8 +13,8 @@ class Authentication extends React.Component {
     forceRedirect: false
   };
 
-  interceptResponse = response => {
-    if (response.status === 401) {
+  interceptResponse = ({status}) => {
+    if (status === 401) {
       // redirect to login
       this.setState({
         forceRedirect: true
@@ -32,6 +32,9 @@ class Authentication extends React.Component {
 
   componentDidUpdate() {
     const {forceRedirect} = this.state;
+
+    // once forceRedirect is set to true, we reset it to false
+    // to prevent always redirecting to Login
     forceRedirect && this.setState({forceRedirect: false});
   }
 }
