@@ -29,6 +29,7 @@ import io.zeebe.util.sched.future.CompletableActorFuture;
 public class ControlledTopologyManager implements TopologyManager
 {
     private final Topology topology;
+    private Throwable queryError;
 
     public ControlledTopologyManager()
     {
@@ -47,6 +48,11 @@ public class ControlledTopologyManager implements TopologyManager
         return topology;
     }
 
+    public void setQueryError(Throwable queryError)
+    {
+        this.queryError = queryError;
+    }
+
     public void setPartitionLeader(final Partition partition, final NodeInfo leaderInfo)
     {
         final PartitionInfo partitionInfo = partition.getInfo();
@@ -60,7 +66,14 @@ public class ControlledTopologyManager implements TopologyManager
     @Override
     public <R> ActorFuture<R> query(Function<ReadableTopology, R> query)
     {
-        return CompletableActorFuture.completed(query.apply(topology));
+        if (queryError != null)
+        {
+            return CompletableActorFuture.completedExceptionally(queryError);
+        }
+        else
+        {
+            return CompletableActorFuture.completed(query.apply(topology));
+        }
     }
 
     @Override
