@@ -8,6 +8,8 @@ import java.util.Random;
 import java.util.UUID;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.writer.WorkflowInstanceWriter;
+import org.camunda.operate.po.IncidentEntity;
+import org.camunda.operate.po.IncidentState;
 import org.camunda.operate.po.WorkflowInstanceEntity;
 import org.camunda.operate.po.WorkflowInstanceState;
 import org.camunda.operate.property.OperateProperties;
@@ -50,6 +52,19 @@ public class DemoDataGenerator {
         workflowInstance.setEndDate(endDate);
         workflowInstance.setState(endDate == null ? WorkflowInstanceState.ACTIVE : WorkflowInstanceState.COMPLETED);
 
+
+        //create active incidents
+        if (endDate == null) {
+          if (random.nextInt(10) % 3 == 0) {
+            workflowInstance.getIncidents().add(createIncident(IncidentState.ACTIVE));
+          }
+        }
+
+        //create resolved incidents
+        if (random.nextInt(10) % 5 == 0) {
+          workflowInstance.getIncidents().add(createIncident(IncidentState.RESOLVED));
+        }
+
         workflowInstance.setWorkflowDefinitionId(UUID.randomUUID().toString());
         workflowInstances.add(workflowInstance);
       }
@@ -57,6 +72,17 @@ public class DemoDataGenerator {
       workflowInstanceWriter.persistWorkflowInstances(workflowInstances);
     }
 
+  }
+
+  private IncidentEntity createIncident(IncidentState state) {
+    IncidentEntity incidentEntity = new IncidentEntity();
+    incidentEntity.setId(UUID.randomUUID().toString());
+    incidentEntity.setActivityId("start");
+    incidentEntity.setActivityInstanceId(UUID.randomUUID().toString());
+    incidentEntity.setErrorType("TASK_NO_RETRIES");
+    incidentEntity.setErrorMessage("No more retries left.");
+    incidentEntity.setState(state);
+    return incidentEntity;
   }
 
 }
