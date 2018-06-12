@@ -8,5 +8,5 @@ jest.mock('./StatsPanel', () => {
 it('contains an statistics panel', () => {
   const node = mount(<Dashboard />);
 
-  expect(node).toIncludeText('StatsPanel');
+  expect(node).toIncludeText('MetricPanel');
 });
