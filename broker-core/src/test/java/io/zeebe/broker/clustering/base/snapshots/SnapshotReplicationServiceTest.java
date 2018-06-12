@@ -20,7 +20,6 @@ package io.zeebe.broker.clustering.base.snapshots;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.snapshotReplicationServiceName;
 import static io.zeebe.util.StringUtil.getBytes;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import java.security.MessageDigest;
@@ -46,7 +45,6 @@ import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import org.junit.Before;
 import org.junit.Rule;
@@ -71,7 +69,8 @@ public class SnapshotReplicationServiceTest
             .around(actorSchedulerRule)
             .around(serviceContainerRule);
 
-    private final SnapshotReplicationService service = new SnapshotReplicationService(Duration.ofSeconds(1));
+    private final Duration snapshotPollInterval = Duration.ofSeconds(1);
+    private final SnapshotReplicationService service = new SnapshotReplicationService(snapshotPollInterval);
     private final ControlledTopologyManager topologyManager = spy(new ControlledTopologyManager());
     private final BufferingClientOutput output = new BufferingClientOutput(DEFAULT_REQUEST_TIMEOUT);
     private final ClientTransport transport = createTransport();
@@ -91,11 +90,6 @@ public class SnapshotReplicationServiceTest
         service.getManagementClientApiInjector().inject(transport);
         service.getPartitionInjector().inject(partition);
 
-        // does not start until actor scheduler #workUntilDone
-        serviceContainerRule.get()
-                .createService(snapshotReplicationServiceName(partition), service)
-                .install();
-
         topologyManager.setPartitionLeader(partition, leaderNodeInfo);
     }
 
@@ -106,7 +100,7 @@ public class SnapshotReplicationServiceTest
         topologyManager.getTopology().removeMember(leaderNodeInfo);
 
         // when
-        actorSchedulerRule.workUntilDone();
+        installService();
 
         // then
         assertThat(output.getSentRequests()).isEmpty();
@@ -129,18 +123,15 @@ public class SnapshotReplicationServiceTest
     @Test
     public void shouldRetryOnTopologyError()
     {
-        // given
-        final CompletableActorFuture<NodeInfo> errorResult = CompletableActorFuture.completedExceptionally(new RuntimeException("fail"));
-        final CompletableActorFuture<NodeInfo> goodResult = CompletableActorFuture.completed(leaderNodeInfo);
-
         // when
-        doReturn(errorResult, goodResult).when(topologyManager).query(any());
-        actorSchedulerRule.workUntilDone();
+        topologyManager.setQueryError(new RuntimeException("fail"));
+        installService();
 
         // then
         assertThat(output.getSentRequests()).isEmpty();
 
         // when
+        topologyManager.setQueryError(null);
         actorSchedulerRule.waitForTimer(errorRetryInterval);
 
         // then
@@ -158,7 +149,7 @@ public class SnapshotReplicationServiceTest
     public void shouldUpdateTopologyOnTransportError()
     {
         // when
-        actorSchedulerRule.workUntilDone();
+        installService();
 
         // then
         assertThat(output.getSentRequests().size()).isEqualTo(1);
@@ -184,7 +175,7 @@ public class SnapshotReplicationServiceTest
         final ErrorResponse response = new ErrorResponse().setCode(ErrorResponseCode.PARTITION_NOT_FOUND).setData("fail");
 
         // when
-        actorSchedulerRule.workUntilDone();
+        installService();
 
         // then
         assertThat(output.getSentRequests().size()).isEqualTo(1);
@@ -211,9 +202,10 @@ public class SnapshotReplicationServiceTest
         };
 
         // when
-        actorSchedulerRule.workUntilDone();
+        installService();
 
         // then
+        assertThat(output.getSentRequests().size()).isEqualTo(1);
         assertThat(output.getLastRequest().getTemplateId()).isEqualTo(ListSnapshotsRequestEncoder.TEMPLATE_ID);
 
         // when
@@ -248,7 +240,7 @@ public class SnapshotReplicationServiceTest
         };
 
         // when
-        actorSchedulerRule.workUntilDone();
+        installService();
 
         // then
         assertThat(output.getLastRequest().getTemplateId()).isEqualTo(ListSnapshotsRequestEncoder.TEMPLATE_ID);
@@ -282,6 +274,14 @@ public class SnapshotReplicationServiceTest
 
         // then
         assertThat(output.getLastRequest().getTemplateId()).isEqualTo(ListSnapshotsRequestEncoder.TEMPLATE_ID);
+    }
+
+    private void installService()
+    {
+        serviceContainerRule.get()
+                .createService(snapshotReplicationServiceName(partition), service)
+                .install();
+        actorSchedulerRule.workUntilDone();
     }
 
     private void assertReplicated(final SnapshotMetadata snapshot, final String contents) throws Exception
