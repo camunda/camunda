@@ -6,19 +6,19 @@ exports[`Login should display an error on unsuccessful login 1`] = `
     onSubmit={[Function]}
   >
     <form
-      className="sc-gzVnrw ebLYyw"
+      className="sc-VigVT jetKjb"
       onSubmit={[Function]}
     >
       <styled.h1>
         <h1
-          className="sc-bZQynM bTLgOj"
+          className="sc-gqjmRU cSGEyB"
         >
           Operate
         </h1>
       </styled.h1>
       <styled.span>
         <span
-          className="sc-dnqmqq fBdfkl"
+          className="sc-fjdhpX bBJvXg"
         >
           Username and Password do not match
         </span>
@@ -32,7 +32,7 @@ exports[`Login should display an error on unsuccessful login 1`] = `
         value=""
       >
         <Input
-          className="sc-htoDjs biKrUb"
+          className="sc-jTzLTM kUdgcZ"
           name="username"
           onChange={[Function]}
           placeholder="Username"
@@ -41,7 +41,7 @@ exports[`Login should display an error on unsuccessful login 1`] = `
           value=""
         >
           <styled.input
-            className="sc-htoDjs biKrUb"
+            className="sc-jTzLTM kUdgcZ"
             name="username"
             onChange={[Function]}
             placeholder="Username"
@@ -50,7 +50,7 @@ exports[`Login should display an error on unsuccessful login 1`] = `
             value=""
           >
             <input
-              className="sc-htoDjs biKrUb sc-bdVaJa fEQlyH"
+              className="sc-jTzLTM kUdgcZ sc-bdVaJa fEQlyH"
               name="username"
               onChange={[Function]}
               placeholder="Username"
@@ -70,7 +70,7 @@ exports[`Login should display an error on unsuccessful login 1`] = `
         value=""
       >
         <Input
-          className="sc-htoDjs biKrUb"
+          className="sc-jTzLTM kUdgcZ"
           name="password"
           onChange={[Function]}
           placeholder="Password"
@@ -79,7 +79,7 @@ exports[`Login should display an error on unsuccessful login 1`] = `
           value=""
         >
           <styled.input
-            className="sc-htoDjs biKrUb"
+            className="sc-jTzLTM kUdgcZ"
             name="password"
             onChange={[Function]}
             placeholder="Password"
@@ -88,7 +88,7 @@ exports[`Login should display an error on unsuccessful login 1`] = `
             value=""
           >
             <input
-              className="sc-htoDjs biKrUb sc-bdVaJa fEQlyH"
+              className="sc-jTzLTM kUdgcZ sc-bdVaJa fEQlyH"
               name="password"
               onChange={[Function]}
               placeholder="Password"
@@ -104,17 +104,17 @@ exports[`Login should display an error on unsuccessful login 1`] = `
         type="submit"
       >
         <Input
-          className="sc-htoDjs biKrUb"
+          className="sc-jTzLTM kUdgcZ"
           placeholder="Password"
           type="submit"
         >
           <styled.input
-            className="sc-htoDjs biKrUb"
+            className="sc-jTzLTM kUdgcZ"
             placeholder="Password"
             type="submit"
           >
             <input
-              className="sc-htoDjs biKrUb sc-bdVaJa iDLlQf"
+              className="sc-jTzLTM kUdgcZ sc-bdVaJa iDLlQf"
               placeholder="Password"
               type="submit"
             />
@@ -139,12 +139,12 @@ exports[`Login should render login form by default 1`] = `
     onSubmit={[Function]}
   >
     <form
-      className="sc-gzVnrw ebLYyw"
+      className="sc-VigVT jetKjb"
       onSubmit={[Function]}
     >
       <styled.h1>
         <h1
-          className="sc-bZQynM bTLgOj"
+          className="sc-gqjmRU cSGEyB"
         >
           Operate
         </h1>
@@ -158,7 +158,7 @@ exports[`Login should render login form by default 1`] = `
         value=""
       >
         <Input
-          className="sc-htoDjs biKrUb"
+          className="sc-jTzLTM kUdgcZ"
           name="username"
           onChange={[Function]}
           placeholder="Username"
@@ -167,7 +167,7 @@ exports[`Login should render login form by default 1`] = `
           value=""
         >
           <styled.input
-            className="sc-htoDjs biKrUb"
+            className="sc-jTzLTM kUdgcZ"
             name="username"
             onChange={[Function]}
             placeholder="Username"
@@ -176,7 +176,7 @@ exports[`Login should render login form by default 1`] = `
             value=""
           >
             <input
-              className="sc-htoDjs biKrUb sc-bdVaJa fEQlyH"
+              className="sc-jTzLTM kUdgcZ sc-bdVaJa fEQlyH"
               name="username"
               onChange={[Function]}
               placeholder="Username"
@@ -196,7 +196,7 @@ exports[`Login should render login form by default 1`] = `
         value=""
       >
         <Input
-          className="sc-htoDjs biKrUb"
+          className="sc-jTzLTM kUdgcZ"
           name="password"
           onChange={[Function]}
           placeholder="Password"
@@ -205,7 +205,7 @@ exports[`Login should render login form by default 1`] = `
           value=""
         >
           <styled.input
-            className="sc-htoDjs biKrUb"
+            className="sc-jTzLTM kUdgcZ"
             name="password"
             onChange={[Function]}
             placeholder="Password"
@@ -214,7 +214,7 @@ exports[`Login should render login form by default 1`] = `
             value=""
           >
             <input
-              className="sc-htoDjs biKrUb sc-bdVaJa fEQlyH"
+              className="sc-jTzLTM kUdgcZ sc-bdVaJa fEQlyH"
               name="password"
               onChange={[Function]}
               placeholder="Password"
@@ -230,17 +230,17 @@ exports[`Login should render login form by default 1`] = `
         type="submit"
       >
         <Input
-          className="sc-htoDjs biKrUb"
+          className="sc-jTzLTM kUdgcZ"
           placeholder="Password"
           type="submit"
         >
           <styled.input
-            className="sc-htoDjs biKrUb"
+            className="sc-jTzLTM kUdgcZ"
             placeholder="Password"
             type="submit"
           >
             <input
-              className="sc-htoDjs biKrUb sc-bdVaJa iDLlQf"
+              className="sc-jTzLTM kUdgcZ sc-bdVaJa iDLlQf"
               placeholder="Password"
               type="submit"
             />
