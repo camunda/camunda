@@ -18,7 +18,7 @@ public class VariableUpdateWriter extends VariableWriter {
     for (Map.Entry<String, List<VariableDto>> typedVarsEntry : typeMappedVars.entrySet()) {
       String typeName = typedVarsEntry.getKey();
       builder.append("for (def var : params." + typeName + ") {");
-        builder.append("ctx._source." + typeName + ".removeIf(item -> item.id.equals(var.id) || var.value == null) ;");
+        builder.append("ctx._source." + typeName + ".removeIf(item -> item.id.equals(var.id)) ;");
       builder.append("}");
       // if a variable update has the value null then this means that the runtime variable
       // has been deleted and therefore we shouldn't add it to Optimize
@@ -42,8 +42,7 @@ public class VariableUpdateWriter extends VariableWriter {
     procInst.setProcessDefinitionId(firstVariable.getProcessDefinitionId());
     procInst.setProcessDefinitionKey(firstVariable.getProcessDefinitionKey());
     procInst.setProcessInstanceId(processInstanceId);
-    procInst.setStartDate(OffsetDateTime.now());
-    procInst.setEndDate(OffsetDateTime.now());
+
     for (Map.Entry<String, List<VariableDto>> entry: typeMappedVars.entrySet()) {
       for (VariableDto var : entry.getValue()) {
         parseValue(var)
