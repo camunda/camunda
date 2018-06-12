@@ -1,3 +1,5 @@
+import {mockResolvedAsyncFn, mockRejectedAsyncFn} from 'modules/testUtils';
+
 import {
   request,
   BASE_URL,
@@ -15,9 +17,7 @@ const failedResponse = {
   content: 'FAILED'
 };
 
-global.fetch = jest
-  .fn()
-  .mockImplementation(() => Promise.resolve(successResponse));
+global.fetch = mockResolvedAsyncFn(successResponse);
 
 describe('request', () => {
   const url = '/some/url';
@@ -98,9 +98,7 @@ describe('request', () => {
   describe('response', () => {
     it("should call responseInterceptor only when it's provided", async () => {
       // given
-      const responseInterceptor = jest
-        .fn()
-        .mockImplementation(() => Promise.resolve());
+      const responseInterceptor = mockResolvedAsyncFn();
       setResponseInterceptor(responseInterceptor);
 
       // when
@@ -121,19 +119,21 @@ describe('request', () => {
     });
 
     it("should throw response if it's unsuccessful", async () => {
-      // given
-      global.fetch = jest
-        .fn()
-        .mockImplementation(() => Promise.resolve(failedResponse));
+      // mock global.fetch
+      const originalFetch = global.fetch;
+      global.fetch = mockRejectedAsyncFn(failedResponse);
 
       // then
-      let error;
+      let error = null;
       try {
         await request({url});
       } catch (e) {
         error = e;
       }
       expect(error).toEqual(failedResponse);
+
+      // reset global.fetch
+      global.fetch = originalFetch.bind(global);
     });
   });
 });

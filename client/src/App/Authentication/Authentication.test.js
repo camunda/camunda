@@ -9,12 +9,11 @@ import Authentication from './Authentication';
 jest.mock('modules/request');
 
 describe('Authentication', () => {
-  let Child, wrapper;
+  let Child, node;
 
   beforeEach(() => {
-    // given
     Child = () => <span>I am a child component</span>;
-    wrapper = shallow(
+    node = shallow(
       <Authentication>
         <Child />
       </Authentication>
@@ -22,36 +21,34 @@ describe('Authentication', () => {
   });
 
   it('should attach a responseInterceptor', () => {
-    // then
     expect(setResponseInterceptor).toBeCalled();
   });
 
   it('should render children by default', () => {
-    // then
-    expect(wrapper.state('forceRedirect')).toBe(false);
-    expect(wrapper.find(Child)).toHaveLength(1);
-    expect(wrapper).toMatchSnapshot();
+    expect(node.state('forceRedirect')).toBe(false);
+    expect(node.find(Child)).toHaveLength(1);
+    expect(node).toMatchSnapshot();
   });
 
   it('should set forceRedirect to true on failed response', () => {
     // when
-    wrapper.instance().interceptResponse({status: 401});
-    wrapper.update();
+    node.instance().interceptResponse({status: 401});
+    node.update();
 
     // then
-    expect(wrapper.state('forceRedirect')).toBe(true);
-    expect(wrapper.find(Child)).toHaveLength(0);
-    const RedirectNode = wrapper.find(Redirect);
+    expect(node.state('forceRedirect')).toBe(true);
+    expect(node.find(Child)).toHaveLength(0);
+    const RedirectNode = node.find(Redirect);
     expect(RedirectNode).toHaveLength(1);
     expect(RedirectNode.prop('to')).toBe('/login');
-    expect(wrapper).toMatchSnapshot();
+    expect(node).toMatchSnapshot();
   });
 
   it("should reset falseRedirect to false once it's set", () => {
     // when
-    wrapper.setState({forceRedirect: true});
+    node.setState({forceRedirect: true});
 
     // then
-    expect(wrapper.state('forceRedirect')).toBe(false);
+    expect(node.state('forceRedirect')).toBe(false);
   });
 });

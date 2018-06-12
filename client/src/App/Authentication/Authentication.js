@@ -33,8 +33,8 @@ class Authentication extends React.Component {
   componentDidUpdate() {
     const {forceRedirect} = this.state;
 
-    // once forceRedirect is set to true, we reset it to false
-    // to prevent always redirecting to Login
+    // if foreceRedirect is true we reset it to false
+    // this prevents from always redirecting to Login
     forceRedirect && this.setState({forceRedirect: false});
   }
 }

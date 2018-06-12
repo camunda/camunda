@@ -3,23 +3,21 @@ import {shallow, mount} from 'enzyme';
 import {Redirect} from 'react-router-dom';
 
 import {resetResponseInterceptor} from 'modules/request';
+import {
+  flushPromises,
+  mockResolvedAsyncFn,
+  mockRejectedAsyncFn
+} from 'modules/testUtils';
 
 import Login from './Login';
 import * as api from './api';
 
 jest.mock('modules/request');
 
-/**
- * helper function to flush promises in queue
- */
-function flushPromises() {
-  return new Promise(resolve => setImmediate(resolve));
-}
-
 describe('Login', () => {
   it('should reset the response interceptor', () => {
     // given
-    const wrapper = mount(<Login />);
+    mount(<Login />);
 
     // then
     expect(resetResponseInterceptor).toBeCalled();
@@ -27,72 +25,84 @@ describe('Login', () => {
 
   it('should render login form by default', () => {
     // given
-    const wrapper = mount(<Login />);
+    const node = mount(<Login />);
 
     // then
-    expect(wrapper.state('username')).toEqual('');
-    expect(wrapper.state('password')).toEqual('');
-    expect(wrapper.state('forceRedirect')).toBe(false);
-    expect(wrapper.state('error')).toBeNull();
-    expect(wrapper.find('form')).toHaveLength(1);
-    expect(wrapper.find('input[type="text"]')).toHaveLength(1);
-    expect(wrapper.find('input[type="password"]')).toHaveLength(1);
-    expect(wrapper.find('input[type="submit"]')).toHaveLength(1);
-    expect(wrapper).toMatchSnapshot();
+    expect(node.state('username')).toEqual('');
+    expect(node.state('password')).toEqual('');
+    expect(node.state('forceRedirect')).toBe(false);
+    expect(node.state('error')).toBeNull();
+    expect(node.find('form')).toHaveLength(1);
+    expect(node.find('input[type="text"]')).toHaveLength(1);
+    expect(node.find('input[type="password"]')).toHaveLength(1);
+    expect(node.find('input[type="submit"]')).toHaveLength(1);
+    expect(node).toMatchSnapshot();
   });
 
   it('should change state according to inputs change', () => {
     // given
-    const wrapper = mount(<Login />);
+    const node = mount(<Login />);
     const username = 'foo';
     const password = 'bar';
 
     // when
-    wrapper
+    node
       .find("input[name='username']")
       .simulate('change', {target: {name: 'username', value: username}});
 
-    wrapper
+    node
       .find("input[name='password']")
       .simulate('change', {target: {name: 'password', value: password}});
 
     // then
-    expect(wrapper.state('username')).toEqual(username);
-    expect(wrapper.state('password')).toEqual(password);
+    expect(node.state('username')).toEqual(username);
+    expect(node.state('password')).toEqual(password);
   });
 
   it('should redirect to home page on successful login', async () => {
+    // mock api.login
+    const originalLogin = api.login;
+    api.login = mockResolvedAsyncFn();
+
     // given
-    const wrapper = shallow(<Login />);
-    api.login = jest.fn().mockImplementation(() => Promise.resolve());
-    const form = wrapper.dive().find('form');
-    const username = wrapper.state('username');
-    const password = wrapper.state('password');
+    const node = shallow(<Login />);
+    const form = node.dive().find('form');
+    const username = node.state('username');
+    const password = node.state('password');
 
     // when
     form.simulate('submit', {preventDefault: () => {}});
     expect(api.login).toBeCalledWith({username, password});
     await flushPromises();
-    wrapper.update();
-    const RedirectNode = wrapper.find(Redirect);
+    node.update();
+    const RedirectNode = node.find(Redirect);
     expect(RedirectNode).toHaveLength(1);
     expect(RedirectNode.prop('to')).toBe('/');
-    expect(wrapper).toMatchSnapshot();
+    expect(node).toMatchSnapshot();
+
+    // reset api.login
+    api.login = originalLogin.bind(api);
   });
 
   it('should display an error on unsuccessful login', async () => {
+    // mock api.login
+    const originalLogin = api.login;
+    api.login = mockRejectedAsyncFn();
+
     // given
-    const wrapper = mount(<Login />);
-    const form = wrapper.find('form');
+    const node = mount(<Login />);
+    const form = node.find('form');
     const error = 'Username and Password do not match';
-    api.login = jest.fn().mockImplementation(() => Promise.reject(error));
 
     // when
     form.simulate('submit', {preventDefault: () => {}});
     await flushPromises();
-    wrapper.update();
-    expect(wrapper.state('error')).toEqual(error);
-    expect(wrapper.text()).toContain(error);
-    expect(wrapper).toMatchSnapshot();
+    node.update();
+    expect(node.state('error')).toEqual(error);
+    expect(node.text()).toContain(error);
+    expect(node).toMatchSnapshot();
+
+    // reset api.login
+    api.login = originalLogin.bind(api);
   });
 });
