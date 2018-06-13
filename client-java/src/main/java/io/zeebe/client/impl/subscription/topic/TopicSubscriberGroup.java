@@ -106,7 +106,7 @@ public class TopicSubscriberGroup extends SubscriberGroup<TopicSubscriber> imple
         final ActorFuture<?> ackFuture = subscriber.acknowledgeLastProcessedEvent();
 
         final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
-        actor.runOnCompletion(ackFuture, (ackResult, ackThrowable) ->
+        actor.runOnCompletionBlockingCurrentPhase(ackFuture, (ackResult, ackThrowable) ->
         {
             if (ackThrowable != null)
             {
@@ -114,7 +114,7 @@ public class TopicSubscriberGroup extends SubscriberGroup<TopicSubscriber> imple
             }
 
             final ActorFuture<Void> closeRequestFuture = subscriber.requestSubscriptionClose();
-            actor.runOnCompletion(closeRequestFuture, (closeResult, closeThrowable) ->
+            actor.runOnCompletionBlockingCurrentPhase(closeRequestFuture, (closeResult, closeThrowable) ->
             {
                 if (closeThrowable == null)
                 {
