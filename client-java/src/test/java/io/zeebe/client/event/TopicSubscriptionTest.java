@@ -1096,7 +1096,6 @@ public class TopicSubscriptionTest
     }
 
     @Test
-    @Category(UnstableTest.class) // https://github.com/zeebe-io/zeebe/issues/939
     public void shouldCloseClientAfterSubscriptionCloseIsCalled() throws Exception
     {
         // given
