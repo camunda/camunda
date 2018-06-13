@@ -16,6 +16,7 @@ import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Component;
 @Component
 @ConditionalOnProperty(name= OperateProperties.PREFIX + ".demoData", havingValue="true")
 @Profile("elasticsearch")
+@DependsOn("elasticsearchSchemaManager")
 public class DemoDataGenerator {
 
   @Autowired
