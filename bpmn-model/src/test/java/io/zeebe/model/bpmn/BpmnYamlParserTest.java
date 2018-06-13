@@ -16,7 +16,7 @@
 package io.zeebe.model.bpmn;
 
 import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
-import io.zeebe.model.bpmn.impl.validation.ValidationException;
+import io.zeebe.model.bpmn.impl.error.ValidationException;
 import io.zeebe.model.bpmn.instance.*;
 import org.junit.Test;
 

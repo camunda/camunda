@@ -17,13 +17,13 @@ package io.zeebe.model.bpmn.impl.validation.nodes.task;
 
 import io.zeebe.model.bpmn.BpmnConstants;
 import io.zeebe.model.bpmn.impl.metadata.TaskHeadersImpl;
-import io.zeebe.model.bpmn.impl.validation.ValidationResultImpl;
+import io.zeebe.model.bpmn.impl.error.ErrorCollector;
 
 import java.util.Map;
 
 public class TaskHeadersValidator
 {
-    public void validate(ValidationResultImpl validationResult, TaskHeadersImpl taskHeaders)
+    public void validate(ErrorCollector validationResult, TaskHeadersImpl taskHeaders)
     {
         for (Map.Entry<String, String> header : taskHeaders.asMap().entrySet())
         {

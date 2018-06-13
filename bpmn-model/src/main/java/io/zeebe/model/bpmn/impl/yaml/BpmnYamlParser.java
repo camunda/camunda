@@ -19,7 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.zeebe.model.bpmn.builder.BpmnBuilder;
 import io.zeebe.model.bpmn.builder.BpmnServiceTaskBuilder;
-import io.zeebe.model.bpmn.impl.validation.ValidationException;
+import io.zeebe.model.bpmn.impl.error.ValidationException;
 import io.zeebe.model.bpmn.instance.OutputBehavior;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 

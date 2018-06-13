@@ -16,13 +16,13 @@
 package io.zeebe.model.bpmn.impl.validation.nodes.task;
 
 import io.zeebe.model.bpmn.BpmnConstants;
-import io.zeebe.model.bpmn.impl.validation.ValidationResultImpl;
-import io.zeebe.model.bpmn.instance.TaskDefinition;
+import io.zeebe.model.bpmn.impl.error.ErrorCollector;
+import io.zeebe.model.bpmn.impl.metadata.TaskDefinitionImpl;
 import org.agrona.DirectBuffer;
 
 public class TaskDefinitionValidator
 {
-    public void validate(ValidationResultImpl validationResult, TaskDefinition taskDefinition)
+    public void validate(ErrorCollector validationResult, TaskDefinitionImpl taskDefinition)
     {
         final DirectBuffer taskType = taskDefinition.getTypeAsBuffer();
         if (taskType == null || taskType.capacity() == 0)

@@ -20,7 +20,6 @@ import io.zeebe.model.bpmn.impl.BpmnParser;
 import io.zeebe.model.bpmn.impl.instance.DefinitionsImpl;
 import io.zeebe.model.bpmn.impl.transformation.BpmnTransformer;
 import io.zeebe.model.bpmn.impl.validation.BpmnValidator;
-import io.zeebe.model.bpmn.impl.validation.ValidationException;
 import io.zeebe.model.bpmn.impl.yaml.BpmnYamlParser;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import org.agrona.DirectBuffer;
@@ -50,17 +49,10 @@ public class BpmnModelApi
         final DefinitionsImpl definitions = parser.readFromFile(file);
 
         // semantic analyzer
-        final ValidationResult validationResult = validator.validate(definitions);
+        validator.validate(definitions);
 
-        if (validationResult.hasErrors())
-        {
-            throw new ValidationException(validationResult.format());
-        }
-        else
-        {
-            // generator/transformer
-            return transformer.transform(definitions);
-        }
+        // generator/transformer
+        return transformer.transform(definitions);
     }
 
     public WorkflowDefinition readFromXmlStream(InputStream stream)
@@ -68,17 +60,10 @@ public class BpmnModelApi
         final DefinitionsImpl definitions = parser.readFromStream(stream);
 
         // semantic analyzer
-        final ValidationResult validationResult = validator.validate(definitions);
+        validator.validate(definitions);
 
-        if (validationResult.hasErrors())
-        {
-            throw new ValidationException(validationResult.format());
-        }
-        else
-        {
-            // generator/transformer
-            return transformer.transform(definitions);
-        }
+        // generator/transformer
+        return transformer.transform(definitions);
     }
 
     public WorkflowDefinition readFromXmlBuffer(DirectBuffer buffer)

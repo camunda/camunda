@@ -13,15 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.model.bpmn;
+package io.zeebe.model.bpmn.impl;
 
-public interface ValidationResult
+import io.zeebe.util.ZbLogger;
+import org.slf4j.Logger;
+
+public class Loggers
 {
-
-    boolean hasErrors();
-
-    boolean hasWarnings();
-
-    String format();
-
+    public static final Logger MODEL_API_LOGGER = new ZbLogger("io.zeebe.model.bpmn");
 }

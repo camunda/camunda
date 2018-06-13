@@ -15,9 +15,8 @@
  */
 package io.zeebe.model.bpmn.impl.validation.nodes.task;
 
+import io.zeebe.model.bpmn.impl.error.ErrorCollector;
 import io.zeebe.model.bpmn.impl.metadata.InputOutputMappingImpl;
-import io.zeebe.model.bpmn.impl.validation.ValidationResultImpl;
-import io.zeebe.model.bpmn.instance.InputOutputMapping;
 import io.zeebe.model.bpmn.instance.OutputBehavior;
 import io.zeebe.msgpack.mapping.Mapping;
 
@@ -33,7 +32,7 @@ public class InputOutputMappingValidator
     private static final Pattern PROHIBITED_EXPRESSIONS = Pattern.compile(PROHIBITED_EXPRESSIONS_REGEX);
 
 
-    public void validate(ValidationResultImpl validationResult, InputOutputMappingImpl inputOutputMapping)
+    public void validate(ErrorCollector validationResult, InputOutputMappingImpl inputOutputMapping)
     {
         validateOutputBehavior(validationResult, inputOutputMapping, inputOutputMapping.getOutputBehaviorString());
 
@@ -41,12 +40,12 @@ public class InputOutputMappingValidator
         validateMappingExpressions(validationResult, inputOutputMapping, inputOutputMapping.getOutputMappingsAsMap());
     }
 
-    private void validateOutputBehavior(ValidationResultImpl validationResult, InputOutputMapping element, String outputBehavior)
+    private void validateOutputBehavior(ErrorCollector validationResult, InputOutputMappingImpl element, String outputBehavior)
     {
         OutputBehavior behavior = null;
         try
         {
-            behavior = OutputBehavior.valueOf(outputBehavior);
+            behavior = OutputBehavior.valueOf(outputBehavior.toUpperCase());
         }
         catch (Exception exception)
         {
@@ -60,7 +59,7 @@ public class InputOutputMappingValidator
         }
     }
 
-    private void validateMappingExpressions(ValidationResultImpl validationResult, InputOutputMapping element, Map<String, String> mappings)
+    private void validateMappingExpressions(ErrorCollector validationResult, InputOutputMappingImpl element, Map<String, String> mappings)
     {
         for (Map.Entry<String, String> mapping : mappings.entrySet())
         {

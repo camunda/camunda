@@ -15,21 +15,20 @@
  */
 package io.zeebe.model.bpmn.impl.validation.nodes;
 
+import io.zeebe.model.bpmn.impl.error.ErrorCollector;
 import io.zeebe.model.bpmn.impl.instance.ExclusiveGatewayImpl;
 import io.zeebe.model.bpmn.impl.instance.SequenceFlowImpl;
-import io.zeebe.model.bpmn.impl.validation.ValidationResultImpl;
-import io.zeebe.model.bpmn.instance.SequenceFlow;
 
 import java.util.List;
 
 public class ExclusiveGatewayValidator
 {
-    public void validate(ValidationResultImpl validationResult, ExclusiveGatewayImpl exclusiveGateway)
+    public void validate(ErrorCollector validationResult, ExclusiveGatewayImpl exclusiveGateway)
     {
         final List<SequenceFlowImpl> outgoing = exclusiveGateway.getOutgoing();
         if (outgoing.size() > 1 || (outgoing.size() == 1 && outgoing.get(0).hasCondition()))
         {
-            final SequenceFlow defaultFlow = exclusiveGateway.getDefaultFlow();
+            final SequenceFlowImpl defaultFlow = exclusiveGateway.getDefaultFlow();
             if (defaultFlow != null)
             {
                 if (defaultFlow.hasCondition())
@@ -47,7 +46,7 @@ public class ExclusiveGatewayValidator
                 validationResult.addWarning(exclusiveGateway, "An exclusive gateway should have a default sequence flow without condition.");
             }
 
-            for (SequenceFlow sequenceFlow : exclusiveGateway.getOutgoingSequenceFlows())
+            for (SequenceFlowImpl sequenceFlow : exclusiveGateway.getOutgoing())
             {
                 if (!sequenceFlow.hasCondition() && !sequenceFlow.equals(defaultFlow))
                 {

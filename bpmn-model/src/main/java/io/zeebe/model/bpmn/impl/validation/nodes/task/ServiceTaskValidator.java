@@ -16,11 +16,11 @@
 package io.zeebe.model.bpmn.impl.validation.nodes.task;
 
 import io.zeebe.model.bpmn.BpmnConstants;
+import io.zeebe.model.bpmn.impl.error.ErrorCollector;
 import io.zeebe.model.bpmn.impl.instance.ServiceTaskImpl;
 import io.zeebe.model.bpmn.impl.metadata.InputOutputMappingImpl;
+import io.zeebe.model.bpmn.impl.metadata.TaskDefinitionImpl;
 import io.zeebe.model.bpmn.impl.metadata.TaskHeadersImpl;
-import io.zeebe.model.bpmn.impl.validation.ValidationResultImpl;
-import io.zeebe.model.bpmn.instance.TaskDefinition;
 
 public class ServiceTaskValidator
 {
@@ -28,9 +28,9 @@ public class ServiceTaskValidator
     private final TaskHeadersValidator taskHeadersValidator = new TaskHeadersValidator();
     private final InputOutputMappingValidator inputOutputMappingValidator = new InputOutputMappingValidator();
 
-    public void validate(ValidationResultImpl validationResult, ServiceTaskImpl serviceTask)
+    public void validate(ErrorCollector validationResult, ServiceTaskImpl serviceTask)
     {
-        final TaskDefinition taskDefinition = serviceTask.getTaskDefinition();
+        final TaskDefinitionImpl taskDefinition = serviceTask.getTaskDefinitionImpl();
         if (taskDefinition == null)
         {
             validationResult.addError(serviceTask, String.format("A service task must contain a '%s' extension element.", BpmnConstants.ZEEBE_ELEMENT_TASK_DEFINITION));

@@ -15,9 +15,12 @@
  */
 package io.zeebe.model.bpmn;
 
+import io.zeebe.model.bpmn.impl.error.TransformationException;
 import io.zeebe.model.bpmn.instance.*;
 import org.assertj.core.util.Files;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.io.File;
 import java.io.InputStream;
@@ -28,10 +31,17 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class BpmnParserTest
+public class BpmnTransformTest
 {
     private static final String BPMN_FILE = "/process.bpmn";
+    private static final String BPMN_OVERWRITE_PROCESS_FILE = "/overwrite_output_process.bpmn";
+    private static final String BPMN_UPPER_CASE_OVERWRITE_PROCESS_FILE = "/upper_case_overwrite_output_process.bpmn";
+    private static final String BPMN_NONE_PROCESS_FILE = "/none_output_process.bpmn";
+    private static final String BPMN_MERGE_PROCESS_FILE = "/merge_output_process.bpmn";
     private static final String BPMN_XOR_GATEWAY_FILE = "/process-xor-gateway.bpmn";
+
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void shouldReadFromFile() throws Exception
@@ -157,6 +167,129 @@ public class BpmnParserTest
         final InputOutputMapping inputOutputMapping = serviceTask.getInputOutputMapping();
         assertThat(inputOutputMapping).isNotNull();
 
+        assertThat(inputOutputMapping.getOutputBehavior()).isEqualTo(OutputBehavior.MERGE);
+
+        assertThat(inputOutputMapping.getInputMappingsAsMap())
+            .hasSize(1)
+            .containsEntry("$.a", "$.b");
+
+        assertThat(inputOutputMapping.getOutputMappingsAsMap())
+            .hasSize(1)
+            .containsEntry("$.c", "$.d");
+    }
+
+    @Test
+    public void shouldTransformOverwriteOutputBehaviorOnServiceTask()
+    {
+        // given
+        final InputStream stream = getClass().getResourceAsStream(BPMN_OVERWRITE_PROCESS_FILE);
+        final WorkflowDefinition workflowDefinition = Bpmn.readFromXmlStream(stream);
+        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
+
+        // when
+        final ServiceTask serviceTask = workflow.findFlowElementById(wrapString("task"));
+
+        // then
+        final InputOutputMapping inputOutputMapping = serviceTask.getInputOutputMapping();
+        assertThat(inputOutputMapping).isNotNull();
+        assertThat(inputOutputMapping.getOutputBehavior()).isEqualTo(OutputBehavior.OVERWRITE);
+
+        assertThat(inputOutputMapping.getInputMappingsAsMap())
+            .hasSize(1)
+            .containsEntry("$.a", "$.b");
+
+        assertThat(inputOutputMapping.getOutputMappingsAsMap())
+            .hasSize(1)
+            .containsEntry("$.c", "$.d");
+    }
+
+    @Test
+    public void shouldTransformUpperCaseOutputBehaviorOnServiceTask()
+    {
+        // given
+        final InputStream stream = getClass().getResourceAsStream(BPMN_UPPER_CASE_OVERWRITE_PROCESS_FILE);
+        final WorkflowDefinition workflowDefinition = Bpmn.readFromXmlStream(stream);
+        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
+
+        // when
+        final ServiceTask serviceTask = workflow.findFlowElementById(wrapString("task"));
+
+        // then
+        final InputOutputMapping inputOutputMapping = serviceTask.getInputOutputMapping();
+        assertThat(inputOutputMapping).isNotNull();
+        assertThat(inputOutputMapping.getOutputBehavior()).isEqualTo(OutputBehavior.OVERWRITE);
+
+        assertThat(inputOutputMapping.getInputMappingsAsMap())
+            .hasSize(1)
+            .containsEntry("$.a", "$.b");
+
+        assertThat(inputOutputMapping.getOutputMappingsAsMap())
+            .hasSize(1)
+            .containsEntry("$.c", "$.d");
+    }
+
+    @Test
+    public void shouldTransformNoneOutputBehaviorOnServiceTask()
+    {
+        // given
+        final InputStream stream = getClass().getResourceAsStream(BPMN_NONE_PROCESS_FILE);
+        final WorkflowDefinition workflowDefinition = Bpmn.readFromXmlStream(stream);
+        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
+
+        // when
+        final ServiceTask serviceTask = workflow.findFlowElementById(wrapString("task"));
+
+        // then
+        final InputOutputMapping inputOutputMapping = serviceTask.getInputOutputMapping();
+        assertThat(inputOutputMapping).isNotNull();
+        assertThat(inputOutputMapping.getOutputBehavior()).isEqualTo(OutputBehavior.NONE);
+
+        assertThat(inputOutputMapping.getInputMappingsAsMap())
+            .hasSize(1)
+            .containsEntry("$.a", "$.b");
+    }
+
+    @Test
+    public void shouldTransformMergeOutputBehaviorOnServiceTask()
+    {
+        // given
+        final InputStream stream = getClass().getResourceAsStream(BPMN_MERGE_PROCESS_FILE);
+        final WorkflowDefinition workflowDefinition = Bpmn.readFromXmlStream(stream);
+        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
+
+        // when
+        final ServiceTask serviceTask = workflow.findFlowElementById(wrapString("task"));
+
+        // then
+        final InputOutputMapping inputOutputMapping = serviceTask.getInputOutputMapping();
+        assertThat(inputOutputMapping).isNotNull();
+        assertThat(inputOutputMapping.getOutputBehavior()).isEqualTo(OutputBehavior.MERGE);
+
+        assertThat(inputOutputMapping.getInputMappingsAsMap())
+            .hasSize(1)
+            .containsEntry("$.a", "$.b");
+
+        assertThat(inputOutputMapping.getOutputMappingsAsMap())
+            .hasSize(1)
+            .containsEntry("$.c", "$.d");
+    }
+
+    @Test
+    public void shouldTransformDefaultOutputBehaviorOnServiceTask()
+    {
+        // given
+        final InputStream stream = getClass().getResourceAsStream(BPMN_FILE);
+        final WorkflowDefinition workflowDefinition = Bpmn.readFromXmlStream(stream);
+        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
+
+        // when
+        final ServiceTask serviceTask = workflow.findFlowElementById(wrapString("task"));
+
+        // then
+        final InputOutputMapping inputOutputMapping = serviceTask.getInputOutputMapping();
+        assertThat(inputOutputMapping).isNotNull();
+        assertThat(inputOutputMapping.getOutputBehavior()).isEqualTo(OutputBehavior.MERGE);
+
         assertThat(inputOutputMapping.getInputMappingsAsMap())
             .hasSize(1)
             .containsEntry("$.a", "$.b");
@@ -192,4 +325,40 @@ public class BpmnParserTest
             .containsExactly("$.foo < 5", "$.foo >= 5 && $.foo < 10");
     }
 
+    @Test
+    public void shouldThrowTransformExceptionOnSyntacticallyInvalidMapping()
+    {
+        // expect
+        expectedException.expect(TransformationException.class);
+        expectedException.expectMessage("JSON path query 'foo' is not valid!");
+        expectedException.expectMessage("JSON path query 'bar' is not valid!");
+
+        // when
+        Bpmn.createExecutableWorkflow("process")
+            .startEvent()
+            .serviceTask()
+            .taskType("test")
+            .input("foo", "$")
+            .output("bar", "$")
+            .done()
+            .done();
+    }
+
+    @Test
+    public void shouldThrowTransformExceptionOnSyntacticallyInvalidSequenceFlowCondition()
+    {
+        // expect
+        expectedException.expect(TransformationException.class);
+        expectedException.expectMessage("The condition 'foobar' is not valid");
+
+        // when
+        Bpmn.createExecutableWorkflow("workflow")
+            .startEvent()
+            .exclusiveGateway("xor")
+            .sequenceFlow("s1", s -> s.condition("foobar"))
+            .endEvent()
+            .sequenceFlow("s2", s -> s.defaultFlow())
+            .endEvent()
+            .done();
+    }
 }

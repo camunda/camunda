@@ -62,6 +62,7 @@ public class BpmnBuilderTest
                 .taskRetries(3)
                 .taskHeader("foo", "f")
                 .taskHeader("bar", "b")
+                .outputBehavior(OutputBehavior.OVERWRITE)
                 .input("$.a", "$.b")
                 .output("$.c", "$.d")
                 .done()
@@ -86,6 +87,7 @@ public class BpmnBuilderTest
         final InputOutputMapping inputOutputMapping = serviceTask.getInputOutputMapping();
         assertThat(inputOutputMapping).isNotNull();
 
+        assertThat(inputOutputMapping.getOutputBehavior()).isEqualTo(OutputBehavior.OVERWRITE);
         assertThat(inputOutputMapping.getInputMappingsAsMap())
             .hasSize(1)
             .containsEntry("$.a", "$.b");
@@ -215,6 +217,29 @@ public class BpmnBuilderTest
         final TaskDefinition taskDefinition = serviceTask.getTaskDefinition();
         assertThat(taskDefinition).isNotNull();
         assertThat(taskDefinition.getTypeAsBuffer()).isEqualTo(wrapString("foo"));
+    }
+
+    @Test
+    public void shouldUseDefaultOutputBehavior()
+    {
+        // given
+
+        // when
+        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("process")
+            .startEvent("start")
+            .serviceTask("task")
+                .taskType("foo")
+            .done()
+            .endEvent("end2")
+            .done();
+
+        // then
+        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
+
+        final ServiceTask serviceTask = workflow.findFlowElementById(wrapString("task"));
+        final InputOutputMapping inputOutputMapping = serviceTask.getInputOutputMapping();
+        assertThat(inputOutputMapping).isNotNull();
+        assertThat(inputOutputMapping.getOutputBehavior()).isEqualTo(OutputBehavior.MERGE);
     }
 
 }

@@ -13,18 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.model.bpmn.impl.validation.nodes;
+package io.zeebe.model.bpmn.impl.error;
 
-import io.zeebe.model.bpmn.impl.instance.EndEventImpl;
-import io.zeebe.model.bpmn.impl.error.ErrorCollector;
-
-public class EndEventValidator
+public class TransformationException extends RuntimeException
 {
-    public void validate(ErrorCollector validationResult, EndEventImpl endEvent)
+    public TransformationException(String message)
     {
-        if (!endEvent.getOutgoingSequenceFlows().isEmpty())
-        {
-            validationResult.addError(endEvent, "An end event must not have an outgoing sequence flow.");
-        }
+        super(message);
     }
 }

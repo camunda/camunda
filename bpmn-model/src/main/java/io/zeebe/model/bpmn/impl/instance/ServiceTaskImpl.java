@@ -16,6 +16,7 @@
 package io.zeebe.model.bpmn.impl.instance;
 
 import io.zeebe.model.bpmn.impl.metadata.InputOutputMappingImpl;
+import io.zeebe.model.bpmn.impl.metadata.TaskDefinitionImpl;
 import io.zeebe.model.bpmn.impl.metadata.TaskHeadersImpl;
 import io.zeebe.model.bpmn.instance.ServiceTask;
 import io.zeebe.model.bpmn.instance.TaskDefinition;
@@ -23,10 +24,15 @@ import io.zeebe.model.bpmn.instance.TaskDefinition;
 public class ServiceTaskImpl extends FlowNodeImpl implements ServiceTask
 {
 
+    public TaskDefinitionImpl getTaskDefinitionImpl()
+    {
+        return getExtensionElements() != null ? getExtensionElements().getTaskDefinition() : null;
+    }
+
     @Override
     public TaskDefinition getTaskDefinition()
     {
-        return getExtensionElements() != null ? getExtensionElements().getTaskDefinition() : null;
+        return getTaskDefinitionImpl();
     }
 
     @Override

@@ -15,20 +15,25 @@
  */
 package io.zeebe.model.bpmn.impl.validation;
 
-import io.zeebe.model.bpmn.ValidationResult;
+import io.zeebe.model.bpmn.impl.Loggers;
+import io.zeebe.model.bpmn.impl.error.ErrorCollector;
+import io.zeebe.model.bpmn.impl.error.ValidationException;
 import io.zeebe.model.bpmn.impl.instance.DefinitionsImpl;
 import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
+import org.slf4j.Logger;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class BpmnValidator
 {
+    private static final Logger LOG = Loggers.MODEL_API_LOGGER;
+
     private final ProcessValidator processValidator = new ProcessValidator();
 
-    public ValidationResult validate(DefinitionsImpl definition)
+    public void validate(DefinitionsImpl definition)
     {
-        final ValidationResultImpl validationResult = new ValidationResultImpl();
+        final ErrorCollector validationResult = new ErrorCollector();
 
         final List<ProcessImpl> executableProcesses = definition.getProcesses()
                                                       .stream()
@@ -45,6 +50,18 @@ public class BpmnValidator
             processValidator.validate(validationResult, executableProcess);
         }
 
-        return validationResult;
+        reportExsitingErrorsOrWarnings(validationResult);
+    }
+
+    public void reportExsitingErrorsOrWarnings(ErrorCollector validationResult)
+    {
+        if (validationResult.hasErrors())
+        {
+            throw new ValidationException(validationResult.formatErrors());
+        }
+        else if (validationResult.hasWarnings())
+        {
+            LOG.warn(validationResult.formatWarnings());
+        }
     }
 }

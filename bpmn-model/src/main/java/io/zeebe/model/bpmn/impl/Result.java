@@ -13,18 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.model.bpmn.impl.validation.nodes;
+package io.zeebe.model.bpmn.impl;
 
-import io.zeebe.model.bpmn.impl.instance.EndEventImpl;
-import io.zeebe.model.bpmn.impl.error.ErrorCollector;
-
-public class EndEventValidator
+public interface Result
 {
-    public void validate(ErrorCollector validationResult, EndEventImpl endEvent)
-    {
-        if (!endEvent.getOutgoingSequenceFlows().isEmpty())
-        {
-            validationResult.addError(endEvent, "An end event must not have an outgoing sequence flow.");
-        }
-    }
+    boolean success();
+
+    boolean hasErrors();
+
+    boolean hasWarnings();
+
+    String format();
+
+    String formatErrors();
+
+    String formatWarnings();
 }

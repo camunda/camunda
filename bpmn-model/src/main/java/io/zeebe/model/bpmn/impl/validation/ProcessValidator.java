@@ -16,14 +16,14 @@
 package io.zeebe.model.bpmn.impl.validation;
 
 import io.zeebe.model.bpmn.impl.ZeebeConstraints;
+import io.zeebe.model.bpmn.impl.error.ErrorCollector;
 import io.zeebe.model.bpmn.impl.instance.*;
 import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
 import io.zeebe.model.bpmn.impl.validation.nodes.EndEventValidator;
 import io.zeebe.model.bpmn.impl.validation.nodes.ExclusiveGatewayValidator;
 import io.zeebe.model.bpmn.impl.validation.nodes.task.ServiceTaskValidator;
 import io.zeebe.model.bpmn.instance.ExclusiveGateway;
-import io.zeebe.model.bpmn.instance.FlowElement;
-import io.zeebe.model.bpmn.instance.FlowNode;
+import io.zeebe.util.collection.Tuple;
 import org.agrona.DirectBuffer;
 
 import java.util.ArrayList;
@@ -36,7 +36,7 @@ public class ProcessValidator
     private final EndEventValidator endEventValidator = new EndEventValidator();
     private final ExclusiveGatewayValidator exclusiveGatewayValidator = new ExclusiveGatewayValidator();
 
-    public void validate(ValidationResultImpl validationResult, ProcessImpl process)
+    public void validate(ErrorCollector validationResult, ProcessImpl process)
     {
         final DirectBuffer bpmnProcessId = process.getBpmnProcessId();
         if (bpmnProcessId == null || bpmnProcessId.capacity() == 0)
@@ -56,7 +56,7 @@ public class ProcessValidator
         validateFlowNodes(validationResult, process);
     }
 
-    private void validateFlowNodes(ValidationResultImpl validationResult, ProcessImpl process)
+    private void validateFlowNodes(ErrorCollector validationResult, ProcessImpl process)
     {
         final List<FlowNodeImpl> flowNodes = new ArrayList<>();
         flowNodes.addAll(process.getStartEvents());
@@ -71,7 +71,7 @@ public class ProcessValidator
         validateEndEvents(validationResult, process, flowNodes);
     }
 
-    private void validateStartEvent(ValidationResultImpl validationResult, ProcessImpl process, List<FlowNodeImpl> existingNodes)
+    private void validateStartEvent(ErrorCollector validationResult, ProcessImpl process, List<FlowNodeImpl> existingNodes)
     {
         final List<StartEventImpl> startEvents = process.getStartEvents();
         for (StartEventImpl startEvent : startEvents)
@@ -81,24 +81,24 @@ public class ProcessValidator
         }
     }
 
-    private void validateSequenceFlows(ValidationResultImpl validationResult, ProcessImpl process, List<FlowNodeImpl> existingNodes)
+    private void validateSequenceFlows(ErrorCollector validationResult, ProcessImpl process, List<FlowNodeImpl> existingNodes)
     {
         final List<SequenceFlowImpl> sequenceFlows = process.getSequenceFlows();
-        final List<String> sourceNodes = new ArrayList<>();
-        final List<String> targetNodes = new ArrayList<>();
+        final List<Tuple<String, SequenceFlowImpl>> sourceNodes = new ArrayList<>();
+        final List<Tuple<String, SequenceFlowImpl>> targetNodes = new ArrayList<>();
 
         for (SequenceFlowImpl sequenceFlow : sequenceFlows)
         {
             validateGeneralFlowElement(validationResult, sequenceFlow);
-            sourceNodes.add(sequenceFlow.getSourceRef());
-            targetNodes.add(sequenceFlow.getTargetRef());
+            sourceNodes.add(new Tuple<>(sequenceFlow.getSourceRef(), sequenceFlow));
+            targetNodes.add(new Tuple<>(sequenceFlow.getTargetRef(), sequenceFlow));
         }
 
         validateNodeExistence(validationResult, existingNodes, sourceNodes, "source");
         validateNodeExistence(validationResult, existingNodes, targetNodes, "target");
     }
 
-    private void validateGeneralFlowElement(ValidationResultImpl validationResult, FlowElement flowElement)
+    private void validateGeneralFlowElement(ErrorCollector validationResult, FlowElementImpl flowElement)
     {
         final DirectBuffer id = flowElement.getIdAsBuffer();
         if (id == null || id.capacity() == 0)
@@ -111,7 +111,7 @@ public class ProcessValidator
         }
     }
 
-    private void validateGeneralFlowNode(ValidationResultImpl validationResult, List<FlowNodeImpl> existingNodes, FlowNode flowNode)
+    private void validateGeneralFlowNode(ErrorCollector validationResult, List<FlowNodeImpl> existingNodes, FlowNodeImpl flowNode)
     {
         if (!(flowNode instanceof ExclusiveGateway))
         {
@@ -121,31 +121,31 @@ public class ProcessValidator
             }
         }
 
-        final List<String> sourceNodes = flowNode.getIncomingSequenceFlows()
+        final List<Tuple<String, SequenceFlowImpl>> sourceNodes = flowNode.getIncoming()
             .stream()
-            .map(flow -> ((SequenceFlowImpl) flow).getSourceRef())
+            .map(flow -> new Tuple<>(((SequenceFlowImpl) flow).getSourceRef(), flow))
             .collect(Collectors.toList());
 
         validateNodeExistence(validationResult, existingNodes, sourceNodes, "source");
 
-        final List<String> targetNodes = flowNode.getOutgoingSequenceFlows()
+        final List<Tuple<String, SequenceFlowImpl>> targetNodes = flowNode.getOutgoing()
             .stream()
-            .map(flow -> ((SequenceFlowImpl) flow).getTargetRef())
+            .map(flow -> new Tuple<>(((SequenceFlowImpl) flow).getTargetRef(), flow))
             .collect(Collectors.toList());
         validateNodeExistence(validationResult, existingNodes, targetNodes, "target");
     }
 
-    private void validateNodeExistence(ValidationResultImpl validationResult,
+    private void validateNodeExistence(ErrorCollector validationResult,
                                        List<FlowNodeImpl> existingNodes,
-                                       List<String> nodes,
+                                       List<Tuple<String, SequenceFlowImpl>> nodes,
                                        String nodeType)
     {
-        for (String nodeId : nodes)
+        for (Tuple<String, SequenceFlowImpl> tuple : nodes)
         {
             boolean exist = false;
             for (FlowNodeImpl existingNode : existingNodes)
             {
-                if (existingNode.getId().equalsIgnoreCase(nodeId))
+                if (existingNode.getId().equalsIgnoreCase(tuple.getLeft()))
                 {
                     exist = true;
                     break;
@@ -153,12 +153,13 @@ public class ProcessValidator
             }
             if (!exist)
             {
-                validationResult.addError(nodeId, String.format("Cannot find %s as %s of sequence flow.", nodeId, nodeType));
+                validationResult.addError(tuple.getRight(),
+                    String.format("Cannot find %s as %s of sequence flow.", tuple.getLeft(), nodeType));
             }
         }
     }
 
-    private void validateExclusiveGateways(ValidationResultImpl validationResult, ProcessImpl process, List<FlowNodeImpl> existingNodes)
+    private void validateExclusiveGateways(ErrorCollector validationResult, ProcessImpl process, List<FlowNodeImpl> existingNodes)
     {
         final List<ExclusiveGatewayImpl> exclusiveGateways = process.getExclusiveGateways();
         for (ExclusiveGatewayImpl exclusiveGateway : exclusiveGateways)
@@ -169,7 +170,7 @@ public class ProcessValidator
         }
     }
 
-    private void validateEndEvents(ValidationResultImpl validationResult, ProcessImpl process, List<FlowNodeImpl> existingNodes)
+    private void validateEndEvents(ErrorCollector validationResult, ProcessImpl process, List<FlowNodeImpl> existingNodes)
     {
         final List<EndEventImpl> endEvents = process.getEndEvents();
         for (EndEventImpl endEvent : endEvents)
@@ -180,7 +181,7 @@ public class ProcessValidator
         }
     }
 
-    private void validateServiceTasks(ValidationResultImpl validationResult, ProcessImpl process, List<FlowNodeImpl> existingNodes)
+    private void validateServiceTasks(ErrorCollector validationResult, ProcessImpl process, List<FlowNodeImpl> existingNodes)
     {
         final List<ServiceTaskImpl> serviceTasks = process.getServiceTasks();
         for (ServiceTaskImpl task : serviceTasks)

@@ -15,18 +15,16 @@
  */
 package io.zeebe.model.bpmn.builder;
 
+import io.zeebe.model.bpmn.impl.instance.*;
+import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
+import io.zeebe.model.bpmn.impl.transformation.BpmnTransformer;
+import io.zeebe.model.bpmn.impl.validation.BpmnValidator;
+import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
-
-import io.zeebe.model.bpmn.ValidationResult;
-import io.zeebe.model.bpmn.impl.transformation.BpmnTransformer;
-import io.zeebe.model.bpmn.impl.instance.*;
-import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
-import io.zeebe.model.bpmn.impl.validation.BpmnValidator;
-import io.zeebe.model.bpmn.impl.validation.ValidationException;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 
 public class BpmnBuilder
 {
@@ -245,16 +243,9 @@ public class BpmnBuilder
         final DefinitionsImpl definitionsImpl = new DefinitionsImpl();
         definitionsImpl.getProcesses().add(process);
 
-        final ValidationResult validationResult = validator.validate(definitionsImpl);
+        validator.validate(definitionsImpl);
 
-        if (validationResult.hasErrors())
-        {
-            throw new ValidationException(validationResult.format());
-        }
-        else
-        {
-            return transformer.transform(definitionsImpl);
-        }
+        return transformer.transform(definitionsImpl);
     }
 
 }

@@ -15,7 +15,7 @@
  */
 package io.zeebe.model.bpmn;
 
-import io.zeebe.model.bpmn.impl.validation.ValidationException;
+import io.zeebe.model.bpmn.impl.error.ValidationException;
 import io.zeebe.model.bpmn.instance.OutputBehavior;
 import org.junit.Rule;
 import org.junit.Test;
@@ -129,24 +129,6 @@ public class BpmnValidationTest
                 .taskType("test")
                     .input("$.*", "$.foo")
                     .output("$.bar", "$.a[0,1]")
-                .done()
-            .done();
-    }
-
-    @Test
-    public void testInvalidInputOutputMapping()
-    {
-        // expect
-        expectedException.expect(ValidationException.class);
-        expectedException.expectMessage("JSON path query 'foo' is not valid!");
-
-        // when
-        Bpmn.createExecutableWorkflow("process")
-            .startEvent()
-            .serviceTask()
-                .taskType("test")
-                    .input("foo", "$")
-                    .output("bar", "$")
                 .done()
             .done();
     }
@@ -271,23 +253,4 @@ public class BpmnValidationTest
         // when
         Bpmn.readFromXmlFile(bpmnFile);
     }
-
-    @Test
-    public void testInvalidConditionOnSequenceFlow()
-    {
-        // expect
-        expectedException.expect(ValidationException.class);
-        expectedException.expectMessage("The condition 'foobar' is not valid");
-
-        // when
-        Bpmn.createExecutableWorkflow("workflow")
-                .startEvent()
-                .exclusiveGateway("xor")
-                .sequenceFlow("s1", s -> s.condition("foobar"))
-                    .endEvent()
-                .sequenceFlow("s2", s -> s.defaultFlow())
-                    .endEvent()
-                    .done();
-    }
-
 }
