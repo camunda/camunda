@@ -8,7 +8,7 @@ import * as Styled from './styled';
 
 export default function DiagramPanel({instanceId}) {
   return (
-    <Styled.DiagramPanel>
+    <Panel>
       <Panel.Header>
         <Styled.DiagramPanelHeader>
           <tbody>
@@ -25,12 +25,12 @@ export default function DiagramPanel({instanceId}) {
           </tbody>
         </Styled.DiagramPanelHeader>
       </Panel.Header>
-      <Styled.DiagramPanelBody>
+      <Panel.Body>
         <Styled.IncidentMessage>
           <strong>Incident:</strong> Error Message goes here
         </Styled.IncidentMessage>
         <Diagram />
-      </Styled.DiagramPanelBody>
-    </Styled.DiagramPanel>
+      </Panel.Body>
+    </Panel>
   );
 }

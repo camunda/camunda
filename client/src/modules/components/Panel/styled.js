@@ -2,9 +2,9 @@ import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
 export const Panel = themed(styled.div`
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  height: 100%;
-  position: relative;
   border-radius: 3px;
   border: solid 1px #45464e;
   background-color: ${themeStyle({

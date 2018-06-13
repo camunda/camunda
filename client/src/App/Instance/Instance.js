@@ -26,7 +26,10 @@ export default class Instance extends Component {
           </Styled.Top>
           <Styled.Bottom>
             <Panel>
-              <Panel.Header>Instance history</Panel.Header>
+              <Panel.Header foldButtonType="right">
+                Instance history
+              </Panel.Header>
+              <Panel.Body> Body of bottom panel without footer</Panel.Body>
             </Panel>
           </Styled.Bottom>
         </Styled.Instance>

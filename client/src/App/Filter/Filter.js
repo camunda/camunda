@@ -39,21 +39,35 @@ export default class Filter extends Component {
           <Styled.Left>
             <Panel>
               <Panel.Header foldButtonType="left">Filters</Panel.Header>
-              <InstancesFilter
-                filter={this.state.filter}
-                onChange={this.handleFilterChange}
-              />
+              <Panel.Body>
+                <InstancesFilter
+                  filter={this.state.filter}
+                  onChange={this.handleFilterChange}
+                />
+              </Panel.Body>
               <Panel.Footer />
             </Panel>
           </Styled.Left>
           <Styled.Right>
-            <Panel>
-              <Panel.Header>Process Definition Name</Panel.Header>
-            </Panel>
-            <InstancesListView
-              instancesInFilter={this.state.filterCount}
-              filter={this.state.filter}
-            />
+            <Styled.Top>
+              <Panel>
+                <Panel.Header>Process Definition Name</Panel.Header>
+                <Panel.Body>Process Definition Name content</Panel.Body>
+              </Panel>
+            </Styled.Top>
+            <Styled.Bottom>
+              <Panel>
+                <Panel.Header>Lorem ipsum</Panel.Header>
+                <Panel.Body>
+                  {/*  <InstancesListView
+                      instancesInFilter={this.state.filterCount}
+                      filter={this.state.filter}
+                    />
+                  */}
+                  wierd table listing goes here
+                </Panel.Body>
+              </Panel>
+            </Styled.Bottom>
           </Styled.Right>
         </Styled.Filter>
       </div>

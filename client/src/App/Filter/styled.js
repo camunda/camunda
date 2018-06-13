@@ -8,6 +8,7 @@ export const Filter = styled.div`
 `;
 
 export const Left = styled.div`
+  display: flex;
   width: 320px;
 `;
 
@@ -15,4 +16,13 @@ export const Right = styled.div`
   width: 100%;
   display: flex;
   flex-direction: column;
+`;
+
+export const Top = styled.div`
+  flex-grow: 1;
+  display: flex;
+`;
+export const Bottom = styled.div`
+  flex-grow: 1;
+  display: flex;
 `;

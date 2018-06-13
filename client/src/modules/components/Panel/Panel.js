@@ -2,6 +2,7 @@ import React, {Component} from 'react';
 import PropTypes from 'prop-types';
 import PanelHeader from './PanelHeader';
 import PanelFooter from './PanelFooter';
+import PanelBody from './PanelBody';
 
 import * as Styled from './styled.js';
 
@@ -21,5 +22,6 @@ class Panel extends Component {
 
 Panel.Footer = PanelFooter;
 Panel.Header = PanelHeader;
+Panel.Body = PanelBody;
 
 export default Panel;

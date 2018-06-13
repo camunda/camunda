@@ -10,9 +10,10 @@ export const Instance = styled.div`
 
 export const Top = styled.div`
   flex-grow: 1;
-  position: relative;
+  display: flex;
 `;
 
 export const Bottom = styled.div`
   flex-grow: 1;
+  display: flex;
 `;

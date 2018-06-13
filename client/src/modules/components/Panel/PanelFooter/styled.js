@@ -2,9 +2,6 @@ import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
 export const Footer = themed(styled.div`
-  bottom: 0px;
-  left: 0px;
-  position: absolute;
   height: 38px;
   width: 100%;
   padding: 10px 0px;
