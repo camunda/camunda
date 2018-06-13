@@ -83,14 +83,14 @@ XML representation:
 
 BPMN Modeler: [Click Here](/bpmn-modeler/tasks.html#add-inputoutput-mapping)
 
-Even if no output mapping is given, the job result is merged on top level into the workflow instance payload. This is the default output behavior.
-The output behavior is configurable via the `outputBehavior` attribute on the `<ioMapping>` tag.
-It accepts three differents states:
+When no output mapping is defined, the job payload is by default merged on into the workflow instance payload.
+This default output behavior is configurable via the `outputBehavior` attribute on the `<ioMapping>` tag.
+It accepts three differents values:
 
- * **MERGE** merges the job result on top level into the workflow instance payload, if no output mapping is specified.  If output mappings are specified then it does a mapping specific merge.
+ * **MERGE** merges the job payload into the workflow instance payload, if no output mapping is specified.  If output mappings are specified, then the payloads are merged according to those.
  *This is the default output behavior.*
- * **OVERWRITE** overwrites the workflow instance payload with the job result. If output mappings are specified, then the content is extracted from the job result, which then overwrites the workflow instance payload.
- * **NONE** indicates that the worker does not produce any output. It is not possible to use output mappings in combination with this behavior. The Job result will simply dropped.
+ * **OVERWRITE** overwrites the workflow instance payload with the job payload. If output mappings are specified, then the content is extracted from the job payload, which then overwrites the workflow instance payload.
+ * **NONE** indicates that the worker does not produce any output. Output mappings cannot be used in combination with this behavior. The Job payload is simply ignored on job completion and the workflow instance payload remains unchanged.
 
 Example:
 

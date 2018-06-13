@@ -262,14 +262,14 @@ For more examples see the [extract mapping tests](https://github.com/zeebe-io/zb
 
   <tr>
     <th>Description</th>
-    <th>Task Payload</th>
+    <th>Job Payload</th>
     <th>Workflow Instance Payload</th>
     <th>Output Mapping</th>
     <th>Result</th>
   </tr>
 <!-- NEW ROW -->
   <tr>
-  <td>Merge top level</td>
+  <td>Default Merge</td>
   <td><pre>
 {
  "sum": 234.97
@@ -300,7 +300,7 @@ For more examples see the [extract mapping tests](https://github.com/zeebe-io/zb
 
 <!-- NEW ROW -->
   <tr>
-  <td>Merge top level without workflow payload</td>
+  <td>Default Merge without workflow payload</td>
   <td><pre>
 {
  "sum": 234.97
