@@ -32,9 +32,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import io.zeebe.UnstableTest;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
@@ -1094,6 +1096,7 @@ public class TopicSubscriptionTest
     }
 
     @Test
+    @Category(UnstableTest.class) // https://github.com/zeebe-io/zeebe/issues/939
     public void shouldCloseClientAfterSubscriptionCloseIsCalled() throws Exception
     {
         // given
@@ -1126,8 +1129,8 @@ public class TopicSubscriptionTest
         responseController.unblockNextResponse();
 
         // then
-        closingThread.join();
-        waitUntil(() -> future.isDone());
+        closingThread.join(Duration.ofSeconds(10).toMillis());
+        waitUntil(future::isDone);
 
         assertThat(future).isDone();
     }
