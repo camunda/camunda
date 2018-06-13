@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 import * as Styled from './styled.js';
 
@@ -14,3 +15,10 @@ export default function MetricTile({name, metric, metricColor}) {
     </div>
   );
 }
+
+MetricTile.propTypes = {
+  name: PropTypes.string.isRequired,
+  metric: PropTypes.number.isRequired,
+  metricColor: PropTypes.oneOf(['themed', 'allIsWell', 'incidentsAndErrors'])
+    .isRequired
+};
