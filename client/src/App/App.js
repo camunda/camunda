@@ -8,6 +8,7 @@ import Login from './Login';
 import Header from './Header';
 import Dashboard from './Dashboard';
 import Filter from './Filter';
+import Instance from './Instance';
 
 const Home = () => (
   <React.Fragment>
@@ -36,6 +37,7 @@ export default function App(props) {
           <Route path="/login" component={Login} />
           <Route exact path="/" component={Home} />
           <Route exact path="/filter" component={FilterPage} />
+          <Route exact path="/instance/:id" component={Instance} />
         </Authentication>
       </Router>
     </ThemeProvider>

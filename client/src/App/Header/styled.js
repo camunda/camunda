@@ -1,13 +1,14 @@
 import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
+export const HEADER_HEIGHT = 56;
 const separator = themeStyle({
   dark: 'rgba(246, 252, 251, 0.5)',
   light: 'rgba(98, 98, 110, 0.25)'
 });
 
 export const Header = themed(styled.header`
-  height: 56px;
+  height: ${HEADER_HEIGHT}px;
   background-color: ${themeStyle({
     dark: Colors.uiDark01,
     light: Colors.uiLight01
