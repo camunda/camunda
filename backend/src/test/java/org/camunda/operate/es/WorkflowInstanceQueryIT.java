@@ -60,7 +60,7 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
     //query running instances
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setRunning(true);
-    mockMvc.perform(post("/workflow-instances/count/")
+    mockMvc.perform(post("/api/workflow-instances/count/")
       .content(this.json(workflowInstanceQueryDto))
       .contentType(contentType))
       .andExpect(status().isOk())
@@ -74,7 +74,7 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setRunning(true);
     final MvcResult mvcResult =
-      mockMvc.perform(post("/workflow-instances/")
+      mockMvc.perform(post("/api/workflow-instances/")
         .content(this.json(workflowInstanceQueryDto))
         .contentType(contentType))
         .andExpect(status().isOk())
@@ -93,7 +93,7 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
   public void testQueryCompletedWorkflowInstancesCount() throws Exception {
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setCompleted(true);
-    mockMvc.perform(post("/workflow-instances/count/")
+    mockMvc.perform(post("/api/workflow-instances/count/")
       .content(this.json(workflowInstanceQueryDto))
       .contentType(contentType))
       .andExpect(status().isOk())
@@ -106,7 +106,7 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setCompleted(true);
     final MvcResult mvcResult = mockMvc
-      .perform(post("/workflow-instances/")
+      .perform(post("/api/workflow-instances/")
         .content(this.json(workflowInstanceQueryDto))
         .contentType(contentType))
       .andExpect(status().isOk())
@@ -123,7 +123,7 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
   public void testQueryWorkflowInstancesWithIncidentsCount() throws Exception {
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setWithIncidents(true);
-    mockMvc.perform(post("/workflow-instances/count/")
+    mockMvc.perform(post("/api/workflow-instances/count/")
       .content(this.json(workflowInstanceQueryDto))
       .contentType(contentType))
       .andExpect(status().isOk())
@@ -136,7 +136,7 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setWithIncidents(true);
     final MvcResult mvcResult = mockMvc
-      .perform(post("/workflow-instances/")
+      .perform(post("/api/workflow-instances/")
         .content(this.json(workflowInstanceQueryDto))
         .contentType(contentType))
       .andExpect(status().isOk())
@@ -160,7 +160,7 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
   public void testQueryWorkflowInstancesWithoutIncidentsCount() throws Exception {
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setWithoutIncidents(true);
-    mockMvc.perform(post("/workflow-instances/count/")
+    mockMvc.perform(post("/api/workflow-instances/count/")
       .content(this.json(workflowInstanceQueryDto))
       .contentType(contentType))
       .andExpect(status().isOk())
@@ -173,7 +173,7 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setWithoutIncidents(true);
     final MvcResult mvcResult = mockMvc
-      .perform(post("/workflow-instances/")
+      .perform(post("/api/workflow-instances/")
         .content(this.json(workflowInstanceQueryDto))
         .contentType(contentType))
       .andExpect(status().isOk())
@@ -235,7 +235,5 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
     incidentEntity.setState(state);
     return incidentEntity;
   }
-
-
 
 }

@@ -31,7 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(value = AUTHENTICATION_URL)
 public class AuthenticationRestService {
 
-  public static final String AUTHENTICATION_URL = "/authentications";
+  public static final String AUTHENTICATION_URL = "/api/authentications";
 
   @Autowired
   protected UserDetailsService userDetailsService;

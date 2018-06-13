@@ -1,5 +1,7 @@
 package org.camunda.operate.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.camunda.operate.TestApplication;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -16,7 +18,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Svetlana Dorokhova.
@@ -51,7 +52,7 @@ public class LoginLogoutTest {
 
     HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
 
-    ResponseEntity<Object> response = testRestTemplate.postForEntity("/login", request, Object.class);
+    ResponseEntity<Object> response = testRestTemplate.postForEntity("/api/login", request, Object.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     assertThat(response.getHeaders()).containsKey("Set-Cookie");
@@ -71,7 +72,7 @@ public class LoginLogoutTest {
 
     HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
 
-    ResponseEntity<String> response = testRestTemplate.postForEntity("/login", request, String.class);
+    ResponseEntity<String> response = testRestTemplate.postForEntity("/api/login", request, String.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     assertThat(response.getBody()).contains("Bad credentials");

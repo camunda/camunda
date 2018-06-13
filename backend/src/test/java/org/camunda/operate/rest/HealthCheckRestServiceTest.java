@@ -1,19 +1,17 @@
 package org.camunda.operate.rest;
 
-import org.camunda.operate.Application;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.camunda.operate.TestApplication;
 import org.camunda.operate.rest.dto.HealthStateDto;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.model.TestTimedOutException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Svetlana Dorokhova.

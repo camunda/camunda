@@ -1,6 +1,7 @@
 package org.camunda.operate.rest;
 
-import org.camunda.operate.Application;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.camunda.operate.TestApplication;
 import org.camunda.operate.rest.dto.HealthStateDto;
 import org.junit.Test;
@@ -12,7 +13,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Svetlana Dorokhova.
@@ -30,7 +30,7 @@ public class HealthCheckRestServiceAuthenticationTest {
 
   @Test
   public void testHealthStateEndpointIsSecured() {
-    final ResponseEntity<HealthStateDto> response = testRestTemplate.getForEntity(HealthCheckRestService.HEALTH_CHECK_URL, HealthStateDto.class);
+    final ResponseEntity<String> response = testRestTemplate.getForEntity(HealthCheckRestService.HEALTH_CHECK_URL, String.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
   }
