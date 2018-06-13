@@ -150,7 +150,7 @@ public class CreateWorkflowInstanceTest
 
         // then
         assertThat(workflowInstance.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
-        assertThat(workflowInstance.getPayloadAsMap()).contains(entry("foo", "bar"));
+        assertThat(workflowInstance.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
     }
 
     @Test
@@ -168,7 +168,7 @@ public class CreateWorkflowInstanceTest
 
         // then
         assertThat(workflowInstance.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
-        assertThat(workflowInstance.getPayloadAsMap()).contains(entry("foo", "bar"));
+        assertThat(workflowInstance.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
     }
 
     @Test

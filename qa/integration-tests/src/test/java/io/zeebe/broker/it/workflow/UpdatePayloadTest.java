@@ -99,7 +99,38 @@ public class UpdatePayloadTest
 
         assertThat(payloadUpdated.getState()).isEqualTo(WorkflowInstanceState.PAYLOAD_UPDATED);
         assertThat(payloadUpdated.getPayload()).isEqualTo(PAYLOAD);
-        assertThat(payloadUpdated.getPayloadAsMap()).contains(entry("foo", "bar"));
+        assertThat(payloadUpdated.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+    }
+
+    @Test
+    public void shouldUpdatePayloadAndCompleteJobAfterwards()
+    {
+        // given
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED));
+        final WorkflowInstanceEvent activtyInstance = eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED);
+        clientRule.getWorkflowClient()
+            .newUpdatePayloadCommand(activtyInstance)
+            .payload(PAYLOAD)
+            .send()
+            .join();
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.PAYLOAD_UPDATED));
+
+        // when
+        clientRule.getJobClient()
+            .newWorker()
+            .jobType("task-1")
+            .handler((client, job) -> client.newCompleteCommand(job).payload("{\"result\": \"ok\"}").send())
+            .open();
+
+        // then
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED));
+        final WorkflowInstanceEvent wfEvent =
+            eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED);
+        assertThat(wfEvent.getPayload()).isEqualTo("{\"foo\":\"bar\",\"result\":\"ok\"}");
+        assertThat(wfEvent.getPayloadAsMap())
+            .hasSize(2)
+            .contains(entry("foo", "bar"))
+            .contains(entry("result", "ok"));
     }
 
     @Test
@@ -122,7 +153,7 @@ public class UpdatePayloadTest
 
         assertThat(event.getState()).isEqualTo(WorkflowInstanceState.PAYLOAD_UPDATED);
         assertThat(event.getPayload()).isEqualTo(PAYLOAD);
-        assertThat(event.getPayloadAsMap()).contains(entry("foo", "bar"));
+        assertThat(event.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
     }
 
     @Test
