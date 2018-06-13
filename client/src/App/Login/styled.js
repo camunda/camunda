@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import {Input} from 'modules/components';
+import Input from 'modules/components/Input';
 import {Colors} from 'modules/theme';
 
 export const H1 = styled.h1`

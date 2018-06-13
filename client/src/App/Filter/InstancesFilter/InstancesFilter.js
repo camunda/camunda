@@ -1,6 +1,6 @@
 import React from 'react';
 
-import {Checkbox} from 'modules/components';
+import Checkbox from 'modules/components/Checkbox';
 
 import * as Styled from './styled.js';
 

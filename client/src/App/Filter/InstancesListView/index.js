@@ -1,1 +1,1 @@
-export {default as InstancesListView} from './InstancesListView';
+export {default} from './InstancesListView';

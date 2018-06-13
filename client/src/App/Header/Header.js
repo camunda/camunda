@@ -4,7 +4,9 @@ import PropTypes from 'prop-types';
 
 import * as Styled from './styled.js';
 
-import {Badge, Dropdown} from 'modules/components';
+import Badge from 'modules/components/Badge';
+import Dropdown from 'modules/components/Dropdown';
+
 import * as api from './api';
 
 export default class Header extends React.Component {

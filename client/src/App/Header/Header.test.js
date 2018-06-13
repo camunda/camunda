@@ -1,7 +1,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 import Header from './Header';
-import {Dropdown} from 'modules/components';
+import Dropdown from 'modules/components/Dropdown';
 import * as api from './api';
 import {flushPromises, mockResolvedAsyncFn} from 'modules/testUtils';
 

@@ -1,1 +1,1 @@
-export {default as InstancesFilter} from './InstancesFilter';
+export {default} from './InstancesFilter';

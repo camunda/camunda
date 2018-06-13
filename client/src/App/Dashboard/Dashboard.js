@@ -1,7 +1,7 @@
 import React, {Component} from 'react';
 
-import {MetricPanel} from './MetricPanel';
-import {MetricTile} from './MetricTile';
+import MetricPanel from './MetricPanel';
+import MetricTile from './MetricTile';
 
 import {
   loadRunningInst,

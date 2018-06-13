@@ -1,1 +1,1 @@
-export {default as MetricPanel} from './MetricPanel';
+export {default} from './MetricPanel';

@@ -1,7 +1,7 @@
 import React, {Component} from 'react';
 import PropTypes from 'prop-types';
-import PanelHeader from './../PanelHeader';
-import PanelFooter from './../PanelFooter';
+import PanelHeader from './PanelHeader';
+import PanelFooter from './PanelFooter';
 
 import * as Styled from './styled.js';
 

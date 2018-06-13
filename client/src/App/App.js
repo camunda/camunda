@@ -3,11 +3,11 @@ import {BrowserRouter as Router, Route} from 'react-router-dom';
 
 import {ThemeProvider} from 'modules/theme';
 
-import {Authentication} from './Authentication';
-import {Login} from './Login';
-import {Header} from './Header';
-import {Dashboard} from './Dashboard';
-import {Filter} from './Filter';
+import Authentication from './Authentication';
+import Login from './Login';
+import Header from './Header';
+import Dashboard from './Dashboard';
+import Filter from './Filter';
 
 const Home = () => (
   <React.Fragment>

@@ -1,15 +1,13 @@
 import React, {Component} from 'react';
 
-import {Header} from '../Header';
+import Header from '../Header';
 
 import Panel from 'modules/components/Panel';
 
-import {InstancesFilter} from './InstancesFilter';
-import {InstancesListView} from './InstancesListView';
+import InstancesFilter from './InstancesFilter';
+import InstancesListView from './InstancesListView';
 
 import * as Styled from './styled.js';
-
-console.log(Panel);
 
 export default class Filter extends Component {
   render() {

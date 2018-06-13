@@ -1,1 +1,1 @@
-export {default as MetricTile} from './MetricTile';
+export {default} from './MetricTile';
