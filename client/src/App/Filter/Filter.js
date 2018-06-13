@@ -10,7 +10,7 @@ import {InstancesListView} from './InstancesListView';
 
 import * as Styled from './styled.js';
 
-class Filter extends Component {
+export default class Filter extends Component {
   render() {
     return (
       <div>
@@ -25,7 +25,7 @@ class Filter extends Component {
           <Styled.Left>
             <Panel>
               <PanelHeader headline="Filters" foldButtonType="left" />
-              <InstancesFilter type="running" />
+              <InstancesFilter />
               <PanelFooter />
             </Panel>
           </Styled.Left>
@@ -40,5 +40,3 @@ class Filter extends Component {
     );
   }
 }
-
-export default Filter;

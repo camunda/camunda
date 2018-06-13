@@ -1,5 +1,4 @@
 import React from 'react';
-import PropTypes from 'prop-types';
 
 import {Checkbox} from 'components';
 
@@ -11,7 +10,7 @@ export default class InstancesFilter extends React.Component {
     incident: false
   };
 
-  handleInputChange = () => {
+  toggleParentSelected = () => {
     if (this.state.active && this.state.incident) {
       this.setState({active: false, incident: false});
     } else {
@@ -37,7 +36,7 @@ export default class InstancesFilter extends React.Component {
           label="Running Instances"
           indeterminate={this.isIndeterminate()}
           checked={active && incident}
-          onChange={this.handleInputChange}
+          onChange={this.toggleParentSelected}
         />
         <Styled.NestedFilters>
           <Checkbox
@@ -55,6 +54,3 @@ export default class InstancesFilter extends React.Component {
     );
   }
 }
-InstancesFilter.propTypes = {
-  type: PropTypes.oneOf(['running'])
-};

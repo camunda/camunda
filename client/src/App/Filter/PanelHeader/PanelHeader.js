@@ -20,5 +20,8 @@ export default function PanelHeader({headline, foldButtonType, children}) {
 PanelHeader.propTypes = {
   headline: PropTypes.string,
   foldButtonType: PropTypes.oneOf(['left', 'right']),
-  children: PropTypes.element
+  children: PropTypes.oneOfType([
+    PropTypes.arrayOf(PropTypes.node),
+    PropTypes.node
+  ])
 };
