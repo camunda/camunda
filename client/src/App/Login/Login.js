@@ -18,7 +18,7 @@ class Login extends React.Component {
     error: null
   };
 
-  login = async e => {
+  handleLogin = async e => {
     e.preventDefault();
     const {username, password} = this.state;
     try {
@@ -42,9 +42,11 @@ class Login extends React.Component {
 
     // default render
     return (
-      <Styled.Login onSubmit={this.login}>
+      <Styled.Login onSubmit={this.handleLogin}>
         <Styled.H1>Operate</Styled.H1>
-        {error && <Styled.FormError>{error}</Styled.FormError>}
+        {error && (
+          <Styled.FormError data-test-id="error-span">{error}</Styled.FormError>
+        )}
         <Styled.LoginInput
           value={username}
           type="text"

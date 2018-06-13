@@ -16,17 +16,19 @@ import * as api from './api';
 jest.mock('modules/request');
 
 describe('Login', () => {
-  it('should reset the response interceptor', () => {
-    // given
-    shallow(<Login />);
+  let node;
 
+  beforeEach(() => {
+    node = shallow(<Login />);
+  });
+
+  it('should reset the response interceptor', () => {
     // then
     expect(resetResponseInterceptor).toBeCalled();
   });
 
   it('should render login form by default', () => {
     // given
-    const node = shallow(<Login />);
     const usernameInput = node.findWhere(
       element =>
         element.prop('type') === 'text' && element.prop('name') === 'username'
@@ -55,18 +57,27 @@ describe('Login', () => {
 
   it('should change state according to inputs change', () => {
     // given
-    const node = mount(<Login />);
+    const usernameInput = node.findWhere(
+      element =>
+        element.prop('type') === 'text' && element.prop('name') === 'username'
+    );
+    const passwordInput = node.findWhere(
+      element =>
+        element.prop('type') === 'password' &&
+        element.prop('name') === 'password'
+    );
+
     const username = 'foo';
     const password = 'bar';
 
     // when
-    node
-      .find("input[name='username']")
-      .simulate('change', {target: {name: 'username', value: username}});
+    usernameInput.simulate('change', {
+      target: {name: 'username', value: username}
+    });
 
-    node
-      .find("input[name='password']")
-      .simulate('change', {target: {name: 'password', value: password}});
+    passwordInput.simulate('change', {
+      target: {name: 'password', value: password}
+    });
 
     // then
     expect(node.state('username')).toEqual(username);
@@ -79,16 +90,16 @@ describe('Login', () => {
     api.login = mockResolvedAsyncFn();
 
     // given
-    const node = shallow(<Login />);
-    const form = node.dive().find('form');
     const username = node.state('username');
     const password = node.state('password');
 
     // when
-    form.simulate('submit', {preventDefault: () => {}});
-    expect(api.login).toBeCalledWith({username, password});
+    node.instance().handleLogin({preventDefault: () => {}});
     await flushPromises();
     node.update();
+
+    // then
+    expect(api.login).toBeCalledWith({username, password});
     const RedirectNode = node.find(Redirect);
     expect(RedirectNode).toHaveLength(1);
     expect(RedirectNode.prop('to')).toBe('/');
@@ -104,16 +115,17 @@ describe('Login', () => {
     api.login = mockRejectedAsyncFn();
 
     // given
-    const node = mount(<Login />);
-    const form = node.find('form');
     const error = 'Username and Password do not match';
 
     // when
-    form.simulate('submit', {preventDefault: () => {}});
+    node.instance().handleLogin({preventDefault: () => {}});
     await flushPromises();
     node.update();
+
+    // then
+    const errorSpan = node.find('[data-test-id="error-span"]').render();
     expect(node.state('error')).toEqual(error);
-    expect(node.text()).toContain(error);
+    expect(errorSpan.text()).toContain(error);
     expect(node).toMatchSnapshot();
 
     // reset api.login

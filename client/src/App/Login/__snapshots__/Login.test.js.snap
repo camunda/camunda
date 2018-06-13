@@ -1,129 +1,38 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`Login should display an error on unsuccessful login 1`] = `
-<Login>
-  <styled.form
-    onSubmit={[Function]}
+<styled.form
+  onSubmit={[Function]}
+>
+  <styled.h1>
+    Operate
+  </styled.h1>
+  <styled.span
+    data-test-id="error-span"
   >
-    <form
-      className="sc-fjdhpX fuFiXT"
-      onSubmit={[Function]}
-    >
-      <styled.h1>
-        <h1
-          className="sc-jTzLTM gcjyOT"
-        >
-          Operate
-        </h1>
-      </styled.h1>
-      <styled.span>
-        <span
-          className="sc-cSHVUG jgrGPI"
-        >
-          Username and Password do not match
-        </span>
-      </styled.span>
-      <Styled(Input)
-        name="username"
-        onChange={[Function]}
-        placeholder="Username"
-        required={true}
-        type="text"
-        value=""
-      >
-        <Input
-          className="sc-jzJRlG dUREXQ"
-          name="username"
-          onChange={[Function]}
-          placeholder="Username"
-          required={true}
-          type="text"
-          value=""
-        >
-          <styled.input
-            className="sc-jzJRlG dUREXQ"
-            name="username"
-            onChange={[Function]}
-            placeholder="Username"
-            required={true}
-            type="text"
-            value=""
-          >
-            <input
-              className="sc-jzJRlG dUREXQ sc-bdVaJa fEQlyH"
-              name="username"
-              onChange={[Function]}
-              placeholder="Username"
-              required={true}
-              type="text"
-              value=""
-            />
-          </styled.input>
-        </Input>
-      </Styled(Input)>
-      <Styled(Input)
-        name="password"
-        onChange={[Function]}
-        placeholder="Password"
-        required={true}
-        type="password"
-        value=""
-      >
-        <Input
-          className="sc-jzJRlG dUREXQ"
-          name="password"
-          onChange={[Function]}
-          placeholder="Password"
-          required={true}
-          type="password"
-          value=""
-        >
-          <styled.input
-            className="sc-jzJRlG dUREXQ"
-            name="password"
-            onChange={[Function]}
-            placeholder="Password"
-            required={true}
-            type="password"
-            value=""
-          >
-            <input
-              className="sc-jzJRlG dUREXQ sc-bdVaJa fEQlyH"
-              name="password"
-              onChange={[Function]}
-              placeholder="Password"
-              required={true}
-              type="password"
-              value=""
-            />
-          </styled.input>
-        </Input>
-      </Styled(Input)>
-      <Styled(Input)
-        placeholder="Password"
-        type="submit"
-      >
-        <Input
-          className="sc-jzJRlG dUREXQ"
-          placeholder="Password"
-          type="submit"
-        >
-          <styled.input
-            className="sc-jzJRlG dUREXQ"
-            placeholder="Password"
-            type="submit"
-          >
-            <input
-              className="sc-jzJRlG dUREXQ sc-bdVaJa iDLlQf"
-              placeholder="Password"
-              type="submit"
-            />
-          </styled.input>
-        </Input>
-      </Styled(Input)>
-    </form>
-  </styled.form>
-</Login>
+    Username and Password do not match
+  </styled.span>
+  <Styled(Input)
+    name="username"
+    onChange={[Function]}
+    placeholder="Username"
+    required={true}
+    type="text"
+    value=""
+  />
+  <Styled(Input)
+    name="password"
+    onChange={[Function]}
+    placeholder="Password"
+    required={true}
+    type="password"
+    value=""
+  />
+  <Styled(Input)
+    placeholder="Password"
+    type="submit"
+  />
+</styled.form>
 `;
 
 exports[`Login should redirect to home page on successful login 1`] = `
