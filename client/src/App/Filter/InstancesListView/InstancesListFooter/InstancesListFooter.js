@@ -1,5 +1,5 @@
 import React from 'react';
-import {PanelFooter} from 'App/Filter/PanelFooter';
+import Panel from 'modules/components/Panel';
 
 import * as Styled from './styled';
 
@@ -12,7 +12,7 @@ export default class InstancesListFooter extends React.Component {
     const pageRange = getRange(currentPage, maxPage);
 
     return (
-      <PanelFooter>
+      <Panel.Footer>
         <Styled.Pagination>
           <Styled.Page disabled={currentPage === 1}>f</Styled.Page>
           <Styled.Page disabled={currentPage === 1}>p</Styled.Page>
@@ -36,7 +36,7 @@ export default class InstancesListFooter extends React.Component {
           <Styled.Page disabled={currentPage === maxPage}>n</Styled.Page>
           <Styled.Page disabled={currentPage === maxPage}>l</Styled.Page>
         </Styled.Pagination>
-      </PanelFooter>
+      </Panel.Footer>
     );
   }
 }

@@ -1,6 +1,5 @@
 import React from 'react';
-import {Panel} from 'App/Filter/Panel';
-import {PanelHeader} from 'App/Filter/PanelHeader';
+import Panel from 'modules/components/Panel';
 import InstancesList from './InstancesList';
 import InstancesListFooter from './InstancesListFooter';
 
@@ -29,7 +28,7 @@ export default class InstancesListView extends React.Component {
   render() {
     return (
       <Panel>
-        <PanelHeader headline="Instances" />
+        <Panel.Header headline="Instances" />
         <InstancesList
           data={this.state.instances}
           updateEntriesPerPage={entriesPerPage =>

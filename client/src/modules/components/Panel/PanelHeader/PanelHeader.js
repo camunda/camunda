@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import {FoldButton} from '../FoldButton';
+import FoldButton from 'modules/components/FoldButton';
 
 import * as Styled from './styled.js';
 
