@@ -50,3 +50,7 @@ button {
 svg {
   fill: currentColor;
 }
+
+.bjs-powered-by {
+  display: none;
+}

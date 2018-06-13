@@ -1,6 +1,7 @@
 import React, {Component, Fragment} from 'react';
 import Panel from 'modules/components/Panel';
 import Header from '../Header';
+import Diagram from './Diagram';
 
 import * as Styled from './styled';
 
@@ -21,7 +22,7 @@ export default class Instance extends Component {
           <Styled.Top>
             <Panel>
               <Panel.Header headline="Process_definition_name" />
-              Here comes the diagram
+              <Diagram />
             </Panel>
           </Styled.Top>
           <Styled.Bottom>

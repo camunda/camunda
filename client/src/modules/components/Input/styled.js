@@ -4,7 +4,7 @@ export const Input = styled.input`
   font-family: IBMPlexSans;
   font-size: 15px;
   font-style: ${({type}) =>
-    type === 'button' || type === 'submit' ? 'normal' : 'italic'};
+    type === 'button' || type === 'text' ? 'italic' : 'normal'};
   color: #ffffff;
   border: solid 1px #5b5e63;
   background-color: #313238;
