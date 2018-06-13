@@ -5,10 +5,13 @@ import * as Styled from './styled';
 
 const headerConfig = {
   headerLabels: {
+    workflowDefinitionId: 'Process Definition',
     id: 'Instance ID',
-    name: 'Process Definition Name'
+    startDate: 'Start Time',
+    endDate: 'End Time',
+    actions: 'Actions'
   },
-  order: ['id', 'name']
+  order: ['workflowDefinitionId', 'id', 'startDate', 'endDate', 'actions']
 };
 
 export default class InstancesList extends React.Component {
@@ -25,7 +28,7 @@ export default class InstancesList extends React.Component {
   }
 
   renderTable() {
-    if (!this.state.rowsToDisplay) {
+    if (!this.state.rowsToDisplay || !this.props.data) {
       return null;
     }
 

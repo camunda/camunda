@@ -1,8 +1,10 @@
 import React from 'react';
-import {Panel} from '../Panel';
-import {PanelHeader} from '../PanelHeader';
-import {PanelFooter} from '../PanelFooter';
+import {Panel} from 'App/Filter/Panel';
+import {PanelHeader} from 'App/Filter/PanelHeader';
 import InstancesList from './InstancesList';
+import InstancesListFooter from './InstancesListFooter';
+
+import {getData} from './api';
 
 /**
  * This component is responsible for the handling the current state of the process instance list view and synchronize this with the table and the Panel footer.
@@ -19,7 +21,8 @@ import InstancesList from './InstancesList';
  */
 export default class InstancesListView extends React.Component {
   state = {
-    instances: generateData(20),
+    firstElement: 0,
+    instances: null,
     entriesPerPage: null
   };
 
@@ -33,22 +36,27 @@ export default class InstancesListView extends React.Component {
             this.setState({entriesPerPage})
           }
         />
-        <PanelFooter>
-          Displaying page 1 /{' '}
-          {Math.ceil(this.props.instancesInFilter / this.state.entriesPerPage)}
-        </PanelFooter>
+        <InstancesListFooter
+          total={this.props.instancesInFilter}
+          perPage={this.state.entriesPerPage}
+          firstElement={this.state.firstElement}
+          changePage={newPage => this.setState({firstElement: newPage})}
+        />
       </Panel>
     );
   }
-}
 
-function generateData(number) {
-  const data = [];
-  for (let i = 0; i < number; i++) {
-    data.push({
-      id: i,
-      name: 'Instance ' + i
-    });
+  componentDidMount() {
+    this.loadData();
   }
-  return data;
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.filter !== this.props.filter) {
+      this.loadData();
+    }
+  }
+
+  loadData = async () => {
+    this.setState({instances: await getData()});
+  };
 }
