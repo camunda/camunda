@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import {ThemeProvider, ThemeConsumer} from 'theme';
+import {ThemeProvider, ThemeConsumer} from 'modules/theme';
 
 export default class Wrapper extends Component {
   render() {

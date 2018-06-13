@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import {Colors} from 'theme';
+import {Colors} from 'modules/theme';
 
 export const Pagination = styled.div`
   text-align: center;

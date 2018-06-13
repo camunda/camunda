@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import {themed, themeStyle} from 'theme';
+import {themed, themeStyle} from 'modules/theme';
 
 export const FoldButton = themed(styled.div`
   display: flex;

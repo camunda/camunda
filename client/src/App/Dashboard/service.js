@@ -1,4 +1,4 @@
-import {post} from 'request';
+import {post} from 'modules/request';
 
 const loadCount = async payload => {
   const response = await post('/workflow-instances/count', payload);

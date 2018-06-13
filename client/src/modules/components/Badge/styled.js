@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import {Colors} from 'theme';
+import {Colors} from 'modules/theme';
 
 export const Badge = styled.div`
   display: inline-block;

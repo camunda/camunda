@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import {Colors, themed, themeStyle} from 'theme';
+import {Colors, themed, themeStyle} from 'modules/theme';
 
 export const Footer = themed(styled.div`
   bottom: 0px;

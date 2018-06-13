@@ -1,5 +1,5 @@
 import React from 'react';
-import {Table} from 'components';
+import {Table} from 'modules/components';
 
 import * as Styled from './styled';
 

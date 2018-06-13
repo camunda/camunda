@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 
-import {Colors, themed, themeStyle} from 'theme';
+import {Colors, themed, themeStyle} from 'modules/theme';
 
 export const Checkbox = themed(styled.input`
   width: 14px;

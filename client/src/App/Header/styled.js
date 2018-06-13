@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import {Colors, themed, themeStyle} from 'theme';
+import {Colors, themed, themeStyle} from 'modules/theme';
 
 const separator = themeStyle({
   dark: 'rgba(246, 252, 251, 0.5)',

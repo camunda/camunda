@@ -1,5 +1,5 @@
 import React from 'react';
-import {mount, shallow} from 'enzyme';
+import {shallow} from 'enzyme';
 import Header from './Header';
 import {Dropdown} from 'modules/components';
 import * as api from './api';
@@ -16,13 +16,15 @@ api.user = mockResolvedAsyncFn(USER);
 
 describe('Header', () => {
   it('should show the count of all instances', () => {
-    const node = mount(<Header active="dashboard" instances={123} />);
+    const node = shallow(<Header active="dashboard" instances={123} />);
 
-    expect(node).toIncludeText('123');
+    const badge = node.find('Badge[type="instances"]').render();
+
+    expect(badge.text()).toEqual('123');
   });
 
   it('should show other provided properties', () => {
-    const node = mount(
+    const node = shallow(
       <Header
         active="dashboard"
         instances={123}
@@ -32,29 +34,29 @@ describe('Header', () => {
       />
     );
 
-    expect(node).toIncludeText('Filters');
-    expect(node).toIncludeText('Selections');
-    expect(node).toIncludeText('Incidents');
+    expect(node.find('Badge[type="filters"]')).toExist();
+    expect(node.find('Badge[type="selections"]')).toExist();
+    expect(node.find('Badge[type="incidents"]')).toExist();
   });
 
   it('should not show the labels if they are not provided', () => {
-    const node = mount(
+    const node = shallow(
       <Header active="dashboard" instances={123} incidents={1} />
     );
 
-    expect(node).not.toIncludeText('Filters');
-    expect(node).not.toIncludeText('Selections');
-    expect(node).toIncludeText('Incidents');
+    expect(node.find('Badge[type="filters"]')).not.toExist();
+    expect(node.find('Badge[type="selections"]')).not.toExist();
+    expect(node.find('Badge[type="incidents"]')).toExist();
   });
 
   it('it should show the instances field even if there are no instances', () => {
-    const node = mount(<Header active="dashboard" instances={0} />);
+    const node = shallow(<Header active="dashboard" instances={0} />);
 
-    expect(node).toIncludeText('Instances');
+    expect(node.find('Badge[type="instances"]')).toExist();
   });
 
   it('it should request user information', async () => {
-    const node = mount(<Header active="dashboard" instances={0} />);
+    const node = shallow(<Header active="dashboard" instances={0} />);
     const spyFetch = jest.spyOn(node.instance(), 'fetchUser');
 
     await node.instance().componentDidMount();
@@ -62,7 +64,7 @@ describe('Header', () => {
   });
 
   it('it should display user firstname and lastname', async () => {
-    const node = mount(<Header active="dashboard" instances={0} />);
+    const node = shallow(<Header active="dashboard" instances={0} />);
 
     // await user data fetching
     await node.instance().componentDidMount();
@@ -73,8 +75,9 @@ describe('Header', () => {
     expect(state).toHaveProperty(`lastname`, USER.lastname);
 
     // check user firstname and lastname are shown in the Header
-    expect(node.text()).toContain(USER.firstname);
-    expect(node.text()).toContain(USER.lastname);
+    const DropdownLabel = node.find('Dropdown').prop('label');
+    expect(DropdownLabel).toContain(USER.firstname);
+    expect(DropdownLabel).toContain(USER.lastname);
   });
 
   it('should logout the user when calling handleLogout', async () => {
