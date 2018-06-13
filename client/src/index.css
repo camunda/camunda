@@ -46,3 +46,7 @@ body {
 button {
   font-family: IBMPlexSans;
 }
+
+svg {
+  fill: currentColor;
+}

@@ -11,10 +11,11 @@ export const Page = styled.button`
   font-family: IBMPlexSans;
   font-size: 13px;
   cursor: pointer;
-  padding: 0 5px;
+  padding: ${({withIcon}) => (withIcon ? '0' : '0 5px')};
   line-height: 18px;
   height: 18px;
   margin: 1px;
+  vertical-align: top;
   ${({active}) => {
     if (active) {
       return `background-color: rgba(77, 144, 255, 0.9);
@@ -29,6 +30,7 @@ export const Page = styled.button`
 `;
 
 export const PageSeparator = styled.div`
+  vertical-align: top;
   display: inline-block;
   opacity: 0.9;
   font-size: 13px;

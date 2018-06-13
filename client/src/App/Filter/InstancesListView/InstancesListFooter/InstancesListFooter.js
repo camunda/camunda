@@ -2,6 +2,7 @@ import React from 'react';
 import Panel from 'modules/components/Panel';
 
 import * as Styled from './styled';
+import {LeftBar, Left, Right, RightBar} from 'modules/components/Icon';
 
 export default class InstancesListFooter extends React.Component {
   render() {
@@ -14,8 +15,12 @@ export default class InstancesListFooter extends React.Component {
     return (
       <Panel.Footer>
         <Styled.Pagination>
-          <Styled.Page disabled={currentPage === 1}>f</Styled.Page>
-          <Styled.Page disabled={currentPage === 1}>p</Styled.Page>
+          <Styled.Page disabled={currentPage === 1} withIcon>
+            <LeftBar />
+          </Styled.Page>
+          <Styled.Page disabled={currentPage === 1} withIcon>
+            <Left />
+          </Styled.Page>
           {!pageRange.includes(1) && (
             <React.Fragment>
               <Styled.Page>1</Styled.Page>
@@ -33,8 +38,12 @@ export default class InstancesListFooter extends React.Component {
               <Styled.Page>{maxPage}</Styled.Page>
             </React.Fragment>
           )}
-          <Styled.Page disabled={currentPage === maxPage}>n</Styled.Page>
-          <Styled.Page disabled={currentPage === maxPage}>l</Styled.Page>
+          <Styled.Page disabled={currentPage === maxPage} withIcon>
+            <Right />
+          </Styled.Page>
+          <Styled.Page disabled={currentPage === maxPage} withIcon>
+            <RightBar />
+          </Styled.Page>
         </Styled.Pagination>
       </Panel.Footer>
     );
