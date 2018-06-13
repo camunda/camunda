@@ -1,8 +1,27 @@
 import {post} from 'request';
 
-export async function loadDashboard() {
-  const response = await post('/workflow-instance/count', {
+const loadCount = async payload => {
+  const response = await post('/workflow-instances/count', payload);
+  const resJson = await response.json();
+  return resJson.count;
+};
+
+export async function loadRunningInst() {
+  return loadCount({
     running: true
   });
-  return await response.json();
+}
+
+export async function loadInstWithoutIncidents() {
+  return loadCount({
+    running: true,
+    withoutIncidents: true
+  });
+}
+
+export async function loadInstWithIncidents() {
+  return loadCount({
+    running: true,
+    withIncidents: true
+  });
 }
