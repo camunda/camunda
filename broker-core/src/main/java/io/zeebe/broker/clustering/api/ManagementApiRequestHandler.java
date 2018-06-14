@@ -175,7 +175,7 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
                     LOG.error("Exception while creating partition", throwable);
                 }
 
-                sendResponseAsync(output, remoteAddress, requestId, EMPTY_RESPONSE);
+                sendEmptyResponse(output, remoteAddress, requestId);
             }
             else
             {
@@ -193,7 +193,7 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
                 {
                     if (installThrowable == null)
                     {
-                        sendResponseAsync(output, remoteAddress, requestId, EMPTY_RESPONSE);
+                        sendEmptyResponse(output, remoteAddress, requestId);
                     }
                     else
                     {
@@ -225,9 +225,9 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
         });
     }
 
-    private void sendResponseAsync(final ServerOutput output, final RemoteAddress remoteAddress, final long requestId, final BufferWriter responseWriter)
+    private void sendEmptyResponse(final ServerOutput output, final RemoteAddress remoteAddress, final long requestId)
     {
-        sendResponseAsync(output, remoteAddress, requestId, () -> responseWriter);
+        sendResponseAsync(output, remoteAddress, requestId, () -> EMPTY_RESPONSE);
     }
 
     @Override
