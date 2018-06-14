@@ -8,15 +8,22 @@ import Panel from 'modules/components/Panel';
 import InstancesFilter from './InstancesFilter';
 import InstancesListView from './InstancesListView';
 
+import {getCount} from './api';
+
 import * as Styled from './styled.js';
 
 export default class Filter extends Component {
   state = {
-    filter: {}
+    filter: {running: true}
   };
 
-  handleFilterChange = change =>
-    this.setState({filter: update(this.state.filter, change)});
+  handleFilterChange = async change => {
+    const filter = update(this.state.filter, change);
+    this.setState({
+      filter,
+      filterCount: await getCount(filter)
+    });
+  };
 
   render() {
     return (
@@ -24,7 +31,7 @@ export default class Filter extends Component {
         <Header
           active="instances"
           instances={14576}
-          filters={9263}
+          filters={this.state.filterCount}
           selections={24}
           incidents={328}
         />
@@ -44,12 +51,18 @@ export default class Filter extends Component {
               <Panel.Header>Process Definition Name</Panel.Header>
             </Panel>
             <InstancesListView
-              instancesInFilter={9263}
+              instancesInFilter={this.state.filterCount}
               filter={this.state.filter}
             />
           </Styled.Right>
         </Styled.Filter>
       </div>
     );
+  }
+
+  async componentDidMount() {
+    this.setState({
+      filterCount: await getCount(this.state.filter)
+    });
   }
 }

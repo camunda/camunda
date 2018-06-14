@@ -6,6 +6,9 @@ import {LeftBar, Left, Right, RightBar} from 'modules/components/Icon';
 
 export default class InstancesListFooter extends React.Component {
   render() {
+    if (typeof this.props.total !== 'number') {
+      return null;
+    }
     const currentPage =
       Math.round(this.props.firstElement / this.props.perPage) + 1;
     const maxPage = Math.ceil(this.props.total / this.props.perPage);
