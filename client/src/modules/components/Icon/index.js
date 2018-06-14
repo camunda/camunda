@@ -74,6 +74,7 @@ export {
   default as PlusCircledSolid
 } from '-!@svgr/webpack!./plus-circled-solid.svg';
 export {default as PlusCircled} from '-!@svgr/webpack!./plus-circled.svg';
+export {default as Plus} from '-!@svgr/webpack!./plus.svg';
 export {default as RemoveItem} from '-!@svgr/webpack!./remove-item.svg';
 export {default as Retry} from '-!@svgr/webpack!./retry.svg';
 export {default as RightBar} from '-!@svgr/webpack!./right-bar.svg';
