@@ -3,7 +3,7 @@ This is a distribution of
        Camunda Optimize v${project.version}
 
 visit
-       http://docs.camunda.org/
+       https://docs.camunda.org/optimize
 
 ==================
 
@@ -17,7 +17,7 @@ Contents:
 
                     this folder contains preconfigured Elasticsearch server
 
-        start-optimize.sh
+        start-optimize.sh (unix) or start-optimize.bat (windows)
 
                     a script to start elasticsearch and optimize in embedded Jetty container
 
