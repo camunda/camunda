@@ -2,7 +2,6 @@ import styled from 'styled-components';
 
 import {Colors} from 'modules/theme';
 import {StateIconIncident} from 'modules/components/Icon';
-import Panel from 'modules/components/Panel';
 
 export const DiagramPanel = styled.div`
   display: flex;
@@ -12,11 +11,6 @@ export const DiagramPanel = styled.div`
   height: 100%;
 `;
 
-export const DiagramPanelBody = styled(Panel.Body)`
-  display: flex;
-  flex-direction: column;
-  background: blue;
-`;
 export const DiagramPanelHeader = styled.table`
   width: 100%;
   table-layout: fixed;

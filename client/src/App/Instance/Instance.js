@@ -9,7 +9,7 @@ import * as Styled from './styled';
 
 export default class Instance extends Component {
   render() {
-    const instaceId = this.props.match.params.id;
+    const instanceId = this.props.match.params.id;
     return (
       <Fragment>
         <Header
@@ -18,11 +18,11 @@ export default class Instance extends Component {
           filters={9263}
           selections={24}
           incidents={328}
-          detail={instaceId}
+          detail={instanceId}
         />
         <Styled.Instance>
           <Styled.Top>
-            <DiagramPanel instanceId={this.props.match.params.id} />
+            <DiagramPanel instanceId={instanceId} />
           </Styled.Top>
           <Styled.Bottom>
             <Panel>
