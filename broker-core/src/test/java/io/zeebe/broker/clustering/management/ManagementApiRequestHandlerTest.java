@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.clustering.management;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -356,7 +356,57 @@ public class ManagementApiRequestHandlerTest
         assertThat(received.getObject()).isEqualTo(contents.getObject());
     }
 
-    private void sendRequest(final BufferWriter request)
+    @Test
+    public void shouldHandleConcurrentFetchSnapshotChunkRequests() throws Exception
+    {
+        // given
+        final FetchSnapshotChunkResponse response = new FetchSnapshotChunkResponse();
+        final int partitionId = 2;
+        final SerializableWrapper<String> contents = new SerializableWrapper<>("foo");
+        final ReadableSnapshot snapshot = createAndTrackPartitionWithSnapshotContents(partitionId, contents);
+        final byte[] snapshotBytes = new byte[(int)snapshot.getSize()];
+        final FetchSnapshotChunkRequest firstRequest = getFetchSnapshotChunkRequest(partitionId, snapshot).setChunkOffset(1).setChunkLength(1);
+        final FetchSnapshotChunkRequest secondRequest = getFetchSnapshotChunkRequest(partitionId, snapshot).setChunkOffset(2).setChunkLength(1);
+        final ActorControl controller = actor.getActorControl();
+
+        // when
+        snapshot.getData().read(snapshotBytes, 0, (int)snapshot.getSize());
+
+        // ugly hack to make sure ALL requests are processed before responses are scheduled to be sent
+        // change behaviour of runUntilDone to append a job instead of prepending it
+        actor.run(() ->
+        {
+            doAnswer(i ->
+            {
+                controller.submit(i.getArgument(0));
+                return null;
+            }).when(controller).runUntilDone(any());
+            doNothing().when(controller).done();
+        });
+        actorSchedulerRule.workUntilDone();
+
+        // when
+        sendRequestAsync(firstRequest);
+
+        sendRequestAsync(secondRequest);
+
+        // then
+        assertThat(output.getSentResponses()).isEmpty();
+
+        // when
+        actorSchedulerRule.workUntilDone();
+
+        // then
+        assertThat(output.getSentResponses().size()).isEqualTo(2);
+
+        output.wrapResponse(0, response);
+        assertThat(response.getData().getByte(0)).isEqualTo(snapshotBytes[1]);
+
+        output.wrapResponse(1, response);
+        assertThat(response.getData().getByte(0)).isEqualTo(snapshotBytes[2]);
+    }
+
+    private void sendRequestAsync(final BufferWriter request)
     {
         final RemoteAddress address = new RemoteAddressImpl(1, new SocketAddress("0.0.0.0", 8080));
         final MutableDirectBuffer requestBuffer = new ExpandableDirectByteBuffer();
@@ -365,6 +415,12 @@ public class ManagementApiRequestHandlerTest
         {
             handler.onRequest(output, address, requestBuffer, 0, request.getLength(), 1);
         });
+    }
+
+    private void sendRequest(final BufferWriter request)
+    {
+        sendRequestAsync(request);
+        actorSchedulerRule.workUntilDone();
     }
 
     private ManagementApiRequestHandler createHandler()
@@ -491,15 +547,16 @@ public class ManagementApiRequestHandlerTest
 
     private class TestActor extends Actor
     {
+        ActorControl mocked = spy(actor);
+
         ActorControl getActorControl()
         {
-            return actor;
+            return mocked;
         }
 
         void run(Runnable r)
         {
-            actor.run(r);
-            actorSchedulerRule.workUntilDone();
+            mocked.run(r);
         }
     }
 }
