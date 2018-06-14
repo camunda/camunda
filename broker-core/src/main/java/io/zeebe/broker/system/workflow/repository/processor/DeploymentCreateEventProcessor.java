@@ -25,7 +25,8 @@ import io.zeebe.broker.system.workflow.repository.data.DeploymentResource;
 import io.zeebe.broker.system.workflow.repository.data.ResourceType;
 import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex;
 import io.zeebe.model.bpmn.BpmnModelApi;
-import io.zeebe.model.bpmn.impl.validation.ValidationException;
+import io.zeebe.model.bpmn.impl.error.TransformationException;
+import io.zeebe.model.bpmn.impl.error.ValidationException;
 import io.zeebe.model.bpmn.instance.Workflow;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.clientapi.RejectionType;
@@ -142,10 +143,10 @@ public class DeploymentCreateEventProcessor implements TypedRecordProcessor<Depl
 
                 transformWorkflowResource(deploymentResource, definition);
             }
-            catch (ValidationException validationException)
+            catch (ValidationException | TransformationException ex)
             {
                 validationErrors.append(String.format("Resource '%s':\n", bufferAsString(deploymentResource.getResourceName())));
-                validationErrors.append(validationException.getMessage());
+                validationErrors.append(ex.getMessage());
                 success = false;
             }
             catch (Exception e)
