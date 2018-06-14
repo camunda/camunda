@@ -17,29 +17,24 @@
  */
 package io.zeebe.broker.system.workflow.repository.processor;
 
-import io.zeebe.broker.logstreams.processor.TypedRecord;
-import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
-import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
-import io.zeebe.broker.system.workflow.repository.data.DeploymentRecord;
-import io.zeebe.broker.system.workflow.repository.data.DeploymentResource;
-import io.zeebe.broker.system.workflow.repository.data.ResourceType;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Iterator;
+
+import io.zeebe.broker.logstreams.processor.*;
+import io.zeebe.broker.system.workflow.repository.data.*;
 import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex;
 import io.zeebe.model.bpmn.BpmnModelApi;
-import io.zeebe.model.bpmn.impl.error.TransformationException;
-import io.zeebe.model.bpmn.impl.error.ValidationException;
+import io.zeebe.model.bpmn.impl.error.InvalidModelException;
 import io.zeebe.model.bpmn.instance.Workflow;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
-
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.Iterator;
-
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 public class DeploymentCreateEventProcessor implements TypedRecordProcessor<DeploymentRecord>
 {
@@ -143,7 +138,7 @@ public class DeploymentCreateEventProcessor implements TypedRecordProcessor<Depl
 
                 transformWorkflowResource(deploymentResource, definition);
             }
-            catch (ValidationException | TransformationException ex)
+            catch (InvalidModelException ex)
             {
                 validationErrors.append(String.format("Resource '%s':\n", bufferAsString(deploymentResource.getResourceName())));
                 validationErrors.append(ex.getMessage());
