@@ -1,5 +1,9 @@
 # Subscribe to a Topic
 
+## Related Resources
+
+* [Record Subscriber Basics](basics/record-consumers.html)
+
 ## Prerequisites
 
 1. Running Zeebe broker with endpoint `localhost:51015` (default)

@@ -3,7 +3,7 @@
 ## Prerequisites
 
 1. Running Zeebe broker with endpoint `localhost:51015` (default)
-1. Make sure workflows are deployed, e.g. run the [Deploy a Workflow example](java-client-examples/workflow-deploy.html) multiple times
+1. Make sure a couple of workflows are deployed, e.g. run the [Deploy a Workflow example](java-client-examples/workflow-deploy.html) multiple times to create multiple workflow versions.
 
 ## DeploymentViewer.java
 

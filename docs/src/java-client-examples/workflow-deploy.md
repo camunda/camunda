@@ -1,5 +1,10 @@
 # Deploy a Workflow
 
+## Related Resources
+
+* [Workflow Basics](basics/workflows.html)
+* [BPMN Introduction](bpmn-workflows/README.html)
+
 ## Prerequisites
 
 1. Running Zeebe broker with endpoint `localhost:51015` (default)

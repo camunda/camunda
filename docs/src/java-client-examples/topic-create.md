@@ -1,5 +1,10 @@
 # Create a Topic
 
+## Related Resources
+
+* [Topics and Partitions Basics](basics/topics-and-logs.html)
+* [Topics and Partitions Reference](reference/topics-partitions.html)
+
 ## Prerequisites
 
 1. Running Zeebe broker with endpoint `localhost:51015` (default)

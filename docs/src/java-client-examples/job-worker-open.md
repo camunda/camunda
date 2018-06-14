@@ -1,5 +1,9 @@
 # Open a Job Worker
 
+## Related Resources
+
+* [Job Worker Basics](basics/job-workers.html)
+
 ## Prerequisites
 
 1. Running Zeebe broker with endpoint `localhost:51015` (default)
