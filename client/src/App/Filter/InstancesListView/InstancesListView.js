@@ -29,18 +29,22 @@ export default class InstancesListView extends React.Component {
     return (
       <Panel>
         <Panel.Header>Instances</Panel.Header>
-        <InstancesList
-          data={this.state.instances}
-          updateEntriesPerPage={entriesPerPage =>
-            this.setState({entriesPerPage})
-          }
-        />
-        <InstancesListFooter
-          total={this.props.instancesInFilter}
-          perPage={this.state.entriesPerPage}
-          firstElement={this.state.firstElement}
-          changePage={newPage => this.setState({firstElement: newPage})}
-        />
+        <Panel.Body>
+          <InstancesList
+            data={this.state.instances}
+            updateEntriesPerPage={entriesPerPage =>
+              this.setState({entriesPerPage})
+            }
+          />
+        </Panel.Body>
+        <Panel.Footer>
+          <InstancesListFooter
+            total={this.props.instancesInFilter}
+            perPage={this.state.entriesPerPage}
+            firstElement={this.state.firstElement}
+            onFirstElementChange={firstElement => this.setState({firstElement})}
+          />
+        </Panel.Footer>
       </Panel>
     );
   }
@@ -49,13 +53,18 @@ export default class InstancesListView extends React.Component {
     this.loadData();
   }
 
-  componentDidUpdate(prevProps) {
-    if (prevProps.filter !== this.props.filter) {
+  componentDidUpdate(prevProps, prevState) {
+    if (
+      prevProps.filter !== this.props.filter ||
+      prevState.firstElement !== this.state.firstElement
+    ) {
       this.loadData();
     }
   }
 
   loadData = async () => {
-    this.setState({instances: await getData(this.props.filter)});
+    this.setState({
+      instances: await getData(this.props.filter, this.state.firstElement)
+    });
   };
 }

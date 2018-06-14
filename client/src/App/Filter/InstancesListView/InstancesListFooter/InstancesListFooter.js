@@ -1,10 +1,13 @@
 import React from 'react';
-import Panel from 'modules/components/Panel';
 
 import * as Styled from './styled';
 import {LeftBar, Left, Right, RightBar} from 'modules/components/Icon';
 
 export default class InstancesListFooter extends React.Component {
+  handlePageChange = page => () => {
+    this.props.onFirstElementChange((page - 1) * this.props.perPage);
+  };
+
   render() {
     if (typeof this.props.total !== 'number') {
       return null;
@@ -16,39 +19,47 @@ export default class InstancesListFooter extends React.Component {
     const pageRange = getRange(currentPage, maxPage);
 
     return (
-      <Panel.Footer>
-        <Styled.Pagination>
-          <Styled.Page disabled={currentPage === 1} withIcon>
-            <LeftBar />
-          </Styled.Page>
-          <Styled.Page disabled={currentPage === 1} withIcon>
-            <Left />
-          </Styled.Page>
-          {!pageRange.includes(1) && (
-            <React.Fragment>
-              <Styled.Page>1</Styled.Page>
+      <Styled.Pagination>
+        <Styled.Page disabled={currentPage === 1} withIcon>
+          <LeftBar />
+        </Styled.Page>
+        <Styled.Page disabled={currentPage === 1} withIcon>
+          <Left />
+        </Styled.Page>
+        {!pageRange.includes(1) && (
+          <React.Fragment>
+            <Styled.Page onClick={this.handlePageChange(1)}>1</Styled.Page>
+            {!pageRange.includes(2) && (
               <Styled.PageSeparator>…</Styled.PageSeparator>
-            </React.Fragment>
-          )}
-          {pageRange.map(page => (
-            <Styled.Page key={page} active={page === currentPage}>
-              {page}
+            )}
+          </React.Fragment>
+        )}
+        {pageRange.map(page => (
+          <Styled.Page
+            key={page}
+            active={page === currentPage}
+            onClick={this.handlePageChange(page)}
+          >
+            {page}
+          </Styled.Page>
+        ))}
+        {!pageRange.includes(maxPage) && (
+          <React.Fragment>
+            {!pageRange.includes(maxPage - 1) && (
+              <Styled.PageSeparator>…</Styled.PageSeparator>
+            )}
+            <Styled.Page onClick={this.handlePageChange(maxPage)}>
+              {maxPage}
             </Styled.Page>
-          ))}
-          {!pageRange.includes(maxPage) && (
-            <React.Fragment>
-              <Styled.PageSeparator>…</Styled.PageSeparator>
-              <Styled.Page>{maxPage}</Styled.Page>
-            </React.Fragment>
-          )}
-          <Styled.Page disabled={currentPage === maxPage} withIcon>
-            <Right />
-          </Styled.Page>
-          <Styled.Page disabled={currentPage === maxPage} withIcon>
-            <RightBar />
-          </Styled.Page>
-        </Styled.Pagination>
-      </Panel.Footer>
+          </React.Fragment>
+        )}
+        <Styled.Page disabled={currentPage === maxPage} withIcon>
+          <Right />
+        </Styled.Page>
+        <Styled.Page disabled={currentPage === maxPage} withIcon>
+          <RightBar />
+        </Styled.Page>
+      </Styled.Pagination>
     );
   }
 }

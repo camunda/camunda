@@ -21,9 +21,11 @@ export default class InstancesList extends React.Component {
 
   render() {
     return (
-      <Styled.TableContainer innerRef={node => (this.container = node)}>
-        {this.renderTable()}
-      </Styled.TableContainer>
+      <Styled.InstancesList>
+        <Styled.TableContainer innerRef={node => (this.container = node)}>
+          {this.renderTable()}
+        </Styled.TableContainer>
+      </Styled.InstancesList>
     );
   }
 

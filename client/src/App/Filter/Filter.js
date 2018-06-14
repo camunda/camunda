@@ -56,17 +56,10 @@ export default class Filter extends Component {
               </Panel>
             </Styled.Top>
             <Styled.Bottom>
-              <Panel>
-                <Panel.Header>Lorem ipsum</Panel.Header>
-                <Panel.Body>
-                  {/*  <InstancesListView
-                      instancesInFilter={this.state.filterCount}
-                      filter={this.state.filter}
-                    />
-                  */}
-                  wierd table listing goes here
-                </Panel.Body>
-              </Panel>
+              <InstancesListView
+                instancesInFilter={this.state.filterCount}
+                filter={this.state.filter}
+              />
             </Styled.Bottom>
           </Styled.Right>
         </Styled.Filter>
