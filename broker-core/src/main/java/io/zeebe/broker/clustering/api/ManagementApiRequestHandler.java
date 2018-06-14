@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.Partition;
@@ -101,14 +102,15 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
                 }
                 case ListSnapshotsRequestDecoder.TEMPLATE_ID:
                 {
-                    sendResponse(output, remoteAddress, requestId,
-                            snapshotReplicationRequestHandler.handleListSnapshots(buffer, offset, length));
+                    sendResponseAsync(output, remoteAddress, requestId,
+                            snapshotReplicationRequestHandler.handleListSnapshotsAsync(buffer, offset, length));
                     break;
                 }
                 case FetchSnapshotChunkRequestDecoder.TEMPLATE_ID:
                 {
-                    sendResponse(output, remoteAddress, requestId,
-                            snapshotReplicationRequestHandler.handleFetchSnapshotChunk(buffer, offset, length));
+                    // Instead provide a supplier which knows how to get the right response
+                    sendResponseAsync(output, remoteAddress, requestId,
+                            snapshotReplicationRequestHandler.handleFetchSnapshotChunkAsync(buffer, offset, length));
                     break;
                 }
             }
@@ -173,7 +175,7 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
                     LOG.error("Exception while creating partition", throwable);
                 }
 
-                sendResponse(output, remoteAddress, requestId, EMPTY_RESPONSE);
+                sendResponseAsync(output, remoteAddress, requestId, EMPTY_RESPONSE);
             }
             else
             {
@@ -191,7 +193,7 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
                 {
                     if (installThrowable == null)
                     {
-                        sendResponse(output, remoteAddress, requestId, EMPTY_RESPONSE);
+                        sendResponseAsync(output, remoteAddress, requestId, EMPTY_RESPONSE);
                     }
                     else
                     {
@@ -202,10 +204,11 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
         });
     }
 
-    private void sendResponse(final ServerOutput output, final RemoteAddress remoteAddress, final long requestId, final BufferWriter responseWriter)
+    private void sendResponseAsync(final ServerOutput output, final RemoteAddress remoteAddress, final long requestId, final Supplier<BufferWriter> responseSupplier)
     {
         actor.runUntilDone(() ->
         {
+            final BufferWriter responseWriter = responseSupplier.get();
             final ServerResponse response = new ServerResponse().reset()
                     .remoteAddress(remoteAddress)
                     .requestId(requestId)
@@ -220,6 +223,11 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
                 actor.yield();
             }
         });
+    }
+
+    private void sendResponseAsync(final ServerOutput output, final RemoteAddress remoteAddress, final long requestId, final BufferWriter responseWriter)
+    {
+        sendResponseAsync(output, remoteAddress, requestId, () -> responseWriter);
     }
 
     @Override

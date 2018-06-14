@@ -298,11 +298,9 @@ public class SnapshotReplicationService extends Actor implements Service<Snapsho
         }
         catch (final Exception ex)
         {
-            LOG.error("Error committing temporary snapshot", ex);
+            LOG.error("Error committing temporary snapshot, aborting", ex);
             abortCurrentSnapshotReplication();
         }
-
-        replicateNextSnapshot();
     }
 
     private void abortCurrentSnapshotReplication()

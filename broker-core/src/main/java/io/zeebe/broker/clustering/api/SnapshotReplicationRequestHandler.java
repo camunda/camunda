@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.clustering.management.ErrorResponseCode;
@@ -66,7 +67,7 @@ public class SnapshotReplicationRequestHandler
         this.chunkReadBuffer = new byte[chunkReadBufferSize];
     }
 
-    BufferWriter handleListSnapshots(final DirectBuffer buffer, final int offset, final int length)
+    Supplier<BufferWriter> handleListSnapshotsAsync(final DirectBuffer buffer, final int offset, final int length)
     {
         listSnapshotsRequest.wrap(buffer, offset, length);
         listSnapshotsResponse.reset();
@@ -76,10 +77,34 @@ public class SnapshotReplicationRequestHandler
 
         if (partition == null)
         {
-            return prepareError(ErrorResponseCode.PARTITION_NOT_FOUND, PARTITION_NOT_FOUND_MESSAGE);
+            return () -> prepareError(ErrorResponseCode.PARTITION_NOT_FOUND, PARTITION_NOT_FOUND_MESSAGE);
         }
 
         final SnapshotStorage storage = partition.getSnapshotStorage();
+        return () -> handleListSnapshots(storage);
+    }
+
+    Supplier<BufferWriter> handleFetchSnapshotChunkAsync(final DirectBuffer buffer, final int offset, final int length)
+    {
+        fetchSnapshotChunkRequest.wrap(buffer, offset, length);
+
+        final int partitionId = fetchSnapshotChunkRequest.getPartitionId();
+        final Partition partition = trackedPartitions.get(partitionId);
+        if (partition == null)
+        {
+            return () -> prepareError(ErrorResponseCode.PARTITION_NOT_FOUND, PARTITION_NOT_FOUND_MESSAGE);
+        }
+
+        final String name = BufferUtil.bufferAsString(fetchSnapshotChunkRequest.getName());
+        final int chunkOffset = fetchSnapshotChunkRequest.getChunkOffset();
+        final int maxChunkLength = fetchSnapshotChunkRequest.getChunkLength();
+        final SnapshotStorage storage = partition.getSnapshotStorage();
+
+        return () -> handleFetchSnapshotChunk(storage, name, chunkOffset, maxChunkLength);
+    }
+
+    private BufferWriter handleListSnapshots(final SnapshotStorage storage)
+    {
         final List<SnapshotMetadata> snapshots = storage.listSnapshots();
         for (final SnapshotMetadata snapshot : snapshots)
         {
@@ -97,20 +122,9 @@ public class SnapshotReplicationRequestHandler
         return listSnapshotsResponse;
     }
 
-    BufferWriter handleFetchSnapshotChunk(final DirectBuffer buffer, final int offset, final int length)
+    private BufferWriter handleFetchSnapshotChunk(final SnapshotStorage storage, final String name, final int chunkOffset, final int chunkLength)
     {
-        fetchSnapshotChunkRequest.wrap(buffer, offset, length);
-
-        final int partitionId = fetchSnapshotChunkRequest.getPartitionId();
-        final Partition partition = trackedPartitions.get(partitionId);
-        if (partition == null)
-        {
-            return prepareError(ErrorResponseCode.PARTITION_NOT_FOUND, PARTITION_NOT_FOUND_MESSAGE);
-        }
-
         final ReadableSnapshot snapshot;
-        final String name = BufferUtil.bufferAsString(fetchSnapshotChunkRequest.getName());
-        final SnapshotStorage storage = partition.getSnapshotStorage();
 
         try
         {
@@ -127,12 +141,11 @@ public class SnapshotReplicationRequestHandler
             return prepareError(ErrorResponseCode.INVALID_PARAMETERS, NO_SNAPSHOT_ERROR_MESSAGE);
         }
 
-        return readSnapshotChunk(snapshot);
+        return readSnapshotChunk(snapshot, chunkOffset, chunkLength);
     }
 
-    private BufferWriter readSnapshotChunk(final ReadableSnapshot snapshot)
+    private BufferWriter readSnapshotChunk(final ReadableSnapshot snapshot, final int chunkOffset, final int maxChunkLength)
     {
-        final int chunkOffset = fetchSnapshotChunkRequest.getChunkOffset();
         if (chunkOffset < 0)
         {
             return prepareError(ErrorResponseCode.INVALID_PARAMETERS, INVALID_CHUNK_OFFSET_MESSAGE);
@@ -140,7 +153,7 @@ public class SnapshotReplicationRequestHandler
 
         final long snapshotLength = snapshot.getSize();
         final int chunkLength = (int) Math.min(
-                Math.min(snapshotLength - chunkOffset, fetchSnapshotChunkRequest.getChunkLength()),
+                Math.min(snapshotLength - chunkOffset, maxChunkLength),
                 chunkReadBuffer.length);
 
         if (chunkLength < 1)
