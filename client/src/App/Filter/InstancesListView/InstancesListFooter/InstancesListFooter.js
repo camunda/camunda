@@ -20,10 +20,18 @@ export default class InstancesListFooter extends React.Component {
 
     return (
       <Styled.Pagination>
-        <Styled.Page disabled={currentPage === 1} withIcon>
+        <Styled.Page
+          disabled={currentPage === 1}
+          withIcon
+          onClick={this.handlePageChange(1)}
+        >
           <LeftBar />
         </Styled.Page>
-        <Styled.Page disabled={currentPage === 1} withIcon>
+        <Styled.Page
+          disabled={currentPage === 1}
+          withIcon
+          onClick={this.handlePageChange(currentPage - 1)}
+        >
           <Left />
         </Styled.Page>
         {!pageRange.includes(1) && (
@@ -53,10 +61,18 @@ export default class InstancesListFooter extends React.Component {
             </Styled.Page>
           </React.Fragment>
         )}
-        <Styled.Page disabled={currentPage === maxPage} withIcon>
+        <Styled.Page
+          disabled={currentPage === maxPage}
+          withIcon
+          onClick={this.handlePageChange(currentPage + 1)}
+        >
           <Right />
         </Styled.Page>
-        <Styled.Page disabled={currentPage === maxPage} withIcon>
+        <Styled.Page
+          disabled={currentPage === maxPage}
+          withIcon
+          onClick={this.handlePageChange(maxPage)}
+        >
           <RightBar />
         </Styled.Page>
       </Styled.Pagination>

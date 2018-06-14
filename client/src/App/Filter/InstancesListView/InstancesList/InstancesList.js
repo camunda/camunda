@@ -2,8 +2,9 @@ import React from 'react';
 import Table from 'modules/components/Table';
 
 import * as Styled from './styled';
+import {formatData} from './service';
 
-const headerConfig = {
+const config = {
   headerLabels: {
     workflowDefinitionId: 'Process Definition',
     id: 'Instance ID',
@@ -36,8 +37,10 @@ export default class InstancesList extends React.Component {
 
     return (
       <Table
-        data={this.props.data.slice(0, this.state.rowsToDisplay)}
-        config={headerConfig}
+        data={this.props.data
+          .slice(0, this.state.rowsToDisplay)
+          .map(formatData)}
+        config={config}
       />
     );
   }
