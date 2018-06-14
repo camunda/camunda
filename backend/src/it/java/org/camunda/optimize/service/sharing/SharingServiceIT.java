@@ -108,6 +108,21 @@ public class SharingServiceIT extends AbstractSharingIT {
   }
 
   @Test
+  public void shareDashboardWithExternalResourceReport () {
+    // given
+    String dashboardId = addEmptyDashboardToOptimize();
+    String externalResourceReportId = "";
+    addReportToDashboard(dashboardId, externalResourceReportId);
+
+    // when
+    DashboardShareDto share = createDashboardShareDto(dashboardId);
+    Response response = createDashboardShareResponse(share);
+
+    // then
+    assertThat(response.getStatus(), is(200));
+  }
+
+  @Test
   public void canEvaluateEveryReportOfSharedDashboard() {
     //given
     String reportId = createReport();

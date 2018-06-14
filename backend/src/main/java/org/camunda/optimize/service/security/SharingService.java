@@ -99,14 +99,14 @@ public class SharingService  {
     try {
       DashboardDefinitionDto dashboardDefinition =
         dashboardService.getDashboardDefinition(dashboardId);
-      List<String> authorizedFilterIds = reportService
+      List<String> authorizedReportIds = reportService
         .findAndFilterReports(userId)
         .stream()
         .map(ReportDefinitionDto::getId)
         .collect(Collectors.toList());
 
       for (ReportLocationDto reportLocationDto : dashboardDefinition.getReports()) {
-        if (!authorizedFilterIds.contains(reportLocationDto.getId())) {
+        if (!authorizedReportIds.contains(reportLocationDto.getId()) && isNotAnExternalResourceReport(reportLocationDto)) {
           String errorMessage = "User [" + userId + "] is not authorized to share dashboard [" +
           dashboardDefinition.getName() + "] because he is not authorized to see contained report [" +
           reportLocationDto.getId() + "]";
@@ -119,6 +119,10 @@ public class SharingService  {
         dashboardId + "]. Probably it does not exist.";
       throw new OptimizeRuntimeException(errorMessage, e);
     }
+  }
+
+  public boolean isNotAnExternalResourceReport(ReportLocationDto reportLocationDto) {
+    return !reportLocationDto.getId().isEmpty();
   }
 
   public void validateAndCheckAuthorization(ReportShareDto reportShare, String userId) {
