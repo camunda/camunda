@@ -37,9 +37,9 @@ services:
 
   zeebe:
     container_name: zeebe
-    image: camunda/zeebe:0.10.0
+    image: camunda/zeebe:0.10.1
     environment:
-      - "JAVA_TOOL_OPTTIONS=-Xms512m -Xmx512m"
+      - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
     ports:
       - 51015:51015
       - 51016:51016
