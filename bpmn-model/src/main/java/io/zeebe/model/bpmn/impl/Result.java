@@ -21,11 +21,7 @@ public interface Result
 
     boolean hasErrors();
 
-    boolean hasWarnings();
-
     String format();
 
     String formatErrors();
-
-    String formatWarnings();
 }

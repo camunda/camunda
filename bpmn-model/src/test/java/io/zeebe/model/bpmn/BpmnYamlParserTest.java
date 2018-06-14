@@ -16,7 +16,7 @@
 package io.zeebe.model.bpmn;
 
 import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
-import io.zeebe.model.bpmn.impl.error.ValidationException;
+import io.zeebe.model.bpmn.impl.error.InvalidModelException;
 import io.zeebe.model.bpmn.instance.*;
 import org.junit.Test;
 
@@ -168,7 +168,7 @@ public class BpmnYamlParserTest
         {
             parseWorkflow(WORKFLOW_WITH_INVALID_BEHAVIOR);
         }).hasMessage("Output behavior 'asdf' is not supported. Valid values are [MERGE, OVERWRITE, NONE].")
-            .isExactlyInstanceOf(ValidationException.class);
+            .isExactlyInstanceOf(InvalidModelException.class);
     }
 
     @Test

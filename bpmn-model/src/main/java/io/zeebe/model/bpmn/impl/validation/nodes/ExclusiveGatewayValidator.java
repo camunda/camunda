@@ -15,11 +15,11 @@
  */
 package io.zeebe.model.bpmn.impl.validation.nodes;
 
+import java.util.List;
+
 import io.zeebe.model.bpmn.impl.error.ErrorCollector;
 import io.zeebe.model.bpmn.impl.instance.ExclusiveGatewayImpl;
 import io.zeebe.model.bpmn.impl.instance.SequenceFlowImpl;
-
-import java.util.List;
 
 public class ExclusiveGatewayValidator
 {
@@ -40,10 +40,6 @@ public class ExclusiveGatewayValidator
                 {
                     validationResult.addError(exclusiveGateway, "The default sequence flow must be an outgoing sequence flow of the exclusive gateway.");
                 }
-            }
-            else
-            {
-                validationResult.addWarning(exclusiveGateway, "An exclusive gateway should have a default sequence flow without condition.");
             }
 
             for (SequenceFlowImpl sequenceFlow : exclusiveGateway.getOutgoing())

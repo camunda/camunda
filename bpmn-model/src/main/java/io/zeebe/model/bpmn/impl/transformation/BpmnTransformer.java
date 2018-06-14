@@ -15,24 +15,18 @@
  */
 package io.zeebe.model.bpmn.impl.transformation;
 
-import io.zeebe.model.bpmn.impl.Loggers;
+import java.util.*;
+
 import io.zeebe.model.bpmn.impl.error.ErrorCollector;
-import io.zeebe.model.bpmn.impl.error.TransformationException;
+import io.zeebe.model.bpmn.impl.error.InvalidModelException;
 import io.zeebe.model.bpmn.impl.instance.DefinitionsImpl;
 import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
 import io.zeebe.model.bpmn.instance.Workflow;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import org.agrona.DirectBuffer;
-import org.slf4j.Logger;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class BpmnTransformer
 {
-    private static final Logger LOG = Loggers.MODEL_API_LOGGER;
-
     private final ProcessTransformer processTransformer = new ProcessTransformer();
 
     public WorkflowDefinition transform(DefinitionsImpl definitions)
@@ -59,11 +53,7 @@ public class BpmnTransformer
     {
         if (errorCollector.hasErrors())
         {
-            throw new TransformationException(errorCollector.formatErrors());
-        }
-        else if (errorCollector.hasWarnings())
-        {
-            LOG.warn(errorCollector.formatWarnings());
+            throw new InvalidModelException(errorCollector.formatErrors());
         }
     }
 

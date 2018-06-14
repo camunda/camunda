@@ -15,14 +15,14 @@
  */
 package io.zeebe.model.bpmn;
 
-import io.zeebe.model.bpmn.impl.error.ValidationException;
+import java.io.File;
+import java.net.URL;
+
+import io.zeebe.model.bpmn.impl.error.InvalidModelException;
 import io.zeebe.model.bpmn.instance.OutputBehavior;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
-import java.io.File;
-import java.net.URL;
 
 public class BpmnValidationTest
 {
@@ -37,8 +37,8 @@ public class BpmnValidationTest
         final File bpmnFile = new File(resource.toURI());
 
         // expect
-        expectedException.expect(ValidationException.class);
-        expectedException.expectMessage("[ERROR] [line:4] (bpmn:startEvent) Activity id is required.");
+        expectedException.expect(InvalidModelException.class);
+        expectedException.expectMessage("[line:4] (bpmn:startEvent) Activity id is required.");
 
         // when
         Bpmn.readFromXmlFile(bpmnFile);
@@ -48,7 +48,7 @@ public class BpmnValidationTest
     public void testMissingStartEvent()
     {
         // expect
-        expectedException.expect(ValidationException.class);
+        expectedException.expect(InvalidModelException.class);
         expectedException.expectMessage("The process must contain at least one none start event.");
 
         // when
@@ -59,7 +59,7 @@ public class BpmnValidationTest
     public void testMissingActivityId()
     {
         // expect
-        expectedException.expect(ValidationException.class);
+        expectedException.expect(InvalidModelException.class);
         expectedException.expectMessage("Activity id is required.");
 
         // when
@@ -70,7 +70,7 @@ public class BpmnValidationTest
     public void testMissingTaskDefinition()
     {
         // expect
-        expectedException.expect(ValidationException.class);
+        expectedException.expect(InvalidModelException.class);
         expectedException.expectMessage("A service task must contain a 'taskDefinition' extension element.");
 
         // when
@@ -86,7 +86,7 @@ public class BpmnValidationTest
     public void testMissingTaskType()
     {
         // expect
-        expectedException.expect(ValidationException.class);
+        expectedException.expect(InvalidModelException.class);
         expectedException.expectMessage("A task definition must contain a 'type' attribute which specifies the type of the task.");
 
         // when
@@ -107,7 +107,7 @@ public class BpmnValidationTest
         final File bpmnFile = new File(resource.toURI());
 
         // expect
-        expectedException.expect(ValidationException.class);
+        expectedException.expect(InvalidModelException.class);
         expectedException.expectMessage("Cannot find task as target of sequence flow.");
         expectedException.expectMessage("Cannot find task as source of sequence flow.");
 
@@ -119,7 +119,7 @@ public class BpmnValidationTest
     public void testProhibitedInputOutputMapping()
     {
         // expect
-        expectedException.expect(ValidationException.class);
+        expectedException.expect(InvalidModelException.class);
         expectedException.expectMessage("Source mapping: JSON path '$.*' contains prohibited expression");
 
         // when
@@ -137,7 +137,7 @@ public class BpmnValidationTest
     public void testInvalidInputRootAndSpecificMapping()
     {
         // expect
-        expectedException.expect(ValidationException.class);
+        expectedException.expect(InvalidModelException.class);
         expectedException.expectMessage("Target mapping: root mapping is not allowed because it would override other mapping.");
 
         // when
@@ -155,7 +155,7 @@ public class BpmnValidationTest
     public void testInvalidOutputRootAndSpecificMapping()
     {
         // expect
-        expectedException.expect(ValidationException.class);
+        expectedException.expect(InvalidModelException.class);
         expectedException.expectMessage("Target mapping: root mapping is not allowed because it would override other mapping.");
 
         // when
@@ -174,7 +174,7 @@ public class BpmnValidationTest
     public void testInvalidOutputBehaviorWithOutputMapping()
     {
         // expect
-        expectedException.expect(ValidationException.class);
+        expectedException.expect(InvalidModelException.class);
         expectedException.expectMessage("Output behavior 'NONE' is not supported in combination with output mappings.");
 
         // when
@@ -196,7 +196,7 @@ public class BpmnValidationTest
         final File bpmnFile = new File(resource.toURI());
 
         // expect
-        expectedException.expect(ValidationException.class);
+        expectedException.expect(InvalidModelException.class);
         expectedException.expectMessage("Output behavior 'asdf' is not supported. Valid values are [MERGE, OVERWRITE, NONE].");
 
         // when
@@ -207,7 +207,7 @@ public class BpmnValidationTest
     public void testMissingConditionOnSequenceFlow()
     {
         // expect
-        expectedException.expect(ValidationException.class);
+        expectedException.expect(InvalidModelException.class);
         expectedException.expectMessage("A sequence flow on an exclusive gateway must have a condition, if it is not the default flow.");
 
         // when
@@ -225,7 +225,7 @@ public class BpmnValidationTest
     public void testDefaultSequenceFlowWithCondtion()
     {
         // expect
-        expectedException.expect(ValidationException.class);
+        expectedException.expect(InvalidModelException.class);
         expectedException.expectMessage("A default sequence flow must not have a condition.");
 
         // when
@@ -247,7 +247,7 @@ public class BpmnValidationTest
         final File bpmnFile = new File(resource.toURI());
 
         // expect
-        expectedException.expect(ValidationException.class);
+        expectedException.expect(InvalidModelException.class);
         expectedException.expectMessage("The default sequence flow must be an outgoing sequence flow of the exclusive gateway.");
 
         // when

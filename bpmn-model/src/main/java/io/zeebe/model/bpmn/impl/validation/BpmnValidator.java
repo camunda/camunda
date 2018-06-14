@@ -15,20 +15,16 @@
  */
 package io.zeebe.model.bpmn.impl.validation;
 
-import io.zeebe.model.bpmn.impl.Loggers;
-import io.zeebe.model.bpmn.impl.error.ErrorCollector;
-import io.zeebe.model.bpmn.impl.error.ValidationException;
-import io.zeebe.model.bpmn.impl.instance.DefinitionsImpl;
-import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
-import org.slf4j.Logger;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
+import io.zeebe.model.bpmn.impl.error.ErrorCollector;
+import io.zeebe.model.bpmn.impl.error.InvalidModelException;
+import io.zeebe.model.bpmn.impl.instance.DefinitionsImpl;
+import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
+
 public class BpmnValidator
 {
-    private static final Logger LOG = Loggers.MODEL_API_LOGGER;
-
     private final ProcessValidator processValidator = new ProcessValidator();
 
     public void validate(DefinitionsImpl definition)
@@ -57,11 +53,7 @@ public class BpmnValidator
     {
         if (validationResult.hasErrors())
         {
-            throw new ValidationException(validationResult.formatErrors());
-        }
-        else if (validationResult.hasWarnings())
-        {
-            LOG.warn(validationResult.formatWarnings());
+            throw new InvalidModelException(validationResult.formatErrors());
         }
     }
 }

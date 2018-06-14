@@ -15,21 +15,21 @@
  */
 package io.zeebe.model.bpmn;
 
-import io.zeebe.model.bpmn.impl.error.TransformationException;
-import io.zeebe.model.bpmn.instance.*;
-import org.assertj.core.util.Files;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.List;
 
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.assertj.core.api.Assertions.assertThat;
+import io.zeebe.model.bpmn.impl.error.InvalidModelException;
+import io.zeebe.model.bpmn.instance.*;
+import org.assertj.core.util.Files;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class BpmnTransformTest
 {
@@ -329,7 +329,7 @@ public class BpmnTransformTest
     public void shouldThrowTransformExceptionOnSyntacticallyInvalidMapping()
     {
         // expect
-        expectedException.expect(TransformationException.class);
+        expectedException.expect(InvalidModelException.class);
         expectedException.expectMessage("JSON path query 'foo' is not valid!");
         expectedException.expectMessage("JSON path query 'bar' is not valid!");
 
@@ -348,7 +348,7 @@ public class BpmnTransformTest
     public void shouldThrowTransformExceptionOnSyntacticallyInvalidSequenceFlowCondition()
     {
         // expect
-        expectedException.expect(TransformationException.class);
+        expectedException.expect(InvalidModelException.class);
         expectedException.expectMessage("The condition 'foobar' is not valid");
 
         // when

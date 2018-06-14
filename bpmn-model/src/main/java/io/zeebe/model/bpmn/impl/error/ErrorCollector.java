@@ -15,27 +15,21 @@
  */
 package io.zeebe.model.bpmn.impl.error;
 
-import io.zeebe.model.bpmn.impl.Result;
-import io.zeebe.model.bpmn.impl.instance.BaseElement;
-
 import java.util.ArrayList;
 import java.util.List;
 
+import io.zeebe.model.bpmn.impl.Result;
+import io.zeebe.model.bpmn.impl.instance.BaseElement;
+
 public class ErrorCollector implements Result
 {
-    private static final String MESSAGE = "[%s] [line:%s] (%s) %s";
+    private static final String MESSAGE = "[line:%s] (%s) %s";
 
     private final List<Entry> errors = new ArrayList<>();
-    private final List<Entry> warnings = new ArrayList<>();
 
     public void addError(BaseElement element, String message)
     {
         errors.add(new Entry(message, element));
-    }
-
-    public void addWarning(BaseElement element, String message)
-    {
-        warnings.add(new Entry(message, element));
     }
 
     @Override
@@ -51,36 +45,19 @@ public class ErrorCollector implements Result
     }
 
     @Override
-    public boolean hasWarnings()
-    {
-        return !warnings.isEmpty();
-    }
-
-    @Override
     public String format()
     {
         final StringBuilder builder = new StringBuilder();
 
         formatErrors(builder);
-        formatWarnings(builder);
-
         return builder.toString();
-    }
-
-    public void formatWarnings(StringBuilder builder)
-    {
-        for (Entry warning : warnings)
-        {
-            builder.append(String.format(MESSAGE, "WARNING", getLine(warning.element), getElementName(warning.element), warning.message));
-            builder.append("\n");
-        }
     }
 
     private void formatErrors(StringBuilder builder)
     {
         for (Entry error : errors)
         {
-            builder.append(String.format(MESSAGE, "ERROR", getLine(error.element), getElementName(error.element), error.message));
+            builder.append(String.format(MESSAGE, getLine(error.element), getElementName(error.element), error.message));
             builder.append("\n");
         }
     }
@@ -90,14 +67,6 @@ public class ErrorCollector implements Result
     {
         final StringBuilder builder = new StringBuilder();
         formatErrors(builder);
-        return builder.toString();
-    }
-
-    @Override
-    public String formatWarnings()
-    {
-        final StringBuilder builder = new StringBuilder();
-        formatWarnings(builder);
         return builder.toString();
     }
 
