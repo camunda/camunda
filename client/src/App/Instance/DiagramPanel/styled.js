@@ -1,7 +1,6 @@
 import styled from 'styled-components';
 
 import {Colors} from 'modules/theme';
-import Panel from 'modules/components/Panel';
 import {StateIconIncident} from 'modules/components/Icon';
 
 export const DiagramPanel = styled.div`
