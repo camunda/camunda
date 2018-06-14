@@ -17,13 +17,6 @@ export const Header = themed(styled.div`
     dark: Colors.uiDark03,
     light: Colors.uiLight02
   })};
-`);
-
-export const Content = styled.div`
-  padding: 9px 0;
-`;
-
-export const Headline = themed(styled.span`
   opacity: 0.9;
   color: ${themeStyle({
     dark: '#ffffff',
@@ -31,5 +24,11 @@ export const Headline = themed(styled.span`
   })};
   font-size: 15px;
   font-weight: bold;
-  padding-right: 5px;
+  padding: 9px 10px;
 `);
+
+export const Content = styled.div`
+  padding: 9px 0;
+`;
+
+export const Headline = themed(styled.span``);

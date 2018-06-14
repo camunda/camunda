@@ -28,7 +28,7 @@ export default class InstancesListView extends React.Component {
   render() {
     return (
       <Panel>
-        <Panel.Header headline="Instances" />
+        <Panel.Header>Instances</Panel.Header>
         <InstancesList
           data={this.state.instances}
           updateEntriesPerPage={entriesPerPage =>

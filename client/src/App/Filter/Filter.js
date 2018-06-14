@@ -23,14 +23,14 @@ export default class Filter extends Component {
         <Styled.Filter>
           <Styled.Left>
             <Panel>
-              <Panel.Header headline="Filters" foldButtonType="left" />
+              <Panel.Header foldButtonType="left">Filters</Panel.Header>
               <InstancesFilter />
               <Panel.Footer />
             </Panel>
           </Styled.Left>
           <Styled.Right>
             <Panel>
-              <Panel.Header headline="Process Definition Name" />
+              <Panel.Header>Process Definition Name</Panel.Header>
             </Panel>
             <InstancesListView instancesInFilter={9263} />
           </Styled.Right>
