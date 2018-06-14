@@ -3,11 +3,7 @@ import React, {Component} from 'react';
 import MetricPanel from './MetricPanel';
 import MetricTile from './MetricTile';
 
-import {
-  loadRunningInst,
-  loadInstWithoutIncidents,
-  loadInstWithIncidents
-} from './service.js';
+import * as api from './api';
 
 import * as Styled from './styled.js';
 
@@ -19,9 +15,9 @@ export default class Dashboard extends Component {
   };
 
   componentDidMount = async () => {
-    const running = await loadRunningInst();
-    const active = await loadInstWithIncidents();
-    const incidents = await loadInstWithoutIncidents();
+    const running = await api.loadRunningInst();
+    const active = await api.loadInstWithIncidents();
+    const incidents = await api.loadInstWithoutIncidents();
     this.setState({running, active, incidents});
   };
 
