@@ -1,6 +1,7 @@
 import React from 'react';
 
 import './Footer.css';
+import {getOptimizeVersion} from './service';
 
 export default class Footer extends React.Component {
   constructor(props) {
@@ -11,15 +12,20 @@ export default class Footer extends React.Component {
         engineConnections: {},
         connectedToElasticsearch: true // initial status before we get first data
       },
-      isImporting: {}
+      isImporting: {},
+      optimizeVersion: null
     };
   }
 
-  componentDidMount() {
+  async componentDidMount() {
     this.connection = new WebSocket('ws://localhost:8090/ws/status');
 
     this.connection.addEventListener('message', ({data}) => {
       this.setState(JSON.parse(data));
+    });
+
+    this.setState({
+      optimizeVersion: await getOptimizeVersion()
     });
   }
 
@@ -53,7 +59,8 @@ export default class Footer extends React.Component {
   render() {
     const {
       isImporting,
-      connectionStatus: {engineConnections, connectedToElasticsearch}
+      connectionStatus: {engineConnections, connectedToElasticsearch},
+      optimizeVersion
     } = this.state;
 
     return (
@@ -66,7 +73,7 @@ export default class Footer extends React.Component {
             {this.renderListElement('Elasticsearch', connectedToElasticsearch, false)}
           </ul>
           <div className="Footer__colophon">
-            © Camunda Services GmbH 2017, All Rights Reserved. | {this.props.version}
+            © Camunda Services GmbH 2017, All Rights Reserved. | {optimizeVersion}
           </div>
         </div>
       </footer>

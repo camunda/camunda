@@ -35,7 +35,7 @@ const headered = Component => props => {
           <Component {...props} />
         </ErrorBoundary>
       </main>
-      <Footer version="2.0.0" />
+      <Footer />
     </React.Fragment>
   );
 };

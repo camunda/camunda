@@ -4,6 +4,13 @@ import {shallow, mount} from 'enzyme';
 import {Server} from 'mock-socket';
 
 import Footer from './Footer';
+import {getOptimizeVersion} from './service';
+
+jest.mock('./service', () => {
+  return {
+    getOptimizeVersion: jest.fn()
+  };
+});
 
 let server;
 beforeEach(() => {
@@ -17,10 +24,11 @@ it('renders without crashing', () => {
   shallow(<Footer />);
 });
 
-it('includes the version number provided as property', () => {
+it('includes the version number retrieved from back-end', async () => {
   const version = 'alpha';
+  getOptimizeVersion.mockReturnValue(version);
 
-  const node = mount(<Footer version={version} />);
+  const node = await mount(<Footer version={version} />);
   expect(node).toIncludeText(version);
 });
 
@@ -89,5 +97,6 @@ it('should store data from the socket connection in state', () => {
 
   server.send(JSON.stringify(data));
 
-  expect(node.state()).toEqual(data);
+  expect(node.state().connectionStatus).toEqual(data.connectionStatus);
+  expect(node.state().isImporting).toEqual(data.isImporting);
 });
