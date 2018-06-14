@@ -16,6 +16,10 @@ export default class InstancesListFooter extends React.Component {
       Math.round(this.props.firstElement / this.props.perPage) + 1;
     const maxPage = Math.ceil(this.props.total / this.props.perPage);
 
+    if (maxPage === 1) {
+      return null;
+    }
+
     const pageRange = getRange(currentPage, maxPage);
 
     return (

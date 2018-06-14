@@ -54,6 +54,9 @@ export default class InstancesListView extends React.Component {
   }
 
   componentDidUpdate(prevProps, prevState) {
+    if (prevProps.filter !== this.props.filter) {
+      return this.setState({firstElement: 0}, this.loadData);
+    }
     if (
       prevProps.filter !== this.props.filter ||
       prevState.firstElement !== this.state.firstElement
