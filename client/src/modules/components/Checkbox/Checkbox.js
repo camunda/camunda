@@ -21,7 +21,7 @@ export default class Checkbox extends React.Component {
           {...indeterminate}
           type="checkbox"
           checked={checked}
-          onChange={() => onChange()}
+          onChange={onChange}
           ref={el => (this.el = el)}
         />
         {label && <Styled.Label>{label}</Styled.Label>}

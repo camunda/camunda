@@ -5,49 +5,103 @@ import Checkbox from 'modules/components/Checkbox';
 import * as Styled from './styled.js';
 
 export default class InstancesFilter extends React.Component {
-  state = {
-    active: false,
-    incident: false
-  };
-
-  toggleParentSelected = () => {
-    if (this.state.active && this.state.incident) {
-      this.setState({active: false, incident: false});
+  handleRunningChange = () => {
+    const {withIncidents, withoutIncidents, running} = this.props.filter;
+    if (running && !withIncidents && !withoutIncidents) {
+      this.props.onChange({
+        running: {$set: false}
+      });
     } else {
-      this.setState({active: true, incident: true});
+      this.props.onChange({
+        withIncidents: {$set: false},
+        withoutIncidents: {$set: false},
+        running: {$set: true}
+      });
     }
   };
 
-  toggleSelected = type => () => {
-    this.setState({[type]: !this.state[type]});
+  handleActiveChange = () => {
+    const {withIncidents, withoutIncidents, running} = this.props.filter;
+    if (running) {
+      if (withIncidents) {
+        this.props.onChange({
+          withIncidents: {$set: false}
+        });
+      } else {
+        if (withoutIncidents) {
+          this.props.onChange({
+            withoutIncidents: {$set: false},
+            running: {$set: false}
+          });
+        } else {
+          this.props.onChange({
+            withIncidents: {$set: true}
+          });
+        }
+      }
+    } else {
+      this.props.onChange({
+        running: {$set: true},
+        withoutIncidents: {$set: true}
+      });
+    }
+  };
+
+  handleIncidentChange = () => {
+    const {withoutIncidents, withIncidents, running} = this.props.filter;
+    if (running) {
+      if (withoutIncidents) {
+        this.props.onChange({
+          withoutIncidents: {$set: false}
+        });
+      } else {
+        if (withIncidents) {
+          this.props.onChange({
+            withIncidents: {$set: false},
+            running: {$set: false}
+          });
+        } else {
+          this.props.onChange({
+            withoutIncidents: {$set: true}
+          });
+        }
+      }
+    } else {
+      this.props.onChange({
+        running: {$set: true},
+        withIncidents: {$set: true}
+      });
+    }
   };
 
   isIndeterminate = () => {
-    const {active, incident} = this.state;
-    return !!(active ^ incident);
+    const {withIncidents, withoutIncidents} = this.props.filter;
+    return !!(withIncidents || withoutIncidents);
   };
 
   render() {
-    const {active, incident} = this.state;
+    const {withIncidents, withoutIncidents, running} = this.props.filter;
 
     return (
       <Styled.Filters>
         <Checkbox
           label="Running Instances"
           indeterminate={this.isIndeterminate()}
-          checked={active && incident}
-          onChange={this.toggleParentSelected}
+          checked={running || false}
+          onChange={this.handleRunningChange}
         />
         <Styled.NestedFilters>
           <Checkbox
             label="Active"
-            checked={active}
-            onChange={this.toggleSelected('active')}
+            checked={
+              !!(withoutIncidents || (running && !this.isIndeterminate()))
+            }
+            onChange={this.handleActiveChange}
           />
           <Checkbox
             label="Incident"
-            checked={incident}
-            onChange={this.toggleSelected('incident')}
+            checked={!!(withIncidents || (running && !this.isIndeterminate()))}
+            onChange={this.handleIncidentChange}
           />
         </Styled.NestedFilters>
       </Styled.Filters>

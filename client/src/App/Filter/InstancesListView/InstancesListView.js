@@ -56,6 +56,6 @@ export default class InstancesListView extends React.Component {
   }
 
   loadData = async () => {
-    this.setState({instances: await getData()});
+    this.setState({instances: await getData(this.props.filter)});
   };
 }
