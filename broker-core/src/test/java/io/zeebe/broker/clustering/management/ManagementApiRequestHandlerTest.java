@@ -59,6 +59,7 @@ import org.agrona.MutableDirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
 public class ManagementApiRequestHandlerTest
@@ -68,14 +69,15 @@ public class ManagementApiRequestHandlerTest
     private BufferingServerOutput output = new BufferingServerOutput();
     private ManagementApiRequestHandler handler = createHandler();
 
-    @Rule
-    public TemporaryFolder tempFolder = new TemporaryFolder();
+    private TemporaryFolder tempFolder = new TemporaryFolder();
+    private ControlledActorSchedulerRule actorSchedulerRule = new ControlledActorSchedulerRule();
+    private ServiceContainerRule serviceContainerRule = new ServiceContainerRule(actorSchedulerRule);
 
     @Rule
-    public ControlledActorSchedulerRule actorSchedulerRule = new ControlledActorSchedulerRule();
-
-    @Rule
-    public ServiceContainerRule serviceContainerRule = new ServiceContainerRule(actorSchedulerRule);
+    public RuleChain ruleChain = RuleChain
+            .outerRule(tempFolder)
+            .around(actorSchedulerRule)
+            .around(serviceContainerRule);
 
     @Before
     public void setup()
