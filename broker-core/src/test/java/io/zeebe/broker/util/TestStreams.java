@@ -108,17 +108,17 @@ public class TestStreams
             .deleteOnClose(true)
             .build().join();
 
-        logStream.openAppender().join();
-
         actorScheduler.submitActor(new Actor()
         {
             @Override
-            protected void onActorStarted()
+            protected void onActorStarting()
             {
                 final ActorCondition condition = actor.onCondition("on-append", () -> logStream.setCommitPosition(Long.MAX_VALUE));
                 logStream.registerOnAppendCondition(condition);
             }
-        });
+        }).join();
+
+        logStream.openAppender().join();
 
         managedLogs.put(name, logStream);
         closeables.manage(logStream);
