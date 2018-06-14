@@ -46,7 +46,8 @@ export default class Diagram extends React.Component {
 
   render() {
     return (
-      <Styled.Diagram innerRef={this.containerRef}>
+      <Styled.Diagram>
+        <Styled.DiagramCanvas innerRef={this.containerRef} />
         <DiagramControls
           handleZoomIn={this.handleZoomIn}
           handleZoomOut={this.handleZoomOut}

@@ -15,11 +15,7 @@ class Panel extends Component {
 
   render() {
     const {children} = this.props;
-    return (
-      <Styled.Panel>
-        <div>{children}</div>
-      </Styled.Panel>
-    );
+    return <Styled.Panel>{children}</Styled.Panel>;
   }
 }
 

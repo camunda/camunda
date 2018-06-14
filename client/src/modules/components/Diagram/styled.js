@@ -1,12 +1,15 @@
 import styled from 'styled-components';
 
-export const TemporaryDiv = styled.div`
-  height: 500px;
+export const Diagram = styled.div`
+  flex-grow: 1;
   position: relative;
-  border: solid 1px #45464e;
+  overflow: hidden;
 `;
 
-export const Diagram = styled.div`
+export const DiagramCanvas = styled.div`
+  position: absolute;
   height: 100%;
   width: 100%;
+  left: 0;
+  top: 0;
 `;

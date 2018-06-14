@@ -1,9 +1,9 @@
 import React, {Component, Fragment} from 'react';
 
 import Panel from 'modules/components/Panel';
-import Diagram from 'modules/components/Diagram';
 
 import Header from '../Header';
+import DiagramPanel from './DiagramPanel';
 
 import * as Styled from './styled';
 
@@ -22,17 +22,7 @@ export default class Instance extends Component {
         />
         <Styled.Instance>
           <Styled.Top>
-            <Panel>
-              <Styled.DiagramPanelHeader>
-                <span>
-                  <Styled.IncidentIcon /> Process_definition_name
-                </span>
-              </Styled.DiagramPanelHeader>
-              <Styled.IncidentMessage>
-                <strong>Incident:</strong> Error Message goes here
-              </Styled.IncidentMessage>
-              <Diagram />
-            </Panel>
+            <DiagramPanel instanceId={this.props.match.params.id} />
           </Styled.Top>
           <Styled.Bottom>
             <Panel>
