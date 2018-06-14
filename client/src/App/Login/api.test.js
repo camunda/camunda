@@ -19,7 +19,7 @@ describe('login api', () => {
       login({username, password});
 
       // then
-      expect(post.mock.calls[0][0]).toBe('/login');
+      expect(post.mock.calls[0][0]).toBe('/api/login');
       expect(post.mock.calls[0][1]).toBe('username=foo&password=bar');
       expect(post.mock.calls[0][2]).toEqual({
         headers: {

@@ -16,7 +16,7 @@ describe('header api', () => {
       logout();
 
       // then
-      expect(wrappers.post.mock.calls[0][0]).toBe('/logout');
+      expect(wrappers.post.mock.calls[0][0]).toBe('/api/logout');
     });
   });
 
@@ -33,7 +33,7 @@ describe('header api', () => {
       const response = await user();
 
       // then
-      expect(wrappers.get.mock.calls[0][0]).toBe('/authentications/user');
+      expect(wrappers.get.mock.calls[0][0]).toBe('/api/authentications/user');
       expect(successResponse.json).toBeCalled();
       expect(response).toEqual(successMessage);
     });

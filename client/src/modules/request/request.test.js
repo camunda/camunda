@@ -2,7 +2,6 @@ import {mockResolvedAsyncFn, mockRejectedAsyncFn} from 'modules/testUtils';
 
 import {
   request,
-  BASE_URL,
   setResponseInterceptor,
   resetResponseInterceptor
 } from './request';
@@ -33,7 +32,7 @@ describe('request', () => {
 
       // then
       expect(fetch).toBeCalled();
-      expect(fetch.mock.calls[0][0]).toEqual(`${BASE_URL}/some/url`);
+      expect(fetch.mock.calls[0][0]).toEqual('/some/url');
     });
 
     it('should call fetch with url and query', () => {
@@ -45,7 +44,7 @@ describe('request', () => {
 
       // then
       expect(fetch).toBeCalled();
-      expect(fetch.mock.calls[0][0]).toEqual(`${BASE_URL}/some/url?x=10&y=foo`);
+      expect(fetch.mock.calls[0][0]).toEqual('/some/url?x=10&y=foo');
     });
   });
 
