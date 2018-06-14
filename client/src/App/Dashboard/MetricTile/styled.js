@@ -9,7 +9,7 @@ export const Metric = styled.div`
   color: ${({metricColor}) => Colors[metricColor]};
 `;
 
-export const themedMetric = themed(Metric.extend`
+export const ThemedMetric = themed(Metric.extend`
   opacity: ${themeStyle({
     dark: 0.9,
     light: 1
