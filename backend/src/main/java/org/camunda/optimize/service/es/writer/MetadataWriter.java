@@ -4,17 +4,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 
 @Component
@@ -31,20 +27,17 @@ public class MetadataWriter {
 
   public void writeMetadata(MetadataDto metadataDto) {
     try {
-      Map valueMap = objectMapper.readValue
-        (objectMapper.writeValueAsString(metadataDto), HashMap.class);
-      IndexResponse response = esclient
+      String source = objectMapper.writeValueAsString(metadataDto);
+      esclient
         .prepareIndex(
           configurationService.getOptimizeIndex(configurationService.getMetaDataType()),
           configurationService.getMetaDataType(),
           ID
         )
         .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
-        .setSource(valueMap)
+        .setSource(source, XContentType.JSON)
         .get();
     } catch (JsonProcessingException e) {
-      logger.error("can't write metadata", e);
-    } catch (IOException e) {
       logger.error("can't write metadata", e);
     }
   }
