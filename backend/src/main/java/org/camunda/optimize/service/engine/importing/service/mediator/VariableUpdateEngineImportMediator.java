@@ -15,10 +15,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -62,22 +59,10 @@ public class VariableUpdateEngineImportMediator
       OffsetDateTime timestamp = entities.get(entities.size() - 1).getTime();
       importIndexHandler.updateTimestampOfLastEntity(timestamp);
       entities.addAll(entitiesOfLastTimestamp);
-      entities = filterLatestUpdates(entities);
       variableUpdateInstanceImportService.executeImport(entities);
     }
     return entities.size() >= configurationService.getEngineImportVariableInstanceMaxPageSize();
   }
 
-  private List<HistoricVariableUpdateInstanceDto> filterLatestUpdates(List<HistoricVariableUpdateInstanceDto> updates) {
-    Map<String, HistoricVariableUpdateInstanceDto> latestUpdateForVariable = new HashMap<>();
-    for (HistoricVariableUpdateInstanceDto update : updates) {
-      latestUpdateForVariable
-        .compute(
-          update.getVariableInstanceId(),
-          (k, v) -> (v != null && v.getTime().isAfter(update.getTime()))? v : update
-        );
-    }
-    return new ArrayList<>(latestUpdateForVariable.values());
-  }
 
 }

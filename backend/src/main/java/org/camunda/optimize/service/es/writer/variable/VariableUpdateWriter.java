@@ -1,11 +1,12 @@
 package org.camunda.optimize.service.es.writer.variable;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.commons.text.StrSubstitutor;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableDto;
 import org.springframework.stereotype.Component;
 
-import java.time.OffsetDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -15,15 +16,21 @@ public class VariableUpdateWriter extends VariableWriter {
   @Override
   protected String createInlineUpdateScript(Map<String, List<VariableDto>> typeMappedVars) {
     StringBuilder builder = new StringBuilder();
+    Map<String, String> valuesMap = new HashMap<>();
     for (Map.Entry<String, List<VariableDto>> typedVarsEntry : typeMappedVars.entrySet()) {
-      String typeName = typedVarsEntry.getKey();
-      builder.append("for (def var : params." + typeName + ") {");
-        builder.append("ctx._source." + typeName + ".removeIf(item -> item.id.equals(var.id)) ;");
-      builder.append("}");
-      // if a variable update has the value null then this means that the runtime variable
-      // has been deleted and therefore we shouldn't add it to Optimize
-      builder.append("params." + typeName + ".removeIf(item -> item.value == null);");
-      builder.append("ctx._source." + typeName + ".addAll(params." + typeName + ");\n");
+      valuesMap.put("typeName", typedVarsEntry.getKey());
+      StrSubstitutor sub = new StrSubstitutor(valuesMap);
+      String variableScript =
+        "HashMap ${typeName}Entries = new HashMap();" +
+        "for (def var : ctx._source.${typeName}) {" +
+          "${typeName}Entries.put(var.id, var);" +
+        "}" +
+        "for (def var : params.${typeName}) {" +
+          "${typeName}Entries.put(var.id, var);" +
+        "}" +
+        "ctx._source.${typeName} = ${typeName}Entries.values();\n";
+      String resolvedVariableScript = sub.replace(variableScript);
+      builder.append(resolvedVariableScript);
     }
     return builder.toString();
   }
