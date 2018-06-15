@@ -1,4 +1,4 @@
-import moment from 'moment';
+import {formatDate} from 'modules/utils';
 
 export function formatData(instance) {
   return {
@@ -6,10 +6,4 @@ export function formatData(instance) {
     startDate: formatDate(instance.startDate),
     endDate: formatDate(instance.endDate)
   };
-}
-
-function formatDate(dateString) {
-  if (dateString) {
-    return moment(dateString).format('D MMM Y | HH:mm:ss');
-  }
 }

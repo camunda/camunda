@@ -50,7 +50,7 @@ export default class Instance extends Component {
     let instanceStats = {
       workflowDefinitionId,
       startDate,
-      endDate: endDate || '--',
+      endDate,
       instanceState: state
     };
 

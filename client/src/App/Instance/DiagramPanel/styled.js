@@ -12,7 +12,6 @@ export const DiagramPanel = styled.div`
 
 export const DiagramPanelHeader = styled.table`
   width: 100%;
-  table-layout: fixed;
 `;
 
 export const IncidentMessage = styled.div`
