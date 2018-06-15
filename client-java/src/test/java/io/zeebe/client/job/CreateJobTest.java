@@ -15,10 +15,20 @@
  */
 package io.zeebe.client.job;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
+
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.HashMap;
+
 import io.zeebe.client.api.commands.CreateJobCommandStep1;
 import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.events.JobState;
 import io.zeebe.client.api.record.RecordMetadata;
+import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.util.ClientRule;
 import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
@@ -27,20 +37,9 @@ import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import org.assertj.core.util.Maps;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
-
-import java.io.ByteArrayInputStream;
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.Collections;
-import java.util.HashMap;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
 
 public class CreateJobTest
 {
@@ -176,6 +175,26 @@ public class CreateJobTest
     }
 
     @Test
+    public void shouldSetPayloadAsObject()
+    {
+        final PayloadObject payload = new PayloadObject();
+        payload.foo = "bar";
+
+        // when
+        clientRule
+            .jobClient()
+            .newCreateCommand()
+            .jobType("foo")
+            .payload(payload)
+            .send()
+            .join();
+
+        // then
+        final ExecuteCommandRequest request = brokerRule.getReceivedCommandRequests().get(0);
+        assertThat(request.getCommand()).contains(entry("payload", MSGPACK_PAYLOAD));
+    }
+
+    @Test
     public void shouldValidateTypeNotNull()
     {
         // then
@@ -189,4 +208,28 @@ public class CreateJobTest
             .send();
     }
 
+    @Test
+    public void shouldThrowExceptionIfFailedToSerializePayload()
+    {
+        class NotSerializable
+        { }
+
+        // then
+        exception.expect(ClientException.class);
+        exception.expectMessage("Failed to serialize object");
+
+        // when
+        clientRule
+            .jobClient()
+            .newCreateCommand()
+            .jobType("foo")
+            .payload(new NotSerializable())
+            .send()
+            .join();
+    }
+
+    public static class PayloadObject
+    {
+        public String foo;
+    }
 }

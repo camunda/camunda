@@ -65,6 +65,13 @@ public class UpdatePayloadCommandImpl extends CommandImpl<WorkflowInstanceEvent>
     }
 
     @Override
+    public UpdatePayloadWorkflowInstanceCommandStep2 payload(Object payload)
+    {
+        command.setPayload(payload);
+        return this;
+    }
+
+    @Override
     public RecordImpl getCommand()
     {
         return command;

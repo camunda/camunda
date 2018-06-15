@@ -15,10 +15,16 @@
  */
 package io.zeebe.client.workflow;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
+
+import java.util.Collections;
+
 import io.zeebe.client.api.clients.WorkflowClient;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.api.events.WorkflowInstanceState;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
+import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.impl.event.WorkflowInstanceEventImpl;
 import io.zeebe.client.util.ClientRule;
@@ -27,16 +33,9 @@ import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
-
-import java.util.Collections;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
 
 
 public class UpdatePayloadTest
@@ -129,6 +128,28 @@ public class UpdatePayloadTest
     }
 
     @Test
+    public void shouldUpdatePayloadAsObject()
+    {
+        // given
+        final WorkflowInstanceEventImpl baseEvent = Events.exampleWorfklowInstance();
+
+        final PayloadObject payload = new PayloadObject();
+        payload.foo = "bar";
+
+        // when
+        workflowTopicClient.newUpdatePayloadCommand(baseEvent)
+            .payload(payload)
+            .send()
+            .join();
+
+        // then
+        assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
+
+        final ExecuteCommandRequest request = brokerRule.getReceivedCommandRequests().get(0);
+        assertThat(request.getCommand()).contains(entry("payload", ENCODED_PAYLOAD));
+    }
+
+    @Test
     public void shouldThrowExceptionOnRejection()
     {
         // given
@@ -160,6 +181,31 @@ public class UpdatePayloadTest
         workflowTopicClient.newUpdatePayloadCommand(null)
             .payload(PAYLOAD)
             .send();
+    }
+
+    @Test
+    public void shouldThrowExceptionIfFailedToSerializePayload()
+    {
+        // given
+        final WorkflowInstanceEventImpl baseEvent = Events.exampleWorfklowInstance();
+
+        class NotSerializable
+        { }
+
+        // then
+        thrown.expect(ClientException.class);
+        thrown.expectMessage("Failed to serialize object");
+
+        // when
+        workflowTopicClient.newUpdatePayloadCommand(baseEvent)
+            .payload(new NotSerializable())
+            .send()
+            .join();
+    }
+
+    public static class PayloadObject
+    {
+        public String foo;
     }
 
 }

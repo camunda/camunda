@@ -57,6 +57,17 @@ public interface CompleteJobCommandStep1 extends FinalCommandStep<JobEvent>
     CompleteJobCommandStep1 payload(Map<String, Object> payload);
 
     /**
+     * Set the payload to complete the job with.
+     *
+     * @param payload
+     *            the payload as object
+     *
+     * @return the builder for this command. Call {@link #send()} to
+     *         complete the command and send it to the broker.
+     */
+    CompleteJobCommandStep1 payload(Object payload);
+
+    /**
      * Complete the job without payload.
      *
      * @return the builder for this command. Call {@link #send()} to

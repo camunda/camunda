@@ -55,6 +55,17 @@ public interface UpdatePayloadWorkflowInstanceCommandStep1
      */
     UpdatePayloadWorkflowInstanceCommandStep2 payload(Map<String, Object> payload);
 
+    /**
+     * Set the new payload of the workflow instance.
+     *
+     * @param payload
+     *            the payload as object
+     *
+     * @return the builder for this command. Call {@link #send()} to
+     *         complete the command and send it to the broker.
+     */
+    UpdatePayloadWorkflowInstanceCommandStep2 payload(Object payload);
+
     interface UpdatePayloadWorkflowInstanceCommandStep2 extends FinalCommandStep<WorkflowInstanceEvent>
     {
         // the place for new optional parameters

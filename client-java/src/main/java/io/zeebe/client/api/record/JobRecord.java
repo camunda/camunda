@@ -65,4 +65,9 @@ public interface JobRecord extends Record
      * @return de-serialized payload as map
      */
     Map<String, Object> getPayloadAsMap();
+
+    /**
+     * @return de-serialized payload as the given type
+     */
+    <T> T getPayloadAsType(Class<T> payloadType);
 }

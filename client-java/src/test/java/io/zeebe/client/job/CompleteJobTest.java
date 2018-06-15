@@ -25,6 +25,7 @@ import java.util.Collections;
 import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.events.JobState;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
+import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.impl.event.JobEventImpl;
 import io.zeebe.client.util.ClientRule;
@@ -199,6 +200,52 @@ public class CompleteJobTest
         // then
         final ExecuteCommandRequest request = brokerRule.getReceivedCommandRequests().get(0);
         assertThat(request.getCommand()).contains(entry("payload", MSGPACK_PAYLOAD));
+    }
+
+    @Test
+    public void shouldSetPayloadAsObject()
+    {
+        // given
+        final JobEventImpl baseEvent = Events.exampleJob();
+        final PayloadObject payload = new PayloadObject();
+        payload.fruit = "cherry";
+
+        // when
+        clientRule.jobClient()
+            .newCompleteCommand(baseEvent)
+            .payload(payload)
+            .send()
+            .join();
+
+        // then
+        final ExecuteCommandRequest request = brokerRule.getReceivedCommandRequests().get(0);
+        assertThat(request.getCommand()).contains(entry("payload", MSGPACK_PAYLOAD));
+    }
+
+    @Test
+    public void shouldThrowExceptionIfFailedToSerializePayload()
+    {
+        // given
+        final JobEventImpl baseEvent = Events.exampleJob();
+
+        class NotSerializable
+        { }
+
+        // then
+        exception.expect(ClientException.class);
+        exception.expectMessage("Failed to serialize object");
+
+        // when
+        clientRule.jobClient()
+            .newCompleteCommand(baseEvent)
+            .payload(new NotSerializable())
+            .send()
+            .join();
+    }
+
+    public static class PayloadObject
+    {
+        public String fruit;
     }
 
 }

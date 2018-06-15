@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.util.ClientRule;
 import io.zeebe.msgpack.spec.MsgPackHelper;
@@ -108,6 +109,17 @@ public class WorkflowInstancePayloadTest
     }
 
     @Test
+    public void shouldGetPayloadAsType()
+    {
+        final WorkflowInstanceEvent event = workflowInstanceEventWithPayload(converter.convertToMsgPack("{\"foo\":\"bar\"}"));
+
+        final PayloadObject payload = event.getPayloadAsType(PayloadObject.class);
+
+        assertThat(payload).isNotNull();
+        assertThat(payload.foo).isEqualTo("bar");
+    }
+
+    @Test
     public void shouldGetNilPayloadAsString()
     {
         final WorkflowInstanceEvent event = workflowInstanceEventWithPayload(MsgPackHelper.NIL);
@@ -137,6 +149,33 @@ public class WorkflowInstancePayloadTest
         final WorkflowInstanceEvent event = workflowInstanceEventWithPayload(MsgPackHelper.EMTPY_OBJECT);
 
         assertThat(event.getPayloadAsMap()).isEmpty();
+    }
+
+    @Test
+    public void shouldGetEmptyPayloadAsType()
+    {
+        final WorkflowInstanceEvent event = workflowInstanceEventWithPayload(MsgPackHelper.EMTPY_OBJECT);
+
+        final PayloadObject payload = event.getPayloadAsType(PayloadObject.class);
+
+        assertThat(payload).isNotNull();
+        assertThat(payload.foo).isNull();
+    }
+
+    @Test
+    public void shouldThrowExceptionIfFailedToDeserializablePayload()
+    {
+        final WorkflowInstanceEvent event = workflowInstanceEventWithPayload(converter.convertToMsgPack("{\"foo\":123}"));
+
+        exception.expect(ClientException.class);
+        exception.expectMessage("Failed deserialize JSON '{\"foo\":123}' to type '" + PayloadObject.class.getName() + "'");
+
+        event.getPayloadAsType(PayloadObject.class);
+    }
+
+    public static class PayloadObject
+    {
+        public String foo;
     }
 
 

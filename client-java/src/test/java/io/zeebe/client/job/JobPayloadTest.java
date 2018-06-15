@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.Collections;
 
 import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.job.subscription.RecordingJobHandler;
 import io.zeebe.client.util.ClientRule;
@@ -113,6 +114,17 @@ public class JobPayloadTest
     }
 
     @Test
+    public void shouldGetPayloadAsObject()
+    {
+        final JobEvent jobEvent = jobEventWithPayload(converter.convertToMsgPack("{\"foo\":\"bar\"}"));
+
+        final PayloadObject payload = jobEvent.getPayloadAsType(PayloadObject.class);
+
+        assertThat(payload).isNotNull();
+        assertThat(payload.foo).isEqualTo("bar");
+    }
+
+    @Test
     public void shouldGetNilPayloadAsString()
     {
         final JobEvent jobEvent = jobEventWithPayload(MsgPackHelper.NIL);
@@ -144,5 +156,31 @@ public class JobPayloadTest
         assertThat(jobEvent.getPayloadAsMap()).isEmpty();
     }
 
+    @Test
+    public void shouldGetEmptyPayloadAsObject()
+    {
+        final JobEvent jobEvent = jobEventWithPayload(MsgPackHelper.EMTPY_OBJECT);
+
+        final PayloadObject payload = jobEvent.getPayloadAsType(PayloadObject.class);
+
+        assertThat(payload).isNotNull();
+        assertThat(payload.foo).isNull();
+    }
+
+    @Test
+    public void shouldThrowExceptionIfFailedToDeserializablePayload()
+    {
+        final JobEvent jobEvent = jobEventWithPayload(converter.convertToMsgPack("{\"foo\":123}"));
+
+        exception.expect(ClientException.class);
+        exception.expectMessage("Failed deserialize JSON '{\"foo\":123}' to type '" + PayloadObject.class.getName() + "'");
+
+        jobEvent.getPayloadAsType(PayloadObject.class);
+    }
+
+    public static class PayloadObject
+    {
+        public String foo;
+    }
 
 }

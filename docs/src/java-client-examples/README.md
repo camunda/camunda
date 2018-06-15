@@ -23,6 +23,10 @@ Import the Maven project in the `samples` directory into your IDE to start hacki
 
 * [Open a Job Worker](java-client-examples/job-worker-open.html)
 
+## Data
+
+* [Handle the payload as POJO](java-client-examples/data-pojo.html)
+
 ## Topic
 
 * [Create a Topic](java-client-examples/topic-create.html)

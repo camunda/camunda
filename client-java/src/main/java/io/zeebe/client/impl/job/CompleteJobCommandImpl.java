@@ -63,6 +63,13 @@ public class CompleteJobCommandImpl extends CommandImpl<JobEvent> implements Com
     }
 
     @Override
+    public CompleteJobCommandStep1 payload(Object payload)
+    {
+        command.setPayload(payload);
+        return this;
+    }
+
+    @Override
     public CompleteJobCommandStep1 withoutPayload()
     {
         command.clearPayload();

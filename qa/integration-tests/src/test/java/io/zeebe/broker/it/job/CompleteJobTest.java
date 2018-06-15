@@ -121,6 +121,25 @@ public class CompleteJobTest
     }
 
     @Test
+    public void shouldCompleteJobWithPayloadAsObject()
+    {
+        final PayloadObject payload = new PayloadObject();
+        payload.foo = "bar";
+
+        // when
+        final JobEvent job = clientRule
+            .getJobClient()
+            .newCompleteCommand(jobEvent)
+            .payload(payload)
+            .send()
+            .join();
+
+        // then
+        assertThat(job.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
+        assertThat(job.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+    }
+
+    @Test
     public void shouldProvideReasonInExceptionMessageOnRejection()
     {
         // given
@@ -142,5 +161,10 @@ public class CompleteJobTest
         jobClient.newCompleteCommand(job)
             .send()
             .join();
+    }
+
+    public static class PayloadObject
+    {
+        public String foo;
     }
 }

@@ -141,6 +141,20 @@ public abstract class WorkflowInstanceRecordImpl extends RecordImpl implements W
         }
     }
 
+    @JsonIgnore
+    @Override
+    public <T> T getPayloadAsType(Class<T> payloadType)
+    {
+        if (payload == null)
+        {
+            return null;
+        }
+        else
+        {
+            return payload.getAsType(payloadType);
+        }
+    }
+
     public void setPayload(String jsonString)
     {
         initializePayloadField();
@@ -157,6 +171,12 @@ public abstract class WorkflowInstanceRecordImpl extends RecordImpl implements W
     {
         initializePayloadField();
         this.payload.setAsMap(payload);
+    }
+
+    public void setPayload(Object payload)
+    {
+        initializePayloadField();
+        this.payload.setAsObject(payload);
     }
 
     private void initializePayloadField()

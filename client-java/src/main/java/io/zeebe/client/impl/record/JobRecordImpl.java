@@ -159,6 +159,20 @@ public abstract class JobRecordImpl extends RecordImpl implements JobRecord
         }
     }
 
+    @JsonIgnore
+    @Override
+    public <T> T getPayloadAsType(Class<T> payloadType)
+    {
+        if (payload == null)
+        {
+            return null;
+        }
+        else
+        {
+            return payload.getAsType(payloadType);
+        }
+    }
+
     public void setPayload(String jsonString)
     {
         initializePayloadField();
@@ -175,6 +189,12 @@ public abstract class JobRecordImpl extends RecordImpl implements JobRecord
     {
         initializePayloadField();
         this.payload.setAsMap(payload);
+    }
+
+    public void setPayload(Object payload)
+    {
+        initializePayloadField();
+        this.payload.setAsObject(payload);
     }
 
     private void initializePayloadField()

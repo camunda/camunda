@@ -64,6 +64,13 @@ public class CreateWorkflowInstanceCommandImpl extends CommandImpl<WorkflowInsta
     }
 
     @Override
+    public CreateWorkflowInstanceCommandStep3 payload(Object payload)
+    {
+        this.command.setPayload(payload);
+        return this;
+    }
+
+    @Override
     public CreateWorkflowInstanceCommandStep2 bpmnProcessId(final String id)
     {
         this.command.setBpmnProcessId(id);

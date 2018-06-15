@@ -54,4 +54,9 @@ public interface WorkflowInstanceRecord extends Record
      * @return the de-serialized payload of the workflow instance as map
      */
     Map<String, Object> getPayloadAsMap();
+
+    /**
+     * @return de-serialized payload of the workflow instance as the given type
+     */
+    <T> T getPayloadAsType(Class<T> payloadType);
 }

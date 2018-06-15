@@ -172,6 +172,27 @@ public class CreateWorkflowInstanceTest
     }
 
     @Test
+    public void shouldCreateWithPayloadAsObject()
+    {
+        final PayloadObject payload = new PayloadObject();
+        payload.foo = "bar";
+
+        // when
+        final WorkflowInstanceEvent workflowInstance =
+            clientRule.getWorkflowClient()
+                .newCreateInstanceCommand()
+                .bpmnProcessId("anId")
+                .latestVersion()
+                .payload(payload)
+                .send()
+                .join();
+
+        // then
+        assertThat(workflowInstance.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
+        assertThat(workflowInstance.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+    }
+
+    @Test
     public void shouldRejectCreateBpmnProcessByIllegalId()
     {
         // expected
@@ -200,6 +221,11 @@ public class CreateWorkflowInstanceTest
             .workflowKey(99L)
             .send()
             .join();
+    }
+
+    public static class PayloadObject
+    {
+        public String foo;
     }
 
 }

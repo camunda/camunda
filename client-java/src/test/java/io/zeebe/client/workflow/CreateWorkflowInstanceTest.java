@@ -15,28 +15,27 @@
  */
 package io.zeebe.client.workflow;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
+
+import java.io.ByteArrayInputStream;
+import java.util.Collections;
+
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.commands.CreateWorkflowInstanceCommandStep1;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.api.events.WorkflowInstanceState;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
+import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.util.ClientRule;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
-
-import java.io.ByteArrayInputStream;
-import java.util.Collections;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
 
 
 public class CreateWorkflowInstanceTest
@@ -229,6 +228,34 @@ public class CreateWorkflowInstanceTest
     }
 
     @Test
+    public void shouldCreateWorkflowInstanceWithPayloadAsObject()
+    {
+        // given
+        final String payload = "{\"foo\":\"bar\"}";
+
+        final PayloadObject payloadObj = new PayloadObject();
+        payloadObj.foo = "bar";
+
+        brokerRule.workflowInstances().registerCreateCommand();
+
+        // when
+        final WorkflowInstanceEvent workflowInstance = clientRule.workflowClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId("foo")
+            .latestVersion()
+            .payload(payloadObj)
+            .send()
+            .join();
+
+        // then
+        final ExecuteCommandRequest commandRequest = brokerRule.getReceivedCommandRequests().get(0);
+        assertThat(commandRequest.getCommand()).contains(entry("payload", msgPackConverter.convertToMsgPack(payload)));
+
+        assertThat(workflowInstance.getPayload()).isEqualTo(payload);
+        assertThat(workflowInstance.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+    }
+
+    @Test
     public void shouldThrowExceptionOnRejection()
     {
         // given
@@ -245,6 +272,31 @@ public class CreateWorkflowInstanceTest
             .latestVersion()
             .send()
             .join();
+    }
+
+    @Test
+    public void shouldThrowExceptionIfFailedToSerializePayload()
+    {
+        class NotSerializable
+        { }
+
+        // then
+        expectedException.expect(ClientException.class);
+        expectedException.expectMessage("Failed to serialize object");
+
+        // when
+        clientRule.workflowClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId("foo")
+            .latestVersion()
+            .payload(new NotSerializable())
+            .send()
+            .join();
+    }
+
+    public static class PayloadObject
+    {
+        public String foo;
     }
 
 }

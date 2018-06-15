@@ -160,7 +160,7 @@ public class ZeebeObjectMapperImpl implements ZeebeObjectMapper
         }
         catch (IOException e)
         {
-            throw new RuntimeException(String.format("Failed to serialize object '%s' to Msgpack JSON", value), e);
+            throw new ClientException(String.format("Failed to serialize object '%s' to Msgpack JSON", value), e);
         }
     }
 
@@ -185,6 +185,18 @@ public class ZeebeObjectMapperImpl implements ZeebeObjectMapper
         catch (IOException e)
         {
             throw new RuntimeException("Failed deserialize Msgpack JSON to map", e);
+        }
+    }
+
+    public <T> T fromMsgpackAsType(byte[] msgpack, Class<T> type)
+    {
+        try
+        {
+            return msgpackObjectMapper.readValue(msgpack, type);
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(String.format("Failed deserialize Msgpack JSON to type '%s'", type.getName()), e);
         }
     }
 

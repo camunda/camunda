@@ -20,20 +20,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.Arrays;
 import java.util.Collection;
 
+import io.zeebe.example.cluster.TopologyViewer;
+import io.zeebe.example.data.HandlePayloadAsPojo;
+import io.zeebe.example.job.JobWorkerCreator;
+import io.zeebe.example.topic.TopicCreator;
+import io.zeebe.example.topic.TopicSubscriber;
+import io.zeebe.example.workflow.*;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
-
-import io.zeebe.example.cluster.TopologyViewer;
-import io.zeebe.example.job.JobWorkerCreator;
-import io.zeebe.example.topic.TopicCreator;
-import io.zeebe.example.topic.TopicSubscriber;
-import io.zeebe.example.workflow.DeploymentViewer;
-import io.zeebe.example.workflow.NonBlockingWorkflowInstanceCreator;
-import io.zeebe.example.workflow.WorkflowDeployer;
-import io.zeebe.example.workflow.WorkflowInstanceCreator;
 
 @RunWith(Parameterized.class)
 public class DocsConsistencyTest
@@ -51,6 +48,7 @@ public class DocsConsistencyTest
             { NonBlockingWorkflowInstanceCreator.class, "io.zeebe.example.workflow.NonBlockingWorkflowInstanceCreator" },
             { WorkflowDeployer.class, "io.zeebe.example.workflow.WorkflowDeployer" },
             { WorkflowInstanceCreator.class, "io.zeebe.example.workflow.WorkflowInstanceCreator" },
+            { HandlePayloadAsPojo.class, "io.zeebe.example.data.HandlePayloadAsPojo" },
         });
     }
 

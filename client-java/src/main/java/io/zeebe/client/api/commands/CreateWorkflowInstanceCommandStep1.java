@@ -124,6 +124,17 @@ public interface CreateWorkflowInstanceCommandStep1
          *         complete the command and send it to the broker.
          */
         CreateWorkflowInstanceCommandStep3 payload(Map<String, Object> payload);
+
+        /**
+         * Set the initial payload of the workflow instance.
+         *
+         * @param payload
+         *            the payload as object
+         *
+         * @return the builder for this command. Call {@link #send()} to
+         *         complete the command and send it to the broker.
+         */
+        CreateWorkflowInstanceCommandStep3 payload(Object payload);
     }
 
 }

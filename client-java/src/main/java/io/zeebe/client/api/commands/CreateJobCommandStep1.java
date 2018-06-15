@@ -105,5 +105,16 @@ public interface CreateJobCommandStep1
          *         complete the command and send it to the broker.
          */
         CreateJobCommandStep2 payload(Map<String, Object> payload);
+
+        /**
+         * Set the initial payload of this job.
+         *
+         * @param payload
+         *            the payload as object
+         *
+         * @return the builder for this command. Call {@link #send()} to
+         *         complete the command and send it to the broker.
+         */
+        CreateJobCommandStep2 payload(Object payload);
     }
 }

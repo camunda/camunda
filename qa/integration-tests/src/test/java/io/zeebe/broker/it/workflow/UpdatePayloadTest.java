@@ -15,6 +15,12 @@
  */
 package io.zeebe.broker.it.workflow;
 
+import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
+
+import java.util.Collections;
+
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
@@ -23,17 +29,9 @@ import io.zeebe.client.api.events.WorkflowInstanceState;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
-
-import java.util.Collections;
-
-import static io.zeebe.test.util.TestUtil.waitUntil;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
 
 public class UpdatePayloadTest
 {
@@ -157,6 +155,32 @@ public class UpdatePayloadTest
     }
 
     @Test
+    public void shouldUpdatePayloadWithObject()
+    {
+        // given
+        final PayloadObject newPayload = new PayloadObject();
+        newPayload.foo = "bar";
+
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED));
+
+        final WorkflowInstanceEvent activtyInstance = eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED);
+
+        // when
+        final WorkflowInstanceEvent event = clientRule.getWorkflowClient()
+            .newUpdatePayloadCommand(activtyInstance)
+            .payload(newPayload)
+            .send()
+            .join();
+
+        // then
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.PAYLOAD_UPDATED));
+
+        assertThat(event.getState()).isEqualTo(WorkflowInstanceState.PAYLOAD_UPDATED);
+        assertThat(event.getPayload()).isEqualTo(PAYLOAD);
+        assertThat(event.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+    }
+
+    @Test
     public void shouldFailUpdatePayloadIfWorkflowInstanceIsCompleted()
     {
         // given
@@ -180,6 +204,11 @@ public class UpdatePayloadTest
             .payload(PAYLOAD)
             .send()
             .join();
+    }
+
+    public static class PayloadObject
+    {
+        public String foo;
     }
 
 }

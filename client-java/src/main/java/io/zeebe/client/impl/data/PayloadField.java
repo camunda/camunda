@@ -18,6 +18,8 @@ package io.zeebe.client.impl.data;
 import java.io.InputStream;
 import java.util.Map;
 
+import io.zeebe.client.cmd.ClientException;
+
 public class PayloadField
 {
     private final ZeebeObjectMapperImpl objectMapper;
@@ -64,7 +66,37 @@ public class PayloadField
     {
         if (msgPack != null)
         {
-            return objectMapper.fromMsgpackAsMap(msgPack);
+            try
+            {
+                return objectMapper.fromMsgpackAsMap(msgPack);
+            }
+            catch (Exception e)
+            {
+                final String json = getAsJsonString();
+
+                throw new ClientException(String.format("Failed deserialize JSON '%s' to map", json), e);
+            }
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    public <T> T getAsType(Class<T> type)
+    {
+        if (msgPack != null)
+        {
+            try
+            {
+                return objectMapper.fromMsgpackAsType(msgPack, type);
+            }
+            catch (Exception e)
+            {
+                final String json = getAsJsonString();
+
+                throw new ClientException(String.format("Failed deserialize JSON '%s' to type '%s'", json, type.getName()), e);
+            }
         }
         else
         {
@@ -97,6 +129,18 @@ public class PayloadField
     }
 
     public void setAsMap(Map<String, Object> payload)
+    {
+        if (payload != null)
+        {
+            msgPack = objectMapper.toMsgpack(payload);
+        }
+        else
+        {
+            msgPack = null;
+        }
+    }
+
+    public void setAsObject(Object payload)
     {
         if (payload != null)
         {

@@ -120,6 +120,27 @@ public class CreateJobTest
     }
 
     @Test
+    public void shouldCreateJobWithPayloadAsObject()
+    {
+        // given
+        final JobClient jobClient = clientRule.getClient().topicClient().jobClient();
+
+        final PayloadObject payload = new PayloadObject();
+        payload.foo = "bar";
+
+        // when
+        final JobEvent job = jobClient.newCreateCommand()
+            .jobType("foo")
+            .payload(payload)
+            .send()
+            .join();
+
+        // then
+        assertThat(job.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
+        assertThat(job.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+    }
+
+    @Test
     public void shouldFailCreateJobIfTopicNameIsNotValid()
     {
         // given
@@ -135,5 +156,10 @@ public class CreateJobTest
             .jobType("foo")
             .send()
             .join();
+    }
+
+    public static class PayloadObject
+    {
+        public String foo;
     }
 }
