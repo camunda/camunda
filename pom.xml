@@ -35,6 +35,10 @@
     <module>test-util</module>
     <module>zb-map</module>
     <module>dispatcher</module>
+    <module>msgpack-core</module>
+    <module>msgpack-value</module>
+    <module>json-el</module>
+    <module>json-path</module>
   </modules>
 
   <repositories>
