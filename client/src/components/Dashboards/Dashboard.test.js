@@ -356,7 +356,7 @@ describe('edit mode', async () => {
     const shareButton = node.find('.Dashboard__share-button');
     expect(shareButton).toBeDisabled();
     expect(shareButton.props()).toHaveProperty(
-      'buttonTitle',
+      'tooltip',
       "You are not authorized to share the dashboard,  because you don't have access to all reports on the dashboard!"
     );
   });

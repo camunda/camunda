@@ -115,7 +115,7 @@ export default class Popover extends React.Component {
           ref={this.storeButtonRef}
           className="Popover__button"
           disabled={this.props.disabled}
-          title={this.props.buttonTitle}
+          title={this.props.tooltip}
         >
           {this.props.icon ? <Icon type={this.props.icon} /> : ''}
           {this.props.title}

@@ -50,3 +50,13 @@ it('should not close the popover when clicking inside the popover', () => {
 
   expect(node).toIncludeText('Child content');
 });
+
+it('should display tooltip on button', () => {
+  const node = mount(
+    <Popover title="a" tooltip="myTooltip">
+      <p>Child content</p>
+    </Popover>
+  );
+
+  expect(node.find('button')).toMatchSelector('button[title="' + 'myTooltip' + '"]');
+});

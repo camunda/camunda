@@ -116,7 +116,8 @@ export default withErrorHandling(
 
       this.setState({
         originalName: this.state.name,
-        originalReports: this.state.reports
+        originalReports: this.state.reports,
+        isAuthorizedToShare: await isAuthorizedToShareDashboard(this.id)
       });
     };
 
@@ -322,7 +323,7 @@ export default withErrorHandling(
                       icon="share"
                       title="Share"
                       disabled={!isAuthorizedToShare}
-                      buttonTitle={this.createShareButtonTitle()}
+                      tooltip={this.createShareTooltip()}
                     >
                       <ShareEntity
                         type="dashboard"
@@ -404,7 +405,7 @@ export default withErrorHandling(
       );
     };
 
-    createShareButtonTitle = () => {
+    createShareTooltip = () => {
       return this.state.isAuthorizedToShare
         ? ''
         : 'You are not authorized to share the dashboard, ' +
