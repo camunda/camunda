@@ -59,17 +59,14 @@ export default class InstancesListView extends React.Component {
     );
   }
 
-  componentDidMount() {
-    this.loadData();
-  }
-
   componentDidUpdate(prevProps, prevState) {
     if (prevProps.filter !== this.props.filter) {
       return this.setState({firstElement: 0}, this.loadData);
     }
     if (
       prevProps.filter !== this.props.filter ||
-      prevState.firstElement !== this.state.firstElement
+      prevState.firstElement !== this.state.firstElement ||
+      prevState.entriesPerPage !== this.state.entriesPerPage
     ) {
       this.loadData();
     }
@@ -77,7 +74,11 @@ export default class InstancesListView extends React.Component {
 
   loadData = async () => {
     this.setState({
-      instances: await getData(this.props.filter, this.state.firstElement)
+      instances: await getData(
+        this.props.filter,
+        this.state.firstElement,
+        this.state.entriesPerPage
+      )
     });
   };
 }

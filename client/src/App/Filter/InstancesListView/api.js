@@ -1,8 +1,8 @@
 import {post} from 'modules/request';
 
-export async function getData(filter, firstElement) {
-  // backend does not support pagination and pageoffset yet :(
-  const response = await post('/api/workflow-instances', filter);
+export async function getData(filter, firstResult, maxResults) {
+  const url = `/api/workflow-instances?firstResult=${firstResult}&maxResults=${maxResults}`;
+  const response = await post(url, filter);
 
   return await response.json();
 }
