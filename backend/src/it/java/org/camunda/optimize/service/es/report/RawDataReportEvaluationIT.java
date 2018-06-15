@@ -50,6 +50,9 @@ import static org.hamcrest.core.IsNull.notNullValue;
 
 public class RawDataReportEvaluationIT {
 
+  private static final String BUSINESS_KEY = "aBusinessKey";
+
+
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -63,7 +66,7 @@ public class RawDataReportEvaluationIT {
       .around(engineDatabaseRule);
 
   @Test
-  public void reportAcrossAllVersions() throws Exception {
+  public void reportAcrossAllVersions() {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     deployAndStartSimpleProcess();
@@ -117,6 +120,7 @@ public class RawDataReportEvaluationIT {
     assertThat(rawDataProcessInstanceDto.getStartDate(), is(notNullValue()));
     assertThat(rawDataProcessInstanceDto.getEndDate(), is(notNullValue()));
     assertThat(rawDataProcessInstanceDto.getEngineName(), is("1"));
+    assertThat(rawDataProcessInstanceDto.getBusinessKey(), is(BUSINESS_KEY));
     assertThat(rawDataProcessInstanceDto.getVariables(), is(notNullValue()));
     assertThat(rawDataProcessInstanceDto.getVariables().size(), is(0));
   }
@@ -593,7 +597,7 @@ public class RawDataReportEvaluationIT {
       .startEvent()
       .endEvent()
       .done();
-    return engineRule.deployAndStartProcessWithVariables(processModel, variables);
+    return engineRule.deployAndStartProcessWithVariables(processModel, variables, BUSINESS_KEY);
   }
 
   private ProcessDefinitionEngineDto deploySimpleGatewayProcessDefinition() throws Exception {

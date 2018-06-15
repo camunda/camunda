@@ -8,6 +8,7 @@ public class RawDataProcessInstanceDto {
   protected String processDefinitionKey;
   protected String processDefinitionId;
   protected String processInstanceId;
+  protected String businessKey;
   protected OffsetDateTime startDate;
   protected OffsetDateTime endDate;
   protected String engineName;
@@ -35,6 +36,14 @@ public class RawDataProcessInstanceDto {
 
   public void setProcessInstanceId(String processInstanceId) {
     this.processInstanceId = processInstanceId;
+  }
+
+  public String getBusinessKey() {
+    return businessKey;
+  }
+
+  public void setBusinessKey(String businessKey) {
+    this.businessKey = businessKey;
   }
 
   public OffsetDateTime getStartDate() {
@@ -79,6 +88,7 @@ public class RawDataProcessInstanceDto {
       result = result && startDate.equals(other.startDate);
       result = result && endDate.equals(other.endDate);
       result = result && engineName.equals(other.engineName);
+      result = result && businessKey.equals(other.businessKey);
       Map<String, Object> otherVariables = other.variables;
       for (Map.Entry<String, Object> nameToValue : variables.entrySet()) {
         result = result && otherVariables.containsKey(nameToValue.getKey());

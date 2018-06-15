@@ -62,6 +62,7 @@ public class FinishedProcessInstanceWriter {
     params.put(ProcessInstanceType.ENGINE, procInst.getEngine());
     params.put(ProcessInstanceType.DURATION, procInst.getDurationInMs());
     params.put(ProcessInstanceType.PROCESS_DEFINITION_VERSION, procInst.getProcessDefinitionVersion());
+    params.put(ProcessInstanceType.BUSINESS_KEY, procInst.getBusinessKey());
 
     Script updateScript = new Script(
         ScriptType.INLINE,
@@ -70,7 +71,8 @@ public class FinishedProcessInstanceWriter {
             "ctx._source.endDate = params.endDate; " +
             "ctx._source.durationInMs = params.durationInMs;" +
             "ctx._source.processDefinitionVersion = params.processDefinitionVersion;" +
-            "ctx._source.engine = params.engine",
+            "ctx._source.engine = params.engine;" +
+            "ctx._source.businessKey = params.businessKey;",
         params
     );
 

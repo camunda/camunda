@@ -57,14 +57,16 @@ public class RunningProcessInstanceWriter {
     params.put(ProcessInstanceType.START_DATE, dateTimeFormatter.format(procInst.getStartDate()));
     params.put(ProcessInstanceType.ENGINE, procInst.getEngine());
     params.put(ProcessInstanceType.PROCESS_DEFINITION_VERSION, procInst.getProcessDefinitionVersion());
+    params.put(ProcessInstanceType.BUSINESS_KEY, procInst.getBusinessKey());
 
     Script updateScript = new Script(
       ScriptType.INLINE,
       Script.DEFAULT_SCRIPT_LANG,
       "ctx._source.startDate = params.startDate;" +
-          "ctx._source.processDefinitionVersion = params.processDefinitionVersion;" +
-          " ctx._source.engine = params.engine",
-      params
+      "ctx._source.processDefinitionVersion = params.processDefinitionVersion;" +
+      "ctx._source.engine = params.engine;" +
+      "ctx._source.businessKey = params.businessKey;",
+        params
     );
 
     String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);

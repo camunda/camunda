@@ -92,6 +92,7 @@ public class RawDataCommand extends ReportCommand<RawDataReportResultDto> {
     rawDataInstance.setStartDate(processInstanceDto.getStartDate());
     rawDataInstance.setEndDate(processInstanceDto.getEndDate());
     rawDataInstance.setEngineName(processInstanceDto.getEngine());
+    rawDataInstance.setBusinessKey(processInstanceDto.getBusinessKey());
 
     rawDataInstance.setVariables(variables);
     return rawDataInstance;

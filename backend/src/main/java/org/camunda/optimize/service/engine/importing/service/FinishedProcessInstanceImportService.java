@@ -69,6 +69,7 @@ public class FinishedProcessInstanceImportService {
     processInstanceDto.setProcessDefinitionVersion(engineEntity.getProcessDefinitionVersionAsString());
     processInstanceDto.setProcessDefinitionId(engineEntity.getProcessDefinitionId());
     processInstanceDto.setProcessInstanceId(engineEntity.getId());
+    processInstanceDto.setBusinessKey(engineEntity.getBusinessKey());
     OffsetDateTime startDate = engineEntity.getStartTime();
     OffsetDateTime endDate = engineEntity.getEndTime();
     processInstanceDto.setStartDate(startDate);

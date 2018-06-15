@@ -1,7 +1,6 @@
 package org.camunda.optimize.test.it.rule;
 
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -228,7 +227,14 @@ public class EngineIntegrationRule extends TestWatcher {
     }
   }
 
-  public ProcessInstanceEngineDto deployAndStartProcessWithVariables(BpmnModelInstance bpmnModelInstance, Map<String, Object> variables) {
+  public ProcessInstanceEngineDto deployAndStartProcessWithVariables(BpmnModelInstance bpmnModelInstance,
+                                                                     Map<String, Object> variables) {
+    return deployAndStartProcessWithVariables(bpmnModelInstance, variables, "aBusinessKey");
+  }
+
+  public ProcessInstanceEngineDto deployAndStartProcessWithVariables(BpmnModelInstance bpmnModelInstance,
+                                                                     Map<String, Object> variables,
+                                                                     String businessKey) {
     CloseableHttpClient client = getHttpClient();
     DeploymentDto deployment = deployProcess(bpmnModelInstance, client);
     ProcessInstanceEngineDto processInstanceDto = new ProcessInstanceEngineDto();
@@ -237,7 +243,7 @@ public class EngineIntegrationRule extends TestWatcher {
       assertThat(procDefs.size(), is(1));
 
       ProcessDefinitionEngineDto processDefinitionEngineDto = procDefs.get(0);
-      processInstanceDto = startProcessInstance(processDefinitionEngineDto.getId(), client, variables);
+      processInstanceDto = startProcessInstance(processDefinitionEngineDto.getId(), client, variables, businessKey);
       processInstanceDto.setProcessDefinitionKey(processDefinitionEngineDto.getKey());
       processInstanceDto.setProcessDefinitionVersion(String.valueOf(processDefinitionEngineDto.getVersion()));
 
@@ -417,13 +423,32 @@ public class EngineIntegrationRule extends TestWatcher {
 
   public ProcessInstanceEngineDto startProcessInstance(String processDefinitionId, Map<String, Object> variables) throws IOException {
     CloseableHttpClient client = getHttpClient();
-    return startProcessInstance(processDefinitionId, client, variables);
+    return startProcessInstance(processDefinitionId, client, variables, "aBusinessKey");
   }
 
-  private ProcessInstanceEngineDto startProcessInstance(String procDefId, CloseableHttpClient client, Map<String, Object> variables) throws IOException {
+  private ProcessInstanceEngineDto startProcessInstance(String processDefinitionId,
+                                                       CloseableHttpClient client,
+                                                       Map<String, Object> variables) throws IOException {
+    return startProcessInstance(processDefinitionId, client, variables, "aBusinessKey");
+  }
+
+  public ProcessInstanceEngineDto startProcessInstance(String processDefinitionId,
+                                                       Map<String, Object> variables,
+                                                       String businessKey) throws IOException {
+    CloseableHttpClient client = getHttpClient();
+    return startProcessInstance(processDefinitionId, client, variables, businessKey);
+  }
+
+  private ProcessInstanceEngineDto startProcessInstance(String procDefId,
+                                                        CloseableHttpClient client,
+                                                        Map<String, Object> variables,
+                                                        String businessKey) throws IOException {
     HttpPost post = new HttpPost(getStartProcessInstanceUri(procDefId));
     post.addHeader("Content-Type", "application/json");
-    post.setEntity(new StringEntity(convertVariableMapToJsonString(variables), ContentType.APPLICATION_JSON));
+    Map<String, Object> requestBodyAsMap = convertVariableMap(variables);
+    requestBodyAsMap.put("businessKey", businessKey);
+    String requestBodyAsJson = objectMapper.writeValueAsString(requestBodyAsMap);
+    post.setEntity(new StringEntity(requestBodyAsJson, ContentType.APPLICATION_JSON));
     CloseableHttpResponse response = client.execute(post);
     if (response.getStatusLine().getStatusCode() != 200) {
       String body = "";
@@ -444,7 +469,7 @@ public class EngineIntegrationRule extends TestWatcher {
 
   }
 
-  private String convertVariableMapToJsonString(Map<String, Object> plainVariables) throws JsonProcessingException {
+  private Map<String, Object> convertVariableMap(Map<String, Object> plainVariables) {
     Map<String, Object> variables = new HashMap<>();
     for (Map.Entry<String, Object> nameToValue : plainVariables.entrySet()) {
       Object value = nameToValue.getValue();
@@ -459,7 +484,7 @@ public class EngineIntegrationRule extends TestWatcher {
     }
     Map<String, Object> variableWrapper = new HashMap<>();
     variableWrapper.put("variables", variables);
-    return objectMapper.writeValueAsString(variableWrapper);
+    return variableWrapper;
   }
 
   private String getSimpleName(Map.Entry<String, Object> nameToValue) {

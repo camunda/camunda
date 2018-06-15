@@ -20,6 +20,7 @@ public class ProcessInstanceDto implements OptimizeDto {
   protected String processDefinitionVersion;
   protected String processDefinitionId;
   protected String processInstanceId;
+  protected String businessKey;
   protected OffsetDateTime startDate;
   protected OffsetDateTime endDate;
   protected Long durationInMs;
@@ -101,6 +102,14 @@ public class ProcessInstanceDto implements OptimizeDto {
 
   public void setProcessInstanceId(String processInstanceId) {
     this.processInstanceId = processInstanceId;
+  }
+
+  public String getBusinessKey() {
+    return businessKey;
+  }
+
+  public void setBusinessKey(String businessKey) {
+    this.businessKey = businessKey;
   }
 
   public OffsetDateTime getStartDate() {

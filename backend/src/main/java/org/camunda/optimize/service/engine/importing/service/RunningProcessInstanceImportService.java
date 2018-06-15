@@ -70,6 +70,7 @@ public class RunningProcessInstanceImportService {
     processInstanceDto.setProcessDefinitionVersion(engineEntity.getProcessDefinitionVersionAsString());
     processInstanceDto.setProcessDefinitionId(engineEntity.getProcessDefinitionId());
     processInstanceDto.setProcessInstanceId(engineEntity.getId());
+    processInstanceDto.setBusinessKey(engineEntity.getBusinessKey());
     processInstanceDto.setStartDate(engineEntity.getStartTime());
     processInstanceDto.setEndDate(null);
     processInstanceDto.setEngine(engineContext.getEngineAlias());
