@@ -4,15 +4,15 @@ exports[`Login should display an error on unsuccessful login 1`] = `
 <styled.form
   onSubmit={[Function]}
 >
-  <styled.h1>
+  <Themed(styled.h1)>
     Operate
-  </styled.h1>
+  </Themed(styled.h1)>
   <styled.span
     data-test-id="error-span"
   >
     Username and Password do not match
   </styled.span>
-  <Styled(Input)
+  <Themed(Styled(Input))
     name="username"
     onChange={[Function]}
     placeholder="Username"
@@ -20,7 +20,7 @@ exports[`Login should display an error on unsuccessful login 1`] = `
     type="text"
     value=""
   />
-  <Styled(Input)
+  <Themed(Styled(Input))
     name="password"
     onChange={[Function]}
     placeholder="Password"
@@ -28,7 +28,7 @@ exports[`Login should display an error on unsuccessful login 1`] = `
     type="password"
     value=""
   />
-  <Styled(Input)
+  <Themed(Styled(Input))
     placeholder="Password"
     type="submit"
   />
@@ -46,10 +46,10 @@ exports[`Login should render login form by default 1`] = `
 <styled.form
   onSubmit={[Function]}
 >
-  <styled.h1>
+  <Themed(styled.h1)>
     Operate
-  </styled.h1>
-  <Styled(Input)
+  </Themed(styled.h1)>
+  <Themed(Styled(Input))
     name="username"
     onChange={[Function]}
     placeholder="Username"
@@ -57,7 +57,7 @@ exports[`Login should render login form by default 1`] = `
     type="text"
     value=""
   />
-  <Styled(Input)
+  <Themed(Styled(Input))
     name="password"
     onChange={[Function]}
     placeholder="Password"
@@ -65,7 +65,7 @@ exports[`Login should render login form by default 1`] = `
     type="password"
     value=""
   />
-  <Styled(Input)
+  <Themed(Styled(Input))
     placeholder="Password"
     type="submit"
   />

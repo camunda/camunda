@@ -39,6 +39,7 @@ export const HeaderCell = themed(styled.th`
 
 export const BodyCell = styled.td`
   padding: 0 0 0 5px;
+  white-space: nowrap;
 `;
 
 export const BodyRow = themed(styled.tr`
@@ -51,17 +52,39 @@ export const BodyRow = themed(styled.tr`
     })};
 
   &:nth-child(odd) {
-    background-color: ${themeStyle({
-      dark: Colors.uiDark02,
-      light: Colors.uiLight04
-    })};
+    background-color: ${({theme, selected}) => {
+      if (selected) {
+        if (theme === 'dark') {
+          return '#3a527d';
+        } else {
+          return '#bfd6fe';
+        }
+      } else {
+        if (theme === 'dark') {
+          return Colors.uiDark02;
+        } else {
+          return Colors.uiLight04;
+        }
+      }
+    }};
   }
 
   &:nth-child(even) {
-    background-color: ${themeStyle({
-      dark: '#37383e',
-      light: '#f9fafc'
-    })};
+    background-color: ${({theme, selected}) => {
+      if (selected) {
+        if (theme === 'dark') {
+          return '#3e5681';
+        } else {
+          return '#bdd4fd';
+        }
+      } else {
+        if (theme === 'dark') {
+          return '#37383e';
+        } else {
+          return '#f9fafc';
+        }
+      }
+    }};
   }
 `);
 

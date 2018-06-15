@@ -24,16 +24,16 @@ export default class Checkbox extends React.Component {
   render() {
     const {label, indeterminate, checked, onChange} = this.props;
     return (
-      <div>
-        <input
+      <React.Fragment>
+        <Styled.Checkbox
           {...indeterminate}
           type="checkbox"
           checked={checked}
           onChange={onChange}
-          ref={el => (this.el = el)}
+          innerRef={el => (this.el = el)}
         />
         {label && <Styled.Label>{label}</Styled.Label>}
-      </div>
+      </React.Fragment>
     );
   }
 }

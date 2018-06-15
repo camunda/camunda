@@ -84,25 +84,33 @@ export default class InstancesFilter extends React.Component {
 
     return (
       <Styled.Filters>
-        <Checkbox
-          label="Running Instances"
-          indeterminate={this.isIndeterminate()}
-          checked={running || false}
-          onChange={this.handleRunningChange}
-        />
+        <div>
+          <Checkbox
+            label="Running Instances"
+            indeterminate={this.isIndeterminate()}
+            checked={running || false}
+            onChange={this.handleRunningChange}
+          />
+        </div>
         <Styled.NestedFilters>
-          <Checkbox
-            label="Active"
-            checked={
-              !!(withoutIncidents || (running && !this.isIndeterminate()))
-            }
-            onChange={this.handleActiveChange}
-          />
-          <Checkbox
-            label="Incident"
-            checked={!!(withIncidents || (running && !this.isIndeterminate()))}
-            onChange={this.handleIncidentChange}
-          />
+          <div>
+            <Checkbox
+              label="Active"
+              checked={
+                !!(withoutIncidents || (running && !this.isIndeterminate()))
+              }
+              onChange={this.handleActiveChange}
+            />
+          </div>
+          <div>
+            <Checkbox
+              label="Incident"
+              checked={
+                !!(withIncidents || (running && !this.isIndeterminate()))
+              }
+              onChange={this.handleIncidentChange}
+            />
+          </div>
         </Styled.NestedFilters>
       </Styled.Filters>
     );

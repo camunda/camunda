@@ -40,8 +40,10 @@ export default class Table extends React.Component {
     const {data} = this.props;
     const order = this.getOrder();
 
+    const selectionCheck = this.props.config.selectionCheck || (() => false);
+
     return data.map((row, idx) => (
-      <Styled.BodyRow key={idx}>
+      <Styled.BodyRow key={idx} selected={selectionCheck(row)}>
         {order.map(key => (
           <Styled.BodyCell key={key}>{row[key]}</Styled.BodyCell>
         ))}

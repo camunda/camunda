@@ -20,7 +20,10 @@ export default class Filter extends Component {
   handleFilterChange = async change => {
     const filter = update(this.state.filter, change);
     this.setState({
-      filter,
+      filter
+    });
+    // separate setState to not block UI while waiting for server response
+    this.setState({
       filterCount: await getCount(filter)
     });
   };

@@ -1,4 +1,6 @@
 import React from 'react';
+import update from 'immutability-helper';
+
 import Panel from 'modules/components/Panel';
 import InstancesList from './InstancesList';
 import InstancesListFooter from './InstancesListFooter';
@@ -22,7 +24,11 @@ export default class InstancesListView extends React.Component {
   state = {
     firstElement: 0,
     instances: null,
-    entriesPerPage: null
+    entriesPerPage: null,
+    selection: {
+      list: new Set(),
+      isBlacklist: false
+    }
   };
 
   render() {
@@ -32,9 +38,13 @@ export default class InstancesListView extends React.Component {
         <Panel.Body>
           <InstancesList
             data={this.state.instances}
+            selection={this.state.selection}
             updateEntriesPerPage={entriesPerPage =>
               this.setState({entriesPerPage})
             }
+            updateSelection={change => {
+              this.setState({selection: update(this.state.selection, change)});
+            }}
           />
         </Panel.Body>
         <Panel.Footer>
