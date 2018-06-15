@@ -1,0 +1,394 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <name>Zeebe Parent</name>
+  <groupId>io.zeebe</groupId>
+  <artifactId>zb-parent</artifactId>
+  <version>0.11.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <inceptionYear>2017</inceptionYear>
+  <url>http://zeebe.io/</url>
+
+  <parent>
+    <groupId>org.camunda</groupId>
+    <artifactId>camunda-release-parent</artifactId>
+    <version>2.5</version>
+    <!-- do not remove empty tag - http://jira.codehaus.org/browse/MNG-4687 -->
+    <relativePath />
+  </parent>
+
+  <properties>
+    <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
+    <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
+    <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/zeebe-io-snapshots/</nexus.snapshot.repository>
+    <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/zeebe-io/</nexus.release.repository>
+    <!-- disable jdk8 javadoc checks on release build -->
+    <additionalparam>-Xdoclint:none</additionalparam>
+    <checkstyle.config.location>.checkstyle.xml</checkstyle.config.location>
+
+    <!-- zb-build-tools -->
+    <version.build-tools>0.1.0</version.build-tools>
+
+    <!-- EXTERNAL LIBS -->
+    <version.agrona>0.9.13</version.agrona>
+    <version.junit>4.12</version.junit>
+    <version.mockito>2.13.0</version.mockito>
+    <version.assertj>3.8.0</version.assertj>
+    <version.msgpack>0.8.16</version.msgpack>
+    <version.jackson>2.9.5</version.jackson>
+    <version.jmh>1.11.2</version.jmh>
+    <version.sbe>1.5.6</version.sbe>
+    <version.slf4j>1.7.23</version.slf4j>
+    <version.log4j>2.8.1</version.log4j>
+    <version.toml>0.5.1</version.toml>
+    <version.model>7.7.0</version.model>
+    <version.hamcrest>1.3</version.hamcrest>
+    <version.scala>2.12.2</version.scala>
+    <version.scala-parser>1.0.6</version.scala-parser>
+
+    <!-- maven plugins -->
+    <plugin.version.compiler>3.5.1</plugin.version.compiler>
+    <plugin.version.checkstyle>2.17</plugin.version.checkstyle>
+    <plugin.version.license>3.0</plugin.version.license>
+    <plugin.version.surefire>2.20</plugin.version.surefire>
+    <plugin.version.build-helper>1.12</plugin.version.build-helper>
+    <plugin.version.shade>2.2</plugin.version.shade>
+    <plugin.version.appassembler>1.10</plugin.version.appassembler>
+    <plugin.version.exec>1.6.0</plugin.version.exec>
+    <plugin.version.resources>2.6</plugin.version.resources>
+    <plugin.version.scala>3.2.1</plugin.version.scala>
+    <plugin.version.antrun>1.8</plugin.version.antrun>
+    <plugin.version.versions>2.5</plugin.version.versions>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.agrona</groupId>
+        <artifactId>agrona</artifactId>
+        <version>${version.agrona}</version>
+      </dependency>
+      
+      <dependency>
+          <groupId>com.fasterxml.jackson</groupId>
+          <artifactId>jackson-bom</artifactId>
+          <version>${version.jackson}</version>
+          <scope>import</scope>
+          <type>pom</type>
+      </dependency>   
+
+      <dependency>
+        <groupId>org.msgpack</groupId>
+        <artifactId>msgpack-core</artifactId>
+        <version>${version.msgpack}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.msgpack</groupId>
+        <artifactId>jackson-dataformat-msgpack</artifactId>
+        <version>${version.msgpack}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>${version.junit}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-core</artifactId>
+        <version>${version.mockito}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.assertj</groupId>
+        <artifactId>assertj-core</artifactId>
+        <version>${version.assertj}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.openjdk.jmh</groupId>
+        <artifactId>jmh-core</artifactId>
+        <version>${version.jmh}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.openjdk.jmh</groupId>
+        <artifactId>jmh-generator-annprocess</artifactId>
+        <version>${version.jmh}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.moandjiezana.toml</groupId>
+        <artifactId>toml4j</artifactId>
+        <version>${version.toml}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>uk.co.real-logic</groupId>
+        <artifactId>sbe-tool</artifactId>
+        <version>${version.sbe}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${version.slf4j}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-slf4j-impl</artifactId>
+        <version>${version.log4j}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-core</artifactId>
+        <version>${version.log4j}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.hamcrest</groupId>
+        <artifactId>hamcrest-library</artifactId>
+        <version>${version.hamcrest}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.scala-lang.modules</groupId>
+        <artifactId>scala-parser-combinators_2.12</artifactId>
+        <version>${version.scala-parser}</version>
+      </dependency>
+
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <!-- MAVEN COMPILER -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>${plugin.version.compiler}</version>
+          <configuration>
+            <source>1.8</source>
+            <target>1.8</target>
+          </configuration>
+        </plugin>
+
+        <!-- LICENSE PLUGIN -->
+        <plugin>
+          <groupId>com.mycila</groupId>
+          <artifactId>license-maven-plugin</artifactId>
+          <version>${plugin.version.license}</version>
+          <configuration>
+            <header>${license.header}</header>
+            <properties>
+              <owner>camunda services GmbH</owner>
+              <email>info@camunda.com</email>
+            </properties>
+            <includes>
+              <include>**/*.java</include>
+              <include>**/*.scala</include>
+            </includes>
+            <mapping>
+              <java>SLASHSTAR_STYLE</java>
+            </mapping>
+          </configuration>
+          <executions>
+            <execution>
+              <id>add-license</id>
+              <phase>compile</phase>
+              <goals>
+                <goal>format</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+
+        <!-- CHECKSTYLE -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-checkstyle-plugin</artifactId>
+          <version>${plugin.version.checkstyle}</version>
+          <!-- dependency on build tool to reference the checkstyle cfg -->
+          <dependencies>
+            <dependency>
+              <groupId>io.zeebe</groupId>
+              <artifactId>zb-build-tools</artifactId>
+              <version>${version.build-tools}</version>
+            </dependency>
+          </dependencies>
+          <configuration>
+            <configLocation>check/.checkstyle.xml</configLocation>
+            <includeTestSourceDirectory>true</includeTestSourceDirectory>
+            <encoding>UTF-8</encoding>
+            <failOnViolation>true</failOnViolation>
+          </configuration>
+          <executions>
+            <execution>
+              <id>validate-java</id>
+              <phase>validate</phase>
+              <goals>
+                <goal>check</goal>
+              </goals>
+              <configuration>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+
+        <!-- MAVEN SUREFIRE -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>${plugin.version.surefire}</version>
+          <configuration>
+            <failIfNoTests>false</failIfNoTests>
+            <trimStackTrace>false</trimStackTrace>
+            <redirectTestOutputToFile>true</redirectTestOutputToFile>
+          </configuration>
+        </plugin>
+
+
+        <!-- Build Helper Plugin -->
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>build-helper-maven-plugin</artifactId>
+          <version>${plugin.version.build-helper}</version>
+        </plugin>
+
+        <!-- Shade Plugin -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>${plugin.version.shade}</version>
+        </plugin>
+
+        <!-- App Assembler Plugin -->
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>appassembler-maven-plugin</artifactId>
+          <version>${plugin.version.appassembler}</version>
+        </plugin>
+
+        <!-- Exec Plugin -->
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>exec-maven-plugin</artifactId>
+          <version>${plugin.version.exec}</version>
+        </plugin>
+
+        <!-- Resources Plugin -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>${plugin.version.resources}</version>
+        </plugin>
+
+        <!-- Scala Plugin -->
+        <plugin>
+          <groupId>net.alchim31.maven</groupId>
+          <artifactId>scala-maven-plugin</artifactId>
+          <version>${plugin.version.scala}</version>
+          <executions>
+            <execution>
+              <id>scala-compile-first</id>
+              <phase>process-resources</phase>
+              <goals>
+                <goal>add-source</goal>
+                <goal>compile</goal>
+              </goals>
+            </execution>
+            <execution>
+              <id>scala-test-compile</id>
+              <phase>process-test-resources</phase>
+              <goals>
+                <goal>testCompile</goal>
+              </goals>
+            </execution>
+          </executions>
+          <configuration>
+            <scalaVersion>${version.scala}</scalaVersion>
+          </configuration>
+        </plugin>
+
+        <!--This plugin's configuration is used to store Eclipse m2e settings
+          only. It has no influence on the Maven build itself. -->
+        <plugin>
+          <groupId>org.eclipse.m2e</groupId>
+          <artifactId>lifecycle-mapping</artifactId>
+          <version>1.0.0</version>
+          <configuration>
+            <lifecycleMappingMetadata>
+              <pluginExecutions>
+                <pluginExecution>
+                  <pluginExecutionFilter>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>exec-maven-plugin</artifactId>
+                    <versionRange>[1.3.2,)</versionRange>
+                    <goals>
+                      <goal>java</goal>
+                    </goals>
+                  </pluginExecutionFilter>
+                  <action>
+                    <ignore />
+                  </action>
+                </pluginExecution>
+              </pluginExecutions>
+            </lifecycleMappingMetadata>
+          </configuration>
+        </plugin>
+
+        <!-- Ant run plugin -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-antrun-plugin</artifactId>
+          <version>${plugin.version.antrun}</version>
+        </plugin>
+
+        <!-- Versions plugin to update versions in pom files -->
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>versions-maven-plugin</artifactId>
+          <version>${plugin.version.versions}</version>
+        </plugin>
+
+      </plugins>
+
+    </pluginManagement>
+
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+      </plugin>
+
+      <plugin>
+        <groupId>com.mycila</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+      </plugin>
+
+    </plugins>
+  </build>
+
+  <scm>
+    <url>https://github.com/zeebe-io/zb-parent</url>
+    <connection>scm:git:git@github.com:zeebe-io/zb-parent.git</connection>
+    <developerConnection>scm:git:git@github.com:zeebe-io/zb-parent.git</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
+
+</project>
