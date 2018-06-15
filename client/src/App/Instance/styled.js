@@ -1,7 +1,5 @@
 import styled from 'styled-components';
 
-import {StateIconIncident} from 'modules/components/Icon';
-
 import {HEADER_HEIGHT} from './../Header/styled';
 
 export const Instance = styled.div`
@@ -22,10 +20,4 @@ export const Top = styled.div`
 export const Bottom = styled.div`
   flex-grow: 1;
   display: flex;
-`;
-
-export const IncidentIcon = styled(StateIconIncident)`
-  position: relative;
-  top: 3px;
-  margin-right: 5px;
 `;

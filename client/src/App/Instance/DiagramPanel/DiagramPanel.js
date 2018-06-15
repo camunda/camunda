@@ -6,7 +6,7 @@ import Diagram from 'modules/components/Diagram';
 
 import * as Styled from './styled';
 
-export default function DiagramPanel({instanceId, stateIcon}) {
+export default function DiagramPanel({instance, stateIcon}) {
   return (
     <Panel>
       <Panel.Header>
@@ -14,18 +14,20 @@ export default function DiagramPanel({instanceId, stateIcon}) {
           <tbody>
             <tr>
               <td>{stateIcon} Process_definition_name</td>
-              <td>{instanceId}</td>
+              <td>{instance.id}</td>
               <td>Flow Node</td>
-              <td>12 Dec 2018 | 00:00:00</td>
-              <td>--</td>
+              <td>{instance.startDate}</td>
+              <td>{instance.endDate}</td>
             </tr>
           </tbody>
         </Styled.DiagramPanelHeader>
       </Panel.Header>
       <Panel.Body>
-        <Styled.IncidentMessage>
-          <strong>Incident:</strong> Error Message goes here
-        </Styled.IncidentMessage>
+        {instance.instanceState === 'INCIDENT' && (
+          <Styled.IncidentMessage>
+            <strong>Incident:</strong> {instance.errorMessage}
+          </Styled.IncidentMessage>
+        )}
         <Diagram />
       </Panel.Body>
     </Panel>
@@ -33,6 +35,12 @@ export default function DiagramPanel({instanceId, stateIcon}) {
 }
 
 DiagramPanel.propTypes = {
-  instanceId: PropTypes.string.isRequired,
+  instance: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    startDate: PropTypes.string.isRequired,
+    endDate: PropTypes.string.isRequired,
+    instanceState: PropTypes.string.isRequired,
+    errorMessage: PropTypes.string
+  }),
   stateIcon: PropTypes.element.isRequired
 };
