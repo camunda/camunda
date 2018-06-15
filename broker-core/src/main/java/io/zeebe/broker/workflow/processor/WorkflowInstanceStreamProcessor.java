@@ -60,8 +60,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import static io.zeebe.broker.util.PayloadUtil.isNilPayload;
-import static io.zeebe.broker.util.PayloadUtil.isValidPayload;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.EMPTY_PAYLOAD;
 
 public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycleAware
 {
@@ -192,7 +191,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         @Override
         public void processRecord(TypedRecord<WorkflowInstanceRecord> command, EventLifecycleContext ctx)
         {
-            accepted = false;
             final WorkflowInstanceRecord workflowInstanceCommand = command.getValue();
 
             this.requestId = command.getMetadata().getRequestId();
@@ -200,18 +198,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
             workflowInstanceCommand.setWorkflowInstanceKey(command.getKey());
 
-            final DirectBuffer payload = workflowInstanceCommand.getPayload();
-
-            if (isNilPayload(payload) || isValidPayload(payload))
-            {
-                accepted = true;
-                resolveWorkflowDefinition(workflowInstanceCommand, ctx);
-            }
-            else
-            {
-                rejectionType = RejectionType.BAD_VALUE;
-                rejectionReason = "Payload is not a valid msgpack-encoded JSON object or nil";
-            }
+            accepted = true;
+            resolveWorkflowDefinition(workflowInstanceCommand, ctx);
         }
 
         private void addRequestMetadata(RecordMetadata metadata)
@@ -652,7 +640,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
                 .setJobKey(-1L)
                 .write();
 
-            if (!createsIncident && !isNilPayload(workflowInstanceEvent.getPayload()))
+            if (!createsIncident)
             {
                 payloadCache.addPayload(
                         workflowInstanceEvent.getWorkflowInstanceKey(),
@@ -829,29 +817,22 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
             {
                 if (outputBehavior == OutputBehavior.OVERWRITE)
                 {
-                    workflowInstancePayload = WorkflowInstanceRecord.NO_PAYLOAD;
+                    workflowInstancePayload = EMPTY_PAYLOAD;
                 }
 
                 final Mapping[] outputMappings = inputOutputMapping.getOutputMappings();
                 final DirectBuffer jobPayload = activityEvent.getPayload();
-                if (outputMappings != null && outputMappings.length > 0 && isNilPayload(jobPayload))
+
+                try
                 {
-                    createIncident(event, "Could not apply output mappings: Job was completed without payload");
-                    hasIncident = true;
+                    final int resultLen = payloadMappingProcessor.merge(jobPayload, workflowInstancePayload, outputMappings);
+                    final MutableDirectBuffer mergedPayload = payloadMappingProcessor.getResultBuffer();
+                    activityEvent.setPayload(mergedPayload, 0, resultLen);
                 }
-                else
+                catch (MappingException e)
                 {
-                    try
-                    {
-                        final int resultLen = payloadMappingProcessor.merge(jobPayload, workflowInstancePayload, outputMappings);
-                        final MutableDirectBuffer mergedPayload = payloadMappingProcessor.getResultBuffer();
-                        activityEvent.setPayload(mergedPayload, 0, resultLen);
-                    }
-                    catch (MappingException e)
-                    {
-                        createIncident(event, e.getMessage());
-                        hasIncident = true;
-                    }
+                    createIncident(event, e.getMessage());
+                    hasIncident = true;
                 }
             }
         }
@@ -938,7 +919,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
             {
                 workflowInstanceEvent = reader.readValue(workflowInstance.getPosition(), WorkflowInstanceRecord.class);
 
-                workflowInstanceEvent.getValue().setPayload(WorkflowInstanceRecord.NO_PAYLOAD);
+                workflowInstanceEvent.getValue().setPayload(EMPTY_PAYLOAD);
 
                 activityInstanceKey = workflowInstance.getActivityInstanceKey();
                 jobKey = activityInstanceMap.wrapActivityInstanceKey(activityInstanceKey).getJobKey();
@@ -1034,14 +1015,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
             if (isActive)
             {
-                if (isValidPayload(workflowInstanceEvent.getPayload()))
-                {
-                    return commandControl.accept(WorkflowInstanceIntent.PAYLOAD_UPDATED);
-                }
-                else
-                {
-                    return commandControl.reject(RejectionType.BAD_VALUE, "Payload is not a valid msgpack-encoded JSON object");
-                }
+                return commandControl.accept(WorkflowInstanceIntent.PAYLOAD_UPDATED);
             }
             else
             {

@@ -367,7 +367,7 @@ public class IncidentTest
 
         assertThat(incidentEvent.key()).isGreaterThan(0);
         assertThat(incidentEvent.value()).containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
-                                         .containsEntry("errorMessage", "Could not apply output mappings: Job was completed without payload");
+                                         .containsEntry("errorMessage", "No data found for query $.testAttr.");
     }
 
     @Test
@@ -403,8 +403,7 @@ public class IncidentTest
         final SubscribedRecord incidentResolvedEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
         assertThat(incidentResolvedEvent.key()).isEqualTo(incidentEvent.key());
         assertThat(incidentResolvedEvent.value()).containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
-                                                 .containsEntry("errorMessage",
-                                                                "Could not apply output mappings: Job was completed without payload")
+                                                 .containsEntry("errorMessage", "No data found for query $.testAttr.")
                                                  .containsEntry("bpmnProcessId", "process")
                                                  .containsEntry("workflowInstanceKey", workflowInstanceKey)
                                                  .containsEntry("activityId", "service")
@@ -432,7 +431,7 @@ public class IncidentTest
 
         assertThat(incidentEvent.key()).isGreaterThan(0);
         assertThat(incidentEvent.value()).containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
-                                         .containsEntry("errorMessage", "Could not apply output mappings: Job was completed without payload");
+                                         .containsEntry("errorMessage", "No data found for query $.testAttr.");
     }
 
     @Test
@@ -467,8 +466,7 @@ public class IncidentTest
         final SubscribedRecord incidentResolvedEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
         assertThat(incidentResolvedEvent.key()).isEqualTo(incidentEvent.key());
         assertThat(incidentResolvedEvent.value()).containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
-                                                 .containsEntry("errorMessage",
-                                                                "Could not apply output mappings: Job was completed without payload")
+                                                 .containsEntry("errorMessage", "No data found for query $.testAttr.")
                                                  .containsEntry("bpmnProcessId", "process")
                                                  .containsEntry("workflowInstanceKey", workflowInstanceKey)
                                                  .containsEntry("activityId", "service")

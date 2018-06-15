@@ -76,7 +76,7 @@ public class PayloadCache implements AutoCloseable, StreamProcessorLifecycleAwar
         {
             payload = cache.get(position);
         }
-        return payload == null ? WorkflowInstanceRecord.NO_PAYLOAD : payload;
+        return payload == null ? WorkflowInstanceRecord.EMPTY_PAYLOAD : payload;
     }
 
     public void addPayload(long workflowInstanceKey, long payloadEventPosition, DirectBuffer payload)

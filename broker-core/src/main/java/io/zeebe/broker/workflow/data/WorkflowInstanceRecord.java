@@ -18,14 +18,17 @@
 package io.zeebe.broker.workflow.data;
 
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.*;
+import io.zeebe.msgpack.property.DocumentProperty;
+import io.zeebe.msgpack.property.IntegerProperty;
+import io.zeebe.msgpack.property.LongProperty;
+import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class WorkflowInstanceRecord extends UnpackedObject
 {
-    public static final DirectBuffer NO_PAYLOAD = new UnsafeBuffer(MsgPackHelper.NIL);
+    public static final DirectBuffer EMPTY_PAYLOAD = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
 
     public static final String PROP_WORKFLOW_BPMN_PROCESS_ID = "bpmnProcessId";
     public static final String PROP_WORKFLOW_INSTANCE_KEY = "workflowInstanceKey";
@@ -41,7 +44,7 @@ public class WorkflowInstanceRecord extends UnpackedObject
     private final LongProperty workflowInstanceKeyProp = new LongProperty(PROP_WORKFLOW_INSTANCE_KEY, -1L);
     private final StringProperty activityIdProp = new StringProperty(PROP_WORKFLOW_ACTIVITY_ID, "");
 
-    private final BinaryProperty payloadProp = new BinaryProperty(PROP_WORKFLOW_PAYLOAD, NO_PAYLOAD);
+    private final DocumentProperty payloadProp = new DocumentProperty(PROP_WORKFLOW_PAYLOAD);
 
     public WorkflowInstanceRecord()
     {

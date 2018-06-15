@@ -20,6 +20,7 @@ package io.zeebe.broker.workflow;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -35,6 +36,7 @@ import org.junit.rules.RuleChain;
 
 import static io.zeebe.broker.test.MsgPackUtil.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 public class UpdatePayloadTest
 {
@@ -102,6 +104,56 @@ public class UpdatePayloadTest
     }
 
     @Test
+    public void shouldUpdateWithNilPayload() throws Exception
+    {
+        // given
+        testClient.deploy(WORKFLOW);
+
+        final long workflowInstanceKey = testClient.createWorkflowInstance("process");
+
+        final SubscribedRecord activityInstanceEvent = waitForActivityActivatedEvent();
+
+        // when
+        final ExecuteCommandResponse response = updatePayload(activityInstanceEvent.position(),
+            workflowInstanceKey,
+            activityInstanceEvent.key(),
+            MsgPackHelper.NIL);
+
+        // then
+        assertThat(response.intent()).isEqualTo(WorkflowInstanceIntent.PAYLOAD_UPDATED);
+        final SubscribedRecord updatedEvent =
+            testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.PAYLOAD_UPDATED);
+
+        final byte[] payload = (byte[]) updatedEvent.value().get("payload");
+        assertThat(payload).isEqualTo(MsgPackHelper.EMTPY_OBJECT);
+    }
+
+    @Test
+    public void shouldUpdateWithZeroLengthPayload() throws Exception
+    {
+        // given
+        testClient.deploy(WORKFLOW);
+
+        final long workflowInstanceKey = testClient.createWorkflowInstance("process");
+
+        final SubscribedRecord activityInstanceEvent = waitForActivityActivatedEvent();
+
+        // when
+        final ExecuteCommandResponse response = updatePayload(activityInstanceEvent.position(),
+            workflowInstanceKey,
+            activityInstanceEvent.key(),
+            new byte[0]);
+
+        // then
+        assertThat(response.intent()).isEqualTo(WorkflowInstanceIntent.PAYLOAD_UPDATED);
+        final SubscribedRecord updatedEvent =
+            testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.PAYLOAD_UPDATED);
+
+        final byte[] payload = (byte[]) updatedEvent.value().get("payload");
+        assertThat(payload).isEqualTo(MsgPackHelper.EMTPY_OBJECT);
+    }
+
+    @Test
     public void shouldUpdatePayloadWhenActivityActivated() throws Exception
     {
         // given
@@ -131,7 +183,7 @@ public class UpdatePayloadTest
     }
 
     @Test
-    public void shouldRejectUpdateForInvalidPayload() throws Exception
+    public void shouldThrowExceptionForInvalidPayload()
     {
         // given
         testClient.deploy(WORKFLOW);
@@ -139,25 +191,15 @@ public class UpdatePayloadTest
         final SubscribedRecord activityInstanceEvent = waitForActivityActivatedEvent();
 
         // when
-        final ExecuteCommandResponse response = updatePayload(activityInstanceEvent.position(),
+        final Throwable throwable = catchThrowable(() -> updatePayload(activityInstanceEvent.position(),
             workflowInstanceKey,
             activityInstanceEvent.key(),
-            MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("'foo'")));
+            MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("'foo'"))));
 
         // then
-        final SubscribedRecord updateCommand =
-            testClient.receiveFirstWorkflowInstanceCommand(WorkflowInstanceIntent.UPDATE_PAYLOAD);
-
-        assertThat(response.sourceRecordPosition()).isEqualTo(updateCommand.position());
-        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-        assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-        assertThat(response.rejectionReason()).isEqualTo("Payload is not a valid msgpack-encoded JSON object");
-
-        final SubscribedRecord rejection = testClient.receiveRejections()
-            .withIntent(WorkflowInstanceIntent.UPDATE_PAYLOAD)
-            .getFirst();
-
-        assertThat(rejection).isNotNull();
+        assertThat(throwable).isInstanceOf(RuntimeException.class);
+        assertThat(throwable.getMessage()).contains("Could not read property 'payload'.");
+        assertThat(throwable.getMessage()).contains("Document has invalid format. On root level an object is only allowed.");
     }
 
     @Test

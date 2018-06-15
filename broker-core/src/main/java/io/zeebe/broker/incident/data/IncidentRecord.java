@@ -17,22 +17,17 @@
  */
 package io.zeebe.broker.incident.data;
 
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.BinaryProperty;
+import io.zeebe.msgpack.property.DocumentProperty;
 import io.zeebe.msgpack.property.EnumProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
-import io.zeebe.msgpack.spec.MsgPackHelper;
+import org.agrona.DirectBuffer;
 
 public class IncidentRecord extends UnpackedObject
 {
-    protected static final DirectBuffer EMPTY_PAYLOAD = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
-
     private final EnumProperty<ErrorType> errorTypeProp = new EnumProperty<>("errorType", ErrorType.class, ErrorType.UNKNOWN);
     private final StringProperty errorMessageProp = new StringProperty("errorMessage", "");
 
@@ -44,7 +39,7 @@ public class IncidentRecord extends UnpackedObject
     private final LongProperty activityInstanceKeyProp = new LongProperty("activityInstanceKey", -1L);
     private final LongProperty jobKeyProp = new LongProperty("jobKey", -1L);
 
-    private final BinaryProperty payloadProp = new BinaryProperty("payload", EMPTY_PAYLOAD);
+    private final DocumentProperty payloadProp = new DocumentProperty("payload");
 
     public IncidentRecord()
     {

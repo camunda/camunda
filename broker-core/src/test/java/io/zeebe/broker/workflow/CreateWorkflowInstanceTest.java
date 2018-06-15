@@ -17,32 +17,6 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.broker.test.MsgPackUtil.JSON_MAPPER;
-import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_MAPPER;
-import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_PAYLOAD;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_ACTIVITY_ID;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.CREATE;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.CREATED;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_INSTANCE_KEY;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_KEY;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_PAYLOAD;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_VERSION;
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import io.zeebe.test.broker.protocol.clientapi.*;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
 import io.zeebe.broker.system.workflow.repository.data.ResourceType;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.workflow.map.WorkflowCache;
@@ -54,7 +28,34 @@ import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
+import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
+import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
+import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
 import io.zeebe.util.StreamUtil;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import static io.zeebe.broker.test.MsgPackUtil.*;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_ACTIVITY_ID;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
+import static io.zeebe.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
+import static io.zeebe.msgpack.spec.MsgPackHelper.NIL;
+import static io.zeebe.protocol.intent.WorkflowInstanceIntent.CREATE;
+import static io.zeebe.protocol.intent.WorkflowInstanceIntent.CREATED;
+import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 
 public class CreateWorkflowInstanceTest
@@ -320,7 +321,75 @@ public class CreateWorkflowInstanceTest
     }
 
     @Test
-    public void shouldRejectWorkflowInstanceWithInvalidPayload() throws Exception
+    public void shouldCreateWorkflowInstanceWithNilPayload()
+    {
+        // given
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
+            .startEvent()
+            .endEvent()
+            .done());
+
+        // when
+        final ExecuteCommandResponse resp = apiRule.createCmdRequest()
+            .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
+            .command()
+            .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
+            .put(PROP_WORKFLOW_PAYLOAD, NIL)
+            .done()
+            .sendAndAwait();
+
+        // then
+        assertThat(resp.getValue())
+            .containsEntry(PROP_WORKFLOW_PAYLOAD, EMTPY_OBJECT);
+    }
+
+    @Test
+    public void shouldCreateWorkflowInstanceWithZeroLengthPayload()
+    {
+        // given
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
+            .startEvent()
+            .endEvent()
+            .done());
+
+        // when
+        final ExecuteCommandResponse resp = apiRule.createCmdRequest()
+            .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
+            .command()
+            .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
+            .put(PROP_WORKFLOW_PAYLOAD, new byte[0])
+            .done()
+            .sendAndAwait();
+
+        // then
+        assertThat(resp.getValue())
+            .containsEntry(PROP_WORKFLOW_PAYLOAD, EMTPY_OBJECT);
+    }
+
+    @Test
+    public void shouldCreateWorkflowInstanceWithNoPayload()
+    {
+        // given
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
+            .startEvent()
+            .endEvent()
+            .done());
+
+        // when
+        final ExecuteCommandResponse resp = apiRule.createCmdRequest()
+            .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
+            .command()
+            .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
+            .done()
+            .sendAndAwait();
+
+        // then
+        assertThat(resp.getValue())
+            .containsEntry(PROP_WORKFLOW_PAYLOAD, EMTPY_OBJECT);
+    }
+
+    @Test
+    public void shouldThrowExceptionOnCreationWithInvalidPayload() throws Exception
     {
         // given
         testClient.deploy(Bpmn.createExecutableWorkflow("process")
@@ -331,26 +400,18 @@ public class CreateWorkflowInstanceTest
         // when
         final byte[] invalidPayload = MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("'foo'"));
 
-        final ExecuteCommandResponse resp = apiRule.createCmdRequest()
+        final Throwable throwable = catchThrowable(() -> apiRule.createCmdRequest()
                 .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
                 .command()
                     .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
                     .put(PROP_WORKFLOW_PAYLOAD, invalidPayload)
                 .done()
-                .sendAndAwait();
+                .sendAndAwait());
 
         // then
-        final SubscribedRecord createWorkflowCommand = testClient.receiveFirstWorkflowInstanceCommand(CREATE);
-
-        assertThat(resp.key()).isEqualTo(createWorkflowCommand.position());
-        assertThat(resp.position()).isGreaterThan(createWorkflowCommand.position());
-        assertThat(resp.sourceRecordPosition()).isEqualTo(createWorkflowCommand.position());
-        assertThat(resp.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
-        assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-        assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-        assertThat(resp.rejectionReason()).isEqualTo("Payload is not a valid msgpack-encoded JSON object or nil");
-        assertThat(resp.getValue())
-            .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process");
+        assertThat(throwable).isInstanceOf(RuntimeException.class);
+        assertThat(throwable.getMessage()).contains("Could not read property 'payload'.");
+        assertThat(throwable.getMessage()).contains("Document has invalid format. On root level an object is only allowed.");
     }
 
     @Test

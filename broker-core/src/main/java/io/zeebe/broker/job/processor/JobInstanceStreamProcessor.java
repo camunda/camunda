@@ -17,22 +17,11 @@
  */
 package io.zeebe.broker.job.processor;
 
-import static io.zeebe.broker.util.PayloadUtil.isNilPayload;
-import static io.zeebe.broker.util.PayloadUtil.isValidPayload;
-
-import org.agrona.DirectBuffer;
-
 import io.zeebe.broker.job.CreditsRequest;
 import io.zeebe.broker.job.JobSubscriptionManager;
 import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.job.map.JobInstanceMap;
-import io.zeebe.broker.logstreams.processor.CommandProcessor;
-import io.zeebe.broker.logstreams.processor.TypedRecord;
-import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
-import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
-import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
-import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
-import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.broker.transport.clientapi.SubscribedRecordWriter;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
@@ -179,20 +168,10 @@ public class JobInstanceStreamProcessor
         {
             final short state = jobIndex.getJobState(command.getKey());
 
-            final JobRecord value = command.getValue();
-
             final boolean isCompletable = state == STATE_ACTIVATED || state == STATE_TIMED_OUT;
             if (isCompletable)
             {
-                final DirectBuffer payload = value.getPayload();
-                if (isNilPayload(payload) || isValidPayload(payload))
-                {
-                    return commandControl.accept(JobIntent.COMPLETED);
-                }
-                else
-                {
-                    return commandControl.reject(RejectionType.BAD_VALUE, "Payload is not a valid msgpack-encoded JSON object or nil");
-                }
+                return commandControl.accept(JobIntent.COMPLETED);
             }
             else
             {

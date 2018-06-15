@@ -15,21 +15,25 @@
  */
 package io.zeebe.broker.it.workflow;
 
-import static io.zeebe.test.util.TestUtil.waitUntil;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
-
-import java.util.Collections;
-
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
-import io.zeebe.client.api.events.*;
+import io.zeebe.client.api.events.DeploymentEvent;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.events.WorkflowInstanceState;
+import io.zeebe.client.cmd.BrokerErrorException;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.model.bpmn.Bpmn;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
+
+import java.util.Collections;
+
+import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.*;
 
 public class CreateWorkflowInstanceTest
 {
@@ -151,6 +155,62 @@ public class CreateWorkflowInstanceTest
         // then
         assertThat(workflowInstance.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
         assertThat(workflowInstance.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+    }
+
+    @Test
+    public void shouldCreateWithoutPayload()
+    {
+        // when
+        final WorkflowInstanceEvent workflowInstance =
+            clientRule.getWorkflowClient()
+                .newCreateInstanceCommand()
+                .bpmnProcessId("anId")
+                .latestVersion()
+                .send()
+                .join();
+
+        // then
+        assertThat(workflowInstance.getPayload()).isEqualTo("{}");
+        assertThat(workflowInstance.getPayloadAsMap()).isEmpty();
+    }
+
+    @Test
+    public void shouldCreateWithNullPayload()
+    {
+        // when
+        final WorkflowInstanceEvent workflowInstance =
+            clientRule.getWorkflowClient()
+                .newCreateInstanceCommand()
+                .bpmnProcessId("anId")
+                .latestVersion()
+                .payload("null")
+                .send()
+                .join();
+
+        // then
+        assertThat(workflowInstance.getPayload()).isEqualTo("{}");
+        assertThat(workflowInstance.getPayloadAsMap()).isEmpty();
+    }
+
+    @Test
+    public void shouldThrowExceptionOnCompleteJobWithInvalidPayload()
+    {
+        // given
+
+        // when
+        final Throwable throwable = catchThrowable(() ->
+            clientRule.getWorkflowClient()
+                .newCreateInstanceCommand()
+                .bpmnProcessId("anId")
+                .latestVersion()
+                .payload("[]")
+                .send()
+                .join());
+
+        // then
+        assertThat(throwable).isInstanceOf(BrokerErrorException.class);
+        assertThat(throwable.getMessage()).contains("Could not read property 'payload'.");
+        assertThat(throwable.getMessage()).contains("Document has invalid format. On root level an object is only allowed.");
     }
 
     @Test

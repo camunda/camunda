@@ -15,24 +15,25 @@
  */
 package io.zeebe.broker.it.workflow;
 
-import static io.zeebe.test.util.TestUtil.waitUntil;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
-
-import java.util.Collections;
-
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.api.events.WorkflowInstanceState;
+import io.zeebe.client.cmd.BrokerErrorException;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
+import java.util.Collections;
+
+import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.*;
 public class UpdatePayloadTest
 {
     private static final String PAYLOAD = "{\"foo\":\"bar\"}";
@@ -98,6 +99,50 @@ public class UpdatePayloadTest
         assertThat(payloadUpdated.getState()).isEqualTo(WorkflowInstanceState.PAYLOAD_UPDATED);
         assertThat(payloadUpdated.getPayload()).isEqualTo(PAYLOAD);
         assertThat(payloadUpdated.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+    }
+
+    @Test
+    public void shouldUpdateWithNullPayload()
+    {
+        // given
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED));
+
+        final WorkflowInstanceEvent activtyInstance = eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED);
+
+        // when
+        final WorkflowInstanceEvent payloadUpdated = clientRule.getWorkflowClient()
+            .newUpdatePayloadCommand(activtyInstance)
+            .payload("null")
+            .send()
+            .join();
+
+        // then
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.PAYLOAD_UPDATED));
+
+        assertThat(payloadUpdated.getState()).isEqualTo(WorkflowInstanceState.PAYLOAD_UPDATED);
+        assertThat(payloadUpdated.getPayload()).isEqualTo("{}");
+        assertThat(payloadUpdated.getPayloadAsMap()).isEmpty();
+    }
+
+    @Test
+    public void shouldThrowExceptionOnUpdateWithInvalidPayload()
+    {
+        // given
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED));
+
+        final WorkflowInstanceEvent activtyInstance = eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED);
+
+        // when
+        final Throwable throwable = catchThrowable(() -> clientRule.getWorkflowClient()
+            .newUpdatePayloadCommand(activtyInstance)
+            .payload("[]")
+            .send()
+            .join());
+
+        // then
+        assertThat(throwable).isInstanceOf(BrokerErrorException.class);
+        assertThat(throwable.getMessage()).contains("Could not read property 'payload'.");
+        assertThat(throwable.getMessage()).contains("Document has invalid format. On root level an object is only allowed.");
     }
 
     @Test

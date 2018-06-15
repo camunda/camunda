@@ -16,6 +16,7 @@
 package io.zeebe.broker.it.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.entry;
 
 import java.util.Collections;
@@ -27,6 +28,7 @@ import io.zeebe.client.ClientProperties;
 import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.events.JobState;
+import io.zeebe.client.cmd.BrokerErrorException;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.*;
@@ -79,8 +81,27 @@ public class CreateJobTest
         assertThat(job.getDeadline()).isNull();
         assertThat(job.getRetries()).isEqualTo(3);
 
-        assertThat(job.getPayload()).isEqualTo("null");
-        assertThat(job.getPayloadAsMap()).isNull();
+        assertThat(job.getPayload()).isEqualTo("{}");
+        assertThat(job.getPayloadAsMap()).isEmpty();
+    }
+
+    @Test
+    public void shouldCompleteJobNullPayload()
+    {
+        // given
+        final JobClient jobClient = clientRule.getClient().topicClient().jobClient();
+
+        // when
+        final JobEvent job = jobClient.newCreateCommand()
+            .jobType("foo")
+            .payload("null")
+            .send()
+            .join();
+
+        // then
+        assertThat(job.getState()).isEqualTo(JobState.CREATED);
+        assertThat(job.getPayload()).isEqualTo("{}");
+        assertThat(job.getPayloadAsMap()).isEmpty();
     }
 
     @Test
@@ -99,6 +120,25 @@ public class CreateJobTest
         // then
         assertThat(job.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
         assertThat(job.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+    }
+
+    @Test
+    public void shouldThrowExceptionOnCompleteJobWithInvalidPayload()
+    {
+        // given
+        final JobClient jobClient = clientRule.getClient().topicClient().jobClient();
+
+        // when
+        final Throwable throwable = catchThrowable(() -> jobClient.newCreateCommand()
+            .jobType("foo")
+            .payload("[]")
+            .send()
+            .join());
+
+        // then
+        assertThat(throwable).isInstanceOf(BrokerErrorException.class);
+        assertThat(throwable.getMessage()).contains("Could not read property 'payload'.");
+        assertThat(throwable.getMessage()).contains("Document has invalid format. On root level an object is only allowed.");
     }
 
     @Test

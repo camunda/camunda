@@ -17,22 +17,15 @@
  */
 package io.zeebe.broker.job.data;
 
+import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.msgpack.property.*;
+import io.zeebe.msgpack.spec.MsgPackHelper;
+import io.zeebe.protocol.Protocol;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.BinaryProperty;
-import io.zeebe.msgpack.property.IntegerProperty;
-import io.zeebe.msgpack.property.LongProperty;
-import io.zeebe.msgpack.property.ObjectProperty;
-import io.zeebe.msgpack.property.PackedProperty;
-import io.zeebe.msgpack.property.StringProperty;
-import io.zeebe.msgpack.spec.MsgPackHelper;
-import io.zeebe.protocol.Protocol;
-
 public class JobRecord extends UnpackedObject
 {
-    protected static final DirectBuffer NO_PAYLOAD = new UnsafeBuffer(MsgPackHelper.NIL);
     protected static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
 
     private final LongProperty deadlineProp = new LongProperty("deadline", Protocol.INSTANT_NULL_VALUE);
@@ -41,7 +34,7 @@ public class JobRecord extends UnpackedObject
     private final StringProperty typeProp = new StringProperty("type");
     private final ObjectProperty<JobHeaders> headersProp = new ObjectProperty<>("headers", new JobHeaders());
     private final PackedProperty customHeadersProp = new PackedProperty("customHeaders", NO_HEADERS);
-    private final BinaryProperty payloadProp = new BinaryProperty("payload", NO_PAYLOAD);
+    private final DocumentProperty payloadProp = new DocumentProperty("payload");
 
     public JobRecord()
     {
@@ -117,12 +110,7 @@ public class JobRecord extends UnpackedObject
     public JobRecord setPayload(DirectBuffer payload)
     {
         payloadProp.setValue(payload);
-        return this;
-    }
 
-    public JobRecord setPayload(DirectBuffer payload, int offset, int length)
-    {
-        payloadProp.setValue(payload, offset, length);
         return this;
     }
 

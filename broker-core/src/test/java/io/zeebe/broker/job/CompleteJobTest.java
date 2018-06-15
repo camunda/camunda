@@ -19,11 +19,15 @@ package io.zeebe.broker.job;
 
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.Assertions.entry;
 
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.zeebe.broker.test.MsgPackUtil;
+import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
 import org.junit.Before;
 import org.junit.Rule;
@@ -102,7 +106,86 @@ public class CompleteJobTest
     }
 
     @Test
-    public void shouldRejectCompletionIfPayloadIsInvalid()
+    public void shouldCompleteJobWithPayload()
+    {
+        // given
+        createJob(JOB_TYPE);
+
+        apiRule.openJobSubscription(JOB_TYPE).await();
+
+        final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
+
+        // when
+        subscribedEvent.value().put("payload", MsgPackUtil.MSGPACK_PAYLOAD);
+        final ExecuteCommandResponse response = completeJob(subscribedEvent.key(), subscribedEvent.value());
+
+        // then
+        assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
+        assertThat(response.intent()).isEqualTo(JobIntent.COMPLETED);
+        assertThat(response.getValue()).contains(entry("payload", MsgPackUtil.MSGPACK_PAYLOAD));
+    }
+
+    @Test
+    public void shouldCompleteJobWithNilPayload()
+    {
+        // given
+        createJob(JOB_TYPE);
+
+        apiRule.openJobSubscription(JOB_TYPE).await();
+
+        final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
+
+        // when
+        subscribedEvent.value().put("payload", MsgPackHelper.NIL);
+        final ExecuteCommandResponse response = completeJob(subscribedEvent.key(), subscribedEvent.value());
+
+        // then
+        assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
+        assertThat(response.intent()).isEqualTo(JobIntent.COMPLETED);
+        assertThat(response.getValue()).contains(entry("payload", MsgPackHelper.EMTPY_OBJECT));
+    }
+
+    @Test
+    public void shouldCompleteJobWithZeroLengthPayload()
+    {
+        // given
+        createJob(JOB_TYPE);
+
+        apiRule.openJobSubscription(JOB_TYPE).await();
+
+        final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
+
+        // when
+        subscribedEvent.value().put("payload", new byte[0]);
+        final ExecuteCommandResponse response = completeJob(subscribedEvent.key(), subscribedEvent.value());
+
+        // then
+        assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
+        assertThat(response.intent()).isEqualTo(JobIntent.COMPLETED);
+        assertThat(response.getValue()).contains(entry("payload", MsgPackHelper.EMTPY_OBJECT));
+    }
+
+    @Test
+    public void shouldCompleteJobWithNoPayload()
+    {
+        // given
+        createJob(JOB_TYPE);
+
+        apiRule.openJobSubscription(JOB_TYPE).await();
+
+        final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
+
+        // when
+        final ExecuteCommandResponse response = completeJob(subscribedEvent.key(), subscribedEvent.value());
+
+        // then
+        assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
+        assertThat(response.intent()).isEqualTo(JobIntent.COMPLETED);
+        assertThat(response.getValue()).contains(entry("payload", MsgPackHelper.EMTPY_OBJECT));
+    }
+
+    @Test
+    public void shouldThrowExceptionOnCompletionIfPayloadIsInvalid()
     {
         // given
         createJob(JOB_TYPE);
@@ -115,16 +198,12 @@ public class CompleteJobTest
         event.put("payload", new byte[] {1}); // positive fixnum, i.e. no object
 
         // when
-        final ExecuteCommandResponse response = completeJob(subscribedEvent.key(), event);
+        final Throwable throwable = catchThrowable(() -> completeJob(subscribedEvent.key(), event));
 
         // then
-        final SubscribedRecord completeEvent = testClient.receiveFirstJobCommand(JobIntent.COMPLETE);
-
-        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-        assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-        assertThat(response.sourceRecordPosition()).isEqualTo(completeEvent.position());
-        assertThat(response.rejectionReason()).isEqualTo("Payload is not a valid msgpack-encoded JSON object or nil");
-        assertThat(response.intent()).isEqualTo(JobIntent.COMPLETE);
+        assertThat(throwable).isInstanceOf(RuntimeException.class);
+        assertThat(throwable.getMessage()).contains("Could not read property 'payload'.");
+        assertThat(throwable.getMessage()).contains("Document has invalid format. On root level an object is only allowed.");
     }
 
     @Test

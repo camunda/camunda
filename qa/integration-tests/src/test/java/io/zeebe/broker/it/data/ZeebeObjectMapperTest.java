@@ -215,10 +215,11 @@ public class ZeebeObjectMapperTest
 
         // when / then
         final String json = jobEvent.toJson();
-        assertThat(json).contains("\"payload\":null");
+        assertThat(json).contains("\"payload\":{}");
 
         final JobEvent deserializedRecord = clientRule.getClient().objectMapper().fromJson(json, JobEvent.class);
-        assertThat(deserializedRecord.getPayload()).isNull();
+        assertThat(deserializedRecord.getPayload()).isEqualTo("{}");
+        assertThat(deserializedRecord.getPayloadAsMap()).isEmpty();
     }
 
     @Test
@@ -266,10 +267,11 @@ public class ZeebeObjectMapperTest
 
         // when / then
         final String json = workflowInstanceEvent.toJson();
-        assertThat(json).contains("\"payload\":null");
+        assertThat(json).contains("\"payload\":{}");
 
         final WorkflowInstanceEvent deserializedRecord = clientRule.getClient().objectMapper().fromJson(json, WorkflowInstanceEvent.class);
-        assertThat(deserializedRecord.getPayload()).isNull();
+        assertThat(deserializedRecord.getPayload()).isEqualTo("{}");
+        assertThat(deserializedRecord.getPayloadAsMap()).isEmpty();
     }
 
     private static Predicate<Record> recordFilter(ValueType valueType, String intent)

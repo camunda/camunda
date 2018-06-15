@@ -38,7 +38,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static io.zeebe.broker.test.MsgPackUtil.*;
-import static io.zeebe.msgpack.spec.MsgPackHelper.NIL;
+import static io.zeebe.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -113,7 +113,7 @@ public class WorkflowTaskIOMappingTest
     }
 
     @Test
-    public void shouldUseNILIfCreatedWithNoPayload()
+    public void shouldUseEmptyObjectIfCreatedWithNoPayload()
     {
         // given
         testClient.deploy(Bpmn.createExecutableWorkflow("process")
@@ -127,7 +127,7 @@ public class WorkflowTaskIOMappingTest
         final SubscribedRecord event = testClient.receiveFirstJobCommand(JobIntent.CREATE);
 
         // then
-        assertThat(event.value()).containsEntry(WorkflowInstanceRecord.PROP_WORKFLOW_PAYLOAD, NIL);
+        assertThat(event.value()).containsEntry(WorkflowInstanceRecord.PROP_WORKFLOW_PAYLOAD, EMTPY_OBJECT);
     }
 
 
@@ -322,7 +322,7 @@ public class WorkflowTaskIOMappingTest
 
         final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(result))
-            .isEqualTo(JSON_MAPPER.readTree("null"));
+            .isEqualTo(JSON_MAPPER.readTree("{}"));
     }
 
     @Test
@@ -399,7 +399,7 @@ public class WorkflowTaskIOMappingTest
         assertThat(incidentEvent.key()).isGreaterThan(0);
         assertThat(incidentEvent.value())
             .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
-            .containsEntry("errorMessage", "Could not apply output mappings: Job was completed without payload");
+            .containsEntry("errorMessage", "No data found for query $.string.");
     }
 
     @Test

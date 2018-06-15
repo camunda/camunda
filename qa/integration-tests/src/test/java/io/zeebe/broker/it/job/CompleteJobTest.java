@@ -17,6 +17,7 @@ package io.zeebe.broker.it.job;
 
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.entry;
 
 import java.util.Collections;
@@ -27,6 +28,7 @@ import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.events.JobState;
+import io.zeebe.client.cmd.BrokerErrorException;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 import org.junit.*;
 import org.junit.rules.*;
@@ -73,7 +75,7 @@ public class CompleteJobTest
     }
 
     @Test
-    public void shouldCompleteJob()
+    public void shouldCompleteJobWithoutPayload()
     {
         // when
         final JobEvent job = clientRule
@@ -84,9 +86,27 @@ public class CompleteJobTest
 
         // then
         assertThat(job.getState()).isEqualTo(JobState.COMPLETED);
-        assertThat(job.getPayload()).isEqualTo("null");
-        assertThat(job.getPayloadAsMap()).isNull();
+        assertThat(job.getPayload()).isEqualTo("{}");
+        assertThat(job.getPayloadAsMap()).isEmpty();
     }
+
+    @Test
+    public void shouldCompleteJobNullPayload()
+    {
+        // when
+        final JobEvent job = clientRule
+            .getJobClient()
+            .newCompleteCommand(jobEvent)
+            .payload("null")
+            .send()
+            .join();
+
+        // then
+        assertThat(job.getState()).isEqualTo(JobState.COMPLETED);
+        assertThat(job.getPayload()).isEqualTo("{}");
+        assertThat(job.getPayloadAsMap()).isEmpty();
+    }
+
 
     @Test
     public void shouldCompleteJobWithPayload()
@@ -102,6 +122,23 @@ public class CompleteJobTest
         // then
         assertThat(job.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
         assertThat(job.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+    }
+
+    @Test
+    public void shouldThrowExceptionOnCompleteJobWithInvalidPayload()
+    {
+        // when
+        final Throwable throwable = catchThrowable(() -> clientRule
+            .getJobClient()
+            .newCompleteCommand(jobEvent)
+            .payload("[]")
+            .send()
+            .join());
+
+        // then
+        assertThat(throwable).isInstanceOf(BrokerErrorException.class);
+        assertThat(throwable.getMessage()).contains("Could not read property 'payload'.");
+        assertThat(throwable.getMessage()).contains("Document has invalid format. On root level an object is only allowed.");
     }
 
     @Test
