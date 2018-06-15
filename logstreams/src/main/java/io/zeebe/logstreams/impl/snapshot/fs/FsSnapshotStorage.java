@@ -27,7 +27,6 @@ import java.util.stream.Collectors;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.spi.SnapshotMetadata;
 import io.zeebe.logstreams.spi.SnapshotStorage;
-import org.agrona.LangUtil;
 import org.slf4j.Logger;
 
 public class FsSnapshotStorage implements SnapshotStorage
@@ -111,7 +110,7 @@ public class FsSnapshotStorage implements SnapshotStorage
         catch (IOException e)
         {
             snapshotFile.delete();
-            LangUtil.rethrowUnchecked(e);
+            throw e;
         }
 
         return new FsSnapshotWriter(cfg, snapshotFile, checksumFile, lastSnapshot);
