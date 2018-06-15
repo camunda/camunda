@@ -9,7 +9,7 @@
     <groupId>io.zeebe</groupId>
     <artifactId>zb-parent</artifactId>
     <version>0.11.0-SNAPSHOT</version>
-    <relativePath>../</relativePath>
+    <relativePath>../parent</relativePath>
   </parent>
 
   <dependencies>
