@@ -13,18 +13,6 @@
     <relativePath>../parent</relativePath>
   </parent>
 
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>io.zeebe</groupId>
-        <artifactId>zb-bom</artifactId>
-        <version>${project.version}</version>
-        <scope>import</scope>
-        <type>pom</type>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
-
   <dependencies>
     <dependency>
       <groupId>io.zeebe</groupId>

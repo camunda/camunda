@@ -27,6 +27,7 @@
     <module>service-container</module>
     <module>bpmn-model</module>
     <module>logstreams</module>
+    <module>transport</module>
   </modules>
 
   <repositories>
