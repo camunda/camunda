@@ -75,15 +75,15 @@ spec:
     resources:
       limits:
         cpu: 1
-        memory: 512Mi
+        memory: 1Gi
       requests:
         cpu: 1
-        memory: 512Mi
+        memory: 1Gi
   - name: elasticsearch
     image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.2.4
     env:
     - name: ES_JAVA_OPTS
-      value: "-Xms2g -Xmx2g"
+      value: "-Xms1g -Xmx1g"
     - name: cluster.name
       value: docker-cluster
     - name: discovery.type
@@ -107,10 +107,10 @@ spec:
     resources:
       limits:
         cpu: 1
-        memory: 4Gi
+        memory: 3Gi
       requests:
         cpu: 1
-        memory: 4Gi
+        memory: 3Gi
   - name: docker
     image: ${DIND_DOCKER_IMAGE()}
     args: ["--storage-driver=overlay2"]
