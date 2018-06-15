@@ -1,24 +1,42 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import BPMNViewer from 'bpmn-js/lib/NavigatedViewer';
 
 import * as Styled from './styled';
 import DiagramControls from './DiagramControls';
-import {Colors} from 'modules/theme';
+import {Colors, themed, themeStyle} from 'modules/theme';
 import {getXML} from './api';
 
-export default class Diagram extends React.Component {
+class Diagram extends React.Component {
+  static propTypes = {
+    theme: PropTypes.string.isRequired
+  };
+
   containerNode = null;
   Viewer = null;
 
   async componentDidMount() {
     const xml = await getXML();
+
+    // colors config for bpmnRenderer
+    const defaultFillColor = themeStyle({
+      dark: Colors.uiDark02,
+      light: Colors.uiLight04
+    })(this.props);
+    const defaultStrokeColor = themeStyle({
+      dark: Colors.darkDiagram,
+      light: Colors.uiLight06
+    })(this.props);
+    const bpmnRenderer = {
+      defaultFillColor,
+      defaultStrokeColor
+    };
+
     this.Viewer = new BPMNViewer({
       container: this.containerNode,
-      bpmnRenderer: {
-        defaultFillColor: Colors.uiDark02,
-        defaultStrokeColor: '#dedede'
-      }
+      bpmnRenderer
     });
+
     this.Viewer.importXML(xml, e => {
       if (e) {
         return console.log('oops error importing: ', e);
@@ -57,3 +75,5 @@ export default class Diagram extends React.Component {
     );
   }
 }
+
+export default themed(Diagram);

@@ -42,7 +42,9 @@ const themed = StyledComponent => {
     );
   }
 
-  Themed.displayName = `Themed(${StyledComponent.displayName})`;
+  Themed.displayName = `Themed(${StyledComponent.displayName ||
+    StyledComponent.name ||
+    'Component'})`;
 
   return Themed;
 };

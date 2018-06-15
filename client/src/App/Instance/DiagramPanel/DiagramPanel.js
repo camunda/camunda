@@ -39,7 +39,7 @@ DiagramPanel.propTypes = {
   instance: PropTypes.shape({
     id: PropTypes.string.isRequired,
     startDate: PropTypes.string.isRequired,
-    endDate: PropTypes.string.isRequired,
+    endDate: PropTypes.string,
     instanceState: PropTypes.string.isRequired,
     errorMessage: PropTypes.string
   }),
