@@ -104,7 +104,7 @@ import:
     process-instance:
       #Overwrites the maximum page size for historic process instance
       #fetching.
-      maxPageSize: 1000
+      maxPageSize: 10000
       #The name of the process instance type.
       elasticsearchType: process-instance
     variable:
@@ -116,10 +116,6 @@ import:
   #Adjust the queue size of the import jobs that store data to elasticsearch.
   #A too large value might cause memory problems.
   elasticsearchJobExecutorQueueSize: 100
-  #The data is fetched from the engine in pages. Define
-  #maximum size or, to be precise, a range for the number
-  #of entities that should be fetched at once for each import type.
-  maxPageSize: 1000
   handler:
     backoff:
       # Interval which is used for the backoff time calculation.
