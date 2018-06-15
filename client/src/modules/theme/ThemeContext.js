@@ -1,4 +1,7 @@
 import React from 'react';
+import {injectGlobal} from 'styled-components';
+
+import {Colors} from './index';
 
 const THEME_NAME = {
   LIGHT: 'light',
@@ -12,6 +15,14 @@ const ThemeConsumer = ThemeContext.Consumer;
 
 // Top level component to pass down theme in the App
 class ThemeProvider extends React.Component {
+  constructor(props) {
+    super(props);
+    this.setBodyBackground();
+  }
+
+  // we start with the dark theme as default
+  state = {theme: THEME_NAME.DARK, toggleTheme: this.toggleTheme};
+
   toggleTheme = () => {
     this.setState({
       theme:
@@ -21,8 +32,16 @@ class ThemeProvider extends React.Component {
     });
   };
 
-  // we start with the dark theme as default
-  state = {theme: THEME_NAME.DARK, toggleTheme: this.toggleTheme};
+  setBodyBackground = () => {
+    const {theme} = this.state;
+    injectGlobal`
+      body{
+        background: ${
+          theme === THEME_NAME.DARK ? Colors.uiDark01 : Colors.uiLight01
+        }
+      }
+    `;
+  };
 
   render() {
     return (
@@ -30,6 +49,10 @@ class ThemeProvider extends React.Component {
         {this.props.children}
       </ThemeContext.Provider>
     );
+  }
+
+  componentDidUpdate() {
+    this.setBodyBackground();
   }
 }
 
