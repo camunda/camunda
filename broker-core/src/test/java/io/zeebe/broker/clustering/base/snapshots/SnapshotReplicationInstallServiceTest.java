@@ -34,8 +34,6 @@ import org.junit.rules.RuleChain;
 
 public class SnapshotReplicationInstallServiceTest
 {
-    private static final ServiceName<Void> NAME = ServiceName.newServiceName("test.snapshots.replicationInstall", Void.class);
-
     private ControlledActorSchedulerRule actorSchedulerRule = new ControlledActorSchedulerRule();
     private ServiceContainerRule serviceContainerRule = new ServiceContainerRule(actorSchedulerRule);
 
