@@ -20,11 +20,22 @@ public class OperateProperties {
   @NestedConfigurationProperty
   private ElasticsearchProperties elasticsearch = new ElasticsearchProperties();
 
+  @NestedConfigurationProperty
+  private ZeebeProperties zeebe = new ZeebeProperties();
+
   public ElasticsearchProperties getElasticsearch() {
     return elasticsearch;
   }
 
   public void setElasticsearch(ElasticsearchProperties elasticsearch) {
     this.elasticsearch = elasticsearch;
+  }
+
+  public ZeebeProperties getZeebe() {
+    return zeebe;
+  }
+
+  public void setZeebe(ZeebeProperties zeebe) {
+    this.zeebe = zeebe;
   }
 }

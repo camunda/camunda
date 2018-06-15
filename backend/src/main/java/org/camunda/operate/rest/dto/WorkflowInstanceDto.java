@@ -3,8 +3,8 @@ package org.camunda.operate.rest.dto;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import org.camunda.operate.po.WorkflowInstanceEntity;
-import org.camunda.operate.po.WorkflowInstanceState;
+import org.camunda.operate.entities.WorkflowInstanceEntity;
+import org.camunda.operate.entities.WorkflowInstanceState;
 
 /**
  * @author Svetlana Dorokhova.

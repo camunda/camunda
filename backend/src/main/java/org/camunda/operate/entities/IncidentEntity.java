@@ -1,11 +1,11 @@
-package org.camunda.operate.po;
+package org.camunda.operate.entities;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * @author Svetlana Dorokhova.
  */
-public class IncidentEntity {
-
-  private String id;
+public class IncidentEntity extends OperateEntity {
 
   private String errorType;
 
@@ -19,13 +19,8 @@ public class IncidentEntity {
 
   private String taskId;
 
-  public String getId() {
-    return id;
-  }
-
-  public void setId(String id) {
-    this.id = id;
-  }
+  @JsonIgnore
+  private String workflowInstanceId;
 
   public String getErrorType() {
     return errorType;
@@ -75,17 +70,25 @@ public class IncidentEntity {
     this.taskId = taskId;
   }
 
+  public String getWorkflowInstanceId() {
+    return workflowInstanceId;
+  }
+
+  public void setWorkflowInstanceId(String workflowInstanceId) {
+    this.workflowInstanceId = workflowInstanceId;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o)
       return true;
     if (o == null || getClass() != o.getClass())
       return false;
+    if (!super.equals(o))
+      return false;
 
     IncidentEntity that = (IncidentEntity) o;
 
-    if (id != null ? !id.equals(that.id) : that.id != null)
-      return false;
     if (errorType != null ? !errorType.equals(that.errorType) : that.errorType != null)
       return false;
     if (errorMessage != null ? !errorMessage.equals(that.errorMessage) : that.errorMessage != null)
@@ -96,18 +99,21 @@ public class IncidentEntity {
       return false;
     if (activityInstanceId != null ? !activityInstanceId.equals(that.activityInstanceId) : that.activityInstanceId != null)
       return false;
-    return taskId != null ? taskId.equals(that.taskId) : that.taskId == null;
+    if (taskId != null ? !taskId.equals(that.taskId) : that.taskId != null)
+      return false;
+    return workflowInstanceId != null ? workflowInstanceId.equals(that.workflowInstanceId) : that.workflowInstanceId == null;
   }
 
   @Override
   public int hashCode() {
-    int result = id != null ? id.hashCode() : 0;
+    int result = super.hashCode();
     result = 31 * result + (errorType != null ? errorType.hashCode() : 0);
     result = 31 * result + (errorMessage != null ? errorMessage.hashCode() : 0);
     result = 31 * result + (state != null ? state.hashCode() : 0);
     result = 31 * result + (activityId != null ? activityId.hashCode() : 0);
     result = 31 * result + (activityInstanceId != null ? activityInstanceId.hashCode() : 0);
     result = 31 * result + (taskId != null ? taskId.hashCode() : 0);
+    result = 31 * result + (workflowInstanceId != null ? workflowInstanceId.hashCode() : 0);
     return result;
   }
 }

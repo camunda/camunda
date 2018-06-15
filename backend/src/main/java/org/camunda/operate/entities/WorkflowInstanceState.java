@@ -1,4 +1,4 @@
-package org.camunda.operate.po;
+package org.camunda.operate.entities;
 
 /**
  * @author Svetlana Dorokhova.
@@ -6,6 +6,7 @@ package org.camunda.operate.po;
 public enum WorkflowInstanceState {
 
   ACTIVE,
-  COMPLETED
+  COMPLETED,
+  CANCELED
 
 }

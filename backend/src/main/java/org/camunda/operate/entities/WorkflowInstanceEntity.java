@@ -1,15 +1,14 @@
-package org.camunda.operate.po;
+package org.camunda.operate.entities;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import org.camunda.operate.property.OperateProperties;
 
 /**
  * @author Svetlana Dorokhova.
  */
-public class WorkflowInstanceEntity {
-
-  private String id;
+public class WorkflowInstanceEntity extends OperateEntity {
 
   private String workflowDefinitionId;
 
@@ -21,14 +20,6 @@ public class WorkflowInstanceEntity {
   private String businessKey;
 
   private List<IncidentEntity> incidents = new ArrayList<>();
-
-  public String getId() {
-    return id;
-  }
-
-  public void setId(String id) {
-    this.id = id;
-  }
 
   public String getWorkflowDefinitionId() {
     return workflowDefinitionId;
@@ -84,11 +75,11 @@ public class WorkflowInstanceEntity {
       return true;
     if (o == null || getClass() != o.getClass())
       return false;
+    if (!super.equals(o))
+      return false;
 
     WorkflowInstanceEntity that = (WorkflowInstanceEntity) o;
 
-    if (id != null ? !id.equals(that.id) : that.id != null)
-      return false;
     if (workflowDefinitionId != null ? !workflowDefinitionId.equals(that.workflowDefinitionId) : that.workflowDefinitionId != null)
       return false;
     if (startDate != null ? !startDate.equals(that.startDate) : that.startDate != null)
@@ -104,7 +95,7 @@ public class WorkflowInstanceEntity {
 
   @Override
   public int hashCode() {
-    int result = id != null ? id.hashCode() : 0;
+    int result = super.hashCode();
     result = 31 * result + (workflowDefinitionId != null ? workflowDefinitionId.hashCode() : 0);
     result = 31 * result + (startDate != null ? startDate.hashCode() : 0);
     result = 31 * result + (endDate != null ? endDate.hashCode() : 0);
@@ -113,5 +104,4 @@ public class WorkflowInstanceEntity {
     result = 31 * result + (incidents != null ? incidents.hashCode() : 0);
     return result;
   }
-
 }

@@ -11,11 +11,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-import org.camunda.operate.es.writer.WorkflowInstanceWriter;
-import org.camunda.operate.po.IncidentEntity;
-import org.camunda.operate.po.IncidentState;
-import org.camunda.operate.po.WorkflowInstanceEntity;
-import org.camunda.operate.po.WorkflowInstanceState;
+import org.camunda.operate.entities.IncidentEntity;
+import org.camunda.operate.entities.IncidentState;
+import org.camunda.operate.entities.WorkflowInstanceEntity;
+import org.camunda.operate.entities.WorkflowInstanceState;
+import org.camunda.operate.es.writer.ElasticsearchBulkProcessor;
 import org.camunda.operate.rest.dto.IncidentDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
@@ -46,14 +46,14 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
   protected static final String QUERY_URL = WORKFLOW_INSTANCE_URL;
   protected static final String COUNT_URL = WORKFLOW_INSTANCE_URL + "/count";
 
-  @Autowired
-  private WorkflowInstanceWriter workflowInstanceWriter;
-
   private MediaType contentType = new MediaType(MediaType.APPLICATION_JSON.getType(),
     MediaType.APPLICATION_JSON.getSubtype(),
     Charset.forName("utf8"));
 
   private Random random = new Random();
+
+  @Autowired
+  private ElasticsearchBulkProcessor elasticsearchBulkProcessor;
 
   @Before
   public void starting() {
@@ -272,7 +272,7 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
     workflowInstances.addAll(Arrays.asList(runningInstance, completedInstance, instanceWithIncident, instanceWithoutIncident));
 
     //persist instances
-    workflowInstanceWriter.persistWorkflowInstances(workflowInstances);
+    elasticsearchBulkProcessor.persistOperateEntities(workflowInstances);
     super.refreshIndexesInElasticsearch();
   }
 

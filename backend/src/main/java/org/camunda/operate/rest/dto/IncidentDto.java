@@ -2,8 +2,8 @@ package org.camunda.operate.rest.dto;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.camunda.operate.po.IncidentEntity;
-import org.camunda.operate.po.IncidentState;
+import org.camunda.operate.entities.IncidentEntity;
+import org.camunda.operate.entities.IncidentState;
 
 /**
  * @author Svetlana Dorokhova.
@@ -89,7 +89,7 @@ public class IncidentDto {
     incident.setActivityId(incidentEntity.getActivityId());
     incident.setActivityInstanceId(incidentEntity.getActivityInstanceId());
     incident.setErrorMessage(incidentEntity.getErrorMessage());
-    incident.setErrorType(incidentEntity.getErrorMessage());
+    incident.setErrorType(incidentEntity.getErrorType());
     incident.setState(incidentEntity.getState());
     incident.setTaskId(incidentEntity.getTaskId());
     return incident;

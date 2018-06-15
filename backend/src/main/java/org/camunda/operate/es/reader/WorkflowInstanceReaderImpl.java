@@ -5,9 +5,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.search.join.ScoreMode;
+import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.es.types.WorkflowInstanceType;
-import org.camunda.operate.po.IncidentState;
-import org.camunda.operate.po.WorkflowInstanceEntity;
+import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
@@ -22,6 +22,7 @@ import org.elasticsearch.search.SearchHits;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -40,6 +41,7 @@ public class WorkflowInstanceReaderImpl implements WorkflowInstanceReader {
   private TransportClient esClient;
 
   @Autowired
+  @Qualifier("esObjectMapper")
   private ObjectMapper objectMapper;
 
   @Override

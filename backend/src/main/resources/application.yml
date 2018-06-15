@@ -4,10 +4,17 @@ camunda.bpm.operate:
     host: localhost
     port: 9300
     dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
-  demoData: true
+    demoData: false
+  zeebe:
+    brokerContactPoint: localhost:51015
+    demoData: true
+    topics:
+      - new-topic
+    worker: operate
 logging:
   level:
     ROOT: INFO
+    org.camunda.operate: DEBUG
 ---
 spring:
   profiles: dev
@@ -17,7 +24,14 @@ camunda.bpm.operate:
     host: elasticsearch
     port: 9300
     dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
-  demoData: true
+    demoData: false
+  zeebe:
+    brokerContactPoint: zeebe:51015
+    demoData: true
+    topics:
+      - new-topic
+    worker: operate
 logging:
   level:
     ROOT: INFO
+    org.camunda.operate: INFO

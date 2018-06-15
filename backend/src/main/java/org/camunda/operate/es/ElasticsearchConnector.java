@@ -18,6 +18,7 @@ import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -40,9 +41,9 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 @Component
 @Configuration
 @Profile("elasticsearch")
-public class ElasticsearchClient {
+public class ElasticsearchConnector {
 
-  private Logger logger = LoggerFactory.getLogger(ElasticsearchClient.class);
+  private Logger logger = LoggerFactory.getLogger(ElasticsearchConnector.class);
 
   @Autowired
   private OperateProperties operateProperties;
@@ -53,20 +54,32 @@ public class ElasticsearchClient {
       .build();
   }
 
-  @Bean
-  public TransportClient esClient() throws UnknownHostException {
-    final TransportClient transportClient = new PreBuiltTransportClient(getElasticSearchSettings()).addTransportAddress(
-      new TransportAddress(InetAddress.getByName(operateProperties.getElasticsearch().getHost()), operateProperties.getElasticsearch().getPort()));
-    checkHealthAndReconnect(transportClient);
-
+  @Bean/*(destroyMethod = "close")*/
+  public TransportClient esClient() {
+    logger.debug("Creating Elasticsearch connection...");
+    TransportClient transportClient = null;
+    try {
+      transportClient = new PreBuiltTransportClient(getElasticSearchSettings()).addTransportAddress(
+        new TransportAddress(InetAddress.getByName(operateProperties.getElasticsearch().getHost()), operateProperties.getElasticsearch().getPort()));
+      if (!checkHealth(transportClient, true)) {
+        logger.warn("Elasticsearch cluster [{}] is not accessible", operateProperties.getElasticsearch().getClusterName());
+      } else {
+        logger.debug("Elasticsearch connection was successfully created.");
+      }
+    } catch (UnknownHostException ex) {
+      logger.error(String
+          .format("Unable to connect to Elasticsearch [%s:%s]", operateProperties.getElasticsearch().getHost(), operateProperties.getElasticsearch().getPort()),
+        ex);
+      //TODO
+    }
     return transportClient;
   }
 
-  private void checkHealthAndReconnect(TransportClient transportClient) {
+  public boolean checkHealth(TransportClient transportClient, boolean reconnect) {
     //TODO temporary solution
     int attempts = 0;
     boolean successfullyConnected = false;
-    while (attempts < 10 && !successfullyConnected) {
+    while (attempts == 0 || (reconnect && attempts < 10 && !successfullyConnected)) {
       try {
         final ClusterHealthResponse clusterHealthResponse = transportClient.admin().cluster().prepareHealth().get();
         successfullyConnected = clusterHealthResponse.getClusterName().equals(operateProperties.getElasticsearch().getClusterName());
@@ -80,9 +93,11 @@ public class ElasticsearchClient {
       }
       attempts++;
     }
-    if (!successfullyConnected) {
-      logger.warn("Elasticsearch cluster [{}] is not accessible", operateProperties.getElasticsearch().getClusterName());
-    }
+    return successfullyConnected;
+  }
+
+  public boolean checkHealth(boolean reconnect) {
+    return checkHealth(esClient(), reconnect);
   }
 
   @Bean
@@ -90,7 +105,7 @@ public class ElasticsearchClient {
     return DateTimeFormatter.ofPattern(operateProperties.getElasticsearch().getDateFormat());
   }
 
-  @Bean
+  @Bean("esObjectMapper")
   public ObjectMapper objectMapper() {
 
     JavaTimeModule javaTimeModule = new JavaTimeModule();

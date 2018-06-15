@@ -13,6 +13,8 @@ public class ElasticsearchProperties {
 
   private String dateFormat;
 
+  private int insertBatchSize = 20;
+
   public String getClusterName() {
     return clusterName;
   }
@@ -43,5 +45,13 @@ public class ElasticsearchProperties {
 
   public void setDateFormat(String dateFormat) {
     this.dateFormat = dateFormat;
+  }
+
+  public int getInsertBatchSize() {
+    return insertBatchSize;
+  }
+
+  public void setInsertBatchSize(int insertBatchSize) {
+    this.insertBatchSize = insertBatchSize;
   }
 }

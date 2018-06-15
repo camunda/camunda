@@ -6,12 +6,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
-import org.camunda.operate.es.writer.WorkflowInstanceWriter;
-import org.camunda.operate.po.IncidentEntity;
-import org.camunda.operate.po.IncidentState;
-import org.camunda.operate.po.WorkflowInstanceEntity;
-import org.camunda.operate.po.WorkflowInstanceState;
+import org.camunda.operate.entities.IncidentEntity;
+import org.camunda.operate.entities.IncidentState;
+import org.camunda.operate.entities.WorkflowInstanceEntity;
+import org.camunda.operate.entities.WorkflowInstanceState;
+import org.camunda.operate.es.writer.ElasticsearchBulkProcessor;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,13 +25,13 @@ import org.springframework.stereotype.Component;
  * @author Svetlana Dorokhova.
  */
 @Component
-@ConditionalOnProperty(name= OperateProperties.PREFIX + ".demoData", havingValue="true")
+@ConditionalOnProperty(name= OperateProperties.PREFIX + ".elasticsearch.demoData", havingValue="true")
 @Profile("elasticsearch")
 @DependsOn("elasticsearchSchemaManager")
-public class DemoDataGenerator {
+public class EsDemoDataGenerator {
 
   @Autowired
-  private WorkflowInstanceWriter workflowInstanceWriter;
+  private ElasticsearchBulkProcessor elasticsearchBulkProcessor;
 
   @Autowired
   private WorkflowInstanceReader workflowInstanceReader;
@@ -43,7 +44,7 @@ public class DemoDataGenerator {
     final long count = workflowInstanceReader.countWorkflowInstances(new WorkflowInstanceQueryDto());
     if (count == 0) {
 
-      List<WorkflowInstanceEntity> workflowInstances = new ArrayList<>();
+      List<OperateEntity> workflowInstances = new ArrayList<>();
       for (int i = 0; i < random.nextInt(100) + 500; i++) {
 
         WorkflowInstanceEntity workflowInstance = new WorkflowInstanceEntity();
@@ -71,7 +72,7 @@ public class DemoDataGenerator {
         workflowInstances.add(workflowInstance);
       }
 
-      workflowInstanceWriter.persistWorkflowInstances(workflowInstances);
+      elasticsearchBulkProcessor.persistOperateEntities(workflowInstances);
     }
 
   }

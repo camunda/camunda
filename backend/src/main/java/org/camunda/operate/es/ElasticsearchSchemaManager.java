@@ -62,7 +62,7 @@ public class ElasticsearchSchemaManager {
     }
 
     esClient.admin().indices().prepareRefresh().get();
-    logger.debug("Index [{}] was successfully created");
+    logger.debug("Index [{}] was successfully created", mapping.getType());
   }
 
   /**

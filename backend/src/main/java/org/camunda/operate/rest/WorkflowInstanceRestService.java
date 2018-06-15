@@ -5,7 +5,7 @@ import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INST
 import java.util.List;
 
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
-import org.camunda.operate.po.WorkflowInstanceEntity;
+import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.rest.dto.CountResultDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;

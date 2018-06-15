@@ -1,4 +1,4 @@
-package org.camunda.operate.po;
+package org.camunda.operate.entities;
 
 /**
  * @author Svetlana Dorokhova.

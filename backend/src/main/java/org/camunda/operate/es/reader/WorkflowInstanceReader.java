@@ -1,7 +1,7 @@
 package org.camunda.operate.es.reader;
 
 import java.util.List;
-import org.camunda.operate.po.WorkflowInstanceEntity;
+import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
 
 /**
