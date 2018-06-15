@@ -7,7 +7,7 @@
 
   <parent>
     <groupId>io.zeebe</groupId>
-    <artifactId>zeebe-core-parent</artifactId>
+    <artifactId>zb-parent</artifactId>
     <version>0.11.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
@@ -38,12 +38,12 @@
       <groupId>org.msgpack</groupId>
       <artifactId>jackson-dataformat-msgpack</artifactId>
     </dependency>
-    
+
     <dependency>
 	    <groupId>com.fasterxml.jackson.datatype</groupId>
 	    <artifactId>jackson-datatype-jsr310</artifactId>
 	</dependency>
-	
+
     <dependency>
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>

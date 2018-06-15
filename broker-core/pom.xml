@@ -7,7 +7,7 @@
 
   <parent>
     <groupId>io.zeebe</groupId>
-    <artifactId>zeebe-core-parent</artifactId>
+    <artifactId>zb-parent</artifactId>
     <version>0.11.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
@@ -204,7 +204,7 @@
             <argument>${project.build.resources[0].directory}/management-schema.xml</argument>
           </arguments>
           <workingDirectory>${project.build.directory}/generated-sources</workingDirectory>
-          <!-- system properties defined in zeebe-core-parent -->
+          <!-- system properties defined in zb-parent -->
         </configuration>
         <dependencies>
           <dependency>

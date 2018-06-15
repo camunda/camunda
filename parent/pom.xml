@@ -10,11 +10,10 @@
   <url>http://zeebe.io/</url>
 
   <parent>
-    <groupId>org.camunda</groupId>
-    <artifactId>camunda-release-parent</artifactId>
-    <version>2.5</version>
-    <!-- do not remove empty tag - http://jira.codehaus.org/browse/MNG-4687 -->
-    <relativePath />
+    <groupId>io.zeebe</groupId>
+    <artifactId>zb-bom</artifactId>
+    <version>0.11.0-SNAPSHOT</version>
+    <relativePath>../bom</relativePath>
   </parent>
 
   <properties>
@@ -68,14 +67,14 @@
         <artifactId>agrona</artifactId>
         <version>${version.agrona}</version>
       </dependency>
-      
+
       <dependency>
           <groupId>com.fasterxml.jackson</groupId>
           <artifactId>jackson-bom</artifactId>
           <version>${version.jackson}</version>
           <scope>import</scope>
           <type>pom</type>
-      </dependency>   
+      </dependency>
 
       <dependency>
         <groupId>org.msgpack</groupId>
@@ -279,6 +278,23 @@
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>exec-maven-plugin</artifactId>
           <version>${plugin.version.exec}</version>
+          <configuration>
+            <!-- Define system properties in one place, see https://github.com/camunda-zeebe/zeebe/issues/377 -->
+            <systemProperties>
+              <systemProperty>
+                <key>sbe.output.dir</key>
+                <value>${project.build.directory}/generated-sources/sbe</value>
+              </systemProperty>
+              <systemProperty>
+                <key>sbe.java.generate.interfaces</key>
+                <value>true</value>
+              </systemProperty>
+              <systemProperty>
+                <key>sbe.decode.unknown.enum.values</key>
+                <value>true</value>
+              </systemProperty>
+            </systemProperties>
+          </configuration>
         </plugin>
 
         <!-- Resources Plugin -->
@@ -380,7 +396,6 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
       </plugin>
-
     </plugins>
   </build>
 

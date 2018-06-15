@@ -7,14 +7,15 @@
   <packaging>pom</packaging>
 
   <parent>
-    <groupId>io.zeebe</groupId>
-    <artifactId>zb-parent</artifactId>
-    <version>0.10.0</version>
+    <groupId>org.camunda</groupId>
+    <artifactId>camunda-release-parent</artifactId>
+    <version>2.5</version>
     <!-- do not remove empty tag - http://jira.codehaus.org/browse/MNG-4687 -->
     <relativePath />
   </parent>
 
   <modules>
+    <module>bom</module>
     <module>parent</module>
     <module>broker-core</module>
     <module>qa</module>
