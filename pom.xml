@@ -25,6 +25,7 @@
     <module>dist</module>
     <module>protocol</module>
     <module>service-container</module>
+    <module>bpmn-model</module>
   </modules>
 
   <repositories>

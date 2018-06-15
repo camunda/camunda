@@ -1,0 +1,21 @@
+name: test
+
+tasks:
+    
+    - id: task1
+      type: foo
+      retries: 3
+      headers:
+            foo: f
+            bar: b
+      outputBehavior: asdf
+      inputs:
+            - source: $.a
+              target: $.b
+      outputs:
+            - source: $.c
+              target: $.d
+    
+    - id: task2
+      type: bar
+      retries: 5
