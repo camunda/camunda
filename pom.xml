@@ -24,6 +24,7 @@
     <module>samples</module>
     <module>dist</module>
     <module>protocol</module>
+    <module>service-container</module>
   </modules>
 
   <repositories>
