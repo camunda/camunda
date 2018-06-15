@@ -1,0 +1,13 @@
+
+[*]
+indent_style = space
+charset = utf-8
+end_of_line = lf
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.java]
+indent_size = 4
+
+[*.xml]
+indent_size = 2

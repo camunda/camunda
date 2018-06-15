@@ -28,6 +28,7 @@
     <module>bpmn-model</module>
     <module>logstreams</module>
     <module>transport</module>
+    <module>gossip</module>
   </modules>
 
   <repositories>
