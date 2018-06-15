@@ -19,8 +19,6 @@
   <properties>
     <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
-    <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/zeebe-io-snapshots/</nexus.snapshot.repository>
-    <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/zeebe-io/</nexus.release.repository>
     <!-- disable jdk8 javadoc checks on release build -->
     <additionalparam>-Xdoclint:none</additionalparam>
     <checkstyle.config.location>.checkstyle.xml</checkstyle.config.location>
