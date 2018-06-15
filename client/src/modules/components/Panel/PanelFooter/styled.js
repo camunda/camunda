@@ -13,7 +13,7 @@ export const Footer = themed(styled.div`
     })};
   background-color: ${themeStyle({
     dark: Colors.uiDark03,
-    light: Colors.uiLight06
+    light: Colors.uiLight02
   })};
   color: ${themeStyle({
     dark: '#ffffff',

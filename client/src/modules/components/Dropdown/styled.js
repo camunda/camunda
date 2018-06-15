@@ -18,10 +18,18 @@ export const Dropdown = styled.div`
 `;
 
 export const DropdownMenu = themed(styled.div`
-  background-color: ${themeStyle({dark: Colors.uiDark04, light: '#ffffff'})};
-  border: 1px solid ${Colors.uiDark06};
+  background-color: ${themeStyle({
+    dark: Colors.uiDark04,
+    light: Colors.uiLight02
+  })};
+  border: 1px solid
+    ${themeStyle({dark: Colors.uiDark06, light: Colors.uiLight05})};
   border-radius: 3px;
-  box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.5);
+  box-shadow: 0 2px 2px 0
+    ${themeStyle({
+      dark: 'rgba(0, 0, 0, 0.5)',
+      light: 'rgba(231, 233, 238, 0.5)'
+    })};
   min-width: 186px;
   position: absolute;
   right: 0;
@@ -38,18 +46,24 @@ export const DropdownMenu = themed(styled.div`
   }
 
   &:after {
-    border-bottom-color: ${Colors.uiDark04};
+    border-bottom-color: ${themeStyle({
+      dark: Colors.uiDark04,
+      light: Colors.uiLight02
+    })};
     border-width: 7px;
     margin-right: -7px;
   }
   &:before {
-    border-bottom-color: ${Colors.uiDark06};
+    border-bottom-color: ${themeStyle({
+      dark: Colors.uiDark06,
+      light: Colors.uiLight05
+    })};
     border-width: 8px;
     margin-right: -8px;
   }
 `);
 
-export const Option = styled.button`
+export const Option = themed(styled.button`
   height: 36px;
   background: none;
   border: none;
@@ -62,4 +76,10 @@ export const Option = styled.button`
   font-weight: 600;
   line-height: 36px;
   padding: 0 10px;
-`;
+
+  &:not(:last-child) {
+    border-bottom: 1px solid ${themeStyle({
+      dark: Colors.uiDark06,
+      light: Colors.uiLight05
+    })}
+`);
