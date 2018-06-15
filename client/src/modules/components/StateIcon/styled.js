@@ -2,9 +2,10 @@ import styled, {css} from 'styled-components';
 import {
   StateIconIncident,
   StateOk,
-  StateCompleted
+  StateCompleted,
+  Stop
 } from 'modules/components/Icon';
-import {Colors} from 'modules/theme';
+import {Colors, themed, themeStyle} from 'modules/theme';
 
 const iconPosition = css`
   position: relative;
@@ -17,16 +18,31 @@ export const IncidentIcon = styled(StateIconIncident)`
   color: ${Colors.incidentsAndErrors};
 `;
 
-export const ActiveIcon = styled(StateOk)`
+export const ActiveIcon = themed(styled(StateOk)`
   ${iconPosition};
   color: ${Colors.allIsWell};
-`;
+`);
 
-export const CompletedIcon = styled(StateCompleted)`
+export const CompletedIcon = themed(styled(StateCompleted)`
   ${iconPosition};
-  color: ${Colors.allIsWell};
-`;
+  color: ${themeStyle({
+    dark: '#ffffff',
+    light: Colors.uiLight06
+  })};
+  opacity: ${themeStyle({
+    dark: '0.46',
+    light: '0.4'
+  })};
+`);
 
-export const CanceledIcon = styled(StateCompleted)`
+export const CanceledIcon = themed(styled(Stop)`
   ${iconPosition};
-`;
+  color: ${themeStyle({
+    dark: '#ffffff',
+    light: Colors.uiLight06
+  })};
+  opacity: ${themeStyle({
+    dark: '0.81',
+    light: '0.75'
+  })};
+`);
