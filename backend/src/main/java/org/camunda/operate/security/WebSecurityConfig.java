@@ -33,9 +33,9 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 @EnableWebSecurity
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
-  protected static final String COOKIE_JSESSIONID = "JSESSIONID";
-  protected static final String LOGIN_RESOURCE = "/api/login";
-  protected static final String LOGOUT_RESOURCE = "/api/logout";
+  public static final String COOKIE_JSESSIONID = "JSESSIONID";
+  public static final String LOGIN_RESOURCE = "/api/login";
+  public static final String LOGOUT_RESOURCE = "/api/logout";
 
   @Bean
   public UserDetailsService userDetailsService() {
