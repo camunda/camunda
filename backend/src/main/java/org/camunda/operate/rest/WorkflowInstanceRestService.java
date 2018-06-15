@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -33,13 +34,16 @@ public class WorkflowInstanceRestService {
 
   @PostMapping("/count")
   public CountResultDto queryWorkflowInstancesCount(@RequestBody WorkflowInstanceQueryDto workflowInstanceQuery) {
-    final long count = workflowInstanceReader.queryWorkflowInstancesCount(workflowInstanceQuery);
+    final long count = workflowInstanceReader.countWorkflowInstances(workflowInstanceQuery);
     return new CountResultDto(count);
   }
 
   @PostMapping
-  public List<WorkflowInstanceDto> queryWorkflowInstances(@RequestBody WorkflowInstanceQueryDto workflowInstanceQuery) {
-    final List<WorkflowInstanceEntity> workflowInstanceEntities = workflowInstanceReader.queryWorkflowInstances(workflowInstanceQuery);
+  public List<WorkflowInstanceDto> queryWorkflowInstances(
+      @RequestBody WorkflowInstanceQueryDto workflowInstanceQuery,
+      @RequestParam("firstResult") Integer firstResult,
+      @RequestParam("maxResults") Integer maxResults) {
+    final List<WorkflowInstanceEntity> workflowInstanceEntities = workflowInstanceReader.queryWorkflowInstances(workflowInstanceQuery, firstResult, maxResults);
     return WorkflowInstanceDto.createFrom(workflowInstanceEntities);
   }
 

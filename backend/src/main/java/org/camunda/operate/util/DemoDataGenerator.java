@@ -40,7 +40,7 @@ public class DemoDataGenerator {
 
     Random random = new Random();
 
-    final long count = workflowInstanceReader.queryWorkflowInstancesCount(new WorkflowInstanceQueryDto());
+    final long count = workflowInstanceReader.countWorkflowInstances(new WorkflowInstanceQueryDto());
     if (count == 0) {
 
       List<WorkflowInstanceEntity> workflowInstances = new ArrayList<>();

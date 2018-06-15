@@ -1,5 +1,9 @@
 package org.camunda.operate.es;
 
+import static org.camunda.operate.rest.WorkflowInstanceRestService.*;
+
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -23,7 +27,12 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonMappingException;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -33,6 +42,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @author Svetlana Dorokhova.
  */
 public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
+
+  protected static final String QUERY_URL = WORKFLOW_INSTANCE_URL;
+  protected static final String COUNT_URL = WORKFLOW_INSTANCE_URL + "/count";
 
   @Autowired
   private WorkflowInstanceWriter workflowInstanceWriter;
@@ -60,9 +72,12 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
     //query running instances
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setRunning(true);
-    mockMvc.perform(post("/api/workflow-instances/count/")
-      .content(this.json(workflowInstanceQueryDto))
-      .contentType(contentType))
+
+    MockHttpServletRequestBuilder request = post(COUNT_URL)
+      .content(json(workflowInstanceQueryDto))
+      .contentType(contentType);
+
+    mockMvc.perform(request)
       .andExpect(status().isOk())
       .andExpect(content().contentType(contentType))
       .andExpect(content().json("{\"count\":3}"));
@@ -73,16 +88,45 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
     //query running instances
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setRunning(true);
-    final MvcResult mvcResult =
-      mockMvc.perform(post("/api/workflow-instances/")
-        .content(this.json(workflowInstanceQueryDto))
-        .contentType(contentType))
+
+    MockHttpServletRequestBuilder request = post(query(0, 3))
+        .content(json(workflowInstanceQueryDto))
+        .contentType(contentType);
+
+    MvcResult mvcResult = mockMvc.perform(request)
         .andExpect(status().isOk())
-        .andExpect(content()
-          .contentType(contentType))
+        .andExpect(content().contentType(contentType))
         .andReturn();
-     List<WorkflowInstanceDto> workflowInstanceDtos = objectMapper.readValue(mvcResult.getResponse().getContentAsByteArray(), new TypeReference<List<WorkflowInstanceDto>>(){});
+
+     List<WorkflowInstanceDto> workflowInstanceDtos = fromResponse(mvcResult);
+
      assertThat(workflowInstanceDtos.size()).isEqualTo(3);
+
+     for (WorkflowInstanceDto workflowInstanceDto: workflowInstanceDtos) {
+       assertThat(workflowInstanceDto.getEndDate()).isNull();
+       assertThat(workflowInstanceDto.getState()).isEqualTo(WorkflowInstanceState.ACTIVE);
+     }
+  }
+
+  @Test
+  public void testPagination() throws Exception {
+    //query running instances
+    WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
+    workflowInstanceQueryDto.setRunning(true);
+
+    MockHttpServletRequestBuilder request = post(query(1, 3))
+        .content(json(workflowInstanceQueryDto))
+        .contentType(contentType);
+
+    MvcResult mvcResult = mockMvc.perform(request)
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(contentType))
+        .andReturn();
+
+     List<WorkflowInstanceDto> workflowInstanceDtos = fromResponse(mvcResult);
+
+     assertThat(workflowInstanceDtos.size()).isEqualTo(2);
+
      for (WorkflowInstanceDto workflowInstanceDto: workflowInstanceDtos) {
        assertThat(workflowInstanceDto.getEndDate()).isNull();
        assertThat(workflowInstanceDto.getState()).isEqualTo(WorkflowInstanceState.ACTIVE);
@@ -93,9 +137,12 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
   public void testQueryCompletedWorkflowInstancesCount() throws Exception {
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setCompleted(true);
-    mockMvc.perform(post("/api/workflow-instances/count/")
-      .content(this.json(workflowInstanceQueryDto))
-      .contentType(contentType))
+
+    MockHttpServletRequestBuilder request = post(COUNT_URL)
+      .content(json(workflowInstanceQueryDto))
+      .contentType(contentType);
+
+    mockMvc.perform(request)
       .andExpect(status().isOk())
       .andExpect(content().contentType(contentType))
       .andExpect(content().json("{\"count\":1}"));
@@ -105,15 +152,18 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
   public void testQueryCompletedWorkflowInstances() throws Exception {
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setCompleted(true);
-    final MvcResult mvcResult = mockMvc
-      .perform(post("/api/workflow-instances/")
-        .content(this.json(workflowInstanceQueryDto))
-        .contentType(contentType))
+
+    MockHttpServletRequestBuilder request = post(query(0, 3))
+      .content(json(workflowInstanceQueryDto))
+      .contentType(contentType);
+
+    MvcResult mvcResult = mockMvc.perform(request)
       .andExpect(status().isOk())
-      .andExpect(content()
-        .contentType(contentType))
+      .andExpect(content().contentType(contentType))
       .andReturn();
-    List<WorkflowInstanceDto> workflowInstanceDtos = objectMapper.readValue(mvcResult.getResponse().getContentAsByteArray(), new TypeReference<List<WorkflowInstanceDto>>(){});
+
+    List<WorkflowInstanceDto> workflowInstanceDtos = fromResponse(mvcResult);
+
     assertThat(workflowInstanceDtos.size()).isEqualTo(1);
     assertThat(workflowInstanceDtos.get(0).getEndDate()).isNotNull();
     assertThat(workflowInstanceDtos.get(0).getState()).isEqualTo(WorkflowInstanceState.COMPLETED);
@@ -123,9 +173,12 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
   public void testQueryWorkflowInstancesWithIncidentsCount() throws Exception {
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setWithIncidents(true);
-    mockMvc.perform(post("/api/workflow-instances/count/")
-      .content(this.json(workflowInstanceQueryDto))
-      .contentType(contentType))
+
+    MockHttpServletRequestBuilder request = post(COUNT_URL)
+      .content(json(workflowInstanceQueryDto))
+      .contentType(contentType);
+
+    mockMvc.perform(request)
       .andExpect(status().isOk())
       .andExpect(content().contentType(contentType))
       .andExpect(content().json("{\"count\":1}"));
@@ -135,17 +188,23 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
   public void testQueryWorkflowInstancesWithIncidents() throws Exception {
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setWithIncidents(true);
-    final MvcResult mvcResult = mockMvc
-      .perform(post("/api/workflow-instances/")
-        .content(this.json(workflowInstanceQueryDto))
-        .contentType(contentType))
+
+    MockHttpServletRequestBuilder request = post(query(0, 3))
+      .content(json(workflowInstanceQueryDto))
+      .contentType(contentType);
+
+    MvcResult mvcResult = mockMvc
+      .perform(request)
       .andExpect(status().isOk())
       .andExpect(content()
         .contentType(contentType))
       .andReturn();
-    List<WorkflowInstanceDto> workflowInstanceDtos = objectMapper.readValue(mvcResult.getResponse().getContentAsByteArray(), new TypeReference<List<WorkflowInstanceDto>>(){});
+
+    List<WorkflowInstanceDto> workflowInstanceDtos = fromResponse(mvcResult);
+
     assertThat(workflowInstanceDtos.size()).isEqualTo(1);
     assertThat(workflowInstanceDtos.get(0).getIncidents().size()).isEqualTo(2);
+
     IncidentDto activeIncident = null;
     for (IncidentDto incident: workflowInstanceDtos.get(0).getIncidents()) {
       if (incident.getState().equals(IncidentState.ACTIVE)) {
@@ -155,14 +214,16 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
     assertThat(activeIncident).isNotNull();
   }
 
-
   @Test
   public void testQueryWorkflowInstancesWithoutIncidentsCount() throws Exception {
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setWithoutIncidents(true);
-    mockMvc.perform(post("/api/workflow-instances/count/")
-      .content(this.json(workflowInstanceQueryDto))
-      .contentType(contentType))
+
+    MockHttpServletRequestBuilder request = post(COUNT_URL)
+      .content(json(workflowInstanceQueryDto))
+      .contentType(contentType);
+
+    mockMvc.perform(request)
       .andExpect(status().isOk())
       .andExpect(content().contentType(contentType))
       .andExpect(content().json("{\"count\":3}"));
@@ -172,16 +233,21 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
   public void testQueryWorkflowInstancesWithoutIncidents() throws Exception {
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setWithoutIncidents(true);
-    final MvcResult mvcResult = mockMvc
-      .perform(post("/api/workflow-instances/")
-        .content(this.json(workflowInstanceQueryDto))
-        .contentType(contentType))
+
+    MockHttpServletRequestBuilder request = post(query(0, 3))
+      .content(json(workflowInstanceQueryDto))
+      .contentType(contentType);
+
+    MvcResult mvcResult = mockMvc
+      .perform(request)
       .andExpect(status().isOk())
-      .andExpect(content()
-        .contentType(contentType))
+      .andExpect(content().contentType(contentType))
       .andReturn();
-    List<WorkflowInstanceDto> workflowInstanceDtos = objectMapper.readValue(mvcResult.getResponse().getContentAsByteArray(), new TypeReference<List<WorkflowInstanceDto>>(){});
+
+    List<WorkflowInstanceDto> workflowInstanceDtos = fromResponse(mvcResult);
+
     assertThat(workflowInstanceDtos.size()).isEqualTo(3);
+
     for (WorkflowInstanceDto workflowInstanceDto: workflowInstanceDtos) {
       IncidentDto activeIncident = null;
       for (IncidentDto incident : workflowInstanceDto.getIncidents()) {
@@ -210,8 +276,6 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
     super.refreshIndexesInElasticsearch();
   }
 
-
-
   private WorkflowInstanceEntity createWorkflowInstance(boolean completed) {
     WorkflowInstanceEntity workflowInstance = new WorkflowInstanceEntity();
     workflowInstance.setId(UUID.randomUUID().toString());
@@ -236,4 +300,11 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
     return incidentEntity;
   }
 
+  protected List<WorkflowInstanceDto> fromResponse(MvcResult result) throws JsonParseException, JsonMappingException, UnsupportedEncodingException, IOException {
+    return objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<List<WorkflowInstanceDto>>(){});
+  }
+
+  protected String query(int firstResult, int maxResults) {
+    return String.format("%s?firstResult=%d&maxResults=%d", QUERY_URL, firstResult, maxResults);
+  }
 }

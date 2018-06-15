@@ -9,9 +9,9 @@ import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
  */
 public interface WorkflowInstanceReader {
 
-  long queryWorkflowInstancesCount(WorkflowInstanceQueryDto workflowInstanceQuery);
+  long countWorkflowInstances(WorkflowInstanceQueryDto workflowInstanceQuery);
 
-  List<WorkflowInstanceEntity> queryWorkflowInstances(WorkflowInstanceQueryDto workflowInstanceQuery);
+  List<WorkflowInstanceEntity> queryWorkflowInstances(WorkflowInstanceQueryDto workflowInstanceQuery, Integer firstResult, Integer maxResults);
 
   WorkflowInstanceEntity getWorkflowInstanceById(String workflowInstanceId);
 
