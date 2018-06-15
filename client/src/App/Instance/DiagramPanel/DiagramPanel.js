@@ -1,22 +1,19 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 import Panel from 'modules/components/Panel';
 import Diagram from 'modules/components/Diagram';
-import {Colors} from 'modules/theme';
 
 import * as Styled from './styled';
 
-export default function DiagramPanel({instanceId}) {
+export default function DiagramPanel({instanceId, stateIcon}) {
   return (
     <Panel>
       <Panel.Header>
         <Styled.DiagramPanelHeader>
           <tbody>
             <tr>
-              <td>
-                <Styled.IncidentIcon color={Colors.incidentsAndErrors} />{' '}
-                Process_definition_name
-              </td>
+              <td>{stateIcon} Process_definition_name</td>
               <td>{instanceId}</td>
               <td>Flow Node</td>
               <td>12 Dec 2018 | 00:00:00</td>
@@ -34,3 +31,8 @@ export default function DiagramPanel({instanceId}) {
     </Panel>
   );
 }
+
+DiagramPanel.propTypes = {
+  instanceId: PropTypes.string.isRequired,
+  stateIcon: PropTypes.element.isRequired
+};

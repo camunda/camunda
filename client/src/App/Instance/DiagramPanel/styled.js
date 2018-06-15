@@ -1,7 +1,6 @@
 import styled from 'styled-components';
 
 import {Colors} from 'modules/theme';
-import {StateIconIncident} from 'modules/components/Icon';
 
 export const DiagramPanel = styled.div`
   display: flex;
@@ -21,10 +20,4 @@ export const IncidentMessage = styled.div`
   color: #ffffff;
   padding: 9px 20px;
   font-size: 14px;
-`;
-
-export const IncidentIcon = styled(StateIconIncident)`
-  position: relative;
-  top: 3px;
-  margin-right: 10px;
 `;
