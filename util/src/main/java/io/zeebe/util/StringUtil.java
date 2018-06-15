@@ -32,18 +32,7 @@ public final class StringUtil
 
     public static byte[] getBytes(final String value, final Charset charset)
     {
-        byte[] bytes = null;
-
-        try
-        {
-            bytes = value.getBytes(charset);
-        }
-        catch (final Exception e)
-        {
-            LangUtil.rethrowUnchecked(e);
-        }
-
-        return bytes;
+        return value.getBytes(charset);
     }
 
     public static String fromBytes(final byte[] bytes)
