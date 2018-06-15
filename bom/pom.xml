@@ -110,7 +110,7 @@
         <artifactId>zb-raft</artifactId>
         <version>${version.zb-raft}</version>
       </dependency>
-      
+
       <dependency>
         <groupId>io.zeebe</groupId>
         <artifactId>zb-gossip</artifactId>
@@ -156,9 +156,9 @@
   </dependencyManagement>
 
   <scm>
-    <url>https://github.com/zeebe-io/zb-bom</url>
-    <connection>scm:git:git@github.com:zeebe-io/zb-bom.git</connection>
-    <developerConnection>scm:git:git@github.com:zeebe-io/zb-bom.git</developerConnection>
+    <url>https://github.com/zeebe-io/zeebe</url>
+    <connection>scm:git:git@github.com:zeebe-io/zeebe.git</connection>
+    <developerConnection>scm:git:git@github.com:zeebe-io/zeebe.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 

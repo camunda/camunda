@@ -399,11 +399,4 @@
     </plugins>
   </build>
 
-  <scm>
-    <url>https://github.com/zeebe-io/zb-parent</url>
-    <connection>scm:git:git@github.com:zeebe-io/zb-parent.git</connection>
-    <developerConnection>scm:git:git@github.com:zeebe-io/zb-parent.git</developerConnection>
-    <tag>HEAD</tag>
-  </scm>
-
 </project>
