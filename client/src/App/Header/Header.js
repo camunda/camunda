@@ -11,12 +11,12 @@ import * as api from './api';
 
 export default class Header extends React.Component {
   static propTypes = {
-    active: PropTypes.oneOf(['dashboard', 'instances', 'detail']).isRequired,
+    active: PropTypes.oneOf(['dashboard', 'instances']),
     instances: PropTypes.number,
     filters: PropTypes.number,
     selections: PropTypes.number,
     incidents: PropTypes.number,
-    detail: PropTypes.string
+    detail: PropTypes.element
   };
 
   state = {
@@ -62,7 +62,7 @@ export default class Header extends React.Component {
         {props.filters > 0 && this.createBadgeEntry('Filters')}
         {props.selections > 0 && this.createBadgeEntry('Selections')}
         {props.incidents > 0 && this.createBadgeEntry('Incidents')}
-        {detail && <Styled.Detail>Instance {detail}</Styled.Detail>}
+        <Styled.Detail>{detail}</Styled.Detail>
         <Styled.ProfileDropdown>
           <Dropdown label={`${firstname} ${lastname}`}>
             <Dropdown.Option
