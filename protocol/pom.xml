@@ -9,26 +9,13 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zb-parent</artifactId>
-    <version>0.10.0</version>
-    <!-- do not remove empty tag - http://jira.codehaus.org/browse/MNG-4687 -->
-    <relativePath />
+    <version>0.11.0-SNAPSHOT</version>
+    <relativePath>../parent</relativePath>
   </parent>
 
   <properties>
     <protocol.version>1</protocol.version>
   </properties>
-
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>io.zeebe</groupId>
-        <artifactId>zb-bom</artifactId>
-        <version>${project.version}</version>
-        <scope>import</scope>
-        <type>pom</type>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
 
   <dependencies>
 
@@ -147,38 +134,5 @@
       </plugin>
     </plugins>
   </build>
-
-  <repositories>
-    <repository>
-      <id>zeebe</id>
-      <name>Zeebe Repository</name>
-      <url>https://app.camunda.com/nexus/content/repositories/zeebe-io/</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-
-    <repository>
-      <id>zeebe-snapshots</id>
-      <name>Zeebe Snapshot Repository</name>
-      <url>https://app.camunda.com/nexus/content/repositories/zeebe-io-snapshots/</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
-
-  <scm>
-    <url>https://github.com/zeebe-io/zb-protocol</url>
-    <connection>scm:git:git@github.com:zeebe-io/zb-protocol.git</connection>
-    <developerConnection>scm:git:git@github.com:zeebe-io/zb-protocol.git</developerConnection>
-    <tag>HEAD</tag>
-  </scm>
 
 </project>
