@@ -20,9 +20,6 @@ class ThemeProvider extends React.Component {
     this.setBodyBackground();
   }
 
-  // we start with the dark theme as default
-  state = {theme: THEME_NAME.DARK, toggleTheme: this.toggleTheme};
-
   toggleTheme = () => {
     this.setState({
       theme:
@@ -42,6 +39,9 @@ class ThemeProvider extends React.Component {
       }
     `;
   };
+
+  // we start with the dark theme as default
+  state = {theme: THEME_NAME.DARK, toggleTheme: this.toggleTheme};
 
   render() {
     return (
