@@ -1,8 +1,8 @@
 import styled from 'styled-components';
 import Input from 'modules/components/Input';
-import {Colors} from 'modules/theme';
+import {Colors, themed, themeStyle} from 'modules/theme';
 
-export const H1 = styled.h1`
+export const H1 = themed(styled.h1`
   align-self: center;
   width: 134px;
   height: 47px;
@@ -11,8 +11,11 @@ export const H1 = styled.h1`
   font-size: 36px;
   font-weight: 500;
   font-style: normal;
-  color: #ffffff;
-`;
+  color: ${themeStyle({
+    dark: '#ffffff',
+    light: Colors.uiLight06
+  })};
+`);
 
 export const Login = styled.form`
   display: flex;
@@ -22,9 +25,9 @@ export const Login = styled.form`
   font-family: IBMPlexSans;
 `;
 
-export const LoginInput = styled(Input)`
+export const LoginInput = themed(styled(Input)`
   margin-bottom: 10px;
-`;
+`);
 
 export const FormError = styled.span`
   font-family: IBMPlexSans;
