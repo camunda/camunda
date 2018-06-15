@@ -73,38 +73,5 @@
 
   </dependencies>
 
-  <repositories>
-    <repository>
-      <id>zeebe</id>
-      <name>zeebe repository</name>
-      <url>https://app.camunda.com/nexus/content/repositories/zeebe-io/</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-
-    <repository>
-      <id>zeebe-snapshots</id>
-      <name>zeebe snapshot repository</name>
-      <url>https://app.camunda.com/nexus/content/repositories/zeebe-io-snapshots/</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
-
-  <scm>
-    <url>https://github.com/zeebe-io/zb-service-container</url>
-    <connection>scm:git:git@github.com:zeebe-io/zb-service-container.git</connection>
-    <developerConnection>scm:git:git@github.com:zeebe-io/zb-service-container.git</developerConnection>
-    <tag>HEAD</tag>
-  </scm>
-
 </project>
 
