@@ -1,0 +1,93 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.zeebe.util.sched.channel;
+
+import static org.agrona.UnsafeAccess.UNSAFE;
+
+import io.zeebe.util.sched.*;
+
+@SuppressWarnings("restriction")
+public class ChannelConsumerCondition implements ActorCondition, ActorSubscription, ChannelSubscription
+{
+    private static final long TRIGGER_COUNT_OFFSET;
+
+    private volatile long triggerCount = 0;
+    private long processedTiggersCount = 0;
+
+    private final ConsumableChannel channel;
+    private final ActorJob job;
+    private final ActorTask task;
+
+    static
+    {
+        try
+        {
+            TRIGGER_COUNT_OFFSET = UNSAFE.objectFieldOffset(ChannelConsumerCondition.class.getDeclaredField("triggerCount"));
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+    public ChannelConsumerCondition(ActorJob job, ConsumableChannel channel)
+    {
+        this.job = job;
+        this.task = job.getTask();
+        this.channel = channel;
+    }
+
+    @Override
+    public boolean poll()
+    {
+        final long polledCount = this.triggerCount;
+        final boolean hasAvailable = channel.hasAvailable();
+        return polledCount > processedTiggersCount || hasAvailable;
+    }
+
+    @Override
+    public void signal()
+    {
+        UNSAFE.getAndAddLong(this, TRIGGER_COUNT_OFFSET, 1);
+        task.tryWakeup();
+    }
+
+    @Override
+    public void onJobCompleted()
+    {
+        this.processedTiggersCount++;
+    }
+
+    @Override
+    public ActorJob getJob()
+    {
+        return job;
+    }
+
+    @Override
+    public boolean isRecurring()
+    {
+        return true;
+    }
+
+    @Override
+    public void cancel()
+    {
+        channel.removeConsumer(this);
+        task.onSubscriptionCancelled(this);
+    }
+}

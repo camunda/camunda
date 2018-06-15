@@ -31,6 +31,9 @@
     <module>gossip</module>
     <module>raft</module>
     <module>test</module>
+    <module>util</module>
+    <module>test-util</module>
+    <module>zb-map</module>
   </modules>
 
   <repositories>
