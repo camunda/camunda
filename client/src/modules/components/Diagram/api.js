@@ -147,6 +147,6 @@ const XML = `<?xml version="1.0" encoding="UTF-8"?>
   </bpmndi:BPMNDiagram>
 </definitions>
 `;
-export const getXML = async () => {
+export const getWorkflowXML = async workflowDefinitionId => {
   return Promise.resolve(XML);
 };

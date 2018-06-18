@@ -5,31 +5,33 @@ import BPMNViewer from 'bpmn-js/lib/NavigatedViewer';
 import * as Styled from './styled';
 import DiagramControls from './DiagramControls';
 import {Colors, themed, themeStyle} from 'modules/theme';
-import {getXML} from './api';
+import * as api from './api';
 
 class Diagram extends React.Component {
   static propTypes = {
-    theme: PropTypes.string.isRequired
+    theme: PropTypes.string.isRequired,
+    workflowDefinitionId: PropTypes.string.isRequired
   };
 
-  containerNode = null;
-  Viewer = null;
+  constructor(props) {
+    super(props);
+    this.containerNode = null;
+    this.Viewer = null;
+  }
 
   async componentDidMount() {
-    const xml = await getXML();
+    const xml = await api.getWorkflowXML(this.props.workflowDefinitionId);
 
     // colors config for bpmnRenderer
-    const defaultFillColor = themeStyle({
-      dark: Colors.uiDark02,
-      light: Colors.uiLight04
-    })(this.props);
-    const defaultStrokeColor = themeStyle({
-      dark: Colors.darkDiagram,
-      light: Colors.uiLight06
-    })(this.props);
     const bpmnRenderer = {
-      defaultFillColor,
-      defaultStrokeColor
+      defaultFillColor: themeStyle({
+        dark: Colors.uiDark02,
+        light: Colors.uiLight04
+      })(this.props),
+      defaultStrokeColor: themeStyle({
+        dark: Colors.darkDiagram,
+        light: Colors.uiLight06
+      })(this.props)
     };
 
     this.Viewer = new BPMNViewer({
