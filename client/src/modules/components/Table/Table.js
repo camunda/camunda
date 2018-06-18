@@ -38,6 +38,10 @@ export default class Table extends React.Component {
 
   renderBody() {
     const {data} = this.props;
+    if (!data || data.length === 0) {
+      return null;
+    }
+
     const order = this.getOrder();
 
     const selectionCheck = this.props.config.selectionCheck || (() => false);
