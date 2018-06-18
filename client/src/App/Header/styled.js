@@ -12,14 +12,14 @@ export const Header = themed(styled.header`
   background-color: ${themeStyle({
     dark: Colors.uiDark01,
     light: Colors.uiLight01
-  })}
+  })};
   padding: 9px 20px 0 20px;
   font-size: 15px;
   font-weight: 600;
   color: ${themeStyle({
     dark: '#ffffff',
     light: Colors.uiLight06
-  })}
+  })};
   line-height: 19px;
   & > span {
     vertical-align: text-bottom;
