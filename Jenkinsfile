@@ -6,6 +6,8 @@
 def static NODE_POOL() { return "slaves" }
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.5.3-jdk-8-alpine" }
 def static NODEJS_DOCKER_IMAGE() { return "node:8.11.2-alpine" }
+def static ELASTICSEARCH_DOCKER_IMAGE() { return "docker.elastic.co/elasticsearch/elasticsearch-oss:6.2.4" }
+def static ZEEBE_DOCKER_IMAGE() { return "camunda/zeebe:0.10.1" }
 def static DIND_DOCKER_IMAGE() { return "docker:18.03.1-ce-dind" }
 def static OPERATE_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-operate" }
 
@@ -80,7 +82,7 @@ spec:
         cpu: 1
         memory: 1Gi
   - name: elasticsearch
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.2.4
+    image: ${ELASTICSEARCH_DOCKER_IMAGE()}
     env:
     - name: ES_JAVA_OPTS
       value: "-Xms1g -Xmx1g"
@@ -111,6 +113,34 @@ spec:
       requests:
         cpu: 1
         memory: 3Gi
+  - name: zeebe
+    image: ${ZEEBE_DOCKER_IMAGE()}
+    env:
+      - name: ZEEBE_HOST
+        value: localhost
+      - name: JAVA_TOOL_OPTIONS
+        value: |
+          -XX:+UnlockExperimentalVMOptions
+          -XX:+UseCGroupMemoryLimitForHeap
+          -Xms512m
+          -Xmx512m
+    ports:
+    - containerPort: 51015
+      name: zeebe-broker
+      protocol: TCP
+    - containerPort: 51016
+      name: zeebe-raft
+      protocol: TCP
+    - containerPort: 51017
+      name: zeebe-gossip
+      protocol: TCP
+    resources:
+      limits:
+        cpu: 1
+        memory: 1Gi
+      requests:
+        cpu: 1
+        memory: 1Gi
   - name: docker
     image: ${DIND_DOCKER_IMAGE()}
     args: ["--storage-driver=overlay2"]
