@@ -14,7 +14,9 @@ export default function DiagramPanel({instance, stateIcon}) {
         <Styled.DiagramPanelHeader>
           <tbody>
             <tr>
-              <td>{stateIcon} Process_definition_name</td>
+              <td>
+                {stateIcon} {instance.workflowDefinitionId}
+              </td>
               <td>{instance.id}</td>
               <td>Flow Node</td>
               <td>{formatDate(instance.startDate)}</td>
@@ -24,7 +26,7 @@ export default function DiagramPanel({instance, stateIcon}) {
         </Styled.DiagramPanelHeader>
       </Panel.Header>
       <Panel.Body>
-        {instance.instanceState === 'INCIDENT' && (
+        {instance.stateName === 'INCIDENT' && (
           <Styled.IncidentMessage>
             <strong>Incident:</strong> {instance.errorMessage}
           </Styled.IncidentMessage>
@@ -40,7 +42,7 @@ DiagramPanel.propTypes = {
     id: PropTypes.string.isRequired,
     startDate: PropTypes.string.isRequired,
     endDate: PropTypes.string,
-    instanceState: PropTypes.string.isRequired,
+    stateName: PropTypes.string.isRequired,
     errorMessage: PropTypes.string
   }),
   stateIcon: PropTypes.element.isRequired

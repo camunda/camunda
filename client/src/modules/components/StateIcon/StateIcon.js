@@ -5,8 +5,8 @@ import {themed} from 'modules/theme';
 
 import * as Styled from './styled';
 
-function StateIcon({instanceState, toggleTheme, ...props}) {
-  switch (instanceState) {
+function StateIcon({stateName, toggleTheme, ...props}) {
+  switch (stateName) {
     case 'INCIDENT':
       return <Styled.IncidentIcon {...props} />;
     case 'ACTIVE':
@@ -21,6 +21,6 @@ function StateIcon({instanceState, toggleTheme, ...props}) {
 export default themed(StateIcon);
 
 StateIcon.propTypes = {
-  instanceState: PropTypes.string.isRequired,
+  stateName: PropTypes.string.isRequired,
   theme: PropTypes.string.isRequired
 };

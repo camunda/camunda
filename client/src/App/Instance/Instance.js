@@ -51,7 +51,7 @@ export default class Instance extends Component {
       workflowDefinitionId,
       startDate,
       endDate,
-      instanceState: state
+      stateName: state
     };
 
     if (state === 'COMPLETED' || state === 'CANCELLED') {
@@ -70,7 +70,7 @@ export default class Instance extends Component {
 
     instanceStats = {
       ...instanceStats,
-      instanceState: 'INCIDENT',
+      stateName: 'INCIDENT',
       errorMessage: activeIncident.errorMessage
     };
 
@@ -83,8 +83,8 @@ export default class Instance extends Component {
     }
 
     const instanceId = this.props.match.params.id;
-    const {instanceState} = this.state.instance;
-    const stateIcon = <StateIcon instanceState={instanceState} />;
+    const {stateName} = this.state.instance;
+    const stateIcon = <StateIcon stateName={stateName} />;
 
     return (
       <Fragment>
