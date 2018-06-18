@@ -29,7 +29,7 @@ export default class Dropdown extends React.Component {
   render() {
     return (
       <Styled.Dropdown innerRef={this.storeContainer}>
-        <Styled.Label onClick={this.toggleOpen}>
+        <Styled.Label data-test-id="dropdown-label" onClick={this.toggleOpen}>
           {this.props.label}
         </Styled.Label>
         {this.state.open && (

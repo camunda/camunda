@@ -1,5 +1,4 @@
 import React from 'react';
-import update from 'immutability-helper';
 
 import Panel from 'modules/components/Panel';
 import InstancesList from './InstancesList';
