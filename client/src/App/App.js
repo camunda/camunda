@@ -10,6 +10,9 @@ import Dashboard from './Dashboard';
 import Filter from './Filter';
 import Instance from './Instance';
 
+// Development Utility Component to test the theming.
+import ThemeToggle from 'modules/theme/ThemeToggle';
+
 const Home = () => (
   <React.Fragment>
     <Header
@@ -32,6 +35,7 @@ const FilterPage = () => (
 export default function App(props) {
   return (
     <ThemeProvider>
+      <ThemeToggle />
       <Router>
         <Authentication>
           <Route path="/login" component={Login} />

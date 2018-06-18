@@ -1,5 +1,4 @@
 import React from 'react';
-import {injectGlobal} from 'styled-components';
 
 import {Colors} from './index';
 
@@ -34,13 +33,8 @@ class ThemeProvider extends React.Component {
 
   setBodyBackground = () => {
     const {theme} = this.state;
-    injectGlobal`
-      body{
-        background: ${
-          theme === THEME_NAME.DARK ? Colors.uiDark01 : Colors.uiLight01
-        }
-      }
-    `;
+    document.body.style.backgroundColor =
+      theme === THEME_NAME.DARK ? Colors.uiDark01 : Colors.uiLight01;
   };
 
   render() {
