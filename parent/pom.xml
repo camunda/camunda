@@ -384,7 +384,9 @@
             </execution>
           </executions>
           <configuration>
-            <additionalSourceDirectories>${project.basedir}/src/test/jmh</additionalSourceDirectories>
+            <additionalSourceDirectories>
+                <additionalSourceDirectory>${project.basedir}/src/test/jmh</additionalSourceDirectory>
+            </additionalSourceDirectories>
           </configuration>
         </plugin>
 
