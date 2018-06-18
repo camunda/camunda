@@ -189,7 +189,7 @@ pipeline {
             container('maven') {
               sh '''
                 cd ./backend
-                mvn install -P -docker -B -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+                mvn verify -P -docker -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
               '''
             }
           }
