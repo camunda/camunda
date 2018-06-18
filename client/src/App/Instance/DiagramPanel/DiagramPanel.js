@@ -18,7 +18,6 @@ export default function DiagramPanel({instance, stateIcon}) {
                 {stateIcon} {instance.workflowDefinitionId}
               </td>
               <td>{instance.id}</td>
-              <td>Flow Node</td>
               <td>{formatDate(instance.startDate)}</td>
               <td>{formatDate(instance.endDate)}</td>
             </tr>
@@ -31,7 +30,7 @@ export default function DiagramPanel({instance, stateIcon}) {
             <strong>Incident:</strong> {instance.errorMessage}
           </Styled.IncidentMessage>
         )}
-        <Diagram />
+        <Diagram workflowDefinitionId={instance.workflowDefinitionId} />
       </Panel.Body>
     </Panel>
   );
