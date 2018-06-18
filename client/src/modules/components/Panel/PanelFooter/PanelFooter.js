@@ -3,8 +3,9 @@ import PropTypes from 'prop-types';
 
 import * as Styled from './styled.js';
 
-export default function PanelFooter({children}) {
-  return <Styled.Footer>{children}</Styled.Footer>;
+export default function PanelFooter(props) {
+  const {children} = props;
+  return <Styled.Footer {...props}>{children}</Styled.Footer>;
 }
 
 PanelFooter.propTypes = {

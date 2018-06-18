@@ -1,4 +1,5 @@
 import styled from 'styled-components';
+import Panel from 'modules/components/Panel';
 
 import {HEADER_HEIGHT} from './../Header/styled';
 
@@ -20,4 +21,9 @@ export const Top = styled.div`
 export const Bottom = styled.div`
   flex-grow: 1;
   display: flex;
+`;
+
+export const PanelFooter = styled(Panel.Footer)`
+  display: flex;
+  justify-content: flex-end;
 `;

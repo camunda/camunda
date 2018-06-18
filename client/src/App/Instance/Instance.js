@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 
 import Panel from 'modules/components/Panel';
 import StateIcon from 'modules/components/StateIcon';
+import Copyright from 'modules/components/Copyright';
 
 import Header from '../Header';
 import DiagramPanel from './DiagramPanel';
@@ -112,6 +113,9 @@ export default class Instance extends Component {
                 Instance history
               </Panel.Header>
               <Panel.Body />
+              <Styled.PanelFooter>
+                <Copyright />
+              </Styled.PanelFooter>
             </Panel>
           </Styled.Bottom>
         </Styled.Instance>

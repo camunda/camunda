@@ -2,7 +2,6 @@ import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
 export const Footer = themed(styled.div`
-  display: flex;
   height: 38px;
   width: 100%;
   padding: 10px 20px;
