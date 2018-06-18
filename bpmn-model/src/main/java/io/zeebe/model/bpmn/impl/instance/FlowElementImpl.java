@@ -18,89 +18,77 @@ package io.zeebe.model.bpmn.impl.instance;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
-import javax.xml.bind.annotation.*;
-
 import io.zeebe.model.bpmn.BpmnAspect;
 import io.zeebe.model.bpmn.BpmnConstants;
 import io.zeebe.model.bpmn.instance.FlowElement;
+import javax.xml.bind.annotation.*;
 import org.agrona.DirectBuffer;
 
-public class FlowElementImpl extends BaseElement implements FlowElement
-{
-    private DirectBuffer id;
-    private DirectBuffer name;
+public class FlowElementImpl extends BaseElement implements FlowElement {
+  private DirectBuffer id;
+  private DirectBuffer name;
 
-    private ExtensionElementsImpl extensionElements;
+  private ExtensionElementsImpl extensionElements;
 
-    private BpmnAspect bpmnAspect = BpmnAspect.NONE;
+  private BpmnAspect bpmnAspect = BpmnAspect.NONE;
 
-    @XmlID
-    @XmlAttribute(name = BpmnConstants.BPMN_ATTRIBUTE_ID, required = true)
-    public void setId(String id)
-    {
-        this.id = wrapString(id);
-    }
+  @XmlID
+  @XmlAttribute(name = BpmnConstants.BPMN_ATTRIBUTE_ID, required = true)
+  public void setId(String id) {
+    this.id = wrapString(id);
+  }
 
-    public String getId()
-    {
-        return id != null ? bufferAsString(id) : null;
-    }
+  public String getId() {
+    return id != null ? bufferAsString(id) : null;
+  }
 
-    @XmlAttribute(name = BpmnConstants.BPMN_ATTRIBUTE_NAME)
-    public void setName(String name)
-    {
-        this.name = wrapString(name);
-    }
+  @XmlAttribute(name = BpmnConstants.BPMN_ATTRIBUTE_NAME)
+  public void setName(String name) {
+    this.name = wrapString(name);
+  }
 
-    public String getName()
-    {
-        return name != null ? bufferAsString(name) : null;
-    }
+  public String getName() {
+    return name != null ? bufferAsString(name) : null;
+  }
 
-    @XmlElement(name = BpmnConstants.BPMN_ELEMENT_EXTENSION_ELEMENTS, namespace = BpmnConstants.BPMN20_NS)
-    public void setExtensionElements(ExtensionElementsImpl extensionElements)
-    {
-        this.extensionElements = extensionElements;
-    }
+  @XmlElement(
+      name = BpmnConstants.BPMN_ELEMENT_EXTENSION_ELEMENTS,
+      namespace = BpmnConstants.BPMN20_NS)
+  public void setExtensionElements(ExtensionElementsImpl extensionElements) {
+    this.extensionElements = extensionElements;
+  }
 
-    public ExtensionElementsImpl getExtensionElements()
-    {
-        return extensionElements;
-    }
+  public ExtensionElementsImpl getExtensionElements() {
+    return extensionElements;
+  }
 
-    @Override
-    public DirectBuffer getIdAsBuffer()
-    {
-        return id;
-    }
+  @Override
+  public DirectBuffer getIdAsBuffer() {
+    return id;
+  }
 
-    public DirectBuffer getNameAsBuffer()
-    {
-        return name;
-    }
+  public DirectBuffer getNameAsBuffer() {
+    return name;
+  }
 
-    @Override
-    public BpmnAspect getBpmnAspect()
-    {
-        return bpmnAspect;
-    }
+  @Override
+  public BpmnAspect getBpmnAspect() {
+    return bpmnAspect;
+  }
 
-    @XmlTransient
-    public void setBpmnAspect(BpmnAspect bpmnAspect)
-    {
-        this.bpmnAspect = bpmnAspect;
-    }
+  @XmlTransient
+  public void setBpmnAspect(BpmnAspect bpmnAspect) {
+    this.bpmnAspect = bpmnAspect;
+  }
 
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("FlowElement [id=");
-        builder.append(getId());
-        builder.append(", name=");
-        builder.append(getName());
-        builder.append("]");
-        return builder.toString();
-    }
-
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("FlowElement [id=");
+    builder.append(getId());
+    builder.append(", name=");
+    builder.append(getName());
+    builder.append("]");
+    return builder.toString();
+  }
 }

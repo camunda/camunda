@@ -23,128 +23,116 @@ import io.zeebe.client.impl.record.*;
 import io.zeebe.util.CheckedConsumer;
 import org.agrona.collections.Long2LongHashMap;
 
-public class TopicSubscriptionSpec
-{
+public class TopicSubscriptionSpec {
 
-    protected final String topic;
-    protected final boolean forceStart;
-    protected final String name;
-    protected final int bufferSize;
-    protected final long defaultStartPosition;
-    protected final Long2LongHashMap startPositions;
+  protected final String topic;
+  protected final boolean forceStart;
+  protected final String name;
+  protected final int bufferSize;
+  protected final long defaultStartPosition;
+  protected final Long2LongHashMap startPositions;
 
-    protected final CheckedConsumer<UntypedRecordImpl> handler;
-    protected final BiEnumMap<RecordType, ValueType, CheckedConsumer<RecordImpl>> handlers;
-    protected final RecordHandler defaultHandler;
+  protected final CheckedConsumer<UntypedRecordImpl> handler;
+  protected final BiEnumMap<RecordType, ValueType, CheckedConsumer<RecordImpl>> handlers;
+  protected final RecordHandler defaultHandler;
 
-    public TopicSubscriptionSpec(
-            String topic,
-            long defaultStartPosition,
-            Long2LongHashMap startPositions,
-            boolean forceStart,
-            String name,
-            int bufferSize,
-            BiEnumMap<RecordType, ValueType, CheckedConsumer<RecordImpl>> handlers,
-            RecordHandler defaultHandler)
-    {
-        this.topic = topic;
-        this.defaultStartPosition = defaultStartPosition;
-        this.startPositions = startPositions;
-        this.forceStart = forceStart;
-        this.name = name;
-        this.bufferSize = bufferSize;
+  public TopicSubscriptionSpec(
+      String topic,
+      long defaultStartPosition,
+      Long2LongHashMap startPositions,
+      boolean forceStart,
+      String name,
+      int bufferSize,
+      BiEnumMap<RecordType, ValueType, CheckedConsumer<RecordImpl>> handlers,
+      RecordHandler defaultHandler) {
+    this.topic = topic;
+    this.defaultStartPosition = defaultStartPosition;
+    this.startPositions = startPositions;
+    this.forceStart = forceStart;
+    this.name = name;
+    this.bufferSize = bufferSize;
 
-        this.handlers = handlers;
-        this.defaultHandler = defaultHandler;
+    this.handlers = handlers;
+    this.defaultHandler = defaultHandler;
 
-        this.handler = this::dispatchRecord;
+    this.handler = this::dispatchRecord;
+  }
+
+  @SuppressWarnings("unchecked")
+  protected <T extends RecordImpl> void dispatchRecord(UntypedRecordImpl record) throws Exception {
+    final RecordMetadataImpl metadata = record.getMetadata();
+    final ValueType valueType = metadata.getValueType();
+    final RecordType recordType = metadata.getRecordType();
+
+    final Class<T> targetClass = RecordClassMapping.getRecordImplClass(recordType, valueType);
+
+    if (targetClass == null) {
+      throw new ClientException(
+          "Cannot deserialize record "
+              + recordType
+              + "/"
+              + valueType
+              + ": No POJO class registered");
     }
 
-    @SuppressWarnings("unchecked")
-    protected <T extends RecordImpl> void dispatchRecord(UntypedRecordImpl record) throws Exception
-    {
-        final RecordMetadataImpl metadata = record.getMetadata();
-        final ValueType valueType = metadata.getValueType();
-        final RecordType recordType = metadata.getRecordType();
+    final T typedRecord = record.asRecordType(targetClass);
+    typedRecord.updateMetadata(record.getMetadata());
 
-        final Class<T> targetClass = RecordClassMapping.getRecordImplClass(recordType, valueType);
+    final CheckedConsumer<T> handler = (CheckedConsumer<T>) handlers.get(recordType, valueType);
 
-        if (targetClass == null)
-        {
-            throw new ClientException("Cannot deserialize record " + recordType + "/" + valueType + ": No POJO class registered");
-        }
-
-        final T typedRecord = record.asRecordType(targetClass);
-        typedRecord.updateMetadata(record.getMetadata());
-
-        final CheckedConsumer<T> handler = (CheckedConsumer<T>) handlers.get(recordType, valueType);
-
-        if (handler != null)
-        {
-            handler.accept(typedRecord);
-        }
-        else if (defaultHandler != null)
-        {
-            defaultHandler.onRecord(typedRecord);
-        }
+    if (handler != null) {
+      handler.accept(typedRecord);
+    } else if (defaultHandler != null) {
+      defaultHandler.onRecord(typedRecord);
     }
+  }
 
-    public String getTopic()
-    {
-        return topic;
-    }
+  public String getTopic() {
+    return topic;
+  }
 
-    public CheckedConsumer<UntypedRecordImpl> getHandler()
-    {
-        return handler;
-    }
+  public CheckedConsumer<UntypedRecordImpl> getHandler() {
+    return handler;
+  }
 
-    public long getStartPosition(int partitionId)
-    {
-        if (startPositions.containsKey(partitionId))
-        {
-            return startPositions.get(partitionId);
-        }
-        else
-        {
-            return defaultStartPosition;
-        }
+  public long getStartPosition(int partitionId) {
+    if (startPositions.containsKey(partitionId)) {
+      return startPositions.get(partitionId);
+    } else {
+      return defaultStartPosition;
     }
+  }
 
-    public boolean isForceStart()
-    {
-        return forceStart;
-    }
-    public String getName()
-    {
-        return name;
-    }
-    public int getBufferSize()
-    {
-        return bufferSize;
-    }
+  public boolean isForceStart() {
+    return forceStart;
+  }
 
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("[topic=");
-        builder.append(topic);
-        builder.append(", handler=");
-        builder.append(handler);
-        builder.append(", defaultStartPosition=");
-        builder.append(defaultStartPosition);
-        builder.append(", startPositions=");
-        builder.append(startPositions);
-        builder.append(", forceStart=");
-        builder.append(forceStart);
-        builder.append(", name=");
-        builder.append(name);
-        builder.append(", bufferSize=");
-        builder.append(bufferSize);
-        builder.append("]");
-        return builder.toString();
-    }
+  public String getName() {
+    return name;
+  }
 
+  public int getBufferSize() {
+    return bufferSize;
+  }
 
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("[topic=");
+    builder.append(topic);
+    builder.append(", handler=");
+    builder.append(handler);
+    builder.append(", defaultStartPosition=");
+    builder.append(defaultStartPosition);
+    builder.append(", startPositions=");
+    builder.append(startPositions);
+    builder.append(", forceStart=");
+    builder.append(forceStart);
+    builder.append(", name=");
+    builder.append(name);
+    builder.append(", bufferSize=");
+    builder.append(bufferSize);
+    builder.append("]");
+    return builder.toString();
+  }
 }

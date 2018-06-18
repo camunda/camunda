@@ -19,113 +19,87 @@ package io.zeebe.broker;
 
 import static java.lang.Runtime.getRuntime;
 
+import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Scanner;
 
-import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.util.FileUtil;
+public class StandaloneBroker {
+  private static String tempFolder;
 
-public class StandaloneBroker
-{
-    private static String tempFolder;
+  public static void main(String[] args) {
+    final Broker broker;
 
-    public static void main(String[] args)
-    {
-        final Broker broker;
+    if (args.length == 1) {
+      broker = startBrokerFromConfiguration(args);
+    } else {
+      broker = startDefaultBrokerInTempDirectory();
+    }
 
-        if (args.length == 1)
-        {
-            broker = startBrokerFromConfiguration(args);
-        }
-        else
-        {
-            broker = startDefaultBrokerInTempDirectory();
-        }
-
-        getRuntime().addShutdownHook(new Thread("Broker close Thread")
-        {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    if (broker != null)
-                    {
-                        broker.close();
-                    }
+    getRuntime()
+        .addShutdownHook(
+            new Thread("Broker close Thread") {
+              @Override
+              public void run() {
+                try {
+                  if (broker != null) {
+                    broker.close();
+                  }
+                } finally {
+                  deleteTempDirectory();
                 }
-                finally
-                {
-                    deleteTempDirectory();
-                }
-            }
+              }
+            });
 
-        });
-
-        try (Scanner scanner = new Scanner(System.in))
-        {
-            while (scanner.hasNextLine())
-            {
-                final String nextLine = scanner.nextLine();
-                if (nextLine.contains("exit")
-                    || nextLine.contains("close")
-                    || nextLine.contains("quit")
-                    || nextLine.contains("halt")
-                    || nextLine.contains("shutdown")
-                    || nextLine.contains("stop"))
-                {
-                    System.exit(0);
-                }
-            }
+    try (Scanner scanner = new Scanner(System.in)) {
+      while (scanner.hasNextLine()) {
+        final String nextLine = scanner.nextLine();
+        if (nextLine.contains("exit")
+            || nextLine.contains("close")
+            || nextLine.contains("quit")
+            || nextLine.contains("halt")
+            || nextLine.contains("shutdown")
+            || nextLine.contains("stop")) {
+          System.exit(0);
         }
+      }
+    }
+  }
 
+  private static Broker startBrokerFromConfiguration(String[] args) {
+    String basePath = System.getProperty("basedir");
+
+    if (basePath == null) {
+      basePath = Paths.get(".").toAbsolutePath().normalize().toString();
     }
 
-    private static Broker startBrokerFromConfiguration(String[] args)
-    {
-        String basePath = System.getProperty("basedir");
+    return new Broker(args[0], basePath, null);
+  }
 
-        if (basePath == null)
-        {
-            basePath = Paths.get(".").toAbsolutePath().normalize().toString();
-        }
+  private static Broker startDefaultBrokerInTempDirectory() {
+    Loggers.SYSTEM_LOGGER.info("No configuration file specified. Using default configuration.");
 
-        return new Broker(args[0], basePath, null);
+    try {
+      tempFolder = Files.createTempDirectory("zeebe").toAbsolutePath().normalize().toString();
+
+      final BrokerCfg cfg = new BrokerCfg();
+      cfg.setBootstrap(1);
+
+      return new Broker(cfg, tempFolder, null);
+    } catch (IOException e) {
+      throw new RuntimeException("Could not start broker", e);
     }
+  }
 
-    private static Broker startDefaultBrokerInTempDirectory()
-    {
-        Loggers.SYSTEM_LOGGER.info("No configuration file specified. Using default configuration.");
-
-        try
-        {
-            tempFolder = Files.createTempDirectory("zeebe").toAbsolutePath().normalize().toString();
-
-            final BrokerCfg cfg = new BrokerCfg();
-            cfg.setBootstrap(1);
-
-            return new Broker(cfg, tempFolder, null);
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException("Could not start broker", e);
-        }
+  private static void deleteTempDirectory() {
+    if (tempFolder != null) {
+      try {
+        FileUtil.deleteFolder(tempFolder);
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
     }
-
-    private static void deleteTempDirectory()
-    {
-        if (tempFolder != null)
-        {
-            try
-            {
-                FileUtil.deleteFolder(tempFolder);
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace();
-            }
-        }
-    }
+  }
 }

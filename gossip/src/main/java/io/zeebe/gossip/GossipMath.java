@@ -17,25 +17,19 @@ package io.zeebe.gossip;
 
 import java.time.Duration;
 
-public class GossipMath
-{
+public class GossipMath {
 
-    public static int gossipPeriodsToSpread(int repeatMult, int clusterSize)
-    {
-        return repeatMult * ceilLog2(clusterSize);
-    }
+  public static int gossipPeriodsToSpread(int repeatMult, int clusterSize) {
+    return repeatMult * ceilLog2(clusterSize);
+  }
 
-    public static Duration suspicionTimeout(int suspicionMult, int clusterSize, Duration pingInterval)
-    {
-        return pingInterval.multipliedBy(suspicionMult * ceilLog2(clusterSize));
-    }
+  public static Duration suspicionTimeout(
+      int suspicionMult, int clusterSize, Duration pingInterval) {
+    return pingInterval.multipliedBy(suspicionMult * ceilLog2(clusterSize));
+  }
 
-    /**
-     * Returns ceil(log2(n + 1)).
-     */
-    protected static int ceilLog2(int num)
-    {
-        return 32 - Integer.numberOfLeadingZeros(num);
-    }
-
+  /** Returns ceil(log2(n + 1)). */
+  protected static int ceilLog2(int num) {
+    return 32 - Integer.numberOfLeadingZeros(num);
+  }
 }

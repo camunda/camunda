@@ -15,23 +15,21 @@
  */
 package io.zeebe.model.bpmn.instance;
 
+import io.zeebe.msgpack.mapping.Mapping;
 import java.util.Map;
 
-import io.zeebe.msgpack.mapping.Mapping;
+public interface InputOutputMapping {
+  String DEFAULT_MAPPING = "$";
 
-public interface InputOutputMapping
-{
-    String DEFAULT_MAPPING = "$";
+  OutputBehavior getOutputBehavior();
 
-    OutputBehavior getOutputBehavior();
-    String getOutputBehaviorString();
+  String getOutputBehaviorString();
 
-    Mapping[] getInputMappings();
+  Mapping[] getInputMappings();
 
-    Mapping[] getOutputMappings();
+  Mapping[] getOutputMappings();
 
-    Map<String, String> getInputMappingsAsMap();
+  Map<String, String> getInputMappingsAsMap();
 
-    Map<String, String> getOutputMappingsAsMap();
-
+  Map<String, String> getOutputMappingsAsMap();
 }

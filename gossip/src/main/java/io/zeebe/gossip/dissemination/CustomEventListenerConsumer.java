@@ -15,62 +15,51 @@
  */
 package io.zeebe.gossip.dissemination;
 
-import java.util.*;
-
 import io.zeebe.gossip.GossipCustomEventListener;
 import io.zeebe.gossip.Loggers;
 import io.zeebe.gossip.protocol.CustomEvent;
 import io.zeebe.gossip.protocol.CustomEventConsumer;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.collection.Tuple;
+import java.util.*;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
-public class CustomEventListenerConsumer implements CustomEventConsumer
-{
-    private static final Logger LOG = Loggers.GOSSIP_LOGGER;
+public class CustomEventListenerConsumer implements CustomEventConsumer {
+  private static final Logger LOG = Loggers.GOSSIP_LOGGER;
 
-    private final List<Tuple<DirectBuffer, GossipCustomEventListener>> listenersByType = new ArrayList<>();
+  private final List<Tuple<DirectBuffer, GossipCustomEventListener>> listenersByType =
+      new ArrayList<>();
 
-    @Override
-    public boolean consumeCustomEvent(CustomEvent event)
-    {
-        for (Tuple<DirectBuffer, GossipCustomEventListener> tuple : listenersByType)
-        {
-            if (BufferUtil.equals(tuple.getLeft(), event.getType()))
-            {
-                final GossipCustomEventListener listener = tuple.getRight();
+  @Override
+  public boolean consumeCustomEvent(CustomEvent event) {
+    for (Tuple<DirectBuffer, GossipCustomEventListener> tuple : listenersByType) {
+      if (BufferUtil.equals(tuple.getLeft(), event.getType())) {
+        final GossipCustomEventListener listener = tuple.getRight();
 
-                try
-                {
-                    listener.onEvent(event.getSenderAddress(), event.getPayload());
-                }
-                catch (Throwable t)
-                {
-                    LOG.warn("Custom event listener '{}' failed", listener.getClass(), t);
-                }
-            }
+        try {
+          listener.onEvent(event.getSenderAddress(), event.getPayload());
+        } catch (Throwable t) {
+          LOG.warn("Custom event listener '{}' failed", listener.getClass(), t);
         }
-
-        return true;
+      }
     }
 
-    public void addCustomEventListener(DirectBuffer eventType, GossipCustomEventListener listener)
-    {
-        listenersByType.add(new Tuple<DirectBuffer, GossipCustomEventListener>(eventType, listener));
-    }
+    return true;
+  }
 
-    public void removeCustomEventListener(GossipCustomEventListener listener)
-    {
-        final Iterator<Tuple<DirectBuffer, GossipCustomEventListener>> iterator = listenersByType.iterator();
-        while (iterator.hasNext())
-        {
-            final Tuple<DirectBuffer, GossipCustomEventListener> tuple = iterator.next();
-            if (tuple.getRight() == listener)
-            {
-                iterator.remove();
-            }
-        }
-    }
+  public void addCustomEventListener(DirectBuffer eventType, GossipCustomEventListener listener) {
+    listenersByType.add(new Tuple<DirectBuffer, GossipCustomEventListener>(eventType, listener));
+  }
 
+  public void removeCustomEventListener(GossipCustomEventListener listener) {
+    final Iterator<Tuple<DirectBuffer, GossipCustomEventListener>> iterator =
+        listenersByType.iterator();
+    while (iterator.hasNext()) {
+      final Tuple<DirectBuffer, GossipCustomEventListener> tuple = iterator.next();
+      if (tuple.getRight() == listener) {
+        iterator.remove();
+      }
+    }
+  }
 }

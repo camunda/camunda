@@ -15,17 +15,10 @@
  */
 package io.zeebe.servicecontainer;
 
-public interface Service<S>
-{
-    default void start(ServiceStartContext startContext)
-    {
+public interface Service<S> {
+  default void start(ServiceStartContext startContext) {}
 
-    }
+  default void stop(ServiceStopContext stopContext) {}
 
-    default void stop(ServiceStopContext stopContext)
-    {
-
-    }
-
-    S get();
+  S get();
 }

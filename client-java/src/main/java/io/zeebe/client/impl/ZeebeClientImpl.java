@@ -15,8 +15,6 @@
  */
 package io.zeebe.client.impl;
 
-import java.util.concurrent.*;
-
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientConfiguration;
 import io.zeebe.client.api.clients.TopicClient;
@@ -38,236 +36,216 @@ import io.zeebe.transport.impl.memory.UnboundedMemoryPool;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
+import java.util.concurrent.*;
 import org.slf4j.Logger;
 
-public class ZeebeClientImpl implements ZeebeClient
-{
-    public static final Logger LOG = Loggers.CLIENT_LOGGER;
+public class ZeebeClientImpl implements ZeebeClient {
+  public static final Logger LOG = Loggers.CLIENT_LOGGER;
 
-    public static final String VERSION;
+  public static final String VERSION;
 
-    static
-    {
-        final String version = ZeebeClient.class.getPackage().getImplementationVersion();
-        VERSION = version != null ? version : "development";
-    }
+  static {
+    final String version = ZeebeClient.class.getPackage().getImplementationVersion();
+    VERSION = version != null ? version : "development";
+  }
 
-    protected final ZeebeClientConfiguration configuration;
+  protected final ZeebeClientConfiguration configuration;
 
-    protected Dispatcher dataFrameReceiveBuffer;
-    protected ActorScheduler scheduler;
+  protected Dispatcher dataFrameReceiveBuffer;
+  protected ActorScheduler scheduler;
 
-    protected ClientTransport transport;
+  protected ClientTransport transport;
 
-    protected final ZeebeObjectMapperImpl objectMapper;
+  protected final ZeebeObjectMapperImpl objectMapper;
 
-    protected final ClientTopologyManager topologyManager;
-    protected final RequestManager apiCommandManager;
-    protected SubscriptionManager subscriptionManager;
+  protected final ClientTopologyManager topologyManager;
+  protected final RequestManager apiCommandManager;
+  protected SubscriptionManager subscriptionManager;
 
-    protected boolean isClosed;
+  protected boolean isClosed;
 
-    private ClientTransport internalTransport;
+  private ClientTransport internalTransport;
 
-    public ZeebeClientImpl(final ZeebeClientConfiguration configuration)
-    {
-        this(configuration, null);
-    }
+  public ZeebeClientImpl(final ZeebeClientConfiguration configuration) {
+    this(configuration, null);
+  }
 
-    public ZeebeClientImpl(final ZeebeClientConfiguration configuration, ActorClock actorClock)
-    {
-        LOG.info("Version: {}", VERSION);
+  public ZeebeClientImpl(final ZeebeClientConfiguration configuration, ActorClock actorClock) {
+    LOG.info("Version: {}", VERSION);
 
-        this.configuration = configuration;
+    this.configuration = configuration;
 
-        final SocketAddress contactPoint = SocketAddress.from(configuration.getBrokerContactPoint());
+    final SocketAddress contactPoint = SocketAddress.from(configuration.getBrokerContactPoint());
 
-        this.scheduler = ActorScheduler.newActorScheduler()
+    this.scheduler =
+        ActorScheduler.newActorScheduler()
             .setCpuBoundActorThreadCount(configuration.getNumManagementThreads())
             .setIoBoundActorThreadCount(0)
             .setActorClock(actorClock)
             .setSchedulerName("client")
             .build();
-        this.scheduler.start();
+    this.scheduler.start();
 
-        final ByteValue sendBufferSize = ByteValue.ofMegabytes(configuration.getSendBufferSize());
-        final long requestBlockTimeMs = configuration.getRequestBlocktime().toMillis();
+    final ByteValue sendBufferSize = ByteValue.ofMegabytes(configuration.getSendBufferSize());
+    final long requestBlockTimeMs = configuration.getRequestBlocktime().toMillis();
 
-        dataFrameReceiveBuffer = Dispatchers.create("receive-buffer")
+    dataFrameReceiveBuffer =
+        Dispatchers.create("receive-buffer")
             .bufferSize(sendBufferSize)
             .modePubSub()
             .frameMaxLength(1024 * 1024)
             .actorScheduler(scheduler)
             .build();
 
-        final ClientTransportBuilder transportBuilder = Transports.newClientTransport()
+    final ClientTransportBuilder transportBuilder =
+        Transports.newClientTransport()
             .messageMaxLength(1024 * 1024)
             .messageReceiveBuffer(dataFrameReceiveBuffer)
-            .messageMemoryPool(new UnboundedMemoryPool()) // Client is not sending any heavy messages
+            .messageMemoryPool(
+                new UnboundedMemoryPool()) // Client is not sending any heavy messages
             .requestMemoryPool(new BlockingMemoryPool(sendBufferSize, requestBlockTimeMs))
             .scheduler(scheduler);
 
-        // internal transport is used for topology request
-        final ClientTransportBuilder internalTransportBuilder = Transports.newClientTransport()
+    // internal transport is used for topology request
+    final ClientTransportBuilder internalTransportBuilder =
+        Transports.newClientTransport()
             .messageMaxLength(1024 * 1024)
             .messageMemoryPool(new UnboundedMemoryPool())
             .requestMemoryPool(new UnboundedMemoryPool())
             .scheduler(scheduler);
 
-        if (configuration.getTcpChannelKeepAlivePeriod() != null)
-        {
-            transportBuilder.keepAlivePeriod(configuration.getTcpChannelKeepAlivePeriod());
-            internalTransportBuilder.keepAlivePeriod(configuration.getTcpChannelKeepAlivePeriod());
-        }
+    if (configuration.getTcpChannelKeepAlivePeriod() != null) {
+      transportBuilder.keepAlivePeriod(configuration.getTcpChannelKeepAlivePeriod());
+      internalTransportBuilder.keepAlivePeriod(configuration.getTcpChannelKeepAlivePeriod());
+    }
 
-        transport = transportBuilder.build();
-        internalTransport = internalTransportBuilder.build();
+    transport = transportBuilder.build();
+    internalTransport = internalTransportBuilder.build();
 
-        this.objectMapper = new ZeebeObjectMapperImpl();
+    this.objectMapper = new ZeebeObjectMapperImpl();
 
-        final RemoteAddress initialContactPoint = transport.registerRemoteAddress(contactPoint);
+    final RemoteAddress initialContactPoint = transport.registerRemoteAddress(contactPoint);
 
-        topologyManager = new ClientTopologyManager(transport, internalTransport, objectMapper, initialContactPoint);
-        scheduler.submitActor(topologyManager);
+    topologyManager =
+        new ClientTopologyManager(transport, internalTransport, objectMapper, initialContactPoint);
+    scheduler.submitActor(topologyManager);
 
-        apiCommandManager = new RequestManager(
+    apiCommandManager =
+        new RequestManager(
             transport.getOutput(),
             topologyManager,
             objectMapper,
             configuration.getRequestTimeout(),
             requestBlockTimeMs);
-        this.scheduler.submitActor(apiCommandManager);
+    this.scheduler.submitActor(apiCommandManager);
 
-        this.subscriptionManager = new SubscriptionManager(this);
-        this.transport.registerChannelListener(subscriptionManager);
-        this.scheduler.submitActor(subscriptionManager);
+    this.subscriptionManager = new SubscriptionManager(this);
+    this.transport.registerChannelListener(subscriptionManager);
+    this.scheduler.submitActor(subscriptionManager);
+  }
+
+  @Override
+  public void close() {
+    if (isClosed) {
+      return;
     }
 
-    @Override
-    public void close()
-    {
-        if (isClosed)
-        {
-            return;
-        }
+    isClosed = true;
 
-        isClosed = true;
+    LOG.debug("Closing client ...");
 
-        LOG.debug("Closing client ...");
+    doAndLogException(() -> subscriptionManager.close().join());
+    LOG.debug("subscriber group manager closed");
+    doAndLogException(() -> apiCommandManager.close().join());
+    LOG.debug("api command manager closed");
+    doAndLogException(() -> topologyManager.close().join());
+    LOG.debug("topology manager closed");
+    doAndLogException(() -> transport.close());
+    LOG.debug("transport closed");
+    doAndLogException(() -> internalTransport.close());
+    LOG.debug("internal transport closed");
+    doAndLogException(() -> dataFrameReceiveBuffer.close());
+    LOG.debug("data frame receive buffer closed");
 
-        doAndLogException(() -> subscriptionManager.close().join());
-        LOG.debug("subscriber group manager closed");
-        doAndLogException(() -> apiCommandManager.close().join());
-        LOG.debug("api command manager closed");
-        doAndLogException(() -> topologyManager.close().join());
-        LOG.debug("topology manager closed");
-        doAndLogException(() -> transport.close());
-        LOG.debug("transport closed");
-        doAndLogException(() -> internalTransport.close());
-        LOG.debug("internal transport closed");
-        doAndLogException(() -> dataFrameReceiveBuffer.close());
-        LOG.debug("data frame receive buffer closed");
+    try {
+      scheduler.stop().get(15, TimeUnit.SECONDS);
 
-        try
-        {
-            scheduler.stop().get(15, TimeUnit.SECONDS);
-
-            LOG.debug("Client closed.");
-        }
-        catch (InterruptedException | ExecutionException | TimeoutException e)
-        {
-            throw new RuntimeException("Could not shutdown client successfully", e);
-        }
+      LOG.debug("Client closed.");
+    } catch (InterruptedException | ExecutionException | TimeoutException e) {
+      throw new RuntimeException("Could not shutdown client successfully", e);
     }
+  }
 
-    protected void doAndLogException(Runnable r)
-    {
-        try
-        {
-            r.run();
-        }
-        catch (Exception e)
-        {
-            Loggers.CLIENT_LOGGER.error("Exception when closing client. Ignoring", e);
-        }
+  protected void doAndLogException(Runnable r) {
+    try {
+      r.run();
+    } catch (Exception e) {
+      Loggers.CLIENT_LOGGER.error("Exception when closing client. Ignoring", e);
     }
+  }
 
-    public RequestManager getCommandManager()
-    {
-        return apiCommandManager;
-    }
+  public RequestManager getCommandManager() {
+    return apiCommandManager;
+  }
 
-    public ClientTopologyManager getTopologyManager()
-    {
-        return topologyManager;
-    }
+  public ClientTopologyManager getTopologyManager() {
+    return topologyManager;
+  }
 
-    public ZeebeObjectMapperImpl getObjectMapper()
-    {
-        return objectMapper;
-    }
+  public ZeebeObjectMapperImpl getObjectMapper() {
+    return objectMapper;
+  }
 
-    @Override
-    public ZeebeClientConfiguration getConfiguration()
-    {
-        return configuration;
-    }
+  @Override
+  public ZeebeClientConfiguration getConfiguration() {
+    return configuration;
+  }
 
-    public ClientTransport getTransport()
-    {
-        return transport;
-    }
+  public ClientTransport getTransport() {
+    return transport;
+  }
 
-    public ActorScheduler getScheduler()
-    {
-        return scheduler;
-    }
+  public ActorScheduler getScheduler() {
+    return scheduler;
+  }
 
-    public SubscriptionManager getSubscriptionManager()
-    {
-        return subscriptionManager;
-    }
+  public SubscriptionManager getSubscriptionManager() {
+    return subscriptionManager;
+  }
 
-    @Override
-    public TopicClient topicClient(String topicName)
-    {
-        return new TopicClientImpl(this, topicName);
-    }
+  @Override
+  public TopicClient topicClient(String topicName) {
+    return new TopicClientImpl(this, topicName);
+  }
 
-    @Override
-    public TopicClient topicClient()
-    {
-        final String defaultTopic = getConfiguration().getDefaultTopic();
-        return topicClient(defaultTopic);
-    }
+  @Override
+  public TopicClient topicClient() {
+    final String defaultTopic = getConfiguration().getDefaultTopic();
+    return topicClient(defaultTopic);
+  }
 
-    @Override
-    public ZeebeObjectMapper objectMapper()
-    {
-        return objectMapper;
-    }
+  @Override
+  public ZeebeObjectMapper objectMapper() {
+    return objectMapper;
+  }
 
-    @Override
-    public CreateTopicCommandStep1 newCreateTopicCommand()
-    {
-        return new CreateTopicCommandImpl(getCommandManager());
-    }
+  @Override
+  public CreateTopicCommandStep1 newCreateTopicCommand() {
+    return new CreateTopicCommandImpl(getCommandManager());
+  }
 
-    @Override
-    public TopicsRequestStep1 newTopicsRequest()
-    {
-        return new TopicsRequestImpl(getCommandManager());
-    }
+  @Override
+  public TopicsRequestStep1 newTopicsRequest() {
+    return new TopicsRequestImpl(getCommandManager());
+  }
 
-    @Override
-    public TopologyRequestStep1 newTopologyRequest()
-    {
-        return new TopologyRequestImpl(getCommandManager(), topologyManager);
-    }
+  @Override
+  public TopologyRequestStep1 newTopologyRequest() {
+    return new TopologyRequestImpl(getCommandManager(), topologyManager);
+  }
 
-    @Override
-    public ManagementSubscriptionBuilderStep1 newManagementSubscription()
-    {
-        return new ManagementSubscriptionBuilderImpl(subscriptionManager, configuration);
-    }
+  @Override
+  public ManagementSubscriptionBuilderStep1 newManagementSubscription() {
+    return new ManagementSubscriptionBuilderImpl(subscriptionManager, configuration);
+  }
 }

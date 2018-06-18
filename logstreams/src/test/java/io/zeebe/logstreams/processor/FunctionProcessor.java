@@ -15,31 +15,26 @@
  */
 package io.zeebe.logstreams.processor;
 
-import java.util.function.Consumer;
-
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.SnapshotSupport;
+import java.util.function.Consumer;
 
-public class FunctionProcessor implements StreamProcessor, EventProcessor
-{
+public class FunctionProcessor implements StreamProcessor, EventProcessor {
 
-    private Consumer<LoggedEvent> function;
+  private Consumer<LoggedEvent> function;
 
-    FunctionProcessor(Consumer<LoggedEvent> function)
-    {
-        this.function = function;
-    }
+  FunctionProcessor(Consumer<LoggedEvent> function) {
+    this.function = function;
+  }
 
-    @Override
-    public SnapshotSupport getStateResource()
-    {
-        return new StringValueSnapshot();
-    }
+  @Override
+  public SnapshotSupport getStateResource() {
+    return new StringValueSnapshot();
+  }
 
-    @Override
-    public EventProcessor onEvent(LoggedEvent event)
-    {
-        function.accept(event);
-        return this;
-    }
+  @Override
+  public EventProcessor onEvent(LoggedEvent event) {
+    function.accept(event);
+    return this;
+  }
 }

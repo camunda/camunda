@@ -15,207 +15,201 @@
  */
 package io.zeebe.msgpack.mapping;
 
-import static io.zeebe.msgpack.mapping.MappingTestUtil.constructNodeId;
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.msgpack.mapping.MappingBuilder.createMapping;
 import static io.zeebe.msgpack.mapping.MappingTestUtil.*;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.constructNodeId;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-public class MsgPackDocumentExtractorTest
-{
-    private final MsgPackDocumentExtractor extractor = new MsgPackDocumentExtractor();
+public class MsgPackDocumentExtractorTest {
+  private final MsgPackDocumentExtractor extractor = new MsgPackDocumentExtractor();
 
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
+  @Rule public ExpectedException expectedException = ExpectedException.none();
 
-    @Test
-    public void shouldExtractHoleDocument() throws Exception
-    {
-        // given document
-        final DirectBuffer document = new UnsafeBuffer(MSG_PACK_BYTES);
-        extractor.wrap(document);
-        final Mapping[] mapping = createMapping("$", "$");
+  @Test
+  public void shouldExtractHoleDocument() throws Exception {
+    // given document
+    final DirectBuffer document = new UnsafeBuffer(MSG_PACK_BYTES);
+    extractor.wrap(document);
+    final Mapping[] mapping = createMapping("$", "$");
 
-        // when
-        final MsgPackTree extractTree = extractor.extract(mapping);
+    // when
+    final MsgPackTree extractTree = extractor.extract(mapping);
 
-        // then root is leaf
-        assertThatIsLeafNode(extractTree, "$", MSG_PACK_BYTES);
-    }
+    // then root is leaf
+    assertThatIsLeafNode(extractTree, "$", MSG_PACK_BYTES);
+  }
 
-    @Test
-    public void shouldExtractHoleDocumentAndCreateNewObject() throws Exception
-    {
-        // given document
-        final DirectBuffer document = new UnsafeBuffer(MSG_PACK_BYTES);
-        extractor.wrap(document);
-        final Mapping[] mapping = createMapping("$", "$.old");
+  @Test
+  public void shouldExtractHoleDocumentAndCreateNewObject() throws Exception {
+    // given document
+    final DirectBuffer document = new UnsafeBuffer(MSG_PACK_BYTES);
+    extractor.wrap(document);
+    final Mapping[] mapping = createMapping("$", "$.old");
 
-        // when
-        final MsgPackTree extractTree = extractor.extract(mapping);
+    // when
+    final MsgPackTree extractTree = extractor.extract(mapping);
 
-        // then
-        assertThatIsMapNode(extractTree, "$", "old");
-        assertThatIsLeafNode(extractTree, constructNodeId("$", "old"), MSG_PACK_BYTES);
-    }
+    // then
+    assertThatIsMapNode(extractTree, "$", "old");
+    assertThatIsLeafNode(extractTree, constructNodeId("$", "old"), MSG_PACK_BYTES);
+  }
 
-    @Test
-    public void shouldExtractHoleDocumentAndCreateNewDeepObject() throws Exception
-    {
-        // given document
-        final DirectBuffer document = new UnsafeBuffer(MSG_PACK_BYTES);
-        extractor.wrap(document);
-        final Mapping[] mapping = createMapping("$", "$.old.test");
+  @Test
+  public void shouldExtractHoleDocumentAndCreateNewDeepObject() throws Exception {
+    // given document
+    final DirectBuffer document = new UnsafeBuffer(MSG_PACK_BYTES);
+    extractor.wrap(document);
+    final Mapping[] mapping = createMapping("$", "$.old.test");
 
-        // when
-        final MsgPackTree extractTree = extractor.extract(mapping);
+    // when
+    final MsgPackTree extractTree = extractor.extract(mapping);
 
-        // then
-        assertThatIsMapNode(extractTree, "$", "old");
-        assertThatIsMapNode(extractTree, constructNodeId("$", "old"), "test");
-        assertThatIsLeafNode(extractTree, constructNodeId("$", "old", "test"), MSG_PACK_BYTES);
-    }
+    // then
+    assertThatIsMapNode(extractTree, "$", "old");
+    assertThatIsMapNode(extractTree, constructNodeId("$", "old"), "test");
+    assertThatIsLeafNode(extractTree, constructNodeId("$", "old", "test"), MSG_PACK_BYTES);
+  }
 
-    @Test
-    public void shouldCreateOrRenameObject() throws Exception
-    {
-        // given document
-        final DirectBuffer document = new UnsafeBuffer(MSG_PACK_BYTES);
-        extractor.wrap(document);
-        final Mapping[] mapping = createMapping("$.jsonObject", "$.testObj");
+  @Test
+  public void shouldCreateOrRenameObject() throws Exception {
+    // given document
+    final DirectBuffer document = new UnsafeBuffer(MSG_PACK_BYTES);
+    extractor.wrap(document);
+    final Mapping[] mapping = createMapping("$.jsonObject", "$.testObj");
 
-        // when
-        final MsgPackTree extractTree = extractor.extract(mapping);
+    // when
+    final MsgPackTree extractTree = extractor.extract(mapping);
 
-        // then
-        assertThatIsMapNode(extractTree, "$", "testObj");
+    // then
+    assertThatIsMapNode(extractTree, "$", "testObj");
 
-        // and leaf is expected as
-        final Map<String, Object> json = new HashMap<>();
-        json.put("testAttr", "test");
-        final byte[] bytes = MSGPACK_MAPPER.writeValueAsBytes(json);
-        assertThatIsLeafNode(extractTree, constructNodeId("$", "testObj"), bytes);
-    }
+    // and leaf is expected as
+    final Map<String, Object> json = new HashMap<>();
+    json.put("testAttr", "test");
+    final byte[] bytes = MSGPACK_MAPPER.writeValueAsBytes(json);
+    assertThatIsLeafNode(extractTree, constructNodeId("$", "testObj"), bytes);
+  }
 
-    @Test
-    public void shouldCreateObjectOnRoot() throws Exception
-    {
-        // given document
-        final DirectBuffer document = new UnsafeBuffer(MSG_PACK_BYTES);
-        extractor.wrap(document);
-        final Mapping[] mapping = createMapping("$.jsonObject", "$");
+  @Test
+  public void shouldCreateObjectOnRoot() throws Exception {
+    // given document
+    final DirectBuffer document = new UnsafeBuffer(MSG_PACK_BYTES);
+    extractor.wrap(document);
+    final Mapping[] mapping = createMapping("$.jsonObject", "$");
 
-        // when
-        final MsgPackTree extractTree = extractor.extract(mapping);
+    // when
+    final MsgPackTree extractTree = extractor.extract(mapping);
 
-        // then tree root is leaf
-        assertThat(extractTree.isLeaf("$")).isTrue();
+    // then tree root is leaf
+    assertThat(extractTree.isLeaf("$")).isTrue();
 
-        // and value is expected as
-        final Map<String, Object> json = new HashMap<>();
-        json.put("testAttr", "test");
-        final byte[] bytes = MSGPACK_MAPPER.writeValueAsBytes(json);
-        assertThatIsLeafNode(extractTree, "$", bytes);
-    }
+    // and value is expected as
+    final Map<String, Object> json = new HashMap<>();
+    json.put("testAttr", "test");
+    final byte[] bytes = MSGPACK_MAPPER.writeValueAsBytes(json);
+    assertThatIsLeafNode(extractTree, "$", bytes);
+  }
 
-    @Test
-    public void shouldCreateValueOnArrayIndex() throws Exception
-    {
-        // given document
-        final DirectBuffer document = new UnsafeBuffer(MSG_PACK_BYTES);
-        extractor.wrap(document);
-        final Mapping[] mapping = createMapping("$.array[1]", "$.array[0]");
+  @Test
+  public void shouldCreateValueOnArrayIndex() throws Exception {
+    // given document
+    final DirectBuffer document = new UnsafeBuffer(MSG_PACK_BYTES);
+    extractor.wrap(document);
+    final Mapping[] mapping = createMapping("$.array[1]", "$.array[0]");
 
-        // when
-        final MsgPackTree extractTree = extractor.extract(mapping);
+    // when
+    final MsgPackTree extractTree = extractor.extract(mapping);
 
-        // then tree contains root node
-        assertThatIsMapNode(extractTree, "$", "array");
+    // then tree contains root node
+    assertThatIsMapNode(extractTree, "$", "array");
 
-        // and array node
-        assertThatIsArrayNode(extractTree, constructNodeId("$", "array"), "0");
+    // and array node
+    assertThatIsArrayNode(extractTree, constructNodeId("$", "array"), "0");
 
-        // and value is
-        assertThatIsLeafNode(extractTree, constructNodeId("$", "array", "0"), MSGPACK_MAPPER.writeValueAsBytes(1));
-    }
+    // and value is
+    assertThatIsLeafNode(
+        extractTree, constructNodeId("$", "array", "0"), MSGPACK_MAPPER.writeValueAsBytes(1));
+  }
 
-    @Test
-    public void shouldCreateValueOnArrayIndexObject() throws Exception
-    {
-        // given document
-        final DirectBuffer document = new UnsafeBuffer(MSG_PACK_BYTES);
-        extractor.wrap(document);
-        final Mapping[] mapping = createMapping("$.array[1]", "$.array[0].test");
+  @Test
+  public void shouldCreateValueOnArrayIndexObject() throws Exception {
+    // given document
+    final DirectBuffer document = new UnsafeBuffer(MSG_PACK_BYTES);
+    extractor.wrap(document);
+    final Mapping[] mapping = createMapping("$.array[1]", "$.array[0].test");
 
-        // when
-        final MsgPackTree extractTree = extractor.extract(mapping);
+    // when
+    final MsgPackTree extractTree = extractor.extract(mapping);
 
-        // then tree contains root node
-        assertThatIsMapNode(extractTree, "$", "array");
+    // then tree contains root node
+    assertThatIsMapNode(extractTree, "$", "array");
 
-        // and array node
-        assertThatIsArrayNode(extractTree, constructNodeId("$", "array"), "0");
-        assertThatIsMapNode(extractTree, constructNodeId("$", "array", "0"), "test");
+    // and array node
+    assertThatIsArrayNode(extractTree, constructNodeId("$", "array"), "0");
+    assertThatIsMapNode(extractTree, constructNodeId("$", "array", "0"), "test");
 
-        // and value is
-        assertThatIsLeafNode(extractTree, constructNodeId("$", "array", "0", "test"), MSGPACK_MAPPER.writeValueAsBytes(1));
-    }
+    // and value is
+    assertThatIsLeafNode(
+        extractTree,
+        constructNodeId("$", "array", "0", "test"),
+        MSGPACK_MAPPER.writeValueAsBytes(1));
+  }
 
-    @Test
-    public void shouldExtractWithMoreMappings() throws Exception
-    {
-        // given document
-        final DirectBuffer document = new UnsafeBuffer(MSG_PACK_BYTES);
-        extractor.wrap(document);
-        final Mapping[] mappings = MappingBuilder.createMappings()
-                                        .mapping("$.boolean", "$.newBoolean")
-                                        .mapping("$.array", "$.newArray")
-                                        .mapping("$.jsonObject", "$.newObject")
-                                        .build();
+  @Test
+  public void shouldExtractWithMoreMappings() throws Exception {
+    // given document
+    final DirectBuffer document = new UnsafeBuffer(MSG_PACK_BYTES);
+    extractor.wrap(document);
+    final Mapping[] mappings =
+        MappingBuilder.createMappings()
+            .mapping("$.boolean", "$.newBoolean")
+            .mapping("$.array", "$.newArray")
+            .mapping("$.jsonObject", "$.newObject")
+            .build();
 
-        // when
-        final MsgPackTree extractTree = extractor.extract(mappings);
+    // when
+    final MsgPackTree extractTree = extractor.extract(mappings);
 
-        // then root is
-        assertThatIsMapNode(extractTree, "$", "newBoolean", "newArray", "newObject");
+    // then root is
+    assertThatIsMapNode(extractTree, "$", "newBoolean", "newArray", "newObject");
 
-        // and new bool is expected as
-        assertThatIsLeafNode(extractTree, constructNodeId("$", "newBoolean"), MSGPACK_MAPPER.writeValueAsBytes(false));
+    // and new bool is expected as
+    assertThatIsLeafNode(
+        extractTree, constructNodeId("$", "newBoolean"), MSGPACK_MAPPER.writeValueAsBytes(false));
 
-        // and new array is expected as
-        byte[] bytes = MSGPACK_MAPPER.writeValueAsBytes(new int[]{0, 1, 2, 3});
-        assertThatIsLeafNode(extractTree, constructNodeId("$", "newArray"), bytes);
+    // and new array is expected as
+    byte[] bytes = MSGPACK_MAPPER.writeValueAsBytes(new int[] {0, 1, 2, 3});
+    assertThatIsLeafNode(extractTree, constructNodeId("$", "newArray"), bytes);
 
+    // and new object is expected as
+    final Map<String, Object> jsonObject = new HashMap<>();
+    jsonObject.put("testAttr", "test");
+    bytes = MSGPACK_MAPPER.writeValueAsBytes(jsonObject);
+    assertThatIsLeafNode(extractTree, constructNodeId("$", "newObject"), bytes);
+  }
 
-        // and new object is expected as
-        final Map<String, Object> jsonObject = new HashMap<>();
-        jsonObject.put("testAttr", "test");
-        bytes = MSGPACK_MAPPER.writeValueAsBytes(jsonObject);
-        assertThatIsLeafNode(extractTree, constructNodeId("$", "newObject"), bytes);
-    }
-
-    @Test
-    public void shouldThrowExceptionIfMappingMatchesTwice() throws Exception
-    {
-        // given document
-        final DirectBuffer document = new UnsafeBuffer(
+  @Test
+  public void shouldThrowExceptionIfMappingMatchesTwice() throws Exception {
+    // given document
+    final DirectBuffer document =
+        new UnsafeBuffer(
             MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'foo':'bar', 'foa':'baz'}")));
-        extractor.wrap(document);
-        final Mapping[] mapping = createMapping("$.*", "$");
+    extractor.wrap(document);
+    final Mapping[] mapping = createMapping("$.*", "$");
 
-        // expect
-        expectedException.expect(IllegalStateException.class);
-        expectedException.expectMessage("JSON path mapping has more than one matching source.");
+    // expect
+    expectedException.expect(IllegalStateException.class);
+    expectedException.expectMessage("JSON path mapping has more than one matching source.");
 
-        // when
-        extractor.extract(mapping);
-    }
+    // when
+    extractor.extract(mapping);
+  }
 }

@@ -29,46 +29,49 @@ import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 
-public class RemoveTopicSubscriptionHandler extends AbstractControlMessageHandler
-{
-    protected final CloseSubscriptionRequest request = new CloseSubscriptionRequest();
+public class RemoveTopicSubscriptionHandler extends AbstractControlMessageHandler {
+  protected final CloseSubscriptionRequest request = new CloseSubscriptionRequest();
 
-    protected final TopicSubscriptionService subscriptionService;
+  protected final TopicSubscriptionService subscriptionService;
 
-    public RemoveTopicSubscriptionHandler(final ServerOutput output, final TopicSubscriptionService subscriptionService)
-    {
-        super(output);
-        this.subscriptionService = subscriptionService;
-    }
+  public RemoveTopicSubscriptionHandler(
+      final ServerOutput output, final TopicSubscriptionService subscriptionService) {
+    super(output);
+    this.subscriptionService = subscriptionService;
+  }
 
-    @Override
-    public ControlMessageType getMessageType()
-    {
-        return ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION;
-    }
+  @Override
+  public ControlMessageType getMessageType() {
+    return ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION;
+  }
 
-    @Override
-    public void handle(final ActorControl actor, final int partitionId, final DirectBuffer buffer, final RecordMetadata metadata)
-    {
-        final int requestStreamId = metadata.getRequestStreamId();
-        final long requestId = metadata.getRequestId();
+  @Override
+  public void handle(
+      final ActorControl actor,
+      final int partitionId,
+      final DirectBuffer buffer,
+      final RecordMetadata metadata) {
+    final int requestStreamId = metadata.getRequestStreamId();
+    final long requestId = metadata.getRequestId();
 
-        final CloseSubscriptionRequest request = new CloseSubscriptionRequest();
-        request.wrap(cloneBuffer(buffer));
+    final CloseSubscriptionRequest request = new CloseSubscriptionRequest();
+    request.wrap(cloneBuffer(buffer));
 
-        final ActorFuture<Void> future = subscriptionService.closeSubscriptionAsync(partitionId,
-            request.getSubscriberKey());
-        actor.runOnCompletion(future, ((aVoid, throwable) ->
-        {
-            if (throwable == null)
-            {
-                sendResponse(actor, requestStreamId, requestId, request);
-            }
-            else
-            {
-                sendErrorResponse(actor, requestStreamId, requestId, "Cannot close topic subscription. %s", throwable.getMessage());
-            }
+    final ActorFuture<Void> future =
+        subscriptionService.closeSubscriptionAsync(partitionId, request.getSubscriberKey());
+    actor.runOnCompletion(
+        future,
+        ((aVoid, throwable) -> {
+          if (throwable == null) {
+            sendResponse(actor, requestStreamId, requestId, request);
+          } else {
+            sendErrorResponse(
+                actor,
+                requestStreamId,
+                requestId,
+                "Cannot close topic subscription. %s",
+                throwable.getMessage());
+          }
         }));
-    }
-
+  }
 }

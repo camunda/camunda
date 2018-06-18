@@ -15,45 +15,37 @@
  */
 package io.zeebe.client.impl.topic;
 
-import java.util.List;
-
 import io.zeebe.client.api.commands.Partition;
 import io.zeebe.client.api.commands.Topic;
+import java.util.List;
 
-public class TopicImpl implements Topic
-{
-    private String name;
-    private List<Partition> partitions;
+public class TopicImpl implements Topic {
+  private String name;
+  private List<Partition> partitions;
 
-    public TopicImpl(String name, List<Partition> partitions)
-    {
-        this.name = name;
-        this.partitions = partitions;
-    }
+  public TopicImpl(String name, List<Partition> partitions) {
+    this.name = name;
+    this.partitions = partitions;
+  }
 
-    @Override
-    public String getName()
-    {
-        return name;
-    }
+  @Override
+  public String getName() {
+    return name;
+  }
 
-    @Override
-    public List<Partition> getPartitions()
-    {
-        return partitions;
-    }
+  @Override
+  public List<Partition> getPartitions() {
+    return partitions;
+  }
 
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("Topic [name=");
-        builder.append(name);
-        builder.append(", partitions=");
-        builder.append(partitions);
-        builder.append("]");
-        return builder.toString();
-    }
-
-
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("Topic [name=");
+    builder.append(name);
+    builder.append(", partitions=");
+    builder.append(partitions);
+    builder.append("]");
+    return builder.toString();
+  }
 }

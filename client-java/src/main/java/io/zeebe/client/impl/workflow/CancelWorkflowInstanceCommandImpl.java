@@ -25,23 +25,23 @@ import io.zeebe.client.impl.record.RecordImpl;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.EnsureUtil;
 
-public class CancelWorkflowInstanceCommandImpl extends CommandImpl<WorkflowInstanceEvent> implements CancelWorkflowInstanceCommandStep1
-{
-    private final WorkflowInstanceCommandImpl command;
+public class CancelWorkflowInstanceCommandImpl extends CommandImpl<WorkflowInstanceEvent>
+    implements CancelWorkflowInstanceCommandStep1 {
+  private final WorkflowInstanceCommandImpl command;
 
-    public CancelWorkflowInstanceCommandImpl(final RequestManager commandManager, WorkflowInstanceEvent event)
-    {
-        super(commandManager);
+  public CancelWorkflowInstanceCommandImpl(
+      final RequestManager commandManager, WorkflowInstanceEvent event) {
+    super(commandManager);
 
-        EnsureUtil.ensureNotNull("base event", event);
+    EnsureUtil.ensureNotNull("base event", event);
 
-        command = new WorkflowInstanceCommandImpl((WorkflowInstanceEventImpl) event, WorkflowInstanceIntent.CANCEL);
-    }
+    command =
+        new WorkflowInstanceCommandImpl(
+            (WorkflowInstanceEventImpl) event, WorkflowInstanceIntent.CANCEL);
+  }
 
-    @Override
-    public RecordImpl getCommand()
-    {
-        return command;
-    }
-
+  @Override
+  public RecordImpl getCommand() {
+    return command;
+  }
 }

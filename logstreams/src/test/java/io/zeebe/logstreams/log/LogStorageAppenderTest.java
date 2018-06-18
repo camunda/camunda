@@ -22,9 +22,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.dispatcher.Subscription;
 import io.zeebe.logstreams.impl.LogStorageAppender;
@@ -32,113 +29,111 @@ import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.util.*;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorCondition;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.DirectBuffer;
 import org.junit.*;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
-public class LogStorageAppenderTest
-{
-    private static final DirectBuffer EVENT = wrapString("FOO");
+public class LogStorageAppenderTest {
+  private static final DirectBuffer EVENT = wrapString("FOO");
 
-    private TemporaryFolder temporaryFolder = new TemporaryFolder();
+  private TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-    private LogStreamRule logStreamRule = new LogStreamRule(temporaryFolder, b ->
-    {
-        b.logStorageStubber(logStorage -> spy(logStorage));
-    });
+  private LogStreamRule logStreamRule =
+      new LogStreamRule(
+          temporaryFolder,
+          b -> {
+            b.logStorageStubber(logStorage -> spy(logStorage));
+          });
 
-    private LogStreamWriterRule writer = new LogStreamWriterRule(logStreamRule);
-    private LogStreamReaderRule reader = new LogStreamReaderRule(logStreamRule);
+  private LogStreamWriterRule writer = new LogStreamWriterRule(logStreamRule);
+  private LogStreamReaderRule reader = new LogStreamReaderRule(logStreamRule);
 
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(temporaryFolder)
-        .around(logStreamRule)
-        .around(reader)
-        .around(writer);
+  @Rule
+  public RuleChain ruleChain =
+      RuleChain.outerRule(temporaryFolder).around(logStreamRule).around(reader).around(writer);
 
-    private LogStream logStream;
-    private LogStorage logStorageSpy;
+  private LogStream logStream;
+  private LogStorage logStorageSpy;
 
-    @Before
-    public void setup()
-    {
-        logStream = logStreamRule.getLogStream();
-        logStorageSpy = logStream.getLogStorage();
-    }
+  @Before
+  public void setup() {
+    logStream = logStreamRule.getLogStream();
+    logStorageSpy = logStream.getLogStorage();
+  }
 
-    @Test
-    public void shouldAppendEvents()
-    {
-        writer.writeEvents(10, EVENT, true);
+  @Test
+  public void shouldAppendEvents() {
+    writer.writeEvents(10, EVENT, true);
 
-        reader.assertEvents(10, EVENT);
-    }
+    reader.assertEvents(10, EVENT);
+  }
 
-    @Test
-    public void shouldUpdateAppenderPosition()
-    {
-        final LogStorageAppender storageAppender = logStream.getLogStorageAppender();
-        final long positionBefore = storageAppender.getCurrentAppenderPosition();
+  @Test
+  public void shouldUpdateAppenderPosition() {
+    final LogStorageAppender storageAppender = logStream.getLogStorageAppender();
+    final long positionBefore = storageAppender.getCurrentAppenderPosition();
 
-        writer.writeEvent(EVENT);
+    writer.writeEvent(EVENT);
 
-        waitUntil(() -> storageAppender.getCurrentAppenderPosition() > positionBefore);
-    }
+    waitUntil(() -> storageAppender.getCurrentAppenderPosition() > positionBefore);
+  }
 
-    @Test
-    public void shouldInvokeOnAppendConditions()
-    {
-        final AtomicInteger counter = new AtomicInteger();
+  @Test
+  public void shouldInvokeOnAppendConditions() {
+    final AtomicInteger counter = new AtomicInteger();
 
-        logStreamRule.getActorScheduler().submitActor(new Actor()
-        {
-            @Override
-            protected void onActorStarting()
-            {
-                final ActorCondition condition = actor.onCondition("appended", () -> counter.incrementAndGet());
+    logStreamRule
+        .getActorScheduler()
+        .submitActor(
+            new Actor() {
+              @Override
+              protected void onActorStarting() {
+                final ActorCondition condition =
+                    actor.onCondition("appended", () -> counter.incrementAndGet());
                 logStream.registerOnAppendCondition(condition);
-            }
+              }
+            })
+        .join();
 
-        }).join();
+    writer.writeEvent(EVENT);
 
-        writer.writeEvent(EVENT);
+    waitUntil(() -> counter.get() == 1);
+  }
 
-        waitUntil(() -> counter.get() == 1);
-    }
+  @Test
+  public void shouldDiscardEventsIfFailToAppend() {
+    final Subscription subscription = logStream.getWriteBuffer().openSubscription("test");
 
-    @Test
-    public void shouldDiscardEventsIfFailToAppend()
-    {
-        final Subscription subscription = logStream.getWriteBuffer().openSubscription("test");
+    final LogStorageAppender logStorageAppender = logStream.getLogStorageAppender();
+    final long positionBefore = logStorageAppender.getCurrentAppenderPosition();
 
-        final LogStorageAppender logStorageAppender = logStream.getLogStorageAppender();
-        final long positionBefore = logStorageAppender.getCurrentAppenderPosition();
+    doReturn(-1L).when(logStorageSpy).append(any());
 
-        doReturn(-1L).when(logStorageSpy).append(any());
+    // when log storage append fails
+    writer.writeEvent(EVENT);
 
-        // when log storage append fails
-        writer.writeEvent(EVENT);
+    // then
+    waitUntil(() -> logStorageAppender.getCurrentAppenderPosition() > positionBefore);
 
-        // then
-        waitUntil(() -> logStorageAppender.getCurrentAppenderPosition() > positionBefore);
+    assertThat(logStorageAppender.isFailed()).isTrue();
 
-        assertThat(logStorageAppender.isFailed()).isTrue();
+    // verify that the segment is marked as failed
+    final AtomicBoolean fragmentIsFailed = new AtomicBoolean();
+    subscription.poll(
+        new FragmentHandler() {
 
-        // verify that the segment is marked as failed
-        final AtomicBoolean fragmentIsFailed = new AtomicBoolean();
-        subscription.poll(new FragmentHandler()
-        {
+          @Override
+          public int onFragment(
+              DirectBuffer buffer, int offset, int length, int streamId, boolean isMarkedFailed) {
+            fragmentIsFailed.set(isMarkedFailed);
+            return 0;
+          }
+        },
+        1);
 
-            @Override
-            public int onFragment(DirectBuffer buffer, int offset, int length, int streamId, boolean isMarkedFailed)
-            {
-                fragmentIsFailed.set(isMarkedFailed);
-                return 0;
-            }
-        }, 1);
-
-        assertThat(fragmentIsFailed).isTrue();
-    }
-
+    assertThat(fragmentIsFailed).isTrue();
+  }
 }

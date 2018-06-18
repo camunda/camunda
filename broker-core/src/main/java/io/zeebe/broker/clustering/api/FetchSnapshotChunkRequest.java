@@ -28,128 +28,114 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class FetchSnapshotChunkRequest extends SbeBufferWriterReader<FetchSnapshotChunkRequestEncoder, FetchSnapshotChunkRequestDecoder>
-{
-    private final FetchSnapshotChunkRequestDecoder bodyDecoder = new FetchSnapshotChunkRequestDecoder();
-    private final FetchSnapshotChunkRequestEncoder bodyEncoder = new FetchSnapshotChunkRequestEncoder();
+public class FetchSnapshotChunkRequest
+    extends SbeBufferWriterReader<
+        FetchSnapshotChunkRequestEncoder, FetchSnapshotChunkRequestDecoder> {
+  private final FetchSnapshotChunkRequestDecoder bodyDecoder =
+      new FetchSnapshotChunkRequestDecoder();
+  private final FetchSnapshotChunkRequestEncoder bodyEncoder =
+      new FetchSnapshotChunkRequestEncoder();
 
-    private int partitionId = partitionIdNullValue();
-    private final UnsafeBuffer name = new UnsafeBuffer(0, 0);
-    private long logPosition = logPositionNullValue();
-    private int chunkOffset = chunkOffsetNullValue();
-    private int chunkLength = chunkLengthNullValue();
+  private int partitionId = partitionIdNullValue();
+  private final UnsafeBuffer name = new UnsafeBuffer(0, 0);
+  private long logPosition = logPositionNullValue();
+  private int chunkOffset = chunkOffsetNullValue();
+  private int chunkLength = chunkLengthNullValue();
 
-    @Override
-    public void reset()
-    {
-        super.reset();
-        this.setPartitionId(partitionIdNullValue());
-        this.setLogPosition(logPositionNullValue());
-        this.name.wrap(ArrayUtil.EMPTY_BYTE_ARRAY);
-        this.setChunkLength(chunkLengthNullValue());
-        this.setChunkOffset(chunkOffsetNullValue());
-    }
+  @Override
+  public void reset() {
+    super.reset();
+    this.setPartitionId(partitionIdNullValue());
+    this.setLogPosition(logPositionNullValue());
+    this.name.wrap(ArrayUtil.EMPTY_BYTE_ARRAY);
+    this.setChunkLength(chunkLengthNullValue());
+    this.setChunkOffset(chunkOffsetNullValue());
+  }
 
-    public int getPartitionId()
-    {
-        return partitionId;
-    }
+  public int getPartitionId() {
+    return partitionId;
+  }
 
-    public FetchSnapshotChunkRequest setPartitionId(final int partitionId)
-    {
-        this.partitionId = partitionId;
-        return this;
-    }
+  public FetchSnapshotChunkRequest setPartitionId(final int partitionId) {
+    this.partitionId = partitionId;
+    return this;
+  }
 
-    public DirectBuffer getName()
-    {
-        return name;
-    }
+  public DirectBuffer getName() {
+    return name;
+  }
 
-    public FetchSnapshotChunkRequest setName(final String name)
-    {
-        this.name.wrap(getBytes(name));
-        return this;
-    }
+  public FetchSnapshotChunkRequest setName(final String name) {
+    this.name.wrap(getBytes(name));
+    return this;
+  }
 
-    public FetchSnapshotChunkRequest setName(final DirectBuffer name)
-    {
-        this.name.wrap(name);
-        return this;
-    }
+  public FetchSnapshotChunkRequest setName(final DirectBuffer name) {
+    this.name.wrap(name);
+    return this;
+  }
 
-    public long getLogPosition()
-    {
-        return logPosition;
-    }
+  public long getLogPosition() {
+    return logPosition;
+  }
 
-    public FetchSnapshotChunkRequest setLogPosition(final long logPosition)
-    {
-        this.logPosition = logPosition;
-        return this;
-    }
+  public FetchSnapshotChunkRequest setLogPosition(final long logPosition) {
+    this.logPosition = logPosition;
+    return this;
+  }
 
-    public int getChunkOffset()
-    {
-        return chunkOffset;
-    }
+  public int getChunkOffset() {
+    return chunkOffset;
+  }
 
-    public FetchSnapshotChunkRequest setChunkOffset(final int chunkOffset)
-    {
-        this.chunkOffset = chunkOffset;
-        return this;
-    }
+  public FetchSnapshotChunkRequest setChunkOffset(final int chunkOffset) {
+    this.chunkOffset = chunkOffset;
+    return this;
+  }
 
-    public int getChunkLength()
-    {
-        return chunkLength;
-    }
+  public int getChunkLength() {
+    return chunkLength;
+  }
 
-    public FetchSnapshotChunkRequest setChunkLength(final int chunkLength)
-    {
-        this.chunkLength = chunkLength;
-        return this;
-    }
+  public FetchSnapshotChunkRequest setChunkLength(final int chunkLength) {
+    this.chunkLength = chunkLength;
+    return this;
+  }
 
-    @Override
-    protected FetchSnapshotChunkRequestEncoder getBodyEncoder()
-    {
-        return bodyEncoder;
-    }
+  @Override
+  protected FetchSnapshotChunkRequestEncoder getBodyEncoder() {
+    return bodyEncoder;
+  }
 
-    @Override
-    protected FetchSnapshotChunkRequestDecoder getBodyDecoder()
-    {
-        return bodyDecoder;
-    }
+  @Override
+  protected FetchSnapshotChunkRequestDecoder getBodyDecoder() {
+    return bodyDecoder;
+  }
 
-    @Override
-    public int getLength()
-    {
-        return super.getLength() + nameHeaderLength() + name.capacity();
-    }
+  @Override
+  public int getLength() {
+    return super.getLength() + nameHeaderLength() + name.capacity();
+  }
 
-    @Override
-    public void wrap(final DirectBuffer buffer, final int offset, final int length)
-    {
-        super.wrap(buffer, offset, length);
+  @Override
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
+    super.wrap(buffer, offset, length);
 
-        partitionId = bodyDecoder.partitionId();
-        logPosition = bodyDecoder.logPosition();
-        chunkOffset = bodyDecoder.chunkOffset();
-        chunkLength = bodyDecoder.chunkLength();
-        name.wrap(buffer, bodyDecoder.limit() + nameHeaderLength(), bodyDecoder.nameLength());
-    }
+    partitionId = bodyDecoder.partitionId();
+    logPosition = bodyDecoder.logPosition();
+    chunkOffset = bodyDecoder.chunkOffset();
+    chunkLength = bodyDecoder.chunkLength();
+    name.wrap(buffer, bodyDecoder.limit() + nameHeaderLength(), bodyDecoder.nameLength());
+  }
 
-    @Override
-    public void write(final MutableDirectBuffer buffer, final int offset)
-    {
-        super.write(buffer, offset);
+  @Override
+  public void write(final MutableDirectBuffer buffer, final int offset) {
+    super.write(buffer, offset);
 
-        bodyEncoder.chunkLength(chunkLength);
-        bodyEncoder.chunkOffset(chunkOffset);
-        bodyEncoder.partitionId(partitionId);
-        bodyEncoder.logPosition(logPosition);
-        bodyEncoder.putName(name, 0, name.capacity());
-    }
+    bodyEncoder.chunkLength(chunkLength);
+    bodyEncoder.chunkOffset(chunkOffset);
+    bodyEncoder.partitionId(partitionId);
+    bodyEncoder.logPosition(logPosition);
+    bodyEncoder.putName(name, 0, name.capacity());
+  }
 }

@@ -22,36 +22,32 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.junit.Test;
 
-public class CollectionUtilTest
-{
+public class CollectionUtilTest {
 
-    @Test
-    public void addToMapOfLists()
-    {
-        // given
-        final Map<String, List<String>> map = new HashMap<>();
+  @Test
+  public void addToMapOfLists() {
+    // given
+    final Map<String, List<String>> map = new HashMap<>();
 
-        // when
-        CollectionUtil.addToMapOfLists(map, "foo", "bar");
+    // when
+    CollectionUtil.addToMapOfLists(map, "foo", "bar");
 
-        // then
-        assertThat(map).containsExactly(entry("foo", Arrays.asList("bar")));
-    }
+    // then
+    assertThat(map).containsExactly(entry("foo", Arrays.asList("bar")));
+  }
 
-    @Test
-    public void appendToMapOfLists()
-    {
-        // given
-        final Map<String, List<String>> map = new HashMap<>();
-        CollectionUtil.addToMapOfLists(map, "foo", "bar");
+  @Test
+  public void appendToMapOfLists() {
+    // given
+    final Map<String, List<String>> map = new HashMap<>();
+    CollectionUtil.addToMapOfLists(map, "foo", "bar");
 
-        // when
-        CollectionUtil.addToMapOfLists(map, "foo", "baz");
+    // when
+    CollectionUtil.addToMapOfLists(map, "foo", "baz");
 
-        // then
-        assertThat(map).containsExactly(entry("foo", Arrays.asList("bar", "baz")));
-    }
+    // then
+    assertThat(map).containsExactly(entry("foo", Arrays.asList("bar", "baz")));
+  }
 }

@@ -15,13 +15,12 @@
  */
 package io.zeebe.map;
 
-public interface ValueHandler
-{
-    void setValueLength(int length);
+public interface ValueHandler {
+  void setValueLength(int length);
 
-    int getValueLength();
+  int getValueLength();
 
-    void writeValue(long writeValueAddr);
+  void writeValue(long writeValueAddr);
 
-    void readValue(long valueAddr, int valueLength);
+  void readValue(long valueAddr, int valueLength);
 }

@@ -26,49 +26,40 @@ import io.zeebe.test.util.AutoCloseableRule;
 import org.junit.*;
 import org.junit.rules.RuleChain;
 
+public class TaskEventClusteredTest {
+  public ClientRule clientRule = new ClientRule();
+  public AutoCloseableRule closeables = new AutoCloseableRule();
+  public ClusteringRule clusteringRule = new ClusteringRule(closeables, clientRule);
 
-public class TaskEventClusteredTest
-{
-    public ClientRule clientRule = new ClientRule();
-    public AutoCloseableRule closeables = new AutoCloseableRule();
-    public ClusteringRule clusteringRule = new ClusteringRule(closeables, clientRule);
+  @Rule
+  public RuleChain ruleChain =
+      RuleChain.outerRule(closeables).around(clientRule).around(clusteringRule);
 
-    @Rule
-    public RuleChain ruleChain =
-        RuleChain.outerRule(closeables)
-                 .around(clientRule)
-                 .around(clusteringRule);
+  @Test
+  @Ignore("https://github.com/zeebe-io/zeebe/issues/844")
+  public void shouldCreateJobWhenFollowerUnavailable() {
+    // given
+    final ZeebeClient client = clientRule.getClient();
 
-    @Test
-    @Ignore("https://github.com/zeebe-io/zeebe/issues/844")
-    public void shouldCreateJobWhenFollowerUnavailable()
-    {
-        // given
-        final ZeebeClient client = clientRule.getClient();
+    final String topicName = "foo";
+    clusteringRule.createTopic(topicName, 1);
 
-        final String topicName = "foo";
-        clusteringRule.createTopic(topicName, 1);
+    final Topics topics = client.newTopicsRequest().send().join();
+    final Topic topic =
+        topics.getTopics().stream().filter(t -> topicName.equals(t.getName())).findFirst().get();
 
-        final Topics topics = client.newTopicsRequest().send().join();
-        final Topic topic = topics.getTopics()
-            .stream()
-            .filter(t -> topicName.equals(t.getName()))
-            .findFirst()
-            .get();
+    final BrokerInfo leader =
+        clusteringRule.getLeaderForPartition(topic.getPartitions().get(0).getId());
 
-        final BrokerInfo leader = clusteringRule.getLeaderForPartition(topic.getPartitions().get(0).getId());
+    // choosing a new leader in a raft group where the previously leading broker is no longer
+    // available
+    clusteringRule.stopBroker(leader.getAddress());
 
-        // choosing a new leader in a raft group where the previously leading broker is no longer available
-        clusteringRule.stopBroker(leader.getAddress());
+    // when
+    final JobEvent jobEvent =
+        client.topicClient(topicName).jobClient().newCreateCommand().jobType("bar").send().join();
 
-        // when
-        final JobEvent jobEvent = client.topicClient(topicName).jobClient()
-                .newCreateCommand()
-                .jobType("bar")
-                .send()
-                .join();
-
-        // then
-        assertThat(jobEvent.getState()).isEqualTo(JobState.CREATED);
-    }
+    // then
+    assertThat(jobEvent.getState()).isEqualTo(JobState.CREATED);
+  }
 }

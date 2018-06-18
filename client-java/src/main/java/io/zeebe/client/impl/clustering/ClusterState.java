@@ -15,16 +15,13 @@
  */
 package io.zeebe.client.impl.clustering;
 
+import io.zeebe.transport.RemoteAddress;
 import java.util.List;
 
-import io.zeebe.transport.RemoteAddress;
+public interface ClusterState {
+  RemoteAddress getLeaderForPartition(int partition);
 
-public interface ClusterState
-{
-    RemoteAddress getLeaderForPartition(int partition);
+  RemoteAddress getRandomBroker();
 
-    RemoteAddress getRandomBroker();
-
-    List<Integer> getPartitionsOfTopic(String topic);
-
+  List<Integer> getPartitionsOfTopic(String topic);
 }

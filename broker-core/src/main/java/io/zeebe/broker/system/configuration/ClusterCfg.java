@@ -17,17 +17,14 @@
  */
 package io.zeebe.broker.system.configuration;
 
-public class ClusterCfg implements ConfigurationEntry
-{
-    private String[] initialContactPoints = new String[0];
+public class ClusterCfg implements ConfigurationEntry {
+  private String[] initialContactPoints = new String[0];
 
-    public String[] getInitialContactPoints()
-    {
-        return initialContactPoints;
-    }
+  public String[] getInitialContactPoints() {
+    return initialContactPoints;
+  }
 
-    public void setInitialContactPoints(String[] initialContactPoints)
-    {
-        this.initialContactPoints = initialContactPoints;
-    }
+  public void setInitialContactPoints(String[] initialContactPoints) {
+    this.initialContactPoints = initialContactPoints;
+  }
 }

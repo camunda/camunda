@@ -22,46 +22,40 @@ import io.zeebe.client.impl.event.TopicSubscriberEventImpl;
 import io.zeebe.client.impl.record.RecordImpl;
 import io.zeebe.protocol.intent.SubscriberIntent;
 
-public class CreateTopicSubscriptionCommandImpl extends CommandImpl<TopicSubscriberEventImpl>
-{
-    private  final TopicSubscriberCommandImpl command = new TopicSubscriberCommandImpl(SubscriberIntent.SUBSCRIBE);
+public class CreateTopicSubscriptionCommandImpl extends CommandImpl<TopicSubscriberEventImpl> {
+  private final TopicSubscriberCommandImpl command =
+      new TopicSubscriberCommandImpl(SubscriberIntent.SUBSCRIBE);
 
-    public CreateTopicSubscriptionCommandImpl(final RequestManager commandManager, final String topicName, final int partitionId)
-    {
-        super(commandManager);
+  public CreateTopicSubscriptionCommandImpl(
+      final RequestManager commandManager, final String topicName, final int partitionId) {
+    super(commandManager);
 
-        this.command.setTopicName(topicName);
-        this.command.setPartitionId(partitionId);
-    }
+    this.command.setTopicName(topicName);
+    this.command.setPartitionId(partitionId);
+  }
 
-    public CreateTopicSubscriptionCommandImpl startPosition(long startPosition)
-    {
-        this.command.setStartPosition(startPosition);
-        return this;
-    }
+  public CreateTopicSubscriptionCommandImpl startPosition(long startPosition) {
+    this.command.setStartPosition(startPosition);
+    return this;
+  }
 
-    public CreateTopicSubscriptionCommandImpl name(String name)
-    {
-        this.command.setName(name);
-        return this;
-    }
+  public CreateTopicSubscriptionCommandImpl name(String name) {
+    this.command.setName(name);
+    return this;
+  }
 
-    public CreateTopicSubscriptionCommandImpl bufferSize(int bufferSize)
-    {
-        this.command.setBufferSize(bufferSize);
-        return this;
-    }
+  public CreateTopicSubscriptionCommandImpl bufferSize(int bufferSize) {
+    this.command.setBufferSize(bufferSize);
+    return this;
+  }
 
-    public CreateTopicSubscriptionCommandImpl forceStart(boolean forceStart)
-    {
-        this.command.setForceStart(forceStart);
-        return this;
-    }
+  public CreateTopicSubscriptionCommandImpl forceStart(boolean forceStart) {
+    this.command.setForceStart(forceStart);
+    return this;
+  }
 
-    @Override
-    public RecordImpl getCommand()
-    {
-        return command;
-    }
-
+  @Override
+  public RecordImpl getCommand() {
+    return command;
+  }
 }

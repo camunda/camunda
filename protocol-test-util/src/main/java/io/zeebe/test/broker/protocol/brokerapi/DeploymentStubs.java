@@ -15,41 +15,38 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi;
 
-import java.util.function.Consumer;
-
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.DeploymentIntent;
+import java.util.function.Consumer;
 
-public class DeploymentStubs
-{
+public class DeploymentStubs {
 
-    private StubBrokerRule broker;
+  private StubBrokerRule broker;
 
-    public DeploymentStubs(StubBrokerRule broker)
-    {
-        this.broker = broker;
-    }
+  public DeploymentStubs(StubBrokerRule broker) {
+    this.broker = broker;
+  }
 
-    public void registerCreateCommand()
-    {
-        registerCreateCommand(b -> b.sourceRecordPosition(1L));
-    }
+  public void registerCreateCommand() {
+    registerCreateCommand(b -> b.sourceRecordPosition(1L));
+  }
 
-    public void registerCreateCommand(Consumer<ExecuteCommandResponseBuilder> modifier)
-    {
-        final ExecuteCommandResponseBuilder builder =
-            broker.onExecuteCommandRequest(Protocol.SYSTEM_PARTITION, ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
-                .respondWith()
-                .event()
-                .intent(DeploymentIntent.CREATED)
-                .key(r -> r.key())
-                .value()
-                  .allOf((r) -> r.getCommand())
-                  .done();
+  public void registerCreateCommand(Consumer<ExecuteCommandResponseBuilder> modifier) {
+    final ExecuteCommandResponseBuilder builder =
+        broker
+            .onExecuteCommandRequest(
+                Protocol.SYSTEM_PARTITION, ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
+            .respondWith()
+            .event()
+            .intent(DeploymentIntent.CREATED)
+            .key(r -> r.key())
+            .value()
+            .allOf((r) -> r.getCommand())
+            .done();
 
-        modifier.accept(builder);
+    modifier.accept(builder);
 
-        builder.register();
-    }
+    builder.register();
+  }
 }

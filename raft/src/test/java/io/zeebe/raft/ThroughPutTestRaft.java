@@ -17,11 +17,6 @@ package io.zeebe.raft;
 
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.*;
-import java.util.stream.Collectors;
-
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
@@ -35,153 +30,150 @@ import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.*;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.channel.OneToOneRingBufferChannel;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.*;
+import java.util.stream.Collectors;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
-public class ThroughPutTestRaft implements RaftStateListener
-{
-    protected final RaftConfiguration configuration;
-    protected final SocketAddress socketAddress;
-    protected final String topicName;
-    protected final int partition;
-    protected final RaftConfigurationEvent configurationEvent = new RaftConfigurationEvent();
-    protected final LogStreamWriterImpl writer = new LogStreamWriterImpl();
-    protected final List<ThroughPutTestRaft> members;
-    protected final RecordMetadata metadata = new RecordMetadata();
-    private final String name;
+public class ThroughPutTestRaft implements RaftStateListener {
+  protected final RaftConfiguration configuration;
+  protected final SocketAddress socketAddress;
+  protected final String topicName;
+  protected final int partition;
+  protected final RaftConfigurationEvent configurationEvent = new RaftConfigurationEvent();
+  protected final LogStreamWriterImpl writer = new LogStreamWriterImpl();
+  protected final List<ThroughPutTestRaft> members;
+  protected final RecordMetadata metadata = new RecordMetadata();
+  private final String name;
 
-    protected ClientTransport clientTransport;
-    protected ServerTransport serverTransport;
+  protected ClientTransport clientTransport;
+  protected ServerTransport serverTransport;
 
-    protected LogStream logStream;
-    protected Raft raft;
-    private InMemoryRaftPersistentStorage persistentStorage;
+  protected LogStream logStream;
+  protected Raft raft;
+  private InMemoryRaftPersistentStorage persistentStorage;
 
-    protected final List<RaftState> raftStateChanges = new ArrayList<>();
-    private ServiceContainer serviceContainer;
+  protected final List<RaftState> raftStateChanges = new ArrayList<>();
+  private ServiceContainer serviceContainer;
 
-    public ThroughPutTestRaft(SocketAddress socketAddress, ThroughPutTestRaft... members)
-    {
-        this.name = socketAddress.toString();
-        this.configuration = new RaftConfiguration();
-        this.topicName = "someTopic";
-        this.partition = 0;
-        this.members = Arrays.asList(members);
-        this.socketAddress = socketAddress;
-    }
+  public ThroughPutTestRaft(SocketAddress socketAddress, ThroughPutTestRaft... members) {
+    this.name = socketAddress.toString();
+    this.configuration = new RaftConfiguration();
+    this.topicName = "someTopic";
+    this.partition = 0;
+    this.members = Arrays.asList(members);
+    this.socketAddress = socketAddress;
+  }
 
-    public void open(ActorScheduler scheduler, ServiceContainer serviceContainer) throws IOException
-    {
-        this.serviceContainer = serviceContainer;
-        final RaftApiMessageHandler raftApiMessageHandler = new RaftApiMessageHandler();
+  public void open(ActorScheduler scheduler, ServiceContainer serviceContainer) throws IOException {
+    this.serviceContainer = serviceContainer;
+    final RaftApiMessageHandler raftApiMessageHandler = new RaftApiMessageHandler();
 
+    serverTransport =
+        Transports.newServerTransport()
+            .bindAddress(socketAddress.toInetSocketAddress())
+            .scheduler(scheduler)
+            .build(raftApiMessageHandler, raftApiMessageHandler);
 
-        serverTransport =
-            Transports.newServerTransport()
-                      .bindAddress(socketAddress.toInetSocketAddress())
-                      .scheduler(scheduler)
-                      .build(raftApiMessageHandler, raftApiMessageHandler);
+    clientTransport = Transports.newClientTransport().scheduler(scheduler).build();
 
-        clientTransport =
-            Transports.newClientTransport()
-                      .scheduler(scheduler)
-                      .build();
+    logStream =
+        LogStreams.createFsLogStream(wrapString(topicName), partition)
+            .logName(String.format("%s-%d-%s", topicName, partition, socketAddress))
+            .deleteOnClose(true)
+            .logDirectory(
+                Files.createTempDirectory("raft-test-" + socketAddress.port() + "-").toString())
+            .serviceContainer(serviceContainer)
+            .build()
+            .join();
 
-        logStream =
-            LogStreams.createFsLogStream(wrapString(topicName), partition)
-                      .logName(String.format("%s-%d-%s", topicName, partition, socketAddress))
-                      .deleteOnClose(true)
-                      .logDirectory(Files.createTempDirectory("raft-test-" + socketAddress.port() + "-").toString())
-                      .serviceContainer(serviceContainer)
-                      .build()
-                      .join();
+    persistentStorage = new InMemoryRaftPersistentStorage(logStream);
+    final OneToOneRingBufferChannel messageBuffer =
+        new OneToOneRingBufferChannel(
+            new UnsafeBuffer(
+                new byte
+                    [(MemberReplicateLogController.REMOTE_BUFFER_SIZE)
+                        + RingBufferDescriptor.TRAILER_LENGTH]));
 
-        persistentStorage = new InMemoryRaftPersistentStorage(logStream);
-        final OneToOneRingBufferChannel messageBuffer = new OneToOneRingBufferChannel(new UnsafeBuffer(new byte[(MemberReplicateLogController.REMOTE_BUFFER_SIZE) + RingBufferDescriptor.TRAILER_LENGTH]));
-
-        raft = new Raft(logStream.getLogName(),
+    raft =
+        new Raft(
+            logStream.getLogName(),
             configuration,
             socketAddress,
             clientTransport,
             persistentStorage,
             messageBuffer,
             this);
-        raft.addMembersWhenJoined(this.members.stream().map(ThroughPutTestRaft::getSocketAddress).collect(Collectors.toList()));
-        raftApiMessageHandler.registerRaft(raft);
+    raft.addMembersWhenJoined(
+        this.members
+            .stream()
+            .map(ThroughPutTestRaft::getSocketAddress)
+            .collect(Collectors.toList()));
+    raftApiMessageHandler.registerRaft(raft);
 
-        serviceContainer.createService(RaftServiceNames.raftServiceName(raft.getName()), raft)
-            .install();
-    }
+    serviceContainer
+        .createService(RaftServiceNames.raftServiceName(raft.getName()), raft)
+        .install();
+  }
 
-    public void awaitWritable()
-    {
-        TestUtil.waitUntil(() -> logStream.getWriteBuffer() != null);
-        writer.wrap(logStream);
-    }
+  public void awaitWritable() {
+    TestUtil.waitUntil(() -> logStream.getWriteBuffer() != null);
+    writer.wrap(logStream);
+  }
 
-    public void close()
-    {
-        serviceContainer.removeService(RaftServiceNames.raftServiceName(raft.getName()));
+  public void close() {
+    serviceContainer.removeService(RaftServiceNames.raftServiceName(raft.getName()));
 
-        logStream.close();
+    logStream.close();
 
-        serverTransport.close();
-        clientTransport.close();
-    }
+    serverTransport.close();
+    clientTransport.close();
+  }
 
-    public SocketAddress getSocketAddress()
-    {
-        return socketAddress;
-    }
+  public SocketAddress getSocketAddress() {
+    return socketAddress;
+  }
 
-    public String getTopicName()
-    {
-        return topicName;
-    }
+  public String getTopicName() {
+    return topicName;
+  }
 
-    public int getPartition()
-    {
-        return partition;
-    }
+  public int getPartition() {
+    return partition;
+  }
 
-    public LogStreamWriterImpl getWriter()
-    {
-        return writer;
-    }
+  public LogStreamWriterImpl getWriter() {
+    return writer;
+  }
 
-    public List<ThroughPutTestRaft> getMembers()
-    {
-        return members;
-    }
+  public List<ThroughPutTestRaft> getMembers() {
+    return members;
+  }
 
-    public RecordMetadata getMetadata()
-    {
-        return metadata;
-    }
+  public RecordMetadata getMetadata() {
+    return metadata;
+  }
 
-    public LogStream getLogStream()
-    {
-        return logStream;
-    }
+  public LogStream getLogStream() {
+    return logStream;
+  }
 
-    public Raft getRaft()
-    {
-        return raft;
-    }
+  public Raft getRaft() {
+    return raft;
+  }
 
-    public InMemoryRaftPersistentStorage getPersistentStorage()
-    {
-        return persistentStorage;
-    }
+  public InMemoryRaftPersistentStorage getPersistentStorage() {
+    return persistentStorage;
+  }
 
-    public List<RaftState> getRaftStateChanges()
-    {
-        return raftStateChanges;
-    }
+  public List<RaftState> getRaftStateChanges() {
+    return raftStateChanges;
+  }
 
-    @Override
-    public void onStateChange(Raft raft, RaftState raftState)
-    {
-        System.out.println(String.format("%s became %s", socketAddress, raftState));
-    }
+  @Override
+  public void onStateChange(Raft raft, RaftState raftState) {
+    System.out.println(String.format("%s became %s", socketAddress, raftState));
+  }
 }

@@ -15,37 +15,30 @@
  */
 package io.zeebe.client.impl.clustering;
 
-import java.util.List;
-
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-
 import io.zeebe.client.api.commands.BrokerInfo;
 import io.zeebe.client.api.commands.Topology;
+import java.util.List;
 
-public class TopologyImpl implements Topology
-{
-    private List<BrokerInfo> brokers;
+public class TopologyImpl implements Topology {
+  private List<BrokerInfo> brokers;
 
-    @Override
-    public List<BrokerInfo> getBrokers()
-    {
-        return brokers;
-    }
+  @Override
+  public List<BrokerInfo> getBrokers() {
+    return brokers;
+  }
 
-    @JsonDeserialize(contentAs = BrokerInfoImpl.class)
-    public void setBrokers(List<BrokerInfo> brokers)
-    {
-        this.brokers = brokers;
-    }
+  @JsonDeserialize(contentAs = BrokerInfoImpl.class)
+  public void setBrokers(List<BrokerInfo> brokers) {
+    this.brokers = brokers;
+  }
 
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("Topology [brokers=");
-        builder.append(brokers);
-        builder.append("]");
-        return builder.toString();
-    }
-
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("Topology [brokers=");
+    builder.append(brokers);
+    builder.append("]");
+    return builder.toString();
+  }
 }

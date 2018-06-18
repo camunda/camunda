@@ -24,168 +24,154 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class ConfigurationRequest extends AbstractRaftMessage implements HasSocketAddress, HasTerm, HasPartition
-{
+public class ConfigurationRequest extends AbstractRaftMessage
+    implements HasSocketAddress, HasTerm, HasPartition {
 
-    protected final ConfigurationRequestDecoder bodyDecoder = new ConfigurationRequestDecoder();
-    protected final ConfigurationRequestEncoder bodyEncoder = new ConfigurationRequestEncoder();
+  protected final ConfigurationRequestDecoder bodyDecoder = new ConfigurationRequestDecoder();
+  protected final ConfigurationRequestEncoder bodyEncoder = new ConfigurationRequestEncoder();
 
-    // read + write
-    protected int partitionId;
-    protected int term;
-    protected boolean joinRequest;
+  // read + write
+  protected int partitionId;
+  protected int term;
+  protected boolean joinRequest;
 
-    // read
-    private final DirectBuffer readHost = new UnsafeBuffer(0, 0);
-    private final SocketAddress readSocketAddress = new SocketAddress();
+  // read
+  private final DirectBuffer readHost = new UnsafeBuffer(0, 0);
+  private final SocketAddress readSocketAddress = new SocketAddress();
 
-    // write
-    private SocketAddress writeSocketAddress;
+  // write
+  private SocketAddress writeSocketAddress;
 
-    public ConfigurationRequest()
-    {
-        reset();
+  public ConfigurationRequest() {
+    reset();
+  }
+
+  public ConfigurationRequest reset() {
+    partitionId = partitionIdNullValue();
+    term = termNullValue();
+    joinRequest = true;
+
+    readHost.wrap(0, 0);
+    readSocketAddress.reset();
+
+    writeSocketAddress = null;
+
+    return this;
+  }
+
+  @Override
+  protected int getVersion() {
+    return bodyDecoder.sbeSchemaVersion();
+  }
+
+  @Override
+  protected int getSchemaId() {
+    return bodyDecoder.sbeSchemaId();
+  }
+
+  @Override
+  protected int getTemplateId() {
+    return bodyDecoder.sbeTemplateId();
+  }
+
+  @Override
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  @Override
+  public int getTerm() {
+    return term;
+  }
+
+  public boolean isJoinRequest() {
+    return joinRequest;
+  }
+
+  @Override
+  public SocketAddress getSocketAddress() {
+    return readSocketAddress;
+  }
+
+  public ConfigurationRequest setRaft(final Raft raft) {
+    final LogStream logStream = raft.getLogStream();
+
+    partitionId = logStream.getPartitionId();
+    term = raft.getTerm();
+
+    writeSocketAddress = raft.getSocketAddress();
+
+    return this;
+  }
+
+  public ConfigurationRequest setLeave() {
+    joinRequest = false;
+    return this;
+  }
+
+  @Override
+  public int getLength() {
+    int length = headerEncoder.encodedLength() + bodyEncoder.sbeBlockLength() + hostHeaderLength();
+
+    if (writeSocketAddress != null) {
+      length += writeSocketAddress.hostLength();
     }
 
-    public ConfigurationRequest reset()
-    {
-        partitionId = partitionIdNullValue();
-        term = termNullValue();
-        joinRequest = true;
+    return length;
+  }
 
-        readHost.wrap(0, 0);
-        readSocketAddress.reset();
+  @Override
+  public void wrap(final DirectBuffer buffer, int offset, final int length) {
+    reset();
 
-        writeSocketAddress = null;
+    final int frameEnd = offset + length;
 
-        return this;
+    headerDecoder.wrap(buffer, offset);
+    offset += headerDecoder.encodedLength();
+
+    bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
+
+    partitionId = bodyDecoder.partitionId();
+    term = bodyDecoder.term();
+    joinRequest = bodyDecoder.join() == BooleanType.TRUE;
+    readSocketAddress.port(bodyDecoder.port());
+
+    offset += bodyDecoder.sbeBlockLength();
+
+    offset += wrapVarData(buffer, offset, readHost, hostHeaderLength(), bodyDecoder.hostLength());
+    bodyDecoder.limit(offset);
+
+    readSocketAddress.host(readHost, 0, readHost.capacity());
+
+    assert bodyDecoder.limit() == frameEnd
+        : "Decoder read only to position "
+            + bodyDecoder.limit()
+            + " but expected "
+            + frameEnd
+            + " as final position";
+  }
+
+  @Override
+  public void write(final MutableDirectBuffer buffer, int offset) {
+    headerEncoder
+        .wrap(buffer, offset)
+        .blockLength(bodyEncoder.sbeBlockLength())
+        .templateId(bodyEncoder.sbeTemplateId())
+        .schemaId(bodyEncoder.sbeSchemaId())
+        .version(bodyEncoder.sbeSchemaVersion());
+
+    offset += headerEncoder.encodedLength();
+
+    bodyEncoder
+        .wrap(buffer, offset)
+        .partitionId(partitionId)
+        .term(term)
+        .join(joinRequest ? BooleanType.TRUE : BooleanType.FALSE);
+
+    if (writeSocketAddress != null) {
+      bodyEncoder
+          .port(writeSocketAddress.port())
+          .putHost(writeSocketAddress.getHostBuffer(), 0, writeSocketAddress.hostLength());
     }
-
-    @Override
-    protected int getVersion()
-    {
-        return bodyDecoder.sbeSchemaVersion();
-    }
-
-    @Override
-    protected int getSchemaId()
-    {
-        return bodyDecoder.sbeSchemaId();
-    }
-
-    @Override
-    protected int getTemplateId()
-    {
-        return bodyDecoder.sbeTemplateId();
-    }
-
-    @Override
-    public int getPartitionId()
-    {
-        return partitionId;
-    }
-
-    @Override
-    public int getTerm()
-    {
-        return term;
-    }
-
-    public boolean isJoinRequest()
-    {
-        return joinRequest;
-    }
-
-    @Override
-    public SocketAddress getSocketAddress()
-    {
-        return readSocketAddress;
-    }
-
-    public ConfigurationRequest setRaft(final Raft raft)
-    {
-        final LogStream logStream = raft.getLogStream();
-
-        partitionId = logStream.getPartitionId();
-        term = raft.getTerm();
-
-        writeSocketAddress = raft.getSocketAddress();
-
-        return this;
-    }
-
-    public ConfigurationRequest setLeave()
-    {
-        joinRequest = false;
-        return this;
-    }
-
-    @Override
-    public int getLength()
-    {
-        int length = headerEncoder.encodedLength() +
-            bodyEncoder.sbeBlockLength() +
-            hostHeaderLength();
-
-        if (writeSocketAddress != null)
-        {
-            length += writeSocketAddress.hostLength();
-        }
-
-        return length;
-    }
-
-    @Override
-    public void wrap(final DirectBuffer buffer, int offset, final int length)
-    {
-        reset();
-
-        final int frameEnd = offset + length;
-
-        headerDecoder.wrap(buffer, offset);
-        offset += headerDecoder.encodedLength();
-
-        bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
-
-        partitionId = bodyDecoder.partitionId();
-        term = bodyDecoder.term();
-        joinRequest = bodyDecoder.join() == BooleanType.TRUE;
-        readSocketAddress.port(bodyDecoder.port());
-
-        offset += bodyDecoder.sbeBlockLength();
-
-        offset += wrapVarData(buffer, offset, readHost, hostHeaderLength(), bodyDecoder.hostLength());
-        bodyDecoder.limit(offset);
-
-        readSocketAddress.host(readHost, 0, readHost.capacity());
-
-        assert bodyDecoder.limit() == frameEnd : "Decoder read only to position " + bodyDecoder.limit() + " but expected " + frameEnd + " as final position";
-    }
-
-    @Override
-    public void write(final MutableDirectBuffer buffer, int offset)
-    {
-        headerEncoder
-            .wrap(buffer, offset)
-            .blockLength(bodyEncoder.sbeBlockLength())
-            .templateId(bodyEncoder.sbeTemplateId())
-            .schemaId(bodyEncoder.sbeSchemaId())
-            .version(bodyEncoder.sbeSchemaVersion());
-
-        offset += headerEncoder.encodedLength();
-
-        bodyEncoder
-            .wrap(buffer, offset)
-            .partitionId(partitionId)
-            .term(term)
-            .join(joinRequest ? BooleanType.TRUE : BooleanType.FALSE);
-
-        if (writeSocketAddress != null)
-        {
-            bodyEncoder
-                .port(writeSocketAddress.port())
-                .putHost(writeSocketAddress.getHostBuffer(), 0, writeSocketAddress.hostLength());
-        }
-    }
-
+  }
 }

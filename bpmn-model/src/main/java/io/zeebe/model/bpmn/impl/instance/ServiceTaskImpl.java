@@ -21,30 +21,24 @@ import io.zeebe.model.bpmn.impl.metadata.TaskHeadersImpl;
 import io.zeebe.model.bpmn.instance.ServiceTask;
 import io.zeebe.model.bpmn.instance.TaskDefinition;
 
-public class ServiceTaskImpl extends FlowNodeImpl implements ServiceTask
-{
+public class ServiceTaskImpl extends FlowNodeImpl implements ServiceTask {
 
-    public TaskDefinitionImpl getTaskDefinitionImpl()
-    {
-        return getExtensionElements() != null ? getExtensionElements().getTaskDefinition() : null;
-    }
+  public TaskDefinitionImpl getTaskDefinitionImpl() {
+    return getExtensionElements() != null ? getExtensionElements().getTaskDefinition() : null;
+  }
 
-    @Override
-    public TaskDefinition getTaskDefinition()
-    {
-        return getTaskDefinitionImpl();
-    }
+  @Override
+  public TaskDefinition getTaskDefinition() {
+    return getTaskDefinitionImpl();
+  }
 
-    @Override
-    public TaskHeadersImpl getTaskHeaders()
-    {
-        return getExtensionElements() != null ? getExtensionElements().getTaskHeaders() : null;
-    }
+  @Override
+  public TaskHeadersImpl getTaskHeaders() {
+    return getExtensionElements() != null ? getExtensionElements().getTaskHeaders() : null;
+  }
 
-    @Override
-    public InputOutputMappingImpl getInputOutputMapping()
-    {
-        return getExtensionElements() != null ? getExtensionElements().getInputOutputMapping() : null;
-    }
-
+  @Override
+  public InputOutputMappingImpl getInputOutputMapping() {
+    return getExtensionElements() != null ? getExtensionElements().getInputOutputMapping() : null;
+  }
 }

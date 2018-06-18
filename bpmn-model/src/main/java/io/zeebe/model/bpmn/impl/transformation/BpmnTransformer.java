@@ -15,46 +15,39 @@
  */
 package io.zeebe.model.bpmn.impl.transformation;
 
-import java.util.*;
-
 import io.zeebe.model.bpmn.impl.error.ErrorCollector;
 import io.zeebe.model.bpmn.impl.error.InvalidModelException;
 import io.zeebe.model.bpmn.impl.instance.DefinitionsImpl;
 import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
 import io.zeebe.model.bpmn.instance.Workflow;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import java.util.*;
 import org.agrona.DirectBuffer;
 
-public class BpmnTransformer
-{
-    private final ProcessTransformer processTransformer = new ProcessTransformer();
+public class BpmnTransformer {
+  private final ProcessTransformer processTransformer = new ProcessTransformer();
 
-    public WorkflowDefinition transform(DefinitionsImpl definitions)
-    {
-        final ErrorCollector errorCollector = new ErrorCollector();
-        final Map<DirectBuffer, Workflow> workflowsById = new HashMap<>();
-        final List<ProcessImpl> processes = definitions.getProcesses();
+  public WorkflowDefinition transform(DefinitionsImpl definitions) {
+    final ErrorCollector errorCollector = new ErrorCollector();
+    final Map<DirectBuffer, Workflow> workflowsById = new HashMap<>();
+    final List<ProcessImpl> processes = definitions.getProcesses();
 
-        for (int p = 0; p < processes.size(); p++)
-        {
-            final ProcessImpl process = processes.get(p);
-            processTransformer.transform(errorCollector, process);
-            workflowsById.put(process.getBpmnProcessId(), process);
-        }
-
-        definitions.getWorkflowsById().putAll(workflowsById);
-
-        reportExistingErrorsOrWarnings(errorCollector);
-
-        return definitions;
+    for (int p = 0; p < processes.size(); p++) {
+      final ProcessImpl process = processes.get(p);
+      processTransformer.transform(errorCollector, process);
+      workflowsById.put(process.getBpmnProcessId(), process);
     }
 
-    public void reportExistingErrorsOrWarnings(ErrorCollector errorCollector)
-    {
-        if (errorCollector.hasErrors())
-        {
-            throw new InvalidModelException(errorCollector.formatErrors());
-        }
-    }
+    definitions.getWorkflowsById().putAll(workflowsById);
 
+    reportExistingErrorsOrWarnings(errorCollector);
+
+    return definitions;
+  }
+
+  public void reportExistingErrorsOrWarnings(ErrorCollector errorCollector) {
+    if (errorCollector.hasErrors()) {
+      throw new InvalidModelException(errorCollector.formatErrors());
+    }
+  }
 }

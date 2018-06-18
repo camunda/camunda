@@ -18,13 +18,6 @@ package io.zeebe.client;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.Duration;
-
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
 import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.events.JobState;
 import io.zeebe.client.cmd.ClientException;
@@ -37,92 +30,85 @@ import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.sched.clock.ControlledActorClock;
+import java.time.Duration;
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
-public class ZeebeClientTopologyTimeoutTest
-{
-    @Rule
-    public StubBrokerRule broker = new StubBrokerRule();
+public class ZeebeClientTopologyTimeoutTest {
+  @Rule public StubBrokerRule broker = new StubBrokerRule();
 
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
+  @Rule public ExpectedException exception = ExpectedException.none();
 
-    @Rule
-    public AutoCloseableRule closeables = new AutoCloseableRule();
+  @Rule public AutoCloseableRule closeables = new AutoCloseableRule();
 
-    protected ControlledActorClock clientClock = new ControlledActorClock();
+  protected ControlledActorClock clientClock = new ControlledActorClock();
 
+  protected ZeebeClient buildClient() {
+    final ZeebeClientBuilderImpl config = new ZeebeClientBuilderImpl();
+    config.requestTimeout(Duration.ofSeconds(1));
 
-    protected ZeebeClient buildClient()
-    {
-        final ZeebeClientBuilderImpl config = new ZeebeClientBuilderImpl();
-        config.requestTimeout(Duration.ofSeconds(1));
+    final ZeebeClient client = new ZeebeClientImpl(config, clientClock);
+    closeables.manage(client);
+    return client;
+  }
 
-        final ZeebeClient client = new ZeebeClientImpl(config, clientClock);
-        closeables.manage(client);
-        return client;
-    }
+  @After
+  public void tearDown() {
+    clientClock.reset();
+  }
 
-    @After
-    public void tearDown()
-    {
-        clientClock.reset();
-    }
+  @Test
+  public void shouldFailRequestIfTopologyCannotBeRefreshed() {
+    // given
+    broker.onTopologyRequest().doNotRespond();
+    broker.onExecuteCommandRequest(ValueType.JOB, JobIntent.COMPLETE).doNotRespond();
 
-    @Test
-    public void shouldFailRequestIfTopologyCannotBeRefreshed()
-    {
-        // given
-        broker.onTopologyRequest().doNotRespond();
-        broker.onExecuteCommandRequest(ValueType.JOB, JobIntent.COMPLETE)
-            .doNotRespond();
+    final JobEvent baseEvent = Events.exampleJob();
 
-        final JobEvent baseEvent = Events.exampleJob();
+    final ZeebeClient client = buildClient();
 
-        final ZeebeClient client = buildClient();
+    // then
+    exception.expect(ClientException.class);
+    exception.expectMessage(
+        "Request timed out (PT1S). "
+            + "Request was: [ topic = default-topic, partition = 99, value type = JOB, command = COMPLETE ]");
 
-        // then
-        exception.expect(ClientException.class);
-        exception.expectMessage("Request timed out (PT1S). " +
-                "Request was: [ topic = default-topic, partition = 99, value type = JOB, command = COMPLETE ]");
+    // when
+    client.topicClient().jobClient().newCompleteCommand(baseEvent).send().join();
+  }
 
-        // when
-        client.topicClient().jobClient()
-                .newCompleteCommand(baseEvent)
-                .send()
-                .join();
-    }
+  @Test
+  public void shouldRetryTopologyRequestAfterTimeout() {
+    // given
+    final int topologyTimeoutSeconds = 1;
 
-    @Test
-    public void shouldRetryTopologyRequestAfterTimeout()
-    {
-        // given
-        final int topologyTimeoutSeconds = 1;
+    broker.onTopologyRequest().doNotRespond();
+    broker.jobs().registerCompleteCommand();
 
-        broker.onTopologyRequest().doNotRespond();
-        broker.jobs().registerCompleteCommand();
+    final JobEvent baseEvent = Events.exampleJob();
 
-        final JobEvent baseEvent = Events.exampleJob();
+    final ZeebeClient client = buildClient();
 
-        final ZeebeClient client = buildClient();
+    // wait for a hanging topology request
+    waitUntil(
+        () ->
+            broker
+                    .getReceivedControlMessageRequests()
+                    .stream()
+                    .filter(r -> r.messageType() == ControlMessageType.REQUEST_TOPOLOGY)
+                    .count()
+                == 1);
 
-        // wait for a hanging topology request
-        waitUntil(() ->
-            broker.getReceivedControlMessageRequests()
-                .stream()
-                .filter(r -> r.messageType() == ControlMessageType.REQUEST_TOPOLOGY)
-                .count() == 1);
+    broker.stubTopologyRequest(); // make topology available
+    clientClock.addTime(Duration.ofSeconds(topologyTimeoutSeconds + 1)); // let request time out
 
-        broker.stubTopologyRequest(); // make topology available
-        clientClock.addTime(Duration.ofSeconds(topologyTimeoutSeconds + 1)); // let request time out
+    // when making a new request
+    final JobEvent jobEvent =
+        client.topicClient().jobClient().newCompleteCommand(baseEvent).send().join();
 
-        // when making a new request
-        final JobEvent jobEvent = client.topicClient().jobClient()
-                .newCompleteCommand(baseEvent)
-                .send()
-                .join();
-
-        // then the topology has been refreshed and the request succeeded
-        assertThat(jobEvent.getState()).isEqualTo(JobState.COMPLETED);
-    }
-
+    // then the topology has been refreshed and the request succeeded
+    assertThat(jobEvent.getState()).isEqualTo(JobState.COMPLETED);
+  }
 }

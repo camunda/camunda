@@ -17,12 +17,9 @@ package io.zeebe.gossip;
 
 import io.zeebe.gossip.membership.Member;
 
-/**
- * Listen on gossip membership updates.
- */
-public interface GossipMembershipListener
-{
-    void onAdd(Member member);
+/** Listen on gossip membership updates. */
+public interface GossipMembershipListener {
+  void onAdd(Member member);
 
-    void onRemove(Member member);
+  void onRemove(Member member);
 }

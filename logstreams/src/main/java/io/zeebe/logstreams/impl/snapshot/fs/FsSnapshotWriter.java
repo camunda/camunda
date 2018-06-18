@@ -15,12 +15,10 @@
  */
 package io.zeebe.logstreams.impl.snapshot.fs;
 
+import static io.zeebe.util.StringUtil.getBytes;
+
 import io.zeebe.logstreams.spi.SnapshotWriter;
 import io.zeebe.util.FileUtil;
-import org.agrona.BitUtil;
-import org.agrona.LangUtil;
-import org.slf4j.Logger;
-
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -29,144 +27,127 @@ import java.nio.file.Files;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.util.Arrays;
+import org.agrona.BitUtil;
+import org.agrona.LangUtil;
+import org.slf4j.Logger;
 
-import static io.zeebe.util.StringUtil.getBytes;
+public class FsSnapshotWriter implements SnapshotWriter {
+  public static final Logger LOG = io.zeebe.logstreams.impl.Loggers.LOGSTREAMS_LOGGER;
+  protected final FsSnapshotStorageConfiguration config;
+  protected final File dataFile;
+  protected final File checksumFile;
+  protected final FsReadableSnapshot lastSnapshot;
 
+  protected DigestOutputStream dataOutputStream;
+  protected BufferedOutputStream checksumOutputStream;
 
-public class FsSnapshotWriter implements SnapshotWriter
-{
-    public static final Logger LOG = io.zeebe.logstreams.impl.Loggers.LOGSTREAMS_LOGGER;
-    protected final FsSnapshotStorageConfiguration config;
-    protected final File dataFile;
-    protected final File checksumFile;
-    protected final FsReadableSnapshot lastSnapshot;
+  public FsSnapshotWriter(
+      FsSnapshotStorageConfiguration config,
+      File snapshotFile,
+      File checksumFile,
+      FsReadableSnapshot lastSnapshot) {
+    this.config = config;
+    this.dataFile = snapshotFile;
+    this.checksumFile = checksumFile;
+    this.lastSnapshot = lastSnapshot;
 
-    protected DigestOutputStream dataOutputStream;
-    protected BufferedOutputStream checksumOutputStream;
+    initOutputStreams(config, snapshotFile, checksumFile);
+  }
 
-    public FsSnapshotWriter(FsSnapshotStorageConfiguration config, File snapshotFile, File checksumFile, FsReadableSnapshot lastSnapshot)
-    {
-        this.config = config;
-        this.dataFile = snapshotFile;
-        this.checksumFile = checksumFile;
-        this.lastSnapshot = lastSnapshot;
+  protected void initOutputStreams(
+      FsSnapshotStorageConfiguration config, File snapshotFile, File checksumFile) {
+    try {
+      final MessageDigest messageDigest = MessageDigest.getInstance(config.getChecksumAlgorithm());
 
-        initOutputStreams(config, snapshotFile, checksumFile);
+      final FileOutputStream dataFileOutputStream = new FileOutputStream(snapshotFile);
+      final BufferedOutputStream bufferedDataOutputStream =
+          new BufferedOutputStream(dataFileOutputStream);
+      dataOutputStream = new DigestOutputStream(bufferedDataOutputStream, messageDigest);
+    } catch (Exception e) {
+      abort();
+      LangUtil.rethrowUnchecked(e);
+    }
+  }
+
+  @Override
+  public OutputStream getOutputStream() {
+    return dataOutputStream;
+  }
+
+  @Override
+  public void commit() throws Exception {
+    writeToDisk(closeAndGetChecksum());
+  }
+
+  @Override
+  public void validateAndCommit(final byte[] checksum) throws Exception {
+    final byte[] writtenChecksum = closeAndGetChecksum();
+    if (Arrays.equals(writtenChecksum, checksum)) {
+      writeToDisk(checksum);
+    } else {
+      abort();
+      throw new RuntimeException(
+          String.format(
+              "Mismatched checksums, expected %s, got %s",
+              BitUtil.toHex(checksum), BitUtil.toHex(writtenChecksum)));
+    }
+  }
+
+  @Override
+  public void abort() {
+    FileUtil.closeSilently(dataOutputStream);
+    FileUtil.closeSilently(checksumOutputStream);
+    dataFile.delete();
+    checksumFile.delete();
+  }
+
+  public File getChecksumFile() {
+    return checksumFile;
+  }
+
+  public File getDataFile() {
+    return dataFile;
+  }
+
+  protected String getDataFileName() {
+    return dataFile.getName();
+  }
+
+  protected byte[] closeAndGetChecksum() throws Exception {
+    final byte[] checksum;
+
+    try {
+      dataOutputStream.close();
+      final MessageDigest digest = dataOutputStream.getMessageDigest();
+      checksum = digest.digest();
+    } catch (final Exception ex) {
+      abort();
+      throw ex;
     }
 
-    protected void initOutputStreams(FsSnapshotStorageConfiguration config, File snapshotFile, File checksumFile)
-    {
-        try
-        {
-            final MessageDigest messageDigest = MessageDigest.getInstance(config.getChecksumAlgorithm());
+    return checksum;
+  }
 
-            final FileOutputStream dataFileOutputStream = new FileOutputStream(snapshotFile);
-            final BufferedOutputStream bufferedDataOutputStream = new BufferedOutputStream(dataFileOutputStream);
-            dataOutputStream = new DigestOutputStream(bufferedDataOutputStream, messageDigest);
-        }
-        catch (Exception e)
-        {
-            abort();
-            LangUtil.rethrowUnchecked(e);
-        }
+  protected void writeToDisk(final byte[] checksum) throws Exception {
+    try {
+      Files.createFile(checksumFile.toPath());
+
+      final FileOutputStream checksumFileOutputStream = new FileOutputStream(checksumFile);
+      checksumOutputStream = new BufferedOutputStream(checksumFileOutputStream);
+
+      final String checksumHex = BitUtil.toHex(checksum);
+      final String checksumFileContents = config.checksumContent(checksumHex, getDataFileName());
+
+      checksumOutputStream.write(getBytes(checksumFileContents));
+      checksumOutputStream.close();
+
+      if (lastSnapshot != null) {
+        LOG.info("Delete last snapshot file {}.", lastSnapshot.getDataFile());
+        lastSnapshot.delete();
+      }
+    } catch (final Exception ex) {
+      abort();
+      throw ex;
     }
-
-    @Override
-    public OutputStream getOutputStream()
-    {
-        return dataOutputStream;
-    }
-
-    @Override
-    public void commit() throws Exception
-    {
-        writeToDisk(closeAndGetChecksum());
-    }
-
-    @Override
-    public void validateAndCommit(final byte[] checksum) throws Exception
-    {
-        final byte[] writtenChecksum = closeAndGetChecksum();
-        if (Arrays.equals(writtenChecksum, checksum))
-        {
-            writeToDisk(checksum);
-        }
-        else
-        {
-            abort();
-            throw new RuntimeException(String.format("Mismatched checksums, expected %s, got %s",
-                BitUtil.toHex(checksum), BitUtil.toHex(writtenChecksum)));
-        }
-    }
-
-    @Override
-    public void abort()
-    {
-        FileUtil.closeSilently(dataOutputStream);
-        FileUtil.closeSilently(checksumOutputStream);
-        dataFile.delete();
-        checksumFile.delete();
-    }
-
-    public File getChecksumFile()
-    {
-        return checksumFile;
-    }
-
-    public File getDataFile()
-    {
-        return dataFile;
-    }
-
-    protected String getDataFileName()
-    {
-        return dataFile.getName();
-    }
-
-    protected byte[] closeAndGetChecksum() throws Exception
-    {
-        final byte[] checksum;
-
-        try
-        {
-            dataOutputStream.close();
-            final MessageDigest digest = dataOutputStream.getMessageDigest();
-            checksum = digest.digest();
-        }
-        catch (final Exception ex)
-        {
-            abort();
-            throw ex;
-        }
-
-        return checksum;
-    }
-
-    protected void writeToDisk(final byte[] checksum) throws Exception
-    {
-        try
-        {
-            Files.createFile(checksumFile.toPath());
-
-            final FileOutputStream checksumFileOutputStream = new FileOutputStream(checksumFile);
-            checksumOutputStream = new BufferedOutputStream(checksumFileOutputStream);
-
-            final String checksumHex = BitUtil.toHex(checksum);
-            final String checksumFileContents = config.checksumContent(checksumHex, getDataFileName());
-
-            checksumOutputStream.write(getBytes(checksumFileContents));
-            checksumOutputStream.close();
-
-            if (lastSnapshot != null)
-            {
-                LOG.info("Delete last snapshot file {}.", lastSnapshot.getDataFile());
-                lastSnapshot.delete();
-            }
-        }
-        catch (final Exception ex)
-        {
-            abort();
-            throw ex;
-        }
-    }
+  }
 }

@@ -15,13 +15,10 @@
  */
 package io.zeebe.msgpack.el;
 
-public class JsonConditionException extends RuntimeException
-{
-    private static final long serialVersionUID = 1L;
+public class JsonConditionException extends RuntimeException {
+  private static final long serialVersionUID = 1L;
 
-    public JsonConditionException(String message)
-    {
-        super(message);
-    }
-
+  public JsonConditionException(String message) {
+    super(message);
+  }
 }

@@ -15,67 +15,65 @@
  */
 package io.zeebe.raft;
 
+import io.zeebe.util.DurationUtil;
 import java.time.Duration;
 
-import io.zeebe.util.DurationUtil;
+public class RaftConfiguration {
+  private String heartbeatInterval = "250ms";
+  private String electionInterval = "1s";
+  private String leaveTimeout = "1s";
 
-public class RaftConfiguration
-{
-    private String heartbeatInterval = "250ms";
-    private String electionInterval = "1s";
-    private String leaveTimeout = "1s";
+  public String getHeartbeatInterval() {
+    return heartbeatInterval;
+  }
 
-    public String getHeartbeatInterval()
-    {
-        return heartbeatInterval;
-    }
+  public RaftConfiguration setHeartbeatInterval(final String heartbeatInterval) {
+    this.heartbeatInterval = heartbeatInterval;
+    return this;
+  }
 
-    public RaftConfiguration setHeartbeatInterval(final String heartbeatInterval)
-    {
-        this.heartbeatInterval = heartbeatInterval;
-        return this;
-    }
+  public Duration getHeartbeatIntervalDuration() {
+    return DurationUtil.parse(heartbeatInterval);
+  }
 
-    public Duration getHeartbeatIntervalDuration()
-    {
-        return DurationUtil.parse(heartbeatInterval);
-    }
+  public String getElectionInterval() {
+    return electionInterval;
+  }
 
-    public String getElectionInterval()
-    {
-        return electionInterval;
-    }
+  public Duration getElectionIntervalDuration() {
+    return DurationUtil.parse(electionInterval);
+  }
 
-    public Duration getElectionIntervalDuration()
-    {
-        return DurationUtil.parse(electionInterval);
-    }
+  public RaftConfiguration setElectionInterval(final String electionInterval) {
+    this.electionInterval = electionInterval;
+    return this;
+  }
 
-    public RaftConfiguration setElectionInterval(final String electionInterval)
-    {
-        this.electionInterval = electionInterval;
-        return this;
-    }
+  public String getLeaveTimeout() {
+    return leaveTimeout;
+  }
 
-    public String getLeaveTimeout()
-    {
-        return leaveTimeout;
-    }
+  public Duration getLeaveTimeoutDuration() {
+    return DurationUtil.parse(leaveTimeout);
+  }
 
-    public Duration getLeaveTimeoutDuration()
-    {
-        return DurationUtil.parse(leaveTimeout);
-    }
+  public RaftConfiguration setLeaveTimeout(String leaveTimeout) {
+    this.leaveTimeout = leaveTimeout;
+    return this;
+  }
 
-    public RaftConfiguration setLeaveTimeout(String leaveTimeout)
-    {
-        this.leaveTimeout = leaveTimeout;
-        return this;
-    }
-
-    @Override
-    public String toString()
-    {
-        return "RaftConfiguration{" + "heartbeatInterval='" + heartbeatInterval + '\'' + ", electionInterval='" + electionInterval + '\'' + ", leaveTimeout='" + leaveTimeout + '\'' + '}';
-    }
+  @Override
+  public String toString() {
+    return "RaftConfiguration{"
+        + "heartbeatInterval='"
+        + heartbeatInterval
+        + '\''
+        + ", electionInterval='"
+        + electionInterval
+        + '\''
+        + ", leaveTimeout='"
+        + leaveTimeout
+        + '\''
+        + '}';
+  }
 }

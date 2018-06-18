@@ -17,19 +17,22 @@ package io.zeebe.transport;
 
 import org.agrona.DirectBuffer;
 
-public class EchoMessageHandler implements ServerMessageHandler
-{
-    private final TransportMessage message = new TransportMessage();
+public class EchoMessageHandler implements ServerMessageHandler {
+  private final TransportMessage message = new TransportMessage();
 
-    @Override
-    public boolean onMessage(ServerOutput output, RemoteAddress remoteAddress, DirectBuffer buffer, int offset, int length)
-    {
-        message.reset()
-            .buffer(buffer, offset, length)
-            .remoteAddress(remoteAddress)
-            .remoteStreamId(remoteAddress.getStreamId());
+  @Override
+  public boolean onMessage(
+      ServerOutput output,
+      RemoteAddress remoteAddress,
+      DirectBuffer buffer,
+      int offset,
+      int length) {
+    message
+        .reset()
+        .buffer(buffer, offset, length)
+        .remoteAddress(remoteAddress)
+        .remoteStreamId(remoteAddress.getStreamId());
 
-        return output.sendMessage(message);
-    }
-
+    return output.sendMessage(message);
+  }
 }

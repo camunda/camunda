@@ -15,62 +15,51 @@
  */
 package io.zeebe.msgpack.el;
 
+import io.zeebe.msgpack.jsonpath.JsonPathQuery;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.zeebe.msgpack.jsonpath.JsonPathQuery;
+public class JsonConditionValidator {
 
-public class JsonConditionValidator
-{
+  public static String validate(JsonCondition condition) {
+    final List<String> errors = new ArrayList<>();
 
-    public static String validate(JsonCondition condition)
-    {
-        final List<String> errors = new ArrayList<>();
+    validateCondition(condition, errors);
 
-        validateCondition(condition, errors);
-
-        if (errors.isEmpty())
-        {
-            return null;
-        }
-        else
-        {
-            return formatErrorMessage(errors);
-        }
+    if (errors.isEmpty()) {
+      return null;
+    } else {
+      return formatErrorMessage(errors);
     }
+  }
 
-    private static void validateCondition(JsonCondition condition, final List<String> errors)
-    {
-        JsonConditionWalker.walk(condition, object ->
-        {
-            if (object instanceof JsonPath)
-            {
-                final JsonPath path = (JsonPath) object;
-                final JsonPathQuery query = path.query();
+  private static void validateCondition(JsonCondition condition, final List<String> errors) {
+    JsonConditionWalker.walk(
+        condition,
+        object -> {
+          if (object instanceof JsonPath) {
+            final JsonPath path = (JsonPath) object;
+            final JsonPathQuery query = path.query();
 
-                if (!query.isValid())
-                {
-                    errors.add(query.getErrorReason());
-                }
+            if (!query.isValid()) {
+              errors.add(query.getErrorReason());
             }
+          }
         });
+  }
+
+  private static String formatErrorMessage(final List<String> errors) {
+    final StringBuilder builder = new StringBuilder();
+
+    builder.append(errors.get(0));
+
+    for (int i = 1; i < errors.size(); i++) {
+      final String error = errors.get(i);
+
+      builder.append("\n");
+      builder.append(error);
     }
 
-    private static String formatErrorMessage(final List<String> errors)
-    {
-        final StringBuilder builder = new StringBuilder();
-
-        builder.append(errors.get(0));
-
-        for (int i = 1; i < errors.size(); i++)
-        {
-            final String error = errors.get(i);
-
-            builder.append("\n");
-            builder.append(error);
-        }
-
-        return builder.toString();
-    }
-
+    return builder.toString();
+  }
 }

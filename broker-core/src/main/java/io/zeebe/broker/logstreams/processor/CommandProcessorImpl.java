@@ -23,92 +23,72 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.Intent;
 
-public class CommandProcessorImpl<T extends UnpackedObject> implements TypedRecordProcessor<T>, CommandControl, CommandResult
-{
+public class CommandProcessorImpl<T extends UnpackedObject>
+    implements TypedRecordProcessor<T>, CommandControl, CommandResult {
 
-    private final CommandProcessor<T> wrappedProcessor;
+  private final CommandProcessor<T> wrappedProcessor;
 
-    private boolean isAccepted;
-    private boolean respond;
+  private boolean isAccepted;
+  private boolean respond;
 
-    private Intent newState;
+  private Intent newState;
 
-    private RejectionType rejectionType;
-    private String rejectionReason;
+  private RejectionType rejectionType;
+  private String rejectionReason;
 
-    public CommandProcessorImpl(CommandProcessor<T> commandProcessor)
-    {
-        this.wrappedProcessor = commandProcessor;
+  public CommandProcessorImpl(CommandProcessor<T> commandProcessor) {
+    this.wrappedProcessor = commandProcessor;
+  }
+
+  @Override
+  public void processRecord(TypedRecord<T> record) {
+    wrappedProcessor.onCommand(record, this);
+    respond = record.getMetadata().hasRequestMetadata();
+  }
+
+  @Override
+  public boolean executeSideEffects(TypedRecord<T> record, TypedResponseWriter responseWriter) {
+    if (respond) {
+      if (isAccepted) {
+        return responseWriter.writeRecord(newState, record);
+      } else {
+        return responseWriter.writeRejection(record, rejectionType, rejectionReason);
+      }
+    } else {
+      return true;
     }
+  }
 
-    @Override
-    public void processRecord(TypedRecord<T> record)
-    {
-        wrappedProcessor.onCommand(record, this);
-        respond = record.getMetadata().hasRequestMetadata();
+  @Override
+  public long writeRecord(TypedRecord<T> record, TypedStreamWriter writer) {
+    if (isAccepted) {
+      return writer.writeFollowUpEvent(record.getKey(), newState, record.getValue());
+    } else {
+      return writer.writeRejection(record, rejectionType, rejectionReason);
     }
+  }
 
-    @Override
-    public boolean executeSideEffects(TypedRecord<T> record, TypedResponseWriter responseWriter)
-    {
-        if (respond)
-        {
-            if (isAccepted)
-            {
-                return responseWriter.writeRecord(newState, record);
-            }
-            else
-            {
-                return responseWriter.writeRejection(record, rejectionType, rejectionReason);
-            }
-        }
-        else
-        {
-            return true;
-        }
+  @Override
+  public void updateState(TypedRecord<T> record) {
+    if (isAccepted) {
+      wrappedProcessor.updateStateOnAccept(record);
+    } else {
+      wrappedProcessor.updateStateOnReject(record);
     }
+  }
 
-    @Override
-    public long writeRecord(TypedRecord<T> record, TypedStreamWriter writer)
-    {
-        if (isAccepted)
-        {
-            return writer.writeFollowUpEvent(record.getKey(), newState, record.getValue());
-        }
-        else
-        {
-            return writer.writeRejection(record, rejectionType, rejectionReason);
-        }
-    }
+  @Override
+  public CommandResult accept(Intent newState) {
+    isAccepted = true;
+    this.newState = newState;
+    return this;
+  }
 
-    @Override
-    public void updateState(TypedRecord<T> record)
-    {
-        if (isAccepted)
-        {
-            wrappedProcessor.updateStateOnAccept(record);
-        }
-        else
-        {
-            wrappedProcessor.updateStateOnReject(record);
-        }
-    }
-
-    @Override
-    public CommandResult accept(Intent newState)
-    {
-        isAccepted = true;
-        this.newState = newState;
-        return this;
-    }
-
-    @Override
-    public CommandResult reject(RejectionType type, String reason)
-    {
-        isAccepted = false;
-        this.rejectionType = type;
-        this.rejectionReason = reason;
-        return this;
-    }
-
+  @Override
+  public CommandResult reject(RejectionType type, String reason) {
+    isAccepted = false;
+    this.rejectionType = type;
+    this.rejectionReason = reason;
+    return this;
+  }
 }

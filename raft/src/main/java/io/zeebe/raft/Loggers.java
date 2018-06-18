@@ -18,7 +18,6 @@ package io.zeebe.raft;
 import io.zeebe.util.ZbLogger;
 import org.slf4j.Logger;
 
-public class Loggers
-{
-    public static final Logger RAFT_LOGGER = new ZbLogger("io.zeebe.raft");
+public class Loggers {
+  public static final Logger RAFT_LOGGER = new ZbLogger("io.zeebe.raft");
 }

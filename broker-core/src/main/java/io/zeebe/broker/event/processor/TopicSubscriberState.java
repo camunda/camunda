@@ -17,9 +17,7 @@
  */
 package io.zeebe.broker.event.processor;
 
-public enum TopicSubscriberState
-{
-
-    SUBSCRIBE,
-    SUBSCRIBED;
+public enum TopicSubscriberState {
+  SUBSCRIBE,
+  SUBSCRIBED;
 }

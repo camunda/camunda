@@ -15,8 +15,6 @@
  */
 package io.zeebe.client.impl.event;
 
-import java.util.List;
-
 import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.zeebe.client.api.events.*;
@@ -24,52 +22,45 @@ import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.record.RecordImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
+import java.util.List;
 
-public class RaftEventImpl extends RecordImpl implements RaftEvent
-{
-    private List<RaftMember> members;
+public class RaftEventImpl extends RecordImpl implements RaftEvent {
+  private List<RaftMember> members;
 
-    @JsonCreator
-    public RaftEventImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper)
-    {
-        super(objectMapper, RecordType.EVENT, ValueType.RAFT);
-    }
+  @JsonCreator
+  public RaftEventImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper) {
+    super(objectMapper, RecordType.EVENT, ValueType.RAFT);
+  }
 
-    @Override
-    @JsonDeserialize(contentAs = RaftMemberImpl.class)
-    public List<RaftMember> getMembers()
-    {
-        return members;
-    }
+  @Override
+  @JsonDeserialize(contentAs = RaftMemberImpl.class)
+  public List<RaftMember> getMembers() {
+    return members;
+  }
 
-    public void setMembers(final List<RaftMember> members)
-    {
-        this.members = members;
-    }
+  public void setMembers(final List<RaftMember> members) {
+    this.members = members;
+  }
 
-    @JsonIgnore
-    @Override
-    public RaftState getState()
-    {
-        return RaftState.valueOf(getMetadata().getIntent());
-    }
+  @JsonIgnore
+  @Override
+  public RaftState getState() {
+    return RaftState.valueOf(getMetadata().getIntent());
+  }
 
-    @Override
-    public Class<? extends RecordImpl> getEventClass()
-    {
-        return RaftEventImpl.class;
-    }
+  @Override
+  public Class<? extends RecordImpl> getEventClass() {
+    return RaftEventImpl.class;
+  }
 
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("RaftEvent [state=");
-        builder.append(getState());
-        builder.append(", members=");
-        builder.append(members);
-        builder.append("]");
-        return builder.toString();
-    }
-
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("RaftEvent [state=");
+    builder.append(getState());
+    builder.append(", members=");
+    builder.append(members);
+    builder.append("]");
+    return builder.toString();
+  }
 }

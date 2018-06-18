@@ -32,133 +32,130 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
-public class CreateDeploymentTest
-{
-    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-    public ClientRule clientRule = new ClientRule();
-    public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
+public class CreateDeploymentTest {
+  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  public ClientRule clientRule = new ClientRule();
+  public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
 
-    @Rule
-    public RuleChain ruleChain = RuleChain
-        .outerRule(brokerRule)
-        .around(clientRule)
-        .around(eventRecorder);
+  @Rule
+  public RuleChain ruleChain =
+      RuleChain.outerRule(brokerRule).around(clientRule).around(eventRecorder);
 
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
+  @Rule public ExpectedException exception = ExpectedException.none();
 
-    @Test
-    public void shouldDeployWorkflowModel()
-    {
-        // given
-        final WorkflowDefinition workflow = Bpmn.createExecutableWorkflow("process")
-               .startEvent()
-               .endEvent()
-               .done();
-        // when
-        final DeploymentEvent result = clientRule.getWorkflowClient()
-                .newDeployCommand()
-                .addWorkflowModel(workflow, "workflow.bpmn")
-                .send()
-                .join();
-
-        // then
-        assertThat(result.getMetadata().getKey()).isGreaterThan(0);
-        assertThat(result.getResources()).hasSize(1);
-
-        final DeploymentResource deployedResource = result.getResources().get(0);
-        assertThat(deployedResource.getResource()).isEqualTo(Bpmn.convertToString(workflow).getBytes(UTF_8));
-        assertThat(deployedResource.getResourceType()).isEqualTo(ResourceType.BPMN_XML);
-        assertThat(deployedResource.getResourceName()).isEqualTo("workflow.bpmn");
-
-        assertThat(result.getDeployedWorkflows()).hasSize(1);
-
-        final Workflow deployedWorkflow = result.getDeployedWorkflows().get(0);
-        assertThat(deployedWorkflow.getBpmnProcessId()).isEqualTo("process");
-        assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
-        assertThat(deployedWorkflow.getWorkflowKey()).isEqualTo(1L);
-        assertThat(deployedWorkflow.getResourceName()).isEqualTo("workflow.bpmn");
-    }
-
-    @Test
-    public void shouldNotDeployUnparsableModel()
-    {
-        // then
-        exception.expect(ClientCommandRejectedException.class);
-        exception.expectMessage("Failed to deploy resource 'invalid.bpmn'");
-
-        // when
-        clientRule.getWorkflowClient()
+  @Test
+  public void shouldDeployWorkflowModel() {
+    // given
+    final WorkflowDefinition workflow =
+        Bpmn.createExecutableWorkflow("process").startEvent().endEvent().done();
+    // when
+    final DeploymentEvent result =
+        clientRule
+            .getWorkflowClient()
             .newDeployCommand()
-            .addResourceStringUtf8("Foooo", "invalid.bpmn")
+            .addWorkflowModel(workflow, "workflow.bpmn")
             .send()
             .join();
-    }
 
-    @Test
-    public void shouldNotDeployInvalidModel() throws Exception
-    {
-        // then
-        exception.expect(ClientCommandRejectedException.class);
-        exception.expectMessage("The process must contain at least one none start event.");
+    // then
+    assertThat(result.getMetadata().getKey()).isGreaterThan(0);
+    assertThat(result.getResources()).hasSize(1);
 
-        // when
-        clientRule.getWorkflowClient()
+    final DeploymentResource deployedResource = result.getResources().get(0);
+    assertThat(deployedResource.getResource())
+        .isEqualTo(Bpmn.convertToString(workflow).getBytes(UTF_8));
+    assertThat(deployedResource.getResourceType()).isEqualTo(ResourceType.BPMN_XML);
+    assertThat(deployedResource.getResourceName()).isEqualTo("workflow.bpmn");
+
+    assertThat(result.getDeployedWorkflows()).hasSize(1);
+
+    final Workflow deployedWorkflow = result.getDeployedWorkflows().get(0);
+    assertThat(deployedWorkflow.getBpmnProcessId()).isEqualTo("process");
+    assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
+    assertThat(deployedWorkflow.getWorkflowKey()).isEqualTo(1L);
+    assertThat(deployedWorkflow.getResourceName()).isEqualTo("workflow.bpmn");
+  }
+
+  @Test
+  public void shouldNotDeployUnparsableModel() {
+    // then
+    exception.expect(ClientCommandRejectedException.class);
+    exception.expectMessage("Failed to deploy resource 'invalid.bpmn'");
+
+    // when
+    clientRule
+        .getWorkflowClient()
+        .newDeployCommand()
+        .addResourceStringUtf8("Foooo", "invalid.bpmn")
+        .send()
+        .join();
+  }
+
+  @Test
+  public void shouldNotDeployInvalidModel() throws Exception {
+    // then
+    exception.expect(ClientCommandRejectedException.class);
+    exception.expectMessage("The process must contain at least one none start event.");
+
+    // when
+    clientRule
+        .getWorkflowClient()
+        .newDeployCommand()
+        .addResourceFile(
+            getClass()
+                .getResource("/workflows/invalid_process.bpmn")
+                .getFile()) // does not have a start event
+        .send()
+        .join();
+  }
+
+  @Test
+  public void shouldNotDeployNonExecutableModel() {
+    // given
+    final WorkflowDefinition model =
+        Bpmn.createExecutableWorkflow("not-executable").startEvent().endEvent().done();
+
+    final ProcessImpl workflowImpl = (ProcessImpl) model.getWorkflows().iterator().next();
+    workflowImpl.setExecutable(false);
+
+    // then
+    exception.expect(ClientCommandRejectedException.class);
+    exception.expectMessage("BPMN model must contain at least one executable process");
+
+    // when
+    clientRule
+        .getWorkflowClient()
+        .newDeployCommand()
+        .addWorkflowModel(model, "workflow.bpmn")
+        .send()
+        .join();
+  }
+
+  @Test
+  public void shouldDeployYamlWorkflow() {
+    // when
+    final DeploymentEvent result =
+        clientRule
+            .getWorkflowClient()
             .newDeployCommand()
-            .addResourceFile(getClass().getResource("/workflows/invalid_process.bpmn").getFile()) // does not have a start event
+            .addResourceFromClasspath("workflows/simple-workflow.yaml")
             .send()
             .join();
-    }
 
-    @Test
-    public void shouldNotDeployNonExecutableModel()
-    {
-        // given
-        final WorkflowDefinition model = Bpmn.createExecutableWorkflow("not-executable")
-                .startEvent()
-                .endEvent()
-                .done();
+    // then
+    assertThat(result.getMetadata().getKey()).isGreaterThan(0);
 
-        final ProcessImpl workflowImpl = (ProcessImpl) model.getWorkflows().iterator().next();
-        workflowImpl.setExecutable(false);
+    assertThat(result.getResources()).hasSize(1);
 
-        // then
-        exception.expect(ClientCommandRejectedException.class);
-        exception.expectMessage("BPMN model must contain at least one executable process");
+    final DeploymentResource deployedResource = result.getResources().get(0);
+    assertThat(deployedResource.getResourceType()).isEqualTo(ResourceType.YAML_WORKFLOW);
+    assertThat(deployedResource.getResourceName()).isEqualTo("workflows/simple-workflow.yaml");
 
-        // when
-        clientRule.getWorkflowClient()
-            .newDeployCommand()
-            .addWorkflowModel(model, "workflow.bpmn")
-            .send()
-            .join();
-    }
+    assertThat(result.getDeployedWorkflows()).hasSize(1);
 
-    @Test
-    public void shouldDeployYamlWorkflow()
-    {
-        // when
-        final DeploymentEvent result = clientRule.getWorkflowClient()
-                .newDeployCommand()
-                .addResourceFromClasspath("workflows/simple-workflow.yaml")
-                .send()
-                .join();
-
-        // then
-        assertThat(result.getMetadata().getKey()).isGreaterThan(0);
-
-        assertThat(result.getResources()).hasSize(1);
-
-        final DeploymentResource deployedResource = result.getResources().get(0);
-        assertThat(deployedResource.getResourceType()).isEqualTo(ResourceType.YAML_WORKFLOW);
-        assertThat(deployedResource.getResourceName()).isEqualTo("workflows/simple-workflow.yaml");
-
-        assertThat(result.getDeployedWorkflows()).hasSize(1);
-
-        final Workflow deployedWorkflow = result.getDeployedWorkflows().get(0);
-        assertThat(deployedWorkflow.getBpmnProcessId()).isEqualTo("yaml-workflow");
-        assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
-        assertThat(deployedWorkflow.getWorkflowKey()).isGreaterThan(0);
-    }
-
+    final Workflow deployedWorkflow = result.getDeployedWorkflows().get(0);
+    assertThat(deployedWorkflow.getBpmnProcessId()).isEqualTo("yaml-workflow");
+    assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
+    assertThat(deployedWorkflow.getWorkflowKey()).isGreaterThan(0);
+  }
 }

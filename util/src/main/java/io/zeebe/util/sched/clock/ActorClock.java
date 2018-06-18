@@ -17,25 +17,22 @@ package io.zeebe.util.sched.clock;
 
 import io.zeebe.util.sched.ActorThread;
 
-public interface ActorClock
-{
-    boolean update();
+public interface ActorClock {
+  boolean update();
 
-    long getTimeMillis();
+  long getTimeMillis();
 
-    long getNanosSinceLastMillisecond();
+  long getNanosSinceLastMillisecond();
 
-    long getNanoTime();
+  long getNanoTime();
 
-    static ActorClock current()
-    {
-        final ActorThread current = ActorThread.current();
-        return current != null ? current.getClock() : null;
-    }
+  static ActorClock current() {
+    final ActorThread current = ActorThread.current();
+    return current != null ? current.getClock() : null;
+  }
 
-    static long currentTimeMillis()
-    {
-        final ActorClock clock = current();
-        return clock != null ? clock.getTimeMillis() : System.currentTimeMillis();
-    }
+  static long currentTimeMillis() {
+    final ActorClock clock = current();
+    return clock != null ? clock.getTimeMillis() : System.currentTimeMillis();
+  }
 }

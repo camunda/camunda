@@ -19,32 +19,26 @@ package io.zeebe.broker.test;
 
 import io.zeebe.protocol.impl.RecordMetadata;
 
-public class WrittenEvent<E>
-{
-    final long key;
-    final E value;
-    final RecordMetadata metadata;
+public class WrittenEvent<E> {
+  final long key;
+  final E value;
+  final RecordMetadata metadata;
 
-    public WrittenEvent(long key, E value, RecordMetadata metadata)
-    {
-        this.key = key;
-        this.value = value;
-        this.metadata = metadata;
-    }
+  public WrittenEvent(long key, E value, RecordMetadata metadata) {
+    this.key = key;
+    this.value = value;
+    this.metadata = metadata;
+  }
 
-    public long getKey()
-    {
-        return key;
-    }
+  public long getKey() {
+    return key;
+  }
 
-    public E getValue()
-    {
-        return value;
-    }
+  public E getValue() {
+    return value;
+  }
 
-    public RecordMetadata getMetadata()
-    {
-        return metadata;
-    }
-
+  public RecordMetadata getMetadata() {
+    return metadata;
+  }
 }

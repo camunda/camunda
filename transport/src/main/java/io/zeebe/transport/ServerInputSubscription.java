@@ -17,9 +17,8 @@ package io.zeebe.transport;
 
 import io.zeebe.util.sched.channel.ConsumableChannel;
 
-public interface ServerInputSubscription extends ConsumableChannel
-{
-    int poll();
+public interface ServerInputSubscription extends ConsumableChannel {
+  int poll();
 
-    int poll(int maxCount);
+  int poll(int maxCount);
 }

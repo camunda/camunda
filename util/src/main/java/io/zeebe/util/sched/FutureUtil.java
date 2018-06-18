@@ -15,43 +15,32 @@
  */
 package io.zeebe.util.sched;
 
+import io.zeebe.util.LangUtil;
 import java.util.concurrent.Future;
 
-import io.zeebe.util.LangUtil;
-
-public class FutureUtil
-{
-    /**
-     * Invokes Future.get() returning the result of the invocation.
-     * Transforms checked exceptions into RuntimeExceptions to accommodate programmer laziness.
-     */
-    public static <T> T join(Future<T> f)
-    {
-        try
-        {
-            return f.get();
-        }
-        catch (Exception e)
-        {
-            // NOTE: here we actually want to use rethrowUnchecked
-            LangUtil.rethrowUnchecked(e);
-        }
-
-        return null;
+public class FutureUtil {
+  /**
+   * Invokes Future.get() returning the result of the invocation. Transforms checked exceptions into
+   * RuntimeExceptions to accommodate programmer laziness.
+   */
+  public static <T> T join(Future<T> f) {
+    try {
+      return f.get();
+    } catch (Exception e) {
+      // NOTE: here we actually want to use rethrowUnchecked
+      LangUtil.rethrowUnchecked(e);
     }
 
-    public static Runnable wrap(Future<?> future)
-    {
-        return () ->
-        {
-            try
-            {
-                future.get();
-            }
-            catch (Exception e)
-            {
-                LangUtil.rethrowUnchecked(e);
-            }
-        };
-    }
+    return null;
+  }
+
+  public static Runnable wrap(Future<?> future) {
+    return () -> {
+      try {
+        future.get();
+      } catch (Exception e) {
+        LangUtil.rethrowUnchecked(e);
+      }
+    };
+  }
 }

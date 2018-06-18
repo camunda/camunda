@@ -15,40 +15,29 @@
  */
 package io.zeebe.util.sched.future;
 
+import io.zeebe.util.Loggers;
 import java.util.function.BiConsumer;
 
-import io.zeebe.util.Loggers;
+public class FutureContinuationRunnable<T> implements Runnable {
+  private ActorFuture<T> future;
+  private BiConsumer<T, Throwable> consumer;
 
-public class FutureContinuationRunnable<T> implements Runnable
-{
-    private ActorFuture<T> future;
-    private BiConsumer<T, Throwable> consumer;
+  public FutureContinuationRunnable(ActorFuture<T> future, BiConsumer<T, Throwable> consumer) {
+    this.future = future;
+    this.consumer = consumer;
+  }
 
-    public FutureContinuationRunnable(ActorFuture<T> future, BiConsumer<T, Throwable> consumer)
-    {
-        this.future = future;
-        this.consumer = consumer;
+  @Override
+  public void run() {
+    if (!future.isCompletedExceptionally()) {
+      try {
+        final T res = future.get();
+        consumer.accept(res, null);
+      } catch (Throwable e) {
+        Loggers.ACTOR_LOGGER.debug("Continuing on future completion failed", e);
+      }
+    } else {
+      consumer.accept(null, future.getException());
     }
-
-    @Override
-    public void run()
-    {
-        if (!future.isCompletedExceptionally())
-        {
-            try
-            {
-                final T res = future.get();
-                consumer.accept(res, null);
-            }
-            catch (Throwable e)
-            {
-                Loggers.ACTOR_LOGGER.debug("Continuing on future completion failed", e);
-            }
-        }
-        else
-        {
-            consumer.accept(null, future.getException());
-        }
-    }
-
+  }
 }

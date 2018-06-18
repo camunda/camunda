@@ -19,128 +19,109 @@ import java.io.File;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class FsSnapshotStorageConfiguration
-{
-    protected static final String CHECKSUM_ALGORITHM = "SHA1";
+public class FsSnapshotStorageConfiguration {
+  protected static final String CHECKSUM_ALGORITHM = "SHA1";
 
-    protected static final String SNAPSHOT_FILE_NAME_TEMPLATE = "%s-%d.snapshot";
-    protected static final String SNAPSHOT_FILE_PATH_TEMPLATE = "%s" + File.separatorChar + SNAPSHOT_FILE_NAME_TEMPLATE;
-    protected static final String SNAPSHOT_FILE_NAME_PATTERN = "%s-(\\d+)\\.snapshot";
+  protected static final String SNAPSHOT_FILE_NAME_TEMPLATE = "%s-%d.snapshot";
+  protected static final String SNAPSHOT_FILE_PATH_TEMPLATE =
+      "%s" + File.separatorChar + SNAPSHOT_FILE_NAME_TEMPLATE;
+  protected static final String SNAPSHOT_FILE_NAME_PATTERN = "%s-(\\d+)\\.snapshot";
 
-    protected static final String CHECKSUM_FILE_NAME_TEMPLATE = "%s" + File.separatorChar + "%s-%d." + CHECKSUM_ALGORITHM.toLowerCase();
+  protected static final String CHECKSUM_FILE_NAME_TEMPLATE =
+      "%s" + File.separatorChar + "%s-%d." + CHECKSUM_ALGORITHM.toLowerCase();
 
-    protected static final String CHECKSUM_CONTENT_SEPARATOR = "  ";
-    protected static final String CHECKSUM_CONTENT_TEMPLATE = "%s" + CHECKSUM_CONTENT_SEPARATOR + "%s" + System.lineSeparator();
+  protected static final String CHECKSUM_CONTENT_SEPARATOR = "  ";
+  protected static final String CHECKSUM_CONTENT_TEMPLATE =
+      "%s" + CHECKSUM_CONTENT_SEPARATOR + "%s" + System.lineSeparator();
 
-    protected String rootPath;
+  protected String rootPath;
 
-    public void setRootPath(String rootPath)
-    {
-        this.rootPath = rootPath;
+  public void setRootPath(String rootPath) {
+    this.rootPath = rootPath;
+  }
+
+  public String getRootPath() {
+    return rootPath;
+  }
+
+  public String getChecksumAlgorithm() {
+    return CHECKSUM_ALGORITHM;
+  }
+
+  public String snapshotFileName(String name, long logPosition) {
+    return String.format(SNAPSHOT_FILE_PATH_TEMPLATE, rootPath, name, logPosition);
+  }
+
+  public String checksumFileName(String name, long logPosition) {
+    return String.format(CHECKSUM_FILE_NAME_TEMPLATE, rootPath, name, logPosition);
+  }
+
+  public boolean matchesSnapshotFileNamePattern(File file, String name) {
+    final String pattern = String.format(SNAPSHOT_FILE_NAME_PATTERN, name);
+    return file.getName().matches(pattern);
+  }
+
+  public boolean isSnapshotFile(final File file) {
+    return matchesSnapshotFileNamePattern(file, ".+");
+  }
+
+  public Long getPositionOfSnapshotFile(File file, String name) {
+    final String fileName = file.getName();
+
+    final String pattern = String.format(SNAPSHOT_FILE_NAME_PATTERN, name);
+    final Matcher matcher = Pattern.compile(pattern).matcher(fileName);
+    if (matcher.find()) {
+      final String position = matcher.group(1);
+      return Long.parseLong(position);
+    } else {
+      throw new IllegalArgumentException("Cannot resolve position of snapshot file: " + fileName);
+    }
+  }
+
+  public String checksumContent(String checksum, String dataFileName) {
+    return String.format(CHECKSUM_CONTENT_TEMPLATE, checksum, dataFileName);
+  }
+
+  public String extractDigestFromChecksumContent(String content) {
+    final int indexOfSeparator = content.indexOf(CHECKSUM_CONTENT_SEPARATOR);
+    if (indexOfSeparator < 0) {
+      throw new RuntimeException("Read invalid checksum file, missing separator.");
     }
 
-    public String getRootPath()
-    {
-        return rootPath;
+    return content.substring(0, indexOfSeparator);
+  }
+
+  public String extractDataFileNameFromChecksumContent(String content) {
+    final int indexOfSeparator = content.indexOf(CHECKSUM_CONTENT_SEPARATOR);
+    if (indexOfSeparator < 0) {
+      throw new RuntimeException("Read invalid checksum file, missing separator.");
     }
 
-    public String getChecksumAlgorithm()
-    {
-        return CHECKSUM_ALGORITHM;
-    }
+    return content.substring(indexOfSeparator + CHECKSUM_CONTENT_SEPARATOR.length());
+  }
 
-    public String snapshotFileName(String name, long logPosition)
-    {
-        return String.format(SNAPSHOT_FILE_PATH_TEMPLATE, rootPath, name, logPosition);
-    }
+  public String getSnapshotNameFromFileName(final String fileName) {
+    final String suffixPattern = String.format(SNAPSHOT_FILE_NAME_PATTERN, "");
+    final Pattern pattern = Pattern.compile(suffixPattern);
+    final String[] parts = pattern.split(fileName);
 
-    public String checksumFileName(String name, long logPosition)
-    {
-        return String.format(CHECKSUM_FILE_NAME_TEMPLATE, rootPath, name, logPosition);
-    }
+    return parts[0];
+  }
 
-    public boolean matchesSnapshotFileNamePattern(File file, String name)
-    {
-        final String pattern = String.format(SNAPSHOT_FILE_NAME_PATTERN, name);
-        return file.getName().matches(pattern);
-    }
+  public String getSnapshotFileNameTemplate() {
+    return SNAPSHOT_FILE_PATH_TEMPLATE;
+  }
 
-    public boolean isSnapshotFile(final File file)
-    {
-        return matchesSnapshotFileNamePattern(file, ".+");
-    }
+  public String getChecksumFileNameTemplate() {
+    return CHECKSUM_FILE_NAME_TEMPLATE;
+  }
 
-    public Long getPositionOfSnapshotFile(File file, String name)
-    {
-        final String fileName = file.getName();
+  public static String getChecksumContentTemplate() {
+    return CHECKSUM_CONTENT_TEMPLATE;
+  }
 
-        final String pattern = String.format(SNAPSHOT_FILE_NAME_PATTERN, name);
-        final Matcher matcher = Pattern.compile(pattern).matcher(fileName);
-        if (matcher.find())
-        {
-            final String position = matcher.group(1);
-            return Long.parseLong(position);
-        }
-        else
-        {
-            throw new IllegalArgumentException("Cannot resolve position of snapshot file: " + fileName);
-        }
-    }
-
-    public String checksumContent(String checksum, String dataFileName)
-    {
-        return String.format(CHECKSUM_CONTENT_TEMPLATE, checksum, dataFileName);
-    }
-
-    public String extractDigestFromChecksumContent(String content)
-    {
-        final int indexOfSeparator = content.indexOf(CHECKSUM_CONTENT_SEPARATOR);
-        if (indexOfSeparator < 0)
-        {
-            throw new RuntimeException("Read invalid checksum file, missing separator.");
-        }
-
-        return content.substring(0, indexOfSeparator);
-    }
-
-    public String extractDataFileNameFromChecksumContent(String content)
-    {
-        final int indexOfSeparator = content.indexOf(CHECKSUM_CONTENT_SEPARATOR);
-        if (indexOfSeparator < 0)
-        {
-            throw new RuntimeException("Read invalid checksum file, missing separator.");
-        }
-
-        return content.substring(indexOfSeparator + CHECKSUM_CONTENT_SEPARATOR.length());
-    }
-
-    public String getSnapshotNameFromFileName(final String fileName)
-    {
-        final String suffixPattern = String.format(SNAPSHOT_FILE_NAME_PATTERN, "");
-        final Pattern pattern = Pattern.compile(suffixPattern);
-        final String[] parts = pattern.split(fileName);
-
-        return parts[0];
-    }
-
-    public String getSnapshotFileNameTemplate()
-    {
-        return SNAPSHOT_FILE_PATH_TEMPLATE;
-    }
-
-    public String getChecksumFileNameTemplate()
-    {
-        return CHECKSUM_FILE_NAME_TEMPLATE;
-    }
-
-    public static String getChecksumContentTemplate()
-    {
-        return CHECKSUM_CONTENT_TEMPLATE;
-    }
-
-    // TODO: make this not terrible
-    public boolean isReplicable(final String snapshotName)
-    {
-        return !snapshotName.matches(".*blockIdx.*");
-    }
+  // TODO: make this not terrible
+  public boolean isReplicable(final String snapshotName) {
+    return !snapshotName.matches(".*blockIdx.*");
+  }
 }

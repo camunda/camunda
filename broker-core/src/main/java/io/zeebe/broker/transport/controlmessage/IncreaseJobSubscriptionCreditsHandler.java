@@ -26,53 +26,55 @@ import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.ActorControl;
 import org.agrona.DirectBuffer;
 
-public class IncreaseJobSubscriptionCreditsHandler extends AbstractControlMessageHandler
-{
+public class IncreaseJobSubscriptionCreditsHandler extends AbstractControlMessageHandler {
 
-    protected final JobSubscriptionRequest subscription = new JobSubscriptionRequest();
-    protected final CreditsRequest creditsRequest = new CreditsRequest();
+  protected final JobSubscriptionRequest subscription = new JobSubscriptionRequest();
+  protected final CreditsRequest creditsRequest = new CreditsRequest();
 
-    protected final JobSubscriptionManager manager;
+  protected final JobSubscriptionManager manager;
 
-    public IncreaseJobSubscriptionCreditsHandler(final ServerOutput output, final JobSubscriptionManager manager)
-    {
-        super(output);
-        this.manager = manager;
+  public IncreaseJobSubscriptionCreditsHandler(
+      final ServerOutput output, final JobSubscriptionManager manager) {
+    super(output);
+    this.manager = manager;
+  }
+
+  @Override
+  public ControlMessageType getMessageType() {
+    return ControlMessageType.INCREASE_JOB_SUBSCRIPTION_CREDITS;
+  }
+
+  @Override
+  public void handle(
+      final ActorControl actor,
+      final int partitionId,
+      final DirectBuffer buffer,
+      final RecordMetadata eventMetadata) {
+    final long requestId = eventMetadata.getRequestId();
+    final int requestStreamId = eventMetadata.getRequestStreamId();
+    subscription.reset();
+    subscription.wrap(buffer);
+
+    if (subscription.getCredits() <= 0) {
+      sendErrorResponse(
+          actor,
+          requestStreamId,
+          requestId,
+          "Cannot increase job subscription credits. Credits must be positive.");
+    } else {
+      creditsRequest.setCredits(subscription.getCredits());
+      creditsRequest.setSubscriberKey(subscription.getSubscriberKey());
+
+      final boolean success = manager.increaseSubscriptionCreditsAsync(creditsRequest);
+      if (success) {
+        sendResponse(actor, requestStreamId, requestId, subscription);
+      } else {
+        sendErrorResponse(
+            actor,
+            requestStreamId,
+            requestId,
+            "Cannot increase job subscription credits. Capacities exhausted.");
+      }
     }
-
-    @Override
-    public ControlMessageType getMessageType()
-    {
-        return ControlMessageType.INCREASE_JOB_SUBSCRIPTION_CREDITS;
-    }
-
-    @Override
-    public void handle(final ActorControl actor, final int partitionId, final DirectBuffer buffer, final RecordMetadata eventMetadata)
-    {
-        final long requestId = eventMetadata.getRequestId();
-        final int requestStreamId = eventMetadata.getRequestStreamId();
-        subscription.reset();
-        subscription.wrap(buffer);
-
-        if (subscription.getCredits() <= 0)
-        {
-            sendErrorResponse(actor, requestStreamId, requestId, "Cannot increase job subscription credits. Credits must be positive.");
-        }
-        else
-        {
-            creditsRequest.setCredits(subscription.getCredits());
-            creditsRequest.setSubscriberKey(subscription.getSubscriberKey());
-
-            final boolean success = manager.increaseSubscriptionCreditsAsync(creditsRequest);
-            if (success)
-            {
-                sendResponse(actor, requestStreamId, requestId, subscription);
-            }
-            else
-            {
-                sendErrorResponse(actor, requestStreamId, requestId, "Cannot increase job subscription credits. Capacities exhausted.");
-            }
-        }
-    }
-
+  }
 }

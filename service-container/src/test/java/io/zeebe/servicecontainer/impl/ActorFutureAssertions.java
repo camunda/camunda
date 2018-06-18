@@ -19,21 +19,16 @@ import static org.assertj.core.api.Java6Assertions.assertThat;
 
 import io.zeebe.util.sched.future.ActorFuture;
 
-public class ActorFutureAssertions
-{
-    protected static void assertCompleted(final ActorFuture<?> serviceFuture)
-    {
-        assertThat(serviceFuture).isDone();
-    }
+public class ActorFutureAssertions {
+  protected static void assertCompleted(final ActorFuture<?> serviceFuture) {
+    assertThat(serviceFuture).isDone();
+  }
 
-    protected static void assertNotCompleted(final ActorFuture<?> serviceFuture)
-    {
-        assertThat(serviceFuture).isNotDone();
-    }
+  protected static void assertNotCompleted(final ActorFuture<?> serviceFuture) {
+    assertThat(serviceFuture).isNotDone();
+  }
 
-    protected static void assertFailed(final ActorFuture<?> serviceFuture)
-    {
-        assertThat(serviceFuture.isCompletedExceptionally()).isTrue();
-    }
-
+  protected static void assertFailed(final ActorFuture<?> serviceFuture) {
+    assertThat(serviceFuture.isCompletedExceptionally()).isTrue();
+  }
 }

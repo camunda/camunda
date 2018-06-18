@@ -21,75 +21,64 @@ import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
 import org.agrona.DirectBuffer;
 
-public class JobSubscription
-{
-    public static final int WORKER_MAX_LENGTH = 64;
+public class JobSubscription {
+  public static final int WORKER_MAX_LENGTH = 64;
 
-    private final int partitionId;
+  private final int partitionId;
 
-    private final DirectBuffer jobType;
+  private final DirectBuffer jobType;
 
-    private final long timeout;
-    private final DirectBuffer worker;
+  private final long timeout;
+  private final DirectBuffer worker;
 
-    private final int streamId;
+  private final int streamId;
 
-    private long subscriberKey;
+  private long subscriberKey;
 
-    private int credits;
+  private int credits;
 
-    public JobSubscription(int partitionId, DirectBuffer jobType, long timeout, DirectBuffer worker, int streamId)
-    {
-        this.partitionId = partitionId;
-        this.jobType = cloneBuffer(jobType);
-        this.timeout = timeout;
-        this.worker = cloneBuffer(worker);
-        this.streamId = streamId;
-    }
+  public JobSubscription(
+      int partitionId, DirectBuffer jobType, long timeout, DirectBuffer worker, int streamId) {
+    this.partitionId = partitionId;
+    this.jobType = cloneBuffer(jobType);
+    this.timeout = timeout;
+    this.worker = cloneBuffer(worker);
+    this.streamId = streamId;
+  }
 
-    public int getCredits()
-    {
-        return credits;
-    }
+  public int getCredits() {
+    return credits;
+  }
 
-    public void setCredits(int credits)
-    {
-        this.credits = credits;
-    }
+  public void setCredits(int credits) {
+    this.credits = credits;
+  }
 
-    public long getSubscriberKey()
-    {
-        return subscriberKey;
-    }
+  public long getSubscriberKey() {
+    return subscriberKey;
+  }
 
-    public DirectBuffer getJobType()
-    {
-        return jobType;
-    }
+  public DirectBuffer getJobType() {
+    return jobType;
+  }
 
-    public long getTimeout()
-    {
-        return timeout;
-    }
+  public long getTimeout() {
+    return timeout;
+  }
 
-    public DirectBuffer getWorker()
-    {
-        return worker;
-    }
+  public DirectBuffer getWorker() {
+    return worker;
+  }
 
-    public int getStreamId()
-    {
-        return streamId;
-    }
+  public int getStreamId() {
+    return streamId;
+  }
 
-    public void setSubscriberKey(long subscriberKey)
-    {
-        this.subscriberKey = subscriberKey;
-    }
+  public void setSubscriberKey(long subscriberKey) {
+    this.subscriberKey = subscriberKey;
+  }
 
-    public int getPartitionId()
-    {
-        return partitionId;
-    }
-
+  public int getPartitionId() {
+    return partitionId;
+  }
 }

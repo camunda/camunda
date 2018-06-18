@@ -15,53 +15,42 @@
  */
 package io.zeebe.transport.impl;
 
-import org.agrona.DirectBuffer;
-
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.FragmentHandler;
+import org.agrona.DirectBuffer;
 
-public class ReceiveBufferHandler implements FragmentHandler
-{
-    private final TransportHeaderDescriptor transportHeaderDescriptor = new TransportHeaderDescriptor();
+public class ReceiveBufferHandler implements FragmentHandler {
+  private final TransportHeaderDescriptor transportHeaderDescriptor =
+      new TransportHeaderDescriptor();
 
-    protected final Dispatcher receiveBuffer;
+  protected final Dispatcher receiveBuffer;
 
-    public ReceiveBufferHandler(Dispatcher receiveBuffer)
-    {
-        this.receiveBuffer = receiveBuffer;
+  public ReceiveBufferHandler(Dispatcher receiveBuffer) {
+    this.receiveBuffer = receiveBuffer;
+  }
+
+  @Override
+  public int onFragment(
+      DirectBuffer buffer, int offset, int length, int streamId, boolean isMarkedFailed) {
+    if (receiveBuffer == null) {
+      return CONSUME_FRAGMENT_RESULT;
     }
 
-    @Override
-    public int onFragment(DirectBuffer buffer, int offset, int length, int streamId, boolean isMarkedFailed)
-    {
-        if (receiveBuffer == null)
-        {
-            return CONSUME_FRAGMENT_RESULT;
-        }
+    if (!isMarkedFailed) {
+      transportHeaderDescriptor.wrap(buffer, offset);
+      if (transportHeaderDescriptor.protocolId() == TransportHeaderDescriptor.CONTROL_MESSAGE) {
+        // don't forward control messages
+        return CONSUME_FRAGMENT_RESULT;
+      }
 
-        if (!isMarkedFailed)
-        {
-            transportHeaderDescriptor.wrap(buffer, offset);
-            if (transportHeaderDescriptor.protocolId() == TransportHeaderDescriptor.CONTROL_MESSAGE)
-            {
-                // don't forward control messages
-                return CONSUME_FRAGMENT_RESULT;
-            }
-
-            final long offerPosition = receiveBuffer.offer(buffer, offset, length, streamId);
-            if (offerPosition < 0)
-            {
-                return POSTPONE_FRAGMENT_RESULT;
-            }
-            else
-            {
-                return CONSUME_FRAGMENT_RESULT;
-            }
-        }
-        else
-        {
-            return CONSUME_FRAGMENT_RESULT;
-        }
+      final long offerPosition = receiveBuffer.offer(buffer, offset, length, streamId);
+      if (offerPosition < 0) {
+        return POSTPONE_FRAGMENT_RESULT;
+      } else {
+        return CONSUME_FRAGMENT_RESULT;
+      }
+    } else {
+      return CONSUME_FRAGMENT_RESULT;
     }
-
+  }
 }

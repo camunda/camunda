@@ -17,9 +17,8 @@ package io.zeebe.transport.impl.memory;
 
 import java.nio.ByteBuffer;
 
-public interface TransportMemoryPool
-{
-    ByteBuffer allocate(int requestedCapacity);
+public interface TransportMemoryPool {
+  ByteBuffer allocate(int requestedCapacity);
 
-    void reclaim(ByteBuffer buffer);
+  void reclaim(ByteBuffer buffer);
 }

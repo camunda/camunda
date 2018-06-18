@@ -17,51 +17,41 @@
  */
 package io.zeebe.broker.system.workflow.repository.data;
 
-import org.agrona.DirectBuffer;
-
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.msgpack.value.ValueArray;
+import org.agrona.DirectBuffer;
 
-public class DeploymentRecord extends UnpackedObject
-{
-    private final StringProperty topicNameProp = new StringProperty("topicName");
+public class DeploymentRecord extends UnpackedObject {
+  private final StringProperty topicNameProp = new StringProperty("topicName");
 
-    private final ArrayProperty<DeploymentResource> resourcesProp = new ArrayProperty<>(
-            "resources",
-            new DeploymentResource());
+  private final ArrayProperty<DeploymentResource> resourcesProp =
+      new ArrayProperty<>("resources", new DeploymentResource());
 
-    private final ArrayProperty<DeployedWorkflow> deployedWorkflowsProp = new ArrayProperty<>(
-            "deployedWorkflows",
-            new DeployedWorkflow());
+  private final ArrayProperty<DeployedWorkflow> deployedWorkflowsProp =
+      new ArrayProperty<>("deployedWorkflows", new DeployedWorkflow());
 
-    public DeploymentRecord()
-    {
-        this
-            .declareProperty(topicNameProp)
-            .declareProperty(resourcesProp)
-            .declareProperty(deployedWorkflowsProp);
-    }
+  public DeploymentRecord() {
+    this.declareProperty(topicNameProp)
+        .declareProperty(resourcesProp)
+        .declareProperty(deployedWorkflowsProp);
+  }
 
-    public ValueArray<DeployedWorkflow> deployedWorkflows()
-    {
-        return deployedWorkflowsProp;
-    }
+  public ValueArray<DeployedWorkflow> deployedWorkflows() {
+    return deployedWorkflowsProp;
+  }
 
-    public ValueArray<DeploymentResource> resources()
-    {
-        return resourcesProp;
-    }
+  public ValueArray<DeploymentResource> resources() {
+    return resourcesProp;
+  }
 
-    public DirectBuffer getTopicName()
-    {
-        return topicNameProp.getValue();
-    }
+  public DirectBuffer getTopicName() {
+    return topicNameProp.getValue();
+  }
 
-    public DeploymentRecord setTopicName(String topicName)
-    {
-        this.topicNameProp.setValue(topicName);
-        return this;
-    }
+  public DeploymentRecord setTopicName(String topicName) {
+    this.topicNameProp.setValue(topicName);
+    return this;
+  }
 }

@@ -15,186 +15,158 @@
  */
 package io.zeebe.dispatcher;
 
+import static io.zeebe.dispatcher.impl.PositionUtil.position;
+
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.util.metrics.Metric;
 import io.zeebe.util.sched.ActorCondition;
+import java.nio.ByteBuffer;
+import java.util.Iterator;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import java.nio.ByteBuffer;
-import java.util.Iterator;
+/** Represents a block of fragments to read from. */
+public class BlockPeek implements Iterable<DirectBuffer> {
+  protected ByteBuffer byteBuffer;
+  protected UnsafeBuffer bufferView = new UnsafeBuffer(0, 0);
+  protected AtomicPosition subscriberPosition;
 
-import static io.zeebe.dispatcher.impl.PositionUtil.position;
+  protected int streamId;
 
-/**
- * Represents a block of fragments to read from.
- */
-public class BlockPeek implements Iterable<DirectBuffer>
-{
-    protected ByteBuffer byteBuffer;
-    protected UnsafeBuffer bufferView = new UnsafeBuffer(0, 0);
-    protected AtomicPosition subscriberPosition;
+  protected int bufferOffset;
+  protected int blockLength;
 
-    protected int streamId;
+  protected int newPartitionId;
+  protected int newPartitionOffset;
 
-    protected int bufferOffset;
-    protected int blockLength;
+  protected DataFrameIterator iterator = new DataFrameIterator();
+  private ActorCondition dataConsumed;
+  private int fragmentCount;
+  private Metric fragmentsConsumedMetric;
 
-    protected int newPartitionId;
-    protected int newPartitionOffset;
+  public void setBlock(
+      final ByteBuffer byteBuffer,
+      final AtomicPosition position,
+      final ActorCondition dataConsumed,
+      final int streamId,
+      final int bufferOffset,
+      final int blockLength,
+      final int newPartitionId,
+      final int newPartitionOffset,
+      int fragmentCount,
+      Metric fragmentsConsumedMetric) {
+    this.byteBuffer = byteBuffer;
+    this.subscriberPosition = position;
+    this.dataConsumed = dataConsumed;
+    this.streamId = streamId;
+    this.bufferOffset = bufferOffset;
+    this.blockLength = blockLength;
+    this.newPartitionId = newPartitionId;
+    this.newPartitionOffset = newPartitionOffset;
+    this.fragmentCount = fragmentCount;
+    this.fragmentsConsumedMetric = fragmentsConsumedMetric;
 
-    protected DataFrameIterator iterator = new DataFrameIterator();
-    private ActorCondition dataConsumed;
-    private int fragmentCount;
-    private Metric fragmentsConsumedMetric;
+    byteBuffer.limit(bufferOffset + blockLength);
+    byteBuffer.position(bufferOffset);
 
-    public void setBlock(
-            final ByteBuffer byteBuffer,
-            final AtomicPosition position,
-            final ActorCondition dataConsumed,
-            final int streamId,
-            final int bufferOffset,
-            final int blockLength,
-            final int newPartitionId,
-            final int newPartitionOffset,
-            int fragmentCount,
-            Metric fragmentsConsumedMetric)
-    {
-        this.byteBuffer = byteBuffer;
-        this.subscriberPosition = position;
-        this.dataConsumed = dataConsumed;
-        this.streamId = streamId;
-        this.bufferOffset = bufferOffset;
-        this.blockLength = blockLength;
-        this.newPartitionId = newPartitionId;
-        this.newPartitionOffset = newPartitionOffset;
-        this.fragmentCount = fragmentCount;
-        this.fragmentsConsumedMetric = fragmentsConsumedMetric;
+    bufferView.wrap(byteBuffer, bufferOffset, blockLength);
+  }
 
-        byteBuffer.limit(bufferOffset + blockLength);
-        byteBuffer.position(bufferOffset);
+  public ByteBuffer getRawBuffer() {
+    return byteBuffer;
+  }
 
-        bufferView.wrap(byteBuffer, bufferOffset, blockLength);
+  /** Returns the buffer to read from. */
+  public MutableDirectBuffer getBuffer() {
+    return bufferView;
+  }
+
+  /**
+   * Finish reading and consume the fragments (i.e. update the subscription position). Mark all
+   * fragments as failed.
+   */
+  public void markFailed() {
+    int fragmentOffset = 0;
+    while (fragmentOffset < blockLength) {
+      int framedFragmentLength =
+          bufferView.getInt(DataFrameDescriptor.lengthOffset(fragmentOffset));
+
+      if (framedFragmentLength < 0) {
+        framedFragmentLength = -framedFragmentLength;
+      }
+
+      final int frameLength = DataFrameDescriptor.alignedLength(framedFragmentLength);
+      final int flagsOffset = DataFrameDescriptor.flagsOffset(fragmentOffset);
+      final byte flags = bufferView.getByte(flagsOffset);
+
+      bufferView.putByte(flagsOffset, DataFrameDescriptor.enableFlagFailed(flags));
+
+      fragmentOffset += frameLength;
     }
 
-    public ByteBuffer getRawBuffer()
-    {
-        return byteBuffer;
-    }
+    updatePosition();
+  }
 
-    /**
-     * Returns the buffer to read from.
-     */
-    public MutableDirectBuffer getBuffer()
-    {
-        return bufferView;
-    }
+  /** Finish reading and consume the fragments (i.e. update the subscription position). */
+  public void markCompleted() {
+    updatePosition();
+  }
 
-    /**
-     * Finish reading and consume the fragments (i.e. update the subscription
-     * position). Mark all fragments as failed.
-     */
-    public void markFailed()
-    {
-        int fragmentOffset = 0;
-        while (fragmentOffset < blockLength)
-        {
-            int framedFragmentLength = bufferView.getInt(DataFrameDescriptor.lengthOffset(fragmentOffset));
+  protected void updatePosition() {
+    fragmentsConsumedMetric.getAndAddOrdered(fragmentCount);
+    subscriberPosition.proposeMaxOrdered(position(newPartitionId, newPartitionOffset));
+    dataConsumed.signal();
+  }
 
-            if (framedFragmentLength < 0)
-            {
-                framedFragmentLength = -framedFragmentLength;
-            }
+  public int getStreamId() {
+    return streamId;
+  }
 
-            final int frameLength = DataFrameDescriptor.alignedLength(framedFragmentLength);
-            final int flagsOffset = DataFrameDescriptor.flagsOffset(fragmentOffset);
-            final byte flags = bufferView.getByte(flagsOffset);
+  public int getBufferOffset() {
+    return bufferOffset;
+  }
 
-            bufferView.putByte(flagsOffset, DataFrameDescriptor.enableFlagFailed(flags));
+  public int getBlockLength() {
+    return blockLength;
+  }
 
-            fragmentOffset += frameLength;
-        }
+  public long getBlockPosition() {
+    return position(newPartitionId, newPartitionOffset);
+  }
 
-        updatePosition();
-    }
+  @Override
+  public Iterator<DirectBuffer> iterator() {
+    iterator.reset();
+    return iterator;
+  }
 
-    /**
-     * Finish reading and consume the fragments (i.e. update the subscription
-     * position).
-     */
-    public void markCompleted()
-    {
-        updatePosition();
-    }
+  protected class DataFrameIterator implements Iterator<DirectBuffer> {
 
-    protected void updatePosition()
-    {
-        fragmentsConsumedMetric.getAndAddOrdered(fragmentCount);
-        subscriberPosition.proposeMaxOrdered(position(newPartitionId, newPartitionOffset));
-        dataConsumed.signal();
-    }
+    protected int iterationOffset;
+    protected UnsafeBuffer buffer = new UnsafeBuffer(0, 0);
 
-    public int getStreamId()
-    {
-        return streamId;
-    }
-
-    public int getBufferOffset()
-    {
-        return bufferOffset;
-    }
-
-    public int getBlockLength()
-    {
-        return blockLength;
-    }
-
-    public long getBlockPosition()
-    {
-        return position(newPartitionId, newPartitionOffset);
+    public void reset() {
+      iterationOffset = 0;
     }
 
     @Override
-    public Iterator<DirectBuffer> iterator()
-    {
-        iterator.reset();
-        return iterator;
+    public boolean hasNext() {
+      return iterationOffset < blockLength;
     }
 
-    protected class DataFrameIterator implements Iterator<DirectBuffer>
-    {
+    @Override
+    public DirectBuffer next() {
+      final int framedFragmentLength =
+          bufferView.getInt(DataFrameDescriptor.lengthOffset(iterationOffset));
+      final int fragmentLength = DataFrameDescriptor.messageLength(framedFragmentLength);
+      final int messageOffset = DataFrameDescriptor.messageOffset(iterationOffset);
 
-        protected int iterationOffset;
-        protected UnsafeBuffer buffer = new UnsafeBuffer(0, 0);
+      buffer.wrap(bufferView, messageOffset, fragmentLength);
 
-        public void reset()
-        {
-            iterationOffset = 0;
-        }
+      iterationOffset += DataFrameDescriptor.alignedLength(framedFragmentLength);
 
-        @Override
-        public boolean hasNext()
-        {
-            return iterationOffset < blockLength;
-        }
-
-        @Override
-        public DirectBuffer next()
-        {
-            final int framedFragmentLength = bufferView.getInt(DataFrameDescriptor.lengthOffset(iterationOffset));
-            final int fragmentLength = DataFrameDescriptor.messageLength(framedFragmentLength);
-            final int messageOffset = DataFrameDescriptor.messageOffset(iterationOffset);
-
-            buffer.wrap(bufferView, messageOffset, fragmentLength);
-
-            iterationOffset += DataFrameDescriptor.alignedLength(framedFragmentLength);
-
-            return buffer;
-        }
-
-
+      return buffer;
     }
-
-
+  }
 }

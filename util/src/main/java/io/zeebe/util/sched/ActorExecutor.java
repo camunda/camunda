@@ -15,117 +15,100 @@
  */
 package io.zeebe.util.sched;
 
-import java.time.Duration;
-import java.util.concurrent.*;
-
 import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.metrics.TaskMetrics;
+import java.time.Duration;
+import java.util.concurrent.*;
 
 /**
- * Used to submit {@link ActorTask ActorTasks} and Blocking Actions to
- * the scheduler's internal runners and queues.
+ * Used to submit {@link ActorTask ActorTasks} and Blocking Actions to the scheduler's internal
+ * runners and queues.
  */
-public class ActorExecutor
-{
-    private final ActorThreadGroup cpuBoundThreads;
-    private final ActorThreadGroup ioBoundThreads;
-    private final ThreadPoolExecutor blockingTasksRunner;
-    private final MetricsManager metricsManager;
-    private final Duration blockingTasksShutdownTime;
+public class ActorExecutor {
+  private final ActorThreadGroup cpuBoundThreads;
+  private final ActorThreadGroup ioBoundThreads;
+  private final ThreadPoolExecutor blockingTasksRunner;
+  private final MetricsManager metricsManager;
+  private final Duration blockingTasksShutdownTime;
 
-    public ActorExecutor(ActorSchedulerBuilder builder)
-    {
-        this.ioBoundThreads = builder.getIoBoundActorThreads();
-        this.cpuBoundThreads = builder.getCpuBoundActorThreads();
-        this.blockingTasksRunner = builder.getBlockingTasksRunner();
-        this.metricsManager = builder.getMetricsManager();
-        this.blockingTasksShutdownTime = builder.getBlockingTasksShutdownTime();
+  public ActorExecutor(ActorSchedulerBuilder builder) {
+    this.ioBoundThreads = builder.getIoBoundActorThreads();
+    this.cpuBoundThreads = builder.getCpuBoundActorThreads();
+    this.blockingTasksRunner = builder.getBlockingTasksRunner();
+    this.metricsManager = builder.getMetricsManager();
+    this.blockingTasksShutdownTime = builder.getBlockingTasksShutdownTime();
+  }
+
+  /**
+   * Initially submit a non-blocking actor to be managed by this schedueler.
+   *
+   * @param task the task to submit
+   * @param collectTaskMetrics Controls whether metrics should be collected. (See {@link
+   *     ActorScheduler#submitActor(Actor, boolean)})
+   */
+  public ActorFuture<Void> submitCpuBound(ActorTask task, boolean collectTaskMetrics) {
+    return submitTask(task, collectTaskMetrics, cpuBoundThreads);
+  }
+
+  public ActorFuture<Void> submitIoBoundTask(ActorTask task, boolean collectTaskMetrics) {
+    return submitTask(task, collectTaskMetrics, ioBoundThreads);
+  }
+
+  private ActorFuture<Void> submitTask(
+      ActorTask task, boolean collectMetrics, ActorThreadGroup threadGroup) {
+    TaskMetrics taskMetrics = null;
+
+    if (collectMetrics) {
+      taskMetrics = new TaskMetrics(task.getName(), metricsManager);
     }
 
-    /**
-     * Initially submit a non-blocking actor to be managed by this schedueler.
-     *
-     * @param task
-     *            the task to submit
-     * @param collectTaskMetrics
-     *            Controls whether metrics should be collected. (See
-     *            {@link ActorScheduler#submitActor(Actor, boolean)})
-     */
-    public ActorFuture<Void> submitCpuBound(ActorTask task, boolean collectTaskMetrics)
-    {
-        return submitTask(task, collectTaskMetrics, cpuBoundThreads);
+    final ActorFuture<Void> startingFuture = task.onTaskScheduled(this, threadGroup, taskMetrics);
+
+    threadGroup.submit(task);
+    return startingFuture;
+  }
+
+  /**
+   * Sumbit a blocking action to run using the scheduler's blocking thread pool
+   *
+   * @param action the action to submit
+   */
+  public void submitBlocking(Runnable action) {
+    blockingTasksRunner.execute(action);
+  }
+
+  public void start() {
+    cpuBoundThreads.start();
+    ioBoundThreads.start();
+  }
+
+  public CompletableFuture<Void> closeAsync() {
+    blockingTasksRunner.shutdown();
+
+    final CompletableFuture<Void> resultFuture =
+        CompletableFuture.allOf(ioBoundThreads.closeAsync(), cpuBoundThreads.closeAsync());
+
+    try {
+      blockingTasksRunner.awaitTermination(
+          blockingTasksShutdownTime.getSeconds(), TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
     }
 
-    public ActorFuture<Void> submitIoBoundTask(ActorTask task, boolean collectTaskMetrics)
-    {
-        return submitTask(task, collectTaskMetrics, ioBoundThreads);
-    }
+    return resultFuture;
+  }
 
-    private ActorFuture<Void> submitTask(ActorTask task, boolean collectMetrics, ActorThreadGroup threadGroup)
-    {
-        TaskMetrics taskMetrics = null;
+  public MetricsManager getMetricsManager() {
+    return metricsManager;
+  }
 
-        if (collectMetrics)
-        {
-            taskMetrics = new TaskMetrics(task.getName(), metricsManager);
-        }
+  public ActorThreadGroup getCpuBoundThreads() {
+    return cpuBoundThreads;
+  }
 
-        final ActorFuture<Void> startingFuture = task.onTaskScheduled(this, threadGroup, taskMetrics);
-
-        threadGroup.submit(task);
-        return startingFuture;
-    }
-
-    /**
-     * Sumbit a blocking action to run using the scheduler's blocking thread
-     * pool
-     *
-     * @param action
-     *            the action to submit
-     */
-    public void submitBlocking(Runnable action)
-    {
-        blockingTasksRunner.execute(action);
-    }
-
-    public void start()
-    {
-        cpuBoundThreads.start();
-        ioBoundThreads.start();
-    }
-
-    public CompletableFuture<Void> closeAsync()
-    {
-        blockingTasksRunner.shutdown();
-
-        final CompletableFuture<Void> resultFuture = CompletableFuture.allOf(ioBoundThreads.closeAsync(), cpuBoundThreads.closeAsync());
-
-        try
-        {
-            blockingTasksRunner.awaitTermination(blockingTasksShutdownTime.getSeconds(), TimeUnit.SECONDS);
-        }
-        catch (InterruptedException e)
-        {
-            e.printStackTrace();
-        }
-
-        return resultFuture;
-    }
-
-    public MetricsManager getMetricsManager()
-    {
-        return metricsManager;
-    }
-
-    public ActorThreadGroup getCpuBoundThreads()
-    {
-        return cpuBoundThreads;
-    }
-
-    public ActorThreadGroup getIoBoundThreads()
-    {
-        return ioBoundThreads;
-    }
+  public ActorThreadGroup getIoBoundThreads() {
+    return ioBoundThreads;
+  }
 }

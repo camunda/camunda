@@ -21,55 +21,46 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.*;
 import org.agrona.DirectBuffer;
 
-public class DeploymentResource extends UnpackedObject
-{
-    private final BinaryProperty resourceProp = new BinaryProperty("resource");
-    private final EnumProperty<ResourceType> resourceTypeProp = new EnumProperty<ResourceType>("resourceType", ResourceType.class, ResourceType.BPMN_XML);
-    private final StringProperty resourceNameProp = new StringProperty("resourceName", "resource");
+public class DeploymentResource extends UnpackedObject {
+  private final BinaryProperty resourceProp = new BinaryProperty("resource");
+  private final EnumProperty<ResourceType> resourceTypeProp =
+      new EnumProperty<ResourceType>("resourceType", ResourceType.class, ResourceType.BPMN_XML);
+  private final StringProperty resourceNameProp = new StringProperty("resourceName", "resource");
 
-    public DeploymentResource()
-    {
-        this.declareProperty(resourceProp)
-            .declareProperty(resourceTypeProp)
-            .declareProperty(resourceNameProp);
-    }
+  public DeploymentResource() {
+    this.declareProperty(resourceProp)
+        .declareProperty(resourceTypeProp)
+        .declareProperty(resourceNameProp);
+  }
 
-    public DirectBuffer getResource()
-    {
-        return resourceProp.getValue();
-    }
+  public DirectBuffer getResource() {
+    return resourceProp.getValue();
+  }
 
-    public DeploymentResource setResource(DirectBuffer resource)
-    {
-        return setResource(resource, 0, resource.capacity());
-    }
+  public DeploymentResource setResource(DirectBuffer resource) {
+    return setResource(resource, 0, resource.capacity());
+  }
 
-    public DeploymentResource setResource(DirectBuffer resource, int offset, int length)
-    {
-        this.resourceProp.setValue(resource, offset, length);
-        return this;
-    }
+  public DeploymentResource setResource(DirectBuffer resource, int offset, int length) {
+    this.resourceProp.setValue(resource, offset, length);
+    return this;
+  }
 
-    public ResourceType getResourceType()
-    {
-        return resourceTypeProp.getValue();
-    }
+  public ResourceType getResourceType() {
+    return resourceTypeProp.getValue();
+  }
 
-    public DeploymentResource setResourceType(ResourceType resourceType)
-    {
-        this.resourceTypeProp.setValue(resourceType);
-        return this;
-    }
+  public DeploymentResource setResourceType(ResourceType resourceType) {
+    this.resourceTypeProp.setValue(resourceType);
+    return this;
+  }
 
-    public DirectBuffer getResourceName()
-    {
-        return resourceNameProp.getValue();
-    }
+  public DirectBuffer getResourceName() {
+    return resourceNameProp.getValue();
+  }
 
-    public DeploymentResource setResourceName(DirectBuffer resourceName)
-    {
-        this.resourceNameProp.setValue(resourceName);
-        return this;
-    }
-
+  public DeploymentResource setResourceName(DirectBuffer resourceName) {
+    this.resourceNameProp.setValue(resourceName);
+    return this;
+  }
 }

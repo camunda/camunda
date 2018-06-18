@@ -15,57 +15,43 @@
  */
 package io.zeebe.util;
 
-import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
-
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
-public class DeferredCommandContext
-{
-    protected final ManyToOneConcurrentLinkedQueue<Runnable> cmdQueue;
-    protected final Consumer<Runnable> cmdConsumer = Runnable::run;
+public class DeferredCommandContext {
+  protected final ManyToOneConcurrentLinkedQueue<Runnable> cmdQueue;
+  protected final Consumer<Runnable> cmdConsumer = Runnable::run;
 
-    public DeferredCommandContext()
-    {
-        this.cmdQueue = new ManyToOneConcurrentLinkedQueue<>();
-    }
+  public DeferredCommandContext() {
+    this.cmdQueue = new ManyToOneConcurrentLinkedQueue<>();
+  }
 
-    public <T> CompletableFuture<T> runAsync(Consumer<CompletableFuture<T>> action)
-    {
-        final CompletableFuture<T> future = new CompletableFuture<>();
+  public <T> CompletableFuture<T> runAsync(Consumer<CompletableFuture<T>> action) {
+    final CompletableFuture<T> future = new CompletableFuture<>();
 
-        cmdQueue.add(() ->
-        {
-            try
-            {
-                action.accept(future);
-            }
-            catch (Exception e)
-            {
-                future.completeExceptionally(e);
-            }
+    cmdQueue.add(
+        () -> {
+          try {
+            action.accept(future);
+          } catch (Exception e) {
+            future.completeExceptionally(e);
+          }
         });
-        return future;
-    }
+    return future;
+  }
 
-    /**
-     * Use this when no future is required.
-     */
-    public void runAsync(Runnable r)
-    {
-        cmdQueue.add(r);
-    }
+  /** Use this when no future is required. */
+  public void runAsync(Runnable r) {
+    cmdQueue.add(r);
+  }
 
-    public void doWork()
-    {
-        while (!cmdQueue.isEmpty())
-        {
-            final Runnable runnable = cmdQueue.poll();
-            if (runnable != null)
-            {
-                cmdConsumer.accept(runnable);
-            }
-        }
+  public void doWork() {
+    while (!cmdQueue.isEmpty()) {
+      final Runnable runnable = cmdQueue.poll();
+      if (runnable != null) {
+        cmdConsumer.accept(runnable);
+      }
     }
-
+  }
 }

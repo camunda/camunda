@@ -19,21 +19,17 @@ import io.zeebe.client.api.record.Record;
 import io.zeebe.client.impl.RequestManager.ResponseFuture;
 import io.zeebe.client.impl.record.RecordImpl;
 
-public abstract class CommandImpl<R extends Record>
-{
+public abstract class CommandImpl<R extends Record> {
 
-    protected final RequestManager client;
+  protected final RequestManager client;
 
-    public CommandImpl(RequestManager client)
-    {
-        this.client = client;
-    }
+  public CommandImpl(RequestManager client) {
+    this.client = client;
+  }
 
-    public ResponseFuture<R> send()
-    {
-        return client.send(this);
-    }
+  public ResponseFuture<R> send() {
+    return client.send(this);
+  }
 
-    public abstract RecordImpl getCommand();
-
+  public abstract RecordImpl getCommand();
 }

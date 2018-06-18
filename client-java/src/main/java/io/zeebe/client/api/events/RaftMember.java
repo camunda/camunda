@@ -15,16 +15,10 @@
  */
 package io.zeebe.client.api.events;
 
-public interface RaftMember
-{
-    /**
-     * @return the host name of the member's address
-     */
-    String getHost();
+public interface RaftMember {
+  /** @return the host name of the member's address */
+  String getHost();
 
-    /**
-     *
-     * @return the port of the member's address
-     */
-    int getPort();
+  /** @return the port of the member's address */
+  int getPort();
 }

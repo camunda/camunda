@@ -19,50 +19,37 @@ import java.io.*;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel.MapMode;
 
-/**
- * Allocates a buffer in a mapped file.
- */
-public class MappedFileAllocator implements BufferAllocator
-{
+/** Allocates a buffer in a mapped file. */
+public class MappedFileAllocator implements BufferAllocator {
 
-    private final File mappedFile;
+  private final File mappedFile;
 
-    public MappedFileAllocator(File mappedFile)
-    {
-        super();
-        this.mappedFile = mappedFile;
-    }
+  public MappedFileAllocator(File mappedFile) {
+    super();
+    this.mappedFile = mappedFile;
+  }
 
-    @Override
-    public AllocatedBuffer allocate(int capacity)
-    {
-        RandomAccessFile raf = null;
+  @Override
+  public AllocatedBuffer allocate(int capacity) {
+    RandomAccessFile raf = null;
 
-        try
-        {
-            raf = new RandomAccessFile(mappedFile, "rw");
+    try {
+      raf = new RandomAccessFile(mappedFile, "rw");
 
-            final MappedByteBuffer mappedBuffer = raf.getChannel().map(MapMode.READ_WRITE, 0, capacity);
+      final MappedByteBuffer mappedBuffer = raf.getChannel().map(MapMode.READ_WRITE, 0, capacity);
 
-            return new AllocatedMappedFile(mappedBuffer, raf);
+      return new AllocatedMappedFile(mappedBuffer, raf);
+    } catch (Exception e) {
+      if (raf != null) {
+        try {
+          raf.close();
+        } catch (IOException e1) {
+          // ignore silently
         }
-        catch (Exception e)
-        {
-            if (raf != null)
-            {
-                try
-                {
-                    raf.close();
-                }
-                catch (IOException e1)
-                {
-                    // ignore silently
-                }
-            }
+      }
 
-            throw new RuntimeException("Could not map file " + mappedFile + " into memory: " + e.getMessage(), e);
-        }
-
+      throw new RuntimeException(
+          "Could not map file " + mappedFile + " into memory: " + e.getMessage(), e);
     }
-
+  }
 }

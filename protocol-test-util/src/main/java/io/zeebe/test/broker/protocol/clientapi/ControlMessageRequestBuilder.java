@@ -15,58 +15,49 @@
  */
 package io.zeebe.test.broker.protocol.clientapi;
 
-import java.util.Map;
-
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.util.collection.MapBuilder;
 import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.RemoteAddress;
+import java.util.Map;
 
-public class ControlMessageRequestBuilder
-{
-    protected ControlMessageRequest request;
+public class ControlMessageRequestBuilder {
+  protected ControlMessageRequest request;
 
-    public ControlMessageRequestBuilder(ClientOutput output, RemoteAddress target, MsgPackHelper msgPackHelper)
-    {
-        request = new ControlMessageRequest(output, target, msgPackHelper);
-    }
+  public ControlMessageRequestBuilder(
+      ClientOutput output, RemoteAddress target, MsgPackHelper msgPackHelper) {
+    request = new ControlMessageRequest(output, target, msgPackHelper);
+  }
 
-    public ControlMessageRequest send()
-    {
-        return request.send();
-    }
+  public ControlMessageRequest send() {
+    return request.send();
+  }
 
-    public ControlMessageRequest sendWithoutRetries()
-    {
-        return request.send(b -> false);
-    }
+  public ControlMessageRequest sendWithoutRetries() {
+    return request.send(b -> false);
+  }
 
-    public ControlMessageResponse sendAndAwait()
-    {
-        return send().await();
-    }
+  public ControlMessageResponse sendAndAwait() {
+    return send().await();
+  }
 
-    public ControlMessageRequestBuilder messageType(ControlMessageType msgType)
-    {
-        request.messageType(msgType);
-        return this;
-    }
+  public ControlMessageRequestBuilder messageType(ControlMessageType msgType) {
+    request.messageType(msgType);
+    return this;
+  }
 
-    public ControlMessageRequestBuilder partitionId(int partitionId)
-    {
-        request.partitionId(partitionId);
-        return this;
-    }
+  public ControlMessageRequestBuilder partitionId(int partitionId) {
+    request.partitionId(partitionId);
+    return this;
+  }
 
-    public ControlMessageRequestBuilder data(Map<String, Object> data)
-    {
-        request.data(data);
-        return this;
-    }
+  public ControlMessageRequestBuilder data(Map<String, Object> data) {
+    request.data(data);
+    return this;
+  }
 
-    public MapBuilder<ControlMessageRequestBuilder> data()
-    {
-        return new MapBuilder<>(this, this::data);
-    }
+  public MapBuilder<ControlMessageRequestBuilder> data() {
+    return new MapBuilder<>(this, this::data);
+  }
 }

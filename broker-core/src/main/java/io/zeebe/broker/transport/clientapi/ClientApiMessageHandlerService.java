@@ -21,42 +21,37 @@ import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.servicecontainer.*;
 
-public class ClientApiMessageHandlerService implements Service<ClientApiMessageHandler>
-{
-    private final Injector<Dispatcher> controlMessageBufferInjector = new Injector<>();
-    protected ClientApiMessageHandler service;
+public class ClientApiMessageHandlerService implements Service<ClientApiMessageHandler> {
+  private final Injector<Dispatcher> controlMessageBufferInjector = new Injector<>();
+  protected ClientApiMessageHandler service;
 
-    protected final ServiceGroupReference<Partition> leaderPartitionsGroupReference = ServiceGroupReference.<Partition>create()
-        .onAdd((name, partition) -> service.addPartition(partition))
-        .onRemove((name, partition) -> service.removePartition(partition))
-        .build();
+  protected final ServiceGroupReference<Partition> leaderPartitionsGroupReference =
+      ServiceGroupReference.<Partition>create()
+          .onAdd((name, partition) -> service.addPartition(partition))
+          .onRemove((name, partition) -> service.removePartition(partition))
+          .build();
 
-    @Override
-    public void start(ServiceStartContext startContext)
-    {
-        final Dispatcher controlMessageBuffer = controlMessageBufferInjector.getValue();
-        service = new ClientApiMessageHandler(controlMessageBuffer);
-    }
+  @Override
+  public void start(ServiceStartContext startContext) {
+    final Dispatcher controlMessageBuffer = controlMessageBufferInjector.getValue();
+    service = new ClientApiMessageHandler(controlMessageBuffer);
+  }
 
-    @Override
-    public void stop(ServiceStopContext arg0)
-    {
-        // nothing to do
-    }
+  @Override
+  public void stop(ServiceStopContext arg0) {
+    // nothing to do
+  }
 
-    @Override
-    public ClientApiMessageHandler get()
-    {
-        return service;
-    }
+  @Override
+  public ClientApiMessageHandler get() {
+    return service;
+  }
 
-    public Injector<Dispatcher> getControlMessageBufferInjector()
-    {
-        return controlMessageBufferInjector;
-    }
+  public Injector<Dispatcher> getControlMessageBufferInjector() {
+    return controlMessageBufferInjector;
+  }
 
-    public ServiceGroupReference<Partition> getLeaderParitionsGroupReference()
-    {
-        return leaderPartitionsGroupReference;
-    }
+  public ServiceGroupReference<Partition> getLeaderParitionsGroupReference() {
+    return leaderPartitionsGroupReference;
+  }
 }

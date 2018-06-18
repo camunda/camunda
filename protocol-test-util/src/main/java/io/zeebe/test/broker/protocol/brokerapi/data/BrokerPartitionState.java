@@ -15,40 +15,43 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi.data;
 
-public class BrokerPartitionState
-{
-    public static final String LEADER_STATE = "LEADER";
-    public static final String FOLLOWER_STATE = "FOLLOWER";
+public class BrokerPartitionState {
+  public static final String LEADER_STATE = "LEADER";
+  public static final String FOLLOWER_STATE = "FOLLOWER";
 
-    private final String state;
-    private final String topicName;
-    private final int partitionId;
+  private final String state;
+  private final String topicName;
+  private final int partitionId;
 
-    public BrokerPartitionState(final String state, final String topicName, final int partitionId)
-    {
-        this.state = state;
-        this.topicName = topicName;
-        this.partitionId = partitionId;
-    }
+  public BrokerPartitionState(final String state, final String topicName, final int partitionId) {
+    this.state = state;
+    this.topicName = topicName;
+    this.partitionId = partitionId;
+  }
 
-    public String getState()
-    {
-        return state;
-    }
+  public String getState() {
+    return state;
+  }
 
-    public String getTopicName()
-    {
-        return topicName;
-    }
+  public String getTopicName() {
+    return topicName;
+  }
 
-    public int getPartitionId()
-    {
-        return partitionId;
-    }
+  public int getPartitionId() {
+    return partitionId;
+  }
 
-    @Override
-    public String toString()
-    {
-        return "BrokerPartitionState{" + "state='" + state + '\'' + ", topicName='" + topicName + '\'' + ", partitionId=" + partitionId + '}';
-    }
+  @Override
+  public String toString() {
+    return "BrokerPartitionState{"
+        + "state='"
+        + state
+        + '\''
+        + ", topicName='"
+        + topicName
+        + '\''
+        + ", partitionId="
+        + partitionId
+        + '}';
+  }
 }

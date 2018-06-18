@@ -16,54 +16,48 @@
 package io.zeebe.util.sched.clock;
 
 /**
- * Default actor clock implementation; minimizes calls to {@link System#currentTimeMillis()} to once per millisecond.
+ * Default actor clock implementation; minimizes calls to {@link System#currentTimeMillis()} to once
+ * per millisecond.
  */
-public class DefaultActorClock implements ActorClock
-{
-    long timeMillis;
+public class DefaultActorClock implements ActorClock {
+  long timeMillis;
 
-    long nanoTime;
+  long nanoTime;
 
-    long nanoTimeOfLastMilli;
+  long nanoTimeOfLastMilli;
 
-    long nanosSinceLastMilli;
+  long nanosSinceLastMilli;
 
-    @Override
-    public boolean update()
-    {
-        updateNanos();
+  @Override
+  public boolean update() {
+    updateNanos();
 
-        if (nanosSinceLastMilli >= 1_000_000)
-        {
-            timeMillis = System.currentTimeMillis();
-            nanoTimeOfLastMilli = nanoTime;
-            return true;
-        }
-
-        return false;
+    if (nanosSinceLastMilli >= 1_000_000) {
+      timeMillis = System.currentTimeMillis();
+      nanoTimeOfLastMilli = nanoTime;
+      return true;
     }
 
-    private void updateNanos()
-    {
-        nanoTime = System.nanoTime();
-        nanosSinceLastMilli = nanoTime - nanoTimeOfLastMilli;
-    }
+    return false;
+  }
 
-    @Override
-    public long getTimeMillis()
-    {
-        return timeMillis;
-    }
+  private void updateNanos() {
+    nanoTime = System.nanoTime();
+    nanosSinceLastMilli = nanoTime - nanoTimeOfLastMilli;
+  }
 
-    @Override
-    public long getNanosSinceLastMillisecond()
-    {
-        return nanosSinceLastMilli;
-    }
+  @Override
+  public long getTimeMillis() {
+    return timeMillis;
+  }
 
-    @Override
-    public long getNanoTime()
-    {
-        return nanoTime;
-    }
+  @Override
+  public long getNanosSinceLastMillisecond() {
+    return nanosSinceLastMilli;
+  }
+
+  @Override
+  public long getNanoTime() {
+    return nanoTime;
+  }
 }

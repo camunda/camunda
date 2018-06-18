@@ -19,46 +19,39 @@ package io.zeebe.broker.workflow.map;
 
 import io.zeebe.model.bpmn.instance.Workflow;
 
-public class DeployedWorkflow
-{
-    private final Workflow workflow;
+public class DeployedWorkflow {
+  private final Workflow workflow;
 
-    private final long key;
+  private final long key;
 
-    private final int version;
+  private final int version;
 
-    private long fetched;
+  private long fetched;
 
-    public DeployedWorkflow(Workflow workflow, long key, int version, long fetched)
-    {
-        this.workflow = workflow;
-        this.key = key;
-        this.version = version;
-        this.fetched = fetched;
-    }
+  public DeployedWorkflow(Workflow workflow, long key, int version, long fetched) {
+    this.workflow = workflow;
+    this.key = key;
+    this.version = version;
+    this.fetched = fetched;
+  }
 
-    public Workflow getWorkflow()
-    {
-        return workflow;
-    }
+  public Workflow getWorkflow() {
+    return workflow;
+  }
 
-    public int getVersion()
-    {
-        return version;
-    }
+  public int getVersion() {
+    return version;
+  }
 
-    public long getKey()
-    {
-        return key;
-    }
+  public long getKey() {
+    return key;
+  }
 
-    public long getFetched()
-    {
-        return fetched;
-    }
+  public long getFetched() {
+    return fetched;
+  }
 
-    public void setFetched(long fetched)
-    {
-        this.fetched = fetched;
-    }
+  public void setFetched(long fetched) {
+    this.fetched = fetched;
+  }
 }

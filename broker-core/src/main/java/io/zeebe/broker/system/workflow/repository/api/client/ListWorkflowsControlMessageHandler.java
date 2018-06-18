@@ -17,9 +17,6 @@
  */
 package io.zeebe.broker.system.workflow.repository.api.client;
 
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
-
 import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex.WorkflowMetadata;
 import io.zeebe.broker.system.workflow.repository.service.WorkflowRepositoryService;
 import io.zeebe.broker.transport.controlmessage.AbstractControlMessageHandler;
@@ -32,79 +29,80 @@ import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.DirectBuffer;
 
-public class ListWorkflowsControlMessageHandler extends AbstractControlMessageHandler
-{
-    private AtomicReference<WorkflowRepositoryService> workflowRepositoryServiceRef = new AtomicReference<>();
+public class ListWorkflowsControlMessageHandler extends AbstractControlMessageHandler {
+  private AtomicReference<WorkflowRepositoryService> workflowRepositoryServiceRef =
+      new AtomicReference<>();
 
-    public ListWorkflowsControlMessageHandler(ServerOutput output)
-    {
-        super(output);
-    }
+  public ListWorkflowsControlMessageHandler(ServerOutput output) {
+    super(output);
+  }
 
-    @Override
-    public ControlMessageType getMessageType()
-    {
-        return ControlMessageType.LIST_WORKFLOWS;
-    }
+  @Override
+  public ControlMessageType getMessageType() {
+    return ControlMessageType.LIST_WORKFLOWS;
+  }
 
-    @Override
-    public void handle(ActorControl actor, int partitionId, DirectBuffer buffer, RecordMetadata metadata)
-    {
-        final WorkflowRepositoryService repository = workflowRepositoryServiceRef.get();
+  @Override
+  public void handle(
+      ActorControl actor, int partitionId, DirectBuffer buffer, RecordMetadata metadata) {
+    final WorkflowRepositoryService repository = workflowRepositoryServiceRef.get();
 
-        if (repository == null)
-        {
-            sendErrorResponse(actor, metadata.getRequestStreamId(), metadata.getRequestId(), ErrorCode.PARTITION_NOT_FOUND, "Workflow request must address the leader of the system partition %d", Protocol.SYSTEM_PARTITION);
-        }
-        else
-        {
-            final ListWorkflowsControlRequest controlRequest = new ListWorkflowsControlRequest();
-            controlRequest.wrap(buffer);
+    if (repository == null) {
+      sendErrorResponse(
+          actor,
+          metadata.getRequestStreamId(),
+          metadata.getRequestId(),
+          ErrorCode.PARTITION_NOT_FOUND,
+          "Workflow request must address the leader of the system partition %d",
+          Protocol.SYSTEM_PARTITION);
+    } else {
+      final ListWorkflowsControlRequest controlRequest = new ListWorkflowsControlRequest();
+      controlRequest.wrap(buffer);
 
-            final String topicName = BufferUtil.bufferAsString(controlRequest.getTopicName());
-            final String bpmnProcessId = BufferUtil.bufferAsString(controlRequest.getBpmnProcessId());
+      final String topicName = BufferUtil.bufferAsString(controlRequest.getTopicName());
+      final String bpmnProcessId = BufferUtil.bufferAsString(controlRequest.getBpmnProcessId());
 
-            final ActorFuture<List<WorkflowMetadata>> future;
+      final ActorFuture<List<WorkflowMetadata>> future;
 
-            if (!bpmnProcessId.isEmpty())
-            {
-                future = repository.getWorkflowsByBpmnProcessId(topicName, bpmnProcessId);
+      if (!bpmnProcessId.isEmpty()) {
+        future = repository.getWorkflowsByBpmnProcessId(topicName, bpmnProcessId);
+      } else {
+        future = repository.getWorkflowsByTopic(topicName);
+      }
+
+      actor.runOnCompletion(
+          future,
+          (workflows, err) -> {
+            if (err != null) {
+              sendErrorResponse(
+                  actor, metadata.getRequestStreamId(), metadata.getRequestId(), err.getMessage());
+            } else {
+              final ListWorkflowsResponse response = new ListWorkflowsResponse();
+              final ValueArray<
+                      io.zeebe.broker.system.workflow.repository.api.client.WorkflowMetadata>
+                  responseWorklows = response.getWorkflows();
+
+              workflows.forEach(
+                  (workflow) ->
+                      responseWorklows
+                          .add()
+                          .setTopicName(workflow.getTopicName())
+                          .setBpmnProcessId(workflow.getBpmnProcessId())
+                          .setWorkflowKey(workflow.getKey())
+                          .setResourceName(workflow.getResourceName())
+                          .setVersion(workflow.getVersion()));
+
+              sendResponse(actor, metadata.getRequestStreamId(), metadata.getRequestId(), response);
             }
-            else
-            {
-                future = repository.getWorkflowsByTopic(topicName);
-            }
-
-            actor.runOnCompletion(future, (workflows, err) ->
-            {
-                if (err != null)
-                {
-                    sendErrorResponse(actor, metadata.getRequestStreamId(), metadata.getRequestId(), err.getMessage());
-                }
-                else
-                {
-                    final ListWorkflowsResponse response = new ListWorkflowsResponse();
-                    final ValueArray<io.zeebe.broker.system.workflow.repository.api.client.WorkflowMetadata> responseWorklows = response.getWorkflows();
-
-                    workflows.forEach((workflow) ->
-                        responseWorklows.add()
-                            .setTopicName(workflow.getTopicName())
-                            .setBpmnProcessId(workflow.getBpmnProcessId())
-                            .setWorkflowKey(workflow.getKey())
-                            .setResourceName(workflow.getResourceName())
-                            .setVersion(workflow.getVersion()));
-
-                    sendResponse(actor, metadata.getRequestStreamId(), metadata.getRequestId(), response);
-                }
-            });
-        }
+          });
     }
+  }
 
-
-    public void setWorkflowRepositoryService(WorkflowRepositoryService service)
-    {
-        workflowRepositoryServiceRef.set(service);
-    }
+  public void setWorkflowRepositoryService(WorkflowRepositoryService service) {
+    workflowRepositoryServiceRef.set(service);
+  }
 }

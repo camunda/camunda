@@ -22,40 +22,37 @@ import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.record.WorkflowInstanceRecordImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 
-public class WorkflowInstanceEventImpl extends WorkflowInstanceRecordImpl implements WorkflowInstanceEvent
-{
-    @JsonCreator
-    public WorkflowInstanceEventImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper)
-    {
-        super(objectMapper, RecordType.EVENT);
-    }
+public class WorkflowInstanceEventImpl extends WorkflowInstanceRecordImpl
+    implements WorkflowInstanceEvent {
+  @JsonCreator
+  public WorkflowInstanceEventImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper) {
+    super(objectMapper, RecordType.EVENT);
+  }
 
-    @JsonIgnore
-    @Override
-    public WorkflowInstanceState getState()
-    {
-        return WorkflowInstanceState.valueOf(getMetadata().getIntent());
-    }
+  @JsonIgnore
+  @Override
+  public WorkflowInstanceState getState() {
+    return WorkflowInstanceState.valueOf(getMetadata().getIntent());
+  }
 
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("WorkflowInstanceEvent [state=");
-        builder.append(getState());
-        builder.append(", workflowInstanceKey=");
-        builder.append(getWorkflowInstanceKey());
-        builder.append(", workflowKey=");
-        builder.append(getWorkflowKey());
-        builder.append(", bpmnProcessId=");
-        builder.append(getBpmnProcessId());
-        builder.append(", version=");
-        builder.append(getVersion());
-        builder.append(", activityId=");
-        builder.append(getActivityId());
-        builder.append(", payload=");
-        builder.append(getPayload());
-        builder.append("]");
-        return builder.toString();
-    }
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("WorkflowInstanceEvent [state=");
+    builder.append(getState());
+    builder.append(", workflowInstanceKey=");
+    builder.append(getWorkflowInstanceKey());
+    builder.append(", workflowKey=");
+    builder.append(getWorkflowKey());
+    builder.append(", bpmnProcessId=");
+    builder.append(getBpmnProcessId());
+    builder.append(", version=");
+    builder.append(getVersion());
+    builder.append(", activityId=");
+    builder.append(getActivityId());
+    builder.append(", payload=");
+    builder.append(getPayload());
+    builder.append("]");
+    return builder.toString();
+  }
 }

@@ -19,254 +19,240 @@ import static io.zeebe.util.StringUtil.getBytes;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.zeebe.logstreams.impl.snapshot.fs.*;
+import io.zeebe.logstreams.spi.SnapshotMetadata;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
-
-import io.zeebe.logstreams.impl.snapshot.fs.*;
-import io.zeebe.logstreams.spi.SnapshotMetadata;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
-public class FsSnapshotStorageTest
-{
-    protected static final byte[] SNAPSHOT_DATA = getBytes("snapshot");
+public class FsSnapshotStorageTest {
+  protected static final byte[] SNAPSHOT_DATA = getBytes("snapshot");
 
-    @Rule
-    public TemporaryFolder tempFolder = new TemporaryFolder();
+  @Rule public TemporaryFolder tempFolder = new TemporaryFolder();
 
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
+  @Rule public ExpectedException thrown = ExpectedException.none();
 
-    private String snapshotRootPath;
+  private String snapshotRootPath;
 
-    private FsSnapshotStorageConfiguration config;
+  private FsSnapshotStorageConfiguration config;
 
-    private FsSnapshotStorage fsSnapshotStorage;
+  private FsSnapshotStorage fsSnapshotStorage;
 
-    @Before
-    public void init() throws IOException
-    {
-        snapshotRootPath = tempFolder.getRoot().getAbsolutePath();
+  @Before
+  public void init() throws IOException {
+    snapshotRootPath = tempFolder.getRoot().getAbsolutePath();
 
-        config = new FsSnapshotStorageConfiguration();
-        config.setRootPath(snapshotRootPath);
+    config = new FsSnapshotStorageConfiguration();
+    config.setRootPath(snapshotRootPath);
 
-        fsSnapshotStorage = new FsSnapshotStorage(config);
-    }
+    fsSnapshotStorage = new FsSnapshotStorage(config);
+  }
 
-    @Test
-    public void shouldCreateSnapshot() throws Exception
-    {
-        final FsSnapshotWriter fsSnapshotWriter = fsSnapshotStorage.createSnapshot("test", 100);
+  @Test
+  public void shouldCreateSnapshot() throws Exception {
+    final FsSnapshotWriter fsSnapshotWriter = fsSnapshotStorage.createSnapshot("test", 100);
 
-        final File dataFile = fsSnapshotWriter.getDataFile();
-        final File checksumFile = fsSnapshotWriter.getChecksumFile();
-        final OutputStream outputStream = fsSnapshotWriter.getOutputStream();
+    final File dataFile = fsSnapshotWriter.getDataFile();
+    final File checksumFile = fsSnapshotWriter.getChecksumFile();
+    final OutputStream outputStream = fsSnapshotWriter.getOutputStream();
 
-        outputStream.write(SNAPSHOT_DATA);
+    outputStream.write(SNAPSHOT_DATA);
 
-        fsSnapshotWriter.commit();
+    fsSnapshotWriter.commit();
 
-        assertThat(dataFile)
-            .exists()
-            .hasParent(snapshotRootPath)
-            .hasName(getFileName(config.snapshotFileName("test", 100)))
-            .hasBinaryContent(SNAPSHOT_DATA);
+    assertThat(dataFile)
+        .exists()
+        .hasParent(snapshotRootPath)
+        .hasName(getFileName(config.snapshotFileName("test", 100)))
+        .hasBinaryContent(SNAPSHOT_DATA);
 
-        assertThat(checksumFile)
-            .exists()
-            .hasParent(snapshotRootPath)
-            .hasName(getFileName(config.checksumFileName("test", 100)));
-    }
+    assertThat(checksumFile)
+        .exists()
+        .hasParent(snapshotRootPath)
+        .hasName(getFileName(config.checksumFileName("test", 100)));
+  }
 
-    @Test
-    public void shoulNotCreateSnapshotIfSnapshotAlreadyExists() throws Exception
-    {
-        final FsSnapshotWriter fsSnapshotWriter = fsSnapshotStorage.createSnapshot("test", 100);
-        fsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
-        fsSnapshotWriter.commit();
+  @Test
+  public void shoulNotCreateSnapshotIfSnapshotAlreadyExists() throws Exception {
+    final FsSnapshotWriter fsSnapshotWriter = fsSnapshotStorage.createSnapshot("test", 100);
+    fsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
+    fsSnapshotWriter.commit();
 
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("Cannot write snapshot");
+    thrown.expect(RuntimeException.class);
+    thrown.expectMessage("Cannot write snapshot");
 
-        fsSnapshotStorage.createSnapshot("test", 100);
-    }
+    fsSnapshotStorage.createSnapshot("test", 100);
+  }
 
-    @Test
-    public void shouldNotGetLatestSnapshotIfNotExists() throws Exception
-    {
-        final FsReadableSnapshot lastSnapshot = fsSnapshotStorage.getLastSnapshot("not-existing");
+  @Test
+  public void shouldNotGetLatestSnapshotIfNotExists() throws Exception {
+    final FsReadableSnapshot lastSnapshot = fsSnapshotStorage.getLastSnapshot("not-existing");
 
-        assertThat(lastSnapshot).isNull();
-    }
+    assertThat(lastSnapshot).isNull();
+  }
 
-    @Test
-    public void shouldGetLastSnapshot() throws Exception
-    {
-        final FsSnapshotWriter fsSnapshotWriter = fsSnapshotStorage.createSnapshot("test", 100);
-        fsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
-        fsSnapshotWriter.commit();
+  @Test
+  public void shouldGetLastSnapshot() throws Exception {
+    final FsSnapshotWriter fsSnapshotWriter = fsSnapshotStorage.createSnapshot("test", 100);
+    fsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
+    fsSnapshotWriter.commit();
 
-        final FsReadableSnapshot lastSnapshot = fsSnapshotStorage.getLastSnapshot("test");
+    final FsReadableSnapshot lastSnapshot = fsSnapshotStorage.getLastSnapshot("test");
 
-        assertThat(lastSnapshot).isNotNull();
-        assertThat(lastSnapshot.getPosition()).isEqualTo(100);
+    assertThat(lastSnapshot).isNotNull();
+    assertThat(lastSnapshot.getPosition()).isEqualTo(100);
 
-        assertThat(lastSnapshot.getDataFile()).isEqualTo(fsSnapshotWriter.getDataFile());
-        assertThat(lastSnapshot.getChecksumFile()).isEqualTo(fsSnapshotWriter.getChecksumFile());
-    }
+    assertThat(lastSnapshot.getDataFile()).isEqualTo(fsSnapshotWriter.getDataFile());
+    assertThat(lastSnapshot.getChecksumFile()).isEqualTo(fsSnapshotWriter.getChecksumFile());
+  }
 
-    @Test
-    public void shouldGetLastSnapshotWithMultipleFiles() throws Exception
-    {
-        final FsSnapshotWriter fsSnapshotWriter = fsSnapshotStorage.createSnapshot("test", 100);
-        fsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
-        fsSnapshotWriter.commit();
+  @Test
+  public void shouldGetLastSnapshotWithMultipleFiles() throws Exception {
+    final FsSnapshotWriter fsSnapshotWriter = fsSnapshotStorage.createSnapshot("test", 100);
+    fsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
+    fsSnapshotWriter.commit();
 
-        final FsSnapshotWriter anotherFsSnapshotWriter = fsSnapshotStorage.createSnapshot("test-2", 150);
-        anotherFsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
-        anotherFsSnapshotWriter.commit();
+    final FsSnapshotWriter anotherFsSnapshotWriter =
+        fsSnapshotStorage.createSnapshot("test-2", 150);
+    anotherFsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
+    anotherFsSnapshotWriter.commit();
 
-        final FsReadableSnapshot snapshot = fsSnapshotStorage.getLastSnapshot("test");
-        assertThat(snapshot).isNotNull();
-        assertThat(snapshot.getPosition()).isEqualTo(100);
+    final FsReadableSnapshot snapshot = fsSnapshotStorage.getLastSnapshot("test");
+    assertThat(snapshot).isNotNull();
+    assertThat(snapshot.getPosition()).isEqualTo(100);
 
-        final FsReadableSnapshot anotherSnapshot = fsSnapshotStorage.getLastSnapshot("test-2");
-        assertThat(anotherSnapshot).isNotNull();
-        assertThat(anotherSnapshot.getPosition()).isEqualTo(150);
-    }
+    final FsReadableSnapshot anotherSnapshot = fsSnapshotStorage.getLastSnapshot("test-2");
+    assertThat(anotherSnapshot).isNotNull();
+    assertThat(anotherSnapshot.getPosition()).isEqualTo(150);
+  }
 
-    @Test
-    public void shouldNotGetLastSnapshotWithMissingChecksum() throws Exception
-    {
-        final FsSnapshotWriter fsSnapshotWriter = fsSnapshotStorage.createSnapshot("test", 100);
-        fsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
-        fsSnapshotWriter.commit();
+  @Test
+  public void shouldNotGetLastSnapshotWithMissingChecksum() throws Exception {
+    final FsSnapshotWriter fsSnapshotWriter = fsSnapshotStorage.createSnapshot("test", 100);
+    fsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
+    fsSnapshotWriter.commit();
 
-        fsSnapshotWriter.getChecksumFile().delete();
+    fsSnapshotWriter.getChecksumFile().delete();
 
-        final FsReadableSnapshot snapshot = fsSnapshotStorage.getLastSnapshot("test");
-        assertThat(snapshot).isNull();
-    }
+    final FsReadableSnapshot snapshot = fsSnapshotStorage.getLastSnapshot("test");
+    assertThat(snapshot).isNull();
+  }
 
-    @Test
-    public void shouldGetLastSnapshotWithUncommittedOnce() throws Exception
-    {
-        final FsSnapshotWriter fsSnapshotWriter = fsSnapshotStorage.createSnapshot("test", 100);
-        fsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
-        fsSnapshotWriter.commit();
+  @Test
+  public void shouldGetLastSnapshotWithUncommittedOnce() throws Exception {
+    final FsSnapshotWriter fsSnapshotWriter = fsSnapshotStorage.createSnapshot("test", 100);
+    fsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
+    fsSnapshotWriter.commit();
 
-        final FsSnapshotWriter newFsSnapshotWriter = fsSnapshotStorage.createSnapshot("test", 150);
-        newFsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
+    final FsSnapshotWriter newFsSnapshotWriter = fsSnapshotStorage.createSnapshot("test", 150);
+    newFsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
 
-        final FsReadableSnapshot snapshot = fsSnapshotStorage.getLastSnapshot("test");
-        assertThat(snapshot).isNotNull();
-        assertThat(snapshot.getPosition()).isEqualTo(100);
-    }
+    final FsReadableSnapshot snapshot = fsSnapshotStorage.getLastSnapshot("test");
+    assertThat(snapshot).isNotNull();
+    assertThat(snapshot.getPosition()).isEqualTo(100);
+  }
 
-    @Test
-    public void shouldReturnEmptyListIfNoSnapshotsAvailable()
-    {
-        // given
-        final List<SnapshotMetadata> snapshots = fsSnapshotStorage.listSnapshots();
+  @Test
+  public void shouldReturnEmptyListIfNoSnapshotsAvailable() {
+    // given
+    final List<SnapshotMetadata> snapshots = fsSnapshotStorage.listSnapshots();
 
-        // then
-        assertThat(snapshots).isEmpty();
-    }
+    // then
+    assertThat(snapshots).isEmpty();
+  }
 
-    @Test
-    public void shouldListLatestVersionOfExistingSnapshots() throws Exception
-    {
-        // given
-        final List<SnapshotMetadata> snapshots;
-        final String firstName = "first";
-        final String secondName = "second";
+  @Test
+  public void shouldListLatestVersionOfExistingSnapshots() throws Exception {
+    // given
+    final List<SnapshotMetadata> snapshots;
+    final String firstName = "first";
+    final String secondName = "second";
 
-        // when
-        writeSnapshot(firstName, 1);
-        writeSnapshot(firstName, 3);
-        writeSnapshot(secondName, 1);
-        snapshots = fsSnapshotStorage.listSnapshots();
+    // when
+    writeSnapshot(firstName, 1);
+    writeSnapshot(firstName, 3);
+    writeSnapshot(secondName, 1);
+    snapshots = fsSnapshotStorage.listSnapshots();
 
-        // then
-        assertThat(snapshots.size()).isEqualTo(2);
+    // then
+    assertThat(snapshots.size()).isEqualTo(2);
 
-        // when
-        final SnapshotMetadata first = snapshots.stream().filter((s) -> s.getName().equals("first")).findFirst().get();
-        assertThat(first.getPosition()).isEqualTo(3);
+    // when
+    final SnapshotMetadata first =
+        snapshots.stream().filter((s) -> s.getName().equals("first")).findFirst().get();
+    assertThat(first.getPosition()).isEqualTo(3);
 
-        final SnapshotMetadata second = snapshots.stream().filter((s) -> s.getName().equals("second")).findFirst().get();
-        assertThat(second.getPosition()).isEqualTo(1);
-    }
+    final SnapshotMetadata second =
+        snapshots.stream().filter((s) -> s.getName().equals("second")).findFirst().get();
+    assertThat(second.getPosition()).isEqualTo(1);
+  }
 
-    @Test
-    public void shouldIdentifyExistingSnapshotsIfFileIsPresent() throws Exception
-    {
-        // given
-        final String firstName = "first";
+  @Test
+  public void shouldIdentifyExistingSnapshotsIfFileIsPresent() throws Exception {
+    // given
+    final String firstName = "first";
 
-        // when
-        writeSnapshot(firstName, 1);
-        writeSnapshot(firstName, 3);
+    // when
+    writeSnapshot(firstName, 1);
+    writeSnapshot(firstName, 3);
 
-        // then
-        assertThat(fsSnapshotStorage.snapshotExists(firstName, 3L)).isTrue();
-        assertThat(fsSnapshotStorage.snapshotExists(firstName, 1L)).isFalse();
-        assertThat(fsSnapshotStorage.snapshotExists("something weird that should not exist", 2L)).isFalse();
-    }
+    // then
+    assertThat(fsSnapshotStorage.snapshotExists(firstName, 3L)).isTrue();
+    assertThat(fsSnapshotStorage.snapshotExists(firstName, 1L)).isFalse();
+    assertThat(fsSnapshotStorage.snapshotExists("something weird that should not exist", 2L))
+        .isFalse();
+  }
 
-    @SuppressWarnings("ConstantConditions")
-    @Test
-    public void shouldFailToCreateTemporarySnapshotWriterIfSnapshotAlreadyExists() throws Exception
-    {
-        // given
-        final String name = "snapshot";
-        final long logPosition = 3L;
+  @SuppressWarnings("ConstantConditions")
+  @Test
+  public void shouldFailToCreateTemporarySnapshotWriterIfSnapshotAlreadyExists() throws Exception {
+    // given
+    final String name = "snapshot";
+    final long logPosition = 3L;
 
-        // when
-        writeSnapshot(name, logPosition);
+    // when
+    writeSnapshot(name, logPosition);
 
-        // then
-        // assert that allocated resources were removed in case of exception
-        final int expectedFilesCount = tempFolder.getRoot().listFiles().length;
-        assertThatThrownBy(() -> fsSnapshotStorage.createTemporarySnapshot(name, logPosition))
-            .isInstanceOf(Exception.class);
-        assertThat(tempFolder.getRoot().listFiles().length).isEqualTo(expectedFilesCount);
-    }
+    // then
+    // assert that allocated resources were removed in case of exception
+    final int expectedFilesCount = tempFolder.getRoot().listFiles().length;
+    assertThatThrownBy(() -> fsSnapshotStorage.createTemporarySnapshot(name, logPosition))
+        .isInstanceOf(Exception.class);
+    assertThat(tempFolder.getRoot().listFiles().length).isEqualTo(expectedFilesCount);
+  }
 
-    @Test
-    public void shouldCreateTemporarySnapshotWriter() throws Exception
-    {
-        // given
-        final String name = "snapshot";
-        final long logPosition = 4L;
+  @Test
+  public void shouldCreateTemporarySnapshotWriter() throws Exception {
+    // given
+    final String name = "snapshot";
+    final long logPosition = 4L;
 
-        // when
-        final FsTemporarySnapshotWriter temporarySnapshotWriter = fsSnapshotStorage.createTemporarySnapshot(name, logPosition);
+    // when
+    final FsTemporarySnapshotWriter temporarySnapshotWriter =
+        fsSnapshotStorage.createTemporarySnapshot(name, logPosition);
 
-        // then
-        assertThat(temporarySnapshotWriter).isNotNull();
+    // then
+    assertThat(temporarySnapshotWriter).isNotNull();
 
-        final File[] files = tempFolder.getRoot().listFiles();
-        assertThat(files).isNotNull();
-        assertThat(files.length).isEqualTo(1);
-        assertThat(files[0].getName()).matches(".+\\.tmp");
-    }
+    final File[] files = tempFolder.getRoot().listFiles();
+    assertThat(files).isNotNull();
+    assertThat(files.length).isEqualTo(1);
+    assertThat(files[0].getName()).matches(".+\\.tmp");
+  }
 
-    protected String getFileName(String absolutePath)
-    {
-        return new File(absolutePath).getName();
-    }
+  protected String getFileName(String absolutePath) {
+    return new File(absolutePath).getName();
+  }
 
-    private void writeSnapshot(final String name, final long position) throws Exception
-    {
-        final FsSnapshotWriter fsSnapshotWriter = fsSnapshotStorage.createSnapshot(name, position);
-        fsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
-        fsSnapshotWriter.commit();
-    }
+  private void writeSnapshot(final String name, final long position) throws Exception {
+    final FsSnapshotWriter fsSnapshotWriter = fsSnapshotStorage.createSnapshot(name, position);
+    fsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
+    fsSnapshotWriter.commit();
+  }
 }

@@ -22,48 +22,48 @@ import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.util.buffer.BufferReader;
 import org.agrona.DirectBuffer;
 
-public class ErrorResponse implements BufferReader
-{
-    private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-    private final ErrorResponseDecoder bodyDecoder = new ErrorResponseDecoder();
+public class ErrorResponse implements BufferReader {
+  private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
+  private final ErrorResponseDecoder bodyDecoder = new ErrorResponseDecoder();
 
-    protected final MsgPackHelper msgPackHelper;
+  protected final MsgPackHelper msgPackHelper;
 
-    protected String errorData;
+  protected String errorData;
 
-    public ErrorResponse(MsgPackHelper msgPackHelper)
-    {
-        this.msgPackHelper = msgPackHelper;
+  public ErrorResponse(MsgPackHelper msgPackHelper) {
+    this.msgPackHelper = msgPackHelper;
+  }
+
+  public ErrorCode getErrorCode() {
+    return bodyDecoder.errorCode();
+  }
+
+  public String getErrorData() {
+    return errorData;
+  }
+
+  @Override
+  public void wrap(DirectBuffer responseBuffer, int offset, int length) {
+    messageHeaderDecoder.wrap(responseBuffer, 0);
+
+    if (messageHeaderDecoder.templateId() != bodyDecoder.sbeTemplateId()) {
+      throw new RuntimeException("Unexpected response from broker.");
     }
 
-    public ErrorCode getErrorCode()
-    {
-        return bodyDecoder.errorCode();
-    }
+    bodyDecoder.wrap(
+        responseBuffer,
+        messageHeaderDecoder.encodedLength(),
+        messageHeaderDecoder.blockLength(),
+        messageHeaderDecoder.version());
 
-    public String getErrorData()
-    {
-        return errorData;
-    }
+    final int errorDataLength = bodyDecoder.errorDataLength();
+    final int errorDataOffset =
+        messageHeaderDecoder.encodedLength()
+            + messageHeaderDecoder.blockLength()
+            + ErrorResponseDecoder.errorDataHeaderLength();
 
-    @Override
-    public void wrap(DirectBuffer responseBuffer, int offset, int length)
-    {
-        messageHeaderDecoder.wrap(responseBuffer, 0);
+    errorData = responseBuffer.getStringWithoutLengthUtf8(errorDataOffset, errorDataLength);
 
-        if (messageHeaderDecoder.templateId() != bodyDecoder.sbeTemplateId())
-        {
-            throw new RuntimeException("Unexpected response from broker.");
-        }
-
-        bodyDecoder.wrap(responseBuffer, messageHeaderDecoder.encodedLength(), messageHeaderDecoder.blockLength(), messageHeaderDecoder.version());
-
-        final int errorDataLength = bodyDecoder.errorDataLength();
-        final int errorDataOffset = messageHeaderDecoder.encodedLength() + messageHeaderDecoder.blockLength() + ErrorResponseDecoder.errorDataHeaderLength();
-
-        errorData = responseBuffer.getStringWithoutLengthUtf8(errorDataOffset, errorDataLength);
-
-        bodyDecoder.limit(errorDataOffset + errorDataLength);
-    }
-
+    bodyDecoder.limit(errorDataOffset + errorDataLength);
+  }
 }

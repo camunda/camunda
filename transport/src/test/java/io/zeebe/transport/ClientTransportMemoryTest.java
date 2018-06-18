@@ -23,9 +23,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.*;
 
-import java.time.Duration;
-import java.util.function.Function;
-
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.test.util.AutoCloseableRule;
@@ -36,257 +33,245 @@ import io.zeebe.util.buffer.*;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import java.time.Duration;
+import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.junit.*;
 import org.junit.rules.RuleChain;
 
-public class ClientTransportMemoryTest
-{
-    private ControlledActorClock clock = new ControlledActorClock();
-    public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3, clock);
-    public AutoCloseableRule closeables = new AutoCloseableRule();
+public class ClientTransportMemoryTest {
+  private ControlledActorClock clock = new ControlledActorClock();
+  public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3, clock);
+  public AutoCloseableRule closeables = new AutoCloseableRule();
 
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
 
-    public static final DirectBuffer BUF1 = BufferUtil.wrapBytes(1, 2, 3, 4);
-    public static final SocketAddress SERVER_ADDRESS1 = new SocketAddress("localhost", 51115);
+  public static final DirectBuffer BUF1 = BufferUtil.wrapBytes(1, 2, 3, 4);
+  public static final SocketAddress SERVER_ADDRESS1 = new SocketAddress("localhost", 51115);
 
-    protected ClientTransport clientTransport;
+  protected ClientTransport clientTransport;
 
-    private NonBlockingMemoryPool requestMemoryPoolSpy;
-    private NonBlockingMemoryPool messageMemoryPoolSpy;
+  private NonBlockingMemoryPool requestMemoryPoolSpy;
+  private NonBlockingMemoryPool messageMemoryPoolSpy;
 
-    @Before
-    public void setUp()
-    {
-        requestMemoryPoolSpy = spy(new NonBlockingMemoryPool(ByteValue.ofMegabytes(4)));
-        messageMemoryPoolSpy = spy(new NonBlockingMemoryPool(ByteValue.ofMegabytes(4)));
+  @Before
+  public void setUp() {
+    requestMemoryPoolSpy = spy(new NonBlockingMemoryPool(ByteValue.ofMegabytes(4)));
+    messageMemoryPoolSpy = spy(new NonBlockingMemoryPool(ByteValue.ofMegabytes(4)));
 
-        clientTransport = Transports.newClientTransport()
+    clientTransport =
+        Transports.newClientTransport()
             .scheduler(actorSchedulerRule.get())
             .requestMemoryPool(requestMemoryPoolSpy)
             .messageMemoryPool(messageMemoryPoolSpy)
             .build();
-        closeables.manage(clientTransport);
-    }
+    closeables.manage(clientTransport);
+  }
 
-    protected ControllableServerTransport buildControllableServerTransport()
-    {
-        final ControllableServerTransport serverTransport = new ControllableServerTransport();
-        closeables.manage(serverTransport);
-        return serverTransport;
-    }
+  protected ControllableServerTransport buildControllableServerTransport() {
+    final ControllableServerTransport serverTransport = new ControllableServerTransport();
+    closeables.manage(serverTransport);
+    return serverTransport;
+  }
 
-    protected ServerTransport buildServerTransport(Function<ServerTransportBuilder, ServerTransport> builderConsumer)
-    {
-        final Dispatcher serverSendBuffer = Dispatchers.create("serverSendBuffer")
+  protected ServerTransport buildServerTransport(
+      Function<ServerTransportBuilder, ServerTransport> builderConsumer) {
+    final Dispatcher serverSendBuffer =
+        Dispatchers.create("serverSendBuffer")
             .bufferSize(ByteValue.ofMegabytes(4))
             .actorScheduler(actorSchedulerRule.get())
             .build();
-        closeables.manage(serverSendBuffer);
+    closeables.manage(serverSendBuffer);
 
-        final ServerTransportBuilder transportBuilder = Transports.newServerTransport()
-            .scheduler(actorSchedulerRule.get());
+    final ServerTransportBuilder transportBuilder =
+        Transports.newServerTransport().scheduler(actorSchedulerRule.get());
 
-        final ServerTransport serverTransport = builderConsumer.apply(transportBuilder);
-        closeables.manage(serverTransport);
+    final ServerTransport serverTransport = builderConsumer.apply(transportBuilder);
+    closeables.manage(serverTransport);
 
-        return serverTransport;
+    return serverTransport;
+  }
+
+  @Test
+  public void shouldReclaimRequestMemoryOnRequestTimeout() {
+    // given
+    final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+
+    final ClientOutput output = clientTransport.getOutput();
+
+    // when
+    final ActorFuture<ClientResponse> responseFuture =
+        output.sendRequest(remote, new DirectBufferWriter().wrap(BUF1), Duration.ofMillis(500));
+
+    // then
+    assertThatThrownBy(() -> responseFuture.join())
+        .hasMessageContaining("Request timed out after PT0.5S");
+    verify(requestMemoryPoolSpy, times(1)).allocate(anyInt());
+    verify(requestMemoryPoolSpy, timeout(500).times(1))
+        .reclaim(any()); // released after future is completed
+  }
+
+  @Test
+  public void shouldReclaimRequestMemoryIfFutureCompleteFails() {
+    // given
+    final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+    final ClientOutput output = clientTransport.getOutput();
+    final ActorFuture<ClientResponse> responseFuture =
+        output.sendRequest(remote, new DirectBufferWriter().wrap(BUF1), Duration.ofMillis(500));
+
+    // when
+
+    // future is completed before timeout occurs to simmulate situation in which future can not be
+    // completed
+    responseFuture.complete(null);
+
+    // then
+    verify(requestMemoryPoolSpy, times(1)).allocate(anyInt());
+    verify(requestMemoryPoolSpy, timeout(5000).times(1)).reclaim(any()); // released of timeout
+  }
+
+  @Test
+  public void shouldReclaimRequestMemoryOnResponse() throws InterruptedException {
+    // given
+    final BufferWriter writer = mock(BufferWriter.class);
+    when(writer.getLength()).thenReturn(16);
+
+    buildServerTransport(
+        b ->
+            b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
+                .build(null, new EchoRequestResponseHandler()));
+
+    final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+
+    clientTransport.getOutput().sendRequest(remote, writer).join();
+
+    verify(requestMemoryPoolSpy, times(1)).allocate(anyInt());
+    verify(requestMemoryPoolSpy, timeout(500).times(1))
+        .reclaim(any()); // released after future is completed
+  }
+
+  @Test
+  public void shouldReclaimRequestMemoryOnRequestWriterException() throws InterruptedException {
+    // given
+    final BufferWriter writer = mock(BufferWriter.class);
+    when(writer.getLength()).thenReturn(16);
+    doThrow(RuntimeException.class).when(writer).write(any(), anyInt());
+
+    final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+
+    try {
+      clientTransport.getOutput().sendRequest(remote, writer);
+    } catch (RuntimeException e) {
+      // expected
     }
 
-    @Test
-    public void shouldReclaimRequestMemoryOnRequestTimeout()
-    {
-        // given
-        final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+    verify(requestMemoryPoolSpy, times(1)).allocate(anyInt());
+    verify(requestMemoryPoolSpy, times(1)).reclaim(any());
+  }
 
-        final ClientOutput output = clientTransport.getOutput();
+  @Test
+  public void shouldReclaimOnMessageSend() throws InterruptedException {
+    // given
+    final BufferWriter writer = mock(BufferWriter.class);
+    when(writer.getLength()).thenReturn(16);
 
-        // when
-        final ActorFuture<ClientResponse> responseFuture = output.sendRequest(remote, new DirectBufferWriter().wrap(BUF1), Duration.ofMillis(500));
+    final RecordingMessageHandler messageHandler = new RecordingMessageHandler();
 
-        // then
-        assertThatThrownBy(() -> responseFuture.join()).hasMessageContaining("Request timed out after PT0.5S");
-        verify(requestMemoryPoolSpy, times(1)).allocate(anyInt());
-        verify(requestMemoryPoolSpy, timeout(500).times(1)).reclaim(any()); // released after future is completed
-    }
-
-    @Test
-    public void shouldReclaimRequestMemoryIfFutureCompleteFails()
-    {
-        // given
-        final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
-        final ClientOutput output = clientTransport.getOutput();
-        final ActorFuture<ClientResponse> responseFuture = output.sendRequest(remote, new DirectBufferWriter().wrap(BUF1), Duration.ofMillis(500));
-
-        // when
-
-        // future is completed before timeout occurs to simmulate situation in which future can not be completed
-        responseFuture.complete(null);
-
-        // then
-        verify(requestMemoryPoolSpy, times(1)).allocate(anyInt());
-        verify(requestMemoryPoolSpy, timeout(5000).times(1)).reclaim(any()); // released of timeout
-    }
-
-    @Test
-    public void shouldReclaimRequestMemoryOnResponse() throws InterruptedException
-    {
-        // given
-        final BufferWriter writer = mock(BufferWriter.class);
-        when(writer.getLength()).thenReturn(16);
-
-        buildServerTransport(b -> b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
-            .build(null, new EchoRequestResponseHandler()));
-
-        final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
-
-        clientTransport.getOutput().sendRequest(remote, writer)
-                .join();
-
-        verify(requestMemoryPoolSpy, times(1)).allocate(anyInt());
-        verify(requestMemoryPoolSpy, timeout(500).times(1)).reclaim(any()); // released after future is completed
-    }
-
-    @Test
-    public void shouldReclaimRequestMemoryOnRequestWriterException() throws InterruptedException
-    {
-        // given
-        final BufferWriter writer = mock(BufferWriter.class);
-        when(writer.getLength()).thenReturn(16);
-        doThrow(RuntimeException.class).when(writer).write(any(), anyInt());
-
-        final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
-
-        try
-        {
-            clientTransport.getOutput().sendRequest(remote, writer);
-        }
-        catch (RuntimeException e)
-        {
-            // expected
-        }
-
-        verify(requestMemoryPoolSpy, times(1)).allocate(anyInt());
-        verify(requestMemoryPoolSpy, times(1)).reclaim(any());
-    }
-
-    @Test
-    public void shouldReclaimOnMessageSend() throws InterruptedException
-    {
-        // given
-        final BufferWriter writer = mock(BufferWriter.class);
-        when(writer.getLength()).thenReturn(16);
-
-        final RecordingMessageHandler messageHandler = new RecordingMessageHandler();
-
-        buildServerTransport(b ->
-        {
-            return b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
-                .build(messageHandler, null);
+    buildServerTransport(
+        b -> {
+          return b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress()).build(messageHandler, null);
         });
 
-        final RemoteAddress remote = clientTransport.registerRemoteAndAwaitChannel(SERVER_ADDRESS1);
+    final RemoteAddress remote = clientTransport.registerRemoteAndAwaitChannel(SERVER_ADDRESS1);
 
-        final TransportMessage message = new TransportMessage();
+    final TransportMessage message = new TransportMessage();
 
-        message.writer(writer);
-        message.remoteAddress(remote);
+    message.writer(writer);
+    message.remoteAddress(remote);
 
-        clientTransport.getOutput().sendMessage(message);
+    clientTransport.getOutput().sendMessage(message);
 
-        waitUntil(() -> messageHandler.numReceivedMessages() == 1);
+    waitUntil(() -> messageHandler.numReceivedMessages() == 1);
 
-        verify(messageMemoryPoolSpy, times(1)).allocate(anyInt());
-        verify(messageMemoryPoolSpy, times(1)).reclaim(any());
+    verify(messageMemoryPoolSpy, times(1)).allocate(anyInt());
+    verify(messageMemoryPoolSpy, times(1)).reclaim(any());
+  }
+
+  @Test
+  public void shouldReclaimOnMessageSendFailed() throws InterruptedException {
+    // given
+    final BufferWriter writer = mock(BufferWriter.class);
+    when(writer.getLength()).thenReturn(16);
+
+    // no channel open
+    final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+
+    final TransportMessage message = new TransportMessage();
+
+    message.writer(writer);
+    message.remoteAddress(remote);
+
+    // when
+    clientTransport.getOutput().sendMessage(message);
+
+    // then
+    verify(messageMemoryPoolSpy, times(1)).allocate(anyInt());
+    verify(messageMemoryPoolSpy, timeout(1000).times(1)).reclaim(any());
+  }
+
+  @Test
+  public void shouldReclaimOnMessageWriterException() throws InterruptedException {
+    // given
+    final BufferWriter writer = mock(BufferWriter.class);
+    when(writer.getLength()).thenReturn(16);
+    doThrow(RuntimeException.class).when(writer).write(any(), anyInt());
+
+    final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+
+    final TransportMessage message = new TransportMessage();
+
+    message.writer(writer);
+    message.remoteAddress(remote);
+
+    try {
+      clientTransport.getOutput().sendMessage(message);
+      fail("expected exception");
+    } catch (Exception e) {
+      // expected
     }
 
-    @Test
-    public void shouldReclaimOnMessageSendFailed() throws InterruptedException
-    {
-        // given
-        final BufferWriter writer = mock(BufferWriter.class);
-        when(writer.getLength()).thenReturn(16);
+    verify(messageMemoryPoolSpy, times(1)).allocate(anyInt());
+    verify(messageMemoryPoolSpy, times(1)).reclaim(any());
+  }
 
-        // no channel open
-        final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+  @Test
+  public void shouldRejectMessageWhenBufferPoolExhaused() {
+    // given
+    final ClientOutput output = clientTransport.getOutput();
+    final TransportMessage message = new TransportMessage().buffer(BUF1).remoteStreamId(0);
 
-        final TransportMessage message = new TransportMessage();
+    doReturn(null).when(messageMemoryPoolSpy).allocate(anyInt());
 
-        message.writer(writer);
-        message.remoteAddress(remote);
+    // when
+    final boolean success = output.sendMessage(message);
 
-        // when
-        clientTransport.getOutput().sendMessage(message);
+    // then
+    assertThat(success).isFalse();
+  }
 
-        // then
-        verify(messageMemoryPoolSpy, times(1)).allocate(anyInt());
-        verify(messageMemoryPoolSpy, timeout(1000).times(1)).reclaim(any());
-    }
+  @Test
+  public void shouldRejectRequestWhenBufferPoolExhaused() {
+    // given
+    final ClientOutput output = clientTransport.getOutput();
+    final RemoteAddress addr = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
 
-    @Test
-    public void shouldReclaimOnMessageWriterException() throws InterruptedException
-    {
-        // given
-        final BufferWriter writer = mock(BufferWriter.class);
-        when(writer.getLength()).thenReturn(16);
-        doThrow(RuntimeException.class).when(writer).write(any(), anyInt());
+    doReturn(null).when(requestMemoryPoolSpy).allocate(anyInt());
 
-        final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+    // when
+    final ActorFuture<ClientResponse> reqFuture =
+        output.sendRequest(addr, new DirectBufferWriter().wrap(BUF1));
 
-        final TransportMessage message = new TransportMessage();
-
-        message.writer(writer);
-        message.remoteAddress(remote);
-
-        try
-        {
-            clientTransport.getOutput().sendMessage(message);
-            fail("expected exception");
-        }
-        catch (Exception e)
-        {
-            // expected
-        }
-
-        verify(messageMemoryPoolSpy, times(1)).allocate(anyInt());
-        verify(messageMemoryPoolSpy, times(1)).reclaim(any());
-    }
-
-
-    @Test
-    public void shouldRejectMessageWhenBufferPoolExhaused()
-    {
-        // given
-        final ClientOutput output = clientTransport.getOutput();
-        final TransportMessage message = new TransportMessage()
-            .buffer(BUF1)
-            .remoteStreamId(0);
-
-        doReturn(null).when(messageMemoryPoolSpy).allocate(anyInt());
-
-        // when
-        final boolean success = output.sendMessage(message);
-
-        // then
-        assertThat(success).isFalse();
-    }
-
-    @Test
-    public void shouldRejectRequestWhenBufferPoolExhaused()
-    {
-        // given
-        final ClientOutput output = clientTransport.getOutput();
-        final RemoteAddress addr = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
-
-        doReturn(null).when(requestMemoryPoolSpy).allocate(anyInt());
-
-        // when
-        final ActorFuture<ClientResponse> reqFuture = output.sendRequest(addr, new DirectBufferWriter().wrap(BUF1));
-
-        // then
-        assertThat(reqFuture).isNull();
-    }
-
+    // then
+    assertThat(reqFuture).isNull();
+  }
 }

@@ -15,65 +15,58 @@
  */
 package io.zeebe.logstreams.snapshot;
 
-import java.io.InputStream;
-import java.io.OutputStream;
-
 import io.zeebe.logstreams.spi.ComposableSnapshotSupport;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.spec.MsgPackReader;
 import io.zeebe.msgpack.spec.MsgPackWriter;
 import io.zeebe.util.StreamUtil;
+import java.io.InputStream;
+import java.io.OutputStream;
 import org.agrona.ExpandableArrayBuffer;
 
-public class UnpackedObjectSnapshotSupport implements ComposableSnapshotSupport
-{
+public class UnpackedObjectSnapshotSupport implements ComposableSnapshotSupport {
 
-    protected final UnpackedObject object;
-    protected final MsgPackWriter writer = new MsgPackWriter();
-    protected final MsgPackReader reader = new MsgPackReader();
+  protected final UnpackedObject object;
+  protected final MsgPackWriter writer = new MsgPackWriter();
+  protected final MsgPackReader reader = new MsgPackReader();
 
-    /*
-     * This implementation via an intermediate buffer is not the most efficient, because
-     * it requires an extra intermediate copy of the serialized value; directly writing/reading to/from the
-     * streams would be more efficient, but extending MsgPackReader/Writer is no quick win
-     * (=> reading primitives instead of single bytes; byte order; skipping values efficiently).
-     *
-     * This implementation should be ok for rather small objects.
-     */
-    protected final ExpandableArrayBuffer ioBuffer = new ExpandableArrayBuffer();
+  /*
+   * This implementation via an intermediate buffer is not the most efficient, because
+   * it requires an extra intermediate copy of the serialized value; directly writing/reading to/from the
+   * streams would be more efficient, but extending MsgPackReader/Writer is no quick win
+   * (=> reading primitives instead of single bytes; byte order; skipping values efficiently).
+   *
+   * This implementation should be ok for rather small objects.
+   */
+  protected final ExpandableArrayBuffer ioBuffer = new ExpandableArrayBuffer();
 
-    public UnpackedObjectSnapshotSupport(UnpackedObject object)
-    {
-        this.object = object;
-    }
+  public UnpackedObjectSnapshotSupport(UnpackedObject object) {
+    this.object = object;
+  }
 
-    @Override
-    public long writeSnapshot(OutputStream outputStream) throws Exception
-    {
-        writer.wrap(ioBuffer, 0);
-        final int length = object.getEncodedLength();
-        object.write(writer);
-        outputStream.write(ioBuffer.byteArray(), 0, length);
-        return length;
-    }
+  @Override
+  public long writeSnapshot(OutputStream outputStream) throws Exception {
+    writer.wrap(ioBuffer, 0);
+    final int length = object.getEncodedLength();
+    object.write(writer);
+    outputStream.write(ioBuffer.byteArray(), 0, length);
+    return length;
+  }
 
-    @Override
-    public void recoverFromSnapshot(InputStream inputStream) throws Exception
-    {
-        final int length = StreamUtil.read(inputStream, ioBuffer, 0);
-        reader.wrap(ioBuffer, 0, length);
-        object.read(reader);
-    }
+  @Override
+  public void recoverFromSnapshot(InputStream inputStream) throws Exception {
+    final int length = StreamUtil.read(inputStream, ioBuffer, 0);
+    reader.wrap(ioBuffer, 0, length);
+    object.read(reader);
+  }
 
-    @Override
-    public void reset()
-    {
-        object.reset();
-    }
+  @Override
+  public void reset() {
+    object.reset();
+  }
 
-    @Override
-    public long snapshotSize()
-    {
-        return object.getEncodedLength();
-    }
+  @Override
+  public long snapshotSize() {
+    return object.getEncodedLength();
+  }
 }

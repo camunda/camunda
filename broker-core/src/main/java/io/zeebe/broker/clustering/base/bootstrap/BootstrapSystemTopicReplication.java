@@ -33,76 +33,63 @@ import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.sched.Actor;
 
 /**
- * This service only writes a create topic event to the system topic, which then is picked up
- * by the corresponding services to ensure the replication factor.
+ * This service only writes a create topic event to the system topic, which then is picked up by the
+ * corresponding services to ensure the replication factor.
  */
-class BootstrapSystemTopicReplication extends Actor implements Service<Void>
-{
+class BootstrapSystemTopicReplication extends Actor implements Service<Void> {
 
-    private final Injector<Partition> partitionInjector = new Injector<>();
+  private final Injector<Partition> partitionInjector = new Injector<>();
 
-    private final RecordMetadata metadata = new RecordMetadata();
-    private final TopicRecord topicEvent = new TopicRecord();
-    private final LogStreamWriterImpl writer = new LogStreamWriterImpl();
+  private final RecordMetadata metadata = new RecordMetadata();
+  private final TopicRecord topicEvent = new TopicRecord();
+  private final LogStreamWriterImpl writer = new LogStreamWriterImpl();
 
-    @Override
-    public Void get()
-    {
-        return null;
+  @Override
+  public Void get() {
+    return null;
+  }
+
+  @Override
+  public void start(final ServiceStartContext startContext) {
+    startContext.async(startContext.getScheduler().submitActor(this));
+  }
+
+  @Override
+  protected void onActorStarted() {
+    final Partition partition = partitionInjector.getValue();
+    final PartitionInfo partitionInfo = partition.getInfo();
+
+    metadata.recordType(RecordType.EVENT);
+    metadata.valueType(ValueType.TOPIC);
+    metadata.intent(TopicIntent.CREATE_COMPLETE);
+
+    topicEvent.setName(partitionInfo.getTopicNameBuffer());
+    topicEvent.setReplicationFactor(partitionInfo.getReplicationFactor());
+    topicEvent.setPartitions(1);
+    topicEvent.getPartitionIds().add().setValue(Protocol.SYSTEM_PARTITION);
+
+    writer.wrap(partition.getLogStream());
+
+    actor.runUntilDone(this::writeEvent);
+  }
+
+  @Override
+  public void stop(final ServiceStopContext stopContext) {
+    stopContext.async(actor.close());
+  }
+
+  private void writeEvent() {
+    final long position =
+        writer.positionAsKey().metadataWriter(metadata).valueWriter(topicEvent).tryWrite();
+
+    if (position < 0) {
+      actor.yield();
+    } else {
+      actor.done();
     }
+  }
 
-    @Override
-    public void start(final ServiceStartContext startContext)
-    {
-        startContext.async(startContext.getScheduler().submitActor(this));
-    }
-
-    @Override
-    protected void onActorStarted()
-    {
-        final Partition partition = partitionInjector.getValue();
-        final PartitionInfo partitionInfo = partition.getInfo();
-
-        metadata.recordType(RecordType.EVENT);
-        metadata.valueType(ValueType.TOPIC);
-        metadata.intent(TopicIntent.CREATE_COMPLETE);
-
-        topicEvent.setName(partitionInfo.getTopicNameBuffer());
-        topicEvent.setReplicationFactor(partitionInfo.getReplicationFactor());
-        topicEvent.setPartitions(1);
-        topicEvent.getPartitionIds().add().setValue(Protocol.SYSTEM_PARTITION);
-
-        writer.wrap(partition.getLogStream());
-
-        actor.runUntilDone(this::writeEvent);
-    }
-
-    @Override
-    public void stop(final ServiceStopContext stopContext)
-    {
-        stopContext.async(actor.close());
-    }
-
-    private void writeEvent()
-    {
-        final long position = writer.positionAsKey()
-                                    .metadataWriter(metadata)
-                                    .valueWriter(topicEvent)
-                                    .tryWrite();
-
-        if (position < 0)
-        {
-            actor.yield();
-        }
-        else
-        {
-            actor.done();
-        }
-    }
-
-    public Injector<Partition> getPartitionInjector()
-    {
-        return partitionInjector;
-    }
-
+  public Injector<Partition> getPartitionInjector() {
+    return partitionInjector;
+  }
 }

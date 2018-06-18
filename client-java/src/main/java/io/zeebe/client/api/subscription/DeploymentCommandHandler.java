@@ -18,12 +18,8 @@ package io.zeebe.client.api.subscription;
 import io.zeebe.client.api.commands.DeploymentCommand;
 
 @FunctionalInterface
-public interface DeploymentCommandHandler
-{
-    void onDeploymentCommand(DeploymentCommand deploymentCommand);
+public interface DeploymentCommandHandler {
+  void onDeploymentCommand(DeploymentCommand deploymentCommand);
 
-    default void onDeploymentCommandRejection(DeploymentCommand deploymentCommand)
-    {
-    };
-
+  default void onDeploymentCommandRejection(DeploymentCommand deploymentCommand) {};
 }

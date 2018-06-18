@@ -17,72 +17,65 @@
  */
 package io.zeebe.broker.transport;
 
-import java.net.InetSocketAddress;
-
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.*;
 import io.zeebe.transport.impl.memory.NonBlockingMemoryPool;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorScheduler;
+import java.net.InetSocketAddress;
 import org.slf4j.Logger;
 
-public class ServerTransportService implements Service<ServerTransport>
-{
-    public static final Logger LOG = Loggers.TRANSPORT_LOGGER;
+public class ServerTransportService implements Service<ServerTransport> {
+  public static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
-    protected final Injector<ServerRequestHandler> requestHandlerInjector = new Injector<>();
-    protected final Injector<ServerMessageHandler> messageHandlerInjector = new Injector<>();
+  protected final Injector<ServerRequestHandler> requestHandlerInjector = new Injector<>();
+  protected final Injector<ServerMessageHandler> messageHandlerInjector = new Injector<>();
 
-    protected final String readableName;
-    protected final InetSocketAddress bindAddress;
-    private final ByteValue sendBufferSize;
+  protected final String readableName;
+  protected final InetSocketAddress bindAddress;
+  private final ByteValue sendBufferSize;
 
-    protected ServerTransport serverTransport;
+  protected ServerTransport serverTransport;
 
-    public ServerTransportService(String readableName, InetSocketAddress bindAddress, ByteValue sendBufferSize)
-    {
-        this.readableName = readableName;
-        this.bindAddress = bindAddress;
-        this.sendBufferSize = sendBufferSize;
-    }
+  public ServerTransportService(
+      String readableName, InetSocketAddress bindAddress, ByteValue sendBufferSize) {
+    this.readableName = readableName;
+    this.bindAddress = bindAddress;
+    this.sendBufferSize = sendBufferSize;
+  }
 
-    @Override
-    public void start(ServiceStartContext serviceContext)
-    {
-        final ActorScheduler scheduler = serviceContext.getScheduler();
-        final ServerRequestHandler requestHandler = requestHandlerInjector.getValue();
-        final ServerMessageHandler messageHandler = messageHandlerInjector.getValue();
+  @Override
+  public void start(ServiceStartContext serviceContext) {
+    final ActorScheduler scheduler = serviceContext.getScheduler();
+    final ServerRequestHandler requestHandler = requestHandlerInjector.getValue();
+    final ServerMessageHandler messageHandler = messageHandlerInjector.getValue();
 
-        serverTransport = Transports.newServerTransport()
+    serverTransport =
+        Transports.newServerTransport()
             .name(readableName)
             .bindAddress(bindAddress)
             .scheduler(scheduler)
             .messageMemoryPool(new NonBlockingMemoryPool(sendBufferSize))
             .build(messageHandler, requestHandler);
 
-        LOG.info("Bound {} to {}", readableName, bindAddress);
-    }
+    LOG.info("Bound {} to {}", readableName, bindAddress);
+  }
 
-    @Override
-    public void stop(ServiceStopContext serviceStopContext)
-    {
-        serviceStopContext.async(serverTransport.closeAsync());
-    }
+  @Override
+  public void stop(ServiceStopContext serviceStopContext) {
+    serviceStopContext.async(serverTransport.closeAsync());
+  }
 
-    @Override
-    public ServerTransport get()
-    {
-        return serverTransport;
-    }
+  @Override
+  public ServerTransport get() {
+    return serverTransport;
+  }
 
-    public Injector<ServerRequestHandler> getRequestHandlerInjector()
-    {
-        return requestHandlerInjector;
-    }
+  public Injector<ServerRequestHandler> getRequestHandlerInjector() {
+    return requestHandlerInjector;
+  }
 
-    public Injector<ServerMessageHandler> getMessageHandlerInjector()
-    {
-        return messageHandlerInjector;
-    }
-
+  public Injector<ServerMessageHandler> getMessageHandlerInjector() {
+    return messageHandlerInjector;
+  }
 }

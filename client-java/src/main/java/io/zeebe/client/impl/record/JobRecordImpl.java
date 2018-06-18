@@ -15,11 +15,6 @@
  */
 package io.zeebe.client.impl.record;
 
-import java.io.InputStream;
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.zeebe.client.api.record.JobRecord;
@@ -29,204 +24,169 @@ import io.zeebe.client.impl.event.JobEventImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
+import java.io.InputStream;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 
-public abstract class JobRecordImpl extends RecordImpl implements JobRecord
-{
-    private Map<String, Object> headers = new HashMap<>();
-    private Map<String, Object> customHeaders = new HashMap<>();
+public abstract class JobRecordImpl extends RecordImpl implements JobRecord {
+  private Map<String, Object> headers = new HashMap<>();
+  private Map<String, Object> customHeaders = new HashMap<>();
 
-    private Instant deadline;
-    private String worker;
-    private Integer retries;
-    private String type;
-    private PayloadField payload;
+  private Instant deadline;
+  private String worker;
+  private Integer retries;
+  private String type;
+  private PayloadField payload;
 
-    public JobRecordImpl(ZeebeObjectMapperImpl objectMapper, RecordType recordType)
-    {
-        super(objectMapper, recordType, ValueType.JOB);
+  public JobRecordImpl(ZeebeObjectMapperImpl objectMapper, RecordType recordType) {
+    super(objectMapper, recordType, ValueType.JOB);
+  }
+
+  public JobRecordImpl(JobRecordImpl base, JobIntent intent) {
+    super(base, intent);
+
+    this.headers = new HashMap<>(base.headers);
+    this.customHeaders = new HashMap<>(base.customHeaders);
+    this.deadline = base.deadline;
+    this.worker = base.worker;
+    this.retries = base.retries;
+    this.type = base.type;
+
+    if (base.payload != null) {
+      this.payload = new PayloadField(base.payload);
     }
+  }
 
-    public JobRecordImpl(JobRecordImpl base, JobIntent intent)
-    {
-        super(base, intent);
+  @Override
+  public String getType() {
+    return type;
+  }
 
-        this.headers = new HashMap<>(base.headers);
-        this.customHeaders = new HashMap<>(base.customHeaders);
-        this.deadline = base.deadline;
-        this.worker = base.worker;
-        this.retries = base.retries;
-        this.type = base.type;
+  public void setType(String type) {
+    this.type = type;
+  }
 
-        if (base.payload != null)
-        {
-            this.payload = new PayloadField(base.payload);
-        }
+  @Override
+  public Instant getDeadline() {
+    return deadline;
+  }
+
+  public void setDeadline(Instant deadline) {
+    this.deadline = deadline;
+  }
+
+  @Override
+  public Map<String, Object> getHeaders() {
+    return headers;
+  }
+
+  public void setHeaders(Map<String, Object> headers) {
+    this.headers.clear();
+    this.headers.putAll(headers);
+  }
+
+  @Override
+  public Map<String, Object> getCustomHeaders() {
+    return customHeaders;
+  }
+
+  public void setCustomHeaders(Map<String, Object> customHeaders) {
+    this.customHeaders.clear();
+    this.customHeaders.putAll(customHeaders);
+  }
+
+  @Override
+  public String getWorker() {
+    return worker;
+  }
+
+  public void setWorker(String worker) {
+    this.worker = worker;
+  }
+
+  @JsonProperty("payload")
+  public PayloadField getPayloadField() {
+    return payload;
+  }
+
+  @JsonProperty("payload")
+  public void setPayloadField(PayloadField payload) {
+    this.payload = payload;
+  }
+
+  @Override
+  public String getPayload() {
+    if (payload == null) {
+      return null;
+    } else {
+      return payload.getAsJsonString();
     }
+  }
 
-    @Override
-    public String getType()
-    {
-        return type;
+  @JsonIgnore
+  @Override
+  public Map<String, Object> getPayloadAsMap() {
+    if (payload == null) {
+      return null;
+    } else {
+      return payload.getAsMap();
     }
+  }
 
-    public void setType(String type)
-    {
-        this.type = type;
+  @JsonIgnore
+  @Override
+  public <T> T getPayloadAsType(Class<T> payloadType) {
+    if (payload == null) {
+      return null;
+    } else {
+      return payload.getAsType(payloadType);
     }
+  }
 
-    @Override
-    public Instant getDeadline()
-    {
-        return deadline;
+  public void setPayload(String jsonString) {
+    initializePayloadField();
+    this.payload.setJson(jsonString);
+  }
+
+  public void setPayload(InputStream jsonStream) {
+    initializePayloadField();
+    this.payload.setJson(jsonStream);
+  }
+
+  public void setPayload(Map<String, Object> payload) {
+    initializePayloadField();
+    this.payload.setAsMap(payload);
+  }
+
+  public void setPayload(Object payload) {
+    initializePayloadField();
+    this.payload.setAsObject(payload);
+  }
+
+  private void initializePayloadField() {
+    if (payload == null) {
+      payload = new PayloadField(objectMapper);
     }
+  }
 
-    public void setDeadline(Instant deadline)
-    {
-        this.deadline = deadline;
-    }
+  public void clearPayload() {
+    // set field to null so that it is not serialized to Msgpack
+    // - currently, the broker doesn't support null as payload
+    payload = null;
+  }
 
-    @Override
-    public Map<String, Object> getHeaders()
-    {
-        return headers;
-    }
+  @Override
+  public Integer getRetries() {
+    return retries;
+  }
 
-    public void setHeaders(Map<String, Object> headers)
-    {
-        this.headers.clear();
-        this.headers.putAll(headers);
-    }
+  public void setRetries(Integer retries) {
+    this.retries = retries;
+  }
 
-    @Override
-    public Map<String, Object> getCustomHeaders()
-    {
-        return customHeaders;
-    }
-
-    public void setCustomHeaders(Map<String, Object> customHeaders)
-    {
-        this.customHeaders.clear();
-        this.customHeaders.putAll(customHeaders);
-    }
-
-    @Override
-    public String getWorker()
-    {
-        return worker;
-    }
-
-    public void setWorker(String worker)
-    {
-        this.worker = worker;
-    }
-
-    @JsonProperty("payload")
-    public PayloadField getPayloadField()
-    {
-        return payload;
-    }
-
-    @JsonProperty("payload")
-    public void setPayloadField(PayloadField payload)
-    {
-        this.payload = payload;
-    }
-
-    @Override
-    public String getPayload()
-    {
-        if (payload == null)
-        {
-            return null;
-        }
-        else
-        {
-            return payload.getAsJsonString();
-        }
-    }
-
-    @JsonIgnore
-    @Override
-    public Map<String, Object> getPayloadAsMap()
-    {
-        if (payload == null)
-        {
-            return null;
-        }
-        else
-        {
-            return payload.getAsMap();
-        }
-    }
-
-    @JsonIgnore
-    @Override
-    public <T> T getPayloadAsType(Class<T> payloadType)
-    {
-        if (payload == null)
-        {
-            return null;
-        }
-        else
-        {
-            return payload.getAsType(payloadType);
-        }
-    }
-
-    public void setPayload(String jsonString)
-    {
-        initializePayloadField();
-        this.payload.setJson(jsonString);
-    }
-
-    public void setPayload(InputStream jsonStream)
-    {
-        initializePayloadField();
-        this.payload.setJson(jsonStream);
-    }
-
-    public void setPayload(Map<String, Object> payload)
-    {
-        initializePayloadField();
-        this.payload.setAsMap(payload);
-    }
-
-    public void setPayload(Object payload)
-    {
-        initializePayloadField();
-        this.payload.setAsObject(payload);
-    }
-
-    private void initializePayloadField()
-    {
-        if (payload == null)
-        {
-            payload = new PayloadField(objectMapper);
-        }
-    }
-
-    public void clearPayload()
-    {
-        // set field to null so that it is not serialized to Msgpack
-        // - currently, the broker doesn't support null as payload
-        payload = null;
-    }
-
-    @Override
-    public Integer getRetries()
-    {
-        return retries;
-    }
-
-    public void setRetries(Integer retries)
-    {
-        this.retries = retries;
-    }
-
-    @Override
-    public Class<? extends RecordImpl> getEventClass()
-    {
-        return JobEventImpl.class;
-    }
-
+  @Override
+  public Class<? extends RecordImpl> getEventClass() {
+    return JobEventImpl.class;
+  }
 }

@@ -15,7 +15,6 @@
  */
 package io.zeebe.client.api.events;
 
-public enum DeploymentState
-{
-    CREATED
+public enum DeploymentState {
+  CREATED
 }

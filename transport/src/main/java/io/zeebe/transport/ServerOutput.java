@@ -15,21 +15,20 @@
  */
 package io.zeebe.transport;
 
-public interface ServerOutput
-{
-    /**
-     * <p>Sends a message according to the single message protocol.
-     *
-     * <p>Returns false if the message cannot be currently written due to exhausted capacity.
-     * Throws an exception if the request is not sendable at all (e.g. buffer writer throws exception).
-     */
-    boolean sendMessage(TransportMessage transportMessage);
+public interface ServerOutput {
+  /**
+   * Sends a message according to the single message protocol.
+   *
+   * <p>Returns false if the message cannot be currently written due to exhausted capacity. Throws
+   * an exception if the request is not sendable at all (e.g. buffer writer throws exception).
+   */
+  boolean sendMessage(TransportMessage transportMessage);
 
-    /**
-     * <p>Sends a response according to the request response protocol.
-     *
-     * <p>Returns null if the response cannot be currently written due to exhausted capacity.
-     * Throws an exception if the response is not sendable at all (e.g. buffer writer throws exception).
-     */
-    boolean sendResponse(ServerResponse response);
+  /**
+   * Sends a response according to the request response protocol.
+   *
+   * <p>Returns null if the response cannot be currently written due to exhausted capacity. Throws
+   * an exception if the response is not sendable at all (e.g. buffer writer throws exception).
+   */
+  boolean sendResponse(ServerResponse response);
 }

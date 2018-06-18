@@ -17,66 +17,57 @@ package io.zeebe.logstreams.reader.benchmarks;
 
 import static io.zeebe.logstreams.reader.benchmarks.Benchmarks.DATA_SET_SIZE;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.concurrent.*;
-
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.LogStorageAppender;
 import io.zeebe.logstreams.log.*;
 import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorScheduler;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.concurrent.*;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.openjdk.jmh.annotations.*;
 
 @State(Scope.Benchmark)
-public class FilledLogStreamAndReaderSupplier
-{
-    LogStream logStream;
-    ActorScheduler actorScheduler;
-    LogStreamWriterImpl writer;
-    ServiceContainerImpl serviceContainer;
-    BufferedLogStreamReader reader = new BufferedLogStreamReader();
+public class FilledLogStreamAndReaderSupplier {
+  LogStream logStream;
+  ActorScheduler actorScheduler;
+  LogStreamWriterImpl writer;
+  ServiceContainerImpl serviceContainer;
+  BufferedLogStreamReader reader = new BufferedLogStreamReader();
 
-    private long[] writeEvents(int count, DirectBuffer eventValue)
-    {
-        final long[] positions = new long[count];
+  private long[] writeEvents(int count, DirectBuffer eventValue) {
+    final long[] positions = new long[count];
 
-        for (int i = 0; i < count; i++)
-        {
-            positions[i] = writeEvent(i, eventValue);
-        }
-        return positions;
+    for (int i = 0; i < count; i++) {
+      positions[i] = writeEvent(i, eventValue);
+    }
+    return positions;
+  }
+
+  private long writeEvent(long key, DirectBuffer eventValue) {
+    long position = -1;
+    while (position <= 0) {
+      position = writer.key(key).value(eventValue).tryWrite();
     }
 
-    private long writeEvent(long key, DirectBuffer eventValue)
-    {
-        long position = -1;
-        while (position <= 0)
-        {
-            position = writer
-                .key(key)
-                .value(eventValue)
-                .tryWrite();
-        }
+    return position;
+  }
 
-        return position;
-    }
+  @Setup(Level.Iteration)
+  public void fillStream() throws IOException {
+    final Path tempDirectory = Files.createTempDirectory("reader-benchmark");
+    actorScheduler = ActorScheduler.newDefaultActorScheduler();
+    actorScheduler.start();
 
-    @Setup(Level.Iteration)
-    public void fillStream() throws IOException
-    {
-        final Path tempDirectory = Files.createTempDirectory("reader-benchmark");
-        actorScheduler = ActorScheduler.newDefaultActorScheduler();
-        actorScheduler.start();
+    serviceContainer = new ServiceContainerImpl(actorScheduler);
+    serviceContainer.start();
 
-        serviceContainer = new ServiceContainerImpl(actorScheduler);
-        serviceContainer.start();
-
-        logStream = LogStreams.createFsLogStream(BufferUtil.wrapString("topic"), 0)
+    logStream =
+        LogStreams.createFsLogStream(BufferUtil.wrapString("topic"), 0)
             .logName("foo")
             .logDirectory(tempDirectory.toString())
             .serviceContainer(serviceContainer)
@@ -84,31 +75,28 @@ public class FilledLogStreamAndReaderSupplier
             .build()
             .join();
 
-        logStream.openAppender()
-            .join();
+    logStream.openAppender().join();
 
-        logStream.setCommitPosition(Long.MAX_VALUE);
+    logStream.setCommitPosition(Long.MAX_VALUE);
 
-        writer = new LogStreamWriterImpl(logStream);
-        final long[] positions = writeEvents(DATA_SET_SIZE, new UnsafeBuffer("test".getBytes()));
+    writer = new LogStreamWriterImpl(logStream);
+    final long[] positions = writeEvents(DATA_SET_SIZE, new UnsafeBuffer("test".getBytes()));
 
-        final long lastPosition = positions[DATA_SET_SIZE - 1];
-        final LogStorageAppender logStorageAppender = logStream.getLogStorageAppender();
+    final long lastPosition = positions[DATA_SET_SIZE - 1];
+    final LogStorageAppender logStorageAppender = logStream.getLogStorageAppender();
 
-        while (logStorageAppender.getCurrentAppenderPosition() < lastPosition)
-        {
-            // spin
-        }
-
-        reader.wrap(logStream);
+    while (logStorageAppender.getCurrentAppenderPosition() < lastPosition) {
+      // spin
     }
 
-    @TearDown(Level.Iteration)
-    public void closeStream() throws InterruptedException, ExecutionException, TimeoutException
-    {
-        reader.close();
-        logStream.close();
-        serviceContainer.close(10, TimeUnit.SECONDS);
-        actorScheduler.stop();
-    }
+    reader.wrap(logStream);
+  }
+
+  @TearDown(Level.Iteration)
+  public void closeStream() throws InterruptedException, ExecutionException, TimeoutException {
+    reader.close();
+    logStream.close();
+    serviceContainer.close(10, TimeUnit.SECONDS);
+    actorScheduler.stop();
+  }
 }

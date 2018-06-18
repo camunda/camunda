@@ -37,267 +37,256 @@ import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerMessageHandler;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerRequestHandler;
+import java.util.EnumMap;
+import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
-import java.util.EnumMap;
-import java.util.function.Consumer;
+public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequestHandler {
+  protected final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
+  protected final ExecuteCommandRequestDecoder executeCommandRequestDecoder =
+      new ExecuteCommandRequestDecoder();
+  protected final ControlMessageRequestHeaderDescriptor controlMessageRequestHeaderDescriptor =
+      new ControlMessageRequestHeaderDescriptor();
 
-public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequestHandler
-{
-    protected final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-    protected final ExecuteCommandRequestDecoder executeCommandRequestDecoder = new ExecuteCommandRequestDecoder();
-    protected final ControlMessageRequestHeaderDescriptor controlMessageRequestHeaderDescriptor = new ControlMessageRequestHeaderDescriptor();
+  protected final ManyToOneConcurrentLinkedQueue<Runnable> cmdQueue =
+      new ManyToOneConcurrentLinkedQueue<>();
+  protected final Consumer<Runnable> cmdConsumer = (c) -> c.run();
 
-    protected final ManyToOneConcurrentLinkedQueue<Runnable> cmdQueue = new ManyToOneConcurrentLinkedQueue<>();
-    protected final Consumer<Runnable> cmdConsumer = (c) -> c.run();
+  protected final Int2ObjectHashMap<Partition> leaderPartitions = new Int2ObjectHashMap<>();
+  protected final RecordMetadata eventMetadata = new RecordMetadata();
+  protected final LogStreamWriter logStreamWriter = new LogStreamWriterImpl();
 
-    protected final Int2ObjectHashMap<Partition> leaderPartitions = new Int2ObjectHashMap<>();
-    protected final RecordMetadata eventMetadata = new RecordMetadata();
-    protected final LogStreamWriter logStreamWriter = new LogStreamWriterImpl();
+  protected final ErrorResponseWriter errorResponseWriter = new ErrorResponseWriter();
+  protected final Dispatcher controlMessageDispatcher;
+  protected final ClaimedFragment claimedControlMessageFragment = new ClaimedFragment();
 
-    protected final ErrorResponseWriter errorResponseWriter = new ErrorResponseWriter();
-    protected final Dispatcher controlMessageDispatcher;
-    protected final ClaimedFragment claimedControlMessageFragment = new ClaimedFragment();
+  protected final EnumMap<ValueType, UnpackedObject> recordsByType = new EnumMap<>(ValueType.class);
 
-    protected final EnumMap<ValueType, UnpackedObject> recordsByType = new EnumMap<>(ValueType.class);
+  public ClientApiMessageHandler(final Dispatcher controlMessageDispatcher) {
+    this.controlMessageDispatcher = controlMessageDispatcher;
 
-    public ClientApiMessageHandler(final Dispatcher controlMessageDispatcher)
-    {
-        this.controlMessageDispatcher = controlMessageDispatcher;
+    initEventTypeMap();
+  }
 
-        initEventTypeMap();
+  private void initEventTypeMap() {
+    recordsByType.put(ValueType.DEPLOYMENT, new DeploymentRecord());
+    recordsByType.put(ValueType.JOB, new JobRecord());
+    recordsByType.put(ValueType.WORKFLOW_INSTANCE, new WorkflowInstanceRecord());
+    recordsByType.put(ValueType.SUBSCRIBER, new TopicSubscriberEvent());
+    recordsByType.put(ValueType.SUBSCRIPTION, new TopicSubscriptionEvent());
+    recordsByType.put(ValueType.TOPIC, new TopicRecord());
+  }
+
+  private boolean handleExecuteCommandRequest(
+      final ServerOutput output,
+      final RemoteAddress requestAddress,
+      final long requestId,
+      final RecordMetadata eventMetadata,
+      final DirectBuffer buffer,
+      final int messageOffset,
+      final int messageLength) {
+    executeCommandRequestDecoder.wrap(
+        buffer,
+        messageOffset + messageHeaderDecoder.encodedLength(),
+        messageHeaderDecoder.blockLength(),
+        messageHeaderDecoder.version());
+
+    final int partitionId = executeCommandRequestDecoder.partitionId();
+    final long key = executeCommandRequestDecoder.key();
+
+    final Partition partition = leaderPartitions.get(partitionId);
+
+    if (partition == null) {
+      return errorResponseWriter
+          .errorCode(ErrorCode.PARTITION_NOT_FOUND)
+          .errorMessage("Cannot execute command. Partition with id '%d' not found", partitionId)
+          .tryWriteResponseOrLogFailure(output, requestAddress.getStreamId(), requestId);
     }
 
-    private void initEventTypeMap()
-    {
-        recordsByType.put(ValueType.DEPLOYMENT, new DeploymentRecord());
-        recordsByType.put(ValueType.JOB, new JobRecord());
-        recordsByType.put(ValueType.WORKFLOW_INSTANCE, new WorkflowInstanceRecord());
-        recordsByType.put(ValueType.SUBSCRIBER, new TopicSubscriberEvent());
-        recordsByType.put(ValueType.SUBSCRIPTION, new TopicSubscriptionEvent());
-        recordsByType.put(ValueType.TOPIC, new TopicRecord());
+    final ValueType eventType = executeCommandRequestDecoder.valueType();
+    final short intent = executeCommandRequestDecoder.intent();
+    final UnpackedObject event = recordsByType.get(eventType);
+
+    if (event == null) {
+      return errorResponseWriter
+          .errorCode(ErrorCode.MESSAGE_NOT_SUPPORTED)
+          .errorMessage("Cannot execute command. Invalid event type '%s'.", eventType.name())
+          .tryWriteResponseOrLogFailure(output, requestAddress.getStreamId(), requestId);
     }
 
-    private boolean handleExecuteCommandRequest(
-            final ServerOutput output,
-            final RemoteAddress requestAddress,
-            final long requestId,
-            final RecordMetadata eventMetadata,
-            final DirectBuffer buffer,
-            final int messageOffset,
-            final int messageLength)
-    {
-        executeCommandRequestDecoder.wrap(buffer, messageOffset + messageHeaderDecoder.encodedLength(), messageHeaderDecoder.blockLength(), messageHeaderDecoder.version());
+    final int eventOffset =
+        executeCommandRequestDecoder.limit() + ExecuteCommandRequestDecoder.valueHeaderLength();
+    final int eventLength = executeCommandRequestDecoder.valueLength();
 
-        final int partitionId = executeCommandRequestDecoder.partitionId();
-        final long key = executeCommandRequestDecoder.key();
+    event.reset();
 
-        final Partition partition = leaderPartitions.get(partitionId);
-
-        if (partition == null)
-        {
-            return errorResponseWriter
-                .errorCode(ErrorCode.PARTITION_NOT_FOUND)
-                .errorMessage("Cannot execute command. Partition with id '%d' not found", partitionId)
-                .tryWriteResponseOrLogFailure(output, requestAddress.getStreamId(), requestId);
-        }
-
-        final ValueType eventType = executeCommandRequestDecoder.valueType();
-        final short intent = executeCommandRequestDecoder.intent();
-        final UnpackedObject event = recordsByType.get(eventType);
-
-        if (event == null)
-        {
-            return errorResponseWriter
-                    .errorCode(ErrorCode.MESSAGE_NOT_SUPPORTED)
-                    .errorMessage("Cannot execute command. Invalid event type '%s'.", eventType.name())
-                    .tryWriteResponseOrLogFailure(output, requestAddress.getStreamId(), requestId);
-        }
-
-        final int eventOffset = executeCommandRequestDecoder.limit() + ExecuteCommandRequestDecoder.valueHeaderLength();
-        final int eventLength = executeCommandRequestDecoder.valueLength();
-
-        event.reset();
-
-        try
-        {
-            // verify that the event / command is valid
-            event.wrap(buffer, eventOffset, eventLength);
-        }
-        catch (Throwable t)
-        {
-            return errorResponseWriter
-                    .errorCode(ErrorCode.INVALID_MESSAGE)
-                    .errorMessage("Cannot deserialize command: '%s'.", concatErrorMessages(t))
-                    .tryWriteResponseOrLogFailure(output, requestAddress.getStreamId(), requestId);
-        }
-
-        eventMetadata.recordType(RecordType.COMMAND);
-        eventMetadata.intent(intent);
-        eventMetadata.valueType(eventType);
-
-        logStreamWriter.wrap(partition.getLogStream());
-
-        if (key != ExecuteCommandRequestDecoder.keyNullValue())
-        {
-            logStreamWriter.key(key);
-        }
-        else
-        {
-            logStreamWriter.positionAsKey();
-        }
-
-        final long sourceRecordPosition = executeCommandRequestDecoder.sourceRecordPosition();
-
-        final long eventPosition = logStreamWriter
-                .metadataWriter(eventMetadata)
-                .value(buffer, eventOffset, eventLength)
-                .sourceRecordPosition(sourceRecordPosition)
-                .tryWrite();
-
-        return eventPosition >= 0;
+    try {
+      // verify that the event / command is valid
+      event.wrap(buffer, eventOffset, eventLength);
+    } catch (Throwable t) {
+      return errorResponseWriter
+          .errorCode(ErrorCode.INVALID_MESSAGE)
+          .errorMessage("Cannot deserialize command: '%s'.", concatErrorMessages(t))
+          .tryWriteResponseOrLogFailure(output, requestAddress.getStreamId(), requestId);
     }
 
-    private String concatErrorMessages(Throwable t)
-    {
-        final StringBuilder sb = new StringBuilder();
+    eventMetadata.recordType(RecordType.COMMAND);
+    eventMetadata.intent(intent);
+    eventMetadata.valueType(eventType);
 
-        sb.append(t.getMessage());
+    logStreamWriter.wrap(partition.getLogStream());
 
-        while (t.getCause() != null)
-        {
-            t = t.getCause();
-
-            sb.append("; ");
-            sb.append(t.getMessage());
-        }
-
-        return sb.toString();
+    if (key != ExecuteCommandRequestDecoder.keyNullValue()) {
+      logStreamWriter.key(key);
+    } else {
+      logStreamWriter.positionAsKey();
     }
 
-    private boolean handleControlMessageRequest(
-            final RecordMetadata eventMetadata,
-            final DirectBuffer buffer,
-            final int messageOffset,
-            final int messageLength)
-    {
-        boolean isHandled = false;
-        long publishPosition;
+    final long sourceRecordPosition = executeCommandRequestDecoder.sourceRecordPosition();
 
-        do
-        {
-            publishPosition = controlMessageDispatcher.claim(claimedControlMessageFragment, ControlMessageRequestHeaderDescriptor.framedLength(messageLength));
-        }
-        while (publishPosition == -2);
+    final long eventPosition =
+        logStreamWriter
+            .metadataWriter(eventMetadata)
+            .value(buffer, eventOffset, eventLength)
+            .sourceRecordPosition(sourceRecordPosition)
+            .tryWrite();
 
-        if (publishPosition >= 0)
-        {
-            final MutableDirectBuffer writeBuffer = claimedControlMessageFragment.getBuffer();
-            int writeBufferOffset = claimedControlMessageFragment.getOffset();
+    return eventPosition >= 0;
+  }
 
-            controlMessageRequestHeaderDescriptor
-                .wrap(writeBuffer, writeBufferOffset)
-                .streamId(eventMetadata.getRequestStreamId())
-                .requestId(eventMetadata.getRequestId());
+  private String concatErrorMessages(Throwable t) {
+    final StringBuilder sb = new StringBuilder();
 
-            writeBufferOffset += ControlMessageRequestHeaderDescriptor.headerLength();
+    sb.append(t.getMessage());
 
-            writeBuffer.putBytes(writeBufferOffset, buffer, messageOffset, messageLength);
+    while (t.getCause() != null) {
+      t = t.getCause();
 
-            claimedControlMessageFragment.commit();
-
-            isHandled = true;
-        }
-
-        return isHandled;
+      sb.append("; ");
+      sb.append(t.getMessage());
     }
 
-    public void addPartition(final Partition partition)
-    {
-        cmdQueue.add(() -> leaderPartitions.put(partition.getInfo().getPartitionId(), partition));
+    return sb.toString();
+  }
+
+  private boolean handleControlMessageRequest(
+      final RecordMetadata eventMetadata,
+      final DirectBuffer buffer,
+      final int messageOffset,
+      final int messageLength) {
+    boolean isHandled = false;
+    long publishPosition;
+
+    do {
+      publishPosition =
+          controlMessageDispatcher.claim(
+              claimedControlMessageFragment,
+              ControlMessageRequestHeaderDescriptor.framedLength(messageLength));
+    } while (publishPosition == -2);
+
+    if (publishPosition >= 0) {
+      final MutableDirectBuffer writeBuffer = claimedControlMessageFragment.getBuffer();
+      int writeBufferOffset = claimedControlMessageFragment.getOffset();
+
+      controlMessageRequestHeaderDescriptor
+          .wrap(writeBuffer, writeBufferOffset)
+          .streamId(eventMetadata.getRequestStreamId())
+          .requestId(eventMetadata.getRequestId());
+
+      writeBufferOffset += ControlMessageRequestHeaderDescriptor.headerLength();
+
+      writeBuffer.putBytes(writeBufferOffset, buffer, messageOffset, messageLength);
+
+      claimedControlMessageFragment.commit();
+
+      isHandled = true;
     }
 
-    public void removePartition(final Partition partition)
-    {
-        cmdQueue.add(() -> leaderPartitions.remove(partition.getInfo().getPartitionId()));
+    return isHandled;
+  }
+
+  public void addPartition(final Partition partition) {
+    cmdQueue.add(() -> leaderPartitions.put(partition.getInfo().getPartitionId(), partition));
+  }
+
+  public void removePartition(final Partition partition) {
+    cmdQueue.add(() -> leaderPartitions.remove(partition.getInfo().getPartitionId()));
+  }
+
+  @Override
+  public boolean onRequest(
+      ServerOutput output,
+      RemoteAddress remoteAddress,
+      DirectBuffer buffer,
+      int offset,
+      int length,
+      long requestId) {
+    drainCommandQueue();
+
+    messageHeaderDecoder.wrap(buffer, offset);
+
+    final int templateId = messageHeaderDecoder.templateId();
+    final int clientVersion = messageHeaderDecoder.version();
+
+    if (clientVersion > Protocol.PROTOCOL_VERSION) {
+      return errorResponseWriter
+          .errorCode(ErrorCode.INVALID_CLIENT_VERSION)
+          .errorMessage(
+              "Client has newer version than broker (%d > %d)",
+              clientVersion, Protocol.PROTOCOL_VERSION)
+          .tryWriteResponse(output, remoteAddress.getStreamId(), requestId);
     }
 
-    @Override
-    public boolean onRequest(ServerOutput output, RemoteAddress remoteAddress, DirectBuffer buffer, int offset,
-            int length, long requestId)
-    {
-        drainCommandQueue();
+    eventMetadata.reset();
+    eventMetadata.protocolVersion(clientVersion);
+    eventMetadata.requestId(requestId);
+    eventMetadata.requestStreamId(remoteAddress.getStreamId());
 
-        messageHeaderDecoder.wrap(buffer, offset);
+    final boolean isHandled;
+    switch (templateId) {
+      case ExecuteCommandRequestDecoder.TEMPLATE_ID:
+        isHandled =
+            handleExecuteCommandRequest(
+                output, remoteAddress, requestId, eventMetadata, buffer, offset, length);
+        break;
 
-        final int templateId = messageHeaderDecoder.templateId();
-        final int clientVersion = messageHeaderDecoder.version();
+      case ControlMessageRequestDecoder.TEMPLATE_ID:
+        isHandled = handleControlMessageRequest(eventMetadata, buffer, offset, length);
+        break;
 
-
-        if (clientVersion > Protocol.PROTOCOL_VERSION)
-        {
-            return errorResponseWriter
-                .errorCode(ErrorCode.INVALID_CLIENT_VERSION)
-                .errorMessage("Client has newer version than broker (%d > %d)", clientVersion, Protocol.PROTOCOL_VERSION)
+      default:
+        isHandled =
+            errorResponseWriter
+                .errorCode(ErrorCode.MESSAGE_NOT_SUPPORTED)
+                .errorMessage(
+                    "Cannot handle message. Template id '%d' is not supported.", templateId)
                 .tryWriteResponse(output, remoteAddress.getStreamId(), requestId);
-        }
-
-        eventMetadata.reset();
-        eventMetadata.protocolVersion(clientVersion);
-        eventMetadata.requestId(requestId);
-        eventMetadata.requestStreamId(remoteAddress.getStreamId());
-
-        final boolean isHandled;
-        switch (templateId)
-        {
-            case ExecuteCommandRequestDecoder.TEMPLATE_ID:
-
-                isHandled = handleExecuteCommandRequest(
-                        output,
-                        remoteAddress,
-                        requestId,
-                        eventMetadata,
-                        buffer,
-                        offset,
-                        length);
-                break;
-
-            case ControlMessageRequestDecoder.TEMPLATE_ID:
-                isHandled = handleControlMessageRequest(eventMetadata, buffer, offset, length);
-                break;
-
-            default:
-                isHandled = errorResponseWriter
-                        .errorCode(ErrorCode.MESSAGE_NOT_SUPPORTED)
-                        .errorMessage("Cannot handle message. Template id '%d' is not supported.", templateId)
-                        .tryWriteResponse(output, remoteAddress.getStreamId(), requestId);
-                break;
-        }
-
-        return isHandled;
+        break;
     }
 
-    @Override
-    public boolean onMessage(ServerOutput output, RemoteAddress remoteAddress, DirectBuffer buffer, int offset,
-            int length)
-    {
-        // ignore; currently no incoming single-message client interactions
-        return true;
-    }
+    return isHandled;
+  }
 
-    private void drainCommandQueue()
-    {
-        while (!cmdQueue.isEmpty())
-        {
-            final Runnable runnable = cmdQueue.poll();
-            if (runnable != null)
-            {
-                cmdConsumer.accept(runnable);
-            }
-        }
-    }
+  @Override
+  public boolean onMessage(
+      ServerOutput output,
+      RemoteAddress remoteAddress,
+      DirectBuffer buffer,
+      int offset,
+      int length) {
+    // ignore; currently no incoming single-message client interactions
+    return true;
+  }
 
+  private void drainCommandQueue() {
+    while (!cmdQueue.isEmpty()) {
+      final Runnable runnable = cmdQueue.poll();
+      if (runnable != null) {
+        cmdConsumer.accept(runnable);
+      }
+    }
+  }
 }

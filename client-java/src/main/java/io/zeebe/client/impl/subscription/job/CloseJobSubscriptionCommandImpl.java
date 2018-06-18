@@ -19,21 +19,18 @@ import io.zeebe.client.impl.ControlMessageRequest;
 import io.zeebe.client.impl.RequestManager;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 
-public class CloseJobSubscriptionCommandImpl extends ControlMessageRequest<Void>
-{
-    private final JobSubscriptionImpl subscription;
+public class CloseJobSubscriptionCommandImpl extends ControlMessageRequest<Void> {
+  private final JobSubscriptionImpl subscription;
 
-    public CloseJobSubscriptionCommandImpl(final RequestManager commandManager, int partition, long subscriberKey)
-    {
-        super(commandManager, ControlMessageType.REMOVE_JOB_SUBSCRIPTION, partition, Void.class);
-        this.subscription = new JobSubscriptionImpl();
-        this.subscription.setSubscriberKey(subscriberKey);
-    }
+  public CloseJobSubscriptionCommandImpl(
+      final RequestManager commandManager, int partition, long subscriberKey) {
+    super(commandManager, ControlMessageType.REMOVE_JOB_SUBSCRIPTION, partition, Void.class);
+    this.subscription = new JobSubscriptionImpl();
+    this.subscription.setSubscriberKey(subscriberKey);
+  }
 
-    @Override
-    public Object getRequest()
-    {
-        return subscription;
-    }
-
+  @Override
+  public Object getRequest() {
+    return subscription;
+  }
 }

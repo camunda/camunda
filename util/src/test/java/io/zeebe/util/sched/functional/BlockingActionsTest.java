@@ -18,101 +18,93 @@ package io.zeebe.util.sched.functional;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-import java.util.function.Consumer;
-
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
+import java.util.function.Consumer;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.InOrder;
 
 @SuppressWarnings("unchecked")
-public class BlockingActionsTest
-{
-    @Rule
-    public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
+public class BlockingActionsTest {
+  @Rule
+  public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
 
-    @Test
-    public void testInvokeBlockingAction() throws InterruptedException
-    {
-        // given
-        final Runnable blockingAction = mock(Runnable.class);
-        final Actor actor = new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                actor.runBlocking(blockingAction);
-            }
+  @Test
+  public void testInvokeBlockingAction() throws InterruptedException {
+    // given
+    final Runnable blockingAction = mock(Runnable.class);
+    final Actor actor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            actor.runBlocking(blockingAction);
+          }
         };
 
-        // when
-        schedulerRule.submitActor(actor);
-        schedulerRule.workUntilDone();
-        schedulerRule.awaitBlockingTasksCompleted(1);
-        schedulerRule.workUntilDone();
+    // when
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
+    schedulerRule.awaitBlockingTasksCompleted(1);
+    schedulerRule.workUntilDone();
 
-        // then
-        verify(blockingAction, times(1)).run();
-    }
+    // then
+    verify(blockingAction, times(1)).run();
+  }
 
-    @Test
-    public void testInvokeCallbackAfterBlockingAction() throws InterruptedException
-    {
-        // given
-        final Runnable blockingAction = mock(Runnable.class);
-        final Consumer<Throwable> whenDone = mock(Consumer.class);
-        final Actor actor = new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                actor.runBlocking(blockingAction, whenDone);
-            }
+  @Test
+  public void testInvokeCallbackAfterBlockingAction() throws InterruptedException {
+    // given
+    final Runnable blockingAction = mock(Runnable.class);
+    final Consumer<Throwable> whenDone = mock(Consumer.class);
+    final Actor actor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            actor.runBlocking(blockingAction, whenDone);
+          }
         };
 
-        // when
-        schedulerRule.submitActor(actor);
-        schedulerRule.workUntilDone();
-        schedulerRule.awaitBlockingTasksCompleted(1);
-        schedulerRule.workUntilDone();
+    // when
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
+    schedulerRule.awaitBlockingTasksCompleted(1);
+    schedulerRule.workUntilDone();
 
-        // then
-        final InOrder inOrder = inOrder(blockingAction, whenDone);
-        inOrder.verify(blockingAction, times(1)).run();
-        inOrder.verify(whenDone, times(1)).accept(eq(null));
-        inOrder.verifyNoMoreInteractions();
-    }
+    // then
+    final InOrder inOrder = inOrder(blockingAction, whenDone);
+    inOrder.verify(blockingAction, times(1)).run();
+    inOrder.verify(whenDone, times(1)).accept(eq(null));
+    inOrder.verifyNoMoreInteractions();
+  }
 
-    @Test
-    public void testPassExceptionToCallback() throws InterruptedException
-    {
-        // given
-        final Runnable blockingAction = mock(Runnable.class);
-        final RuntimeException exception = new RuntimeException();
-        doThrow(exception).when(blockingAction).run();
+  @Test
+  public void testPassExceptionToCallback() throws InterruptedException {
+    // given
+    final Runnable blockingAction = mock(Runnable.class);
+    final RuntimeException exception = new RuntimeException();
+    doThrow(exception).when(blockingAction).run();
 
-        final Consumer<Throwable> whenDone = mock(Consumer.class);
+    final Consumer<Throwable> whenDone = mock(Consumer.class);
 
-        final Actor actor = new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                actor.runBlocking(blockingAction, whenDone);
-            }
+    final Actor actor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            actor.runBlocking(blockingAction, whenDone);
+          }
         };
 
-        // when
-        schedulerRule.submitActor(actor);
-        schedulerRule.workUntilDone();
-        schedulerRule.awaitBlockingTasksCompleted(1);
-        schedulerRule.workUntilDone();
+    // when
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
+    schedulerRule.awaitBlockingTasksCompleted(1);
+    schedulerRule.workUntilDone();
 
-        // then
-        final InOrder inOrder = inOrder(blockingAction, whenDone);
-        inOrder.verify(blockingAction, times(1)).run();
-        inOrder.verify(whenDone, times(1)).accept(eq(exception));
-        inOrder.verifyNoMoreInteractions();
-    }
+    // then
+    final InOrder inOrder = inOrder(blockingAction, whenDone);
+    inOrder.verify(blockingAction, times(1)).run();
+    inOrder.verify(whenDone, times(1)).accept(eq(exception));
+    inOrder.verifyNoMoreInteractions();
+  }
 }

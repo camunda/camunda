@@ -15,43 +15,32 @@
  */
 package io.zeebe.raft.event;
 
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.raft.Raft;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
-public class InitialEvent
-{
-    private static final DirectBuffer EMPTY_OBJECT = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
+public class InitialEvent {
+  private static final DirectBuffer EMPTY_OBJECT = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
 
-    public final LogStreamWriter logStreamWriter = new LogStreamWriterImpl();
-    public final RecordMetadata metadata = new RecordMetadata();
+  public final LogStreamWriter logStreamWriter = new LogStreamWriterImpl();
+  public final RecordMetadata metadata = new RecordMetadata();
 
-    public InitialEvent reset()
-    {
-        logStreamWriter.reset();
-        metadata.reset();
-        return this;
-    }
+  public InitialEvent reset() {
+    logStreamWriter.reset();
+    metadata.reset();
+    return this;
+  }
 
-    public long tryWrite(final Raft raft)
-    {
-        logStreamWriter.wrap(raft.getLogStream());
+  public long tryWrite(final Raft raft) {
+    logStreamWriter.wrap(raft.getLogStream());
 
-        metadata
-            .reset()
-            .valueType(ValueType.NOOP);
+    metadata.reset().valueType(ValueType.NOOP);
 
-        return logStreamWriter
-            .positionAsKey()
-            .metadataWriter(metadata)
-            .value(EMPTY_OBJECT)
-            .tryWrite();
-    }
-
+    return logStreamWriter.positionAsKey().metadataWriter(metadata).value(EMPTY_OBJECT).tryWrite();
+  }
 }

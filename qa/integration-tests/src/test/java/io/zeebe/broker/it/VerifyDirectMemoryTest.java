@@ -20,11 +20,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.Test;
 import sun.misc.VM;
 
-public class VerifyDirectMemoryTest
-{
-    @Test
-    public void shouldEnsureDirectMemory()
-    {
-        assertThat(VM.maxDirectMemory()).isGreaterThanOrEqualTo(4 * 1024 * 1024 * 1024); // 4 gigabyte
-    }
+public class VerifyDirectMemoryTest {
+  @Test
+  public void shouldEnsureDirectMemory() {
+    assertThat(VM.maxDirectMemory()).isGreaterThanOrEqualTo(4 * 1024 * 1024 * 1024); // 4 gigabyte
+  }
 }

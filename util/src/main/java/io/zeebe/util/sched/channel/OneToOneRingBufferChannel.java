@@ -20,44 +20,34 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.ringbuffer.OneToOneRingBuffer;
 
-public class OneToOneRingBufferChannel extends OneToOneRingBuffer implements ConsumableChannel
-{
-    public OneToOneRingBufferChannel(AtomicBuffer buffer)
-    {
-        super(buffer);
+public class OneToOneRingBufferChannel extends OneToOneRingBuffer implements ConsumableChannel {
+  public OneToOneRingBufferChannel(AtomicBuffer buffer) {
+    super(buffer);
+  }
+
+  private final ActorConditions conditions = new ActorConditions();
+
+  @Override
+  public boolean hasAvailable() {
+    return consumerPosition() < producerPosition();
+  }
+
+  @Override
+  public void registerConsumer(ActorCondition onDataAvailable) {
+    conditions.registerConsumer(onDataAvailable);
+  }
+
+  @Override
+  public void removeConsumer(ActorCondition onDataAvailable) {
+    conditions.removeConsumer(onDataAvailable);
+  }
+
+  @Override
+  public boolean write(int msgTypeId, DirectBuffer srcBuffer, int srcIndex, int length) {
+    try {
+      return super.write(msgTypeId, srcBuffer, srcIndex, length);
+    } finally {
+      conditions.signalConsumers();
     }
-
-    private final ActorConditions conditions = new ActorConditions();
-
-    @Override
-    public boolean hasAvailable()
-    {
-        return consumerPosition() < producerPosition();
-    }
-
-    @Override
-    public void registerConsumer(ActorCondition onDataAvailable)
-    {
-        conditions.registerConsumer(onDataAvailable);
-    }
-
-    @Override
-    public void removeConsumer(ActorCondition onDataAvailable)
-    {
-        conditions.removeConsumer(onDataAvailable);
-    }
-
-    @Override
-    public boolean write(int msgTypeId, DirectBuffer srcBuffer, int srcIndex, int length)
-    {
-        try
-        {
-            return super.write(msgTypeId, srcBuffer, srcIndex, length);
-        }
-        finally
-        {
-            conditions.signalConsumers();
-        }
-    }
-
+  }
 }

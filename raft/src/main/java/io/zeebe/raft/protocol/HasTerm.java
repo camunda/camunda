@@ -15,9 +15,7 @@
  */
 package io.zeebe.raft.protocol;
 
-public interface HasTerm
-{
+public interface HasTerm {
 
-    int getTerm();
-
+  int getTerm();
 }

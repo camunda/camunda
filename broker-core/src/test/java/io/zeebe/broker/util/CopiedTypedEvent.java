@@ -17,66 +17,59 @@
  */
 package io.zeebe.broker.util;
 
-import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedEventImpl;
+import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.util.ReflectUtil;
 
-public class CopiedTypedEvent extends TypedEventImpl
-{
-    private final long key;
-    private final long position;
-    private final long sourcePosition;
-    private final long timestamp;
-    private final RecordMetadata metadata;
+public class CopiedTypedEvent extends TypedEventImpl {
+  private final long key;
+  private final long position;
+  private final long sourcePosition;
+  private final long timestamp;
+  private final RecordMetadata metadata;
 
-    CopiedTypedEvent(LoggedEvent event, UnpackedObject object)
-    {
-        this.value = object;
-        this.position = event.getPosition();
-        this.sourcePosition = event.getSourceEventPosition();
-        this.key = event.getKey();
-        this.timestamp = event.getTimestamp();
-        this.metadata = new RecordMetadata();
-        event.readMetadata(metadata);
-    }
+  CopiedTypedEvent(LoggedEvent event, UnpackedObject object) {
+    this.value = object;
+    this.position = event.getPosition();
+    this.sourcePosition = event.getSourceEventPosition();
+    this.key = event.getKey();
+    this.timestamp = event.getTimestamp();
+    this.metadata = new RecordMetadata();
+    event.readMetadata(metadata);
+  }
 
-    @Override
-    public long getKey()
-    {
-        return key;
-    }
+  @Override
+  public long getKey() {
+    return key;
+  }
 
-    @Override
-    public long getSourcePosition()
-    {
-        return sourcePosition;
-    }
+  @Override
+  public long getSourcePosition() {
+    return sourcePosition;
+  }
 
-    @Override
-    public long getPosition()
-    {
-        return position;
-    }
+  @Override
+  public long getPosition() {
+    return position;
+  }
 
-    @Override
-    public RecordMetadata getMetadata()
-    {
-        return metadata;
-    }
+  @Override
+  public RecordMetadata getMetadata() {
+    return metadata;
+  }
 
-    @Override
-    public long getTimestamp()
-    {
-        return timestamp;
-    }
+  @Override
+  public long getTimestamp() {
+    return timestamp;
+  }
 
-    public static <T extends UnpackedObject> TypedRecord<T> toTypedEvent(LoggedEvent event, Class<T> valueClass)
-    {
-        final T value = ReflectUtil.newInstance(valueClass);
-        value.wrap(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
-        return new CopiedTypedEvent(event, value);
-    }
+  public static <T extends UnpackedObject> TypedRecord<T> toTypedEvent(
+      LoggedEvent event, Class<T> valueClass) {
+    final T value = ReflectUtil.newInstance(valueClass);
+    value.wrap(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
+    return new CopiedTypedEvent(event, value);
+  }
 }

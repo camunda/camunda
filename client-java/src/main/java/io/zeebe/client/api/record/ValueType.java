@@ -15,18 +15,17 @@
  */
 package io.zeebe.client.api.record;
 
-public enum ValueType
-{
-    JOB,
-    WORKFLOW_INSTANCE,
-    INCIDENT,
-    SUBSCRIBER,
-    SUBSCRIPTION,
-    DEPLOYMENT,
+public enum ValueType {
+  JOB,
+  WORKFLOW_INSTANCE,
+  INCIDENT,
+  SUBSCRIBER,
+  SUBSCRIPTION,
+  DEPLOYMENT,
 
-    TOPIC,
+  TOPIC,
 
-    RAFT,
+  RAFT,
 
-    UNKNOWN
+  UNKNOWN
 }

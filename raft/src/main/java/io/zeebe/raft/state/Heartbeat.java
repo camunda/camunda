@@ -15,34 +15,29 @@
  */
 package io.zeebe.raft.state;
 
+import io.zeebe.util.sched.clock.ActorClock;
 import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
 
-import io.zeebe.util.sched.clock.ActorClock;
+public class Heartbeat {
+  private final long electionInterval;
 
-public class Heartbeat
-{
-    private final long electionInterval;
+  private volatile long lastHeartbeat = 0;
 
-    private volatile long lastHeartbeat = 0;
+  public Heartbeat(long electionInterval) {
+    this.electionInterval = electionInterval;
+  }
 
-    public Heartbeat(long electionInterval)
-    {
-        this.electionInterval = electionInterval;
-    }
+  public void update() {
+    lastHeartbeat = ActorClock.currentTimeMillis();
+  }
 
-    public void update()
-    {
-        lastHeartbeat = ActorClock.currentTimeMillis();
-    }
+  public boolean shouldElect() {
+    return ActorClock.currentTimeMillis() >= (lastHeartbeat + electionInterval);
+  }
 
-    public boolean shouldElect()
-    {
-        return ActorClock.currentTimeMillis() >= (lastHeartbeat + electionInterval);
-    }
-
-    public Duration nextElectionTimeout()
-    {
-        return Duration.ofMillis(electionInterval + (Math.abs(ThreadLocalRandom.current().nextInt()) % electionInterval));
-    }
+  public Duration nextElectionTimeout() {
+    return Duration.ofMillis(
+        electionInterval + (Math.abs(ThreadLocalRandom.current().nextInt()) % electionInterval));
+  }
 }

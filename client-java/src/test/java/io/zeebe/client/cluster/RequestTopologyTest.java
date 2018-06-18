@@ -17,91 +17,91 @@ package io.zeebe.client.cluster;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.*;
-
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.commands.*;
 import io.zeebe.client.util.ClientRule;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
+import java.util.*;
 import org.assertj.core.api.Condition;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public class RequestTopologyTest
-{
+public class RequestTopologyTest {
 
-    public ClientRule clientRule = new ClientRule();
-    public StubBrokerRule brokerRule = new StubBrokerRule();
+  public ClientRule clientRule = new ClientRule();
+  public StubBrokerRule brokerRule = new StubBrokerRule();
 
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
-    @Test
-    public void shouldRequestTopics()
-    {
-        // given
-        final Map<String, Object> broker1 = buildBroker("0.0.0.0", 51015);
-        broker1.put("partitions", Arrays.asList(buildPartition(0, "system", "LEADER"), buildPartition(1, "my-topic", "FOLLOWER")));
+  @Test
+  public void shouldRequestTopics() {
+    // given
+    final Map<String, Object> broker1 = buildBroker("0.0.0.0", 51015);
+    broker1.put(
+        "partitions",
+        Arrays.asList(
+            buildPartition(0, "system", "LEADER"), buildPartition(1, "my-topic", "FOLLOWER")));
 
-        final Map<String, Object> broker2 = buildBroker("0.0.0.0", 41015);
-        broker2.put("partitions", Arrays.asList(buildPartition(0, "system", "FOLLOWER"), buildPartition(1, "my-topic", "LEADER")));
+    final Map<String, Object> broker2 = buildBroker("0.0.0.0", 41015);
+    broker2.put(
+        "partitions",
+        Arrays.asList(
+            buildPartition(0, "system", "FOLLOWER"), buildPartition(1, "my-topic", "LEADER")));
 
-        final List<Map<String, Object>> brokers = Arrays.asList(broker1, broker2);
+    final List<Map<String, Object>> brokers = Arrays.asList(broker1, broker2);
 
-        brokerRule.onControlMessageRequest(r -> r.messageType() == ControlMessageType.REQUEST_TOPOLOGY)
-            .respondWith()
-            .data()
-                .put("brokers", brokers)
-                .done()
-            .register();
+    brokerRule
+        .onControlMessageRequest(r -> r.messageType() == ControlMessageType.REQUEST_TOPOLOGY)
+        .respondWith()
+        .data()
+        .put("brokers", brokers)
+        .done()
+        .register();
 
-        final ZeebeClient client = clientRule.getClient();
+    final ZeebeClient client = clientRule.getClient();
 
-        // when
-        final Topology topology = client.newTopologyRequest()
-                .send()
-                .join();
+    // when
+    final Topology topology = client.newTopologyRequest().send().join();
 
-        // then
-        final List<BrokerInfo> returnedBrokers = topology.getBrokers();
-        assertThat(returnedBrokers).hasSize(2);
-        assertThat(returnedBrokers).extracting(BrokerInfo::getAddress).contains("0.0.0.0:51015", "0.0.0.0:41015");
+    // then
+    final List<BrokerInfo> returnedBrokers = topology.getBrokers();
+    assertThat(returnedBrokers).hasSize(2);
+    assertThat(returnedBrokers)
+        .extracting(BrokerInfo::getAddress)
+        .contains("0.0.0.0:51015", "0.0.0.0:41015");
 
-        assertThat(returnedBrokers.get(0).getPartitions())
-            .hasSize(2)
-            .areExactly(1, partition(0, "system", PartitionBrokerRole.LEADER))
-            .areExactly(1, partition(1, "my-topic", PartitionBrokerRole.FOLLOWER));
+    assertThat(returnedBrokers.get(0).getPartitions())
+        .hasSize(2)
+        .areExactly(1, partition(0, "system", PartitionBrokerRole.LEADER))
+        .areExactly(1, partition(1, "my-topic", PartitionBrokerRole.FOLLOWER));
 
-        assertThat(returnedBrokers.get(1).getPartitions())
-            .hasSize(2)
-            .areExactly(1, partition(0, "system", PartitionBrokerRole.FOLLOWER))
-            .areExactly(1, partition(1, "my-topic", PartitionBrokerRole.LEADER));
-    }
+    assertThat(returnedBrokers.get(1).getPartitions())
+        .hasSize(2)
+        .areExactly(1, partition(0, "system", PartitionBrokerRole.FOLLOWER))
+        .areExactly(1, partition(1, "my-topic", PartitionBrokerRole.LEADER));
+  }
 
-    public Map<String, Object> buildBroker(String host, int port)
-    {
-        final Map<String, Object> broker = new HashMap<>();
-        broker.put("host", host);
-        broker.put("port", port);
+  public Map<String, Object> buildBroker(String host, int port) {
+    final Map<String, Object> broker = new HashMap<>();
+    broker.put("host", host);
+    broker.put("port", port);
 
-        return broker;
-    }
+    return broker;
+  }
 
-    public Map<String, Object> buildPartition(int id, String topic, String role)
-    {
-        final Map<String, Object> partition = new HashMap<>();
-        partition.put("topicName", topic);
-        partition.put("partitionId", id);
-        partition.put("role", role);
+  public Map<String, Object> buildPartition(int id, String topic, String role) {
+    final Map<String, Object> partition = new HashMap<>();
+    partition.put("topicName", topic);
+    partition.put("partitionId", id);
+    partition.put("role", role);
 
-        return partition;
-    }
+    return partition;
+  }
 
-    private Condition<PartitionInfo> partition(int id, String topic, PartitionBrokerRole role)
-    {
-        return new Condition<>(p -> p.getPartitionId() == id && p.getTopicName().equals(topic) && p.getRole() == role, "");
-    }
-
+  private Condition<PartitionInfo> partition(int id, String topic, PartitionBrokerRole role) {
+    return new Condition<>(
+        p -> p.getPartitionId() == id && p.getTopicName().equals(topic) && p.getRole() == role, "");
+  }
 }

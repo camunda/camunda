@@ -15,176 +15,152 @@
  */
 package io.zeebe.transport.impl;
 
+import io.zeebe.transport.*;
 import java.util.Iterator;
 import java.util.function.Consumer;
 
-import io.zeebe.transport.*;
+/** Threadsafe datastructure for indexing remote addresses and assigning streamIds. */
+public class RemoteAddressListImpl implements RemoteAddressList {
+  private volatile int size;
+  private RemoteAddressImpl[] index = new RemoteAddressImpl[0];
 
-/**
- * Threadsafe datastructure for indexing remote addresses and assigning
- * streamIds.
- *
- */
-public class RemoteAddressListImpl implements RemoteAddressList
-{
-    private volatile int size;
-    private RemoteAddressImpl[] index = new RemoteAddressImpl[0];
+  private Consumer<RemoteAddressImpl> onAddressAddedConsumer = r -> {};
 
-    private Consumer<RemoteAddressImpl> onAddressAddedConsumer = r ->
-    {
-    };
+  @Override
+  public RemoteAddressImpl getByStreamId(int streamId) {
+    if (streamId < size) {
+      return index[streamId];
+    }
+
+    return null;
+  }
+
+  /**
+   * Returns only active addresses
+   *
+   * @param inetSocketAddress
+   * @return
+   */
+  @Override
+  public RemoteAddressImpl getByAddress(SocketAddress inetSocketAddress) {
+    return getByAddress(inetSocketAddress, RemoteAddressImpl.STATE_ACTIVE);
+  }
+
+  public RemoteAddressImpl getByAddress(SocketAddress inetSocketAddress, int stateMask) {
+    final int currSize = size;
+
+    for (int i = 0; i < currSize; i++) {
+      final RemoteAddressImpl remoteAddress = index[i];
+
+      if (remoteAddress != null) {
+        if (remoteAddress.getAddress().equals(inetSocketAddress)
+            && remoteAddress.isInAnyState(stateMask)) {
+          return remoteAddress;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Effect: This remote address/stream is never used again; no channel will every be managed for
+   * this again; if the underlying socket address is registered again, a new remote address is
+   * assigned (+ new stream id)
+   */
+  @Override
+  public synchronized void retire(RemoteAddress remote) {
+    getByStreamId(remote.getStreamId()).retire();
+  }
+
+  /**
+   * This stream is deactivated until it is registered again; the stream id in this case will remain
+   * stable
+   *
+   * @param remote
+   */
+  @Override
+  public synchronized void deactivate(RemoteAddress remote) {
+    getByStreamId(remote.getStreamId()).deactivate();
+  }
+
+  @Override
+  public synchronized void deactivateAll() {
+    for (int i = 0; i < size; i++) {
+      index[i].deactivate();
+    }
+  }
+
+  @Override
+  public RemoteAddressImpl register(SocketAddress inetSocketAddress) {
+    RemoteAddressImpl result = getByAddress(inetSocketAddress);
+
+    if (result == null) {
+      synchronized (this) {
+        result =
+            getByAddress(
+                inetSocketAddress,
+                RemoteAddressImpl.STATE_ACTIVE | RemoteAddressImpl.STATE_INACTIVE);
+
+        if (result == null) {
+          final int prevSize = size;
+          final int newSize = prevSize + 1;
+
+          final RemoteAddressImpl remoteAddress =
+              new RemoteAddressImpl(prevSize, new SocketAddress(inetSocketAddress));
+
+          final RemoteAddressImpl[] newAddresses = new RemoteAddressImpl[newSize];
+          System.arraycopy(index, 0, newAddresses, 0, prevSize);
+          newAddresses[remoteAddress.getStreamId()] = remoteAddress;
+
+          this.index = newAddresses;
+          this.size = newSize; // publish
+
+          result = remoteAddress;
+        } else {
+          if (result.isInAnyState(RemoteAddressImpl.STATE_INACTIVE)) {
+            result.activate();
+          }
+        }
+
+        onAddressAddedConsumer.accept(result);
+      }
+    }
+
+    return result;
+  }
+
+  public Iterator<RemoteAddressImpl> iterator() {
+    iterator.reset();
+    return iterator;
+  }
+
+  protected AddressIterator iterator = new AddressIterator();
+
+  protected class AddressIterator implements Iterator<RemoteAddressImpl> {
+
+    protected int curr = 0;
+    protected int currentSize;
+
+    public void reset() {
+      curr = 0;
+      currentSize = size;
+    }
 
     @Override
-    public RemoteAddressImpl getByStreamId(int streamId)
-    {
-        if (streamId < size)
-        {
-            return index[streamId];
-        }
-
-        return null;
-    }
-
-    /**
-     * Returns only active addresses
-     * @param inetSocketAddress
-     * @return
-     */
-    @Override
-    public RemoteAddressImpl getByAddress(SocketAddress inetSocketAddress)
-    {
-        return getByAddress(inetSocketAddress, RemoteAddressImpl.STATE_ACTIVE);
-    }
-
-    public RemoteAddressImpl getByAddress(SocketAddress inetSocketAddress, int stateMask)
-    {
-        final int currSize = size;
-
-        for (int i = 0; i < currSize; i++)
-        {
-            final RemoteAddressImpl remoteAddress = index[i];
-
-            if (remoteAddress != null)
-            {
-                if (remoteAddress.getAddress().equals(inetSocketAddress) && remoteAddress.isInAnyState(stateMask))
-                {
-                    return remoteAddress;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Effect: This remote address/stream is never used again; no channel will every be managed for this again;
-     * if the underlying socket address is registered again, a new remote address is assigned (+ new stream id)
-     */
-    @Override
-    public synchronized void retire(RemoteAddress remote)
-    {
-        getByStreamId(remote.getStreamId()).retire();
-    }
-
-    /**
-     * This stream is deactivated until it is registered again; the stream id in this case will remain stable
-     * @param remote
-     */
-    @Override
-    public synchronized void deactivate(RemoteAddress remote)
-    {
-        getByStreamId(remote.getStreamId()).deactivate();
+    public boolean hasNext() {
+      return curr < currentSize;
     }
 
     @Override
-    public synchronized void deactivateAll()
-    {
-        for (int i = 0; i < size; i++)
-        {
-            index[i].deactivate();
-        }
+    public RemoteAddressImpl next() {
+      final RemoteAddressImpl next = index[curr];
+      curr++;
+      return next;
     }
+  };
 
-    @Override
-    public RemoteAddressImpl register(SocketAddress inetSocketAddress)
-    {
-        RemoteAddressImpl result = getByAddress(inetSocketAddress);
-
-        if (result == null)
-        {
-            synchronized (this)
-            {
-                result = getByAddress(inetSocketAddress, RemoteAddressImpl.STATE_ACTIVE | RemoteAddressImpl.STATE_INACTIVE);
-
-                if (result == null)
-                {
-                    final int prevSize = size;
-                    final int newSize = prevSize + 1;
-
-                    final RemoteAddressImpl remoteAddress = new RemoteAddressImpl(prevSize, new SocketAddress(inetSocketAddress));
-
-                    final RemoteAddressImpl[] newAddresses = new RemoteAddressImpl[newSize];
-                    System.arraycopy(index, 0, newAddresses, 0, prevSize);
-                    newAddresses[remoteAddress.getStreamId()] = remoteAddress;
-
-                    this.index = newAddresses;
-                    this.size = newSize; // publish
-
-                    result = remoteAddress;
-                }
-                else
-                {
-                    if (result.isInAnyState(RemoteAddressImpl.STATE_INACTIVE))
-                    {
-                        result.activate();
-                    }
-                }
-
-                onAddressAddedConsumer.accept(result);
-            }
-        }
-
-        return result;
-    }
-
-    public Iterator<RemoteAddressImpl> iterator()
-    {
-        iterator.reset();
-        return iterator;
-    }
-
-    protected AddressIterator iterator = new AddressIterator();
-
-    protected class AddressIterator implements Iterator<RemoteAddressImpl>
-    {
-
-        protected int curr = 0;
-        protected int currentSize;
-
-
-        public void reset()
-        {
-            curr = 0;
-            currentSize = size;
-        }
-
-        @Override
-        public boolean hasNext()
-        {
-            return curr < currentSize;
-        }
-
-        @Override
-        public RemoteAddressImpl next()
-        {
-            final RemoteAddressImpl next = index[curr];
-            curr++;
-            return next;
-        }
-    };
-
-    public void setOnAddressAddedConsumer(Consumer<RemoteAddressImpl> onAddressAddedConsumer)
-    {
-        this.onAddressAddedConsumer = onAddressAddedConsumer;
-    }
+  public void setOnAddressAddedConsumer(Consumer<RemoteAddressImpl> onAddressAddedConsumer) {
+    this.onAddressAddedConsumer = onAddressAddedConsumer;
+  }
 }

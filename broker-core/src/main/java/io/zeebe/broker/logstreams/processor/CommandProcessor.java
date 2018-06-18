@@ -25,27 +25,19 @@ import io.zeebe.protocol.intent.Intent;
  * High-level record processor abstraction that implements the common behavior of most
  * command-handling processors.
  */
-public interface CommandProcessor<T extends UnpackedObject>
-{
+public interface CommandProcessor<T extends UnpackedObject> {
 
-    CommandResult onCommand(TypedRecord<T> command, CommandControl commandControl);
+  CommandResult onCommand(TypedRecord<T> command, CommandControl commandControl);
 
-    default void updateStateOnAccept(TypedRecord<T> command)
-    {
-    };
+  default void updateStateOnAccept(TypedRecord<T> command) {};
 
-    default void updateStateOnReject(TypedRecord<T> command)
-    {
-    };
+  default void updateStateOnReject(TypedRecord<T> command) {};
 
-    interface CommandControl
-    {
-        CommandResult accept(Intent newState);
+  interface CommandControl {
+    CommandResult accept(Intent newState);
 
-        CommandResult reject(RejectionType type, String reason);
-    }
+    CommandResult reject(RejectionType type, String reason);
+  }
 
-    interface CommandResult
-    {
-    }
+  interface CommandResult {}
 }

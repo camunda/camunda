@@ -22,65 +22,57 @@ import io.zeebe.client.impl.subscription.*;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 
-public class JobSubscriberGroup extends SubscriberGroup<JobSubscriber> implements JobWorker
-{
-    private final JobSubscriptionSpec subscription;
+public class JobSubscriberGroup extends SubscriberGroup<JobSubscriber> implements JobWorker {
+  private final JobSubscriptionSpec subscription;
 
-    public JobSubscriberGroup(
-            ActorControl actor,
-            ZeebeClientImpl client,
-            SubscriptionManager acquisition,
-            JobSubscriptionSpec subscription)
-    {
-        super(actor, client, acquisition, subscription.getTopic());
-        this.subscription = subscription;
+  public JobSubscriberGroup(
+      ActorControl actor,
+      ZeebeClientImpl client,
+      SubscriptionManager acquisition,
+      JobSubscriptionSpec subscription) {
+    super(actor, client, acquisition, subscription.getTopic());
+    this.subscription = subscription;
+  }
+
+  @Override
+  public int poll() {
+    return poll(subscription.getJobHandler());
+  }
+
+  public int poll(JobHandler jobHandler) {
+    int workCount = 0;
+    for (JobSubscriber subscriber : subscribersList) {
+      workCount += subscriber.pollEvents(jobHandler);
     }
 
-    @Override
-    public int poll()
-    {
-        return poll(subscription.getJobHandler());
-    }
+    return workCount;
+  }
 
-    public int poll(JobHandler jobHandler)
-    {
-        int workCount = 0;
-        for (JobSubscriber subscriber : subscribersList)
-        {
-            workCount += subscriber.pollEvents(jobHandler);
-        }
+  @Override
+  protected ActorFuture<? extends EventSubscriptionCreationResult> requestNewSubscriber(
+      int partitionId) {
+    return new CreateJobSubscriptionCommandImpl(client.getCommandManager(), partitionId)
+        .jobType(subscription.getJobType())
+        .timeout(subscription.getTimeout())
+        .worker(subscription.getWorker())
+        .initialCredits(subscription.getCapacity())
+        .send();
+  }
 
-        return workCount;
-    }
+  @Override
+  protected JobSubscriber buildSubscriber(EventSubscriptionCreationResult result) {
+    return new JobSubscriber(
+        client,
+        subscription,
+        result.getSubscriberKey(),
+        result.getEventPublisher(),
+        result.getPartitionId(),
+        this,
+        subscriptionManager);
+  }
 
-    @Override
-    protected ActorFuture<? extends EventSubscriptionCreationResult> requestNewSubscriber(int partitionId)
-    {
-        return new CreateJobSubscriptionCommandImpl(client.getCommandManager(), partitionId)
-                .jobType(subscription.getJobType())
-                .timeout(subscription.getTimeout())
-                .worker(subscription.getWorker())
-                .initialCredits(subscription.getCapacity())
-                .send();
-    }
-
-    @Override
-    protected JobSubscriber buildSubscriber(EventSubscriptionCreationResult result)
-    {
-        return new JobSubscriber(
-                client,
-                subscription,
-                result.getSubscriberKey(),
-                result.getEventPublisher(),
-                result.getPartitionId(),
-                this,
-                subscriptionManager);
-    }
-
-    @Override
-    protected String describeGroup()
-    {
-        return subscription.toString();
-    }
-
+  @Override
+  protected String describeGroup() {
+    return subscription.toString();
+  }
 }

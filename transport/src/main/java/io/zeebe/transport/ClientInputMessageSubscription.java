@@ -17,7 +17,6 @@ package io.zeebe.transport;
 
 import io.zeebe.util.sched.channel.ConsumableChannel;
 
-public interface ClientInputMessageSubscription extends ConsumableChannel
-{
-    int poll();
+public interface ClientInputMessageSubscription extends ConsumableChannel {
+  int poll();
 }

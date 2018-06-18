@@ -23,51 +23,43 @@ import io.zeebe.client.impl.record.DeploymentRecordImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 
-public class DeploymentCommandImpl extends DeploymentRecordImpl implements DeploymentCommand
-{
-    private String errorMessage;
+public class DeploymentCommandImpl extends DeploymentRecordImpl implements DeploymentCommand {
+  private String errorMessage;
 
-    @JsonCreator
-    public DeploymentCommandImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper)
-    {
-        super(objectMapper, RecordType.COMMAND);
-    }
+  @JsonCreator
+  public DeploymentCommandImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper) {
+    super(objectMapper, RecordType.COMMAND);
+  }
 
-    public DeploymentCommandImpl(DeploymentIntent intent)
-    {
-        super(null, RecordType.COMMAND);
-        setIntent(intent);
-    }
+  public DeploymentCommandImpl(DeploymentIntent intent) {
+    super(null, RecordType.COMMAND);
+    setIntent(intent);
+  }
 
-    @JsonIgnore
-    @Override
-    public DeploymentCommandName getName()
-    {
-        return DeploymentCommandName.valueOf(getMetadata().getIntent());
-    }
+  @JsonIgnore
+  @Override
+  public DeploymentCommandName getName() {
+    return DeploymentCommandName.valueOf(getMetadata().getIntent());
+  }
 
-    public String getErrorMessage()
-    {
-        return errorMessage;
-    }
+  public String getErrorMessage() {
+    return errorMessage;
+  }
 
-    public void setErrorMessage(String errorMessage)
-    {
-        this.errorMessage = errorMessage;
-    }
+  public void setErrorMessage(String errorMessage) {
+    this.errorMessage = errorMessage;
+  }
 
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("DeploymentCommand [command=");
-        builder.append(getName());
-        builder.append(", topic=");
-        builder.append(getDeploymentTopic());
-        builder.append(", resource=");
-        builder.append(getResources());
-        builder.append("]");
-        return builder.toString();
-    }
-
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("DeploymentCommand [command=");
+    builder.append(getName());
+    builder.append(", topic=");
+    builder.append(getDeploymentTopic());
+    builder.append(", resource=");
+    builder.append(getResources());
+    builder.append("]");
+    return builder.toString();
+  }
 }

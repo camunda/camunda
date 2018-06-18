@@ -17,37 +17,30 @@ package io.zeebe.msgpack;
 
 import io.zeebe.msgpack.property.LongProperty;
 
-public class DefaultValuesPOJO extends UnpackedObject
-{
+public class DefaultValuesPOJO extends UnpackedObject {
 
-    protected LongProperty defaultValueProperty;
-    protected LongProperty noDefaultValueProperty = new LongProperty("noDefaultValueProp");
+  protected LongProperty defaultValueProperty;
+  protected LongProperty noDefaultValueProperty = new LongProperty("noDefaultValueProp");
 
-    public DefaultValuesPOJO(long defaultValue)
-    {
-        defaultValueProperty = new LongProperty("defaultValueProp", defaultValue);
+  public DefaultValuesPOJO(long defaultValue) {
+    defaultValueProperty = new LongProperty("defaultValueProp", defaultValue);
 
-        this.declareProperty(defaultValueProperty)
-            .declareProperty(noDefaultValueProperty);
-    }
+    this.declareProperty(defaultValueProperty).declareProperty(noDefaultValueProperty);
+  }
 
-    public long getDefaultValueProperty()
-    {
-        return defaultValueProperty.getValue();
-    }
+  public long getDefaultValueProperty() {
+    return defaultValueProperty.getValue();
+  }
 
-    public void setDefaultValueProperty(long value)
-    {
-        this.defaultValueProperty.setValue(value);
-    }
+  public void setDefaultValueProperty(long value) {
+    this.defaultValueProperty.setValue(value);
+  }
 
-    public long getNoDefaultValueProperty()
-    {
-        return noDefaultValueProperty.getValue();
-    }
+  public long getNoDefaultValueProperty() {
+    return noDefaultValueProperty.getValue();
+  }
 
-    public void setNoDefaultValueProperty(long value)
-    {
-        this.noDefaultValueProperty.setValue(value);
-    }
+  public void setNoDefaultValueProperty(long value) {
+    this.noDefaultValueProperty.setValue(value);
+  }
 }

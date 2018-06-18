@@ -20,62 +20,50 @@ import io.zeebe.client.impl.event.TopicSubscriberEventImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 
-public abstract class TopicSubscriberRecordImpl extends RecordImpl
-{
-    private String name;
-    private long startPosition = -1L;
-    private int bufferSize = -1;
-    private boolean forceStart;
+public abstract class TopicSubscriberRecordImpl extends RecordImpl {
+  private String name;
+  private long startPosition = -1L;
+  private int bufferSize = -1;
+  private boolean forceStart;
 
-    public TopicSubscriberRecordImpl(ZeebeObjectMapperImpl objectMapper, RecordType recordType)
-    {
-        super(objectMapper, recordType, ValueType.SUBSCRIBER);
-    }
+  public TopicSubscriberRecordImpl(ZeebeObjectMapperImpl objectMapper, RecordType recordType) {
+    super(objectMapper, recordType, ValueType.SUBSCRIBER);
+  }
 
-    public long getStartPosition()
-    {
-        return startPosition;
-    }
+  public long getStartPosition() {
+    return startPosition;
+  }
 
-    public void setStartPosition(long startPosition)
-    {
-        this.startPosition = startPosition;
-    }
+  public void setStartPosition(long startPosition) {
+    this.startPosition = startPosition;
+  }
 
-    public void setName(String name)
-    {
-        this.name = name;
-    }
+  public void setName(String name) {
+    this.name = name;
+  }
 
-    public String getName()
-    {
-        return name;
-    }
+  public String getName() {
+    return name;
+  }
 
-    public void setBufferSize(int bufferSize)
-    {
-        this.bufferSize = bufferSize;
-    }
+  public void setBufferSize(int bufferSize) {
+    this.bufferSize = bufferSize;
+  }
 
-    public int getBufferSize()
-    {
-        return bufferSize;
-    }
+  public int getBufferSize() {
+    return bufferSize;
+  }
 
-    public boolean isForceStart()
-    {
-        return forceStart;
-    }
+  public boolean isForceStart() {
+    return forceStart;
+  }
 
-    public void setForceStart(boolean forceStart)
-    {
-        this.forceStart = forceStart;
-    }
+  public void setForceStart(boolean forceStart) {
+    this.forceStart = forceStart;
+  }
 
-    @Override
-    public Class<? extends RecordImpl> getEventClass()
-    {
-        return TopicSubscriberEventImpl.class;
-    }
-
+  @Override
+  public Class<? extends RecordImpl> getEventClass() {
+    return TopicSubscriberEventImpl.class;
+  }
 }

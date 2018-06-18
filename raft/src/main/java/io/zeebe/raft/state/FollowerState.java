@@ -22,71 +22,56 @@ import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.ActorPriority;
 import io.zeebe.util.sched.SchedulingHints;
 
-public class FollowerState extends AbstractRaftState
-{
-    public FollowerState(Raft raft, ActorControl raftActor)
-    {
-        super(raft, raftActor);
+public class FollowerState extends AbstractRaftState {
+  public FollowerState(Raft raft, ActorControl raftActor) {
+    super(raft, raftActor);
+  }
+
+  @Override
+  public RaftState getState() {
+    return RaftState.FOLLOWER;
+  }
+
+  @Override
+  protected void onEnterState() {
+    super.onEnterState();
+    raftActor.setSchedulingHints(SchedulingHints.ioBound((short) 0));
+  }
+
+  @Override
+  protected void onLeaveState() {
+    raftActor.setSchedulingHints(SchedulingHints.cpuBound(ActorPriority.REGULAR));
+    super.onLeaveState();
+  }
+
+  @Override
+  protected void consumeMessage() {
+    super.consumeMessage();
+
+    // when there are no more append requests immediately available,
+    // flush now and send the ack immediately
+    if (!messageBuffer.hasAvailable()) {
+      appender.flushAndAck();
     }
+  }
 
-    @Override
-    public RaftState getState()
-    {
-        return RaftState.FOLLOWER;
+  @Override
+  public void appendRequest(final AppendRequest appendRequest) {
+    raft.mayStepDown(appendRequest);
+
+    final long previousEventPosition = appendRequest.getPreviousEventPosition();
+    final int previousEventTerm = appendRequest.getPreviousEventTerm();
+    final LoggedEventImpl event = appendRequest.getEvent();
+
+    if (raft.isTermCurrent(appendRequest)) {
+      final boolean lastEvent = appender.isLastEvent(previousEventPosition, previousEventTerm);
+      if (lastEvent) {
+        appender.appendEvent(appendRequest, event);
+      } else {
+        appender.truncateLog(appendRequest, event);
+      }
+    } else {
+      rejectAppendRequest(appendRequest, appender.getLastPosition());
     }
-
-    @Override
-    protected void onEnterState()
-    {
-        super.onEnterState();
-        raftActor.setSchedulingHints(SchedulingHints.ioBound((short) 0));
-    }
-
-    @Override
-    protected void onLeaveState()
-    {
-        raftActor.setSchedulingHints(SchedulingHints.cpuBound(ActorPriority.REGULAR));
-        super.onLeaveState();
-    }
-
-    @Override
-    protected void consumeMessage()
-    {
-        super.consumeMessage();
-
-        // when there are no more append requests immediately available,
-        // flush now and send the ack immediately
-        if (!messageBuffer.hasAvailable())
-        {
-            appender.flushAndAck();
-        }
-    }
-
-    @Override
-    public void appendRequest(final AppendRequest appendRequest)
-    {
-        raft.mayStepDown(appendRequest);
-
-        final long previousEventPosition = appendRequest.getPreviousEventPosition();
-        final int previousEventTerm = appendRequest.getPreviousEventTerm();
-        final LoggedEventImpl event = appendRequest.getEvent();
-
-        if (raft.isTermCurrent(appendRequest))
-        {
-            final boolean lastEvent = appender.isLastEvent(previousEventPosition, previousEventTerm);
-            if (lastEvent)
-            {
-                appender.appendEvent(appendRequest, event);
-            }
-            else
-            {
-                appender.truncateLog(appendRequest, event);
-            }
-        }
-        else
-        {
-            rejectAppendRequest(appendRequest, appender.getLastPosition());
-        }
-    }
-
+  }
 }

@@ -15,119 +15,102 @@
  */
 package io.zeebe.logstreams.impl;
 
-import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import io.zeebe.dispatcher.BlockPeek;
 import io.zeebe.dispatcher.Subscription;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
+import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.agrona.MutableDirectBuffer;
 import org.slf4j.Logger;
 
-/**
- * Consume the write buffer and append the blocks on the log storage.
- */
-public class LogStorageAppender extends Actor
-{
-    public static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
+/** Consume the write buffer and append the blocks on the log storage. */
+public class LogStorageAppender extends Actor {
+  public static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
 
-    private final AtomicBoolean isFailed = new AtomicBoolean(false);
+  private final AtomicBoolean isFailed = new AtomicBoolean(false);
 
-    private final BlockPeek blockPeek = new BlockPeek();
+  private final BlockPeek blockPeek = new BlockPeek();
 
-    private final String name;
-    private final LogStorage logStorage;
-    private final Subscription writeBufferSubscription;
-    private final ActorConditions logStorageAppendConditions;
+  private final String name;
+  private final LogStorage logStorage;
+  private final Subscription writeBufferSubscription;
+  private final ActorConditions logStorageAppendConditions;
 
-    private Runnable peekedBlockHandler = this::appendBlock;
-    private int maxAppendBlockSize;
+  private Runnable peekedBlockHandler = this::appendBlock;
+  private int maxAppendBlockSize;
 
+  public LogStorageAppender(
+      String name,
+      LogStorage logStorage,
+      Subscription writeBufferSubscription,
+      int maxBlockSize,
+      ActorConditions logStorageAppendConditions) {
+    this.name = name;
+    this.logStorage = logStorage;
+    this.writeBufferSubscription = writeBufferSubscription;
+    this.maxAppendBlockSize = maxBlockSize;
+    this.logStorageAppendConditions = logStorageAppendConditions;
+  }
 
-    public LogStorageAppender(String name,
-        LogStorage logStorage,
-        Subscription writeBufferSubscription,
-        int maxBlockSize,
-        ActorConditions logStorageAppendConditions)
-    {
-        this.name = name;
-        this.logStorage = logStorage;
-        this.writeBufferSubscription = writeBufferSubscription;
-        this.maxAppendBlockSize = maxBlockSize;
-        this.logStorageAppendConditions = logStorageAppendConditions;
+  @Override
+  public String getName() {
+    return name;
+  }
+
+  @Override
+  protected void onActorStarting() {
+    actor.consume(writeBufferSubscription, this::peekBlock);
+  }
+
+  private void peekBlock() {
+    if (writeBufferSubscription.peekBlock(blockPeek, maxAppendBlockSize, true) > 0) {
+      peekedBlockHandler.run();
+    } else {
+      actor.yield();
     }
+  }
 
-    @Override
-    public String getName()
-    {
-        return name;
+  private void appendBlock() {
+    final ByteBuffer rawBuffer = blockPeek.getRawBuffer();
+    final MutableDirectBuffer buffer = blockPeek.getBuffer();
+
+    final long address = logStorage.append(rawBuffer);
+    if (address >= 0) {
+      blockPeek.markCompleted();
+      logStorageAppendConditions.signalConsumers();
+    } else {
+      isFailed.set(true);
+
+      final long positionOfFirstEventInBlock = LogEntryDescriptor.getPosition(buffer, 0);
+      LOG.error(
+          "Failed to append log storage on position '{}'. Stop writing to log storage until recovered.",
+          positionOfFirstEventInBlock);
+
+      // recover log storage from failure - see zeebe-io/zeebe#500
+      peekedBlockHandler = this::discardBlock;
+
+      discardBlock();
     }
+  }
 
-    @Override
-    protected void onActorStarting()
-    {
-        actor.consume(writeBufferSubscription, this::peekBlock);
-    }
+  private void discardBlock() {
+    blockPeek.markFailed();
+    // continue with next block
+    actor.yield();
+  }
 
-    private void peekBlock()
-    {
-        if (writeBufferSubscription.peekBlock(blockPeek, maxAppendBlockSize, true) > 0)
-        {
-            peekedBlockHandler.run();
-        }
-        else
-        {
-            actor.yield();
-        }
-    }
+  public ActorFuture<Void> close() {
+    return actor.close();
+  }
 
-    private void appendBlock()
-    {
-        final ByteBuffer rawBuffer = blockPeek.getRawBuffer();
-        final MutableDirectBuffer buffer = blockPeek.getBuffer();
+  public boolean isFailed() {
+    return isFailed.get();
+  }
 
-        final long address = logStorage.append(rawBuffer);
-        if (address >= 0)
-        {
-            blockPeek.markCompleted();
-            logStorageAppendConditions.signalConsumers();
-        }
-        else
-        {
-            isFailed.set(true);
-
-            final long positionOfFirstEventInBlock = LogEntryDescriptor.getPosition(buffer, 0);
-            LOG.error("Failed to append log storage on position '{}'. Stop writing to log storage until recovered.", positionOfFirstEventInBlock);
-
-            // recover log storage from failure - see zeebe-io/zeebe#500
-            peekedBlockHandler = this::discardBlock;
-
-            discardBlock();
-        }
-    }
-
-    private void discardBlock()
-    {
-        blockPeek.markFailed();
-        // continue with next block
-        actor.yield();
-    }
-
-    public ActorFuture<Void> close()
-    {
-        return actor.close();
-    }
-
-    public boolean isFailed()
-    {
-        return isFailed.get();
-    }
-
-    public long getCurrentAppenderPosition()
-    {
-        return writeBufferSubscription.getPosition();
-    }
+  public long getCurrentAppenderPosition() {
+    return writeBufferSubscription.getPosition();
+  }
 }

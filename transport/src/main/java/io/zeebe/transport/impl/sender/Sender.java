@@ -15,11 +15,6 @@
  */
 package io.zeebe.transport.impl.sender;
 
-import java.nio.ByteBuffer;
-import java.time.Duration;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-
 import io.zeebe.transport.*;
 import io.zeebe.transport.impl.*;
 import io.zeebe.transport.impl.actor.ActorContext;
@@ -29,6 +24,10 @@ import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.channel.ConcurrentQueueChannel;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
+import java.nio.ByteBuffer;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import org.agrona.DeadlineTimerWheel;
 import org.agrona.DeadlineTimerWheel.TimerHandler;
 import org.agrona.DirectBuffer;
@@ -38,545 +37,457 @@ import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
-public class Sender extends Actor implements TimerHandler
-{
-    private static final int MAX_REQUEST_CONSUME_BATCH_SIZE = 100;
+public class Sender extends Actor implements TimerHandler {
+  private static final int MAX_REQUEST_CONSUME_BATCH_SIZE = 100;
 
-    private static final int DEFAULT_BATCH_SIZE = (int) ByteValue.ofKilobytes(128).toBytes();
+  private static final int DEFAULT_BATCH_SIZE = (int) ByteValue.ofKilobytes(128).toBytes();
 
-    private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
+  private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
-    private long nextRequestId = 0;
+  private long nextRequestId = 0;
 
-    private final ConcurrentQueueChannel<IncomingResponse> submittedResponses = new ConcurrentQueueChannel<>(new ManyToOneConcurrentLinkedQueue<>());
-    private final ConcurrentQueueChannel<OutgoingRequest> submittedRequests = new ConcurrentQueueChannel<>(new ManyToOneConcurrentLinkedQueue<>());
-    private final ConcurrentQueueChannel<OutgoingMessage> submittedMessages = new ConcurrentQueueChannel<>(new ManyToOneConcurrentLinkedQueue<>());
+  private final ConcurrentQueueChannel<IncomingResponse> submittedResponses =
+      new ConcurrentQueueChannel<>(new ManyToOneConcurrentLinkedQueue<>());
+  private final ConcurrentQueueChannel<OutgoingRequest> submittedRequests =
+      new ConcurrentQueueChannel<>(new ManyToOneConcurrentLinkedQueue<>());
+  private final ConcurrentQueueChannel<OutgoingMessage> submittedMessages =
+      new ConcurrentQueueChannel<>(new ManyToOneConcurrentLinkedQueue<>());
 
-    private final Long2ObjectHashMap<OutgoingRequest> inFlightRequests = new Long2ObjectHashMap<>();
-    private final Long2ObjectHashMap<OutgoingRequest> requestsByTimeoutIds = new Long2ObjectHashMap<>();
+  private final Long2ObjectHashMap<OutgoingRequest> inFlightRequests = new Long2ObjectHashMap<>();
+  private final Long2ObjectHashMap<OutgoingRequest> requestsByTimeoutIds =
+      new Long2ObjectHashMap<>();
 
-    private final Int2ObjectHashMap<ChannelWriteQueue> channelMap = new Int2ObjectHashMap<>();
-    private final List<ChannelWriteQueue> channelList = new ArrayList<>();
+  private final Int2ObjectHashMap<ChannelWriteQueue> channelMap = new Int2ObjectHashMap<>();
+  private final List<ChannelWriteQueue> channelList = new ArrayList<>();
 
-    private final Deque<Batch> recycledBuffers = new LinkedList<>();
+  private final Deque<Batch> recycledBuffers = new LinkedList<>();
 
-    private DeadlineTimerWheel requestTimeouts;
+  private DeadlineTimerWheel requestTimeouts;
 
-    private final Runnable sendNext = this::sendNext;
+  private final Runnable sendNext = this::sendNext;
 
-    protected final Duration keepAlivePeriod;
+  protected final Duration keepAlivePeriod;
 
-    private final TransportMemoryPool messageMemoryPool;
-    private final TransportMemoryPool requestMemoryPool;
+  private final TransportMemoryPool messageMemoryPool;
+  private final TransportMemoryPool requestMemoryPool;
 
-    public Sender(ActorContext actorContext,
-        TransportMemoryPool messageMemoryPool,
-        TransportMemoryPool requestMemoryPool,
-        Duration keepalivePeriod)
-    {
-        this.messageMemoryPool = messageMemoryPool;
-        this.requestMemoryPool = requestMemoryPool;
-        this.keepAlivePeriod = keepalivePeriod;
+  public Sender(
+      ActorContext actorContext,
+      TransportMemoryPool messageMemoryPool,
+      TransportMemoryPool requestMemoryPool,
+      Duration keepalivePeriod) {
+    this.messageMemoryPool = messageMemoryPool;
+    this.requestMemoryPool = requestMemoryPool;
+    this.keepAlivePeriod = keepalivePeriod;
 
-        actorContext.setSender(this);
+    actorContext.setSender(this);
+  }
+
+  @Override
+  protected void onActorStarted() {
+    requestTimeouts =
+        new DeadlineTimerWheel(TimeUnit.MILLISECONDS, ActorClock.currentTimeMillis(), 1, 32);
+
+    actor.consume(submittedMessages, this::processSubmittedMessages);
+    actor.consume(submittedRequests, this::processSubmittedRequests);
+    actor.consume(submittedResponses, this::processIncomingResponses);
+
+    actor.runAtFixedRate(Duration.ofMillis(100), this::processTimeouts);
+
+    if (keepAlivePeriod != null) {
+      actor.runAtFixedRate(keepAlivePeriod, this::sendKeepalives);
+    }
+  }
+
+  private void processTimeouts() {
+    final long now = ActorClock.currentTimeMillis();
+
+    while (requestTimeouts.poll(now, this, Integer.MAX_VALUE) > 0) {
+      // process timeouts
+    }
+  }
+
+  private void processIncomingResponses() {
+    while (!submittedResponses.isEmpty()) {
+      final IncomingResponse response = submittedResponses.poll();
+
+      if (response != null) {
+        onResponseReceived(response);
+      }
     }
 
-    @Override
-    protected void onActorStarted()
-    {
-        requestTimeouts = new DeadlineTimerWheel(TimeUnit.MILLISECONDS, ActorClock.currentTimeMillis(), 1, 32);
+    sendNext();
+  }
 
-        actor.consume(submittedMessages, this::processSubmittedMessages);
-        actor.consume(submittedRequests, this::processSubmittedRequests);
-        actor.consume(submittedResponses, this::processIncomingResponses);
+  private void processSubmittedRequests() {
+    for (int i = 0; i < MAX_REQUEST_CONSUME_BATCH_SIZE && !submittedRequests.isEmpty(); i++) {
+      final OutgoingRequest request = submittedRequests.poll();
 
-        actor.runAtFixedRate(Duration.ofMillis(100), this::processTimeouts);
-
-        if (keepAlivePeriod != null)
-        {
-            actor.runAtFixedRate(keepAlivePeriod, this::sendKeepalives);
-        }
+      if (request != null) {
+        LOG.trace("New request submitted");
+        onRequestSubmitted(request);
+      }
     }
 
-    private void processTimeouts()
-    {
-        final long now = ActorClock.currentTimeMillis();
+    sendNext();
+  }
 
-        while (requestTimeouts.poll(now, this, Integer.MAX_VALUE) > 0)
-        {
-            // process timeouts
-        }
+  private void processSubmittedMessages() {
+    while (!submittedMessages.isEmpty()) {
+      final OutgoingMessage message = submittedMessages.poll();
+
+      if (message != null) {
+        LOG.trace("New message submitted");
+        onMessageSubmitted(message);
+      }
     }
 
-    private void processIncomingResponses()
-    {
-        while (!submittedResponses.isEmpty())
-        {
-            final IncomingResponse response = submittedResponses.poll();
+    sendNext();
+  }
 
-            if (response != null)
-            {
-                onResponseReceived(response);
-            }
+  private void onResponseReceived(final IncomingResponse response) {
+    final OutgoingRequest request = inFlightRequests.remove(response.getRequestId());
+
+    if (request != null) {
+      boolean shouldRetry = false;
+
+      try {
+        shouldRetry = !request.tryComplete(response);
+      } catch (Exception e) {
+        request.fail(e);
+        reclaimRequestBuffer(request.getRequestBuffer().byteBuffer());
+        return;
+      }
+
+      if (shouldRetry) {
+        // retry after delay
+        actor.runDelayed(Duration.ofMillis(1), () -> submittedRequests.offer(request));
+      } else {
+        reclaimRequestBuffer(request.getRequestBuffer().byteBuffer());
+
+        final long timerId = request.getTimerId();
+
+        if (timerId != -1) {
+          requestTimeouts.cancelTimer(timerId);
+          requestsByTimeoutIds.remove(timerId);
         }
+      }
+    }
+  }
 
-        sendNext();
+  private void onRequestSubmitted(final OutgoingRequest request) {
+    if (!request.hasTimeoutScheduled()) {
+      final long timerId =
+          requestTimeouts.scheduleTimer(
+              ActorClock.currentTimeMillis() + request.getTimeout().toMillis());
+      request.setTimerId(timerId);
+      requestsByTimeoutIds.put(timerId, request);
     }
 
-    private void processSubmittedRequests()
-    {
-        for (int i = 0; i < MAX_REQUEST_CONSUME_BATCH_SIZE && !submittedRequests.isEmpty(); i++)
-        {
-            final OutgoingRequest request = submittedRequests.poll();
+    if (!request.isTimedout()) {
+      final RemoteAddress remoteAddress = request.getNextRemoteAddress();
 
-            if (request != null)
-            {
-                LOG.trace("New request submitted");
-                onRequestSubmitted(request);
-            }
+      if (remoteAddress != null) {
+        final ChannelWriteQueue sendQueue = channelMap.get(remoteAddress.getStreamId());
+        if (sendQueue != null) {
+          request.markRemoteAddress(remoteAddress);
+          sendQueue.offer(request);
+        } else {
+          // channel not open, retry
+          actor.runDelayed(Duration.ofMillis(10), () -> submittedRequests.offer(request));
         }
+      } else {
+        // no remote address available, retry
+        actor.runDelayed(Duration.ofMillis(10), () -> submittedRequests.offer(request));
+      }
+    }
+  }
 
-        sendNext();
+  private void onMessageSubmitted(final OutgoingMessage message) {
+    try {
+      final int remoteStreamId = message.getRemoteStreamId();
+
+      final ChannelWriteQueue sendQueue = channelMap.get(remoteStreamId);
+      if (sendQueue != null) {
+        sendQueue.offer(message);
+      }
+    } finally {
+      reclaimMessageBuffer(message.getAllocatedBuffer());
+    }
+  }
+
+  private void sendNext() {
+    boolean hasPending = false;
+
+    for (int i = 0; i < channelList.size(); i++) {
+      final ChannelWriteQueue channelSendQueue = channelList.get(i);
+
+      channelSendQueue.write();
+
+      hasPending |= channelSendQueue.hasPending();
     }
 
-    private void processSubmittedMessages()
-    {
-        while (!submittedMessages.isEmpty())
-        {
-            final OutgoingMessage message = submittedMessages.poll();
+    if (hasPending) {
+      actor.submit(sendNext);
+    }
+  }
 
-            if (message != null)
-            {
-                LOG.trace("New message submitted");
-                onMessageSubmitted(message);
-            }
-        }
-
-        sendNext();
+  private void sendKeepalives() {
+    for (ChannelWriteQueue channelWriteQueue : channelList) {
+      if (!channelWriteQueue.hasPending()) {
+        channelWriteQueue
+            .getPendingWrites()
+            .addLast(new ControlMessage(ControlMessages.KEEP_ALIVE));
+      }
     }
 
-    private void onResponseReceived(final IncomingResponse response)
-    {
-        final OutgoingRequest request = inFlightRequests.remove(response.getRequestId());
+    sendNext();
+  }
 
-        if (request != null)
-        {
-            boolean shouldRetry = false;
+  public class ChannelWriteQueue {
+    private final Deque<Batch> pendingWrites = new LinkedList<>();
 
-            try
-            {
-                shouldRetry = !request.tryComplete(response);
-            }
-            catch (Exception e)
-            {
-                request.fail(e);
-                reclaimRequestBuffer(request.getRequestBuffer().byteBuffer());
-                return;
-            }
+    private final TransportChannel channel;
 
-            if (shouldRetry)
-            {
-                // retry after delay
-                actor.runDelayed(Duration.ofMillis(1), () -> submittedRequests.offer(request));
-            }
-            else
-            {
-                reclaimRequestBuffer(request.getRequestBuffer().byteBuffer());
+    private Batch currentWrite;
 
-                final long timerId = request.getTimerId();
-
-                if (timerId != -1)
-                {
-                    requestTimeouts.cancelTimer(timerId);
-                    requestsByTimeoutIds.remove(timerId);
-                }
-            }
-        }
+    public ChannelWriteQueue(TransportChannel channel) {
+      this.channel = channel;
     }
 
-    private void onRequestSubmitted(final OutgoingRequest request)
-    {
-        if (!request.hasTimeoutScheduled())
-        {
-            final long timerId = requestTimeouts.scheduleTimer(ActorClock.currentTimeMillis() + request.getTimeout().toMillis());
-            request.setTimerId(timerId);
-            requestsByTimeoutIds.put(timerId, request);
-        }
-
-        if (!request.isTimedout())
-        {
-            final RemoteAddress remoteAddress = request.getNextRemoteAddress();
-
-            if (remoteAddress != null)
-            {
-                final ChannelWriteQueue sendQueue = channelMap.get(remoteAddress.getStreamId());
-                if (sendQueue != null)
-                {
-                    request.markRemoteAddress(remoteAddress);
-                    sendQueue.offer(request);
-                }
-                else
-                {
-                    // channel not open, retry
-                    actor.runDelayed(Duration.ofMillis(10), () -> submittedRequests.offer(request));
-                }
-            }
-            else
-            {
-                // no remote address available, retry
-                actor.runDelayed(Duration.ofMillis(10), () -> submittedRequests.offer(request));
-            }
-        }
+    public boolean hasPending() {
+      return currentWrite != null || !pendingWrites.isEmpty();
     }
 
-    private void onMessageSubmitted(final OutgoingMessage message)
-    {
-        try
-        {
-            final int remoteStreamId = message.getRemoteStreamId();
+    public void write() {
+      if (hasPending()) {
+        if (currentWrite == null) {
+          currentWrite = pendingWrites.poll();
+          currentWrite.prepareWrite();
+        }
 
-            final ChannelWriteQueue sendQueue = channelMap.get(remoteStreamId);
-            if (sendQueue != null)
-            {
-                sendQueue.offer(message);
-            }
+        currentWrite.writeTo(channel);
+
+        if (!currentWrite.hasRemaining()) {
+          currentWrite.recycle();
+          currentWrite = null;
         }
-        finally
-        {
-            reclaimMessageBuffer(message.getAllocatedBuffer());
-        }
+      }
     }
 
-    private void sendNext()
-    {
-        boolean hasPending = false;
+    public void offer(OutgoingRequest request) {
+      // try to fit into last pending batch
+      final Batch existingBatch = pendingWrites.peekLast();
 
-        for (int i = 0; i < channelList.size(); i++)
-        {
-            final ChannelWriteQueue channelSendQueue = channelList.get(i);
+      if (existingBatch == null || !existingBatch.addToBatch(request, channel)) {
+        // try to recycle existing batch
+        final Iterator<Batch> recycledBuffersIterator = recycledBuffers.iterator();
+        while (recycledBuffersIterator.hasNext()) {
+          final Batch batch = recycledBuffersIterator.next();
 
-            channelSendQueue.write();
-
-            hasPending |= channelSendQueue.hasPending();
+          if (batch.addToBatch(request, channel)) {
+            recycledBuffersIterator.remove();
+            pendingWrites.addLast(batch);
+            return;
+          }
         }
 
-        if (hasPending)
-        {
-            actor.submit(sendNext);
-        }
+        // allocate new batch
+        final Batch batch =
+            new Batch(Math.max(DEFAULT_BATCH_SIZE, request.getRequestBuffer().capacity()));
+        batch.addToBatch(request, channel);
+        pendingWrites.addLast(batch);
+      }
     }
 
-    private void sendKeepalives()
-    {
-        for (ChannelWriteQueue channelWriteQueue : channelList)
-        {
-            if (!channelWriteQueue.hasPending())
-            {
-                channelWriteQueue
-                    .getPendingWrites()
-                    .addLast(new ControlMessage(ControlMessages.KEEP_ALIVE));
-            }
+    public void offer(OutgoingMessage message) {
+      // try to fit into last pending batch
+      Batch batch = pendingWrites.peekLast();
+
+      if (batch == null || !batch.addToBatch(message)) {
+        boolean hasRecycled = false;
+
+        // try to recycle existing batch
+        final Iterator<Batch> recycledBuffersIterator = recycledBuffers.iterator();
+        while (recycledBuffersIterator.hasNext()) {
+          batch = recycledBuffersIterator.next();
+
+          if (batch.addToBatch(message)) {
+            recycledBuffersIterator.remove();
+            hasRecycled = true;
+            break;
+          }
         }
 
-        sendNext();
+        if (!hasRecycled) {
+          // allocate new batch
+          batch = new Batch(Math.max(DEFAULT_BATCH_SIZE, message.getBuffer().capacity()));
+          batch.addToBatch(message);
+        }
+
+        pendingWrites.addLast(batch);
+      }
     }
 
-    public class ChannelWriteQueue
-    {
-        private final Deque<Batch> pendingWrites = new LinkedList<>();
+    public Deque<Batch> getPendingWrites() {
+      return pendingWrites;
+    }
+  }
 
-        private final TransportChannel channel;
+  private class Batch {
+    final List<OutgoingRequest> requestsInBatch = new ArrayList<>();
 
-        private Batch currentWrite;
+    final UnsafeBuffer view = new UnsafeBuffer();
+    final ByteBuffer batchBuffer;
+    int writeOffset = 0;
 
-        public ChannelWriteQueue(TransportChannel channel)
-        {
-            this.channel = channel;
-        }
-
-        public boolean hasPending()
-        {
-            return currentWrite != null || !pendingWrites.isEmpty();
-        }
-
-        public void write()
-        {
-            if (hasPending())
-            {
-                if (currentWrite == null)
-                {
-                    currentWrite = pendingWrites.poll();
-                    currentWrite.prepareWrite();
-                }
-
-                currentWrite.writeTo(channel);
-
-                if (!currentWrite.hasRemaining())
-                {
-                    currentWrite.recycle();
-                    currentWrite = null;
-                }
-            }
-        }
-
-        public void offer(OutgoingRequest request)
-        {
-            // try to fit into last pending batch
-            final Batch existingBatch = pendingWrites.peekLast();
-
-            if (existingBatch == null || !existingBatch.addToBatch(request, channel))
-            {
-                // try to recycle existing batch
-                final Iterator<Batch> recycledBuffersIterator = recycledBuffers.iterator();
-                while (recycledBuffersIterator.hasNext())
-                {
-                    final Batch batch = recycledBuffersIterator.next();
-
-                    if (batch.addToBatch(request, channel))
-                    {
-                        recycledBuffersIterator.remove();
-                        pendingWrites.addLast(batch);
-                        return;
-                    }
-                }
-
-                // allocate new batch
-                final Batch batch = new Batch(Math.max(DEFAULT_BATCH_SIZE, request.getRequestBuffer().capacity()));
-                batch.addToBatch(request, channel);
-                pendingWrites.addLast(batch);
-            }
-        }
-
-        public void offer(OutgoingMessage message)
-        {
-            // try to fit into last pending batch
-            Batch batch = pendingWrites.peekLast();
-
-            if (batch == null || !batch.addToBatch(message))
-            {
-                boolean hasRecycled = false;
-
-                // try to recycle existing batch
-                final Iterator<Batch> recycledBuffersIterator = recycledBuffers.iterator();
-                while (recycledBuffersIterator.hasNext())
-                {
-                    batch = recycledBuffersIterator.next();
-
-                    if (batch.addToBatch(message))
-                    {
-                        recycledBuffersIterator.remove();
-                        hasRecycled = true;
-                        break;
-                    }
-                }
-
-                if (!hasRecycled)
-                {
-                    // allocate new batch
-                    batch = new Batch(Math.max(DEFAULT_BATCH_SIZE, message.getBuffer().capacity()));
-                    batch.addToBatch(message);
-                }
-
-                pendingWrites.addLast(batch);
-            }
-        }
-
-        public Deque<Batch> getPendingWrites()
-        {
-            return pendingWrites;
-        }
+    Batch(int size) {
+      batchBuffer = ByteBuffer.allocateDirect(size);
+      view.wrap(batchBuffer);
     }
 
-    private class Batch
-    {
-        final List<OutgoingRequest> requestsInBatch = new ArrayList<>();
+    public boolean addToBatch(OutgoingRequest request, TransportChannel channel) {
+      final DirectBuffer requestBuffer = request.getRequestBuffer();
+      final int requestLength = requestBuffer.capacity();
 
-        final UnsafeBuffer view = new UnsafeBuffer();
-        final ByteBuffer batchBuffer;
-        int writeOffset = 0;
+      if (writeOffset + requestLength <= batchBuffer.capacity()) {
+        final long requestId = ++nextRequestId;
 
-        Batch(int size)
-        {
-            batchBuffer = ByteBuffer.allocateDirect(size);
-            view.wrap(batchBuffer);
-        }
+        request.setLastRequestId(requestId);
 
-        public boolean addToBatch(OutgoingRequest request, TransportChannel channel)
-        {
-            final DirectBuffer requestBuffer = request.getRequestBuffer();
-            final int requestLength = requestBuffer.capacity();
+        request.getHeaderWriter().setStreamId(channel.getStreamId()).setRequestId(requestId);
 
-            if (writeOffset + requestLength <= batchBuffer.capacity())
-            {
-                final long requestId = ++nextRequestId;
+        requestBuffer.getBytes(0, batchBuffer, writeOffset, requestLength);
+        writeOffset += requestLength;
+        requestsInBatch.add(request);
 
-                request.setLastRequestId(requestId);
-
-                request.getHeaderWriter()
-                    .setStreamId(channel.getStreamId())
-                    .setRequestId(requestId);
-
-                requestBuffer.getBytes(0, batchBuffer, writeOffset, requestLength);
-                writeOffset += requestLength;
-                requestsInBatch.add(request);
-
-                inFlightRequests.put(requestId, request);
-
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        public boolean addToBatch(OutgoingMessage message)
-        {
-            final DirectBuffer buffer = message.getBuffer();
-            final int requiredLength = buffer.capacity();
-
-            if (writeOffset + requiredLength <= batchBuffer.capacity())
-            {
-                buffer.getBytes(0, batchBuffer, writeOffset, requiredLength);
-                writeOffset += requiredLength;
-
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        public boolean writeTo(TransportChannel channel)
-        {
-            return channel.write(batchBuffer) > 0;
-        }
-
-        public void prepareWrite()
-        {
-            batchBuffer.position(0);
-            batchBuffer.limit(writeOffset);
-        }
-
-        public boolean hasRemaining()
-        {
-            return batchBuffer.hasRemaining();
-        }
-
-        public void recycle()
-        {
-            writeOffset = 0;
-            view.setMemory(0, view.capacity(), (byte) 0);
-            requestsInBatch.clear();
-            recycledBuffers.push(this);
-        }
-
-        public void onChannelClosed()
-        {
-            requestsInBatch.forEach(Sender.this::submitRequest);
-            recycle();
-        }
-    }
-
-    class ControlMessage extends Batch
-    {
-        ControlMessage(DirectBuffer controlMessageTemplate)
-        {
-            super(controlMessageTemplate.capacity());
-            view.putBytes(0, controlMessageTemplate, 0, controlMessageTemplate.capacity());
-            this.writeOffset = controlMessageTemplate.capacity();
-        }
-
-        @Override
-        public void recycle()
-        {
-            // don't do it
-        }
-    }
-
-    public ActorFuture<ClientResponse> submitRequest(OutgoingRequest request)
-    {
-        submittedRequests.add(request);
-        return request.getResponseFuture();
-    }
-
-    public void submitMessage(OutgoingMessage outgoingMessage)
-    {
-        submittedMessages.add(outgoingMessage);
-    }
-
-    public void submitResponse(IncomingResponse incomingClientResponse)
-    {
-        submittedResponses.add(incomingClientResponse);
-    }
-
-    public ActorFuture<Void> close()
-    {
-        return actor.close();
-    }
-
-    public ActorFuture<Void> onChannelConnected(TransportChannel ch)
-    {
-        return actor.call(() ->
-        {
-            final ChannelWriteQueue sendQueue = new ChannelWriteQueue(ch);
-            channelMap.put(ch.getStreamId(), sendQueue);
-            channelList.add(sendQueue);
-        });
-    }
-
-
-    public ActorFuture<Void> onChannelClosed(TransportChannel channel)
-    {
-        return actor.call(() ->
-        {
-            final ChannelWriteQueue sendQueue = channelMap.remove(channel.getStreamId());
-            if (sendQueue != null)
-            {
-                channelList.remove(sendQueue);
-                // re-submit pending requests so that they can be retried
-                sendQueue.pendingWrites.forEach(Batch::onChannelClosed);
-            }
-        });
-    }
-
-    @Override
-    public boolean onTimerExpiry(TimeUnit timeUnit, long now, long timerId)
-    {
-        final OutgoingRequest request = requestsByTimeoutIds.get(timerId);
-
-        if (request != null)
-        {
-            reclaimRequestBuffer(request.getRequestBuffer().byteBuffer());
-            request.timeout();
-            inFlightRequests.remove(request.getLastRequestId());
-        }
+        inFlightRequests.put(requestId, request);
 
         return true;
+      } else {
+        return false;
+      }
     }
 
-    public ByteBuffer allocateMessageBuffer(int length)
-    {
-        return messageMemoryPool.allocate(length);
+    public boolean addToBatch(OutgoingMessage message) {
+      final DirectBuffer buffer = message.getBuffer();
+      final int requiredLength = buffer.capacity();
+
+      if (writeOffset + requiredLength <= batchBuffer.capacity()) {
+        buffer.getBytes(0, batchBuffer, writeOffset, requiredLength);
+        writeOffset += requiredLength;
+
+        return true;
+      } else {
+        return false;
+      }
     }
 
-    public void reclaimMessageBuffer(ByteBuffer allocatedBuffer)
-    {
-        messageMemoryPool.reclaim(allocatedBuffer);
+    public boolean writeTo(TransportChannel channel) {
+      return channel.write(batchBuffer) > 0;
     }
 
-    public ByteBuffer allocateRequestBuffer(int requestedCapacity)
-    {
-        return requestMemoryPool.allocate(requestedCapacity);
+    public void prepareWrite() {
+      batchBuffer.position(0);
+      batchBuffer.limit(writeOffset);
     }
 
-    public void reclaimRequestBuffer(ByteBuffer allocatedBuffer)
-    {
-        requestMemoryPool.reclaim(allocatedBuffer);
+    public boolean hasRemaining() {
+      return batchBuffer.hasRemaining();
     }
 
-    public void failPendingRequestsToRemote(RemoteAddressImpl remoteAddress, String reason)
-    {
+    public void recycle() {
+      writeOffset = 0;
+      view.setMemory(0, view.capacity(), (byte) 0);
+      requestsInBatch.clear();
+      recycledBuffers.push(this);
     }
+
+    public void onChannelClosed() {
+      requestsInBatch.forEach(Sender.this::submitRequest);
+      recycle();
+    }
+  }
+
+  class ControlMessage extends Batch {
+    ControlMessage(DirectBuffer controlMessageTemplate) {
+      super(controlMessageTemplate.capacity());
+      view.putBytes(0, controlMessageTemplate, 0, controlMessageTemplate.capacity());
+      this.writeOffset = controlMessageTemplate.capacity();
+    }
+
+    @Override
+    public void recycle() {
+      // don't do it
+    }
+  }
+
+  public ActorFuture<ClientResponse> submitRequest(OutgoingRequest request) {
+    submittedRequests.add(request);
+    return request.getResponseFuture();
+  }
+
+  public void submitMessage(OutgoingMessage outgoingMessage) {
+    submittedMessages.add(outgoingMessage);
+  }
+
+  public void submitResponse(IncomingResponse incomingClientResponse) {
+    submittedResponses.add(incomingClientResponse);
+  }
+
+  public ActorFuture<Void> close() {
+    return actor.close();
+  }
+
+  public ActorFuture<Void> onChannelConnected(TransportChannel ch) {
+    return actor.call(
+        () -> {
+          final ChannelWriteQueue sendQueue = new ChannelWriteQueue(ch);
+          channelMap.put(ch.getStreamId(), sendQueue);
+          channelList.add(sendQueue);
+        });
+  }
+
+  public ActorFuture<Void> onChannelClosed(TransportChannel channel) {
+    return actor.call(
+        () -> {
+          final ChannelWriteQueue sendQueue = channelMap.remove(channel.getStreamId());
+          if (sendQueue != null) {
+            channelList.remove(sendQueue);
+            // re-submit pending requests so that they can be retried
+            sendQueue.pendingWrites.forEach(Batch::onChannelClosed);
+          }
+        });
+  }
+
+  @Override
+  public boolean onTimerExpiry(TimeUnit timeUnit, long now, long timerId) {
+    final OutgoingRequest request = requestsByTimeoutIds.get(timerId);
+
+    if (request != null) {
+      reclaimRequestBuffer(request.getRequestBuffer().byteBuffer());
+      request.timeout();
+      inFlightRequests.remove(request.getLastRequestId());
+    }
+
+    return true;
+  }
+
+  public ByteBuffer allocateMessageBuffer(int length) {
+    return messageMemoryPool.allocate(length);
+  }
+
+  public void reclaimMessageBuffer(ByteBuffer allocatedBuffer) {
+    messageMemoryPool.reclaim(allocatedBuffer);
+  }
+
+  public ByteBuffer allocateRequestBuffer(int requestedCapacity) {
+    return requestMemoryPool.allocate(requestedCapacity);
+  }
+
+  public void reclaimRequestBuffer(ByteBuffer allocatedBuffer) {
+    requestMemoryPool.reclaim(allocatedBuffer);
+  }
+
+  public void failPendingRequestsToRemote(RemoteAddressImpl remoteAddress, String reason) {}
 }

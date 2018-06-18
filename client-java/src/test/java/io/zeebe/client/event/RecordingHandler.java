@@ -15,35 +15,29 @@
  */
 package io.zeebe.client.event;
 
+import io.zeebe.client.api.record.Record;
+import io.zeebe.client.api.subscription.RecordHandler;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.zeebe.client.api.record.Record;
-import io.zeebe.client.api.subscription.RecordHandler;
+public class RecordingHandler implements RecordHandler {
 
-public class RecordingHandler implements RecordHandler
-{
+  protected List<Record> records = new ArrayList<>();
 
-    protected List<Record> records = new ArrayList<>();
+  @Override
+  public void onRecord(Record record) {
+    this.records.add(record);
+  }
 
-    @Override
-    public void onRecord(Record record)
-    {
-        this.records.add(record);
-    }
+  public int numRecordedRecords() {
+    return records.size();
+  }
 
-    public int numRecordedRecords()
-    {
-        return records.size();
-    }
+  public List<Record> getRecordedRecords() {
+    return records;
+  }
 
-    public List<Record> getRecordedRecords()
-    {
-        return records;
-    }
-
-    public void reset()
-    {
-        this.records.clear();
-    }
+  public void reset() {
+    this.records.clear();
+  }
 }

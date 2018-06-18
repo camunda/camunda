@@ -15,22 +15,18 @@
  */
 package io.zeebe.client.impl.subscription.topic;
 
-public class CloseSubscriptionRequest
-{
-    private long subscriberKey;
+public class CloseSubscriptionRequest {
+  private long subscriberKey;
 
-    public long getSubscriberKey()
-    {
-        return subscriberKey;
-    }
+  public long getSubscriberKey() {
+    return subscriberKey;
+  }
 
-    public void setSubscriberKey(final long subscriberKey)
-    {
-        this.subscriberKey = subscriberKey;
-    }
+  public void setSubscriberKey(final long subscriberKey) {
+    this.subscriberKey = subscriberKey;
+  }
 
-    public void reset()
-    {
-        this.subscriberKey = -1L;
-    }
+  public void reset() {
+    this.subscriberKey = -1L;
+  }
 }

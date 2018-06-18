@@ -15,100 +15,85 @@
  */
 package io.zeebe.client.impl.workflow;
 
+import io.zeebe.client.api.commands.WorkflowResource;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
-import io.zeebe.client.api.commands.WorkflowResource;
+public class WorkflowResourceImpl implements WorkflowResource {
+  private String bpmnProcessId;
+  private int version;
+  private long workflowKey;
+  private String resourceName;
+  private String bpmnXml;
 
-public class WorkflowResourceImpl implements WorkflowResource
-{
-    private String bpmnProcessId;
-    private int version;
-    private long workflowKey;
-    private String resourceName;
-    private String bpmnXml;
+  @Override
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
+  }
 
-    @Override
-    public String getBpmnProcessId()
-    {
-        return bpmnProcessId;
-    }
+  @Override
+  public int getVersion() {
+    return version;
+  }
 
-    @Override
-    public int getVersion()
-    {
-        return version;
-    }
+  public WorkflowResourceImpl setBpmnProcessId(String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
+    return this;
+  }
 
-    public WorkflowResourceImpl setBpmnProcessId(String bpmnProcessId)
-    {
-        this.bpmnProcessId = bpmnProcessId;
-        return this;
-    }
+  public WorkflowResourceImpl setVersion(int version) {
+    this.version = version;
+    return this;
+  }
 
-    public WorkflowResourceImpl setVersion(int version)
-    {
-        this.version = version;
-        return this;
-    }
+  public void setWorkflowKey(long workflowKey) {
+    this.workflowKey = workflowKey;
+  }
 
-    public void setWorkflowKey(long workflowKey)
-    {
-        this.workflowKey = workflowKey;
-    }
+  @Override
+  public long getWorkflowKey() {
+    return workflowKey;
+  }
 
-    @Override
-    public long getWorkflowKey()
-    {
-        return workflowKey;
-    }
+  @Override
+  public String getBpmnXml() {
+    return bpmnXml;
+  }
 
-    @Override
-    public String getBpmnXml()
-    {
-        return bpmnXml;
-    }
+  public void setBpmnXml(String bpmnXml) {
+    this.bpmnXml = bpmnXml;
+  }
 
-    public void setBpmnXml(String bpmnXml)
-    {
-        this.bpmnXml = bpmnXml;
-    }
+  @Override
+  public InputStream getBpmnXmlAsStream() {
+    final byte[] bytes = bpmnXml.getBytes(StandardCharsets.UTF_8);
+    return new ByteArrayInputStream(bytes);
+  }
 
-    @Override
-    public InputStream getBpmnXmlAsStream()
-    {
-        final byte[] bytes = bpmnXml.getBytes(StandardCharsets.UTF_8);
-        return new ByteArrayInputStream(bytes);
-    }
+  @Override
+  public String getResourceName() {
+    return resourceName;
+  }
 
-    @Override
-    public String getResourceName()
-    {
-        return resourceName;
-    }
+  public void setResourceName(String resourceName) {
+    this.resourceName = resourceName;
+  }
 
-    public void setResourceName(String resourceName)
-    {
-        this.resourceName = resourceName;
-    }
-
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("WorkflowResource [bpmnProcessId=");
-        builder.append(bpmnProcessId);
-        builder.append(", version=");
-        builder.append(version);
-        builder.append(", workflowKey=");
-        builder.append(workflowKey);
-        builder.append(", resourceName=");
-        builder.append(resourceName);
-        builder.append(", bpmnXML=");
-        builder.append(bpmnXml);
-        builder.append("]");
-        return builder.toString();
-    }
-
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("WorkflowResource [bpmnProcessId=");
+    builder.append(bpmnProcessId);
+    builder.append(", version=");
+    builder.append(version);
+    builder.append(", workflowKey=");
+    builder.append(workflowKey);
+    builder.append(", resourceName=");
+    builder.append(resourceName);
+    builder.append(", bpmnXML=");
+    builder.append(bpmnXml);
+    builder.append("]");
+    return builder.toString();
+  }
 }

@@ -19,26 +19,25 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
- * Interface to be implemented by resources which are used by
- * stream processors and support snapshots.
+ * Interface to be implemented by resources which are used by stream processors and support
+ * snapshots.
  */
-public interface SnapshotSupport
-{
-    /**
-     * write a snapshot to the provided output stream
-     * @param outputStream the stream to write to
-     * @return the size of the snapshot in bytes
-     */
-    long writeSnapshot(OutputStream outputStream) throws Exception;
+public interface SnapshotSupport {
+  /**
+   * write a snapshot to the provided output stream
+   *
+   * @param outputStream the stream to write to
+   * @return the size of the snapshot in bytes
+   */
+  long writeSnapshot(OutputStream outputStream) throws Exception;
 
-    /**
-     * read a snapshot from the provided input stream.
-     * @param inputStream the stream to read from
-     */
-    void recoverFromSnapshot(InputStream inputStream) throws Exception;
+  /**
+   * read a snapshot from the provided input stream.
+   *
+   * @param inputStream the stream to read from
+   */
+  void recoverFromSnapshot(InputStream inputStream) throws Exception;
 
-    /**
-     * Set the snapshot in the initial state.
-     */
-    void reset();
+  /** Set the snapshot in the initial state. */
+  void reset();
 }

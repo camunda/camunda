@@ -21,125 +21,104 @@ import io.zeebe.raft.backpressure.EventSizesByPosition;
 import org.junit.Before;
 import org.junit.Test;
 
-public class EventSizesByPositionTest
-{
-    private EventSizesByPosition eventSizesByPosition;
+public class EventSizesByPositionTest {
+  private EventSizesByPosition eventSizesByPosition;
 
-    @Before
-    public void init()
-    {
-        eventSizesByPosition = new EventSizesByPosition();
+  @Before
+  public void init() {
+    eventSizesByPosition = new EventSizesByPosition();
+  }
+
+  @Test
+  public void empty() {
+    assertThat(eventSizesByPosition.isEmpty()).isTrue();
+    assertThat(eventSizesByPosition.size()).isEqualTo(0);
+  }
+
+  @Test
+  public void canAddUpToCapaciy() {
+    for (int i = 0; i < eventSizesByPosition.getCurrentCapacity(); i++) {
+      eventSizesByPosition.add(i, i);
+    }
+  }
+
+  @Test
+  public void isAutoGrowing() {
+    for (int i = 0; i < eventSizesByPosition.getCurrentCapacity(); i++) {
+      eventSizesByPosition.add(i, i);
     }
 
-    @Test
-    public void empty()
-    {
-        assertThat(eventSizesByPosition.isEmpty()).isTrue();
-        assertThat(eventSizesByPosition.size()).isEqualTo(0);
+    eventSizesByPosition.add(100, 100);
+  }
+
+  @Test
+  public void canConsumeInOrder() {
+    for (int i = 0; i < eventSizesByPosition.getCurrentCapacity(); i++) {
+      eventSizesByPosition.add(i, i);
     }
 
-    @Test
-    public void canAddUpToCapaciy()
-    {
-        for (int i = 0; i < eventSizesByPosition.getCurrentCapacity(); i++)
-        {
-            eventSizesByPosition.add(i, i);
-        }
+    for (int i = 0; i < eventSizesByPosition.getCurrentCapacity(); i++) {
+      assertThat(eventSizesByPosition.markConsumed(i)).isEqualTo(i);
+    }
+  }
+
+  @Test
+  public void canConsumeAfterResize() {
+    final int initalCapacity = eventSizesByPosition.getCurrentCapacity();
+    final int initialCapacityPlusOne = initalCapacity + 1;
+
+    for (int i = 0; i < initalCapacity; i++) {
+      eventSizesByPosition.add(i, i);
     }
 
-    @Test
-    public void isAutoGrowing()
-    {
-        for (int i = 0; i < eventSizesByPosition.getCurrentCapacity(); i++)
-        {
-            eventSizesByPosition.add(i, i);
-        }
+    eventSizesByPosition.add(initialCapacityPlusOne, initialCapacityPlusOne);
 
-        eventSizesByPosition.add(100, 100);
+    for (int i = 0; i < initalCapacity; i++) {
+      assertThat(eventSizesByPosition.markConsumed(i)).isEqualTo(i);
     }
 
-    @Test
-    public void canConsumeInOrder()
-    {
-        for (int i = 0; i < eventSizesByPosition.getCurrentCapacity(); i++)
-        {
-            eventSizesByPosition.add(i, i);
-        }
+    assertThat(eventSizesByPosition.markConsumed(initialCapacityPlusOne))
+        .isEqualTo(initialCapacityPlusOne);
+  }
 
-        for (int i = 0; i < eventSizesByPosition.getCurrentCapacity(); i++)
-        {
-            assertThat(eventSizesByPosition.markConsumed(i)).isEqualTo(i);
-        }
+  @Test
+  public void isReusing() {
+    final int initalCapacity = eventSizesByPosition.getCurrentCapacity();
+
+    for (int i = 0; i < initalCapacity; i++) {
+      eventSizesByPosition.add(i, i);
     }
 
-    @Test
-    public void canConsumeAfterResize()
-    {
-        final int initalCapacity = eventSizesByPosition.getCurrentCapacity();
-        final int initialCapacityPlusOne = initalCapacity + 1;
-
-        for (int i = 0; i < initalCapacity; i++)
-        {
-            eventSizesByPosition.add(i, i);
-        }
-
-        eventSizesByPosition.add(initialCapacityPlusOne, initialCapacityPlusOne);
-
-        for (int i = 0; i < initalCapacity; i++)
-        {
-            assertThat(eventSizesByPosition.markConsumed(i)).isEqualTo(i);
-        }
-
-        assertThat(eventSizesByPosition.markConsumed(initialCapacityPlusOne)).isEqualTo(initialCapacityPlusOne);
+    for (int i = 0; i < initalCapacity; i++) {
+      assertThat(eventSizesByPosition.markConsumed(i)).isEqualTo(i);
     }
 
-    @Test
-    public void isReusing()
-    {
-        final int initalCapacity = eventSizesByPosition.getCurrentCapacity();
-
-        for (int i = 0; i < initalCapacity; i++)
-        {
-            eventSizesByPosition.add(i, i);
-        }
-
-        for (int i = 0; i < initalCapacity; i++)
-        {
-            assertThat(eventSizesByPosition.markConsumed(i)).isEqualTo(i);
-        }
-
-        for (int i = 0; i < initalCapacity; i++)
-        {
-            eventSizesByPosition.add(i, i);
-        }
-
-        for (int i = 0; i < initalCapacity; i++)
-        {
-            assertThat(eventSizesByPosition.markConsumed(i)).isEqualTo(i);
-        }
-
-        assertThat(eventSizesByPosition.getCurrentCapacity()).isEqualTo(initalCapacity);
+    for (int i = 0; i < initalCapacity; i++) {
+      eventSizesByPosition.add(i, i);
     }
 
-    @Test
-    public void isReusingAlternating()
-    {
-        final int initalCapacity = eventSizesByPosition.getCurrentCapacity();
-
-        for (int i = 0; i < 1024; i++)
-        {
-            eventSizesByPosition.add(i, i);
-            assertThat(eventSizesByPosition.markConsumed(i)).isEqualTo(i);
-        }
-
-        assertThat(eventSizesByPosition.getCurrentCapacity()).isEqualTo(initalCapacity);
+    for (int i = 0; i < initalCapacity; i++) {
+      assertThat(eventSizesByPosition.markConsumed(i)).isEqualTo(i);
     }
 
-    @Test
-    public void doesNotConsumerIfSmaller()
-    {
-        eventSizesByPosition.add(1, 1);
-        assertThat(eventSizesByPosition.markConsumed(0)).isEqualTo(0);
+    assertThat(eventSizesByPosition.getCurrentCapacity()).isEqualTo(initalCapacity);
+  }
+
+  @Test
+  public void isReusingAlternating() {
+    final int initalCapacity = eventSizesByPosition.getCurrentCapacity();
+
+    for (int i = 0; i < 1024; i++) {
+      eventSizesByPosition.add(i, i);
+      assertThat(eventSizesByPosition.markConsumed(i)).isEqualTo(i);
     }
 
+    assertThat(eventSizesByPosition.getCurrentCapacity()).isEqualTo(initalCapacity);
+  }
+
+  @Test
+  public void doesNotConsumerIfSmaller() {
+    eventSizesByPosition.add(1, 1);
+    assertThat(eventSizesByPosition.markConsumed(0)).isEqualTo(0);
+  }
 }

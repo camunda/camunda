@@ -18,745 +18,691 @@ package io.zeebe.util.sched.functional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
-
 import io.zeebe.util.collection.Tuple;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import org.assertj.core.api.AbstractThrowableAssert;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ActorFutureTest
-{
-    @Rule
-    public ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
+public class ActorFutureTest {
+  @Rule public ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
 
+  @Test
+  public void shouldInvokeCallbackOnFutureCompletion() {
+    // given
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+    final AtomicInteger callbackInvocations = new AtomicInteger(0);
 
-    @Test
-    public void shouldInvokeCallbackOnFutureCompletion()
-    {
-        // given
-        final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-        final AtomicInteger callbackInvocations = new AtomicInteger(0);
-
-        final Actor waitingActor = new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                actor.runOnCompletion(future, (r, t) -> callbackInvocations.incrementAndGet());
-            }
+    final Actor waitingActor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            actor.runOnCompletion(future, (r, t) -> callbackInvocations.incrementAndGet());
+          }
         };
 
-        final Actor completingActor = new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                future.complete(null);
-            }
+    final Actor completingActor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            future.complete(null);
+          }
         };
 
-        schedulerRule.submitActor(waitingActor);
-        schedulerRule.workUntilDone();
+    schedulerRule.submitActor(waitingActor);
+    schedulerRule.workUntilDone();
 
-        // when
-        schedulerRule.submitActor(completingActor);
-        schedulerRule.workUntilDone();
+    // when
+    schedulerRule.submitActor(completingActor);
+    schedulerRule.workUntilDone();
 
-        // then
-        assertThat(callbackInvocations).hasValue(1);
-    }
+    // then
+    assertThat(callbackInvocations).hasValue(1);
+  }
 
-    @Test
-    public void shouldInvokeCallbackOnBlockPhaseForFutureCompletion()
-    {
-        // given
-        final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-        final AtomicInteger callbackInvocations = new AtomicInteger(0);
+  @Test
+  public void shouldInvokeCallbackOnBlockPhaseForFutureCompletion() {
+    // given
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+    final AtomicInteger callbackInvocations = new AtomicInteger(0);
 
-        final Actor waitingActor = new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                actor.runOnCompletionBlockingCurrentPhase(future, (r, t) -> callbackInvocations.incrementAndGet());
-            }
+    final Actor waitingActor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            actor.runOnCompletionBlockingCurrentPhase(
+                future, (r, t) -> callbackInvocations.incrementAndGet());
+          }
         };
 
-        final Actor completingActor = new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                future.complete(null);
-            }
+    final Actor completingActor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            future.complete(null);
+          }
         };
 
-        schedulerRule.submitActor(waitingActor);
-        schedulerRule.workUntilDone();
+    schedulerRule.submitActor(waitingActor);
+    schedulerRule.workUntilDone();
 
-        // when
-        schedulerRule.submitActor(completingActor);
-        schedulerRule.workUntilDone();
+    // when
+    schedulerRule.submitActor(completingActor);
+    schedulerRule.workUntilDone();
 
-        // then
-        assertThat(callbackInvocations).hasValue(1);
-    }
+    // then
+    assertThat(callbackInvocations).hasValue(1);
+  }
 
-    @Test
-    public void shouldInvokeCallbackOnFirstFutureCompletion()
-    {
-        // given
-        final CompletableActorFuture<String> future1 = new CompletableActorFuture<>();
-        final CompletableActorFuture<String> future2 = new CompletableActorFuture<>();
+  @Test
+  public void shouldInvokeCallbackOnFirstFutureCompletion() {
+    // given
+    final CompletableActorFuture<String> future1 = new CompletableActorFuture<>();
+    final CompletableActorFuture<String> future2 = new CompletableActorFuture<>();
 
-        final List<Tuple<String, Throwable>> invocations = new ArrayList<>();
+    final List<Tuple<String, Throwable>> invocations = new ArrayList<>();
 
-        final Actor waitingActor = new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                actor.runOnFirstCompletion(Arrays.asList(future1, future2), (r, t) -> invocations.add(new Tuple<>(r, t)));
-            }
+    final Actor waitingActor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            actor.runOnFirstCompletion(
+                Arrays.asList(future1, future2), (r, t) -> invocations.add(new Tuple<>(r, t)));
+          }
         };
 
-        final Actor completingActor = new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                future1.complete("foo");
-                future2.complete("bar");
-            }
+    final Actor completingActor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            future1.complete("foo");
+            future2.complete("bar");
+          }
         };
 
-        schedulerRule.submitActor(waitingActor);
-        schedulerRule.workUntilDone();
+    schedulerRule.submitActor(waitingActor);
+    schedulerRule.workUntilDone();
 
-        // when
-        schedulerRule.submitActor(completingActor);
-        schedulerRule.workUntilDone();
+    // when
+    schedulerRule.submitActor(completingActor);
+    schedulerRule.workUntilDone();
 
-        // then
-        assertThat(invocations).hasSize(1).contains(new Tuple<>("foo", null));
-    }
+    // then
+    assertThat(invocations).hasSize(1).contains(new Tuple<>("foo", null));
+  }
 
-    @Test
-    public void shouldInvokeCallbackOnlyOnSuccessfullyFutureCompletion()
-    {
-        // given
-        final CompletableActorFuture<String> future1 = new CompletableActorFuture<>();
-        final CompletableActorFuture<String> future2 = new CompletableActorFuture<>();
+  @Test
+  public void shouldInvokeCallbackOnlyOnSuccessfullyFutureCompletion() {
+    // given
+    final CompletableActorFuture<String> future1 = new CompletableActorFuture<>();
+    final CompletableActorFuture<String> future2 = new CompletableActorFuture<>();
 
-        final List<Tuple<String, Throwable>> invocations = new ArrayList<>();
+    final List<Tuple<String, Throwable>> invocations = new ArrayList<>();
 
-        final Actor waitingActor = new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                actor.runOnFirstCompletion(Arrays.asList(future1, future2), (r, t) -> invocations.add(new Tuple<>(r, t)));
-            }
+    final Actor waitingActor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            actor.runOnFirstCompletion(
+                Arrays.asList(future1, future2), (r, t) -> invocations.add(new Tuple<>(r, t)));
+          }
         };
 
-        final Actor completingActor = new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                future1.completeExceptionally(new RuntimeException("foo"));
-                future2.complete("bar");
-            }
+    final Actor completingActor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            future1.completeExceptionally(new RuntimeException("foo"));
+            future2.complete("bar");
+          }
         };
 
-        schedulerRule.submitActor(waitingActor);
-        schedulerRule.workUntilDone();
+    schedulerRule.submitActor(waitingActor);
+    schedulerRule.workUntilDone();
 
-        // when
-        schedulerRule.submitActor(completingActor);
-        schedulerRule.workUntilDone();
+    // when
+    schedulerRule.submitActor(completingActor);
+    schedulerRule.workUntilDone();
 
-        // then
-        assertThat(invocations).hasSize(1).contains(new Tuple<>("bar", null));
-    }
+    // then
+    assertThat(invocations).hasSize(1).contains(new Tuple<>("bar", null));
+  }
 
-    @Test
-    public void shouldInvokeCallbackOnLastExceptionallyFutureCompletion()
-    {
-        // given
-        final CompletableActorFuture<String> future1 = new CompletableActorFuture<>();
-        final CompletableActorFuture<String> future2 = new CompletableActorFuture<>();
+  @Test
+  public void shouldInvokeCallbackOnLastExceptionallyFutureCompletion() {
+    // given
+    final CompletableActorFuture<String> future1 = new CompletableActorFuture<>();
+    final CompletableActorFuture<String> future2 = new CompletableActorFuture<>();
 
-        final List<Tuple<String, Throwable>> invocations = new ArrayList<>();
+    final List<Tuple<String, Throwable>> invocations = new ArrayList<>();
 
-        final Actor waitingActor = new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                actor.runOnFirstCompletion(Arrays.asList(future1, future2), (r, t) -> invocations.add(new Tuple<>(r, t)));
-            }
+    final Actor waitingActor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            actor.runOnFirstCompletion(
+                Arrays.asList(future1, future2), (r, t) -> invocations.add(new Tuple<>(r, t)));
+          }
         };
 
-        final Actor completingActor = new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                future1.completeExceptionally(new RuntimeException("foo"));
-                future2.completeExceptionally(new RuntimeException("bar"));
-            }
+    final Actor completingActor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            future1.completeExceptionally(new RuntimeException("foo"));
+            future2.completeExceptionally(new RuntimeException("bar"));
+          }
         };
 
-        schedulerRule.submitActor(waitingActor);
-        schedulerRule.workUntilDone();
+    schedulerRule.submitActor(waitingActor);
+    schedulerRule.workUntilDone();
 
-        // when
-        schedulerRule.submitActor(completingActor);
-        schedulerRule.workUntilDone();
+    // when
+    schedulerRule.submitActor(completingActor);
+    schedulerRule.workUntilDone();
 
-        // then
-        assertThat(invocations).hasSize(1);
-        assertThat(invocations.get(0).getLeft()).isNull();
-        assertThat(invocations.get(0).getRight().getMessage()).isEqualTo("bar");
-    }
+    // then
+    assertThat(invocations).hasSize(1);
+    assertThat(invocations.get(0).getLeft()).isNull();
+    assertThat(invocations.get(0).getRight().getMessage()).isEqualTo("bar");
+  }
 
-    @Test
-    public void shouldInvokeCloseCallbackAfterFirstFutureCompletion()
-    {
-        // given
-        final CompletableActorFuture<String> future1 = new CompletableActorFuture<>();
-        final CompletableActorFuture<String> future2 = new CompletableActorFuture<>();
-        final CompletableActorFuture<String> future3 = new CompletableActorFuture<>();
+  @Test
+  public void shouldInvokeCloseCallbackAfterFirstFutureCompletion() {
+    // given
+    final CompletableActorFuture<String> future1 = new CompletableActorFuture<>();
+    final CompletableActorFuture<String> future2 = new CompletableActorFuture<>();
+    final CompletableActorFuture<String> future3 = new CompletableActorFuture<>();
 
-        final List<String> invocations = new ArrayList<>();
+    final List<String> invocations = new ArrayList<>();
 
-        final Actor waitingActor = new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                actor.runOnFirstCompletion(Arrays.asList(future1, future2, future3), (r, t) ->
-                { }, invocations::add);
-            }
+    final Actor waitingActor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            actor.runOnFirstCompletion(
+                Arrays.asList(future1, future2, future3), (r, t) -> {}, invocations::add);
+          }
         };
 
-        final Actor completingActor = new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                future1.complete("foo");
-                future2.complete("bar");
-                future3.complete("baz");
-            }
+    final Actor completingActor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            future1.complete("foo");
+            future2.complete("bar");
+            future3.complete("baz");
+          }
         };
 
-        schedulerRule.submitActor(waitingActor);
-        schedulerRule.workUntilDone();
+    schedulerRule.submitActor(waitingActor);
+    schedulerRule.workUntilDone();
 
-        // when
-        schedulerRule.submitActor(completingActor);
-        schedulerRule.workUntilDone();
+    // when
+    schedulerRule.submitActor(completingActor);
+    schedulerRule.workUntilDone();
 
-        // then
-        assertThat(invocations).hasSize(2).contains("bar", "baz");
-    }
+    // then
+    assertThat(invocations).hasSize(2).contains("bar", "baz");
+  }
 
-    @Test
-    public void shouldInvokeCallbackOnAllFutureCompletedSuccessfully()
-    {
-        // given
-        final CompletableActorFuture<String> future1 = new CompletableActorFuture<>();
-        final CompletableActorFuture<String> future2 = new CompletableActorFuture<>();
+  @Test
+  public void shouldInvokeCallbackOnAllFutureCompletedSuccessfully() {
+    // given
+    final CompletableActorFuture<String> future1 = new CompletableActorFuture<>();
+    final CompletableActorFuture<String> future2 = new CompletableActorFuture<>();
 
-        final List<Throwable> invocations = new ArrayList<>();
-        final List<String> results = new ArrayList<>();
+    final List<Throwable> invocations = new ArrayList<>();
+    final List<String> results = new ArrayList<>();
 
-        final Actor waitingActor = new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                actor.runOnCompletion(Arrays.asList(future1, future2), t ->
-                {
-                    invocations.add(t);
+    final Actor waitingActor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            actor.runOnCompletion(
+                Arrays.asList(future1, future2),
+                t -> {
+                  invocations.add(t);
 
-                    results.add(future1.join());
-                    results.add(future2.join());
+                  results.add(future1.join());
+                  results.add(future2.join());
                 });
-            }
+          }
         };
 
-        final Actor completingActor = new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                future1.complete("foo");
-                future2.complete("bar");
-            }
+    final Actor completingActor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            future1.complete("foo");
+            future2.complete("bar");
+          }
         };
 
-        schedulerRule.submitActor(waitingActor);
-        schedulerRule.workUntilDone();
+    schedulerRule.submitActor(waitingActor);
+    schedulerRule.workUntilDone();
 
-        // when
-        schedulerRule.submitActor(completingActor);
-        schedulerRule.workUntilDone();
+    // when
+    schedulerRule.submitActor(completingActor);
+    schedulerRule.workUntilDone();
 
-        // then
-        assertThat(invocations).hasSize(1).containsNull();
-        assertThat(results).contains("foo", "bar");
-    }
+    // then
+    assertThat(invocations).hasSize(1).containsNull();
+    assertThat(results).contains("foo", "bar");
+  }
 
-    @Test
-    public void shouldInvokeCallbackOnEmptyFutureList()
-    {
-        // given
-        final List<ActorFuture<Void>> futures = Collections.emptyList();
+  @Test
+  public void shouldInvokeCallbackOnEmptyFutureList() {
+    // given
+    final List<ActorFuture<Void>> futures = Collections.emptyList();
 
-        final List<Throwable> invocations = new ArrayList<>();
+    final List<Throwable> invocations = new ArrayList<>();
 
-        final Actor waitingActor = new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                actor.runOnCompletion(futures, t ->
-                {
-                    invocations.add(t);
+    final Actor waitingActor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            actor.runOnCompletion(
+                futures,
+                t -> {
+                  invocations.add(t);
                 });
-            }
+          }
         };
 
-        schedulerRule.submitActor(waitingActor);
-        schedulerRule.workUntilDone();
+    schedulerRule.submitActor(waitingActor);
+    schedulerRule.workUntilDone();
 
-        // then
-        assertThat(invocations).hasSize(1).containsNull();
-    }
+    // then
+    assertThat(invocations).hasSize(1).containsNull();
+  }
 
-    @Test
-    public void shouldInvokeCallbackOnAllFutureCompletedExceptionally()
-    {
-        // given
-        final CompletableActorFuture<String> future1 = new CompletableActorFuture<>();
-        final CompletableActorFuture<String> future2 = new CompletableActorFuture<>();
+  @Test
+  public void shouldInvokeCallbackOnAllFutureCompletedExceptionally() {
+    // given
+    final CompletableActorFuture<String> future1 = new CompletableActorFuture<>();
+    final CompletableActorFuture<String> future2 = new CompletableActorFuture<>();
 
-        final List<Throwable> invocations = new ArrayList<>();
+    final List<Throwable> invocations = new ArrayList<>();
 
-        final Actor waitingActor = new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                actor.runOnCompletion(Arrays.asList(future1, future2), t -> invocations.add(t));
-            }
+    final Actor waitingActor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            actor.runOnCompletion(Arrays.asList(future1, future2), t -> invocations.add(t));
+          }
         };
 
-        final Actor completingActor = new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                future1.completeExceptionally(new RuntimeException("foo"));
-                future2.completeExceptionally(new RuntimeException("bar"));
-            }
+    final Actor completingActor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            future1.completeExceptionally(new RuntimeException("foo"));
+            future2.completeExceptionally(new RuntimeException("bar"));
+          }
         };
 
-        schedulerRule.submitActor(waitingActor);
-        schedulerRule.workUntilDone();
+    schedulerRule.submitActor(waitingActor);
+    schedulerRule.workUntilDone();
 
-        // when
-        schedulerRule.submitActor(completingActor);
-        schedulerRule.workUntilDone();
+    // when
+    schedulerRule.submitActor(completingActor);
+    schedulerRule.workUntilDone();
 
-        // then
-        assertThat(invocations).hasSize(1);
-        assertThat(invocations.get(0).getMessage()).isEqualTo("bar");
-    }
+    // then
+    assertThat(invocations).hasSize(1);
+    assertThat(invocations.get(0).getMessage()).isEqualTo("bar");
+  }
 
-    @Test
-    public void shouldNotBlockExecutionWhenRegisteredOnFuture()
-    {
-        // given
-        final BlockedCallActor actor = new BlockedCallActor();
-        schedulerRule.submitActor(actor);
-        actor.waitOnFuture(); // actor is waiting on future
-        schedulerRule.workUntilDone();
+  @Test
+  public void shouldNotBlockExecutionWhenRegisteredOnFuture() {
+    // given
+    final BlockedCallActor actor = new BlockedCallActor();
+    schedulerRule.submitActor(actor);
+    actor.waitOnFuture(); // actor is waiting on future
+    schedulerRule.workUntilDone();
 
-        // when
-        final ActorFuture<Integer> future = actor.call(42);
-        schedulerRule.workUntilDone();
-        final Integer result = future.join();
+    // when
+    final ActorFuture<Integer> future = actor.call(42);
+    schedulerRule.workUntilDone();
+    final Integer result = future.join();
 
-        // then
-        assertThat(result).isEqualTo(42);
-    }
+    // then
+    assertThat(result).isEqualTo(42);
+  }
 
-    @Test
-    public void shouldNotBlockExecutionOnRunOnCompletion()
-    {
-        // given
-        final BlockedCallActorWithRunOnCompletion actor = new BlockedCallActorWithRunOnCompletion();
-        schedulerRule.submitActor(actor);
-        actor.waitOnFuture(); // actor is waiting on future
-        schedulerRule.workUntilDone();
+  @Test
+  public void shouldNotBlockExecutionOnRunOnCompletion() {
+    // given
+    final BlockedCallActorWithRunOnCompletion actor = new BlockedCallActorWithRunOnCompletion();
+    schedulerRule.submitActor(actor);
+    actor.waitOnFuture(); // actor is waiting on future
+    schedulerRule.workUntilDone();
 
-        // when
-        final ActorFuture<Integer> future = actor.call(42);
-        schedulerRule.workUntilDone();
-        final Integer result = future.join();
+    // when
+    final ActorFuture<Integer> future = actor.call(42);
+    schedulerRule.workUntilDone();
+    final Integer result = future.join();
 
-        // then
-        assertThat(result).isEqualTo(42);
-    }
+    // then
+    assertThat(result).isEqualTo(42);
+  }
 
-    @Test
-    public void shouldInvokeCallbackOnCompletedFuture()
-    {
-        // given
-        final AtomicReference<String> futureResult = new AtomicReference<>();
+  @Test
+  public void shouldInvokeCallbackOnCompletedFuture() {
+    // given
+    final AtomicReference<String> futureResult = new AtomicReference<>();
 
-        schedulerRule.submitActor(new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                actor.runOnCompletion(CompletableActorFuture.completed("foo"), (r, t) -> futureResult.set(r));
-            }
+    schedulerRule.submitActor(
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            actor.runOnCompletion(
+                CompletableActorFuture.completed("foo"), (r, t) -> futureResult.set(r));
+          }
         });
 
-        // when
-        schedulerRule.workUntilDone();
+    // when
+    schedulerRule.workUntilDone();
 
-        // then
-        assertThat(futureResult.get()).isEqualTo("foo");
-    }
+    // then
+    assertThat(futureResult.get()).isEqualTo("foo");
+  }
 
-    @Test
-    public void shouldInvokeCallbackOnBlockPhaseForCompletedFuture()
-    {
-        // given
-        final AtomicReference<String> futureResult = new AtomicReference<>();
+  @Test
+  public void shouldInvokeCallbackOnBlockPhaseForCompletedFuture() {
+    // given
+    final AtomicReference<String> futureResult = new AtomicReference<>();
 
-        schedulerRule.submitActor(new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                actor.runOnCompletionBlockingCurrentPhase(CompletableActorFuture.completed("foo"), (r, t) -> futureResult.set(r));
-            }
+    schedulerRule.submitActor(
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            actor.runOnCompletionBlockingCurrentPhase(
+                CompletableActorFuture.completed("foo"), (r, t) -> futureResult.set(r));
+          }
         });
 
-        // when
-        schedulerRule.workUntilDone();
+    // when
+    schedulerRule.workUntilDone();
 
-        // then
-        assertThat(futureResult.get()).isEqualTo("foo");
-    }
+    // then
+    assertThat(futureResult.get()).isEqualTo("foo");
+  }
 
-    class BlockedCallActor extends Actor
-    {
-        public void waitOnFuture()
-        {
-            actor.call(() ->
-            {
-                actor.runOnCompletionBlockingCurrentPhase(new CompletableActorFuture<>(), (r, t) ->
-                {
-                    // never called since future is never completed
+  class BlockedCallActor extends Actor {
+    public void waitOnFuture() {
+      actor.call(
+          () -> {
+            actor.runOnCompletionBlockingCurrentPhase(
+                new CompletableActorFuture<>(),
+                (r, t) -> {
+                  // never called since future is never completed
                 });
-            });
-        }
-
-        public ActorFuture<Integer> call(int returnValue)
-        {
-            return actor.call(() -> returnValue);
-        }
+          });
     }
 
-    class BlockedCallActorWithRunOnCompletion extends Actor
-    {
-        public void waitOnFuture()
-        {
-            actor.call(() ->
-            {
-                actor.runOnCompletion(new CompletableActorFuture<>(), (r, t) ->
-                {
-                    // never called since future is never completed
+    public ActorFuture<Integer> call(int returnValue) {
+      return actor.call(() -> returnValue);
+    }
+  }
+
+  class BlockedCallActorWithRunOnCompletion extends Actor {
+    public void waitOnFuture() {
+      actor.call(
+          () -> {
+            actor.runOnCompletion(
+                new CompletableActorFuture<>(),
+                (r, t) -> {
+                  // never called since future is never completed
                 });
-            });
-        }
-
-        public ActorFuture<Integer> call(int returnValue)
-        {
-            return actor.call(() -> returnValue);
-        }
+          });
     }
 
-    @Test
-    public void shouldReturnCompletedFutureWithNullValue()
-    {
-        // given
-
-        // when
-        final CompletableActorFuture<Void> completed = CompletableActorFuture.completed(null);
-
-        // then
-        assertThat(completed).isDone();
-        assertThat(completed.join()).isNull();
+    public ActorFuture<Integer> call(int returnValue) {
+      return actor.call(() -> returnValue);
     }
+  }
 
+  @Test
+  public void shouldReturnCompletedFutureWithNullValue() {
+    // given
 
-    @Test
-    public void shouldReturnCompletedFuture()
-    {
-        // given
-        final Object result = new Object();
+    // when
+    final CompletableActorFuture<Void> completed = CompletableActorFuture.completed(null);
 
-        // when
-        final CompletableActorFuture<Object> completed = CompletableActorFuture.completed(result);
+    // then
+    assertThat(completed).isDone();
+    assertThat(completed.join()).isNull();
+  }
 
-        // then
-        assertThat(completed).isDone();
-        assertThat(completed.join()).isEqualTo(result);
-    }
+  @Test
+  public void shouldReturnCompletedFuture() {
+    // given
+    final Object result = new Object();
 
-    @Test
-    public void shouldReturnCompletedExceptionallyFuture()
-    {
-        // given
-        final RuntimeException result = new RuntimeException("Something bad happend!");
+    // when
+    final CompletableActorFuture<Object> completed = CompletableActorFuture.completed(result);
 
-        // when
-        final CompletableActorFuture<Object> completed = CompletableActorFuture.completedExceptionally(result);
+    // then
+    assertThat(completed).isDone();
+    assertThat(completed.join()).isEqualTo(result);
+  }
 
-        // then
-        assertThat(completed).isDone();
-        assertThat(completed.isCompletedExceptionally()).isTrue();
+  @Test
+  public void shouldReturnCompletedExceptionallyFuture() {
+    // given
+    final RuntimeException result = new RuntimeException("Something bad happend!");
 
-        assertThatThrownBy(() -> completed.join()).hasMessageContaining("Something bad happend!");
-    }
+    // when
+    final CompletableActorFuture<Object> completed =
+        CompletableActorFuture.completedExceptionally(result);
 
-    @Test
-    public void shouldInvokeCallbacksAfterCloseIsCalled()
-    {
-        // given
-        final CompletableActorFuture<Object> f1 = new CompletableActorFuture<>();
-        final CompletableActorFuture<Object> f2 = new CompletableActorFuture<>();
+    // then
+    assertThat(completed).isDone();
+    assertThat(completed.isCompletedExceptionally()).isTrue();
 
-        final Object result1 = new Object();
-        final Object result2 = new Object();
+    assertThatThrownBy(() -> completed.join()).hasMessageContaining("Something bad happend!");
+  }
 
-        final TestActor actor = new TestActor();
+  @Test
+  public void shouldInvokeCallbacksAfterCloseIsCalled() {
+    // given
+    final CompletableActorFuture<Object> f1 = new CompletableActorFuture<>();
+    final CompletableActorFuture<Object> f2 = new CompletableActorFuture<>();
 
-        schedulerRule.submitActor(actor);
+    final Object result1 = new Object();
+    final Object result2 = new Object();
 
-        final List<Object> receivedObjects = new ArrayList<>();
+    final TestActor actor = new TestActor();
 
-        actor.awaitFuture(f1, (o, t) -> receivedObjects.add(o));
-        actor.awaitFuture(f2, (o, t) -> receivedObjects.add(o));
-        schedulerRule.workUntilDone();
+    schedulerRule.submitActor(actor);
 
-        // when
-        /*
-         * Explanation:
-         *   - #close submits the close job
-         *   - #workUntilDone picks up the close job and before execution polls the future subscriptions,
-         *     therefore appends the subscription callback jobs (callback1, callback2) to the close job
-         *     => job queue: close => callback1 => callback2
-         *   - the close job detaches the jobs again, but leaves the other jobs connected
-         *     => job queue: close; detached: callback1 => callback2
-         *   - after the close job finishes, the subscriptions are polled again, so the callback jobs are submitted again
-         *     => job queue: callback1 => callback2 => callback2
-         *   - callback2 is now connected to itself and is therefore executed twice in succession
-         */
-        f1.complete(result1);
-        f2.complete(result2);
-        actor.close();
-        schedulerRule.workUntilDone();
+    final List<Object> receivedObjects = new ArrayList<>();
 
-        // then
-        assertThat(receivedObjects).containsExactly(result1, result2);
-    }
+    actor.awaitFuture(f1, (o, t) -> receivedObjects.add(o));
+    actor.awaitFuture(f2, (o, t) -> receivedObjects.add(o));
+    schedulerRule.workUntilDone();
 
-    @Test
-    public void joinShouldThrowExecutionException()
-    {
-        // given
-        final CompletableActorFuture<Object> future = new CompletableActorFuture<>();
-        final RuntimeException throwable = new RuntimeException();
+    // when
+    /*
+     * Explanation:
+     *   - #close submits the close job
+     *   - #workUntilDone picks up the close job and before execution polls the future subscriptions,
+     *     therefore appends the subscription callback jobs (callback1, callback2) to the close job
+     *     => job queue: close => callback1 => callback2
+     *   - the close job detaches the jobs again, but leaves the other jobs connected
+     *     => job queue: close; detached: callback1 => callback2
+     *   - after the close job finishes, the subscriptions are polled again, so the callback jobs are submitted again
+     *     => job queue: callback1 => callback2 => callback2
+     *   - callback2 is now connected to itself and is therefore executed twice in succession
+     */
+    f1.complete(result1);
+    f2.complete(result2);
+    actor.close();
+    schedulerRule.workUntilDone();
 
-        // when
-        future.completeExceptionally(throwable);
+    // then
+    assertThat(receivedObjects).containsExactly(result1, result2);
+  }
 
-        // then
-        final AbstractThrowableAssert<?, ? extends Throwable> thrownBy = assertThatThrownBy(() -> future.join());
-        thrownBy.isInstanceOf(ExecutionException.class);
-        thrownBy.hasCause(throwable);
-    }
+  @Test
+  public void joinShouldThrowExecutionException() {
+    // given
+    final CompletableActorFuture<Object> future = new CompletableActorFuture<>();
+    final RuntimeException throwable = new RuntimeException();
 
-    @Test
-    public void shouldCompleteFutureAndWaitOnNonActorThread() throws Exception
-    {
-        // given
-        final CompletableActorFuture<Integer> future = new CompletableActorFuture<>();
+    // when
+    future.completeExceptionally(throwable);
 
-        // when
-        schedulerRule.submitActor(new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                future.complete(0xFA);
-            }
+    // then
+    final AbstractThrowableAssert<?, ? extends Throwable> thrownBy =
+        assertThatThrownBy(() -> future.join());
+    thrownBy.isInstanceOf(ExecutionException.class);
+    thrownBy.hasCause(throwable);
+  }
+
+  @Test
+  public void shouldCompleteFutureAndWaitOnNonActorThread() throws Exception {
+    // given
+    final CompletableActorFuture<Integer> future = new CompletableActorFuture<>();
+
+    // when
+    schedulerRule.submitActor(
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            future.complete(0xFA);
+          }
         });
 
-        new Thread()
-        {
-            @Override
-            public void run()
-            {
-                schedulerRule.workUntilDone();
-            }
-        }.start();
+    new Thread() {
+      @Override
+      public void run() {
+        schedulerRule.workUntilDone();
+      }
+    }.start();
 
-        final Integer value = future.get();
+    final Integer value = future.get();
 
-        // then
-        assertThat(value).isEqualTo(0xFA);
-    }
+    // then
+    assertThat(value).isEqualTo(0xFA);
+  }
 
-    @Test
-    public void shouldCompleteFutureExceptionallyAndWaitOnNonActorThread()
-    {
-        // given
-        final CompletableActorFuture<Integer> future = new CompletableActorFuture<>();
+  @Test
+  public void shouldCompleteFutureExceptionallyAndWaitOnNonActorThread() {
+    // given
+    final CompletableActorFuture<Integer> future = new CompletableActorFuture<>();
 
-        // when
-        schedulerRule.submitActor(new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                future.completeExceptionally(new IllegalArgumentException("moep"));
-            }
+    // when
+    schedulerRule.submitActor(
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            future.completeExceptionally(new IllegalArgumentException("moep"));
+          }
         });
 
-        new Thread()
-        {
-            @Override
-            public void run()
-            {
-                schedulerRule.workUntilDone();
-            }
-        }.start();
+    new Thread() {
+      @Override
+      public void run() {
+        schedulerRule.workUntilDone();
+      }
+    }.start();
 
-        // expect
-        assertThatThrownBy(() -> future.get())
-            .isInstanceOf(ExecutionException.class)
-            .hasMessage("moep");
+    // expect
+    assertThatThrownBy(() -> future.get())
+        .isInstanceOf(ExecutionException.class)
+        .hasMessage("moep");
+  }
+
+  @Test
+  public void shouldReturnValueOnNonActorThread() throws Exception {
+    // given
+    final CompletableActorFuture<String> future = CompletableActorFuture.completed("value");
+
+    // when
+    final String value = future.get(5, TimeUnit.MILLISECONDS);
+
+    // then
+    assertThat(value).isEqualTo("value");
+  }
+
+  @Test
+  public void shouldThrowExceptionOnNonActorThread() {
+    // given
+    final CompletableActorFuture<String> future =
+        CompletableActorFuture.completedExceptionally(new IllegalArgumentException("moep"));
+
+    // expect
+    assertThatThrownBy(() -> future.get(5, TimeUnit.MILLISECONDS))
+        .isInstanceOf(ExecutionException.class)
+        .hasMessage("moep");
+  }
+
+  @Test
+  public void shouldThrowTimeoutOnNonActorThread() {
+    // given
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+
+    // expect
+    assertThatThrownBy(() -> future.get(5, TimeUnit.MILLISECONDS))
+        .isInstanceOf(TimeoutException.class)
+        .hasMessage("Timeout after: 5 MILLISECONDS");
+  }
+
+  @Test
+  public void shouldFailToStaticallyCreateExceptionallyCompletedFutureWithNull() {
+    // when
+    final RuntimeException result = null;
+
+    // then
+    assertThatThrownBy(() -> CompletableActorFuture.completedExceptionally(result))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessageContaining("Throwable must not be null.");
+  }
+
+  @Test
+  public void shouldFailToExceptionallyCompleteFutureWithNull() {
+    // given
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+    final RuntimeException result = null;
+
+    // then/then
+    assertThatThrownBy(() -> future.completeExceptionally(result))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessageContaining("Throwable must not be null.");
+  }
+
+  @Test
+  public void shouldFailToExceptionallyCompleteFutureWithNullAndMessage() {
+    // given
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+    final RuntimeException result = null;
+    final String message = "foo";
+
+    // then/then
+    assertThatThrownBy(() -> future.completeExceptionally(message, result))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessageContaining("Throwable must not be null.");
+  }
+
+  class TestActor extends Actor {
+
+    public <T> void awaitFuture(ActorFuture<T> f, BiConsumer<T, Throwable> onCompletion) {
+      actor.call(() -> actor.runOnCompletionBlockingCurrentPhase(f, onCompletion));
     }
 
-    @Test
-    public void shouldReturnValueOnNonActorThread() throws Exception
-    {
-        // given
-        final CompletableActorFuture<String> future = CompletableActorFuture.completed("value");
-
-        // when
-        final String value = future.get(5, TimeUnit.MILLISECONDS);
-
-        // then
-        assertThat(value).isEqualTo("value");
+    public void close() {
+      actor.close();
     }
-
-    @Test
-    public void shouldThrowExceptionOnNonActorThread()
-    {
-        // given
-        final CompletableActorFuture<String> future = CompletableActorFuture.completedExceptionally(new IllegalArgumentException("moep"));
-
-        // expect
-        assertThatThrownBy(() -> future.get(5, TimeUnit.MILLISECONDS))
-            .isInstanceOf(ExecutionException.class)
-            .hasMessage("moep");
-    }
-
-    @Test
-    public void shouldThrowTimeoutOnNonActorThread()
-    {
-        // given
-        final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-
-        // expect
-        assertThatThrownBy(() -> future.get(5, TimeUnit.MILLISECONDS))
-            .isInstanceOf(TimeoutException.class)
-            .hasMessage("Timeout after: 5 MILLISECONDS");
-    }
-
-    @Test
-    public void shouldFailToStaticallyCreateExceptionallyCompletedFutureWithNull()
-    {
-        // when
-        final RuntimeException result = null;
-
-        // then
-        assertThatThrownBy(() -> CompletableActorFuture.completedExceptionally(result))
-            .isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("Throwable must not be null.");
-    }
-
-    @Test
-    public void shouldFailToExceptionallyCompleteFutureWithNull()
-    {
-        // given
-        final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-        final RuntimeException result = null;
-
-        // then/then
-        assertThatThrownBy(() -> future.completeExceptionally(result))
-            .isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("Throwable must not be null.");
-    }
-
-    @Test
-    public void shouldFailToExceptionallyCompleteFutureWithNullAndMessage()
-    {
-        // given
-        final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-        final RuntimeException result = null;
-        final String message = "foo";
-
-        // then/then
-        assertThatThrownBy(() -> future.completeExceptionally(message, result))
-            .isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("Throwable must not be null.");
-    }
-
-    class TestActor extends Actor
-    {
-
-        public <T> void awaitFuture(ActorFuture<T> f, BiConsumer<T, Throwable> onCompletion)
-        {
-            actor.call(() -> actor.runOnCompletionBlockingCurrentPhase(f, onCompletion));
-        }
-
-        public void close()
-        {
-            actor.close();
-        }
-    }
-
-
+  }
 }

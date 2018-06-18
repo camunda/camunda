@@ -25,41 +25,35 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.*;
 
-public class ClientReconnectTest
-{
-    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-    public ClientRule clientRule = new ClientRule();
+public class ClientReconnectTest {
+  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  public ClientRule clientRule = new ClientRule();
 
-    @Rule
-    public RuleChain ruleChain = RuleChain
-        .outerRule(brokerRule)
-        .around(clientRule);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
+  @Rule public ExpectedException thrown = ExpectedException.none();
 
-    @Rule
-    public Timeout testTimeout = Timeout.seconds(30);
+  @Rule public Timeout testTimeout = Timeout.seconds(30);
 
-    @Test
-    public void shouldTransparentlyReconnectOnUnexpectedConnectionLoss()
-    {
-        // given
-        final long initialTaskKey = createJob();
+  @Test
+  public void shouldTransparentlyReconnectOnUnexpectedConnectionLoss() {
+    // given
+    final long initialTaskKey = createJob();
 
-        clientRule.interruptBrokerConnections();
+    clientRule.interruptBrokerConnections();
 
-        // when
-        final long newTaskKey = TestUtil.doRepeatedly(() -> createJob())
-                .until((key) -> key != null);
+    // when
+    final long newTaskKey = TestUtil.doRepeatedly(() -> createJob()).until((key) -> key != null);
 
-        // then
-        assertThat(newTaskKey).isNotEqualTo(initialTaskKey);
-    }
+    // then
+    assertThat(newTaskKey).isNotEqualTo(initialTaskKey);
+  }
 
-    protected long createJob()
-    {
-        final JobEvent jobEvent = clientRule.getJobClient().newCreateCommand()
+  protected long createJob() {
+    final JobEvent jobEvent =
+        clientRule
+            .getJobClient()
+            .newCreateCommand()
             .jobType("foo")
             .addCustomHeader("k1", "a")
             .addCustomHeader("k2", "b")
@@ -67,6 +61,6 @@ public class ClientReconnectTest
             .send()
             .join();
 
-        return jobEvent.getMetadata().getKey();
-    }
+    return jobEvent.getMetadata().getKey();
+  }
 }

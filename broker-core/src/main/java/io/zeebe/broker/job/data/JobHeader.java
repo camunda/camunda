@@ -18,41 +18,32 @@
 package io.zeebe.broker.job.data;
 
 import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.msgpack.property.StringProperty;
 import org.agrona.DirectBuffer;
 
-import io.zeebe.msgpack.property.StringProperty;
+public class JobHeader extends UnpackedObject {
+  private final StringProperty keyProp = new StringProperty("key");
+  private final StringProperty valueProp = new StringProperty("value");
 
-public class JobHeader extends UnpackedObject
-{
-    private final StringProperty keyProp = new StringProperty("key");
-    private final StringProperty valueProp = new StringProperty("value");
+  public JobHeader() {
+    this.declareProperty(keyProp).declareProperty(valueProp);
+  }
 
-    public JobHeader()
-    {
-        this.declareProperty(keyProp)
-            .declareProperty(valueProp);
-    }
+  public DirectBuffer getKey() {
+    return keyProp.getValue();
+  }
 
-    public DirectBuffer getKey()
-    {
-        return keyProp.getValue();
-    }
+  public JobHeader setKey(String key) {
+    this.keyProp.setValue(key);
+    return this;
+  }
 
-    public JobHeader setKey(String key)
-    {
-        this.keyProp.setValue(key);
-        return this;
-    }
+  public DirectBuffer getValue() {
+    return valueProp.getValue();
+  }
 
-    public DirectBuffer getValue()
-    {
-        return valueProp.getValue();
-    }
-
-    public JobHeader setValue(String value)
-    {
-        this.valueProp.setValue(value);
-        return this;
-    }
-
+  public JobHeader setValue(String value) {
+    this.valueProp.setValue(value);
+    return this;
+  }
 }

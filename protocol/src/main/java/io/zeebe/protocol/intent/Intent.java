@@ -15,113 +15,106 @@
  */
 package io.zeebe.protocol.intent;
 
+import io.zeebe.protocol.clientapi.ValueType;
 import java.util.Arrays;
 import java.util.Collection;
 
-import io.zeebe.protocol.clientapi.ValueType;
+public interface Intent {
+  Collection<Class<? extends Intent>> INTENT_CLASSES =
+      Arrays.asList(
+          DeploymentIntent.class,
+          IdIntent.class,
+          IncidentIntent.class,
+          SubscriberIntent.class,
+          SubscriptionIntent.class,
+          JobIntent.class,
+          TopicIntent.class,
+          WorkflowInstanceIntent.class);
 
-public interface Intent
-{
-    Collection<Class<? extends Intent>> INTENT_CLASSES = Arrays.asList(
-        DeploymentIntent.class,
-        IdIntent.class,
-        IncidentIntent.class,
-        SubscriberIntent.class,
-        SubscriptionIntent.class,
-        JobIntent.class,
-        TopicIntent.class,
-        WorkflowInstanceIntent.class);
-
-    Intent UNKNOWN = new Intent()
-    {
+  Intent UNKNOWN =
+      new Intent() {
         @Override
-        public short value()
-        {
-            return NULL_VAL;
+        public short value() {
+          return NULL_VAL;
         }
 
         @Override
-        public String name()
-        {
-            return "UNKNOWN";
+        public String name() {
+          return "UNKNOWN";
         }
-    };
+      };
 
-    short NULL_VAL = 255;
+  short NULL_VAL = 255;
 
-    short value();
+  short value();
 
-    String name();
+  String name();
 
-    static Intent fromProtocolValue(ValueType valueType, short intent)
-    {
-        switch (valueType)
-        {
-            case DEPLOYMENT:
-                return DeploymentIntent.from(intent);
-            case ID:
-                return IdIntent.from(intent);
-            case INCIDENT:
-                return IncidentIntent.from(intent);
-            case NOOP:
-                return Intent.UNKNOWN;
-            case RAFT:
-                return RaftIntent.from(intent);
-            case SUBSCRIBER:
-                return SubscriberIntent.from(intent);
-            case SUBSCRIPTION:
-                return SubscriptionIntent.from(intent);
-            case JOB:
-                return JobIntent.from(intent);
-            case TOPIC:
-                return TopicIntent.from(intent);
-            case WORKFLOW_INSTANCE:
-                return WorkflowInstanceIntent.from(intent);
-            case NULL_VAL:
-            case SBE_UNKNOWN:
-                return Intent.UNKNOWN;
-            default:
-                throw new RuntimeException("unknown type");
-        }
+  static Intent fromProtocolValue(ValueType valueType, short intent) {
+    switch (valueType) {
+      case DEPLOYMENT:
+        return DeploymentIntent.from(intent);
+      case ID:
+        return IdIntent.from(intent);
+      case INCIDENT:
+        return IncidentIntent.from(intent);
+      case NOOP:
+        return Intent.UNKNOWN;
+      case RAFT:
+        return RaftIntent.from(intent);
+      case SUBSCRIBER:
+        return SubscriberIntent.from(intent);
+      case SUBSCRIPTION:
+        return SubscriptionIntent.from(intent);
+      case JOB:
+        return JobIntent.from(intent);
+      case TOPIC:
+        return TopicIntent.from(intent);
+      case WORKFLOW_INSTANCE:
+        return WorkflowInstanceIntent.from(intent);
+      case NULL_VAL:
+      case SBE_UNKNOWN:
+        return Intent.UNKNOWN;
+      default:
+        throw new RuntimeException("unknown type");
     }
+  }
 
-    static Intent fromProtocolValue(ValueType valueType, String intent)
-    {
-        switch (valueType)
-        {
-            case DEPLOYMENT:
-                return DeploymentIntent.valueOf(intent);
-            case ID:
-                return IdIntent.valueOf(intent);
-            case INCIDENT:
-                return IncidentIntent.valueOf(intent);
-            case NOOP:
-                return Intent.UNKNOWN;
-            case RAFT:
-                return RaftIntent.valueOf(intent);
-            case SUBSCRIBER:
-                return SubscriberIntent.valueOf(intent);
-            case SUBSCRIPTION:
-                return SubscriptionIntent.valueOf(intent);
-            case JOB:
-                return JobIntent.valueOf(intent);
-            case TOPIC:
-                return TopicIntent.valueOf(intent);
-            case WORKFLOW_INSTANCE:
-                return WorkflowInstanceIntent.valueOf(intent);
-            case NULL_VAL:
-            case SBE_UNKNOWN:
-                return Intent.UNKNOWN;
-            default:
-                throw new RuntimeException("unknown type");
-        }
+  static Intent fromProtocolValue(ValueType valueType, String intent) {
+    switch (valueType) {
+      case DEPLOYMENT:
+        return DeploymentIntent.valueOf(intent);
+      case ID:
+        return IdIntent.valueOf(intent);
+      case INCIDENT:
+        return IncidentIntent.valueOf(intent);
+      case NOOP:
+        return Intent.UNKNOWN;
+      case RAFT:
+        return RaftIntent.valueOf(intent);
+      case SUBSCRIBER:
+        return SubscriberIntent.valueOf(intent);
+      case SUBSCRIPTION:
+        return SubscriptionIntent.valueOf(intent);
+      case JOB:
+        return JobIntent.valueOf(intent);
+      case TOPIC:
+        return TopicIntent.valueOf(intent);
+      case WORKFLOW_INSTANCE:
+        return WorkflowInstanceIntent.valueOf(intent);
+      case NULL_VAL:
+      case SBE_UNKNOWN:
+        return Intent.UNKNOWN;
+      default:
+        throw new RuntimeException("unknown type");
     }
+  }
 
-    static int maxCardinality()
-    {
-        return INTENT_CLASSES.stream()
-            .mapToInt(clazz -> clazz.getEnumConstants().length)
-            .max()
-            .getAsInt();
-    }
+  static int maxCardinality() {
+    return INTENT_CLASSES
+        .stream()
+        .mapToInt(clazz -> clazz.getEnumConstants().length)
+        .max()
+        .getAsInt();
+  }
 }

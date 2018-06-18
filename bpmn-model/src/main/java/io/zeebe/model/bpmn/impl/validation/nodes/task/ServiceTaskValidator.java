@@ -22,34 +22,32 @@ import io.zeebe.model.bpmn.impl.metadata.InputOutputMappingImpl;
 import io.zeebe.model.bpmn.impl.metadata.TaskDefinitionImpl;
 import io.zeebe.model.bpmn.impl.metadata.TaskHeadersImpl;
 
-public class ServiceTaskValidator
-{
-    private final TaskDefinitionValidator taskDefinitionValidator = new TaskDefinitionValidator();
-    private final TaskHeadersValidator taskHeadersValidator = new TaskHeadersValidator();
-    private final InputOutputMappingValidator inputOutputMappingValidator = new InputOutputMappingValidator();
+public class ServiceTaskValidator {
+  private final TaskDefinitionValidator taskDefinitionValidator = new TaskDefinitionValidator();
+  private final TaskHeadersValidator taskHeadersValidator = new TaskHeadersValidator();
+  private final InputOutputMappingValidator inputOutputMappingValidator =
+      new InputOutputMappingValidator();
 
-    public void validate(ErrorCollector validationResult, ServiceTaskImpl serviceTask)
-    {
-        final TaskDefinitionImpl taskDefinition = serviceTask.getTaskDefinitionImpl();
-        if (taskDefinition == null)
-        {
-            validationResult.addError(serviceTask, String.format("A service task must contain a '%s' extension element.", BpmnConstants.ZEEBE_ELEMENT_TASK_DEFINITION));
-        }
-        else
-        {
-            taskDefinitionValidator.validate(validationResult, taskDefinition);
-        }
-
-        final TaskHeadersImpl taskHeaders = serviceTask.getTaskHeaders();
-        if (taskHeaders != null)
-        {
-            taskHeadersValidator.validate(validationResult, taskHeaders);
-        }
-
-        final InputOutputMappingImpl inputOutputMapping = serviceTask.getInputOutputMapping();
-        if (inputOutputMapping != null)
-        {
-            inputOutputMappingValidator.validate(validationResult, inputOutputMapping);
-        }
+  public void validate(ErrorCollector validationResult, ServiceTaskImpl serviceTask) {
+    final TaskDefinitionImpl taskDefinition = serviceTask.getTaskDefinitionImpl();
+    if (taskDefinition == null) {
+      validationResult.addError(
+          serviceTask,
+          String.format(
+              "A service task must contain a '%s' extension element.",
+              BpmnConstants.ZEEBE_ELEMENT_TASK_DEFINITION));
+    } else {
+      taskDefinitionValidator.validate(validationResult, taskDefinition);
     }
+
+    final TaskHeadersImpl taskHeaders = serviceTask.getTaskHeaders();
+    if (taskHeaders != null) {
+      taskHeadersValidator.validate(validationResult, taskHeaders);
+    }
+
+    final InputOutputMappingImpl inputOutputMapping = serviceTask.getInputOutputMapping();
+    if (inputOutputMapping != null) {
+      inputOutputMappingValidator.validate(validationResult, inputOutputMapping);
+    }
+  }
 }

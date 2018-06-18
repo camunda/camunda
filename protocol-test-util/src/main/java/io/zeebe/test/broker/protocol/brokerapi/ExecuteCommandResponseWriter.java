@@ -19,158 +19,143 @@ import io.zeebe.protocol.clientapi.*;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.util.EnsureUtil;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Map;
 import java.util.function.Function;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
-public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<ExecuteCommandRequest>
-{
-    protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-    protected final ExecuteCommandResponseEncoder bodyEncoder = new ExecuteCommandResponseEncoder();
-    protected final MsgPackHelper msgPackHelper;
+public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<ExecuteCommandRequest> {
+  protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+  protected final ExecuteCommandResponseEncoder bodyEncoder = new ExecuteCommandResponseEncoder();
+  protected final MsgPackHelper msgPackHelper;
 
-    protected Function<ExecuteCommandRequest, Long> keyFunction = r -> r.key();
-    protected Function<ExecuteCommandRequest, Integer> partitionIdFunction = r -> r.partitionId();
-    protected Function<ExecuteCommandRequest, Map<String, Object>> eventFunction;
-    protected Function<ExecuteCommandRequest, Long> positionFunction = r -> r.position();
-    protected Function<ExecuteCommandRequest, Long> sourceRecordPositionFunction = r -> r.sourceRecordPosition();
-    private Function<ExecuteCommandRequest, Intent> intentFunction = r -> r.intent();
+  protected Function<ExecuteCommandRequest, Long> keyFunction = r -> r.key();
+  protected Function<ExecuteCommandRequest, Integer> partitionIdFunction = r -> r.partitionId();
+  protected Function<ExecuteCommandRequest, Map<String, Object>> eventFunction;
+  protected Function<ExecuteCommandRequest, Long> positionFunction = r -> r.position();
+  protected Function<ExecuteCommandRequest, Long> sourceRecordPositionFunction =
+      r -> r.sourceRecordPosition();
+  private Function<ExecuteCommandRequest, Intent> intentFunction = r -> r.intent();
 
-    protected long key;
-    protected int partitionId;
-    protected byte[] value;
-    protected long position;
-    private long sourceRecordPosition;
-    private RecordType recordType;
-    private Intent intent;
-    private ValueType valueType;
-    private long timestamp = ExecuteCommandResponseEncoder.timestampNullValue();
-    private RejectionType rejectionType = RejectionType.NULL_VAL;
-    private UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
+  protected long key;
+  protected int partitionId;
+  protected byte[] value;
+  protected long position;
+  private long sourceRecordPosition;
+  private RecordType recordType;
+  private Intent intent;
+  private ValueType valueType;
+  private long timestamp = ExecuteCommandResponseEncoder.timestampNullValue();
+  private RejectionType rejectionType = RejectionType.NULL_VAL;
+  private UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
 
-    public ExecuteCommandResponseWriter(MsgPackHelper msgPackHelper)
-    {
-        this.msgPackHelper = msgPackHelper;
-    }
+  public ExecuteCommandResponseWriter(MsgPackHelper msgPackHelper) {
+    this.msgPackHelper = msgPackHelper;
+  }
 
-    @Override
-    public void initializeFrom(ExecuteCommandRequest request)
-    {
-        key = keyFunction.apply(request);
-        partitionId = partitionIdFunction.apply(request);
-        position = positionFunction.apply(request);
-        sourceRecordPosition = sourceRecordPositionFunction.apply(request);
-        final Map<String, Object> deserializedEvent = eventFunction.apply(request);
-        value = msgPackHelper.encodeAsMsgPack(deserializedEvent);
-        this.valueType = request.valueType();
-        this.intent = intentFunction.apply(request);
-    }
+  @Override
+  public void initializeFrom(ExecuteCommandRequest request) {
+    key = keyFunction.apply(request);
+    partitionId = partitionIdFunction.apply(request);
+    position = positionFunction.apply(request);
+    sourceRecordPosition = sourceRecordPositionFunction.apply(request);
+    final Map<String, Object> deserializedEvent = eventFunction.apply(request);
+    value = msgPackHelper.encodeAsMsgPack(deserializedEvent);
+    this.valueType = request.valueType();
+    this.intent = intentFunction.apply(request);
+  }
 
-    public void setPartitionIdFunction(Function<ExecuteCommandRequest, Integer> partitionIdFunction)
-    {
-        this.partitionIdFunction = partitionIdFunction;
-    }
+  public void setPartitionIdFunction(Function<ExecuteCommandRequest, Integer> partitionIdFunction) {
+    this.partitionIdFunction = partitionIdFunction;
+  }
 
-    public void setEventFunction(Function<ExecuteCommandRequest, Map<String, Object>> eventFunction)
-    {
-        this.eventFunction = eventFunction;
-    }
+  public void setEventFunction(Function<ExecuteCommandRequest, Map<String, Object>> eventFunction) {
+    this.eventFunction = eventFunction;
+  }
 
-    public void setRecordType(RecordType recordType)
-    {
-        this.recordType = recordType;
-    }
+  public void setRecordType(RecordType recordType) {
+    this.recordType = recordType;
+  }
 
-    public void setKeyFunction(Function<ExecuteCommandRequest, Long> keyFunction)
-    {
-        this.keyFunction = keyFunction;
-    }
+  public void setKeyFunction(Function<ExecuteCommandRequest, Long> keyFunction) {
+    this.keyFunction = keyFunction;
+  }
 
-    public void setPositionFunction(Function<ExecuteCommandRequest, Long> positionFunction)
-    {
-        this.positionFunction = positionFunction;
-    }
+  public void setPositionFunction(Function<ExecuteCommandRequest, Long> positionFunction) {
+    this.positionFunction = positionFunction;
+  }
 
-    public void setSourceRecordPositionFunction(Function<ExecuteCommandRequest, Long> sourceRecordPositionFunction)
-    {
-        this.sourceRecordPositionFunction = sourceRecordPositionFunction;
-    }
+  public void setSourceRecordPositionFunction(
+      Function<ExecuteCommandRequest, Long> sourceRecordPositionFunction) {
+    this.sourceRecordPositionFunction = sourceRecordPositionFunction;
+  }
 
-    public void setIntentFunction(Function<ExecuteCommandRequest, Intent> intentFunction)
-    {
-        this.intentFunction = intentFunction;
-    }
+  public void setIntentFunction(Function<ExecuteCommandRequest, Intent> intentFunction) {
+    this.intentFunction = intentFunction;
+  }
 
-    public void setTimestamp(Instant timestamp)
-    {
-        final long epochMillis = timestamp == null ? ExecuteCommandResponseEncoder.timestampNullValue() : timestamp.toEpochMilli();
-        setTimestamp(epochMillis);
-    }
+  public void setTimestamp(Instant timestamp) {
+    final long epochMillis =
+        timestamp == null
+            ? ExecuteCommandResponseEncoder.timestampNullValue()
+            : timestamp.toEpochMilli();
+    setTimestamp(epochMillis);
+  }
 
-    public void setTimestamp(long timestamp)
-    {
-        this.timestamp = timestamp;
-    }
+  public void setTimestamp(long timestamp) {
+    this.timestamp = timestamp;
+  }
 
-    public void setRejectionType(RejectionType rejectionType)
-    {
-        this.rejectionType = rejectionType;
-    }
+  public void setRejectionType(RejectionType rejectionType) {
+    this.rejectionType = rejectionType;
+  }
 
-    public void setRejectionReason(String rejectionReason)
-    {
-        final byte[] bytes = rejectionReason.getBytes(StandardCharsets.UTF_8);
-        this.rejectionReason = new UnsafeBuffer(bytes);
-    }
+  public void setRejectionReason(String rejectionReason) {
+    final byte[] bytes = rejectionReason.getBytes(StandardCharsets.UTF_8);
+    this.rejectionReason = new UnsafeBuffer(bytes);
+  }
 
-    @Override
-    public int getLength()
-    {
-        return MessageHeaderEncoder.ENCODED_LENGTH +
-                ExecuteCommandResponseEncoder.BLOCK_LENGTH +
-                ExecuteCommandResponseEncoder.valueHeaderLength() +
-                value.length +
-                ExecuteCommandResponseEncoder.rejectionReasonHeaderLength() +
-                rejectionReason.capacity();
-    }
+  @Override
+  public int getLength() {
+    return MessageHeaderEncoder.ENCODED_LENGTH
+        + ExecuteCommandResponseEncoder.BLOCK_LENGTH
+        + ExecuteCommandResponseEncoder.valueHeaderLength()
+        + value.length
+        + ExecuteCommandResponseEncoder.rejectionReasonHeaderLength()
+        + rejectionReason.capacity();
+  }
 
-    @Override
-    public void write(MutableDirectBuffer buffer, int offset)
-    {
-        EnsureUtil.ensureNotNull("recordType", recordType);
-        EnsureUtil.ensureNotNull("valueType", valueType);
-        EnsureUtil.ensureNotNull("intent", intent);
+  @Override
+  public void write(MutableDirectBuffer buffer, int offset) {
+    EnsureUtil.ensureNotNull("recordType", recordType);
+    EnsureUtil.ensureNotNull("valueType", valueType);
+    EnsureUtil.ensureNotNull("intent", intent);
 
-        // protocol header
-        headerEncoder
-            .wrap(buffer, offset)
-            .blockLength(bodyEncoder.sbeBlockLength())
-            .templateId(bodyEncoder.sbeTemplateId())
-            .schemaId(bodyEncoder.sbeSchemaId())
-            .version(bodyEncoder.sbeSchemaVersion());
+    // protocol header
+    headerEncoder
+        .wrap(buffer, offset)
+        .blockLength(bodyEncoder.sbeBlockLength())
+        .templateId(bodyEncoder.sbeTemplateId())
+        .schemaId(bodyEncoder.sbeSchemaId())
+        .version(bodyEncoder.sbeSchemaVersion());
 
-        offset += headerEncoder.encodedLength();
+    offset += headerEncoder.encodedLength();
 
-        // protocol message
-        bodyEncoder
-            .wrap(buffer, offset)
-            .recordType(recordType)
-            .valueType(valueType)
-            .intent(intent.value())
-            .partitionId(partitionId)
-            .key(key)
-            .timestamp(timestamp)
-            .position(position)
-            .rejectionType(rejectionType)
-            .putValue(value, 0, value.length)
-            .putRejectionReason(rejectionReason, 0, rejectionReason.capacity())
-            .sourceRecordPosition(sourceRecordPosition);
-
-    }
-
-
+    // protocol message
+    bodyEncoder
+        .wrap(buffer, offset)
+        .recordType(recordType)
+        .valueType(valueType)
+        .intent(intent.value())
+        .partitionId(partitionId)
+        .key(key)
+        .timestamp(timestamp)
+        .position(position)
+        .rejectionType(rejectionType)
+        .putValue(value, 0, value.length)
+        .putRejectionReason(rejectionReason, 0, rejectionReason.capacity())
+        .sourceRecordPosition(sourceRecordPosition);
+  }
 }

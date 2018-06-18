@@ -23,117 +23,97 @@ import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.raft.state.RaftState;
 import org.agrona.DirectBuffer;
 
-/**
- * Message pack formatted DTO of topology; can be requested through client api.
- */
-public class TopologyDto extends UnpackedObject
-{
-    private final ArrayProperty<BrokerDto> brokersProp = new ArrayProperty<>("brokers", new BrokerDto());
+/** Message pack formatted DTO of topology; can be requested through client api. */
+public class TopologyDto extends UnpackedObject {
+  private final ArrayProperty<BrokerDto> brokersProp =
+      new ArrayProperty<>("brokers", new BrokerDto());
 
-    public TopologyDto()
-    {
-        this.declareProperty(brokersProp);
+  public TopologyDto() {
+    this.declareProperty(brokersProp);
+  }
+
+  public ArrayProperty<BrokerDto> brokers() {
+    return brokersProp;
+  }
+
+  public static class BrokerDto extends UnpackedObject {
+    private final StringProperty hostProp = new StringProperty("host");
+    private final IntegerProperty portProp = new IntegerProperty("port");
+
+    private final ArrayProperty<PartitionDto> partitionStatesProp =
+        new ArrayProperty<>("partitions", new PartitionDto());
+
+    public BrokerDto() {
+      this.declareProperty(hostProp).declareProperty(portProp).declareProperty(partitionStatesProp);
     }
 
-    public ArrayProperty<BrokerDto> brokers()
-    {
-        return brokersProp;
+    public DirectBuffer getHost() {
+      return hostProp.getValue();
     }
 
-    public static class BrokerDto extends UnpackedObject
-    {
-        private final StringProperty hostProp = new StringProperty("host");
-        private final IntegerProperty portProp = new IntegerProperty("port");
-
-        private final ArrayProperty<PartitionDto> partitionStatesProp = new ArrayProperty<>("partitions", new PartitionDto());
-
-        public BrokerDto()
-        {
-            this.declareProperty(hostProp)
-                .declareProperty(portProp)
-                .declareProperty(partitionStatesProp);
-        }
-
-        public DirectBuffer getHost()
-        {
-            return hostProp.getValue();
-        }
-
-        public BrokerDto setHost(final DirectBuffer host, final int offset, final int length)
-        {
-            this.hostProp.setValue(host, offset, length);
-            return this;
-        }
-
-        public int getPort()
-        {
-            return portProp.getValue();
-        }
-
-        public BrokerDto setPort(final int port)
-        {
-            portProp.setValue(port);
-            return this;
-        }
-
-        public ValueArray<PartitionDto> partitionStates()
-        {
-            return partitionStatesProp;
-        }
+    public BrokerDto setHost(final DirectBuffer host, final int offset, final int length) {
+      this.hostProp.setValue(host, offset, length);
+      return this;
     }
 
-    public static class PartitionDto extends UnpackedObject
-    {
-        private final EnumProperty<RaftState> stateProp = new EnumProperty<>("state", RaftState.class);
-        private final StringProperty topicNameProp = new StringProperty("topicName");
-        private final IntegerProperty partitionIdProp = new IntegerProperty("partitionId");
-        private final IntegerProperty replicationFactorProp = new IntegerProperty("replicationFactor");
-
-        public PartitionDto()
-        {
-            this.declareProperty(stateProp)
-                .declareProperty(topicNameProp)
-                .declareProperty(partitionIdProp)
-                .declareProperty(replicationFactorProp);
-        }
-
-        public RaftState getState()
-        {
-            return stateProp.getValue();
-        }
-
-        public PartitionDto setState(RaftState eventType)
-        {
-            this.stateProp.setValue(eventType);
-            return this;
-        }
-
-        public PartitionDto setTopicName(final DirectBuffer topicName, final int offset, final int length)
-        {
-            this.topicNameProp.setValue(topicName, offset, length);
-            return this;
-        }
-
-        public int getPartitionId()
-        {
-            return partitionIdProp.getValue();
-        }
-
-        public int getReplicationFactor()
-        {
-            return replicationFactorProp.getValue();
-        }
-
-        public PartitionDto setReplicationFactor(int replicationFactor)
-        {
-            replicationFactorProp.setValue(replicationFactor);
-            return this;
-        }
-
-        public PartitionDto setPartitionId(final int partitionId)
-        {
-            partitionIdProp.setValue(partitionId);
-            return this;
-        }
+    public int getPort() {
+      return portProp.getValue();
     }
+
+    public BrokerDto setPort(final int port) {
+      portProp.setValue(port);
+      return this;
+    }
+
+    public ValueArray<PartitionDto> partitionStates() {
+      return partitionStatesProp;
+    }
+  }
+
+  public static class PartitionDto extends UnpackedObject {
+    private final EnumProperty<RaftState> stateProp = new EnumProperty<>("state", RaftState.class);
+    private final StringProperty topicNameProp = new StringProperty("topicName");
+    private final IntegerProperty partitionIdProp = new IntegerProperty("partitionId");
+    private final IntegerProperty replicationFactorProp = new IntegerProperty("replicationFactor");
+
+    public PartitionDto() {
+      this.declareProperty(stateProp)
+          .declareProperty(topicNameProp)
+          .declareProperty(partitionIdProp)
+          .declareProperty(replicationFactorProp);
+    }
+
+    public RaftState getState() {
+      return stateProp.getValue();
+    }
+
+    public PartitionDto setState(RaftState eventType) {
+      this.stateProp.setValue(eventType);
+      return this;
+    }
+
+    public PartitionDto setTopicName(
+        final DirectBuffer topicName, final int offset, final int length) {
+      this.topicNameProp.setValue(topicName, offset, length);
+      return this;
+    }
+
+    public int getPartitionId() {
+      return partitionIdProp.getValue();
+    }
+
+    public int getReplicationFactor() {
+      return replicationFactorProp.getValue();
+    }
+
+    public PartitionDto setReplicationFactor(int replicationFactor) {
+      replicationFactorProp.setValue(replicationFactor);
+      return this;
+    }
+
+    public PartitionDto setPartitionId(final int partitionId) {
+      partitionIdProp.setValue(partitionId);
+      return this;
+    }
+  }
 }

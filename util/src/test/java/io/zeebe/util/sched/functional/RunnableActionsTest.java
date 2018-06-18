@@ -23,260 +23,226 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.ActorThread;
+import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.ActorControl;
-import io.zeebe.util.sched.ActorThread;
-import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
+public class RunnableActionsTest {
+  @Rule public ControlledActorSchedulerRule scheduler = new ControlledActorSchedulerRule();
 
-public class RunnableActionsTest
-{
-    @Rule
-    public ControlledActorSchedulerRule scheduler = new ControlledActorSchedulerRule();
-
-    @Test
-    public void shouldInvokeRunFromWithinActor()
-    {
-        // given
-        final Runner runner = new Runner()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                this.doRun();
-            }
+  @Test
+  public void shouldInvokeRunFromWithinActor() {
+    // given
+    final Runner runner =
+        new Runner() {
+          @Override
+          protected void onActorStarted() {
+            this.doRun();
+          }
         };
 
-        scheduler.submitActor(runner);
+    scheduler.submitActor(runner);
 
-        // when
-        scheduler.workUntilDone();
+    // when
+    scheduler.workUntilDone();
 
-        // then
-        assertThat(runner.runs).isEqualTo(1);
-    }
+    // then
+    assertThat(runner.runs).isEqualTo(1);
+  }
 
-    @Test
-    public void shouldInvokeRunFromNonActorThread()
-    {
-        // given
-        final Runner runner = new Runner();
-        scheduler.submitActor(runner);
+  @Test
+  public void shouldInvokeRunFromNonActorThread() {
+    // given
+    final Runner runner = new Runner();
+    scheduler.submitActor(runner);
 
-        // when
-        runner.doRun();
-        scheduler.workUntilDone();
+    // when
+    runner.doRun();
+    scheduler.workUntilDone();
 
-        // then
-        assertThat(runner.runs).isEqualTo(1);
-    }
+    // then
+    assertThat(runner.runs).isEqualTo(1);
+  }
 
-    @Test
-    public void shouldInvokeRunFromAnotherActor()
-    {
-        // given
-        final Runner runner = new Runner();
-        final Actor invoker = new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                runner.doRun();
-            }
+  @Test
+  public void shouldInvokeRunFromAnotherActor() {
+    // given
+    final Runner runner = new Runner();
+    final Actor invoker =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            runner.doRun();
+          }
         };
 
-        scheduler.submitActor(runner);
-        scheduler.submitActor(invoker);
+    scheduler.submitActor(runner);
+    scheduler.submitActor(invoker);
 
-        // when
-        scheduler.workUntilDone();
+    // when
+    scheduler.workUntilDone();
 
-        // then
-        assertThat(runner.runs).isEqualTo(1);
-    }
+    // then
+    assertThat(runner.runs).isEqualTo(1);
+  }
 
-    @Test
-    public void shouldSubmitRunnableToCorrectActorTask()
-    {
-        // given
-        final List<Actor> actorContext = new ArrayList<>();
-        final Runner runner = new Runner(() -> actorContext.add(ActorThread.current().getCurrentTask().getActor()));
+  @Test
+  public void shouldSubmitRunnableToCorrectActorTask() {
+    // given
+    final List<Actor> actorContext = new ArrayList<>();
+    final Runner runner =
+        new Runner(() -> actorContext.add(ActorThread.current().getCurrentTask().getActor()));
 
-        final Actor invoker = new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                runner.doRun();
-            }
+    final Actor invoker =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            runner.doRun();
+          }
         };
 
-        scheduler.submitActor(runner);
-        scheduler.submitActor(invoker);
+    scheduler.submitActor(runner);
+    scheduler.submitActor(invoker);
 
-        // when
-        scheduler.workUntilDone();
+    // when
+    scheduler.workUntilDone();
 
-        // then
-        assertThat(actorContext).containsExactly(runner);
-    }
+    // then
+    assertThat(actorContext).containsExactly(runner);
+  }
 
-    @Test
-    public void shouldRunUntilDoneCalled()
-    {
-        // given
-        final Runner actor = new Runner();
-        final Consumer<ActorControl> runnable = (ctr) ->
-        {
-            if (actor.runs == 5)
-            {
-                ctr.done();
-            }
-            else
-            {
-                ctr.yield();
-            }
+  @Test
+  public void shouldRunUntilDoneCalled() {
+    // given
+    final Runner actor = new Runner();
+    final Consumer<ActorControl> runnable =
+        (ctr) -> {
+          if (actor.runs == 5) {
+            ctr.done();
+          } else {
+            ctr.yield();
+          }
         };
 
-        // when
-        scheduler.submitActor(actor);
-        actor.doRunUntilDone(runnable);
-        scheduler.workUntilDone();
+    // when
+    scheduler.submitActor(actor);
+    actor.doRunUntilDone(runnable);
+    scheduler.workUntilDone();
 
-        // then
-        assertThat(actor.runs == 5);
-    }
+    // then
+    assertThat(actor.runs == 5);
+  }
 
-    @Test
-    public void shouldNotInterruptRunUntilDone()
-    {
-        // given
-        final Runnable otherAction = mock(Runnable.class);
-        final Runner actor = new Runner();
-        final Consumer<ActorControl> runUntilDoneAction = spy(new Consumer<ActorControl>()
-        {
-            @Override
-            public void accept(ActorControl ctr)
-            {
+  @Test
+  public void shouldNotInterruptRunUntilDone() {
+    // given
+    final Runnable otherAction = mock(Runnable.class);
+    final Runner actor = new Runner();
+    final Consumer<ActorControl> runUntilDoneAction =
+        spy(
+            new Consumer<ActorControl>() {
+              @Override
+              public void accept(ActorControl ctr) {
                 ctr.run(otherAction); // does not interrupt this action
 
-                if (actor.runs == 5)
-                {
-                    ctr.done();
+                if (actor.runs == 5) {
+                  ctr.done();
+                } else {
+                  ctr.yield();
                 }
-                else
-                {
-                    ctr.yield();
-                }
+              }
+            });
+    doCallRealMethod().when(runUntilDoneAction).accept(any());
 
+    // when
+    scheduler.submitActor(actor);
+    actor.doRunUntilDone(runUntilDoneAction);
+    scheduler.workUntilDone();
+
+    // then
+    final InOrder inOrder = inOrder(runUntilDoneAction, otherAction);
+    inOrder.verify(runUntilDoneAction, times(5)).accept(any());
+    inOrder.verify(otherAction, times(5)).run();
+    inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
+  public void shouldSubmitFromAnotherActor() {
+    // given
+    final AtomicInteger invocations = new AtomicInteger();
+    final AtomicBoolean exceptionOnSubmit = new AtomicBoolean(false);
+
+    final Submitter submitter = new Submitter();
+
+    final Actor actor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            try {
+              submitter.submit(invocations::incrementAndGet);
+            } catch (Exception e) {
+              exceptionOnSubmit.set(true);
             }
-        });
-        doCallRealMethod().when(runUntilDoneAction).accept(any());
-
-        // when
-        scheduler.submitActor(actor);
-        actor.doRunUntilDone(runUntilDoneAction);
-        scheduler.workUntilDone();
-
-        // then
-        final InOrder inOrder = inOrder(runUntilDoneAction, otherAction);
-        inOrder.verify(runUntilDoneAction, times(5)).accept(any());
-        inOrder.verify(otherAction, times(5)).run();
-        inOrder.verifyNoMoreInteractions();
-    }
-
-    @Test
-    public void shouldSubmitFromAnotherActor()
-    {
-        // given
-        final AtomicInteger invocations = new AtomicInteger();
-        final AtomicBoolean exceptionOnSubmit = new AtomicBoolean(false);
-
-        final Submitter submitter = new Submitter();
-
-        final Actor actor = new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                try
-                {
-                    submitter.submit(invocations::incrementAndGet);
-                }
-                catch (Exception e)
-                {
-                    exceptionOnSubmit.set(true);
-                }
-            }
+          }
         };
 
-        scheduler.submitActor(submitter);
-        scheduler.submitActor(actor);
+    scheduler.submitActor(submitter);
+    scheduler.submitActor(actor);
 
-        // when
-        scheduler.workUntilDone();
+    // when
+    scheduler.workUntilDone();
 
-        // then
-        assertThat(invocations).hasValue(1);
-        assertThat(exceptionOnSubmit).isFalse();
+    // then
+    assertThat(invocations).hasValue(1);
+    assertThat(exceptionOnSubmit).isFalse();
+  }
+
+  class Submitter extends Actor {
+    public void submit(Runnable r) {
+      this.actor.submit(r);
+    }
+  }
+
+  class Runner extends Actor {
+    int runs = 0;
+    Runnable onExecution;
+
+    Runner() {
+      this(null);
     }
 
-    class Submitter extends Actor
-    {
-        public void submit(Runnable r)
-        {
-            this.actor.submit(r);
-        }
+    Runner(Runnable onExecution) {
+      this.onExecution = onExecution;
     }
 
-    class Runner extends Actor
-    {
-        int runs = 0;
-        Runnable onExecution;
+    public void doRun() {
+      actor.run(
+          () -> {
+            if (onExecution != null) {
+              onExecution.run();
+            }
+            runs++;
+          });
+    }
 
-        Runner()
-        {
-            this(null);
-        }
-
-        Runner(Runnable onExecution)
-        {
-            this.onExecution = onExecution;
-        }
-
-        public void doRun()
-        {
-            actor.run(() ->
-            {
-                if (onExecution != null)
-                {
-                    onExecution.run();
-                }
-                runs++;
-            });
-        }
-
-        public void doRunUntilDone(Consumer<ActorControl> runnable)
-        {
-            actor.run(() ->
-            {
-                actor.runUntilDone(() ->
-                {
-                    runs++;
-                    runnable.accept(actor);
+    public void doRunUntilDone(Consumer<ActorControl> runnable) {
+      actor.run(
+          () -> {
+            actor.runUntilDone(
+                () -> {
+                  runs++;
+                  runnable.accept(actor);
                 });
-            });
-        }
+          });
     }
-
+  }
 }
-

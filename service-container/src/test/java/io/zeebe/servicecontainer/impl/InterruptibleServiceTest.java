@@ -27,158 +27,142 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class InterruptibleServiceTest
-{
-    @Rule
-    public ControlledActorSchedulerRule actorSchedulerRule = new ControlledActorSchedulerRule();
+public class InterruptibleServiceTest {
+  @Rule public ControlledActorSchedulerRule actorSchedulerRule = new ControlledActorSchedulerRule();
 
-    private ServiceContainer serviceContainer;
+  private ServiceContainer serviceContainer;
 
-    private ServiceName<Object> serviceName;
-    private ServiceName<Object> dependentName;
+  private ServiceName<Object> serviceName;
+  private ServiceName<Object> dependentName;
 
-    @Before
-    public void setup()
-    {
-        serviceContainer = new ServiceContainerImpl(actorSchedulerRule.get());
-        serviceContainer.start();
+  @Before
+  public void setup() {
+    serviceContainer = new ServiceContainerImpl(actorSchedulerRule.get());
+    serviceContainer.start();
 
-        serviceName = ServiceName.newServiceName("service", Object.class);
-        dependentName = ServiceName.newServiceName("dependent", Object.class);
+    serviceName = ServiceName.newServiceName("service", Object.class);
+    dependentName = ServiceName.newServiceName("dependent", Object.class);
+  }
+
+  @Test
+  public void shouldBeInterruptedOnDependentsStopped() {
+    // given
+    final InterruptibleService service = new InterruptibleService(true);
+    final ActorFuture<Object> startFuture =
+        serviceContainer.createService(serviceName, service).dependency(dependentName).install();
+
+    final InterruptibleService dependent = new InterruptibleService(false);
+    serviceContainer.createService(dependentName, dependent).install();
+    actorSchedulerRule.workUntilDone();
+
+    // when
+    dependent.finishStart();
+    actorSchedulerRule.workUntilDone();
+
+    serviceContainer.removeService(dependentName);
+    actorSchedulerRule.workUntilDone();
+
+    // then
+    assertInterrupted(service, startFuture);
+  }
+
+  @Test
+  public void shouldNotBeCompletedIfNotInterruptible() {
+    // given
+    final InterruptibleService service = new InterruptibleService(false);
+
+    final ActorFuture<Object> startFuture =
+        serviceContainer.createService(serviceName, service).install();
+    actorSchedulerRule.workUntilDone();
+
+    // when
+    serviceContainer.removeService(serviceName);
+    actorSchedulerRule.workUntilDone();
+
+    // then
+    assertNotCompleted(startFuture);
+  }
+
+  @Test
+  public void shouldNotBeMarkedAsInterruptedWhenStoppedNormally() {
+    // given
+    final InterruptibleService service = new InterruptibleService(false);
+
+    final ActorFuture<Object> startFuture =
+        serviceContainer.createService(serviceName, service).install();
+    actorSchedulerRule.workUntilDone();
+
+    // when
+    service.finishStart();
+    actorSchedulerRule.workUntilDone();
+
+    serviceContainer.removeService(serviceName);
+    actorSchedulerRule.workUntilDone();
+
+    // then
+    assertCompleted(startFuture);
+    assertThat(service.wasInterrupted).isFalse();
+    assertThat(service.wasStopped).isTrue();
+  }
+
+  @Test
+  public void shouldCompleteExceptionallyIfInterrupted() {
+    // given
+    final InterruptibleService service = new InterruptibleService(true);
+
+    final ActorFuture<Object> startFuture =
+        serviceContainer.createService(serviceName, service).install();
+    actorSchedulerRule.workUntilDone();
+
+    // when
+    serviceContainer.removeService(serviceName);
+    actorSchedulerRule.workUntilDone();
+
+    // then
+    assertInterrupted(service, startFuture);
+  }
+
+  private void assertInterrupted(InterruptibleService service, ActorFuture<?> future) {
+    assertCompleted(future);
+    assertThat(future.getException()).isInstanceOf(ServiceInterruptedException.class);
+    assertThat(service.wasInterrupted).isTrue();
+    assertThat(service.wasStopped).isTrue();
+  }
+
+  static class InterruptibleService implements Service<Object> {
+    CompletableActorFuture<Void> startFuture = new CompletableActorFuture<>();
+    Object value = new Object();
+    boolean isInterruptible;
+    volatile boolean wasInterrupted;
+    volatile boolean wasStopped;
+
+    InterruptibleService(boolean isInterruptible) {
+      this.isInterruptible = isInterruptible;
+      wasInterrupted = false;
+      wasStopped = false;
     }
 
-    @Test
-    public void shouldBeInterruptedOnDependentsStopped()
-    {
-        // given
-        final InterruptibleService service = new InterruptibleService(true);
-        final ActorFuture<Object> startFuture = serviceContainer.createService(serviceName, service)
-            .dependency(dependentName)
-            .install();
-
-        final InterruptibleService dependent = new InterruptibleService(false);
-        serviceContainer.createService(dependentName, dependent).install();
-        actorSchedulerRule.workUntilDone();
-
-        // when
-        dependent.finishStart();
-        actorSchedulerRule.workUntilDone();
-
-        serviceContainer.removeService(dependentName);
-        actorSchedulerRule.workUntilDone();
-
-        // then
-        assertInterrupted(service, startFuture);
+    @Override
+    public void start(ServiceStartContext startContext) {
+      startContext.async(startFuture, isInterruptible);
     }
 
-    @Test
-    public void shouldNotBeCompletedIfNotInterruptible()
-    {
-        // given
-        final InterruptibleService service = new InterruptibleService(false);
+    @Override
+    public void stop(ServiceStopContext stopContext) {
+      if (stopContext.wasInterrupted()) {
+        wasInterrupted = true;
+      }
 
-        final ActorFuture<Object> startFuture = serviceContainer.createService(serviceName, service)
-            .install();
-        actorSchedulerRule.workUntilDone();
-
-        // when
-        serviceContainer.removeService(serviceName);
-        actorSchedulerRule.workUntilDone();
-
-        // then
-        assertNotCompleted(startFuture);
+      wasStopped = true;
     }
 
-    @Test
-    public void shouldNotBeMarkedAsInterruptedWhenStoppedNormally()
-    {
-        // given
-        final InterruptibleService service = new InterruptibleService(false);
-
-        final ActorFuture<Object> startFuture = serviceContainer.createService(serviceName, service)
-            .install();
-        actorSchedulerRule.workUntilDone();
-
-        // when
-        service.finishStart();
-        actorSchedulerRule.workUntilDone();
-
-        serviceContainer.removeService(serviceName);
-        actorSchedulerRule.workUntilDone();
-
-        // then
-        assertCompleted(startFuture);
-        assertThat(service.wasInterrupted).isFalse();
-        assertThat(service.wasStopped).isTrue();
+    public void finishStart() {
+      startFuture.complete(null);
     }
 
-    @Test
-    public void shouldCompleteExceptionallyIfInterrupted()
-    {
-        // given
-        final InterruptibleService service = new InterruptibleService(true);
-
-        final ActorFuture<Object> startFuture = serviceContainer.createService(serviceName, service)
-            .install();
-        actorSchedulerRule.workUntilDone();
-
-        // when
-        serviceContainer.removeService(serviceName);
-        actorSchedulerRule.workUntilDone();
-
-        // then
-        assertInterrupted(service, startFuture);
+    @Override
+    public Object get() {
+      return value;
     }
-
-    private void assertInterrupted(InterruptibleService service, ActorFuture<?> future)
-    {
-        assertCompleted(future);
-        assertThat(future.getException()).isInstanceOf(ServiceInterruptedException.class);
-        assertThat(service.wasInterrupted).isTrue();
-        assertThat(service.wasStopped).isTrue();
-    }
-
-    static class InterruptibleService implements Service<Object>
-    {
-        CompletableActorFuture<Void> startFuture = new CompletableActorFuture<>();
-        Object value = new Object();
-        boolean isInterruptible;
-        volatile boolean wasInterrupted;
-        volatile boolean wasStopped;
-
-        InterruptibleService(boolean isInterruptible)
-        {
-            this.isInterruptible = isInterruptible;
-            wasInterrupted = false;
-            wasStopped = false;
-        }
-
-        @Override
-        public void start(ServiceStartContext startContext)
-        {
-            startContext.async(startFuture, isInterruptible);
-        }
-
-        @Override
-        public void stop(ServiceStopContext stopContext)
-        {
-            if (stopContext.wasInterrupted())
-            {
-                wasInterrupted = true;
-            }
-
-            wasStopped = true;
-        }
-
-        public void finishStart()
-        {
-            startFuture.complete(null);
-        }
-
-        @Override
-        public Object get()
-        {
-            return value;
-        }
-    }
+  }
 }

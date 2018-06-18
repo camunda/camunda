@@ -20,52 +20,44 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class RequestResponseHeaderDescriptor
-{
-    public static final int REQUEST_ID_OFFSET;
-    public static final int HEADER_LENGTH;
+public class RequestResponseHeaderDescriptor {
+  public static final int REQUEST_ID_OFFSET;
+  public static final int HEADER_LENGTH;
 
-    static
-    {
-        int offset = 0;
+  static {
+    int offset = 0;
 
-        REQUEST_ID_OFFSET = offset;
-        offset += SIZE_OF_LONG;
+    REQUEST_ID_OFFSET = offset;
+    offset += SIZE_OF_LONG;
 
-        HEADER_LENGTH = offset;
-    }
+    HEADER_LENGTH = offset;
+  }
 
-    public static int framedLength(int messageLength)
-    {
-        return HEADER_LENGTH + messageLength;
-    }
+  public static int framedLength(int messageLength) {
+    return HEADER_LENGTH + messageLength;
+  }
 
-    public static int headerLength()
-    {
-        return HEADER_LENGTH;
-    }
+  public static int headerLength() {
+    return HEADER_LENGTH;
+  }
 
-    public static int requestIdOffset(int offset)
-    {
-        return offset + REQUEST_ID_OFFSET;
-    }
+  public static int requestIdOffset(int offset) {
+    return offset + REQUEST_ID_OFFSET;
+  }
 
-    protected UnsafeBuffer buffer = new UnsafeBuffer(0, 0);
+  protected UnsafeBuffer buffer = new UnsafeBuffer(0, 0);
 
-    public RequestResponseHeaderDescriptor wrap(DirectBuffer buffer, int offset)
-    {
-        this.buffer.wrap(buffer, offset, HEADER_LENGTH);
-        return this;
-    }
+  public RequestResponseHeaderDescriptor wrap(DirectBuffer buffer, int offset) {
+    this.buffer.wrap(buffer, offset, HEADER_LENGTH);
+    return this;
+  }
 
-    public RequestResponseHeaderDescriptor requestId(long requestId)
-    {
-        buffer.putLong(REQUEST_ID_OFFSET, requestId);
-        return this;
-    }
+  public RequestResponseHeaderDescriptor requestId(long requestId) {
+    buffer.putLong(REQUEST_ID_OFFSET, requestId);
+    return this;
+  }
 
-    public long requestId()
-    {
-        return buffer.getLong(REQUEST_ID_OFFSET);
-    }
+  public long requestId() {
+    return buffer.getLong(REQUEST_ID_OFFSET);
+  }
 }

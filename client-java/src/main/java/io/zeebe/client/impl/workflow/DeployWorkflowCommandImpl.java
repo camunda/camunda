@@ -17,15 +17,6 @@ package io.zeebe.client.impl.workflow;
 
 import static io.zeebe.util.EnsureUtil.ensureNotNull;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-
 import io.zeebe.client.api.commands.DeployWorkflowCommandStep1;
 import io.zeebe.client.api.commands.DeployWorkflowCommandStep1.DeployWorkflowCommandBuilderStep2;
 import io.zeebe.client.api.commands.DeploymentResource;
@@ -42,140 +33,132 @@ import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.util.StreamUtil;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
-public class DeployWorkflowCommandImpl extends CommandImpl<DeploymentEvent> implements DeployWorkflowCommandStep1, DeployWorkflowCommandBuilderStep2
-{
-    private final DeploymentCommandImpl command = new DeploymentCommandImpl(DeploymentIntent.CREATE);
+public class DeployWorkflowCommandImpl extends CommandImpl<DeploymentEvent>
+    implements DeployWorkflowCommandStep1, DeployWorkflowCommandBuilderStep2 {
+  private final DeploymentCommandImpl command = new DeploymentCommandImpl(DeploymentIntent.CREATE);
 
-    private final List<DeploymentResource> resources = new ArrayList<>();
+  private final List<DeploymentResource> resources = new ArrayList<>();
 
-    private final BpmnModelApi bpmn = new BpmnModelApi();
+  private final BpmnModelApi bpmn = new BpmnModelApi();
 
-    public DeployWorkflowCommandImpl(final RequestManager commandManager, String topic)
-    {
-        super(commandManager);
+  public DeployWorkflowCommandImpl(final RequestManager commandManager, String topic) {
+    super(commandManager);
 
-        // send command always to the system topic
-        this.command.setTopicName(Protocol.SYSTEM_TOPIC);
-        // set the topic to deploy to
-        this.command.setDeploymentTopic(topic);
+    // send command always to the system topic
+    this.command.setTopicName(Protocol.SYSTEM_TOPIC);
+    // set the topic to deploy to
+    this.command.setDeploymentTopic(topic);
+  }
+
+  @Override
+  public DeployWorkflowCommandBuilderStep2 addResourceBytes(
+      final byte[] resource, String resourceName) {
+    final DeploymentResourceImpl deploymentResource = new DeploymentResourceImpl();
+
+    deploymentResource.setResource(resource);
+    deploymentResource.setResourceName(resourceName);
+    deploymentResource.setResourceType(getResourceType(resourceName));
+
+    resources.add(deploymentResource);
+
+    return this;
+  }
+
+  @Override
+  public DeployWorkflowCommandBuilderStep2 addResourceString(
+      final String resource, Charset charset, String resourceName) {
+    return addResourceBytes(resource.getBytes(charset), resourceName);
+  }
+
+  @Override
+  public DeployWorkflowCommandBuilderStep2 addResourceStringUtf8(
+      String resourceString, String resourceName) {
+    return addResourceString(resourceString, StandardCharsets.UTF_8, resourceName);
+  }
+
+  @Override
+  public DeployWorkflowCommandBuilderStep2 addResourceStream(
+      final InputStream resourceStream, String resourceName) {
+    ensureNotNull("resource stream", resourceStream);
+
+    try {
+      final byte[] bytes = StreamUtil.read(resourceStream);
+
+      return addResourceBytes(bytes, resourceName);
+    } catch (final IOException e) {
+      final String exceptionMsg =
+          String.format("Cannot deploy bpmn resource from stream. %s", e.getMessage());
+      throw new ClientException(exceptionMsg, e);
     }
+  }
 
-    @Override
-    public DeployWorkflowCommandBuilderStep2 addResourceBytes(final byte[] resource, String resourceName)
-    {
-        final DeploymentResourceImpl deploymentResource = new DeploymentResourceImpl();
+  @Override
+  public DeployWorkflowCommandBuilderStep2 addResourceFromClasspath(
+      final String classpathResource) {
+    ensureNotNull("classpath resource", classpathResource);
 
-        deploymentResource.setResource(resource);
-        deploymentResource.setResourceName(resourceName);
-        deploymentResource.setResourceType(getResourceType(resourceName));
+    try (InputStream resourceStream =
+        getClass().getClassLoader().getResourceAsStream(classpathResource)) {
+      if (resourceStream != null) {
+        return addResourceStream(resourceStream, classpathResource);
+      } else {
+        throw new FileNotFoundException(classpathResource);
+      }
 
-        resources.add(deploymentResource);
-
-        return this;
+    } catch (final IOException e) {
+      final String exceptionMsg =
+          String.format("Cannot deploy resource from classpath. %s", e.getMessage());
+      throw new RuntimeException(exceptionMsg, e);
     }
+  }
 
-    @Override
-    public DeployWorkflowCommandBuilderStep2 addResourceString(final String resource, Charset charset, String resourceName)
-    {
-        return addResourceBytes(resource.getBytes(charset), resourceName);
+  @Override
+  public DeployWorkflowCommandBuilderStep2 addResourceFile(final String filename) {
+    ensureNotNull("filename", filename);
+
+    try (InputStream resourceStream = new FileInputStream(filename)) {
+      return addResourceStream(resourceStream, filename);
+    } catch (final IOException e) {
+      final String exceptionMsg =
+          String.format("Cannot deploy resource from file. %s", e.getMessage());
+      throw new RuntimeException(exceptionMsg, e);
     }
+  }
 
-    @Override
-    public DeployWorkflowCommandBuilderStep2 addResourceStringUtf8(String resourceString, String resourceName)
-    {
-        return addResourceString(resourceString, StandardCharsets.UTF_8, resourceName);
+  @Override
+  public DeployWorkflowCommandBuilderStep2 addWorkflowModel(
+      final WorkflowDefinition workflowDefinition, String resourceName) {
+    ensureNotNull("workflow model", workflowDefinition);
+
+    final String bpmnXml = bpmn.convertToString(workflowDefinition);
+    return addResourceStringUtf8(bpmnXml, resourceName);
+  }
+
+  @Override
+  public RecordImpl getCommand() {
+    command.setResources(resources);
+    return command;
+  }
+
+  private ResourceType getResourceType(String resourceName) {
+    resourceName = resourceName.toLowerCase();
+
+    if (resourceName.endsWith(".yaml")) {
+      return ResourceType.YAML_WORKFLOW;
+    } else if (resourceName.endsWith(".bpmn") || resourceName.endsWith(".bpmn20.xml")) {
+      return ResourceType.BPMN_XML;
+    } else {
+      throw new RuntimeException(
+          String.format("Cannot resolve type of resource '%s'.", resourceName));
     }
-
-    @Override
-    public DeployWorkflowCommandBuilderStep2 addResourceStream(final InputStream resourceStream, String resourceName)
-    {
-        ensureNotNull("resource stream", resourceStream);
-
-        try
-        {
-            final byte[] bytes = StreamUtil.read(resourceStream);
-
-            return addResourceBytes(bytes, resourceName);
-        }
-        catch (final IOException e)
-        {
-            final String exceptionMsg = String.format("Cannot deploy bpmn resource from stream. %s", e.getMessage());
-            throw new ClientException(exceptionMsg, e);
-        }
-    }
-
-    @Override
-    public DeployWorkflowCommandBuilderStep2 addResourceFromClasspath(final String classpathResource)
-    {
-        ensureNotNull("classpath resource", classpathResource);
-
-        try (InputStream resourceStream = getClass().getClassLoader().getResourceAsStream(classpathResource))
-        {
-            if (resourceStream != null)
-            {
-                return addResourceStream(resourceStream, classpathResource);
-            }
-            else
-            {
-                throw new FileNotFoundException(classpathResource);
-            }
-
-        }
-        catch (final IOException e)
-        {
-            final String exceptionMsg = String.format("Cannot deploy resource from classpath. %s", e.getMessage());
-            throw new RuntimeException(exceptionMsg, e);
-        }
-    }
-
-    @Override
-    public DeployWorkflowCommandBuilderStep2 addResourceFile(final String filename)
-    {
-        ensureNotNull("filename", filename);
-
-        try (InputStream resourceStream = new FileInputStream(filename))
-        {
-            return addResourceStream(resourceStream, filename);
-        }
-        catch (final IOException e)
-        {
-            final String exceptionMsg = String.format("Cannot deploy resource from file. %s", e.getMessage());
-            throw new RuntimeException(exceptionMsg, e);
-        }
-    }
-
-    @Override
-    public DeployWorkflowCommandBuilderStep2 addWorkflowModel(final WorkflowDefinition workflowDefinition, String resourceName)
-    {
-        ensureNotNull("workflow model", workflowDefinition);
-
-        final String bpmnXml = bpmn.convertToString(workflowDefinition);
-        return addResourceStringUtf8(bpmnXml, resourceName);
-    }
-
-    @Override
-    public RecordImpl getCommand()
-    {
-        command.setResources(resources);
-        return command;
-    }
-
-    private ResourceType getResourceType(String resourceName)
-    {
-        resourceName = resourceName.toLowerCase();
-
-        if (resourceName.endsWith(".yaml"))
-        {
-            return ResourceType.YAML_WORKFLOW;
-        }
-        else if (resourceName.endsWith(".bpmn") || resourceName.endsWith(".bpmn20.xml"))
-        {
-            return ResourceType.BPMN_XML;
-        }
-        else
-        {
-            throw new RuntimeException(String.format("Cannot resolve type of resource '%s'.", resourceName));
-        }
-    }
+  }
 }

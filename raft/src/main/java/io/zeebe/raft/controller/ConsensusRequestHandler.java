@@ -19,37 +19,23 @@ import io.zeebe.raft.Raft;
 import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 
-public interface ConsensusRequestHandler
-{
+public interface ConsensusRequestHandler {
 
-    /**
-     * The name of the request type, i.e. vote or poll.
-     */
-    String requestName();
+  /** The name of the request type, i.e. vote or poll. */
+  String requestName();
 
-    /**
-     * Creates specific request.
-     */
-    BufferWriter createRequest(Raft raft, long lastEventPosition, int lastTerm);
+  /** Creates specific request. */
+  BufferWriter createRequest(Raft raft, long lastEventPosition, int lastTerm);
 
-    /**
-     * Checks if the response was granted, quorum was reached.
-     */
-    boolean isResponseGranted(Raft raft, DirectBuffer responseBuffer);
+  /** Checks if the response was granted, quorum was reached. */
+  boolean isResponseGranted(Raft raft, DirectBuffer responseBuffer);
 
-    /**
-     * Callback if a consensus was reached.
-     */
-    void consensusGranted(Raft raft);
+  /** Callback if a consensus was reached. */
+  void consensusGranted(Raft raft);
 
-    /**
-     * Callback if a consensus was not reached.
-     */
-    void consensusFailed(Raft raft);
+  /** Callback if a consensus was not reached. */
+  void consensusFailed(Raft raft);
 
-    /**
-     * Reset the handler.
-     */
-    void reset();
-
+  /** Reset the handler. */
+  void reset();
 }

@@ -25,54 +25,47 @@ import io.zeebe.clustering.management.ListSnapshotsRequestEncoder;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class ListSnapshotsRequest extends SbeBufferWriterReader<ListSnapshotsRequestEncoder, ListSnapshotsRequestDecoder>
-{
-    private final ListSnapshotsRequestDecoder bodyDecoder = new ListSnapshotsRequestDecoder();
-    private final ListSnapshotsRequestEncoder bodyEncoder = new ListSnapshotsRequestEncoder();
+public class ListSnapshotsRequest
+    extends SbeBufferWriterReader<ListSnapshotsRequestEncoder, ListSnapshotsRequestDecoder> {
+  private final ListSnapshotsRequestDecoder bodyDecoder = new ListSnapshotsRequestDecoder();
+  private final ListSnapshotsRequestEncoder bodyEncoder = new ListSnapshotsRequestEncoder();
 
-    private int partitionId = partitionIdNullValue();
+  private int partitionId = partitionIdNullValue();
 
-    public int getPartitionId()
-    {
-        return partitionId;
-    }
+  public int getPartitionId() {
+    return partitionId;
+  }
 
-    public ListSnapshotsRequest setPartitionId(final int partitionId)
-    {
-        this.partitionId = partitionId;
-        return this;
-    }
+  public ListSnapshotsRequest setPartitionId(final int partitionId) {
+    this.partitionId = partitionId;
+    return this;
+  }
 
-    @Override
-    public void reset()
-    {
-        super.reset();
-        this.partitionId = partitionIdNullValue();
-    }
+  @Override
+  public void reset() {
+    super.reset();
+    this.partitionId = partitionIdNullValue();
+  }
 
-    @Override
-    protected ListSnapshotsRequestEncoder getBodyEncoder()
-    {
-        return bodyEncoder;
-    }
+  @Override
+  protected ListSnapshotsRequestEncoder getBodyEncoder() {
+    return bodyEncoder;
+  }
 
-    @Override
-    protected ListSnapshotsRequestDecoder getBodyDecoder()
-    {
-        return bodyDecoder;
-    }
+  @Override
+  protected ListSnapshotsRequestDecoder getBodyDecoder() {
+    return bodyDecoder;
+  }
 
-    @Override
-    public void wrap(DirectBuffer buffer, int offset, int length)
-    {
-        super.wrap(buffer, offset, length);
-        partitionId = bodyDecoder.partitionId();
-    }
+  @Override
+  public void wrap(DirectBuffer buffer, int offset, int length) {
+    super.wrap(buffer, offset, length);
+    partitionId = bodyDecoder.partitionId();
+  }
 
-    @Override
-    public void write(MutableDirectBuffer buffer, int offset)
-    {
-        super.write(buffer, offset);
-        bodyEncoder.partitionId(partitionId);
-    }
+  @Override
+  public void write(MutableDirectBuffer buffer, int offset) {
+    super.write(buffer, offset);
+    bodyEncoder.partitionId(partitionId);
+  }
 }

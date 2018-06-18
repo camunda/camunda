@@ -22,74 +22,60 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.rules.ExternalResource;
 
-public class LogStreamReaderRule extends ExternalResource
-{
+public class LogStreamReaderRule extends ExternalResource {
 
-    private final LogStreamRule logStreamRule;
-    private final LogStreamReader logStreamReader;
+  private final LogStreamRule logStreamRule;
+  private final LogStreamReader logStreamReader;
 
-    public LogStreamReaderRule(final LogStreamRule logStreamRule)
-    {
-        this.logStreamRule = logStreamRule;
-        logStreamReader = new BufferedLogStreamReader();
+  public LogStreamReaderRule(final LogStreamRule logStreamRule) {
+    this.logStreamRule = logStreamRule;
+    logStreamReader = new BufferedLogStreamReader();
+  }
+
+  @Override
+  protected void before() {
+    final LogStream logStream = logStreamRule.getLogStream();
+    logStreamReader.wrap(logStream);
+  }
+
+  @Override
+  protected void after() {
+    logStreamReader.close();
+  }
+
+  public LogStreamReader getLogStreamReader() {
+    return logStreamReader;
+  }
+
+  public LoggedEvent assertEvents(final int eventCount, final DirectBuffer event) {
+    LoggedEvent lastEvent = null;
+
+    for (int i = 1; i <= eventCount; i++) {
+      lastEvent = nextEvent();
+      assertThat(lastEvent.getKey()).isEqualTo(i);
+      assertThat(eventValue(lastEvent)).isEqualTo(event);
     }
 
-    @Override
-    protected void before()
-    {
-        final LogStream logStream = logStreamRule.getLogStream();
-        logStreamReader.wrap(logStream);
+    return lastEvent;
+  }
+
+  public LoggedEvent nextEvent() {
+    assertThat(logStreamReader.hasNext()).isTrue();
+    return logStreamReader.next();
+  }
+
+  public LoggedEvent readEventAtPosition(long position) {
+    while (logStreamReader.hasNext()) {
+      final LoggedEvent event = logStreamReader.next();
+      if (event.getPosition() == position) {
+        return event;
+      }
     }
+    return null;
+  }
 
-    @Override
-    protected void after()
-    {
-        logStreamReader.close();
-    }
-
-    public LogStreamReader getLogStreamReader()
-    {
-        return logStreamReader;
-    }
-
-    public LoggedEvent assertEvents(final int eventCount, final DirectBuffer event)
-    {
-        LoggedEvent lastEvent = null;
-
-        for (int i = 1; i <= eventCount; i++)
-        {
-            lastEvent = nextEvent();
-            assertThat(lastEvent.getKey()).isEqualTo(i);
-            assertThat(eventValue(lastEvent)).isEqualTo(event);
-        }
-
-        return lastEvent;
-    }
-
-    public LoggedEvent nextEvent()
-    {
-        assertThat(logStreamReader.hasNext()).isTrue();
-        return logStreamReader.next();
-    }
-
-    public LoggedEvent readEventAtPosition(long position)
-    {
-        while (logStreamReader.hasNext())
-        {
-            final LoggedEvent event = logStreamReader.next();
-            if (event.getPosition() == position)
-            {
-                return event;
-            }
-        }
-        return null;
-    }
-
-    private DirectBuffer eventValue(final LoggedEvent event)
-    {
-        assertThat(event).isNotNull();
-        return new UnsafeBuffer(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
-
-    }
-
+  private DirectBuffer eventValue(final LoggedEvent event) {
+    assertThat(event).isNotNull();
+    return new UnsafeBuffer(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
+  }
 }

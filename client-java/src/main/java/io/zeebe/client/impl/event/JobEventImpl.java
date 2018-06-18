@@ -23,42 +23,37 @@ import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.record.JobRecordImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 
-public class JobEventImpl extends JobRecordImpl implements JobEvent
-{
-    public JobEventImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper)
-    {
-        super(objectMapper, RecordType.EVENT);
-    }
+public class JobEventImpl extends JobRecordImpl implements JobEvent {
+  public JobEventImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper) {
+    super(objectMapper, RecordType.EVENT);
+  }
 
-    @JsonIgnore
-    @Override
-    public JobState getState()
-    {
-        return JobState.valueOf(getMetadata().getIntent());
-    }
+  @JsonIgnore
+  @Override
+  public JobState getState() {
+    return JobState.valueOf(getMetadata().getIntent());
+  }
 
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("Job [state=");
-        builder.append(getState());
-        builder.append(", type=");
-        builder.append(getType());
-        builder.append(", retries=");
-        builder.append(getRetries());
-        builder.append(", worker=");
-        builder.append(getWorker());
-        builder.append(", deadline=");
-        builder.append(getDeadline());
-        builder.append(", headers=");
-        builder.append(getHeaders());
-        builder.append(", customHeaders=");
-        builder.append(getCustomHeaders());
-        builder.append(", payload=");
-        builder.append(getPayload());
-        builder.append("]");
-        return builder.toString();
-    }
-
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("Job [state=");
+    builder.append(getState());
+    builder.append(", type=");
+    builder.append(getType());
+    builder.append(", retries=");
+    builder.append(getRetries());
+    builder.append(", worker=");
+    builder.append(getWorker());
+    builder.append(", deadline=");
+    builder.append(getDeadline());
+    builder.append(", headers=");
+    builder.append(getHeaders());
+    builder.append(", customHeaders=");
+    builder.append(getCustomHeaders());
+    builder.append(", payload=");
+    builder.append(getPayload());
+    builder.append("]");
+    return builder.toString();
+  }
 }

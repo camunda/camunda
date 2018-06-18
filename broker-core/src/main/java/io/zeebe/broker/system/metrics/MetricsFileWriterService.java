@@ -25,38 +25,34 @@ import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.SchedulingHints;
 
-public class MetricsFileWriterService implements Service<MetricsFileWriter>
-{
-    private MetricsFileWriter metricsFileWriter;
-    private MetricsCfg configuration;
+public class MetricsFileWriterService implements Service<MetricsFileWriter> {
+  private MetricsFileWriter metricsFileWriter;
+  private MetricsCfg configuration;
 
-    public MetricsFileWriterService(MetricsCfg cfg)
-    {
-        this.configuration = cfg;
-    }
+  public MetricsFileWriterService(MetricsCfg cfg) {
+    this.configuration = cfg;
+  }
 
-    @Override
-    public void start(ServiceStartContext startContext)
-    {
-        final ActorScheduler scheduler = startContext.getScheduler();
-        final MetricsManager metricsManager = startContext.getScheduler().getMetricsManager();
+  @Override
+  public void start(ServiceStartContext startContext) {
+    final ActorScheduler scheduler = startContext.getScheduler();
+    final MetricsManager metricsManager = startContext.getScheduler().getMetricsManager();
 
-        final String metricsFileName = configuration.getFile();
+    final String metricsFileName = configuration.getFile();
 
-        metricsFileWriter = new MetricsFileWriter(configuration.getReportingIntervalDuration(), metricsFileName, metricsManager);
-        startContext.async(scheduler.submitActor(metricsFileWriter, SchedulingHints.isIoBound(0)));
-    }
+    metricsFileWriter =
+        new MetricsFileWriter(
+            configuration.getReportingIntervalDuration(), metricsFileName, metricsManager);
+    startContext.async(scheduler.submitActor(metricsFileWriter, SchedulingHints.isIoBound(0)));
+  }
 
-    @Override
-    public void stop(ServiceStopContext stopContext)
-    {
-        stopContext.async(metricsFileWriter.close());
-    }
+  @Override
+  public void stop(ServiceStopContext stopContext) {
+    stopContext.async(metricsFileWriter.close());
+  }
 
-    @Override
-    public MetricsFileWriter get()
-    {
-        return metricsFileWriter;
-    }
-
+  @Override
+  public MetricsFileWriter get() {
+    return metricsFileWriter;
+  }
 }

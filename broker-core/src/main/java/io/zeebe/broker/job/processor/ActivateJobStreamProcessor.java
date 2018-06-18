@@ -37,209 +37,184 @@ import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
 
-public class ActivateJobStreamProcessor implements TypedRecordProcessor<JobRecord>, StreamProcessorLifecycleAware
-{
-    protected final CreditsRequestBuffer creditsBuffer = new CreditsRequestBuffer(JobSubscriptionManager.NUM_CONCURRENT_REQUESTS);
+public class ActivateJobStreamProcessor
+    implements TypedRecordProcessor<JobRecord>, StreamProcessorLifecycleAware {
+  protected final CreditsRequestBuffer creditsBuffer =
+      new CreditsRequestBuffer(JobSubscriptionManager.NUM_CONCURRENT_REQUESTS);
 
-    private final JobSubscriptions subscriptions = new JobSubscriptions(8);
-    private final SubscriptionIterator jobDistributionIterator;
+  private final JobSubscriptions subscriptions = new JobSubscriptions(8);
+  private final SubscriptionIterator jobDistributionIterator;
 
-    private final DirectBuffer subscribedJobType;
-    private ActorControl actor;
-    private StreamProcessorContext context;
+  private final DirectBuffer subscribedJobType;
+  private ActorControl actor;
+  private StreamProcessorContext context;
 
-    private JobSubscription selectedSubscriber;
-    private ChannelSubscription creditsSubscription;
+  private JobSubscription selectedSubscriber;
+  private ChannelSubscription creditsSubscription;
 
-    public ActivateJobStreamProcessor(DirectBuffer jobType)
-    {
-        this.subscribedJobType = jobType;
-        this.jobDistributionIterator = subscriptions.iterator();
+  public ActivateJobStreamProcessor(DirectBuffer jobType) {
+    this.subscribedJobType = jobType;
+    this.jobDistributionIterator = subscriptions.iterator();
+  }
+
+  public DirectBuffer getSubscriptedJobType() {
+    return subscribedJobType;
+  }
+
+  @Override
+  public void onOpen(TypedStreamProcessor streamProcessor) {
+    this.context = streamProcessor.getStreamProcessorContext();
+    this.actor = context.getActorControl();
+    creditsSubscription = actor.consume(creditsBuffer, this::consumeCreditsRequest);
+
+    // activate the processor while adding the first subscription
+    context.suspendController();
+  }
+
+  @Override
+  public void onClose() {
+    if (creditsSubscription != null) {
+      creditsSubscription.cancel();
+      creditsSubscription = null;
+    }
+  }
+
+  public TypedStreamProcessor createStreamProcessor(TypedStreamEnvironment env) {
+    return env.newStreamProcessor()
+        .onEvent(ValueType.JOB, JobIntent.CREATED, this)
+        .onEvent(ValueType.JOB, JobIntent.TIMED_OUT, this)
+        .onEvent(ValueType.JOB, JobIntent.FAILED, this)
+        .onEvent(ValueType.JOB, JobIntent.RETRIES_UPDATED, this)
+        .build();
+  }
+
+  public ActorFuture<Void> addSubscription(JobSubscription subscription) {
+    try {
+      ensureNotNull("subscription", subscription);
+      ensureNotNullOrEmpty("job type", subscription.getJobType());
+      ensureNotNullOrEmpty("worker", subscription.getWorker());
+      ensureGreaterThan("length of worker", subscription.getWorker().capacity(), 0);
+      ensureLessThanOrEqual(
+          "length of worker",
+          subscription.getWorker().capacity(),
+          JobSubscription.WORKER_MAX_LENGTH);
+      ensureGreaterThan("timeout", subscription.getTimeout(), 0);
+      ensureGreaterThan("subscription credits", subscription.getCredits(), 0);
+    } catch (Exception e) {
+      return CompletableActorFuture.completedExceptionally(e);
     }
 
-    public DirectBuffer getSubscriptedJobType()
-    {
-        return subscribedJobType;
+    return actor.call(
+        () -> {
+          subscriptions.addSubscription(subscription);
+
+          context.resumeController();
+        });
+  }
+
+  public ActorFuture<Void> removeSubscription(long subscriberKey) {
+    return actor.call(
+        () -> {
+          subscriptions.removeSubscription(subscriberKey);
+          final boolean isSuspended = subscriptions.isEmpty();
+          if (isSuspended) {
+            context.suspendController();
+          }
+        });
+  }
+
+  private void consumeCreditsRequest() {
+    final CreditsRequest creditsRequest = new CreditsRequest();
+    creditsBuffer.read(
+        (msgTypeId, buffer, index, length) -> {
+          creditsRequest.wrap(buffer, index, length);
+          increaseSubscriptionCredits(creditsRequest);
+        },
+        1);
+  }
+
+  public boolean increaseSubscriptionCreditsAsync(CreditsRequest request) {
+    return request.writeTo(creditsBuffer);
+  }
+
+  protected void increaseSubscriptionCredits(CreditsRequest request) {
+    final long subscriberKey = request.getSubscriberKey();
+    final int credits = request.getCredits();
+
+    subscriptions.addCredits(subscriberKey, credits);
+
+    context.resumeController();
+  }
+
+  protected JobSubscription getNextAvailableSubscription() {
+    JobSubscription nextSubscription = null;
+
+    if (subscriptions.getTotalCredits() > 0) {
+
+      final int subscriptionSize = subscriptions.size();
+      int seenSubscriptions = 0;
+
+      while (seenSubscriptions < subscriptionSize && nextSubscription == null) {
+        if (!jobDistributionIterator.hasNext()) {
+          jobDistributionIterator.reset();
+        }
+
+        final JobSubscription subscription = jobDistributionIterator.next();
+        if (subscription.getCredits() > 0) {
+          nextSubscription = subscription;
+        }
+
+        seenSubscriptions += 1;
+      }
     }
+    return nextSubscription;
+  }
 
-    @Override
-    public void onOpen(TypedStreamProcessor streamProcessor)
-    {
-        this.context = streamProcessor.getStreamProcessorContext();
-        this.actor = context.getActorControl();
-        creditsSubscription = actor.consume(creditsBuffer, this::consumeCreditsRequest);
+  @Override
+  public void processRecord(TypedRecord<JobRecord> event) {
+    selectedSubscriber = null;
 
-        // activate the processor while adding the first subscription
+    final JobRecord jobEvent = event.getValue();
+    final boolean handlesJobType = BufferUtil.equals(jobEvent.getType(), subscribedJobType);
+
+    if (handlesJobType && jobEvent.getRetries() > 0) {
+      selectedSubscriber = getNextAvailableSubscription();
+      if (selectedSubscriber != null) {
+        final long deadline = ActorClock.currentTimeMillis() + selectedSubscriber.getTimeout();
+
+        jobEvent.setDeadline(deadline).setWorker(selectedSubscriber.getWorker());
+      }
+    }
+  }
+
+  @Override
+  public long writeRecord(TypedRecord<JobRecord> event, TypedStreamWriter writer) {
+    long position = 0;
+
+    if (selectedSubscriber != null) {
+      position =
+          writer.writeFollowUpCommand(
+              event.getKey(),
+              JobIntent.ACTIVATE,
+              event.getValue(),
+              this::assignToSelectedSubscriber);
+    }
+    return position;
+  }
+
+  private void assignToSelectedSubscriber(RecordMetadata metadata) {
+    metadata.subscriberKey(selectedSubscriber.getSubscriberKey());
+    metadata.requestStreamId(selectedSubscriber.getStreamId());
+  }
+
+  @Override
+  public void updateState(TypedRecord<JobRecord> event) {
+    if (selectedSubscriber != null) {
+      subscriptions.addCredits(selectedSubscriber.getSubscriberKey(), -1);
+
+      if (subscriptions.getTotalCredits() <= 0) {
         context.suspendController();
+      }
     }
-
-    @Override
-    public void onClose()
-    {
-        if (creditsSubscription != null)
-        {
-            creditsSubscription.cancel();
-            creditsSubscription = null;
-        }
-    }
-
-    public TypedStreamProcessor createStreamProcessor(TypedStreamEnvironment env)
-    {
-        return env.newStreamProcessor()
-                .onEvent(ValueType.JOB, JobIntent.CREATED, this)
-                .onEvent(ValueType.JOB, JobIntent.TIMED_OUT, this)
-                .onEvent(ValueType.JOB, JobIntent.FAILED, this)
-                .onEvent(ValueType.JOB, JobIntent.RETRIES_UPDATED, this)
-                .build();
-    }
-
-    public ActorFuture<Void> addSubscription(JobSubscription subscription)
-    {
-        try
-        {
-            ensureNotNull("subscription", subscription);
-            ensureNotNullOrEmpty("job type", subscription.getJobType());
-            ensureNotNullOrEmpty("worker", subscription.getWorker());
-            ensureGreaterThan("length of worker", subscription.getWorker().capacity(), 0);
-            ensureLessThanOrEqual("length of worker", subscription.getWorker().capacity(), JobSubscription.WORKER_MAX_LENGTH);
-            ensureGreaterThan("timeout", subscription.getTimeout(), 0);
-            ensureGreaterThan("subscription credits", subscription.getCredits(), 0);
-        }
-        catch (Exception e)
-        {
-            return CompletableActorFuture.completedExceptionally(e);
-        }
-
-        return actor.call(() ->
-        {
-            subscriptions.addSubscription(subscription);
-
-            context.resumeController();
-        });
-    }
-
-    public ActorFuture<Void> removeSubscription(long subscriberKey)
-    {
-        return actor.call(() ->
-        {
-            subscriptions.removeSubscription(subscriberKey);
-            final boolean isSuspended = subscriptions.isEmpty();
-            if (isSuspended)
-            {
-                context.suspendController();
-            }
-        });
-    }
-
-    private void consumeCreditsRequest()
-    {
-        final CreditsRequest creditsRequest = new CreditsRequest();
-        creditsBuffer.read((msgTypeId, buffer, index, length) ->
-        {
-            creditsRequest.wrap(buffer, index, length);
-            increaseSubscriptionCredits(creditsRequest);
-        }, 1);
-    }
-
-    public boolean increaseSubscriptionCreditsAsync(CreditsRequest request)
-    {
-        return request.writeTo(creditsBuffer);
-    }
-
-    protected void increaseSubscriptionCredits(CreditsRequest request)
-    {
-        final long subscriberKey = request.getSubscriberKey();
-        final int credits = request.getCredits();
-
-        subscriptions.addCredits(subscriberKey, credits);
-
-        context.resumeController();
-    }
-
-    protected JobSubscription getNextAvailableSubscription()
-    {
-        JobSubscription nextSubscription = null;
-
-        if (subscriptions.getTotalCredits() > 0)
-        {
-
-            final int subscriptionSize = subscriptions.size();
-            int seenSubscriptions = 0;
-
-            while (seenSubscriptions < subscriptionSize && nextSubscription == null)
-            {
-                if (!jobDistributionIterator.hasNext())
-                {
-                    jobDistributionIterator.reset();
-                }
-
-                final JobSubscription subscription = jobDistributionIterator.next();
-                if (subscription.getCredits() > 0)
-                {
-                    nextSubscription = subscription;
-                }
-
-                seenSubscriptions += 1;
-            }
-        }
-        return nextSubscription;
-    }
-
-    @Override
-    public void processRecord(TypedRecord<JobRecord> event)
-    {
-        selectedSubscriber = null;
-
-        final JobRecord jobEvent = event.getValue();
-        final boolean handlesJobType = BufferUtil.equals(jobEvent.getType(), subscribedJobType);
-
-        if (handlesJobType && jobEvent.getRetries() > 0)
-        {
-            selectedSubscriber = getNextAvailableSubscription();
-            if (selectedSubscriber != null)
-            {
-                final long deadline = ActorClock.currentTimeMillis() + selectedSubscriber.getTimeout();
-
-                jobEvent
-                    .setDeadline(deadline)
-                    .setWorker(selectedSubscriber.getWorker());
-            }
-        }
-    }
-
-    @Override
-    public long writeRecord(TypedRecord<JobRecord> event, TypedStreamWriter writer)
-    {
-        long position = 0;
-
-        if (selectedSubscriber != null)
-        {
-            position = writer.writeFollowUpCommand(
-                event.getKey(),
-                JobIntent.ACTIVATE,
-                event.getValue(),
-                this::assignToSelectedSubscriber);
-        }
-        return position;
-    }
-
-    private void assignToSelectedSubscriber(RecordMetadata metadata)
-    {
-        metadata.subscriberKey(selectedSubscriber.getSubscriberKey());
-        metadata.requestStreamId(selectedSubscriber.getStreamId());
-    }
-
-    @Override
-    public void updateState(TypedRecord<JobRecord> event)
-    {
-        if (selectedSubscriber != null)
-        {
-            subscriptions.addCredits(selectedSubscriber.getSubscriberKey(), -1);
-
-            if (subscriptions.getTotalCredits() <= 0)
-            {
-                context.suspendController();
-            }
-        }
-    }
+  }
 }

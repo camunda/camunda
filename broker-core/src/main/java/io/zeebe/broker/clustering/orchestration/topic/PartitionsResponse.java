@@ -17,61 +17,49 @@
  */
 package io.zeebe.broker.clustering.orchestration.topic;
 
-import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
-import org.agrona.MutableDirectBuffer;
-
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.StringProperty;
+import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
 
-public class PartitionsResponse extends UnpackedObject
-{
-    protected ArrayProperty<Partition> partitions = new ArrayProperty<>(
-            "partitions",
-            new Partition());
-    protected final MutableDirectBuffer topicName = new ExpandableArrayBuffer(128);
+public class PartitionsResponse extends UnpackedObject {
+  protected ArrayProperty<Partition> partitions =
+      new ArrayProperty<>("partitions", new Partition());
+  protected final MutableDirectBuffer topicName = new ExpandableArrayBuffer(128);
 
-    public PartitionsResponse()
-    {
-        declareProperty(partitions);
+  public PartitionsResponse() {
+    declareProperty(partitions);
+  }
+
+  public void addPartition(int id, DirectBuffer topic) {
+    final Partition partition = partitions.add();
+
+    topicName.putBytes(0, topic, 0, topic.capacity());
+    // copy the topic name because arrayproperty#add does not
+    // copy the value immediately (only on the next add() or write() invocation),
+    // and the buffer's content may change until then
+
+    partition.setId(id);
+    partition.setTopic(topicName, 0, topic.capacity());
+  }
+
+  protected static class Partition extends UnpackedObject {
+    protected IntegerProperty idProperty = new IntegerProperty("id");
+    protected StringProperty topicProperty = new StringProperty("topic");
+
+    public Partition() {
+      declareProperty(idProperty).declareProperty(topicProperty);
     }
 
-    public void addPartition(int id, DirectBuffer topic)
-    {
-        final Partition partition = partitions.add();
-
-        topicName.putBytes(0, topic, 0, topic.capacity());
-        // copy the topic name because arrayproperty#add does not
-        // copy the value immediately (only on the next add() or write() invocation),
-        // and the buffer's content may change until then
-
-        partition.setId(id);
-        partition.setTopic(topicName, 0, topic.capacity());
+    public void setId(int id) {
+      this.idProperty.setValue(id);
     }
 
-    protected static class Partition extends UnpackedObject
-    {
-        protected IntegerProperty idProperty = new IntegerProperty("id");
-        protected StringProperty topicProperty = new StringProperty("topic");
-
-        public Partition()
-        {
-            declareProperty(idProperty)
-                .declareProperty(topicProperty);
-        }
-
-        public void setId(int id)
-        {
-            this.idProperty.setValue(id);
-        }
-
-
-        public void setTopic(DirectBuffer topic, int offset, int length)
-        {
-            this.topicProperty.setValue(topic, offset, length);
-        }
-
+    public void setTopic(DirectBuffer topic, int offset, int length) {
+      this.topicProperty.setValue(topic, offset, length);
     }
+  }
 }

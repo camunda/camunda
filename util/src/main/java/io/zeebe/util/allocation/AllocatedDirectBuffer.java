@@ -18,22 +18,18 @@ package io.zeebe.util.allocation;
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
-public class AllocatedDirectBuffer extends AllocatedBuffer
-{
-    private final Consumer<AllocatedDirectBuffer> onCloseCallback;
+public class AllocatedDirectBuffer extends AllocatedBuffer {
+  private final Consumer<AllocatedDirectBuffer> onCloseCallback;
 
-    public AllocatedDirectBuffer(ByteBuffer buffer, Consumer<AllocatedDirectBuffer> onClose)
-    {
-        super(buffer);
-        this.onCloseCallback = onClose;
-    }
+  public AllocatedDirectBuffer(ByteBuffer buffer, Consumer<AllocatedDirectBuffer> onClose) {
+    super(buffer);
+    this.onCloseCallback = onClose;
+  }
 
-    @Override
-    public void doClose()
-    {
-        AllocationUtil.freeDirectBuffer(rawBuffer);
+  @Override
+  public void doClose() {
+    AllocationUtil.freeDirectBuffer(rawBuffer);
 
-        onCloseCallback.accept(this);
-    }
-
+    onCloseCallback.accept(this);
+  }
 }

@@ -21,66 +21,63 @@ import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.TOPOL
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.snapshotReplicationServiceName;
 import static io.zeebe.broker.transport.TransportServiceNames.clientTransport;
 
-import java.time.Duration;
-
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.util.DurationUtil;
+import java.time.Duration;
 import org.slf4j.Logger;
 
-public class SnapshotReplicationInstallService implements Service<SnapshotReplicationInstallService>
-{
-    private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
+public class SnapshotReplicationInstallService
+    implements Service<SnapshotReplicationInstallService> {
+  private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
-    private ServiceGroupReference<Partition> followerPartitionsGroupReference = ServiceGroupReference.<Partition>create()
-            .onAdd(this::onPartitionAdded)
-            .build();
+  private ServiceGroupReference<Partition> followerPartitionsGroupReference =
+      ServiceGroupReference.<Partition>create().onAdd(this::onPartitionAdded).build();
 
-    private ServiceStartContext startContext;
-    private final Duration snapshotReplicationPeriod;
+  private ServiceStartContext startContext;
+  private final Duration snapshotReplicationPeriod;
 
-    public SnapshotReplicationInstallService(final BrokerCfg config)
-    {
-        this.snapshotReplicationPeriod = DurationUtil.parse(config.getData().getSnapshotReplicationPeriod());
+  public SnapshotReplicationInstallService(final BrokerCfg config) {
+    this.snapshotReplicationPeriod =
+        DurationUtil.parse(config.getData().getSnapshotReplicationPeriod());
+  }
+
+  @Override
+  public void start(ServiceStartContext startContext) {
+    this.startContext = startContext;
+  }
+
+  public void stop(ServiceStopContext stopContext) {}
+
+  @Override
+  public SnapshotReplicationInstallService get() {
+    return this;
+  }
+
+  private void onPartitionAdded(
+      final ServiceName<Partition> partitionServiceName, final Partition partition) {
+    final ServiceName<SnapshotReplicationService> serviceName =
+        snapshotReplicationServiceName(partition);
+    final SnapshotReplicationService service =
+        new SnapshotReplicationService(snapshotReplicationPeriod);
+
+    if (!startContext.hasService(serviceName)) {
+      LOG.debug("Installing snapshot replication service for {}", partition.getInfo());
+      startContext
+          .createService(serviceName, service)
+          .dependency(partitionServiceName, service.getPartitionInjector())
+          .dependency(TOPOLOGY_MANAGER_SERVICE, service.getTopologyManagerInjector())
+          .dependency(
+              clientTransport(TransportServiceNames.MANAGEMENT_API_CLIENT_NAME),
+              service.getManagementClientApiInjector())
+          .install();
     }
+  }
 
-    @Override
-    public void start(ServiceStartContext startContext)
-    {
-        this.startContext = startContext;
-    }
-
-    public void stop(ServiceStopContext stopContext)
-    {
-    }
-
-    @Override
-    public SnapshotReplicationInstallService get()
-    {
-        return this;
-    }
-
-    private void onPartitionAdded(final ServiceName<Partition> partitionServiceName, final Partition partition)
-    {
-        final ServiceName<SnapshotReplicationService> serviceName = snapshotReplicationServiceName(partition);
-        final SnapshotReplicationService service = new SnapshotReplicationService(snapshotReplicationPeriod);
-
-        if (!startContext.hasService(serviceName))
-        {
-            LOG.debug("Installing snapshot replication service for {}", partition.getInfo());
-            startContext.createService(serviceName, service)
-                    .dependency(partitionServiceName, service.getPartitionInjector())
-                    .dependency(TOPOLOGY_MANAGER_SERVICE, service.getTopologyManagerInjector())
-                    .dependency(clientTransport(TransportServiceNames.MANAGEMENT_API_CLIENT_NAME), service.getManagementClientApiInjector())
-                    .install();
-        }
-    }
-
-    public ServiceGroupReference<Partition> getFollowerPartitionsGroupReference()
-    {
-        return followerPartitionsGroupReference;
-    }
+  public ServiceGroupReference<Partition> getFollowerPartitionsGroupReference() {
+    return followerPartitionsGroupReference;
+  }
 }

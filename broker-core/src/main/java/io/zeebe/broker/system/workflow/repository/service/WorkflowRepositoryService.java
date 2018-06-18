@@ -17,102 +17,95 @@
  */
 package io.zeebe.broker.system.workflow.repository.service;
 
-import java.util.List;
-
 import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex;
 import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex.WorkflowMetadata;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.util.collection.Tuple;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
+import java.util.List;
 import org.agrona.DirectBuffer;
 
-public class WorkflowRepositoryService implements Service<WorkflowRepositoryService>
-{
-    private final ActorControl actor;
-    private final WorkflowRepositoryIndex index;
-    private final DeploymentResourceCache resourceCache;
+public class WorkflowRepositoryService implements Service<WorkflowRepositoryService> {
+  private final ActorControl actor;
+  private final WorkflowRepositoryIndex index;
+  private final DeploymentResourceCache resourceCache;
 
-    public WorkflowRepositoryService(ActorControl actor,
-            WorkflowRepositoryIndex index,
-            DeploymentResourceCache deploymentWorkflowsCache)
-    {
-        this.actor = actor;
-        this.index = index;
-        this.resourceCache = deploymentWorkflowsCache;
-    }
+  public WorkflowRepositoryService(
+      ActorControl actor,
+      WorkflowRepositoryIndex index,
+      DeploymentResourceCache deploymentWorkflowsCache) {
+    this.actor = actor;
+    this.index = index;
+    this.resourceCache = deploymentWorkflowsCache;
+  }
 
-    @Override
-    public WorkflowRepositoryService get()
-    {
-        return this;
-    }
+  @Override
+  public WorkflowRepositoryService get() {
+    return this;
+  }
 
-    public ActorFuture<Tuple<WorkflowMetadata, DirectBuffer>> getWorkflowByKey(long key)
-    {
-        return actor.call(() ->
-        {
-            final WorkflowMetadata metadata = index.getWorkflowByKey(key);
+  public ActorFuture<Tuple<WorkflowMetadata, DirectBuffer>> getWorkflowByKey(long key) {
+    return actor.call(
+        () -> {
+          final WorkflowMetadata metadata = index.getWorkflowByKey(key);
 
-            if (metadata != null)
-            {
-                final  DirectBuffer resource = resourceCache.getResource(metadata);
+          if (metadata != null) {
+            final DirectBuffer resource = resourceCache.getResource(metadata);
 
-                return new Tuple<>(metadata, resource);
-            }
+            return new Tuple<>(metadata, resource);
+          }
 
-            return null;
+          return null;
         });
-    }
+  }
 
-    public ActorFuture<Tuple<WorkflowMetadata, DirectBuffer>> getLatestWorkflowByBpmnProcessId(String topicName, String bpmnProcessId)
-    {
-        return actor.call(() ->
-        {
-            final WorkflowMetadata metadata = index.getLatestWorkflowByBpmnProcessId(topicName, bpmnProcessId);
+  public ActorFuture<Tuple<WorkflowMetadata, DirectBuffer>> getLatestWorkflowByBpmnProcessId(
+      String topicName, String bpmnProcessId) {
+    return actor.call(
+        () -> {
+          final WorkflowMetadata metadata =
+              index.getLatestWorkflowByBpmnProcessId(topicName, bpmnProcessId);
 
-            if (metadata != null)
-            {
-                final  DirectBuffer resource = resourceCache.getResource(metadata);
+          if (metadata != null) {
+            final DirectBuffer resource = resourceCache.getResource(metadata);
 
-                return new Tuple<>(metadata, resource);
-            }
+            return new Tuple<>(metadata, resource);
+          }
 
-            return null;
+          return null;
         });
-    }
+  }
 
-    public ActorFuture<Tuple<WorkflowMetadata, DirectBuffer>> getWorkflowByBpmnProcessIdAndVersion(String topicName, String bpmnProcessId, int version)
-    {
-        return actor.call(() ->
-        {
-            final WorkflowMetadata metadata = index.getWorkflowByBpmnProcessIdAndVersion(topicName, bpmnProcessId, version);
+  public ActorFuture<Tuple<WorkflowMetadata, DirectBuffer>> getWorkflowByBpmnProcessIdAndVersion(
+      String topicName, String bpmnProcessId, int version) {
+    return actor.call(
+        () -> {
+          final WorkflowMetadata metadata =
+              index.getWorkflowByBpmnProcessIdAndVersion(topicName, bpmnProcessId, version);
 
-            if (metadata != null)
-            {
-                final  DirectBuffer resource = resourceCache.getResource(metadata);
+          if (metadata != null) {
+            final DirectBuffer resource = resourceCache.getResource(metadata);
 
-                return new Tuple<>(metadata, resource);
-            }
+            return new Tuple<>(metadata, resource);
+          }
 
-            return null;
+          return null;
         });
-    }
+  }
 
-    public ActorFuture<List<WorkflowMetadata>> getWorkflowsByTopic(String topicName)
-    {
-        return actor.call(() ->
-        {
-            return index.getWorkflowsByTopic(topicName);
+  public ActorFuture<List<WorkflowMetadata>> getWorkflowsByTopic(String topicName) {
+    return actor.call(
+        () -> {
+          return index.getWorkflowsByTopic(topicName);
         });
-    }
+  }
 
-    public ActorFuture<List<WorkflowMetadata>> getWorkflowsByBpmnProcessId(String topicName, String bpmnProcessId)
-    {
-        return actor.call(() ->
-        {
-            return index.getWorkflowsByTopicAndBpmnProcessId(topicName, bpmnProcessId);
+  public ActorFuture<List<WorkflowMetadata>> getWorkflowsByBpmnProcessId(
+      String topicName, String bpmnProcessId) {
+    return actor.call(
+        () -> {
+          return index.getWorkflowsByTopicAndBpmnProcessId(topicName, bpmnProcessId);
         });
-    }
-
+  }
 }

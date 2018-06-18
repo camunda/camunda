@@ -20,32 +20,27 @@ import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotStorageConfiguration;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.servicecontainer.*;
 
-public class FsSnapshotStorageService implements Service<SnapshotStorage>
-{
-    private final FsSnapshotStorageConfiguration config;
+public class FsSnapshotStorageService implements Service<SnapshotStorage> {
+  private final FsSnapshotStorageConfiguration config;
 
-    private FsSnapshotStorage service;
+  private FsSnapshotStorage service;
 
-    public FsSnapshotStorageService(FsSnapshotStorageConfiguration snapshotStorageConfiguration)
-    {
-        this.config = snapshotStorageConfiguration;
-    }
+  public FsSnapshotStorageService(FsSnapshotStorageConfiguration snapshotStorageConfiguration) {
+    this.config = snapshotStorageConfiguration;
+  }
 
-    @Override
-    public void start(ServiceStartContext startContext)
-    {
-        service = new FsSnapshotStorage(config);
-    }
+  @Override
+  public void start(ServiceStartContext startContext) {
+    service = new FsSnapshotStorage(config);
+  }
 
-    @Override
-    public void stop(ServiceStopContext stopContext)
-    {
-        // no-op
-    }
+  @Override
+  public void stop(ServiceStopContext stopContext) {
+    // no-op
+  }
 
-    @Override
-    public SnapshotStorage get()
-    {
-        return service;
-    }
+  @Override
+  public SnapshotStorage get() {
+    return service;
+  }
 }

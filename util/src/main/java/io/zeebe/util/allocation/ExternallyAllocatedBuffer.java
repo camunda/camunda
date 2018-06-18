@@ -17,21 +17,17 @@ package io.zeebe.util.allocation;
 
 import java.nio.ByteBuffer;
 
-public class ExternallyAllocatedBuffer extends AllocatedBuffer
-{
+public class ExternallyAllocatedBuffer extends AllocatedBuffer {
 
-    public ExternallyAllocatedBuffer(ByteBuffer buffer)
-    {
-        super(buffer);
-    }
+  public ExternallyAllocatedBuffer(ByteBuffer buffer) {
+    super(buffer);
+  }
 
-    @Override
-    public void doClose()
-    {
-        // nothing to do; buffer allocated externally
-    }
+  @Override
+  public void doClose() {
+    // nothing to do; buffer allocated externally
+  }
 
-    @Override
-    protected void finalize() throws Throwable
-    { }
+  @Override
+  protected void finalize() throws Throwable {}
 }

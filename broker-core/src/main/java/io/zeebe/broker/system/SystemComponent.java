@@ -17,10 +17,10 @@
  */
 package io.zeebe.broker.system;
 
-import static io.zeebe.broker.transport.TransportServiceNames.*;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_SYSTEM_GROUP_NAME;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY;
 import static io.zeebe.broker.system.SystemServiceNames.*;
+import static io.zeebe.broker.transport.TransportServiceNames.*;
 
 import io.zeebe.broker.system.metrics.MetricsFileWriterService;
 import io.zeebe.broker.system.workflow.repository.api.management.DeploymentManagerRequestHandler;
@@ -28,29 +28,42 @@ import io.zeebe.broker.system.workflow.repository.service.DeploymentManager;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.servicecontainer.ServiceContainer;
 
-public class SystemComponent implements Component
-{
-    @Override
-    public void init(SystemContext context)
-    {
-        final ServiceContainer serviceContainer = context.getServiceContainer();
+public class SystemComponent implements Component {
+  @Override
+  public void init(SystemContext context) {
+    final ServiceContainer serviceContainer = context.getServiceContainer();
 
-        final MetricsFileWriterService metricsFileWriterService = new MetricsFileWriterService(context.getBrokerConfiguration().getMetrics());
-        serviceContainer.createService(METRICS_FILE_WRITER, metricsFileWriterService)
-            .install();
+    final MetricsFileWriterService metricsFileWriterService =
+        new MetricsFileWriterService(context.getBrokerConfiguration().getMetrics());
+    serviceContainer.createService(METRICS_FILE_WRITER, metricsFileWriterService).install();
 
-        final DeploymentManagerRequestHandler requestHandlerService = new DeploymentManagerRequestHandler();
-        serviceContainer.createService(DEPLOYMENT_MANAGER_REQUEST_HANDLER, requestHandlerService)
-            .dependency(bufferingServerTransport(MANAGEMENT_API_SERVER_NAME), requestHandlerService.getManagementApiServerTransportInjector())
-            .install();
+    final DeploymentManagerRequestHandler requestHandlerService =
+        new DeploymentManagerRequestHandler();
+    serviceContainer
+        .createService(DEPLOYMENT_MANAGER_REQUEST_HANDLER, requestHandlerService)
+        .dependency(
+            bufferingServerTransport(MANAGEMENT_API_SERVER_NAME),
+            requestHandlerService.getManagementApiServerTransportInjector())
+        .install();
 
-        final DeploymentManager deploymentManagerService = new DeploymentManager();
-        serviceContainer.createService(DEPLOYMENT_MANAGER_SERVICE, deploymentManagerService)
-            .dependency(DEPLOYMENT_MANAGER_REQUEST_HANDLER, deploymentManagerService.getRequestHandlerServiceInjector())
-            .dependency(STREAM_PROCESSOR_SERVICE_FACTORY, deploymentManagerService.getStreamProcessorServiceFactoryInjector())
-            .dependency(serverTransport(CLIENT_API_SERVER_NAME), deploymentManagerService.getClientApiTransportInjector())
-            .dependency(TransportServiceNames.CONTROL_MESSAGE_HANDLER_MANAGER, deploymentManagerService.getControlMessageHandlerManagerServiceInjector())
-            .groupReference(LEADER_PARTITION_SYSTEM_GROUP_NAME, deploymentManagerService.getPartitionsGroupReference())
-            .install();
-    }
+    final DeploymentManager deploymentManagerService = new DeploymentManager();
+    serviceContainer
+        .createService(DEPLOYMENT_MANAGER_SERVICE, deploymentManagerService)
+        .dependency(
+            DEPLOYMENT_MANAGER_REQUEST_HANDLER,
+            deploymentManagerService.getRequestHandlerServiceInjector())
+        .dependency(
+            STREAM_PROCESSOR_SERVICE_FACTORY,
+            deploymentManagerService.getStreamProcessorServiceFactoryInjector())
+        .dependency(
+            serverTransport(CLIENT_API_SERVER_NAME),
+            deploymentManagerService.getClientApiTransportInjector())
+        .dependency(
+            TransportServiceNames.CONTROL_MESSAGE_HANDLER_MANAGER,
+            deploymentManagerService.getControlMessageHandlerManagerServiceInjector())
+        .groupReference(
+            LEADER_PARTITION_SYSTEM_GROUP_NAME,
+            deploymentManagerService.getPartitionsGroupReference())
+        .install();
+  }
 }

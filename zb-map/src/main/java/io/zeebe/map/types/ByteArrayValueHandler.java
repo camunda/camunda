@@ -15,70 +15,64 @@
  */
 package io.zeebe.map.types;
 
+import io.zeebe.map.ValueHandler;
 import org.agrona.DirectBuffer;
 import org.agrona.UnsafeAccess;
 import org.agrona.concurrent.UnsafeBuffer;
-
-import io.zeebe.map.ValueHandler;
 import sun.misc.Unsafe;
 
 @SuppressWarnings("restriction")
-public class ByteArrayValueHandler implements ValueHandler
-{
-    private static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
+public class ByteArrayValueHandler implements ValueHandler {
+  private static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
 
-    protected int valueLength;
-    public UnsafeBuffer valueBuffer = new UnsafeBuffer(0, 0);
+  protected int valueLength;
+  public UnsafeBuffer valueBuffer = new UnsafeBuffer(0, 0);
 
-    @Override
-    public int getValueLength()
-    {
-        return valueLength;
+  @Override
+  public int getValueLength() {
+    return valueLength;
+  }
+
+  @Override
+  public void setValueLength(int length) {
+    this.valueLength = length;
+  }
+
+  public void setValue(byte[] value) {
+    checkValueLength(value.length);
+    valueBuffer.wrap(value);
+  }
+
+  public void setValue(DirectBuffer buffer, int offset, int length) {
+    checkValueLength(length);
+    valueBuffer.wrap(buffer, offset, length);
+  }
+
+  public DirectBuffer getValue() {
+    return valueBuffer;
+  }
+
+  @Override
+  public void writeValue(long writeValueAddr) {
+    final int actualValueLength = valueBuffer.capacity();
+    UNSAFE.copyMemory(
+        valueBuffer.byteArray(),
+        valueBuffer.addressOffset(),
+        null,
+        writeValueAddr,
+        actualValueLength);
+    UNSAFE.setMemory(writeValueAddr + actualValueLength, valueLength - actualValueLength, (byte) 0);
+  }
+
+  @Override
+  public void readValue(long valueAddr, int valueLength) {
+    valueBuffer.wrap(valueAddr, valueLength);
+  }
+
+  protected void checkValueLength(final int providedLength) {
+    if (providedLength > valueLength) {
+      throw new IllegalArgumentException(
+          "Illegal byte array length: expected at most " + valueLength + ", got " + providedLength);
     }
-
-    @Override
-    public void setValueLength(int length)
-    {
-        this.valueLength = length;
-    }
-
-    public void setValue(byte[] value)
-    {
-        checkValueLength(value.length);
-        valueBuffer.wrap(value);
-    }
-
-    public void setValue(DirectBuffer buffer, int offset, int length)
-    {
-        checkValueLength(length);
-        valueBuffer.wrap(buffer, offset, length);
-    }
-
-    public DirectBuffer getValue()
-    {
-        return valueBuffer;
-    }
-
-    @Override
-    public void writeValue(long writeValueAddr)
-    {
-        final int actualValueLength = valueBuffer.capacity();
-        UNSAFE.copyMemory(valueBuffer.byteArray(), valueBuffer.addressOffset(), null, writeValueAddr, actualValueLength);
-        UNSAFE.setMemory(writeValueAddr + actualValueLength, valueLength - actualValueLength, (byte) 0);
-    }
-
-    @Override
-    public void readValue(long valueAddr, int valueLength)
-    {
-        valueBuffer.wrap(valueAddr, valueLength);
-    }
-
-
-    protected void checkValueLength(final int providedLength)
-    {
-        if (providedLength > valueLength)
-        {
-            throw new IllegalArgumentException("Illegal byte array length: expected at most " + valueLength + ", got " + providedLength);
-        }
-    }
+  }
 }

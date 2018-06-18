@@ -20,57 +20,50 @@ import io.zeebe.model.bpmn.impl.instance.ExtensionElementsImpl;
 import io.zeebe.model.bpmn.impl.instance.ServiceTaskImpl;
 import io.zeebe.model.bpmn.impl.metadata.InputOutputMappingImpl;
 import io.zeebe.model.bpmn.impl.metadata.TaskHeadersImpl;
-
 import java.util.List;
 
-public class ServiceTaskTransformer
-{
-    private final TaskHeadersTransformer taskHeadersTransformer = new TaskHeadersTransformer();
-    private final InputOutputMappingTransformer inputOutputMappingTransformer = new InputOutputMappingTransformer();
+public class ServiceTaskTransformer {
+  private final TaskHeadersTransformer taskHeadersTransformer = new TaskHeadersTransformer();
+  private final InputOutputMappingTransformer inputOutputMappingTransformer =
+      new InputOutputMappingTransformer();
 
-    public void transform(ErrorCollector errorCollector, List<ServiceTaskImpl> serviceTasks)
-    {
-        for (int s = 0; s < serviceTasks.size(); s++)
-        {
-            final ServiceTaskImpl serviceTaskImpl = serviceTasks.get(s);
+  public void transform(ErrorCollector errorCollector, List<ServiceTaskImpl> serviceTasks) {
+    for (int s = 0; s < serviceTasks.size(); s++) {
+      final ServiceTaskImpl serviceTaskImpl = serviceTasks.get(s);
 
-            final ExtensionElementsImpl extensionElements = transformExtensionElements(serviceTaskImpl);
-            transformTaskHeaders(extensionElements);
-            transformInputOutputMappings(errorCollector, serviceTaskImpl, extensionElements);
-        }
+      final ExtensionElementsImpl extensionElements = transformExtensionElements(serviceTaskImpl);
+      transformTaskHeaders(extensionElements);
+      transformInputOutputMappings(errorCollector, serviceTaskImpl, extensionElements);
     }
+  }
 
-    private ExtensionElementsImpl transformExtensionElements(ServiceTaskImpl serviceTaskImpl)
-    {
-        ExtensionElementsImpl extensionElements = serviceTaskImpl.getExtensionElements();
-        if (extensionElements == null)
-        {
-            extensionElements = new ExtensionElementsImpl();
-            serviceTaskImpl.setExtensionElements(extensionElements);
-        }
-        return extensionElements;
+  private ExtensionElementsImpl transformExtensionElements(ServiceTaskImpl serviceTaskImpl) {
+    ExtensionElementsImpl extensionElements = serviceTaskImpl.getExtensionElements();
+    if (extensionElements == null) {
+      extensionElements = new ExtensionElementsImpl();
+      serviceTaskImpl.setExtensionElements(extensionElements);
     }
+    return extensionElements;
+  }
 
-    private void transformTaskHeaders(ExtensionElementsImpl extensionElements)
-    {
-        TaskHeadersImpl taskHeaders = extensionElements.getTaskHeaders();
-        if (taskHeaders == null)
-        {
-            taskHeaders = new TaskHeadersImpl();
-            extensionElements.setTaskHeaders(taskHeaders);
-        }
-        taskHeadersTransformer.transform(taskHeaders);
+  private void transformTaskHeaders(ExtensionElementsImpl extensionElements) {
+    TaskHeadersImpl taskHeaders = extensionElements.getTaskHeaders();
+    if (taskHeaders == null) {
+      taskHeaders = new TaskHeadersImpl();
+      extensionElements.setTaskHeaders(taskHeaders);
     }
+    taskHeadersTransformer.transform(taskHeaders);
+  }
 
-    public void transformInputOutputMappings(ErrorCollector errorCollector, ServiceTaskImpl serviceTaskImpl, ExtensionElementsImpl extensionElements)
-    {
-        InputOutputMappingImpl inputOutputMapping = serviceTaskImpl.getInputOutputMapping();
-        if (inputOutputMapping == null)
-        {
-            inputOutputMapping = new InputOutputMappingImpl();
-            extensionElements.setInputOutputMapping(inputOutputMapping);
-        }
-        inputOutputMappingTransformer.transform(errorCollector, inputOutputMapping);
+  public void transformInputOutputMappings(
+      ErrorCollector errorCollector,
+      ServiceTaskImpl serviceTaskImpl,
+      ExtensionElementsImpl extensionElements) {
+    InputOutputMappingImpl inputOutputMapping = serviceTaskImpl.getInputOutputMapping();
+    if (inputOutputMapping == null) {
+      inputOutputMapping = new InputOutputMappingImpl();
+      extensionElements.setInputOutputMapping(inputOutputMapping);
     }
-
+    inputOutputMappingTransformer.transform(errorCollector, inputOutputMapping);
+  }
 }

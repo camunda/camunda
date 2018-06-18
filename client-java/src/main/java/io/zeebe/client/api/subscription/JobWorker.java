@@ -16,26 +16,24 @@
 package io.zeebe.client.api.subscription;
 
 /**
- * Represents an active job worker that perfors jobs of a certain type. While a registration is open,
- * the client continuously receives jobs from the broker and hands them to a registered
- * {@link JobHandler}.
+ * Represents an active job worker that perfors jobs of a certain type. While a registration is
+ * open, the client continuously receives jobs from the broker and hands them to a registered {@link
+ * JobHandler}.
  */
-public interface JobWorker
-{
-    /**
-     * @return true if this registration is currently active and work items are being received for it
-     */
-    boolean isOpen();
+public interface JobWorker {
+  /**
+   * @return true if this registration is currently active and work items are being received for it
+   */
+  boolean isOpen();
 
-    /**
-     * @return true if this registration is not open and is not in the process of opening or closing
-     */
-    boolean isClosed();
+  /**
+   * @return true if this registration is not open and is not in the process of opening or closing
+   */
+  boolean isClosed();
 
-    /**
-     * Closes this registration and stops receiving new work items.
-     * Blocks until all previously received items have been
-     * handed to the worker.
-     */
-    void close();
+  /**
+   * Closes this registration and stops receiving new work items. Blocks until all previously
+   * received items have been handed to the worker.
+   */
+  void close();
 }

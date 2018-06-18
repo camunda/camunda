@@ -17,16 +17,12 @@ package io.zeebe.msgpack.property;
 
 import io.zeebe.msgpack.value.ObjectValue;
 
-public class ObjectProperty<T extends ObjectValue> extends BaseProperty<T>
-{
-    public ObjectProperty(String key, T objectValue)
-    {
-        super(key, objectValue, objectValue);
-    }
+public class ObjectProperty<T extends ObjectValue> extends BaseProperty<T> {
+  public ObjectProperty(String key, T objectValue) {
+    super(key, objectValue, objectValue);
+  }
 
-    public T getValue()
-    {
-        return resolveValue();
-    }
-
+  public T getValue() {
+    return resolveValue();
+  }
 }

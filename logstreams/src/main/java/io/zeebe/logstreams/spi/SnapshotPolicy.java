@@ -15,20 +15,14 @@
  */
 package io.zeebe.logstreams.spi;
 
-/**
- * Policy to decide when to create a new snapshot.
- */
+/** Policy to decide when to create a new snapshot. */
 @FunctionalInterface
-public interface SnapshotPolicy
-{
-    /**
-     * Decides if a new snapshot should be created.
-     *
-     * @param logPosition
-     *            the current log position
-     *
-     * @return <code>true</code> if a new snapshot should be created.
-     */
-    boolean apply(long logPosition);
-
+public interface SnapshotPolicy {
+  /**
+   * Decides if a new snapshot should be created.
+   *
+   * @param logPosition the current log position
+   * @return <code>true</code> if a new snapshot should be created.
+   */
+  boolean apply(long logPosition);
 }

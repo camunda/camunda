@@ -15,55 +15,44 @@
  */
 package io.zeebe.broker.it.util;
 
-import java.util.*;
-
 import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.subscription.JobHandler;
+import java.util.*;
 
-public class RecordingJobHandler implements JobHandler
-{
-    protected List<JobEvent> handledJobs = Collections.synchronizedList(new ArrayList<>());
-    protected int nextJobHandler = 0;
-    protected final JobHandler[] jobHandlers;
+public class RecordingJobHandler implements JobHandler {
+  protected List<JobEvent> handledJobs = Collections.synchronizedList(new ArrayList<>());
+  protected int nextJobHandler = 0;
+  protected final JobHandler[] jobHandlers;
 
-    public RecordingJobHandler()
-    {
-        this((controller, job) ->
-        {
-            // do nothing
+  public RecordingJobHandler() {
+    this(
+        (controller, job) -> {
+          // do nothing
         });
+  }
+
+  public RecordingJobHandler(JobHandler... jobHandlers) {
+    this.jobHandlers = jobHandlers;
+  }
+
+  @Override
+  public void handle(JobClient client, JobEvent job) {
+    final JobHandler handler = jobHandlers[nextJobHandler];
+    nextJobHandler = Math.min(nextJobHandler + 1, jobHandlers.length - 1);
+
+    try {
+      handler.handle(client, job);
+    } finally {
+      handledJobs.add(job);
     }
+  }
 
-    public RecordingJobHandler(JobHandler... jobHandlers)
-    {
-        this.jobHandlers = jobHandlers;
-    }
+  public List<JobEvent> getHandledJobs() {
+    return handledJobs;
+  }
 
-    @Override
-    public void handle(JobClient client, JobEvent job)
-    {
-        final JobHandler handler = jobHandlers[nextJobHandler];
-        nextJobHandler = Math.min(nextJobHandler + 1, jobHandlers.length - 1);
-
-        try
-        {
-            handler.handle(client, job);
-        }
-        finally
-        {
-            handledJobs.add(job);
-        }
-    }
-
-    public List<JobEvent> getHandledJobs()
-    {
-        return handledJobs;
-    }
-
-    public void clear()
-    {
-        handledJobs.clear();
-    }
-
+  public void clear() {
+    handledJobs.clear();
+  }
 }

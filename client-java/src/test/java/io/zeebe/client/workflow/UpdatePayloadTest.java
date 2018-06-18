@@ -15,6 +15,9 @@
  */
 package io.zeebe.client.workflow;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
+
 import io.zeebe.client.api.clients.WorkflowClient;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.api.events.WorkflowInstanceState;
@@ -28,186 +31,157 @@ import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
+import java.util.Collections;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
-import java.util.Collections;
+public class UpdatePayloadTest {
+  private static final String PAYLOAD = "{\"foo\":\"bar\"}";
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
+  private static final byte[] ENCODED_PAYLOAD = new MsgPackConverter().convertToMsgPack(PAYLOAD);
 
+  public ClientRule clientRule = new ClientRule();
+  public StubBrokerRule brokerRule = new StubBrokerRule();
 
-public class UpdatePayloadTest
-{
-    private static final String PAYLOAD = "{\"foo\":\"bar\"}";
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
-    private static final byte[] ENCODED_PAYLOAD = new MsgPackConverter().convertToMsgPack(PAYLOAD);
+  @Rule public ExpectedException thrown = ExpectedException.none();
 
-    public ClientRule clientRule = new ClientRule();
-    public StubBrokerRule brokerRule = new StubBrokerRule();
+  private WorkflowClient workflowTopicClient;
 
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
+  @Before
+  public void setUp() {
+    this.workflowTopicClient = clientRule.getClient().topicClient().workflowClient();
 
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
+    brokerRule.workflowInstances().registerUpdatedPayloadCommand();
+  }
 
-    private WorkflowClient workflowTopicClient;
+  @Test
+  public void shouldUpdatePayload() {
+    // given
+    final WorkflowInstanceEventImpl baseEvent = Events.exampleWorfklowInstance();
+    baseEvent.setPosition(3L);
+    baseEvent.setKey(2L);
+    baseEvent.setSourceRecordPosition(1L);
+    baseEvent.setWorkflowInstanceKey(1L);
 
-    @Before
-    public void setUp()
-    {
-        this.workflowTopicClient = clientRule
-                .getClient()
-                .topicClient()
-                .workflowClient();
+    brokerRule.workflowInstances().registerUpdatedPayloadCommand(b -> b.sourceRecordPosition(4L));
 
-        brokerRule.workflowInstances().registerUpdatedPayloadCommand();
-    }
+    // when
+    final WorkflowInstanceEvent workflowInstanceEvent =
+        workflowTopicClient.newUpdatePayloadCommand(baseEvent).payload(PAYLOAD).send().join();
 
-    @Test
-    public void shouldUpdatePayload()
-    {
-        // given
-        final WorkflowInstanceEventImpl baseEvent = Events.exampleWorfklowInstance();
-        baseEvent.setPosition(3L);
-        baseEvent.setKey(2L);
-        baseEvent.setSourceRecordPosition(1L);
-        baseEvent.setWorkflowInstanceKey(1L);
+    // then
+    assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
 
-        brokerRule.workflowInstances()
-            .registerUpdatedPayloadCommand(b -> b.sourceRecordPosition(4L));
+    final ExecuteCommandRequest request = brokerRule.getReceivedCommandRequests().get(0);
+    assertThat(request.valueType()).isEqualTo(ValueType.WORKFLOW_INSTANCE);
+    assertThat(request.intent()).isEqualTo(WorkflowInstanceIntent.UPDATE_PAYLOAD);
+    assertThat(request.sourceRecordPosition()).isEqualTo(3L);
+    assertThat(request.key()).isEqualTo(2L);
+    assertThat(request.partitionId()).isEqualTo(baseEvent.getMetadata().getPartitionId());
+    assertThat(request.position()).isEqualTo(baseEvent.getMetadata().getPosition());
 
-        // when
-        final WorkflowInstanceEvent workflowInstanceEvent = workflowTopicClient.newUpdatePayloadCommand(baseEvent)
-            .payload(PAYLOAD)
-            .send()
-            .join();
+    assertThat(request.getCommand())
+        .containsOnly(
+            entry("bpmnProcessId", baseEvent.getBpmnProcessId()),
+            entry("version", baseEvent.getVersion()),
+            entry("workflowKey", (int) baseEvent.getWorkflowKey()),
+            entry("workflowInstanceKey", (int) baseEvent.getWorkflowInstanceKey()),
+            entry("activityId", baseEvent.getActivityId()),
+            entry("payload", ENCODED_PAYLOAD));
 
-        // then
-        assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
+    assertThat(workflowInstanceEvent.getMetadata().getSourceRecordPosition()).isEqualTo(4L);
+    assertThat(workflowInstanceEvent.getState()).isEqualTo(WorkflowInstanceState.PAYLOAD_UPDATED);
+  }
 
-        final ExecuteCommandRequest request = brokerRule.getReceivedCommandRequests().get(0);
-        assertThat(request.valueType()).isEqualTo(ValueType.WORKFLOW_INSTANCE);
-        assertThat(request.intent()).isEqualTo(WorkflowInstanceIntent.UPDATE_PAYLOAD);
-        assertThat(request.sourceRecordPosition()).isEqualTo(3L);
-        assertThat(request.key()).isEqualTo(2L);
-        assertThat(request.partitionId()).isEqualTo(baseEvent.getMetadata().getPartitionId());
-        assertThat(request.position()).isEqualTo(baseEvent.getMetadata().getPosition());
+  @Test
+  public void shouldUpdatePayloadAsMap() {
+    // given
+    final WorkflowInstanceEventImpl baseEvent = Events.exampleWorfklowInstance();
 
-        assertThat(request.getCommand()).containsOnly(
-                entry("bpmnProcessId", baseEvent.getBpmnProcessId()),
-                entry("version", baseEvent.getVersion()),
-                entry("workflowKey", (int) baseEvent.getWorkflowKey()),
-                entry("workflowInstanceKey", (int) baseEvent.getWorkflowInstanceKey()),
-                entry("activityId", baseEvent.getActivityId()),
-                entry("payload", ENCODED_PAYLOAD));
+    // when
+    workflowTopicClient
+        .newUpdatePayloadCommand(baseEvent)
+        .payload(Collections.singletonMap("foo", "bar"))
+        .send()
+        .join();
 
-        assertThat(workflowInstanceEvent.getMetadata().getSourceRecordPosition()).isEqualTo(4L);
-        assertThat(workflowInstanceEvent.getState()).isEqualTo(WorkflowInstanceState.PAYLOAD_UPDATED);
-    }
+    // then
+    assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
 
-    @Test
-    public void shouldUpdatePayloadAsMap()
-    {
-        // given
-        final WorkflowInstanceEventImpl baseEvent = Events.exampleWorfklowInstance();
+    final ExecuteCommandRequest request = brokerRule.getReceivedCommandRequests().get(0);
+    assertThat(request.getCommand()).contains(entry("payload", ENCODED_PAYLOAD));
+  }
 
-        // when
-        workflowTopicClient.newUpdatePayloadCommand(baseEvent)
-            .payload(Collections.singletonMap("foo", "bar"))
-            .send()
-            .join();
+  @Test
+  public void shouldUpdatePayloadAsObject() {
+    // given
+    final WorkflowInstanceEventImpl baseEvent = Events.exampleWorfklowInstance();
 
-        // then
-        assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
+    final PayloadObject payload = new PayloadObject();
+    payload.foo = "bar";
 
-        final ExecuteCommandRequest request = brokerRule.getReceivedCommandRequests().get(0);
-        assertThat(request.getCommand()).contains(entry("payload", ENCODED_PAYLOAD));
-    }
+    // when
+    workflowTopicClient.newUpdatePayloadCommand(baseEvent).payload(payload).send().join();
 
-    @Test
-    public void shouldUpdatePayloadAsObject()
-    {
-        // given
-        final WorkflowInstanceEventImpl baseEvent = Events.exampleWorfklowInstance();
+    // then
+    assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
 
-        final PayloadObject payload = new PayloadObject();
-        payload.foo = "bar";
+    final ExecuteCommandRequest request = brokerRule.getReceivedCommandRequests().get(0);
+    assertThat(request.getCommand()).contains(entry("payload", ENCODED_PAYLOAD));
+  }
 
-        // when
-        workflowTopicClient.newUpdatePayloadCommand(baseEvent)
-            .payload(payload)
-            .send()
-            .join();
+  @Test
+  public void shouldThrowExceptionOnRejection() {
+    // given
+    final WorkflowInstanceEventImpl event = Events.exampleWorfklowInstance();
+    event.setKey(2L);
+    event.setWorkflowInstanceKey(1L);
 
-        // then
-        assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
+    brokerRule.workflowInstances().registerUpdatedPayloadCommand(r -> r.rejection());
 
-        final ExecuteCommandRequest request = brokerRule.getReceivedCommandRequests().get(0);
-        assertThat(request.getCommand()).contains(entry("payload", ENCODED_PAYLOAD));
-    }
+    // then
+    thrown.expect(ClientCommandRejectedException.class);
+    thrown.expectMessage("Command (UPDATE_PAYLOAD) for event with key 2 was rejected");
 
-    @Test
-    public void shouldThrowExceptionOnRejection()
-    {
-        // given
-        final WorkflowInstanceEventImpl event = Events.exampleWorfklowInstance();
-        event.setKey(2L);
-        event.setWorkflowInstanceKey(1L);
+    // when
+    workflowTopicClient.newUpdatePayloadCommand(event).payload(PAYLOAD).send().join();
+  }
 
-        brokerRule.workflowInstances().registerUpdatedPayloadCommand(r -> r.rejection());
+  @Test
+  public void shouldThrowExceptionIfBaseEventIsNull() {
+    // then
+    thrown.expect(RuntimeException.class);
+    thrown.expectMessage("base event must not be null");
 
-        // then
-        thrown.expect(ClientCommandRejectedException.class);
-        thrown.expectMessage("Command (UPDATE_PAYLOAD) for event with key 2 was rejected");
+    // when
+    workflowTopicClient.newUpdatePayloadCommand(null).payload(PAYLOAD).send();
+  }
 
-        // when
-        workflowTopicClient.newUpdatePayloadCommand(event)
-            .payload(PAYLOAD)
-            .send()
-            .join();
-    }
+  @Test
+  public void shouldThrowExceptionIfFailedToSerializePayload() {
+    // given
+    final WorkflowInstanceEventImpl baseEvent = Events.exampleWorfklowInstance();
 
-    @Test
-    public void shouldThrowExceptionIfBaseEventIsNull()
-    {
-        // then
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("base event must not be null");
+    class NotSerializable {}
 
-        // when
-        workflowTopicClient.newUpdatePayloadCommand(null)
-            .payload(PAYLOAD)
-            .send();
-    }
+    // then
+    thrown.expect(ClientException.class);
+    thrown.expectMessage("Failed to serialize object");
 
-    @Test
-    public void shouldThrowExceptionIfFailedToSerializePayload()
-    {
-        // given
-        final WorkflowInstanceEventImpl baseEvent = Events.exampleWorfklowInstance();
+    // when
+    workflowTopicClient
+        .newUpdatePayloadCommand(baseEvent)
+        .payload(new NotSerializable())
+        .send()
+        .join();
+  }
 
-        class NotSerializable
-        { }
-
-        // then
-        thrown.expect(ClientException.class);
-        thrown.expectMessage("Failed to serialize object");
-
-        // when
-        workflowTopicClient.newUpdatePayloadCommand(baseEvent)
-            .payload(new NotSerializable())
-            .send()
-            .join();
-    }
-
-    public static class PayloadObject
-    {
-        public String foo;
-    }
-
+  public static class PayloadObject {
+    public String foo;
+  }
 }

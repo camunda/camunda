@@ -17,8 +17,6 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import java.util.EnumMap;
-
 import io.zeebe.broker.clustering.orchestration.id.IdRecord;
 import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.broker.incident.data.IncidentRecord;
@@ -29,76 +27,66 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.transport.ServerOutput;
+import java.util.EnumMap;
 
-public class TypedStreamEnvironment
-{
-    protected final ServerOutput output;
-    protected final LogStream stream;
-    protected static final EnumMap<ValueType, Class<? extends UnpackedObject>> EVENT_REGISTRY = new EnumMap<>(ValueType.class);
-    static
-    {
-        EVENT_REGISTRY.put(ValueType.TOPIC, TopicRecord.class);
-        EVENT_REGISTRY.put(ValueType.DEPLOYMENT, DeploymentRecord.class);
-        EVENT_REGISTRY.put(ValueType.JOB, JobRecord.class);
-        EVENT_REGISTRY.put(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceRecord.class);
-        EVENT_REGISTRY.put(ValueType.INCIDENT, IncidentRecord.class);
-        EVENT_REGISTRY.put(ValueType.ID, IdRecord.class);
+public class TypedStreamEnvironment {
+  protected final ServerOutput output;
+  protected final LogStream stream;
+  protected static final EnumMap<ValueType, Class<? extends UnpackedObject>> EVENT_REGISTRY =
+      new EnumMap<>(ValueType.class);
+
+  static {
+    EVENT_REGISTRY.put(ValueType.TOPIC, TopicRecord.class);
+    EVENT_REGISTRY.put(ValueType.DEPLOYMENT, DeploymentRecord.class);
+    EVENT_REGISTRY.put(ValueType.JOB, JobRecord.class);
+    EVENT_REGISTRY.put(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceRecord.class);
+    EVENT_REGISTRY.put(ValueType.INCIDENT, IncidentRecord.class);
+    EVENT_REGISTRY.put(ValueType.ID, IdRecord.class);
+  }
+
+  private TypedStreamReader reader;
+  private TypedStreamWriter writer;
+
+  public TypedStreamEnvironment(LogStream stream, ServerOutput output) {
+    this.output = output;
+    this.stream = stream;
+  }
+
+  public EnumMap<ValueType, Class<? extends UnpackedObject>> getEventRegistry() {
+    return EVENT_REGISTRY;
+  }
+
+  public ServerOutput getOutput() {
+    return output;
+  }
+
+  public LogStream getStream() {
+    return stream;
+  }
+
+  public TypedEventStreamProcessorBuilder newStreamProcessor() {
+    return new TypedEventStreamProcessorBuilder(this);
+  }
+
+  public TypedStreamWriter buildStreamWriter() {
+    return new TypedStreamWriterImpl(stream, EVENT_REGISTRY);
+  }
+
+  public TypedStreamReader buildStreamReader() {
+    return new TypedStreamReaderImpl(stream, EVENT_REGISTRY);
+  }
+
+  public TypedStreamReader getStreamReader() {
+    if (reader == null) {
+      reader = buildStreamReader();
     }
+    return reader;
+  }
 
-    private TypedStreamReader reader;
-    private TypedStreamWriter writer;
-
-    public TypedStreamEnvironment(LogStream stream, ServerOutput output)
-    {
-        this.output = output;
-        this.stream = stream;
+  public TypedStreamWriter getStreamWriter() {
+    if (writer == null) {
+      writer = buildStreamWriter();
     }
-
-    public EnumMap<ValueType, Class<? extends UnpackedObject>> getEventRegistry()
-    {
-        return EVENT_REGISTRY;
-    }
-
-    public ServerOutput getOutput()
-    {
-        return output;
-    }
-
-    public LogStream getStream()
-    {
-        return stream;
-    }
-
-    public TypedEventStreamProcessorBuilder newStreamProcessor()
-    {
-        return new TypedEventStreamProcessorBuilder(this);
-    }
-
-    public TypedStreamWriter buildStreamWriter()
-    {
-        return new TypedStreamWriterImpl(stream, EVENT_REGISTRY);
-    }
-
-    public TypedStreamReader buildStreamReader()
-    {
-        return new TypedStreamReaderImpl(stream, EVENT_REGISTRY);
-    }
-
-    public TypedStreamReader getStreamReader()
-    {
-        if (reader == null)
-        {
-            reader = buildStreamReader();
-        }
-        return reader;
-    }
-
-    public TypedStreamWriter getStreamWriter()
-    {
-        if (writer == null)
-        {
-            writer = buildStreamWriter();
-        }
-        return writer;
-    }
+    return writer;
+  }
 }

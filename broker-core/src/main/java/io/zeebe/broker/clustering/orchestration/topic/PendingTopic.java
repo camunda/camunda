@@ -17,71 +17,81 @@
  */
 package io.zeebe.broker.clustering.orchestration.topic;
 
-import java.util.List;
-
 import io.zeebe.util.buffer.BufferUtil;
+import java.util.List;
 import org.agrona.DirectBuffer;
 
-public class PendingTopic
-{
-    private final String topicName;
-    private final DirectBuffer topicNameBuffer;
-    private final int partitionCount;
-    private final int replicationFactor;
-    private final List<Integer> partitionIds;
-    private final int missingPartitions;
-    private final long key;
+public class PendingTopic {
+  private final String topicName;
+  private final DirectBuffer topicNameBuffer;
+  private final int partitionCount;
+  private final int replicationFactor;
+  private final List<Integer> partitionIds;
+  private final int missingPartitions;
+  private final long key;
 
-    PendingTopic(final DirectBuffer topicNameBuffer, final int partitionCount, final int replicationFactor, final List<Integer> partitionIds,
-        final int missingPartitions, final long key)
-    {
-        this.topicName = BufferUtil.bufferAsString(topicNameBuffer);
-        this.topicNameBuffer = BufferUtil.cloneBuffer(topicNameBuffer);
-        this.partitionCount = partitionCount;
-        this.replicationFactor = replicationFactor;
-        this.partitionIds = partitionIds;
-        this.missingPartitions = missingPartitions;
-        this.key = key;
-    }
+  PendingTopic(
+      final DirectBuffer topicNameBuffer,
+      final int partitionCount,
+      final int replicationFactor,
+      final List<Integer> partitionIds,
+      final int missingPartitions,
+      final long key) {
+    this.topicName = BufferUtil.bufferAsString(topicNameBuffer);
+    this.topicNameBuffer = BufferUtil.cloneBuffer(topicNameBuffer);
+    this.partitionCount = partitionCount;
+    this.replicationFactor = replicationFactor;
+    this.partitionIds = partitionIds;
+    this.missingPartitions = missingPartitions;
+    this.key = key;
+  }
 
-    public String getTopicName()
-    {
-        return topicName;
-    }
+  public String getTopicName() {
+    return topicName;
+  }
 
-    public DirectBuffer getTopicNameBuffer()
-    {
-        return topicNameBuffer;
-    }
+  public DirectBuffer getTopicNameBuffer() {
+    return topicNameBuffer;
+  }
 
-    public int getPartitionCount()
-    {
-        return partitionCount;
-    }
+  public int getPartitionCount() {
+    return partitionCount;
+  }
 
-    public int getReplicationFactor()
-    {
-        return replicationFactor;
-    }
+  public int getReplicationFactor() {
+    return replicationFactor;
+  }
 
-    public List<Integer> getPartitionIds()
-    {
-        return partitionIds;
-    }
+  public List<Integer> getPartitionIds() {
+    return partitionIds;
+  }
 
-    public int getMissingPartitions()
-    {
-        return missingPartitions;
-    }
+  public int getMissingPartitions() {
+    return missingPartitions;
+  }
 
-    public long getKey()
-    {
-        return key;
-    }
+  public long getKey() {
+    return key;
+  }
 
-    @Override
-    public String toString()
-    {
-        return "PendingTopic{" + "topicName='" + topicName + '\'' + ", topicNameBuffer=" + topicNameBuffer + ", partitionCount=" + partitionCount + ", replicationFactor=" + replicationFactor + ", partitionIds=" + partitionIds + ", missingPartitions=" + missingPartitions + ", key=" + key + '}';
-    }
+  @Override
+  public String toString() {
+    return "PendingTopic{"
+        + "topicName='"
+        + topicName
+        + '\''
+        + ", topicNameBuffer="
+        + topicNameBuffer
+        + ", partitionCount="
+        + partitionCount
+        + ", replicationFactor="
+        + replicationFactor
+        + ", partitionIds="
+        + partitionIds
+        + ", missingPartitions="
+        + missingPartitions
+        + ", key="
+        + key
+        + '}';
+  }
 }

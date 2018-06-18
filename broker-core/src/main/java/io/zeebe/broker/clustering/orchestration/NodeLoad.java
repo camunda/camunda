@@ -19,87 +19,69 @@ package io.zeebe.broker.clustering.orchestration;
 
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
-
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-public class NodeLoad
-{
-    private final NodeInfo nodeInfo;
-    private Set<PartitionInfo> load;
+public class NodeLoad {
+  private final NodeInfo nodeInfo;
+  private Set<PartitionInfo> load;
 
-    private Set<PartitionInfo> pendings;
+  private Set<PartitionInfo> pendings;
 
-    public NodeLoad(final NodeInfo nodeInfo)
-    {
-        this.nodeInfo = nodeInfo;
-        this.load = new HashSet<>();
-        this.pendings = new HashSet<>();
+  public NodeLoad(final NodeInfo nodeInfo) {
+    this.nodeInfo = nodeInfo;
+    this.load = new HashSet<>();
+    this.pendings = new HashSet<>();
+  }
+
+  public NodeInfo getNodeInfo() {
+    return nodeInfo;
+  }
+
+  public Set<PartitionInfo> getLoad() {
+    return load;
+  }
+
+  public boolean addPartition(final PartitionInfo partitionInfo) {
+    return load.add(partitionInfo);
+  }
+
+  public boolean addPendingPartiton(final PartitionInfo partitionInfo) {
+    return pendings.add(partitionInfo);
+  }
+
+  public Set<PartitionInfo> getPendings() {
+    return pendings;
+  }
+
+  public boolean removePending(PartitionInfo partitionInfo) {
+    return pendings.remove(partitionInfo);
+  }
+
+  public boolean doesNotHave(PartitionInfo forPartitionInfo) {
+    return !load.contains(forPartitionInfo) && !pendings.contains(forPartitionInfo);
+  }
+
+  @Override
+  public String toString() {
+    return "NodeLoad{" + "nodeInfo=" + nodeInfo + ", load=" + load + '}';
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
     }
-
-    public NodeInfo getNodeInfo()
-    {
-        return nodeInfo;
+    if (o == null || getClass() != o.getClass()) {
+      return false;
     }
+    final NodeLoad nodeLoad = (NodeLoad) o;
+    return Objects.equals(nodeInfo, nodeLoad.nodeInfo);
+  }
 
-    public Set<PartitionInfo> getLoad()
-    {
-        return load;
-    }
-
-    public boolean addPartition(final PartitionInfo partitionInfo)
-    {
-        return load.add(partitionInfo);
-    }
-
-    public boolean addPendingPartiton(final PartitionInfo partitionInfo)
-    {
-        return pendings.add(partitionInfo);
-    }
-
-    public Set<PartitionInfo> getPendings()
-    {
-        return pendings;
-    }
-
-    public boolean removePending(PartitionInfo partitionInfo)
-    {
-        return pendings.remove(partitionInfo);
-    }
-
-    public boolean doesNotHave(PartitionInfo forPartitionInfo)
-    {
-        return !load.contains(forPartitionInfo) && !pendings.contains(forPartitionInfo);
-    }
-
-    @Override
-    public String toString()
-    {
-        return "NodeLoad{" +
-            "nodeInfo=" + nodeInfo +
-            ", load=" + load +
-            '}';
-    }
-
-    @Override
-    public boolean equals(final Object o)
-    {
-        if (this == o)
-        {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass())
-        {
-            return false;
-        }
-        final NodeLoad nodeLoad = (NodeLoad) o;
-        return Objects.equals(nodeInfo, nodeLoad.nodeInfo);
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return Objects.hash(nodeInfo);
-    }
+  @Override
+  public int hashCode() {
+    return Objects.hash(nodeInfo);
+  }
 }

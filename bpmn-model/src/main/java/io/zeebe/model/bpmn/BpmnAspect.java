@@ -15,26 +15,24 @@
  */
 package io.zeebe.model.bpmn;
 
-public enum BpmnAspect
-{
-    NONE,
+public enum BpmnAspect {
+  NONE,
 
-    // exactly one outgoing sequence flow
-    TAKE_SEQUENCE_FLOW,
+  // exactly one outgoing sequence flow
+  TAKE_SEQUENCE_FLOW,
 
-    // end event, no outgoing sequence flow
-    CONSUME_TOKEN,
+  // end event, no outgoing sequence flow
+  CONSUME_TOKEN,
 
-    // xor-gateway
-    EXCLUSIVE_SPLIT,
+  // xor-gateway
+  EXCLUSIVE_SPLIT,
 
-    // or-gateway
-    INCLUSIVE_SPLIT,
+  // or-gateway
+  INCLUSIVE_SPLIT,
 
-    // and-gateway
-    PARALLEL_SPLIT,
+  // and-gateway
+  PARALLEL_SPLIT,
 
-    // joining and-/or-gateway
-    MERGE,
-
+  // joining and-/or-gateway
+  MERGE,
 }

@@ -15,35 +15,30 @@
  */
 package io.zeebe.protocol.intent;
 
-public enum IdIntent implements Intent
-{
-    GENERATED((short) 0);
+public enum IdIntent implements Intent {
+  GENERATED((short) 0);
 
-    private short value;
+  private short value;
 
-    IdIntent(short value)
-    {
-        this.value = value;
+  IdIntent(short value) {
+    this.value = value;
+  }
+
+  public short getIntent() {
+    return value;
+  }
+
+  public static Intent from(short value) {
+    switch (value) {
+      case 0:
+        return GENERATED;
+      default:
+        return Intent.UNKNOWN;
     }
+  }
 
-    public short getIntent()
-    {
-        return value;
-    }
-
-    public static Intent from(short value)
-    {
-        switch (value)
-        {
-            case 0: return GENERATED;
-            default: return Intent.UNKNOWN;
-        }
-    }
-
-    @Override
-    public short value()
-    {
-        return value;
-    }
-
+  @Override
+  public short value() {
+    return value;
+  }
 }

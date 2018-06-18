@@ -15,10 +15,6 @@
  */
 package io.zeebe.client.util;
 
-import java.util.function.Consumer;
-
-import org.junit.rules.ExternalResource;
-
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.client.api.clients.JobClient;
@@ -28,77 +24,64 @@ import io.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.util.sched.clock.ControlledActorClock;
+import java.util.function.Consumer;
+import org.junit.rules.ExternalResource;
 
-public class ClientRule extends ExternalResource
-{
+public class ClientRule extends ExternalResource {
 
-    protected final Consumer<ZeebeClientBuilder> configurator;
+  protected final Consumer<ZeebeClientBuilder> configurator;
 
-    protected ZeebeClient client;
-    protected ControlledActorClock clock;
+  protected ZeebeClient client;
+  protected ControlledActorClock clock;
 
-    public ClientRule()
-    {
-        this(b ->
-        {
-        });
-    }
+  public ClientRule() {
+    this(b -> {});
+  }
 
-    public ClientRule(Consumer<ZeebeClientBuilder> configurator)
-    {
-        this.configurator = configurator;
+  public ClientRule(Consumer<ZeebeClientBuilder> configurator) {
+    this.configurator = configurator;
+  }
 
-    }
+  @Override
+  protected void before() throws Throwable {
+    clock = new ControlledActorClock();
+    final ZeebeClientBuilderImpl builder = (ZeebeClientBuilderImpl) ZeebeClient.newClientBuilder();
+    configurator.accept(builder);
 
-    @Override
-    protected void before() throws Throwable
-    {
-        clock = new ControlledActorClock();
-        final ZeebeClientBuilderImpl builder = (ZeebeClientBuilderImpl) ZeebeClient.newClientBuilder();
-        configurator.accept(builder);
+    client = new ZeebeClientImpl(builder, clock);
+  }
 
-        client = new ZeebeClientImpl(builder, clock);
-    }
+  public ControlledActorClock getClock() {
+    return clock;
+  }
 
-    public ControlledActorClock getClock()
-    {
-        return clock;
-    }
+  @Override
+  protected void after() {
+    client.close();
+    clock.reset();
+  }
 
-    @Override
-    protected void after()
-    {
-        client.close();
-        clock.reset();
-    }
+  public ZeebeClient getClient() {
+    return client;
+  }
 
-    public ZeebeClient getClient()
-    {
-        return client;
-    }
+  public WorkflowClient workflowClient() {
+    return client.topicClient(getDefaultTopicName()).workflowClient();
+  }
 
-    public WorkflowClient workflowClient()
-    {
-        return client.topicClient(getDefaultTopicName()).workflowClient();
-    }
+  public JobClient jobClient() {
+    return client.topicClient(getDefaultTopicName()).jobClient();
+  }
 
-    public JobClient jobClient()
-    {
-        return client.topicClient(getDefaultTopicName()).jobClient();
-    }
+  public TopicClient topicClient() {
+    return client.topicClient(getDefaultTopicName());
+  }
 
-    public TopicClient topicClient()
-    {
-        return client.topicClient(getDefaultTopicName());
-    }
+  public String getDefaultTopicName() {
+    return StubBrokerRule.TEST_TOPIC_NAME;
+  }
 
-    public String getDefaultTopicName()
-    {
-        return StubBrokerRule.TEST_TOPIC_NAME;
-    }
-
-    public int getDefaultPartitionId()
-    {
-        return StubBrokerRule.TEST_PARTITION_ID;
-    }
+  public int getDefaultPartitionId() {
+    return StubBrokerRule.TEST_PARTITION_ID;
+  }
 }

@@ -15,32 +15,27 @@
  */
 package io.zeebe.msgpack.spec;
 
-public class ByteArrayBuilder
-{
-    protected byte[] value = new byte[0];
+public class ByteArrayBuilder {
+  protected byte[] value = new byte[0];
 
-    /**
-     * NOTE: arguments are not converted to bytes (i.e. int becomes 4 byte) but
-     * the arguments are cast to byte (i.e. lowest 8 bits are kept).
-     * This method exists solely for convenience to
-     * avoid explicit casts to byte where this builder is used.
-     */
-    protected ByteArrayBuilder add(int... toAdd)
-    {
-        final byte[] arr = new byte[toAdd.length];
-        for (int i = 0; i < toAdd.length; i++)
-        {
-            arr[i] = (byte) toAdd[i];
-        }
-        return add(arr);
+  /**
+   * NOTE: arguments are not converted to bytes (i.e. int becomes 4 byte) but the arguments are cast
+   * to byte (i.e. lowest 8 bits are kept). This method exists solely for convenience to avoid
+   * explicit casts to byte where this builder is used.
+   */
+  protected ByteArrayBuilder add(int... toAdd) {
+    final byte[] arr = new byte[toAdd.length];
+    for (int i = 0; i < toAdd.length; i++) {
+      arr[i] = (byte) toAdd[i];
     }
+    return add(arr);
+  }
 
-    protected ByteArrayBuilder add(byte... toAdd)
-    {
-        final byte[] newValue = new byte[value.length + toAdd.length];
-        System.arraycopy(value, 0, newValue, 0, value.length);
-        System.arraycopy(toAdd, 0, newValue, value.length, toAdd.length);
-        value = newValue;
-        return this;
-    }
+  protected ByteArrayBuilder add(byte... toAdd) {
+    final byte[] newValue = new byte[value.length + toAdd.length];
+    System.arraycopy(value, 0, newValue, 0, value.length);
+    System.arraycopy(toAdd, 0, newValue, value.length, toAdd.length);
+    value = newValue;
+    return this;
+  }
 }

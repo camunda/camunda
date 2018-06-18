@@ -15,92 +15,82 @@
  */
 package io.zeebe.dispatcher;
 
-import org.junit.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class AtomicPositionTest
-{
-    private final AtomicPosition atomicPosition = new AtomicPosition();
+import org.junit.Test;
 
-    @Test
-    public void shouldGetDefaultPosition()
-    {
-        // given
+public class AtomicPositionTest {
+  private final AtomicPosition atomicPosition = new AtomicPosition();
 
-        // when
-        final long defaultValue = atomicPosition.get();
+  @Test
+  public void shouldGetDefaultPosition() {
+    // given
 
-        // then
-        assertThat(defaultValue).isEqualTo(0);
-    }
+    // when
+    final long defaultValue = atomicPosition.get();
 
-    @Test
-    public void shouldSetAndGetPosition()
-    {
-        // given
+    // then
+    assertThat(defaultValue).isEqualTo(0);
+  }
 
-        // when
-        atomicPosition.set(1);
+  @Test
+  public void shouldSetAndGetPosition() {
+    // given
 
-        // then
-        assertThat(atomicPosition.get()).isEqualTo(1);
-    }
+    // when
+    atomicPosition.set(1);
 
+    // then
+    assertThat(atomicPosition.get()).isEqualTo(1);
+  }
 
-    @Test
-    public void shouldProposeMaxOrderedPositionIfNoPositionWasSet()
-    {
-        // given
+  @Test
+  public void shouldProposeMaxOrderedPositionIfNoPositionWasSet() {
+    // given
 
-        // when
-        final boolean success = atomicPosition.proposeMaxOrdered(1);
+    // when
+    final boolean success = atomicPosition.proposeMaxOrdered(1);
 
-        // then
-        assertThat(success).isTrue();
-        assertThat(atomicPosition.get()).isEqualTo(1);
-    }
+    // then
+    assertThat(success).isTrue();
+    assertThat(atomicPosition.get()).isEqualTo(1);
+  }
 
+  @Test
+  public void shouldProposeMaxOrderedPosition() {
+    // given
+    atomicPosition.set(1);
 
-    @Test
-    public void shouldProposeMaxOrderedPosition()
-    {
-        // given
-        atomicPosition.set(1);
+    // when
+    final boolean success = atomicPosition.proposeMaxOrdered(2);
 
-        // when
-        final boolean success = atomicPosition.proposeMaxOrdered(2);
+    // then
+    assertThat(success).isTrue();
+    assertThat(atomicPosition.get()).isEqualTo(2);
+  }
 
-        // then
-        assertThat(success).isTrue();
-        assertThat(atomicPosition.get()).isEqualTo(2);
-    }
+  @Test
+  public void shouldNotProposeMaxOrderedPosition() {
+    // given
+    atomicPosition.set(2);
 
-    @Test
-    public void shouldNotProposeMaxOrderedPosition()
-    {
-        // given
-        atomicPosition.set(2);
+    // when
+    final boolean success = atomicPosition.proposeMaxOrdered(1);
 
-        // when
-        final boolean success = atomicPosition.proposeMaxOrdered(1);
+    // then
+    assertThat(success).isFalse();
+    assertThat(atomicPosition.get()).isEqualTo(2);
+  }
 
-        // then
-        assertThat(success).isFalse();
-        assertThat(atomicPosition.get()).isEqualTo(2);
-    }
+  @Test
+  public void shouldResetPosition() {
+    // given
+    atomicPosition.set(2);
 
-    @Test
-    public void shouldResetPosition()
-    {
-        // given
-        atomicPosition.set(2);
+    // when
+    atomicPosition.reset();
 
-        // when
-        atomicPosition.reset();
-
-        // then
-        assertThat(atomicPosition.get()).isEqualTo(-1);
-    }
-
+    // then
+    assertThat(atomicPosition.get()).isEqualTo(-1);
+  }
 }

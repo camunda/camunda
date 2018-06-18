@@ -17,8 +17,6 @@
  */
 package io.zeebe.broker.workflow.map;
 
-import org.agrona.DirectBuffer;
-
 import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
@@ -26,79 +24,69 @@ import io.zeebe.broker.logstreams.processor.TypedStreamReader;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.map.Long2LongZbMap;
 import io.zeebe.util.cache.ExpandableBufferCache;
+import org.agrona.DirectBuffer;
 
 /**
- * Cache of workflow instance payload. It contains an LRU cache of the payload
- * and an map which holds the position of the payload events.
+ * Cache of workflow instance payload. It contains an LRU cache of the payload and an map which
+ * holds the position of the payload events.
  *
- * <p>
- * When a payload is requested then the it is returned from the cache. If it is
- * not present in the cache then the payload event is seek in the log stream.
+ * <p>When a payload is requested then the it is returned from the cache. If it is not present in
+ * the cache then the payload event is seek in the log stream.
  */
-public class PayloadCache implements AutoCloseable, StreamProcessorLifecycleAware
-{
-    private final Long2LongZbMap map;
+public class PayloadCache implements AutoCloseable, StreamProcessorLifecycleAware {
+  private final Long2LongZbMap map;
 
-    private final ExpandableBufferCache cache;
-    private TypedStreamReader logStreamReader;
+  private final ExpandableBufferCache cache;
+  private TypedStreamReader logStreamReader;
 
-    public PayloadCache(int cacheSize)
-    {
-        this.map = new Long2LongZbMap();
-        this.cache = new ExpandableBufferCache(cacheSize, 1024, this::lookupPayload);
+  public PayloadCache(int cacheSize) {
+    this.map = new Long2LongZbMap();
+    this.cache = new ExpandableBufferCache(cacheSize, 1024, this::lookupPayload);
+  }
+
+  @Override
+  public void onOpen(TypedStreamProcessor streamProcessor) {
+    this.logStreamReader = streamProcessor.getEnvironment().buildStreamReader();
+  }
+
+  @Override
+  public void onClose() {
+    this.logStreamReader.close();
+  }
+
+  private DirectBuffer lookupPayload(long position) {
+    final TypedRecord<WorkflowInstanceRecord> record =
+        logStreamReader.readValue(position, WorkflowInstanceRecord.class);
+    return record.getValue().getPayload();
+  }
+
+  public DirectBuffer getPayload(long workflowInstanceKey) {
+    DirectBuffer payload = null;
+
+    final long position = map.get(workflowInstanceKey, -1L);
+
+    if (position > 0) {
+      payload = cache.get(position);
     }
+    return payload == null ? WorkflowInstanceRecord.EMPTY_PAYLOAD : payload;
+  }
 
-    @Override
-    public void onOpen(TypedStreamProcessor streamProcessor)
-    {
-        this.logStreamReader = streamProcessor.getEnvironment().buildStreamReader();
-    }
+  public void addPayload(
+      long workflowInstanceKey, long payloadEventPosition, DirectBuffer payload) {
+    map.put(workflowInstanceKey, payloadEventPosition);
+    cache.put(payloadEventPosition, payload);
+  }
 
-    @Override
-    public void onClose()
-    {
-        this.logStreamReader.close();
-    }
+  public void remove(long workflowInstanceKey) {
+    map.remove(workflowInstanceKey, -1L);
+  }
 
-    private DirectBuffer lookupPayload(long position)
-    {
-        final TypedRecord<WorkflowInstanceRecord> record = logStreamReader.readValue(position, WorkflowInstanceRecord.class);
-        return record.getValue().getPayload();
-    }
+  public Long2LongZbMap getMap() {
+    return map;
+  }
 
-    public DirectBuffer getPayload(long workflowInstanceKey)
-    {
-        DirectBuffer payload = null;
-
-        final long position = map.get(workflowInstanceKey, -1L);
-
-        if (position > 0)
-        {
-            payload = cache.get(position);
-        }
-        return payload == null ? WorkflowInstanceRecord.EMPTY_PAYLOAD : payload;
-    }
-
-    public void addPayload(long workflowInstanceKey, long payloadEventPosition, DirectBuffer payload)
-    {
-        map.put(workflowInstanceKey, payloadEventPosition);
-        cache.put(payloadEventPosition, payload);
-    }
-
-    public void remove(long workflowInstanceKey)
-    {
-        map.remove(workflowInstanceKey, -1L);
-    }
-
-    public Long2LongZbMap getMap()
-    {
-        return map;
-    }
-
-    @Override
-    public void close()
-    {
-        map.close();
-    }
-
+  @Override
+  public void close() {
+    map.close();
+  }
 }

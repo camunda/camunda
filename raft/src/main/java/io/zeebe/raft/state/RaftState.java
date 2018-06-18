@@ -15,9 +15,8 @@
  */
 package io.zeebe.raft.state;
 
-public enum RaftState
-{
-    LEADER,
-    CANDIDATE,
-    FOLLOWER,
+public enum RaftState {
+  LEADER,
+  CANDIDATE,
+  FOLLOWER,
 }

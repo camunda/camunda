@@ -21,69 +21,92 @@ import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
 import io.zeebe.broker.clustering.base.snapshots.SnapshotReplicationInstallService;
 import io.zeebe.broker.clustering.base.snapshots.SnapshotReplicationService;
+import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
-import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.gossip.Gossip;
 import io.zeebe.raft.Raft;
 import io.zeebe.servicecontainer.ServiceName;
 
-public class ClusterBaseLayerServiceNames
-{
-    public static final ServiceName<Void> CLUSTERING_BASE_LAYER = ServiceName.newServiceName("cluster.base.bootstrapped", Void.class);
+public class ClusterBaseLayerServiceNames {
+  public static final ServiceName<Void> CLUSTERING_BASE_LAYER =
+      ServiceName.newServiceName("cluster.base.bootstrapped", Void.class);
 
-    public static final ServiceName<NodeInfo> LOCAL_NODE = ServiceName.newServiceName("cluster.base.localNode", NodeInfo.class);
+  public static final ServiceName<NodeInfo> LOCAL_NODE =
+      ServiceName.newServiceName("cluster.base.localNode", NodeInfo.class);
 
-    public static final ServiceName<Void> MANAGEMENT_API_REQUEST_HANDLER_SERVICE_NAME = ServiceName.newServiceName("cluster.base.managementApiRequestHandlerService", Void.class);
-    public static final ServiceName<TopologyManager> TOPOLOGY_MANAGER_SERVICE = ServiceName.newServiceName("cluster.base.topologyManager", TopologyManager.class);
-    public static final ServiceName<Object> REMOTE_ADDRESS_MANAGER_SERVICE = ServiceName.newServiceName("cluster.base.remoteAddrManager", Object.class);
+  public static final ServiceName<Void> MANAGEMENT_API_REQUEST_HANDLER_SERVICE_NAME =
+      ServiceName.newServiceName("cluster.base.managementApiRequestHandlerService", Void.class);
+  public static final ServiceName<TopologyManager> TOPOLOGY_MANAGER_SERVICE =
+      ServiceName.newServiceName("cluster.base.topologyManager", TopologyManager.class);
+  public static final ServiceName<Object> REMOTE_ADDRESS_MANAGER_SERVICE =
+      ServiceName.newServiceName("cluster.base.remoteAddrManager", Object.class);
 
-    public static final ServiceName<Gossip> GOSSIP_SERVICE = ServiceName.newServiceName("cluster.base.gossip", Gossip.class);
-    public static final ServiceName<Object> GOSSIP_JOIN_SERVICE = ServiceName.newServiceName("cluster.base.gossip.join", Object.class);
+  public static final ServiceName<Gossip> GOSSIP_SERVICE =
+      ServiceName.newServiceName("cluster.base.gossip", Gossip.class);
+  public static final ServiceName<Object> GOSSIP_JOIN_SERVICE =
+      ServiceName.newServiceName("cluster.base.gossip.join", Object.class);
 
-    public static final ServiceName<Object> RAFT_BOOTSTRAP_SERVICE = ServiceName.newServiceName("cluster.base.raft.bootstrap", Object.class);
-    public static final ServiceName<RaftPersistentConfigurationManager> RAFT_CONFIGURATION_MANAGER = ServiceName.newServiceName("cluster.base.raft.configurationManager", RaftPersistentConfigurationManager.class);
-    public static final ServiceName<Raft> RAFT_SERVICE_GROUP = ServiceName.newServiceName("cluster.base.raft.service", Raft.class);
+  public static final ServiceName<Object> RAFT_BOOTSTRAP_SERVICE =
+      ServiceName.newServiceName("cluster.base.raft.bootstrap", Object.class);
+  public static final ServiceName<RaftPersistentConfigurationManager> RAFT_CONFIGURATION_MANAGER =
+      ServiceName.newServiceName(
+          "cluster.base.raft.configurationManager", RaftPersistentConfigurationManager.class);
+  public static final ServiceName<Raft> RAFT_SERVICE_GROUP =
+      ServiceName.newServiceName("cluster.base.raft.service", Raft.class);
 
-    public static ServiceName<Void> raftInstallServiceName(final String topicName, int partitionId)
-    {
-        return ServiceName.newServiceName(String.format("cluster.base.raft.install.%s-%d", topicName, partitionId), Void.class);
-    }
+  public static ServiceName<Void> raftInstallServiceName(final String topicName, int partitionId) {
+    return ServiceName.newServiceName(
+        String.format("cluster.base.raft.install.%s-%d", topicName, partitionId), Void.class);
+  }
 
-    public static ServiceName<Partition> leaderPartitionServiceName(final String partitionName)
-    {
-        return ServiceName.newServiceName(String.format("cluster.base.partition.%s.leader", partitionName), Partition.class);
-    }
+  public static ServiceName<Partition> leaderPartitionServiceName(final String partitionName) {
+    return ServiceName.newServiceName(
+        String.format("cluster.base.partition.%s.leader", partitionName), Partition.class);
+  }
 
-    public static ServiceName<Partition> followerPartitionServiceName(final String partitionName)
-    {
-        return ServiceName.newServiceName(String.format("cluster.base.partition.%s.follower", partitionName), Partition.class);
-    }
+  public static ServiceName<Partition> followerPartitionServiceName(final String partitionName) {
+    return ServiceName.newServiceName(
+        String.format("cluster.base.partition.%s.follower", partitionName), Partition.class);
+  }
 
-    public static ServiceName<Void> partitionInstallServiceName(final String partitionName)
-    {
-        return ServiceName.newServiceName(String.format("cluster.base.partition.install.%s", partitionName), Void.class);
-    }
+  public static ServiceName<Void> partitionInstallServiceName(final String partitionName) {
+    return ServiceName.newServiceName(
+        String.format("cluster.base.partition.install.%s", partitionName), Void.class);
+  }
 
-    public static final ServiceName<Partition> LEADER_PARTITION_GROUP_NAME = ServiceName.newServiceName("cluster.base.leaderGroup", Partition.class);
-    public static final ServiceName<Partition> FOLLOWER_PARTITION_GROUP_NAME = ServiceName.newServiceName("cluster.base.followerGroup", Partition.class);
+  public static final ServiceName<Partition> LEADER_PARTITION_GROUP_NAME =
+      ServiceName.newServiceName("cluster.base.leaderGroup", Partition.class);
+  public static final ServiceName<Partition> FOLLOWER_PARTITION_GROUP_NAME =
+      ServiceName.newServiceName("cluster.base.followerGroup", Partition.class);
 
+  public static final ServiceName<Partition> LEADER_PARTITION_SYSTEM_GROUP_NAME =
+      ServiceName.newServiceName("cluster.base.leaderGroup.system", Partition.class);
 
-    public static final ServiceName<Partition> LEADER_PARTITION_SYSTEM_GROUP_NAME = ServiceName.newServiceName("cluster.base.leaderGroup.system", Partition.class);
+  public static final ServiceName<Void> SYSTEM_PARTITION_BOOTSTRAP_SERVICE_NAME =
+      ServiceName.newServiceName("cluster.base.system.partition.bootstrap", Void.class);
+  public static final ServiceName<Void> SYSTEM_PARTITION_BOOTSTRAP_EXPECTED_SERVICE_NAME =
+      ServiceName.newServiceName("cluster.base.system.partition.bootstrap.expect", Void.class);
+  public static final ServiceName<Void> SYSTEM_PARTITION_BOOTSTRAP_REPLICATION_SERVICE_NAME =
+      ServiceName.newServiceName("cluster.base.system.partition.bootstrap.replication", Void.class);
 
-    public static final ServiceName<Void> SYSTEM_PARTITION_BOOTSTRAP_SERVICE_NAME = ServiceName.newServiceName("cluster.base.system.partition.bootstrap", Void.class);
-    public static final ServiceName<Void> SYSTEM_PARTITION_BOOTSTRAP_EXPECTED_SERVICE_NAME = ServiceName.newServiceName("cluster.base.system.partition.bootstrap.expect", Void.class);
-    public static final ServiceName<Void> SYSTEM_PARTITION_BOOTSTRAP_REPLICATION_SERVICE_NAME = ServiceName.newServiceName("cluster.base.system.partition.bootstrap.replication", Void.class);
+  public static final ServiceName<Void> DEFAULT_TOPICS_BOOTSTRAP_SERVICE_NAME =
+      ServiceName.newServiceName("cluster.base.bootstrap.defaultTopics", Void.class);
 
-    public static final ServiceName<Void> DEFAULT_TOPICS_BOOTSTRAP_SERVICE_NAME = ServiceName.newServiceName("cluster.base.bootstrap.defaultTopics", Void.class);
+  public static final ServiceName<SnapshotReplicationInstallService>
+      SNAPSHOT_REPLICATION_INSTALL_SERVICE_NAME =
+          ServiceName.newServiceName(
+              "cluster.orchestration.snapshotReplication.install",
+              SnapshotReplicationInstallService.class);
 
-    public static final ServiceName<SnapshotReplicationInstallService> SNAPSHOT_REPLICATION_INSTALL_SERVICE_NAME = ServiceName.newServiceName("cluster.orchestration.snapshotReplication.install", SnapshotReplicationInstallService.class);
-    public static ServiceName<SnapshotReplicationService> snapshotReplicationServiceName(final Partition partition)
-    {
-        final PartitionInfo info = partition.getInfo();
-        final String name = String.format("cluster.base.snapshotReplication.%s-%s.replicate",
-                info.getTopicName(), info.getPartitionId());
+  public static ServiceName<SnapshotReplicationService> snapshotReplicationServiceName(
+      final Partition partition) {
+    final PartitionInfo info = partition.getInfo();
+    final String name =
+        String.format(
+            "cluster.base.snapshotReplication.%s-%s.replicate",
+            info.getTopicName(), info.getPartitionId());
 
-        return ServiceName.newServiceName(name, SnapshotReplicationService.class);
-    }
+    return ServiceName.newServiceName(name, SnapshotReplicationService.class);
+  }
 }

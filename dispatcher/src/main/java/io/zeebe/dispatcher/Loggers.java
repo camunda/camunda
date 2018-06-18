@@ -18,9 +18,7 @@ package io.zeebe.dispatcher;
 import io.zeebe.util.ZbLogger;
 import org.slf4j.Logger;
 
-public class Loggers
-{
+public class Loggers {
 
-    public static final Logger DISPATCHER_LOGGER = new ZbLogger("io.zeebe.dispatcher");
-
+  public static final Logger DISPATCHER_LOGGER = new ZbLogger("io.zeebe.dispatcher");
 }

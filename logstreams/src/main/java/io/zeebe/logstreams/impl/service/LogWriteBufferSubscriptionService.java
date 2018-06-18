@@ -20,45 +20,38 @@ import io.zeebe.dispatcher.Subscription;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.util.sched.future.ActorFuture;
 
-public class LogWriteBufferSubscriptionService implements Service<Subscription>
-{
-    private final Injector<Dispatcher> logWritebufferInjector = new Injector<>();
+public class LogWriteBufferSubscriptionService implements Service<Subscription> {
+  private final Injector<Dispatcher> logWritebufferInjector = new Injector<>();
 
-    private final String subscriptionName;
+  private final String subscriptionName;
 
-    private ActorFuture<Subscription> subscriptionFuture;
+  private ActorFuture<Subscription> subscriptionFuture;
 
-    public LogWriteBufferSubscriptionService(String subscriptionName)
-    {
-        this.subscriptionName = subscriptionName;
-    }
+  public LogWriteBufferSubscriptionService(String subscriptionName) {
+    this.subscriptionName = subscriptionName;
+  }
 
-    @Override
-    public void start(ServiceStartContext startContext)
-    {
-        final Dispatcher logBuffer = logWritebufferInjector.getValue();
+  @Override
+  public void start(ServiceStartContext startContext) {
+    final Dispatcher logBuffer = logWritebufferInjector.getValue();
 
-        subscriptionFuture = logBuffer.openSubscriptionAsync(subscriptionName);
-        startContext.async(subscriptionFuture);
-    }
+    subscriptionFuture = logBuffer.openSubscriptionAsync(subscriptionName);
+    startContext.async(subscriptionFuture);
+  }
 
-    @Override
-    public void stop(ServiceStopContext stopContext)
-    {
-        final Dispatcher logBuffer = logWritebufferInjector.getValue();
+  @Override
+  public void stop(ServiceStopContext stopContext) {
+    final Dispatcher logBuffer = logWritebufferInjector.getValue();
 
-        stopContext.async(logBuffer.closeSubscriptionAsync(subscriptionFuture.join()));
-    }
+    stopContext.async(logBuffer.closeSubscriptionAsync(subscriptionFuture.join()));
+  }
 
-    @Override
-    public Subscription get()
-    {
-        return subscriptionFuture.join();
-    }
+  @Override
+  public Subscription get() {
+    return subscriptionFuture.join();
+  }
 
-    public Injector<Dispatcher> getWritebufferInjector()
-    {
-        return logWritebufferInjector;
-    }
-
+  public Injector<Dispatcher> getWritebufferInjector() {
+    return logWritebufferInjector;
+  }
 }

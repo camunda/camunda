@@ -15,24 +15,18 @@
  */
 package io.zeebe.msgpack.mapping;
 
-/**
- * Represents a static constructor to constructing the
- * node ids for the {@link MsgPackTree}.
- */
-public class MsgPackTreeNodeIdConstructor
-{
-    public static final String JSON_PATH_SEPARATOR = "[";
-    public static final String JSON_PATH_SEPARATOR_END = "]";
+/** Represents a static constructor to constructing the node ids for the {@link MsgPackTree}. */
+public class MsgPackTreeNodeIdConstructor {
+  public static final String JSON_PATH_SEPARATOR = "[";
+  public static final String JSON_PATH_SEPARATOR_END = "]";
 
-    public static String construct(String parentId, String nodeName)
-    {
-        return parentId + JSON_PATH_SEPARATOR + nodeName  + JSON_PATH_SEPARATOR_END;
-    }
+  public static String construct(String parentId, String nodeName) {
+    return parentId + JSON_PATH_SEPARATOR + nodeName + JSON_PATH_SEPARATOR_END;
+  }
 
-    public static String getLastParentId(String nodeId)
-    {
-        final int indexOfLastSeparator = nodeId.lastIndexOf(JSON_PATH_SEPARATOR);
-        final String parentId = nodeId.substring(0, indexOfLastSeparator);
-        return parentId;
-    }
+  public static String getLastParentId(String nodeId) {
+    final int indexOfLastSeparator = nodeId.lastIndexOf(JSON_PATH_SEPARATOR);
+    final String parentId = nodeId.substring(0, indexOfLastSeparator);
+    return parentId;
+  }
 }

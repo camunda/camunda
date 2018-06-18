@@ -15,52 +15,43 @@
  */
 package io.zeebe.transport.util;
 
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.TransportListener;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.TransportListener;
+public class RecordingChannelListener implements TransportListener {
 
-public class RecordingChannelListener implements TransportListener
-{
+  protected List<RemoteAddress> closedConnections = new CopyOnWriteArrayList<>();
+  protected List<RemoteAddress> openedConnections = new CopyOnWriteArrayList<>();
+  protected List<Event> events = new CopyOnWriteArrayList<>();
 
-    protected List<RemoteAddress> closedConnections = new CopyOnWriteArrayList<>();
-    protected List<RemoteAddress> openedConnections = new CopyOnWriteArrayList<>();
-    protected List<Event> events = new CopyOnWriteArrayList<>();
+  public List<RemoteAddress> getClosedConnections() {
+    return closedConnections;
+  }
 
-    public List<RemoteAddress> getClosedConnections()
-    {
-        return closedConnections;
-    }
+  public List<RemoteAddress> getOpenedConnections() {
+    return openedConnections;
+  }
 
-    public List<RemoteAddress> getOpenedConnections()
-    {
-        return openedConnections;
-    }
+  public List<Event> getEvents() {
+    return events;
+  }
 
-    public List<Event> getEvents()
-    {
-        return events;
-    }
+  @Override
+  public void onConnectionEstablished(RemoteAddress remoteAddress) {
+    events.add(Event.ESTABLISHED);
+    openedConnections.add(remoteAddress);
+  }
 
-    @Override
-    public void onConnectionEstablished(RemoteAddress remoteAddress)
-    {
-        events.add(Event.ESTABLISHED);
-        openedConnections.add(remoteAddress);
-    }
+  @Override
+  public void onConnectionClosed(RemoteAddress remoteAddress) {
+    events.add(Event.CLOSED);
+    closedConnections.add(remoteAddress);
+  }
 
-    @Override
-    public void onConnectionClosed(RemoteAddress remoteAddress)
-    {
-        events.add(Event.CLOSED);
-        closedConnections.add(remoteAddress);
-    }
-
-    public enum Event
-    {
-        ESTABLISHED,
-        CLOSED
-    }
-
+  public enum Event {
+    ESTABLISHED,
+    CLOSED
+  }
 }

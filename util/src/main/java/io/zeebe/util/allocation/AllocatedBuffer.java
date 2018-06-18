@@ -15,61 +15,52 @@
  */
 package io.zeebe.util.allocation;
 
-import java.nio.ByteBuffer;
-
 import io.zeebe.util.CloseableSilently;
 import io.zeebe.util.Loggers;
+import java.nio.ByteBuffer;
 import org.slf4j.Logger;
 
-public abstract class AllocatedBuffer implements CloseableSilently
-{
-    private static final Logger LOG = Loggers.ALLOCATION_LOGGER;
+public abstract class AllocatedBuffer implements CloseableSilently {
+  private static final Logger LOG = Loggers.ALLOCATION_LOGGER;
 
-    protected final ByteBuffer rawBuffer;
-    private volatile boolean closed;
+  protected final ByteBuffer rawBuffer;
+  private volatile boolean closed;
 
-    public AllocatedBuffer(ByteBuffer buffer)
-    {
-        this.rawBuffer = buffer;
-        this.closed = false;
+  public AllocatedBuffer(ByteBuffer buffer) {
+    this.rawBuffer = buffer;
+    this.closed = false;
+  }
+
+  public ByteBuffer getRawBuffer() {
+    return rawBuffer;
+  }
+
+  public int capacity() {
+    return rawBuffer.capacity();
+  }
+
+  public boolean isClosed() {
+    return closed;
+  }
+
+  @Override
+  public void close() {
+    if (!closed) {
+      closed = true;
+      doClose();
     }
+  }
 
-    public ByteBuffer getRawBuffer()
-    {
-        return rawBuffer;
+  public abstract void doClose();
+
+  @Override
+  protected void finalize() throws Throwable {
+    if (!isClosed()) {
+      LOG.warn(
+          "Allocated {} bytes{}, which are not released. Releasing bytes.",
+          getRawBuffer().capacity(),
+          rawBuffer.isDirect() ? " direct" : "");
+      close();
     }
-
-    public int capacity()
-    {
-        return rawBuffer.capacity();
-    }
-
-    public boolean isClosed()
-    {
-        return closed;
-    }
-
-    @Override
-    public void close()
-    {
-        if (!closed)
-        {
-            closed = true;
-            doClose();
-        }
-    }
-
-    public abstract void doClose();
-
-    @Override
-    protected void finalize() throws Throwable
-    {
-        if (!isClosed())
-        {
-            LOG.warn("Allocated {} bytes{}, which are not released. Releasing bytes.",
-                     getRawBuffer().capacity(),
-                     rawBuffer.isDirect() ? " direct" : "");
-            close();
-        }
-    }
+  }
 }

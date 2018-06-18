@@ -17,21 +17,18 @@ package io.zeebe.model.bpmn.instance;
 
 import java.util.Collection;
 import java.util.Map;
-
 import org.agrona.DirectBuffer;
 
-public interface Workflow
-{
-    boolean isExecutable();
+public interface Workflow {
+  boolean isExecutable();
 
-    DirectBuffer getBpmnProcessId();
+  DirectBuffer getBpmnProcessId();
 
-    StartEvent getInitialStartEvent();
+  StartEvent getInitialStartEvent();
 
-    <T extends FlowElement> T findFlowElementById(DirectBuffer id);
+  <T extends FlowElement> T findFlowElementById(DirectBuffer id);
 
-    Collection<FlowElement> getFlowElements();
+  Collection<FlowElement> getFlowElements();
 
-    Map<DirectBuffer, FlowElement> getFlowElementMap();
-
+  Map<DirectBuffer, FlowElement> getFlowElementMap();
 }

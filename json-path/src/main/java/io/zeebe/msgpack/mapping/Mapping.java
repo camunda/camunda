@@ -20,42 +20,37 @@ import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 /**
- * Represents a mapping to map from one message pack document to another.
- * The mapping has a json path query for the source and a json path string which points to the target.
+ * Represents a mapping to map from one message pack document to another. The mapping has a json
+ * path query for the source and a json path string which points to the target.
  *
- * This makes it possible to map a part of a message pack document into a new/existing document.
+ * <p>This makes it possible to map a part of a message pack document into a new/existing document.
  * With the mapping it is possible to replace/rename objects.
  */
-public class Mapping
-{
-    public static final String JSON_ROOT_PATH = "$";
-    public static final String MAPPING_STRING = "%s -> %s";
+public class Mapping {
+  public static final String JSON_ROOT_PATH = "$";
+  public static final String MAPPING_STRING = "%s -> %s";
 
-    private final JsonPathQuery source;
-    private final DirectBuffer targetQueryBuffer;
+  private final JsonPathQuery source;
+  private final DirectBuffer targetQueryBuffer;
 
-    public Mapping(JsonPathQuery source, DirectBuffer targetQueryBuffer)
-    {
-        this.source = source;
-        this.targetQueryBuffer = targetQueryBuffer;
-    }
+  public Mapping(JsonPathQuery source, DirectBuffer targetQueryBuffer) {
+    this.source = source;
+    this.targetQueryBuffer = targetQueryBuffer;
+  }
 
-    public JsonPathQuery getSource()
-    {
-        return this.source;
-    }
+  public JsonPathQuery getSource() {
+    return this.source;
+  }
 
+  public DirectBuffer getTargetQueryBuffer() {
+    return this.targetQueryBuffer;
+  }
 
-    public DirectBuffer getTargetQueryBuffer()
-    {
-        return this.targetQueryBuffer;
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format(MAPPING_STRING,
-                             new String(source.getExpression().byteArray()),
-                             BufferUtil.bufferAsString(targetQueryBuffer));
-    }
+  @Override
+  public String toString() {
+    return String.format(
+        MAPPING_STRING,
+        new String(source.getExpression().byteArray()),
+        BufferUtil.bufferAsString(targetQueryBuffer));
+  }
 }

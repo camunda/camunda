@@ -23,36 +23,32 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.broadcast.RecordDescriptor;
 import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
-public class CreditsRequestBuffer extends OneToOneRingBufferChannel
-{
-    protected final int capacityUpperBound;
+public class CreditsRequestBuffer extends OneToOneRingBufferChannel {
+  protected final int capacityUpperBound;
 
-    public CreditsRequestBuffer(final int numRequests)
-    {
-        super(new UnsafeBuffer(new byte[requiredBufferCapacityForNumRequests(numRequests)]));
+  public CreditsRequestBuffer(final int numRequests) {
+    super(new UnsafeBuffer(new byte[requiredBufferCapacityForNumRequests(numRequests)]));
 
-        // note: this is only an upper bound, because OneToOneRingBuffer alings the messages to a certain length
-        // which we do not include in this calculation to avoid relying on agrona-internal concepts
-        this.capacityUpperBound = numRequestsFittingInto(numRequests);
-    }
+    // note: this is only an upper bound, because OneToOneRingBuffer alings the messages to a
+    // certain length
+    // which we do not include in this calculation to avoid relying on agrona-internal concepts
+    this.capacityUpperBound = numRequestsFittingInto(numRequests);
+  }
 
-    public int getCapacityUpperBound()
-    {
-        return capacityUpperBound;
-    }
+  public int getCapacityUpperBound() {
+    return capacityUpperBound;
+  }
 
-    protected static int requiredBufferCapacityForNumRequests(final int numRequests)
-    {
-        final int recordLength = RecordDescriptor.HEADER_LENGTH + CreditsRequest.LENGTH;
-        final int allRecordsLength = numRequests * recordLength;
-        return BitUtil.findNextPositivePowerOfTwo(allRecordsLength) + RingBufferDescriptor.TRAILER_LENGTH;
-    }
+  protected static int requiredBufferCapacityForNumRequests(final int numRequests) {
+    final int recordLength = RecordDescriptor.HEADER_LENGTH + CreditsRequest.LENGTH;
+    final int allRecordsLength = numRequests * recordLength;
+    return BitUtil.findNextPositivePowerOfTwo(allRecordsLength)
+        + RingBufferDescriptor.TRAILER_LENGTH;
+  }
 
-    protected static int numRequestsFittingInto(final int numRequests)
-    {
-        final int recordLength = RecordDescriptor.HEADER_LENGTH + CreditsRequest.LENGTH;
-        final int allRecordsLength = numRequests * recordLength;
-        return BitUtil.findNextPositivePowerOfTwo(allRecordsLength) / recordLength;
-    }
-
+  protected static int numRequestsFittingInto(final int numRequests) {
+    final int recordLength = RecordDescriptor.HEADER_LENGTH + CreditsRequest.LENGTH;
+    final int allRecordsLength = numRequests * recordLength;
+    return BitUtil.findNextPositivePowerOfTwo(allRecordsLength) / recordLength;
+  }
 }

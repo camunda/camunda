@@ -15,7 +15,6 @@
  */
 package io.zeebe.msgpack.value;
 
-public interface ValueArray<T> extends Iterable<T>
-{
-    T add();
+public interface ValueArray<T> extends Iterable<T> {
+  T add();
 }

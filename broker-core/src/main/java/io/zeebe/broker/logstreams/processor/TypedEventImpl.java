@@ -22,54 +22,44 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.RecordMetadata;
 
 @SuppressWarnings({"rawtypes"})
-public class TypedEventImpl implements TypedRecord
-{
-    protected LoggedEvent rawEvent;
-    protected RecordMetadata metadata;
-    protected UnpackedObject value;
+public class TypedEventImpl implements TypedRecord {
+  protected LoggedEvent rawEvent;
+  protected RecordMetadata metadata;
+  protected UnpackedObject value;
 
-    public void wrap(LoggedEvent rawEvent, RecordMetadata metadata, UnpackedObject value)
-    {
-        this.rawEvent = rawEvent;
-        this.metadata = metadata;
-        this.value = value;
-    }
+  public void wrap(LoggedEvent rawEvent, RecordMetadata metadata, UnpackedObject value) {
+    this.rawEvent = rawEvent;
+    this.metadata = metadata;
+    this.value = value;
+  }
 
-    @Override
-    public long getPosition()
-    {
-        return rawEvent.getPosition();
-    }
+  @Override
+  public long getPosition() {
+    return rawEvent.getPosition();
+  }
 
-    @Override
-    public long getSourcePosition()
-    {
-        return rawEvent.getSourceEventPosition();
-    }
+  @Override
+  public long getSourcePosition() {
+    return rawEvent.getSourceEventPosition();
+  }
 
-    @Override
-    public long getKey()
-    {
-        return rawEvent.getKey();
-    }
+  @Override
+  public long getKey() {
+    return rawEvent.getKey();
+  }
 
-    @Override
-    public long getTimestamp()
-    {
-        return rawEvent.getTimestamp();
-    }
+  @Override
+  public long getTimestamp() {
+    return rawEvent.getTimestamp();
+  }
 
-    @Override
-    public RecordMetadata getMetadata()
-    {
-        return metadata;
-    }
+  @Override
+  public RecordMetadata getMetadata() {
+    return metadata;
+  }
 
-    @Override
-    public UnpackedObject getValue()
-    {
-        return value;
-    }
-
-
+  @Override
+  public UnpackedObject getValue() {
+    return value;
+  }
 }

@@ -15,7 +15,6 @@
  */
 package io.zeebe.transport;
 
-public interface ServerControlMessageListener
-{
-    void onMessage(ServerOutput output, RemoteAddress remoteAddress, int controlMessageType);
+public interface ServerControlMessageListener {
+  void onMessage(ServerOutput output, RemoteAddress remoteAddress, int controlMessageType);
 }

@@ -27,66 +27,60 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class FetchSnapshotChunkResponse extends SbeBufferWriterReader<FetchSnapshotChunkResponseEncoder, FetchSnapshotChunkResponseDecoder>
-{
-    private final FetchSnapshotChunkResponseDecoder bodyDecoder = new FetchSnapshotChunkResponseDecoder();
-    private final FetchSnapshotChunkResponseEncoder bodyEncoder = new FetchSnapshotChunkResponseEncoder();
+public class FetchSnapshotChunkResponse
+    extends SbeBufferWriterReader<
+        FetchSnapshotChunkResponseEncoder, FetchSnapshotChunkResponseDecoder> {
+  private final FetchSnapshotChunkResponseDecoder bodyDecoder =
+      new FetchSnapshotChunkResponseDecoder();
+  private final FetchSnapshotChunkResponseEncoder bodyEncoder =
+      new FetchSnapshotChunkResponseEncoder();
 
-    private final DirectBuffer data = new UnsafeBuffer(0, 0);
+  private final DirectBuffer data = new UnsafeBuffer(0, 0);
 
-    public DirectBuffer getData()
-    {
-        return data;
-    }
+  public DirectBuffer getData() {
+    return data;
+  }
 
-    public FetchSnapshotChunkResponse setData(final byte[] data, final int offset, final int length)
-    {
-        this.data.wrap(data, offset, length);
-        return this;
-    }
+  public FetchSnapshotChunkResponse setData(final byte[] data, final int offset, final int length) {
+    this.data.wrap(data, offset, length);
+    return this;
+  }
 
-    public FetchSnapshotChunkResponse setData(final DirectBuffer data)
-    {
-        this.data.wrap(data);
-        return this;
-    }
+  public FetchSnapshotChunkResponse setData(final DirectBuffer data) {
+    this.data.wrap(data);
+    return this;
+  }
 
-    @Override
-    public void reset()
-    {
-        super.reset();
-        this.data.wrap(ArrayUtil.EMPTY_BYTE_ARRAY);
-    }
+  @Override
+  public void reset() {
+    super.reset();
+    this.data.wrap(ArrayUtil.EMPTY_BYTE_ARRAY);
+  }
 
-    @Override
-    protected FetchSnapshotChunkResponseEncoder getBodyEncoder()
-    {
-        return bodyEncoder;
-    }
+  @Override
+  protected FetchSnapshotChunkResponseEncoder getBodyEncoder() {
+    return bodyEncoder;
+  }
 
-    @Override
-    protected FetchSnapshotChunkResponseDecoder getBodyDecoder()
-    {
-        return bodyDecoder;
-    }
+  @Override
+  protected FetchSnapshotChunkResponseDecoder getBodyDecoder() {
+    return bodyDecoder;
+  }
 
-    @Override
-    public int getLength()
-    {
-        return super.getLength() + dataHeaderLength() + data.capacity();
-    }
+  @Override
+  public int getLength() {
+    return super.getLength() + dataHeaderLength() + data.capacity();
+  }
 
-    @Override
-    public void wrap(final DirectBuffer buffer, final int offset, final int length)
-    {
-        super.wrap(buffer, offset, length);
-        data.wrap(buffer, bodyDecoder.limit() + dataHeaderLength(), bodyDecoder.dataLength());
-    }
+  @Override
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
+    super.wrap(buffer, offset, length);
+    data.wrap(buffer, bodyDecoder.limit() + dataHeaderLength(), bodyDecoder.dataLength());
+  }
 
-    @Override
-    public void write(final MutableDirectBuffer buffer, final int offset)
-    {
-        super.write(buffer, offset);
-        bodyEncoder.putData(data, 0, data.capacity());
-    }
+  @Override
+  public void write(final MutableDirectBuffer buffer, final int offset) {
+    super.write(buffer, offset);
+    bodyEncoder.putData(data, 0, data.capacity());
+  }
 }

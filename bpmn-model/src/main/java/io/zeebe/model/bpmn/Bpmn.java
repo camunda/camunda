@@ -15,66 +15,53 @@
  */
 package io.zeebe.model.bpmn;
 
-import java.io.File;
-import java.io.InputStream;
-
 import io.zeebe.model.bpmn.builder.BpmnBuilder;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import java.io.File;
+import java.io.InputStream;
 import org.agrona.DirectBuffer;
 
-public class Bpmn
-{
+public class Bpmn {
 
-    private static final BpmnModelApi INSTANCE = new BpmnModelApi();
+  private static final BpmnModelApi INSTANCE = new BpmnModelApi();
 
-    public static BpmnBuilder createExecutableWorkflow(String bpmnProcessId)
-    {
-        return INSTANCE.createExecutableWorkflow(bpmnProcessId);
-    }
+  public static BpmnBuilder createExecutableWorkflow(String bpmnProcessId) {
+    return INSTANCE.createExecutableWorkflow(bpmnProcessId);
+  }
 
-    public static WorkflowDefinition readFromXmlFile(File file)
-    {
-        return INSTANCE.readFromXmlFile(file);
-    }
+  public static WorkflowDefinition readFromXmlFile(File file) {
+    return INSTANCE.readFromXmlFile(file);
+  }
 
-    public static WorkflowDefinition readFromXmlStream(InputStream stream)
-    {
-        return INSTANCE.readFromXmlStream(stream);
-    }
+  public static WorkflowDefinition readFromXmlStream(InputStream stream) {
+    return INSTANCE.readFromXmlStream(stream);
+  }
 
-    public static WorkflowDefinition readFromXmlBuffer(DirectBuffer buffer)
-    {
-        return INSTANCE.readFromXmlBuffer(buffer);
-    }
+  public static WorkflowDefinition readFromXmlBuffer(DirectBuffer buffer) {
+    return INSTANCE.readFromXmlBuffer(buffer);
+  }
 
-    public static WorkflowDefinition readFromXmlString(String workflow)
-    {
-        return INSTANCE.readFromXmlString(workflow);
-    }
+  public static WorkflowDefinition readFromXmlString(String workflow) {
+    return INSTANCE.readFromXmlString(workflow);
+  }
 
-    public static WorkflowDefinition readFromYamlFile(File file)
-    {
-        return INSTANCE.readFromYamlFile(file);
-    }
+  public static WorkflowDefinition readFromYamlFile(File file) {
+    return INSTANCE.readFromYamlFile(file);
+  }
 
-    public static WorkflowDefinition readFromYamlStream(InputStream stream)
-    {
-        return INSTANCE.readFromYamlStream(stream);
-    }
+  public static WorkflowDefinition readFromYamlStream(InputStream stream) {
+    return INSTANCE.readFromYamlStream(stream);
+  }
 
-    public WorkflowDefinition readFromYamlBuffer(DirectBuffer buffer)
-    {
-        return INSTANCE.readFromYamlBuffer(buffer);
-    }
+  public WorkflowDefinition readFromYamlBuffer(DirectBuffer buffer) {
+    return INSTANCE.readFromYamlBuffer(buffer);
+  }
 
-    public WorkflowDefinition readFromYamlString(String workflow)
-    {
-        return INSTANCE.readFromYamlString(workflow);
-    }
+  public WorkflowDefinition readFromYamlString(String workflow) {
+    return INSTANCE.readFromYamlString(workflow);
+  }
 
-    public static String convertToString(WorkflowDefinition definition)
-    {
-        return INSTANCE.convertToString(definition);
-    }
-
+  public static String convertToString(WorkflowDefinition definition) {
+    return INSTANCE.convertToString(definition);
+  }
 }

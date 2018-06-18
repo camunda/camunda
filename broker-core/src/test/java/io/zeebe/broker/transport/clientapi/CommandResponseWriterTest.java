@@ -21,83 +21,80 @@ import static io.zeebe.util.StringUtil.getBytes;
 import static io.zeebe.util.VarDataUtil.readBytes;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Before;
-import org.junit.Test;
-
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.util.buffer.DirectBufferWriter;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.Before;
+import org.junit.Test;
 
-public class CommandResponseWriterTest
-{
-    private static final int PARTITION_ID = 1;
-    private static final long SOURCE_RECORD_POSITION = 121L;
-    private static final long KEY = 2L;
-    private static final long TIMESTAMP = 3L;
-    private static final byte[] EVENT = getBytes("state");
+public class CommandResponseWriterTest {
+  private static final int PARTITION_ID = 1;
+  private static final long SOURCE_RECORD_POSITION = 121L;
+  private static final long KEY = 2L;
+  private static final long TIMESTAMP = 3L;
+  private static final byte[] EVENT = getBytes("state");
 
-    private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-    private final ExecuteCommandResponseDecoder responseDecoder = new ExecuteCommandResponseDecoder();
+  private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
+  private final ExecuteCommandResponseDecoder responseDecoder = new ExecuteCommandResponseDecoder();
 
-    private CommandResponseWriter responseWriter;
-    private DirectBufferWriter eventWriter;
+  private CommandResponseWriter responseWriter;
+  private DirectBufferWriter eventWriter;
 
-    @Before
-    public void setup()
-    {
-        eventWriter = new DirectBufferWriter();
-    }
+  @Before
+  public void setup() {
+    eventWriter = new DirectBufferWriter();
+  }
 
-    @Test
-    public void shouldWriteResponse()
-    {
-        // given
-        responseWriter = new CommandResponseWriter(null);
+  @Test
+  public void shouldWriteResponse() {
+    // given
+    responseWriter = new CommandResponseWriter(null);
 
-        eventWriter.wrap(new UnsafeBuffer(EVENT), 0, EVENT.length);
+    eventWriter.wrap(new UnsafeBuffer(EVENT), 0, EVENT.length);
 
-        responseWriter
-            .partitionId(PARTITION_ID)
-            .key(KEY)
-            .timestamp(TIMESTAMP)
-            .recordType(RecordType.EVENT)
-            .valueType(ValueType.JOB)
-            .intent(JobIntent.CREATED)
-            .sourcePosition(SOURCE_RECORD_POSITION)
-            .valueWriter(eventWriter);
+    responseWriter
+        .partitionId(PARTITION_ID)
+        .key(KEY)
+        .timestamp(TIMESTAMP)
+        .recordType(RecordType.EVENT)
+        .valueType(ValueType.JOB)
+        .intent(JobIntent.CREATED)
+        .sourcePosition(SOURCE_RECORD_POSITION)
+        .valueWriter(eventWriter);
 
-        final UnsafeBuffer buf = new UnsafeBuffer(new byte[responseWriter.getLength()]);
+    final UnsafeBuffer buf = new UnsafeBuffer(new byte[responseWriter.getLength()]);
 
-        // when
-        responseWriter.write(buf, 0);
+    // when
+    responseWriter.write(buf, 0);
 
-        // then
-        int offset = 0;
+    // then
+    int offset = 0;
 
-        messageHeaderDecoder.wrap(buf, offset);
-        assertThat(messageHeaderDecoder.blockLength()).isEqualTo(responseDecoder.sbeBlockLength());
-        assertThat(messageHeaderDecoder.templateId()).isEqualTo(responseDecoder.sbeTemplateId());
-        assertThat(messageHeaderDecoder.schemaId()).isEqualTo(responseDecoder.sbeSchemaId());
-        assertThat(messageHeaderDecoder.version()).isEqualTo(responseDecoder.sbeSchemaVersion());
+    messageHeaderDecoder.wrap(buf, offset);
+    assertThat(messageHeaderDecoder.blockLength()).isEqualTo(responseDecoder.sbeBlockLength());
+    assertThat(messageHeaderDecoder.templateId()).isEqualTo(responseDecoder.sbeTemplateId());
+    assertThat(messageHeaderDecoder.schemaId()).isEqualTo(responseDecoder.sbeSchemaId());
+    assertThat(messageHeaderDecoder.version()).isEqualTo(responseDecoder.sbeSchemaVersion());
 
-        offset += messageHeaderDecoder.encodedLength();
+    offset += messageHeaderDecoder.encodedLength();
 
-        responseDecoder.wrap(buf, offset, responseDecoder.sbeBlockLength(), responseDecoder.sbeSchemaVersion());
-        assertThat(responseDecoder.partitionId()).isEqualTo(PARTITION_ID);
-        assertThat(responseDecoder.key()).isEqualTo(KEY);
-        assertThat(responseDecoder.timestamp()).isEqualTo(TIMESTAMP);
-        assertThat(responseDecoder.recordType()).isEqualTo(RecordType.EVENT);
-        assertThat(responseDecoder.valueType()).isEqualTo(ValueType.JOB);
-        assertThat(responseDecoder.sourceRecordPosition()).isEqualTo(SOURCE_RECORD_POSITION);
-        assertThat(responseDecoder.intent()).isEqualTo(JobIntent.CREATED.value());
+    responseDecoder.wrap(
+        buf, offset, responseDecoder.sbeBlockLength(), responseDecoder.sbeSchemaVersion());
+    assertThat(responseDecoder.partitionId()).isEqualTo(PARTITION_ID);
+    assertThat(responseDecoder.key()).isEqualTo(KEY);
+    assertThat(responseDecoder.timestamp()).isEqualTo(TIMESTAMP);
+    assertThat(responseDecoder.recordType()).isEqualTo(RecordType.EVENT);
+    assertThat(responseDecoder.valueType()).isEqualTo(ValueType.JOB);
+    assertThat(responseDecoder.sourceRecordPosition()).isEqualTo(SOURCE_RECORD_POSITION);
+    assertThat(responseDecoder.intent()).isEqualTo(JobIntent.CREATED.value());
 
-        assertThat(responseDecoder.valueLength()).isEqualTo(EVENT.length);
+    assertThat(responseDecoder.valueLength()).isEqualTo(EVENT.length);
 
-        final byte[] event = readBytes(responseDecoder::getValue, responseDecoder::valueLength);
-        assertThat(event).isEqualTo(EVENT);
-    }
+    final byte[] event = readBytes(responseDecoder::getValue, responseDecoder::valueLength);
+    assertThat(event).isEqualTo(EVENT);
+  }
 }

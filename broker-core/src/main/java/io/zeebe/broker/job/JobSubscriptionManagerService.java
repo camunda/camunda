@@ -24,63 +24,59 @@ import io.zeebe.transport.ServerTransport;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 
-public class JobSubscriptionManagerService implements Service<JobSubscriptionManager>
-{
-    protected final Injector<ServerTransport> transportInjector = new Injector<>();
-    protected final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector = new Injector<>();
+public class JobSubscriptionManagerService implements Service<JobSubscriptionManager> {
+  protected final Injector<ServerTransport> transportInjector = new Injector<>();
+  protected final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector =
+      new Injector<>();
 
-    protected final ServiceContainer serviceContainer;
+  protected final ServiceContainer serviceContainer;
 
-    protected JobSubscriptionManager service;
+  protected JobSubscriptionManager service;
 
-    protected final ServiceGroupReference<Partition> leaderPartitionsGroupReference = ServiceGroupReference.<Partition>create()
-        .onAdd((name, partition) -> service.addPartition(name, partition))
-        .onRemove((name, partition) -> service.removePartition(partition))
-        .build();
+  protected final ServiceGroupReference<Partition> leaderPartitionsGroupReference =
+      ServiceGroupReference.<Partition>create()
+          .onAdd((name, partition) -> service.addPartition(name, partition))
+          .onRemove((name, partition) -> service.removePartition(partition))
+          .build();
 
-    public JobSubscriptionManagerService(ServiceContainer serviceContainer)
-    {
-        this.serviceContainer = serviceContainer;
-    }
+  public JobSubscriptionManagerService(ServiceContainer serviceContainer) {
+    this.serviceContainer = serviceContainer;
+  }
 
-    @Override
-    public void start(ServiceStartContext startContext)
-    {
-        final ServerTransport clientApiTransport = transportInjector.getValue();
-        final StreamProcessorServiceFactory streamProcessorServiceFactory = streamProcessorServiceFactoryInjector.getValue();
+  @Override
+  public void start(ServiceStartContext startContext) {
+    final ServerTransport clientApiTransport = transportInjector.getValue();
+    final StreamProcessorServiceFactory streamProcessorServiceFactory =
+        streamProcessorServiceFactoryInjector.getValue();
 
-        final ActorScheduler actorScheduler = startContext.getScheduler();
-        service = new JobSubscriptionManager(serviceContainer, streamProcessorServiceFactory, clientApiTransport);
-        actorScheduler.submitActor(service);
+    final ActorScheduler actorScheduler = startContext.getScheduler();
+    service =
+        new JobSubscriptionManager(
+            serviceContainer, streamProcessorServiceFactory, clientApiTransport);
+    actorScheduler.submitActor(service);
 
-        final ActorFuture<Void> transportRegistration = clientApiTransport.registerChannelListener(service);
-        startContext.async(transportRegistration);
-    }
+    final ActorFuture<Void> transportRegistration =
+        clientApiTransport.registerChannelListener(service);
+    startContext.async(transportRegistration);
+  }
 
-    @Override
-    public void stop(ServiceStopContext stopContext)
-    {
-    }
+  @Override
+  public void stop(ServiceStopContext stopContext) {}
 
-    @Override
-    public JobSubscriptionManager get()
-    {
-        return service;
-    }
+  @Override
+  public JobSubscriptionManager get() {
+    return service;
+  }
 
-    public ServiceGroupReference<Partition> getLeaderPartitionsGroupReference()
-    {
-        return leaderPartitionsGroupReference;
-    }
+  public ServiceGroupReference<Partition> getLeaderPartitionsGroupReference() {
+    return leaderPartitionsGroupReference;
+  }
 
-    public Injector<ServerTransport> getClientApiTransportInjector()
-    {
-        return transportInjector;
-    }
+  public Injector<ServerTransport> getClientApiTransportInjector() {
+    return transportInjector;
+  }
 
-    public Injector<StreamProcessorServiceFactory> getStreamProcessorServiceFactoryInjector()
-    {
-        return streamProcessorServiceFactoryInjector;
-    }
-
+  public Injector<StreamProcessorServiceFactory> getStreamProcessorServiceFactoryInjector() {
+    return streamProcessorServiceFactoryInjector;
+  }
 }

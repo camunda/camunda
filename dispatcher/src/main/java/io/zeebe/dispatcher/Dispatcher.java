@@ -15,6 +15,9 @@
  */
 package io.zeebe.dispatcher;
 
+import static io.zeebe.dispatcher.impl.PositionUtil.*;
+import static io.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
+
 import io.zeebe.dispatcher.impl.log.LogBuffer;
 import io.zeebe.dispatcher.impl.log.LogBufferAppender;
 import io.zeebe.dispatcher.impl.log.LogBufferPartition;
@@ -24,672 +27,559 @@ import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.FutureUtil;
 import io.zeebe.util.sched.future.ActorFuture;
+import java.util.Arrays;
 import org.agrona.DirectBuffer;
 
-import java.util.Arrays;
+/** Component for sending and receiving messages between different threads. */
+public class Dispatcher extends Actor implements AutoCloseable {
+  public static final int MODE_PUB_SUB = 1;
+  public static final int MODE_PIPELINE = 2;
 
-import static io.zeebe.dispatcher.impl.PositionUtil.*;
-import static io.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
+  protected final LogBuffer logBuffer;
+  protected final LogBufferAppender logAppender;
 
+  protected final MetricsManager metricsManager;
+  protected final AtomicPosition publisherLimit;
+  protected final AtomicPosition publisherPosition;
+  protected final String[] defaultSubscriptionNames;
+  protected Subscription[] subscriptions;
 
-/**
- * Component for sending and receiving messages between different threads.
- *
- */
-public class Dispatcher extends Actor implements AutoCloseable
-{
-    public static final int MODE_PUB_SUB = 1;
-    public static final int MODE_PIPELINE = 2;
+  protected final int maxFrameLength;
+  protected final int partitionSize;
+  protected int logWindowLength;
+  protected final String name;
 
-    protected final LogBuffer logBuffer;
-    protected final LogBufferAppender logAppender;
+  protected final int mode;
 
-    protected final MetricsManager metricsManager;
-    protected final AtomicPosition publisherLimit;
-    protected final AtomicPosition publisherPosition;
-    protected final String[] defaultSubscriptionNames;
-    protected Subscription[] subscriptions;
+  protected volatile boolean isClosed = false;
 
-    protected final int maxFrameLength;
-    protected final int partitionSize;
-    protected int logWindowLength;
-    protected final String name;
+  private ActorCondition dataConsumed;
 
-    protected final int mode;
+  private Runnable backgroundTask = this::runBackgroundTask;
 
-    protected volatile boolean isClosed = false;
+  private final Runnable onClaimComplete = this::signalSubsciptions;
 
-    private ActorCondition dataConsumed;
+  public Dispatcher(
+      LogBuffer logBuffer,
+      LogBufferAppender logAppender,
+      AtomicPosition publisherLimit,
+      AtomicPosition publisherPosition,
+      int logWindowLength,
+      String[] subscriptionNames,
+      int mode,
+      String name,
+      MetricsManager metricsManager) {
+    this.logBuffer = logBuffer;
+    this.logAppender = logAppender;
+    this.publisherLimit = publisherLimit;
+    this.publisherPosition = publisherPosition;
+    this.logWindowLength = logWindowLength;
+    this.mode = mode;
+    this.name = name;
+    this.metricsManager = metricsManager;
 
-    private Runnable backgroundTask = this::runBackgroundTask;
+    this.partitionSize = logBuffer.getPartitionSize();
+    this.maxFrameLength = partitionSize / 16;
 
-    private final Runnable onClaimComplete = this::signalSubsciptions;
+    this.subscriptions = new Subscription[0];
+    this.defaultSubscriptionNames = subscriptionNames;
+  }
 
-    public Dispatcher(
-            LogBuffer logBuffer,
-            LogBufferAppender logAppender,
-            AtomicPosition publisherLimit,
-            AtomicPosition publisherPosition,
-            int logWindowLength,
-            String[] subscriptionNames,
-            int mode,
-            String name,
-            MetricsManager metricsManager)
-    {
-        this.logBuffer = logBuffer;
-        this.logAppender = logAppender;
-        this.publisherLimit = publisherLimit;
-        this.publisherPosition = publisherPosition;
-        this.logWindowLength = logWindowLength;
-        this.mode = mode;
-        this.name = name;
-        this.metricsManager = metricsManager;
+  @Override
+  public String getName() {
+    return name;
+  }
 
-        this.partitionSize = logBuffer.getPartitionSize();
-        this.maxFrameLength = partitionSize / 16;
+  private void runBackgroundTask() {
+    updatePublisherLimit();
+    logBuffer.cleanPartitions();
+  }
 
-        this.subscriptions = new Subscription[0];
-        this.defaultSubscriptionNames = subscriptionNames;
+  @Override
+  protected void onActorStarted() {
+    dataConsumed = actor.onCondition("data-consumed", backgroundTask);
+    openDefaultSubscriptions();
+  }
+
+  @Override
+  protected void onActorClosing() {
+    publisherLimit.reset();
+    publisherPosition.reset();
+
+    final Subscription[] subscriptionsCopy = Arrays.copyOf(subscriptions, subscriptions.length);
+
+    for (Subscription subscription : subscriptionsCopy) {
+      doCloseSubscription(subscription);
     }
 
-    @Override
-    public String getName()
-    {
-        return name;
+    logBuffer.close();
+    isClosed = true;
+  }
+
+  protected void openDefaultSubscriptions() {
+    final int subscriptionSize =
+        defaultSubscriptionNames == null ? 0 : defaultSubscriptionNames.length;
+
+    for (int i = 0; i < subscriptionSize; i++) {
+      doOpenSubscription(defaultSubscriptionNames[i], dataConsumed);
     }
+  }
 
-    private void runBackgroundTask()
-    {
-        updatePublisherLimit();
-        logBuffer.cleanPartitions();
-    }
+  /**
+   * Writes the given message to the buffer. This can fail if the publisher limit or the buffer
+   * partition size is reached.
+   *
+   * @return the new publisher position if the message was written successfully. Otherwise, the
+   *     return value is negative.
+   */
+  public long offer(DirectBuffer msg) {
+    return offer(msg, 0, msg.capacity(), 0);
+  }
 
-    @Override
-    protected void onActorStarted()
-    {
-        dataConsumed = actor.onCondition("data-consumed", backgroundTask);
-        openDefaultSubscriptions();
-    }
+  /**
+   * Writes the given message to the buffer with the given stream id. This can fail if the publisher
+   * limit or the buffer partition size is reached.
+   *
+   * @return the new publisher position if the message was written successfully. Otherwise, the
+   *     return value is negative.
+   */
+  public long offer(DirectBuffer msg, int streamId) {
+    return offer(msg, 0, msg.capacity(), streamId);
+  }
 
-    @Override
-    protected void onActorClosing()
-    {
-        publisherLimit.reset();
-        publisherPosition.reset();
+  /**
+   * Writes the given part of the message to the buffer. This can fail if the publisher limit or the
+   * buffer partition size is reached.
+   *
+   * @return the new publisher position if the message was written successfully. Otherwise, the
+   *     return value is negative.
+   */
+  public long offer(DirectBuffer msg, int start, int length) {
+    return offer(msg, start, length, 0);
+  }
 
-        final Subscription[] subscriptionsCopy = Arrays.copyOf(subscriptions, subscriptions.length);
+  /**
+   * Writes the given part of the message to the buffer with the given stream id. This can fail if
+   * the publisher limit or the buffer partition size is reached.
+   *
+   * @return the new publisher position if the message was written successfully. Otherwise, the
+   *     return value is negative.
+   */
+  public long offer(DirectBuffer msg, int start, int length, int streamId) {
+    long newPosition = -1;
 
-        for (Subscription subscription : subscriptionsCopy)
-        {
-            doCloseSubscription(subscription);
+    if (!isClosed) {
+      final long limit = publisherLimit.get();
+
+      final int activePartitionId = logBuffer.getActivePartitionIdVolatile();
+      final LogBufferPartition partition = logBuffer.getPartition(activePartitionId);
+
+      final int partitionOffset = partition.getTailCounterVolatile();
+      final long position = position(activePartitionId, partitionOffset);
+
+      if (position < limit) {
+        final int newOffset;
+
+        if (length < maxFrameLength) {
+          newOffset =
+              logAppender.appendFrame(partition, activePartitionId, msg, start, length, streamId);
+        } else {
+          final String exceptionMessage =
+              String.format(
+                  "Message length of %s is larger than max frame length of %s",
+                  length, maxFrameLength);
+          throw new RuntimeException(exceptionMessage);
         }
 
-        logBuffer.close();
-        isClosed = true;
+        newPosition = updatePublisherPosition(activePartitionId, newOffset);
+
+        publisherPosition.proposeMaxOrdered(newPosition);
+        signalSubsciptions();
+      }
     }
 
-    protected void openDefaultSubscriptions()
-    {
-        final int subscriptionSize = defaultSubscriptionNames == null ? 0 : defaultSubscriptionNames.length;
+    return newPosition;
+  }
 
-        for (int i = 0; i < subscriptionSize; i++)
-        {
-            doOpenSubscription(defaultSubscriptionNames[i], dataConsumed);
-        }
+  private void signalSubsciptions() {
+    final Subscription[] subscriptions = this.subscriptions;
+    for (int i = 0; i < subscriptions.length; i++) {
+      subscriptions[i].getActorConditions().signalConsumers();
     }
+  }
 
-    /**
-     * Writes the given message to the buffer. This can fail if the publisher
-     * limit or the buffer partition size is reached.
-     *
-     * @return the new publisher position if the message was written
-     *         successfully. Otherwise, the return value is negative.
-     */
-    public long offer(DirectBuffer msg)
-    {
-        return offer(msg, 0, msg.capacity(), 0);
+  /**
+   * Claim a fragment of the buffer with the given length. Use {@link ClaimedFragment#getBuffer()}
+   * to write the message and finish the operation using {@link ClaimedFragment#commit()} or {@link
+   * ClaimedFragment#abort()}. Note that the claim operation can fail if the publisher limit or the
+   * buffer partition size is reached.
+   *
+   * @return the new publisher position if the fragment was claimed successfully. Otherwise, the
+   *     return value is negative.
+   */
+  public long claim(ClaimedFragment claim, int length) {
+    return claim(claim, length, 0);
+  }
+
+  /**
+   * Claim a fragment of the buffer with the given length and stream id. Use {@link
+   * ClaimedFragment#getBuffer()} to write the message and finish the operation using {@link
+   * ClaimedFragment#commit()} or {@link ClaimedFragment#abort()}. Note that the claim operation can
+   * fail if the publisher limit or the buffer partition size is reached.
+   *
+   * @return the new publisher position if the fragment was claimed successfully. Otherwise, the
+   *     return value is negative.
+   */
+  public long claim(ClaimedFragment claim, int length, int streamId) {
+    final long limit = publisherLimit.get();
+
+    final int activePartitionId = logBuffer.getActivePartitionIdVolatile();
+    final LogBufferPartition partition = logBuffer.getPartition(activePartitionId);
+
+    final int partitionOffset = partition.getTailCounterVolatile();
+    final long position = position(activePartitionId, partitionOffset);
+
+    long newPosition = -1;
+
+    if (position < limit) {
+      final int newOffset;
+
+      if (length < maxFrameLength) {
+        newOffset =
+            logAppender.claim(
+                partition, activePartitionId, claim, length, streamId, onClaimComplete);
+      } else {
+        throw new RuntimeException("Cannot claim more than " + maxFrameLength + " bytes.");
+      }
+
+      newPosition = updatePublisherPosition(activePartitionId, newOffset);
+      publisherPosition.proposeMaxOrdered(newPosition);
+      signalSubsciptions();
     }
+    return newPosition;
+  }
 
-    /**
-     * Writes the given message to the buffer with the given stream id. This can
-     * fail if the publisher limit or the buffer partition size is reached.
-     *
-     * @return the new publisher position if the message was written
-     *         successfully. Otherwise, the return value is negative.
-     */
-    public long offer(DirectBuffer msg, int streamId)
-    {
-        return offer(msg, 0, msg.capacity(), streamId);
-    }
+  /**
+   * Claim a batch of fragments on the buffer with the given length. Use {@link #nextFragment(int,
+   * int)} to add a new fragment to the batch. Write the fragment message using {@link #getBuffer()}
+   * and {@link #getFragmentOffset()} to get the buffer offset of this fragment. Complete the whole
+   * batch operation by calling either {@link #commit()} or {@link #abort()}. Note that the claim
+   * operation can fail if the publisher limit or the buffer partition size is reached.
+   *
+   * @return the new publisher position if the batch was claimed successfully. Otherwise, the return
+   *     value is negative.
+   */
+  public long claim(ClaimedFragmentBatch batch, int fragmentCount, int batchLength) {
+    long newPosition = -1;
 
-    /**
-     * Writes the given part of the message to the buffer. This can fail if the publisher
-     * limit or the buffer partition size is reached.
-     *
-     * @return the new publisher position if the message was written
-     *         successfully. Otherwise, the return value is negative.
-     */
-    public long offer(DirectBuffer msg, int start, int length)
-    {
-        return offer(msg, start, length, 0);
-    }
+    if (!isClosed) {
+      final long limit = publisherLimit.get();
 
-    /**
-     * Writes the given part of the message to the buffer with the given stream
-     * id. This can fail if the publisher limit or the buffer partition size is
-     * reached.
-     *
-     * @return the new publisher position if the message was written
-     *         successfully. Otherwise, the return value is negative.
-     */
-    public long offer(DirectBuffer msg, int start, int length, int streamId)
-    {
-        long newPosition = -1;
+      final int activePartitionId = logBuffer.getActivePartitionIdVolatile();
+      final LogBufferPartition partition = logBuffer.getPartition(activePartitionId);
 
-        if (!isClosed)
-        {
-            final long limit = publisherLimit.get();
+      final int partitionOffset = partition.getTailCounterVolatile();
+      final long position = position(activePartitionId, partitionOffset);
 
-            final int activePartitionId = logBuffer.getActivePartitionIdVolatile();
-            final LogBufferPartition partition = logBuffer.getPartition(activePartitionId);
+      if (position < limit) {
+        final int newOffset;
 
-            final int partitionOffset = partition.getTailCounterVolatile();
-            final long position = position(activePartitionId, partitionOffset);
-
-
-            if (position < limit)
-            {
-                final int newOffset;
-
-                if (length < maxFrameLength)
-                {
-                    newOffset = logAppender.appendFrame(partition,
-                                                        activePartitionId,
-                                                        msg,
-                                                        start,
-                                                        length,
-                                                        streamId);
-                }
-                else
-                {
-                    final String exceptionMessage = String.format("Message length of %s is larger than max frame length of %s",
-                                                                  length, maxFrameLength);
-                    throw new RuntimeException(exceptionMessage);
-                }
-
-                newPosition = updatePublisherPosition(activePartitionId, newOffset);
-
-                publisherPosition.proposeMaxOrdered(newPosition);
-                signalSubsciptions();
-            }
-        }
-
-
-        return newPosition;
-    }
-
-    private void signalSubsciptions()
-    {
-        final Subscription[] subscriptions = this.subscriptions;
-        for (int i = 0; i < subscriptions.length; i++)
-        {
-            subscriptions[i].getActorConditions().signalConsumers();
-        }
-    }
-
-    /**
-     * Claim a fragment of the buffer with the given length. Use
-     * {@link ClaimedFragment#getBuffer()} to write the message and finish the
-     * operation using {@link ClaimedFragment#commit()} or
-     * {@link ClaimedFragment#abort()}. Note that the claim operation can fail
-     * if the publisher limit or the buffer partition size is reached.
-     *
-     * @return the new publisher position if the fragment was claimed
-     *         successfully. Otherwise, the return value is negative.
-     */
-    public long claim(ClaimedFragment claim, int length)
-    {
-        return claim(claim, length, 0);
-    }
-
-    /**
-     * Claim a fragment of the buffer with the given length and stream id. Use
-     * {@link ClaimedFragment#getBuffer()} to write the message and finish the
-     * operation using {@link ClaimedFragment#commit()} or
-     * {@link ClaimedFragment#abort()}. Note that the claim operation can fail
-     * if the publisher limit or the buffer partition size is reached.
-     *
-     * @return the new publisher position if the fragment was claimed
-     *         successfully. Otherwise, the return value is negative.
-     */
-    public long claim(ClaimedFragment claim, int length, int streamId)
-    {
-        final long limit = publisherLimit.get();
-
-        final int activePartitionId = logBuffer.getActivePartitionIdVolatile();
-        final LogBufferPartition partition = logBuffer.getPartition(activePartitionId);
-
-        final int partitionOffset = partition.getTailCounterVolatile();
-        final long position = position(activePartitionId, partitionOffset);
-
-        long newPosition = -1;
-
-        if (position < limit)
-        {
-            final int newOffset;
-
-            if (length < maxFrameLength)
-            {
-                newOffset = logAppender.claim(partition,
-                        activePartitionId,
-                        claim,
-                        length,
-                        streamId,
-                        onClaimComplete);
-            }
-            else
-            {
-                throw new RuntimeException("Cannot claim more than " + maxFrameLength + " bytes.");
-            }
-
-            newPosition = updatePublisherPosition(activePartitionId, newOffset);
-            publisherPosition.proposeMaxOrdered(newPosition);
-            signalSubsciptions();
-        }
-        return newPosition;
-    }
-
-    /**
-     * Claim a batch of fragments on the buffer with the given length. Use
-     * {@link #nextFragment(int, int)} to add a new fragment to the batch. Write the
-     * fragment message using {@link #getBuffer()} and {@link #getFragmentOffset()}
-     * to get the buffer offset of this fragment. Complete the whole batch operation
-     * by calling either {@link #commit()} or {@link #abort()}.
-     * Note that the claim operation can fail
-     * if the publisher limit or the buffer partition size is reached.
-     *
-     * @return the new publisher position if the batch was claimed
-     *         successfully. Otherwise, the return value is negative.
-     */
-    public long claim(ClaimedFragmentBatch batch, int fragmentCount, int batchLength)
-    {
-        long newPosition = -1;
-
-        if (!isClosed)
-        {
-            final long limit = publisherLimit.get();
-
-            final int activePartitionId = logBuffer.getActivePartitionIdVolatile();
-            final LogBufferPartition partition = logBuffer.getPartition(activePartitionId);
-
-            final int partitionOffset = partition.getTailCounterVolatile();
-            final long position = position(activePartitionId, partitionOffset);
-
-
-            if (position < limit)
-            {
-                final int newOffset;
-
-                if (batchLength < maxFrameLength)
-                {
-                    newOffset = logAppender.claim(partition,
-                                                  activePartitionId,
-                                                  batch,
-                                                  fragmentCount,
-                                                  batchLength,
-                                                  onClaimComplete);
-                }
-                else
-                {
-                    throw new RuntimeException("Cannot claim more than " + maxFrameLength + " bytes.");
-                }
-
-                newPosition = updatePublisherPosition(activePartitionId, newOffset);
-
-                publisherPosition.proposeMaxOrdered(newPosition);
-                signalSubsciptions();
-            }
+        if (batchLength < maxFrameLength) {
+          newOffset =
+              logAppender.claim(
+                  partition, activePartitionId, batch, fragmentCount, batchLength, onClaimComplete);
+        } else {
+          throw new RuntimeException("Cannot claim more than " + maxFrameLength + " bytes.");
         }
 
-        return newPosition;
+        newPosition = updatePublisherPosition(activePartitionId, newOffset);
+
+        publisherPosition.proposeMaxOrdered(newPosition);
+        signalSubsciptions();
+      }
     }
 
-    protected long updatePublisherPosition(final int activePartitionId, int newOffset)
-    {
-        long newPosition = -1;
+    return newPosition;
+  }
 
-        if (newOffset > 0)
-        {
-            newPosition = position(activePartitionId, newOffset);
+  protected long updatePublisherPosition(final int activePartitionId, int newOffset) {
+    long newPosition = -1;
+
+    if (newOffset > 0) {
+      newPosition = position(activePartitionId, newOffset);
+    } else if (newOffset == RESULT_PADDING_AT_END_OF_PARTITION) {
+      logBuffer.onActiveParitionFilled(activePartitionId);
+      newPosition = -2;
+    }
+
+    return newPosition;
+  }
+
+  public int updatePublisherLimit() {
+    int isUpdated = 0;
+
+    if (!isClosed) {
+      long lastSubscriberPosition = -1;
+
+      if (subscriptions.length > 0) {
+        lastSubscriberPosition = subscriptions[subscriptions.length - 1].getPosition();
+
+        if (MODE_PUB_SUB == mode && subscriptions.length > 1) {
+          for (int i = 0; i < subscriptions.length - 1; i++) {
+            lastSubscriberPosition =
+                Math.min(lastSubscriberPosition, subscriptions[i].getPosition());
+          }
         }
-        else if (newOffset == RESULT_PADDING_AT_END_OF_PARTITION)
-        {
-            logBuffer.onActiveParitionFilled(activePartitionId);
-            newPosition = -2;
-        }
+      } else {
+        lastSubscriberPosition = Math.max(0, publisherLimit.get() - logWindowLength);
+      }
 
-        return newPosition;
+      int partitionId = partitionId(lastSubscriberPosition);
+      int partitionOffset = partitionOffset(lastSubscriberPosition) + logWindowLength;
+      if (partitionOffset >= logBuffer.getPartitionSize()) {
+        ++partitionId;
+        partitionOffset = logWindowLength;
+      }
+      final long proposedPublisherLimit = position(partitionId, partitionOffset);
+
+      if (publisherLimit.proposeMaxOrdered(proposedPublisherLimit)) {
+        isUpdated = 1;
+      }
     }
 
-    public int updatePublisherLimit()
-    {
-        int isUpdated = 0;
+    return isUpdated;
+  }
 
-        if (!isClosed)
-        {
-            long lastSubscriberPosition = -1;
+  /**
+   * Creates a new subscription with the given name.
+   *
+   * @throws IllegalStateException
+   *     <li>if the dispatcher runs in pipeline-mode,
+   *     <li>if a subscription with this name already exists
+   */
+  public Subscription openSubscription(String subscriptionName) {
+    return FutureUtil.join(openSubscriptionAsync(subscriptionName));
+  }
 
-            if (subscriptions.length > 0)
-            {
-                lastSubscriberPosition = subscriptions[subscriptions.length - 1].getPosition();
+  /**
+   * Creates a new subscription with the given name asynchronously. The operation fails if the
+   * dispatcher runs in pipeline-mode or a subscription with this name already exists.
+   */
+  public ActorFuture<Subscription> openSubscriptionAsync(String subscriptionName) {
+    return actor.call(
+        () -> {
+          if (mode == MODE_PIPELINE) {
+            throw new IllegalStateException("Cannot open subscriptions in pipelining mode");
+          }
 
-                if (MODE_PUB_SUB == mode && subscriptions.length > 1)
-                {
-                    for (int i = 0; i < subscriptions.length - 1; i++)
-                    {
-                        lastSubscriberPosition = Math.min(lastSubscriberPosition, subscriptions[i].getPosition());
-                    }
-                }
-            }
-            else
-            {
-                lastSubscriberPosition = Math.max(0, publisherLimit.get() - logWindowLength);
-            }
-
-            int partitionId = partitionId(lastSubscriberPosition);
-            int partitionOffset = partitionOffset(lastSubscriberPosition) + logWindowLength;
-            if (partitionOffset >= logBuffer.getPartitionSize())
-            {
-                ++partitionId;
-                partitionOffset = logWindowLength;
-
-            }
-            final long proposedPublisherLimit = position(partitionId, partitionOffset);
-
-            if (publisherLimit.proposeMaxOrdered(proposedPublisherLimit))
-            {
-                isUpdated = 1;
-            }
-        }
-
-        return isUpdated;
-    }
-
-    /**
-     * Creates a new subscription with the given name.
-     *
-     * @throws IllegalStateException
-     *             <li>if the dispatcher runs in pipeline-mode,
-     *             <li>if a subscription with this name already exists
-     */
-    public Subscription openSubscription(String subscriptionName)
-    {
-        return FutureUtil.join(openSubscriptionAsync(subscriptionName));
-    }
-
-    /**
-     * Creates a new subscription with the given name asynchronously. The
-     * operation fails if the dispatcher runs in pipeline-mode or a subscription
-     * with this name already exists.
-     */
-    public ActorFuture<Subscription> openSubscriptionAsync(String subscriptionName)
-    {
-        return actor.call(() ->
-        {
-            if (mode == MODE_PIPELINE)
-            {
-                throw new IllegalStateException("Cannot open subscriptions in pipelining mode");
-            }
-
-            return doOpenSubscription(subscriptionName, dataConsumed);
+          return doOpenSubscription(subscriptionName, dataConsumed);
         });
+  }
+
+  public ActorFuture<Subscription> getSubscriptionAsync(String subscriptionName) {
+    return actor.call(() -> getSubscriptionByName(subscriptionName));
+  }
+
+  public Subscription getSubscription(String subscriptionName) {
+    return FutureUtil.join(getSubscriptionAsync(subscriptionName));
+  }
+
+  protected Subscription doOpenSubscription(String subscriptionName, ActorCondition onConsumption) {
+    ensureUniqueSubscriptionName(subscriptionName);
+
+    final Subscription[] newSubscriptions = new Subscription[subscriptions.length + 1];
+    System.arraycopy(subscriptions, 0, newSubscriptions, 0, subscriptions.length);
+
+    final int subscriberId = newSubscriptions.length - 1;
+
+    final Subscription subscription =
+        newSubscription(subscriberId, subscriptionName, onConsumption);
+
+    newSubscriptions[subscriberId] = subscription;
+
+    this.subscriptions = newSubscriptions;
+
+    onConsumption.signal();
+
+    return subscription;
+  }
+
+  protected void ensureUniqueSubscriptionName(String subscriptionName) {
+    if (findSubscriptionByName(subscriptionName) != null) {
+      throw new IllegalStateException(
+          "subscription with name '" + subscriptionName + "' already exists");
     }
+  }
 
-    public ActorFuture<Subscription> getSubscriptionAsync(String subscriptionName)
-    {
-        return actor.call(() -> getSubscriptionByName(subscriptionName));
-    }
+  protected Subscription newSubscription(
+      final int subscriptionId, final String subscriptionName, ActorCondition onConsumption) {
+    final AtomicPosition position = new AtomicPosition();
+    position.set(position(logBuffer.getActivePartitionIdVolatile(), 0));
+    final AtomicPosition limit = determineLimit(subscriptionId);
 
-    public Subscription getSubscription(String subscriptionName)
-    {
-        return FutureUtil.join(getSubscriptionAsync(subscriptionName));
-    }
-
-    protected Subscription doOpenSubscription(String subscriptionName, ActorCondition onConsumption)
-    {
-        ensureUniqueSubscriptionName(subscriptionName);
-
-        final Subscription[] newSubscriptions = new Subscription[subscriptions.length + 1];
-        System.arraycopy(subscriptions, 0, newSubscriptions, 0, subscriptions.length);
-
-        final int subscriberId = newSubscriptions.length - 1;
-
-        final Subscription subscription = newSubscription(subscriberId, subscriptionName, onConsumption);
-
-        newSubscriptions[subscriberId] = subscription;
-
-        this.subscriptions = newSubscriptions;
-
-        onConsumption.signal();
-
-        return subscription;
-    }
-
-    protected void ensureUniqueSubscriptionName(String subscriptionName)
-    {
-        if (findSubscriptionByName(subscriptionName) != null)
-        {
-            throw new IllegalStateException("subscription with name '" + subscriptionName + "' already exists");
-        }
-    }
-
-    protected Subscription newSubscription(final int subscriptionId, final String subscriptionName, ActorCondition onConsumption)
-    {
-        final AtomicPosition position = new AtomicPosition();
-        position.set(position(logBuffer.getActivePartitionIdVolatile(), 0));
-        final AtomicPosition limit = determineLimit(subscriptionId);
-
-        final Metric fragmentsRead = metricsManager.newMetric("buffer_fragments_read")
+    final Metric fragmentsRead =
+        metricsManager
+            .newMetric("buffer_fragments_read")
             .type("counter")
             .label("subscription", subscriptionName)
             .label("buffer", getName())
             .create();
 
-        return new Subscription(position, limit, subscriptionId, subscriptionName, onConsumption, logBuffer, fragmentsRead);
+    return new Subscription(
+        position, limit, subscriptionId, subscriptionName, onConsumption, logBuffer, fragmentsRead);
+  }
+
+  protected AtomicPosition determineLimit(int subscriptionId) {
+    if (mode == MODE_PUB_SUB) {
+      return publisherPosition;
+    } else {
+      if (subscriptionId == 0) {
+        return publisherPosition;
+      } else {
+        // in pipelining mode, a subscriber's limit is the position of the
+        // previous subscriber
+        return subscriptions[subscriptionId - 1].position;
+      }
     }
+  }
 
-    protected AtomicPosition determineLimit(int subscriptionId)
-    {
-        if (mode == MODE_PUB_SUB)
-        {
-            return publisherPosition;
-        }
-        else
-        {
-            if (subscriptionId == 0)
-            {
-                return publisherPosition;
-            }
-            else
-            {
-                // in pipelining mode, a subscriber's limit is the position of the
-                // previous subscriber
-                return subscriptions[subscriptionId - 1].position;
-            }
-        }
-    }
+  /**
+   * Close the given subscription.
+   *
+   * @throws IllegalStateException if the dispatcher runs in pipeline-mode.
+   */
+  public void closeSubscription(Subscription subscriptionToClose) {
+    FutureUtil.join(closeSubscriptionAsync(subscriptionToClose));
+  }
 
-    /**
-     * Close the given subscription.
-     *
-     * @throws IllegalStateException
-     *             if the dispatcher runs in pipeline-mode.
-     */
-    public void closeSubscription(Subscription subscriptionToClose)
-    {
-        FutureUtil.join(closeSubscriptionAsync(subscriptionToClose));
-    }
+  /**
+   * Close the given subscription asynchronously. The operation fails if the dispatcher runs in
+   * pipeline-mode.
+   */
+  public ActorFuture<Void> closeSubscriptionAsync(Subscription subscriptionToClose) {
+    return actor.call(
+        () -> {
+          if (mode == MODE_PIPELINE) {
+            throw new IllegalStateException("Cannot close subscriptions in pipelining mode");
+          }
 
-    /**
-     * Close the given subscription asynchronously. The operation fails if the
-     * dispatcher runs in pipeline-mode.
-     */
-    public ActorFuture<Void> closeSubscriptionAsync(Subscription subscriptionToClose)
-    {
-        return actor.call(() ->
-        {
-            if (mode == MODE_PIPELINE)
-            {
-                throw new IllegalStateException("Cannot close subscriptions in pipelining mode");
-            }
-
-            doCloseSubscription(subscriptionToClose);
+          doCloseSubscription(subscriptionToClose);
         });
+  }
+
+  protected void doCloseSubscription(Subscription subscriptionToClose) {
+    if (isClosed) {
+      return; // don't need to adjust the subscriptions when closed
     }
 
-    protected void doCloseSubscription(Subscription subscriptionToClose)
-    {
-        if (isClosed)
-        {
-            return; // don't need to adjust the subscriptions when closed
+    // close subscription
+    subscriptionToClose.isClosed = true;
+    subscriptionToClose.position.reset();
+    subscriptionToClose.fragmentsConsumedMetric.close();
+
+    // remove from list
+    final int len = subscriptions.length;
+    int index = 0;
+
+    for (int i = 0; i < len; i++) {
+      if (subscriptionToClose == subscriptions[i]) {
+        index = i;
+        break;
+      }
+    }
+
+    Subscription[] newSubscriptions = null;
+
+    final int numMoved = len - index - 1;
+
+    if (numMoved == 0) {
+      newSubscriptions = Arrays.copyOf(subscriptions, len - 1);
+    } else {
+      newSubscriptions = new Subscription[len - 1];
+      System.arraycopy(subscriptions, 0, newSubscriptions, 0, index);
+      System.arraycopy(subscriptions, index + 1, newSubscriptions, index, numMoved);
+    }
+
+    this.subscriptions = newSubscriptions;
+
+    // ensuring that the publisher limit is updated
+    dataConsumed.signal();
+  }
+
+  /**
+   * Returns the subscription with the given name.
+   *
+   * @return the subscription
+   * @throws exception if no such subscription is opened
+   */
+  private Subscription getSubscriptionByName(String subscriptionName) {
+    final Subscription subscription = findSubscriptionByName(subscriptionName);
+
+    if (subscription == null) {
+      throw new RuntimeException("Subscription with name " + subscriptionName + " not registered");
+    } else {
+      return subscription;
+    }
+  }
+
+  protected Subscription findSubscriptionByName(String subscriptionName) {
+    Subscription subscription = null;
+
+    if (!isClosed) {
+      for (int i = 0; i < subscriptions.length; i++) {
+        if (subscriptions[i].getName().equals(subscriptionName)) {
+          subscription = subscriptions[i];
+          break;
         }
-
-        // close subscription
-        subscriptionToClose.isClosed = true;
-        subscriptionToClose.position.reset();
-        subscriptionToClose.fragmentsConsumedMetric.close();
-
-        // remove from list
-        final int len = subscriptions.length;
-        int index = 0;
-
-        for (int i = 0; i < len; i++)
-        {
-            if (subscriptionToClose == subscriptions[i])
-            {
-                index = i;
-                break;
-            }
-        }
-
-        Subscription[] newSubscriptions = null;
-
-        final int numMoved = len - index - 1;
-
-        if (numMoved == 0)
-        {
-            newSubscriptions = Arrays.copyOf(subscriptions, len - 1);
-        }
-        else
-        {
-            newSubscriptions = new Subscription[len - 1];
-            System.arraycopy(subscriptions, 0, newSubscriptions, 0, index);
-            System.arraycopy(subscriptions, index + 1, newSubscriptions, index, numMoved);
-        }
-
-        this.subscriptions = newSubscriptions;
-
-        // ensuring that the publisher limit is updated
-        dataConsumed.signal();
+      }
     }
 
-    /**
-     * Returns the subscription with the given name.
-     *
-     * @return the subscription
-     * @throws exception if no such subscription is opened
-     */
-    private Subscription getSubscriptionByName(String subscriptionName)
-    {
-        final Subscription subscription = findSubscriptionByName(subscriptionName);
+    return subscription;
+  }
 
-        if (subscription == null)
-        {
-            throw new RuntimeException("Subscription with name " + subscriptionName + " not registered");
-        }
-        else
-        {
-            return subscription;
-        }
+  public boolean isClosed() {
+    return isClosed;
+  }
+
+  @Override
+  public void close() {
+    FutureUtil.join(closeAsync());
+  }
+
+  public ActorFuture<Void> closeAsync() {
+    return actor.close();
+  }
+
+  public LogBuffer getLogBuffer() {
+    return logBuffer;
+  }
+
+  public int getMaxFrameLength() {
+    return maxFrameLength;
+  }
+
+  public long getPublisherPosition() {
+    if (isClosed) {
+      return -1L;
+    } else {
+      return publisherPosition.get();
     }
+  }
 
-    protected Subscription findSubscriptionByName(String subscriptionName)
-    {
-        Subscription subscription = null;
-
-        if (!isClosed)
-        {
-            for (int i = 0; i < subscriptions.length; i++)
-            {
-                if (subscriptions[i].getName().equals(subscriptionName))
-                {
-                    subscription = subscriptions[i];
-                    break;
-                }
-            }
-        }
-
-        return subscription;
+  public long getPublisherLimit() {
+    if (isClosed) {
+      return -1L;
+    } else {
+      return publisherLimit.get();
     }
+  }
 
-    public boolean isClosed()
-    {
-        return isClosed;
-    }
+  public int getSubscriberCount() {
+    return subscriptions.length;
+  }
 
-    @Override
-    public void close()
-    {
-        FutureUtil.join(closeAsync());
-    }
-
-    public ActorFuture<Void> closeAsync()
-    {
-        return actor.close();
-    }
-
-    public LogBuffer getLogBuffer()
-    {
-        return logBuffer;
-    }
-
-    public int getMaxFrameLength()
-    {
-        return maxFrameLength;
-    }
-
-    public long getPublisherPosition()
-    {
-        if (isClosed)
-        {
-            return -1L;
-        }
-        else
-        {
-            return publisherPosition.get();
-        }
-    }
-
-    public long getPublisherLimit()
-    {
-        if (isClosed)
-        {
-            return -1L;
-        }
-        else
-        {
-            return publisherLimit.get();
-        }
-    }
-
-    public int getSubscriberCount()
-    {
-        return subscriptions.length;
-    }
-
-    @Override
-    public String toString()
-    {
-        return "Dispatcher [" + name + "]";
-    }
+  @Override
+  public String toString() {
+    return "Dispatcher [" + name + "]";
+  }
 }

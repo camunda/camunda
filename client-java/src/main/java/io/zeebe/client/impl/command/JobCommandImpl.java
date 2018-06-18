@@ -23,54 +23,48 @@ import io.zeebe.client.impl.record.JobRecordImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.intent.JobIntent;
 
-public class JobCommandImpl extends JobRecordImpl implements JobCommand
-{
+public class JobCommandImpl extends JobRecordImpl implements JobCommand {
 
-    @JsonCreator
-    public JobCommandImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper)
-    {
-        super(objectMapper, RecordType.COMMAND);
-    }
+  @JsonCreator
+  public JobCommandImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper) {
+    super(objectMapper, RecordType.COMMAND);
+  }
 
-    public JobCommandImpl(ZeebeObjectMapperImpl objectMapper, JobIntent intent)
-    {
-        super(objectMapper, RecordType.COMMAND);
-        setIntent(intent);
-    }
+  public JobCommandImpl(ZeebeObjectMapperImpl objectMapper, JobIntent intent) {
+    super(objectMapper, RecordType.COMMAND);
+    setIntent(intent);
+  }
 
-    public JobCommandImpl(JobRecordImpl base, JobIntent intent)
-    {
-        super(base, intent);
-    }
+  public JobCommandImpl(JobRecordImpl base, JobIntent intent) {
+    super(base, intent);
+  }
 
-    @JsonIgnore
-    @Override
-    public JobCommandName getName()
-    {
-        return JobCommandName.valueOf(getMetadata().getIntent());
-    }
+  @JsonIgnore
+  @Override
+  public JobCommandName getName() {
+    return JobCommandName.valueOf(getMetadata().getIntent());
+  }
 
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("JobCommand [command=");
-        builder.append(getName());
-        builder.append(", type=");
-        builder.append(getType());
-        builder.append(", retries=");
-        builder.append(getRetries());
-        builder.append(", worker=");
-        builder.append(getWorker());
-        builder.append(", deadline=");
-        builder.append(getDeadline());
-        builder.append(", headers=");
-        builder.append(getHeaders());
-        builder.append(", customHeaders=");
-        builder.append(getCustomHeaders());
-        builder.append(", payload=");
-        builder.append(getPayload());
-        builder.append("]");
-        return builder.toString();
-    }
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("JobCommand [command=");
+    builder.append(getName());
+    builder.append(", type=");
+    builder.append(getType());
+    builder.append(", retries=");
+    builder.append(getRetries());
+    builder.append(", worker=");
+    builder.append(getWorker());
+    builder.append(", deadline=");
+    builder.append(getDeadline());
+    builder.append(", headers=");
+    builder.append(getHeaders());
+    builder.append(", customHeaders=");
+    builder.append(getCustomHeaders());
+    builder.append(", payload=");
+    builder.append(getPayload());
+    builder.append("]");
+    return builder.toString();
+  }
 }

@@ -15,181 +15,154 @@
  */
 package io.zeebe.logstreams.impl;
 
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.headerLength;
+
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.util.buffer.BufferReader;
 import org.agrona.DirectBuffer;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.headerLength;
+/** Represents the implementation of the logged event. */
+public class LoggedEventImpl implements ReadableFragment, LoggedEvent {
+  protected int fragmentOffset = -1;
+  protected int messageOffset = -1;
+  protected DirectBuffer buffer;
 
-/**
- * Represents the implementation of the logged event.
- */
-public class LoggedEventImpl implements ReadableFragment, LoggedEvent
-{
-    protected int fragmentOffset = -1;
-    protected int messageOffset = -1;
-    protected DirectBuffer buffer;
+  public void wrap(final DirectBuffer buffer, final int offset) {
+    this.fragmentOffset = offset;
+    this.messageOffset = messageOffset(fragmentOffset);
+    this.buffer = buffer;
+  }
 
-    public void wrap(final DirectBuffer buffer, final int offset)
-    {
-        this.fragmentOffset = offset;
-        this.messageOffset = messageOffset(fragmentOffset);
-        this.buffer = buffer;
-    }
+  @Override
+  public int getType() {
+    return buffer.getShort(typeOffset(fragmentOffset));
+  }
 
-    @Override
-    public int getType()
-    {
-        return buffer.getShort(typeOffset(fragmentOffset));
-    }
+  @Override
+  public int getVersion() {
+    return buffer.getShort(versionOffset(fragmentOffset));
+  }
 
-    @Override
-    public int getVersion()
-    {
-        return buffer.getShort(versionOffset(fragmentOffset));
-    }
+  @Override
+  public int getMessageLength() {
+    return messageLength(buffer.getInt(lengthOffset(fragmentOffset)));
+  }
 
-    @Override
-    public int getMessageLength()
-    {
-        return messageLength(buffer.getInt(lengthOffset(fragmentOffset)));
-    }
+  @Override
+  public int getMessageOffset() {
+    return messageOffset;
+  }
 
-    @Override
-    public int getMessageOffset()
-    {
-        return messageOffset;
-    }
+  @Override
+  public int getStreamId() {
+    return buffer.getInt(streamIdOffset(fragmentOffset));
+  }
 
-    @Override
-    public int getStreamId()
-    {
-        return buffer.getInt(streamIdOffset(fragmentOffset));
-    }
+  @Override
+  public DirectBuffer getBuffer() {
+    return buffer;
+  }
 
-    @Override
-    public DirectBuffer getBuffer()
-    {
-        return buffer;
-    }
+  public int getFragmentLength() {
+    return LogEntryDescriptor.getFragmentLength(buffer, fragmentOffset);
+  }
 
-    public int getFragmentLength()
-    {
-        return LogEntryDescriptor.getFragmentLength(buffer, fragmentOffset);
-    }
+  public int getFragmentOffset() {
+    return fragmentOffset;
+  }
 
-    public int getFragmentOffset()
-    {
-        return fragmentOffset;
-    }
+  @Override
+  public long getPosition() {
+    return LogEntryDescriptor.getPosition(buffer, fragmentOffset);
+  }
 
-    @Override
-    public long getPosition()
-    {
-        return LogEntryDescriptor.getPosition(buffer, fragmentOffset);
-    }
+  @Override
+  public int getRaftTerm() {
+    return LogEntryDescriptor.getRaftTerm(buffer, messageOffset);
+  }
 
-    @Override
-    public int getRaftTerm()
-    {
-        return LogEntryDescriptor.getRaftTerm(buffer, messageOffset);
-    }
+  @Override
+  public long getKey() {
+    return LogEntryDescriptor.getKey(buffer, messageOffset);
+  }
 
-    @Override
-    public long getKey()
-    {
-        return LogEntryDescriptor.getKey(buffer, messageOffset);
-    }
+  @Override
+  public long getTimestamp() {
+    return LogEntryDescriptor.getTimestamp(buffer, messageOffset);
+  }
 
-    @Override
-    public long getTimestamp()
-    {
-        return LogEntryDescriptor.getTimestamp(buffer, messageOffset);
-    }
+  @Override
+  public DirectBuffer getMetadata() {
+    return buffer;
+  }
 
-    @Override
-    public DirectBuffer getMetadata()
-    {
-        return buffer;
-    }
+  @Override
+  public short getMetadataLength() {
+    return LogEntryDescriptor.getMetadataLength(buffer, messageOffset);
+  }
 
-    @Override
-    public short getMetadataLength()
-    {
-        return LogEntryDescriptor.getMetadataLength(buffer, messageOffset);
-    }
+  @Override
+  public int getMetadataOffset() {
+    return LogEntryDescriptor.metadataOffset(messageOffset);
+  }
 
-    @Override
-    public int getMetadataOffset()
-    {
-        return LogEntryDescriptor.metadataOffset(messageOffset);
-    }
+  @Override
+  public void readMetadata(final BufferReader reader) {
+    reader.wrap(buffer, getMetadataOffset(), getMetadataLength());
+  }
 
-    @Override
-    public void readMetadata(final BufferReader reader)
-    {
-        reader.wrap(buffer, getMetadataOffset(), getMetadataLength());
-    }
+  @Override
+  public int getValueOffset() {
+    final short metadataLength = getMetadataLength();
+    return LogEntryDescriptor.valueOffset(messageOffset, metadataLength);
+  }
 
-    @Override
-    public int getValueOffset()
-    {
-        final short metadataLength = getMetadataLength();
-        return LogEntryDescriptor.valueOffset(messageOffset, metadataLength);
-    }
+  @Override
+  public int getValueLength() {
+    final short metadataLength = getMetadataLength();
 
-    @Override
-    public int getValueLength()
-    {
-        final short metadataLength = getMetadataLength();
+    return getMessageLength() - headerLength(metadataLength);
+  }
 
-        return getMessageLength() - headerLength(metadataLength);
-    }
+  @Override
+  public DirectBuffer getValueBuffer() {
+    return buffer;
+  }
 
-    @Override
-    public DirectBuffer getValueBuffer()
-    {
-        return buffer;
-    }
+  @Override
+  public void readValue(final BufferReader reader) {
+    reader.wrap(buffer, getValueOffset(), getValueLength());
+  }
 
-    @Override
-    public void readValue(final BufferReader reader)
-    {
-        reader.wrap(buffer, getValueOffset(), getValueLength());
-    }
+  @Override
+  public long getSourceEventPosition() {
+    return LogEntryDescriptor.getSourceEventPosition(buffer, messageOffset);
+  }
 
-    @Override
-    public long getSourceEventPosition()
-    {
-        return LogEntryDescriptor.getSourceEventPosition(buffer, messageOffset);
-    }
+  @Override
+  public int getProducerId() {
+    return LogEntryDescriptor.getProducerId(buffer, messageOffset);
+  }
 
-    @Override
-    public int getProducerId()
-    {
-        return LogEntryDescriptor.getProducerId(buffer, messageOffset);
-    }
-
-    @Override
-    public String toString()
-    {
-        return "LoggedEvent [type=" +
-            getType() +
-            ", version=" +
-            getVersion() +
-            ", streamId=" +
-            getStreamId() +
-            ", position=" +
-            getPosition() +
-            ", key=" +
-            getKey() +
-            ", timestamp=" +
-            getTimestamp() +
-            ", sourceEventPosition=" +
-            getSourceEventPosition() +
-            ", producerId=" +
-            getProducerId() +
-            "]";
-    }
+  @Override
+  public String toString() {
+    return "LoggedEvent [type="
+        + getType()
+        + ", version="
+        + getVersion()
+        + ", streamId="
+        + getStreamId()
+        + ", position="
+        + getPosition()
+        + ", key="
+        + getKey()
+        + ", timestamp="
+        + getTimestamp()
+        + ", sourceEventPosition="
+        + getSourceEventPosition()
+        + ", producerId="
+        + getProducerId()
+        + "]";
+  }
 }

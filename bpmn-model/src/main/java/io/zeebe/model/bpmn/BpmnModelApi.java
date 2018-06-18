@@ -15,6 +15,8 @@
  */
 package io.zeebe.model.bpmn;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import io.zeebe.model.bpmn.builder.BpmnBuilder;
 import io.zeebe.model.bpmn.impl.BpmnParser;
 import io.zeebe.model.bpmn.impl.instance.DefinitionsImpl;
@@ -22,96 +24,78 @@ import io.zeebe.model.bpmn.impl.transformation.BpmnTransformer;
 import io.zeebe.model.bpmn.impl.validation.BpmnValidator;
 import io.zeebe.model.bpmn.impl.yaml.BpmnYamlParser;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
-import org.agrona.DirectBuffer;
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
+import org.agrona.DirectBuffer;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
+public class BpmnModelApi {
+  private final BpmnParser parser = new BpmnParser();
+  private final BpmnTransformer transformer = new BpmnTransformer();
+  private final BpmnValidator validator = new BpmnValidator();
+  private final BpmnBuilder builder = new BpmnBuilder(transformer, validator);
+  private final BpmnYamlParser yamlParser = new BpmnYamlParser(builder);
 
-public class BpmnModelApi
-{
-    private final BpmnParser parser = new BpmnParser();
-    private final BpmnTransformer transformer = new BpmnTransformer();
-    private final BpmnValidator validator = new BpmnValidator();
-    private final BpmnBuilder builder = new BpmnBuilder(transformer, validator);
-    private final BpmnYamlParser yamlParser = new BpmnYamlParser(builder);
+  public BpmnBuilder createExecutableWorkflow(String bpmnProcessId) {
+    return builder.wrap(bpmnProcessId);
+  }
 
-    public BpmnBuilder createExecutableWorkflow(String bpmnProcessId)
-    {
-        return builder.wrap(bpmnProcessId);
+  public WorkflowDefinition readFromXmlFile(File file) {
+    // lexer and parser
+    final DefinitionsImpl definitions = parser.readFromFile(file);
+
+    // semantic analyzer
+    validator.validate(definitions);
+
+    // generator/transformer
+    return transformer.transform(definitions);
+  }
+
+  public WorkflowDefinition readFromXmlStream(InputStream stream) {
+    final DefinitionsImpl definitions = parser.readFromStream(stream);
+
+    // semantic analyzer
+    validator.validate(definitions);
+
+    // generator/transformer
+    return transformer.transform(definitions);
+  }
+
+  public WorkflowDefinition readFromXmlBuffer(DirectBuffer buffer) {
+    final byte[] bytes = new byte[buffer.capacity()];
+    buffer.getBytes(0, bytes);
+
+    return readFromXmlStream(new ByteArrayInputStream(bytes));
+  }
+
+  public WorkflowDefinition readFromXmlString(String workflow) {
+    return readFromXmlStream(new ByteArrayInputStream(workflow.getBytes(UTF_8)));
+  }
+
+  public WorkflowDefinition readFromYamlFile(File file) {
+    return yamlParser.readFromFile(file);
+  }
+
+  public WorkflowDefinition readFromYamlStream(InputStream stream) {
+    return yamlParser.readFromStream(stream);
+  }
+
+  public WorkflowDefinition readFromYamlBuffer(DirectBuffer buffer) {
+    final byte[] bytes = new byte[buffer.capacity()];
+    buffer.getBytes(0, bytes);
+
+    return yamlParser.readFromStream(new ByteArrayInputStream(bytes));
+  }
+
+  public WorkflowDefinition readFromYamlString(String workflow) {
+    return yamlParser.readFromStream(new ByteArrayInputStream(workflow.getBytes(UTF_8)));
+  }
+
+  public String convertToString(WorkflowDefinition definition) {
+    if (definition instanceof DefinitionsImpl) {
+      return parser.convertToString((DefinitionsImpl) definition);
+    } else {
+      throw new RuntimeException("not supported");
     }
-
-    public WorkflowDefinition readFromXmlFile(File file)
-    {
-        // lexer and parser
-        final DefinitionsImpl definitions = parser.readFromFile(file);
-
-        // semantic analyzer
-        validator.validate(definitions);
-
-        // generator/transformer
-        return transformer.transform(definitions);
-    }
-
-    public WorkflowDefinition readFromXmlStream(InputStream stream)
-    {
-        final DefinitionsImpl definitions = parser.readFromStream(stream);
-
-        // semantic analyzer
-        validator.validate(definitions);
-
-        // generator/transformer
-        return transformer.transform(definitions);
-    }
-
-    public WorkflowDefinition readFromXmlBuffer(DirectBuffer buffer)
-    {
-        final byte[] bytes = new byte[buffer.capacity()];
-        buffer.getBytes(0, bytes);
-
-        return readFromXmlStream(new ByteArrayInputStream(bytes));
-    }
-
-    public WorkflowDefinition readFromXmlString(String workflow)
-    {
-        return readFromXmlStream(new ByteArrayInputStream(workflow.getBytes(UTF_8)));
-    }
-
-    public WorkflowDefinition readFromYamlFile(File file)
-    {
-        return yamlParser.readFromFile(file);
-    }
-
-    public WorkflowDefinition readFromYamlStream(InputStream stream)
-    {
-        return yamlParser.readFromStream(stream);
-    }
-
-    public WorkflowDefinition readFromYamlBuffer(DirectBuffer buffer)
-    {
-        final byte[] bytes = new byte[buffer.capacity()];
-        buffer.getBytes(0, bytes);
-
-        return yamlParser.readFromStream(new ByteArrayInputStream(bytes));
-    }
-
-    public WorkflowDefinition readFromYamlString(String workflow)
-    {
-        return yamlParser.readFromStream(new ByteArrayInputStream(workflow.getBytes(UTF_8)));
-    }
-
-    public String convertToString(WorkflowDefinition definition)
-    {
-        if (definition instanceof DefinitionsImpl)
-        {
-            return parser.convertToString((DefinitionsImpl) definition);
-        }
-        else
-        {
-            throw new RuntimeException("not supported");
-        }
-    }
-
+  }
 }

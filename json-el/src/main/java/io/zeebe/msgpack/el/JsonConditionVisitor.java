@@ -15,9 +15,7 @@
  */
 package io.zeebe.msgpack.el;
 
-public interface JsonConditionVisitor
-{
+public interface JsonConditionVisitor {
 
-    void visitObject(JsonObject object);
-
+  void visitObject(JsonObject object);
 }

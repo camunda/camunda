@@ -19,86 +19,77 @@ package io.zeebe.broker.job.processor;
 
 import static io.zeebe.test.util.TestUtil.waitUntil;
 
-import org.agrona.DirectBuffer;
-import org.junit.Rule;
-import org.junit.Test;
-
 import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.topic.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
+import org.junit.Rule;
+import org.junit.Test;
 
-public class ActivateJobStreamProcessorTest
-{
+public class ActivateJobStreamProcessorTest {
 
-    @Rule
-    public StreamProcessorRule rule = new StreamProcessorRule();
+  @Rule public StreamProcessorRule rule = new StreamProcessorRule();
 
+  /**
+   * https://github.com/zeebe-io/zeebe/issues/926
+   *
+   * @throws InterruptedException
+   */
+  @Test
+  public void shouldReceiveJobsWhenActivationStreamProcessorDoesReprocessing()
+      throws InterruptedException {
+    // given
+    final DirectBuffer jobType = BufferUtil.wrapString("foo");
 
-    /**
-     * https://github.com/zeebe-io/zeebe/issues/926
-     * @throws InterruptedException
-     */
-    @Test
-    public void shouldReceiveJobsWhenActivationStreamProcessorDoesReprocessing() throws InterruptedException
-    {
-        // given
-        final DirectBuffer jobType = BufferUtil.wrapString("foo");
-
-        final int numJobs = 999;
-        for (int i = 0; i < numJobs; i++)
-        {
-            rule.writeEvent(JobIntent.CREATED, jobOfType(jobType));
-        }
-
-        final ActivateJobStreamProcessor processor1 = new ActivateJobStreamProcessor(jobType);
-        final StreamProcessorControl streamProcessorControl = rule.runStreamProcessor(processor1::createStreamProcessor);
-
-        final JobSubscription subscription = newSubscription(jobType);
-        subscription.setCredits(numJobs);
-        subscription.setSubscriberKey(0);
-        processor1.addSubscription(subscription);
-
-        // processor has processed entire log
-        waitUntil(() -> rule.events()
-            .onlyJobRecords()
-            .withIntent(JobIntent.ACTIVATE)
-            .count() == numJobs);
-
-        streamProcessorControl.close();
-
-        // when restarting the stream processor so that it does reprocessing
-        streamProcessorControl.purgeSnapshot();
-
-        final long lastCreated = rule.writeEvent(JobIntent.CREATED, jobOfType(jobType));
-        streamProcessorControl.blockAfterJobEvent(r -> r.getPosition() == lastCreated);
-
-        streamProcessorControl.start();
-
-        // and adding a subscription concurrently
-        final JobSubscription subscription2 = newSubscription(jobType);
-        subscription2.setCredits(numJobs + 1);
-        subscription2.setSubscriberKey(1);
-        processor1.addSubscription(subscription2);
-
-        // then it should not activate the jobs a second time, but only activate the additional job
-        waitUntil(() -> rule.events()
-            .onlyJobRecords()
-            .withIntent(JobIntent.ACTIVATE)
-            .count() == numJobs + 1);
+    final int numJobs = 999;
+    for (int i = 0; i < numJobs; i++) {
+      rule.writeEvent(JobIntent.CREATED, jobOfType(jobType));
     }
 
-    private JobSubscription newSubscription(final DirectBuffer jobType)
-    {
-        return new JobSubscription(0, jobType, 1000L, BufferUtil.wrapString("foo"), 0);
-    }
+    final ActivateJobStreamProcessor processor1 = new ActivateJobStreamProcessor(jobType);
+    final StreamProcessorControl streamProcessorControl =
+        rule.runStreamProcessor(processor1::createStreamProcessor);
 
-    private static JobRecord jobOfType(DirectBuffer type)
-    {
-        final JobRecord jobRecord = new JobRecord();
-        jobRecord.setType(type);
-        jobRecord.setRetries(3);
-        return jobRecord;
-    }
+    final JobSubscription subscription = newSubscription(jobType);
+    subscription.setCredits(numJobs);
+    subscription.setSubscriberKey(0);
+    processor1.addSubscription(subscription);
+
+    // processor has processed entire log
+    waitUntil(
+        () -> rule.events().onlyJobRecords().withIntent(JobIntent.ACTIVATE).count() == numJobs);
+
+    streamProcessorControl.close();
+
+    // when restarting the stream processor so that it does reprocessing
+    streamProcessorControl.purgeSnapshot();
+
+    final long lastCreated = rule.writeEvent(JobIntent.CREATED, jobOfType(jobType));
+    streamProcessorControl.blockAfterJobEvent(r -> r.getPosition() == lastCreated);
+
+    streamProcessorControl.start();
+
+    // and adding a subscription concurrently
+    final JobSubscription subscription2 = newSubscription(jobType);
+    subscription2.setCredits(numJobs + 1);
+    subscription2.setSubscriberKey(1);
+    processor1.addSubscription(subscription2);
+
+    // then it should not activate the jobs a second time, but only activate the additional job
+    waitUntil(
+        () -> rule.events().onlyJobRecords().withIntent(JobIntent.ACTIVATE).count() == numJobs + 1);
+  }
+
+  private JobSubscription newSubscription(final DirectBuffer jobType) {
+    return new JobSubscription(0, jobType, 1000L, BufferUtil.wrapString("foo"), 0);
+  }
+
+  private static JobRecord jobOfType(DirectBuffer type) {
+    final JobRecord jobRecord = new JobRecord();
+    jobRecord.setType(type);
+    jobRecord.setRetries(3);
+    return jobRecord;
+  }
 }

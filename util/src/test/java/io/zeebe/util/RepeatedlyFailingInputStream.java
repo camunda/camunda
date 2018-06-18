@@ -19,51 +19,44 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * Throws an {@link IOException} on every {@code failureFrequency} call to {@link #read}.
- * Otherwise reads the next byte from the {@code underlyingInputStream}.
+ * Throws an {@link IOException} on every {@code failureFrequency} call to {@link #read}. Otherwise
+ * reads the next byte from the {@code underlyingInputStream}.
  */
-public class RepeatedlyFailingInputStream extends InputStream
-{
+public class RepeatedlyFailingInputStream extends InputStream {
 
-    public static final long DEFAULT_FAILURE_FREQUENCY = 8;
+  public static final long DEFAULT_FAILURE_FREQUENCY = 8;
 
-    private final InputStream underlyingInputStream;
-    private final long failureFrequency;
+  private final InputStream underlyingInputStream;
+  private final long failureFrequency;
 
-    private long readCount;
+  private long readCount;
 
-    public RepeatedlyFailingInputStream(final InputStream underlyingInputStream)
-    {
-        this(underlyingInputStream, DEFAULT_FAILURE_FREQUENCY);
+  public RepeatedlyFailingInputStream(final InputStream underlyingInputStream) {
+    this(underlyingInputStream, DEFAULT_FAILURE_FREQUENCY);
+  }
+
+  public RepeatedlyFailingInputStream(
+      final InputStream underlyingInputStream, final long failureFrequency) {
+    this.underlyingInputStream = underlyingInputStream;
+    this.failureFrequency = failureFrequency;
+
+    readCount = 0;
+  }
+
+  @Override
+  public int read() throws IOException {
+    readCount++;
+
+    if (readCount % failureFrequency == 0) {
+      throw new IOException("Read failure - try again");
+    } else {
+      return underlyingInputStream.read();
     }
+  }
 
-    public RepeatedlyFailingInputStream(final InputStream underlyingInputStream, final long failureFrequency)
-    {
-        this.underlyingInputStream = underlyingInputStream;
-        this.failureFrequency = failureFrequency;
-
-        readCount = 0;
-    }
-
-    @Override
-    public int read() throws IOException
-    {
-        readCount++;
-
-        if (readCount % failureFrequency == 0)
-        {
-            throw new IOException("Read failure - try again");
-        }
-        else
-        {
-            return underlyingInputStream.read();
-        }
-    }
-
-    @Override
-    public int read(byte[] b, int off, int len) throws IOException
-    {
-        readCount = 0;
-        return super.read(b, off, len);
-    }
+  @Override
+  public int read(byte[] b, int off, int len) throws IOException {
+    readCount = 0;
+    return super.read(b, off, len);
+  }
 }

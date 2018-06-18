@@ -15,37 +15,33 @@
  */
 package io.zeebe.protocol.intent;
 
-public enum RaftIntent implements Intent
-{
-    MEMBER_ADDED((short) 0),
-    MEMBER_REMOVED((short) 1);
+public enum RaftIntent implements Intent {
+  MEMBER_ADDED((short) 0),
+  MEMBER_REMOVED((short) 1);
 
-    private short value;
+  private short value;
 
-    RaftIntent(short value)
-    {
-        this.value = value;
+  RaftIntent(short value) {
+    this.value = value;
+  }
+
+  public short getIntent() {
+    return value;
+  }
+
+  public static Intent from(short value) {
+    switch (value) {
+      case 0:
+        return MEMBER_ADDED;
+      case 1:
+        return MEMBER_REMOVED;
+      default:
+        return Intent.UNKNOWN;
     }
+  }
 
-    public short getIntent()
-    {
-        return value;
-    }
-
-    public static Intent from(short value)
-    {
-        switch (value)
-        {
-            case 0: return MEMBER_ADDED;
-            case 1: return MEMBER_REMOVED;
-            default: return Intent.UNKNOWN;
-        }
-    }
-
-    @Override
-    public short value()
-    {
-        return value;
-    }
-
+  @Override
+  public short value() {
+    return value;
+  }
 }

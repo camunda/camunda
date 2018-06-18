@@ -15,41 +15,31 @@
  */
 package io.zeebe.client.impl;
 
-import org.agrona.DirectBuffer;
-
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.util.buffer.BufferWriter;
+import org.agrona.DirectBuffer;
 
-public interface RequestResponseHandler extends BufferWriter
-{
+public interface RequestResponseHandler extends BufferWriter {
 
-    boolean handlesResponse(MessageHeaderDecoder responseHeader);
+  boolean handlesResponse(MessageHeaderDecoder responseHeader);
 
-    Object getResult(DirectBuffer buffer, int offset, int blockLength, int version);
+  Object getResult(DirectBuffer buffer, int offset, int blockLength, int version);
 
-    /**
-     * @return null for unspecified topic
-     */
-    String getTargetTopic();
+  /** @return null for unspecified topic */
+  String getTargetTopic();
 
-    /**
-     * @return < 0 for unspecified partition
-     */
-    int getTargetPartition();
+  /** @return < 0 for unspecified partition */
+  int getTargetPartition();
 
-    default boolean addressesSpecificTopic()
-    {
-        return getTargetTopic() != null;
-    }
+  default boolean addressesSpecificTopic() {
+    return getTargetTopic() != null;
+  }
 
-    default boolean addressesSpecificPartition()
-    {
-        return getTargetPartition() >= 0;
-    }
+  default boolean addressesSpecificPartition() {
+    return getTargetPartition() >= 0;
+  }
 
+  void onSelectedPartition(int partitionId);
 
-    void onSelectedPartition(int partitionId);
-
-    String describeRequest();
-
+  String describeRequest();
 }

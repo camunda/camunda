@@ -17,9 +17,8 @@
  */
 package io.zeebe.broker.system.workflow.repository.data;
 
-public enum ResourceType
-{
-    BPMN_XML,
+public enum ResourceType {
+  BPMN_XML,
 
-    YAML_WORKFLOW;
+  YAML_WORKFLOW;
 }

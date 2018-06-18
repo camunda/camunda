@@ -17,182 +17,168 @@ package io.zeebe.util.sched.functional;
 
 import static org.mockito.Mockito.*;
 
-import java.time.Duration;
-import java.util.concurrent.atomic.AtomicReference;
-
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ScheduledTimer;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class TimedActionsTest
-{
-    @Rule
-    public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
+public class TimedActionsTest {
+  @Rule
+  public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
 
-    @Test
-    public void shouldNotRunActionIfDeadlineNotReached() throws InterruptedException
-    {
-        // given
-        final Runnable action = mock(Runnable.class);
-        final Actor actor = new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                actor.runDelayed(Duration.ofMillis(10), action);
-            }
+  @Test
+  public void shouldNotRunActionIfDeadlineNotReached() throws InterruptedException {
+    // given
+    final Runnable action = mock(Runnable.class);
+    final Actor actor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            actor.runDelayed(Duration.ofMillis(10), action);
+          }
         };
 
-        // when
-        schedulerRule.getClock().setCurrentTime(100);
-        schedulerRule.submitActor(actor);
-        schedulerRule.workUntilDone();
+    // when
+    schedulerRule.getClock().setCurrentTime(100);
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
 
-        // then
-        verify(action, never()).run();
-    }
+    // then
+    verify(action, never()).run();
+  }
 
-    @Test
-    public void shouldRunActionWhenDeadlineReached() throws InterruptedException
-    {
-        // given
-        final Runnable action = mock(Runnable.class);
-        final Actor actor = new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                actor.runDelayed(Duration.ofMillis(10), action);
-            }
+  @Test
+  public void shouldRunActionWhenDeadlineReached() throws InterruptedException {
+    // given
+    final Runnable action = mock(Runnable.class);
+    final Actor actor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            actor.runDelayed(Duration.ofMillis(10), action);
+          }
         };
 
-        // when
-        schedulerRule.getClock().setCurrentTime(100);
-        schedulerRule.submitActor(actor);
-        schedulerRule.workUntilDone();
-        schedulerRule.getClock().addTime(Duration.ofMillis(10));
-        schedulerRule.workUntilDone();
+    // when
+    schedulerRule.getClock().setCurrentTime(100);
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
+    schedulerRule.getClock().addTime(Duration.ofMillis(10));
+    schedulerRule.workUntilDone();
 
-        // then
-        verify(action, times(1)).run();
-    }
+    // then
+    verify(action, times(1)).run();
+  }
 
-    @Test
-    public void shouldRunAtFixedRate() throws InterruptedException
-    {
-        // given
-        final Runnable action = mock(Runnable.class);
-        final Actor actor = new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                actor.runAtFixedRate(Duration.ofMillis(10), action);
-            }
+  @Test
+  public void shouldRunAtFixedRate() throws InterruptedException {
+    // given
+    final Runnable action = mock(Runnable.class);
+    final Actor actor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            actor.runAtFixedRate(Duration.ofMillis(10), action);
+          }
         };
 
-        // when then
-        schedulerRule.getClock().setCurrentTime(100);
-        schedulerRule.submitActor(actor);
-        schedulerRule.workUntilDone();
+    // when then
+    schedulerRule.getClock().setCurrentTime(100);
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
 
-        schedulerRule.getClock().addTime(Duration.ofMillis(10));
-        schedulerRule.workUntilDone();
-        verify(action, times(1)).run();
+    schedulerRule.getClock().addTime(Duration.ofMillis(10));
+    schedulerRule.workUntilDone();
+    verify(action, times(1)).run();
 
-        schedulerRule.getClock().addTime(Duration.ofMillis(10));
-        schedulerRule.workUntilDone();
-        verify(action, times(2)).run();
+    schedulerRule.getClock().addTime(Duration.ofMillis(10));
+    schedulerRule.workUntilDone();
+    verify(action, times(2)).run();
 
-        schedulerRule.getClock().addTime(Duration.ofMillis(10));
-        schedulerRule.workUntilDone();
-        verify(action, times(3)).run();
-    }
+    schedulerRule.getClock().addTime(Duration.ofMillis(10));
+    schedulerRule.workUntilDone();
+    verify(action, times(3)).run();
+  }
 
-    @Test
-    public void shouldCancelRunDelayed()
-    {
-        // given
-        final Runnable action = mock(Runnable.class);
-        final AtomicReference<ScheduledTimer> timer = new AtomicReference<>();
-        final Actor actor = new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                timer.set(actor.runDelayed(Duration.ofMillis(10), action));
-            }
+  @Test
+  public void shouldCancelRunDelayed() {
+    // given
+    final Runnable action = mock(Runnable.class);
+    final AtomicReference<ScheduledTimer> timer = new AtomicReference<>();
+    final Actor actor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            timer.set(actor.runDelayed(Duration.ofMillis(10), action));
+          }
         };
 
-        // when
-        schedulerRule.getClock().setCurrentTime(100);
-        schedulerRule.submitActor(actor);
-        schedulerRule.workUntilDone();
-        timer.get().cancel();
-        schedulerRule.getClock().addTime(Duration.ofMillis(10));
-        schedulerRule.workUntilDone();
+    // when
+    schedulerRule.getClock().setCurrentTime(100);
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
+    timer.get().cancel();
+    schedulerRule.getClock().addTime(Duration.ofMillis(10));
+    schedulerRule.workUntilDone();
 
-        // then
-        verify(action, times(0)).run();
-    }
+    // then
+    verify(action, times(0)).run();
+  }
 
-    @Test
-    public void shouldCancelRunDelayedAfterExecution()
-    {
-        // given
-        final Runnable action = mock(Runnable.class);
-        final AtomicReference<ScheduledTimer> timer = new AtomicReference<>();
-        final Actor actor = new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                timer.set(actor.runDelayed(Duration.ofMillis(10), action));
-            }
+  @Test
+  public void shouldCancelRunDelayedAfterExecution() {
+    // given
+    final Runnable action = mock(Runnable.class);
+    final AtomicReference<ScheduledTimer> timer = new AtomicReference<>();
+    final Actor actor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            timer.set(actor.runDelayed(Duration.ofMillis(10), action));
+          }
         };
 
-        // when
-        schedulerRule.getClock().setCurrentTime(100);
-        schedulerRule.submitActor(actor);
-        schedulerRule.workUntilDone();
+    // when
+    schedulerRule.getClock().setCurrentTime(100);
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
 
-        // make timer run
-        schedulerRule.getClock().addTime(Duration.ofMillis(10));
-        schedulerRule.workUntilDone();
+    // make timer run
+    schedulerRule.getClock().addTime(Duration.ofMillis(10));
+    schedulerRule.workUntilDone();
 
-        // when
-        timer.get().cancel();
+    // when
+    timer.get().cancel();
 
-        // then
-        // no exception has been thrown
-    }
+    // then
+    // no exception has been thrown
+  }
 
-    @Test
-    public void shouldCancelRunAtFixedRate()
-    {
-        // given
-        final Runnable action = mock(Runnable.class);
-        final AtomicReference<ScheduledTimer> timer = new AtomicReference<>();
-        final Actor actor = new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                timer.set(actor.runAtFixedRate(Duration.ofMillis(10), action));
-            }
+  @Test
+  public void shouldCancelRunAtFixedRate() {
+    // given
+    final Runnable action = mock(Runnable.class);
+    final AtomicReference<ScheduledTimer> timer = new AtomicReference<>();
+    final Actor actor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            timer.set(actor.runAtFixedRate(Duration.ofMillis(10), action));
+          }
         };
 
-        // when
-        schedulerRule.getClock().setCurrentTime(100);
-        schedulerRule.submitActor(actor);
-        schedulerRule.workUntilDone();
-        timer.get().cancel();
-        schedulerRule.getClock().addTime(Duration.ofMillis(10));
-        schedulerRule.workUntilDone();
+    // when
+    schedulerRule.getClock().setCurrentTime(100);
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
+    timer.get().cancel();
+    schedulerRule.getClock().addTime(Duration.ofMillis(10));
+    schedulerRule.workUntilDone();
 
-        // then
-        verify(action, times(0)).run();
-    }
+    // then
+    verify(action, times(0)).run();
+  }
 }

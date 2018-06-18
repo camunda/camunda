@@ -19,191 +19,182 @@ package io.zeebe.broker.event;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.protocol.clientapi.ControlMessageType;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.intent.SubscriptionIntent;
+import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
+import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
+import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.intent.SubscriptionIntent;
-import io.zeebe.protocol.intent.JobIntent;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
+public class TopicSubscriptionAcknowledgementTest {
+  protected static final String SUBSCRIPTION_NAME = "foo";
 
-public class TopicSubscriptionAcknowledgementTest
-{
-    protected static final String SUBSCRIPTION_NAME = "foo";
+  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  public ClientApiRule apiRule = new ClientApiRule();
 
-    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-    public ClientApiRule apiRule = new ClientApiRule();
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+  protected long subscriberKey;
 
-    protected long subscriberKey;
+  @Before
+  public void openSubscription() {
+    openSubscription(0);
+  }
 
-    @Before
-    public void openSubscription()
-    {
-        openSubscription(0);
-    }
+  public void openSubscription(long startPosition) {
+    final ExecuteCommandResponse response =
+        apiRule.openTopicSubscription(SUBSCRIPTION_NAME, startPosition).await();
+    subscriberKey = response.key();
+  }
 
-    public void openSubscription(long startPosition)
-    {
-        final ExecuteCommandResponse response = apiRule
-                .openTopicSubscription(SUBSCRIPTION_NAME, startPosition)
-                .await();
-        subscriberKey = response.key();
-    }
+  protected void closeSubscription() {
+    apiRule
+        .createControlMessageRequest()
+        .messageType(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
+        .partitionId(apiRule.getDefaultPartitionId())
+        .data()
+        .put("subscriberKey", subscriberKey)
+        .done()
+        .sendAndAwait();
+  }
 
-
-    protected void closeSubscription()
-    {
-        apiRule.createControlMessageRequest()
-            .messageType(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
-            .partitionId(apiRule.getDefaultPartitionId())
-            .data()
-                .put("subscriberKey", subscriberKey)
-                .done()
-            .sendAndAwait();
-    }
-
-    @Test
-    public void shouldAcknowledgePosition()
-    {
-        // when
-        final ExecuteCommandResponse response = apiRule.createCmdRequest()
+  @Test
+  public void shouldAcknowledgePosition() {
+    // when
+    final ExecuteCommandResponse response =
+        apiRule
+            .createCmdRequest()
             .type(ValueType.SUBSCRIPTION, SubscriptionIntent.ACKNOWLEDGE)
             .command()
-                .put("name", SUBSCRIPTION_NAME)
-                .put("ackPosition", 0)
-                .done()
+            .put("name", SUBSCRIPTION_NAME)
+            .put("ackPosition", 0)
+            .done()
             .sendAndAwait();
 
-        // then
-        assertThat(response.getValue()).containsEntry("name", SUBSCRIPTION_NAME);
-        assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
-        assertThat(response.intent()).isEqualTo(SubscriptionIntent.ACKNOWLEDGED);
-    }
+    // then
+    assertThat(response.getValue()).containsEntry("name", SUBSCRIPTION_NAME);
+    assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
+    assertThat(response.intent()).isEqualTo(SubscriptionIntent.ACKNOWLEDGED);
+  }
 
-    @Test
-    public void shouldResumeAfterAcknowledgedPosition()
-    {
-        // given
-        createJob();
+  @Test
+  public void shouldResumeAfterAcknowledgedPosition() {
+    // given
+    createJob();
 
-        final List<SubscribedRecord> events = apiRule
-                .subscribedEvents()
-                .limit(2L)
-                .collect(Collectors.toList());
+    final List<SubscribedRecord> events =
+        apiRule.subscribedEvents().limit(2L).collect(Collectors.toList());
 
-        apiRule.createCmdRequest()
-            .type(ValueType.SUBSCRIPTION, SubscriptionIntent.ACKNOWLEDGE)
-            .command()
-                .put("name", SUBSCRIPTION_NAME)
-                .put("ackPosition", events.get(0).position())
-                .done()
-            .sendAndAwait();
+    apiRule
+        .createCmdRequest()
+        .type(ValueType.SUBSCRIPTION, SubscriptionIntent.ACKNOWLEDGE)
+        .command()
+        .put("name", SUBSCRIPTION_NAME)
+        .put("ackPosition", events.get(0).position())
+        .done()
+        .sendAndAwait();
 
-        closeSubscription();
+    closeSubscription();
 
-        apiRule.moveMessageStreamToTail();
+    apiRule.moveMessageStreamToTail();
 
-        // when
-        openSubscription();
+    // when
+    openSubscription();
 
-        // then
-        final Optional<SubscribedRecord> firstEvent = apiRule
-                .subscribedEvents()
-                .findFirst();
+    // then
+    final Optional<SubscribedRecord> firstEvent = apiRule.subscribedEvents().findFirst();
 
-        assertThat(firstEvent).isPresent();
-        assertThat(firstEvent.get().position()).isEqualTo(events.get(1).position());
-    }
+    assertThat(firstEvent).isPresent();
+    assertThat(firstEvent.get().position()).isEqualTo(events.get(1).position());
+  }
 
-    @Test
-    public void shouldResumeAtTailOnLongMaxAckPosition()
-    {
-        // given
-        apiRule.createCmdRequest()
-            .type(ValueType.SUBSCRIPTION, SubscriptionIntent.ACKNOWLEDGE)
-            .command()
-                .put("name", SUBSCRIPTION_NAME)
-                .put("ackPosition", Long.MAX_VALUE)
-                .done()
-            .sendAndAwait();
+  @Test
+  public void shouldResumeAtTailOnLongMaxAckPosition() {
+    // given
+    apiRule
+        .createCmdRequest()
+        .type(ValueType.SUBSCRIPTION, SubscriptionIntent.ACKNOWLEDGE)
+        .command()
+        .put("name", SUBSCRIPTION_NAME)
+        .put("ackPosition", Long.MAX_VALUE)
+        .done()
+        .sendAndAwait();
 
-        closeSubscription();
+    closeSubscription();
 
-        apiRule.moveMessageStreamToTail();
+    apiRule.moveMessageStreamToTail();
 
-        // when
-        openSubscription();
+    // when
+    openSubscription();
 
-        // and
-        final ExecuteCommandResponse response = apiRule.createCmdRequest()
+    // and
+    final ExecuteCommandResponse response =
+        apiRule
+            .createCmdRequest()
             .type(ValueType.JOB, JobIntent.CREATE)
             .command()
-                .put("type", "theJobType")
-                .done()
+            .put("type", "theJobType")
+            .done()
             .sendAndAwait();
 
-        final long jobKey = response.key();
+    final long jobKey = response.key();
 
-        // then
-        final Optional<SubscribedRecord> firstEvent = apiRule
-                .subscribedEvents()
-                .findFirst();
+    // then
+    final Optional<SubscribedRecord> firstEvent = apiRule.subscribedEvents().findFirst();
 
-        assertThat(firstEvent).isPresent();
-        assertThat(firstEvent.get().key()).isEqualTo(jobKey);
-    }
+    assertThat(firstEvent).isPresent();
+    assertThat(firstEvent.get().key()).isEqualTo(jobKey);
+  }
 
-    @Test
-    public void shouldPersistStartPosition()
-    {
-        // given
-        createJob();
+  @Test
+  public void shouldPersistStartPosition() {
+    // given
+    createJob();
 
-        final List<Long> jobEventPositions = apiRule.subscribedEvents()
+    final List<Long> jobEventPositions =
+        apiRule
+            .subscribedEvents()
             .filter((e) -> e.valueType() == ValueType.JOB)
             .map((e) -> e.position())
             .limit(2)
             .collect(Collectors.toList());
 
-        closeSubscription();
-        apiRule.moveMessageStreamToTail();
+    closeSubscription();
+    apiRule.moveMessageStreamToTail();
 
-        // when
-        openSubscription(jobEventPositions.get(1));
+    // when
+    openSubscription(jobEventPositions.get(1));
 
-        // then it begins at the original offset (we didn't send any ACK before)
-        final List<Long> jobEventPositionsAfterReopen = apiRule.subscribedEvents()
+    // then it begins at the original offset (we didn't send any ACK before)
+    final List<Long> jobEventPositionsAfterReopen =
+        apiRule
+            .subscribedEvents()
             .filter((e) -> e.valueType() == ValueType.JOB)
             .map((e) -> e.position())
             .limit(2)
             .collect(Collectors.toList());
 
-        assertThat(jobEventPositionsAfterReopen).containsExactlyElementsOf(jobEventPositions);
-    }
+    assertThat(jobEventPositionsAfterReopen).containsExactlyElementsOf(jobEventPositions);
+  }
 
-    private ExecuteCommandResponse createJob()
-    {
-        return apiRule.createCmdRequest()
-            .type(ValueType.JOB, JobIntent.CREATE)
-            .command()
-                .put("type", "foo")
-                .put("retries", 1)
-                .done()
-            .sendAndAwait();
-    }
-
+  private ExecuteCommandResponse createJob() {
+    return apiRule
+        .createCmdRequest()
+        .type(ValueType.JOB, JobIntent.CREATE)
+        .command()
+        .put("type", "foo")
+        .put("retries", 1)
+        .done()
+        .sendAndAwait();
+  }
 }

@@ -15,9 +15,8 @@
  */
 package io.zeebe.client.api.record;
 
-public enum RecordType
-{
-    EVENT,
-    COMMAND,
-    COMMAND_REJECTION
+public enum RecordType {
+  EVENT,
+  COMMAND,
+  COMMAND_REJECTION
 }

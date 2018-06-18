@@ -15,82 +15,68 @@
  */
 package io.zeebe.test.broker.protocol.clientapi;
 
-import java.util.Map;
-
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.util.collection.MapBuilder;
 import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.RemoteAddress;
+import java.util.Map;
 
+public class ExecuteCommandRequestBuilder {
+  protected ExecuteCommandRequest request;
 
-public class ExecuteCommandRequestBuilder
-{
-    protected ExecuteCommandRequest request;
+  public ExecuteCommandRequestBuilder(
+      ClientOutput output, RemoteAddress target, MsgPackHelper msgPackHelper) {
+    this.request = new ExecuteCommandRequest(output, target, msgPackHelper);
+  }
 
-    public ExecuteCommandRequestBuilder(ClientOutput output, RemoteAddress target, MsgPackHelper msgPackHelper)
-    {
-        this.request = new ExecuteCommandRequest(output, target, msgPackHelper);
-    }
+  public ExecuteCommandResponse sendAndAwait() {
+    return send().await();
+  }
 
-    public ExecuteCommandResponse sendAndAwait()
-    {
-        return send()
-                .await();
-    }
+  public ExecuteCommandRequest send() {
+    return request.send();
+  }
 
-    public ExecuteCommandRequest send()
-    {
-        return request.send();
-    }
+  public ExecuteCommandRequest sendWithoutRetries() {
+    return request.send(r -> false);
+  }
 
-    public ExecuteCommandRequest sendWithoutRetries()
-    {
-        return request.send(r -> false);
-    }
+  public ExecuteCommandRequestBuilder partitionId(int partitionId) {
+    request.partitionId(partitionId);
+    return this;
+  }
 
-    public ExecuteCommandRequestBuilder partitionId(int partitionId)
-    {
-        request.partitionId(partitionId);
-        return this;
-    }
+  public ExecuteCommandRequestBuilder sourceRecordPosition(long sourceRecordPosition) {
+    request.sourceRecordPosition(sourceRecordPosition);
+    return this;
+  }
 
-    public ExecuteCommandRequestBuilder sourceRecordPosition(long sourceRecordPosition)
-    {
-        request.sourceRecordPosition(sourceRecordPosition);
-        return this;
-    }
+  public ExecuteCommandRequestBuilder key(long key) {
+    request.key(key);
+    return this;
+  }
 
-    public ExecuteCommandRequestBuilder key(long key)
-    {
-        request.key(key);
-        return this;
-    }
+  public ExecuteCommandRequestBuilder type(ValueType valueType, Intent intent) {
+    request.valueType(valueType);
+    request.intent(intent);
+    return this;
+  }
 
-    public ExecuteCommandRequestBuilder type(ValueType valueType, Intent intent)
-    {
-        request.valueType(valueType);
-        request.intent(intent);
-        return this;
-    }
+  public ExecuteCommandRequestBuilder intent(Intent intent) {
+    request.intent(intent);
+    return this;
+  }
 
-    public ExecuteCommandRequestBuilder intent(Intent intent)
-    {
-        request.intent(intent);
-        return this;
-    }
+  public ExecuteCommandRequestBuilder command(Map<String, Object> command) {
+    request.command(command);
+    return this;
+  }
 
-    public ExecuteCommandRequestBuilder command(Map<String, Object> command)
-    {
-        request.command(command);
-        return this;
-    }
-
-    public MapBuilder<ExecuteCommandRequestBuilder> command()
-    {
-        final MapBuilder<ExecuteCommandRequestBuilder> mapBuilder = new MapBuilder<>(this, this::command);
-        return mapBuilder;
-    }
-
+  public MapBuilder<ExecuteCommandRequestBuilder> command() {
+    final MapBuilder<ExecuteCommandRequestBuilder> mapBuilder =
+        new MapBuilder<>(this, this::command);
+    return mapBuilder;
+  }
 }

@@ -17,44 +17,35 @@
  */
 package io.zeebe.broker.system.configuration;
 
+import io.zeebe.util.DurationUtil;
 import java.time.Duration;
 
-import io.zeebe.util.DurationUtil;
+public class MetricsCfg implements ConfigurationEntry {
+  private String reportingInterval = "5s";
+  private String file = "metrics/zeebe.prom";
 
-public class MetricsCfg implements ConfigurationEntry
-{
-    private String reportingInterval = "5s";
-    private String file = "metrics/zeebe.prom";
+  @Override
+  public void init(BrokerCfg brokerCfg, String brokerBase) {
+    file = ConfigurationUtil.toAbsolutePath(file, brokerBase);
+  }
 
-    @Override
-    public void init(BrokerCfg brokerCfg, String brokerBase)
-    {
-        file = ConfigurationUtil.toAbsolutePath(file, brokerBase);
-    }
+  public Duration getReportingIntervalDuration() {
+    return DurationUtil.parse(reportingInterval);
+  }
 
-    public Duration getReportingIntervalDuration()
-    {
-        return DurationUtil.parse(reportingInterval);
-    }
+  public String getReportingInterval() {
+    return reportingInterval;
+  }
 
-    public String getReportingInterval()
-    {
-        return reportingInterval;
-    }
+  public void setReportingInterval(String reportingInterval) {
+    this.reportingInterval = reportingInterval;
+  }
 
-    public void setReportingInterval(String reportingInterval)
-    {
-        this.reportingInterval = reportingInterval;
-    }
+  public String getFile() {
+    return file;
+  }
 
-    public String getFile()
-    {
-        return file;
-    }
-
-    public void setFile(String metricsFile)
-    {
-        this.file = metricsFile;
-    }
-
+  public void setFile(String metricsFile) {
+    this.file = metricsFile;
+  }
 }

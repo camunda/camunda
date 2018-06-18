@@ -15,10 +15,9 @@
  */
 package io.zeebe.transport;
 
-public interface RemoteAddress
-{
+public interface RemoteAddress {
 
-    int getStreamId();
+  int getStreamId();
 
-    SocketAddress getAddress();
+  SocketAddress getAddress();
 }

@@ -17,10 +17,8 @@ package io.zeebe.msgpack.property;
 
 import io.zeebe.msgpack.value.StringValue;
 
-public class UndeclaredProperty extends PackedProperty
-{
-    public UndeclaredProperty()
-    {
-        super(StringValue.EMPTY_STRING);
-    }
+public class UndeclaredProperty extends PackedProperty {
+  public UndeclaredProperty() {
+    super(StringValue.EMPTY_STRING);
+  }
 }

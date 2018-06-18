@@ -20,13 +20,11 @@ package io.zeebe.broker;
 import io.zeebe.util.ZbLogger;
 import org.slf4j.Logger;
 
-public class Loggers
-{
+public class Loggers {
 
-    public static final Logger CLUSTERING_LOGGER = new ZbLogger("io.zeebe.broker.clustering");
-    public static final Logger SERVICES_LOGGER = new ZbLogger("io.zeebe.broker.services");
-    public static final Logger SYSTEM_LOGGER = new ZbLogger("io.zeebe.broker.system");
-    public static final Logger TRANSPORT_LOGGER = new ZbLogger("io.zeebe.broker.transport");
-    public static final Logger STREAM_PROCESSING = new ZbLogger("io.zeebe.broker.streamProcessing");
-
+  public static final Logger CLUSTERING_LOGGER = new ZbLogger("io.zeebe.broker.clustering");
+  public static final Logger SERVICES_LOGGER = new ZbLogger("io.zeebe.broker.services");
+  public static final Logger SYSTEM_LOGGER = new ZbLogger("io.zeebe.broker.system");
+  public static final Logger TRANSPORT_LOGGER = new ZbLogger("io.zeebe.broker.transport");
+  public static final Logger STREAM_PROCESSING = new ZbLogger("io.zeebe.broker.streamProcessing");
 }

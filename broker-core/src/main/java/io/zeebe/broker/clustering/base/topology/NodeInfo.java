@@ -17,112 +17,94 @@
  */
 package io.zeebe.broker.clustering.base.topology;
 
+import io.zeebe.transport.SocketAddress;
 import java.util.HashSet;
 import java.util.Set;
 
-import io.zeebe.transport.SocketAddress;
+public class NodeInfo {
+  private final SocketAddress clientApiAddress;
+  private final SocketAddress managementApiAddress;
+  private final SocketAddress replicationApiAddress;
 
-public class NodeInfo
-{
-    private final SocketAddress clientApiAddress;
-    private final SocketAddress managementApiAddress;
-    private final SocketAddress replicationApiAddress;
+  private final Set<PartitionInfo> leaders = new HashSet<>();
+  private final Set<PartitionInfo> followers = new HashSet<>();
 
-    private final Set<PartitionInfo> leaders = new HashSet<>();
-    private final Set<PartitionInfo> followers = new HashSet<>();
+  public NodeInfo(
+      final SocketAddress clientApiAddress,
+      final SocketAddress managementApiAddress,
+      final SocketAddress replicationApiAddress) {
+    this.clientApiAddress = clientApiAddress;
+    this.managementApiAddress = managementApiAddress;
+    this.replicationApiAddress = replicationApiAddress;
+  }
 
-    public NodeInfo(final SocketAddress clientApiAddress,
-        final SocketAddress managementApiAddress,
-        final SocketAddress replicationApiAddress)
-    {
-        this.clientApiAddress = clientApiAddress;
-        this.managementApiAddress = managementApiAddress;
-        this.replicationApiAddress = replicationApiAddress;
+  public SocketAddress getClientApiAddress() {
+    return clientApiAddress;
+  }
+
+  public SocketAddress getManagementApiAddress() {
+    return managementApiAddress;
+  }
+
+  public SocketAddress getReplicationApiAddress() {
+    return replicationApiAddress;
+  }
+
+  public Set<PartitionInfo> getLeaders() {
+    return leaders;
+  }
+
+  public boolean addLeader(final PartitionInfo leader) {
+    return leaders.add(leader);
+  }
+
+  public boolean removeLeader(final PartitionInfo leader) {
+    return leaders.remove(leader);
+  }
+
+  public Set<PartitionInfo> getFollowers() {
+    return followers;
+  }
+
+  public boolean addFollower(final PartitionInfo follower) {
+    return followers.add(follower);
+  }
+
+  public boolean removeFollower(final PartitionInfo follower) {
+    return followers.remove(follower);
+  }
+
+  @Override
+  public String toString() {
+    return String.format(
+        "Node{clientApi=%s, managementApi=%s, replicationApi=%s}",
+        clientApiAddress, managementApiAddress, replicationApiAddress);
+  }
+
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((clientApiAddress == null) ? 0 : clientApiAddress.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object obj) {
+    if (this == obj) {
+      return true;
     }
-
-    public SocketAddress getClientApiAddress()
-    {
-        return clientApiAddress;
+    if (obj == null) {
+      return false;
     }
-
-    public SocketAddress getManagementApiAddress()
-    {
-        return managementApiAddress;
+    if (getClass() != obj.getClass()) {
+      return false;
     }
-
-    public SocketAddress getReplicationApiAddress()
-    {
-        return replicationApiAddress;
+    final NodeInfo other = (NodeInfo) obj;
+    if (clientApiAddress == null) {
+      return other.clientApiAddress == null;
+    } else {
+      return clientApiAddress.equals(other.clientApiAddress);
     }
-
-    public Set<PartitionInfo> getLeaders()
-    {
-        return leaders;
-    }
-
-    public boolean addLeader(final PartitionInfo leader)
-    {
-        return leaders.add(leader);
-    }
-
-    public boolean removeLeader(final PartitionInfo leader)
-    {
-        return leaders.remove(leader);
-    }
-
-    public Set<PartitionInfo> getFollowers()
-    {
-        return followers;
-    }
-
-    public boolean addFollower(final PartitionInfo follower)
-    {
-        return followers.add(follower);
-    }
-
-    public boolean removeFollower(final PartitionInfo follower)
-    {
-        return followers.remove(follower);
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format("Node{clientApi=%s, managementApi=%s, replicationApi=%s}", clientApiAddress, managementApiAddress, replicationApiAddress);
-    }
-
-    @Override
-    public int hashCode()
-    {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((clientApiAddress == null) ? 0 : clientApiAddress.hashCode());
-        return result;
-    }
-
-    @Override
-    public boolean equals(final Object obj)
-    {
-        if (this == obj)
-        {
-            return true;
-        }
-        if (obj == null)
-        {
-            return false;
-        }
-        if (getClass() != obj.getClass())
-        {
-            return false;
-        }
-        final NodeInfo other = (NodeInfo) obj;
-        if (clientApiAddress == null)
-        {
-            return other.clientApiAddress == null;
-        }
-        else
-        {
-            return clientApiAddress.equals(other.clientApiAddress);
-        }
-    }
+  }
 }

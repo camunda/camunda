@@ -17,27 +17,21 @@ package io.zeebe.msgpack.property;
 
 import io.zeebe.msgpack.value.IntegerValue;
 
-public class IntegerProperty extends BaseProperty<IntegerValue>
-{
-    public IntegerProperty(String key)
-    {
-        super(key, new IntegerValue());
-    }
+public class IntegerProperty extends BaseProperty<IntegerValue> {
+  public IntegerProperty(String key) {
+    super(key, new IntegerValue());
+  }
 
-    public IntegerProperty(String key, int defaultValue)
-    {
-        super(key, new IntegerValue(), new IntegerValue(defaultValue));
-    }
+  public IntegerProperty(String key, int defaultValue) {
+    super(key, new IntegerValue(), new IntegerValue(defaultValue));
+  }
 
-    public int getValue()
-    {
-        return resolveValue().getValue();
-    }
+  public int getValue() {
+    return resolveValue().getValue();
+  }
 
-    public void setValue(int value)
-    {
-        this.value.setValue(value);
-        this.isSet = true;
-    }
-
+  public void setValue(int value) {
+    this.value.setValue(value);
+    this.isSet = true;
+  }
 }

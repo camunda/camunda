@@ -21,39 +21,39 @@ import io.zeebe.client.api.clients.WorkflowClient;
 import io.zeebe.client.api.commands.WorkflowResource;
 import io.zeebe.client.api.commands.Workflows;
 
-public class DeploymentViewer
-{
+public class DeploymentViewer {
 
-    public static void main(final String[] args)
-    {
+  public static void main(final String[] args) {
 
-        final String broker = "localhost:51015";
+    final String broker = "localhost:51015";
 
-        final ZeebeClientBuilder clientBuilder = ZeebeClient
-            .newClientBuilder()
-            .brokerContactPoint(broker);
+    final ZeebeClientBuilder clientBuilder =
+        ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
-        try (ZeebeClient client = clientBuilder.build())
-        {
-            final WorkflowClient workflowClient = client.topicClient().workflowClient();
+    try (ZeebeClient client = clientBuilder.build()) {
+      final WorkflowClient workflowClient = client.topicClient().workflowClient();
 
-            final Workflows workflows = workflowClient.newWorkflowRequest().send().join();
+      final Workflows workflows = workflowClient.newWorkflowRequest().send().join();
 
-            System.out.println("Printing all deployed workflows:");
+      System.out.println("Printing all deployed workflows:");
 
-            workflows.getWorkflows().forEach(wf ->
-            {
+      workflows
+          .getWorkflows()
+          .forEach(
+              wf -> {
                 System.out.println("Workflow resource for " + wf + ":");
 
-                final WorkflowResource resource = workflowClient.newResourceRequest()
-                    .workflowKey(wf.getWorkflowKey())
-                    .send().join();
+                final WorkflowResource resource =
+                    workflowClient
+                        .newResourceRequest()
+                        .workflowKey(wf.getWorkflowKey())
+                        .send()
+                        .join();
 
                 System.out.println(resource);
-            });
+              });
 
-            System.out.println("Done");
-        }
+      System.out.println("Done");
     }
-
+  }
 }

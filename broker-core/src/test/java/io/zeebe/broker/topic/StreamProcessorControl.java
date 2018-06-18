@@ -17,41 +17,39 @@
  */
 package io.zeebe.broker.topic;
 
-import java.util.function.Predicate;
-
 import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.system.workflow.repository.data.DeploymentRecord;
 import io.zeebe.logstreams.log.LoggedEvent;
+import java.util.function.Predicate;
 
-public interface StreamProcessorControl
-{
+public interface StreamProcessorControl {
 
-    void unblock();
+  void unblock();
 
-    void blockAfterEvent(Predicate<LoggedEvent> test);
+  void blockAfterEvent(Predicate<LoggedEvent> test);
 
-    void blockAfterJobEvent(Predicate<TypedRecord<JobRecord>> test);
+  void blockAfterJobEvent(Predicate<TypedRecord<JobRecord>> test);
 
-    void blockAfterDeploymentEvent(Predicate<TypedRecord<DeploymentRecord>> test);
+  void blockAfterDeploymentEvent(Predicate<TypedRecord<DeploymentRecord>> test);
 
-    void blockAfterIncidentEvent(Predicate<TypedRecord<IncidentRecord>> test);
+  void blockAfterIncidentEvent(Predicate<TypedRecord<IncidentRecord>> test);
 
-    void blockAfterTopicEvent(Predicate<TypedRecord<TopicRecord>> test);
+  void blockAfterTopicEvent(Predicate<TypedRecord<TopicRecord>> test);
 
-    void purgeSnapshot();
+  void purgeSnapshot();
 
-    /**
-     * @return true if the event to block on has been processed and the stream processor won't handle
-     *   any more events until {@link #unblock()} is called.
-     */
-    boolean isBlocked();
+  /**
+   * @return true if the event to block on has been processed and the stream processor won't handle
+   *     any more events until {@link #unblock()} is called.
+   */
+  boolean isBlocked();
 
-    void close();
+  void close();
 
-    void start();
+  void start();
 
-    void restart();
+  void restart();
 }

@@ -17,10 +17,6 @@
  */
 package io.zeebe.broker.clustering.orchestration.topic;
 
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.agrona.DirectBuffer;
-
 import io.zeebe.broker.clustering.orchestration.state.KnownTopics;
 import io.zeebe.broker.clustering.orchestration.state.TopicInfo;
 import io.zeebe.broker.transport.controlmessage.AbstractControlMessageHandler;
@@ -35,97 +31,108 @@ import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
+import java.util.concurrent.atomic.AtomicReference;
+import org.agrona.DirectBuffer;
 
-public class RequestPartitionsMessageHandler extends AbstractControlMessageHandler implements Service<RequestPartitionsMessageHandler>
-{
+public class RequestPartitionsMessageHandler extends AbstractControlMessageHandler
+    implements Service<RequestPartitionsMessageHandler> {
 
-    private final Injector<KnownTopics> clusterTopicStateInjector = new Injector<>();
+  private final Injector<KnownTopics> clusterTopicStateInjector = new Injector<>();
 
-    private final AtomicReference<KnownTopics> clusterTopicStateReference = new AtomicReference<>();
+  private final AtomicReference<KnownTopics> clusterTopicStateReference = new AtomicReference<>();
 
-    public RequestPartitionsMessageHandler(final ServerOutput serverOutput)
-    {
-        super(serverOutput);
+  public RequestPartitionsMessageHandler(final ServerOutput serverOutput) {
+    super(serverOutput);
+  }
+
+  @Override
+  public RequestPartitionsMessageHandler get() {
+    return this;
+  }
+
+  @Override
+  public void start(final ServiceStartContext startContext) {
+    final KnownTopics knownTopics = clusterTopicStateInjector.getValue();
+    clusterTopicStateReference.set(knownTopics);
+  }
+
+  @Override
+  public void stop(final ServiceStopContext stopContext) {
+    clusterTopicStateReference.set(null);
+  }
+
+  @Override
+  public ControlMessageType getMessageType() {
+    return ControlMessageType.REQUEST_PARTITIONS;
+  }
+
+  @Override
+  public void handle(
+      final ActorControl actor,
+      final int partitionId,
+      final DirectBuffer buffer,
+      final RecordMetadata metadata) {
+    final int requestStreamId = metadata.getRequestStreamId();
+    final long requestId = metadata.getRequestId();
+    final KnownTopics knownTopics = clusterTopicStateReference.get();
+
+    if (partitionId != Protocol.SYSTEM_PARTITION) {
+      sendErrorResponse(
+          actor,
+          requestStreamId,
+          requestId,
+          "Partitions request must address the system partition %d",
+          Protocol.SYSTEM_PARTITION);
+    } else if (knownTopics == null) {
+      // it is important that partition not found is returned here to signal a client that it may
+      // have addressed a broker
+      // that appeared as the system partition leader but is not (yet) able to respond
+      sendErrorResponse(
+          actor,
+          requestStreamId,
+          requestId,
+          ErrorCode.PARTITION_NOT_FOUND,
+          "Partitions request must address the leader of the system partition %d",
+          Protocol.SYSTEM_PARTITION);
+    } else {
+      final ActorFuture<PartitionsResponse> responseFuture =
+          knownTopics.queryTopics(this::createResponse);
+
+      actor.runOnCompletion(
+          responseFuture,
+          (partitionsResponse, throwable) -> {
+            if (throwable == null) {
+              sendResponse(actor, requestStreamId, requestId, partitionsResponse);
+            } else {
+              // it is important that partition not found is returned here to signal a client that
+              // it may have addressed a broker
+              // that appeared as the system partition leader but is not (yet) able to respond
+              sendErrorResponse(
+                  actor,
+                  requestStreamId,
+                  requestId,
+                  ErrorCode.PARTITION_NOT_FOUND,
+                  throwable.getMessage());
+            }
+          });
+    }
+  }
+
+  private PartitionsResponse createResponse(final Iterable<TopicInfo> topicInfos) {
+    final PartitionsResponse response = new PartitionsResponse();
+
+    for (final TopicInfo topicInfo : topicInfos) {
+      final DirectBuffer topicName = topicInfo.getTopicNameBuffer();
+      topicInfo
+          .getPartitionIds()
+          .iterator()
+          .forEachRemaining(id -> response.addPartition(id.getValue(), topicName));
     }
 
-    @Override
-    public RequestPartitionsMessageHandler get()
-    {
-        return this;
-    }
+    return response;
+  }
 
-    @Override
-    public void start(final ServiceStartContext startContext)
-    {
-        final KnownTopics knownTopics = clusterTopicStateInjector.getValue();
-        clusterTopicStateReference.set(knownTopics);
-    }
-
-    @Override
-    public void stop(final ServiceStopContext stopContext)
-    {
-        clusterTopicStateReference.set(null);
-    }
-
-    @Override
-    public ControlMessageType getMessageType()
-    {
-        return ControlMessageType.REQUEST_PARTITIONS;
-    }
-
-    @Override
-    public void handle(final ActorControl actor, final int partitionId, final DirectBuffer buffer, final RecordMetadata metadata)
-    {
-        final int requestStreamId = metadata.getRequestStreamId();
-        final long requestId = metadata.getRequestId();
-        final KnownTopics knownTopics = clusterTopicStateReference.get();
-
-        if (partitionId != Protocol.SYSTEM_PARTITION)
-        {
-            sendErrorResponse(actor, requestStreamId, requestId, "Partitions request must address the system partition %d", Protocol.SYSTEM_PARTITION);
-        }
-        else if (knownTopics == null)
-        {
-            // it is important that partition not found is returned here to signal a client that it may have addressed a broker
-            // that appeared as the system partition leader but is not (yet) able to respond
-            sendErrorResponse(actor, requestStreamId, requestId, ErrorCode.PARTITION_NOT_FOUND, "Partitions request must address the leader of the system partition %d", Protocol.SYSTEM_PARTITION);
-        }
-        else
-        {
-            final ActorFuture<PartitionsResponse> responseFuture = knownTopics.queryTopics(this::createResponse);
-
-            actor.runOnCompletion(responseFuture, (partitionsResponse, throwable) ->
-            {
-                if (throwable == null)
-                {
-                    sendResponse(actor, requestStreamId, requestId, partitionsResponse);
-                }
-                else
-                {
-                    // it is important that partition not found is returned here to signal a client that it may have addressed a broker
-                    // that appeared as the system partition leader but is not (yet) able to respond
-                    sendErrorResponse(actor, requestStreamId, requestId, ErrorCode.PARTITION_NOT_FOUND, throwable.getMessage());
-                }
-            });
-        }
-    }
-
-    private PartitionsResponse createResponse(final Iterable<TopicInfo> topicInfos)
-    {
-        final PartitionsResponse response = new PartitionsResponse();
-
-        for (final TopicInfo topicInfo : topicInfos)
-        {
-            final DirectBuffer topicName = topicInfo.getTopicNameBuffer();
-            topicInfo.getPartitionIds().iterator().forEachRemaining(id -> response.addPartition(id.getValue(), topicName));
-        }
-
-        return response;
-    }
-
-    public Injector<KnownTopics> getClusterTopicStateInjector()
-    {
-        return clusterTopicStateInjector;
-    }
-
+  public Injector<KnownTopics> getClusterTopicStateInjector() {
+    return clusterTopicStateInjector;
+  }
 }

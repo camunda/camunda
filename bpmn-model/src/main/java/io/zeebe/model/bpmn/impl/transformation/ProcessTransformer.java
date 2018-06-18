@@ -27,93 +27,79 @@ import io.zeebe.model.bpmn.instance.ExclusiveGateway;
 import io.zeebe.model.bpmn.instance.FlowElement;
 import io.zeebe.model.bpmn.instance.FlowNode;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
-import org.agrona.DirectBuffer;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.agrona.DirectBuffer;
 
-public class ProcessTransformer
-{
-    private final SequenceFlowTransformer sequenceFlowTransformer = new SequenceFlowTransformer();
-    private final ServiceTaskTransformer serviceTaskTransformer = new ServiceTaskTransformer();
-    private final ExclusiveGatewayTransformer exclusiveGatewayTransformer = new ExclusiveGatewayTransformer();
+public class ProcessTransformer {
+  private final SequenceFlowTransformer sequenceFlowTransformer = new SequenceFlowTransformer();
+  private final ServiceTaskTransformer serviceTaskTransformer = new ServiceTaskTransformer();
+  private final ExclusiveGatewayTransformer exclusiveGatewayTransformer =
+      new ExclusiveGatewayTransformer();
 
-    public void transform(ErrorCollector errorCollector, ProcessImpl process)
-    {
-        final List<FlowElementImpl> flowElements = collectFlowElements(process);
-        process.getFlowElements().addAll(flowElements);
+  public void transform(ErrorCollector errorCollector, ProcessImpl process) {
+    final List<FlowElementImpl> flowElements = collectFlowElements(process);
+    process.getFlowElements().addAll(flowElements);
 
-        final Map<DirectBuffer, FlowElementImpl> flowElementsById = getFlowElementsById(flowElements);
-        process.getFlowElementMap().putAll(flowElementsById);
+    final Map<DirectBuffer, FlowElementImpl> flowElementsById = getFlowElementsById(flowElements);
+    process.getFlowElementMap().putAll(flowElementsById);
 
-        setInitialStartEvent(process);
+    setInitialStartEvent(process);
 
-        sequenceFlowTransformer.transform(errorCollector, process.getSequenceFlows(), flowElementsById);
-        serviceTaskTransformer.transform(errorCollector, process.getServiceTasks());
-        exclusiveGatewayTransformer.transform(process.getExclusiveGateways());
+    sequenceFlowTransformer.transform(errorCollector, process.getSequenceFlows(), flowElementsById);
+    serviceTaskTransformer.transform(errorCollector, process.getServiceTasks());
+    exclusiveGatewayTransformer.transform(process.getExclusiveGateways());
 
-        transformBpmnAspects(process);
+    transformBpmnAspects(process);
+  }
+
+  private List<FlowElementImpl> collectFlowElements(final ProcessImpl process) {
+    final List<FlowElementImpl> flowElements = new ArrayList<>();
+    flowElements.addAll(process.getStartEvents());
+    flowElements.addAll(process.getEndEvents());
+    flowElements.addAll(process.getSequenceFlows());
+    flowElements.addAll(process.getServiceTasks());
+    flowElements.addAll(process.getExclusiveGateways());
+    return flowElements;
+  }
+
+  private Map<DirectBuffer, FlowElementImpl> getFlowElementsById(
+      List<FlowElementImpl> flowElements) {
+    final Map<DirectBuffer, FlowElementImpl> map = new HashMap<>();
+    for (FlowElementImpl flowElement : flowElements) {
+      map.put(flowElement.getIdAsBuffer(), flowElement);
     }
+    return map;
+  }
 
-    private List<FlowElementImpl> collectFlowElements(final ProcessImpl process)
-    {
-        final List<FlowElementImpl> flowElements = new ArrayList<>();
-        flowElements.addAll(process.getStartEvents());
-        flowElements.addAll(process.getEndEvents());
-        flowElements.addAll(process.getSequenceFlows());
-        flowElements.addAll(process.getServiceTasks());
-        flowElements.addAll(process.getExclusiveGateways());
-        return flowElements;
+  private void setInitialStartEvent(final ProcessImpl process) {
+    final List<StartEventImpl> startEvents = process.getStartEvents();
+    if (startEvents.size() >= 1) {
+      final StartEventImpl startEvent = startEvents.get(0);
+      process.setInitialStartEvent(startEvent);
     }
+  }
 
-    private Map<DirectBuffer, FlowElementImpl> getFlowElementsById(List<FlowElementImpl> flowElements)
-    {
-        final Map<DirectBuffer, FlowElementImpl> map = new HashMap<>();
-        for (FlowElementImpl flowElement : flowElements)
-        {
-            map.put(flowElement.getIdAsBuffer(), flowElement);
+  private void transformBpmnAspects(ProcessImpl process) {
+    final List<FlowElement> flowElements = process.getFlowElements();
+    for (int f = 0; f < flowElements.size(); f++) {
+      final FlowElementImpl flowElement = (FlowElementImpl) flowElements.get(f);
+
+      if (flowElement instanceof FlowNode) {
+        final FlowNode flowNode = (FlowNode) flowElement;
+
+        final List<SequenceFlow> outgoingSequenceFlows = flowNode.getOutgoingSequenceFlows();
+        if (outgoingSequenceFlows.isEmpty()) {
+          flowElement.setBpmnAspect(BpmnAspect.CONSUME_TOKEN);
+        } else if (outgoingSequenceFlows.size() == 1
+            && !outgoingSequenceFlows.get(0).hasCondition()) {
+          flowElement.setBpmnAspect(BpmnAspect.TAKE_SEQUENCE_FLOW);
+        } else if (flowElement instanceof ExclusiveGateway) {
+          flowElement.setBpmnAspect(BpmnAspect.EXCLUSIVE_SPLIT);
         }
-        return map;
+      }
     }
-
-
-    private void setInitialStartEvent(final ProcessImpl process)
-    {
-        final List<StartEventImpl> startEvents = process.getStartEvents();
-        if (startEvents.size() >= 1)
-        {
-            final StartEventImpl startEvent = startEvents.get(0);
-            process.setInitialStartEvent(startEvent);
-        }
-    }
-
-    private void transformBpmnAspects(ProcessImpl process)
-    {
-        final List<FlowElement> flowElements = process.getFlowElements();
-        for (int f = 0; f < flowElements.size(); f++)
-        {
-            final FlowElementImpl flowElement = (FlowElementImpl) flowElements.get(f);
-
-            if (flowElement instanceof FlowNode)
-            {
-                final FlowNode flowNode = (FlowNode) flowElement;
-
-                final List<SequenceFlow> outgoingSequenceFlows = flowNode.getOutgoingSequenceFlows();
-                if (outgoingSequenceFlows.isEmpty())
-                {
-                    flowElement.setBpmnAspect(BpmnAspect.CONSUME_TOKEN);
-                }
-                else if (outgoingSequenceFlows.size() == 1 && !outgoingSequenceFlows.get(0).hasCondition())
-                {
-                    flowElement.setBpmnAspect(BpmnAspect.TAKE_SEQUENCE_FLOW);
-                }
-                else if (flowElement instanceof ExclusiveGateway)
-                {
-                    flowElement.setBpmnAspect(BpmnAspect.EXCLUSIVE_SPLIT);
-                }
-            }
-        }
-    }
+  }
 }

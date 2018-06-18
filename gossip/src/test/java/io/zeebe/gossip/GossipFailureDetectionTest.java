@@ -27,128 +27,120 @@ import org.junit.*;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.Timeout;
 
-public class GossipFailureDetectionTest
-{
-    private GossipRule gossip1 = new GossipRule("localhost:8001");
-    private GossipRule gossip2 = new GossipRule("localhost:8002");
-    private GossipRule gossip3 = new GossipRule("localhost:8003");
+public class GossipFailureDetectionTest {
+  private GossipRule gossip1 = new GossipRule("localhost:8001");
+  private GossipRule gossip2 = new GossipRule("localhost:8002");
+  private GossipRule gossip3 = new GossipRule("localhost:8003");
 
-    @Rule
-    public GossipClusterRule cluster = new GossipClusterRule(gossip1, gossip2, gossip3);
+  @Rule public GossipClusterRule cluster = new GossipClusterRule(gossip1, gossip2, gossip3);
 
-    @Rule
-    public Timeout timeout = Timeout.seconds(10);
+  @Rule public Timeout timeout = Timeout.seconds(10);
 
-    @Before
-    public void init()
-    {
-        gossip2.join(gossip1).join();
-        gossip3.join(gossip1).join();
+  @Before
+  public void init() {
+    gossip2.join(gossip1).join();
+    gossip3.join(gossip1).join();
 
-        cluster.waitUntil(() -> gossip2.hasMember(gossip3));
-        cluster.waitUntil(() -> gossip3.hasMember(gossip2));
+    cluster.waitUntil(() -> gossip2.hasMember(gossip3));
+    cluster.waitUntil(() -> gossip3.hasMember(gossip2));
 
-        gossip1.clearReceivedEvents();
-        gossip2.clearReceivedEvents();
-        gossip3.clearReceivedEvents();
-    }
+    gossip1.clearReceivedEvents();
+    gossip2.clearReceivedEvents();
+    gossip3.clearReceivedEvents();
+  }
 
-    @Test
-    public void shouldSendPingAndAck()
-    {
-        // send PING and ACK events and verify that
+  @Test
+  public void shouldSendPingAndAck() {
+    // send PING and ACK events and verify that
 
-        cluster.waitUntil(() -> gossip1.receivedEvent(GossipEventType.PING, gossip2));
-        cluster.waitUntil(() -> gossip1.receivedEvent(GossipEventType.PING, gossip3));
+    cluster.waitUntil(() -> gossip1.receivedEvent(GossipEventType.PING, gossip2));
+    cluster.waitUntil(() -> gossip1.receivedEvent(GossipEventType.PING, gossip3));
 
-        cluster.waitUntil(() -> gossip2.receivedEvent(GossipEventType.PING, gossip1));
-        cluster.waitUntil(() -> gossip2.receivedEvent(GossipEventType.PING, gossip3));
+    cluster.waitUntil(() -> gossip2.receivedEvent(GossipEventType.PING, gossip1));
+    cluster.waitUntil(() -> gossip2.receivedEvent(GossipEventType.PING, gossip3));
 
-        cluster.waitUntil(() -> gossip3.receivedEvent(GossipEventType.PING, gossip1));
-        cluster.waitUntil(() -> gossip3.receivedEvent(GossipEventType.PING, gossip2));
+    cluster.waitUntil(() -> gossip3.receivedEvent(GossipEventType.PING, gossip1));
+    cluster.waitUntil(() -> gossip3.receivedEvent(GossipEventType.PING, gossip2));
 
-        cluster.waitUntil(() -> gossip1.receivedEvent(GossipEventType.ACK, gossip2));
-        cluster.waitUntil(() -> gossip1.receivedEvent(GossipEventType.ACK, gossip3));
+    cluster.waitUntil(() -> gossip1.receivedEvent(GossipEventType.ACK, gossip2));
+    cluster.waitUntil(() -> gossip1.receivedEvent(GossipEventType.ACK, gossip3));
 
-        cluster.waitUntil(() -> gossip2.receivedEvent(GossipEventType.ACK, gossip1));
-        cluster.waitUntil(() -> gossip2.receivedEvent(GossipEventType.ACK, gossip3));
+    cluster.waitUntil(() -> gossip2.receivedEvent(GossipEventType.ACK, gossip1));
+    cluster.waitUntil(() -> gossip2.receivedEvent(GossipEventType.ACK, gossip3));
 
-        cluster.waitUntil(() -> gossip3.receivedEvent(GossipEventType.ACK, gossip1));
-        cluster.waitUntil(() -> gossip3.receivedEvent(GossipEventType.ACK, gossip2));
-    }
+    cluster.waitUntil(() -> gossip3.receivedEvent(GossipEventType.ACK, gossip1));
+    cluster.waitUntil(() -> gossip3.receivedEvent(GossipEventType.ACK, gossip2));
+  }
 
-    @Test
-    public void shouldSendPingReqAndForwardAck()
-    {
-        // given
-        cluster.interruptConnectionBetween(gossip1, gossip2);
+  @Test
+  public void shouldSendPingReqAndForwardAck() {
+    // given
+    cluster.interruptConnectionBetween(gossip1, gossip2);
 
-        // when send PING-REQ (indirect PING) to probe member
-        cluster.waitUntil(() -> gossip3.receivedEvent(GossipEventType.PING_REQ, gossip1));
-        cluster.waitUntil(() -> gossip2.receivedEvent(GossipEventType.PING, gossip3));
-        cluster.waitUntil(() -> gossip3.receivedEvent(GossipEventType.ACK, gossip2));
-        cluster.waitUntil(() -> gossip1.receivedEvent(GossipEventType.ACK, gossip3));
+    // when send PING-REQ (indirect PING) to probe member
+    cluster.waitUntil(() -> gossip3.receivedEvent(GossipEventType.PING_REQ, gossip1));
+    cluster.waitUntil(() -> gossip2.receivedEvent(GossipEventType.PING, gossip3));
+    cluster.waitUntil(() -> gossip3.receivedEvent(GossipEventType.ACK, gossip2));
+    cluster.waitUntil(() -> gossip1.receivedEvent(GossipEventType.ACK, gossip3));
 
-        assertThat(gossip1.hasMember(gossip2)).isTrue();
-        assertThat(gossip2.hasMember(gossip1)).isTrue();
-    }
+    assertThat(gossip1.hasMember(gossip2)).isTrue();
+    assertThat(gossip2.hasMember(gossip1)).isTrue();
+  }
 
-    @Test
-    @Category(UnstableTest.class)
-    public void shouldSpreadSuspectEvent()
-    {
-        // given
-        cluster.interruptConnectionBetween(gossip3, gossip1);
-        cluster.interruptConnectionBetween(gossip3, gossip2);
+  @Test
+  @Category(UnstableTest.class)
+  public void shouldSpreadSuspectEvent() {
+    // given
+    cluster.interruptConnectionBetween(gossip3, gossip1);
+    cluster.interruptConnectionBetween(gossip3, gossip2);
 
-        // when send SUSPECT event
-        cluster.waitUntil(() -> gossip1.receivedMembershipEvent(MembershipEventType.SUSPECT, gossip3));
-        cluster.waitUntil(() -> gossip2.receivedMembershipEvent(MembershipEventType.SUSPECT, gossip3));
+    // when send SUSPECT event
+    cluster.waitUntil(() -> gossip1.receivedMembershipEvent(MembershipEventType.SUSPECT, gossip3));
+    cluster.waitUntil(() -> gossip2.receivedMembershipEvent(MembershipEventType.SUSPECT, gossip3));
 
-        assertThat(gossip1.hasMember(gossip3)).isTrue();
-        assertThat(gossip2.hasMember(gossip3)).isTrue();
-    }
+    assertThat(gossip1.hasMember(gossip3)).isTrue();
+    assertThat(gossip2.hasMember(gossip3)).isTrue();
+  }
 
-    @Test
-    @Category(UnstableTest.class)
-    public void shouldSpreadConfirmEvent()
-    {
-        // given
-        cluster.interruptConnectionBetween(gossip3, gossip1);
-        cluster.interruptConnectionBetween(gossip3, gossip2);
+  @Test
+  @Category(UnstableTest.class)
+  public void shouldSpreadConfirmEvent() {
+    // given
+    cluster.interruptConnectionBetween(gossip3, gossip1);
+    cluster.interruptConnectionBetween(gossip3, gossip2);
 
-        // when send CONFIRM event after suspicion timeout
-        cluster.waitUntil(() -> gossip1.receivedMembershipEvent(MembershipEventType.CONFIRM, gossip3));
-        cluster.waitUntil(() -> gossip2.receivedMembershipEvent(MembershipEventType.CONFIRM, gossip3));
+    // when send CONFIRM event after suspicion timeout
+    cluster.waitUntil(() -> gossip1.receivedMembershipEvent(MembershipEventType.CONFIRM, gossip3));
+    cluster.waitUntil(() -> gossip2.receivedMembershipEvent(MembershipEventType.CONFIRM, gossip3));
 
-        assertThat(gossip1.hasMember(gossip3)).isFalse();
-        assertThat(gossip2.hasMember(gossip3)).isFalse();
-    }
+    assertThat(gossip1.hasMember(gossip3)).isFalse();
+    assertThat(gossip2.hasMember(gossip3)).isFalse();
+  }
 
-    @Test
-    @Category(UnstableTest.class)
-    public void shouldCounterSuspectEventIfAlive()
-    {
-        // given
-        cluster.interruptConnectionBetween(gossip3, gossip1);
-        cluster.interruptConnectionBetween(gossip3, gossip2);
+  @Test
+  @Category(UnstableTest.class)
+  public void shouldCounterSuspectEventIfAlive() {
+    // given
+    cluster.interruptConnectionBetween(gossip3, gossip1);
+    cluster.interruptConnectionBetween(gossip3, gossip2);
 
-        cluster.waitUntil(() -> gossip1.receivedMembershipEvent(MembershipEventType.SUSPECT, gossip3));
-        cluster.waitUntil(() -> gossip2.receivedMembershipEvent(MembershipEventType.SUSPECT, gossip3));
+    cluster.waitUntil(() -> gossip1.receivedMembershipEvent(MembershipEventType.SUSPECT, gossip3));
+    cluster.waitUntil(() -> gossip2.receivedMembershipEvent(MembershipEventType.SUSPECT, gossip3));
 
-        final MembershipEvent suspectEvent = gossip1.getReceivedMembershipEvents(MembershipEventType.SUSPECT, gossip3)
-                .findFirst()
-                .get();
+    final MembershipEvent suspectEvent =
+        gossip1.getReceivedMembershipEvents(MembershipEventType.SUSPECT, gossip3).findFirst().get();
 
-        // when
-        cluster.reconnect(gossip3, gossip1);
-        cluster.reconnect(gossip3, gossip2);
+    // when
+    cluster.reconnect(gossip3, gossip1);
+    cluster.reconnect(gossip3, gossip2);
 
-        // then
-        cluster.waitUntil(() -> gossip3.receivedMembershipEvent(MembershipEventType.SUSPECT, gossip3));
+    // then
+    cluster.waitUntil(() -> gossip3.receivedMembershipEvent(MembershipEventType.SUSPECT, gossip3));
 
-        cluster.waitUntil(() -> gossip1.getReceivedMembershipEvents(MembershipEventType.ALIVE, gossip3)
-                          .anyMatch(e -> e.getGossipTerm().isGreaterThan(suspectEvent.getGossipTerm())));
-    }
-
+    cluster.waitUntil(
+        () ->
+            gossip1
+                .getReceivedMembershipEvents(MembershipEventType.ALIVE, gossip3)
+                .anyMatch(e -> e.getGossipTerm().isGreaterThan(suspectEvent.getGossipTerm())));
+  }
 }

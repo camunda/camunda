@@ -15,13 +15,10 @@
  */
 package io.zeebe.util.sched;
 
-/**
- * condition variable for actors.
- */
-public interface ActorCondition
-{
-    /** notify that the condition is met (true) */
-    void signal();
+/** condition variable for actors. */
+public interface ActorCondition {
+  /** notify that the condition is met (true) */
+  void signal();
 
-    void cancel();
+  void cancel();
 }

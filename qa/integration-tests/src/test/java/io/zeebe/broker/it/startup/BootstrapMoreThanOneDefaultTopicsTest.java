@@ -17,68 +17,70 @@ package io.zeebe.broker.it.startup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.List;
-import java.util.Map;
-
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.clustering.ClusteringRule;
 import io.zeebe.client.api.commands.Partition;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
+import java.util.List;
+import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
-public class BootstrapMoreThanOneDefaultTopicsTest
-{
-    private static final String BOOTSTRAPPED_BROKER_CONFIG = "zeebe.cluster.moreDefaultTopics.cfg.toml";
-    private static final String OTHER_BROKER_CONFIG = "zeebe.cluster.defaultTopics.2.cfg.toml";
-    private final String[] clusterConfigs = { BOOTSTRAPPED_BROKER_CONFIG, OTHER_BROKER_CONFIG, ClusteringRule.BROKER_3_TOML };
-    private final SocketAddress[] clusterAddresses = { ClusteringRule.BROKER_1_CLIENT_ADDRESS, ClusteringRule.BROKER_2_CLIENT_ADDRESS, ClusteringRule.BROKER_3_CLIENT_ADDRESS };
+public class BootstrapMoreThanOneDefaultTopicsTest {
+  private static final String BOOTSTRAPPED_BROKER_CONFIG =
+      "zeebe.cluster.moreDefaultTopics.cfg.toml";
+  private static final String OTHER_BROKER_CONFIG = "zeebe.cluster.defaultTopics.2.cfg.toml";
+  private final String[] clusterConfigs = {
+    BOOTSTRAPPED_BROKER_CONFIG, OTHER_BROKER_CONFIG, ClusteringRule.BROKER_3_TOML
+  };
+  private final SocketAddress[] clusterAddresses = {
+    ClusteringRule.BROKER_1_CLIENT_ADDRESS,
+    ClusteringRule.BROKER_2_CLIENT_ADDRESS,
+    ClusteringRule.BROKER_3_CLIENT_ADDRESS
+  };
 
-    private AutoCloseableRule closeables = new AutoCloseableRule();
-    private Timeout testTimeout = Timeout.seconds(30);
-    private ClientRule clientRule = new ClientRule();
-    private ClusteringRule clusteringRule = new ClusteringRule(closeables, clientRule, clusterAddresses, clusterConfigs);
+  private AutoCloseableRule closeables = new AutoCloseableRule();
+  private Timeout testTimeout = Timeout.seconds(30);
+  private ClientRule clientRule = new ClientRule();
+  private ClusteringRule clusteringRule =
+      new ClusteringRule(closeables, clientRule, clusterAddresses, clusterConfigs);
 
-    @Rule
-    public RuleChain ruleChain =
-        RuleChain.outerRule(closeables)
-            .around(testTimeout)
-            .around(clientRule)
-            .around(clusteringRule);
+  @Rule
+  public RuleChain ruleChain =
+      RuleChain.outerRule(closeables).around(testTimeout).around(clientRule).around(clusteringRule);
 
-    @Test
-    public void shouldCreateMoreDefaultTopics()
-    {
-        // given
-        final String theOneAndOnlyTopicName = "theOneAndOnlyTopic";
-        final String defaultTopicName = "default-topic-1";
-        final String otherTopicName = "other-topic";
-        final String thisTopicName = "thisTopic";
+  @Test
+  public void shouldCreateMoreDefaultTopics() {
+    // given
+    final String theOneAndOnlyTopicName = "theOneAndOnlyTopic";
+    final String defaultTopicName = "default-topic-1";
+    final String otherTopicName = "other-topic";
+    final String thisTopicName = "thisTopic";
 
-        clusteringRule.waitForTopicPartitionReplicationFactor(defaultTopicName, 1, 1);
-        clusteringRule.waitForTopicPartitionReplicationFactor(otherTopicName, 2, 2);
-        clusteringRule.waitForTopicPartitionReplicationFactor(theOneAndOnlyTopicName, 3, 2);
-        clusteringRule.waitForTopicPartitionReplicationFactor(thisTopicName, 4, 1);
+    clusteringRule.waitForTopicPartitionReplicationFactor(defaultTopicName, 1, 1);
+    clusteringRule.waitForTopicPartitionReplicationFactor(otherTopicName, 2, 2);
+    clusteringRule.waitForTopicPartitionReplicationFactor(theOneAndOnlyTopicName, 3, 2);
+    clusteringRule.waitForTopicPartitionReplicationFactor(thisTopicName, 4, 1);
 
-        // when
-        final Map<String, List<Partition>> topics = clientRule.topicsByName();
+    // when
+    final Map<String, List<Partition>> topics = clientRule.topicsByName();
 
-        // then
-        assertThat(topics.containsKey(defaultTopicName)).isTrue();
-        assertThat(topics.get(defaultTopicName).size()).isEqualTo(1);
+    // then
+    assertThat(topics.containsKey(defaultTopicName)).isTrue();
+    assertThat(topics.get(defaultTopicName).size()).isEqualTo(1);
 
-        assertThat(topics.containsKey(otherTopicName)).isTrue();
-        assertThat(topics.get(otherTopicName).size()).isEqualTo(2);
+    assertThat(topics.containsKey(otherTopicName)).isTrue();
+    assertThat(topics.get(otherTopicName).size()).isEqualTo(2);
 
-        assertThat(topics.containsKey(theOneAndOnlyTopicName)).isTrue();
-        assertThat(topics.get(theOneAndOnlyTopicName).size()).isEqualTo(3);
+    assertThat(topics.containsKey(theOneAndOnlyTopicName)).isTrue();
+    assertThat(topics.get(theOneAndOnlyTopicName).size()).isEqualTo(3);
 
-        assertThat(topics.containsKey(thisTopicName)).isTrue();
-        assertThat(topics.get(thisTopicName).size()).isEqualTo(4);
+    assertThat(topics.containsKey(thisTopicName)).isTrue();
+    assertThat(topics.get(thisTopicName).size()).isEqualTo(4);
 
-        assertThat(topics.size()).isEqualTo(5); // default + internal
-    }
+    assertThat(topics.size()).isEqualTo(5); // default + internal
+  }
 }

@@ -17,11 +17,10 @@ package io.zeebe.util.sched.channel;
 
 import io.zeebe.util.sched.ActorCondition;
 
-public interface ConsumableChannel
-{
-    boolean hasAvailable();
+public interface ConsumableChannel {
+  boolean hasAvailable();
 
-    void registerConsumer(ActorCondition onDataAvailable);
+  void registerConsumer(ActorCondition onDataAvailable);
 
-    void removeConsumer(ActorCondition onDataAvailable);
+  void removeConsumer(ActorCondition onDataAvailable);
 }

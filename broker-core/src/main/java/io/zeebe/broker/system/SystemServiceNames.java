@@ -22,13 +22,19 @@ import io.zeebe.broker.system.workflow.repository.api.management.DeploymentManag
 import io.zeebe.broker.system.workflow.repository.service.*;
 import io.zeebe.servicecontainer.ServiceName;
 
-public class SystemServiceNames
-{
-    public static final ServiceName<MetricsFileWriter> METRICS_FILE_WRITER = ServiceName.newServiceName("broker.metricsFileWriter", MetricsFileWriter.class);
+public class SystemServiceNames {
+  public static final ServiceName<MetricsFileWriter> METRICS_FILE_WRITER =
+      ServiceName.newServiceName("broker.metricsFileWriter", MetricsFileWriter.class);
 
-    public static final ServiceName<DeploymentManager> DEPLOYMENT_MANAGER_SERVICE = ServiceName.newServiceName("broker.system.deployment.manager", DeploymentManager.class);
+  public static final ServiceName<DeploymentManager> DEPLOYMENT_MANAGER_SERVICE =
+      ServiceName.newServiceName("broker.system.deployment.manager", DeploymentManager.class);
 
-    public static final ServiceName<DeploymentManagerRequestHandler> DEPLOYMENT_MANAGER_REQUEST_HANDLER = ServiceName.newServiceName("broker.deployment.requestHandler", DeploymentManagerRequestHandler.class);
+  public static final ServiceName<DeploymentManagerRequestHandler>
+      DEPLOYMENT_MANAGER_REQUEST_HANDLER =
+          ServiceName.newServiceName(
+              "broker.deployment.requestHandler", DeploymentManagerRequestHandler.class);
 
-    public static final ServiceName<WorkflowRepositoryService> REPOSITORY_SERVICE = ServiceName.newServiceName("broker.deployment.workflowRepositoryService", WorkflowRepositoryService.class);
+  public static final ServiceName<WorkflowRepositoryService> REPOSITORY_SERVICE =
+      ServiceName.newServiceName(
+          "broker.deployment.workflowRepositoryService", WorkflowRepositoryService.class);
 }

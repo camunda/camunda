@@ -15,133 +15,115 @@
  */
 package io.zeebe.test.broker.protocol.clientapi;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Map;
-
 import io.zeebe.protocol.clientapi.*;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.util.buffer.BufferReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.io.DirectBufferInputStream;
 
-public class SubscribedRecord implements BufferReader
-{
-    protected final RawMessage rawMessage;
+public class SubscribedRecord implements BufferReader {
+  protected final RawMessage rawMessage;
 
-    protected MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-    protected SubscribedRecordDecoder bodyDecoder = new SubscribedRecordDecoder();
+  protected MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
+  protected SubscribedRecordDecoder bodyDecoder = new SubscribedRecordDecoder();
 
-    protected Map<String, Object> value;
+  protected Map<String, Object> value;
 
-    protected MsgPackHelper msgPackHelper = new MsgPackHelper();
+  protected MsgPackHelper msgPackHelper = new MsgPackHelper();
 
-    private String rejectionReason;
+  private String rejectionReason;
 
-    public SubscribedRecord(RawMessage rawMessage)
-    {
-        this.rawMessage = rawMessage;
-        final DirectBuffer buffer = rawMessage.getMessage();
-        wrap(buffer, 0, buffer.capacity());
+  public SubscribedRecord(RawMessage rawMessage) {
+    this.rawMessage = rawMessage;
+    final DirectBuffer buffer = rawMessage.getMessage();
+    wrap(buffer, 0, buffer.capacity());
+  }
+
+  public int partitionId() {
+    return bodyDecoder.partitionId();
+  }
+
+  public long position() {
+    return bodyDecoder.position();
+  }
+
+  public long sourceRecordPosition() {
+    return bodyDecoder.sourceRecordPosition();
+  }
+
+  public long key() {
+    return bodyDecoder.key();
+  }
+
+  public long subscriberKey() {
+    return bodyDecoder.subscriberKey();
+  }
+
+  public SubscriptionType subscriptionType() {
+    return bodyDecoder.subscriptionType();
+  }
+
+  public ValueType valueType() {
+    return bodyDecoder.valueType();
+  }
+
+  public RecordType recordType() {
+    return bodyDecoder.recordType();
+  }
+
+  public Intent intent() {
+    return Intent.fromProtocolValue(valueType(), bodyDecoder.intent());
+  }
+
+  public long timestamp() {
+    return bodyDecoder.timestamp();
+  }
+
+  public RejectionType rejectionType() {
+    return bodyDecoder.rejectionType();
+  }
+
+  public Map<String, Object> value() {
+    return value;
+  }
+
+  public RawMessage getRawMessage() {
+    return rawMessage;
+  }
+
+  public String rejectionReason() {
+    return rejectionReason;
+  }
+
+  @Override
+  public void wrap(DirectBuffer responseBuffer, int offset, int length) {
+    headerDecoder.wrap(responseBuffer, offset);
+
+    if (headerDecoder.templateId() != bodyDecoder.sbeTemplateId()) {
+      throw new RuntimeException("Unexpected response from broker.");
     }
 
-    public int partitionId()
-    {
-        return bodyDecoder.partitionId();
+    bodyDecoder.wrap(
+        responseBuffer,
+        offset + headerDecoder.encodedLength(),
+        headerDecoder.blockLength(),
+        headerDecoder.version());
+
+    final int eventLength = bodyDecoder.valueLength();
+    final int eventOffset = bodyDecoder.limit() + SubscribedRecordDecoder.valueHeaderLength();
+
+    try (InputStream is =
+        new DirectBufferInputStream(responseBuffer, offset + eventOffset, eventLength)) {
+      value = msgPackHelper.readMsgPack(is);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
 
-    public long position()
-    {
-        return bodyDecoder.position();
-    }
-
-    public long sourceRecordPosition()
-    {
-        return bodyDecoder.sourceRecordPosition();
-    }
-
-    public long key()
-    {
-        return bodyDecoder.key();
-    }
-
-    public long subscriberKey()
-    {
-        return bodyDecoder.subscriberKey();
-    }
-
-    public SubscriptionType subscriptionType()
-    {
-        return bodyDecoder.subscriptionType();
-    }
-
-    public ValueType valueType()
-    {
-        return bodyDecoder.valueType();
-    }
-
-    public RecordType recordType()
-    {
-        return bodyDecoder.recordType();
-    }
-
-    public Intent intent()
-    {
-        return Intent.fromProtocolValue(valueType(), bodyDecoder.intent());
-    }
-
-    public long timestamp()
-    {
-        return bodyDecoder.timestamp();
-    }
-
-    public RejectionType rejectionType()
-    {
-        return bodyDecoder.rejectionType();
-    }
-
-    public Map<String, Object> value()
-    {
-        return value;
-    }
-
-    public RawMessage getRawMessage()
-    {
-        return rawMessage;
-    }
-
-    public String rejectionReason()
-    {
-        return rejectionReason;
-    }
-
-    @Override
-    public void wrap(DirectBuffer responseBuffer, int offset, int length)
-    {
-        headerDecoder.wrap(responseBuffer, offset);
-
-        if (headerDecoder.templateId() != bodyDecoder.sbeTemplateId())
-        {
-            throw new RuntimeException("Unexpected response from broker.");
-        }
-
-        bodyDecoder.wrap(responseBuffer, offset + headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
-
-        final int eventLength = bodyDecoder.valueLength();
-        final int eventOffset = bodyDecoder.limit() + SubscribedRecordDecoder.valueHeaderLength();
-
-        try (InputStream is = new DirectBufferInputStream(responseBuffer, offset + eventOffset, eventLength))
-        {
-            value = msgPackHelper.readMsgPack(is);
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
-
-        bodyDecoder.limit(eventOffset + eventLength);
-        rejectionReason = bodyDecoder.rejectionReason();
-    }
-
+    bodyDecoder.limit(eventOffset + eventLength);
+    rejectionReason = bodyDecoder.rejectionReason();
+  }
 }

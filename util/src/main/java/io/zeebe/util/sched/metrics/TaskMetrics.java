@@ -18,51 +18,51 @@ package io.zeebe.util.sched.metrics;
 import io.zeebe.util.metrics.Metric;
 import io.zeebe.util.metrics.MetricsManager;
 
-public class TaskMetrics implements AutoCloseable
-{
-    private final Metric executionCount;
-    private final Metric totalExecutionTime;
-    private final Metric maxExecutionTime;
+public class TaskMetrics implements AutoCloseable {
+  private final Metric executionCount;
+  private final Metric totalExecutionTime;
+  private final Metric maxExecutionTime;
 
-    public TaskMetrics(String taskName, MetricsManager metricsManager)
-    {
-        executionCount = metricsManager.newMetric("scheduler_task_execution_count")
+  public TaskMetrics(String taskName, MetricsManager metricsManager) {
+    executionCount =
+        metricsManager
+            .newMetric("scheduler_task_execution_count")
             .type("counter")
             .label("task", taskName)
             .create();
 
-        totalExecutionTime = metricsManager.newMetric("scheduler_task_execution_time_total")
+    totalExecutionTime =
+        metricsManager
+            .newMetric("scheduler_task_execution_time_total")
             .type("counter")
             .label("task", taskName)
             .create();
 
-        maxExecutionTime = metricsManager.newMetric("scheduler_task_execution_time_max")
+    maxExecutionTime =
+        metricsManager
+            .newMetric("scheduler_task_execution_time_max")
             .type("gauge")
             .label("task", taskName)
             .create();
+  }
+
+  public void reportExecutionTime(long executionTimeNs) {
+    assert executionTimeNs >= 0;
+
+    final long max = maxExecutionTime.getWeak();
+    if (executionTimeNs > max) {
+      maxExecutionTime.setOrdered(executionTimeNs);
     }
 
-    public void reportExecutionTime(long executionTimeNs)
-    {
-        assert executionTimeNs >= 0;
+    totalExecutionTime.getAndAddOrdered(executionTimeNs);
 
-        final long max = maxExecutionTime.getWeak();
-        if (executionTimeNs > max)
-        {
-            maxExecutionTime.setOrdered(executionTimeNs);
-        }
+    executionCount.incrementOrdered();
+  }
 
-        totalExecutionTime.getAndAddOrdered(executionTimeNs);
-
-        executionCount.incrementOrdered();
-    }
-
-    @Override
-    public void close()
-    {
-        executionCount.close();
-        totalExecutionTime.close();
-        maxExecutionTime.close();
-    }
-
+  @Override
+  public void close() {
+    executionCount.close();
+    totalExecutionTime.close();
+    maxExecutionTime.close();
+  }
 }

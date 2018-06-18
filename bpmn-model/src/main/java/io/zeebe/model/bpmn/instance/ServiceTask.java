@@ -15,13 +15,11 @@
  */
 package io.zeebe.model.bpmn.instance;
 
-public interface ServiceTask extends FlowNode
-{
+public interface ServiceTask extends FlowNode {
 
-    TaskDefinition getTaskDefinition();
+  TaskDefinition getTaskDefinition();
 
-    TaskHeaders getTaskHeaders();
+  TaskHeaders getTaskHeaders();
 
-    InputOutputMapping getInputOutputMapping();
-
+  InputOutputMapping getInputOutputMapping();
 }

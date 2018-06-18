@@ -15,184 +15,152 @@
  */
 package io.zeebe.logstreams.processor;
 
-import java.time.Duration;
-
 import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.ActorScheduler;
+import java.time.Duration;
 
-public class StreamProcessorContext
-{
-    protected int id;
-    protected String name;
+public class StreamProcessorContext {
+  protected int id;
+  protected String name;
 
-    protected StreamProcessor streamProcessor;
-    protected boolean isReadOnlyProcessor;
+  protected StreamProcessor streamProcessor;
+  protected boolean isReadOnlyProcessor;
 
-    protected LogStream logStream;
+  protected LogStream logStream;
 
-    protected LogStreamReader logStreamReader;
-    protected LogStreamWriter logStreamWriter;
+  protected LogStreamReader logStreamReader;
+  protected LogStreamWriter logStreamWriter;
 
-    protected Duration snapshotPeriod;
-    protected SnapshotStorage snapshotStorage;
+  protected Duration snapshotPeriod;
+  protected SnapshotStorage snapshotStorage;
 
-    protected ActorScheduler actorScheduler;
-    private ActorControl actorControl;
+  protected ActorScheduler actorScheduler;
+  private ActorControl actorControl;
 
-    protected EventFilter eventFilter;
+  protected EventFilter eventFilter;
 
-    private Runnable suspendRunnable;
-    private Runnable resumeRunnable;
+  private Runnable suspendRunnable;
+  private Runnable resumeRunnable;
 
-    public LogStream getLogStream()
-    {
-        return logStream;
-    }
+  public LogStream getLogStream() {
+    return logStream;
+  }
 
-    public void setLogStream(LogStream logstream)
-    {
-        this.logStream = logstream;
-    }
+  public void setLogStream(LogStream logstream) {
+    this.logStream = logstream;
+  }
 
-    public StreamProcessor getStreamProcessor()
-    {
-        return streamProcessor;
-    }
+  public StreamProcessor getStreamProcessor() {
+    return streamProcessor;
+  }
 
-    public void setStreamProcessor(StreamProcessor streamProcessor)
-    {
-        this.streamProcessor = streamProcessor;
-    }
+  public void setStreamProcessor(StreamProcessor streamProcessor) {
+    this.streamProcessor = streamProcessor;
+  }
 
-    public String getName()
-    {
-        return name;
-    }
+  public String getName() {
+    return name;
+  }
 
-    public void setName(String name)
-    {
-        this.name = name;
-    }
+  public void setName(String name) {
+    this.name = name;
+  }
 
-    public int getId()
-    {
-        return id;
-    }
+  public int getId() {
+    return id;
+  }
 
-    public void setId(int id)
-    {
-        this.id = id;
-    }
+  public void setId(int id) {
+    this.id = id;
+  }
 
-    public ActorScheduler getActorScheduler()
-    {
-        return actorScheduler;
-    }
+  public ActorScheduler getActorScheduler() {
+    return actorScheduler;
+  }
 
-    public void setActorScheduler(ActorScheduler actorScheduler)
-    {
-        this.actorScheduler = actorScheduler;
-    }
+  public void setActorScheduler(ActorScheduler actorScheduler) {
+    this.actorScheduler = actorScheduler;
+  }
 
-    public void setLogStreamReader(LogStreamReader logStreamReader)
-    {
-        this.logStreamReader = logStreamReader;
-    }
+  public void setLogStreamReader(LogStreamReader logStreamReader) {
+    this.logStreamReader = logStreamReader;
+  }
 
-    public LogStreamReader getLogStreamReader()
-    {
-        return logStreamReader;
-    }
+  public LogStreamReader getLogStreamReader() {
+    return logStreamReader;
+  }
 
-    public LogStreamWriter getLogStreamWriter()
-    {
-        return logStreamWriter;
-    }
+  public LogStreamWriter getLogStreamWriter() {
+    return logStreamWriter;
+  }
 
-    public void setLogStreamWriter(LogStreamWriter logStreamWriter)
-    {
-        this.logStreamWriter = logStreamWriter;
-    }
+  public void setLogStreamWriter(LogStreamWriter logStreamWriter) {
+    this.logStreamWriter = logStreamWriter;
+  }
 
-    public Duration getSnapshotPeriod()
-    {
-        return snapshotPeriod;
-    }
+  public Duration getSnapshotPeriod() {
+    return snapshotPeriod;
+  }
 
-    public void setSnapshotPeriod(Duration snapshotPeriod)
-    {
-        this.snapshotPeriod = snapshotPeriod;
-    }
+  public void setSnapshotPeriod(Duration snapshotPeriod) {
+    this.snapshotPeriod = snapshotPeriod;
+  }
 
-    public SnapshotStorage getSnapshotStorage()
-    {
-        return snapshotStorage;
-    }
+  public SnapshotStorage getSnapshotStorage() {
+    return snapshotStorage;
+  }
 
-    public void setSnapshotStorage(SnapshotStorage snapshotStorage)
-    {
-        this.snapshotStorage = snapshotStorage;
-    }
+  public void setSnapshotStorage(SnapshotStorage snapshotStorage) {
+    this.snapshotStorage = snapshotStorage;
+  }
 
-    public void setEventFilter(EventFilter eventFilter)
-    {
-        this.eventFilter = eventFilter;
-    }
+  public void setEventFilter(EventFilter eventFilter) {
+    this.eventFilter = eventFilter;
+  }
 
-    public EventFilter getEventFilter()
-    {
-        return eventFilter;
-    }
+  public EventFilter getEventFilter() {
+    return eventFilter;
+  }
 
-    public void setReadOnly(boolean readOnly)
-    {
-        this.isReadOnlyProcessor = readOnly;
-    }
+  public void setReadOnly(boolean readOnly) {
+    this.isReadOnlyProcessor = readOnly;
+  }
 
-    public boolean isReadOnlyProcessor()
-    {
-        return isReadOnlyProcessor;
-    }
+  public boolean isReadOnlyProcessor() {
+    return isReadOnlyProcessor;
+  }
 
-    public ActorControl getActorControl()
-    {
-        return actorControl;
-    }
+  public ActorControl getActorControl() {
+    return actorControl;
+  }
 
-    public void setActorControl(ActorControl actorControl)
-    {
-        this.actorControl = actorControl;
-    }
+  public void setActorControl(ActorControl actorControl) {
+    this.actorControl = actorControl;
+  }
 
-    public Runnable getSuspendRunnable()
-    {
-        return suspendRunnable;
-    }
+  public Runnable getSuspendRunnable() {
+    return suspendRunnable;
+  }
 
-    public void setSuspendRunnable(Runnable suspendRunnable)
-    {
-        this.suspendRunnable = suspendRunnable;
-    }
+  public void setSuspendRunnable(Runnable suspendRunnable) {
+    this.suspendRunnable = suspendRunnable;
+  }
 
-    public void suspendController()
-    {
-        suspendRunnable.run();
-    }
+  public void suspendController() {
+    suspendRunnable.run();
+  }
 
-    public Runnable getResumeRunnable()
-    {
-        return resumeRunnable;
-    }
+  public Runnable getResumeRunnable() {
+    return resumeRunnable;
+  }
 
-    public void setResumeRunnable(Runnable resumeRunnable)
-    {
-        this.resumeRunnable = resumeRunnable;
-    }
+  public void setResumeRunnable(Runnable resumeRunnable) {
+    this.resumeRunnable = resumeRunnable;
+  }
 
-    public void resumeController()
-    {
-        resumeRunnable.run();
-    }
+  public void resumeController() {
+    resumeRunnable.run();
+  }
 }

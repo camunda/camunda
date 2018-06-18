@@ -15,130 +15,107 @@
  */
 package io.zeebe.model.bpmn.impl.yaml;
 
-import java.util.*;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.zeebe.model.bpmn.instance.TaskDefinition;
+import java.util.*;
 
-public class YamlTask
-{
-    private String id = "";
+public class YamlTask {
+  private String id = "";
 
-    private String type = "";
-    private int retries = TaskDefinition.DEFAULT_TASK_RETRIES;
+  private String type = "";
+  private int retries = TaskDefinition.DEFAULT_TASK_RETRIES;
 
-    private Map<String, String> headers = new HashMap<>();
+  private Map<String, String> headers = new HashMap<>();
 
-    private String outputBehavior = "MERGE";
-    private List<YamlMapping> inputs = new ArrayList<>();
-    private List<YamlMapping> outputs = new ArrayList<>();
+  private String outputBehavior = "MERGE";
+  private List<YamlMapping> inputs = new ArrayList<>();
+  private List<YamlMapping> outputs = new ArrayList<>();
 
-    private boolean end = false;
+  private boolean end = false;
 
-    @JsonProperty("goto")
-    private String next;
+  @JsonProperty("goto")
+  private String next;
 
-    @JsonProperty("switch")
-    private List<YamlCase> cases = new ArrayList<>();
+  @JsonProperty("switch")
+  private List<YamlCase> cases = new ArrayList<>();
 
-    public String getId()
-    {
-        return id;
-    }
+  public String getId() {
+    return id;
+  }
 
-    public void setId(String id)
-    {
-        this.id = id;
-    }
+  public void setId(String id) {
+    this.id = id;
+  }
 
-    public String getType()
-    {
-        return type;
-    }
+  public String getType() {
+    return type;
+  }
 
-    public void setType(String type)
-    {
-        this.type = type;
-    }
+  public void setType(String type) {
+    this.type = type;
+  }
 
-    public int getRetries()
-    {
-        return retries;
-    }
+  public int getRetries() {
+    return retries;
+  }
 
-    public void setRetries(int retries)
-    {
-        this.retries = retries;
-    }
+  public void setRetries(int retries) {
+    this.retries = retries;
+  }
 
-    public Map<String, String> getHeaders()
-    {
-        return headers;
-    }
+  public Map<String, String> getHeaders() {
+    return headers;
+  }
 
-    public void setHeaders(Map<String, String> headers)
-    {
-        this.headers = headers;
-    }
+  public void setHeaders(Map<String, String> headers) {
+    this.headers = headers;
+  }
 
-    public List<YamlMapping> getInputs()
-    {
-        return inputs;
-    }
+  public List<YamlMapping> getInputs() {
+    return inputs;
+  }
 
-    public void setInputs(List<YamlMapping> inputs)
-    {
-        this.inputs = inputs;
-    }
+  public void setInputs(List<YamlMapping> inputs) {
+    this.inputs = inputs;
+  }
 
-    public List<YamlMapping> getOutputs()
-    {
-        return outputs;
-    }
+  public List<YamlMapping> getOutputs() {
+    return outputs;
+  }
 
-    public void setOutputs(List<YamlMapping> outputs)
-    {
-        this.outputs = outputs;
-    }
+  public void setOutputs(List<YamlMapping> outputs) {
+    this.outputs = outputs;
+  }
 
+  public List<YamlCase> getCases() {
+    return cases;
+  }
 
-    public List<YamlCase> getCases()
-    {
-        return cases;
-    }
+  public void setCases(List<YamlCase> cases) {
+    this.cases = cases;
+  }
 
-    public void setCases(List<YamlCase> cases)
-    {
-        this.cases = cases;
-    }
+  public String getNext() {
+    return next;
+  }
 
-    public String getNext()
-    {
-        return next;
-    }
+  public void setNext(String next) {
+    this.next = next;
+  }
 
-    public void setNext(String next)
-    {
-        this.next = next;
-    }
+  public boolean isEnd() {
+    return end;
+  }
 
-    public boolean isEnd()
-    {
-        return end;
-    }
+  public void setEnd(boolean end) {
+    this.end = end;
+  }
 
-    public void setEnd(boolean end)
-    {
-        this.end = end;
-    }
+  public String getOutputBehavior() {
+    return outputBehavior;
+  }
 
-    public String getOutputBehavior()
-    {
-        return outputBehavior;
-    }
-
-    public void setOutputBehavior(String outputBehavior)
-    {
-        this.outputBehavior = outputBehavior;
-    }
+  public void setOutputBehavior(String outputBehavior) {
+    this.outputBehavior = outputBehavior;
+  }
 }

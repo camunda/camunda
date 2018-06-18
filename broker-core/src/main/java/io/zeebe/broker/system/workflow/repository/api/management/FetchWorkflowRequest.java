@@ -24,145 +24,129 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class FetchWorkflowRequest implements BufferReader, BufferWriter
-{
-    private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-    private final FetchWorkflowRequestEncoder bodyEncoder = new FetchWorkflowRequestEncoder();
+public class FetchWorkflowRequest implements BufferReader, BufferWriter {
+  private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+  private final FetchWorkflowRequestEncoder bodyEncoder = new FetchWorkflowRequestEncoder();
 
-    private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-    private final FetchWorkflowRequestDecoder bodyDecoder = new FetchWorkflowRequestDecoder();
+  private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
+  private final FetchWorkflowRequestDecoder bodyDecoder = new FetchWorkflowRequestDecoder();
 
-    private long workflowKey = FetchWorkflowRequestEncoder.workflowKeyNullValue();
-    private int version = FetchWorkflowRequestEncoder.versionNullValue();
-    private final DirectBuffer bpmnProcessId = new UnsafeBuffer(0, 0);
-    private final DirectBuffer topicName = new UnsafeBuffer(0, 0);
+  private long workflowKey = FetchWorkflowRequestEncoder.workflowKeyNullValue();
+  private int version = FetchWorkflowRequestEncoder.versionNullValue();
+  private final DirectBuffer bpmnProcessId = new UnsafeBuffer(0, 0);
+  private final DirectBuffer topicName = new UnsafeBuffer(0, 0);
 
-    @Override
-    public int getLength()
-    {
-        return headerEncoder.encodedLength() +
-            bodyEncoder.sbeBlockLength() +
-            FetchWorkflowRequestEncoder.bpmnProcessIdHeaderLength() +
-            bpmnProcessId.capacity() +
-            FetchWorkflowRequestEncoder.topicNameHeaderLength() +
-            topicName.capacity();
-    }
+  @Override
+  public int getLength() {
+    return headerEncoder.encodedLength()
+        + bodyEncoder.sbeBlockLength()
+        + FetchWorkflowRequestEncoder.bpmnProcessIdHeaderLength()
+        + bpmnProcessId.capacity()
+        + FetchWorkflowRequestEncoder.topicNameHeaderLength()
+        + topicName.capacity();
+  }
 
-    public FetchWorkflowRequest workflowKey(long workflowKey)
-    {
-        this.workflowKey = workflowKey;
-        return this;
-    }
+  public FetchWorkflowRequest workflowKey(long workflowKey) {
+    this.workflowKey = workflowKey;
+    return this;
+  }
 
-    public FetchWorkflowRequest version(int version)
-    {
-        this.version = version;
-        return this;
-    }
+  public FetchWorkflowRequest version(int version) {
+    this.version = version;
+    return this;
+  }
 
-    public FetchWorkflowRequest latestVersion()
-    {
-        return version(FetchWorkflowRequestEncoder.versionMaxValue());
-    }
+  public FetchWorkflowRequest latestVersion() {
+    return version(FetchWorkflowRequestEncoder.versionMaxValue());
+  }
 
-    public FetchWorkflowRequest bpmnProcessId(DirectBuffer bpmnProcessId)
-    {
-        this.bpmnProcessId.wrap(bpmnProcessId);
-        return this;
-    }
+  public FetchWorkflowRequest bpmnProcessId(DirectBuffer bpmnProcessId) {
+    this.bpmnProcessId.wrap(bpmnProcessId);
+    return this;
+  }
 
-    public FetchWorkflowRequest topicName(DirectBuffer topicName)
-    {
-        this.topicName.wrap(topicName);
-        return this;
-    }
+  public FetchWorkflowRequest topicName(DirectBuffer topicName) {
+    this.topicName.wrap(topicName);
+    return this;
+  }
 
-    @Override
-    public void write(MutableDirectBuffer buffer, int offset)
-    {
-        headerEncoder.wrap(buffer, offset)
-            .blockLength(bodyEncoder.sbeBlockLength())
-            .templateId(bodyEncoder.sbeTemplateId())
-            .schemaId(bodyEncoder.sbeSchemaId())
-            .version(bodyEncoder.sbeSchemaVersion());
+  @Override
+  public void write(MutableDirectBuffer buffer, int offset) {
+    headerEncoder
+        .wrap(buffer, offset)
+        .blockLength(bodyEncoder.sbeBlockLength())
+        .templateId(bodyEncoder.sbeTemplateId())
+        .schemaId(bodyEncoder.sbeSchemaId())
+        .version(bodyEncoder.sbeSchemaVersion());
 
-        bodyEncoder.wrap(buffer, offset + headerEncoder.encodedLength())
-            .workflowKey(workflowKey)
-            .version(version)
-            .putBpmnProcessId(bpmnProcessId, 0, bpmnProcessId.capacity())
-            .putTopicName(topicName, 0, topicName.capacity());
-    }
+    bodyEncoder
+        .wrap(buffer, offset + headerEncoder.encodedLength())
+        .workflowKey(workflowKey)
+        .version(version)
+        .putBpmnProcessId(bpmnProcessId, 0, bpmnProcessId.capacity())
+        .putTopicName(topicName, 0, topicName.capacity());
+  }
 
-    @Override
-    public void wrap(DirectBuffer buffer, int offset, int length)
-    {
-        headerDecoder.wrap(buffer, offset);
+  @Override
+  public void wrap(DirectBuffer buffer, int offset, int length) {
+    headerDecoder.wrap(buffer, offset);
 
-        offset += headerDecoder.encodedLength();
+    offset += headerDecoder.encodedLength();
 
-        bodyDecoder.wrap(buffer,
-            offset,
-            headerDecoder.blockLength(),
-            headerDecoder.version());
+    bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
-        workflowKey = bodyDecoder.workflowKey();
-        version = bodyDecoder.version();
+    workflowKey = bodyDecoder.workflowKey();
+    version = bodyDecoder.version();
 
-        offset += headerDecoder.blockLength();
+    offset += headerDecoder.blockLength();
 
-        // bpmn process id
+    // bpmn process id
 
-        final int bpmnProcessIdLength = bodyDecoder.bpmnProcessIdLength();
-        offset += FetchWorkflowRequestDecoder.bpmnProcessIdHeaderLength();
+    final int bpmnProcessIdLength = bodyDecoder.bpmnProcessIdLength();
+    offset += FetchWorkflowRequestDecoder.bpmnProcessIdHeaderLength();
 
-        bpmnProcessId.wrap(buffer, offset, bpmnProcessIdLength);
+    bpmnProcessId.wrap(buffer, offset, bpmnProcessIdLength);
 
-        offset += bpmnProcessIdLength;
-        bodyDecoder.limit(offset);
+    offset += bpmnProcessIdLength;
+    bodyDecoder.limit(offset);
 
-        // bpmn process id
+    // bpmn process id
 
-        final int topicNameLength = bodyDecoder.topicNameLength();
-        offset += FetchWorkflowRequestDecoder.topicNameHeaderLength();
+    final int topicNameLength = bodyDecoder.topicNameLength();
+    offset += FetchWorkflowRequestDecoder.topicNameHeaderLength();
 
-        topicName.wrap(buffer, offset, topicNameLength);
+    topicName.wrap(buffer, offset, topicNameLength);
 
-        offset += topicNameLength;
-        bodyDecoder.limit(offset);
-    }
+    offset += topicNameLength;
+    bodyDecoder.limit(offset);
+  }
 
-    public long getWorkflowKey()
-    {
-        return workflowKey;
-    }
+  public long getWorkflowKey() {
+    return workflowKey;
+  }
 
-    public int getVersion()
-    {
-        return version;
-    }
+  public int getVersion() {
+    return version;
+  }
 
-    public boolean isLatestVersion()
-    {
-        return version == FetchWorkflowRequestDecoder.versionMaxValue();
-    }
+  public boolean isLatestVersion() {
+    return version == FetchWorkflowRequestDecoder.versionMaxValue();
+  }
 
-    public DirectBuffer getBpmnProcessId()
-    {
-        return bpmnProcessId;
-    }
+  public DirectBuffer getBpmnProcessId() {
+    return bpmnProcessId;
+  }
 
-    public DirectBuffer getTopicName()
-    {
-        return topicName;
-    }
+  public DirectBuffer getTopicName() {
+    return topicName;
+  }
 
-    public FetchWorkflowRequest reset()
-    {
-        workflowKey = FetchWorkflowRequestEncoder.workflowKeyNullValue();
-        version = FetchWorkflowRequestEncoder.versionNullValue();
-        bpmnProcessId.wrap(0, 0);
-        topicName.wrap(0, 0);
+  public FetchWorkflowRequest reset() {
+    workflowKey = FetchWorkflowRequestEncoder.workflowKeyNullValue();
+    version = FetchWorkflowRequestEncoder.versionNullValue();
+    bpmnProcessId.wrap(0, 0);
+    topicName.wrap(0, 0);
 
-        return this;
-    }
+    return this;
+  }
 }

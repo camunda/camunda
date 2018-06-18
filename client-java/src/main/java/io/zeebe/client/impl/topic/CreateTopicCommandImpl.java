@@ -26,47 +26,44 @@ import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.intent.TopicIntent;
 import io.zeebe.util.EnsureUtil;
 
-public class CreateTopicCommandImpl extends CommandImpl<TopicEvent> implements CreateTopicCommandStep1, CreateTopicCommandStep2, CreateTopicCommandStep3, CreateTopicCommandStep4
-{
-    private final TopicCommandImpl command = new TopicCommandImpl(TopicIntent.CREATE);
+public class CreateTopicCommandImpl extends CommandImpl<TopicEvent>
+    implements CreateTopicCommandStep1,
+        CreateTopicCommandStep2,
+        CreateTopicCommandStep3,
+        CreateTopicCommandStep4 {
+  private final TopicCommandImpl command = new TopicCommandImpl(TopicIntent.CREATE);
 
-    public CreateTopicCommandImpl(RequestManager client)
-    {
-        super(client);
+  public CreateTopicCommandImpl(RequestManager client) {
+    super(client);
 
-        this.command.setTopicName(Protocol.SYSTEM_TOPIC);
-        this.command.setPartitionId(Protocol.SYSTEM_PARTITION);
-    }
+    this.command.setTopicName(Protocol.SYSTEM_TOPIC);
+    this.command.setPartitionId(Protocol.SYSTEM_PARTITION);
+  }
 
-    @Override
-    public CreateTopicCommandStep2 name(String topicName)
-    {
-        EnsureUtil.ensureNotNull("name", topicName);
+  @Override
+  public CreateTopicCommandStep2 name(String topicName) {
+    EnsureUtil.ensureNotNull("name", topicName);
 
-        this.command.setName(topicName);
-        return this;
-    }
+    this.command.setName(topicName);
+    return this;
+  }
 
-    @Override
-    public CreateTopicCommandStep3 partitions(int partitions)
-    {
-        EnsureUtil.ensureGreaterThan("partitions", partitions, 0);
-        this.command.setPartitions(partitions);
-        return this;
-    }
+  @Override
+  public CreateTopicCommandStep3 partitions(int partitions) {
+    EnsureUtil.ensureGreaterThan("partitions", partitions, 0);
+    this.command.setPartitions(partitions);
+    return this;
+  }
 
-    @Override
-    public CreateTopicCommandStep4 replicationFactor(int replicationFactor)
-    {
-        EnsureUtil.ensureGreaterThan("replicationFactor", replicationFactor, 0);
-        this.command.setReplicationFactor(replicationFactor);
-        return this;
-    }
+  @Override
+  public CreateTopicCommandStep4 replicationFactor(int replicationFactor) {
+    EnsureUtil.ensureGreaterThan("replicationFactor", replicationFactor, 0);
+    this.command.setReplicationFactor(replicationFactor);
+    return this;
+  }
 
-    @Override
-    public RecordImpl getCommand()
-    {
-        return command;
-    }
-
+  @Override
+  public RecordImpl getCommand() {
+    return command;
+  }
 }

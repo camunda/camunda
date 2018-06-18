@@ -18,56 +18,40 @@ package io.zeebe.client.api.record;
 import java.time.Instant;
 import java.util.Map;
 
-public interface JobRecord extends Record
-{
+public interface JobRecord extends Record {
 
-    /**
-     * @return the type of the job
-     */
-    String getType();
+  /** @return the type of the job */
+  String getType();
 
-    /**
-     * @return broker-defined headers associated with this job. For example, if
-     *         this job is created in the context of workflow instance, the
-     *         header provide context information on which activity is executed,
-     *         etc.
-     */
-    Map<String, Object> getHeaders();
+  /**
+   * @return broker-defined headers associated with this job. For example, if this job is created in
+   *     the context of workflow instance, the header provide context information on which activity
+   *     is executed, etc.
+   */
+  Map<String, Object> getHeaders();
 
-    /**
-     * @return user-defined headers associated with this job
-     */
-    Map<String, Object> getCustomHeaders();
+  /** @return user-defined headers associated with this job */
+  Map<String, Object> getCustomHeaders();
 
-    /**
-     * @return the assigned worker to complete the job
-     */
-    String getWorker();
+  /** @return the assigned worker to complete the job */
+  String getWorker();
 
-    /**
-     * @return remaining retries
-     */
-    Integer getRetries();
+  /** @return remaining retries */
+  Integer getRetries();
 
-    /**
-     * @return the time until when the job is exclusively assigned to this
-     *         worker. If the deadline is exceeded, it can happen that the job
-     *         is handed to another worker and the work is performed twice.
-     */
-    Instant getDeadline();
+  /**
+   * @return the time until when the job is exclusively assigned to this worker. If the deadline is
+   *     exceeded, it can happen that the job is handed to another worker and the work is performed
+   *     twice.
+   */
+  Instant getDeadline();
 
-    /**
-     * @return JSON-formatted payload
-     */
-    String getPayload();
+  /** @return JSON-formatted payload */
+  String getPayload();
 
-    /**
-     * @return de-serialized payload as map
-     */
-    Map<String, Object> getPayloadAsMap();
+  /** @return de-serialized payload as map */
+  Map<String, Object> getPayloadAsMap();
 
-    /**
-     * @return de-serialized payload as the given type
-     */
-    <T> T getPayloadAsType(Class<T> payloadType);
+  /** @return de-serialized payload as the given type */
+  <T> T getPayloadAsType(Class<T> payloadType);
 }

@@ -15,9 +15,8 @@
  */
 package io.zeebe.model.bpmn.instance;
 
-public enum OutputBehavior
-{
-    MERGE,
-    OVERWRITE,
-    NONE;
+public enum OutputBehavior {
+  MERGE,
+  OVERWRITE,
+  NONE;
 }

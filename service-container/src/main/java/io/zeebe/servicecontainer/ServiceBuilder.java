@@ -17,96 +17,83 @@ package io.zeebe.servicecontainer;
 
 import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
 import io.zeebe.util.sched.future.ActorFuture;
-
 import java.util.*;
 
-public class ServiceBuilder<S>
-{
-    protected final ServiceContainerImpl serviceContainer;
+public class ServiceBuilder<S> {
+  protected final ServiceContainerImpl serviceContainer;
 
-    protected final ServiceName<S> name;
-    protected final Service<S> service;
-    protected ServiceName<?> groupName;
+  protected final ServiceName<S> name;
+  protected final Service<S> service;
+  protected ServiceName<?> groupName;
 
-    protected Set<ServiceName<?>> dependencies = new HashSet<>();
-    protected Map<ServiceName<?>, Collection<Injector<?>>> injectedDependencies = new HashMap<>();
-    protected Map<ServiceName<?>, ServiceGroupReference<?>> injectedReferences = new HashMap<>();
+  protected Set<ServiceName<?>> dependencies = new HashSet<>();
+  protected Map<ServiceName<?>, Collection<Injector<?>>> injectedDependencies = new HashMap<>();
+  protected Map<ServiceName<?>, ServiceGroupReference<?>> injectedReferences = new HashMap<>();
 
-    public ServiceBuilder(ServiceName<S> name, Service<S> service, ServiceContainerImpl serviceContainer)
-    {
-        this.name = name;
-        this.service = service;
-        this.serviceContainer = serviceContainer;
+  public ServiceBuilder(
+      ServiceName<S> name, Service<S> service, ServiceContainerImpl serviceContainer) {
+    this.name = name;
+    this.service = service;
+    this.serviceContainer = serviceContainer;
+  }
+
+  public ServiceBuilder<S> group(ServiceName<?> groupName) {
+    this.groupName = groupName;
+    return this;
+  }
+
+  public <T> ServiceBuilder<S> dependency(ServiceName<T> serviceName) {
+    dependencies.add(serviceName);
+    return this;
+  }
+
+  public <T> ServiceBuilder<S> dependency(
+      ServiceName<? extends T> serviceName, Injector<T> injector) {
+    Collection<Injector<?>> injectors = injectedDependencies.get(serviceName);
+    if (injectors == null) {
+      injectors = new ArrayList<>();
     }
+    injectors.add(injector);
 
-    public ServiceBuilder<S> group(ServiceName<?> groupName)
-    {
-        this.groupName = groupName;
-        return this;
-    }
+    injectedDependencies.put(serviceName, injectors);
+    return dependency(serviceName);
+  }
 
-    public <T> ServiceBuilder<S> dependency(ServiceName<T> serviceName)
-    {
-        dependencies.add(serviceName);
-        return this;
-    }
+  public <T> ServiceBuilder<S> dependency(String name, Class<T> type) {
+    return dependency(ServiceName.newServiceName(name, type));
+  }
 
-    public <T> ServiceBuilder<S> dependency(ServiceName<? extends T> serviceName, Injector<T> injector)
-    {
-        Collection<Injector<?>> injectors = injectedDependencies.get(serviceName);
-        if (injectors == null)
-        {
-            injectors = new ArrayList<>();
-        }
-        injectors.add(injector);
+  public <T> ServiceBuilder<S> groupReference(
+      ServiceName<T> groupName, ServiceGroupReference<T> injector) {
+    injectedReferences.put(groupName, injector);
+    return this;
+  }
 
-        injectedDependencies.put(serviceName, injectors);
-        return dependency(serviceName);
-    }
+  public ActorFuture<S> install() {
+    return serviceContainer.onServiceBuilt(this);
+  }
 
-    public <T> ServiceBuilder<S> dependency(String name, Class<T> type)
-    {
-        return dependency(ServiceName.newServiceName(name, type));
-    }
+  public ServiceName<S> getName() {
+    return name;
+  }
 
-    public <T> ServiceBuilder<S> groupReference(ServiceName<T> groupName, ServiceGroupReference<T> injector)
-    {
-        injectedReferences.put(groupName, injector);
-        return this;
-    }
+  public Service<S> getService() {
+    return service;
+  }
 
-    public ActorFuture<S> install()
-    {
-        return serviceContainer.onServiceBuilt(this);
-    }
+  public Set<ServiceName<?>> getDependencies() {
+    return dependencies;
+  }
 
-    public ServiceName<S> getName()
-    {
-        return name;
-    }
+  public Map<ServiceName<?>, Collection<Injector<?>>> getInjectedDependencies() {
+    return injectedDependencies;
+  }
 
-    public Service<S> getService()
-    {
-        return service;
-    }
+  public Map<ServiceName<?>, ServiceGroupReference<?>> getInjectedReferences() {
+    return injectedReferences;
+  }
 
-    public Set<ServiceName<?>> getDependencies()
-    {
-        return dependencies;
-    }
-
-    public Map<ServiceName<?>, Collection<Injector<?>>> getInjectedDependencies()
-    {
-        return injectedDependencies;
-    }
-
-    public Map<ServiceName<?>, ServiceGroupReference<?>> getInjectedReferences()
-    {
-        return injectedReferences;
-    }
-
-    public ServiceName<?> getGroupName()
-    {
-        return groupName;
-    }
+  public ServiceName<?> getGroupName() {
+    return groupName;
+  }
 }

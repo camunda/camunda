@@ -20,23 +20,21 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.TimeValue;
 
-public class Benchmarks
-{
-    public static final int DATA_SET_SIZE = 10_000_000;
+public class Benchmarks {
+  public static final int DATA_SET_SIZE = 10_000_000;
 
-    public static void main(String... args) throws Exception
-    {
+  public static void main(String... args) throws Exception {
 
-        final Options opts = new OptionsBuilder()
-                .include(ComposedMapSnapshotBenchmark.class.getName())
-                .warmupIterations(5)
-                .measurementIterations(5)
-                .measurementTime(TimeValue.seconds(30))
-                .jvmArgs("-server")
-                .forks(1)
-                .build();
+    final Options opts =
+        new OptionsBuilder()
+            .include(ComposedMapSnapshotBenchmark.class.getName())
+            .warmupIterations(5)
+            .measurementIterations(5)
+            .measurementTime(TimeValue.seconds(30))
+            .jvmArgs("-server")
+            .forks(1)
+            .build();
 
-        new Runner(opts).run();
-
-    }
+    new Runner(opts).run();
+  }
 }

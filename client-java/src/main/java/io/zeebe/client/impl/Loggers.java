@@ -18,11 +18,10 @@ package io.zeebe.client.impl;
 import io.zeebe.util.ZbLogger;
 import org.slf4j.Logger;
 
-public class Loggers
-{
+public class Loggers {
 
-    public static final Logger CLIENT_LOGGER = new ZbLogger("io.zeebe.client");
-    public static final Logger SUBSCRIPTION_LOGGER = new ZbLogger("io.zeebe.client.subscription");
-    public static final Logger TASK_SUBSCRIPTION_LOGGER = new ZbLogger("io.zeebe.client.subscription.task");
-
+  public static final Logger CLIENT_LOGGER = new ZbLogger("io.zeebe.client");
+  public static final Logger SUBSCRIPTION_LOGGER = new ZbLogger("io.zeebe.client.subscription");
+  public static final Logger TASK_SUBSCRIPTION_LOGGER =
+      new ZbLogger("io.zeebe.client.subscription.task");
 }

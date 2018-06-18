@@ -15,15 +15,10 @@
  */
 package io.zeebe.client.api.commands;
 
-public interface Partition
-{
-    /**
-     * @return the (unique) id of the partition
-     */
-    int getId();
+public interface Partition {
+  /** @return the (unique) id of the partition */
+  int getId();
 
-    /**
-     * @return the name of the topic this partition belongs to
-     */
-    String getTopicName();
+  /** @return the name of the topic this partition belongs to */
+  String getTopicName();
 }

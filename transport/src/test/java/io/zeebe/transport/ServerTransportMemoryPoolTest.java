@@ -21,152 +21,130 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.*;
 
-import java.nio.ByteBuffer;
-
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.impl.memory.TransportMemoryPool;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import java.nio.ByteBuffer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.*;
 import org.junit.rules.RuleChain;
 
-public class ServerTransportMemoryPoolTest
-{
-    protected static final SocketAddress ADDRESS = new SocketAddress("127.0.0.1", 51115);
+public class ServerTransportMemoryPoolTest {
+  protected static final SocketAddress ADDRESS = new SocketAddress("127.0.0.1", 51115);
 
-    public static final DirectBuffer BUF1 = new UnsafeBuffer(new byte[32]);
+  public static final DirectBuffer BUF1 = new UnsafeBuffer(new byte[32]);
 
-    public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
-    public AutoCloseableRule closeables = new AutoCloseableRule();
+  public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
+  public AutoCloseableRule closeables = new AutoCloseableRule();
 
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
 
-    protected ServerTransport serverTransport;
+  protected ServerTransport serverTransport;
 
-    private TransportMemoryPool messageMemoryPool;
+  private TransportMemoryPool messageMemoryPool;
 
-    @Before
-    public void setUp()
-    {
-        messageMemoryPool = mock(TransportMemoryPool.class);
+  @Before
+  public void setUp() {
+    messageMemoryPool = mock(TransportMemoryPool.class);
 
-        serverTransport = Transports.newServerTransport()
+    serverTransport =
+        Transports.newServerTransport()
             .bindAddress(ADDRESS.toInetSocketAddress())
             .scheduler(actorSchedulerRule.get())
             .messageMemoryPool(messageMemoryPool)
             .build(null, null);
+  }
+
+  @After
+  public void tearDown() {
+    serverTransport.close();
+  }
+
+  @Test
+  public void shouldRejectMessageWhenBufferPoolExhaused() {
+    // given
+    final ServerOutput output = serverTransport.getOutput();
+    final TransportMessage message = new TransportMessage().buffer(BUF1).remoteStreamId(0);
+
+    doReturn(null).when(messageMemoryPool).allocate(anyInt());
+
+    // when
+    final boolean success = output.sendMessage(message);
+
+    // then
+    assertThat(success).isFalse();
+  }
+
+  @Test
+  public void shouldRejectResponseWhenBufferPoolExhaused() {
+    // given
+    final ServerOutput output = serverTransport.getOutput();
+    final ServerResponse response =
+        new ServerResponse().buffer(BUF1).remoteStreamId(0).requestId(1L);
+
+    doReturn(null).when(messageMemoryPool).allocate(anyInt());
+
+    // when
+    final boolean success = output.sendResponse(response);
+
+    // then
+    assertThat(success).isFalse();
+  }
+
+  @Test
+  public void shouldReclaimOnResponseWriterException() throws InterruptedException {
+    final ServerOutput output = serverTransport.getOutput();
+
+    // given
+    final BufferWriter writer = mock(BufferWriter.class);
+    when(writer.getLength()).thenReturn(16);
+    doThrow(RuntimeException.class).when(writer).write(any(), anyInt());
+
+    final ServerResponse response =
+        new ServerResponse().writer(writer).remoteStreamId(0).requestId(1L);
+
+    doReturn(ByteBuffer.allocate(50)).when(messageMemoryPool).allocate(anyInt());
+
+    // when
+    try {
+      output.sendResponse(response);
+      fail("expected exception");
+    } catch (Exception e) {
+      // expected
     }
 
-    @After
-    public void tearDown()
-    {
-        serverTransport.close();
+    // then
+
+    verify(messageMemoryPool, times(1)).allocate(anyInt());
+    verify(messageMemoryPool, times(1)).reclaim(any());
+  }
+
+  @Test
+  public void shouldReclaimOnMessageWriterException() throws InterruptedException {
+    final ServerOutput output = serverTransport.getOutput();
+
+    // given
+    final BufferWriter writer = mock(BufferWriter.class);
+    when(writer.getLength()).thenReturn(16);
+    doThrow(RuntimeException.class).when(writer).write(any(), anyInt());
+
+    final TransportMessage message = new TransportMessage().writer(writer).remoteStreamId(0);
+
+    doReturn(ByteBuffer.allocate(50)).when(messageMemoryPool).allocate(anyInt());
+
+    // when
+    try {
+      output.sendMessage(message);
+      fail("expected exception");
+    } catch (Exception e) {
+      // expected
     }
 
-    @Test
-    public void shouldRejectMessageWhenBufferPoolExhaused()
-    {
-        // given
-        final ServerOutput output = serverTransport.getOutput();
-        final TransportMessage message = new TransportMessage()
-            .buffer(BUF1)
-            .remoteStreamId(0);
+    // then
 
-        doReturn(null).when(messageMemoryPool).allocate(anyInt());
-
-        // when
-        final boolean success = output.sendMessage(message);
-
-        // then
-        assertThat(success).isFalse();
-    }
-
-    @Test
-    public void shouldRejectResponseWhenBufferPoolExhaused()
-    {
-        // given
-        final ServerOutput output = serverTransport.getOutput();
-        final ServerResponse response = new ServerResponse()
-            .buffer(BUF1)
-            .remoteStreamId(0)
-            .requestId(1L);
-
-        doReturn(null).when(messageMemoryPool).allocate(anyInt());
-
-        // when
-        final boolean success = output.sendResponse(response);
-
-        // then
-        assertThat(success).isFalse();
-    }
-
-    @Test
-    public void shouldReclaimOnResponseWriterException() throws InterruptedException
-    {
-        final ServerOutput output = serverTransport.getOutput();
-
-        // given
-        final BufferWriter writer = mock(BufferWriter.class);
-        when(writer.getLength()).thenReturn(16);
-        doThrow(RuntimeException.class).when(writer).write(any(), anyInt());
-
-        final ServerResponse response = new ServerResponse()
-            .writer(writer)
-            .remoteStreamId(0)
-            .requestId(1L);
-
-        doReturn(ByteBuffer.allocate(50)).when(messageMemoryPool).allocate(anyInt());
-
-        // when
-        try
-        {
-            output.sendResponse(response);
-            fail("expected exception");
-        }
-        catch (Exception e)
-        {
-            // expected
-        }
-
-        // then
-
-        verify(messageMemoryPool, times(1)).allocate(anyInt());
-        verify(messageMemoryPool, times(1)).reclaim(any());
-    }
-
-    @Test
-    public void shouldReclaimOnMessageWriterException() throws InterruptedException
-    {
-        final ServerOutput output = serverTransport.getOutput();
-
-        // given
-        final BufferWriter writer = mock(BufferWriter.class);
-        when(writer.getLength()).thenReturn(16);
-        doThrow(RuntimeException.class).when(writer).write(any(), anyInt());
-
-        final TransportMessage message = new TransportMessage()
-            .writer(writer)
-            .remoteStreamId(0);
-
-        doReturn(ByteBuffer.allocate(50)).when(messageMemoryPool).allocate(anyInt());
-
-        // when
-        try
-        {
-            output.sendMessage(message);
-            fail("expected exception");
-        }
-        catch (Exception e)
-        {
-            // expected
-        }
-
-        // then
-
-        verify(messageMemoryPool, times(1)).allocate(anyInt());
-        verify(messageMemoryPool, times(1)).reclaim(any());
-    }
+    verify(messageMemoryPool, times(1)).allocate(anyInt());
+    verify(messageMemoryPool, times(1)).reclaim(any());
+  }
 }

@@ -20,45 +20,39 @@ import io.zeebe.util.collection.Reusable;
 import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class GossipSyncResponsePart implements Reusable
-{
-    private final SocketAddress address = new SocketAddress();
+public class GossipSyncResponsePart implements Reusable {
+  private final SocketAddress address = new SocketAddress();
 
-    private final MutableDirectBuffer payloadBuffer = new ExpandableArrayBuffer();
-    private final DirectBuffer payloadView = new UnsafeBuffer(payloadBuffer);
-    private int payloadLength = 0;
+  private final MutableDirectBuffer payloadBuffer = new ExpandableArrayBuffer();
+  private final DirectBuffer payloadView = new UnsafeBuffer(payloadBuffer);
+  private int payloadLength = 0;
 
-    public void wrap(SocketAddress address, DirectBuffer payload, int offset, int length)
-    {
-        this.address.wrap(address);
+  public void wrap(SocketAddress address, DirectBuffer payload, int offset, int length) {
+    this.address.wrap(address);
 
-        this.payloadLength = length;
-        this.payloadBuffer.putBytes(0, payload, offset, length);
-    }
+    this.payloadLength = length;
+    this.payloadBuffer.putBytes(0, payload, offset, length);
+  }
 
-    public void wrap(SocketAddress address, DirectBuffer payload)
-    {
-        this.address.wrap(address);
+  public void wrap(SocketAddress address, DirectBuffer payload) {
+    this.address.wrap(address);
 
-        this.payloadLength = payload.capacity();
-        this.payloadBuffer.putBytes(0, payload, 0, payloadLength);
-    }
+    this.payloadLength = payload.capacity();
+    this.payloadBuffer.putBytes(0, payload, 0, payloadLength);
+  }
 
-    public SocketAddress getAddress()
-    {
-        return address;
-    }
+  public SocketAddress getAddress() {
+    return address;
+  }
 
-    public DirectBuffer getPayload()
-    {
-        payloadView.wrap(payloadBuffer, 0, payloadLength);
-        return payloadView;
-    }
+  public DirectBuffer getPayload() {
+    payloadView.wrap(payloadBuffer, 0, payloadLength);
+    return payloadView;
+  }
 
-    @Override
-    public void reset()
-    {
-        address.reset();
-        payloadLength = 0;
-    }
+  @Override
+  public void reset() {
+    address.reset();
+    payloadLength = 0;
+  }
 }

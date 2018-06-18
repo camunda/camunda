@@ -29,51 +29,59 @@ import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 
-public class AddJobSubscriptionHandler extends AbstractControlMessageHandler
-{
-    protected final JobSubscriptionManager manager;
+public class AddJobSubscriptionHandler extends AbstractControlMessageHandler {
+  protected final JobSubscriptionManager manager;
 
-    public AddJobSubscriptionHandler(final ServerOutput output, final JobSubscriptionManager manager)
-    {
-        super(output);
-        this.manager = manager;
-    }
+  public AddJobSubscriptionHandler(
+      final ServerOutput output, final JobSubscriptionManager manager) {
+    super(output);
+    this.manager = manager;
+  }
 
-    @Override
-    public ControlMessageType getMessageType()
-    {
-        return ControlMessageType.ADD_JOB_SUBSCRIPTION;
-    }
+  @Override
+  public ControlMessageType getMessageType() {
+    return ControlMessageType.ADD_JOB_SUBSCRIPTION;
+  }
 
-    @Override
-    public void handle(final ActorControl actor, final int partitionId, final DirectBuffer buffer, final RecordMetadata eventMetada)
-    {
-        final JobSubscriptionRequest request = new JobSubscriptionRequest();
-        request.wrap(cloneBuffer(buffer));
+  @Override
+  public void handle(
+      final ActorControl actor,
+      final int partitionId,
+      final DirectBuffer buffer,
+      final RecordMetadata eventMetada) {
+    final JobSubscriptionRequest request = new JobSubscriptionRequest();
+    request.wrap(cloneBuffer(buffer));
 
-        final long requestId = eventMetada.getRequestId();
-        final int requestStreamId = eventMetada.getRequestStreamId();
+    final long requestId = eventMetada.getRequestId();
+    final int requestStreamId = eventMetada.getRequestStreamId();
 
-        final JobSubscription jobSubscription = new JobSubscription(partitionId, request.getJobType(),
-                request.getTimeout(), request.getWorker(), requestStreamId);
-        jobSubscription.setCredits(request.getCredits());
+    final JobSubscription jobSubscription =
+        new JobSubscription(
+            partitionId,
+            request.getJobType(),
+            request.getTimeout(),
+            request.getWorker(),
+            requestStreamId);
+    jobSubscription.setCredits(request.getCredits());
 
-        final ActorFuture<Void> future = manager.addSubscription(jobSubscription);
+    final ActorFuture<Void> future = manager.addSubscription(jobSubscription);
 
-        actor.runOnCompletion(future, ((aVoid, throwable) ->
-        {
-            if (throwable == null)
-            {
-                final long subscriberKey = jobSubscription.getSubscriberKey();
-                request.setSubscriberKey(subscriberKey);
+    actor.runOnCompletion(
+        future,
+        ((aVoid, throwable) -> {
+          if (throwable == null) {
+            final long subscriberKey = jobSubscription.getSubscriberKey();
+            request.setSubscriberKey(subscriberKey);
 
-                sendResponse(actor, requestStreamId, requestId, request);
-            }
-            else
-            {
-                sendErrorResponse(actor, requestStreamId, requestId, "Cannot add job subscription. %s", throwable.getMessage());
-            }
+            sendResponse(actor, requestStreamId, requestId, request);
+          } else {
+            sendErrorResponse(
+                actor,
+                requestStreamId,
+                requestId,
+                "Cannot add job subscription. %s",
+                throwable.getMessage());
+          }
         }));
-    }
-
+  }
 }

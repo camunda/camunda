@@ -20,19 +20,14 @@ package io.zeebe.broker.system.configuration;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public class ConfigurationUtil
-{
-    public static String toAbsolutePath(String path, String base)
-    {
-        final Path asPath = Paths.get(path);
+public class ConfigurationUtil {
+  public static String toAbsolutePath(String path, String base) {
+    final Path asPath = Paths.get(path);
 
-        if (asPath.isAbsolute())
-        {
-            return path;
-        }
-        else
-        {
-            return Paths.get(base, path).toString();
-        }
+    if (asPath.isAbsolute()) {
+      return path;
+    } else {
+      return Paths.get(base, path).toString();
     }
+  }
 }

@@ -15,18 +15,16 @@
  */
 package io.zeebe.map;
 
-public interface KeyHandler
-{
-    void setKeyLength(int keyLength);
+public interface KeyHandler {
+  void setKeyLength(int keyLength);
 
-    int keyHashCode();
+  int keyHashCode();
 
-    boolean keyEquals(long keyAddr);
+  boolean keyEquals(long keyAddr);
 
-    void readKey(long keyAddr);
+  void readKey(long keyAddr);
 
-    void writeKey(long keyAddr);
+  void writeKey(long keyAddr);
 
-    int getKeyLength();
-
+  int getKeyLength();
 }

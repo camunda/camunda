@@ -18,54 +18,44 @@ package io.zeebe.logstreams.processor;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 
-/**
- * Process events from a log stream.
- */
-public interface StreamProcessor
-{
-    /**
-     * Returns the resource which holds the state of the processor.
-     *
-     * @return the processor state resource
-     */
-    SnapshotSupport getStateResource();
+/** Process events from a log stream. */
+public interface StreamProcessor {
+  /**
+   * Returns the resource which holds the state of the processor.
+   *
+   * @return the processor state resource
+   */
+  SnapshotSupport getStateResource();
 
-    /**
-     * Returns a specific processor to process the event which is read from the
-     * log stream, if available.
-     *
-     * @param event
-     *            the event to process
-     *
-     * @return specific processor to process the event, or <code>null</code> if the event can't  be processed
-     */
-    EventProcessor onEvent(LoggedEvent event);
+  /**
+   * Returns a specific processor to process the event which is read from the log stream, if
+   * available.
+   *
+   * @param event the event to process
+   * @return specific processor to process the event, or <code>null</code> if the event can't be
+   *     processed
+   */
+  EventProcessor onEvent(LoggedEvent event);
 
-    /**
-     * Callback which is invoked by the controller when it opens. An
-     * implementation can provide any setup logic here.
-     */
-    default void onOpen(StreamProcessorContext context)
-    {
-        // do nothing
-    }
+  /**
+   * Callback which is invoked by the controller when it opens. An implementation can provide any
+   * setup logic here.
+   */
+  default void onOpen(StreamProcessorContext context) {
+    // do nothing
+  }
 
-    /**
-     * Callback which is invoked by the controller when the recovery is done.
-     * Implementation could contain logic which should not be done on recovery, but afterwards.
-     */
-    default void onRecovered()
-    {
+  /**
+   * Callback which is invoked by the controller when the recovery is done. Implementation could
+   * contain logic which should not be done on recovery, but afterwards.
+   */
+  default void onRecovered() {}
 
-    }
-
-    /**
-     * Callback which is invoked by the controller when it closes. An
-     * implementation can provide any clean up logic here.
-     */
-    default void onClose()
-    {
-        // no nothing
-    }
-
+  /**
+   * Callback which is invoked by the controller when it closes. An implementation can provide any
+   * clean up logic here.
+   */
+  default void onClose() {
+    // no nothing
+  }
 }

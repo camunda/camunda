@@ -16,14 +16,11 @@
 package io.zeebe.model.bpmn.instance;
 
 import java.util.Collection;
-
 import org.agrona.DirectBuffer;
 
-public interface WorkflowDefinition
-{
+public interface WorkflowDefinition {
 
-    Workflow getWorkflow(DirectBuffer bpmnProcessId);
+  Workflow getWorkflow(DirectBuffer bpmnProcessId);
 
-    Collection<Workflow> getWorkflows();
-
+  Collection<Workflow> getWorkflows();
 }

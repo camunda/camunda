@@ -15,51 +15,44 @@
  */
 package io.zeebe.client.impl.event;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.fasterxml.jackson.annotation.*;
 import io.zeebe.client.api.events.TopicEvent;
 import io.zeebe.client.api.events.TopicState;
 import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.record.TopicRecordImpl;
 import io.zeebe.protocol.clientapi.RecordType;
+import java.util.ArrayList;
+import java.util.List;
 
-public class TopicEventImpl extends TopicRecordImpl implements TopicEvent
-{
-    private final List<Integer> partitionIds = new ArrayList<>();
+public class TopicEventImpl extends TopicRecordImpl implements TopicEvent {
+  private final List<Integer> partitionIds = new ArrayList<>();
 
-    @JsonCreator
-    public TopicEventImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper)
-    {
-        super(objectMapper, RecordType.EVENT);
-    }
+  @JsonCreator
+  public TopicEventImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper) {
+    super(objectMapper, RecordType.EVENT);
+  }
 
-    @Override
-    public List<Integer> getPartitionIds()
-    {
-        return partitionIds;
-    }
+  @Override
+  public List<Integer> getPartitionIds() {
+    return partitionIds;
+  }
 
-    @JsonIgnore
-    @Override
-    public TopicState getState()
-    {
-        return TopicState.valueOf(getMetadata().getIntent());
-    }
+  @JsonIgnore
+  @Override
+  public TopicState getState() {
+    return TopicState.valueOf(getMetadata().getIntent());
+  }
 
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("TopicEvent [state=");
-        builder.append(getState());
-        builder.append(", name=");
-        builder.append(getName());
-        builder.append(", partitionIds=");
-        builder.append(partitionIds);
-        builder.append("]");
-        return builder.toString();
-    }
-
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("TopicEvent [state=");
+    builder.append(getState());
+    builder.append(", name=");
+    builder.append(getName());
+    builder.append(", partitionIds=");
+    builder.append(partitionIds);
+    builder.append("]");
+    return builder.toString();
+  }
 }

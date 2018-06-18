@@ -19,76 +19,66 @@ import io.zeebe.msgpack.POJO.POJOEnum;
 import io.zeebe.msgpack.property.*;
 import org.agrona.DirectBuffer;
 
-public class AllTypesDefaultValuesPOJO extends UnpackedObject
-{
+public class AllTypesDefaultValuesPOJO extends UnpackedObject {
 
-    private final EnumProperty<POJOEnum> enumProp;
-    private final LongProperty longProp;
-    private final IntegerProperty intProp;
-    private final StringProperty stringProp;
-    private final PackedProperty packedProp;
-    private final BinaryProperty binaryProp;
-    private final ObjectProperty<POJONested> objectProp;
+  private final EnumProperty<POJOEnum> enumProp;
+  private final LongProperty longProp;
+  private final IntegerProperty intProp;
+  private final StringProperty stringProp;
+  private final PackedProperty packedProp;
+  private final BinaryProperty binaryProp;
+  private final ObjectProperty<POJONested> objectProp;
 
-    public AllTypesDefaultValuesPOJO(
-            POJOEnum enumDefault,
-            long longDefault,
-            int intDefault,
-            String stringDefault,
-            DirectBuffer packedDefault,
-            DirectBuffer binaryDefault,
-            POJONested objectDefault)
-    {
-        enumProp = new EnumProperty<>("enumProp", POJOEnum.class, enumDefault);
-        longProp = new LongProperty("longProp", longDefault);
-        intProp = new IntegerProperty("intProp", intDefault);
-        stringProp = new StringProperty("stringProp", stringDefault);
-        packedProp = new PackedProperty("packedProp", packedDefault);
-        binaryProp = new BinaryProperty("binaryProp", binaryDefault);
-        objectProp = new ObjectProperty<>("objectProp", objectDefault);
+  public AllTypesDefaultValuesPOJO(
+      POJOEnum enumDefault,
+      long longDefault,
+      int intDefault,
+      String stringDefault,
+      DirectBuffer packedDefault,
+      DirectBuffer binaryDefault,
+      POJONested objectDefault) {
+    enumProp = new EnumProperty<>("enumProp", POJOEnum.class, enumDefault);
+    longProp = new LongProperty("longProp", longDefault);
+    intProp = new IntegerProperty("intProp", intDefault);
+    stringProp = new StringProperty("stringProp", stringDefault);
+    packedProp = new PackedProperty("packedProp", packedDefault);
+    binaryProp = new BinaryProperty("binaryProp", binaryDefault);
+    objectProp = new ObjectProperty<>("objectProp", objectDefault);
 
-        this.declareProperty(enumProp)
-            .declareProperty(longProp)
-            .declareProperty(intProp)
-            .declareProperty(stringProp)
-            .declareProperty(packedProp)
-            .declareProperty(binaryProp)
-            .declareProperty(objectProp);
-    }
+    this.declareProperty(enumProp)
+        .declareProperty(longProp)
+        .declareProperty(intProp)
+        .declareProperty(stringProp)
+        .declareProperty(packedProp)
+        .declareProperty(binaryProp)
+        .declareProperty(objectProp);
+  }
 
-    public POJOEnum getEnum()
-    {
-        return enumProp.getValue();
-    }
+  public POJOEnum getEnum() {
+    return enumProp.getValue();
+  }
 
-    public long getLong()
-    {
-        return longProp.getValue();
-    }
+  public long getLong() {
+    return longProp.getValue();
+  }
 
-    public int getInt()
-    {
-        return intProp.getValue();
-    }
+  public int getInt() {
+    return intProp.getValue();
+  }
 
-    public DirectBuffer getString()
-    {
-        return stringProp.getValue();
-    }
+  public DirectBuffer getString() {
+    return stringProp.getValue();
+  }
 
-    public DirectBuffer getPacked()
-    {
-        return packedProp.getValue();
-    }
+  public DirectBuffer getPacked() {
+    return packedProp.getValue();
+  }
 
-    public DirectBuffer getBinary()
-    {
-        return binaryProp.getValue();
-    }
+  public DirectBuffer getBinary() {
+    return binaryProp.getValue();
+  }
 
-    public POJONested getNestedObject()
-    {
-        return objectProp.getValue();
-    }
-
+  public POJONested getNestedObject() {
+    return objectProp.getValue();
+  }
 }

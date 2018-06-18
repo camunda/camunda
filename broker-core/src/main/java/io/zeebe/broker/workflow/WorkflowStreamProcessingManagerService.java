@@ -34,101 +34,97 @@ import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.ServerTransport;
 
-/**
- * Tracks leader partitions and installs the workflow instance stream processors
- */
-public class WorkflowStreamProcessingManagerService implements Service<WorkflowStreamProcessingManagerService>
-{
-    public static final int PAYLOAD_CACHE_SIZE = 64;
+/** Tracks leader partitions and installs the workflow instance stream processors */
+public class WorkflowStreamProcessingManagerService
+    implements Service<WorkflowStreamProcessingManagerService> {
+  public static final int PAYLOAD_CACHE_SIZE = 64;
 
-    protected static final String NAME = "workflow.queue.manager";
+  protected static final String NAME = "workflow.queue.manager";
 
-    private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
-    private final Injector<ClientTransport> managementApiClientInjector = new Injector<>();
-    private final Injector<TopologyManager> topologyManagerInjector = new Injector<>();
+  private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
+  private final Injector<ClientTransport> managementApiClientInjector = new Injector<>();
+  private final Injector<TopologyManager> topologyManagerInjector = new Injector<>();
 
-    private final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector = new Injector<>();
+  private final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector =
+      new Injector<>();
 
-    private final ServiceGroupReference<Partition> partitionsGroupReference = ServiceGroupReference.<Partition>create()
-        .onAdd((partitionName, partition) -> startStreamProcessors(partitionName, partition))
+  private final ServiceGroupReference<Partition> partitionsGroupReference =
+      ServiceGroupReference.<Partition>create()
+          .onAdd((partitionName, partition) -> startStreamProcessors(partitionName, partition))
+          .build();
+
+  private StreamProcessorServiceFactory streamProcessorServiceFactory;
+
+  private ServerTransport transport;
+  private TopologyManager topologyManager;
+
+  public void startStreamProcessors(
+      ServiceName<Partition> partitionServiceName, Partition partition) {
+    installWorkflowStreamProcessor(partition, partitionServiceName);
+    installIncidentStreamProcessor(partition, partitionServiceName);
+  }
+
+  private void installWorkflowStreamProcessor(
+      Partition partition, ServiceName<Partition> partitionServiceName) {
+    final ServerTransport transport = clientApiTransportInjector.getValue();
+
+    final WorkflowInstanceStreamProcessor streamProcessor =
+        new WorkflowInstanceStreamProcessor(
+            managementApiClientInjector.getValue(), topologyManager, PAYLOAD_CACHE_SIZE);
+    final TypedStreamEnvironment env =
+        new TypedStreamEnvironment(partition.getLogStream(), transport.getOutput());
+
+    streamProcessorServiceFactory
+        .createService(partition, partitionServiceName)
+        .processor(streamProcessor.createStreamProcessor(env))
+        .processorId(WORKFLOW_INSTANCE_PROCESSOR_ID)
+        .processorName("workflow-instance")
         .build();
+  }
 
-    private StreamProcessorServiceFactory streamProcessorServiceFactory;
+  private void installIncidentStreamProcessor(
+      Partition partition, ServiceName<Partition> partitionServiceName) {
+    final TypedStreamEnvironment env =
+        new TypedStreamEnvironment(partition.getLogStream(), transport.getOutput());
+    final IncidentStreamProcessor incidentProcessorFactory = new IncidentStreamProcessor();
 
-    private ServerTransport transport;
-    private TopologyManager topologyManager;
+    streamProcessorServiceFactory
+        .createService(partition, partitionServiceName)
+        .processor(incidentProcessorFactory.createStreamProcessor(env))
+        .processorId(INCIDENT_PROCESSOR_ID)
+        .processorName("incident")
+        .build();
+  }
 
-    public void startStreamProcessors(ServiceName<Partition> partitionServiceName, Partition partition)
-    {
-        installWorkflowStreamProcessor(partition, partitionServiceName);
-        installIncidentStreamProcessor(partition, partitionServiceName);
-    }
+  @Override
+  public void start(ServiceStartContext serviceContext) {
+    this.transport = clientApiTransportInjector.getValue();
+    this.streamProcessorServiceFactory = streamProcessorServiceFactoryInjector.getValue();
+    this.topologyManager = topologyManagerInjector.getValue();
+  }
 
-    private void installWorkflowStreamProcessor(Partition partition, ServiceName<Partition> partitionServiceName)
-    {
-        final ServerTransport transport = clientApiTransportInjector.getValue();
+  @Override
+  public WorkflowStreamProcessingManagerService get() {
+    return this;
+  }
 
-        final WorkflowInstanceStreamProcessor streamProcessor = new WorkflowInstanceStreamProcessor(
-            managementApiClientInjector.getValue(),
-            topologyManager,
-            PAYLOAD_CACHE_SIZE);
-        final TypedStreamEnvironment env = new TypedStreamEnvironment(partition.getLogStream(), transport.getOutput());
+  public Injector<ServerTransport> getClientApiTransportInjector() {
+    return clientApiTransportInjector;
+  }
 
-        streamProcessorServiceFactory.createService(partition, partitionServiceName)
-            .processor(streamProcessor.createStreamProcessor(env))
-            .processorId(WORKFLOW_INSTANCE_PROCESSOR_ID)
-            .processorName("workflow-instance")
-            .build();
-    }
+  public ServiceGroupReference<Partition> getPartitionsGroupReference() {
+    return partitionsGroupReference;
+  }
 
-    private void installIncidentStreamProcessor(Partition partition, ServiceName<Partition> partitionServiceName)
-    {
-        final TypedStreamEnvironment env = new TypedStreamEnvironment(partition.getLogStream(), transport.getOutput());
-        final IncidentStreamProcessor incidentProcessorFactory = new IncidentStreamProcessor();
+  public Injector<StreamProcessorServiceFactory> getStreamProcessorServiceFactoryInjector() {
+    return streamProcessorServiceFactoryInjector;
+  }
 
-        streamProcessorServiceFactory.createService(partition, partitionServiceName)
-            .processor(incidentProcessorFactory.createStreamProcessor(env))
-            .processorId(INCIDENT_PROCESSOR_ID)
-            .processorName("incident")
-            .build();
-    }
+  public Injector<TopologyManager> getTopologyManagerInjector() {
+    return topologyManagerInjector;
+  }
 
-    @Override
-    public void start(ServiceStartContext serviceContext)
-    {
-        this.transport = clientApiTransportInjector.getValue();
-        this.streamProcessorServiceFactory =  streamProcessorServiceFactoryInjector.getValue();
-        this.topologyManager = topologyManagerInjector.getValue();
-    }
-
-    @Override
-    public WorkflowStreamProcessingManagerService get()
-    {
-        return this;
-    }
-
-    public Injector<ServerTransport> getClientApiTransportInjector()
-    {
-        return clientApiTransportInjector;
-    }
-
-    public ServiceGroupReference<Partition> getPartitionsGroupReference()
-    {
-        return partitionsGroupReference;
-    }
-
-    public Injector<StreamProcessorServiceFactory> getStreamProcessorServiceFactoryInjector()
-    {
-        return streamProcessorServiceFactoryInjector;
-    }
-
-    public Injector<TopologyManager> getTopologyManagerInjector()
-    {
-        return topologyManagerInjector;
-    }
-
-    public Injector<ClientTransport> getManagementApiClientInjector()
-    {
-        return managementApiClientInjector;
-    }
+  public Injector<ClientTransport> getManagementApiClientInjector() {
+    return managementApiClientInjector;
+  }
 }

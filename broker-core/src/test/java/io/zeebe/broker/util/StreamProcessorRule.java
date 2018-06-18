@@ -17,15 +17,6 @@
  */
 package io.zeebe.broker.util;
 
-import java.util.function.Function;
-
-import org.junit.rules.ExternalResource;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TemporaryFolder;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
-
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.topic.StreamProcessorControl;
 import io.zeebe.broker.transport.clientapi.BufferingServerOutput;
@@ -38,131 +29,134 @@ import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import java.util.function.Function;
+import org.junit.rules.ExternalResource;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TemporaryFolder;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 
-public class StreamProcessorRule implements TestRule
-{
-    // environment
-    private TemporaryFolder tempFolder = new TemporaryFolder();
-    private AutoCloseableRule closeables = new AutoCloseableRule();
-    private ControlledActorClock clock = new ControlledActorClock();
-    private ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(clock);
-    private ServiceContainerRule serviceContainerRule = new ServiceContainerRule(actorSchedulerRule);
+public class StreamProcessorRule implements TestRule {
+  // environment
+  private TemporaryFolder tempFolder = new TemporaryFolder();
+  private AutoCloseableRule closeables = new AutoCloseableRule();
+  private ControlledActorClock clock = new ControlledActorClock();
+  private ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(clock);
+  private ServiceContainerRule serviceContainerRule = new ServiceContainerRule(actorSchedulerRule);
 
-    // things provisioned by this rule
-    public static final String STREAM_NAME = "stream";
+  // things provisioned by this rule
+  public static final String STREAM_NAME = "stream";
 
-    private BufferingServerOutput output;
-    private TestStreams streams;
-    private TypedStreamEnvironment streamEnvironment;
+  private BufferingServerOutput output;
+  private TestStreams streams;
+  private TypedStreamEnvironment streamEnvironment;
 
-    private SetupRule rule = new SetupRule();
+  private SetupRule rule = new SetupRule();
 
-    private RuleChain chain = RuleChain
-        .outerRule(tempFolder)
-        .around(actorSchedulerRule)
-        .around(serviceContainerRule)
-        .around(closeables)
-        .around(rule);
+  private RuleChain chain =
+      RuleChain.outerRule(tempFolder)
+          .around(actorSchedulerRule)
+          .around(serviceContainerRule)
+          .around(closeables)
+          .around(rule);
+
+  @Override
+  public Statement apply(Statement base, Description description) {
+    return chain.apply(base, description);
+  }
+
+  public StreamProcessorControl runStreamProcessor(
+      Function<TypedStreamEnvironment, StreamProcessor> factory) {
+    final StreamProcessorControl control = initStreamProcessor(factory);
+    control.start();
+    return control;
+  }
+
+  public StreamProcessorControl initStreamProcessor(
+      Function<TypedStreamEnvironment, StreamProcessor> factory) {
+    return streams.initStreamProcessor(STREAM_NAME, 0, () -> factory.apply(streamEnvironment));
+  }
+
+  public ControlledActorClock getClock() {
+    return clock;
+  }
+
+  public RecordStream events() {
+    return new RecordStream(streams.events(STREAM_NAME));
+  }
+
+  public long writeEvent(long key, Intent intent, UnpackedObject value) {
+    return streams
+        .newRecord(STREAM_NAME)
+        .recordType(RecordType.EVENT)
+        .key(key)
+        .intent(intent)
+        .event(value)
+        .write();
+  }
+
+  public long writeEvent(Intent intent, UnpackedObject value) {
+    return streams
+        .newRecord(STREAM_NAME)
+        .recordType(RecordType.EVENT)
+        .intent(intent)
+        .event(value)
+        .write();
+  }
+
+  public long writeCommand(long key, Intent intent, UnpackedObject value) {
+    return streams
+        .newRecord(STREAM_NAME)
+        .recordType(RecordType.COMMAND)
+        .key(key)
+        .intent(intent)
+        .event(value)
+        .write();
+  }
+
+  public long writeCommand(Intent intent, UnpackedObject value) {
+    return streams
+        .newRecord(STREAM_NAME)
+        .recordType(RecordType.COMMAND)
+        .intent(intent)
+        .event(value)
+        .write();
+  }
+
+  public FluentLogWriter newRecord() {
+    return streams.newRecord(STREAM_NAME);
+  }
+
+  public void truncateLog(long position) {
+    streams.truncate(STREAM_NAME, position);
+  }
+
+  public BufferingServerOutput getOutput() {
+    return output;
+  }
+
+  private class SetupRule extends ExternalResource {
 
     @Override
-    public Statement apply(Statement base, Description description)
-    {
-        return chain.apply(base, description);
+    protected void before() throws Throwable {
+      output = new BufferingServerOutput();
+
+      streams =
+          new TestStreams(
+              tempFolder.getRoot(),
+              closeables,
+              serviceContainerRule.get(),
+              actorSchedulerRule.get());
+      streams.createLogStream(STREAM_NAME);
+
+      streams
+          .newRecord(
+              STREAM_NAME) // TODO: workaround for https://github.com/zeebe-io/zeebe/issues/478
+          .event(new UnpackedObject())
+          .write();
+
+      streamEnvironment = new TypedStreamEnvironment(streams.getLogStream(STREAM_NAME), output);
     }
-
-    public StreamProcessorControl runStreamProcessor(Function<TypedStreamEnvironment, StreamProcessor> factory)
-    {
-        final StreamProcessorControl control = initStreamProcessor(factory);
-        control.start();
-        return control;
-    }
-
-    public StreamProcessorControl initStreamProcessor(Function<TypedStreamEnvironment, StreamProcessor> factory)
-    {
-        return streams.initStreamProcessor(STREAM_NAME, 0, () -> factory.apply(streamEnvironment));
-    }
-
-    public ControlledActorClock getClock()
-    {
-        return clock;
-    }
-
-    public RecordStream events()
-    {
-        return new RecordStream(streams.events(STREAM_NAME));
-    }
-
-    public long writeEvent(long key, Intent intent, UnpackedObject value)
-    {
-        return streams.newRecord(STREAM_NAME)
-            .recordType(RecordType.EVENT)
-            .key(key)
-            .intent(intent)
-            .event(value)
-            .write();
-    }
-
-    public long writeEvent(Intent intent, UnpackedObject value)
-    {
-        return streams.newRecord(STREAM_NAME)
-            .recordType(RecordType.EVENT)
-            .intent(intent)
-            .event(value)
-            .write();
-    }
-
-    public long writeCommand(long key, Intent intent, UnpackedObject value)
-    {
-        return streams.newRecord(STREAM_NAME)
-            .recordType(RecordType.COMMAND)
-            .key(key)
-            .intent(intent)
-            .event(value)
-            .write();
-    }
-
-    public long writeCommand(Intent intent, UnpackedObject value)
-    {
-        return streams.newRecord(STREAM_NAME)
-            .recordType(RecordType.COMMAND)
-            .intent(intent)
-            .event(value)
-            .write();
-    }
-
-    public FluentLogWriter newRecord()
-    {
-        return streams.newRecord(STREAM_NAME);
-    }
-
-
-    public void truncateLog(long position)
-    {
-        streams.truncate(STREAM_NAME, position);
-    }
-
-    public BufferingServerOutput getOutput()
-    {
-        return output;
-    }
-
-    private class SetupRule extends ExternalResource
-    {
-
-        @Override
-        protected void before() throws Throwable
-        {
-            output = new BufferingServerOutput();
-
-            streams = new TestStreams(tempFolder.getRoot(), closeables, serviceContainerRule.get(), actorSchedulerRule.get());
-            streams.createLogStream(STREAM_NAME);
-
-            streams.newRecord(STREAM_NAME) // TODO: workaround for https://github.com/zeebe-io/zeebe/issues/478
-                .event(new UnpackedObject())
-                .write();
-
-            streamEnvironment = new TypedStreamEnvironment(streams.getLogStream(STREAM_NAME), output);
-        }
-    }
-
+  }
 }

@@ -15,7 +15,6 @@
  */
 package io.zeebe.msgpack;
 
-public interface Recyclable
-{
-    void reset();
+public interface Recyclable {
+  void reset();
 }

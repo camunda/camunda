@@ -15,45 +15,41 @@
  */
 package io.zeebe.logstreams.snapshot.benchmarks;
 
-import java.io.*;
-
 import io.zeebe.logstreams.snapshot.ComposedSnapshot;
+import java.io.*;
 import org.openjdk.jmh.annotations.*;
 
-
 @BenchmarkMode(Mode.SingleShotTime)
-public class ComposedMapSnapshotBenchmark
-{
-    @Benchmark
-    @Threads(1)
-    public long writeSnapshot(FilledMapSnapshotSupplier filledMapSnapshotSupplier) throws Exception
-    {
-        // given
-        final File tmpFile = filledMapSnapshotSupplier.tmpFile;
-        final FileOutputStream outputStream = new FileOutputStream(tmpFile);
-        final ComposedSnapshot composedZbMapSnapshot = filledMapSnapshotSupplier.composedZbMapSnapshot;
+public class ComposedMapSnapshotBenchmark {
+  @Benchmark
+  @Threads(1)
+  public long writeSnapshot(FilledMapSnapshotSupplier filledMapSnapshotSupplier) throws Exception {
+    // given
+    final File tmpFile = filledMapSnapshotSupplier.tmpFile;
+    final FileOutputStream outputStream = new FileOutputStream(tmpFile);
+    final ComposedSnapshot composedZbMapSnapshot = filledMapSnapshotSupplier.composedZbMapSnapshot;
 
-        // run
-        composedZbMapSnapshot.writeSnapshot(outputStream);
-        outputStream.flush();
+    // run
+    composedZbMapSnapshot.writeSnapshot(outputStream);
+    outputStream.flush();
 
-        // some bytes are written
-        return composedZbMapSnapshot.getProcessedBytes();
-    }
+    // some bytes are written
+    return composedZbMapSnapshot.getProcessedBytes();
+  }
 
-    @Benchmark
-    @Threads(1)
-    public long recoverSnapshot(WrittenMapSnapshotSupplier writtenMapSnapshotSupplier) throws Exception
-    {
-        // given
-        final File tmpFile = writtenMapSnapshotSupplier.tmpFile;
-        final FileInputStream outputStream = new FileInputStream(tmpFile);
-        final ComposedSnapshot composedZbMapSnapshot = writtenMapSnapshotSupplier.composedZbMapSnapshot;
+  @Benchmark
+  @Threads(1)
+  public long recoverSnapshot(WrittenMapSnapshotSupplier writtenMapSnapshotSupplier)
+      throws Exception {
+    // given
+    final File tmpFile = writtenMapSnapshotSupplier.tmpFile;
+    final FileInputStream outputStream = new FileInputStream(tmpFile);
+    final ComposedSnapshot composedZbMapSnapshot = writtenMapSnapshotSupplier.composedZbMapSnapshot;
 
-        // run
-        composedZbMapSnapshot.recoverFromSnapshot(outputStream);
+    // run
+    composedZbMapSnapshot.recoverFromSnapshot(outputStream);
 
-        // some bytes are read
-        return composedZbMapSnapshot.getProcessedBytes();
-    }
+    // some bytes are read
+    return composedZbMapSnapshot.getProcessedBytes();
+  }
 }

@@ -17,25 +17,21 @@
  */
 package io.zeebe.broker.event.handler;
 
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.zeebe.util.sched.future.CompletableActorFuture;
+public class FuturePool {
+  protected List<CompletableActorFuture<?>> futures = new ArrayList<>();
 
-public class FuturePool
-{
-    protected List<CompletableActorFuture<?>> futures = new ArrayList<>();
+  public <T> CompletableActorFuture<T> next() {
+    final CompletableActorFuture<T> future = new CompletableActorFuture<>();
+    futures.add(future);
+    return future;
+  }
 
-    public <T> CompletableActorFuture<T> next()
-    {
-        final CompletableActorFuture<T> future = new CompletableActorFuture<>();
-        futures.add(future);
-        return future;
-    }
-
-    @SuppressWarnings("unchecked")
-    public <T> CompletableActorFuture<T> at(int index)
-    {
-        return (CompletableActorFuture<T>) futures.get(index);
-    }
+  @SuppressWarnings("unchecked")
+  public <T> CompletableActorFuture<T> at(int index) {
+    return (CompletableActorFuture<T>) futures.get(index);
+  }
 }

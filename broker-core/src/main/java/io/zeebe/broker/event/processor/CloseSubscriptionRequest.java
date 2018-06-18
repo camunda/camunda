@@ -20,25 +20,20 @@ package io.zeebe.broker.event.processor;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.LongProperty;
 
-public class CloseSubscriptionRequest extends UnpackedObject
-{
+public class CloseSubscriptionRequest extends UnpackedObject {
 
-    protected LongProperty subscriberKeyProp = new LongProperty("subscriberKey");
+  protected LongProperty subscriberKeyProp = new LongProperty("subscriberKey");
 
-    public CloseSubscriptionRequest()
-    {
-        this.declareProperty(subscriberKeyProp);
-    }
+  public CloseSubscriptionRequest() {
+    this.declareProperty(subscriberKeyProp);
+  }
 
-    public long getSubscriberKey()
-    {
-        return subscriberKeyProp.getValue();
-    }
+  public long getSubscriberKey() {
+    return subscriberKeyProp.getValue();
+  }
 
-    public CloseSubscriptionRequest setSubscriberKey(long subscriberKey)
-    {
-        this.subscriberKeyProp.setValue(subscriberKey);
-        return this;
-    }
-
+  public CloseSubscriptionRequest setSubscriberKey(long subscriberKey) {
+    this.subscriberKeyProp.setValue(subscriberKey);
+    return this;
+  }
 }

@@ -30,95 +30,80 @@ import io.zeebe.msgpack.value.IntegerValue;
 import io.zeebe.msgpack.value.ValueArray;
 import org.agrona.DirectBuffer;
 
-public class TopicInfo extends UnpackedObject
-{
+public class TopicInfo extends UnpackedObject {
 
-    protected final StringProperty topicName = new StringProperty("topicName");
-    protected final IntegerProperty partitionCount = new IntegerProperty("partitionCount");
-    protected final IntegerProperty replicationFactor = new IntegerProperty("replicationFactor");
-    protected final LongProperty key = new LongProperty("key");
-    protected final ArrayProperty<IntegerValue> partitionIds = new ArrayProperty<>("partitionIds", new IntegerValue());
+  protected final StringProperty topicName = new StringProperty("topicName");
+  protected final IntegerProperty partitionCount = new IntegerProperty("partitionCount");
+  protected final IntegerProperty replicationFactor = new IntegerProperty("replicationFactor");
+  protected final LongProperty key = new LongProperty("key");
+  protected final ArrayProperty<IntegerValue> partitionIds =
+      new ArrayProperty<>("partitionIds", new IntegerValue());
 
-    public TopicInfo()
-    {
-        this.declareProperty(topicName)
-            .declareProperty(partitionCount)
-            .declareProperty(replicationFactor)
-            .declareProperty(key)
-            .declareProperty(partitionIds);
-    }
+  public TopicInfo() {
+    this.declareProperty(topicName)
+        .declareProperty(partitionCount)
+        .declareProperty(replicationFactor)
+        .declareProperty(key)
+        .declareProperty(partitionIds);
+  }
 
-    public String getTopicName()
-    {
-        return bufferAsString(getTopicNameBuffer());
-    }
+  public String getTopicName() {
+    return bufferAsString(getTopicNameBuffer());
+  }
 
-    public DirectBuffer getTopicNameBuffer()
-    {
-        return topicName.getValue();
-    }
+  public DirectBuffer getTopicNameBuffer() {
+    return topicName.getValue();
+  }
 
-    public TopicInfo setTopicName(final DirectBuffer topicName)
-    {
-        this.topicName.setValue(cloneBuffer(topicName));
-        return this;
-    }
+  public TopicInfo setTopicName(final DirectBuffer topicName) {
+    this.topicName.setValue(cloneBuffer(topicName));
+    return this;
+  }
 
-    public int getPartitionCount()
-    {
-        return partitionCount.getValue();
-    }
+  public int getPartitionCount() {
+    return partitionCount.getValue();
+  }
 
-    public TopicInfo setPartitionCount(final int partitionCount)
-    {
-        this.partitionCount.setValue(partitionCount);
-        return this;
-    }
+  public TopicInfo setPartitionCount(final int partitionCount) {
+    this.partitionCount.setValue(partitionCount);
+    return this;
+  }
 
-    public int getReplicationFactor()
-    {
-        return replicationFactor.getValue();
-    }
+  public int getReplicationFactor() {
+    return replicationFactor.getValue();
+  }
 
-    public TopicInfo setReplicationFactor(final int replicationFactor)
-    {
-        this.replicationFactor.setValue(replicationFactor);
-        return this;
-    }
+  public TopicInfo setReplicationFactor(final int replicationFactor) {
+    this.replicationFactor.setValue(replicationFactor);
+    return this;
+  }
 
-    public long getKey()
-    {
-        return key.getValue();
-    }
+  public long getKey() {
+    return key.getValue();
+  }
 
+  public TopicInfo setKey(final long key) {
+    this.key.setValue(key);
+    return this;
+  }
 
-    public TopicInfo setKey(final long key)
-    {
-        this.key.setValue(key);
-        return this;
-    }
+  public ValueArray<IntegerValue> getPartitionIds() {
+    return partitionIds;
+  }
 
-    public ValueArray<IntegerValue> getPartitionIds()
-    {
-        return partitionIds;
-    }
+  public void asTopicEvent(final TopicRecord topicEvent) {
+    topicEvent.reset();
+    topicEvent.setName(getTopicNameBuffer());
+    topicEvent.setPartitions(getPartitionCount());
+    topicEvent.setReplicationFactor(getReplicationFactor());
 
-    public void asTopicEvent(final TopicRecord topicEvent)
-    {
-        topicEvent.reset();
-        topicEvent.setName(getTopicNameBuffer());
-        topicEvent.setPartitions(getPartitionCount());
-        topicEvent.setReplicationFactor(getReplicationFactor());
+    final ValueArray<IntegerValue> eventPartitionIds = topicEvent.getPartitionIds();
+    getPartitionIds().forEach(id -> eventPartitionIds.add().setValue(id.getValue()));
+  }
 
-        final ValueArray<IntegerValue> eventPartitionIds = topicEvent.getPartitionIds();
-        getPartitionIds().forEach(id -> eventPartitionIds.add().setValue(id.getValue()));
-    }
-
-    public TopicRecord toTopicEvent()
-    {
-        final TopicRecord topicEvent = new TopicRecord();
-        asTopicEvent(topicEvent);
-        return topicEvent;
-    }
-
+  public TopicRecord toTopicEvent() {
+    final TopicRecord topicEvent = new TopicRecord();
+    asTopicEvent(topicEvent);
+    return topicEvent;
+  }
 }

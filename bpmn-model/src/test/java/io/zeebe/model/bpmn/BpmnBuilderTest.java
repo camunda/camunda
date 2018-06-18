@@ -15,110 +15,99 @@
  */
 package io.zeebe.model.bpmn;
 
-import io.zeebe.model.bpmn.instance.*;
-import org.junit.Test;
-
-import java.util.List;
-
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class BpmnBuilderTest
-{
+import io.zeebe.model.bpmn.instance.*;
+import java.util.List;
+import org.junit.Test;
 
-    @Test
-    public void shouldBuildSimpleWorkflow()
-    {
-        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("process")
-            .startEvent("start")
-            .endEvent("end")
-            .done();
+public class BpmnBuilderTest {
 
-        assertThat(workflowDefinition).isNotNull();
-        assertThat(workflowDefinition.getWorkflows()).hasSize(1);
+  @Test
+  public void shouldBuildSimpleWorkflow() {
+    final WorkflowDefinition workflowDefinition =
+        Bpmn.createExecutableWorkflow("process").startEvent("start").endEvent("end").done();
 
-        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
-        assertThat(workflow).isNotNull();
-        assertThat(workflow.getBpmnProcessId()).isEqualTo(wrapString("process"));
+    assertThat(workflowDefinition).isNotNull();
+    assertThat(workflowDefinition.getWorkflows()).hasSize(1);
 
-        final StartEvent initialStartEvent = workflow.getInitialStartEvent();
-        assertThat(initialStartEvent).isNotNull();
-        assertThat(initialStartEvent.getIdAsBuffer()).isEqualTo(wrapString("start"));
-        assertThat(initialStartEvent.getOutgoingSequenceFlows()).hasSize(1);
+    final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
+    assertThat(workflow).isNotNull();
+    assertThat(workflow.getBpmnProcessId()).isEqualTo(wrapString("process"));
 
-        final FlowNode targetElement = initialStartEvent.getOutgoingSequenceFlows().get(0).getTargetNode();
-        assertThat(targetElement).isNotNull();
-        assertThat(targetElement.getIdAsBuffer()).isEqualTo(wrapString("end"));
-    }
+    final StartEvent initialStartEvent = workflow.getInitialStartEvent();
+    assertThat(initialStartEvent).isNotNull();
+    assertThat(initialStartEvent.getIdAsBuffer()).isEqualTo(wrapString("start"));
+    assertThat(initialStartEvent.getOutgoingSequenceFlows()).hasSize(1);
 
-    @Test
-    public void shouldBuildWorkflowWithServiceTask()
-    {
-        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("process")
+    final FlowNode targetElement =
+        initialStartEvent.getOutgoingSequenceFlows().get(0).getTargetNode();
+    assertThat(targetElement).isNotNull();
+    assertThat(targetElement.getIdAsBuffer()).isEqualTo(wrapString("end"));
+  }
+
+  @Test
+  public void shouldBuildWorkflowWithServiceTask() {
+    final WorkflowDefinition workflowDefinition =
+        Bpmn.createExecutableWorkflow("process")
             .startEvent()
             .sequenceFlow()
             .serviceTask("task")
-                .taskType("foo")
-                .taskRetries(3)
-                .taskHeader("foo", "f")
-                .taskHeader("bar", "b")
-                .outputBehavior(OutputBehavior.OVERWRITE)
-                .input("$.a", "$.b")
-                .output("$.c", "$.d")
-                .done()
+            .taskType("foo")
+            .taskRetries(3)
+            .taskHeader("foo", "f")
+            .taskHeader("bar", "b")
+            .outputBehavior(OutputBehavior.OVERWRITE)
+            .input("$.a", "$.b")
+            .output("$.c", "$.d")
+            .done()
             .sequenceFlow()
             .endEvent()
             .done();
-        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
+    final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
 
-        final ServiceTask serviceTask = workflow.findFlowElementById(wrapString("task"));
-        final TaskDefinition taskDefinition = serviceTask.getTaskDefinition();
-        assertThat(taskDefinition).isNotNull();
-        assertThat(taskDefinition.getTypeAsBuffer()).isEqualTo(wrapString("foo"));
-        assertThat(taskDefinition.getRetries()).isEqualTo(3);
+    final ServiceTask serviceTask = workflow.findFlowElementById(wrapString("task"));
+    final TaskDefinition taskDefinition = serviceTask.getTaskDefinition();
+    assertThat(taskDefinition).isNotNull();
+    assertThat(taskDefinition.getTypeAsBuffer()).isEqualTo(wrapString("foo"));
+    assertThat(taskDefinition.getRetries()).isEqualTo(3);
 
-        final TaskHeaders taskHeaders = serviceTask.getTaskHeaders();
-        assertThat(taskHeaders).isNotNull();
-        assertThat(taskHeaders.asMap())
-            .hasSize(2)
-            .containsEntry("foo", "f")
-            .containsEntry("bar", "b");
+    final TaskHeaders taskHeaders = serviceTask.getTaskHeaders();
+    assertThat(taskHeaders).isNotNull();
+    assertThat(taskHeaders.asMap()).hasSize(2).containsEntry("foo", "f").containsEntry("bar", "b");
 
-        final InputOutputMapping inputOutputMapping = serviceTask.getInputOutputMapping();
-        assertThat(inputOutputMapping).isNotNull();
+    final InputOutputMapping inputOutputMapping = serviceTask.getInputOutputMapping();
+    assertThat(inputOutputMapping).isNotNull();
 
-        assertThat(inputOutputMapping.getOutputBehavior()).isEqualTo(OutputBehavior.OVERWRITE);
-        assertThat(inputOutputMapping.getInputMappingsAsMap())
-            .hasSize(1)
-            .containsEntry("$.a", "$.b");
+    assertThat(inputOutputMapping.getOutputBehavior()).isEqualTo(OutputBehavior.OVERWRITE);
+    assertThat(inputOutputMapping.getInputMappingsAsMap()).hasSize(1).containsEntry("$.a", "$.b");
 
-        assertThat(inputOutputMapping.getOutputMappingsAsMap())
-            .hasSize(1)
-            .containsEntry("$.c", "$.d");
-    }
+    assertThat(inputOutputMapping.getOutputMappingsAsMap()).hasSize(1).containsEntry("$.c", "$.d");
+  }
 
-    @Test
-    public void shouldBuildWorkflowWithServiceTaskClosureStyle()
-    {
-        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("process")
+  @Test
+  public void shouldBuildWorkflowWithServiceTaskClosureStyle() {
+    final WorkflowDefinition workflowDefinition =
+        Bpmn.createExecutableWorkflow("process")
             .startEvent()
             .serviceTask("task", s -> s.taskType("foo").taskRetries(3))
             .endEvent()
             .done();
 
-        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
+    final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
 
-        final ServiceTask serviceTask = workflow.findFlowElementById(wrapString("task"));
-        final TaskDefinition taskDefinition = serviceTask.getTaskDefinition();
-        assertThat(taskDefinition).isNotNull();
-        assertThat(taskDefinition.getTypeAsBuffer()).isEqualTo(wrapString("foo"));
-        assertThat(taskDefinition.getRetries()).isEqualTo(3);
-    }
+    final ServiceTask serviceTask = workflow.findFlowElementById(wrapString("task"));
+    final TaskDefinition taskDefinition = serviceTask.getTaskDefinition();
+    assertThat(taskDefinition).isNotNull();
+    assertThat(taskDefinition.getTypeAsBuffer()).isEqualTo(wrapString("foo"));
+    assertThat(taskDefinition.getRetries()).isEqualTo(3);
+  }
 
-    @Test
-    public void shouldBuildWorkflowWithMultipleServiceTasks()
-    {
-        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("process")
+  @Test
+  public void shouldBuildWorkflowWithMultipleServiceTasks() {
+    final WorkflowDefinition workflowDefinition =
+        Bpmn.createExecutableWorkflow("process")
             .startEvent()
             .serviceTask("task1", s -> s.taskType("a"))
             .serviceTask("task2", s -> s.taskType("b"))
@@ -126,120 +115,120 @@ public class BpmnBuilderTest
             .endEvent()
             .done();
 
-        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
+    final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
 
-        assertThat(workflow.getFlowElementMap())
-            .containsKey(wrapString("task1"))
-            .containsKey(wrapString("task2"))
-            .containsKey(wrapString("task3"));
-    }
+    assertThat(workflow.getFlowElementMap())
+        .containsKey(wrapString("task1"))
+        .containsKey(wrapString("task2"))
+        .containsKey(wrapString("task3"));
+  }
 
-    @Test
-    public void shouldBuildWorkflowWithExclusiveGateway()
-    {
-        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("process")
-                .startEvent()
-                .exclusiveGateway("xor")
-                .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
-                    .endEvent("a")
-                .sequenceFlow("s2", s -> s.condition("$.foo >= 5 && $.foo < 10"))
-                    .endEvent("b")
-                .sequenceFlow("s3", s -> s.defaultFlow())
-                    .endEvent("c")
-                .done();
+  @Test
+  public void shouldBuildWorkflowWithExclusiveGateway() {
+    final WorkflowDefinition workflowDefinition =
+        Bpmn.createExecutableWorkflow("process")
+            .startEvent()
+            .exclusiveGateway("xor")
+            .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
+            .endEvent("a")
+            .sequenceFlow("s2", s -> s.condition("$.foo >= 5 && $.foo < 10"))
+            .endEvent("b")
+            .sequenceFlow("s3", s -> s.defaultFlow())
+            .endEvent("c")
+            .done();
 
-        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
+    final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
 
-        final ExclusiveGateway exclusiveGateway = workflow.findFlowElementById(wrapString("xor"));
-        assertThat(exclusiveGateway).isNotNull();
+    final ExclusiveGateway exclusiveGateway = workflow.findFlowElementById(wrapString("xor"));
+    assertThat(exclusiveGateway).isNotNull();
 
-        final SequenceFlow defaultOutgoingSequenceFlow = exclusiveGateway.getDefaultFlow();
-        assertThat(defaultOutgoingSequenceFlow).isNotNull();
-        assertThat(defaultOutgoingSequenceFlow.hasCondition()).isFalse();
+    final SequenceFlow defaultOutgoingSequenceFlow = exclusiveGateway.getDefaultFlow();
+    assertThat(defaultOutgoingSequenceFlow).isNotNull();
+    assertThat(defaultOutgoingSequenceFlow.hasCondition()).isFalse();
 
-        final List<SequenceFlow> outgoingSequenceFlowsWithConditions = exclusiveGateway.getOutgoingSequenceFlowsWithConditions();
-        assertThat(outgoingSequenceFlowsWithConditions).hasSize(2);
-        assertThat(outgoingSequenceFlowsWithConditions).allMatch(SequenceFlow::hasCondition);
-        assertThat(outgoingSequenceFlowsWithConditions)
-            .extracting(s -> s.getCondition().getExpression())
-            .containsExactly("$.foo < 5", "$.foo >= 5 && $.foo < 10");
-    }
+    final List<SequenceFlow> outgoingSequenceFlowsWithConditions =
+        exclusiveGateway.getOutgoingSequenceFlowsWithConditions();
+    assertThat(outgoingSequenceFlowsWithConditions).hasSize(2);
+    assertThat(outgoingSequenceFlowsWithConditions).allMatch(SequenceFlow::hasCondition);
+    assertThat(outgoingSequenceFlowsWithConditions)
+        .extracting(s -> s.getCondition().getExpression())
+        .containsExactly("$.foo < 5", "$.foo >= 5 && $.foo < 10");
+  }
 
-    @Test
-    public void shouldBuildWorkflowWithJoiningExclusiveGateway()
-    {
-        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("process")
-                .startEvent()
-                .exclusiveGateway("split")
-                .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
-                    .exclusiveGateway("join")
-                    .continueAt("split")
-                .sequenceFlow("s2", s -> s.defaultFlow())
-                    .joinWith("join")
-                .endEvent("end")
-                .done();
+  @Test
+  public void shouldBuildWorkflowWithJoiningExclusiveGateway() {
+    final WorkflowDefinition workflowDefinition =
+        Bpmn.createExecutableWorkflow("process")
+            .startEvent()
+            .exclusiveGateway("split")
+            .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
+            .exclusiveGateway("join")
+            .continueAt("split")
+            .sequenceFlow("s2", s -> s.defaultFlow())
+            .joinWith("join")
+            .endEvent("end")
+            .done();
 
-        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
+    final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
 
-        final ExclusiveGateway exclusiveGateway = workflow.findFlowElementById(wrapString("join"));
-        assertThat(exclusiveGateway).isNotNull();
+    final ExclusiveGateway exclusiveGateway = workflow.findFlowElementById(wrapString("join"));
+    assertThat(exclusiveGateway).isNotNull();
 
-        final List<SequenceFlow> incomingSequenceFlows = exclusiveGateway.getIncomingSequenceFlows();
-        assertThat(incomingSequenceFlows).hasSize(2);
-        assertThat(incomingSequenceFlows.get(0).getIdAsBuffer()).isEqualTo(wrapString("s1"));
-        assertThat(incomingSequenceFlows.get(1).getIdAsBuffer()).isEqualTo(wrapString("s2"));
-    }
+    final List<SequenceFlow> incomingSequenceFlows = exclusiveGateway.getIncomingSequenceFlows();
+    assertThat(incomingSequenceFlows).hasSize(2);
+    assertThat(incomingSequenceFlows.get(0).getIdAsBuffer()).isEqualTo(wrapString("s1"));
+    assertThat(incomingSequenceFlows.get(1).getIdAsBuffer()).isEqualTo(wrapString("s2"));
+  }
 
-    @Test
-    public void shouldConvertWorkflowToString()
-    {
-        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("process")
+  @Test
+  public void shouldConvertWorkflowToString() {
+    final WorkflowDefinition workflowDefinition =
+        Bpmn.createExecutableWorkflow("process")
             .startEvent("start")
             .sequenceFlow("s1")
             .serviceTask("task")
-                .taskType("foo")
-                .taskRetries(3)
-                .taskHeader("foo", "f")
-                .taskHeader("bar", "b")
-                .input("$.a", "$.b")
-                .output("$.c", "$.d")
-                .done()
+            .taskType("foo")
+            .taskRetries(3)
+            .taskHeader("foo", "f")
+            .taskHeader("bar", "b")
+            .input("$.a", "$.b")
+            .output("$.c", "$.d")
+            .done()
             .sequenceFlow("s2")
             .endEvent("end2")
             .done();
 
-        final String workflowAsString = Bpmn.convertToString(workflowDefinition);
+    final String workflowAsString = Bpmn.convertToString(workflowDefinition);
 
-        Bpmn.readFromXmlString(workflowAsString);
+    Bpmn.readFromXmlString(workflowAsString);
 
-        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
-        final ServiceTask serviceTask = workflow.findFlowElementById(wrapString("task"));
-        final TaskDefinition taskDefinition = serviceTask.getTaskDefinition();
-        assertThat(taskDefinition).isNotNull();
-        assertThat(taskDefinition.getTypeAsBuffer()).isEqualTo(wrapString("foo"));
-    }
+    final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
+    final ServiceTask serviceTask = workflow.findFlowElementById(wrapString("task"));
+    final TaskDefinition taskDefinition = serviceTask.getTaskDefinition();
+    assertThat(taskDefinition).isNotNull();
+    assertThat(taskDefinition.getTypeAsBuffer()).isEqualTo(wrapString("foo"));
+  }
 
-    @Test
-    public void shouldUseDefaultOutputBehavior()
-    {
-        // given
+  @Test
+  public void shouldUseDefaultOutputBehavior() {
+    // given
 
-        // when
-        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("process")
+    // when
+    final WorkflowDefinition workflowDefinition =
+        Bpmn.createExecutableWorkflow("process")
             .startEvent("start")
             .serviceTask("task")
-                .taskType("foo")
+            .taskType("foo")
             .done()
             .endEvent("end2")
             .done();
 
-        // then
-        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
+    // then
+    final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
 
-        final ServiceTask serviceTask = workflow.findFlowElementById(wrapString("task"));
-        final InputOutputMapping inputOutputMapping = serviceTask.getInputOutputMapping();
-        assertThat(inputOutputMapping).isNotNull();
-        assertThat(inputOutputMapping.getOutputBehavior()).isEqualTo(OutputBehavior.MERGE);
-    }
-
+    final ServiceTask serviceTask = workflow.findFlowElementById(wrapString("task"));
+    final InputOutputMapping inputOutputMapping = serviceTask.getInputOutputMapping();
+    assertThat(inputOutputMapping).isNotNull();
+    assertThat(inputOutputMapping.getOutputBehavior()).isEqualTo(OutputBehavior.MERGE);
+  }
 }

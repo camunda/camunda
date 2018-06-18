@@ -15,113 +15,94 @@
  */
 package io.zeebe.gossip.dissemination;
 
-import java.util.Iterator;
-
 import io.zeebe.clustering.gossip.MembershipEventType;
 import io.zeebe.gossip.membership.*;
 import io.zeebe.gossip.protocol.*;
 import io.zeebe.transport.SocketAddress;
+import java.util.Iterator;
 
-public class MembershipListEventSupplier implements MembershipEventSupplier
-{
-    private final MembershipList membershipList;
-    private final MembershipEventIterator iterator;
+public class MembershipListEventSupplier implements MembershipEventSupplier {
+  private final MembershipList membershipList;
+  private final MembershipEventIterator iterator;
 
-    public MembershipListEventSupplier(MembershipList membershipList)
-    {
-        this.membershipList = membershipList;
-        this.iterator = new MembershipEventIterator(membershipList);
+  public MembershipListEventSupplier(MembershipList membershipList) {
+    this.membershipList = membershipList;
+    this.iterator = new MembershipEventIterator(membershipList);
+  }
+
+  @Override
+  public int membershipEventSize() {
+    return 1 + membershipList.size();
+  }
+
+  @Override
+  public Iterator<MembershipEvent> membershipEventViewIterator(int max) {
+    iterator.reset();
+
+    return iterator;
+  }
+
+  @Override
+  public Iterator<MembershipEvent> membershipEventDrainIterator(int max) {
+    return membershipEventViewIterator(max);
+  }
+
+  private class MembershipEventIterator implements Iterator<MembershipEvent> {
+    private final MembershipEvent membershipEvent = new MembershipEvent();
+
+    private final Member self;
+
+    private Iterator<Member> iterator;
+    private int index = 0;
+
+    MembershipEventIterator(MembershipList membershipList) {
+      this.self = membershipList.self();
+    }
+
+    public void reset() {
+      iterator = membershipList.iterator();
+      index = 0;
     }
 
     @Override
-    public int membershipEventSize()
-    {
-        return 1 + membershipList.size();
+    public boolean hasNext() {
+      return index == 0 || iterator.hasNext();
     }
 
     @Override
-    public Iterator<MembershipEvent> membershipEventViewIterator(int max)
-    {
-        iterator.reset();
+    public MembershipEvent next() {
+      Member member = null;
+      if (index == 0) {
+        member = self;
+      } else {
+        member = iterator.next();
+      }
 
-        return iterator;
+      final MembershipEventType eventType = resolveType(member.getStatus());
+      if (eventType != null) {
+        membershipEvent.type(eventType);
+
+        final GossipTerm gossipTerm = member.getTerm();
+        membershipEvent.getGossipTerm().wrap(gossipTerm);
+
+        final SocketAddress address = member.getAddress();
+        membershipEvent.getAddress().wrap(address);
+      }
+
+      index += 1;
+
+      return membershipEvent;
     }
 
-    @Override
-    public Iterator<MembershipEvent> membershipEventDrainIterator(int max)
-    {
-        return membershipEventViewIterator(max);
+    private MembershipEventType resolveType(MembershipStatus status) {
+      switch (status) {
+        case SUSPECT:
+          return MembershipEventType.SUSPECT;
+        case ALIVE:
+          return MembershipEventType.ALIVE;
+        default:
+          return null;
+      }
     }
-
-    private class MembershipEventIterator implements Iterator<MembershipEvent>
-    {
-        private final MembershipEvent membershipEvent = new MembershipEvent();
-
-        private final Member self;
-
-        private Iterator<Member> iterator;
-        private int index = 0;
-
-        MembershipEventIterator(MembershipList membershipList)
-        {
-            this.self = membershipList.self();
-        }
-
-        public void reset()
-        {
-            iterator = membershipList.iterator();
-            index = 0;
-        }
-
-        @Override
-        public boolean hasNext()
-        {
-            return index == 0 || iterator.hasNext();
-        }
-
-        @Override
-        public MembershipEvent next()
-        {
-            Member member = null;
-            if (index == 0)
-            {
-                member = self;
-            }
-            else
-            {
-                member = iterator.next();
-            }
-
-            final MembershipEventType eventType = resolveType(member.getStatus());
-            if (eventType != null)
-            {
-                membershipEvent.type(eventType);
-
-                final GossipTerm gossipTerm = member.getTerm();
-                membershipEvent.getGossipTerm().wrap(gossipTerm);
-
-                final SocketAddress address = member.getAddress();
-                membershipEvent.getAddress().wrap(address);
-            }
-
-            index += 1;
-
-            return membershipEvent;
-        }
-
-        private MembershipEventType resolveType(MembershipStatus status)
-        {
-            switch (status)
-            {
-                case SUSPECT:
-                    return MembershipEventType.SUSPECT;
-                case ALIVE:
-                    return MembershipEventType.ALIVE;
-                default:
-                    return null;
-            }
-        }
-
-    }
-
+  }
 }

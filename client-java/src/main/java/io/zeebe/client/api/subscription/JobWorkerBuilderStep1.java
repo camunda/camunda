@@ -15,144 +15,126 @@
  */
 package io.zeebe.client.api.subscription;
 
+import io.zeebe.client.ZeebeClientConfiguration;
 import java.time.Duration;
 
-import io.zeebe.client.ZeebeClientConfiguration;
+public interface JobWorkerBuilderStep1 {
+  /**
+   * Set the type of jobs to work on.
+   *
+   * @param type the type of jobs (e.g. "payment")
+   * @return the builder for this subscription
+   */
+  JobWorkerBuilderStep2 jobType(String type);
 
-public interface JobWorkerBuilderStep1
-{
+  interface JobWorkerBuilderStep2 {
     /**
-     * Set the type of jobs to work on.
+     * Set the handler to process the jobs. At the end of the processing, the handler should
+     * complete the job or mark it as failed;
      *
-     * @param type
-     *            the type of jobs (e.g. "payment")
+     * <p>Example JobHandler implementation:
      *
+     * <pre>
+     * public class PaymentHandler implements JobHandler
+     * {
+     *   &#64;Override
+     *   public void handle(JobClient client, JobEvent jobEvent)
+     *   {
+     *     String json = jobEvent.getPayload();
+     *     // modify payload
+     *
+     *     client
+     *      .newCompleteCommand()
+     *      .event(jobEvent)
+     *      .payload(json)
+     *      .send();
+     *   }
+     * };
+     * </pre>
+     *
+     * The handler must be be thread-safe.
+     *
+     * @param handler the handle to process the jobs
      * @return the builder for this subscription
      */
-    JobWorkerBuilderStep2 jobType(String type);
+    JobWorkerBuilderStep3 handler(JobHandler handler);
+  }
 
-    interface JobWorkerBuilderStep2
-    {
-        /**
-         * Set the handler to process the jobs. At the end of the processing,
-         * the handler should complete the job or mark it as failed;
-         * <p>
-         * Example JobHandler implementation:
-         * <pre>
-         * public class PaymentHandler implements JobHandler
-         * {
-         *   &#64;Override
-         *   public void handle(JobClient client, JobEvent jobEvent)
-         *   {
-         *     String json = jobEvent.getPayload();
-         *     // modify payload
-         *
-         *     client
-         *      .newCompleteCommand()
-         *      .event(jobEvent)
-         *      .payload(json)
-         *      .send();
-         *   }
-         * };
-         * </pre>
-         *
-         * The handler must be be thread-safe.
-         *
-         * @param handler
-         *            the handle to process the jobs
-         *
-         * @return the builder for this subscription
-         */
-        JobWorkerBuilderStep3 handler(JobHandler handler);
-    }
+  interface JobWorkerBuilderStep3 {
+    /**
+     * Set the time for how long a job is exclusively assigned for this subscription.
+     *
+     * <p>In this time, the job can not be assigned by other subscriptions to ensure that only one
+     * subscription work on the job. When the time is over then the job can be assigned again by
+     * this or other subscription if it's not completed yet.
+     *
+     * <p>If no timeout is set, then the default is used from the configuration.
+     *
+     * @param timeout the time in milliseconds
+     * @return the builder for this subscription
+     */
+    JobWorkerBuilderStep3 timeout(long timeout);
 
-    interface JobWorkerBuilderStep3
-    {
-        /**
-         * Set the time for how long a job is exclusively assigned for this
-         * subscription.
-         * <p>
-         * In this time, the job can not be assigned by other subscriptions to
-         * ensure that only one subscription work on the job. When the time is
-         * over then the job can be assigned again by this or other subscription
-         * if it's not completed yet.
-         * <p>
-         * If no timeout is set, then the default is used from the configuration.
-         *
-         * @param timeout
-         *            the time in milliseconds
-         *
-         * @return the builder for this subscription
-         */
-        JobWorkerBuilderStep3 timeout(long timeout);
+    /**
+     * Set the time for how long a job is exclusively assigned for this subscription.
+     *
+     * <p>In this time, the job can not be assigned by other subscriptions to ensure that only one
+     * subscription work on the job. When the time is over then the job can be assigned again by
+     * this or other subscription if it's not completed yet.
+     *
+     * <p>If no time is set then the default is used from the configuration.
+     *
+     * @param timeout the time as duration (e.g. "Duration.ofMinutes(5)")
+     * @return the builder for this subscription
+     */
+    JobWorkerBuilderStep3 timeout(Duration timeout);
 
-        /**
-         * Set the time for how long a job is exclusively assigned for this
-         * subscription.
-         * <p>
-         * In this time, the job can not be assigned by other subscriptions to
-         * ensure that only one subscription work on the job. When the time is
-         * over then the job can be assigned again by this or other subscription
-         * if it's not completed yet.
-         * <p>
-         * If no time is set then the default is used from the configuration.
-         *
-         * @param timeout
-         *            the time as duration (e.g. "Duration.ofMinutes(5)")
-         *
-         * @return the builder for this subscription
-         */
-        JobWorkerBuilderStep3 timeout(Duration timeout);
+    /**
+     * Set the name of the subscription owner.
+     *
+     * <p>This name is used to identify the worker to which a job is exclusively assigned to.
+     *
+     * <p>If no name is set then the default is used from the configuration.
+     *
+     * @param workerName the name of the worker (e.g. "payment-service")
+     * @return the builder for this subscription
+     */
+    JobWorkerBuilderStep3 name(String workerName);
 
-        /**
-         * Set the name of the subscription owner.
-         * <p>
-         * This name is used to identify the worker to which a job is exclusively assigned to.
-         * <p>
-         * If no name is set then the default is used from the configuration.
-         *
-         * @param workerName the name of the worker (e.g. "payment-service")
-         *
-         * @return the builder for this subscription
-         */
-        JobWorkerBuilderStep3 name(String workerName);
+    /**
+     * Set the maximum number of jobs which will be exclusively assigned to this subscription at the
+     * same time.
+     *
+     * <p>This is used to control the backpressure of the subscription. When the number of assigned
+     * jobs is reached then the broker will stop assigning new jobs to the subscription in order to
+     * to not overwhelm the client and give other subscriptions the chance to work on the jobs. The
+     * broker will assign new jobs again when jobs are completed (or marked as failed) which were
+     * assigned to the subscription.
+     *
+     * <p>If no buffer size is set then the default is used from the {@link
+     * ZeebeClientConfiguration}.
+     *
+     * <p>Considerations:
+     *
+     * <ul>
+     *   <li>A greater value can avoid situations in which the client waits idle for the broker to
+     *       provide more jobs. This can improve the subscription's throughput.
+     *   <li>The memory used by the subscription is linear with respect to this value.
+     *   <li>The job's timeout starts to run down as soon as the broker pushes the job. Keep in mind
+     *       that the following must hold to ensure fluent job handling: <code>
+     *       time spent in buffer + time job handler needs until job completion < job timeout</code>
+     *       .
+     *
+     * @param numberOfJobs the number of assigned jobs
+     * @return the builder for this subscription
+     */
+    JobWorkerBuilderStep3 bufferSize(int numberOfJobs);
 
-        /**
-         * Set the maximum number of jobs which will be exclusively assigned to
-         * this subscription at the same time.
-         * <p>
-         * This is used to control the backpressure of the subscription. When
-         * the number of assigned jobs is reached then the broker will stop assigning
-         * new jobs to the subscription in order to to not overwhelm the client and give
-         * other subscriptions the chance to work on the jobs. The broker will
-         * assign new jobs again when jobs are completed (or marked as failed) which
-         * were assigned to the subscription.
-         * <p>
-         * If no buffer size is set then the default is used from the {@link ZeebeClientConfiguration}.
-         *
-         * <p>
-         * Considerations:
-         * <ul>
-         * <li>A greater value can avoid situations in which the client waits idle for the broker to
-         * provide more jobs. This can improve the subscription's throughput.
-         * <li>The memory used by the subscription is linear with respect to this value.
-         * <li>The job's timeout starts to run down as soon as the broker pushes the job.
-         * Keep in mind that the following must hold to ensure fluent job handling:
-         * <code>time spent in buffer + time job handler needs until job completion < job timeout</code>.
-         *
-         * @param numberOfJobs
-         *            the number of assigned jobs
-         *
-         * @return the builder for this subscription
-         */
-        JobWorkerBuilderStep3 bufferSize(int numberOfJobs);
-
-        /**
-         * Open the subscription and start to work on available tasks.
-         *
-         * @return the subscription
-         */
-        JobWorker open();
-    }
-
+    /**
+     * Open the subscription and start to work on available tasks.
+     *
+     * @return the subscription
+     */
+    JobWorker open();
+  }
 }

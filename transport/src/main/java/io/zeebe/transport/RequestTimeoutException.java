@@ -15,14 +15,11 @@
  */
 package io.zeebe.transport;
 
-public class RequestTimeoutException extends TransportException
-{
+public class RequestTimeoutException extends TransportException {
 
-    public RequestTimeoutException(String message)
-    {
-        super(message);
-    }
+  public RequestTimeoutException(String message) {
+    super(message);
+  }
 
-    private static final long serialVersionUID = 1L;
-
+  private static final long serialVersionUID = 1L;
 }

@@ -15,10 +15,8 @@
  */
 package io.zeebe.servicecontainer;
 
-public class ServiceInterruptedException extends RuntimeException
-{
-    public ServiceInterruptedException(String message)
-    {
-        super(message);
-    }
+public class ServiceInterruptedException extends RuntimeException {
+  public ServiceInterruptedException(String message) {
+    super(message);
+  }
 }

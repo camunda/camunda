@@ -15,26 +15,21 @@
  */
 package io.zeebe.util.sched;
 
-/**
- * Default Actor Priority Classes
- */
-public enum ActorPriority
-{
-    HIGH(0),
+/** Default Actor Priority Classes */
+public enum ActorPriority {
+  HIGH(0),
 
-    REGULAR(1),
+  REGULAR(1),
 
-    LOW(2);
+  LOW(2);
 
-    private short priorityClass;
+  private short priorityClass;
 
-    ActorPriority(int priorityClass)
-    {
-        this.priorityClass = (short) priorityClass;
-    }
+  ActorPriority(int priorityClass) {
+    this.priorityClass = (short) priorityClass;
+  }
 
-    public short getPriorityClass()
-    {
-        return priorityClass;
-    }
+  public short getPriorityClass() {
+    return priorityClass;
+  }
 }

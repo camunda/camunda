@@ -17,82 +17,65 @@ package io.zeebe.map;
 
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
-import java.util.Iterator;
-
-import org.agrona.DirectBuffer;
-
 import io.zeebe.map.iterator.Long2BytesZbMapEntry;
 import io.zeebe.map.types.ByteArrayValueHandler;
 import io.zeebe.map.types.LongKeyHandler;
+import java.util.Iterator;
+import org.agrona.DirectBuffer;
 
 /**
- * {@link ZbMap} that maps Long keys to Byte Array values. All values have a
- * max size which is defined on creation.
+ * {@link ZbMap} that maps Long keys to Byte Array values. All values have a max size which is
+ * defined on creation.
  */
-public class Long2BytesZbMap extends ZbMap<LongKeyHandler, ByteArrayValueHandler> implements Iterable<Long2BytesZbMapEntry>
-{
-    private ZbMapIterator<LongKeyHandler, ByteArrayValueHandler, Long2BytesZbMapEntry> iterator;
+public class Long2BytesZbMap extends ZbMap<LongKeyHandler, ByteArrayValueHandler>
+    implements Iterable<Long2BytesZbMapEntry> {
+  private ZbMapIterator<LongKeyHandler, ByteArrayValueHandler, Long2BytesZbMapEntry> iterator;
 
-    public Long2BytesZbMap(int valueMaxLength)
-    {
-        super(SIZE_OF_LONG, valueMaxLength);
+  public Long2BytesZbMap(int valueMaxLength) {
+    super(SIZE_OF_LONG, valueMaxLength);
+  }
+
+  public Long2BytesZbMap(int tableSize, int blocksPerBucket, int valueMaxLength) {
+    super(tableSize, blocksPerBucket, SIZE_OF_LONG, valueMaxLength);
+  }
+
+  /**
+   * Returns a view on the map value, i.e. direct modification should be avoided. This view may
+   * become invalid with the very next interaction with the map. For values shorter than
+   * valueMaxLength, the returned buffer contains padding 0s.
+   */
+  public DirectBuffer get(long key) {
+    keyHandler.theKey = key;
+    if (get()) {
+      return valueHandler.getValue();
+    } else {
+      return null;
+    }
+  }
+
+  public boolean put(long key, DirectBuffer buffer) {
+    keyHandler.theKey = key;
+    valueHandler.setValue(buffer, 0, buffer.capacity());
+    return put();
+  }
+
+  public DirectBuffer remove(long key) {
+    keyHandler.theKey = key;
+    if (remove()) {
+      return valueHandler.getValue();
+    } else {
+      return null;
+    }
+  }
+
+  @Override
+  public Iterator<Long2BytesZbMapEntry> iterator() {
+    if (iterator == null) {
+      iterator = new ZbMapIterator<>(this, new Long2BytesZbMapEntry());
+    } else {
+      iterator.reset();
     }
 
-    public Long2BytesZbMap(int tableSize, int blocksPerBucket, int valueMaxLength)
-    {
-        super(tableSize, blocksPerBucket, SIZE_OF_LONG, valueMaxLength);
-    }
-
-    /**
-     * Returns a view on the map value, i.e. direct modification should be avoided.
-     * This view may become invalid with the very next interaction with the map.
-     * For values shorter than valueMaxLength, the returned buffer contains padding 0s.
-     */
-    public DirectBuffer get(long key)
-    {
-        keyHandler.theKey = key;
-        if (get())
-        {
-            return valueHandler.getValue();
-        }
-        else
-        {
-            return null;
-        }
-    }
-
-    public boolean put(long key, DirectBuffer buffer)
-    {
-        keyHandler.theKey = key;
-        valueHandler.setValue(buffer, 0, buffer.capacity());
-        return put();
-    }
-
-    public DirectBuffer remove(long key)
-    {
-        keyHandler.theKey = key;
-        if (remove())
-        {
-            return valueHandler.getValue();
-        }
-        else
-        {
-            return null;
-        }
-    }
-
-    @Override
-    public Iterator<Long2BytesZbMapEntry> iterator()
-    {
-        if (iterator == null)
-        {
-            iterator = new ZbMapIterator<>(this, new Long2BytesZbMapEntry());
-        }
-        else
-        {
-            iterator.reset();
-        }
-
-        return iterator;
-    }
+    return iterator;
+  }
 }

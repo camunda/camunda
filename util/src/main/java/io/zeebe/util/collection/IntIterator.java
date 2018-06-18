@@ -17,10 +17,7 @@ package io.zeebe.util.collection;
 
 import java.util.Iterator;
 
-public interface IntIterator extends Iterator<Integer>
-{
-    /**
-     * Use this to avoid auto-boxing
-     */
-    int nextInt();
+public interface IntIterator extends Iterator<Integer> {
+  /** Use this to avoid auto-boxing */
+  int nextInt();
 }

@@ -15,92 +15,69 @@
  */
 package io.zeebe.test;
 
+import io.zeebe.broker.Broker;
+import io.zeebe.util.FileUtil;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.function.Supplier;
-
-import io.zeebe.broker.Broker;
-import io.zeebe.util.FileUtil;
 import org.assertj.core.util.Files;
 import org.junit.rules.ExternalResource;
 
-public class EmbeddedBrokerRule extends ExternalResource
-{
-    public static final Supplier<InputStream> DEFAULT_CONFIG_SUPPLIER = () -> EmbeddedBrokerRule.class.getResourceAsStream("/zeebe.default.cfg.toml");
-    private Broker broker;
-    private Supplier<InputStream> configSupplier;
-    private File brokerBase;
+public class EmbeddedBrokerRule extends ExternalResource {
+  public static final Supplier<InputStream> DEFAULT_CONFIG_SUPPLIER =
+      () -> EmbeddedBrokerRule.class.getResourceAsStream("/zeebe.default.cfg.toml");
+  private Broker broker;
+  private Supplier<InputStream> configSupplier;
+  private File brokerBase;
 
-    public EmbeddedBrokerRule()
-    {
-        this(DEFAULT_CONFIG_SUPPLIER);
+  public EmbeddedBrokerRule() {
+    this(DEFAULT_CONFIG_SUPPLIER);
+  }
+
+  public EmbeddedBrokerRule(final Supplier<InputStream> configSupplier) {
+    this.configSupplier = configSupplier;
+  }
+
+  @Override
+  protected void before() {
+    startBroker();
+  }
+
+  @Override
+  protected void after() {
+    try {
+      broker.close();
+    } catch (final Exception e) {
+      throw new IllegalStateException(e);
+    } finally {
+      try {
+        FileUtil.deleteFolder(brokerBase.getAbsolutePath());
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
     }
 
-    public EmbeddedBrokerRule(final Supplier<InputStream> configSupplier)
-    {
-        this.configSupplier = configSupplier;
+    broker = null;
+    System.gc();
+  }
+
+  public void startBroker() {
+    try (InputStream configStream = configSupplier.get()) {
+      if (brokerBase == null) {
+        brokerBase = Files.newTemporaryFolder();
+      }
+
+      broker = new Broker(configStream, brokerBase.getAbsolutePath(), null);
+    } catch (final IOException e) {
+      throw new RuntimeException("Unable to read configuration", e);
     }
 
-
-    @Override
-    protected void before()
-    {
-        startBroker();
+    // wait until up and running
+    try {
+      Thread.sleep(1000);
+    } catch (final InterruptedException e) {
+      // ignore
     }
-
-    @Override
-    protected void after()
-    {
-        try
-        {
-            broker.close();
-        }
-        catch (final Exception e)
-        {
-            throw new IllegalStateException(e);
-        }
-        finally
-        {
-            try
-            {
-                FileUtil.deleteFolder(brokerBase.getAbsolutePath());
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace();
-            }
-        }
-
-        broker = null;
-        System.gc();
-    }
-
-    public void startBroker()
-    {
-        try (InputStream configStream = configSupplier.get())
-        {
-            if (brokerBase == null)
-            {
-                brokerBase = Files.newTemporaryFolder();
-            }
-
-            broker = new Broker(configStream, brokerBase.getAbsolutePath(), null);
-        }
-        catch (final IOException e)
-        {
-            throw new RuntimeException("Unable to read configuration", e);
-        }
-
-        // wait until up and running
-        try
-        {
-            Thread.sleep(1000);
-        }
-        catch (final InterruptedException e)
-        {
-            // ignore
-        }
-    }
-
+  }
 }

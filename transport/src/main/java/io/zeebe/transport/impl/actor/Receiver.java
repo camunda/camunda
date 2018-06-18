@@ -21,55 +21,47 @@ import io.zeebe.transport.impl.selector.ReadTransportPoller;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 
-public class Receiver extends Actor
-{
-    protected final ReadTransportPoller transportPoller;
-    private String name;
+public class Receiver extends Actor {
+  protected final ReadTransportPoller transportPoller;
+  private String name;
 
-    public Receiver(ActorContext actorContext, TransportContext context)
-    {
-        this.transportPoller = new ReadTransportPoller(actor);
-        this.name = String.format("%s-receiver", context.getName());
-        actorContext.setReceiver(this);
-    }
+  public Receiver(ActorContext actorContext, TransportContext context) {
+    this.transportPoller = new ReadTransportPoller(actor);
+    this.name = String.format("%s-receiver", context.getName());
+    actorContext.setReceiver(this);
+  }
 
-    @Override
-    protected void onActorStarted()
-    {
-        actor.runBlocking(transportPoller::pollBlocking, transportPoller::pollBlockingEnded);
-    }
+  @Override
+  protected void onActorStarted() {
+    actor.runBlocking(transportPoller::pollBlocking, transportPoller::pollBlockingEnded);
+  }
 
-    @Override
-    protected void onActorClosing()
-    {
-        transportPoller.close();
-        transportPoller.clearChannels();
-    }
+  @Override
+  protected void onActorClosing() {
+    transportPoller.close();
+    transportPoller.clearChannels();
+  }
 
-    @Override
-    public String getName()
-    {
-        return name;
-    }
+  @Override
+  public String getName() {
+    return name;
+  }
 
-    public ActorFuture<Void> removeChannel(TransportChannel c)
-    {
-        return actor.call(() ->
-        {
-            transportPoller.removeChannel(c);
+  public ActorFuture<Void> removeChannel(TransportChannel c) {
+    return actor.call(
+        () -> {
+          transportPoller.removeChannel(c);
         });
-    }
+  }
 
-    public ActorFuture<Void> registerChannel(TransportChannel c)
-    {
-        return actor.call(() ->
-        {
-            transportPoller.addChannel(c);
+  public ActorFuture<Void> registerChannel(TransportChannel c) {
+    return actor.call(
+        () -> {
+          transportPoller.addChannel(c);
         });
-    }
+  }
 
-    public ActorFuture<Void> close()
-    {
-        return actor.close();
-    }
+  public ActorFuture<Void> close() {
+    return actor.close();
+  }
 }

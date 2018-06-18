@@ -21,32 +21,26 @@ import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.servicecontainer.*;
 
-public class SnapshotStorageService implements Service<SnapshotStorage>
-{
-    private String rootPath;
-    private SnapshotStorage snapshotStorage;
+public class SnapshotStorageService implements Service<SnapshotStorage> {
+  private String rootPath;
+  private SnapshotStorage snapshotStorage;
 
-    public SnapshotStorageService(String rootPath)
-    {
-        this.rootPath = rootPath;
-    }
+  public SnapshotStorageService(String rootPath) {
+    this.rootPath = rootPath;
+  }
 
-    @Override
-    public void start(ServiceStartContext serviceContext)
-    {
-        snapshotStorage = LogStreams.createFsSnapshotStore(rootPath).build();
-    }
+  @Override
+  public void start(ServiceStartContext serviceContext) {
+    snapshotStorage = LogStreams.createFsSnapshotStore(rootPath).build();
+  }
 
-    @Override
-    public void stop(ServiceStopContext stopContext)
-    {
-        // nothing to do
-    }
+  @Override
+  public void stop(ServiceStopContext stopContext) {
+    // nothing to do
+  }
 
-    @Override
-    public SnapshotStorage get()
-    {
-        return snapshotStorage;
-    }
-
+  @Override
+  public SnapshotStorage get() {
+    return snapshotStorage;
+  }
 }

@@ -19,43 +19,39 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.junit.Test;
 
-public class IntListIteratorTest
-{
+public class IntListIteratorTest {
 
-    private static final List<Integer> NUMBERS = new ArrayList<>();
-    static
-    {
-        NUMBERS.add(1);
-        NUMBERS.add(2);
-        NUMBERS.add(3);
-    }
+  private static final List<Integer> NUMBERS = new ArrayList<>();
 
-    @Test
-    public void shouldIterateArrayListBoxed()
-    {
-        // when
-        final IntListIterator iterator = new IntListIterator(NUMBERS);
+  static {
+    NUMBERS.add(1);
+    NUMBERS.add(2);
+    NUMBERS.add(3);
+  }
 
-        // then
-        assertThat(iterator).containsExactly(1, 2, 3);
-    }
+  @Test
+  public void shouldIterateArrayListBoxed() {
+    // when
+    final IntListIterator iterator = new IntListIterator(NUMBERS);
 
-    @Test
-    public void shouldIterateArrayListPrimitive()
-    {
-        // when
-        final IntListIterator iterator = new IntListIterator(NUMBERS);
+    // then
+    assertThat(iterator).containsExactly(1, 2, 3);
+  }
 
-        // then
-        assertThat(iterator.hasNext()).isTrue();
-        assertThat(iterator.nextInt()).isEqualTo(1);
-        assertThat(iterator.hasNext()).isTrue();
-        assertThat(iterator.nextInt()).isEqualTo(2);
-        assertThat(iterator.hasNext()).isTrue();
-        assertThat(iterator.nextInt()).isEqualTo(3);
-        assertThat(iterator.hasNext()).isFalse();
-    }
+  @Test
+  public void shouldIterateArrayListPrimitive() {
+    // when
+    final IntListIterator iterator = new IntListIterator(NUMBERS);
+
+    // then
+    assertThat(iterator.hasNext()).isTrue();
+    assertThat(iterator.nextInt()).isEqualTo(1);
+    assertThat(iterator.hasNext()).isTrue();
+    assertThat(iterator.nextInt()).isEqualTo(2);
+    assertThat(iterator.hasNext()).isTrue();
+    assertThat(iterator.nextInt()).isEqualTo(3);
+    assertThat(iterator.hasNext()).isFalse();
+  }
 }

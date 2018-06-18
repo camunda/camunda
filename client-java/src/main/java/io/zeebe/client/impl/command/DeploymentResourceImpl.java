@@ -15,63 +15,52 @@
  */
 package io.zeebe.client.impl.command;
 
-import java.nio.charset.StandardCharsets;
-
 import io.zeebe.client.api.commands.DeploymentResource;
 import io.zeebe.client.api.commands.ResourceType;
+import java.nio.charset.StandardCharsets;
 
+public class DeploymentResourceImpl implements DeploymentResource {
+  private byte[] resource;
+  private ResourceType resourceType;
+  private String resourceName;
 
-public class DeploymentResourceImpl implements DeploymentResource
-{
-    private byte[] resource;
-    private ResourceType resourceType;
-    private String resourceName;
+  @Override
+  public byte[] getResource() {
+    return resource;
+  }
 
-    @Override
-    public byte[] getResource()
-    {
-        return resource;
-    }
+  public void setResource(byte[] resource) {
+    this.resource = resource;
+  }
 
-    public void setResource(byte[] resource)
-    {
-        this.resource = resource;
-    }
+  @Override
+  public ResourceType getResourceType() {
+    return resourceType;
+  }
 
-    @Override
-    public ResourceType getResourceType()
-    {
-        return resourceType;
-    }
+  public void setResourceType(ResourceType resourceType) {
+    this.resourceType = resourceType;
+  }
 
-    public void setResourceType(ResourceType resourceType)
-    {
-        this.resourceType = resourceType;
-    }
+  @Override
+  public String getResourceName() {
+    return resourceName;
+  }
 
-    @Override
-    public String getResourceName()
-    {
-        return resourceName;
-    }
+  public void setResourceName(String resourceName) {
+    this.resourceName = resourceName;
+  }
 
-    public void setResourceName(String resourceName)
-    {
-        this.resourceName = resourceName;
-    }
-
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("DeploymentResourceImpl [resourceName=");
-        builder.append(resourceName);
-        builder.append(", resourceType=");
-        builder.append(resourceType);
-        builder.append(", resource=");
-        builder.append(new String(resource, StandardCharsets.UTF_8));
-        builder.append("]");
-        return builder.toString();
-    }
-
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("DeploymentResourceImpl [resourceName=");
+    builder.append(resourceName);
+    builder.append(", resourceType=");
+    builder.append(resourceType);
+    builder.append(", resource=");
+    builder.append(new String(resource, StandardCharsets.UTF_8));
+    builder.append("]");
+    return builder.toString();
+  }
 }

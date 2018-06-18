@@ -22,34 +22,30 @@ import io.zeebe.client.impl.event.TopicSubscriptionEventImpl;
 import io.zeebe.client.impl.record.RecordImpl;
 import io.zeebe.protocol.intent.SubscriptionIntent;
 
-public class AcknowledgeSubscribedEventCommandImpl extends CommandImpl<TopicSubscriptionEventImpl>
-{
-    private final TopicSubscriptionCommandImpl command = new TopicSubscriptionCommandImpl(SubscriptionIntent.ACKNOWLEDGE);
+public class AcknowledgeSubscribedEventCommandImpl extends CommandImpl<TopicSubscriptionEventImpl> {
+  private final TopicSubscriptionCommandImpl command =
+      new TopicSubscriptionCommandImpl(SubscriptionIntent.ACKNOWLEDGE);
 
-    public AcknowledgeSubscribedEventCommandImpl(final RequestManager commandManager, String topicName, int partitionId)
-    {
-        super(commandManager);
+  public AcknowledgeSubscribedEventCommandImpl(
+      final RequestManager commandManager, String topicName, int partitionId) {
+    super(commandManager);
 
-        command.setTopicName(topicName);
-        command.setPartitionId(partitionId);
-    }
+    command.setTopicName(topicName);
+    command.setPartitionId(partitionId);
+  }
 
-    public AcknowledgeSubscribedEventCommandImpl subscriptionName(String subscriptionName)
-    {
-        command.setName(subscriptionName);
-        return this;
-    }
+  public AcknowledgeSubscribedEventCommandImpl subscriptionName(String subscriptionName) {
+    command.setName(subscriptionName);
+    return this;
+  }
 
-    public AcknowledgeSubscribedEventCommandImpl ackPosition(long position)
-    {
-        this.command.setAckPosition(position);
-        return this;
-    }
+  public AcknowledgeSubscribedEventCommandImpl ackPosition(long position) {
+    this.command.setAckPosition(position);
+    return this;
+  }
 
-    @Override
-    public RecordImpl getCommand()
-    {
-        return command;
-    }
-
+  @Override
+  public RecordImpl getCommand() {
+    return command;
+  }
 }

@@ -17,47 +17,39 @@ package io.zeebe.model.bpmn.builder;
 
 import io.zeebe.model.bpmn.impl.instance.*;
 
-public class BpmnSequenceFlowBuilder
-{
-    private final BpmnBuilder builder;
-    private final SequenceFlowImpl sequenceFlow;
-    private final FlowNodeImpl sourceNode;
+public class BpmnSequenceFlowBuilder {
+  private final BpmnBuilder builder;
+  private final SequenceFlowImpl sequenceFlow;
+  private final FlowNodeImpl sourceNode;
 
-    public BpmnSequenceFlowBuilder(BpmnBuilder builder, SequenceFlowImpl sequenceFlow, FlowNodeImpl sourceNode)
-    {
-        this.builder = builder;
-        this.sequenceFlow = sequenceFlow;
-        this.sourceNode = sourceNode;
+  public BpmnSequenceFlowBuilder(
+      BpmnBuilder builder, SequenceFlowImpl sequenceFlow, FlowNodeImpl sourceNode) {
+    this.builder = builder;
+    this.sequenceFlow = sequenceFlow;
+    this.sourceNode = sourceNode;
+  }
+
+  public BpmnBuilder done() {
+    return builder;
+  }
+
+  public BpmnSequenceFlowBuilder condition(String condition) {
+    final ConditionExpressionImpl conditionExpression = new ConditionExpressionImpl();
+    conditionExpression.setText(condition);
+
+    sequenceFlow.setConditionExpression(conditionExpression);
+
+    return this;
+  }
+
+  public BpmnSequenceFlowBuilder defaultFlow() {
+    if (sourceNode instanceof ExclusiveGatewayImpl) {
+      final ExclusiveGatewayImpl exclusiveGateway = (ExclusiveGatewayImpl) sourceNode;
+      exclusiveGateway.setDefaultFlow(sequenceFlow);
+    } else {
+      throw new IllegalArgumentException("Only an exclusive gateway can have a default flow.");
     }
 
-    public BpmnBuilder done()
-    {
-        return builder;
-    }
-
-    public BpmnSequenceFlowBuilder condition(String condition)
-    {
-        final ConditionExpressionImpl conditionExpression = new ConditionExpressionImpl();
-        conditionExpression.setText(condition);
-
-        sequenceFlow.setConditionExpression(conditionExpression);
-
-        return this;
-    }
-
-    public BpmnSequenceFlowBuilder defaultFlow()
-    {
-        if (sourceNode instanceof ExclusiveGatewayImpl)
-        {
-            final ExclusiveGatewayImpl exclusiveGateway = (ExclusiveGatewayImpl) sourceNode;
-            exclusiveGateway.setDefaultFlow(sequenceFlow);
-        }
-        else
-        {
-            throw new IllegalArgumentException("Only an exclusive gateway can have a default flow.");
-        }
-
-        return this;
-    }
-
+    return this;
+  }
 }

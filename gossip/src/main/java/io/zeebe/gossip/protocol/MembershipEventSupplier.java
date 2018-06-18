@@ -17,22 +17,16 @@ package io.zeebe.gossip.protocol;
 
 import java.util.Iterator;
 
-public interface MembershipEventSupplier
-{
-    int membershipEventSize();
+public interface MembershipEventSupplier {
+  int membershipEventSize();
 
-    /**
-     * Return an iterator for membership events which returns at most the given
-     * amount of events.
-     */
-    Iterator<MembershipEvent> membershipEventViewIterator(int max);
+  /** Return an iterator for membership events which returns at most the given amount of events. */
+  Iterator<MembershipEvent> membershipEventViewIterator(int max);
 
-    /**
-     * Return an iterator for membership events which returns at most the given
-     * amount of events. In contrast to
-     * {@link #membershipEventViewIterator(int)}, the returned events should be
-     * removed afterwards (depending on the spread count).
-     */
-    Iterator<MembershipEvent> membershipEventDrainIterator(int max);
-
+  /**
+   * Return an iterator for membership events which returns at most the given amount of events. In
+   * contrast to {@link #membershipEventViewIterator(int)}, the returned events should be removed
+   * afterwards (depending on the spread count).
+   */
+  Iterator<MembershipEvent> membershipEventDrainIterator(int max);
 }

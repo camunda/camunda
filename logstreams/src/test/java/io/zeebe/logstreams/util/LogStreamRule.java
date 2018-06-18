@@ -15,8 +15,6 @@
  */
 package io.zeebe.logstreams.util;
 
-import java.util.function.Consumer;
-
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.LogStreamBuilder;
 import io.zeebe.logstreams.log.LogStream;
@@ -27,128 +25,114 @@ import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import java.util.function.Consumer;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 
-public class LogStreamRule extends ExternalResource
-{
-    public static final String DEFAULT_NAME = "test-logstream";
+public class LogStreamRule extends ExternalResource {
+  public static final String DEFAULT_NAME = "test-logstream";
 
-    private final String name;
-    private final TemporaryFolder temporaryFolder;
+  private final String name;
+  private final TemporaryFolder temporaryFolder;
 
-    private ActorScheduler actorScheduler;
-    private ServiceContainer serviceContainer;
-    private LogStream logStream;
+  private ActorScheduler actorScheduler;
+  private ServiceContainer serviceContainer;
+  private LogStream logStream;
 
-    private ControlledActorClock clock = new ControlledActorClock();
-    private SnapshotStorage snapshotStorage;
+  private ControlledActorClock clock = new ControlledActorClock();
+  private SnapshotStorage snapshotStorage;
 
-    private final Consumer<LogStreamBuilder> streamBuilder;
+  private final Consumer<LogStreamBuilder> streamBuilder;
 
-    private LogStreamBuilder builder;
+  private LogStreamBuilder builder;
 
-    public LogStreamRule(final TemporaryFolder temporaryFolder)
-    {
-        this(DEFAULT_NAME, temporaryFolder);
+  public LogStreamRule(final TemporaryFolder temporaryFolder) {
+    this(DEFAULT_NAME, temporaryFolder);
+  }
+
+  public LogStreamRule(
+      final TemporaryFolder temporaryFolder, final Consumer<LogStreamBuilder> streamBuilder) {
+    this(DEFAULT_NAME, temporaryFolder, streamBuilder);
+  }
+
+  public LogStreamRule(final String name, final TemporaryFolder temporaryFolder) {
+    this(name, temporaryFolder, b -> {});
+  }
+
+  public LogStreamRule(
+      final String name,
+      final TemporaryFolder temporaryFolder,
+      final Consumer<LogStreamBuilder> streamBuilder) {
+    this.name = name;
+    this.temporaryFolder = temporaryFolder;
+    this.streamBuilder = streamBuilder;
+  }
+
+  @Override
+  protected void before() {
+    actorScheduler = new ActorSchedulerRule(clock).get();
+    actorScheduler.start();
+
+    serviceContainer = new ServiceContainerImpl(actorScheduler);
+    serviceContainer.start();
+
+    builder =
+        LogStreams.createFsLogStream(BufferUtil.wrapString(name), 0)
+            .logDirectory(temporaryFolder.getRoot().getAbsolutePath())
+            .serviceContainer(serviceContainer);
+
+    // apply additional configs
+    streamBuilder.accept(builder);
+
+    openLogStream();
+  }
+
+  @Override
+  protected void after() {
+    if (logStream != null) {
+      logStream.close();
     }
 
-    public LogStreamRule(final TemporaryFolder temporaryFolder, final Consumer<LogStreamBuilder> streamBuilder)
-    {
-        this(DEFAULT_NAME, temporaryFolder, streamBuilder);
-    }
+    actorScheduler.stop();
+  }
 
-    public LogStreamRule(final String name, final TemporaryFolder temporaryFolder)
-    {
-        this(name, temporaryFolder, b ->
-        { });
-    }
+  public void closeLogStream() {
+    logStream.close();
+    logStream = null;
+    snapshotStorage = null;
+  }
 
-    public LogStreamRule(final String name, final TemporaryFolder temporaryFolder, final Consumer<LogStreamBuilder> streamBuilder)
-    {
-        this.name = name;
-        this.temporaryFolder = temporaryFolder;
-        this.streamBuilder = streamBuilder;
-    }
+  public void openLogStream() {
+    logStream = builder.build().join();
+    snapshotStorage = builder.getSnapshotStorage();
+    logStream.openAppender().join();
+  }
 
-    @Override
-    protected void before()
-    {
-        actorScheduler = new ActorSchedulerRule(clock).get();
-        actorScheduler.start();
+  public LogStream getLogStream() {
+    return logStream;
+  }
 
-        serviceContainer = new ServiceContainerImpl(actorScheduler);
-        serviceContainer.start();
+  public SnapshotStorage getSnapshotStorage() {
+    return snapshotStorage;
+  }
 
-        builder = LogStreams.createFsLogStream(BufferUtil.wrapString(name), 0)
-                .logDirectory(temporaryFolder.getRoot().getAbsolutePath())
-                .serviceContainer(serviceContainer);
+  public void setCommitPosition(final long position) {
+    logStream.setCommitPosition(position);
+  }
 
-        // apply additional configs
-        streamBuilder.accept(builder);
+  public long getCommitPosition() {
+    return logStream.getCommitPosition();
+  }
 
-        openLogStream();
-    }
+  public ControlledActorClock getClock() {
+    return clock;
+  }
 
+  public ActorScheduler getActorScheduler() {
+    return actorScheduler;
+  }
 
-    @Override
-    protected void after()
-    {
-        if (logStream != null)
-        {
-            logStream.close();
-        }
-
-        actorScheduler.stop();
-    }
-
-    public void closeLogStream()
-    {
-        logStream.close();
-        logStream = null;
-        snapshotStorage = null;
-    }
-
-    public void openLogStream()
-    {
-        logStream = builder.build().join();
-        snapshotStorage = builder.getSnapshotStorage();
-        logStream.openAppender().join();
-    }
-
-    public LogStream getLogStream()
-    {
-        return logStream;
-    }
-
-    public SnapshotStorage getSnapshotStorage()
-    {
-        return snapshotStorage;
-    }
-
-    public void setCommitPosition(final long position)
-    {
-        logStream.setCommitPosition(position);
-    }
-
-    public long getCommitPosition()
-    {
-        return logStream.getCommitPosition();
-    }
-
-    public ControlledActorClock getClock()
-    {
-        return clock;
-    }
-
-    public ActorScheduler getActorScheduler()
-    {
-        return actorScheduler;
-    }
-
-    public ServiceContainer getServiceContainer()
-    {
-        return serviceContainer;
-    }
-
+  public ServiceContainer getServiceContainer() {
+    return serviceContainer;
+  }
 }

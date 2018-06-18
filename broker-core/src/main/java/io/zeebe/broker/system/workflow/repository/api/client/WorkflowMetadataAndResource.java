@@ -20,25 +20,20 @@ package io.zeebe.broker.system.workflow.repository.api.client;
 import io.zeebe.msgpack.property.*;
 import org.agrona.DirectBuffer;
 
-public class WorkflowMetadataAndResource extends WorkflowMetadata
-{
-    private StringProperty bpmnXmlProp = new StringProperty("bpmnXml");
+public class WorkflowMetadataAndResource extends WorkflowMetadata {
+  private StringProperty bpmnXmlProp = new StringProperty("bpmnXml");
 
-    public WorkflowMetadataAndResource()
-    {
-        super();
-        declareProperty(bpmnXmlProp);
-    }
+  public WorkflowMetadataAndResource() {
+    super();
+    declareProperty(bpmnXmlProp);
+  }
 
-    public DirectBuffer getBpmnXml()
-    {
-        return bpmnXmlProp.getValue();
-    }
+  public DirectBuffer getBpmnXml() {
+    return bpmnXmlProp.getValue();
+  }
 
-    public WorkflowMetadataAndResource setBpmnXml(DirectBuffer val)
-    {
-        bpmnXmlProp.setValue(val);
-        return this;
-    }
-
+  public WorkflowMetadataAndResource setBpmnXml(DirectBuffer val) {
+    bpmnXmlProp.setValue(val);
+    return this;
+  }
 }

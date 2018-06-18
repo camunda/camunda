@@ -17,44 +17,37 @@ package io.zeebe.model.bpmn.impl.yaml;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class YamlCase
-{
-    @JsonProperty("case")
-    private String condition = "";
+public class YamlCase {
+  @JsonProperty("case")
+  private String condition = "";
 
-    @JsonProperty("goto")
-    private String next = "";
+  @JsonProperty("goto")
+  private String next = "";
 
-    @JsonProperty("default")
-    private String defaultCase;
+  @JsonProperty("default")
+  private String defaultCase;
 
-    public String getCondition()
-    {
-        return condition;
-    }
+  public String getCondition() {
+    return condition;
+  }
 
-    public void setCondition(String condition)
-    {
-        this.condition = condition;
-    }
+  public void setCondition(String condition) {
+    this.condition = condition;
+  }
 
-    public String getNext()
-    {
-        return next;
-    }
+  public String getNext() {
+    return next;
+  }
 
-    public void setNext(String next)
-    {
-        this.next = next;
-    }
+  public void setNext(String next) {
+    this.next = next;
+  }
 
-    public String getDefaultCase()
-    {
-        return defaultCase;
-    }
+  public String getDefaultCase() {
+    return defaultCase;
+  }
 
-    public void setDefaultCase(String defaultCase)
-    {
-        this.defaultCase = defaultCase;
-    }
+  public void setDefaultCase(String defaultCase) {
+    this.defaultCase = defaultCase;
+  }
 }

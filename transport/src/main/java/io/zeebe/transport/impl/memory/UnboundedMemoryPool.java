@@ -15,30 +15,26 @@
  */
 package io.zeebe.transport.impl.memory;
 
-import java.nio.ByteBuffer;
-
 import io.zeebe.transport.Loggers;
+import java.nio.ByteBuffer;
 import org.slf4j.Logger;
 
 /**
- * used for transports where you do not need to limit memory
- * (like client requests in the zeebe broker)
+ * used for transports where you do not need to limit memory (like client requests in the zeebe
+ * broker)
  */
-public class UnboundedMemoryPool implements TransportMemoryPool
-{
-    private static final Logger LOG = Loggers.TRANSPORT_MEMORY_LOGGER;
+public class UnboundedMemoryPool implements TransportMemoryPool {
+  private static final Logger LOG = Loggers.TRANSPORT_MEMORY_LOGGER;
 
-    @Override
-    public ByteBuffer allocate(int requestedCapacity)
-    {
-        LOG.trace("Attocated {} bytes", requestedCapacity);
-        return ByteBuffer.allocate(requestedCapacity);
-    }
+  @Override
+  public ByteBuffer allocate(int requestedCapacity) {
+    LOG.trace("Attocated {} bytes", requestedCapacity);
+    return ByteBuffer.allocate(requestedCapacity);
+  }
 
-    @Override
-    public void reclaim(ByteBuffer buffer)
-    {
-        final int bytesReclaimed = buffer.capacity();
-        LOG.trace("Reclaiming {} bytes", bytesReclaimed);
-    }
+  @Override
+  public void reclaim(ByteBuffer buffer) {
+    final int bytesReclaimed = buffer.capacity();
+    LOG.trace("Reclaiming {} bytes", bytesReclaimed);
+  }
 }

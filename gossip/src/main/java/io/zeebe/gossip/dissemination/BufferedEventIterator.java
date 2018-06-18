@@ -18,69 +18,59 @@ package io.zeebe.gossip.dissemination;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-public class BufferedEventIterator<T> implements Iterator<T>
-{
-    public static final int DEFAULT_SPREAD_LIMIT = 10;
+public class BufferedEventIterator<T> implements Iterator<T> {
+  public static final int DEFAULT_SPREAD_LIMIT = 10;
 
-    private final boolean incrementSpreadCount;
+  private final boolean incrementSpreadCount;
 
-    private int spreadLimit = DEFAULT_SPREAD_LIMIT;
+  private int spreadLimit = DEFAULT_SPREAD_LIMIT;
 
-    private Iterator<BufferedEvent<T>> iterator;
+  private Iterator<BufferedEvent<T>> iterator;
 
-    private int count = 0;
-    private int limit = 0;
+  private int count = 0;
+  private int limit = 0;
 
-    public BufferedEventIterator()
-    {
-        this(false);
+  public BufferedEventIterator() {
+    this(false);
+  }
+
+  public BufferedEventIterator(boolean incrementSpreadCount) {
+    this.incrementSpreadCount = incrementSpreadCount;
+  }
+
+  public void wrap(Iterator<BufferedEvent<T>> iterator, int limit) {
+    this.iterator = iterator;
+    this.limit = limit;
+    this.count = 0;
+  }
+
+  public void setSpreadLimit(int spreadLimit) {
+    this.spreadLimit = spreadLimit;
+  }
+
+  @Override
+  public boolean hasNext() {
+    return iterator.hasNext() && count < limit;
+  }
+
+  @Override
+  public T next() {
+    if (!hasNext()) {
+      throw new NoSuchElementException();
     }
 
-    public BufferedEventIterator(boolean incrementSpreadCount)
-    {
-        this.incrementSpreadCount = incrementSpreadCount;
+    final BufferedEvent<T> event = iterator.next();
+
+    count += 1;
+
+    if (incrementSpreadCount) {
+      event.incrementSpreadCount();
+
+      if (event.getSpreadCount() >= spreadLimit) {
+        iterator.remove();
+      }
     }
 
-    public void wrap(Iterator<BufferedEvent<T>> iterator, int limit)
-    {
-        this.iterator = iterator;
-        this.limit = limit;
-        this.count = 0;
-    }
-
-    public void setSpreadLimit(int spreadLimit)
-    {
-        this.spreadLimit = spreadLimit;
-    }
-
-    @Override
-    public boolean hasNext()
-    {
-        return iterator.hasNext() && count < limit;
-    }
-
-    @Override
-    public T next()
-    {
-        if (!hasNext())
-        {
-            throw new NoSuchElementException();
-        }
-
-        final BufferedEvent<T> event = iterator.next();
-
-        count += 1;
-
-        if (incrementSpreadCount)
-        {
-            event.incrementSpreadCount();
-
-            if (event.getSpreadCount() >= spreadLimit)
-            {
-                iterator.remove();
-            }
-        }
-
-        return event.getEvent();
-    }
+    return event.getEvent();
+  }
 }

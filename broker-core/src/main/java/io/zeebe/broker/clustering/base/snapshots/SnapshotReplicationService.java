@@ -17,10 +17,6 @@
  */
 package io.zeebe.broker.clustering.base.snapshots;
 
-import java.time.Duration;
-import java.util.ArrayDeque;
-import java.util.Queue;
-
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.api.*;
 import io.zeebe.broker.clustering.base.partitions.Partition;
@@ -42,322 +38,290 @@ import io.zeebe.util.StreamUtil;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
+import java.time.Duration;
+import java.util.ArrayDeque;
+import java.util.Queue;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
 /**
- * Replicates all snapshots from the leader of a given partition.
- * Depends on the followerService for a given partition to ensure correct lifecycle.
+ * Replicates all snapshots from the leader of a given partition. Depends on the followerService for
+ * a given partition to ensure correct lifecycle.
  *
- * TODO: simplify class to not keep so much state (split into separate fetch operation class?)
+ * <p>TODO: simplify class to not keep so much state (split into separate fetch operation class?)
  */
-public class SnapshotReplicationService extends Actor implements Service<SnapshotReplicationService>
-{
-    private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
+public class SnapshotReplicationService extends Actor
+    implements Service<SnapshotReplicationService> {
+  private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
-    private final Injector<ClientTransport> managementClientApiInjector = new Injector<>();
-    private ClientTransport clientTransport;
+  private final Injector<ClientTransport> managementClientApiInjector = new Injector<>();
+  private ClientTransport clientTransport;
 
-    private final Injector<TopologyManager> topologyManagerInjector = new Injector<>();
-    private TopologyManager topologyManager;
+  private final Injector<TopologyManager> topologyManagerInjector = new Injector<>();
+  private TopologyManager topologyManager;
 
-    private final Injector<Partition> partitionInjector = new Injector<>();
-    private Partition partition;
+  private final Injector<Partition> partitionInjector = new Injector<>();
+  private Partition partition;
 
-    private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-    private final ErrorResponse errorResponse = new ErrorResponse();
+  private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
+  private final ErrorResponse errorResponse = new ErrorResponse();
 
-    // Reuse response/request objects to avoid allocating often
-    private final ListSnapshotsRequest listSnapshotsRequest = new ListSnapshotsRequest();
-    private final ListSnapshotsResponse listSnapshotsResponse = new ListSnapshotsResponse();
+  // Reuse response/request objects to avoid allocating often
+  private final ListSnapshotsRequest listSnapshotsRequest = new ListSnapshotsRequest();
+  private final ListSnapshotsResponse listSnapshotsResponse = new ListSnapshotsResponse();
 
-    private final FetchSnapshotChunkRequest fetchSnapshotChunkRequest = new FetchSnapshotChunkRequest();
-    private final FetchSnapshotChunkResponse fetchSnapshotChunkResponse = new FetchSnapshotChunkResponse();
+  private final FetchSnapshotChunkRequest fetchSnapshotChunkRequest =
+      new FetchSnapshotChunkRequest();
+  private final FetchSnapshotChunkResponse fetchSnapshotChunkResponse =
+      new FetchSnapshotChunkResponse();
 
-    private final Duration pollInterval;
-    private final Duration errorRetryInterval = Duration.ofSeconds(1);
-    private RemoteAddress leaderNodeAddress;
+  private final Duration pollInterval;
+  private final Duration errorRetryInterval = Duration.ofSeconds(1);
+  private RemoteAddress leaderNodeAddress;
 
-    // Used to properly calculate polling intervals (since replication operation can take a while)
-    private long lastPollEpoch;
+  // Used to properly calculate polling intervals (since replication operation can take a while)
+  private long lastPollEpoch;
 
-    // On-going replication state
-    private final Queue<ListSnapshotsResponse.SnapshotMetadata> snapshotsToReplicate = new ArrayDeque<>();
-    private SnapshotWriter currentSnapshotWriter;
-    private ListSnapshotsResponse.SnapshotMetadata currentReplicatingSnapshot;
-    private int chunkOffset;
+  // On-going replication state
+  private final Queue<ListSnapshotsResponse.SnapshotMetadata> snapshotsToReplicate =
+      new ArrayDeque<>();
+  private SnapshotWriter currentSnapshotWriter;
+  private ListSnapshotsResponse.SnapshotMetadata currentReplicatingSnapshot;
+  private int chunkOffset;
 
-    public SnapshotReplicationService(final Duration pollInterval)
-    {
-        this.pollInterval = pollInterval;
-    }
+  public SnapshotReplicationService(final Duration pollInterval) {
+    this.pollInterval = pollInterval;
+  }
 
-    @Override
-    public void start(ServiceStartContext startContext)
-    {
-        clientTransport = managementClientApiInjector.getValue();
-        partition = partitionInjector.getValue();
-        topologyManager = topologyManagerInjector.getValue();
-        listSnapshotsRequest.setPartitionId(partition.getInfo().getPartitionId());
+  @Override
+  public void start(ServiceStartContext startContext) {
+    clientTransport = managementClientApiInjector.getValue();
+    partition = partitionInjector.getValue();
+    topologyManager = topologyManagerInjector.getValue();
+    listSnapshotsRequest.setPartitionId(partition.getInfo().getPartitionId());
 
-        LOG.debug("Starting snapshot replication service for partition {}", partition.getInfo());
-        startContext.async(startContext.getScheduler().submitActor(this));
-    }
+    LOG.debug("Starting snapshot replication service for partition {}", partition.getInfo());
+    startContext.async(startContext.getScheduler().submitActor(this));
+  }
 
-    @Override
-    public void stop(ServiceStopContext stopContext)
-    {
-        LOG.debug("Stopping snapshot replication service for partition {}", partition.getInfo());
+  @Override
+  public void stop(ServiceStopContext stopContext) {
+    LOG.debug("Stopping snapshot replication service for partition {}", partition.getInfo());
 
-        snapshotsToReplicate.clear(); // clear before aborting to avoid trying to replicate the next one
-        abortCurrentSnapshotReplication();
+    snapshotsToReplicate.clear(); // clear before aborting to avoid trying to replicate the next one
+    abortCurrentSnapshotReplication();
 
-        stopContext.async(actor.close());
-    }
+    stopContext.async(actor.close());
+  }
 
-    @Override
-    public SnapshotReplicationService get()
-    {
-        return this;
-    }
+  @Override
+  public SnapshotReplicationService get() {
+    return this;
+  }
 
-    @Override
-    protected void onActorStarted()
-    {
-        this.pollLeaderForSnapshots();
-    }
+  @Override
+  protected void onActorStarted() {
+    this.pollLeaderForSnapshots();
+  }
 
-    private void pollLeaderForSnapshots()
-    {
-        final ActorFuture<NodeInfo> topologyQuery = topologyManager.query(this::getLeaderInfo);
-        actor.runOnCompletion(topologyQuery, (leaderInfo, error) ->
-        {
-            if (error != null)
-            {
-                LOG.error("Failed to query topology for leader info, retrying", error);
-                actor.runDelayed(errorRetryInterval, this::pollLeaderForSnapshots);
-            }
-            else if (leaderInfo == null)
-            {
-                LOG.trace("Waiting for leader node info, retrying");
-                actor.runDelayed(errorRetryInterval, this::pollLeaderForSnapshots);
-            }
-            else
-            {
-                leaderNodeAddress = clientTransport.registerRemoteAddress(leaderInfo.getManagementApiAddress());
+  private void pollLeaderForSnapshots() {
+    final ActorFuture<NodeInfo> topologyQuery = topologyManager.query(this::getLeaderInfo);
+    actor.runOnCompletion(
+        topologyQuery,
+        (leaderInfo, error) -> {
+          if (error != null) {
+            LOG.error("Failed to query topology for leader info, retrying", error);
+            actor.runDelayed(errorRetryInterval, this::pollLeaderForSnapshots);
+          } else if (leaderInfo == null) {
+            LOG.trace("Waiting for leader node info, retrying");
+            actor.runDelayed(errorRetryInterval, this::pollLeaderForSnapshots);
+          } else {
+            leaderNodeAddress =
+                clientTransport.registerRemoteAddress(leaderInfo.getManagementApiAddress());
 
-                LOG.trace("Updated leader address as {}", leaderNodeAddress);
-                pollSnapshots();
-            }
+            LOG.trace("Updated leader address as {}", leaderNodeAddress);
+            pollSnapshots();
+          }
         });
-    }
+  }
 
-    private void pollSnapshots()
-    {
-        lastPollEpoch = ActorClock.currentTimeMillis();
+  private void pollSnapshots() {
+    lastPollEpoch = ActorClock.currentTimeMillis();
 
-        final ActorFuture<ClientResponse> responseFuture = clientTransport.getOutput().sendRequest(leaderNodeAddress, listSnapshotsRequest);
-        LOG.trace("Polling snapshots from {}", leaderNodeAddress);
-        snapshotsToReplicate.clear();
+    final ActorFuture<ClientResponse> responseFuture =
+        clientTransport.getOutput().sendRequest(leaderNodeAddress, listSnapshotsRequest);
+    LOG.trace("Polling snapshots from {}", leaderNodeAddress);
+    snapshotsToReplicate.clear();
 
-        actor.runOnCompletion(responseFuture, (clientResponse, error) ->
-        {
-            if (error != null)
-            {
-                LOG.error("Error listing snapshots from leader", error);
-                actor.runDelayed(errorRetryInterval, this::pollLeaderForSnapshots);
-            }
-            else
-            {
-                handleListSnapshotsResponse(clientResponse.getResponseBuffer());
-            }
+    actor.runOnCompletion(
+        responseFuture,
+        (clientResponse, error) -> {
+          if (error != null) {
+            LOG.error("Error listing snapshots from leader", error);
+            actor.runDelayed(errorRetryInterval, this::pollLeaderForSnapshots);
+          } else {
+            handleListSnapshotsResponse(clientResponse.getResponseBuffer());
+          }
         });
+  }
+
+  private void schedulePollSnapshots() {
+    final long millisSinceLastPoll = ActorClock.currentTimeMillis() - lastPollEpoch;
+    final Duration interval = pollInterval.minusMillis(millisSinceLastPoll);
+
+    if (interval.isNegative() || interval.isZero()) {
+      actor.run(this::pollSnapshots);
+    } else {
+      actor.runDelayed(interval, this::pollSnapshots);
+    }
+  }
+
+  private void handleListSnapshotsResponse(final DirectBuffer buffer) {
+    if (isErrorResponse(buffer)) {
+      logErrorResponse("Error listing snapshots for replication", buffer);
+      actor.runDelayed(errorRetryInterval, this::pollSnapshots);
+      return;
     }
 
-    private void schedulePollSnapshots()
-    {
-        final long millisSinceLastPoll = ActorClock.currentTimeMillis() - lastPollEpoch;
-        final Duration interval = pollInterval.minusMillis(millisSinceLastPoll);
+    listSnapshotsResponse.wrap(buffer);
 
-        if (interval.isNegative() || interval.isZero())
-        {
-            actor.run(this::pollSnapshots);
-        }
-        else
-        {
-            actor.runDelayed(interval, this::pollSnapshots);
-        }
+    for (ListSnapshotsResponse.SnapshotMetadata metadata : listSnapshotsResponse.getSnapshots()) {
+      if (!partition
+          .getSnapshotStorage()
+          .snapshotExists(metadata.getName(), metadata.getLogPosition())) {
+        snapshotsToReplicate.add(metadata);
+      }
     }
 
-    private void handleListSnapshotsResponse(final DirectBuffer buffer)
-    {
-        if (isErrorResponse(buffer))
-        {
-            logErrorResponse("Error listing snapshots for replication", buffer);
-            actor.runDelayed(errorRetryInterval, this::pollSnapshots);
-            return;
-        }
+    LOG.trace("Replicating {} snapshots", snapshotsToReplicate.size());
+    replicateNextSnapshot();
+  }
 
-        listSnapshotsResponse.wrap(buffer);
+  private void replicateNextSnapshot() {
+    chunkOffset = 0;
+    currentReplicatingSnapshot = snapshotsToReplicate.poll();
 
-        for (ListSnapshotsResponse.SnapshotMetadata metadata : listSnapshotsResponse.getSnapshots())
-        {
-            if (!partition.getSnapshotStorage().snapshotExists(metadata.getName(), metadata.getLogPosition()))
-            {
-                snapshotsToReplicate.add(metadata);
-            }
-        }
-
-        LOG.trace("Replicating {} snapshots", snapshotsToReplicate.size());
-        replicateNextSnapshot();
+    if (currentReplicatingSnapshot == null) {
+      schedulePollSnapshots();
+      return;
     }
 
-    private void replicateNextSnapshot()
-    {
-        chunkOffset = 0;
-        currentReplicatingSnapshot = snapshotsToReplicate.poll();
-
-        if (currentReplicatingSnapshot == null)
-        {
-            schedulePollSnapshots();
-            return;
-        }
-
-        try
-        {
-            currentSnapshotWriter = partition.getSnapshotStorage().createTemporarySnapshot(
-                    currentReplicatingSnapshot.getName(), currentReplicatingSnapshot.getLogPosition());
-        }
-        catch (final Exception ex)
-        {
-            LOG.error("Could not create temporary snapshot writer", ex);
-            replicateNextSnapshot();
-            return;
-        }
-
-        replicateSnapshot();
+    try {
+      currentSnapshotWriter =
+          partition
+              .getSnapshotStorage()
+              .createTemporarySnapshot(
+                  currentReplicatingSnapshot.getName(),
+                  currentReplicatingSnapshot.getLogPosition());
+    } catch (final Exception ex) {
+      LOG.error("Could not create temporary snapshot writer", ex);
+      replicateNextSnapshot();
+      return;
     }
 
-    private void replicateSnapshot()
-    {
-        final ActorFuture<ClientResponse> awaitFetchChunk = clientTransport.getOutput().sendRequest(leaderNodeAddress, requestForNextChunk());
-        actor.runOnCompletion(awaitFetchChunk, (clientResponse, error) ->
-        {
-            if (error != null)
-            {
-                // TODO: on transport error, should it start back at pollLeaderForSnapshots or pollSnapshots?
-                LOG.error("Error fetching snapshot chunk", error);
-                abortCurrentSnapshotReplication();
-            }
-            else
-            {
-                handleFetchSnapshotChunkResponse(clientResponse.getResponseBuffer());
-            }
+    replicateSnapshot();
+  }
+
+  private void replicateSnapshot() {
+    final ActorFuture<ClientResponse> awaitFetchChunk =
+        clientTransport.getOutput().sendRequest(leaderNodeAddress, requestForNextChunk());
+    actor.runOnCompletion(
+        awaitFetchChunk,
+        (clientResponse, error) -> {
+          if (error != null) {
+            // TODO: on transport error, should it start back at pollLeaderForSnapshots or
+            // pollSnapshots?
+            LOG.error("Error fetching snapshot chunk", error);
+            abortCurrentSnapshotReplication();
+          } else {
+            handleFetchSnapshotChunkResponse(clientResponse.getResponseBuffer());
+          }
         });
+  }
+
+  private void handleFetchSnapshotChunkResponse(final DirectBuffer buffer) {
+    if (isErrorResponse(buffer)) {
+      logErrorResponse("Error fetching snapshot chunk", buffer);
+      abortCurrentSnapshotReplication();
+      return;
     }
 
-    private void handleFetchSnapshotChunkResponse(final DirectBuffer buffer)
-    {
-        if (isErrorResponse(buffer))
-        {
-            logErrorResponse("Error fetching snapshot chunk", buffer);
-            abortCurrentSnapshotReplication();
-            return;
-        }
+    fetchSnapshotChunkResponse.wrap(buffer);
+    final DirectBuffer chunk = fetchSnapshotChunkResponse.getData();
 
-        fetchSnapshotChunkResponse.wrap(buffer);
-        final DirectBuffer chunk = fetchSnapshotChunkResponse.getData();
-
-        try
-        {
-            StreamUtil.write(chunk, currentSnapshotWriter.getOutputStream());
-        }
-        catch (final Exception ex)
-        {
-            LOG.error("Error writing snapshot chunk", ex);
-            abortCurrentSnapshotReplication();
-            return;
-        }
-
-        chunkOffset += chunk.capacity();
-        if (chunkOffset >= currentReplicatingSnapshot.getLength())
-        {
-            finalizeSnapshot();
-        }
-        else
-        {
-            replicateSnapshot();
-        }
+    try {
+      StreamUtil.write(chunk, currentSnapshotWriter.getOutputStream());
+    } catch (final Exception ex) {
+      LOG.error("Error writing snapshot chunk", ex);
+      abortCurrentSnapshotReplication();
+      return;
     }
 
-    private void finalizeSnapshot()
-    {
-        try
-        {
-            currentSnapshotWriter.validateAndCommit(currentReplicatingSnapshot.getChecksum());
-        }
-        catch (final Exception ex)
-        {
-            LOG.error("Error committing temporary snapshot, aborting", ex);
-            abortCurrentSnapshotReplication();
-            return;
-        }
+    chunkOffset += chunk.capacity();
+    if (chunkOffset >= currentReplicatingSnapshot.getLength()) {
+      finalizeSnapshot();
+    } else {
+      replicateSnapshot();
+    }
+  }
 
-        replicateNextSnapshot();
+  private void finalizeSnapshot() {
+    try {
+      currentSnapshotWriter.validateAndCommit(currentReplicatingSnapshot.getChecksum());
+    } catch (final Exception ex) {
+      LOG.error("Error committing temporary snapshot, aborting", ex);
+      abortCurrentSnapshotReplication();
+      return;
     }
 
-    private void abortCurrentSnapshotReplication()
-    {
-        chunkOffset = 0;
-        currentReplicatingSnapshot = null;
+    replicateNextSnapshot();
+  }
 
-        if (currentSnapshotWriter != null)
-        {
-            currentSnapshotWriter.abort();
-        }
+  private void abortCurrentSnapshotReplication() {
+    chunkOffset = 0;
+    currentReplicatingSnapshot = null;
 
-        if (!snapshotsToReplicate.isEmpty())
-        {
-            this.replicateNextSnapshot();
-        }
+    if (currentSnapshotWriter != null) {
+      currentSnapshotWriter.abort();
     }
 
-    private FetchSnapshotChunkRequest requestForNextChunk()
-    {
-        return fetchSnapshotChunkRequest.setPartitionId(partition.getInfo().getPartitionId())
-                .setName(currentReplicatingSnapshot.getName())
-                .setLogPosition(currentReplicatingSnapshot.getLogPosition())
-                .setChunkLength(ServerTransportBuilder.DEFAULT_MAX_MESSAGE_LENGTH)
-                .setChunkOffset(chunkOffset);
+    if (!snapshotsToReplicate.isEmpty()) {
+      this.replicateNextSnapshot();
     }
+  }
 
-    private void logErrorResponse(final String message, final DirectBuffer buffer)
-    {
-        errorResponse.wrap(buffer);
-        LOG.error("{} - {} - {}", message, errorResponse.getCode(), errorResponse.getMessage());
-    }
+  private FetchSnapshotChunkRequest requestForNextChunk() {
+    return fetchSnapshotChunkRequest
+        .setPartitionId(partition.getInfo().getPartitionId())
+        .setName(currentReplicatingSnapshot.getName())
+        .setLogPosition(currentReplicatingSnapshot.getLogPosition())
+        .setChunkLength(ServerTransportBuilder.DEFAULT_MAX_MESSAGE_LENGTH)
+        .setChunkOffset(chunkOffset);
+  }
 
-    private boolean isErrorResponse(final DirectBuffer buffer)
-    {
-        messageHeaderDecoder.wrap(buffer, 0);
-        return messageHeaderDecoder.templateId() == ErrorResponseDecoder.TEMPLATE_ID;
-    }
+  private void logErrorResponse(final String message, final DirectBuffer buffer) {
+    errorResponse.wrap(buffer);
+    LOG.error("{} - {} - {}", message, errorResponse.getCode(), errorResponse.getMessage());
+  }
 
-    private NodeInfo getLeaderInfo(ReadableTopology topology)
-    {
-        return topology.getLeader(partition.getInfo().getPartitionId());
-    }
+  private boolean isErrorResponse(final DirectBuffer buffer) {
+    messageHeaderDecoder.wrap(buffer, 0);
+    return messageHeaderDecoder.templateId() == ErrorResponseDecoder.TEMPLATE_ID;
+  }
 
-    public Injector<ClientTransport> getManagementClientApiInjector()
-    {
-        return managementClientApiInjector;
-    }
-    public Injector<Partition> getPartitionInjector()
-    {
-        return partitionInjector;
-    }
-    public Injector<TopologyManager> getTopologyManagerInjector()
-    {
-        return topologyManagerInjector;
-    }
+  private NodeInfo getLeaderInfo(ReadableTopology topology) {
+    return topology.getLeader(partition.getInfo().getPartitionId());
+  }
+
+  public Injector<ClientTransport> getManagementClientApiInjector() {
+    return managementClientApiInjector;
+  }
+
+  public Injector<Partition> getPartitionInjector() {
+    return partitionInjector;
+  }
+
+  public Injector<TopologyManager> getTopologyManagerInjector() {
+    return topologyManagerInjector;
+  }
 }

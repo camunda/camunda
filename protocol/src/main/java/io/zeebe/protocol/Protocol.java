@@ -15,38 +15,29 @@
  */
 package io.zeebe.protocol;
 
-import java.nio.ByteOrder;
-
-import org.agrona.DirectBuffer;
-
 import io.zeebe.protocol.clientapi.ExecuteCommandRequestDecoder;
 import io.zeebe.util.buffer.BufferUtil;
+import java.nio.ByteOrder;
+import org.agrona.DirectBuffer;
 
-public class Protocol
-{
+public class Protocol {
 
-    public static final int PROTOCOL_VERSION = ExecuteCommandRequestDecoder.SCHEMA_VERSION;
+  public static final int PROTOCOL_VERSION = ExecuteCommandRequestDecoder.SCHEMA_VERSION;
 
-    /**
-     * The endianness of multibyte values encoded in the protocol. This MUST match the
-     * default byte order in the SBE XML schema.
-     */
-    public static final ByteOrder ENDIANNESS = ByteOrder.LITTLE_ENDIAN;
+  /**
+   * The endianness of multibyte values encoded in the protocol. This MUST match the default byte
+   * order in the SBE XML schema.
+   */
+  public static final ByteOrder ENDIANNESS = ByteOrder.LITTLE_ENDIAN;
 
-    /**
-     * The null value of an instant property which indicates that it is not set.
-     */
-    public static final long INSTANT_NULL_VALUE = Long.MIN_VALUE;
+  /** The null value of an instant property which indicates that it is not set. */
+  public static final long INSTANT_NULL_VALUE = Long.MIN_VALUE;
 
-    /**
-     * By convention, the name of the topic that can be used for topic creation commands
-     */
-    public static final String SYSTEM_TOPIC = "internal-system";
-    public static final DirectBuffer SYSTEM_TOPIC_BUF = BufferUtil.wrapString(SYSTEM_TOPIC);
+  /** By convention, the name of the topic that can be used for topic creation commands */
+  public static final String SYSTEM_TOPIC = "internal-system";
 
-    /**
-     * By convention, the partition id that can be used for topic creation commands
-     */
-    public static final int SYSTEM_PARTITION = 0;
+  public static final DirectBuffer SYSTEM_TOPIC_BUF = BufferUtil.wrapString(SYSTEM_TOPIC);
 
+  /** By convention, the partition id that can be used for topic creation commands */
+  public static final int SYSTEM_PARTITION = 0;
 }

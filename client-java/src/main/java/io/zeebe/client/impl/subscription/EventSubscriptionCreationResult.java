@@ -17,11 +17,10 @@ package io.zeebe.client.impl.subscription;
 
 import io.zeebe.transport.RemoteAddress;
 
-public interface EventSubscriptionCreationResult
-{
-    RemoteAddress getEventPublisher();
+public interface EventSubscriptionCreationResult {
+  RemoteAddress getEventPublisher();
 
-    long getSubscriberKey();
+  long getSubscriberKey();
 
-    int getPartitionId();
+  int getPartitionId();
 }

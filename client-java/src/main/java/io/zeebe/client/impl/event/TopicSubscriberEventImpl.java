@@ -23,57 +23,50 @@ import io.zeebe.client.impl.subscription.EventSubscriptionCreationResult;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.transport.RemoteAddress;
 
-public class TopicSubscriberEventImpl extends TopicSubscriberRecordImpl implements EventSubscriptionCreationResult, ReceiverAwareResponseResult
-{
-    private RemoteAddress remote;
+public class TopicSubscriberEventImpl extends TopicSubscriberRecordImpl
+    implements EventSubscriptionCreationResult, ReceiverAwareResponseResult {
+  private RemoteAddress remote;
 
-    @JsonCreator
-    public TopicSubscriberEventImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper)
-    {
-        super(objectMapper, RecordType.EVENT);
-    }
+  @JsonCreator
+  public TopicSubscriberEventImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper) {
+    super(objectMapper, RecordType.EVENT);
+  }
 
-    @Override
-    public void setReceiver(RemoteAddress receiver)
-    {
-        this.remote = receiver;
-    }
+  @Override
+  public void setReceiver(RemoteAddress receiver) {
+    this.remote = receiver;
+  }
 
-    @Override
-    @JsonIgnore
-    public RemoteAddress getEventPublisher()
-    {
-        return remote;
-    }
+  @Override
+  @JsonIgnore
+  public RemoteAddress getEventPublisher() {
+    return remote;
+  }
 
-    @Override
-    @JsonIgnore
-    public long getSubscriberKey()
-    {
-        return getKey();
-    }
+  @Override
+  @JsonIgnore
+  public long getSubscriberKey() {
+    return getKey();
+  }
 
-    @Override
-    @JsonIgnore
-    public int getPartitionId()
-    {
-        return getMetadata().getPartitionId();
-    }
+  @Override
+  @JsonIgnore
+  public int getPartitionId() {
+    return getMetadata().getPartitionId();
+  }
 
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("TopicSubscriberEvent [name=");
-        builder.append(getName());
-        builder.append(", startPosition=");
-        builder.append(getStartPosition());
-        builder.append(", isForceStart=");
-        builder.append(isForceStart());
-        builder.append(", bufferSize)=");
-        builder.append(getBufferSize());
-        builder.append("]");
-        return builder.toString();
-    }
-
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("TopicSubscriberEvent [name=");
+    builder.append(getName());
+    builder.append(", startPosition=");
+    builder.append(getStartPosition());
+    builder.append(", isForceStart=");
+    builder.append(isForceStart());
+    builder.append(", bufferSize)=");
+    builder.append(getBufferSize());
+    builder.append("]");
+    return builder.toString();
+  }
 }

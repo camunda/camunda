@@ -15,12 +15,9 @@
  */
 package io.zeebe.transport.impl.actor;
 
-public class ClientActorContext extends ActorContext
-{
-    @Override
-    public void setConductor(Conductor clientConductor)
-    {
-        super.setConductor(clientConductor);
-    }
-
+public class ClientActorContext extends ActorContext {
+  @Override
+  public void setConductor(Conductor clientConductor) {
+    super.setConductor(clientConductor);
+  }
 }

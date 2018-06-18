@@ -18,66 +18,56 @@ package io.zeebe.client.impl.clustering;
 import io.zeebe.client.api.commands.PartitionBrokerRole;
 import io.zeebe.client.api.commands.PartitionInfo;
 
-public class PartitionInfoImpl implements PartitionInfo
-{
-    private String topicName;
-    private int partitionId;
-    private PartitionBrokerRole role;
+public class PartitionInfoImpl implements PartitionInfo {
+  private String topicName;
+  private int partitionId;
+  private PartitionBrokerRole role;
 
-    public PartitionInfoImpl setTopicName(final String topicName)
-    {
-        this.topicName = topicName;
-        return this;
-    }
+  public PartitionInfoImpl setTopicName(final String topicName) {
+    this.topicName = topicName;
+    return this;
+  }
 
-    public PartitionInfoImpl setPartitionId(final int partitionId)
-    {
-        this.partitionId = partitionId;
-        return this;
-    }
+  public PartitionInfoImpl setPartitionId(final int partitionId) {
+    this.partitionId = partitionId;
+    return this;
+  }
 
-    @Override
-    public int getPartitionId()
-    {
-        return partitionId;
-    }
+  @Override
+  public int getPartitionId() {
+    return partitionId;
+  }
 
-    @Override
-    public String getTopicName()
-    {
-        return topicName;
-    }
+  @Override
+  public String getTopicName() {
+    return topicName;
+  }
 
-    public PartitionInfoImpl setState(String state)
-    {
-        this.role = PartitionBrokerRole.valueOf(state);
-        return this;
-    }
+  public PartitionInfoImpl setState(String state) {
+    this.role = PartitionBrokerRole.valueOf(state);
+    return this;
+  }
 
-    @Override
-    public boolean isLeader()
-    {
-        return PartitionBrokerRole.LEADER.equals(role);
-    }
+  @Override
+  public boolean isLeader() {
+    return PartitionBrokerRole.LEADER.equals(role);
+  }
 
-    @Override
-    public PartitionBrokerRole getRole()
-    {
-        return role;
-    }
+  @Override
+  public PartitionBrokerRole getRole() {
+    return role;
+  }
 
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("PartitionInfo [topicName=");
-        builder.append(topicName);
-        builder.append(", partitionId=");
-        builder.append(partitionId);
-        builder.append(", role=");
-        builder.append(role);
-        builder.append("]");
-        return builder.toString();
-    }
-
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("PartitionInfo [topicName=");
+    builder.append(topicName);
+    builder.append(", partitionId=");
+    builder.append(partitionId);
+    builder.append(", role=");
+    builder.append(role);
+    builder.append("]");
+    return builder.toString();
+  }
 }

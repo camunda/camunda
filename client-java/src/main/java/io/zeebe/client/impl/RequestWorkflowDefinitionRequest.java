@@ -15,39 +15,32 @@
  */
 package io.zeebe.client.impl;
 
-public class RequestWorkflowDefinitionRequest
-{
-    private long workflowKey;
-    private String topicName = "";
-    private String bpmnProcessId = "";
+public class RequestWorkflowDefinitionRequest {
+  private long workflowKey;
+  private String topicName = "";
+  private String bpmnProcessId = "";
 
-    public long getWorkflowKey()
-    {
-        return workflowKey;
-    }
+  public long getWorkflowKey() {
+    return workflowKey;
+  }
 
-    public void setWorkflowKey(long key)
-    {
-        this.workflowKey = key;
-    }
+  public void setWorkflowKey(long key) {
+    this.workflowKey = key;
+  }
 
-    public String getTopicName()
-    {
-        return topicName;
-    }
+  public String getTopicName() {
+    return topicName;
+  }
 
-    public String getBpmnProcessId()
-    {
-        return bpmnProcessId;
-    }
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
+  }
 
-    public void setBpmnProcessId(String bpmnProcessId)
-    {
-        this.bpmnProcessId = bpmnProcessId;
-    }
+  public void setBpmnProcessId(String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
+  }
 
-    public void setTopicName(String topicName)
-    {
-        this.topicName = topicName;
-    }
+  public void setTopicName(String topicName) {
+    this.topicName = topicName;
+  }
 }

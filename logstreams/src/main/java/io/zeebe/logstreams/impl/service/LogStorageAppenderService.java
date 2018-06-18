@@ -22,56 +22,53 @@ import io.zeebe.servicecontainer.*;
 import io.zeebe.util.sched.SchedulingHints;
 import io.zeebe.util.sched.channel.ActorConditions;
 
-public class LogStorageAppenderService implements Service<LogStorageAppender>
-{
-    private final Injector<LogStorage> logStorageInjector = new Injector<>();
-    private final Injector<Subscription> appenderSubscriptionInjector = new Injector<>();
+public class LogStorageAppenderService implements Service<LogStorageAppender> {
+  private final Injector<LogStorage> logStorageInjector = new Injector<>();
+  private final Injector<Subscription> appenderSubscriptionInjector = new Injector<>();
 
-    private final int maxAppendBlockSize;
+  private final int maxAppendBlockSize;
 
-    private LogStorageAppender service;
-    private ActorConditions onLogStorageAppendedConditions;
+  private LogStorageAppender service;
+  private ActorConditions onLogStorageAppendedConditions;
 
-    public LogStorageAppenderService(ActorConditions onLogStorageAppendedConditions, int maxAppendBlockSize)
-    {
-        this.onLogStorageAppendedConditions = onLogStorageAppendedConditions;
-        this.maxAppendBlockSize = maxAppendBlockSize;
-    }
+  public LogStorageAppenderService(
+      ActorConditions onLogStorageAppendedConditions, int maxAppendBlockSize) {
+    this.onLogStorageAppendedConditions = onLogStorageAppendedConditions;
+    this.maxAppendBlockSize = maxAppendBlockSize;
+  }
 
-    @Override
-    public void start(ServiceStartContext startContext)
-    {
-        final LogStorage logStorage = logStorageInjector.getValue();
-        final Subscription subscription = appenderSubscriptionInjector.getValue();
+  @Override
+  public void start(ServiceStartContext startContext) {
+    final LogStorage logStorage = logStorageInjector.getValue();
+    final Subscription subscription = appenderSubscriptionInjector.getValue();
 
-        service = new LogStorageAppender(startContext.getName(),
+    service =
+        new LogStorageAppender(
+            startContext.getName(),
             logStorage,
             subscription,
             maxAppendBlockSize,
             onLogStorageAppendedConditions);
 
-        startContext.async(startContext.getScheduler().submitActor(service, true, SchedulingHints.ioBound((short) 0)));
-    }
+    startContext.async(
+        startContext.getScheduler().submitActor(service, true, SchedulingHints.ioBound((short) 0)));
+  }
 
-    @Override
-    public void stop(ServiceStopContext stopContext)
-    {
-        stopContext.async(service.close());
-    }
+  @Override
+  public void stop(ServiceStopContext stopContext) {
+    stopContext.async(service.close());
+  }
 
-    @Override
-    public LogStorageAppender get()
-    {
-        return service;
-    }
+  @Override
+  public LogStorageAppender get() {
+    return service;
+  }
 
-    public Injector<LogStorage> getLogStorageInjector()
-    {
-        return logStorageInjector;
-    }
+  public Injector<LogStorage> getLogStorageInjector() {
+    return logStorageInjector;
+  }
 
-    public Injector<Subscription> getAppenderSubscriptionInjector()
-    {
-        return appenderSubscriptionInjector;
-    }
+  public Injector<Subscription> getAppenderSubscriptionInjector() {
+    return appenderSubscriptionInjector;
+  }
 }

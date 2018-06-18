@@ -21,51 +21,45 @@ import io.zeebe.raft.protocol.VoteResponse;
 import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 
-public class VoteRequestHandler implements ConsensusRequestHandler
-{
-    private final VoteRequest voteRequest = new VoteRequest();
-    private final VoteResponse voteResponse = new VoteResponse();
+public class VoteRequestHandler implements ConsensusRequestHandler {
+  private final VoteRequest voteRequest = new VoteRequest();
+  private final VoteResponse voteResponse = new VoteResponse();
 
-    @Override
-    public String requestName()
-    {
-        return "vote";
-    }
+  @Override
+  public String requestName() {
+    return "vote";
+  }
 
-    @Override
-    public BufferWriter createRequest(final Raft raft, final long lastEventPosition, final int lastTerm)
-    {
-        return voteRequest.reset()
-            .setRaft(raft)
-            .setLastEventPosition(lastEventPosition)
-            .setLastEventTerm(lastTerm);
-    }
+  @Override
+  public BufferWriter createRequest(
+      final Raft raft, final long lastEventPosition, final int lastTerm) {
+    return voteRequest
+        .reset()
+        .setRaft(raft)
+        .setLastEventPosition(lastEventPosition)
+        .setLastEventTerm(lastTerm);
+  }
 
-    @Override
-    public boolean isResponseGranted(final Raft raft, final DirectBuffer responseBuffer)
-    {
-        voteResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
+  @Override
+  public boolean isResponseGranted(final Raft raft, final DirectBuffer responseBuffer) {
+    voteResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
 
-        return voteResponse.isGranted();
-    }
+    return voteResponse.isGranted();
+  }
 
-    @Override
-    public void consensusGranted(final Raft raft)
-    {
-        raft.becomeLeader(raft.getTerm());
-    }
+  @Override
+  public void consensusGranted(final Raft raft) {
+    raft.becomeLeader(raft.getTerm());
+  }
 
-    @Override
-    public void consensusFailed(final Raft raft)
-    {
-        raft.becomeFollower(raft.getTerm());
-    }
+  @Override
+  public void consensusFailed(final Raft raft) {
+    raft.becomeFollower(raft.getTerm());
+  }
 
-    @Override
-    public void reset()
-    {
-        voteRequest.reset();
-        voteResponse.reset();
-    }
-
+  @Override
+  public void reset() {
+    voteRequest.reset();
+    voteResponse.reset();
+  }
 }

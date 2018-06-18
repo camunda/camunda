@@ -15,265 +15,217 @@
  */
 package io.zeebe.util.sched;
 
-import java.util.concurrent.Callable;
-
 import io.zeebe.util.sched.ActorTask.TaskSchedulingState;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import java.util.concurrent.Callable;
 
-@SuppressWarnings({ "unchecked", "rawtypes" })
-public class ActorJob
-{
-    TaskSchedulingState schedulingState;
+@SuppressWarnings({"unchecked", "rawtypes"})
+public class ActorJob {
+  TaskSchedulingState schedulingState;
 
-    Actor actor;
-    ActorTask task;
+  Actor actor;
+  ActorTask task;
 
-    ActorJob next;
+  ActorJob next;
 
-    private Callable<?> callable;
-    private Runnable runnable;
-    private Object invocationResult;
-    private boolean isAutoCompleting;
-    private boolean isDoneCalled;
+  private Callable<?> callable;
+  private Runnable runnable;
+  private Object invocationResult;
+  private boolean isAutoCompleting;
+  private boolean isDoneCalled;
 
-    private ActorFuture resultFuture;
+  private ActorFuture resultFuture;
 
-    ActorThread actorThread;
+  ActorThread actorThread;
 
-    private ActorSubscription subscription;
+  private ActorSubscription subscription;
 
-    public void onJobAddedToTask(ActorTask task)
-    {
-        this.actor = task.actor;
-        this.task = task;
-        this.schedulingState = TaskSchedulingState.QUEUED;
-    }
+  public void onJobAddedToTask(ActorTask task) {
+    this.actor = task.actor;
+    this.task = task;
+    this.schedulingState = TaskSchedulingState.QUEUED;
+  }
 
-    void execute(ActorThread runner)
-    {
-        runner.getMetrics().incrementJobCount();
+  void execute(ActorThread runner) {
+    runner.getMetrics().incrementJobCount();
 
-        this.actorThread = runner;
-        try
-        {
-            invoke(runner);
+    this.actorThread = runner;
+    try {
+      invoke(runner);
 
-            if (resultFuture != null)
-            {
-                resultFuture.complete(invocationResult);
-                resultFuture = null;
-            }
-
-        }
-        catch (Exception e)
-        {
-            task.onFailure(e);
-        }
-        finally
-        {
-            this.actorThread = null;
-
-            // in any case, success or exception, decide if the job should be resubmitted
-            if (isTriggeredBySubscription()
-                    || (isAutoCompleting && runnable == null)
-                    || isDoneCalled)
-            {
-                schedulingState = TaskSchedulingState.TERMINATED;
-            }
-            else
-            {
-                schedulingState = TaskSchedulingState.QUEUED;
-            }
-        }
-    }
-
-    private void invoke(ActorThread runner) throws Exception
-    {
-        if (callable != null)
-        {
-            invocationResult = callable.call();
-        }
-        else
-        {
-            if (!isTriggeredBySubscription())
-            {
-                // TODO: preempt after fixed number of iterations
-                while (runnable != null && !task.shouldYield && !isDoneCalled)
-                {
-                    final Runnable r = this.runnable;
-
-                    if (isAutoCompleting)
-                    {
-                        this.runnable = null;
-                    }
-
-                    r.run();
-                }
-            }
-            else
-            {
-                runnable.run();
-            }
-        }
-    }
-
-    public void appendChild(ActorJob spawnedTask)
-    {
-        spawnedTask.next = this.next;
-        this.next = spawnedTask;
-    }
-
-    /**
-     * Append a child task to this task. The new child task is appended to the list of tasks
-     * spawned by this task such that it is executed last.
-     */
-    public void append(ActorJob newJob)
-    {
-        ActorJob job = this;
-        assert job != newJob : "Job cannot be twice in a job queue";
-
-        while (job.next != null)
-        {
-            job = job.next;
-            assert job != newJob : "Job cannot be twice in a job queue";
-        }
-
-        job.appendChild(newJob);
-    }
-
-    /**
-     * remove this task from the chain of tasks to execute
-     * @return the next task
-     */
-    protected ActorJob getNext()
-    {
-        final ActorJob next = this.next;
-        this.next = null;
-        return next;
-    }
-
-    public void setRunnable(Runnable runnable)
-    {
-        this.runnable = runnable;
-    }
-
-    public ActorFuture setCallable(Callable<?> callable)
-    {
-        this.callable = callable;
-        setResultFuture(new CompletableActorFuture<>());
-        return resultFuture;
-    }
-
-    public ActorFuture getResultFuture()
-    {
-        return resultFuture;
-    }
-
-    /**
-     * used to recycle the job object
-     */
-    void reset()
-    {
-        schedulingState = TaskSchedulingState.NOT_SCHEDULED;
-
-        next = null;
-        actor = null;
-
-        task = null;
-        actorThread = null;
-
-        callable = null;
-        runnable = null;
-        invocationResult = null;
-        isAutoCompleting = true;
-        isDoneCalled = false;
-
+      if (resultFuture != null) {
+        resultFuture.complete(invocationResult);
         resultFuture = null;
-        subscription = null;
-    }
+      }
 
-    public void markDone()
-    {
-        if (isAutoCompleting)
-        {
-            throw new UnsupportedOperationException("Incorrect use of actor.done(). Can only be called in methods submitted using actor.runUntilDone(Runnable r)");
+    } catch (Exception e) {
+      task.onFailure(e);
+    } finally {
+      this.actorThread = null;
+
+      // in any case, success or exception, decide if the job should be resubmitted
+      if (isTriggeredBySubscription() || (isAutoCompleting && runnable == null) || isDoneCalled) {
+        schedulingState = TaskSchedulingState.TERMINATED;
+      } else {
+        schedulingState = TaskSchedulingState.QUEUED;
+      }
+    }
+  }
+
+  private void invoke(ActorThread runner) throws Exception {
+    if (callable != null) {
+      invocationResult = callable.call();
+    } else {
+      if (!isTriggeredBySubscription()) {
+        // TODO: preempt after fixed number of iterations
+        while (runnable != null && !task.shouldYield && !isDoneCalled) {
+          final Runnable r = this.runnable;
+
+          if (isAutoCompleting) {
+            this.runnable = null;
+          }
+
+          r.run();
         }
+      } else {
+        runnable.run();
+      }
+    }
+  }
 
-        isDoneCalled = true;
+  public void appendChild(ActorJob spawnedTask) {
+    spawnedTask.next = this.next;
+    this.next = spawnedTask;
+  }
+
+  /**
+   * Append a child task to this task. The new child task is appended to the list of tasks spawned
+   * by this task such that it is executed last.
+   */
+  public void append(ActorJob newJob) {
+    ActorJob job = this;
+    assert job != newJob : "Job cannot be twice in a job queue";
+
+    while (job.next != null) {
+      job = job.next;
+      assert job != newJob : "Job cannot be twice in a job queue";
     }
 
-    public void setAutoCompleting(boolean isAutoCompleting)
-    {
-        this.isAutoCompleting = isAutoCompleting;
+    job.appendChild(newJob);
+  }
+
+  /**
+   * remove this task from the chain of tasks to execute
+   *
+   * @return the next task
+   */
+  protected ActorJob getNext() {
+    final ActorJob next = this.next;
+    this.next = null;
+    return next;
+  }
+
+  public void setRunnable(Runnable runnable) {
+    this.runnable = runnable;
+  }
+
+  public ActorFuture setCallable(Callable<?> callable) {
+    this.callable = callable;
+    setResultFuture(new CompletableActorFuture<>());
+    return resultFuture;
+  }
+
+  public ActorFuture getResultFuture() {
+    return resultFuture;
+  }
+
+  /** used to recycle the job object */
+  void reset() {
+    schedulingState = TaskSchedulingState.NOT_SCHEDULED;
+
+    next = null;
+    actor = null;
+
+    task = null;
+    actorThread = null;
+
+    callable = null;
+    runnable = null;
+    invocationResult = null;
+    isAutoCompleting = true;
+    isDoneCalled = false;
+
+    resultFuture = null;
+    subscription = null;
+  }
+
+  public void markDone() {
+    if (isAutoCompleting) {
+      throw new UnsupportedOperationException(
+          "Incorrect use of actor.done(). Can only be called in methods submitted using actor.runUntilDone(Runnable r)");
     }
 
-    @Override
-    public String toString()
-    {
-        String toString = "";
+    isDoneCalled = true;
+  }
 
-        if (runnable != null)
-        {
-            toString += runnable.getClass().getName();
-        }
-        if (callable != null)
-        {
-            toString += callable.getClass().getName();
-        }
+  public void setAutoCompleting(boolean isAutoCompleting) {
+    this.isAutoCompleting = isAutoCompleting;
+  }
 
-        toString += " " + schedulingState;
+  @Override
+  public String toString() {
+    String toString = "";
 
-        return toString;
+    if (runnable != null) {
+      toString += runnable.getClass().getName();
+    }
+    if (callable != null) {
+      toString += callable.getClass().getName();
     }
 
-    public boolean isTriggeredBySubscription()
-    {
-        return subscription != null;
-    }
+    toString += " " + schedulingState;
 
-    public void setSubscription(ActorSubscription subscription)
-    {
-        this.subscription = subscription;
-        task.addSubscription(subscription);
-    }
+    return toString;
+  }
 
-    public ActorSubscription getSubscription()
-    {
-        return subscription;
-    }
+  public boolean isTriggeredBySubscription() {
+    return subscription != null;
+  }
 
-    public ActorTask getTask()
-    {
-        return task;
-    }
+  public void setSubscription(ActorSubscription subscription) {
+    this.subscription = subscription;
+    task.addSubscription(subscription);
+  }
 
-    public Actor getActor()
-    {
-        return actor;
-    }
+  public ActorSubscription getSubscription() {
+    return subscription;
+  }
 
-    public ActorThread getActorThread()
-    {
-        return actorThread;
-    }
+  public ActorTask getTask() {
+    return task;
+  }
 
-    public void setResultFuture(ActorFuture resultFuture)
-    {
-        assert !resultFuture.isDone();
-        this.resultFuture = resultFuture;
-    }
+  public Actor getActor() {
+    return actor;
+  }
 
-    public void failFuture(String reason)
-    {
-        failFuture(new RuntimeException(reason));
-    }
+  public ActorThread getActorThread() {
+    return actorThread;
+  }
 
-    public void failFuture(Exception cause)
-    {
-        if (this.resultFuture != null)
-        {
-            resultFuture.completeExceptionally(cause);
-        }
+  public void setResultFuture(ActorFuture resultFuture) {
+    assert !resultFuture.isDone();
+    this.resultFuture = resultFuture;
+  }
+
+  public void failFuture(String reason) {
+    failFuture(new RuntimeException(reason));
+  }
+
+  public void failFuture(Exception cause) {
+    if (this.resultFuture != null) {
+      resultFuture.completeExceptionally(cause);
     }
+  }
 }

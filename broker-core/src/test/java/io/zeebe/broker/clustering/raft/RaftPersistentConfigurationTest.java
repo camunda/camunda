@@ -19,36 +19,33 @@ package io.zeebe.broker.clustering.raft;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.File;
-import java.io.IOException;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import io.zeebe.broker.clustering.base.raft.RaftConfigurationMetadata;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
+import java.io.File;
+import java.io.IOException;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class RaftPersistentConfigurationTest
-{
-    @Rule
-    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+public class RaftPersistentConfigurationTest {
+  @Rule public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
-    @Test
-    public void shouldPersistConfigurationAsJSON() throws IOException
-    {
-        final String topicName = "internal-system";
-        final int partitionId = 0;
+  @Test
+  public void shouldPersistConfigurationAsJSON() throws IOException {
+    final String topicName = "internal-system";
+    final int partitionId = 0;
 
-        final BrokerCfg brokerCfg = brokerRule.getBroker().getBrokerContext().getBrokerConfiguration();
-        final ObjectReader jsonReader = new ObjectMapper().readerFor(RaftConfigurationMetadata.class);
+    final BrokerCfg brokerCfg = brokerRule.getBroker().getBrokerContext().getBrokerConfiguration();
+    final ObjectReader jsonReader = new ObjectMapper().readerFor(RaftConfigurationMetadata.class);
 
-        final String dataDirectory = brokerCfg.getData().getDirectories()[0];
-        final File configFile = new File(String.format("%s/%s-%d/partition.json", dataDirectory, topicName, partitionId));
+    final String dataDirectory = brokerCfg.getData().getDirectories()[0];
+    final File configFile =
+        new File(String.format("%s/%s-%d/partition.json", dataDirectory, topicName, partitionId));
 
-        final RaftConfigurationMetadata persisted = jsonReader.readValue(configFile);
-        assertThat(persisted.getTopicName()).isEqualTo(topicName);
-        assertThat(persisted.getPartitionId()).isEqualTo(partitionId);
-    }
+    final RaftConfigurationMetadata persisted = jsonReader.readValue(configFile);
+    assertThat(persisted.getTopicName()).isEqualTo(topicName);
+    assertThat(persisted.getPartitionId()).isEqualTo(partitionId);
+  }
 }

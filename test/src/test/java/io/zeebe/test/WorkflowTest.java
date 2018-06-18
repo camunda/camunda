@@ -21,32 +21,31 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class WorkflowTest
-{
-    @Rule
-    public final ZeebeTestRule testRule = new ZeebeTestRule();
+public class WorkflowTest {
+  @Rule public final ZeebeTestRule testRule = new ZeebeTestRule();
 
-    private ZeebeClient client;
-    private String topic;
+  private ZeebeClient client;
+  private String topic;
 
-    @Before
-    public void deploy()
-    {
-        client = testRule.getClient();
-        topic = testRule.getDefaultTopic();
+  @Before
+  public void deploy() {
+    client = testRule.getClient();
+    topic = testRule.getDefaultTopic();
 
-        client.topicClient(topic)
-            .workflowClient()
-            .newDeployCommand()
-            .addResourceFromClasspath("process.bpmn")
-            .send()
-            .join();
-    }
+    client
+        .topicClient(topic)
+        .workflowClient()
+        .newDeployCommand()
+        .addResourceFromClasspath("process.bpmn")
+        .send()
+        .join();
+  }
 
-    @Test
-    public void shouldCompleteWorkflowInstance()
-    {
-        final WorkflowInstanceEvent workflowInstance = client.topicClient(topic)
+  @Test
+  public void shouldCompleteWorkflowInstance() {
+    final WorkflowInstanceEvent workflowInstance =
+        client
+            .topicClient(topic)
             .workflowClient()
             .newCreateInstanceCommand()
             .bpmnProcessId("process")
@@ -54,15 +53,15 @@ public class WorkflowTest
             .send()
             .join();
 
-        client.topicClient(topic)
-            .jobClient()
-            .newWorker()
-            .jobType("task")
-            .handler((c, j) -> c.newCompleteCommand(j).withoutPayload().send().join())
-            .name("test")
-            .open();
+    client
+        .topicClient(topic)
+        .jobClient()
+        .newWorker()
+        .jobType("task")
+        .handler((c, j) -> c.newCompleteCommand(j).withoutPayload().send().join())
+        .name("test")
+        .open();
 
-        testRule.waitUntilWorkflowInstanceCompleted(workflowInstance.getWorkflowInstanceKey());
-    }
-
+    testRule.waitUntilWorkflowInstanceCompleted(workflowInstance.getWorkflowInstanceKey());
+  }
 }

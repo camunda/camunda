@@ -21,71 +21,71 @@ import static io.zeebe.test.util.BufferAssert.assertThatBuffer;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.MockitoAnnotations;
-
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.SubscribedRecordDecoder;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.MockitoAnnotations;
 
-public class SubscribedEventWriterTest
-{
+public class SubscribedEventWriterTest {
 
-    protected static final DirectBuffer BUFFER = wrapString("foo");
+  protected static final DirectBuffer BUFFER = wrapString("foo");
 
-    protected MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-    protected SubscribedRecordDecoder bodyDecoder = new SubscribedRecordDecoder();
+  protected MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
+  protected SubscribedRecordDecoder bodyDecoder = new SubscribedRecordDecoder();
 
-    @Before
-    public void setUp()
-    {
-        MockitoAnnotations.initMocks(this);
-    }
+  @Before
+  public void setUp() {
+    MockitoAnnotations.initMocks(this);
+  }
 
-    @Test
-    public void shouldWriteEventToBuffer()
-    {
-        // given
-        final SubscribedRecordWriter eventWriter = new SubscribedRecordWriter(null);
-        eventWriter
-            .value(BUFFER, 1, BUFFER.capacity() - 1)
-            .recordType(RecordType.EVENT)
-            .valueType(ValueType.JOB)
-            .intent(JobIntent.CREATED)
-            .key(123L)
-            .timestamp(456L)
-            .position(546L)
-            .partitionId(876)
-            .subscriberKey(4L)
-            .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION);
+  @Test
+  public void shouldWriteEventToBuffer() {
+    // given
+    final SubscribedRecordWriter eventWriter = new SubscribedRecordWriter(null);
+    eventWriter
+        .value(BUFFER, 1, BUFFER.capacity() - 1)
+        .recordType(RecordType.EVENT)
+        .valueType(ValueType.JOB)
+        .intent(JobIntent.CREATED)
+        .key(123L)
+        .timestamp(456L)
+        .position(546L)
+        .partitionId(876)
+        .subscriberKey(4L)
+        .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION);
 
-        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[eventWriter.getLength() + 2]);
+    final UnsafeBuffer buffer = new UnsafeBuffer(new byte[eventWriter.getLength() + 2]);
 
-        // when
-        eventWriter.write(buffer, 2);
+    // when
+    eventWriter.write(buffer, 2);
 
-        // then
-        headerDecoder.wrap(buffer, 2);
-        bodyDecoder.wrap(buffer, 2 + headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
+    // then
+    headerDecoder.wrap(buffer, 2);
+    bodyDecoder.wrap(
+        buffer,
+        2 + headerDecoder.encodedLength(),
+        headerDecoder.blockLength(),
+        headerDecoder.version());
 
-        assertThat(bodyDecoder.recordType()).isEqualTo(RecordType.EVENT);
-        assertThat(bodyDecoder.valueType()).isEqualTo(ValueType.JOB);
-        assertThat(bodyDecoder.intent()).isEqualTo(JobIntent.CREATED.value());
-        assertThat(bodyDecoder.key()).isEqualTo(123L);
-        assertThat(bodyDecoder.timestamp()).isEqualTo(456L);
-        assertThat(bodyDecoder.position()).isEqualTo(546L);
-        assertThat(bodyDecoder.partitionId()).isEqualTo(876);
-        assertThat(bodyDecoder.subscriberKey()).isEqualTo(4L);
+    assertThat(bodyDecoder.recordType()).isEqualTo(RecordType.EVENT);
+    assertThat(bodyDecoder.valueType()).isEqualTo(ValueType.JOB);
+    assertThat(bodyDecoder.intent()).isEqualTo(JobIntent.CREATED.value());
+    assertThat(bodyDecoder.key()).isEqualTo(123L);
+    assertThat(bodyDecoder.timestamp()).isEqualTo(456L);
+    assertThat(bodyDecoder.position()).isEqualTo(546L);
+    assertThat(bodyDecoder.partitionId()).isEqualTo(876);
+    assertThat(bodyDecoder.subscriberKey()).isEqualTo(4L);
 
-        final UnsafeBuffer eventBuffer = new UnsafeBuffer(new byte[bodyDecoder.valueLength()]);
-        bodyDecoder.getValue(eventBuffer, 0, eventBuffer.capacity());
+    final UnsafeBuffer eventBuffer = new UnsafeBuffer(new byte[bodyDecoder.valueLength()]);
+    bodyDecoder.getValue(eventBuffer, 0, eventBuffer.capacity());
 
-        assertThatBuffer(eventBuffer).hasBytes(BUFFER, 1, BUFFER.capacity() - 1);
-    }
+    assertThatBuffer(eventBuffer).hasBytes(BUFFER, 1, BUFFER.capacity() - 1);
+  }
 }

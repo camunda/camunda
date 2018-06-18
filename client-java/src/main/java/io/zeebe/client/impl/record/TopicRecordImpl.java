@@ -21,53 +21,44 @@ import io.zeebe.client.impl.event.TopicEventImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 
-public abstract class TopicRecordImpl extends RecordImpl implements TopicRecord
-{
-    private String name;
-    private int partitions;
-    private int replicationFactor;
+public abstract class TopicRecordImpl extends RecordImpl implements TopicRecord {
+  private String name;
+  private int partitions;
+  private int replicationFactor;
 
-    public TopicRecordImpl(ZeebeObjectMapperImpl objectMapper, RecordType recordType)
-    {
-        super(objectMapper, recordType, ValueType.TOPIC);
-    }
+  public TopicRecordImpl(ZeebeObjectMapperImpl objectMapper, RecordType recordType) {
+    super(objectMapper, recordType, ValueType.TOPIC);
+  }
 
-    @Override
-    public String getName()
-    {
-        return name;
-    }
+  @Override
+  public String getName() {
+    return name;
+  }
 
-    @Override
-    public int getPartitions()
-    {
-        return partitions;
-    }
+  @Override
+  public int getPartitions() {
+    return partitions;
+  }
 
-    @Override
-    public int getReplicationFactor()
-    {
-        return replicationFactor;
-    }
+  @Override
+  public int getReplicationFactor() {
+    return replicationFactor;
+  }
 
-    @Override
-    public Class<? extends RecordImpl> getEventClass()
-    {
-        return TopicEventImpl.class;
-    }
+  @Override
+  public Class<? extends RecordImpl> getEventClass() {
+    return TopicEventImpl.class;
+  }
 
-    public void setName(String name)
-    {
-        this.name = name;
-    }
+  public void setName(String name) {
+    this.name = name;
+  }
 
-    public void setPartitions(int partitions)
-    {
-        this.partitions = partitions;
-    }
+  public void setPartitions(int partitions) {
+    this.partitions = partitions;
+  }
 
-    public void setReplicationFactor(int replicationFactor)
-    {
-        this.replicationFactor = replicationFactor;
-    }
+  public void setReplicationFactor(int replicationFactor) {
+    this.replicationFactor = replicationFactor;
+  }
 }

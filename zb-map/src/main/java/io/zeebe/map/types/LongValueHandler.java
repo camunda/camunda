@@ -21,34 +21,28 @@ import org.agrona.UnsafeAccess;
 import sun.misc.Unsafe;
 
 @SuppressWarnings("restriction")
-public class LongValueHandler implements ValueHandler
-{
-    private static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
+public class LongValueHandler implements ValueHandler {
+  private static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
 
-    public long theValue;
+  public long theValue;
 
-    @Override
-    public void setValueLength(int length)
-    {
-        // ignore; length is static
-    }
+  @Override
+  public void setValueLength(int length) {
+    // ignore; length is static
+  }
 
-    @Override
-    public int getValueLength()
-    {
-        return BitUtil.SIZE_OF_LONG;
-    }
+  @Override
+  public int getValueLength() {
+    return BitUtil.SIZE_OF_LONG;
+  }
 
-    @Override
-    public void writeValue(long writeValueAddr)
-    {
-        UNSAFE.putLong(writeValueAddr, theValue);
-    }
+  @Override
+  public void writeValue(long writeValueAddr) {
+    UNSAFE.putLong(writeValueAddr, theValue);
+  }
 
-    @Override
-    public void readValue(long valueAddr, int valueLength)
-    {
-        theValue = UNSAFE.getLong(valueAddr);
-    }
-
+  @Override
+  public void readValue(long valueAddr, int valueLength) {
+    theValue = UNSAFE.getLong(valueAddr);
+  }
 }

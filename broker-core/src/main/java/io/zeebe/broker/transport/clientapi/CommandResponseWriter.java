@@ -17,195 +17,171 @@
  */
 package io.zeebe.broker.transport.clientapi;
 
+import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.*;
+
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.*;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerResponse;
 import io.zeebe.util.buffer.BufferWriter;
+import java.util.Objects;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import java.util.Objects;
+public class CommandResponseWriter implements BufferWriter {
+  protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
+  protected final ExecuteCommandResponseEncoder responseEncoder =
+      new ExecuteCommandResponseEncoder();
 
-import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.*;
+  protected int partitionId = partitionIdNullValue();
+  protected long position = positionNullValue();
+  private long sourceRecordPosition = sourceRecordPositionNullValue();
+  protected long key = keyNullValue();
+  protected long timestamp = timestampNullValue();
+  private RecordType recordType = RecordType.NULL_VAL;
+  private ValueType valueType = ValueType.NULL_VAL;
+  private short intent = Intent.NULL_VAL;
+  private RejectionType rejectionType = RejectionType.NULL_VAL;
 
-public class CommandResponseWriter implements BufferWriter
-{
-    protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
-    protected final ExecuteCommandResponseEncoder responseEncoder = new ExecuteCommandResponseEncoder();
+  protected BufferWriter valueWriter;
+  private UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
 
-    protected int partitionId = partitionIdNullValue();
-    protected long position = positionNullValue();
-    private long sourceRecordPosition = sourceRecordPositionNullValue();
-    protected long key = keyNullValue();
-    protected long timestamp = timestampNullValue();
-    private RecordType recordType = RecordType.NULL_VAL;
-    private ValueType valueType = ValueType.NULL_VAL;
-    private short intent = Intent.NULL_VAL;
-    private RejectionType rejectionType = RejectionType.NULL_VAL;
+  protected final ServerResponse response = new ServerResponse();
+  protected final ServerOutput output;
 
-    protected BufferWriter valueWriter;
-    private UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
+  public CommandResponseWriter(final ServerOutput output) {
+    this.output = output;
+  }
 
-    protected final ServerResponse response = new ServerResponse();
-    protected final ServerOutput output;
+  public CommandResponseWriter recordType(RecordType recordType) {
+    this.recordType = recordType;
+    return this;
+  }
 
-    public CommandResponseWriter(final ServerOutput output)
-    {
-        this.output = output;
+  public CommandResponseWriter intent(Intent intent) {
+    this.intent = intent.value();
+    return this;
+  }
+
+  public CommandResponseWriter valueType(ValueType valueType) {
+    this.valueType = valueType;
+    return this;
+  }
+
+  public CommandResponseWriter partitionId(final int partitionId) {
+    this.partitionId = partitionId;
+    return this;
+  }
+
+  public CommandResponseWriter position(final long position) {
+    this.position = position;
+    return this;
+  }
+
+  public CommandResponseWriter rejectionType(RejectionType rejectionType) {
+    this.rejectionType = rejectionType;
+    return this;
+  }
+
+  public CommandResponseWriter rejectionReason(DirectBuffer rejectionReason) {
+    this.rejectionReason.wrap(rejectionReason);
+    return this;
+  }
+
+  public CommandResponseWriter sourcePosition(final long sourcePosition) {
+    this.sourceRecordPosition = sourcePosition;
+    return this;
+  }
+
+  public CommandResponseWriter key(final long key) {
+    this.key = key;
+    return this;
+  }
+
+  public CommandResponseWriter timestamp(final long timestamp) {
+    this.timestamp = timestamp;
+    return this;
+  }
+
+  public CommandResponseWriter valueWriter(final BufferWriter writer) {
+    this.valueWriter = writer;
+    return this;
+  }
+
+  public boolean tryWriteResponse(int remoteStreamId, long requestId) {
+    Objects.requireNonNull(valueWriter);
+
+    try {
+      response.reset().remoteStreamId(remoteStreamId).requestId(requestId).writer(this);
+
+      return output.sendResponse(response);
+    } finally {
+      reset();
     }
+  }
 
-    public CommandResponseWriter recordType(RecordType recordType)
-    {
-        this.recordType = recordType;
-        return this;
-    }
+  @Override
+  public void write(final MutableDirectBuffer buffer, int offset) {
+    // protocol header
+    messageHeaderEncoder
+        .wrap(buffer, offset)
+        .blockLength(responseEncoder.sbeBlockLength())
+        .templateId(responseEncoder.sbeTemplateId())
+        .schemaId(responseEncoder.sbeSchemaId())
+        .version(responseEncoder.sbeSchemaVersion());
 
-    public CommandResponseWriter intent(Intent intent)
-    {
-        this.intent = intent.value();
-        return this;
-    }
+    offset += messageHeaderEncoder.encodedLength();
 
-    public CommandResponseWriter valueType(ValueType valueType)
-    {
-        this.valueType = valueType;
-        return this;
-    }
+    // protocol message
+    responseEncoder
+        .wrap(buffer, offset)
+        .recordType(recordType)
+        .partitionId(partitionId)
+        .position(position)
+        .sourceRecordPosition(sourceRecordPosition)
+        .valueType(valueType)
+        .intent(intent)
+        .key(key)
+        .timestamp(timestamp)
+        .rejectionType(rejectionType);
 
-    public CommandResponseWriter partitionId(final int partitionId)
-    {
-        this.partitionId = partitionId;
-        return this;
-    }
+    offset = responseEncoder.limit();
 
-    public CommandResponseWriter position(final long position)
-    {
-        this.position = position;
-        return this;
-    }
+    final int eventLength = valueWriter.getLength();
+    buffer.putShort(offset, (short) eventLength, Protocol.ENDIANNESS);
 
-    public CommandResponseWriter rejectionType(RejectionType rejectionType)
-    {
-        this.rejectionType = rejectionType;
-        return this;
-    }
+    offset += valueHeaderLength();
+    valueWriter.write(buffer, offset);
 
-    public CommandResponseWriter rejectionReason(DirectBuffer rejectionReason)
-    {
-        this.rejectionReason.wrap(rejectionReason);
-        return this;
-    }
+    offset += eventLength;
 
-    public CommandResponseWriter sourcePosition(final long sourcePosition)
-    {
-        this.sourceRecordPosition = sourcePosition;
-        return this;
-    }
+    responseEncoder.limit(offset);
+    responseEncoder.putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
+  }
 
-    public CommandResponseWriter key(final long key)
-    {
-        this.key = key;
-        return this;
-    }
+  @Override
+  public int getLength() {
+    return MessageHeaderEncoder.ENCODED_LENGTH
+        + ExecuteCommandResponseEncoder.BLOCK_LENGTH
+        + valueHeaderLength()
+        + valueWriter.getLength()
+        + ExecuteCommandResponseEncoder.rejectionReasonHeaderLength()
+        + rejectionReason.capacity();
+  }
 
-    public CommandResponseWriter timestamp(final long timestamp)
-    {
-        this.timestamp = timestamp;
-        return this;
-    }
-
-    public CommandResponseWriter valueWriter(final BufferWriter writer)
-    {
-        this.valueWriter = writer;
-        return this;
-    }
-
-    public boolean tryWriteResponse(int remoteStreamId, long requestId)
-    {
-        Objects.requireNonNull(valueWriter);
-
-        try
-        {
-            response.reset()
-                .remoteStreamId(remoteStreamId)
-                .requestId(requestId)
-                .writer(this);
-
-            return output.sendResponse(response);
-        }
-        finally
-        {
-            reset();
-        }
-    }
-
-    @Override
-    public void write(final MutableDirectBuffer buffer, int offset)
-    {
-        // protocol header
-        messageHeaderEncoder
-            .wrap(buffer, offset)
-            .blockLength(responseEncoder.sbeBlockLength())
-            .templateId(responseEncoder.sbeTemplateId())
-            .schemaId(responseEncoder.sbeSchemaId())
-            .version(responseEncoder.sbeSchemaVersion());
-
-        offset += messageHeaderEncoder.encodedLength();
-
-        // protocol message
-        responseEncoder
-            .wrap(buffer, offset)
-            .recordType(recordType)
-            .partitionId(partitionId)
-            .position(position)
-            .sourceRecordPosition(sourceRecordPosition)
-            .valueType(valueType)
-            .intent(intent)
-            .key(key)
-            .timestamp(timestamp)
-            .rejectionType(rejectionType);
-
-        offset = responseEncoder.limit();
-
-        final int eventLength = valueWriter.getLength();
-        buffer.putShort(offset, (short) eventLength, Protocol.ENDIANNESS);
-
-        offset += valueHeaderLength();
-        valueWriter.write(buffer, offset);
-
-        offset += eventLength;
-
-        responseEncoder.limit(offset);
-        responseEncoder.putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
-    }
-
-    @Override
-    public int getLength()
-    {
-        return MessageHeaderEncoder.ENCODED_LENGTH +
-                ExecuteCommandResponseEncoder.BLOCK_LENGTH +
-                valueHeaderLength() +
-                valueWriter.getLength() +
-                ExecuteCommandResponseEncoder.rejectionReasonHeaderLength() +
-                rejectionReason.capacity();
-    }
-
-    protected void reset()
-    {
-        partitionId = partitionIdNullValue();
-        key = keyNullValue();
-        position = positionNullValue();
-        sourceRecordPosition = sourceRecordPositionNullValue();
-        valueWriter = null;
-        recordType = RecordType.NULL_VAL;
-        intent = Intent.NULL_VAL;
-        valueType = ValueType.NULL_VAL;
-        timestamp = timestampNullValue();
-        rejectionType = RejectionType.NULL_VAL;
-        rejectionReason.wrap(0, 0);
-    }
-
+  protected void reset() {
+    partitionId = partitionIdNullValue();
+    key = keyNullValue();
+    position = positionNullValue();
+    sourceRecordPosition = sourceRecordPositionNullValue();
+    valueWriter = null;
+    recordType = RecordType.NULL_VAL;
+    intent = Intent.NULL_VAL;
+    valueType = ValueType.NULL_VAL;
+    timestamp = timestampNullValue();
+    rejectionType = RejectionType.NULL_VAL;
+    rejectionReason.wrap(0, 0);
+  }
 }

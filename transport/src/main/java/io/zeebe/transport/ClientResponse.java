@@ -18,23 +18,16 @@ package io.zeebe.transport;
 import org.agrona.DirectBuffer;
 
 /**
- * Response obtained to a client request. See
- * {@link ClientOutput#sendRequest(RemoteAddress, io.zeebe.util.buffer.BufferWriter)} and others.
+ * Response obtained to a client request. See {@link ClientOutput#sendRequest(RemoteAddress,
+ * io.zeebe.util.buffer.BufferWriter)} and others.
  */
-public interface ClientResponse
-{
-    /**
-     * @return the remote address from which the response was obtained
-     */
-    RemoteAddress getRemoteAddress();
+public interface ClientResponse {
+  /** @return the remote address from which the response was obtained */
+  RemoteAddress getRemoteAddress();
 
-    /**
-     * @return the id of the request
-     */
-    long getRequestId();
+  /** @return the id of the request */
+  long getRequestId();
 
-    /**
-     * @return the response data
-     */
-    DirectBuffer getResponseBuffer();
+  /** @return the response data */
+  DirectBuffer getResponseBuffer();
 }

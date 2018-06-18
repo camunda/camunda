@@ -19,55 +19,54 @@ import io.zeebe.raft.state.AbstractRaftState;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.transport.SocketAddress;
 
-public class RaftServiceNames
-{
-    public static ServiceName<Raft> raftServiceName(String raftName)
-    {
-        return ServiceName.newServiceName(String.format("raft.%s", raftName), Raft.class);
-    }
+public class RaftServiceNames {
+  public static ServiceName<Raft> raftServiceName(String raftName) {
+    return ServiceName.newServiceName(String.format("raft.%s", raftName), Raft.class);
+  }
 
-    public static ServiceName<Void> joinServiceName(String raftName)
-    {
-        return ServiceName.newServiceName(String.format("raft.%s.joinService", raftName), Void.class);
-    }
+  public static ServiceName<Void> joinServiceName(String raftName) {
+    return ServiceName.newServiceName(String.format("raft.%s.joinService", raftName), Void.class);
+  }
 
-    public static ServiceName<Void> leaderInstallServiceName(String raftName, int term)
-    {
-        return ServiceName.newServiceName(String.format("raft.leader.%s.%d.install", raftName, term), Void.class);
-    }
+  public static ServiceName<Void> leaderInstallServiceName(String raftName, int term) {
+    return ServiceName.newServiceName(
+        String.format("raft.leader.%s.%d.install", raftName, term), Void.class);
+  }
 
-    public static ServiceName<Void> leaderOpenLogStreamServiceName(String raftName, int term)
-    {
-        return ServiceName.newServiceName(String.format("raft.leader.%s.%d.openLogStream", raftName, term), Void.class);
-    }
+  public static ServiceName<Void> leaderOpenLogStreamServiceName(String raftName, int term) {
+    return ServiceName.newServiceName(
+        String.format("raft.leader.%s.%d.openLogStream", raftName, term), Void.class);
+  }
 
-    public static ServiceName<Void> leaderInitialEventCommittedServiceName(String raftName, int term)
-    {
-        return ServiceName.newServiceName(String.format("raft.leader.%s.%d.initialEventCommitted", raftName, term), Void.class);
-    }
+  public static ServiceName<Void> leaderInitialEventCommittedServiceName(
+      String raftName, int term) {
+    return ServiceName.newServiceName(
+        String.format("raft.leader.%s.%d.initialEventCommitted", raftName, term), Void.class);
+  }
 
-    public static ServiceName<Void> replicateLogConrollerServiceName(String raftName, int term, SocketAddress follower)
-    {
-        return ServiceName.newServiceName(String.format("raft.leader.%s.%d.replicate.%s", raftName, term, follower), Void.class);
-    }
+  public static ServiceName<Void> replicateLogConrollerServiceName(
+      String raftName, int term, SocketAddress follower) {
+    return ServiceName.newServiceName(
+        String.format("raft.leader.%s.%d.replicate.%s", raftName, term, follower), Void.class);
+  }
 
-    public static ServiceName<AbstractRaftState> leaderServiceName(String raftName, int term)
-    {
-        return ServiceName.newServiceName(String.format("raft.leader.%s.%d", raftName, term), AbstractRaftState.class);
-    }
+  public static ServiceName<AbstractRaftState> leaderServiceName(String raftName, int term) {
+    return ServiceName.newServiceName(
+        String.format("raft.leader.%s.%d", raftName, term), AbstractRaftState.class);
+  }
 
-    public static ServiceName<AbstractRaftState> followerServiceName(String raftName, int term)
-    {
-        return ServiceName.newServiceName(String.format("raft.follower.%s.%d", raftName, term), AbstractRaftState.class);
-    }
+  public static ServiceName<AbstractRaftState> followerServiceName(String raftName, int term) {
+    return ServiceName.newServiceName(
+        String.format("raft.follower.%s.%d", raftName, term), AbstractRaftState.class);
+  }
 
-    public static ServiceName<Void> pollServiceName(String raftName, int term)
-    {
-        return ServiceName.newServiceName(String.format("raft.follower.%s.%d.pollService", raftName, term), Void.class);
-    }
+  public static ServiceName<Void> pollServiceName(String raftName, int term) {
+    return ServiceName.newServiceName(
+        String.format("raft.follower.%s.%d.pollService", raftName, term), Void.class);
+  }
 
-    public static ServiceName<AbstractRaftState> candidateServiceName(String raftName, int term)
-    {
-        return ServiceName.newServiceName(String.format("raft.candidate.%s.%d", raftName, term), AbstractRaftState.class);
-    }
+  public static ServiceName<AbstractRaftState> candidateServiceName(String raftName, int term) {
+    return ServiceName.newServiceName(
+        String.format("raft.candidate.%s.%d", raftName, term), AbstractRaftState.class);
+  }
 }

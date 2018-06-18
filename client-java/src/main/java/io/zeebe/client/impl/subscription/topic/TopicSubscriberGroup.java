@@ -15,8 +15,6 @@
  */
 package io.zeebe.client.impl.subscription.topic;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import io.zeebe.client.api.subscription.*;
 import io.zeebe.client.impl.Loggers;
 import io.zeebe.client.impl.ZeebeClientImpl;
@@ -26,112 +24,101 @@ import io.zeebe.util.CheckedConsumer;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-public class TopicSubscriberGroup extends SubscriberGroup<TopicSubscriber> implements TopicSubscription
-{
-    private AtomicBoolean processingFlag = new AtomicBoolean(false);
-    private final TopicSubscriptionSpec subscription;
+public class TopicSubscriberGroup extends SubscriberGroup<TopicSubscriber>
+    implements TopicSubscription {
+  private AtomicBoolean processingFlag = new AtomicBoolean(false);
+  private final TopicSubscriptionSpec subscription;
 
-    public TopicSubscriberGroup(
-            ActorControl actor,
-            ZeebeClientImpl client,
-            SubscriptionManager acquisition,
-            TopicSubscriptionSpec subscription)
-    {
-        super(actor, client, acquisition, subscription.getTopic());
-        this.subscription = subscription;
+  public TopicSubscriberGroup(
+      ActorControl actor,
+      ZeebeClientImpl client,
+      SubscriptionManager acquisition,
+      TopicSubscriptionSpec subscription) {
+    super(actor, client, acquisition, subscription.getTopic());
+    this.subscription = subscription;
+  }
+
+  @Override
+  public int poll() {
+    return pollEvents(subscription.getHandler());
+  }
+
+  public int poll(RecordHandler recordHandler) {
+    return pollEvents((e) -> recordHandler.onRecord(e));
+  }
+
+  @Override
+  public int pollEvents(CheckedConsumer<UntypedRecordImpl> pollHandler) {
+
+    // ensuring at most one thread polls at a time which is the guarantee we give for
+    // topic subscriptions
+    if (processingFlag.compareAndSet(false, true)) {
+      try {
+        return super.pollEvents(pollHandler);
+      } finally {
+        processingFlag.set(false);
+      }
+    } else {
+      return 0;
     }
+  }
 
-    @Override
-    public int poll()
-    {
-        return pollEvents(subscription.getHandler());
-    }
+  @Override
+  protected ActorFuture<? extends EventSubscriptionCreationResult> requestNewSubscriber(
+      int partitionId) {
+    return new CreateTopicSubscriptionCommandImpl(
+            client.getCommandManager(), subscription.getTopic(), partitionId)
+        .startPosition(subscription.getStartPosition(partitionId))
+        .bufferSize(subscription.getBufferSize())
+        .name(subscription.getName())
+        .forceStart(subscription.isForceStart())
+        .send();
+  }
 
-    public int poll(RecordHandler recordHandler)
-    {
-        return pollEvents((e) -> recordHandler.onRecord(e));
-    }
+  @Override
+  protected TopicSubscriber buildSubscriber(EventSubscriptionCreationResult result) {
+    return new TopicSubscriber(
+        client,
+        subscription,
+        result.getSubscriberKey(),
+        result.getEventPublisher(),
+        result.getPartitionId(),
+        this,
+        subscriptionManager);
+  }
 
-    @Override
-    public int pollEvents(CheckedConsumer<UntypedRecordImpl> pollHandler)
-    {
+  @Override
+  protected ActorFuture<Void> doCloseSubscriber(TopicSubscriber subscriber) {
+    final ActorFuture<?> ackFuture = subscriber.acknowledgeLastProcessedEvent();
 
-        // ensuring at most one thread polls at a time which is the guarantee we give for
-        // topic subscriptions
-        if (processingFlag.compareAndSet(false, true))
-        {
-            try
-            {
-                return super.pollEvents(pollHandler);
-            }
-            finally
-            {
-                processingFlag.set(false);
-            }
-        }
-        else
-        {
-            return 0;
-        }
-    }
+    final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
+    actor.runOnCompletionBlockingCurrentPhase(
+        ackFuture,
+        (ackResult, ackThrowable) -> {
+          if (ackThrowable != null) {
+            Loggers.SUBSCRIPTION_LOGGER.error(
+                "Could not acknowledge last event position before closing subscriber. Ignoring.",
+                ackThrowable);
+          }
 
-    @Override
-    protected ActorFuture<? extends EventSubscriptionCreationResult> requestNewSubscriber(int partitionId)
-    {
-        return new CreateTopicSubscriptionCommandImpl(client.getCommandManager(), subscription.getTopic(), partitionId)
-            .startPosition(subscription.getStartPosition(partitionId))
-            .bufferSize(subscription.getBufferSize())
-            .name(subscription.getName())
-            .forceStart(subscription.isForceStart())
-            .send();
-    }
-
-    @Override
-    protected TopicSubscriber buildSubscriber(EventSubscriptionCreationResult result)
-    {
-        return new TopicSubscriber(
-                client,
-                subscription,
-                result.getSubscriberKey(),
-                result.getEventPublisher(),
-                result.getPartitionId(),
-                this,
-                subscriptionManager);
-    }
-
-    @Override
-    protected ActorFuture<Void> doCloseSubscriber(TopicSubscriber subscriber)
-    {
-        final ActorFuture<?> ackFuture = subscriber.acknowledgeLastProcessedEvent();
-
-        final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
-        actor.runOnCompletionBlockingCurrentPhase(ackFuture, (ackResult, ackThrowable) ->
-        {
-            if (ackThrowable != null)
-            {
-                Loggers.SUBSCRIPTION_LOGGER.error("Could not acknowledge last event position before closing subscriber. Ignoring.", ackThrowable);
-            }
-
-            final ActorFuture<Void> closeRequestFuture = subscriber.requestSubscriptionClose();
-            actor.runOnCompletionBlockingCurrentPhase(closeRequestFuture, (closeResult, closeThrowable) ->
-            {
-                if (closeThrowable == null)
-                {
-                    closeFuture.complete(closeResult);
+          final ActorFuture<Void> closeRequestFuture = subscriber.requestSubscriptionClose();
+          actor.runOnCompletionBlockingCurrentPhase(
+              closeRequestFuture,
+              (closeResult, closeThrowable) -> {
+                if (closeThrowable == null) {
+                  closeFuture.complete(closeResult);
+                } else {
+                  closeFuture.completeExceptionally(closeThrowable);
                 }
-                else
-                {
-                    closeFuture.completeExceptionally(closeThrowable);
-                }
-            });
+              });
         });
-        return closeFuture;
-    }
+    return closeFuture;
+  }
 
-    @Override
-    protected String describeGroup()
-    {
-        return subscription.toString();
-    }
+  @Override
+  protected String describeGroup() {
+    return subscription.toString();
+  }
 }

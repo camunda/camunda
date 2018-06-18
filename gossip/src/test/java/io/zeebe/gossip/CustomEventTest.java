@@ -19,298 +19,292 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import io.zeebe.gossip.protocol.CustomEvent;
 import io.zeebe.gossip.util.GossipClusterRule;
 import io.zeebe.gossip.util.GossipRule;
 import io.zeebe.gossip.util.GossipRule.ReceivedCustomEvent;
 import io.zeebe.gossip.util.GossipRule.RecordingCustomEventListener;
 import io.zeebe.test.util.BufferAssert;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.DirectBuffer;
 import org.junit.*;
 import org.junit.rules.Timeout;
 
-public class CustomEventTest
-{
-    private static final DirectBuffer TYPE_1 = wrapString("CUST_1");
-    private static final DirectBuffer TYPE_2 = wrapString("CUST_2");
+public class CustomEventTest {
+  private static final DirectBuffer TYPE_1 = wrapString("CUST_1");
+  private static final DirectBuffer TYPE_2 = wrapString("CUST_2");
 
-    private static final DirectBuffer PAYLOAD_1 = wrapString("FOO");
-    private static final DirectBuffer PAYLOAD_2 = wrapString("BAR");
+  private static final DirectBuffer PAYLOAD_1 = wrapString("FOO");
+  private static final DirectBuffer PAYLOAD_2 = wrapString("BAR");
 
-    private static final GossipConfiguration CONFIGURATION = new GossipConfiguration();
+  private static final GossipConfiguration CONFIGURATION = new GossipConfiguration();
 
-    private GossipRule gossip1 = new GossipRule("localhost:8001");
-    private GossipRule gossip2 = new GossipRule("localhost:8002");
-    private GossipRule gossip3 = new GossipRule("localhost:8003");
+  private GossipRule gossip1 = new GossipRule("localhost:8001");
+  private GossipRule gossip2 = new GossipRule("localhost:8002");
+  private GossipRule gossip3 = new GossipRule("localhost:8003");
 
-    @Rule
-    public GossipClusterRule cluster = new GossipClusterRule(CONFIGURATION, gossip1, gossip2, gossip3);
+  @Rule
+  public GossipClusterRule cluster =
+      new GossipClusterRule(CONFIGURATION, gossip1, gossip2, gossip3);
 
-    @Rule
-    public Timeout timeout = Timeout.seconds(10);
+  @Rule public Timeout timeout = Timeout.seconds(10);
 
-    @Before
-    public void init()
-    {
-        gossip2.join(gossip1).join();
-        gossip3.join(gossip1).join();
+  @Before
+  public void init() {
+    gossip2.join(gossip1).join();
+    gossip3.join(gossip1).join();
 
-        cluster.waitUntil(() -> gossip2.hasMember(gossip3));
-        cluster.waitUntil(() -> gossip3.hasMember(gossip2));
+    cluster.waitUntil(() -> gossip2.hasMember(gossip3));
+    cluster.waitUntil(() -> gossip3.hasMember(gossip2));
 
-        gossip1.clearReceivedEvents();
-        gossip2.clearReceivedEvents();
-        gossip3.clearReceivedEvents();
+    gossip1.clearReceivedEvents();
+    gossip2.clearReceivedEvents();
+    gossip3.clearReceivedEvents();
+  }
+
+  @Test
+  public void shouldSpreadCustomEvent() {
+    // when
+    gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
+
+    cluster.waitUntil(() -> gossip2.receivedCustomEvent(TYPE_1, gossip1));
+
+    // then
+    final CustomEvent customEvent =
+        gossip2.getReceivedCustomEvents(TYPE_1, gossip1).findFirst().get();
+    BufferAssert.assertThatBuffer(customEvent.getPayload())
+        .hasCapacity(PAYLOAD_1.capacity())
+        .hasBytes(PAYLOAD_1);
+  }
+
+  @Test
+  public void shouldSpreadCustomEventToAllNodes() {
+    // when
+    gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
+
+    cluster.waitUntil(() -> gossip2.receivedCustomEvent(TYPE_1, gossip1));
+    cluster.waitUntil(() -> gossip3.receivedCustomEvent(TYPE_1, gossip1));
+
+    // then
+    final CustomEvent customEvent =
+        gossip2.getReceivedCustomEvents(TYPE_1, gossip1).findFirst().get();
+    BufferAssert.assertThatBuffer(customEvent.getPayload())
+        .hasCapacity(PAYLOAD_1.capacity())
+        .hasBytes(PAYLOAD_1);
+
+    final CustomEvent customEvent2 =
+        gossip3.getReceivedCustomEvents(TYPE_1, gossip1).findFirst().get();
+    BufferAssert.assertThatBuffer(customEvent2.getPayload())
+        .hasCapacity(PAYLOAD_1.capacity())
+        .hasBytes(PAYLOAD_1);
+  }
+
+  @Test
+  public void shouldInvokeCustomEventListener() {
+    // given
+    final RecordingCustomEventListener customEventListener = new RecordingCustomEventListener();
+    gossip2.getController().addCustomEventListener(TYPE_1, customEventListener);
+
+    // when
+    gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
+
+    cluster.waitUntil(() -> customEventListener.getInvocations().count() == 1);
+
+    // then
+    final ReceivedCustomEvent customEvent = customEventListener.getInvocations().findFirst().get();
+    assertThat(customEvent.getSender()).isEqualTo(gossip1.getAddress());
+    BufferAssert.assertThatBuffer(customEvent.getPayload())
+        .hasCapacity(PAYLOAD_1.capacity())
+        .hasBytes(PAYLOAD_1);
+  }
+
+  @Test
+  public void shouldInvokeCustomEventListenerOfAllNodes() {
+    // given
+    final RecordingCustomEventListener customEventListener2 = new RecordingCustomEventListener();
+    gossip2.getController().addCustomEventListener(TYPE_1, customEventListener2);
+
+    final RecordingCustomEventListener customEventListener3 = new RecordingCustomEventListener();
+    gossip3.getController().addCustomEventListener(TYPE_1, customEventListener3);
+
+    // when
+    gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
+
+    cluster.waitUntil(() -> gossip2.receivedCustomEvent(TYPE_1, gossip1));
+    cluster.waitUntil(() -> gossip3.receivedCustomEvent(TYPE_1, gossip1));
+
+    // then
+    assertThat(customEventListener2.getInvocations().count()).isEqualTo(1);
+    assertThat(customEventListener3.getInvocations().count()).isEqualTo(1);
+
+    final ReceivedCustomEvent customEvent2 =
+        customEventListener2.getInvocations().findFirst().get();
+    assertThat(customEvent2.getSender()).isEqualTo(gossip1.getAddress());
+    BufferAssert.assertThatBuffer(customEvent2.getPayload())
+        .hasCapacity(PAYLOAD_1.capacity())
+        .hasBytes(PAYLOAD_1);
+
+    final ReceivedCustomEvent customEvent3 =
+        customEventListener3.getInvocations().findFirst().get();
+    assertThat(customEvent3.getSender()).isEqualTo(gossip1.getAddress());
+    BufferAssert.assertThatBuffer(customEvent3.getPayload())
+        .hasCapacity(PAYLOAD_1.capacity())
+        .hasBytes(PAYLOAD_1);
+  }
+
+  @Test
+  public void shouldInvokeCustomEventListenerForMoreEvents() {
+    // given
+    final RecordingCustomEventListener customEventListener = new RecordingCustomEventListener();
+    gossip2.getController().addCustomEventListener(TYPE_1, customEventListener);
+
+    // when
+    final int customEventCount = CONFIGURATION.getMaxCustomEventsPerMessage() + 1;
+    for (int i = 0; i < customEventCount; i++) {
+      final DirectBuffer payload = wrapString("PAYLOAD_" + i);
+      gossip1.getPushlisher().publishEvent(TYPE_1, payload);
     }
 
-    @Test
-    public void shouldSpreadCustomEvent()
-    {
-        // when
-        gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
+    cluster.waitUntil(() -> customEventListener.getInvocations().count() == customEventCount);
 
-        cluster.waitUntil(() -> gossip2.receivedCustomEvent(TYPE_1, gossip1));
+    // then
+    final List<ReceivedCustomEvent> customEvents =
+        customEventListener.getInvocations().collect(toList());
+    for (int i = 0; i < customEventCount; i++) {
+      final ReceivedCustomEvent customEvent = customEvents.get(i);
+      assertThat(customEvent.getSender()).isEqualTo(gossip1.getAddress());
 
-        // then
-        final CustomEvent customEvent = gossip2.getReceivedCustomEvents(TYPE_1, gossip1).findFirst().get();
-        BufferAssert.assertThatBuffer(customEvent.getPayload())
-            .hasCapacity(PAYLOAD_1.capacity())
-            .hasBytes(PAYLOAD_1);
+      final DirectBuffer payload = wrapString("PAYLOAD_" + i);
+
+      BufferAssert.assertThatBuffer(customEvent.getPayload())
+          .hasCapacity(payload.capacity())
+          .hasBytes(payload);
     }
+  }
 
-    @Test
-    public void shouldSpreadCustomEventToAllNodes()
-    {
-        // when
-        gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
+  @Test
+  public void shouldInvokeCustomEventListenerOnlyOncePerEvent() {
+    // given
+    final RecordingCustomEventListener customEventListener1 = new RecordingCustomEventListener();
+    gossip2.getController().addCustomEventListener(TYPE_1, customEventListener1);
 
-        cluster.waitUntil(() -> gossip2.receivedCustomEvent(TYPE_1, gossip1));
-        cluster.waitUntil(() -> gossip3.receivedCustomEvent(TYPE_1, gossip1));
+    final RecordingCustomEventListener customEventListener2 = new RecordingCustomEventListener();
+    gossip2.getController().addCustomEventListener(TYPE_2, customEventListener2);
 
-        // then
-        final CustomEvent customEvent = gossip2.getReceivedCustomEvents(TYPE_1, gossip1).findFirst().get();
-        BufferAssert.assertThatBuffer(customEvent.getPayload())
-            .hasCapacity(PAYLOAD_1.capacity())
-            .hasBytes(PAYLOAD_1);
+    // when
+    gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
+    gossip1.getPushlisher().publishEvent(TYPE_2, PAYLOAD_2);
 
-        final CustomEvent customEvent2 = gossip3.getReceivedCustomEvents(TYPE_1, gossip1).findFirst().get();
-        BufferAssert.assertThatBuffer(customEvent2.getPayload())
-            .hasCapacity(PAYLOAD_1.capacity())
-            .hasBytes(PAYLOAD_1);
-    }
+    cluster.waitUntil(() -> customEventListener1.getInvocations().count() == 1);
+    cluster.waitUntil(() -> customEventListener2.getInvocations().count() == 1);
 
-    @Test
-    public void shouldInvokeCustomEventListener()
-    {
-        // given
-        final RecordingCustomEventListener customEventListener = new RecordingCustomEventListener();
-        gossip2.getController().addCustomEventListener(TYPE_1, customEventListener);
+    // then
+    final ReceivedCustomEvent customEvent1 =
+        customEventListener1.getInvocations().findFirst().get();
+    BufferAssert.assertThatBuffer(customEvent1.getPayload()).hasBytes(PAYLOAD_1);
 
-        // when
-        gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
+    final ReceivedCustomEvent customEvent2 =
+        customEventListener2.getInvocations().findFirst().get();
+    BufferAssert.assertThatBuffer(customEvent2.getPayload()).hasBytes(PAYLOAD_2);
+  }
 
-        cluster.waitUntil(() -> customEventListener.getInvocations().count() == 1);
+  @Test
+  public void shouldNotInvokeCustomEventListenerForOwnEvent() {
+    // given
+    final AtomicBoolean invoked = new AtomicBoolean(false);
+    gossip1.getController().addCustomEventListener(TYPE_1, (s, p) -> invoked.set(true));
 
-        // then
-        final ReceivedCustomEvent customEvent = customEventListener.getInvocations().findFirst().get();
-        assertThat(customEvent.getSender()).isEqualTo(gossip1.getAddress());
-        BufferAssert.assertThatBuffer(customEvent.getPayload())
-            .hasCapacity(PAYLOAD_1.capacity())
-            .hasBytes(PAYLOAD_1);
-    }
+    // when
+    gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
 
-    @Test
-    public void shouldInvokeCustomEventListenerOfAllNodes()
-    {
-        // given
-        final RecordingCustomEventListener customEventListener2 = new RecordingCustomEventListener();
-        gossip2.getController().addCustomEventListener(TYPE_1, customEventListener2);
+    cluster.waitUntil(() -> gossip1.receivedCustomEvent(TYPE_1, gossip1));
 
-        final RecordingCustomEventListener customEventListener3 = new RecordingCustomEventListener();
-        gossip3.getController().addCustomEventListener(TYPE_1, customEventListener3);
+    // then
+    assertThat(invoked.get()).isFalse();
+  }
 
-        // when
-        gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
+  @Test
+  public void shouldIncreaseGossipTermPerEventType() {
+    // when
+    gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
+    gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
+    gossip1.getPushlisher().publishEvent(TYPE_2, PAYLOAD_1);
 
-        cluster.waitUntil(() -> gossip2.receivedCustomEvent(TYPE_1, gossip1));
-        cluster.waitUntil(() -> gossip3.receivedCustomEvent(TYPE_1, gossip1));
+    cluster.waitUntil(() -> gossip2.receivedCustomEvent(TYPE_2, gossip1));
 
-        // then
-        assertThat(customEventListener2.getInvocations().count()).isEqualTo(1);
-        assertThat(customEventListener3.getInvocations().count()).isEqualTo(1);
+    // then
+    assertThat(gossip2.getReceivedCustomEvents(TYPE_1, gossip1).distinct())
+        .hasSize(2)
+        .extracting(e -> e.getSenderGossipTerm().getHeartbeat())
+        .containsExactly(0L, 1L);
 
-        final ReceivedCustomEvent customEvent2 = customEventListener2.getInvocations().findFirst().get();
-        assertThat(customEvent2.getSender()).isEqualTo(gossip1.getAddress());
-        BufferAssert.assertThatBuffer(customEvent2.getPayload())
-            .hasCapacity(PAYLOAD_1.capacity())
-            .hasBytes(PAYLOAD_1);
+    final CustomEvent customEventType2 =
+        gossip2.getReceivedCustomEvents(TYPE_2, gossip1).findFirst().get();
+    assertThat(customEventType2.getSenderGossipTerm().getHeartbeat()).isEqualTo(0L);
+  }
 
-        final ReceivedCustomEvent customEvent3 = customEventListener3.getInvocations().findFirst().get();
-        assertThat(customEvent3.getSender()).isEqualTo(gossip1.getAddress());
-        BufferAssert.assertThatBuffer(customEvent3.getPayload())
-            .hasCapacity(PAYLOAD_1.capacity())
-            .hasBytes(PAYLOAD_1);
-    }
+  @Test
+  public void shouldInvokeAllCustomEventListeners() {
+    // given
+    final AtomicInteger counter = new AtomicInteger(0);
 
-    @Test
-    public void shouldInvokeCustomEventListenerForMoreEvents()
-    {
-        // given
-        final RecordingCustomEventListener customEventListener = new RecordingCustomEventListener();
-        gossip2.getController().addCustomEventListener(TYPE_1, customEventListener);
+    gossip2.getController().addCustomEventListener(TYPE_1, (s, p) -> counter.incrementAndGet());
+    gossip2.getController().addCustomEventListener(TYPE_1, (s, p) -> counter.incrementAndGet());
+    gossip2.getController().addCustomEventListener(TYPE_1, (s, p) -> counter.incrementAndGet());
 
-        // when
-        final int customEventCount = CONFIGURATION.getMaxCustomEventsPerMessage() + 1;
-        for (int i = 0; i < customEventCount; i++)
-        {
-            final DirectBuffer payload = wrapString("PAYLOAD_" + i);
-            gossip1.getPushlisher().publishEvent(TYPE_1, payload);
-        }
+    // when
+    gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
 
-        cluster.waitUntil(() -> customEventListener.getInvocations().count() == customEventCount);
+    cluster.waitUntil(() -> gossip2.receivedCustomEvent(TYPE_1, gossip1));
 
-        // then
-        final List<ReceivedCustomEvent> customEvents = customEventListener.getInvocations().collect(toList());
-        for (int i = 0; i < customEventCount; i++)
-        {
-            final ReceivedCustomEvent customEvent = customEvents.get(i);
-            assertThat(customEvent.getSender()).isEqualTo(gossip1.getAddress());
+    // then
+    assertThat(counter.get()).isEqualTo(3);
+  }
 
-            final DirectBuffer payload = wrapString("PAYLOAD_" + i);
+  @Test
+  public void shouldRemoveCustomEventListener() {
+    // given
+    final AtomicInteger counter = new AtomicInteger(0);
 
-            BufferAssert.assertThatBuffer(customEvent.getPayload())
-                        .hasCapacity(payload.capacity())
-                        .hasBytes(payload);
-        }
-    }
+    final GossipCustomEventListener listener = (s, p) -> counter.incrementAndGet();
 
-    @Test
-    public void shouldInvokeCustomEventListenerOnlyOncePerEvent()
-    {
-        // given
-        final RecordingCustomEventListener customEventListener1 = new RecordingCustomEventListener();
-        gossip2.getController().addCustomEventListener(TYPE_1, customEventListener1);
+    gossip2.getController().addCustomEventListener(TYPE_1, (s, p) -> counter.incrementAndGet());
+    gossip2.getController().addCustomEventListener(TYPE_1, listener);
+    gossip2.getController().addCustomEventListener(TYPE_1, (s, p) -> counter.incrementAndGet());
 
-        final RecordingCustomEventListener customEventListener2 = new RecordingCustomEventListener();
-        gossip2.getController().addCustomEventListener(TYPE_2, customEventListener2);
+    // when
+    gossip2.getController().removeCustomEventListener(listener);
 
-        // when
-        gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
-        gossip1.getPushlisher().publishEvent(TYPE_2, PAYLOAD_2);
+    gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
 
-        cluster.waitUntil(() -> customEventListener1.getInvocations().count() == 1);
-        cluster.waitUntil(() -> customEventListener2.getInvocations().count() == 1);
+    cluster.waitUntil(() -> gossip2.receivedCustomEvent(TYPE_1, gossip1));
 
-        // then
-        final ReceivedCustomEvent customEvent1 = customEventListener1.getInvocations().findFirst().get();
-        BufferAssert.assertThatBuffer(customEvent1.getPayload()).hasBytes(PAYLOAD_1);
+    // then
+    assertThat(counter.get()).isEqualTo(2);
+  }
 
-        final ReceivedCustomEvent customEvent2 = customEventListener2.getInvocations().findFirst().get();
-        BufferAssert.assertThatBuffer(customEvent2.getPayload()).hasBytes(PAYLOAD_2);
-    }
+  @Test
+  public void shouldInvokeCustomEventListenersFailsafe() {
+    // given
+    final AtomicInteger counter = new AtomicInteger(0);
 
-    @Test
-    public void shouldNotInvokeCustomEventListenerForOwnEvent()
-    {
-        // given
-        final AtomicBoolean invoked = new AtomicBoolean(false);
-        gossip1.getController().addCustomEventListener(TYPE_1, (s, p) -> invoked.set(true));
+    gossip2
+        .getController()
+        .addCustomEventListener(
+            TYPE_1,
+            (s, p) -> {
+              throw new RuntimeException("expected");
+            });
 
-        // when
-        gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
+    gossip2.getController().addCustomEventListener(TYPE_1, (s, p) -> counter.incrementAndGet());
+    gossip2.getController().addCustomEventListener(TYPE_1, (s, p) -> counter.incrementAndGet());
 
-        cluster.waitUntil(() -> gossip1.receivedCustomEvent(TYPE_1, gossip1));
+    // when
+    gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
 
-        // then
-        assertThat(invoked.get()).isFalse();
-    }
-
-    @Test
-    public void shouldIncreaseGossipTermPerEventType()
-    {
-        // when
-        gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
-        gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
-        gossip1.getPushlisher().publishEvent(TYPE_2, PAYLOAD_1);
-
-        cluster.waitUntil(() -> gossip2.receivedCustomEvent(TYPE_2, gossip1));
-
-        // then
-        assertThat(gossip2.getReceivedCustomEvents(TYPE_1, gossip1).distinct())
-            .hasSize(2)
-            .extracting(e -> e.getSenderGossipTerm().getHeartbeat())
-            .containsExactly(0L, 1L);
-
-        final CustomEvent customEventType2 = gossip2.getReceivedCustomEvents(TYPE_2, gossip1).findFirst().get();
-        assertThat(customEventType2.getSenderGossipTerm().getHeartbeat()).isEqualTo(0L);
-    }
-
-
-    @Test
-    public void shouldInvokeAllCustomEventListeners()
-    {
-        // given
-        final AtomicInteger counter = new AtomicInteger(0);
-
-        gossip2.getController().addCustomEventListener(TYPE_1, (s, p) -> counter.incrementAndGet());
-        gossip2.getController().addCustomEventListener(TYPE_1, (s, p) -> counter.incrementAndGet());
-        gossip2.getController().addCustomEventListener(TYPE_1, (s, p) -> counter.incrementAndGet());
-
-        // when
-        gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
-
-        cluster.waitUntil(() -> gossip2.receivedCustomEvent(TYPE_1, gossip1));
-
-        // then
-        assertThat(counter.get()).isEqualTo(3);
-    }
-
-    @Test
-    public void shouldRemoveCustomEventListener()
-    {
-        // given
-        final AtomicInteger counter = new AtomicInteger(0);
-
-        final GossipCustomEventListener listener = (s, p) -> counter.incrementAndGet();
-
-        gossip2.getController().addCustomEventListener(TYPE_1, (s, p) -> counter.incrementAndGet());
-        gossip2.getController().addCustomEventListener(TYPE_1, listener);
-        gossip2.getController().addCustomEventListener(TYPE_1, (s, p) -> counter.incrementAndGet());
-
-        // when
-        gossip2.getController().removeCustomEventListener(listener);
-
-        gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
-
-        cluster.waitUntil(() -> gossip2.receivedCustomEvent(TYPE_1, gossip1));
-
-        // then
-        assertThat(counter.get()).isEqualTo(2);
-    }
-
-    @Test
-    public void shouldInvokeCustomEventListenersFailsafe()
-    {
-        // given
-        final AtomicInteger counter = new AtomicInteger(0);
-
-        gossip2.getController().addCustomEventListener(TYPE_1, (s, p) ->
-        {
-            throw new RuntimeException("expected");
-        });
-
-        gossip2.getController().addCustomEventListener(TYPE_1, (s, p) -> counter.incrementAndGet());
-        gossip2.getController().addCustomEventListener(TYPE_1, (s, p) -> counter.incrementAndGet());
-
-        // when
-        gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
-
-        // then
-        cluster.waitUntil(() -> counter.get() == 2);
-    }
-
+    // then
+    cluster.waitUntil(() -> counter.get() == 2);
+  }
 }

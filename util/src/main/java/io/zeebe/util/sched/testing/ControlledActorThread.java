@@ -15,54 +15,48 @@
  */
 package io.zeebe.util.sched.testing;
 
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CyclicBarrier;
-
 import io.zeebe.util.LangUtil;
 import io.zeebe.util.sched.*;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.metrics.ActorThreadMetrics;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
 
-public class ControlledActorThread extends ActorThread
-{
-    private CyclicBarrier barrier = new CyclicBarrier(2);
+public class ControlledActorThread extends ActorThread {
+  private CyclicBarrier barrier = new CyclicBarrier(2);
 
-    public ControlledActorThread(String name, int id, ActorThreadGroup threadGroup, TaskScheduler taskScheduler, ActorClock clock,
-            ActorThreadMetrics metrics, ActorTimerQueue timerQueue)
-    {
-        super(name, id, threadGroup, taskScheduler, clock, metrics, timerQueue);
-        idleStrategy = new ControlledIdleStartegy();
+  public ControlledActorThread(
+      String name,
+      int id,
+      ActorThreadGroup threadGroup,
+      TaskScheduler taskScheduler,
+      ActorClock clock,
+      ActorThreadMetrics metrics,
+      ActorTimerQueue timerQueue) {
+    super(name, id, threadGroup, taskScheduler, clock, metrics, timerQueue);
+    idleStrategy = new ControlledIdleStartegy();
+  }
+
+  class ControlledIdleStartegy extends ActorTaskRunnerIdleStrategy {
+    @Override
+    protected void onIdle() {
+      super.onIdle();
+
+      try {
+        barrier.await();
+      } catch (InterruptedException | BrokenBarrierException e) {
+        LangUtil.rethrowUnchecked(e);
+      }
     }
+  }
 
-    class ControlledIdleStartegy extends ActorTaskRunnerIdleStrategy
-    {
-        @Override
-        protected void onIdle()
-        {
-            super.onIdle();
-
-            try
-            {
-                barrier.await();
-            }
-            catch (InterruptedException | BrokenBarrierException e)
-            {
-                LangUtil.rethrowUnchecked(e);
-            }
-        }
+  public void workUntilDone() {
+    try {
+      barrier.await(); // work at least 1 full cycle until the runner becomes idle after having been
+      // idle
+      barrier.await();
+    } catch (InterruptedException | BrokenBarrierException e) {
+      LangUtil.rethrowUnchecked(e);
     }
-
-    public void workUntilDone()
-    {
-        try
-        {
-            barrier.await(); // work at least 1 full cycle until the runner becomes idle after having been idle
-            barrier.await();
-        }
-        catch (InterruptedException | BrokenBarrierException e)
-        {
-            LangUtil.rethrowUnchecked(e);
-        }
-    }
-
+  }
 }

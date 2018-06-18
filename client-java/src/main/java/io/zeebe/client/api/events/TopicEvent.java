@@ -15,20 +15,13 @@
  */
 package io.zeebe.client.api.events;
 
+import io.zeebe.client.api.record.TopicRecord;
 import java.util.List;
 
-import io.zeebe.client.api.record.TopicRecord;
+public interface TopicEvent extends TopicRecord {
+  /** @return the current state */
+  TopicState getState();
 
-public interface TopicEvent extends TopicRecord
-{
-    /**
-     * @return the current state
-     */
-    TopicState getState();
-
-    /**
-     * @return the ids of the created partitions
-     */
-    List<Integer> getPartitionIds();
-
+  /** @return the ids of the created partitions */
+  List<Integer> getPartitionIds();
 }

@@ -17,19 +17,16 @@
  */
 package io.zeebe.broker.clustering.base.partitions;
 
-public class PartitionAlreadyExistsException extends RuntimeException
-{
+public class PartitionAlreadyExistsException extends RuntimeException {
 
-    private final int partitionId;
+  private final int partitionId;
 
-    public PartitionAlreadyExistsException(final int partitionId)
-    {
-        super("Partition with id " + partitionId + " already exists");
-        this.partitionId = partitionId;
-    }
+  public PartitionAlreadyExistsException(final int partitionId) {
+    super("Partition with id " + partitionId + " already exists");
+    this.partitionId = partitionId;
+  }
 
-    public int getPartitionId()
-    {
-        return partitionId;
-    }
+  public int getPartitionId() {
+    return partitionId;
+  }
 }

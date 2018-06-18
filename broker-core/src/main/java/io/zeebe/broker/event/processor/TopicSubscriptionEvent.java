@@ -17,43 +17,34 @@
  */
 package io.zeebe.broker.event.processor;
 
-import org.agrona.DirectBuffer;
-
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
+import org.agrona.DirectBuffer;
 
-public class TopicSubscriptionEvent extends UnpackedObject
-{
-    protected StringProperty nameProp = new StringProperty("name");
-    protected LongProperty ackPositionProp = new LongProperty("ackPosition");
+public class TopicSubscriptionEvent extends UnpackedObject {
+  protected StringProperty nameProp = new StringProperty("name");
+  protected LongProperty ackPositionProp = new LongProperty("ackPosition");
 
-    public TopicSubscriptionEvent()
-    {
-        declareProperty(nameProp)
-            .declareProperty(ackPositionProp);
-    }
+  public TopicSubscriptionEvent() {
+    declareProperty(nameProp).declareProperty(ackPositionProp);
+  }
 
-    public TopicSubscriptionEvent setName(DirectBuffer nameBuffer, int offset, int length)
-    {
-        this.nameProp.setValue(nameBuffer, offset, length);
-        return this;
-    }
+  public TopicSubscriptionEvent setName(DirectBuffer nameBuffer, int offset, int length) {
+    this.nameProp.setValue(nameBuffer, offset, length);
+    return this;
+  }
 
-    public DirectBuffer getName()
-    {
-        return nameProp.getValue();
-    }
+  public DirectBuffer getName() {
+    return nameProp.getValue();
+  }
 
-    public long getAckPosition()
-    {
-        return ackPositionProp.getValue();
-    }
+  public long getAckPosition() {
+    return ackPositionProp.getValue();
+  }
 
-    public TopicSubscriptionEvent setAckPosition(long ackPosition)
-    {
-        this.ackPositionProp.setValue(ackPosition);
-        return this;
-    }
-
+  public TopicSubscriptionEvent setAckPosition(long ackPosition) {
+    this.ackPositionProp.setValue(ackPosition);
+    return this;
+  }
 }

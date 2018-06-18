@@ -15,7 +15,6 @@
  */
 package io.zeebe.util.collection;
 
-public interface Reusable
-{
-    void reset();
+public interface Reusable {
+  void reset();
 }

@@ -17,80 +17,74 @@ package io.zeebe.test.broker.protocol.brokerapi;
 
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-
 import java.util.function.Consumer;
 
-public class WorkflowInstanceStubs
-{
+public class WorkflowInstanceStubs {
 
-    private StubBrokerRule broker;
+  private StubBrokerRule broker;
 
-    public WorkflowInstanceStubs(StubBrokerRule broker)
-    {
-        this.broker = broker;
-    }
+  public WorkflowInstanceStubs(StubBrokerRule broker) {
+    this.broker = broker;
+  }
 
-    public void registerCreateCommand()
-    {
-        registerCreateCommand(b ->
-        { });
-    }
+  public void registerCreateCommand() {
+    registerCreateCommand(b -> {});
+  }
 
-    public void registerCreateCommand(Consumer<ExecuteCommandResponseBuilder> modifier)
-    {
-        final ExecuteCommandResponseBuilder builder =
-            broker.onExecuteCommandRequest(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
-                .respondWith()
-                .event()
-                .intent(WorkflowInstanceIntent.CREATED)
-                .value()
-                  .allOf(r -> r.getCommand())
-                  .done();
+  public void registerCreateCommand(Consumer<ExecuteCommandResponseBuilder> modifier) {
+    final ExecuteCommandResponseBuilder builder =
+        broker
+            .onExecuteCommandRequest(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
+            .respondWith()
+            .event()
+            .intent(WorkflowInstanceIntent.CREATED)
+            .value()
+            .allOf(r -> r.getCommand())
+            .done();
 
-        modifier.accept(builder);
+    modifier.accept(builder);
 
-        builder.register();
-    }
+    builder.register();
+  }
 
-    public void registerCancelCommand()
-    {
-        registerCancelCommand(b -> { });
-    }
+  public void registerCancelCommand() {
+    registerCancelCommand(b -> {});
+  }
 
-    public void registerCancelCommand(Consumer<ExecuteCommandResponseBuilder> modifier)
-    {
-        final ExecuteCommandResponseBuilder builder =
-            broker.onExecuteCommandRequest(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CANCEL)
-                .respondWith()
-                .event()
-                .intent(WorkflowInstanceIntent.CANCELED)
-                .value()
-                  .allOf(r -> r.getCommand())
-                  .done();
+  public void registerCancelCommand(Consumer<ExecuteCommandResponseBuilder> modifier) {
+    final ExecuteCommandResponseBuilder builder =
+        broker
+            .onExecuteCommandRequest(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CANCEL)
+            .respondWith()
+            .event()
+            .intent(WorkflowInstanceIntent.CANCELED)
+            .value()
+            .allOf(r -> r.getCommand())
+            .done();
 
-        modifier.accept(builder);
+    modifier.accept(builder);
 
-        builder.register();
-    }
+    builder.register();
+  }
 
-    public void registerUpdatedPayloadCommand()
-    {
-        registerUpdatedPayloadCommand(b -> { });
-    }
+  public void registerUpdatedPayloadCommand() {
+    registerUpdatedPayloadCommand(b -> {});
+  }
 
-    public void registerUpdatedPayloadCommand(Consumer<ExecuteCommandResponseBuilder> modifier)
-    {
-        final ExecuteCommandResponseBuilder builder =
-            broker.onExecuteCommandRequest(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.UPDATE_PAYLOAD)
-                .respondWith()
-                .event()
-                .intent(WorkflowInstanceIntent.PAYLOAD_UPDATED)
-                .value()
-                  .allOf(r -> r.getCommand())
-                  .done();
+  public void registerUpdatedPayloadCommand(Consumer<ExecuteCommandResponseBuilder> modifier) {
+    final ExecuteCommandResponseBuilder builder =
+        broker
+            .onExecuteCommandRequest(
+                ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.UPDATE_PAYLOAD)
+            .respondWith()
+            .event()
+            .intent(WorkflowInstanceIntent.PAYLOAD_UPDATED)
+            .value()
+            .allOf(r -> r.getCommand())
+            .done();
 
-        modifier.accept(builder);
+    modifier.accept(builder);
 
-        builder.register();
-    }
+    builder.register();
+  }
 }

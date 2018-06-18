@@ -15,40 +15,36 @@
  */
 package io.zeebe.model.bpmn.impl.validation.nodes;
 
-import java.util.List;
-
 import io.zeebe.model.bpmn.impl.error.ErrorCollector;
 import io.zeebe.model.bpmn.impl.instance.ExclusiveGatewayImpl;
 import io.zeebe.model.bpmn.impl.instance.SequenceFlowImpl;
+import java.util.List;
 
-public class ExclusiveGatewayValidator
-{
-    public void validate(ErrorCollector validationResult, ExclusiveGatewayImpl exclusiveGateway)
-    {
-        final List<SequenceFlowImpl> outgoing = exclusiveGateway.getOutgoing();
-        if (outgoing.size() > 1 || (outgoing.size() == 1 && outgoing.get(0).hasCondition()))
-        {
-            final SequenceFlowImpl defaultFlow = exclusiveGateway.getDefaultFlow();
-            if (defaultFlow != null)
-            {
-                if (defaultFlow.hasCondition())
-                {
-                    validationResult.addError(defaultFlow, "A default sequence flow must not have a condition.");
-                }
-
-                if (!exclusiveGateway.getOutgoingSequenceFlows().contains(defaultFlow))
-                {
-                    validationResult.addError(exclusiveGateway, "The default sequence flow must be an outgoing sequence flow of the exclusive gateway.");
-                }
-            }
-
-            for (SequenceFlowImpl sequenceFlow : exclusiveGateway.getOutgoing())
-            {
-                if (!sequenceFlow.hasCondition() && !sequenceFlow.equals(defaultFlow))
-                {
-                    validationResult.addError(sequenceFlow, "A sequence flow on an exclusive gateway must have a condition, if it is not the default flow.");
-                }
-            }
+public class ExclusiveGatewayValidator {
+  public void validate(ErrorCollector validationResult, ExclusiveGatewayImpl exclusiveGateway) {
+    final List<SequenceFlowImpl> outgoing = exclusiveGateway.getOutgoing();
+    if (outgoing.size() > 1 || (outgoing.size() == 1 && outgoing.get(0).hasCondition())) {
+      final SequenceFlowImpl defaultFlow = exclusiveGateway.getDefaultFlow();
+      if (defaultFlow != null) {
+        if (defaultFlow.hasCondition()) {
+          validationResult.addError(
+              defaultFlow, "A default sequence flow must not have a condition.");
         }
+
+        if (!exclusiveGateway.getOutgoingSequenceFlows().contains(defaultFlow)) {
+          validationResult.addError(
+              exclusiveGateway,
+              "The default sequence flow must be an outgoing sequence flow of the exclusive gateway.");
+        }
+      }
+
+      for (SequenceFlowImpl sequenceFlow : exclusiveGateway.getOutgoing()) {
+        if (!sequenceFlow.hasCondition() && !sequenceFlow.equals(defaultFlow)) {
+          validationResult.addError(
+              sequenceFlow,
+              "A sequence flow on an exclusive gateway must have a condition, if it is not the default flow.");
+        }
+      }
     }
+  }
 }

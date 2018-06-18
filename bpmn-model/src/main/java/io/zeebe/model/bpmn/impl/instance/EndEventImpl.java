@@ -17,19 +17,16 @@ package io.zeebe.model.bpmn.impl.instance;
 
 import io.zeebe.model.bpmn.instance.EndEvent;
 
-public class EndEventImpl extends FlowNodeImpl implements EndEvent
-{
+public class EndEventImpl extends FlowNodeImpl implements EndEvent {
 
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("EndEvent [id=");
-        builder.append(getId());
-        builder.append(", name=");
-        builder.append(getName());
-        builder.append("]");
-        return builder.toString();
-    }
-
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("EndEvent [id=");
+    builder.append(getId());
+    builder.append(", name=");
+    builder.append(getName());
+    builder.append("]");
+    return builder.toString();
+  }
 }

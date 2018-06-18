@@ -20,63 +20,58 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 
 /**
- * Extends FsSnapshotWriter, delegating the write of the checksum + data to it,
- * and moving the data file to its correct path at the end.
+ * Extends FsSnapshotWriter, delegating the write of the checksum + data to it, and moving the data
+ * file to its correct path at the end.
  *
- * In this respect, dataFile => temporaryFile, and snapshotFile is the correct
- * final destination.
+ * <p>In this respect, dataFile => temporaryFile, and snapshotFile is the correct final destination.
  */
-public class FsTemporarySnapshotWriter extends FsSnapshotWriter
-{
-    private File snapshotFile;
+public class FsTemporarySnapshotWriter extends FsSnapshotWriter {
+  private File snapshotFile;
 
-    @SuppressWarnings("WeakerAccess")
-    public FsTemporarySnapshotWriter(final FsSnapshotStorageConfiguration config,
-        final File temporaryFile,
-        final File checksumFile,
-        final File snapshotFile,
-        final FsReadableSnapshot lastSnapshot)
-    {
-        super(config, temporaryFile, checksumFile, lastSnapshot);
-        this.snapshotFile = snapshotFile;
+  @SuppressWarnings("WeakerAccess")
+  public FsTemporarySnapshotWriter(
+      final FsSnapshotStorageConfiguration config,
+      final File temporaryFile,
+      final File checksumFile,
+      final File snapshotFile,
+      final FsReadableSnapshot lastSnapshot) {
+    super(config, temporaryFile, checksumFile, lastSnapshot);
+    this.snapshotFile = snapshotFile;
+  }
+
+  @Override
+  protected void writeToDisk(byte[] checksum) throws Exception {
+    try {
+      super.writeToDisk(checksum);
+
+      // TODO: evaluate if REPLACE_EXISTING is safe here
+      Files.move(
+          dataFile.toPath(),
+          snapshotFile.toPath(),
+          StandardCopyOption.ATOMIC_MOVE,
+          StandardCopyOption.REPLACE_EXISTING);
+
+      //noinspection ResultOfMethodCallIgnored
+      dataFile.delete();
+    } catch (final Exception ex) {
+      abort();
+      throw ex;
     }
+  }
 
-    @Override
-    protected void writeToDisk(byte[] checksum) throws Exception
-    {
-        try
-        {
-            super.writeToDisk(checksum);
+  @SuppressWarnings("ResultOfMethodCallIgnored")
+  @Override
+  public void abort() {
+    super.abort();
+    snapshotFile.delete();
+  }
 
-            // TODO: evaluate if REPLACE_EXISTING is safe here
-            Files.move(dataFile.toPath(), snapshotFile.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+  @Override
+  protected String getDataFileName() {
+    return snapshotFile.getName();
+  }
 
-            //noinspection ResultOfMethodCallIgnored
-            dataFile.delete();
-        }
-        catch (final Exception ex)
-        {
-            abort();
-            throw ex;
-        }
-    }
-
-    @SuppressWarnings("ResultOfMethodCallIgnored")
-    @Override
-    public void abort()
-    {
-        super.abort();
-        snapshotFile.delete();
-    }
-
-    @Override
-    protected String getDataFileName()
-    {
-        return snapshotFile.getName();
-    }
-
-    public File getSnapshotFile()
-    {
-        return snapshotFile;
-    }
+  public File getSnapshotFile() {
+    return snapshotFile;
+  }
 }

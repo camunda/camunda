@@ -15,249 +15,236 @@
  */
 package io.zeebe.model.bpmn;
 
-import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
-import io.zeebe.model.bpmn.impl.error.InvalidModelException;
-import io.zeebe.model.bpmn.instance.*;
-import org.junit.Test;
-
-import java.io.File;
-import java.io.InputStream;
-import java.net.URL;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class BpmnYamlParserTest
-{
-    private static final String INVALID_WORKFLOW = "/invalid_process.yaml";
-    private static final String WORKFLOW_WITH_TASK_SEQUENCE = "/process.yaml";
-    private static final String WORKFLOW_WITH_OVERWRITE_BEHAVIOR = "/overwrite_output_process.yaml";
-    private static final String WORKFLOW_WITH_NONE_BEHAVIOR = "/none_behavior_process.yaml";
-    private static final String WORKFLOW_WITH_INVALID_BEHAVIOR = "/invalid_output_behavior.yaml";
-    private static final String WORKFLOW_WITH_SPLIT = "/process-conditions.yaml";
-    private static final String INVALID_WORKFLOW_WITH_SPLIT = "/invalid_process-conditions.yaml";
+import io.zeebe.model.bpmn.impl.error.InvalidModelException;
+import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
+import io.zeebe.model.bpmn.instance.*;
+import java.io.File;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.List;
+import java.util.stream.Collectors;
+import org.junit.Test;
 
-    @Test
-    public void shouldReadFromFile() throws Exception
-    {
-        final URL resource = getClass().getResource(WORKFLOW_WITH_TASK_SEQUENCE);
-        final File file = new File(resource.toURI());
+public class BpmnYamlParserTest {
+  private static final String INVALID_WORKFLOW = "/invalid_process.yaml";
+  private static final String WORKFLOW_WITH_TASK_SEQUENCE = "/process.yaml";
+  private static final String WORKFLOW_WITH_OVERWRITE_BEHAVIOR = "/overwrite_output_process.yaml";
+  private static final String WORKFLOW_WITH_NONE_BEHAVIOR = "/none_behavior_process.yaml";
+  private static final String WORKFLOW_WITH_INVALID_BEHAVIOR = "/invalid_output_behavior.yaml";
+  private static final String WORKFLOW_WITH_SPLIT = "/process-conditions.yaml";
+  private static final String INVALID_WORKFLOW_WITH_SPLIT = "/invalid_process-conditions.yaml";
 
-        final WorkflowDefinition workflowDefinition = Bpmn.readFromYamlFile(file);
+  @Test
+  public void shouldReadFromFile() throws Exception {
+    final URL resource = getClass().getResource(WORKFLOW_WITH_TASK_SEQUENCE);
+    final File file = new File(resource.toURI());
 
-        assertThat(workflowDefinition).isNotNull();
-        assertThat(workflowDefinition.getWorkflows()).hasSize(1);
-    }
+    final WorkflowDefinition workflowDefinition = Bpmn.readFromYamlFile(file);
 
-    @Test
-    public void shouldReadFromStream()
-    {
-        final InputStream stream = getClass().getResourceAsStream(WORKFLOW_WITH_TASK_SEQUENCE);
+    assertThat(workflowDefinition).isNotNull();
+    assertThat(workflowDefinition.getWorkflows()).hasSize(1);
+  }
 
-        final WorkflowDefinition workflowDefinition = Bpmn.readFromYamlStream(stream);
+  @Test
+  public void shouldReadFromStream() {
+    final InputStream stream = getClass().getResourceAsStream(WORKFLOW_WITH_TASK_SEQUENCE);
 
-        assertThat(workflowDefinition).isNotNull();
-        assertThat(workflowDefinition.getWorkflows()).hasSize(1);
-    }
+    final WorkflowDefinition workflowDefinition = Bpmn.readFromYamlStream(stream);
 
-    @Test
-    public void shouldTransformTask()
-    {
-        final WorkflowDefinition workflowDefinition = parseWorkflow(WORKFLOW_WITH_TASK_SEQUENCE);
+    assertThat(workflowDefinition).isNotNull();
+    assertThat(workflowDefinition.getWorkflows()).hasSize(1);
+  }
 
-        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("test"));
-        assertThat(workflow).isNotNull();
+  @Test
+  public void shouldTransformTask() {
+    final WorkflowDefinition workflowDefinition = parseWorkflow(WORKFLOW_WITH_TASK_SEQUENCE);
 
-        final ServiceTask serviceTask = workflow.findFlowElementById(wrapString("task1"));
-        assertThat(serviceTask).isNotNull();
+    final Workflow workflow = workflowDefinition.getWorkflow(wrapString("test"));
+    assertThat(workflow).isNotNull();
 
-        final TaskDefinition taskDefinition = serviceTask.getTaskDefinition();
-        assertThat(taskDefinition).isNotNull();
-        assertThat(taskDefinition.getTypeAsBuffer()).isEqualTo(wrapString("foo"));
-        assertThat(taskDefinition.getRetries()).isEqualTo(3);
+    final ServiceTask serviceTask = workflow.findFlowElementById(wrapString("task1"));
+    assertThat(serviceTask).isNotNull();
 
-        final TaskHeaders taskHeaders = serviceTask.getTaskHeaders();
-        assertThat(taskHeaders).isNotNull();
-        assertThat(taskHeaders.asMap())
-            .hasSize(2)
-            .containsEntry("foo", "f")
-            .containsEntry("bar", "b");
+    final TaskDefinition taskDefinition = serviceTask.getTaskDefinition();
+    assertThat(taskDefinition).isNotNull();
+    assertThat(taskDefinition.getTypeAsBuffer()).isEqualTo(wrapString("foo"));
+    assertThat(taskDefinition.getRetries()).isEqualTo(3);
 
-        final InputOutputMapping inputOutputMapping = serviceTask.getInputOutputMapping();
-        assertThat(inputOutputMapping).isNotNull();
+    final TaskHeaders taskHeaders = serviceTask.getTaskHeaders();
+    assertThat(taskHeaders).isNotNull();
+    assertThat(taskHeaders.asMap()).hasSize(2).containsEntry("foo", "f").containsEntry("bar", "b");
 
-        assertThat(inputOutputMapping.getOutputBehavior()).isEqualTo(OutputBehavior.MERGE);
+    final InputOutputMapping inputOutputMapping = serviceTask.getInputOutputMapping();
+    assertThat(inputOutputMapping).isNotNull();
 
-        assertThat(inputOutputMapping.getInputMappingsAsMap())
-            .hasSize(1)
-            .containsEntry("$.a", "$.b");
+    assertThat(inputOutputMapping.getOutputBehavior()).isEqualTo(OutputBehavior.MERGE);
 
-        assertThat(inputOutputMapping.getOutputMappingsAsMap())
-            .hasSize(1)
-            .containsEntry("$.c", "$.d");
-    }
+    assertThat(inputOutputMapping.getInputMappingsAsMap()).hasSize(1).containsEntry("$.a", "$.b");
 
-    @Test
-    public void shouldTransformMultipleTasks()
-    {
-        final WorkflowDefinition workflowDefinition = parseWorkflow(WORKFLOW_WITH_TASK_SEQUENCE);
+    assertThat(inputOutputMapping.getOutputMappingsAsMap()).hasSize(1).containsEntry("$.c", "$.d");
+  }
 
-        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("test"));
-        assertThat(workflow).isNotNull();
+  @Test
+  public void shouldTransformMultipleTasks() {
+    final WorkflowDefinition workflowDefinition = parseWorkflow(WORKFLOW_WITH_TASK_SEQUENCE);
 
-        final ServiceTask task1 = workflow.findFlowElementById(wrapString("task1"));
-        assertThat(task1).isNotNull();
+    final Workflow workflow = workflowDefinition.getWorkflow(wrapString("test"));
+    assertThat(workflow).isNotNull();
 
-        final TaskDefinition taskDefinition1 = task1.getTaskDefinition();
-        assertThat(taskDefinition1).isNotNull();
-        assertThat(taskDefinition1.getTypeAsBuffer()).isEqualTo(wrapString("foo"));
-        assertThat(taskDefinition1.getRetries()).isEqualTo(3);
+    final ServiceTask task1 = workflow.findFlowElementById(wrapString("task1"));
+    assertThat(task1).isNotNull();
 
-        final ServiceTask task2 = workflow.findFlowElementById(wrapString("task2"));
-        assertThat(task2).isNotNull();
+    final TaskDefinition taskDefinition1 = task1.getTaskDefinition();
+    assertThat(taskDefinition1).isNotNull();
+    assertThat(taskDefinition1.getTypeAsBuffer()).isEqualTo(wrapString("foo"));
+    assertThat(taskDefinition1.getRetries()).isEqualTo(3);
 
-        final TaskDefinition taskDefinition2 = task2.getTaskDefinition();
-        assertThat(taskDefinition2).isNotNull();
-        assertThat(taskDefinition2.getTypeAsBuffer()).isEqualTo(wrapString("bar"));
-        assertThat(taskDefinition2.getRetries()).isEqualTo(5);
+    final ServiceTask task2 = workflow.findFlowElementById(wrapString("task2"));
+    assertThat(task2).isNotNull();
 
-        assertThat(getFlows(workflow)).contains("task1 -> task2");
-    }
+    final TaskDefinition taskDefinition2 = task2.getTaskDefinition();
+    assertThat(taskDefinition2).isNotNull();
+    assertThat(taskDefinition2.getTypeAsBuffer()).isEqualTo(wrapString("bar"));
+    assertThat(taskDefinition2.getRetries()).isEqualTo(5);
 
-    @Test
-    public void shouldTransformOverwriteOutputBehavior()
-    {
-        // given
-        final WorkflowDefinition workflowDefinition = parseWorkflow(WORKFLOW_WITH_OVERWRITE_BEHAVIOR);
-        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("test"));
-        final ServiceTask serviceTask = workflow.findFlowElementById(wrapString("task1"));
+    assertThat(getFlows(workflow)).contains("task1 -> task2");
+  }
 
-        // when
-        final InputOutputMapping inputOutputMapping = serviceTask.getInputOutputMapping();
+  @Test
+  public void shouldTransformOverwriteOutputBehavior() {
+    // given
+    final WorkflowDefinition workflowDefinition = parseWorkflow(WORKFLOW_WITH_OVERWRITE_BEHAVIOR);
+    final Workflow workflow = workflowDefinition.getWorkflow(wrapString("test"));
+    final ServiceTask serviceTask = workflow.findFlowElementById(wrapString("task1"));
 
-        // then
-        assertThat(inputOutputMapping).isNotNull();
-        assertThat(inputOutputMapping.getOutputBehavior()).isEqualTo(OutputBehavior.OVERWRITE);
-    }
+    // when
+    final InputOutputMapping inputOutputMapping = serviceTask.getInputOutputMapping();
 
-    @Test
-    public void shouldTransformNoneOutputBehavior()
-    {
-        // given
-        final WorkflowDefinition workflowDefinition = parseWorkflow(WORKFLOW_WITH_NONE_BEHAVIOR);
-        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("test"));
-        final ServiceTask serviceTask = workflow.findFlowElementById(wrapString("task1"));
+    // then
+    assertThat(inputOutputMapping).isNotNull();
+    assertThat(inputOutputMapping.getOutputBehavior()).isEqualTo(OutputBehavior.OVERWRITE);
+  }
 
-        // when
-        final InputOutputMapping inputOutputMapping = serviceTask.getInputOutputMapping();
+  @Test
+  public void shouldTransformNoneOutputBehavior() {
+    // given
+    final WorkflowDefinition workflowDefinition = parseWorkflow(WORKFLOW_WITH_NONE_BEHAVIOR);
+    final Workflow workflow = workflowDefinition.getWorkflow(wrapString("test"));
+    final ServiceTask serviceTask = workflow.findFlowElementById(wrapString("task1"));
 
-        // then
-        assertThat(inputOutputMapping).isNotNull();
-        assertThat(inputOutputMapping.getOutputBehavior()).isEqualTo(OutputBehavior.NONE);
-    }
+    // when
+    final InputOutputMapping inputOutputMapping = serviceTask.getInputOutputMapping();
 
-    @Test
-    public void shouldThrowExceptionOnInvalidBehavior()
-    {
-        // expect - when
-        assertThatThrownBy(() ->
-        {
-            parseWorkflow(WORKFLOW_WITH_INVALID_BEHAVIOR);
-        }).hasMessage("Output behavior 'asdf' is not supported. Valid values are [MERGE, OVERWRITE, NONE].")
-            .isExactlyInstanceOf(InvalidModelException.class);
-    }
+    // then
+    assertThat(inputOutputMapping).isNotNull();
+    assertThat(inputOutputMapping.getOutputBehavior()).isEqualTo(OutputBehavior.NONE);
+  }
 
-    @Test
-    public void shouldTransformExclusiveSplit()
-    {
-        final WorkflowDefinition workflowDefinition = parseWorkflow(WORKFLOW_WITH_SPLIT);
+  @Test
+  public void shouldThrowExceptionOnInvalidBehavior() {
+    // expect - when
+    assertThatThrownBy(
+            () -> {
+              parseWorkflow(WORKFLOW_WITH_INVALID_BEHAVIOR);
+            })
+        .hasMessage(
+            "Output behavior 'asdf' is not supported. Valid values are [MERGE, OVERWRITE, NONE].")
+        .isExactlyInstanceOf(InvalidModelException.class);
+  }
 
-        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("test"));
-        assertThat(workflow).isNotNull();
+  @Test
+  public void shouldTransformExclusiveSplit() {
+    final WorkflowDefinition workflowDefinition = parseWorkflow(WORKFLOW_WITH_SPLIT);
 
-        final ServiceTask task1 = workflow.findFlowElementById(wrapString("task1"));
-        assertThat(task1).isNotNull();
-        assertThat(task1.getOutgoingSequenceFlows()).hasSize(1);
+    final Workflow workflow = workflowDefinition.getWorkflow(wrapString("test"));
+    assertThat(workflow).isNotNull();
 
-        final SequenceFlow flowToGateway = task1.getOutgoingSequenceFlows().get(0);
-        final ExclusiveGateway exclusiveGateway = workflow.findFlowElementById(flowToGateway.getTargetNode().getIdAsBuffer());
-        assertThat(exclusiveGateway).isNotNull();
+    final ServiceTask task1 = workflow.findFlowElementById(wrapString("task1"));
+    assertThat(task1).isNotNull();
+    assertThat(task1.getOutgoingSequenceFlows()).hasSize(1);
 
-        final List<SequenceFlow> outgoingSequenceFlowsWithConditions = exclusiveGateway.getOutgoingSequenceFlowsWithConditions();
-        assertThat(outgoingSequenceFlowsWithConditions).hasSize(2);
-        assertThat(outgoingSequenceFlowsWithConditions).allMatch(SequenceFlow::hasCondition);
-        assertThat(outgoingSequenceFlowsWithConditions)
-            .extracting(s -> s.getCondition().getExpression())
-            .containsExactly("$.foo < 5", "$.foo >= 5 && $.foo < 10");
+    final SequenceFlow flowToGateway = task1.getOutgoingSequenceFlows().get(0);
+    final ExclusiveGateway exclusiveGateway =
+        workflow.findFlowElementById(flowToGateway.getTargetNode().getIdAsBuffer());
+    assertThat(exclusiveGateway).isNotNull();
 
-        final SequenceFlow defaultFlow = exclusiveGateway.getDefaultFlow();
-        assertThat(defaultFlow).isNotNull();
-        assertThat(defaultFlow.hasCondition()).isFalse();
-        assertThat(defaultFlow.getTargetNode().getIdAsBuffer()).isEqualTo(wrapString("task4"));
+    final List<SequenceFlow> outgoingSequenceFlowsWithConditions =
+        exclusiveGateway.getOutgoingSequenceFlowsWithConditions();
+    assertThat(outgoingSequenceFlowsWithConditions).hasSize(2);
+    assertThat(outgoingSequenceFlowsWithConditions).allMatch(SequenceFlow::hasCondition);
+    assertThat(outgoingSequenceFlowsWithConditions)
+        .extracting(s -> s.getCondition().getExpression())
+        .containsExactly("$.foo < 5", "$.foo >= 5 && $.foo < 10");
 
-        assertThat(getFlows(workflow))
-            .contains("task1 -> split-task1")
-            .contains("split-task1 -> task2")
-            .contains("split-task1 -> task3")
-            .contains("split-task1 -> task4")
-            .contains("task2 -> task5")
-            .contains("task3 -> task4")
-            .doesNotContain("task2 -> task3")
-            .doesNotContain("task4 -> task5");
-    }
+    final SequenceFlow defaultFlow = exclusiveGateway.getDefaultFlow();
+    assertThat(defaultFlow).isNotNull();
+    assertThat(defaultFlow.hasCondition()).isFalse();
+    assertThat(defaultFlow.getTargetNode().getIdAsBuffer()).isEqualTo(wrapString("task4"));
 
-    @Test
-    public void shouldThrowExceptionOnInvalidFile() throws Exception
-    {
-        // given
-        final URL resource = getClass().getResource(INVALID_WORKFLOW);
-        final File bpmnFile = new File(resource.toURI());
+    assertThat(getFlows(workflow))
+        .contains("task1 -> split-task1")
+        .contains("split-task1 -> task2")
+        .contains("split-task1 -> task3")
+        .contains("split-task1 -> task4")
+        .contains("task2 -> task5")
+        .contains("task3 -> task4")
+        .doesNotContain("task2 -> task3")
+        .doesNotContain("task4 -> task5");
+  }
 
-        // when
-        assertThatThrownBy(() ->
-        {
-            Bpmn.readFromYamlFile(bpmnFile);
-        }).hasMessageContaining("BPMN process id is required.")
-            .hasMessageContaining("A task definition must contain a 'type' attribute which specifies the type of the task.");
-    }
+  @Test
+  public void shouldThrowExceptionOnInvalidFile() throws Exception {
+    // given
+    final URL resource = getClass().getResource(INVALID_WORKFLOW);
+    final File bpmnFile = new File(resource.toURI());
 
-    @Test
-    public void shouldThrowExceptionOnInvalidExclusiveSplit() throws Exception
-    {
-        // given
-        final URL resource = getClass().getResource(INVALID_WORKFLOW_WITH_SPLIT);
-        final File yamlFile = new File(resource.toURI());
+    // when
+    assertThatThrownBy(
+            () -> {
+              Bpmn.readFromYamlFile(bpmnFile);
+            })
+        .hasMessageContaining("BPMN process id is required.")
+        .hasMessageContaining(
+            "A task definition must contain a 'type' attribute which specifies the type of the task.");
+  }
 
-        // when
-        assertThatThrownBy(() ->
-        {
-            Bpmn.readFromYamlFile(yamlFile);
-        }).hasMessageContaining("A sequence flow on an exclusive gateway must have a condition, if it is not the default flow.");
-    }
+  @Test
+  public void shouldThrowExceptionOnInvalidExclusiveSplit() throws Exception {
+    // given
+    final URL resource = getClass().getResource(INVALID_WORKFLOW_WITH_SPLIT);
+    final File yamlFile = new File(resource.toURI());
 
-    private WorkflowDefinition parseWorkflow(String path)
-    {
-        final InputStream stream = getClass().getResourceAsStream(path);
-        final WorkflowDefinition workflowDefinition = Bpmn.readFromYamlStream(stream);
-        return workflowDefinition;
-    }
+    // when
+    assertThatThrownBy(
+            () -> {
+              Bpmn.readFromYamlFile(yamlFile);
+            })
+        .hasMessageContaining(
+            "A sequence flow on an exclusive gateway must have a condition, if it is not the default flow.");
+  }
 
-    private List<String> getFlows(Workflow workflow)
-    {
-        final ProcessImpl process = (ProcessImpl) workflow;
+  private WorkflowDefinition parseWorkflow(String path) {
+    final InputStream stream = getClass().getResourceAsStream(path);
+    final WorkflowDefinition workflowDefinition = Bpmn.readFromYamlStream(stream);
+    return workflowDefinition;
+  }
 
-        return process.getSequenceFlows().stream()
-            .map(s -> getFlowId(s.getSourceNode()) + " -> " + getFlowId(s.getTargetNode()))
-            .collect(Collectors.toList());
-    }
+  private List<String> getFlows(Workflow workflow) {
+    final ProcessImpl process = (ProcessImpl) workflow;
 
-    private String getFlowId(FlowNode node)
-    {
-        return bufferAsString(node.getIdAsBuffer());
-    }
+    return process
+        .getSequenceFlows()
+        .stream()
+        .map(s -> getFlowId(s.getSourceNode()) + " -> " + getFlowId(s.getTargetNode()))
+        .collect(Collectors.toList());
+  }
 
+  private String getFlowId(FlowNode node) {
+    return bufferAsString(node.getIdAsBuffer());
+  }
 }

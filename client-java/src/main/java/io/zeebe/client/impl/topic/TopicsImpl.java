@@ -15,39 +15,33 @@
  */
 package io.zeebe.client.impl.topic;
 
+import io.zeebe.client.api.commands.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import io.zeebe.client.api.commands.*;
+public class TopicsImpl implements Topics {
+  private List<Topic> topics;
 
-public class TopicsImpl implements Topics
-{
-    private List<Topic> topics;
+  public void setPartitions(List<PartitionImpl> partitions) {
+    topics = new ArrayList<>();
+    partitions
+        .stream()
+        .collect(Collectors.groupingBy(PartitionImpl::getTopicName, Collectors.<Partition>toList()))
+        .forEach((t, p) -> topics.add(new TopicImpl(t, p)));
+  }
 
-    public void setPartitions(List<PartitionImpl> partitions)
-    {
-        topics = new ArrayList<>();
-        partitions
-                .stream()
-                .collect(Collectors.groupingBy(PartitionImpl::getTopicName, Collectors.<Partition> toList()))
-                .forEach((t, p) -> topics.add(new TopicImpl(t, p)));
-    }
+  @Override
+  public List<Topic> getTopics() {
+    return topics;
+  }
 
-    @Override
-    public List<Topic> getTopics()
-    {
-        return topics;
-    }
-
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("Topics [");
-        builder.append(topics);
-        builder.append("]");
-        return builder.toString();
-    }
-
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("Topics [");
+    builder.append(topics);
+    builder.append("]");
+    return builder.toString();
+  }
 }

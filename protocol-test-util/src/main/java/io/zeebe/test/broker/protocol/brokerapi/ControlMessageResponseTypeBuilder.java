@@ -15,33 +15,26 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi;
 
+import io.zeebe.test.broker.protocol.MsgPackHelper;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import io.zeebe.test.broker.protocol.MsgPackHelper;
+public class ControlMessageResponseTypeBuilder extends ResponseTypeBuilder<ControlMessageRequest> {
+  protected MsgPackHelper msgPackConverter;
 
-public class ControlMessageResponseTypeBuilder extends ResponseTypeBuilder<ControlMessageRequest>
-{
-    protected MsgPackHelper msgPackConverter;
+  public ControlMessageResponseTypeBuilder(
+      Consumer<ResponseStub<ControlMessageRequest>> stubConsumer,
+      Predicate<ControlMessageRequest> activationFunction,
+      MsgPackHelper msgPackConverter) {
+    super(stubConsumer, activationFunction);
+    this.msgPackConverter = msgPackConverter;
+  }
 
-    public ControlMessageResponseTypeBuilder(
-            Consumer<ResponseStub<ControlMessageRequest>> stubConsumer,
-            Predicate<ControlMessageRequest> activationFunction,
-            MsgPackHelper msgPackConverter)
-    {
-        super(stubConsumer, activationFunction);
-        this.msgPackConverter = msgPackConverter;
-    }
+  public ControlMessageResponseBuilder respondWith() {
+    return new ControlMessageResponseBuilder(this::respondWith, msgPackConverter);
+  }
 
-    public ControlMessageResponseBuilder respondWith()
-    {
-        return new ControlMessageResponseBuilder(this::respondWith, msgPackConverter);
-    }
-
-    public ErrorResponseBuilder<ControlMessageRequest> respondWithError()
-    {
-        return new ErrorResponseBuilder<>(this::respondWith, msgPackConverter);
-    }
-
-
+  public ErrorResponseBuilder<ControlMessageRequest> respondWithError() {
+    return new ErrorResponseBuilder<>(this::respondWith, msgPackConverter);
+  }
 }

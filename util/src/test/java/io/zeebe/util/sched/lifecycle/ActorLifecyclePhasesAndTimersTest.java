@@ -17,151 +17,138 @@ package io.zeebe.util.sched.lifecycle;
 
 import static org.mockito.Mockito.*;
 
-import java.time.Duration;
-
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
+import java.time.Duration;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ActorLifecyclePhasesAndTimersTest
-{
-    @Rule
-    public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
+public class ActorLifecyclePhasesAndTimersTest {
+  @Rule
+  public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
 
-    @Test
-    public void shouldNotExecuteTimersInStartingPhase()
-    {
-        // given
-        schedulerRule.getClock().setCurrentTime(100);
-        final Runnable action = mock(Runnable.class);
-        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
-        {
-            @Override
-            public void onActorStarting()
-            {
-                actor.runDelayed(Duration.ofMillis(10), action);
-                blockPhase();
-            }
+  @Test
+  public void shouldNotExecuteTimersInStartingPhase() {
+    // given
+    schedulerRule.getClock().setCurrentTime(100);
+    final Runnable action = mock(Runnable.class);
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+          @Override
+          public void onActorStarting() {
+            actor.runDelayed(Duration.ofMillis(10), action);
+            blockPhase();
+          }
         };
-        schedulerRule.submitActor(actor);
-        schedulerRule.workUntilDone();
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
 
-        // when
-        schedulerRule.getClock().addTime(Duration.ofMillis(10));
-        schedulerRule.workUntilDone();
+    // when
+    schedulerRule.getClock().addTime(Duration.ofMillis(10));
+    schedulerRule.workUntilDone();
 
-        // then
-        verify(action, times(0)).run();
-    }
+    // then
+    verify(action, times(0)).run();
+  }
 
-    @Test
-    public void shouldExecuteTimersSubmittedInStartingPhaseWhenInStartedPhase() throws Exception
-    {
-        // given
-        schedulerRule.getClock().setCurrentTime(100);
-        final Runnable action = mock(Runnable.class);
-        final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
-        {
-            @Override
-            public void onActorStarting()
-            {
-                actor.runDelayed(Duration.ofMillis(10), action);
-                blockPhase(future);
-            }
+  @Test
+  public void shouldExecuteTimersSubmittedInStartingPhaseWhenInStartedPhase() throws Exception {
+    // given
+    schedulerRule.getClock().setCurrentTime(100);
+    final Runnable action = mock(Runnable.class);
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+          @Override
+          public void onActorStarting() {
+            actor.runDelayed(Duration.ofMillis(10), action);
+            blockPhase(future);
+          }
         };
-        schedulerRule.submitActor(actor);
-        schedulerRule.workUntilDone();
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
 
-        // when
-        schedulerRule.getClock().addTime(Duration.ofMillis(10));
-        schedulerRule.workUntilDone();
-        verify(action, times(0)).run();
+    // when
+    schedulerRule.getClock().addTime(Duration.ofMillis(10));
+    schedulerRule.workUntilDone();
+    verify(action, times(0)).run();
 
-        // when then
-        future.complete(null);
-        schedulerRule.workUntilDone();
-        verify(action, times(1)).run();
-    }
+    // when then
+    future.complete(null);
+    schedulerRule.workUntilDone();
+    verify(action, times(1)).run();
+  }
 
-    @Test
-    public void shouldExecuteTimersInStartedPhase()
-    {
-        // given
-        schedulerRule.getClock().setCurrentTime(100);
-        final Runnable action = mock(Runnable.class);
-        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
-        {
-            @Override
-            public void onActorStarted()
-            {
-                actor.runDelayed(Duration.ofMillis(10), action);
-            }
+  @Test
+  public void shouldExecuteTimersInStartedPhase() {
+    // given
+    schedulerRule.getClock().setCurrentTime(100);
+    final Runnable action = mock(Runnable.class);
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+          @Override
+          public void onActorStarted() {
+            actor.runDelayed(Duration.ofMillis(10), action);
+          }
         };
-        schedulerRule.submitActor(actor);
-        schedulerRule.workUntilDone();
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
 
-        // when
-        schedulerRule.getClock().addTime(Duration.ofMillis(10));
-        schedulerRule.workUntilDone();
+    // when
+    schedulerRule.getClock().addTime(Duration.ofMillis(10));
+    schedulerRule.workUntilDone();
 
-        // then
-        verify(action, times(1)).run();
-    }
+    // then
+    verify(action, times(1)).run();
+  }
 
-    @Test
-    public void shouldNotExecuteTimersInCloseRequestedPhase()
-    {
-        // given
-        schedulerRule.getClock().setCurrentTime(100);
-        final Runnable action = mock(Runnable.class);
-        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
-        {
-            @Override
-            public void onActorCloseRequested()
-            {
-                blockPhase();
-                actor.runDelayed(Duration.ofMillis(10), action);
-            }
+  @Test
+  public void shouldNotExecuteTimersInCloseRequestedPhase() {
+    // given
+    schedulerRule.getClock().setCurrentTime(100);
+    final Runnable action = mock(Runnable.class);
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+          @Override
+          public void onActorCloseRequested() {
+            blockPhase();
+            actor.runDelayed(Duration.ofMillis(10), action);
+          }
         };
-        schedulerRule.submitActor(actor);
-        actor.close();
-        schedulerRule.workUntilDone();
+    schedulerRule.submitActor(actor);
+    actor.close();
+    schedulerRule.workUntilDone();
 
-        // when
-        schedulerRule.getClock().addTime(Duration.ofMillis(10));
-        schedulerRule.workUntilDone();
+    // when
+    schedulerRule.getClock().addTime(Duration.ofMillis(10));
+    schedulerRule.workUntilDone();
 
-        // then
-        verify(action, times(0)).run();
-    }
+    // then
+    verify(action, times(0)).run();
+  }
 
-    @Test
-    public void shouldNotExecuteTimersInClosingPhase()
-    {
-        // given
-        schedulerRule.getClock().setCurrentTime(100);
-        final Runnable action = mock(Runnable.class);
-        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
-        {
-            @Override
-            public void onActorClosing()
-            {
-                blockPhase();
-                actor.runDelayed(Duration.ofMillis(10), action);
-            }
+  @Test
+  public void shouldNotExecuteTimersInClosingPhase() {
+    // given
+    schedulerRule.getClock().setCurrentTime(100);
+    final Runnable action = mock(Runnable.class);
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+          @Override
+          public void onActorClosing() {
+            blockPhase();
+            actor.runDelayed(Duration.ofMillis(10), action);
+          }
         };
-        schedulerRule.submitActor(actor);
-        actor.close();
-        schedulerRule.workUntilDone();
+    schedulerRule.submitActor(actor);
+    actor.close();
+    schedulerRule.workUntilDone();
 
-        // when
-        schedulerRule.getClock().addTime(Duration.ofMillis(10));
-        schedulerRule.workUntilDone();
+    // when
+    schedulerRule.getClock().addTime(Duration.ofMillis(10));
+    schedulerRule.workUntilDone();
 
-        // then
-        verify(action, times(0)).run();
-    }
-
+    // then
+    verify(action, times(0)).run();
+  }
 }

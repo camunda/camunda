@@ -15,25 +15,23 @@
  */
 package io.zeebe.client.benchmark.msgpack;
 
-public enum TaskEventType
-{
-    CREATE,
-    CREATED,
+public enum TaskEventType {
+  CREATE,
+  CREATED,
 
-    LOCK,
-    LOCKED,
-    LOCK_FAILED,
+  LOCK,
+  LOCKED,
+  LOCK_FAILED,
 
-    COMPLETE,
-    COMPLETED,
-    COMPLETE_FAILED,
+  COMPLETE,
+  COMPLETED,
+  COMPLETE_FAILED,
 
-    EXPIRE_LOCK,
-    LOCK_EXPIRED,
-    LOCK_EXPIRATION_FAILED,
+  EXPIRE_LOCK,
+  LOCK_EXPIRED,
+  LOCK_EXPIRATION_FAILED,
 
-    ABORT,
-    ABORTED,
-    ABORT_FAILED;
-
+  ABORT,
+  ABORTED,
+  ABORT_FAILED;
 }

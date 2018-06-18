@@ -22,42 +22,36 @@ import io.zeebe.client.api.subscription.JobWorkerBuilderStep1;
 import io.zeebe.client.impl.job.*;
 import io.zeebe.client.impl.subscription.job.JobSubcriptionBuilder;
 
-public class JobClientImpl implements JobClient
-{
-    private final TopicClientImpl client;
+public class JobClientImpl implements JobClient {
+  private final TopicClientImpl client;
 
-    public JobClientImpl(TopicClientImpl client)
-    {
-        this.client = client;
-    }
+  public JobClientImpl(TopicClientImpl client) {
+    this.client = client;
+  }
 
-    @Override
-    public CreateJobCommandStep1 newCreateCommand()
-    {
-        return new CreateJobCommandImpl(client.getCommandManager(), client.getObjectMapper(), client.getTopic());
-    }
+  @Override
+  public CreateJobCommandStep1 newCreateCommand() {
+    return new CreateJobCommandImpl(
+        client.getCommandManager(), client.getObjectMapper(), client.getTopic());
+  }
 
-    @Override
-    public CompleteJobCommandStep1 newCompleteCommand(JobEvent event)
-    {
-        return new CompleteJobCommandImpl(client.getCommandManager(), event);
-    }
+  @Override
+  public CompleteJobCommandStep1 newCompleteCommand(JobEvent event) {
+    return new CompleteJobCommandImpl(client.getCommandManager(), event);
+  }
 
-    @Override
-    public FailJobCommandStep1 newFailCommand(JobEvent event)
-    {
-        return new FailJobCommandImpl(client.getCommandManager(), event);
-    }
+  @Override
+  public FailJobCommandStep1 newFailCommand(JobEvent event) {
+    return new FailJobCommandImpl(client.getCommandManager(), event);
+  }
 
-    @Override
-    public UpdateRetriesJobCommandStep1 newUpdateRetriesCommand(JobEvent event)
-    {
-        return new UpdateRetriesJobCommandImpl(client.getCommandManager(), event);
-    }
+  @Override
+  public UpdateRetriesJobCommandStep1 newUpdateRetriesCommand(JobEvent event) {
+    return new UpdateRetriesJobCommandImpl(client.getCommandManager(), event);
+  }
 
-    @Override
-    public JobWorkerBuilderStep1 newWorker()
-    {
-        return new JobSubcriptionBuilder(client);
-    }
+  @Override
+  public JobWorkerBuilderStep1 newWorker() {
+    return new JobSubcriptionBuilder(client);
+  }
 }

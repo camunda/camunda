@@ -17,42 +17,36 @@ package io.zeebe.client.impl.topic;
 
 import io.zeebe.client.api.commands.Partition;
 
-public class PartitionImpl implements Partition
-{
-    private int id;
-    private String topic;
+public class PartitionImpl implements Partition {
+  private int id;
+  private String topic;
 
-    @Override
-    public int getId()
-    {
-        return id;
-    }
+  @Override
+  public int getId() {
+    return id;
+  }
 
-    public void setId(int id)
-    {
-        this.id = id;
-    }
+  public void setId(int id) {
+    this.id = id;
+  }
 
-    @Override
-    public String getTopicName()
-    {
-        return topic;
-    }
+  @Override
+  public String getTopicName() {
+    return topic;
+  }
 
-    public void setTopic(String topic)
-    {
-        this.topic = topic;
-    }
+  public void setTopic(String topic) {
+    this.topic = topic;
+  }
 
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("Partition [id=");
-        builder.append(id);
-        builder.append(", topic=");
-        builder.append(topic);
-        builder.append("]");
-        return builder.toString();
-    }
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("Partition [id=");
+    builder.append(id);
+    builder.append(", topic=");
+    builder.append(topic);
+    builder.append("]");
+    return builder.toString();
+  }
 }

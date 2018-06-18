@@ -18,41 +18,34 @@ package io.zeebe.raft;
 import io.zeebe.raft.controller.MemberReplicateLogController;
 import io.zeebe.transport.RemoteAddress;
 
-public class RaftMember
-{
-    private final RemoteAddress remoteAddress;
-    private MemberReplicateLogController replicationController;
+public class RaftMember {
+  private final RemoteAddress remoteAddress;
+  private MemberReplicateLogController replicationController;
 
-    private long matchPosition;
+  private long matchPosition;
 
-    public RaftMember(final RemoteAddress remoteAddress)
-    {
-        this.remoteAddress = remoteAddress;
-    }
+  public RaftMember(final RemoteAddress remoteAddress) {
+    this.remoteAddress = remoteAddress;
+  }
 
-    public RemoteAddress getRemoteAddress()
-    {
-        return remoteAddress;
-    }
+  public RemoteAddress getRemoteAddress() {
+    return remoteAddress;
+  }
 
-    public void onFollowerHasAcknowledgedPosition(long position)
-    {
-        matchPosition = position;
-        replicationController.onFollowerHasAcknowledgedPosition(position);
-    }
+  public void onFollowerHasAcknowledgedPosition(long position) {
+    matchPosition = position;
+    replicationController.onFollowerHasAcknowledgedPosition(position);
+  }
 
-    public void onFollowerHasFailedPosition(long position)
-    {
-        replicationController.onFollowerHasFailedPosition(position);
-    }
+  public void onFollowerHasFailedPosition(long position) {
+    replicationController.onFollowerHasFailedPosition(position);
+  }
 
-    public long getMatchPosition()
-    {
-        return matchPosition;
-    }
+  public long getMatchPosition() {
+    return matchPosition;
+  }
 
-    public void setReplicationController(MemberReplicateLogController replicationController)
-    {
-        this.replicationController = replicationController;
-    }
+  public void setReplicationController(MemberReplicateLogController replicationController) {
+    this.replicationController = replicationController;
+  }
 }

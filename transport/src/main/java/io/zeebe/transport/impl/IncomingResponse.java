@@ -17,24 +17,20 @@ package io.zeebe.transport.impl;
 
 import org.agrona.DirectBuffer;
 
-public class IncomingResponse
-{
-    private final long requestId;
-    private final DirectBuffer responseBuffer;
+public class IncomingResponse {
+  private final long requestId;
+  private final DirectBuffer responseBuffer;
 
-    public IncomingResponse(long requestId, DirectBuffer responseBuffer)
-    {
-        this.requestId = requestId;
-        this.responseBuffer = responseBuffer;
-    }
+  public IncomingResponse(long requestId, DirectBuffer responseBuffer) {
+    this.requestId = requestId;
+    this.responseBuffer = responseBuffer;
+  }
 
-    public long getRequestId()
-    {
-        return requestId;
-    }
+  public long getRequestId() {
+    return requestId;
+  }
 
-    public DirectBuffer getResponseBuffer()
-    {
-        return responseBuffer;
-    }
+  public DirectBuffer getResponseBuffer() {
+    return responseBuffer;
+  }
 }

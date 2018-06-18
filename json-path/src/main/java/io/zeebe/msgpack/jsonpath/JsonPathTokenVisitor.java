@@ -17,9 +17,7 @@ package io.zeebe.msgpack.jsonpath;
 
 import org.agrona.DirectBuffer;
 
-public interface JsonPathTokenVisitor
-{
+public interface JsonPathTokenVisitor {
 
-    void visit(JsonPathToken type, DirectBuffer valueBuffer, int valueOffset, int valueLength);
-
+  void visit(JsonPathToken type, DirectBuffer valueBuffer, int valueOffset, int valueLength);
 }

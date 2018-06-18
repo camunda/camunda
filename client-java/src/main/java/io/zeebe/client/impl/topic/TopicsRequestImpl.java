@@ -15,29 +15,24 @@
  */
 package io.zeebe.client.impl.topic;
 
-import java.util.Collections;
-
 import io.zeebe.client.api.commands.Topics;
 import io.zeebe.client.api.commands.TopicsRequestStep1;
 import io.zeebe.client.impl.ControlMessageRequest;
 import io.zeebe.client.impl.RequestManager;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
+import java.util.Collections;
 
-public class TopicsRequestImpl extends ControlMessageRequest<Topics> implements TopicsRequestStep1
-{
+public class TopicsRequestImpl extends ControlMessageRequest<Topics> implements TopicsRequestStep1 {
 
-    public TopicsRequestImpl(RequestManager client)
-    {
-        super(client, ControlMessageType.REQUEST_PARTITIONS, TopicsImpl.class);
+  public TopicsRequestImpl(RequestManager client) {
+    super(client, ControlMessageType.REQUEST_PARTITIONS, TopicsImpl.class);
 
-        setTargetPartition(Protocol.SYSTEM_PARTITION);
-    }
+    setTargetPartition(Protocol.SYSTEM_PARTITION);
+  }
 
-    @Override
-    public Object getRequest()
-    {
-        return Collections.EMPTY_MAP;
-    }
-
+  @Override
+  public Object getRequest() {
+    return Collections.EMPTY_MAP;
+  }
 }

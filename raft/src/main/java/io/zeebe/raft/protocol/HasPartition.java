@@ -15,7 +15,6 @@
  */
 package io.zeebe.raft.protocol;
 
-public interface HasPartition
-{
-    int getPartitionId();
+public interface HasPartition {
+  int getPartitionId();
 }

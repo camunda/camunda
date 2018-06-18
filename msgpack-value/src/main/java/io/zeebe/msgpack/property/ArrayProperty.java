@@ -15,36 +15,31 @@
  */
 package io.zeebe.msgpack.property;
 
-import java.util.Iterator;
-
 import io.zeebe.msgpack.value.ArrayValue;
 import io.zeebe.msgpack.value.BaseValue;
 import io.zeebe.msgpack.value.ValueArray;
+import java.util.Iterator;
 
-public class ArrayProperty<T extends BaseValue> extends BaseProperty<ArrayValue<T>> implements ValueArray<T>
-{
-    public ArrayProperty(String keyString, T innerValue)
-    {
-        super(keyString, new ArrayValue<T>(innerValue));
-        isSet = true;
-    }
+public class ArrayProperty<T extends BaseValue> extends BaseProperty<ArrayValue<T>>
+    implements ValueArray<T> {
+  public ArrayProperty(String keyString, T innerValue) {
+    super(keyString, new ArrayValue<T>(innerValue));
+    isSet = true;
+  }
 
-    @Override
-    public void reset()
-    {
-        super.reset();
-        isSet = true;
-    }
+  @Override
+  public void reset() {
+    super.reset();
+    isSet = true;
+  }
 
-    @Override
-    public Iterator<T> iterator()
-    {
-        return resolveValue().iterator();
-    }
+  @Override
+  public Iterator<T> iterator() {
+    return resolveValue().iterator();
+  }
 
-    @Override
-    public T add()
-    {
-        return value.add();
-    }
+  @Override
+  public T add() {
+    return value.add();
+  }
 }

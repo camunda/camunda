@@ -17,62 +17,51 @@
  */
 package io.zeebe.broker.system.configuration;
 
-public class DataCfg implements ConfigurationEntry
-{
-    private String[] directories = new String[] { "data" };
+public class DataCfg implements ConfigurationEntry {
+  private String[] directories = new String[] {"data"};
 
-    private String defaultLogSegmentSize = "512M";
+  private String defaultLogSegmentSize = "512M";
 
-    private String snapshotPeriod = "15m";
+  private String snapshotPeriod = "15m";
 
-    private String snapshotReplicationPeriod = "5m";
+  private String snapshotReplicationPeriod = "5m";
 
-    @Override
-    public void init(BrokerCfg globalConfig, String brokerBase)
-    {
-        for (int i = 0; i < directories.length; i++)
-        {
-            directories[i] = ConfigurationUtil.toAbsolutePath(directories[i], brokerBase);
-        }
+  @Override
+  public void init(BrokerCfg globalConfig, String brokerBase) {
+    for (int i = 0; i < directories.length; i++) {
+      directories[i] = ConfigurationUtil.toAbsolutePath(directories[i], brokerBase);
     }
+  }
 
-    public String[] getDirectories()
-    {
-        return directories;
-    }
+  public String[] getDirectories() {
+    return directories;
+  }
 
-    public void setDirectories(String[] directories)
-    {
-        this.directories = directories;
-    }
+  public void setDirectories(String[] directories) {
+    this.directories = directories;
+  }
 
-    public String getDefaultLogSegmentSize()
-    {
-        return defaultLogSegmentSize;
-    }
+  public String getDefaultLogSegmentSize() {
+    return defaultLogSegmentSize;
+  }
 
-    public void setDefaultLogSegmentSize(String defaultLogSegmentSize)
-    {
-        this.defaultLogSegmentSize = defaultLogSegmentSize;
-    }
+  public void setDefaultLogSegmentSize(String defaultLogSegmentSize) {
+    this.defaultLogSegmentSize = defaultLogSegmentSize;
+  }
 
-    public String getSnapshotPeriod()
-    {
-        return snapshotPeriod;
-    }
+  public String getSnapshotPeriod() {
+    return snapshotPeriod;
+  }
 
-    public void setSnapshotPeriod(final String snapshotPeriod)
-    {
-        this.snapshotPeriod = snapshotPeriod;
-    }
+  public void setSnapshotPeriod(final String snapshotPeriod) {
+    this.snapshotPeriod = snapshotPeriod;
+  }
 
-    public String getSnapshotReplicationPeriod()
-    {
-        return snapshotReplicationPeriod;
-    }
+  public String getSnapshotReplicationPeriod() {
+    return snapshotReplicationPeriod;
+  }
 
-    public void setSnapshotReplicationPeriod(String snapshotReplicationPeriod)
-    {
-        this.snapshotReplicationPeriod = snapshotReplicationPeriod;
-    }
+  public void setSnapshotReplicationPeriod(String snapshotReplicationPeriod) {
+    this.snapshotReplicationPeriod = snapshotReplicationPeriod;
+  }
 }

@@ -15,14 +15,6 @@
  */
 package io.zeebe.test.broker.protocol.clientapi;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Map;
-
-import org.agrona.DirectBuffer;
-import org.agrona.LangUtil;
-import org.agrona.io.DirectBufferInputStream;
-
 import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
@@ -32,115 +24,107 @@ import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.util.buffer.BufferReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Map;
+import org.agrona.DirectBuffer;
+import org.agrona.LangUtil;
+import org.agrona.io.DirectBufferInputStream;
 
-public class ExecuteCommandResponse implements BufferReader
-{
-    private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-    private final ExecuteCommandResponseDecoder responseDecoder = new ExecuteCommandResponseDecoder();
-    protected final ErrorResponse errorResponse;
+public class ExecuteCommandResponse implements BufferReader {
+  private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
+  private final ExecuteCommandResponseDecoder responseDecoder = new ExecuteCommandResponseDecoder();
+  protected final ErrorResponse errorResponse;
 
-    protected final MsgPackHelper msgPackHelper;
+  protected final MsgPackHelper msgPackHelper;
 
-    protected Map<String, Object> value;
-    private String rejectionReason;
+  protected Map<String, Object> value;
+  private String rejectionReason;
 
-    public ExecuteCommandResponse(MsgPackHelper msgPackHelper)
-    {
-        this.msgPackHelper = msgPackHelper;
-        this.errorResponse = new ErrorResponse(msgPackHelper);
+  public ExecuteCommandResponse(MsgPackHelper msgPackHelper) {
+    this.msgPackHelper = msgPackHelper;
+    this.errorResponse = new ErrorResponse(msgPackHelper);
+  }
+
+  public Map<String, Object> getValue() {
+    return value;
+  }
+
+  public long position() {
+    return responseDecoder.position();
+  }
+
+  public long sourceRecordPosition() {
+    return responseDecoder.sourceRecordPosition();
+  }
+
+  public long key() {
+    return responseDecoder.key();
+  }
+
+  public long timestamp() {
+    return responseDecoder.timestamp();
+  }
+
+  public int partitionId() {
+    return responseDecoder.partitionId();
+  }
+
+  public ValueType valueType() {
+    return responseDecoder.valueType();
+  }
+
+  public Intent intent() {
+    return Intent.fromProtocolValue(responseDecoder.valueType(), responseDecoder.intent());
+  }
+
+  public RecordType recordType() {
+    return responseDecoder.recordType();
+  }
+
+  public RejectionType rejectionType() {
+    return responseDecoder.rejectionType();
+  }
+
+  public String rejectionReason() {
+    return rejectionReason;
+  }
+
+  @Override
+  public void wrap(DirectBuffer responseBuffer, int offset, int length) {
+    messageHeaderDecoder.wrap(responseBuffer, offset);
+
+    if (messageHeaderDecoder.templateId() != responseDecoder.sbeTemplateId()) {
+      if (messageHeaderDecoder.templateId() == ErrorResponseDecoder.TEMPLATE_ID) {
+        errorResponse.wrap(responseBuffer, offset + messageHeaderDecoder.encodedLength(), length);
+        throw new RuntimeException(
+            "Unexpected error response from broker: "
+                + errorResponse.getErrorCode()
+                + " - "
+                + errorResponse.getErrorData());
+      } else {
+        throw new RuntimeException(
+            "Unexpected response from broker. Template id " + messageHeaderDecoder.templateId());
+      }
     }
 
-    public Map<String, Object> getValue()
-    {
-        return value;
+    responseDecoder.wrap(
+        responseBuffer,
+        offset + messageHeaderDecoder.encodedLength(),
+        messageHeaderDecoder.blockLength(),
+        messageHeaderDecoder.version());
+
+    final int eventLength = responseDecoder.valueLength();
+    final int eventOffset =
+        responseDecoder.limit() + ExecuteCommandResponseDecoder.valueHeaderLength();
+
+    try (InputStream is = new DirectBufferInputStream(responseBuffer, eventOffset, eventLength)) {
+      value = msgPackHelper.readMsgPack(is);
+    } catch (IOException e) {
+      LangUtil.rethrowUnchecked(e);
     }
 
-    public long position()
-    {
-        return responseDecoder.position();
-    }
-
-    public long sourceRecordPosition()
-    {
-        return responseDecoder.sourceRecordPosition();
-    }
-
-
-    public long key()
-    {
-        return responseDecoder.key();
-    }
-
-    public long timestamp()
-    {
-        return responseDecoder.timestamp();
-    }
-
-    public int partitionId()
-    {
-        return responseDecoder.partitionId();
-    }
-
-    public ValueType valueType()
-    {
-        return responseDecoder.valueType();
-    }
-
-    public Intent intent()
-    {
-        return Intent.fromProtocolValue(responseDecoder.valueType(), responseDecoder.intent());
-    }
-
-    public RecordType recordType()
-    {
-        return responseDecoder.recordType();
-    }
-
-    public RejectionType rejectionType()
-    {
-        return responseDecoder.rejectionType();
-    }
-
-    public String rejectionReason()
-    {
-        return rejectionReason;
-    }
-
-    @Override
-    public void wrap(DirectBuffer responseBuffer, int offset, int length)
-    {
-        messageHeaderDecoder.wrap(responseBuffer, offset);
-
-        if (messageHeaderDecoder.templateId() != responseDecoder.sbeTemplateId())
-        {
-            if (messageHeaderDecoder.templateId() == ErrorResponseDecoder.TEMPLATE_ID)
-            {
-                errorResponse.wrap(responseBuffer, offset + messageHeaderDecoder.encodedLength(), length);
-                throw new RuntimeException("Unexpected error response from broker: " +
-                        errorResponse.getErrorCode() + " - " + errorResponse.getErrorData());
-            }
-            else
-            {
-                throw new RuntimeException("Unexpected response from broker. Template id " + messageHeaderDecoder.templateId());
-            }
-        }
-
-        responseDecoder.wrap(responseBuffer, offset + messageHeaderDecoder.encodedLength(), messageHeaderDecoder.blockLength(), messageHeaderDecoder.version());
-
-        final int eventLength = responseDecoder.valueLength();
-        final int eventOffset = responseDecoder.limit() + ExecuteCommandResponseDecoder.valueHeaderLength();
-
-        try (InputStream is = new DirectBufferInputStream(responseBuffer, eventOffset, eventLength))
-        {
-            value = msgPackHelper.readMsgPack(is);
-        }
-        catch (IOException e)
-        {
-            LangUtil.rethrowUnchecked(e);
-        }
-
-        responseDecoder.limit(eventOffset + eventLength);
-        rejectionReason = responseDecoder.rejectionReason();
-    }
-
+    responseDecoder.limit(eventOffset + eventLength);
+    rejectionReason = responseDecoder.rejectionReason();
+  }
 }

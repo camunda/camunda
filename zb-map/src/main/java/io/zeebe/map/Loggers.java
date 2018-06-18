@@ -18,7 +18,6 @@ package io.zeebe.map;
 import io.zeebe.util.ZbLogger;
 import org.slf4j.Logger;
 
-public class Loggers
-{
-    public static final Logger ZB_MAP_LOGGER = new ZbLogger("io.zeebe.map");
+public class Loggers {
+  public static final Logger ZB_MAP_LOGGER = new ZbLogger("io.zeebe.map");
 }

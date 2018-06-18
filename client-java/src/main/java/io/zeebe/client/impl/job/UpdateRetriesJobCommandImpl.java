@@ -26,30 +26,26 @@ import io.zeebe.client.impl.record.RecordImpl;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.util.EnsureUtil;
 
-public class UpdateRetriesJobCommandImpl extends CommandImpl<JobEvent> implements UpdateRetriesJobCommandStep1, UpdateRetriesJobCommandStep2
-{
-    private final JobCommandImpl command;
+public class UpdateRetriesJobCommandImpl extends CommandImpl<JobEvent>
+    implements UpdateRetriesJobCommandStep1, UpdateRetriesJobCommandStep2 {
+  private final JobCommandImpl command;
 
-    public UpdateRetriesJobCommandImpl(RequestManager commandManager, JobEvent event)
-    {
-        super(commandManager);
+  public UpdateRetriesJobCommandImpl(RequestManager commandManager, JobEvent event) {
+    super(commandManager);
 
-        EnsureUtil.ensureNotNull("base event", event);
+    EnsureUtil.ensureNotNull("base event", event);
 
-        command = new JobCommandImpl((JobEventImpl) event, JobIntent.UPDATE_RETRIES);
-    }
+    command = new JobCommandImpl((JobEventImpl) event, JobIntent.UPDATE_RETRIES);
+  }
 
-    @Override
-    public UpdateRetriesJobCommandStep2 retries(int remaingRetries)
-    {
-        command.setRetries(remaingRetries);
-        return this;
-    }
+  @Override
+  public UpdateRetriesJobCommandStep2 retries(int remaingRetries) {
+    command.setRetries(remaingRetries);
+    return this;
+  }
 
-    @Override
-    public RecordImpl getCommand()
-    {
-        return command;
-    }
-
+  @Override
+  public RecordImpl getCommand() {
+    return command;
+  }
 }

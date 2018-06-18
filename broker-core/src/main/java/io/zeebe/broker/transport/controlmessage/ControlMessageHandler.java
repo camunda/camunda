@@ -22,35 +22,24 @@ import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.util.sched.ActorControl;
 import org.agrona.DirectBuffer;
 
-/**
- * Handle a specific type of control messages.
- */
-public interface ControlMessageHandler
-{
-    /**
-     * Returns the type of control message which can be handled.
-     */
-    ControlMessageType getMessageType();
+/** Handle a specific type of control messages. */
+public interface ControlMessageHandler {
+  /** Returns the type of control message which can be handled. */
+  ControlMessageType getMessageType();
 
-    /**
-     * Handle the given control message asynchronously. An implementation may
-     * copy the buffer if the data is used beyond the invocation.
-     *
-     *
-     * Backpressure should be implemented in the {@link #handle(ActorControl, int, DirectBuffer, RecordMetadata)}
-     * methdod like follows:
-     * Sending response (success or error) should be done via actor.runUntilDone. This
-     * will block the calling actor, until the response is send successfully.
-     *
-     * @param actor
-     *          the actor that can be used for waiting of async calls
-     * @param partitionId
-     *         < 0 if no specific partition is addressed
-     * @param buffer
-     *            the buffer which contains the control message as MsgPack-JSON
-     * @param metadata
-     *            the metadata (channel partitionId, connection partitionId, request partitionId) of the
-     *            request
-     */
-    void handle(ActorControl actor, int partitionId, DirectBuffer buffer, RecordMetadata metadata);
+  /**
+   * Handle the given control message asynchronously. An implementation may copy the buffer if the
+   * data is used beyond the invocation.
+   *
+   * <p>Backpressure should be implemented in the {@link #handle(ActorControl, int, DirectBuffer,
+   * RecordMetadata)} methdod like follows: Sending response (success or error) should be done via
+   * actor.runUntilDone. This will block the calling actor, until the response is send successfully.
+   *
+   * @param actor the actor that can be used for waiting of async calls
+   * @param partitionId < 0 if no specific partition is addressed
+   * @param buffer the buffer which contains the control message as MsgPack-JSON
+   * @param metadata the metadata (channel partitionId, connection partitionId, request partitionId)
+   *     of the request
+   */
+  void handle(ActorControl actor, int partitionId, DirectBuffer buffer, RecordMetadata metadata);
 }

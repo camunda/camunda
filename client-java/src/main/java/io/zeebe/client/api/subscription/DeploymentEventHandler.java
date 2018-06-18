@@ -18,8 +18,7 @@ package io.zeebe.client.api.subscription;
 import io.zeebe.client.api.events.DeploymentEvent;
 
 @FunctionalInterface
-public interface DeploymentEventHandler
-{
+public interface DeploymentEventHandler {
 
-    void onDeploymentEvent(DeploymentEvent deploymentEvent) throws Exception;
+  void onDeploymentEvent(DeploymentEvent deploymentEvent) throws Exception;
 }

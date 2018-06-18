@@ -15,55 +15,45 @@
  */
 package io.zeebe.client.event;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 import io.zeebe.client.api.record.Record;
 import io.zeebe.client.api.subscription.RecordHandler;
+import java.util.concurrent.atomic.AtomicInteger;
 
-public class ControllableHandler implements RecordHandler
-{
+public class ControllableHandler implements RecordHandler {
 
-    protected Object monitor = new Object();
-    protected boolean shouldWait = true;
-    protected boolean isWaiting = false;
-    protected AtomicInteger numHandledRecords = new AtomicInteger(0);
+  protected Object monitor = new Object();
+  protected boolean shouldWait = true;
+  protected boolean isWaiting = false;
+  protected AtomicInteger numHandledRecords = new AtomicInteger(0);
 
-    @Override
-    public void onRecord(Record record) throws Exception
-    {
-        if (shouldWait)
-        {
-            synchronized (monitor)
-            {
-                isWaiting = true;
-                monitor.wait();
-                isWaiting = false;
-            }
-        }
-
-        numHandledRecords.incrementAndGet();
+  @Override
+  public void onRecord(Record record) throws Exception {
+    if (shouldWait) {
+      synchronized (monitor) {
+        isWaiting = true;
+        monitor.wait();
+        isWaiting = false;
+      }
     }
 
-    public int getNumHandledRecords()
-    {
-        return numHandledRecords.get();
-    }
+    numHandledRecords.incrementAndGet();
+  }
 
-    public void signal()
-    {
-        synchronized (monitor)
-        {
-            monitor.notify();
-        }
-    }
+  public int getNumHandledRecords() {
+    return numHandledRecords.get();
+  }
 
-    public void disableWait()
-    {
-        shouldWait = false;
+  public void signal() {
+    synchronized (monitor) {
+      monitor.notify();
     }
+  }
 
-    public boolean isWaiting()
-    {
-        return isWaiting;
-    }
+  public void disableWait() {
+    shouldWait = false;
+  }
+
+  public boolean isWaiting() {
+    return isWaiting;
+  }
 }

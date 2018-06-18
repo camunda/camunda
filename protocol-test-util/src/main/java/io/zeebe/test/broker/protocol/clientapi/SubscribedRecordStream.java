@@ -15,69 +15,55 @@
  */
 package io.zeebe.test.broker.protocol.clientapi;
 
-import java.util.stream.Stream;
-
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.util.stream.StreamWrapper;
+import java.util.stream.Stream;
 
-public class SubscribedRecordStream extends StreamWrapper<SubscribedRecord>
-{
+public class SubscribedRecordStream extends StreamWrapper<SubscribedRecord> {
 
-    public SubscribedRecordStream(Stream<SubscribedRecord> wrappedStream)
-    {
-        super(wrappedStream);
-    }
+  public SubscribedRecordStream(Stream<SubscribedRecord> wrappedStream) {
+    super(wrappedStream);
+  }
 
-    private SubscribedRecordStream recordsOfValueType(ValueType valueType)
-    {
-        return new SubscribedRecordStream(filter(r -> r.valueType() == valueType));
-    }
+  private SubscribedRecordStream recordsOfValueType(ValueType valueType) {
+    return new SubscribedRecordStream(filter(r -> r.valueType() == valueType));
+  }
 
-    private SubscribedRecordStream recordsOfType(RecordType recordType)
-    {
-        return new SubscribedRecordStream(filter(r -> r.recordType() == recordType));
-    }
+  private SubscribedRecordStream recordsOfType(RecordType recordType) {
+    return new SubscribedRecordStream(filter(r -> r.recordType() == recordType));
+  }
 
-    public SubscribedRecordStream onlyEvents()
-    {
-        return recordsOfType(RecordType.EVENT);
-    }
+  public SubscribedRecordStream onlyEvents() {
+    return recordsOfType(RecordType.EVENT);
+  }
 
-    public SubscribedRecordStream onlyCommands()
-    {
-        return recordsOfType(RecordType.COMMAND);
-    }
+  public SubscribedRecordStream onlyCommands() {
+    return recordsOfType(RecordType.COMMAND);
+  }
 
-    public SubscribedRecordStream ofTypeWorkflowInstance()
-    {
-        return recordsOfValueType(ValueType.WORKFLOW_INSTANCE);
-    }
+  public SubscribedRecordStream ofTypeWorkflowInstance() {
+    return recordsOfValueType(ValueType.WORKFLOW_INSTANCE);
+  }
 
-    public SubscribedRecordStream ofTypeJob()
-    {
-        return recordsOfValueType(ValueType.JOB);
-    }
+  public SubscribedRecordStream ofTypeJob() {
+    return recordsOfValueType(ValueType.JOB);
+  }
 
-    public SubscribedRecordStream ofTypeIncident()
-    {
-        return recordsOfValueType(ValueType.INCIDENT);
-    }
+  public SubscribedRecordStream ofTypeIncident() {
+    return recordsOfValueType(ValueType.INCIDENT);
+  }
 
-    public SubscribedRecordStream onlyRejections()
-    {
-        return recordsOfType(RecordType.COMMAND_REJECTION);
-    }
+  public SubscribedRecordStream onlyRejections() {
+    return recordsOfType(RecordType.COMMAND_REJECTION);
+  }
 
-    public SubscribedRecordStream withIntent(Intent intent)
-    {
-        return new SubscribedRecordStream(filter(r -> r.intent() == intent));
-    }
+  public SubscribedRecordStream withIntent(Intent intent) {
+    return new SubscribedRecordStream(filter(r -> r.intent() == intent));
+  }
 
-    public SubscribedRecord getFirst()
-    {
-        return findFirst()
-                .orElseThrow(() -> new AssertionError("no event received"));
-    }
+  public SubscribedRecord getFirst() {
+    return findFirst().orElseThrow(() -> new AssertionError("no event received"));
+  }
 }

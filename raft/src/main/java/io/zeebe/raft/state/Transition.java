@@ -17,76 +17,60 @@ package io.zeebe.raft.state;
 
 import java.util.Objects;
 
-public class Transition
-{
+public class Transition {
 
-    private final RaftTranisiton raftTranisiton;
-    private final int term;
+  private final RaftTranisiton raftTranisiton;
+  private final int term;
 
-    public Transition(RaftTranisiton raftTranisiton, int term)
-    {
-        this.raftTranisiton = raftTranisiton;
-        this.term = term;
+  public Transition(RaftTranisiton raftTranisiton, int term) {
+    this.raftTranisiton = raftTranisiton;
+    this.term = term;
+  }
+
+  public RaftTranisiton getRaftTranisiton() {
+    return raftTranisiton;
+  }
+
+  public int getTerm() {
+    return term;
+  }
+
+  public boolean isValid(final RaftState state, final int currentTerm) {
+    if (currentTerm > term) {
+      return false;
     }
 
-    public RaftTranisiton getRaftTranisiton()
-    {
-        return raftTranisiton;
+    switch (raftTranisiton) {
+      case TO_CANDIDATE:
+        return state == RaftState.FOLLOWER;
+      case TO_LEADER:
+        return state == RaftState.CANDIDATE;
+      case TO_FOLLOWER:
+      default:
+        return true;
     }
+  }
 
-    public int getTerm()
-    {
-        return term;
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
     }
-
-    public boolean isValid(final RaftState state, final int currentTerm)
-    {
-        if (currentTerm > term)
-        {
-            return false;
-        }
-
-        switch (raftTranisiton)
-        {
-            case TO_CANDIDATE:
-                return state == RaftState.FOLLOWER;
-            case TO_LEADER:
-                return state == RaftState.CANDIDATE;
-            case TO_FOLLOWER:
-            default:
-                return true;
-        }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
     }
+    final Transition that = (Transition) o;
+    return term == that.term && raftTranisiton == that.raftTranisiton;
+  }
 
-    @Override
-    public boolean equals(Object o)
-    {
-        if (this == o)
-        {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass())
-        {
-            return false;
-        }
-        final Transition that = (Transition) o;
-        return term == that.term &&
-            raftTranisiton == that.raftTranisiton;
-    }
+  @Override
+  public int hashCode() {
 
-    @Override
-    public int hashCode()
-    {
+    return Objects.hash(raftTranisiton, term);
+  }
 
-        return Objects.hash(raftTranisiton, term);
-    }
-
-    @Override
-    public String toString()
-    {
-        return "Transition{" +
-            "raftTranisiton=" + raftTranisiton +
-            ", term=" + term +
-            '}';
-    }
+  @Override
+  public String toString() {
+    return "Transition{" + "raftTranisiton=" + raftTranisiton + ", term=" + term + '}';
+  }
 }

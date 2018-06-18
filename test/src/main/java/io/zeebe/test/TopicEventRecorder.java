@@ -15,122 +15,107 @@
  */
 package io.zeebe.test;
 
+import io.zeebe.client.api.clients.TopicClient;
+import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.events.WorkflowInstanceState;
+import io.zeebe.client.api.subscription.TopicSubscription;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import io.zeebe.client.api.clients.TopicClient;
-import io.zeebe.client.api.events.JobEvent;
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
-import io.zeebe.client.api.events.WorkflowInstanceState;
-import io.zeebe.client.api.subscription.TopicSubscription;
 import org.junit.rules.ExternalResource;
 
-public class TopicEventRecorder extends ExternalResource
-{
-    private static final String SUBSCRIPTION_NAME = "event-recorder";
+public class TopicEventRecorder extends ExternalResource {
+  private static final String SUBSCRIPTION_NAME = "event-recorder";
 
-    private final List<JobEvent> jobEvents = new CopyOnWriteArrayList<>();
-    private final List<WorkflowInstanceEvent> wfInstanceEvents = new CopyOnWriteArrayList<>();
+  private final List<JobEvent> jobEvents = new CopyOnWriteArrayList<>();
+  private final List<WorkflowInstanceEvent> wfInstanceEvents = new CopyOnWriteArrayList<>();
 
-    private final ClientRule clientRule;
+  private final ClientRule clientRule;
 
-    private final String topicName;
+  private final String topicName;
 
-    protected TopicSubscription subscription;
+  protected TopicSubscription subscription;
 
-    public TopicEventRecorder(
-            final ClientRule clientRule,
-            final String topicName)
-    {
-        this.clientRule = clientRule;
-        this.topicName = topicName;
-    }
+  public TopicEventRecorder(final ClientRule clientRule, final String topicName) {
+    this.clientRule = clientRule;
+    this.topicName = topicName;
+  }
 
-    @Override
-    protected void before()
-    {
-        startRecordingEvents();
-    }
+  @Override
+  protected void before() {
+    startRecordingEvents();
+  }
 
-    @Override
-    protected void after()
-    {
-        stopRecordingEvents();
-    }
+  @Override
+  protected void after() {
+    stopRecordingEvents();
+  }
 
-    private void startRecordingEvents()
-    {
-        final TopicClient client = clientRule.getClient().topicClient(topicName);
+  private void startRecordingEvents() {
+    final TopicClient client = clientRule.getClient().topicClient(topicName);
 
-        subscription = client.newSubscription()
+    subscription =
+        client
+            .newSubscription()
             .name(SUBSCRIPTION_NAME)
             .jobEventHandler(jobEvents::add)
             .workflowInstanceEventHandler(wfInstanceEvents::add)
             .open();
+  }
+
+  private void stopRecordingEvents() {
+    subscription.close();
+    subscription = null;
+  }
+
+  private <T> Optional<T> getLastEvent(final Stream<T> eventStream) {
+    final List<T> events = eventStream.collect(Collectors.toList());
+
+    if (events.isEmpty()) {
+      return Optional.empty();
+    } else {
+      return Optional.of(events.get(events.size() - 1));
     }
+  }
 
-    private void stopRecordingEvents()
-    {
-        subscription.close();
-        subscription = null;
-    }
+  public List<WorkflowInstanceEvent> getWorkflowInstanceEvents(
+      final Predicate<WorkflowInstanceEvent> matcher) {
+    return wfInstanceEvents.stream().filter(matcher).collect(Collectors.toList());
+  }
 
-    private <T> Optional<T> getLastEvent(final Stream<T> eventStream)
-    {
-        final List<T> events = eventStream.collect(Collectors.toList());
+  public WorkflowInstanceEvent getLastWorkflowInstanceEvent(
+      final Predicate<WorkflowInstanceEvent> matcher) {
+    return getLastEvent(wfInstanceEvents.stream().filter(matcher))
+        .orElseThrow(() -> new AssertionError("no event found"));
+  }
 
-        if (events.isEmpty())
-        {
-            return Optional.empty();
-        }
-        else
-        {
-            return Optional.of(events.get(events.size() - 1));
-        }
-    }
+  public List<JobEvent> getJobEvents(final Predicate<JobEvent> matcher) {
+    return jobEvents.stream().filter(matcher).collect(Collectors.toList());
+  }
 
-    public List<WorkflowInstanceEvent> getWorkflowInstanceEvents(final Predicate<WorkflowInstanceEvent> matcher)
-    {
-        return wfInstanceEvents.stream().filter(matcher).collect(Collectors.toList());
-    }
+  public JobEvent getLastJobEvent(final Predicate<JobEvent> matcher) {
+    return getLastEvent(jobEvents.stream().filter(matcher))
+        .orElseThrow(() -> new AssertionError("no event found"));
+  }
 
-    public WorkflowInstanceEvent getLastWorkflowInstanceEvent(final Predicate<WorkflowInstanceEvent> matcher)
-    {
-        return getLastEvent(wfInstanceEvents.stream().filter(matcher)).orElseThrow(() -> new AssertionError("no event found"));
-    }
+  public static Predicate<WorkflowInstanceEvent> wfInstance(
+      final WorkflowInstanceState eventState) {
+    return e -> e.getState().equals(eventState);
+  }
 
-    public List<JobEvent> getJobEvents(final Predicate<JobEvent> matcher)
-    {
-        return jobEvents.stream().filter(matcher).collect(Collectors.toList());
-    }
+  public static Predicate<WorkflowInstanceEvent> wfInstanceKey(final long key) {
+    return e -> e.getWorkflowInstanceKey() == key;
+  }
 
-    public JobEvent getLastJobEvent(final Predicate<JobEvent> matcher)
-    {
-        return getLastEvent(jobEvents.stream().filter(matcher)).orElseThrow(() -> new AssertionError("no event found"));
-    }
+  public static Predicate<JobEvent> jobKey(final long key) {
+    return e -> e.getMetadata().getKey() == key;
+  }
 
-    public static Predicate<WorkflowInstanceEvent> wfInstance(final WorkflowInstanceState eventState)
-    {
-        return e -> e.getState().equals(eventState);
-    }
-
-    public static Predicate<WorkflowInstanceEvent> wfInstanceKey(final long key)
-    {
-        return e -> e.getWorkflowInstanceKey() == key;
-    }
-
-    public static Predicate<JobEvent> jobKey(final long key)
-    {
-        return e -> e.getMetadata().getKey() == key;
-    }
-
-    public static Predicate<JobEvent> jobType(final String type)
-    {
-        return e -> e.getType().equals(type);
-    }
-
+  public static Predicate<JobEvent> jobType(final String type) {
+    return e -> e.getType().equals(type);
+  }
 }

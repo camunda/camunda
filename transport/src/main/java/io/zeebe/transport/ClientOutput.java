@@ -15,60 +15,70 @@
  */
 package io.zeebe.transport;
 
+import io.zeebe.util.buffer.BufferWriter;
+import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
 import org.agrona.DirectBuffer;
 
-import io.zeebe.util.buffer.BufferWriter;
-import io.zeebe.util.sched.future.ActorFuture;
+public interface ClientOutput {
+  /**
+   * Sends a message according to the single message protocol.
+   *
+   * <p>Returns false if the message cannot be currently written due to exhausted capacity. Throws
+   * an exception if the request is not sendable at all (e.g. buffer writer throws exception).
+   */
+  boolean sendMessage(TransportMessage transportMessage);
 
-public interface ClientOutput
-{
-    /**
-     * <p>Sends a message according to the single message protocol.
-     *
-     * <p>Returns false if the message cannot be currently written due to exhausted capacity.
-     * Throws an exception if the request is not sendable at all (e.g. buffer writer throws exception).
-     */
-    boolean sendMessage(TransportMessage transportMessage);
+  /**
+   * Same as {@link #sendRequest(RemoteAddress, BufferWriter, long)} where the timeout is set to the
+   * configured default timeout.
+   *
+   * @return the response future or null in case no memory is currently available to allocate the
+   *     request
+   */
+  ActorFuture<ClientResponse> sendRequest(RemoteAddress addr, BufferWriter writer);
 
-    /**
-     * Same as {@link #sendRequest(RemoteAddress, BufferWriter, long)} where the timeout is set to the configured default timeout.
-     * @return the response future or null in case no memory is currently available to allocate the request
-     */
-    ActorFuture<ClientResponse> sendRequest(RemoteAddress addr, BufferWriter writer);
+  /**
+   * Like {@link #sendRequestWithRetry(Supplier, Predicate, BufferWriter, Duration)} with a static
+   * remote and no response inspection (i.e. first response is accepted).
+   *
+   * @return the response future or null in case no memory is currently available to allocate the
+   *     request
+   */
+  ActorFuture<ClientResponse> sendRequest(
+      RemoteAddress addr, BufferWriter writer, Duration timeout);
 
-    /**
-     * <p>Like {@link #sendRequestWithRetry(Supplier, Predicate, BufferWriter, Duration)}
-     * with a static remote and no response inspection (i.e. first response is accepted).
-     *
-     * @return the response future or null in case no memory is currently available to allocate the request
-     */
-    ActorFuture<ClientResponse> sendRequest(RemoteAddress addr, BufferWriter writer, Duration timeout);
-
-    /**
-     * <p>Like {@link #sendRequest(RemoteAddress, BufferWriter)} but retries the request if there is no current connection.
-     * Makes this method more robust in the presence of short intermittent disconnects.
-     *
-     * <p>Guarantees:
-     * <ul>
-     * <li>Not garbage-free
-     * <li>n intermediary copies of the request (one local copy for making retries, one copy on the send buffer per try)
-     *
-     * @param remoteAddressSupplier
-     *            supplier for the remote address the retries are executed against (retries may
-     *            be executed against different remotes). The future may resolve to <code>null</code> to signal that
-     *            a remote can not be determined. In that case, the request is retried after resubmit timeout.
-     * @param responseInspector
-     *            function getting the response and returning a boolean. If the function returns true,
-     *            the request will be retried: usecase: in a system like zeebe, we may send a request to the
-     *            wrong node. The node will send a response indicating that it is not able to handle this request.
-     *            In this case we want to do a retry and send the request to a different node, based on the content
-     *            of the response
-     * @param timeout The timeout until the returned future fails if no response is received.
-     * @return a future carrying the response that was accepted or null in case no memory is currently available to allocate the request. Can complete exceptionally in failure cases such as timeout.
-     */
-    ActorFuture<ClientResponse> sendRequestWithRetry(Supplier<RemoteAddress> remoteAddressSupplier, Predicate<DirectBuffer> responseInspector, BufferWriter writer, Duration timeout);
+  /**
+   * Like {@link #sendRequest(RemoteAddress, BufferWriter)} but retries the request if there is no
+   * current connection. Makes this method more robust in the presence of short intermittent
+   * disconnects.
+   *
+   * <p>Guarantees:
+   *
+   * <ul>
+   *   <li>Not garbage-free
+   *   <li>n intermediary copies of the request (one local copy for making retries, one copy on the
+   *       send buffer per try)
+   *
+   * @param remoteAddressSupplier supplier for the remote address the retries are executed against
+   *     (retries may be executed against different remotes). The future may resolve to <code>null
+   *     </code> to signal that a remote can not be determined. In that case, the request is retried
+   *     after resubmit timeout.
+   * @param responseInspector function getting the response and returning a boolean. If the function
+   *     returns true, the request will be retried: usecase: in a system like zeebe, we may send a
+   *     request to the wrong node. The node will send a response indicating that it is not able to
+   *     handle this request. In this case we want to do a retry and send the request to a different
+   *     node, based on the content of the response
+   * @param timeout The timeout until the returned future fails if no response is received.
+   * @return a future carrying the response that was accepted or null in case no memory is currently
+   *     available to allocate the request. Can complete exceptionally in failure cases such as
+   *     timeout.
+   */
+  ActorFuture<ClientResponse> sendRequestWithRetry(
+      Supplier<RemoteAddress> remoteAddressSupplier,
+      Predicate<DirectBuffer> responseInspector,
+      BufferWriter writer,
+      Duration timeout);
 }

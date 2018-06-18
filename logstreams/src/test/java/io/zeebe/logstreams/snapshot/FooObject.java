@@ -20,34 +20,27 @@ import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.util.buffer.BufferUtil;
 
-public class FooObject extends UnpackedObject
-{
-    protected final IntegerProperty prop1 = new IntegerProperty("prop1");
-    protected final StringProperty prop2 = new StringProperty("prop2");
+public class FooObject extends UnpackedObject {
+  protected final IntegerProperty prop1 = new IntegerProperty("prop1");
+  protected final StringProperty prop2 = new StringProperty("prop2");
 
-    public FooObject()
-    {
-        declareProperty(prop1)
-            .declareProperty(prop2);
-    }
+  public FooObject() {
+    declareProperty(prop1).declareProperty(prop2);
+  }
 
-    public void setProp1(int val)
-    {
-        this.prop1.setValue(val);
-    }
+  public void setProp1(int val) {
+    this.prop1.setValue(val);
+  }
 
-    public int getProp1()
-    {
-        return prop1.getValue();
-    }
+  public int getProp1() {
+    return prop1.getValue();
+  }
 
-    public void setProp2(String val)
-    {
-        this.prop2.setValue(val);
-    }
+  public void setProp2(String val) {
+    this.prop2.setValue(val);
+  }
 
-    public String getProp2()
-    {
-        return BufferUtil.bufferAsString(this.prop2.getValue());
-    }
+  public String getProp2() {
+    return BufferUtil.bufferAsString(this.prop2.getValue());
+  }
 }

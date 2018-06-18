@@ -17,104 +17,100 @@
  */
 package io.zeebe.broker.system.configuration;
 
+import io.zeebe.gossip.GossipConfiguration;
+import io.zeebe.raft.RaftConfiguration;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.zeebe.gossip.GossipConfiguration;
-import io.zeebe.raft.RaftConfiguration;
+public class BrokerCfg {
+  private int bootstrap = 0;
 
-public class BrokerCfg
-{
-    private int bootstrap = 0;
+  private NetworkCfg network = new NetworkCfg();
+  private ClusterCfg cluster = new ClusterCfg();
+  private ThreadsCfg threads = new ThreadsCfg();
+  private MetricsCfg metrics = new MetricsCfg();
+  private DataCfg data = new DataCfg();
+  private GossipConfiguration gossip = new GossipConfiguration();
+  private RaftConfiguration raft = new RaftConfiguration();
+  private List<TopicCfg> topics = new ArrayList<>();
 
-    private NetworkCfg network = new NetworkCfg();
-    private ClusterCfg cluster = new ClusterCfg();
-    private ThreadsCfg threads = new ThreadsCfg();
-    private MetricsCfg metrics = new MetricsCfg();
-    private DataCfg data = new DataCfg();
-    private GossipConfiguration gossip = new GossipConfiguration();
-    private RaftConfiguration raft = new RaftConfiguration();
-    private List<TopicCfg> topics = new ArrayList<>();
+  public void init(String brokerBase) {
+    network.init(this, brokerBase);
+    cluster.init(this, brokerBase);
+    threads.init(this, brokerBase);
+    metrics.init(this, brokerBase);
+    data.init(this, brokerBase);
+  }
 
-    public void init(String brokerBase)
-    {
-        network.init(this, brokerBase);
-        cluster.init(this, brokerBase);
-        threads.init(this, brokerBase);
-        metrics.init(this, brokerBase);
-        data.init(this, brokerBase);
-    }
+  public int getBootstrap() {
+    return bootstrap;
+  }
 
-    public int getBootstrap()
-    {
-        return bootstrap;
-    }
-    public void setBootstrap(int bootstrap)
-    {
-        this.bootstrap = bootstrap;
-    }
-    public NetworkCfg getNetwork()
-    {
-        return network;
-    }
-    public void setNetwork(NetworkCfg network)
-    {
-        this.network = network;
-    }
-    public ClusterCfg getCluster()
-    {
-        return cluster;
-    }
-    public void setCluster(ClusterCfg cluster)
-    {
-        this.cluster = cluster;
-    }
-    public ThreadsCfg getThreads()
-    {
-        return threads;
-    }
-    public void setThreads(ThreadsCfg threads)
-    {
-        this.threads = threads;
-    }
-    public MetricsCfg getMetrics()
-    {
-        return metrics;
-    }
-    public void setMetrics(MetricsCfg metrics)
-    {
-        this.metrics = metrics;
-    }
-    public DataCfg getData()
-    {
-        return data;
-    }
-    public void setData(DataCfg logs)
-    {
-        this.data = logs;
-    }
-    public GossipConfiguration getGossip()
-    {
-        return gossip;
-    }
-    public void setGossip(GossipConfiguration gossip)
-    {
-        this.gossip = gossip;
-    }
-    public RaftConfiguration getRaft()
-    {
-        return raft;
-    }
-    public void setRaft(RaftConfiguration raft)
-    {
-        this.raft = raft;
-    }
-    public List<TopicCfg> getTopics()
-    {
-        return topics;
-    }
-    public void setTopics(List<TopicCfg> topics)
-    {
-        this.topics = topics;
-    }
+  public void setBootstrap(int bootstrap) {
+    this.bootstrap = bootstrap;
+  }
+
+  public NetworkCfg getNetwork() {
+    return network;
+  }
+
+  public void setNetwork(NetworkCfg network) {
+    this.network = network;
+  }
+
+  public ClusterCfg getCluster() {
+    return cluster;
+  }
+
+  public void setCluster(ClusterCfg cluster) {
+    this.cluster = cluster;
+  }
+
+  public ThreadsCfg getThreads() {
+    return threads;
+  }
+
+  public void setThreads(ThreadsCfg threads) {
+    this.threads = threads;
+  }
+
+  public MetricsCfg getMetrics() {
+    return metrics;
+  }
+
+  public void setMetrics(MetricsCfg metrics) {
+    this.metrics = metrics;
+  }
+
+  public DataCfg getData() {
+    return data;
+  }
+
+  public void setData(DataCfg logs) {
+    this.data = logs;
+  }
+
+  public GossipConfiguration getGossip() {
+    return gossip;
+  }
+
+  public void setGossip(GossipConfiguration gossip) {
+    this.gossip = gossip;
+  }
+
+  public RaftConfiguration getRaft() {
+    return raft;
+  }
+
+  public void setRaft(RaftConfiguration raft) {
+    this.raft = raft;
+  }
+
+  public List<TopicCfg> getTopics() {
+    return topics;
+  }
+
+  public void setTopics(List<TopicCfg> topics) {
+    this.topics = topics;
+  }
 }

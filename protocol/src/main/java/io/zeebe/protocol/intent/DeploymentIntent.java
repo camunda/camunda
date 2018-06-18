@@ -15,36 +15,33 @@
  */
 package io.zeebe.protocol.intent;
 
-public enum DeploymentIntent implements Intent
-{
-    CREATE((short) 0),
-    CREATED((short) 3);
+public enum DeploymentIntent implements Intent {
+  CREATE((short) 0),
+  CREATED((short) 3);
 
-    private short value;
+  private short value;
 
-    DeploymentIntent(short value)
-    {
-        this.value = value;
+  DeploymentIntent(short value) {
+    this.value = value;
+  }
+
+  public short getIntent() {
+    return value;
+  }
+
+  public static Intent from(short value) {
+    switch (value) {
+      case 0:
+        return CREATE;
+      case 3:
+        return CREATED;
+      default:
+        return Intent.UNKNOWN;
     }
+  }
 
-    public short getIntent()
-    {
-        return value;
-    }
-
-    public static Intent from(short value)
-    {
-        switch (value)
-        {
-            case 0: return CREATE;
-            case 3: return CREATED;
-            default: return Intent.UNKNOWN;
-        }
-    }
-
-    @Override
-    public short value()
-    {
-        return value;
-    }
+  @Override
+  public short value() {
+    return value;
+  }
 }

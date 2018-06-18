@@ -18,8 +18,7 @@ package io.zeebe.client.api.subscription;
 import io.zeebe.client.api.events.TopicEvent;
 
 @FunctionalInterface
-public interface TopicEventHandler
-{
+public interface TopicEventHandler {
 
-    void onTopicEvent(TopicEvent topicEvent) throws Exception;
+  void onTopicEvent(TopicEvent topicEvent) throws Exception;
 }

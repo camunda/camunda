@@ -18,27 +18,21 @@ package io.zeebe.msgpack.property;
 import io.zeebe.msgpack.value.PackedValue;
 import org.agrona.DirectBuffer;
 
-public class PackedProperty extends BaseProperty<PackedValue>
-{
-    public PackedProperty(String key)
-    {
-        super(key, new PackedValue());
-    }
+public class PackedProperty extends BaseProperty<PackedValue> {
+  public PackedProperty(String key) {
+    super(key, new PackedValue());
+  }
 
-    public PackedProperty(String key, DirectBuffer defaultValue)
-    {
-        super(key, new PackedValue(), new PackedValue(defaultValue, 0, defaultValue.capacity()));
-    }
+  public PackedProperty(String key, DirectBuffer defaultValue) {
+    super(key, new PackedValue(), new PackedValue(defaultValue, 0, defaultValue.capacity()));
+  }
 
-    public DirectBuffer getValue()
-    {
-        return resolveValue().getValue();
-    }
+  public DirectBuffer getValue() {
+    return resolveValue().getValue();
+  }
 
-    public void setValue(DirectBuffer buffer, int offset, int length)
-    {
-        value.wrap(buffer, offset, length);
-        this.isSet = true;
-    }
-
+  public void setValue(DirectBuffer buffer, int offset, int length) {
+    value.wrap(buffer, offset, length);
+    this.isSet = true;
+  }
 }

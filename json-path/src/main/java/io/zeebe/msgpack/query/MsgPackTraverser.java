@@ -15,70 +15,59 @@
  */
 package io.zeebe.msgpack.query;
 
-import org.agrona.DirectBuffer;
 import io.zeebe.msgpack.spec.MsgPackReader;
 import io.zeebe.msgpack.spec.MsgPackToken;
+import org.agrona.DirectBuffer;
 
-public class MsgPackTraverser
-{
+public class MsgPackTraverser {
 
-    protected static final int NO_INVALID_POSITION = -1;
+  protected static final int NO_INVALID_POSITION = -1;
 
-    protected String errorMessage;
-    protected int invalidPosition;
+  protected String errorMessage;
+  protected int invalidPosition;
 
-    protected MsgPackReader msgPackReader = new MsgPackReader();
+  protected MsgPackReader msgPackReader = new MsgPackReader();
 
-    public void wrap(DirectBuffer buffer, int offset, int length)
-    {
-        this.msgPackReader.wrap(buffer, offset, length);
-        this.invalidPosition = NO_INVALID_POSITION;
-        this.errorMessage = null;
+  public void wrap(DirectBuffer buffer, int offset, int length) {
+    this.msgPackReader.wrap(buffer, offset, length);
+    this.invalidPosition = NO_INVALID_POSITION;
+    this.errorMessage = null;
+  }
+
+  public void reset() {
+    msgPackReader.reset();
+    this.invalidPosition = NO_INVALID_POSITION;
+    this.errorMessage = null;
+  }
+
+  /**
+   * @param visitor
+   * @return true if document could be traversed successfully
+   */
+  public boolean traverse(MsgPackTokenVisitor visitor) {
+    while (msgPackReader.hasNext()) {
+      final int nextTokenPosition = msgPackReader.getOffset();
+
+      final MsgPackToken nextToken;
+      try {
+        nextToken = msgPackReader.readToken();
+      } catch (Exception e) {
+        errorMessage = e.getMessage();
+        invalidPosition = nextTokenPosition;
+        return false;
+      }
+
+      visitor.visitElement(nextTokenPosition, nextToken);
     }
 
-    public void reset()
-    {
-        msgPackReader.reset();
-        this.invalidPosition = NO_INVALID_POSITION;
-        this.errorMessage = null;
-    }
+    return true;
+  }
 
-    /**
-     * @param visitor
-     * @return true if document could be traversed successfully
-     */
-    public boolean traverse(MsgPackTokenVisitor visitor)
-    {
-        while (msgPackReader.hasNext())
-        {
-            final int nextTokenPosition = msgPackReader.getOffset();
+  public int getInvalidPosition() {
+    return invalidPosition;
+  }
 
-            final MsgPackToken nextToken;
-            try
-            {
-                nextToken = msgPackReader.readToken();
-            }
-            catch (Exception e)
-            {
-                errorMessage = e.getMessage();
-                invalidPosition = nextTokenPosition;
-                return false;
-            }
-
-            visitor.visitElement(nextTokenPosition, nextToken);
-        }
-
-        return true;
-    }
-
-    public int getInvalidPosition()
-    {
-        return invalidPosition;
-    }
-
-    public String getErrorMessage()
-    {
-        return errorMessage;
-    }
-
+  public String getErrorMessage() {
+    return errorMessage;
+  }
 }

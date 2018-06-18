@@ -17,47 +17,37 @@ package io.zeebe.dispatcher;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-public class AtomicPosition
-{
-    private final AtomicLong position;
+public class AtomicPosition {
+  private final AtomicLong position;
 
-    public AtomicPosition()
-    {
-        this.position = new AtomicLong(0);
+  public AtomicPosition() {
+    this.position = new AtomicLong(0);
+  }
+
+  public void reset() {
+    set(-1);
+  }
+
+  public long get() {
+    return position.get();
+  }
+
+  public void set(final long value) {
+    position.set(value);
+  }
+
+  public boolean proposeMaxOrdered(long newValue) {
+    boolean updated = false;
+
+    while (!updated) {
+      final long currentPosition = position.get();
+      if (currentPosition < newValue) {
+        updated = position.compareAndSet(currentPosition, newValue);
+      } else {
+        return false;
+      }
     }
 
-    public void reset()
-    {
-        set(-1);
-    }
-
-    public long get()
-    {
-        return position.get();
-    }
-
-    public void set(final long value)
-    {
-        position.set(value);
-    }
-
-    public boolean proposeMaxOrdered(long newValue)
-    {
-        boolean updated = false;
-
-        while (!updated)
-        {
-            final long currentPosition = position.get();
-            if (currentPosition < newValue)
-            {
-                updated = position.compareAndSet(currentPosition, newValue);
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        return updated;
-    }
+    return updated;
+  }
 }

@@ -17,69 +17,68 @@ package io.zeebe.raft.util;
 
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.zeebe.logstreams.log.LoggedEvent;
 import java.util.Objects;
 
-import io.zeebe.logstreams.log.LoggedEvent;
+public class EventInfo {
+  private final long position;
+  private final int term;
+  private final String message;
 
-public class EventInfo
-{
-    private final long position;
-    private final int term;
-    private final String message;
+  public EventInfo(long position, int term, String message) {
+    this.position = position;
+    this.term = term;
+    this.message = message;
+  }
 
-    public EventInfo(long position, int term, String message)
-    {
-        this.position = position;
-        this.term = term;
-        this.message = message;
+  public EventInfo(LoggedEvent event) {
+    this.position = event.getPosition();
+    this.term = event.getRaftTerm();
+    this.message =
+        bufferAsString(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
+  }
+
+  public long getPosition() {
+    return position;
+  }
+
+  public int getTerm() {
+    return term;
+  }
+
+  public String getMessage() {
+    return message;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
     }
-
-    public EventInfo(LoggedEvent event)
-    {
-        this.position = event.getPosition();
-        this.term = event.getRaftTerm();
-        this.message = bufferAsString(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
+    if (o == null || getClass() != o.getClass()) {
+      return false;
     }
+    final EventInfo eventInfo = (EventInfo) o;
+    return position == eventInfo.position
+        && term == eventInfo.term
+        && Objects.equals(message, eventInfo.message);
+  }
 
-    public long getPosition()
-    {
-        return position;
-    }
+  @Override
+  public int hashCode() {
+    return Objects.hash(position, term, message);
+  }
 
-    public int getTerm()
-    {
-        return term;
-    }
-
-    public String getMessage()
-    {
-        return message;
-    }
-
-    @Override
-    public boolean equals(Object o)
-    {
-        if (this == o)
-        {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass())
-        {
-            return false;
-        }
-        final EventInfo eventInfo = (EventInfo) o;
-        return position == eventInfo.position && term == eventInfo.term && Objects.equals(message, eventInfo.message);
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return Objects.hash(position, term, message);
-    }
-
-    @Override
-    public String toString()
-    {
-        return "EventInfo{" + "position=" + position + ", term=" + term + ", message='" + message + '\'' + '}';
-    }
+  @Override
+  public String toString() {
+    return "EventInfo{"
+        + "position="
+        + position
+        + ", term="
+        + term
+        + ", message='"
+        + message
+        + '\''
+        + '}';
+  }
 }

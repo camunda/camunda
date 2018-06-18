@@ -18,82 +18,81 @@ package io.zeebe.util.sched.metrics;
 import io.zeebe.util.metrics.Metric;
 import io.zeebe.util.metrics.MetricsManager;
 
-/**
- * Actor runner metrics
- *
- */
-public class ActorThreadMetrics implements AutoCloseable
-{
-    private final Metric threadIdleTime;
-    private final Metric threadBusyTime;
-    private final Metric jobExecutionCount;
-    private final Metric taskStealCount;
-    private final Metric taskExecutionCount;
+/** Actor runner metrics */
+public class ActorThreadMetrics implements AutoCloseable {
+  private final Metric threadIdleTime;
+  private final Metric threadBusyTime;
+  private final Metric jobExecutionCount;
+  private final Metric taskStealCount;
+  private final Metric taskExecutionCount;
 
-    public ActorThreadMetrics(String threadName, MetricsManager metricsManager)
-    {
-        threadIdleTime = metricsManager.newMetric("scheduler_thread_runtime_ns")
+  public ActorThreadMetrics(String threadName, MetricsManager metricsManager) {
+    threadIdleTime =
+        metricsManager
+            .newMetric("scheduler_thread_runtime_ns")
             .type("counter")
             .label("thread", threadName)
             .label("mode", "idle")
             .create();
 
-        threadBusyTime = metricsManager.newMetric("scheduler_thread_runtime_ns")
+    threadBusyTime =
+        metricsManager
+            .newMetric("scheduler_thread_runtime_ns")
             .type("counter")
             .label("thread", threadName)
             .label("mode", "busy")
             .create();
 
-        jobExecutionCount = metricsManager.newMetric("scheduler_thread_job_count")
+    jobExecutionCount =
+        metricsManager
+            .newMetric("scheduler_thread_job_count")
             .type("counter")
             .label("thread", threadName)
             .create();
 
-        taskStealCount = metricsManager.newMetric("scheduler_thread_task_count")
+    taskStealCount =
+        metricsManager
+            .newMetric("scheduler_thread_task_count")
             .type("counter")
             .label("thread", threadName)
             .label("type", "steal")
             .create();
 
-        taskExecutionCount = metricsManager.newMetric("scheduler_thread_task_count")
+    taskExecutionCount =
+        metricsManager
+            .newMetric("scheduler_thread_task_count")
             .type("counter")
             .label("thread", threadName)
             .label("type", "run")
             .create();
-    }
+  }
 
-    public void incrementTaskStealCount()
-    {
-        taskStealCount.incrementOrdered();
-    }
+  public void incrementTaskStealCount() {
+    taskStealCount.incrementOrdered();
+  }
 
-    public void incrementTaskExecutionCount()
-    {
-        taskExecutionCount.incrementOrdered();
-    }
+  public void incrementTaskExecutionCount() {
+    taskExecutionCount.incrementOrdered();
+  }
 
-    public void incrementJobCount()
-    {
-        jobExecutionCount.incrementOrdered();
-    }
+  public void incrementJobCount() {
+    jobExecutionCount.incrementOrdered();
+  }
 
-    public void recordRunnerIdleTime(long time)
-    {
-        threadIdleTime.getAndAddOrdered(time);
-    }
+  public void recordRunnerIdleTime(long time) {
+    threadIdleTime.getAndAddOrdered(time);
+  }
 
-    public void recordRunnerBusyTime(long time)
-    {
-        threadBusyTime.getAndAddOrdered(time);
-    }
+  public void recordRunnerBusyTime(long time) {
+    threadBusyTime.getAndAddOrdered(time);
+  }
 
-    @Override
-    public void close()
-    {
-        jobExecutionCount.close();
-        taskStealCount.close();
-        threadIdleTime.close();
-        threadBusyTime.close();
-        taskExecutionCount.close();
-    }
+  @Override
+  public void close() {
+    jobExecutionCount.close();
+    taskStealCount.close();
+    threadIdleTime.close();
+    threadBusyTime.close();
+    taskExecutionCount.close();
+  }
 }

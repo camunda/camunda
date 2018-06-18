@@ -18,26 +18,21 @@ package io.zeebe.map.iterator;
 import io.zeebe.map.types.LongKeyHandler;
 import io.zeebe.map.types.LongValueHandler;
 
-public class Long2LongZbMapEntry implements ZbMapEntry<LongKeyHandler, LongValueHandler>
-{
-    private long key;
-    private long value;
+public class Long2LongZbMapEntry implements ZbMapEntry<LongKeyHandler, LongValueHandler> {
+  private long key;
+  private long value;
 
-    @Override
-    public void read(LongKeyHandler keyHander, LongValueHandler valueHandler)
-    {
-        key = keyHander.theKey;
-        value = valueHandler.theValue;
-    }
+  @Override
+  public void read(LongKeyHandler keyHander, LongValueHandler valueHandler) {
+    key = keyHander.theKey;
+    value = valueHandler.theValue;
+  }
 
-    public long getKey()
-    {
-        return key;
-    }
+  public long getKey() {
+    return key;
+  }
 
-    public long getValue()
-    {
-        return value;
-    }
-
+  public long getValue() {
+    return value;
+  }
 }

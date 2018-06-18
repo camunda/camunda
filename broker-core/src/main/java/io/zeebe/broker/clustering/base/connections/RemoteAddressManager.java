@@ -26,70 +26,58 @@ import io.zeebe.transport.ClientTransport;
  * Listens to topology member changes and adds / removes the remote addresses of the member's
  * management and replication apis on the corresponding client transports.
  */
-public class RemoteAddressManager implements Service<Object>, TopologyMemberListener
-{
-    private final Injector<TopologyManager> topologyManagerInjector = new Injector<>();
-    private final Injector<ClientTransport> managementClientTransportInjector = new Injector<>();
-    private final Injector<ClientTransport> replicationClientTransportInjector = new Injector<>();
+public class RemoteAddressManager implements Service<Object>, TopologyMemberListener {
+  private final Injector<TopologyManager> topologyManagerInjector = new Injector<>();
+  private final Injector<ClientTransport> managementClientTransportInjector = new Injector<>();
+  private final Injector<ClientTransport> replicationClientTransportInjector = new Injector<>();
 
-    private TopologyManager topologyManager;
-    private ClientTransport managementClientTransport;
-    private ClientTransport replicationClientTransport;
+  private TopologyManager topologyManager;
+  private ClientTransport managementClientTransport;
+  private ClientTransport replicationClientTransport;
 
-    @Override
-    public void start(ServiceStartContext startContext)
-    {
-        topologyManager = topologyManagerInjector.getValue();
-        managementClientTransport = managementClientTransportInjector.getValue();
-        replicationClientTransport = replicationClientTransportInjector.getValue();
+  @Override
+  public void start(ServiceStartContext startContext) {
+    topologyManager = topologyManagerInjector.getValue();
+    managementClientTransport = managementClientTransportInjector.getValue();
+    replicationClientTransport = replicationClientTransportInjector.getValue();
 
-        topologyManager.addTopologyMemberListener(this);
-    }
+    topologyManager.addTopologyMemberListener(this);
+  }
 
-    @Override
-    public void stop(ServiceStopContext stopContext)
-    {
-        topologyManager.removeTopologyMemberListener(this);
-    }
+  @Override
+  public void stop(ServiceStopContext stopContext) {
+    topologyManager.removeTopologyMemberListener(this);
+  }
 
-    @Override
-    public Object get()
-    {
-        return null;
-    }
+  @Override
+  public Object get() {
+    return null;
+  }
 
-    @Override
-    public void onMemberAdded(final NodeInfo memberInfo, final Topology topology)
-    {
-        managementClientTransport.registerRemoteAddress(memberInfo.getManagementApiAddress());
-        replicationClientTransport.registerRemoteAddress(memberInfo.getReplicationApiAddress());
-    }
+  @Override
+  public void onMemberAdded(final NodeInfo memberInfo, final Topology topology) {
+    managementClientTransport.registerRemoteAddress(memberInfo.getManagementApiAddress());
+    replicationClientTransport.registerRemoteAddress(memberInfo.getReplicationApiAddress());
+  }
 
-    @Override
-    public void onMemberRemoved(final NodeInfo memberInfo, final Topology topology)
-    {
-        managementClientTransport.deactivateRemoteAddress(
-            managementClientTransport.getRemoteAddress(memberInfo.getManagementApiAddress())
-        );
+  @Override
+  public void onMemberRemoved(final NodeInfo memberInfo, final Topology topology) {
+    managementClientTransport.deactivateRemoteAddress(
+        managementClientTransport.getRemoteAddress(memberInfo.getManagementApiAddress()));
 
-        replicationClientTransport.deactivateRemoteAddress(
-            replicationClientTransport.getRemoteAddress(memberInfo.getReplicationApiAddress())
-        );
-    }
+    replicationClientTransport.deactivateRemoteAddress(
+        replicationClientTransport.getRemoteAddress(memberInfo.getReplicationApiAddress()));
+  }
 
-    public Injector<TopologyManager> getTopologyManagerInjector()
-    {
-        return topologyManagerInjector;
-    }
+  public Injector<TopologyManager> getTopologyManagerInjector() {
+    return topologyManagerInjector;
+  }
 
-    public Injector<ClientTransport> getManagementClientTransportInjector()
-    {
-        return managementClientTransportInjector;
-    }
+  public Injector<ClientTransport> getManagementClientTransportInjector() {
+    return managementClientTransportInjector;
+  }
 
-    public Injector<ClientTransport> getReplicationClientTransportInjector()
-    {
-        return replicationClientTransportInjector;
-    }
-
+  public Injector<ClientTransport> getReplicationClientTransportInjector() {
+    return replicationClientTransportInjector;
+  }
 }

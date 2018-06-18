@@ -15,45 +15,36 @@
  */
 package io.zeebe.util.sched.ordering;
 
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorControl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.function.BiConsumer;
 
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.ActorControl;
+public class ActionRecordingActor extends Actor {
+  public final List<String> actions = new ArrayList<>();
 
-public class ActionRecordingActor extends Actor
-{
-    public final List<String> actions = new ArrayList<>();
+  protected BiConsumer<Void, Throwable> futureConsumer(String label) {
+    return (v, t) -> {
+      actions.add(label);
+    };
+  }
 
-    protected BiConsumer<Void, Throwable> futureConsumer(String label)
-    {
-        return (v, t) ->
-        {
-            actions.add(label);
-        };
-    }
+  protected Runnable runnable(String label) {
+    return () -> {
+      actions.add(label);
+    };
+  }
 
-    protected Runnable runnable(String label)
-    {
-        return () ->
-        {
-            actions.add(label);
-        };
-    }
+  protected Callable<Void> callable(String label) {
+    return () -> {
+      actions.add(label);
+      return null;
+    };
+  }
 
-    protected Callable<Void> callable(String label)
-    {
-        return () ->
-        {
-            actions.add(label);
-            return null;
-        };
-    }
-
-    public ActorControl actorControl()
-    {
-        return actor;
-    }
+  public ActorControl actorControl() {
+    return actor;
+  }
 }

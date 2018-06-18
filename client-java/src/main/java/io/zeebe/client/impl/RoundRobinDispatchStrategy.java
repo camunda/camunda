@@ -15,32 +15,29 @@
  */
 package io.zeebe.client.impl;
 
+import io.zeebe.client.impl.clustering.ClientTopologyManager;
+import io.zeebe.client.impl.clustering.ClusterStateImpl;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import io.zeebe.client.impl.clustering.ClientTopologyManager;
-import io.zeebe.client.impl.clustering.ClusterStateImpl;
+public class RoundRobinDispatchStrategy implements RequestDispatchStrategy {
 
-public class RoundRobinDispatchStrategy implements RequestDispatchStrategy
-{
+  protected final ClientTopologyManager topologyManager;
+  protected Map<String, AtomicInteger> topicOffsets = new ConcurrentHashMap<>();
 
-    protected final ClientTopologyManager topologyManager;
-    protected Map<String, AtomicInteger> topicOffsets = new ConcurrentHashMap<>();
+  public RoundRobinDispatchStrategy(ClientTopologyManager topologyManager) {
+    this.topologyManager = topologyManager;
+  }
 
-    public RoundRobinDispatchStrategy(ClientTopologyManager topologyManager)
-    {
-        this.topologyManager = topologyManager;
-    }
+  @Override
+  public int determinePartition(String topic) {
+    final ClusterStateImpl topology = topologyManager.getTopology();
 
-    @Override
-    public int determinePartition(String topic)
-    {
-        final ClusterStateImpl topology = topologyManager.getTopology();
+    final AtomicInteger offsetCounter =
+        topicOffsets.computeIfAbsent(topic, t -> new AtomicInteger(0));
+    final int offset = offsetCounter.getAndIncrement();
 
-        final AtomicInteger offsetCounter = topicOffsets.computeIfAbsent(topic, t -> new AtomicInteger(0));
-        final int offset = offsetCounter.getAndIncrement();
-
-        return topology.getPartition(topic, offset);
-    }
+    return topology.getPartition(topic, offset);
+  }
 }

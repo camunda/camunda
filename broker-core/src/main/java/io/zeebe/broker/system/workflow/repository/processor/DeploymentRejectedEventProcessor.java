@@ -22,11 +22,10 @@ import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.system.workflow.repository.data.DeploymentRecord;
 
-public class DeploymentRejectedEventProcessor implements TypedRecordProcessor<DeploymentRecord>
-{
-    @Override
-    public boolean executeSideEffects(TypedRecord<DeploymentRecord> event, TypedResponseWriter responseWriter)
-    {
-        return responseWriter.writeRecordUnchanged(event);
-    }
+public class DeploymentRejectedEventProcessor implements TypedRecordProcessor<DeploymentRecord> {
+  @Override
+  public boolean executeSideEffects(
+      TypedRecord<DeploymentRecord> event, TypedResponseWriter responseWriter) {
+    return responseWriter.writeRecordUnchanged(event);
+  }
 }

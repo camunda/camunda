@@ -15,32 +15,27 @@
  */
 package io.zeebe.client.impl.workflow;
 
-import java.util.List;
-
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.zeebe.client.api.commands.Workflow;
 import io.zeebe.client.api.commands.Workflows;
 import io.zeebe.client.impl.event.WorkflowImpl;
+import java.util.List;
 
-public class WorkflowsImpl implements Workflows
-{
-    private List<Workflow> workflows;
+public class WorkflowsImpl implements Workflows {
+  private List<Workflow> workflows;
 
-    @JsonDeserialize(contentAs = WorkflowImpl.class)
-    @Override
-    public List<Workflow> getWorkflows()
-    {
-        return workflows;
-    }
+  @JsonDeserialize(contentAs = WorkflowImpl.class)
+  @Override
+  public List<Workflow> getWorkflows() {
+    return workflows;
+  }
 
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("Workflows [");
-        builder.append(workflows);
-        builder.append("]");
-        return builder.toString();
-    }
-
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("Workflows [");
+    builder.append(workflows);
+    builder.append("]");
+    return builder.toString();
+  }
 }

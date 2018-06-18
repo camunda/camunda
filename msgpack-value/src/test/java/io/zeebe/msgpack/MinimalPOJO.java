@@ -17,24 +17,19 @@ package io.zeebe.msgpack;
 
 import io.zeebe.msgpack.property.LongProperty;
 
-public class MinimalPOJO extends UnpackedObject
-{
+public class MinimalPOJO extends UnpackedObject {
 
-    private final LongProperty longProp = new LongProperty("longProp");
+  private final LongProperty longProp = new LongProperty("longProp");
 
-    public MinimalPOJO()
-    {
-        this.declareProperty(longProp);
-    }
+  public MinimalPOJO() {
+    this.declareProperty(longProp);
+  }
 
-    public long getLongProp()
-    {
-        return longProp.getValue();
-    }
+  public long getLongProp() {
+    return longProp.getValue();
+  }
 
-    public void setLongProp(final long value)
-    {
-        this.longProp.setValue(value);
-    }
-
+  public void setLongProp(final long value) {
+    this.longProp.setValue(value);
+  }
 }

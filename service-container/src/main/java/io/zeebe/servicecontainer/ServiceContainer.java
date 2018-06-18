@@ -15,23 +15,22 @@
  */
 package io.zeebe.servicecontainer;
 
+import io.zeebe.util.sched.future.ActorFuture;
 import java.util.concurrent.*;
 
-import io.zeebe.util.sched.future.ActorFuture;
+public interface ServiceContainer {
+  void start();
 
-public interface ServiceContainer
-{
-    void start();
+  boolean hasService(ServiceName<?> name);
 
-    boolean hasService(ServiceName<?> name);
+  <S> ServiceBuilder<S> createService(ServiceName<S> name, Service<S> service);
 
-    <S> ServiceBuilder<S> createService(ServiceName<S> name, Service<S> service);
+  CompositeServiceBuilder createComposite(ServiceName<Void> name);
 
-    CompositeServiceBuilder createComposite(ServiceName<Void> name);
+  ActorFuture<Void> removeService(ServiceName<?> serviceName);
 
-    ActorFuture<Void> removeService(ServiceName<?> serviceName);
+  void close(long awaitTime, TimeUnit timeUnit)
+      throws TimeoutException, ExecutionException, InterruptedException;
 
-    void close(long awaitTime, TimeUnit timeUnit) throws TimeoutException, ExecutionException, InterruptedException;
-
-    ActorFuture<Void> closeAsync();
+  ActorFuture<Void> closeAsync();
 }

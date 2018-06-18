@@ -19,33 +19,30 @@ import io.zeebe.client.impl.ControlMessageRequest;
 import io.zeebe.client.impl.RequestManager;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 
-public class IncreaseJobSubscriptionCreditsCmdImpl extends ControlMessageRequest<Void>
-{
-    private final JobSubscriptionImpl subscription;
+public class IncreaseJobSubscriptionCreditsCmdImpl extends ControlMessageRequest<Void> {
+  private final JobSubscriptionImpl subscription;
 
-    public IncreaseJobSubscriptionCreditsCmdImpl(final RequestManager commandManager, int partition)
-    {
-        super(commandManager, ControlMessageType.INCREASE_JOB_SUBSCRIPTION_CREDITS, partition, Void.class);
-        this.subscription = new JobSubscriptionImpl();
-    }
+  public IncreaseJobSubscriptionCreditsCmdImpl(final RequestManager commandManager, int partition) {
+    super(
+        commandManager,
+        ControlMessageType.INCREASE_JOB_SUBSCRIPTION_CREDITS,
+        partition,
+        Void.class);
+    this.subscription = new JobSubscriptionImpl();
+  }
 
-    public IncreaseJobSubscriptionCreditsCmdImpl subscriberKey(long subscriberKey)
-    {
-        this.subscription.setSubscriberKey(subscriberKey);
-        return this;
-    }
+  public IncreaseJobSubscriptionCreditsCmdImpl subscriberKey(long subscriberKey) {
+    this.subscription.setSubscriberKey(subscriberKey);
+    return this;
+  }
 
-    public IncreaseJobSubscriptionCreditsCmdImpl credits(final int credits)
-    {
-        this.subscription.setCredits(credits);
-        return this;
-    }
+  public IncreaseJobSubscriptionCreditsCmdImpl credits(final int credits) {
+    this.subscription.setCredits(credits);
+    return this;
+  }
 
-    @Override
-    public Object getRequest()
-    {
-        return subscription;
-    }
-
-
+  @Override
+  public Object getRequest() {
+    return subscription;
+  }
 }

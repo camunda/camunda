@@ -17,6 +17,9 @@
  */
 package io.zeebe.broker.transport.clientapi;
 
+import static io.zeebe.util.StringUtil.getBytes;
+import static java.lang.String.format;
+
 import io.zeebe.broker.Loggers;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.ErrorResponseEncoder;
@@ -25,135 +28,108 @@ import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerResponse;
 import io.zeebe.util.EnsureUtil;
 import io.zeebe.util.buffer.BufferWriter;
+import java.nio.charset.StandardCharsets;
 import org.agrona.MutableDirectBuffer;
 import org.slf4j.Logger;
 
-import java.nio.charset.StandardCharsets;
+public class ErrorResponseWriter implements BufferWriter {
+  public static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
-import static io.zeebe.util.StringUtil.getBytes;
-import static java.lang.String.format;
+  protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
+  protected final ErrorResponseEncoder errorResponseEncoder = new ErrorResponseEncoder();
 
-public class ErrorResponseWriter implements BufferWriter
-{
-    public static final Logger LOG = Loggers.TRANSPORT_LOGGER;
+  protected ErrorCode errorCode;
+  protected byte[] errorMessage;
 
-    protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
-    protected final ErrorResponseEncoder errorResponseEncoder = new ErrorResponseEncoder();
+  protected final ServerOutput output;
+  protected final ServerResponse response = new ServerResponse();
 
-    protected ErrorCode errorCode;
-    protected byte[] errorMessage;
+  public ErrorResponseWriter() {
+    this(null);
+  }
 
-    protected final ServerOutput output;
-    protected final ServerResponse response = new ServerResponse();
+  public ErrorResponseWriter(ServerOutput output) {
+    this.output = output;
+  }
 
-    public ErrorResponseWriter()
-    {
-        this(null);
+  public ErrorResponseWriter errorCode(ErrorCode errorCode) {
+    this.errorCode = errorCode;
+    return this;
+  }
+
+  public ErrorResponseWriter errorMessage(String errorMessage) {
+    this.errorMessage = getBytes(errorMessage);
+    return this;
+  }
+
+  public ErrorResponseWriter errorMessage(String errorMessage, Object... args) {
+    this.errorMessage = getBytes(format(errorMessage, args));
+    return this;
+  }
+
+  @Override
+  public void write(MutableDirectBuffer buffer, int offset) {
+    // protocol header
+    messageHeaderEncoder.wrap(buffer, offset);
+
+    messageHeaderEncoder
+        .blockLength(errorResponseEncoder.sbeBlockLength())
+        .templateId(errorResponseEncoder.sbeTemplateId())
+        .schemaId(errorResponseEncoder.sbeSchemaId())
+        .version(errorResponseEncoder.sbeSchemaVersion());
+
+    offset += messageHeaderEncoder.encodedLength();
+
+    // error message
+    errorResponseEncoder.wrap(buffer, offset);
+
+    errorResponseEncoder.errorCode(errorCode).putErrorData(errorMessage, 0, errorMessage.length);
+  }
+
+  public boolean tryWriteResponseOrLogFailure(ServerOutput output, int streamId, long requestId) {
+    final boolean isWritten = tryWriteResponse(output, streamId, requestId);
+
+    if (!isWritten) {
+      LOG.error(
+          "Failed to write error response. Error code: '{}', error message: '{}'",
+          errorCode != null ? errorCode.name() : ErrorCode.NULL_VAL.name(),
+          new String(errorMessage, StandardCharsets.UTF_8));
     }
 
-    public ErrorResponseWriter(ServerOutput output)
-    {
-        this.output = output;
+    return isWritten;
+  }
+
+  public boolean tryWriteResponseOrLogFailure(int streamId, long requestId) {
+    return tryWriteResponseOrLogFailure(this.output, streamId, requestId);
+  }
+
+  public boolean tryWriteResponse(ServerOutput output, int streamId, long requestId) {
+    EnsureUtil.ensureNotNull("error code", errorCode);
+    EnsureUtil.ensureNotNull("error message", errorMessage);
+
+    try {
+      response.reset().remoteStreamId(streamId).writer(this).requestId(requestId);
+
+      return output.sendResponse(response);
+    } finally {
+      reset();
     }
+  }
 
-    public ErrorResponseWriter errorCode(ErrorCode errorCode)
-    {
-        this.errorCode = errorCode;
-        return this;
-    }
+  public boolean tryWriteResponse(int streamId, long requestId) {
+    return tryWriteResponse(this.output, streamId, requestId);
+  }
 
-    public ErrorResponseWriter errorMessage(String errorMessage)
-    {
-        this.errorMessage = getBytes(errorMessage);
-        return this;
-    }
+  @Override
+  public int getLength() {
+    return MessageHeaderEncoder.ENCODED_LENGTH
+        + ErrorResponseEncoder.BLOCK_LENGTH
+        + ErrorResponseEncoder.errorDataHeaderLength()
+        + errorMessage.length;
+  }
 
-    public ErrorResponseWriter errorMessage(String errorMessage, Object... args)
-    {
-        this.errorMessage = getBytes(format(errorMessage, args));
-        return this;
-    }
-
-    @Override
-    public void write(MutableDirectBuffer buffer, int offset)
-    {
-        // protocol header
-        messageHeaderEncoder.wrap(buffer, offset);
-
-        messageHeaderEncoder.blockLength(errorResponseEncoder.sbeBlockLength())
-            .templateId(errorResponseEncoder.sbeTemplateId())
-            .schemaId(errorResponseEncoder.sbeSchemaId())
-            .version(errorResponseEncoder.sbeSchemaVersion());
-
-        offset += messageHeaderEncoder.encodedLength();
-
-        // error message
-        errorResponseEncoder.wrap(buffer, offset);
-
-        errorResponseEncoder
-            .errorCode(errorCode)
-            .putErrorData(errorMessage, 0, errorMessage.length);
-    }
-
-    public boolean tryWriteResponseOrLogFailure(ServerOutput output, int streamId, long requestId)
-    {
-        final boolean isWritten = tryWriteResponse(output, streamId, requestId);
-
-        if (!isWritten)
-        {
-            LOG.error("Failed to write error response. Error code: '{}', error message: '{}'",
-                errorCode != null ? errorCode.name() : ErrorCode.NULL_VAL.name(),
-                new String(errorMessage, StandardCharsets.UTF_8)
-            );
-        }
-
-        return isWritten;
-    }
-
-
-    public boolean tryWriteResponseOrLogFailure(int streamId, long requestId)
-    {
-        return tryWriteResponseOrLogFailure(this.output, streamId, requestId);
-    }
-
-    public boolean tryWriteResponse(ServerOutput output, int streamId, long requestId)
-    {
-        EnsureUtil.ensureNotNull("error code", errorCode);
-        EnsureUtil.ensureNotNull("error message", errorMessage);
-
-        try
-        {
-            response.reset()
-                .remoteStreamId(streamId)
-                .writer(this)
-                .requestId(requestId);
-
-            return output.sendResponse(response);
-        }
-        finally
-        {
-            reset();
-        }
-    }
-
-    public boolean tryWriteResponse(int streamId, long requestId)
-    {
-        return tryWriteResponse(this.output, streamId, requestId);
-    }
-
-    @Override
-    public int getLength()
-    {
-        return  MessageHeaderEncoder.ENCODED_LENGTH +
-                ErrorResponseEncoder.BLOCK_LENGTH +
-                ErrorResponseEncoder.errorDataHeaderLength() +
-                errorMessage.length;
-    }
-
-    protected void reset()
-    {
-        errorCode = null;
-        errorMessage = null;
-    }
-
+  protected void reset() {
+    errorCode = null;
+    errorMessage = null;
+  }
 }

@@ -19,8 +19,9 @@ package io.zeebe.broker.job;
 
 import io.zeebe.servicecontainer.ServiceName;
 
-public class JobQueueServiceNames
-{
-    public static final ServiceName<JobQueueManagerService> JOB_QUEUE_MANAGER = ServiceName.newServiceName("jobqueue.manager", JobQueueManagerService.class);
-    public static final ServiceName<JobSubscriptionManager> JOB_QUEUE_SUBSCRIPTION_MANAGER = ServiceName.newServiceName("jobqueue.subscription.manager", JobSubscriptionManager.class);
+public class JobQueueServiceNames {
+  public static final ServiceName<JobQueueManagerService> JOB_QUEUE_MANAGER =
+      ServiceName.newServiceName("jobqueue.manager", JobQueueManagerService.class);
+  public static final ServiceName<JobSubscriptionManager> JOB_QUEUE_SUBSCRIPTION_MANAGER =
+      ServiceName.newServiceName("jobqueue.subscription.manager", JobSubscriptionManager.class);
 }

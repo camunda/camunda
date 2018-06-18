@@ -15,53 +15,44 @@
  */
 package io.zeebe.client.api.commands;
 
-public interface WorkflowResourceRequestStep1
-{
+public interface WorkflowResourceRequestStep1 {
+  /**
+   * Set the BPMN process id of the workflow to get the resource of. This is the static id of the
+   * process in the BPMN XML (i.e. "&#60;bpmn:process id='my-workflow'&#62;").
+   *
+   * @param bpmnProcessId the BPMN process id of the workflow
+   * @return the builder for this request
+   */
+  WorkflowResourceRequestStep2 bpmnProcessId(String bpmnProcessId);
+
+  /**
+   * Set the key of the workflow to get the resource of. The key is assigned by the broker while
+   * deploying the workflow. It can be picked from the deployment or workflow event.
+   *
+   * @param workflowKey the key of the workflow
+   * @return the builder for this request
+   */
+  WorkflowResourceRequestStep3 workflowKey(long workflowKey);
+
+  interface WorkflowResourceRequestStep2 {
     /**
-     * Set the BPMN process id of the workflow to get the resource of. This is
-     * the static id of the process in the BPMN XML (i.e. "&#60;bpmn:process
-     * id='my-workflow'&#62;").
+     * Set the version of the workflow to get the resource of. The version is assigned by the broker
+     * while deploying the workflow. It can be picked from the deployment or workflow event.
      *
-     * @param bpmnProcessId
-     *            the BPMN process id of the workflow
+     * @param version the version of the workflow
      * @return the builder for this request
      */
-    WorkflowResourceRequestStep2 bpmnProcessId(String bpmnProcessId);
+    WorkflowResourceRequestStep3 version(int version);
 
     /**
-     * Set the key of the workflow to get the resource of. The key is assigned
-     * by the broker while deploying the workflow. It can be picked from the
-     * deployment or workflow event.
+     * Use the latest version of the workflow to get the resource of.
      *
-     * @param workflowKey
-     *            the key of the workflow
      * @return the builder for this request
      */
-    WorkflowResourceRequestStep3 workflowKey(long workflowKey);
+    WorkflowResourceRequestStep3 latestVersion();
+  }
 
-    interface WorkflowResourceRequestStep2
-    {
-        /**
-         * Set the version of the workflow to get the resource of. The version
-         * is assigned by the broker while deploying the workflow. It can be
-         * picked from the deployment or workflow event.
-         *
-         * @param version
-         *            the version of the workflow
-         * @return the builder for this request
-         */
-        WorkflowResourceRequestStep3 version(int version);
-
-        /**
-         * Use the latest version of the workflow to get the resource of.
-         *
-         * @return the builder for this request
-         */
-        WorkflowResourceRequestStep3 latestVersion();
-    }
-
-    interface WorkflowResourceRequestStep3 extends FinalCommandStep<WorkflowResource>
-    {
-        // the place for new optional parameters
-    }
+  interface WorkflowResourceRequestStep3 extends FinalCommandStep<WorkflowResource> {
+    // the place for new optional parameters
+  }
 }

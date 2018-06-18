@@ -15,10 +15,9 @@
  */
 package io.zeebe.client.api.events;
 
-public enum IncidentState
-{
-    CREATED,
-    RESOLVED,
-    RESOLVE_FAILED,
-    DELETED,
+public enum IncidentState {
+  CREATED,
+  RESOLVED,
+  RESOLVE_FAILED,
+  DELETED,
 }

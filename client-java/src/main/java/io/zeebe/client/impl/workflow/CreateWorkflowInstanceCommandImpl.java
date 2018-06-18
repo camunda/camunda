@@ -15,9 +15,6 @@
  */
 package io.zeebe.client.impl.workflow;
 
-import java.io.InputStream;
-import java.util.Map;
-
 import io.zeebe.client.api.commands.CreateWorkflowInstanceCommandStep1;
 import io.zeebe.client.api.commands.CreateWorkflowInstanceCommandStep1.CreateWorkflowInstanceCommandStep2;
 import io.zeebe.client.api.commands.CreateWorkflowInstanceCommandStep1.CreateWorkflowInstanceCommandStep3;
@@ -28,85 +25,77 @@ import io.zeebe.client.impl.command.WorkflowInstanceCommandImpl;
 import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.record.RecordImpl;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import java.io.InputStream;
+import java.util.Map;
 
 public class CreateWorkflowInstanceCommandImpl extends CommandImpl<WorkflowInstanceEvent>
-        implements CreateWorkflowInstanceCommandStep1, CreateWorkflowInstanceCommandStep2, CreateWorkflowInstanceCommandStep3
-{
-    private final WorkflowInstanceCommandImpl command;
+    implements CreateWorkflowInstanceCommandStep1,
+        CreateWorkflowInstanceCommandStep2,
+        CreateWorkflowInstanceCommandStep3 {
+  private final WorkflowInstanceCommandImpl command;
 
-    public CreateWorkflowInstanceCommandImpl(final RequestManager commandManager, ZeebeObjectMapperImpl objectMapper, String topic)
-    {
-        super(commandManager);
+  public CreateWorkflowInstanceCommandImpl(
+      final RequestManager commandManager, ZeebeObjectMapperImpl objectMapper, String topic) {
+    super(commandManager);
 
-        command = new WorkflowInstanceCommandImpl(objectMapper, WorkflowInstanceIntent.CREATE);
-        command.setTopicName(topic);
-    }
+    command = new WorkflowInstanceCommandImpl(objectMapper, WorkflowInstanceIntent.CREATE);
+    command.setTopicName(topic);
+  }
 
-    @Override
-    public CreateWorkflowInstanceCommandStep3 payload(final InputStream payload)
-    {
-        this.command.setPayload(payload);
-        return this;
-    }
+  @Override
+  public CreateWorkflowInstanceCommandStep3 payload(final InputStream payload) {
+    this.command.setPayload(payload);
+    return this;
+  }
 
-    @Override
-    public CreateWorkflowInstanceCommandStep3 payload(final String payload)
-    {
-        this.command.setPayload(payload);
-        return this;
-    }
+  @Override
+  public CreateWorkflowInstanceCommandStep3 payload(final String payload) {
+    this.command.setPayload(payload);
+    return this;
+  }
 
-    @Override
-    public CreateWorkflowInstanceCommandStep3 payload(Map<String, Object> payload)
-    {
-        this.command.setPayload(payload);
-        return this;
-    }
+  @Override
+  public CreateWorkflowInstanceCommandStep3 payload(Map<String, Object> payload) {
+    this.command.setPayload(payload);
+    return this;
+  }
 
-    @Override
-    public CreateWorkflowInstanceCommandStep3 payload(Object payload)
-    {
-        this.command.setPayload(payload);
-        return this;
-    }
+  @Override
+  public CreateWorkflowInstanceCommandStep3 payload(Object payload) {
+    this.command.setPayload(payload);
+    return this;
+  }
 
-    @Override
-    public CreateWorkflowInstanceCommandStep2 bpmnProcessId(final String id)
-    {
-        this.command.setBpmnProcessId(id);
-        return this;
-    }
+  @Override
+  public CreateWorkflowInstanceCommandStep2 bpmnProcessId(final String id) {
+    this.command.setBpmnProcessId(id);
+    return this;
+  }
 
-    @Override
-    public CreateWorkflowInstanceCommandStep3 version(final int version)
-    {
-        this.command.setVersion(version);
-        return this;
-    }
+  @Override
+  public CreateWorkflowInstanceCommandStep3 version(final int version) {
+    this.command.setVersion(version);
+    return this;
+  }
 
-    @Override
-    public CreateWorkflowInstanceCommandStep3 latestVersion()
-    {
-        return version(LATEST_VERSION);
-    }
+  @Override
+  public CreateWorkflowInstanceCommandStep3 latestVersion() {
+    return version(LATEST_VERSION);
+  }
 
-    @Override
-    public CreateWorkflowInstanceCommandStep3 latestVersionForce()
-    {
-        return version(FORCE_LATEST_VERSION);
-    }
+  @Override
+  public CreateWorkflowInstanceCommandStep3 latestVersionForce() {
+    return version(FORCE_LATEST_VERSION);
+  }
 
-    @Override
-    public CreateWorkflowInstanceCommandStep3 workflowKey(long workflowKey)
-    {
-        this.command.setWorkflowKey(workflowKey);
-        return this;
-    }
+  @Override
+  public CreateWorkflowInstanceCommandStep3 workflowKey(long workflowKey) {
+    this.command.setWorkflowKey(workflowKey);
+    return this;
+  }
 
-    @Override
-    public RecordImpl getCommand()
-    {
-        return command;
-    }
-
+  @Override
+  public RecordImpl getCommand() {
+    return command;
+  }
 }

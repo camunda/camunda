@@ -18,7 +18,6 @@
 package io.zeebe.broker.workflow;
 
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.*;
-
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY;
 import static io.zeebe.broker.transport.TransportServiceNames.*;
 import static io.zeebe.broker.workflow.WorkflowServiceNames.WORKFLOW_QUEUE_MANAGER;
@@ -27,20 +26,28 @@ import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.servicecontainer.ServiceContainer;
 
-public class WorkflowComponent implements Component
-{
-    @Override
-    public void init(SystemContext context)
-    {
-        final ServiceContainer serviceContainer = context.getServiceContainer();
+public class WorkflowComponent implements Component {
+  @Override
+  public void init(SystemContext context) {
+    final ServiceContainer serviceContainer = context.getServiceContainer();
 
-        final WorkflowStreamProcessingManagerService workflowQueueManagerService = new WorkflowStreamProcessingManagerService();
-        serviceContainer.createService(WORKFLOW_QUEUE_MANAGER, workflowQueueManagerService)
-            .dependency(serverTransport(CLIENT_API_SERVER_NAME), workflowQueueManagerService.getClientApiTransportInjector())
-            .dependency(TOPOLOGY_MANAGER_SERVICE, workflowQueueManagerService.getTopologyManagerInjector())
-            .dependency(clientTransport(MANAGEMENT_API_CLIENT_NAME), workflowQueueManagerService.getManagementApiClientInjector())
-            .dependency(STREAM_PROCESSOR_SERVICE_FACTORY, workflowQueueManagerService.getStreamProcessorServiceFactoryInjector())
-            .groupReference(LEADER_PARTITION_GROUP_NAME, workflowQueueManagerService.getPartitionsGroupReference())
-            .install();
-    }
+    final WorkflowStreamProcessingManagerService workflowQueueManagerService =
+        new WorkflowStreamProcessingManagerService();
+    serviceContainer
+        .createService(WORKFLOW_QUEUE_MANAGER, workflowQueueManagerService)
+        .dependency(
+            serverTransport(CLIENT_API_SERVER_NAME),
+            workflowQueueManagerService.getClientApiTransportInjector())
+        .dependency(
+            TOPOLOGY_MANAGER_SERVICE, workflowQueueManagerService.getTopologyManagerInjector())
+        .dependency(
+            clientTransport(MANAGEMENT_API_CLIENT_NAME),
+            workflowQueueManagerService.getManagementApiClientInjector())
+        .dependency(
+            STREAM_PROCESSOR_SERVICE_FACTORY,
+            workflowQueueManagerService.getStreamProcessorServiceFactoryInjector())
+        .groupReference(
+            LEADER_PARTITION_GROUP_NAME, workflowQueueManagerService.getPartitionsGroupReference())
+        .install();
+  }
 }

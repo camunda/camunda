@@ -17,30 +17,28 @@
  */
 package io.zeebe.broker.clustering.base.topology;
 
+import io.zeebe.transport.SocketAddress;
 import java.util.Collection;
 import java.util.List;
 
-import io.zeebe.transport.SocketAddress;
+public interface ReadableTopology {
+  NodeInfo getLocal();
 
-public interface ReadableTopology
-{
-    NodeInfo getLocal();
+  NodeInfo getMemberByClientApi(SocketAddress apiAddress);
 
-    NodeInfo getMemberByClientApi(SocketAddress apiAddress);
+  NodeInfo getMemberByManagementApi(SocketAddress apiAddress);
 
-    NodeInfo getMemberByManagementApi(SocketAddress apiAddress);
+  NodeInfo getMemberByReplicationApi(SocketAddress apiAddress);
 
-    NodeInfo getMemberByReplicationApi(SocketAddress apiAddress);
+  List<NodeInfo> getMembers();
 
-    List<NodeInfo> getMembers();
+  PartitionInfo getPartition(int partitionId);
 
-    PartitionInfo getPartition(int partitionId);
+  NodeInfo getLeader(int partitionId);
 
-    NodeInfo getLeader(int partitionId);
+  List<NodeInfo> getFollowers(int partitionId);
 
-    List<NodeInfo> getFollowers(int partitionId);
+  Collection<PartitionInfo> getPartitions();
 
-    Collection<PartitionInfo> getPartitions();
-
-    TopologyDto asDto();
+  TopologyDto asDto();
 }

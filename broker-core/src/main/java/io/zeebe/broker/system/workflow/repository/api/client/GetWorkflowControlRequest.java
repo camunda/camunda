@@ -21,63 +21,52 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.*;
 import org.agrona.DirectBuffer;
 
-public class GetWorkflowControlRequest extends UnpackedObject
-{
-    private LongProperty workflowKeyProp = new LongProperty("workflowKey", -1);
-    private IntegerProperty versionProp = new IntegerProperty("version", -1);
-    private StringProperty topicNameProp = new StringProperty("topicName");
-    private StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
+public class GetWorkflowControlRequest extends UnpackedObject {
+  private LongProperty workflowKeyProp = new LongProperty("workflowKey", -1);
+  private IntegerProperty versionProp = new IntegerProperty("version", -1);
+  private StringProperty topicNameProp = new StringProperty("topicName");
+  private StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
 
-    public GetWorkflowControlRequest()
-    {
-        declareProperty(workflowKeyProp)
-            .declareProperty(versionProp)
-            .declareProperty(topicNameProp)
-            .declareProperty(bpmnProcessIdProp);
-    }
+  public GetWorkflowControlRequest() {
+    declareProperty(workflowKeyProp)
+        .declareProperty(versionProp)
+        .declareProperty(topicNameProp)
+        .declareProperty(bpmnProcessIdProp);
+  }
 
-    public long getWorkflowKey()
-    {
-        return workflowKeyProp.getValue();
-    }
+  public long getWorkflowKey() {
+    return workflowKeyProp.getValue();
+  }
 
-    public GetWorkflowControlRequest setWorkflowKey(long key)
-    {
-        workflowKeyProp.setValue(key);
-        return this;
-    }
+  public GetWorkflowControlRequest setWorkflowKey(long key) {
+    workflowKeyProp.setValue(key);
+    return this;
+  }
 
-    public DirectBuffer getTopicName()
-    {
-        return topicNameProp.getValue();
-    }
+  public DirectBuffer getTopicName() {
+    return topicNameProp.getValue();
+  }
 
-    public GetWorkflowControlRequest setTopicName(String topicName)
-    {
-        topicNameProp.setValue(topicName);
-        return this;
-    }
+  public GetWorkflowControlRequest setTopicName(String topicName) {
+    topicNameProp.setValue(topicName);
+    return this;
+  }
 
-    public DirectBuffer getBpmnProcessId()
-    {
-        return bpmnProcessIdProp.getValue();
-    }
+  public DirectBuffer getBpmnProcessId() {
+    return bpmnProcessIdProp.getValue();
+  }
 
-    public GetWorkflowControlRequest setBpmnProcessId(DirectBuffer directBuffer)
-    {
-        bpmnProcessIdProp.setValue(directBuffer);
-        return this;
-    }
+  public GetWorkflowControlRequest setBpmnProcessId(DirectBuffer directBuffer) {
+    bpmnProcessIdProp.setValue(directBuffer);
+    return this;
+  }
 
+  public int getVersion() {
+    return versionProp.getValue();
+  }
 
-    public int getVersion()
-    {
-        return versionProp.getValue();
-    }
-
-    public GetWorkflowControlRequest setVersion(int version)
-    {
-        versionProp.setValue(version);
-        return this;
-    }
+  public GetWorkflowControlRequest setVersion(int version) {
+    versionProp.setValue(version);
+    return this;
+  }
 }

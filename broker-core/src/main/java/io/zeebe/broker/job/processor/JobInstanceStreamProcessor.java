@@ -30,260 +30,214 @@ import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.protocol.intent.JobIntent;
 
-public class JobInstanceStreamProcessor
-{
-    protected static final short STATE_CREATED = 1;
-    protected static final short STATE_ACTIVATED = 2;
-    protected static final short STATE_FAILED = 3;
-    protected static final short STATE_TIMED_OUT = 4;
+public class JobInstanceStreamProcessor {
+  protected static final short STATE_CREATED = 1;
+  protected static final short STATE_ACTIVATED = 2;
+  protected static final short STATE_FAILED = 3;
+  protected static final short STATE_TIMED_OUT = 4;
 
-    protected SubscribedRecordWriter subscribedEventWriter;
-    protected final JobSubscriptionManager jobSubscriptionManager;
+  protected SubscribedRecordWriter subscribedEventWriter;
+  protected final JobSubscriptionManager jobSubscriptionManager;
+  protected final CreditsRequest creditsRequest = new CreditsRequest();
+
+  protected final JobInstanceMap jobIndex;
+  protected int logStreamPartitionId;
+
+  public JobInstanceStreamProcessor(JobSubscriptionManager jobSubscriptionManager) {
+    this.jobSubscriptionManager = jobSubscriptionManager;
+
+    this.jobIndex = new JobInstanceMap();
+  }
+
+  public TypedStreamProcessor createStreamProcessor(TypedStreamEnvironment environment) {
+    this.logStreamPartitionId = environment.getStream().getPartitionId();
+    this.subscribedEventWriter = new SubscribedRecordWriter(environment.getOutput());
+
+    return environment
+        .newStreamProcessor()
+        .onCommand(ValueType.JOB, JobIntent.CREATE, new CreateJobProcessor())
+        .onCommand(ValueType.JOB, JobIntent.ACTIVATE, new ActivateJobProcessor())
+        .onCommand(ValueType.JOB, JobIntent.COMPLETE, new CompleteJobProcessor())
+        .onCommand(ValueType.JOB, JobIntent.FAIL, new FailJobProcessor())
+        .onCommand(ValueType.JOB, JobIntent.TIME_OUT, new TimeOutJobProcessor())
+        .onCommand(ValueType.JOB, JobIntent.UPDATE_RETRIES, new UpdateRetriesJobProcessor())
+        .onCommand(ValueType.JOB, JobIntent.CANCEL, new CancelJobProcessor())
+        .withStateResource(jobIndex.getMap())
+        .build();
+  }
+
+  private class CreateJobProcessor implements CommandProcessor<JobRecord> {
+
+    @Override
+    public CommandResult onCommand(TypedRecord<JobRecord> command, CommandControl commandControl) {
+      return commandControl.accept(JobIntent.CREATED);
+    }
+
+    @Override
+    public void updateStateOnAccept(TypedRecord<JobRecord> command) {
+      jobIndex.putJobInstance(command.getKey(), STATE_CREATED);
+    }
+  }
+
+  private class ActivateJobProcessor implements TypedRecordProcessor<JobRecord> {
+    protected boolean canActivate;
     protected final CreditsRequest creditsRequest = new CreditsRequest();
 
-    protected final JobInstanceMap jobIndex;
-    protected int logStreamPartitionId;
+    @Override
+    public void processRecord(TypedRecord<JobRecord> command) {
+      canActivate = false;
 
-    public JobInstanceStreamProcessor(JobSubscriptionManager jobSubscriptionManager)
-    {
-        this.jobSubscriptionManager = jobSubscriptionManager;
+      final short state = jobIndex.getJobState(command.getKey());
 
-        this.jobIndex = new JobInstanceMap();
+      if (state == STATE_CREATED || state == STATE_FAILED || state == STATE_TIMED_OUT) {
+        canActivate = true;
+      }
     }
 
-    public TypedStreamProcessor createStreamProcessor(TypedStreamEnvironment environment)
-    {
-        this.logStreamPartitionId = environment.getStream().getPartitionId();
-        this.subscribedEventWriter = new SubscribedRecordWriter(environment.getOutput());
+    @Override
+    public boolean executeSideEffects(
+        TypedRecord<JobRecord> command, TypedResponseWriter responseWriter) {
+      boolean success = true;
 
-        return environment.newStreamProcessor()
-            .onCommand(ValueType.JOB, JobIntent.CREATE, new CreateJobProcessor())
-            .onCommand(ValueType.JOB, JobIntent.ACTIVATE, new ActivateJobProcessor())
-            .onCommand(ValueType.JOB, JobIntent.COMPLETE, new CompleteJobProcessor())
-            .onCommand(ValueType.JOB, JobIntent.FAIL, new FailJobProcessor())
-            .onCommand(ValueType.JOB, JobIntent.TIME_OUT, new TimeOutJobProcessor())
-            .onCommand(ValueType.JOB, JobIntent.UPDATE_RETRIES, new UpdateRetriesJobProcessor())
-            .onCommand(ValueType.JOB, JobIntent.CANCEL, new CancelJobProcessor())
-            .withStateResource(jobIndex.getMap())
-            .build();
+      if (canActivate) {
+        final RecordMetadata metadata = command.getMetadata();
+
+        success =
+            subscribedEventWriter
+                .recordType(RecordType.EVENT)
+                .intent(JobIntent.ACTIVATED)
+                .partitionId(logStreamPartitionId)
+                .position(command.getPosition())
+                .sourceRecordPosition(command.getPosition())
+                .key(command.getKey())
+                .timestamp(command.getTimestamp())
+                .subscriberKey(metadata.getSubscriberKey())
+                .subscriptionType(SubscriptionType.JOB_SUBSCRIPTION)
+                .valueType(ValueType.JOB)
+                .valueWriter(command.getValue())
+                .tryWriteMessage(metadata.getRequestStreamId());
+      } else {
+        final long subscriptionId = command.getMetadata().getSubscriberKey();
+
+        creditsRequest.setSubscriberKey(subscriptionId);
+        creditsRequest.setCredits(1);
+        success = jobSubscriptionManager.increaseSubscriptionCreditsAsync(creditsRequest);
+      }
+
+      return success;
     }
 
-    private class CreateJobProcessor implements CommandProcessor<JobRecord>
-    {
-
-        @Override
-        public CommandResult onCommand(TypedRecord<JobRecord> command, CommandControl commandControl)
-        {
-            return commandControl.accept(JobIntent.CREATED);
-        }
-
-        @Override
-        public void updateStateOnAccept(TypedRecord<JobRecord> command)
-        {
-            jobIndex.putJobInstance(command.getKey(), STATE_CREATED);
-        }
+    @Override
+    public long writeRecord(TypedRecord<JobRecord> command, TypedStreamWriter writer) {
+      if (canActivate) {
+        return writer.writeFollowUpEvent(command.getKey(), JobIntent.ACTIVATED, command.getValue());
+      } else {
+        return writer.writeRejection(
+            command,
+            RejectionType.NOT_APPLICABLE,
+            "Job is not in one of these states: CREATED, FAILED, TIMED_OUT");
+      }
     }
 
-    private class ActivateJobProcessor implements TypedRecordProcessor<JobRecord>
-    {
-        protected boolean canActivate;
-        protected final CreditsRequest creditsRequest = new CreditsRequest();
+    @Override
+    public void updateState(TypedRecord<JobRecord> command) {
+      if (canActivate) {
+        jobIndex.putJobInstance(command.getKey(), STATE_ACTIVATED);
+      }
+    }
+  }
 
-        @Override
-        public void processRecord(TypedRecord<JobRecord> command)
-        {
-            canActivate = false;
+  private class CompleteJobProcessor implements CommandProcessor<JobRecord> {
+    @Override
+    public CommandResult onCommand(TypedRecord<JobRecord> command, CommandControl commandControl) {
+      final short state = jobIndex.getJobState(command.getKey());
 
-            final short state = jobIndex.getJobState(command.getKey());
-
-            if (state == STATE_CREATED || state == STATE_FAILED || state == STATE_TIMED_OUT)
-            {
-                canActivate = true;
-            }
-        }
-
-        @Override
-        public boolean executeSideEffects(TypedRecord<JobRecord> command, TypedResponseWriter responseWriter)
-        {
-            boolean success = true;
-
-            if (canActivate)
-            {
-                final RecordMetadata metadata = command.getMetadata();
-
-                success = subscribedEventWriter
-                        .recordType(RecordType.EVENT)
-                        .intent(JobIntent.ACTIVATED)
-                        .partitionId(logStreamPartitionId)
-                        .position(command.getPosition())
-                        .sourceRecordPosition(command.getPosition())
-                        .key(command.getKey())
-                        .timestamp(command.getTimestamp())
-                        .subscriberKey(metadata.getSubscriberKey())
-                        .subscriptionType(SubscriptionType.JOB_SUBSCRIPTION)
-                        .valueType(ValueType.JOB)
-                        .valueWriter(command.getValue())
-                        .tryWriteMessage(metadata.getRequestStreamId());
-            }
-            else
-            {
-                final long subscriptionId = command.getMetadata().getSubscriberKey();
-
-                creditsRequest.setSubscriberKey(subscriptionId);
-                creditsRequest.setCredits(1);
-                success = jobSubscriptionManager.increaseSubscriptionCreditsAsync(creditsRequest);
-            }
-
-            return success;
-        }
-
-        @Override
-        public long writeRecord(TypedRecord<JobRecord> command, TypedStreamWriter writer)
-        {
-            if (canActivate)
-            {
-                return writer.writeFollowUpEvent(command.getKey(), JobIntent.ACTIVATED, command.getValue());
-            }
-            else
-            {
-                return writer.writeRejection(command,
-                        RejectionType.NOT_APPLICABLE,
-                        "Job is not in one of these states: CREATED, FAILED, TIMED_OUT");
-            }
-        }
-
-        @Override
-        public void updateState(TypedRecord<JobRecord> command)
-        {
-            if (canActivate)
-            {
-                jobIndex.putJobInstance(command.getKey(), STATE_ACTIVATED);
-            }
-        }
+      final boolean isCompletable = state == STATE_ACTIVATED || state == STATE_TIMED_OUT;
+      if (isCompletable) {
+        return commandControl.accept(JobIntent.COMPLETED);
+      } else {
+        return commandControl.reject(
+            RejectionType.NOT_APPLICABLE, "Job is not in state: ACTIVATED, TIMED_OUT");
+      }
     }
 
-    private class CompleteJobProcessor implements CommandProcessor<JobRecord>
-    {
-        @Override
-        public CommandResult onCommand(TypedRecord<JobRecord> command, CommandControl commandControl)
-        {
-            final short state = jobIndex.getJobState(command.getKey());
+    @Override
+    public void updateStateOnAccept(TypedRecord<JobRecord> command) {
+      jobIndex.remove(command.getKey());
+    }
+  }
 
-            final boolean isCompletable = state == STATE_ACTIVATED || state == STATE_TIMED_OUT;
-            if (isCompletable)
-            {
-                return commandControl.accept(JobIntent.COMPLETED);
-            }
-            else
-            {
-                return commandControl.reject(RejectionType.NOT_APPLICABLE, "Job is not in state: ACTIVATED, TIMED_OUT");
-            }
-        }
+  private class FailJobProcessor implements CommandProcessor<JobRecord> {
+    @Override
+    public CommandResult onCommand(TypedRecord<JobRecord> command, CommandControl commandControl) {
+      final short state = jobIndex.getJobState(command.getKey());
 
-        @Override
-        public void updateStateOnAccept(TypedRecord<JobRecord> command)
-        {
-            jobIndex.remove(command.getKey());
-        }
+      if (state == STATE_ACTIVATED) {
+        return commandControl.accept(JobIntent.FAILED);
+      } else {
+        return commandControl.reject(RejectionType.NOT_APPLICABLE, "Job is not in state ACTIVATED");
+      }
     }
 
-    private class FailJobProcessor implements CommandProcessor<JobRecord>
-    {
-        @Override
-        public CommandResult onCommand(TypedRecord<JobRecord> command, CommandControl commandControl)
-        {
-            final short state = jobIndex.getJobState(command.getKey());
+    @Override
+    public void updateStateOnAccept(TypedRecord<JobRecord> command) {
+      jobIndex.putJobInstance(command.getKey(), STATE_FAILED);
+    }
+  }
 
-            if (state == STATE_ACTIVATED)
-            {
-                return commandControl.accept(JobIntent.FAILED);
-            }
-            else
-            {
-                return commandControl.reject(RejectionType.NOT_APPLICABLE, "Job is not in state ACTIVATED");
-            }
-        }
+  private class TimeOutJobProcessor implements CommandProcessor<JobRecord> {
+    private static final String REJECTION_REASON = "Job is not in state ACTIVATED";
 
-        @Override
-        public void updateStateOnAccept(TypedRecord<JobRecord> command)
-        {
-            jobIndex.putJobInstance(command.getKey(), STATE_FAILED);
-        }
+    @Override
+    public CommandResult onCommand(TypedRecord<JobRecord> command, CommandControl commandControl) {
+      final short state = jobIndex.getJobState(command.getKey());
+
+      if (state == STATE_ACTIVATED) {
+        return commandControl.accept(JobIntent.TIMED_OUT);
+      } else {
+        return commandControl.reject(RejectionType.NOT_APPLICABLE, REJECTION_REASON);
+      }
     }
 
-    private class TimeOutJobProcessor implements CommandProcessor<JobRecord>
-    {
-        private static final String REJECTION_REASON = "Job is not in state ACTIVATED";
+    @Override
+    public void updateStateOnAccept(TypedRecord<JobRecord> command) {
+      jobIndex.putJobInstance(command.getKey(), STATE_TIMED_OUT);
+    }
+  }
 
-        @Override
-        public CommandResult onCommand(TypedRecord<JobRecord> command, CommandControl commandControl)
-        {
-            final short state = jobIndex.getJobState(command.getKey());
+  private class UpdateRetriesJobProcessor implements CommandProcessor<JobRecord> {
+    @Override
+    public CommandResult onCommand(TypedRecord<JobRecord> command, CommandControl commandControl) {
+      final short state = jobIndex.getJobState(command.getKey());
+      final JobRecord value = command.getValue();
 
-            if (state == STATE_ACTIVATED)
-            {
-                return commandControl.accept(JobIntent.TIMED_OUT);
-            }
-            else
-            {
-                return commandControl.reject(RejectionType.NOT_APPLICABLE, REJECTION_REASON);
-            }
+      if (state == STATE_FAILED) {
+        if (value.getRetries() > 0) {
+          return commandControl.accept(JobIntent.RETRIES_UPDATED);
+        } else {
+          return commandControl.reject(RejectionType.BAD_VALUE, "Retries must be greater than 0");
         }
+      } else {
+        return commandControl.reject(RejectionType.NOT_APPLICABLE, "Job is not in state FAILED");
+      }
+    }
+  }
 
-        @Override
-        public void updateStateOnAccept(TypedRecord<JobRecord> command)
-        {
-            jobIndex.putJobInstance(command.getKey(), STATE_TIMED_OUT);
-        }
+  private class CancelJobProcessor implements CommandProcessor<JobRecord> {
+    @Override
+    public CommandResult onCommand(TypedRecord<JobRecord> command, CommandControl commandControl) {
+
+      final short state = jobIndex.getJobState(command.getKey());
+      if (state > 0) {
+        return commandControl.accept(JobIntent.CANCELED);
+      } else {
+        return commandControl.reject(RejectionType.NOT_APPLICABLE, "Job does not exist");
+      }
     }
 
-    private class UpdateRetriesJobProcessor implements CommandProcessor<JobRecord>
-    {
-        @Override
-        public CommandResult onCommand(TypedRecord<JobRecord> command, CommandControl commandControl)
-        {
-            final short state = jobIndex.getJobState(command.getKey());
-            final JobRecord value = command.getValue();
-
-            if (state == STATE_FAILED)
-            {
-                if (value.getRetries() > 0)
-                {
-                    return commandControl.accept(JobIntent.RETRIES_UPDATED);
-                }
-                else
-                {
-                    return commandControl.reject(RejectionType.BAD_VALUE, "Retries must be greater than 0");
-                }
-            }
-            else
-            {
-                return commandControl.reject(RejectionType.NOT_APPLICABLE, "Job is not in state FAILED");
-            }
-        }
+    @Override
+    public void updateStateOnAccept(TypedRecord<JobRecord> command) {
+      jobIndex.remove(command.getKey());
     }
-
-    private class CancelJobProcessor implements CommandProcessor<JobRecord>
-    {
-        @Override
-        public CommandResult onCommand(TypedRecord<JobRecord> command, CommandControl commandControl)
-        {
-
-            final short state = jobIndex.getJobState(command.getKey());
-            if (state > 0)
-            {
-                return commandControl.accept(JobIntent.CANCELED);
-            }
-            else
-            {
-                return commandControl.reject(RejectionType.NOT_APPLICABLE, "Job does not exist");
-            }
-        }
-
-        @Override
-        public void updateStateOnAccept(TypedRecord<JobRecord> command)
-        {
-            jobIndex.remove(command.getKey());
-        }
-    }
+  }
 }

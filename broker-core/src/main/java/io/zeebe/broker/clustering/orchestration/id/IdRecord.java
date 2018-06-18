@@ -20,23 +20,19 @@ package io.zeebe.broker.clustering.orchestration.id;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.IntegerProperty;
 
-public class IdRecord extends UnpackedObject
-{
+public class IdRecord extends UnpackedObject {
 
-    private final IntegerProperty id = new IntegerProperty("id");
+  private final IntegerProperty id = new IntegerProperty("id");
 
-    public IdRecord()
-    {
-        this.declareProperty(id);
-    }
+  public IdRecord() {
+    this.declareProperty(id);
+  }
 
-    public Integer getId()
-    {
-        return id.getValue();
-    }
+  public Integer getId() {
+    return id.getValue();
+  }
 
-    public void setId(final int id)
-    {
-        this.id.setValue(id);
-    }
+  public void setId(final int id) {
+    this.id.setValue(id);
+  }
 }

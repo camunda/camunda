@@ -19,132 +19,121 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.function.Consumer;
-
 import org.agrona.BitUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 
-public class Metric
-{
-    public static final byte[] OPENING_CURLY_BRACE = "{".getBytes(StandardCharsets.UTF_8);
-    public static final byte[] CLOSING_CURLY_BRACE = "}".getBytes(StandardCharsets.UTF_8);
-    public static final byte[] NEW_LINE = "\n".getBytes(StandardCharsets.UTF_8);
-    public static final byte[] DOUBLE_QUOTE = "\"".getBytes(StandardCharsets.UTF_8);
-    public static final byte[] COMMA = ",".getBytes(StandardCharsets.UTF_8);
-    public static final byte[] EQUALS = "=".getBytes(StandardCharsets.UTF_8);
-    public static final byte[] WHITESPACE = " ".getBytes(StandardCharsets.UTF_8);
+public class Metric {
+  public static final byte[] OPENING_CURLY_BRACE = "{".getBytes(StandardCharsets.UTF_8);
+  public static final byte[] CLOSING_CURLY_BRACE = "}".getBytes(StandardCharsets.UTF_8);
+  public static final byte[] NEW_LINE = "\n".getBytes(StandardCharsets.UTF_8);
+  public static final byte[] DOUBLE_QUOTE = "\"".getBytes(StandardCharsets.UTF_8);
+  public static final byte[] COMMA = ",".getBytes(StandardCharsets.UTF_8);
+  public static final byte[] EQUALS = "=".getBytes(StandardCharsets.UTF_8);
+  public static final byte[] WHITESPACE = " ".getBytes(StandardCharsets.UTF_8);
 
-    private static class Label
-    {
-        private byte[] name;
-        private byte[] value;
+  private static class Label {
+    private byte[] name;
+    private byte[] value;
 
-        Label(String name, String value)
-        {
-            this.name = name.getBytes(StandardCharsets.UTF_8);
-            this.value = value.getBytes(StandardCharsets.UTF_8);
-        }
-
-        @Override
-        public String toString()
-        {
-            return new String(name, StandardCharsets.UTF_8) + " = " + new String(value, StandardCharsets.UTF_8);
-        }
+    Label(String name, String value) {
+      this.name = name.getBytes(StandardCharsets.UTF_8);
+      this.value = value.getBytes(StandardCharsets.UTF_8);
     }
 
-    private final AtomicCounter value;
-    private final byte[] name;
-    private final byte[] type;
-    private final byte[] description;
-    private final Label[] labels;
-    private final Consumer<Metric> onClose;
-
-    public Metric(String name, String type, String description, Map<String, String> labels, Consumer<Metric> onClose)
-    {
-        this.onClose = onClose;
-        this.value = new AtomicCounter(new UnsafeBuffer(new byte[BitUtil.SIZE_OF_LONG]), 0);
-        this.name = name.getBytes(StandardCharsets.UTF_8);
-        this.type = type.getBytes(StandardCharsets.UTF_8);
-        this.description = description.getBytes(StandardCharsets.UTF_8);
-        this.labels = new Label[labels.size()];
-
-        final List<Entry<String, String>> labelSet = new ArrayList<>(labels.entrySet());
-        for (int i = 0; i < labelSet.size(); i++)
-        {
-            final Entry<String, String> entry = labelSet.get(i);
-            this.labels[i] = new Label(entry.getKey(), entry.getValue());
-        }
+    @Override
+    public String toString() {
+      return new String(name, StandardCharsets.UTF_8)
+          + " = "
+          + new String(value, StandardCharsets.UTF_8);
     }
+  }
 
-    public long incrementOrdered()
-    {
-        return value.incrementOrdered();
-    }
+  private final AtomicCounter value;
+  private final byte[] name;
+  private final byte[] type;
+  private final byte[] description;
+  private final Label[] labels;
+  private final Consumer<Metric> onClose;
 
-    public void setOrdered(long value)
-    {
-        this.value.setOrdered(value);
-    }
+  public Metric(
+      String name,
+      String type,
+      String description,
+      Map<String, String> labels,
+      Consumer<Metric> onClose) {
+    this.onClose = onClose;
+    this.value = new AtomicCounter(new UnsafeBuffer(new byte[BitUtil.SIZE_OF_LONG]), 0);
+    this.name = name.getBytes(StandardCharsets.UTF_8);
+    this.type = type.getBytes(StandardCharsets.UTF_8);
+    this.description = description.getBytes(StandardCharsets.UTF_8);
+    this.labels = new Label[labels.size()];
 
-    public long getWeak()
-    {
-        return value.getWeak();
+    final List<Entry<String, String>> labelSet = new ArrayList<>(labels.entrySet());
+    for (int i = 0; i < labelSet.size(); i++) {
+      final Entry<String, String> entry = labelSet.get(i);
+      this.labels[i] = new Label(entry.getKey(), entry.getValue());
     }
+  }
 
-    public long get()
-    {
-        return value.get();
-    }
+  public long incrementOrdered() {
+    return value.incrementOrdered();
+  }
 
-    public int id()
-    {
-        return value.id();
-    }
+  public void setOrdered(long value) {
+    this.value.setOrdered(value);
+  }
 
-    public long getAndAddOrdered(long increment)
-    {
-        return value.getAndAddOrdered(increment);
-    }
+  public long getWeak() {
+    return value.getWeak();
+  }
 
-    public String getName()
-    {
-        return new String(name, StandardCharsets.UTF_8);
-    }
+  public long get() {
+    return value.get();
+  }
 
-    public int dump(MutableDirectBuffer buffer, int offset, long now)
-    {
-        offset = writeArray(buffer, offset, name);
-        offset = writeArray(buffer, offset, OPENING_CURLY_BRACE);
-        for (int i = 0; i < labels.length; i++)
-        {
-            if (i != 0)
-            {
-                offset = writeArray(buffer, offset, COMMA);
-            }
-            offset = writeArray(buffer, offset, labels[i].name);
-            offset = writeArray(buffer, offset, EQUALS);
-            offset = writeArray(buffer, offset, DOUBLE_QUOTE);
-            offset = writeArray(buffer, offset, labels[i].value);
-            offset = writeArray(buffer, offset, DOUBLE_QUOTE);
-        }
-        offset = writeArray(buffer, offset, CLOSING_CURLY_BRACE);
-        offset = writeArray(buffer, offset, WHITESPACE);
-        offset = writeArray(buffer, offset, Long.toString(value.get()).getBytes(StandardCharsets.UTF_8));
-        offset = writeArray(buffer, offset, WHITESPACE);
-        offset = writeArray(buffer, offset, Long.toString(now).getBytes(StandardCharsets.UTF_8));
-        offset = writeArray(buffer, offset, NEW_LINE);
-        return offset;
-    }
+  public int id() {
+    return value.id();
+  }
 
-    private int writeArray(MutableDirectBuffer buffer, int offset, byte[] array)
-    {
-        buffer.putBytes(offset, array);
-        return offset + array.length;
-    }
+  public long getAndAddOrdered(long increment) {
+    return value.getAndAddOrdered(increment);
+  }
 
-    public void close()
-    {
-        onClose.accept(this);
+  public String getName() {
+    return new String(name, StandardCharsets.UTF_8);
+  }
+
+  public int dump(MutableDirectBuffer buffer, int offset, long now) {
+    offset = writeArray(buffer, offset, name);
+    offset = writeArray(buffer, offset, OPENING_CURLY_BRACE);
+    for (int i = 0; i < labels.length; i++) {
+      if (i != 0) {
+        offset = writeArray(buffer, offset, COMMA);
+      }
+      offset = writeArray(buffer, offset, labels[i].name);
+      offset = writeArray(buffer, offset, EQUALS);
+      offset = writeArray(buffer, offset, DOUBLE_QUOTE);
+      offset = writeArray(buffer, offset, labels[i].value);
+      offset = writeArray(buffer, offset, DOUBLE_QUOTE);
     }
+    offset = writeArray(buffer, offset, CLOSING_CURLY_BRACE);
+    offset = writeArray(buffer, offset, WHITESPACE);
+    offset =
+        writeArray(buffer, offset, Long.toString(value.get()).getBytes(StandardCharsets.UTF_8));
+    offset = writeArray(buffer, offset, WHITESPACE);
+    offset = writeArray(buffer, offset, Long.toString(now).getBytes(StandardCharsets.UTF_8));
+    offset = writeArray(buffer, offset, NEW_LINE);
+    return offset;
+  }
+
+  private int writeArray(MutableDirectBuffer buffer, int offset, byte[] array) {
+    buffer.putBytes(offset, array);
+    return offset + array.length;
+  }
+
+  public void close() {
+    onClose.accept(this);
+  }
 }

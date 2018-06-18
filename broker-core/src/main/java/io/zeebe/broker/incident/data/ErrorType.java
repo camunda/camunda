@@ -17,13 +17,12 @@
  */
 package io.zeebe.broker.incident.data;
 
-public enum ErrorType
-{
-    UNKNOWN,
+public enum ErrorType {
+  UNKNOWN,
 
-    IO_MAPPING_ERROR,
+  IO_MAPPING_ERROR,
 
-    JOB_NO_RETRIES,
+  JOB_NO_RETRIES,
 
-    CONDITION_ERROR,
+  CONDITION_ERROR,
 }

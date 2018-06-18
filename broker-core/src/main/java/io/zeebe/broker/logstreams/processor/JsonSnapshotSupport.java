@@ -17,83 +17,67 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import java.io.*;
-
 import com.fasterxml.jackson.databind.*;
 import io.zeebe.logstreams.spi.ComposableSnapshotSupport;
 import io.zeebe.util.ReflectUtil;
+import java.io.*;
 
 /**
- * Should be used for small data sets only, where programming convenience and
- * human readability of the target format is valued over performance
- * optimization.
- *
+ * Should be used for small data sets only, where programming convenience and human readability of
+ * the target format is valued over performance optimization.
  */
-public class JsonSnapshotSupport<T> implements ComposableSnapshotSupport
-{
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+public class JsonSnapshotSupport<T> implements ComposableSnapshotSupport {
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    private final Class<T> dataType;
-    private final ObjectWriter writer;
-    private final ObjectReader reader;
+  private final Class<T> dataType;
+  private final ObjectWriter writer;
+  private final ObjectReader reader;
 
-    private final ByteArrayOutputStream outBuffer = new ByteArrayOutputStream();
+  private final ByteArrayOutputStream outBuffer = new ByteArrayOutputStream();
 
-    private T data;
+  private T data;
 
-    public T getData()
-    {
-        return data;
+  public T getData() {
+    return data;
+  }
+
+  public JsonSnapshotSupport(Class<T> type) {
+    this.dataType = type;
+    this.writer = OBJECT_MAPPER.writerFor(type).withDefaultPrettyPrinter();
+    this.reader = OBJECT_MAPPER.readerFor(type);
+    reset();
+  }
+
+  @Override
+  public long writeSnapshot(OutputStream outputStream) throws Exception {
+    final long size = outBuffer.size();
+
+    outBuffer.writeTo(outputStream);
+    outBuffer.reset();
+
+    return size;
+  }
+
+  @Override
+  public void recoverFromSnapshot(InputStream inputStream) throws Exception {
+    data = reader.readValue(inputStream);
+  }
+
+  @Override
+  public void reset() {
+    data = ReflectUtil.newInstance(dataType);
+  }
+
+  @Override
+  public long snapshotSize() {
+    outBuffer.reset();
+
+    try {
+      writer.writeValue(outBuffer, data);
+    } catch (Exception e) {
+      throw new RuntimeException("Exception while writing json snapshot", e);
     }
 
-    public JsonSnapshotSupport(Class<T> type)
-    {
-        this.dataType = type;
-        this.writer = OBJECT_MAPPER.writerFor(type)
-            .withDefaultPrettyPrinter();
-        this.reader = OBJECT_MAPPER.readerFor(type);
-        reset();
-    }
-
-    @Override
-    public long writeSnapshot(OutputStream outputStream) throws Exception
-    {
-        final long size = outBuffer.size();
-
-        outBuffer.writeTo(outputStream);
-        outBuffer.reset();
-
-        return size;
-    }
-
-    @Override
-    public void recoverFromSnapshot(InputStream inputStream) throws Exception
-    {
-        data = reader.readValue(inputStream);
-    }
-
-    @Override
-    public void reset()
-    {
-        data = ReflectUtil.newInstance(dataType);
-    }
-
-    @Override
-    public long snapshotSize()
-    {
-        outBuffer.reset();
-
-        try
-        {
-            writer.writeValue(outBuffer, data);
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException("Exception while writing json snapshot", e);
-        }
-
-        return outBuffer.size();
-    }
-
-
+    return outBuffer.size();
+  }
 }

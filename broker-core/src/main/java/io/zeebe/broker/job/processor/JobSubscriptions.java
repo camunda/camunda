@@ -18,153 +18,121 @@
 package io.zeebe.broker.job.processor;
 
 import java.util.Iterator;
-
 import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.Long2LongHashMap;
 
-public class JobSubscriptions implements Iterable<JobSubscription>
-{
+public class JobSubscriptions implements Iterable<JobSubscription> {
 
-    protected JobSubscription[] subscriptions;
-    protected Long2LongHashMap lookupTable = new Long2LongHashMap(-1);
-    protected int totalCredits = 0;
+  protected JobSubscription[] subscriptions;
+  protected Long2LongHashMap lookupTable = new Long2LongHashMap(-1);
+  protected int totalCredits = 0;
 
-    public JobSubscriptions(int initialCapacity)
-    {
-        this.subscriptions = new JobSubscription[initialCapacity];
+  public JobSubscriptions(int initialCapacity) {
+    this.subscriptions = new JobSubscription[initialCapacity];
+  }
+
+  public void addSubscription(JobSubscription subscription) {
+    int insertIndex = -1;
+    final int currentSubscriptionsLength = subscriptions.length;
+    for (int i = 0; i < currentSubscriptionsLength; i++) {
+      if (subscriptions[i] == null) {
+        insertIndex = i;
+        break;
+      }
     }
 
-    public void addSubscription(JobSubscription subscription)
-    {
-        int insertIndex = -1;
-        final int currentSubscriptionsLength = subscriptions.length;
-        for (int i = 0; i < currentSubscriptionsLength; i++)
-        {
-            if (subscriptions[i] == null)
-            {
-                insertIndex = i;
-                break;
-            }
-        }
-
-        if (insertIndex < 0)
-        {
-            subscriptions = ArrayUtil.ensureCapacity(subscriptions, subscriptions.length * 2);
-            insertIndex = currentSubscriptionsLength;
-        }
-
-        subscriptions[insertIndex] = subscription;
-        lookupTable.put(subscription.getSubscriberKey(), insertIndex);
-        totalCredits += subscription.getCredits();
+    if (insertIndex < 0) {
+      subscriptions = ArrayUtil.ensureCapacity(subscriptions, subscriptions.length * 2);
+      insertIndex = currentSubscriptionsLength;
     }
 
-    public void removeSubscription(long subscriberKey)
-    {
-        final long idx = lookupTable.get(subscriberKey);
-        if (idx >= 0)
-        {
-            remove((int) idx);
-        }
-    }
+    subscriptions[insertIndex] = subscription;
+    lookupTable.put(subscription.getSubscriberKey(), insertIndex);
+    totalCredits += subscription.getCredits();
+  }
 
-    protected void remove(int index)
-    {
-        final JobSubscription currentValue = subscriptions[index];
-        if (currentValue != null)
-        {
-            subscriptions[index] = null;
-            lookupTable.remove(currentValue.getSubscriberKey());
-            totalCredits -= currentValue.getCredits();
-        }
+  public void removeSubscription(long subscriberKey) {
+    final long idx = lookupTable.get(subscriberKey);
+    if (idx >= 0) {
+      remove((int) idx);
     }
+  }
 
-    public boolean isEmpty()
-    {
-        return lookupTable.isEmpty();
+  protected void remove(int index) {
+    final JobSubscription currentValue = subscriptions[index];
+    if (currentValue != null) {
+      subscriptions[index] = null;
+      lookupTable.remove(currentValue.getSubscriberKey());
+      totalCredits -= currentValue.getCredits();
+    }
+  }
+
+  public boolean isEmpty() {
+    return lookupTable.isEmpty();
+  }
+
+  @Override
+  public SubscriptionIterator iterator() {
+    return new SubscriptionIterator();
+  }
+
+  public void addCredits(long subscriberKey, int credits) {
+    final long idx = lookupTable.get(subscriberKey);
+
+    if (idx >= 0) {
+      final JobSubscription subscription = subscriptions[(int) idx];
+      subscription.setCredits(subscription.getCredits() + credits);
+      totalCredits += credits;
+    }
+  }
+
+  public int getTotalCredits() {
+    return totalCredits;
+  }
+
+  public int size() {
+    return lookupTable.size();
+  }
+
+  public class SubscriptionIterator implements Iterator<JobSubscription> {
+    int index;
+
+    public SubscriptionIterator() {
+      reset();
     }
 
     @Override
-    public SubscriptionIterator iterator()
-    {
-        return new SubscriptionIterator();
+    public boolean hasNext() {
+      return findNext() < subscriptions.length;
     }
 
-    public void addCredits(long subscriberKey, int credits)
-    {
-        final long idx = lookupTable.get(subscriberKey);
-
-        if (idx >= 0)
-        {
-            final JobSubscription subscription = subscriptions[(int) idx];
-            subscription.setCredits(subscription.getCredits() + credits);
-            totalCredits += credits;
-        }
+    @Override
+    public JobSubscription next() {
+      final int nextElementIdx = findNext();
+      if (nextElementIdx < subscriptions.length) {
+        index = nextElementIdx;
+        return subscriptions[index];
+      } else {
+        return null;
+      }
     }
 
-    public int getTotalCredits()
-    {
-        return totalCredits;
+    protected int findNext() {
+      int currIndex = index;
+      do {
+        currIndex++;
+      } while (currIndex < subscriptions.length && subscriptions[currIndex] == null);
+
+      return currIndex;
     }
 
-    public int size()
-    {
-        return lookupTable.size();
+    @Override
+    public void remove() {
+      JobSubscriptions.this.remove(index);
     }
 
-    public class SubscriptionIterator implements Iterator<JobSubscription>
-    {
-        int index;
-
-        public SubscriptionIterator()
-        {
-            reset();
-        }
-
-        @Override
-        public boolean hasNext()
-        {
-            return findNext() < subscriptions.length;
-        }
-
-        @Override
-        public JobSubscription next()
-        {
-            final int nextElementIdx = findNext();
-            if (nextElementIdx < subscriptions.length)
-            {
-                index = nextElementIdx;
-                return subscriptions[index];
-            }
-            else
-            {
-                return null;
-            }
-        }
-
-        protected int findNext()
-        {
-            int currIndex = index;
-            do
-            {
-                currIndex++;
-            }
-            while (currIndex < subscriptions.length && subscriptions[currIndex] == null);
-
-            return currIndex;
-        }
-
-        @Override
-        public void remove()
-        {
-            JobSubscriptions.this.remove(index);
-        }
-
-        public void reset()
-        {
-            index = -1;
-        }
-
+    public void reset() {
+      index = -1;
     }
-
-
+  }
 }

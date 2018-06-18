@@ -15,32 +15,26 @@
  */
 package io.zeebe.logstreams.impl.service;
 
-import java.nio.ByteBuffer;
-
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.servicecontainer.*;
+import java.nio.ByteBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class LogBlockIndexService implements Service<LogBlockIndex>
-{
-    private LogBlockIndex logBlockIndex;
+public class LogBlockIndexService implements Service<LogBlockIndex> {
+  private LogBlockIndex logBlockIndex;
 
-    @Override
-    public void start(ServiceStartContext startContext)
-    {
-        logBlockIndex = new LogBlockIndex(100000, (c) -> new UnsafeBuffer(ByteBuffer.allocate(c)));
-    }
+  @Override
+  public void start(ServiceStartContext startContext) {
+    logBlockIndex = new LogBlockIndex(100000, (c) -> new UnsafeBuffer(ByteBuffer.allocate(c)));
+  }
 
-    @Override
-    public void stop(ServiceStopContext stopContext)
-    {
-        logBlockIndex = null;
-    }
+  @Override
+  public void stop(ServiceStopContext stopContext) {
+    logBlockIndex = null;
+  }
 
-    @Override
-    public LogBlockIndex get()
-    {
-        return logBlockIndex;
-    }
-
+  @Override
+  public LogBlockIndex get() {
+    return logBlockIndex;
+  }
 }

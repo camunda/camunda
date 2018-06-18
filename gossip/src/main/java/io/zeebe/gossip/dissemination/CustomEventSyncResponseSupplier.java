@@ -15,65 +15,58 @@
  */
 package io.zeebe.gossip.dissemination;
 
-import java.util.Iterator;
-
 import io.zeebe.gossip.protocol.CustomEvent;
 import io.zeebe.gossip.protocol.CustomEventSupplier;
 import io.zeebe.util.collection.ReusableObjectList;
+import java.util.Iterator;
 
-public class CustomEventSyncResponseSupplier implements CustomEventSupplier
-{
-    private final ReusableObjectList<BufferedEvent<CustomEvent>> customEvents = new ReusableObjectList<>(() -> new BufferedEvent<>(new CustomEvent()));
+public class CustomEventSyncResponseSupplier implements CustomEventSupplier {
+  private final ReusableObjectList<BufferedEvent<CustomEvent>> customEvents =
+      new ReusableObjectList<>(() -> new BufferedEvent<>(new CustomEvent()));
 
-    private final BufferedEventIterator<CustomEvent> viewIterator = new BufferedEventIterator<>(false);
-    private final BufferedEventIterator<CustomEvent> drainIterator = new BufferedEventIterator<>(true);
+  private final BufferedEventIterator<CustomEvent> viewIterator =
+      new BufferedEventIterator<>(false);
+  private final BufferedEventIterator<CustomEvent> drainIterator =
+      new BufferedEventIterator<>(true);
 
-    private int spreadLimit = 1;
+  private int spreadLimit = 1;
 
-    public CustomEventSyncResponseSupplier()
-    {
-        reset();
-    }
+  public CustomEventSyncResponseSupplier() {
+    reset();
+  }
 
-    public CustomEvent add()
-    {
-        return customEvents.add().getEvent();
-    }
+  public CustomEvent add() {
+    return customEvents.add().getEvent();
+  }
 
-    public void increaseSpreadLimit()
-    {
-        spreadLimit += 1;
+  public void increaseSpreadLimit() {
+    spreadLimit += 1;
 
-        drainIterator.setSpreadLimit(spreadLimit);
-    }
+    drainIterator.setSpreadLimit(spreadLimit);
+  }
 
-    public void reset()
-    {
-        spreadLimit = 1;
+  public void reset() {
+    spreadLimit = 1;
 
-        drainIterator.setSpreadLimit(1);
-    }
+    drainIterator.setSpreadLimit(1);
+  }
 
-    @Override
-    public int customEventSize()
-    {
-        return customEvents.size();
-    }
+  @Override
+  public int customEventSize() {
+    return customEvents.size();
+  }
 
-    @Override
-    public Iterator<CustomEvent> customEventViewIterator(int max)
-    {
-        viewIterator.wrap(customEvents.iterator(), max);
+  @Override
+  public Iterator<CustomEvent> customEventViewIterator(int max) {
+    viewIterator.wrap(customEvents.iterator(), max);
 
-        return viewIterator;
-    }
+    return viewIterator;
+  }
 
-    @Override
-    public Iterator<CustomEvent> customEventDrainIterator(int max)
-    {
-        drainIterator.wrap(customEvents.iterator(), max);
+  @Override
+  public Iterator<CustomEvent> customEventDrainIterator(int max) {
+    drainIterator.wrap(customEvents.iterator(), max);
 
-        return drainIterator;
-    }
-
+    return drainIterator;
+  }
 }

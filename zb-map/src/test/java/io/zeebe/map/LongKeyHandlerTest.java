@@ -17,94 +17,80 @@ package io.zeebe.map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.map.types.LongKeyHandler;
 import java.util.Random;
 import java.util.function.Consumer;
-
-import io.zeebe.map.types.LongKeyHandler;
 import org.agrona.BitUtil;
 import org.junit.Test;
 
-/**
- *
- */
-public class LongKeyHandlerTest
-{
-    private static final int DATA_COUNT = 10_000_000;
+/** */
+public class LongKeyHandlerTest {
+  private static final int DATA_COUNT = 10_000_000;
 
-    private final int bufferSize = 1 << 30;
-    private final int partitionSize = BitUtil.align(bufferSize / 3, 8);
+  private final int bufferSize = 1 << 30;
+  private final int partitionSize = BitUtil.align(bufferSize / 3, 8);
 
-    public static long position(int partitionId, int partitionOffset)
-    {
-        return (long) partitionId << 32 | (long) partitionOffset & 4294967295L;
+  public static long position(int partitionId, int partitionOffset) {
+    return (long) partitionId << 32 | (long) partitionOffset & 4294967295L;
+  }
+
+  @Test
+  public void shouldGenerateSameHashes() {
+    // given
+    final LongKeyHandler keyHandler = new LongKeyHandler();
+    final int hashes[] = new int[DATA_COUNT];
+
+    // when
+    for (int i = 0; i < DATA_COUNT; i++) {
+      keyHandler.theKey = i;
+      hashes[i] = keyHandler.keyHashCode();
     }
 
-    @Test
-    public void shouldGenerateSameHashes()
-    {
-        // given
-        final LongKeyHandler keyHandler = new LongKeyHandler();
-        final int hashes[] = new int[DATA_COUNT];
+    // then
+    for (int i = 0; i < DATA_COUNT; i++) {
+      keyHandler.theKey = i;
+      assertThat(keyHandler.keyHashCode()).isEqualTo(hashes[i]);
+    }
+  }
 
-        // when
-        for (int i = 0; i < DATA_COUNT; i++)
-        {
-            keyHandler.theKey = i;
-            hashes[i] = keyHandler.keyHashCode();
-        }
+  @Test
+  public void shouldAddLinearKeys() {
+    final Long2LongZbMap map = new Long2LongZbMap();
 
-        // then
-        for (int i = 0; i < DATA_COUNT; i++)
-        {
-            keyHandler.theKey = i;
-            assertThat(keyHandler.keyHashCode()).isEqualTo(hashes[i]);
-        }
+    for (int i = 0; i < DATA_COUNT; i++) {
+      map.put(i, i);
     }
 
-    @Test
-    public void shouldAddLinearKeys()
-    {
-        final Long2LongZbMap map = new Long2LongZbMap();
+    assertThat(map.hashTable.getCapacity()).isLessThan(DATA_COUNT / 2);
+  }
 
-        for (int i = 0; i < DATA_COUNT; i++)
-        {
-            map.put(i, i);
-        }
-
-        assertThat(map.hashTable.getCapacity()).isLessThan(DATA_COUNT / 2);
-    }
-
-    @Test
-    public void shouldAddKeysToMap()
-    {
-        final Long2LongZbMap map = new Long2LongZbMap();
-        positionAsKeyProducer((position) ->
-        {
-            map.put(position, position);
+  @Test
+  public void shouldAddKeysToMap() {
+    final Long2LongZbMap map = new Long2LongZbMap();
+    positionAsKeyProducer(
+        (position) -> {
+          map.put(position, position);
         });
 
-        assertThat(map.hashTable.getCapacity()).isLessThan(DATA_COUNT / 2);
+    assertThat(map.hashTable.getCapacity()).isLessThan(DATA_COUNT / 2);
+  }
+
+  private void positionAsKeyProducer(Consumer<Long> consumer) {
+    int segmentId = 0;
+    int segmentOffset = 0;
+    final Random random = new Random(1 << 15);
+
+    for (int i = 0; i < DATA_COUNT; i++) {
+      final long position = position(segmentId, segmentOffset);
+      consumer.accept(position);
+
+      if (i % partitionSize == 0) {
+        segmentId++;
+        segmentOffset = 0;
+      }
+
+      final int eventSize = random.nextInt(200);
+      segmentOffset += BitUtil.align(eventSize, 8);
     }
-
-    private void positionAsKeyProducer(Consumer<Long> consumer)
-    {
-        int segmentId = 0;
-        int segmentOffset = 0;
-        final Random random = new Random(1 << 15);
-
-        for (int i = 0; i < DATA_COUNT; i++)
-        {
-            final long position = position(segmentId, segmentOffset);
-            consumer.accept(position);
-
-            if (i % partitionSize == 0)
-            {
-                segmentId++;
-                segmentOffset = 0;
-            }
-
-            final int eventSize = random.nextInt(200);
-            segmentOffset += BitUtil.align(eventSize, 8);
-        }
-    }
+  }
 }

@@ -17,19 +17,16 @@ package io.zeebe.model.bpmn.impl.instance;
 
 import io.zeebe.model.bpmn.instance.StartEvent;
 
-public class StartEventImpl extends FlowNodeImpl implements StartEvent
-{
+public class StartEventImpl extends FlowNodeImpl implements StartEvent {
 
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("StartEvent [id=");
-        builder.append(getId());
-        builder.append(", name=");
-        builder.append(getName());
-        builder.append("]");
-        return builder.toString();
-    }
-
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("StartEvent [id=");
+    builder.append(getId());
+    builder.append(", name=");
+    builder.append(getName());
+    builder.append("]");
+    return builder.toString();
+  }
 }

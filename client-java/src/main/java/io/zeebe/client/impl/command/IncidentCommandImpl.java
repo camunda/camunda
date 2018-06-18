@@ -18,50 +18,44 @@ package io.zeebe.client.impl.command;
 import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import io.zeebe.client.api.commands.IncidentCommand;
 import io.zeebe.client.api.commands.IncidentCommandName;
 import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.record.IncidentRecordImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 
-public class IncidentCommandImpl extends IncidentRecordImpl implements IncidentCommand
-{
-    @JsonCreator
-    public IncidentCommandImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper)
-    {
-        super(objectMapper, RecordType.COMMAND);
-    }
+public class IncidentCommandImpl extends IncidentRecordImpl implements IncidentCommand {
+  @JsonCreator
+  public IncidentCommandImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper) {
+    super(objectMapper, RecordType.COMMAND);
+  }
 
-    @JsonIgnore
-    @Override
-    public IncidentCommandName getName()
-    {
-        return IncidentCommandName.valueOf(getMetadata().getIntent());
-    }
+  @JsonIgnore
+  @Override
+  public IncidentCommandName getName() {
+    return IncidentCommandName.valueOf(getMetadata().getIntent());
+  }
 
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("IncidentCommand [command=");
-        builder.append(getName());
-        builder.append(", errorType=");
-        builder.append(getErrorType());
-        builder.append(", errorMessage=");
-        builder.append(getErrorMessage());
-        builder.append(", bpmnProcessId=");
-        builder.append(getBpmnProcessId());
-        builder.append(", workflowInstanceKey=");
-        builder.append(getWorkflowInstanceKey());
-        builder.append(", activityId=");
-        builder.append(getActivityId());
-        builder.append(", activityInstanceKey=");
-        builder.append(getActivityInstanceKey());
-        builder.append(", jobKey=");
-        builder.append(getJobKey());
-        builder.append("]");
-        return builder.toString();
-    }
-
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("IncidentCommand [command=");
+    builder.append(getName());
+    builder.append(", errorType=");
+    builder.append(getErrorType());
+    builder.append(", errorMessage=");
+    builder.append(getErrorMessage());
+    builder.append(", bpmnProcessId=");
+    builder.append(getBpmnProcessId());
+    builder.append(", workflowInstanceKey=");
+    builder.append(getWorkflowInstanceKey());
+    builder.append(", activityId=");
+    builder.append(getActivityId());
+    builder.append(", activityInstanceKey=");
+    builder.append(getActivityInstanceKey());
+    builder.append(", jobKey=");
+    builder.append(getJobKey());
+    builder.append("]");
+    return builder.toString();
+  }
 }

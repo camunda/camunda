@@ -21,103 +21,90 @@ import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW
 import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_INSTANCE_KEY;
 
-import org.agrona.DirectBuffer;
-
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
+import org.agrona.DirectBuffer;
 
-public class JobHeaders extends UnpackedObject
-{
-    private static final String EMPTY_STRING = "";
+public class JobHeaders extends UnpackedObject {
+  private static final String EMPTY_STRING = "";
 
-    private final LongProperty workflowInstanceKeyProp = new LongProperty(PROP_WORKFLOW_INSTANCE_KEY, -1L);
-    private final StringProperty bpmnProcessIdProp = new StringProperty(PROP_WORKFLOW_BPMN_PROCESS_ID, EMPTY_STRING);
-    private final IntegerProperty workflowDefinitionVersionProp = new IntegerProperty("workflowDefinitionVersion", -1);
-    private final LongProperty workflowKeyProp = new LongProperty("workflowKey", -1L);
-    private final StringProperty activityIdProp = new StringProperty(PROP_WORKFLOW_ACTIVITY_ID, EMPTY_STRING);
-    private final LongProperty activityInstanceKeyProp = new LongProperty("activityInstanceKey", -1L);
+  private final LongProperty workflowInstanceKeyProp =
+      new LongProperty(PROP_WORKFLOW_INSTANCE_KEY, -1L);
+  private final StringProperty bpmnProcessIdProp =
+      new StringProperty(PROP_WORKFLOW_BPMN_PROCESS_ID, EMPTY_STRING);
+  private final IntegerProperty workflowDefinitionVersionProp =
+      new IntegerProperty("workflowDefinitionVersion", -1);
+  private final LongProperty workflowKeyProp = new LongProperty("workflowKey", -1L);
+  private final StringProperty activityIdProp =
+      new StringProperty(PROP_WORKFLOW_ACTIVITY_ID, EMPTY_STRING);
+  private final LongProperty activityInstanceKeyProp = new LongProperty("activityInstanceKey", -1L);
 
-    public JobHeaders()
-    {
-        this.declareProperty(bpmnProcessIdProp)
-            .declareProperty(workflowDefinitionVersionProp)
-            .declareProperty(workflowKeyProp)
-            .declareProperty(workflowInstanceKeyProp)
-            .declareProperty(activityIdProp)
-            .declareProperty(activityInstanceKeyProp);
-    }
+  public JobHeaders() {
+    this.declareProperty(bpmnProcessIdProp)
+        .declareProperty(workflowDefinitionVersionProp)
+        .declareProperty(workflowKeyProp)
+        .declareProperty(workflowInstanceKeyProp)
+        .declareProperty(activityIdProp)
+        .declareProperty(activityInstanceKeyProp);
+  }
 
-    public long getWorkflowInstanceKey()
-    {
-        return workflowInstanceKeyProp.getValue();
-    }
+  public long getWorkflowInstanceKey() {
+    return workflowInstanceKeyProp.getValue();
+  }
 
-    public JobHeaders setWorkflowInstanceKey(long key)
-    {
-        this.workflowInstanceKeyProp.setValue(key);
-        return this;
-    }
+  public JobHeaders setWorkflowInstanceKey(long key) {
+    this.workflowInstanceKeyProp.setValue(key);
+    return this;
+  }
 
-    public DirectBuffer getActivityId()
-    {
-        return activityIdProp.getValue();
-    }
+  public DirectBuffer getActivityId() {
+    return activityIdProp.getValue();
+  }
 
-    public JobHeaders setActivityId(DirectBuffer activityId)
-    {
-        return setActivityId(activityId, 0, activityId.capacity());
-    }
+  public JobHeaders setActivityId(DirectBuffer activityId) {
+    return setActivityId(activityId, 0, activityId.capacity());
+  }
 
-    public JobHeaders setActivityId(DirectBuffer activityId, int offset, int length)
-    {
-        this.activityIdProp.setValue(activityId, offset, length);
-        return this;
-    }
+  public JobHeaders setActivityId(DirectBuffer activityId, int offset, int length) {
+    this.activityIdProp.setValue(activityId, offset, length);
+    return this;
+  }
 
-    public JobHeaders setBpmnProcessId(DirectBuffer bpmnProcessId)
-    {
-        this.bpmnProcessIdProp.setValue(bpmnProcessId);
-        return this;
-    }
+  public JobHeaders setBpmnProcessId(DirectBuffer bpmnProcessId) {
+    this.bpmnProcessIdProp.setValue(bpmnProcessId);
+    return this;
+  }
 
-    public DirectBuffer getBpmnProcessId()
-    {
-        return bpmnProcessIdProp.getValue();
-    }
+  public DirectBuffer getBpmnProcessId() {
+    return bpmnProcessIdProp.getValue();
+  }
 
-    public int getWorkflowDefinitionVersion()
-    {
-        return workflowDefinitionVersionProp.getValue();
-    }
+  public int getWorkflowDefinitionVersion() {
+    return workflowDefinitionVersionProp.getValue();
+  }
 
-    public JobHeaders setWorkflowDefinitionVersion(int version)
-    {
-        this.workflowDefinitionVersionProp.setValue(version);
-        return this;
-    }
+  public JobHeaders setWorkflowDefinitionVersion(int version) {
+    this.workflowDefinitionVersionProp.setValue(version);
+    return this;
+  }
 
-    public long getActivityInstanceKey()
-    {
-        return activityInstanceKeyProp.getValue();
-    }
+  public long getActivityInstanceKey() {
+    return activityInstanceKeyProp.getValue();
+  }
 
-    public JobHeaders setActivityInstanceKey(long activityInstanceKey)
-    {
-        this.activityInstanceKeyProp.setValue(activityInstanceKey);
-        return this;
-    }
+  public JobHeaders setActivityInstanceKey(long activityInstanceKey) {
+    this.activityInstanceKeyProp.setValue(activityInstanceKey);
+    return this;
+  }
 
-    public long getWorkflowKey()
-    {
-        return workflowKeyProp.getValue();
-    }
+  public long getWorkflowKey() {
+    return workflowKeyProp.getValue();
+  }
 
-    public JobHeaders setWorkflowKey(long workflowKey)
-    {
-        this.workflowKeyProp.setValue(workflowKey);
-        return this;
-    }
-
+  public JobHeaders setWorkflowKey(long workflowKey) {
+    this.workflowKeyProp.setValue(workflowKey);
+    return this;
+  }
 }

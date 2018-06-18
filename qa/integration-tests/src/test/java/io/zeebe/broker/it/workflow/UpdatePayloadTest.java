@@ -15,6 +15,9 @@
  */
 package io.zeebe.broker.it.workflow;
 
+import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.*;
+
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
@@ -24,236 +27,255 @@ import io.zeebe.client.cmd.BrokerErrorException;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import java.util.Collections;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
-import java.util.Collections;
+public class UpdatePayloadTest {
+  private static final String PAYLOAD = "{\"foo\":\"bar\"}";
 
-import static io.zeebe.test.util.TestUtil.waitUntil;
-import static org.assertj.core.api.Assertions.*;
-public class UpdatePayloadTest
-{
-    private static final String PAYLOAD = "{\"foo\":\"bar\"}";
+  private static final WorkflowDefinition WORKFLOW =
+      Bpmn.createExecutableWorkflow("process")
+          .startEvent("start")
+          .serviceTask("task-1", t -> t.taskType("task-1").output("$.result", "$.result"))
+          .endEvent("end")
+          .done();
 
-    private static final WorkflowDefinition WORKFLOW = Bpmn
-            .createExecutableWorkflow("process")
-            .startEvent("start")
-            .serviceTask("task-1", t -> t.taskType("task-1")
-                         .output("$.result", "$.result"))
-            .endEvent("end")
-            .done();
+  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  public ClientRule clientRule = new ClientRule();
+  public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
 
-    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-    public ClientRule clientRule = new ClientRule();
-    public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
+  @Rule
+  public RuleChain ruleChain =
+      RuleChain.outerRule(brokerRule).around(clientRule).around(eventRecorder);
 
-    @Rule
-    public RuleChain ruleChain = RuleChain
-        .outerRule(brokerRule)
-        .around(clientRule)
-        .around(eventRecorder);
+  @Rule public ExpectedException thrown = ExpectedException.none();
 
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
+  @Before
+  public void init() {
+    clientRule
+        .getWorkflowClient()
+        .newDeployCommand()
+        .addWorkflowModel(WORKFLOW, "workflow.bpmn")
+        .send()
+        .join();
 
-    @Before
-    public void init()
-    {
-        clientRule.getWorkflowClient()
-            .newDeployCommand()
-            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-            .send()
-            .join();
+    clientRule
+        .getWorkflowClient()
+        .newCreateInstanceCommand()
+        .bpmnProcessId("process")
+        .latestVersion()
+        .send()
+        .join();
+  }
 
-        clientRule.getWorkflowClient()
-            .newCreateInstanceCommand()
-            .bpmnProcessId("process")
-            .latestVersion()
-            .send()
-            .join();
+  @Test
+  public void shouldUpdatePayloadWhenActivityIsActivated() {
+    // given
+    waitUntil(
+        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED));
 
-    }
+    final WorkflowInstanceEvent activtyInstance =
+        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED);
 
-    @Test
-    public void shouldUpdatePayloadWhenActivityIsActivated()
-    {
-        // given
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED));
-
-        final WorkflowInstanceEvent activtyInstance = eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED);
-
-        // when
-        final WorkflowInstanceEvent payloadUpdated = clientRule.getWorkflowClient()
+    // when
+    final WorkflowInstanceEvent payloadUpdated =
+        clientRule
+            .getWorkflowClient()
             .newUpdatePayloadCommand(activtyInstance)
             .payload(PAYLOAD)
             .send()
             .join();
 
+    // then
+    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.PAYLOAD_UPDATED));
 
-        // then
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.PAYLOAD_UPDATED));
+    assertThat(payloadUpdated.getState()).isEqualTo(WorkflowInstanceState.PAYLOAD_UPDATED);
+    assertThat(payloadUpdated.getPayload()).isEqualTo(PAYLOAD);
+    assertThat(payloadUpdated.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+  }
 
-        assertThat(payloadUpdated.getState()).isEqualTo(WorkflowInstanceState.PAYLOAD_UPDATED);
-        assertThat(payloadUpdated.getPayload()).isEqualTo(PAYLOAD);
-        assertThat(payloadUpdated.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
-    }
+  @Test
+  public void shouldUpdateWithNullPayload() {
+    // given
+    waitUntil(
+        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED));
 
-    @Test
-    public void shouldUpdateWithNullPayload()
-    {
-        // given
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED));
+    final WorkflowInstanceEvent activtyInstance =
+        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED);
 
-        final WorkflowInstanceEvent activtyInstance = eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED);
-
-        // when
-        final WorkflowInstanceEvent payloadUpdated = clientRule.getWorkflowClient()
+    // when
+    final WorkflowInstanceEvent payloadUpdated =
+        clientRule
+            .getWorkflowClient()
             .newUpdatePayloadCommand(activtyInstance)
             .payload("null")
             .send()
             .join();
 
-        // then
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.PAYLOAD_UPDATED));
+    // then
+    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.PAYLOAD_UPDATED));
 
-        assertThat(payloadUpdated.getState()).isEqualTo(WorkflowInstanceState.PAYLOAD_UPDATED);
-        assertThat(payloadUpdated.getPayload()).isEqualTo("{}");
-        assertThat(payloadUpdated.getPayloadAsMap()).isEmpty();
-    }
+    assertThat(payloadUpdated.getState()).isEqualTo(WorkflowInstanceState.PAYLOAD_UPDATED);
+    assertThat(payloadUpdated.getPayload()).isEqualTo("{}");
+    assertThat(payloadUpdated.getPayloadAsMap()).isEmpty();
+  }
 
-    @Test
-    public void shouldThrowExceptionOnUpdateWithInvalidPayload()
-    {
-        // given
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED));
+  @Test
+  public void shouldThrowExceptionOnUpdateWithInvalidPayload() {
+    // given
+    waitUntil(
+        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED));
 
-        final WorkflowInstanceEvent activtyInstance = eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED);
+    final WorkflowInstanceEvent activtyInstance =
+        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED);
 
-        // when
-        final Throwable throwable = catchThrowable(() -> clientRule.getWorkflowClient()
-            .newUpdatePayloadCommand(activtyInstance)
-            .payload("[]")
-            .send()
-            .join());
+    // when
+    final Throwable throwable =
+        catchThrowable(
+            () ->
+                clientRule
+                    .getWorkflowClient()
+                    .newUpdatePayloadCommand(activtyInstance)
+                    .payload("[]")
+                    .send()
+                    .join());
 
-        // then
-        assertThat(throwable).isInstanceOf(BrokerErrorException.class);
-        assertThat(throwable.getMessage()).contains("Could not read property 'payload'.");
-        assertThat(throwable.getMessage()).contains("Document has invalid format. On root level an object is only allowed.");
-    }
+    // then
+    assertThat(throwable).isInstanceOf(BrokerErrorException.class);
+    assertThat(throwable.getMessage()).contains("Could not read property 'payload'.");
+    assertThat(throwable.getMessage())
+        .contains("Document has invalid format. On root level an object is only allowed.");
+  }
 
-    @Test
-    public void shouldUpdatePayloadAndCompleteJobAfterwards()
-    {
-        // given
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED));
-        final WorkflowInstanceEvent activtyInstance = eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED);
-        clientRule.getWorkflowClient()
-            .newUpdatePayloadCommand(activtyInstance)
-            .payload(PAYLOAD)
-            .send()
-            .join();
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.PAYLOAD_UPDATED));
+  @Test
+  public void shouldUpdatePayloadAndCompleteJobAfterwards() {
+    // given
+    waitUntil(
+        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED));
+    final WorkflowInstanceEvent activtyInstance =
+        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED);
+    clientRule
+        .getWorkflowClient()
+        .newUpdatePayloadCommand(activtyInstance)
+        .payload(PAYLOAD)
+        .send()
+        .join();
+    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.PAYLOAD_UPDATED));
 
-        // when
-        clientRule.getJobClient()
-            .newWorker()
-            .jobType("task-1")
-            .handler((client, job) -> client.newCompleteCommand(job).payload("{\"result\": \"ok\"}").send())
-            .open();
+    // when
+    clientRule
+        .getJobClient()
+        .newWorker()
+        .jobType("task-1")
+        .handler(
+            (client, job) -> client.newCompleteCommand(job).payload("{\"result\": \"ok\"}").send())
+        .open();
 
-        // then
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED));
-        final WorkflowInstanceEvent wfEvent =
-            eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED);
-        assertThat(wfEvent.getPayload()).isEqualTo("{\"foo\":\"bar\",\"result\":\"ok\"}");
-        assertThat(wfEvent.getPayloadAsMap())
-            .hasSize(2)
-            .contains(entry("foo", "bar"))
-            .contains(entry("result", "ok"));
-    }
+    // then
+    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED));
+    final WorkflowInstanceEvent wfEvent =
+        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED);
+    assertThat(wfEvent.getPayload()).isEqualTo("{\"foo\":\"bar\",\"result\":\"ok\"}");
+    assertThat(wfEvent.getPayloadAsMap())
+        .hasSize(2)
+        .contains(entry("foo", "bar"))
+        .contains(entry("result", "ok"));
+  }
 
-    @Test
-    public void shouldUpdatePayloadWithMap()
-    {
-        // given
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED));
+  @Test
+  public void shouldUpdatePayloadWithMap() {
+    // given
+    waitUntil(
+        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED));
 
-        final WorkflowInstanceEvent activtyInstance = eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED);
+    final WorkflowInstanceEvent activtyInstance =
+        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED);
 
-        // when
-        final WorkflowInstanceEvent event = clientRule.getWorkflowClient()
+    // when
+    final WorkflowInstanceEvent event =
+        clientRule
+            .getWorkflowClient()
             .newUpdatePayloadCommand(activtyInstance)
             .payload(Collections.singletonMap("foo", "bar"))
             .send()
             .join();
 
-        // then
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.PAYLOAD_UPDATED));
+    // then
+    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.PAYLOAD_UPDATED));
 
-        assertThat(event.getState()).isEqualTo(WorkflowInstanceState.PAYLOAD_UPDATED);
-        assertThat(event.getPayload()).isEqualTo(PAYLOAD);
-        assertThat(event.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
-    }
+    assertThat(event.getState()).isEqualTo(WorkflowInstanceState.PAYLOAD_UPDATED);
+    assertThat(event.getPayload()).isEqualTo(PAYLOAD);
+    assertThat(event.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+  }
 
-    @Test
-    public void shouldUpdatePayloadWithObject()
-    {
-        // given
-        final PayloadObject newPayload = new PayloadObject();
-        newPayload.foo = "bar";
+  @Test
+  public void shouldUpdatePayloadWithObject() {
+    // given
+    final PayloadObject newPayload = new PayloadObject();
+    newPayload.foo = "bar";
 
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED));
+    waitUntil(
+        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED));
 
-        final WorkflowInstanceEvent activtyInstance = eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED);
+    final WorkflowInstanceEvent activtyInstance =
+        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED);
 
-        // when
-        final WorkflowInstanceEvent event = clientRule.getWorkflowClient()
+    // when
+    final WorkflowInstanceEvent event =
+        clientRule
+            .getWorkflowClient()
             .newUpdatePayloadCommand(activtyInstance)
             .payload(newPayload)
             .send()
             .join();
 
-        // then
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.PAYLOAD_UPDATED));
+    // then
+    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.PAYLOAD_UPDATED));
 
-        assertThat(event.getState()).isEqualTo(WorkflowInstanceState.PAYLOAD_UPDATED);
-        assertThat(event.getPayload()).isEqualTo(PAYLOAD);
-        assertThat(event.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
-    }
+    assertThat(event.getState()).isEqualTo(WorkflowInstanceState.PAYLOAD_UPDATED);
+    assertThat(event.getPayload()).isEqualTo(PAYLOAD);
+    assertThat(event.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+  }
 
-    @Test
-    public void shouldFailUpdatePayloadIfWorkflowInstanceIsCompleted()
-    {
-        // given
-        clientRule.getJobClient()
-            .newWorker()
-            .jobType("task-1")
-            .handler((client, job) -> client.newCompleteCommand(job).payload("{\"result\": \"done\"}").send())
-            .open();
+  @Test
+  public void shouldFailUpdatePayloadIfWorkflowInstanceIsCompleted() {
+    // given
+    clientRule
+        .getJobClient()
+        .newWorker()
+        .jobType("task-1")
+        .handler(
+            (client, job) ->
+                client.newCompleteCommand(job).payload("{\"result\": \"done\"}").send())
+        .open();
 
-        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_COMPLETED));
+    waitUntil(
+        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_COMPLETED));
 
-        final WorkflowInstanceEvent activityInstance = eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED);
+    final WorkflowInstanceEvent activityInstance =
+        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED);
 
-        // then
-        thrown.expect(ClientCommandRejectedException.class);
-        thrown.expectMessage("Command (UPDATE_PAYLOAD) for event with key " + activityInstance.getMetadata().getKey() + " was rejected");
+    // then
+    thrown.expect(ClientCommandRejectedException.class);
+    thrown.expectMessage(
+        "Command (UPDATE_PAYLOAD) for event with key "
+            + activityInstance.getMetadata().getKey()
+            + " was rejected");
 
-        // when
-        clientRule.getWorkflowClient()
-            .newUpdatePayloadCommand(activityInstance)
-            .payload(PAYLOAD)
-            .send()
-            .join();
-    }
+    // when
+    clientRule
+        .getWorkflowClient()
+        .newUpdatePayloadCommand(activityInstance)
+        .payload(PAYLOAD)
+        .send()
+        .join();
+  }
 
-    public static class PayloadObject
-    {
-        public String foo;
-    }
-
+  public static class PayloadObject {
+    public String foo;
+  }
 }

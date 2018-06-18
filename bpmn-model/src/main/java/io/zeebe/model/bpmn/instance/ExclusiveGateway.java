@@ -17,11 +17,9 @@ package io.zeebe.model.bpmn.instance;
 
 import java.util.List;
 
-public interface ExclusiveGateway extends FlowNode
-{
+public interface ExclusiveGateway extends FlowNode {
 
-    List<SequenceFlow> getOutgoingSequenceFlowsWithConditions();
+  List<SequenceFlow> getOutgoingSequenceFlowsWithConditions();
 
-    SequenceFlow getDefaultFlow();
-
+  SequenceFlow getDefaultFlow();
 }

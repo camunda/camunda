@@ -32,42 +32,46 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public class SnapshotReplicationInstallServiceTest
-{
-    private ControlledActorSchedulerRule actorSchedulerRule = new ControlledActorSchedulerRule();
-    private ServiceContainerRule serviceContainerRule = new ServiceContainerRule(actorSchedulerRule);
+public class SnapshotReplicationInstallServiceTest {
+  private ControlledActorSchedulerRule actorSchedulerRule = new ControlledActorSchedulerRule();
+  private ServiceContainerRule serviceContainerRule = new ServiceContainerRule(actorSchedulerRule);
 
-    @Rule
-    public RuleChain ruleChain =
-            RuleChain.outerRule(actorSchedulerRule)
-                    .around(serviceContainerRule);
-    @Test
-    public void shouldInstallReplicationServiceOnNewFollowerPartition()
-    {
-        // given
-        final BrokerCfg config = new BrokerCfg();
-        final SnapshotReplicationInstallService installService = new SnapshotReplicationInstallService(config);
-        final PartitionInfo info = new PartitionInfo(BufferUtil.wrapString("test"), 1, 1);
-        final Partition partition = new Partition(info, RaftState.FOLLOWER);
-        final String partitionName = String.format("%s-%d", info.getTopicName(), info.getPartitionId());
-        final ServiceName<SnapshotReplicationService> serviceName = snapshotReplicationServiceName(partition);
+  @Rule
+  public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(serviceContainerRule);
 
-        // when
-        serviceContainerRule.get().createService(SNAPSHOT_REPLICATION_INSTALL_SERVICE_NAME, installService)
-                .groupReference(FOLLOWER_PARTITION_GROUP_NAME, installService.getFollowerPartitionsGroupReference())
-                .install();
-        actorSchedulerRule.workUntilDone();
+  @Test
+  public void shouldInstallReplicationServiceOnNewFollowerPartition() {
+    // given
+    final BrokerCfg config = new BrokerCfg();
+    final SnapshotReplicationInstallService installService =
+        new SnapshotReplicationInstallService(config);
+    final PartitionInfo info = new PartitionInfo(BufferUtil.wrapString("test"), 1, 1);
+    final Partition partition = new Partition(info, RaftState.FOLLOWER);
+    final String partitionName = String.format("%s-%d", info.getTopicName(), info.getPartitionId());
+    final ServiceName<SnapshotReplicationService> serviceName =
+        snapshotReplicationServiceName(partition);
 
-        // then
-        assertThat(serviceContainerRule.get().hasService(serviceName)).isFalse();
+    // when
+    serviceContainerRule
+        .get()
+        .createService(SNAPSHOT_REPLICATION_INSTALL_SERVICE_NAME, installService)
+        .groupReference(
+            FOLLOWER_PARTITION_GROUP_NAME, installService.getFollowerPartitionsGroupReference())
+        .install();
+    actorSchedulerRule.workUntilDone();
 
-        // when
-        serviceContainerRule.get().createService(followerPartitionServiceName(partitionName), partition)
-                .group(FOLLOWER_PARTITION_GROUP_NAME)
-                .install();
-        actorSchedulerRule.workUntilDone();
+    // then
+    assertThat(serviceContainerRule.get().hasService(serviceName)).isFalse();
 
-        // then
-        assertThat(serviceContainerRule.get().hasService(serviceName)).isTrue();
-    }
+    // when
+    serviceContainerRule
+        .get()
+        .createService(followerPartitionServiceName(partitionName), partition)
+        .group(FOLLOWER_PARTITION_GROUP_NAME)
+        .install();
+    actorSchedulerRule.workUntilDone();
+
+    // then
+    assertThat(serviceContainerRule.get().hasService(serviceName)).isTrue();
+  }
 }

@@ -25,39 +25,38 @@ import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.ActorControl;
 import org.agrona.DirectBuffer;
 
-public class RequestTopologyHandler extends AbstractControlMessageHandler
-{
-    protected final TopologyManager topologyManager;
+public class RequestTopologyHandler extends AbstractControlMessageHandler {
+  protected final TopologyManager topologyManager;
 
-    public RequestTopologyHandler(final ServerOutput output, final TopologyManager topologyManager)
-    {
-        super(output);
-        this.topologyManager = topologyManager;
-    }
+  public RequestTopologyHandler(final ServerOutput output, final TopologyManager topologyManager) {
+    super(output);
+    this.topologyManager = topologyManager;
+  }
 
-    @Override
-    public ControlMessageType getMessageType()
-    {
-        return ControlMessageType.REQUEST_TOPOLOGY;
-    }
+  @Override
+  public ControlMessageType getMessageType() {
+    return ControlMessageType.REQUEST_TOPOLOGY;
+  }
 
-    @Override
-    public void handle(final ActorControl actor, final int partitionId, final DirectBuffer buffer, final RecordMetadata metadata)
-    {
-        final int requestStreamId = metadata.getRequestStreamId();
-        final long requestId = metadata.getRequestId();
+  @Override
+  public void handle(
+      final ActorControl actor,
+      final int partitionId,
+      final DirectBuffer buffer,
+      final RecordMetadata metadata) {
+    final int requestStreamId = metadata.getRequestStreamId();
+    final long requestId = metadata.getRequestId();
 
-        actor.runOnCompletion(topologyManager.getTopologyDto(), ((topology, throwable) ->
-        {
-            if (throwable == null)
-            {
-                sendResponse(actor, requestStreamId, requestId, topology);
-            }
-            else
-            {
-                Loggers.CLUSTERING_LOGGER.debug("Problem on requesting topology. Exception {}", throwable);
-                sendErrorResponse(actor, requestStreamId, requestId, "Cannot request topology");
-            }
+    actor.runOnCompletion(
+        topologyManager.getTopologyDto(),
+        ((topology, throwable) -> {
+          if (throwable == null) {
+            sendResponse(actor, requestStreamId, requestId, topology);
+          } else {
+            Loggers.CLUSTERING_LOGGER.debug(
+                "Problem on requesting topology. Exception {}", throwable);
+            sendErrorResponse(actor, requestStreamId, requestId, "Cannot request topology");
+          }
         }));
-    }
+  }
 }

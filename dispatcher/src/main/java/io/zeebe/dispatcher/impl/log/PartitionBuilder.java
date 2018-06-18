@@ -17,31 +17,27 @@ package io.zeebe.dispatcher.impl.log;
 
 import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.*;
 
-import java.nio.ByteBuffer;
-
 import io.zeebe.util.allocation.AllocatedBuffer;
+import java.nio.ByteBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class PartitionBuilder
-{
+public class PartitionBuilder {
 
-    public LogBufferPartition[] slicePartitions(int partitionSize, AllocatedBuffer allocatedBuffer)
-    {
-        final ByteBuffer buffer = allocatedBuffer.getRawBuffer();
-        final LogBufferPartition[] partitions = new LogBufferPartition[PARTITION_COUNT];
+  public LogBufferPartition[] slicePartitions(int partitionSize, AllocatedBuffer allocatedBuffer) {
+    final ByteBuffer buffer = allocatedBuffer.getRawBuffer();
+    final LogBufferPartition[] partitions = new LogBufferPartition[PARTITION_COUNT];
 
-        for (int i = 0; i < PARTITION_COUNT; i++)
-        {
-            final int dataSectionOffset = partitionDataSectionOffset(partitionSize, i);
-            final int metaDataSectionOffset = partitionMetadataSectionOffset(partitionSize, i);
+    for (int i = 0; i < PARTITION_COUNT; i++) {
+      final int dataSectionOffset = partitionDataSectionOffset(partitionSize, i);
+      final int metaDataSectionOffset = partitionMetadataSectionOffset(partitionSize, i);
 
-            final UnsafeBuffer dataSection = new UnsafeBuffer(buffer, dataSectionOffset, partitionSize);
-            final UnsafeBuffer metadataSection = new UnsafeBuffer(buffer, metaDataSectionOffset, PARTITION_META_DATA_LENGTH);
+      final UnsafeBuffer dataSection = new UnsafeBuffer(buffer, dataSectionOffset, partitionSize);
+      final UnsafeBuffer metadataSection =
+          new UnsafeBuffer(buffer, metaDataSectionOffset, PARTITION_META_DATA_LENGTH);
 
-            partitions[i] = new LogBufferPartition(dataSection, metadataSection, dataSectionOffset);
-        }
-
-        return partitions;
+      partitions[i] = new LogBufferPartition(dataSection, metadataSection, dataSectionOffset);
     }
 
+    return partitions;
+  }
 }

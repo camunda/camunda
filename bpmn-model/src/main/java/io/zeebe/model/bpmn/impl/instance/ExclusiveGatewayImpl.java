@@ -15,62 +15,54 @@
  */
 package io.zeebe.model.bpmn.impl.instance;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.xml.bind.annotation.*;
-
 import io.zeebe.model.bpmn.BpmnConstants;
 import io.zeebe.model.bpmn.instance.ExclusiveGateway;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
+import java.util.ArrayList;
+import java.util.List;
+import javax.xml.bind.annotation.*;
 
-public class ExclusiveGatewayImpl extends FlowNodeImpl implements ExclusiveGateway
-{
-    private SequenceFlowImpl defaultFlow;
+public class ExclusiveGatewayImpl extends FlowNodeImpl implements ExclusiveGateway {
+  private SequenceFlowImpl defaultFlow;
 
-    private List<SequenceFlow> sequenceFlowsWithConditions = new ArrayList<>();
+  private List<SequenceFlow> sequenceFlowsWithConditions = new ArrayList<>();
 
-    @XmlIDREF
-    @XmlAttribute(name = BpmnConstants.BPMN_ATTRIBUTE_DEFAULT)
-    public void setDefaultFlow(SequenceFlowImpl defaultFlow)
-    {
-        this.defaultFlow = defaultFlow;
-    }
+  @XmlIDREF
+  @XmlAttribute(name = BpmnConstants.BPMN_ATTRIBUTE_DEFAULT)
+  public void setDefaultFlow(SequenceFlowImpl defaultFlow) {
+    this.defaultFlow = defaultFlow;
+  }
 
-    @Override
-    public SequenceFlowImpl getDefaultFlow()
-    {
-        return defaultFlow;
-    }
+  @Override
+  public SequenceFlowImpl getDefaultFlow() {
+    return defaultFlow;
+  }
 
-    @XmlTransient
-    public void setOutgoingSequenceFlowsWithConditions(List<SequenceFlow> sequenceFlowsWithConditions)
-    {
-        this.sequenceFlowsWithConditions = sequenceFlowsWithConditions;
-    }
+  @XmlTransient
+  public void setOutgoingSequenceFlowsWithConditions(
+      List<SequenceFlow> sequenceFlowsWithConditions) {
+    this.sequenceFlowsWithConditions = sequenceFlowsWithConditions;
+  }
 
-    @Override
-    public List<SequenceFlow> getOutgoingSequenceFlowsWithConditions()
-    {
-        return sequenceFlowsWithConditions;
-    }
+  @Override
+  public List<SequenceFlow> getOutgoingSequenceFlowsWithConditions() {
+    return sequenceFlowsWithConditions;
+  }
 
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("ExclusiveGateway [id=");
-        builder.append(getId());
-        builder.append(", name=");
-        builder.append(getName());
-        builder.append(", incoming=");
-        builder.append(getIncoming());
-        builder.append(", outgoing=");
-        builder.append(getOutgoing());
-        builder.append(", default=");
-        builder.append(defaultFlow != null ? defaultFlow.getId() : "null");
-        builder.append("]");
-        return builder.toString();
-    }
-
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("ExclusiveGateway [id=");
+    builder.append(getId());
+    builder.append(", name=");
+    builder.append(getName());
+    builder.append(", incoming=");
+    builder.append(getIncoming());
+    builder.append(", outgoing=");
+    builder.append(getOutgoing());
+    builder.append(", default=");
+    builder.append(defaultFlow != null ? defaultFlow.getId() : "null");
+    builder.append("]");
+    return builder.toString();
+  }
 }

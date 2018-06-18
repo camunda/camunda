@@ -17,42 +17,33 @@ package io.zeebe.util.sched;
 
 import io.zeebe.util.sched.ActorTask.ActorLifecyclePhase;
 
-/**
- * Subscription to some external source of work / jobs.
- */
-public interface ActorSubscription
-{
-    /** returns true if the subscription should be able to trigger in the provided phase */
-    default boolean triggersInPhase(ActorLifecyclePhase phase)
-    {
-        return phase == ActorLifecyclePhase.STARTED;
-    }
+/** Subscription to some external source of work / jobs. */
+public interface ActorSubscription {
+  /** returns true if the subscription should be able to trigger in the provided phase */
+  default boolean triggersInPhase(ActorLifecyclePhase phase) {
+    return phase == ActorLifecyclePhase.STARTED;
+  }
 
-    /**
-     * called by the {@link ActorThread} to determine whether the subscription has work available.
-     */
-    boolean poll();
+  /** called by the {@link ActorThread} to determine whether the subscription has work available. */
+  boolean poll();
 
-    /**
-     * called by the {@link ActorThread} after {@link #poll()} returned true to get the job to be run
-     */
-    ActorJob getJob();
+  /**
+   * called by the {@link ActorThread} after {@link #poll()} returned true to get the job to be run
+   */
+  ActorJob getJob();
 
-    /**
-     * Returns true in case the subscription is recurring (ie. after the job finished, the subscription is re-created
-     */
-    boolean isRecurring();
+  /**
+   * Returns true in case the subscription is recurring (ie. after the job finished, the
+   * subscription is re-created
+   */
+  boolean isRecurring();
 
-    /**
-     * callback received as the job returned by {@link #getJob()} completes execution.
-     */
-    default void onJobCompleted()
-    {
-        // default is ignore, can be implemented by cyclic / recurring subscriptions
-    }
+  /** callback received as the job returned by {@link #getJob()} completes execution. */
+  default void onJobCompleted() {
+    // default is ignore, can be implemented by cyclic / recurring subscriptions
+  }
 
-    default void cancel()
-    {
-        // nothing to do
-    }
+  default void cancel() {
+    // nothing to do
+  }
 }

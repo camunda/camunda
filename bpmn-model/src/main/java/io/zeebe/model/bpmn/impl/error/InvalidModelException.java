@@ -15,10 +15,8 @@
  */
 package io.zeebe.model.bpmn.impl.error;
 
-public class InvalidModelException extends RuntimeException
-{
-    public InvalidModelException(String message)
-    {
-        super(message);
-    }
+public class InvalidModelException extends RuntimeException {
+  public InvalidModelException(String message) {
+    super(message);
+  }
 }

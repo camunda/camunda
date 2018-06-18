@@ -23,54 +23,50 @@ import io.zeebe.servicecontainer.*;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.SchedulingHints;
 
-public class LogBlockIndexWriterService implements Service<LogBlockIndexWriter>
-{
-    private final Injector<LogBlockIndex> logBlockIndexInjector = new Injector<>();
-    private final Injector<LogStorage> logStorageInjector = new Injector<>();
+public class LogBlockIndexWriterService implements Service<LogBlockIndexWriter> {
+  private final Injector<LogBlockIndex> logBlockIndexInjector = new Injector<>();
+  private final Injector<LogStorage> logStorageInjector = new Injector<>();
 
-    private LogBlockIndexWriter logBlockIndexWriter;
-    private LogStreamBuilder logStreamBuilder;
+  private LogBlockIndexWriter logBlockIndexWriter;
+  private LogStreamBuilder logStreamBuilder;
 
-    public LogBlockIndexWriterService(LogStreamBuilder logStreamBuilder)
-    {
-        this.logStreamBuilder = logStreamBuilder;
-    }
+  public LogBlockIndexWriterService(LogStreamBuilder logStreamBuilder) {
+    this.logStreamBuilder = logStreamBuilder;
+  }
 
-    @Override
-    public void start(ServiceStartContext startContext)
-    {
-        final LogBlockIndex logBlockIndex = logBlockIndexInjector.getValue();
-        final LogStorage logStorage = logStorageInjector.getValue();
-        final ActorScheduler scheduler = startContext.getScheduler();
+  @Override
+  public void start(ServiceStartContext startContext) {
+    final LogBlockIndex logBlockIndex = logBlockIndexInjector.getValue();
+    final LogStorage logStorage = logStorageInjector.getValue();
+    final ActorScheduler scheduler = startContext.getScheduler();
 
-        logBlockIndexWriter = new LogBlockIndexWriter(startContext.getName(),
+    logBlockIndexWriter =
+        new LogBlockIndexWriter(
+            startContext.getName(),
             logStreamBuilder,
             logStorage,
             logBlockIndex,
             scheduler.getMetricsManager());
 
-        startContext.async(scheduler.submitActor(logBlockIndexWriter, true, SchedulingHints.ioBound((short) 0)));
-    }
+    startContext.async(
+        scheduler.submitActor(logBlockIndexWriter, true, SchedulingHints.ioBound((short) 0)));
+  }
 
-    @Override
-    public void stop(ServiceStopContext stopContext)
-    {
-        stopContext.async(logBlockIndexWriter.closeAsync());
-    }
+  @Override
+  public void stop(ServiceStopContext stopContext) {
+    stopContext.async(logBlockIndexWriter.closeAsync());
+  }
 
-    @Override
-    public LogBlockIndexWriter get()
-    {
-        return logBlockIndexWriter;
-    }
+  @Override
+  public LogBlockIndexWriter get() {
+    return logBlockIndexWriter;
+  }
 
-    public Injector<LogBlockIndex> getLogBlockIndexInjector()
-    {
-        return logBlockIndexInjector;
-    }
+  public Injector<LogBlockIndex> getLogBlockIndexInjector() {
+    return logBlockIndexInjector;
+  }
 
-    public Injector<LogStorage> getLogStorageInjector()
-    {
-        return logStorageInjector;
-    }
+  public Injector<LogStorage> getLogStorageInjector() {
+    return logStorageInjector;
+  }
 }

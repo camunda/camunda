@@ -17,34 +17,31 @@
  */
 package io.zeebe.broker.clustering.base.topology;
 
-import java.util.function.Function;
-
 import io.zeebe.util.sched.future.ActorFuture;
+import java.util.function.Function;
 
 /**
  * Maintains the cluster topology.
  *
- * Three main interactions are possible:
+ * <p>Three main interactions are possible:
+ *
  * <ul>
- * <li>async querying the topology (see {@link #query(Function)})</li>
- * <li>async requesting a snapshot (See {@link #getTopologyDto()}</li>
- * <li>observer: registering a listener and getting updated about node and partition events</li>
+ *   <li>async querying the topology (see {@link #query(Function)})
+ *   <li>async requesting a snapshot (See {@link #getTopologyDto()}
+ *   <li>observer: registering a listener and getting updated about node and partition events
  * </ul>
  */
-public interface TopologyManager
-{
-    /**
-     * Can be used to query the topology.
-     */
-    <R> ActorFuture<R> query(Function<ReadableTopology, R> query);
+public interface TopologyManager {
+  /** Can be used to query the topology. */
+  <R> ActorFuture<R> query(Function<ReadableTopology, R> query);
 
-    ActorFuture<TopologyDto> getTopologyDto();
+  ActorFuture<TopologyDto> getTopologyDto();
 
-    void removeTopologyMemberListener(TopologyMemberListener listener);
+  void removeTopologyMemberListener(TopologyMemberListener listener);
 
-    void addTopologyMemberListener(TopologyMemberListener listener);
+  void addTopologyMemberListener(TopologyMemberListener listener);
 
-    void removeTopologyPartitionListener(TopologyPartitionListener listener);
+  void removeTopologyPartitionListener(TopologyPartitionListener listener);
 
-    void addTopologyPartitionListener(TopologyPartitionListener listener);
+  void addTopologyPartitionListener(TopologyPartitionListener listener);
 }

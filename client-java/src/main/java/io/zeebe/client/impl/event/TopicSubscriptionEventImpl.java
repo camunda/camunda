@@ -21,24 +21,20 @@ import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.record.TopicSubscriptionRecordImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 
-public class TopicSubscriptionEventImpl extends TopicSubscriptionRecordImpl
-{
-    @JsonCreator
-    public TopicSubscriptionEventImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper)
-    {
-        super(objectMapper, RecordType.EVENT);
-    }
+public class TopicSubscriptionEventImpl extends TopicSubscriptionRecordImpl {
+  @JsonCreator
+  public TopicSubscriptionEventImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper) {
+    super(objectMapper, RecordType.EVENT);
+  }
 
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("TopicSubscriptionrEvent [name=");
-        builder.append(getName());
-        builder.append(", ackPosition=");
-        builder.append(getAckPosition());
-        builder.append("]");
-        return builder.toString();
-    }
-
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("TopicSubscriptionrEvent [name=");
+    builder.append(getName());
+    builder.append(", ackPosition=");
+    builder.append(getAckPosition());
+    builder.append("]");
+    return builder.toString();
+  }
 }

@@ -20,33 +20,30 @@ import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.client.api.clients.WorkflowClient;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 
-public class WorkflowInstanceCreator
-{
+public class WorkflowInstanceCreator {
 
-    public static void main(String[] args)
-    {
-        final String broker = "127.0.0.1:51015";
-        final String topic = "default-topic";
+  public static void main(String[] args) {
+    final String broker = "127.0.0.1:51015";
+    final String topic = "default-topic";
 
-        final String bpmnProcessId = "demoProcess";
+    final String bpmnProcessId = "demoProcess";
 
-        final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder()
-            .brokerContactPoint(broker);
+    final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
-        try (ZeebeClient client = builder.build())
-        {
-            final WorkflowClient workflowClient = client.topicClient(topic).workflowClient();
+    try (ZeebeClient client = builder.build()) {
+      final WorkflowClient workflowClient = client.topicClient(topic).workflowClient();
 
-            System.out.println("Creating workflow instance");
+      System.out.println("Creating workflow instance");
 
-            final WorkflowInstanceEvent workflowInstanceEvent = workflowClient
-                .newCreateInstanceCommand()
-                .bpmnProcessId(bpmnProcessId)
-                .latestVersion()
-                .send()
-                .join();
+      final WorkflowInstanceEvent workflowInstanceEvent =
+          workflowClient
+              .newCreateInstanceCommand()
+              .bpmnProcessId(bpmnProcessId)
+              .latestVersion()
+              .send()
+              .join();
 
-            System.out.println(workflowInstanceEvent.getState());
-        }
+      System.out.println(workflowInstanceEvent.getState());
     }
+  }
 }

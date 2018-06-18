@@ -15,116 +15,100 @@
  */
 package io.zeebe.gossip.protocol;
 
-import java.time.Duration;
-
 import io.zeebe.clustering.gossip.GossipEventType;
 import io.zeebe.gossip.Loggers;
 import io.zeebe.gossip.membership.MembershipList;
 import io.zeebe.transport.*;
 import io.zeebe.util.sched.future.ActorFuture;
+import java.time.Duration;
 
-public class GossipEventSender
-{
-    private final ServerResponse serverResponse = new ServerResponse();
+public class GossipEventSender {
+  private final ServerResponse serverResponse = new ServerResponse();
 
-    private final ClientTransport clientTransport;
-    private final ServerTransport serverTransport;
+  private final ClientTransport clientTransport;
+  private final ServerTransport serverTransport;
 
-    private final MembershipList membershipList;
+  private final MembershipList membershipList;
 
-    private final GossipEvent gossipFailureDetectionEvent;
-    private final GossipEvent gossipSyncRequestEvent;
-    private final GossipEvent gossipSyncResponseEvent;
+  private final GossipEvent gossipFailureDetectionEvent;
+  private final GossipEvent gossipSyncRequestEvent;
+  private final GossipEvent gossipSyncResponseEvent;
 
-    public GossipEventSender(
-            ClientTransport clientTransport,
-            ServerTransport serverTransport,
-            MembershipList membershipList,
-            GossipEventFactory gossipEventFactory)
-    {
-        this.clientTransport = clientTransport;
-        this.serverTransport = serverTransport;
-        this.membershipList = membershipList;
+  public GossipEventSender(
+      ClientTransport clientTransport,
+      ServerTransport serverTransport,
+      MembershipList membershipList,
+      GossipEventFactory gossipEventFactory) {
+    this.clientTransport = clientTransport;
+    this.serverTransport = serverTransport;
+    this.membershipList = membershipList;
 
-        this.gossipFailureDetectionEvent = gossipEventFactory.createFailureDetectionEvent();
-        this.gossipSyncRequestEvent = gossipEventFactory.createSyncRequestEvent();
-        this.gossipSyncResponseEvent = gossipEventFactory.createSyncResponseEvent();
+    this.gossipFailureDetectionEvent = gossipEventFactory.createFailureDetectionEvent();
+    this.gossipSyncRequestEvent = gossipEventFactory.createSyncRequestEvent();
+    this.gossipSyncResponseEvent = gossipEventFactory.createSyncResponseEvent();
+  }
+
+  public ActorFuture<ClientResponse> sendPing(SocketAddress receiver, Duration timeout) {
+    gossipFailureDetectionEvent
+        .reset()
+        .eventType(GossipEventType.PING)
+        .sender(membershipList.self().getAddress());
+
+    return sendEventTo(gossipFailureDetectionEvent, receiver, timeout);
+  }
+
+  public ActorFuture<ClientResponse> sendPingReq(
+      SocketAddress receiver, SocketAddress probeMember, Duration timeout) {
+    gossipFailureDetectionEvent
+        .reset()
+        .eventType(GossipEventType.PING_REQ)
+        .probeMember(probeMember)
+        .sender(membershipList.self().getAddress());
+
+    return sendEventTo(gossipFailureDetectionEvent, receiver, timeout);
+  }
+
+  public ActorFuture<ClientResponse> sendSyncRequest(SocketAddress receiver, Duration timeout) {
+    gossipSyncRequestEvent
+        .reset()
+        .eventType(GossipEventType.SYNC_REQUEST)
+        .sender(membershipList.self().getAddress());
+
+    return sendEventTo(gossipSyncRequestEvent, receiver, timeout);
+  }
+
+  public void responseAck(long requestId, int streamId) {
+    gossipFailureDetectionEvent
+        .reset()
+        .eventType(GossipEventType.ACK)
+        .sender(membershipList.self().getAddress());
+
+    responseTo(gossipFailureDetectionEvent, requestId, streamId);
+  }
+
+  public void responseSync(long requestId, int streamId) {
+    gossipSyncResponseEvent
+        .reset()
+        .eventType(GossipEventType.SYNC_RESPONSE)
+        .sender(membershipList.self().getAddress());
+
+    responseTo(gossipSyncResponseEvent, requestId, streamId);
+  }
+
+  private ActorFuture<ClientResponse> sendEventTo(
+      GossipEvent event, SocketAddress receiver, Duration timeout) {
+    final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(receiver);
+    return clientTransport.getOutput().sendRequest(remoteAddress, event, timeout);
+  }
+
+  private void responseTo(GossipEvent event, long requestId, int streamId) {
+    serverResponse.reset().writer(event).requestId(requestId).remoteStreamId(streamId);
+
+    try {
+      serverTransport.getOutput().sendResponse(serverResponse);
+    } catch (Throwable t) {
+      Loggers.GOSSIP_LOGGER.error("Error on sending response.", t);
+      // ignore
     }
-
-    public ActorFuture<ClientResponse> sendPing(SocketAddress receiver, Duration timeout)
-    {
-        gossipFailureDetectionEvent
-                .reset()
-                .eventType(GossipEventType.PING)
-                .sender(membershipList.self().getAddress());
-
-        return sendEventTo(gossipFailureDetectionEvent, receiver, timeout);
-    }
-
-    public ActorFuture<ClientResponse> sendPingReq(SocketAddress receiver, SocketAddress probeMember, Duration timeout)
-    {
-        gossipFailureDetectionEvent
-            .reset()
-            .eventType(GossipEventType.PING_REQ)
-            .probeMember(probeMember)
-            .sender(membershipList.self().getAddress());
-
-        return sendEventTo(gossipFailureDetectionEvent, receiver, timeout);
-    }
-
-    public ActorFuture<ClientResponse> sendSyncRequest(SocketAddress receiver, Duration timeout)
-    {
-        gossipSyncRequestEvent
-            .reset()
-            .eventType(GossipEventType.SYNC_REQUEST)
-            .sender(membershipList.self().getAddress());
-
-        return sendEventTo(gossipSyncRequestEvent, receiver, timeout);
-    }
-
-    public void responseAck(long requestId, int streamId)
-    {
-        gossipFailureDetectionEvent
-            .reset()
-            .eventType(GossipEventType.ACK)
-            .sender(membershipList.self().getAddress());
-
-        responseTo(gossipFailureDetectionEvent, requestId, streamId);
-    }
-
-    public void responseSync(long requestId, int streamId)
-    {
-        gossipSyncResponseEvent
-            .reset()
-            .eventType(GossipEventType.SYNC_RESPONSE)
-            .sender(membershipList.self().getAddress());
-
-        responseTo(gossipSyncResponseEvent, requestId, streamId);
-    }
-
-    private ActorFuture<ClientResponse> sendEventTo(GossipEvent event, SocketAddress receiver, Duration timeout)
-    {
-        final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(receiver);
-        return clientTransport.getOutput().sendRequest(remoteAddress, event, timeout);
-    }
-
-    private void responseTo(GossipEvent event, long requestId, int streamId)
-    {
-        serverResponse
-            .reset()
-            .writer(event)
-            .requestId(requestId)
-            .remoteStreamId(streamId);
-
-        try
-        {
-            serverTransport.getOutput().sendResponse(serverResponse);
-        }
-        catch (Throwable t)
-        {
-            Loggers.GOSSIP_LOGGER.error("Error on sending response.", t);
-            // ignore
-        }
-    }
-
+  }
 }

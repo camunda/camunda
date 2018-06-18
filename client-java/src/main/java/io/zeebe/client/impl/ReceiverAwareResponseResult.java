@@ -17,9 +17,7 @@ package io.zeebe.client.impl;
 
 import io.zeebe.transport.RemoteAddress;
 
-public interface ReceiverAwareResponseResult
-{
+public interface ReceiverAwareResponseResult {
 
-    void setReceiver(RemoteAddress receiver);
-
+  void setReceiver(RemoteAddress receiver);
 }

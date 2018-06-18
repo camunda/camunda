@@ -15,53 +15,44 @@
  */
 package io.zeebe.logstreams.snapshot;
 
-import java.io.InputStream;
-import java.io.OutputStream;
-
 import io.zeebe.logstreams.spi.ComposableSnapshotSupport;
 import io.zeebe.map.ZbMap;
 import io.zeebe.map.ZbMapSerializer;
+import java.io.InputStream;
+import java.io.OutputStream;
 
-public class ZbMapSnapshotSupport<T extends ZbMap<?, ?>> implements ComposableSnapshotSupport
-{
-    private final T zbMap;
+public class ZbMapSnapshotSupport<T extends ZbMap<?, ?>> implements ComposableSnapshotSupport {
+  private final T zbMap;
 
-    private final ZbMapSerializer indexSerializer = new ZbMapSerializer();
+  private final ZbMapSerializer indexSerializer = new ZbMapSerializer();
 
-    public ZbMapSnapshotSupport(T zbMap)
-    {
-        this.zbMap = zbMap;
-        this.indexSerializer.wrap(zbMap);
-    }
+  public ZbMapSnapshotSupport(T zbMap) {
+    this.zbMap = zbMap;
+    this.indexSerializer.wrap(zbMap);
+  }
 
-    public T getZbMap()
-    {
-        return zbMap;
-    }
+  public T getZbMap() {
+    return zbMap;
+  }
 
-    @Override
-    public long snapshotSize()
-    {
-        return indexSerializer.serializationSize();
-    }
+  @Override
+  public long snapshotSize() {
+    return indexSerializer.serializationSize();
+  }
 
-    @Override
-    public long writeSnapshot(OutputStream outputStream) throws Exception
-    {
-        indexSerializer.writeToStream(outputStream);
-        return snapshotSize();
-    }
+  @Override
+  public long writeSnapshot(OutputStream outputStream) throws Exception {
+    indexSerializer.writeToStream(outputStream);
+    return snapshotSize();
+  }
 
-    @Override
-    public void recoverFromSnapshot(InputStream inputStream) throws Exception
-    {
-        indexSerializer.readFromStream(inputStream);
-    }
+  @Override
+  public void recoverFromSnapshot(InputStream inputStream) throws Exception {
+    indexSerializer.readFromStream(inputStream);
+  }
 
-    @Override
-    public void reset()
-    {
-        zbMap.clear();
-    }
-
+  @Override
+  public void reset() {
+    zbMap.clear();
+  }
 }

@@ -17,8 +17,6 @@
  */
 package io.zeebe.broker.system.workflow.repository.api.client;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex.WorkflowMetadata;
 import io.zeebe.broker.system.workflow.repository.service.WorkflowRepositoryService;
 import io.zeebe.broker.transport.controlmessage.AbstractControlMessageHandler;
@@ -31,101 +29,104 @@ import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.collection.Tuple;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
+import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.DirectBuffer;
 
-public class GetWorkflowControlMessageHandler extends AbstractControlMessageHandler
-{
-    private AtomicReference<WorkflowRepositoryService> workflowRepositroyServiceRef = new AtomicReference<>();
+public class GetWorkflowControlMessageHandler extends AbstractControlMessageHandler {
+  private AtomicReference<WorkflowRepositoryService> workflowRepositroyServiceRef =
+      new AtomicReference<>();
 
-    public GetWorkflowControlMessageHandler(ServerOutput output)
-    {
-        super(output);
-    }
+  public GetWorkflowControlMessageHandler(ServerOutput output) {
+    super(output);
+  }
 
-    @Override
-    public ControlMessageType getMessageType()
-    {
-        return ControlMessageType.GET_WORKFLOW;
-    }
+  @Override
+  public ControlMessageType getMessageType() {
+    return ControlMessageType.GET_WORKFLOW;
+  }
 
-    @Override
-    public void handle(ActorControl actor, int partitionId, DirectBuffer buffer, RecordMetadata metadata)
-    {
-        final WorkflowRepositoryService repository = workflowRepositroyServiceRef.get();
+  @Override
+  public void handle(
+      ActorControl actor, int partitionId, DirectBuffer buffer, RecordMetadata metadata) {
+    final WorkflowRepositoryService repository = workflowRepositroyServiceRef.get();
 
-        if (repository == null)
-        {
-            sendErrorResponse(actor, metadata.getRequestStreamId(), metadata.getRequestId(), ErrorCode.PARTITION_NOT_FOUND, "Workflow request must address the leader of the system partition %d", Protocol.SYSTEM_PARTITION);
+    if (repository == null) {
+      sendErrorResponse(
+          actor,
+          metadata.getRequestStreamId(),
+          metadata.getRequestId(),
+          ErrorCode.PARTITION_NOT_FOUND,
+          "Workflow request must address the leader of the system partition %d",
+          Protocol.SYSTEM_PARTITION);
+    } else {
+      final GetWorkflowControlRequest controlRequest = new GetWorkflowControlRequest();
+      controlRequest.wrap(buffer);
+
+      final String topicName = BufferUtil.bufferAsString(controlRequest.getTopicName());
+      final String bpmnProcessId = BufferUtil.bufferAsString(controlRequest.getBpmnProcessId());
+      final long workflowKey = controlRequest.getWorkflowKey();
+
+      final ActorFuture<Tuple<WorkflowMetadata, DirectBuffer>> future;
+
+      final String errorMessage;
+
+      if (workflowKey != -1) {
+        future = repository.getWorkflowByKey(workflowKey);
+        errorMessage = String.format("No workflow found with key '%d'", workflowKey);
+      } else {
+        final int version = controlRequest.getVersion();
+
+        if (version == -1) {
+          future = repository.getLatestWorkflowByBpmnProcessId(topicName, bpmnProcessId);
+          errorMessage =
+              String.format("No workflow found with BPMN process id '%s'", bpmnProcessId);
+        } else {
+          future =
+              repository.getWorkflowByBpmnProcessIdAndVersion(topicName, bpmnProcessId, version);
+          errorMessage =
+              String.format(
+                  "No workflow found with BPMN process id '%s' and version '%d'",
+                  bpmnProcessId, version);
         }
-        else
-        {
-            final GetWorkflowControlRequest controlRequest = new GetWorkflowControlRequest();
-            controlRequest.wrap(buffer);
+      }
 
-            final String topicName = BufferUtil.bufferAsString(controlRequest.getTopicName());
-            final String bpmnProcessId = BufferUtil.bufferAsString(controlRequest.getBpmnProcessId());
-            final long workflowKey = controlRequest.getWorkflowKey();
+      actor.runOnCompletion(
+          future,
+          (workflowAndResource, err) -> {
+            if (err != null) {
+              sendErrorResponse(
+                  actor, metadata.getRequestStreamId(), metadata.getRequestId(), err.getMessage());
+            } else {
+              if (workflowAndResource != null) {
+                final WorkflowMetadata workflow = workflowAndResource.getLeft();
 
-            final ActorFuture<Tuple<WorkflowMetadata, DirectBuffer>> future;
+                final WorkflowMetadataAndResource controlResponse =
+                    new WorkflowMetadataAndResource();
 
-            final String errorMessage;
+                controlResponse
+                    .setBpmnXml(workflowAndResource.getRight())
+                    .setWorkflowKey(workflow.getKey())
+                    .setTopicName(topicName)
+                    .setVersion(workflow.getVersion())
+                    .setBpmnProcessId(workflow.getBpmnProcessId())
+                    .setResourceName(workflow.getResourceName());
 
-            if (workflowKey != -1)
-            {
-                future = repository.getWorkflowByKey(workflowKey);
-                errorMessage = String.format("No workflow found with key '%d'", workflowKey);
+                sendResponse(
+                    actor, metadata.getRequestStreamId(), metadata.getRequestId(), controlResponse);
+              } else {
+                sendErrorResponse(
+                    actor,
+                    metadata.getRequestStreamId(),
+                    metadata.getRequestId(),
+                    ErrorCode.NOT_FOUND,
+                    errorMessage);
+              }
             }
-            else
-            {
-                final int version = controlRequest.getVersion();
-
-                if (version == -1)
-                {
-                    future = repository.getLatestWorkflowByBpmnProcessId(topicName, bpmnProcessId);
-                    errorMessage = String.format("No workflow found with BPMN process id '%s'", bpmnProcessId);
-                }
-                else
-                {
-                    future = repository.getWorkflowByBpmnProcessIdAndVersion(topicName, bpmnProcessId, version);
-                    errorMessage = String.format("No workflow found with BPMN process id '%s' and version '%d'", bpmnProcessId, version);
-                }
-            }
-
-            actor.runOnCompletion(future, (workflowAndResource, err) ->
-            {
-                if (err != null)
-                {
-                    sendErrorResponse(actor, metadata.getRequestStreamId(), metadata.getRequestId(), err.getMessage());
-                }
-                else
-                {
-                    if (workflowAndResource != null)
-                    {
-                        final WorkflowMetadata workflow = workflowAndResource.getLeft();
-
-                        final WorkflowMetadataAndResource controlResponse = new WorkflowMetadataAndResource();
-
-                        controlResponse.setBpmnXml(workflowAndResource.getRight())
-                            .setWorkflowKey(workflow.getKey())
-                            .setTopicName(topicName)
-                            .setVersion(workflow.getVersion())
-                            .setBpmnProcessId(workflow.getBpmnProcessId())
-                            .setResourceName(workflow.getResourceName());
-
-                        sendResponse(actor, metadata.getRequestStreamId(), metadata.getRequestId(), controlResponse);
-                    }
-                    else
-                    {
-                        sendErrorResponse(actor, metadata.getRequestStreamId(), metadata.getRequestId(), ErrorCode.NOT_FOUND, errorMessage);
-                    }
-                }
-            });
-        }
+          });
     }
+  }
 
-
-    public void setWorkflowRepositoryService(WorkflowRepositoryService service)
-    {
-        workflowRepositroyServiceRef.set(service);
-    }
+  public void setWorkflowRepositoryService(WorkflowRepositoryService service) {
+    workflowRepositroyServiceRef.set(service);
+  }
 }

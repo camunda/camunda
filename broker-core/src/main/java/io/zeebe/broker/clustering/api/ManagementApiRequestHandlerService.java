@@ -17,9 +17,6 @@
  */
 package io.zeebe.broker.clustering.api;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
 import io.zeebe.broker.system.configuration.BrokerCfg;
@@ -28,96 +25,97 @@ import io.zeebe.transport.BufferingServerTransport;
 import io.zeebe.transport.ServerInputSubscription;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-public class ManagementApiRequestHandlerService extends Actor implements Service<Void>
-{
-    private final Injector<BufferingServerTransport> serverTransportInjector = new Injector<>();
-    private final Injector<RaftPersistentConfigurationManager> raftPersistentConfigurationManagerInjector = new Injector<>();
+public class ManagementApiRequestHandlerService extends Actor implements Service<Void> {
+  private final Injector<BufferingServerTransport> serverTransportInjector = new Injector<>();
+  private final Injector<RaftPersistentConfigurationManager>
+      raftPersistentConfigurationManagerInjector = new Injector<>();
 
-    private final BrokerCfg brokerCfg;
-    private BufferingServerTransport serverTransport;
-    private ManagementApiRequestHandler managementApiRequestHandler;
-    private RaftPersistentConfigurationManager raftPersistentConfigurationManager;
+  private final BrokerCfg brokerCfg;
+  private BufferingServerTransport serverTransport;
+  private ManagementApiRequestHandler managementApiRequestHandler;
+  private RaftPersistentConfigurationManager raftPersistentConfigurationManager;
 
-    private final Map<Integer, Partition> trackedSnapshotPartitions = new ConcurrentHashMap<>();
-    private ServiceGroupReference<Partition> leaderPartitionsGroupReference = ServiceGroupReference.<Partition>create()
-            .onAdd((name, partition) -> trackedSnapshotPartitions.put(partition.getInfo().getPartitionId(), partition))
-            .onRemove((name, partition) -> trackedSnapshotPartitions.remove(partition.getInfo().getPartitionId()))
-            .build();
+  private final Map<Integer, Partition> trackedSnapshotPartitions = new ConcurrentHashMap<>();
+  private ServiceGroupReference<Partition> leaderPartitionsGroupReference =
+      ServiceGroupReference.<Partition>create()
+          .onAdd(
+              (name, partition) ->
+                  trackedSnapshotPartitions.put(partition.getInfo().getPartitionId(), partition))
+          .onRemove(
+              (name, partition) ->
+                  trackedSnapshotPartitions.remove(partition.getInfo().getPartitionId()))
+          .build();
 
-    public ManagementApiRequestHandlerService(BrokerCfg brokerCfg)
-    {
-        this.brokerCfg = brokerCfg;
-    }
+  public ManagementApiRequestHandlerService(BrokerCfg brokerCfg) {
+    this.brokerCfg = brokerCfg;
+  }
 
-    @Override
-    public String getName()
-    {
-        return "management-api";
-    }
+  @Override
+  public String getName() {
+    return "management-api";
+  }
 
-    @Override
-    public void start(ServiceStartContext startContext)
-    {
-        serverTransport = serverTransportInjector.getValue();
-        raftPersistentConfigurationManager = raftPersistentConfigurationManagerInjector.getValue();
-        managementApiRequestHandler = new ManagementApiRequestHandler(raftPersistentConfigurationManager,
+  @Override
+  public void start(ServiceStartContext startContext) {
+    serverTransport = serverTransportInjector.getValue();
+    raftPersistentConfigurationManager = raftPersistentConfigurationManagerInjector.getValue();
+    managementApiRequestHandler =
+        new ManagementApiRequestHandler(
+            raftPersistentConfigurationManager,
             actor,
             startContext,
             brokerCfg,
             trackedSnapshotPartitions);
 
-        startContext.async(startContext.getScheduler().submitActor(this, true));
-    }
+    startContext.async(startContext.getScheduler().submitActor(this, true));
+  }
 
-    @Override
-    public void stop(ServiceStopContext stopContext)
-    {
-        stopContext.async(actor.close());
-    }
+  @Override
+  public void stop(ServiceStopContext stopContext) {
+    stopContext.async(actor.close());
+  }
 
-    @Override
-    protected void onActorStarting()
-    {
-        final ActorFuture<ServerInputSubscription> subscriptionFuture = serverTransport.openSubscription("clusterManagement", managementApiRequestHandler, managementApiRequestHandler);
+  @Override
+  protected void onActorStarting() {
+    final ActorFuture<ServerInputSubscription> subscriptionFuture =
+        serverTransport.openSubscription(
+            "clusterManagement", managementApiRequestHandler, managementApiRequestHandler);
 
-        actor.runOnCompletion(subscriptionFuture, (subscription, throwable) ->
-        {
-            if (throwable != null)
-            {
-                throw new RuntimeException(throwable);
-            }
-            else
-            {
-                actor.consume(subscription, () ->
-                {
-                    if (subscription.poll() == 0)
-                    {
-                        actor.yield();
-                    }
+    actor.runOnCompletion(
+        subscriptionFuture,
+        (subscription, throwable) -> {
+          if (throwable != null) {
+            throw new RuntimeException(throwable);
+          } else {
+            actor.consume(
+                subscription,
+                () -> {
+                  if (subscription.poll() == 0) {
+                    actor.yield();
+                  }
                 });
-            }
+          }
         });
-    }
+  }
 
-    @Override
-    public Void get()
-    {
-        return null;
-    }
+  @Override
+  public Void get() {
+    return null;
+  }
 
-    public Injector<BufferingServerTransport> getServerTransportInjector()
-    {
-        return serverTransportInjector;
-    }
+  public Injector<BufferingServerTransport> getServerTransportInjector() {
+    return serverTransportInjector;
+  }
 
-    public Injector<RaftPersistentConfigurationManager> getRaftPersistentConfigurationManagerInjector()
-    {
-        return raftPersistentConfigurationManagerInjector;
-    }
+  public Injector<RaftPersistentConfigurationManager>
+      getRaftPersistentConfigurationManagerInjector() {
+    return raftPersistentConfigurationManagerInjector;
+  }
 
-    public ServiceGroupReference<Partition> getLeaderPartitionsGroupReference()
-    {
-        return leaderPartitionsGroupReference;
-    }
+  public ServiceGroupReference<Partition> getLeaderPartitionsGroupReference() {
+    return leaderPartitionsGroupReference;
+  }
 }

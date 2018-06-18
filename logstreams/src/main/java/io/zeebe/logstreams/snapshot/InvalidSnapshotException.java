@@ -15,13 +15,10 @@
  */
 package io.zeebe.logstreams.snapshot;
 
-public class InvalidSnapshotException extends RuntimeException
-{
-    private static final long serialVersionUID = 1L;
+public class InvalidSnapshotException extends RuntimeException {
+  private static final long serialVersionUID = 1L;
 
-    public InvalidSnapshotException(String message)
-    {
-        super(message);
-    }
-
+  public InvalidSnapshotException(String message) {
+    super(message);
+  }
 }

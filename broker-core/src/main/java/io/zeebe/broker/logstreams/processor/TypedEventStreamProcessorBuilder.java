@@ -17,12 +17,6 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
-
 import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.logstreams.snapshot.BaseValueSnapshotSupport;
 import io.zeebe.logstreams.snapshot.ComposedSnapshot;
@@ -35,179 +29,176 @@ import io.zeebe.msgpack.value.BaseValue;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.Intent;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
-public class TypedEventStreamProcessorBuilder
-{
-    protected final TypedStreamEnvironment environment;
+public class TypedEventStreamProcessorBuilder {
+  protected final TypedStreamEnvironment environment;
 
-    protected List<ComposableSnapshotSupport> stateResources = new ArrayList<>();
+  protected List<ComposableSnapshotSupport> stateResources = new ArrayList<>();
 
-    protected RecordProcessorMap eventProcessors = new RecordProcessorMap();
-    protected List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
+  protected RecordProcessorMap eventProcessors = new RecordProcessorMap();
+  protected List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
 
-    public TypedEventStreamProcessorBuilder(TypedStreamEnvironment environment)
-    {
-        this.environment = environment;
-    }
+  public TypedEventStreamProcessorBuilder(TypedStreamEnvironment environment) {
+    this.environment = environment;
+  }
 
-    // TODO: could remove the ValueType argument as it follows from the intent
-    public TypedEventStreamProcessorBuilder onEvent(ValueType valueType, Intent intent, TypedRecordProcessor<?> processor)
-    {
-        return onRecord(RecordType.EVENT, valueType, intent, processor);
-    }
+  // TODO: could remove the ValueType argument as it follows from the intent
+  public TypedEventStreamProcessorBuilder onEvent(
+      ValueType valueType, Intent intent, TypedRecordProcessor<?> processor) {
+    return onRecord(RecordType.EVENT, valueType, intent, processor);
+  }
 
-    public <T extends UnpackedObject> TypedEventStreamProcessorBuilder onEvent(ValueType valueType, Intent intent, Predicate<T> activationFunction, TypedRecordProcessor<T> processor)
-    {
-        return onEvent(valueType, intent, new DelegatingEventProcessor<T>(r -> activationFunction.test(r.getValue()) ? processor : null));
-    }
+  public <T extends UnpackedObject> TypedEventStreamProcessorBuilder onEvent(
+      ValueType valueType,
+      Intent intent,
+      Predicate<T> activationFunction,
+      TypedRecordProcessor<T> processor) {
+    return onEvent(
+        valueType,
+        intent,
+        new DelegatingEventProcessor<T>(
+            r -> activationFunction.test(r.getValue()) ? processor : null));
+  }
 
-    public TypedEventStreamProcessorBuilder onEvent(ValueType valueType, Intent intent, Consumer<? extends UnpackedObject> consumer)
-    {
-        return onEvent(valueType, intent, new ConsumerProcessor<>(consumer));
-    }
+  public TypedEventStreamProcessorBuilder onEvent(
+      ValueType valueType, Intent intent, Consumer<? extends UnpackedObject> consumer) {
+    return onEvent(valueType, intent, new ConsumerProcessor<>(consumer));
+  }
 
-    private TypedEventStreamProcessorBuilder onRecord(RecordType recordType, ValueType valueType, Intent intent, TypedRecordProcessor<?> processor)
-    {
-        eventProcessors.put(recordType, valueType, intent.value(), processor);
+  private TypedEventStreamProcessorBuilder onRecord(
+      RecordType recordType,
+      ValueType valueType,
+      Intent intent,
+      TypedRecordProcessor<?> processor) {
+    eventProcessors.put(recordType, valueType, intent.value(), processor);
 
-        return this;
-    }
+    return this;
+  }
 
-    public TypedEventStreamProcessorBuilder onCommand(ValueType valueType, Intent intent, TypedRecordProcessor<?> processor)
-    {
-        return onRecord(RecordType.COMMAND, valueType, intent, processor);
-    }
+  public TypedEventStreamProcessorBuilder onCommand(
+      ValueType valueType, Intent intent, TypedRecordProcessor<?> processor) {
+    return onRecord(RecordType.COMMAND, valueType, intent, processor);
+  }
 
-    public <T extends UnpackedObject> TypedEventStreamProcessorBuilder onCommand(ValueType valueType, Intent intent, CommandProcessor<T> commandProcessor)
-    {
-        return onCommand(valueType, intent, new CommandProcessorImpl<>(commandProcessor));
-    }
+  public <T extends UnpackedObject> TypedEventStreamProcessorBuilder onCommand(
+      ValueType valueType, Intent intent, CommandProcessor<T> commandProcessor) {
+    return onCommand(valueType, intent, new CommandProcessorImpl<>(commandProcessor));
+  }
 
-    public TypedEventStreamProcessorBuilder onRejection(ValueType valueType, Intent intent, TypedRecordProcessor<?> processor)
-    {
-        return onRecord(RecordType.COMMAND_REJECTION, valueType, intent, processor);
-    }
+  public TypedEventStreamProcessorBuilder onRejection(
+      ValueType valueType, Intent intent, TypedRecordProcessor<?> processor) {
+    return onRecord(RecordType.COMMAND_REJECTION, valueType, intent, processor);
+  }
 
-    public TypedEventStreamProcessorBuilder withListener(StreamProcessorLifecycleAware listener)
-    {
-        this.lifecycleListeners.add(listener);
-        return this;
-    }
+  public TypedEventStreamProcessorBuilder withListener(StreamProcessorLifecycleAware listener) {
+    this.lifecycleListeners.add(listener);
+    return this;
+  }
 
-    public TypedEventStreamProcessorBuilder withStateResource(ZbMap<?, ?> map)
-    {
-        this.stateResources.add(new ZbMapSnapshotSupport<>(map));
-        withListener(new StreamProcessorLifecycleAware()
-        {
-            @Override
-            public void onClose()
-            {
-                map.close();
-            }
+  public TypedEventStreamProcessorBuilder withStateResource(ZbMap<?, ?> map) {
+    this.stateResources.add(new ZbMapSnapshotSupport<>(map));
+    withListener(
+        new StreamProcessorLifecycleAware() {
+          @Override
+          public void onClose() {
+            map.close();
+          }
         });
-        return this;
+    return this;
+  }
+
+  public TypedEventStreamProcessorBuilder withStateResource(BaseValue value) {
+    this.stateResources.add(new BaseValueSnapshotSupport(value));
+    return this;
+  }
+
+  public TypedEventStreamProcessorBuilder withStateResource(
+      ComposableSnapshotSupport snapshotSupport) {
+    this.stateResources.add(snapshotSupport);
+    return this;
+  }
+
+  public TypedStreamProcessor build() {
+
+    final SnapshotSupport snapshotSupport;
+    if (!stateResources.isEmpty()) {
+      snapshotSupport =
+          new ComposedSnapshot(
+              stateResources.toArray(new ComposableSnapshotSupport[stateResources.size()]));
+    } else {
+      snapshotSupport = new NoopSnapshotSupport();
     }
 
-    public TypedEventStreamProcessorBuilder withStateResource(BaseValue value)
-    {
-        this.stateResources.add(new BaseValueSnapshotSupport(value));
-        return this;
+    return new TypedStreamProcessor(
+        snapshotSupport,
+        environment.getOutput(),
+        eventProcessors,
+        lifecycleListeners,
+        environment.getEventRegistry(),
+        environment);
+  }
+
+  private static class DelegatingEventProcessor<T extends UnpackedObject>
+      implements TypedRecordProcessor<T> {
+    private Function<TypedRecord<T>, TypedRecordProcessor<T>> dispatcher;
+    private TypedRecordProcessor<T> selectedProcessor;
+
+    DelegatingEventProcessor(Function<TypedRecord<T>, TypedRecordProcessor<T>> dispatcher) {
+      this.dispatcher = dispatcher;
     }
 
-    public TypedEventStreamProcessorBuilder withStateResource(ComposableSnapshotSupport snapshotSupport)
-    {
-        this.stateResources.add(snapshotSupport);
-        return this;
+    @Override
+    public void processRecord(TypedRecord<T> record) {
+      selectedProcessor = dispatcher.apply(record);
+      if (selectedProcessor != null) {
+        selectedProcessor.processRecord(record);
+      }
     }
 
-    public TypedStreamProcessor build()
-    {
-
-        final SnapshotSupport snapshotSupport;
-        if (!stateResources.isEmpty())
-        {
-            snapshotSupport = new ComposedSnapshot(
-                    stateResources.toArray(new ComposableSnapshotSupport[stateResources.size()]));
-        }
-        else
-        {
-            snapshotSupport = new NoopSnapshotSupport();
-        }
-
-        return new TypedStreamProcessor(
-                snapshotSupport,
-                environment.getOutput(),
-                eventProcessors,
-                lifecycleListeners,
-                environment.getEventRegistry(),
-                environment);
+    @Override
+    public void processRecord(TypedRecord<T> record, EventLifecycleContext ctx) {
+      selectedProcessor = dispatcher.apply(record);
+      if (selectedProcessor != null) {
+        selectedProcessor.processRecord(record, ctx);
+      }
     }
 
-    private static class DelegatingEventProcessor<T extends UnpackedObject> implements TypedRecordProcessor<T>
-    {
-        private Function<TypedRecord<T>, TypedRecordProcessor<T>> dispatcher;
-        private TypedRecordProcessor<T> selectedProcessor;
-
-        DelegatingEventProcessor(Function<TypedRecord<T>, TypedRecordProcessor<T>> dispatcher)
-        {
-            this.dispatcher = dispatcher;
-        }
-
-        @Override
-        public void processRecord(TypedRecord<T> record)
-        {
-            selectedProcessor = dispatcher.apply(record);
-            if (selectedProcessor != null)
-            {
-                selectedProcessor.processRecord(record);
-            }
-        }
-
-        @Override
-        public void processRecord(TypedRecord<T> record, EventLifecycleContext ctx)
-        {
-            selectedProcessor = dispatcher.apply(record);
-            if (selectedProcessor != null)
-            {
-                selectedProcessor.processRecord(record, ctx);
-            }
-        }
-
-        @Override
-        public boolean executeSideEffects(TypedRecord<T> record, TypedResponseWriter responseWriter)
-        {
-            return selectedProcessor != null ? selectedProcessor.executeSideEffects(record, responseWriter) : true;
-        }
-
-        @Override
-        public long writeRecord(TypedRecord<T> record, TypedStreamWriter writer)
-        {
-            return selectedProcessor != null ? selectedProcessor.writeRecord(record, writer) : 0L;
-        }
-
-        @Override
-        public void updateState(TypedRecord<T> record)
-        {
-            if (selectedProcessor != null)
-            {
-                selectedProcessor.updateState(record);
-            }
-        }
+    @Override
+    public boolean executeSideEffects(TypedRecord<T> record, TypedResponseWriter responseWriter) {
+      return selectedProcessor != null
+          ? selectedProcessor.executeSideEffects(record, responseWriter)
+          : true;
     }
 
-    private static class ConsumerProcessor<T extends UnpackedObject> implements TypedRecordProcessor<T>
-    {
-        private final Consumer<T> consumer;
-
-        ConsumerProcessor(Consumer<T> consumer)
-        {
-            this.consumer = consumer;
-        }
-
-        @Override
-        public void processRecord(TypedRecord<T> record)
-        {
-            consumer.accept(record.getValue());
-        }
+    @Override
+    public long writeRecord(TypedRecord<T> record, TypedStreamWriter writer) {
+      return selectedProcessor != null ? selectedProcessor.writeRecord(record, writer) : 0L;
     }
+
+    @Override
+    public void updateState(TypedRecord<T> record) {
+      if (selectedProcessor != null) {
+        selectedProcessor.updateState(record);
+      }
+    }
+  }
+
+  private static class ConsumerProcessor<T extends UnpackedObject>
+      implements TypedRecordProcessor<T> {
+    private final Consumer<T> consumer;
+
+    ConsumerProcessor(Consumer<T> consumer) {
+      this.consumer = consumer;
+    }
+
+    @Override
+    public void processRecord(TypedRecord<T> record) {
+      consumer.accept(record.getValue());
+    }
+  }
 }

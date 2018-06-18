@@ -22,36 +22,31 @@ import io.zeebe.client.impl.record.TopicSubscriberRecordImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.intent.SubscriberIntent;
 
-public class TopicSubscriberCommandImpl extends TopicSubscriberRecordImpl
-{
-    @JsonCreator
-    public TopicSubscriberCommandImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper)
-    {
-        super(objectMapper, RecordType.COMMAND);
-    }
+public class TopicSubscriberCommandImpl extends TopicSubscriberRecordImpl {
+  @JsonCreator
+  public TopicSubscriberCommandImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper) {
+    super(objectMapper, RecordType.COMMAND);
+  }
 
-    public TopicSubscriberCommandImpl(SubscriberIntent intent)
-    {
-        super(null, RecordType.COMMAND);
-        setIntent(intent);
-    }
+  public TopicSubscriberCommandImpl(SubscriberIntent intent) {
+    super(null, RecordType.COMMAND);
+    setIntent(intent);
+  }
 
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("TopicSubscriberCommand [command=");
-        builder.append(getMetadata().getIntent());
-        builder.append(", name=");
-        builder.append(getName());
-        builder.append(", startPosition=");
-        builder.append(getStartPosition());
-        builder.append(", isForceStart=");
-        builder.append(isForceStart());
-        builder.append(", bufferSize)=");
-        builder.append(getBufferSize());
-        builder.append("]");
-        return builder.toString();
-    }
-
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("TopicSubscriberCommand [command=");
+    builder.append(getMetadata().getIntent());
+    builder.append(", name=");
+    builder.append(getName());
+    builder.append(", startPosition=");
+    builder.append(getStartPosition());
+    builder.append(", isForceStart=");
+    builder.append(isForceStart());
+    builder.append(", bufferSize)=");
+    builder.append(getBufferSize());
+    builder.append("]");
+    return builder.toString();
+  }
 }

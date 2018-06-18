@@ -15,14 +15,12 @@
  */
 package io.zeebe.transport.impl.actor;
 
-public class ServerActorContext extends ActorContext
-{
-    private ServerConductor serverConductor;
+public class ServerActorContext extends ActorContext {
+  private ServerConductor serverConductor;
 
-    @Override
-    public void setConductor(Conductor conductor)
-    {
-        super.setConductor(conductor);
-        this.serverConductor = (ServerConductor) conductor;
-    }
+  @Override
+  public void setConductor(Conductor conductor) {
+    super.setConductor(conductor);
+    this.serverConductor = (ServerConductor) conductor;
+  }
 }

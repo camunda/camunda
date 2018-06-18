@@ -17,6 +17,8 @@
  */
 package io.zeebe.broker.clustering.base.bootstrap;
 
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.*;
+
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.Topology;
@@ -29,111 +31,109 @@ import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ScheduledTimer;
+import java.time.Duration;
 import org.slf4j.Logger;
 
-import java.time.Duration;
-
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.*;
-
 /**
- * Service implementing the "-bootstrap-expect" parameter on startup:
- * Waits for the specified number of nodes to join the cluster and then bootstraps
- * the system topic with the specified replication factor.
+ * Service implementing the "-bootstrap-expect" parameter on startup: Waits for the specified number
+ * of nodes to join the cluster and then bootstraps the system topic with the specified replication
+ * factor.
  */
-public class BootstrapExpectNodes extends Actor implements Service<Void>, TopologyMemberListener
-{
-    private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
+public class BootstrapExpectNodes extends Actor implements Service<Void>, TopologyMemberListener {
+  private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
-    private final Injector<TopologyManager> topologyManagerInjector = new Injector<>();
-    private TopologyManager topologyManager;
+  private final Injector<TopologyManager> topologyManagerInjector = new Injector<>();
+  private TopologyManager topologyManager;
 
-    private final BrokerCfg brokerCfg;
-    private final int replicationFactor;
-    private final int countOfExpectedNodes;
-    private int nodeCount;
+  private final BrokerCfg brokerCfg;
+  private final int replicationFactor;
+  private final int countOfExpectedNodes;
+  private int nodeCount;
 
-    private ServiceStartContext serviceStartContext;
-    private ScheduledTimer loggerTimer;
+  private ServiceStartContext serviceStartContext;
+  private ScheduledTimer loggerTimer;
 
+  public BootstrapExpectNodes(
+      int replicationFactor, int countOfExpectedNodes, BrokerCfg brokerCfg) {
+    this.replicationFactor = replicationFactor;
+    this.countOfExpectedNodes = countOfExpectedNodes;
+    this.brokerCfg = brokerCfg;
+    this.nodeCount = 0;
+  }
 
-    public BootstrapExpectNodes(int replicationFactor, int countOfExpectedNodes, BrokerCfg brokerCfg)
-    {
-        this.replicationFactor = replicationFactor;
-        this.countOfExpectedNodes = countOfExpectedNodes;
-        this.brokerCfg = brokerCfg;
-        this.nodeCount = 0;
-    }
+  public Injector<TopologyManager> getTopologyManagerInjector() {
+    return topologyManagerInjector;
+  }
 
-    public Injector<TopologyManager> getTopologyManagerInjector()
-    {
-        return topologyManagerInjector;
-    }
+  @Override
+  public void start(ServiceStartContext startContext) {
+    this.serviceStartContext = startContext;
+    this.topologyManager = topologyManagerInjector.getValue();
 
-    @Override
-    public void start(ServiceStartContext startContext)
-    {
-        this.serviceStartContext = startContext;
-        this.topologyManager = topologyManagerInjector.getValue();
+    startContext.async(startContext.getScheduler().submitActor(this));
+  }
 
-        startContext.async(startContext.getScheduler().submitActor(this));
-    }
+  @Override
+  protected void onActorStarted() {
+    // register listener
+    topologyManager.addTopologyMemberListener(this);
 
-    @Override
-    protected void onActorStarted()
-    {
-        // register listener
-        topologyManager.addTopologyMemberListener(this);
+    loggerTimer =
+        actor.runAtFixedRate(
+            Duration.ofSeconds(5),
+            () -> {
+              LOG.info(
+                  "Cluster bootstrap: Waiting for nodes, expecting {} got {}.",
+                  countOfExpectedNodes,
+                  nodeCount);
+            });
+  }
 
-        loggerTimer = actor.runAtFixedRate(Duration.ofSeconds(5), () ->
-        {
-            LOG.info("Cluster bootstrap: Waiting for nodes, expecting {} got {}.", countOfExpectedNodes, nodeCount);
+  @Override
+  public void stop(ServiceStopContext stopContext) {
+    stopContext.async(actor.close());
+  }
+
+  @Override
+  public Void get() {
+    return null;
+  }
+
+  @Override
+  public void onMemberAdded(NodeInfo memberInfo, Topology topology) {
+    actor.run(
+        () -> {
+          nodeCount++;
+
+          if (nodeCount == countOfExpectedNodes) {
+            LOG.info(
+                "Cluster bootstrap: Reached expected node count of {} got {}",
+                countOfExpectedNodes,
+                nodeCount);
+            loggerTimer.cancel();
+            topologyManager.removeTopologyMemberListener(this);
+
+            installSystemTopicBootstrapService();
+            actor.close();
+          }
         });
-    }
+  }
 
-    @Override
-    public void stop(ServiceStopContext stopContext)
-    {
-        stopContext.async(actor.close());
-    }
+  @Override
+  public void onMemberRemoved(NodeInfo memberInfo, Topology topology) {
+    actor.run(() -> nodeCount--);
+  }
 
-    @Override
-    public Void get()
-    {
-        return null;
-    }
+  private void installSystemTopicBootstrapService() {
+    final BootstrapSystemTopic systemPartitionBootstrapService =
+        new BootstrapSystemTopic(replicationFactor, brokerCfg);
 
-    @Override
-    public void onMemberAdded(NodeInfo memberInfo, Topology topology)
-    {
-        actor.run(() ->
-        {
-            nodeCount++;
-
-            if (nodeCount == countOfExpectedNodes)
-            {
-                LOG.info("Cluster bootstrap: Reached expected node count of {} got {}", countOfExpectedNodes, nodeCount);
-                loggerTimer.cancel();
-                topologyManager.removeTopologyMemberListener(this);
-
-                installSystemTopicBootstrapService();
-                actor.close();
-            }
-        });
-    }
-
-    @Override
-    public void onMemberRemoved(NodeInfo memberInfo, Topology topology)
-    {
-        actor.run(() -> nodeCount--);
-    }
-
-    private void installSystemTopicBootstrapService()
-    {
-        final BootstrapSystemTopic systemPartitionBootstrapService = new BootstrapSystemTopic(replicationFactor, brokerCfg);
-
-        serviceStartContext.createService(SYSTEM_PARTITION_BOOTSTRAP_SERVICE_NAME, systemPartitionBootstrapService)
-            .dependency(RAFT_CONFIGURATION_MANAGER, systemPartitionBootstrapService.getRaftPersistentConfigurationManagerInjector())
-            .dependency(RAFT_BOOTSTRAP_SERVICE)
-            .install();
-    }
+    serviceStartContext
+        .createService(SYSTEM_PARTITION_BOOTSTRAP_SERVICE_NAME, systemPartitionBootstrapService)
+        .dependency(
+            RAFT_CONFIGURATION_MANAGER,
+            systemPartitionBootstrapService.getRaftPersistentConfigurationManagerInjector())
+        .dependency(RAFT_BOOTSTRAP_SERVICE)
+        .install();
+  }
 }

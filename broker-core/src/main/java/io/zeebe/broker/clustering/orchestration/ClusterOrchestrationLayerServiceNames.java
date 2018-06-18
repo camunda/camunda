@@ -24,17 +24,28 @@ import io.zeebe.broker.clustering.orchestration.topic.RequestPartitionsMessageHa
 import io.zeebe.broker.clustering.orchestration.topic.TopicCreationService;
 import io.zeebe.servicecontainer.ServiceName;
 
-public class ClusterOrchestrationLayerServiceNames
-{
+public class ClusterOrchestrationLayerServiceNames {
 
-    public static final ServiceName<Void> CLUSTER_ORCHESTRATION_INSTALL_SERVICE_NAME = ServiceName.newServiceName("cluster.orchestration.install", Void.class);
-    public static final ServiceName<Void> CLUSTER_ORCHESTRATION_COMPOSITE_SERVICE_NAME = ServiceName.newServiceName("cluster.orchestration.composite", Void.class);
+  public static final ServiceName<Void> CLUSTER_ORCHESTRATION_INSTALL_SERVICE_NAME =
+      ServiceName.newServiceName("cluster.orchestration.install", Void.class);
+  public static final ServiceName<Void> CLUSTER_ORCHESTRATION_COMPOSITE_SERVICE_NAME =
+      ServiceName.newServiceName("cluster.orchestration.composite", Void.class);
 
-    public static final ServiceName<KnownTopics> KNOWN_TOPICS_SERVICE_NAME = ServiceName.newServiceName("cluster.orchestration.knownTopics", KnownTopics.class);
+  public static final ServiceName<KnownTopics> KNOWN_TOPICS_SERVICE_NAME =
+      ServiceName.newServiceName("cluster.orchestration.knownTopics", KnownTopics.class);
 
-    public static final ServiceName<TopicCreationService> TOPIC_CREATION_SERVICE_NAME = ServiceName.newServiceName("cluster.orchestration.topicCreation", TopicCreationService.class);
-    public static final ServiceName<ReplicationFactorService> REPLICATION_FACTOR_SERVICE_NAME = ServiceName.newServiceName("cluster.orchestration.replicationFactor", ReplicationFactorService.class);
-    public static final ServiceName<RequestPartitionsMessageHandler> REQUEST_PARTITIONS_MESSAGE_HANDLER_SERVICE_NAME = ServiceName.newServiceName("cluster.orchestration.requestsPartitionsMessageHandler", RequestPartitionsMessageHandler.class);
-    public static final ServiceName<IdGenerator> ID_GENERATOR_SERVICE_NAME = ServiceName.newServiceName("cluster.orchestration.idGenerator", IdGenerator.class);
-    public static final ServiceName<NodeSelector> NODE_SELECTOR_SERVICE_NAME = ServiceName.newServiceName("cluster.orchestration.nodeSelector", NodeSelector.class);
+  public static final ServiceName<TopicCreationService> TOPIC_CREATION_SERVICE_NAME =
+      ServiceName.newServiceName("cluster.orchestration.topicCreation", TopicCreationService.class);
+  public static final ServiceName<ReplicationFactorService> REPLICATION_FACTOR_SERVICE_NAME =
+      ServiceName.newServiceName(
+          "cluster.orchestration.replicationFactor", ReplicationFactorService.class);
+  public static final ServiceName<RequestPartitionsMessageHandler>
+      REQUEST_PARTITIONS_MESSAGE_HANDLER_SERVICE_NAME =
+          ServiceName.newServiceName(
+              "cluster.orchestration.requestsPartitionsMessageHandler",
+              RequestPartitionsMessageHandler.class);
+  public static final ServiceName<IdGenerator> ID_GENERATOR_SERVICE_NAME =
+      ServiceName.newServiceName("cluster.orchestration.idGenerator", IdGenerator.class);
+  public static final ServiceName<NodeSelector> NODE_SELECTOR_SERVICE_NAME =
+      ServiceName.newServiceName("cluster.orchestration.nodeSelector", NodeSelector.class);
 }

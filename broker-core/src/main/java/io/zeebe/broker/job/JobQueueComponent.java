@@ -28,26 +28,40 @@ import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.servicecontainer.ServiceContainer;
 
-public class JobQueueComponent implements Component
-{
-    @Override
-    public void init(SystemContext context)
-    {
-        final ServiceContainer serviceContainer = context.getServiceContainer();
+public class JobQueueComponent implements Component {
+  @Override
+  public void init(SystemContext context) {
+    final ServiceContainer serviceContainer = context.getServiceContainer();
 
-        final JobSubscriptionManagerService jobSubscriptionManagerService = new JobSubscriptionManagerService(serviceContainer);
-        serviceContainer.createService(JOB_QUEUE_SUBSCRIPTION_MANAGER, jobSubscriptionManagerService)
-            .dependency(serverTransport(CLIENT_API_SERVER_NAME), jobSubscriptionManagerService.getClientApiTransportInjector())
-            .dependency(STREAM_PROCESSOR_SERVICE_FACTORY, jobSubscriptionManagerService.getStreamProcessorServiceFactoryInjector())
-            .groupReference(LEADER_PARTITION_GROUP_NAME, jobSubscriptionManagerService.getLeaderPartitionsGroupReference())
-            .install();
+    final JobSubscriptionManagerService jobSubscriptionManagerService =
+        new JobSubscriptionManagerService(serviceContainer);
+    serviceContainer
+        .createService(JOB_QUEUE_SUBSCRIPTION_MANAGER, jobSubscriptionManagerService)
+        .dependency(
+            serverTransport(CLIENT_API_SERVER_NAME),
+            jobSubscriptionManagerService.getClientApiTransportInjector())
+        .dependency(
+            STREAM_PROCESSOR_SERVICE_FACTORY,
+            jobSubscriptionManagerService.getStreamProcessorServiceFactoryInjector())
+        .groupReference(
+            LEADER_PARTITION_GROUP_NAME,
+            jobSubscriptionManagerService.getLeaderPartitionsGroupReference())
+        .install();
 
-        final JobQueueManagerService jobQueueManagerService = new JobQueueManagerService();
-        serviceContainer.createService(JOB_QUEUE_MANAGER, jobQueueManagerService)
-            .dependency(serverTransport(CLIENT_API_SERVER_NAME), jobQueueManagerService.getClientApiTransportInjector())
-            .dependency(JOB_QUEUE_SUBSCRIPTION_MANAGER, jobQueueManagerService.getJobSubscriptionManagerInjector())
-            .dependency(STREAM_PROCESSOR_SERVICE_FACTORY, jobQueueManagerService.getStreamProcessorServiceFactoryInjector())
-            .groupReference(LEADER_PARTITION_GROUP_NAME, jobQueueManagerService.getPartitionsGroupReference())
-            .install();
-    }
+    final JobQueueManagerService jobQueueManagerService = new JobQueueManagerService();
+    serviceContainer
+        .createService(JOB_QUEUE_MANAGER, jobQueueManagerService)
+        .dependency(
+            serverTransport(CLIENT_API_SERVER_NAME),
+            jobQueueManagerService.getClientApiTransportInjector())
+        .dependency(
+            JOB_QUEUE_SUBSCRIPTION_MANAGER,
+            jobQueueManagerService.getJobSubscriptionManagerInjector())
+        .dependency(
+            STREAM_PROCESSOR_SERVICE_FACTORY,
+            jobQueueManagerService.getStreamProcessorServiceFactoryInjector())
+        .groupReference(
+            LEADER_PARTITION_GROUP_NAME, jobQueueManagerService.getPartitionsGroupReference())
+        .install();
+  }
 }

@@ -15,8 +15,7 @@
  */
 package io.zeebe.client.api.events;
 
-public enum RaftState
-{
-    MEMBER_ADDED,
-    MEMBER_REMOVED;
+public enum RaftState {
+  MEMBER_ADDED,
+  MEMBER_REMOVED;
 }

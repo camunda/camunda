@@ -21,25 +21,23 @@ import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import org.openjdk.jmh.annotations.*;
 
 @BenchmarkMode(Mode.Throughput)
-public class BufferedLogStreamReaderBenchmark
-{
-    @Benchmark
-    @Threads(1)
-    public long iterateWithNewReader(FilledLogStreamAndReaderSupplier filledMapSnapshotSupplier) throws Exception
-    {
-        final BufferedLogStreamReader reader = filledMapSnapshotSupplier.reader;
-        reader.seekToFirstEvent();
+public class BufferedLogStreamReaderBenchmark {
+  @Benchmark
+  @Threads(1)
+  public long iterateWithNewReader(FilledLogStreamAndReaderSupplier filledMapSnapshotSupplier)
+      throws Exception {
+    final BufferedLogStreamReader reader = filledMapSnapshotSupplier.reader;
+    reader.seekToFirstEvent();
 
-        long count = 0L;
-        while (reader.hasNext())
-        {
-            reader.next();
-            count++;
-        }
-        if (count != DATA_SET_SIZE)
-        {
-            throw new IllegalStateException("Iteration count " + count + " is not equal with data count " + DATA_SET_SIZE);
-        }
-        return count;
+    long count = 0L;
+    while (reader.hasNext()) {
+      reader.next();
+      count++;
     }
+    if (count != DATA_SET_SIZE) {
+      throw new IllegalStateException(
+          "Iteration count " + count + " is not equal with data count " + DATA_SET_SIZE);
+    }
+    return count;
+  }
 }

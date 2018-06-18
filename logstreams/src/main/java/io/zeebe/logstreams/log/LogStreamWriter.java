@@ -18,39 +18,36 @@ package io.zeebe.logstreams.log;
 import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 
-public interface LogStreamWriter
-{
+public interface LogStreamWriter {
 
-    void wrap(LogStream log);
+  void wrap(LogStream log);
 
-    LogStreamWriter positionAsKey();
+  LogStreamWriter positionAsKey();
 
-    LogStreamWriter key(long key);
+  LogStreamWriter key(long key);
 
-    LogStreamWriter sourceRecordPosition(long position);
+  LogStreamWriter sourceRecordPosition(long position);
 
-    LogStreamWriter producerId(int producerId);
+  LogStreamWriter producerId(int producerId);
 
-    LogStreamWriter metadata(DirectBuffer buffer, int offset, int length);
+  LogStreamWriter metadata(DirectBuffer buffer, int offset, int length);
 
-    LogStreamWriter metadata(DirectBuffer buffer);
+  LogStreamWriter metadata(DirectBuffer buffer);
 
-    LogStreamWriter metadataWriter(BufferWriter writer);
+  LogStreamWriter metadataWriter(BufferWriter writer);
 
-    LogStreamWriter value(DirectBuffer value, int valueOffset, int valueLength);
+  LogStreamWriter value(DirectBuffer value, int valueOffset, int valueLength);
 
-    LogStreamWriter value(DirectBuffer value);
+  LogStreamWriter value(DirectBuffer value);
 
-    LogStreamWriter valueWriter(BufferWriter writer);
+  LogStreamWriter valueWriter(BufferWriter writer);
 
-    void reset();
+  void reset();
 
-    /**
-     * Attempts to write the event to the underlying stream.
-     *
-     * @return the event position or a negative value if fails to write the
-     *         event
-     */
-    long tryWrite();
-
+  /**
+   * Attempts to write the event to the underlying stream.
+   *
+   * @return the event position or a negative value if fails to write the event
+   */
+  long tryWrite();
 }

@@ -24,33 +24,29 @@ import io.zeebe.util.allocation.BufferAllocators;
 import org.junit.Before;
 import org.junit.Test;
 
-public class PartitionBuilderTest
-{
+public class PartitionBuilderTest {
 
-    PartitionBuilder partitionBuilder;
+  PartitionBuilder partitionBuilder;
 
-    @Before
-    public void setup()
-    {
-        partitionBuilder = new PartitionBuilder();
+  @Before
+  public void setup() {
+    partitionBuilder = new PartitionBuilder();
+  }
+
+  @Test
+  public void shouldSlicePartitions() {
+    final int partitionSize = 1024;
+    final int capacity =
+        (PARTITION_COUNT * partitionSize) + (PARTITION_COUNT * PARTITION_META_DATA_LENGTH);
+    final AllocatedBuffer buffer = BufferAllocators.allocateDirect(capacity);
+
+    final LogBufferPartition[] partitions = partitionBuilder.slicePartitions(partitionSize, buffer);
+
+    assertThat(partitions.length).isEqualTo(PARTITION_COUNT);
+
+    for (LogBufferPartition logBufferPartition : partitions) {
+      assertThat(logBufferPartition.getPartitionSize()).isEqualTo(partitionSize);
+      assertThat(logBufferPartition.getDataBuffer().capacity()).isEqualTo(partitionSize);
     }
-
-    @Test
-    public void shouldSlicePartitions()
-    {
-        final int partitionSize = 1024;
-        final int capacity = (PARTITION_COUNT * partitionSize) + (PARTITION_COUNT * PARTITION_META_DATA_LENGTH);
-        final AllocatedBuffer buffer = BufferAllocators.allocateDirect(capacity);
-
-        final LogBufferPartition[] partitions = partitionBuilder.slicePartitions(partitionSize, buffer);
-
-        assertThat(partitions.length).isEqualTo(PARTITION_COUNT);
-
-        for (LogBufferPartition logBufferPartition : partitions)
-        {
-            assertThat(logBufferPartition.getPartitionSize()).isEqualTo(partitionSize);
-            assertThat(logBufferPartition.getDataBuffer().capacity()).isEqualTo(partitionSize);
-        }
-
-    }
+  }
 }

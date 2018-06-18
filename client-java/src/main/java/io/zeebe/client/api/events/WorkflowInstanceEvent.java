@@ -17,10 +17,7 @@ package io.zeebe.client.api.events;
 
 import io.zeebe.client.api.record.WorkflowInstanceRecord;
 
-public interface WorkflowInstanceEvent extends WorkflowInstanceRecord
-{
-    /**
-     * @return the current state
-     */
-    WorkflowInstanceState getState();
+public interface WorkflowInstanceEvent extends WorkflowInstanceRecord {
+  /** @return the current state */
+  WorkflowInstanceState getState();
 }

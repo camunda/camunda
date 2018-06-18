@@ -15,61 +15,52 @@
  */
 package io.zeebe.msgpack.el;
 
-public final class CompiledJsonCondition
-{
-    private final String expression;
-    private final JsonCondition condition;
-    private final boolean isValid;
-    private final String errorMessage;
+public final class CompiledJsonCondition {
+  private final String expression;
+  private final JsonCondition condition;
+  private final boolean isValid;
+  private final String errorMessage;
 
-    private CompiledJsonCondition(String expression, JsonCondition condition, boolean isValid, String errorMessage)
-    {
-        this.expression = expression;
-        this.condition = condition;
-        this.isValid = isValid;
-        this.errorMessage = errorMessage;
-    }
+  private CompiledJsonCondition(
+      String expression, JsonCondition condition, boolean isValid, String errorMessage) {
+    this.expression = expression;
+    this.condition = condition;
+    this.isValid = isValid;
+    this.errorMessage = errorMessage;
+  }
 
-    public static CompiledJsonCondition success(String expression, JsonCondition condition)
-    {
-        return new CompiledJsonCondition(expression, condition, true, null);
-    }
+  public static CompiledJsonCondition success(String expression, JsonCondition condition) {
+    return new CompiledJsonCondition(expression, condition, true, null);
+  }
 
-    public static CompiledJsonCondition fail(String expression, String errorMessage)
-    {
-        return new CompiledJsonCondition(expression, null, false, errorMessage);
-    }
+  public static CompiledJsonCondition fail(String expression, String errorMessage) {
+    return new CompiledJsonCondition(expression, null, false, errorMessage);
+  }
 
-    public String getExpression()
-    {
-        return expression;
-    }
+  public String getExpression() {
+    return expression;
+  }
 
-    public JsonCondition getCondition()
-    {
-        return condition;
-    }
+  public JsonCondition getCondition() {
+    return condition;
+  }
 
-    public boolean isValid()
-    {
-        return isValid;
-    }
+  public boolean isValid() {
+    return isValid;
+  }
 
-    public String getErrorMessage()
-    {
-        return errorMessage;
-    }
+  public String getErrorMessage() {
+    return errorMessage;
+  }
 
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("CompiledJsonCondition [expression=");
-        builder.append(expression);
-        builder.append(", errorMessage=");
-        builder.append(errorMessage);
-        builder.append("]");
-        return builder.toString();
-    }
-
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("CompiledJsonCondition [expression=");
+    builder.append(expression);
+    builder.append(", errorMessage=");
+    builder.append(errorMessage);
+    builder.append("]");
+    return builder.toString();
+  }
 }

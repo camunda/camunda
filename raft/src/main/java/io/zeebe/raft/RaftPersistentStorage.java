@@ -18,57 +18,44 @@ package io.zeebe.raft;
 import io.zeebe.transport.SocketAddress;
 
 /**
- * Raft requires some information to be stored in persistent storage and be available
- * throughout restarts of the raft node. Additionally to the required term and voteFor
- * this also keeps a list of currently known members.
+ * Raft requires some information to be stored in persistent storage and be available throughout
+ * restarts of the raft node. Additionally to the required term and voteFor this also keeps a list
+ * of currently known members.
  */
-public interface RaftPersistentStorage
-{
+public interface RaftPersistentStorage {
 
-    int getReplicationFactor();
+  int getReplicationFactor();
 
-    /**
-     * @return the current term
-     */
-    int getTerm();
+  /** @return the current term */
+  int getTerm();
 
-    /**
-     * Set the the current term.
-     *
-     * @param term the current term, which should be a positive integer
-     */
-    RaftPersistentStorage setTerm(int term);
+  /**
+   * Set the the current term.
+   *
+   * @param term the current term, which should be a positive integer
+   */
+  RaftPersistentStorage setTerm(int term);
 
-    /**
-     * @return the member which was granted the vote for the current term
-     */
-    SocketAddress getVotedFor();
+  /** @return the member which was granted the vote for the current term */
+  SocketAddress getVotedFor();
 
-    /**
-     * Set the member which was granted the vote for the current term.
-     *
-     * @param votedFor the address of the member the vote was granted or null to clear the voteFor property
-     */
-    RaftPersistentStorage setVotedFor(SocketAddress votedFor);
+  /**
+   * Set the member which was granted the vote for the current term.
+   *
+   * @param votedFor the address of the member the vote was granted or null to clear the voteFor
+   *     property
+   */
+  RaftPersistentStorage setVotedFor(SocketAddress votedFor);
 
-    /**
-     * Add a new member to the members list.
-     */
-    RaftPersistentStorage addMember(SocketAddress member);
+  /** Add a new member to the members list. */
+  RaftPersistentStorage addMember(SocketAddress member);
 
+  /** Remove a member from the members list. */
+  RaftPersistentStorage removeMember(SocketAddress member);
 
-    /**
-     * Remove a member from the members list.
-     */
-    RaftPersistentStorage removeMember(SocketAddress member);
+  /** Clears the list of members. */
+  RaftPersistentStorage clearMembers();
 
-    /**
-     * Clears the list of members.
-     */
-    RaftPersistentStorage clearMembers();
-
-    /**
-     * Blocks until the current state is persisted.
-     */
-    RaftPersistentStorage save();
+  /** Blocks until the current state is persisted. */
+  RaftPersistentStorage save();
 }

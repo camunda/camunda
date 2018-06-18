@@ -15,8 +15,7 @@
  */
 package io.zeebe.logstreams.spi;
 
-public interface ComposableSnapshotSupport extends SnapshotSupport
-{
+public interface ComposableSnapshotSupport extends SnapshotSupport {
 
-    long snapshotSize();
+  long snapshotSize();
 }

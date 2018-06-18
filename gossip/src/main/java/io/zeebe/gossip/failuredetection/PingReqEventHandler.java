@@ -25,64 +25,58 @@ import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
-public class PingReqEventHandler implements GossipEventConsumer
-{
-    private static final Logger LOG = Loggers.GOSSIP_LOGGER;
+public class PingReqEventHandler implements GossipEventConsumer {
+  private static final Logger LOG = Loggers.GOSSIP_LOGGER;
 
-    private final ActorControl actor;
+  private final ActorControl actor;
 
-    private final GossipConfiguration configuration;
-    private final MembershipList membershipList;
+  private final GossipConfiguration configuration;
+  private final MembershipList membershipList;
 
-    private final GossipEventSender gossipEventSender;
-    private final GossipEvent ackResponse;
+  private final GossipEventSender gossipEventSender;
+  private final GossipEvent ackResponse;
 
-    public PingReqEventHandler(GossipContext context, ActorControl actorControl)
-    {
-        this.actor = actorControl;
-        this.configuration = context.getConfiguration();
-        this.membershipList = context.getMembershipList();
+  public PingReqEventHandler(GossipContext context, ActorControl actorControl) {
+    this.actor = actorControl;
+    this.configuration = context.getConfiguration();
+    this.membershipList = context.getMembershipList();
 
-        this.gossipEventSender = context.getGossipEventSender();
-        this.ackResponse = context.getGossipEventFactory().createAckResponse();
+    this.gossipEventSender = context.getGossipEventSender();
+    this.ackResponse = context.getGossipEventFactory().createAckResponse();
+  }
+
+  @Override
+  public void accept(GossipEvent event, long requestId, int streamId) {
+    final Member sender = membershipList.get(event.getSender());
+    final Member probeMember = membershipList.get(event.getProbeMember());
+
+    if (probeMember != null) {
+      LOG.trace("Forward PING to '{}'", probeMember.getId());
+
+      final ActorFuture<ClientResponse> respFuture =
+          gossipEventSender.sendPing(
+              probeMember.getAddress(), configuration.getProbeTimeoutDuration());
+
+      actor.runOnCompletion(
+          respFuture,
+          (resp, failure) -> {
+            if (failure == null) {
+              LOG.trace("Received ACK from probe member '{}'", probeMember.getId());
+
+              // process response
+              final DirectBuffer responseBuffer = resp.getResponseBuffer();
+              ackResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
+
+              LOG.trace("Forward ACK to '{}'", sender.getId());
+
+              gossipEventSender.responseAck(requestId, streamId);
+            } else {
+              LOG.trace("Doesn't receive ACK from probe member '{}'", probeMember.getId());
+              // do nothing
+            }
+          });
+    } else {
+      LOG.debug("Reject PING-REQ for unknown member '{}'", event.getProbeMember());
     }
-
-    @Override
-    public void accept(GossipEvent event, long requestId, int streamId)
-    {
-        final Member sender = membershipList.get(event.getSender());
-        final Member probeMember = membershipList.get(event.getProbeMember());
-
-        if (probeMember != null)
-        {
-            LOG.trace("Forward PING to '{}'", probeMember.getId());
-
-            final ActorFuture<ClientResponse> respFuture = gossipEventSender.sendPing(probeMember.getAddress(), configuration.getProbeTimeoutDuration());
-
-            actor.runOnCompletion(respFuture, (resp, failure) ->
-            {
-                if (failure == null)
-                {
-                    LOG.trace("Received ACK from probe member '{}'", probeMember.getId());
-
-                    // process response
-                    final DirectBuffer responseBuffer = resp.getResponseBuffer();
-                    ackResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
-
-                    LOG.trace("Forward ACK to '{}'", sender.getId());
-
-                    gossipEventSender.responseAck(requestId, streamId);
-                }
-                else
-                {
-                    LOG.trace("Doesn't receive ACK from probe member '{}'", probeMember.getId());
-                    // do nothing
-                }
-            });
-        }
-        else
-        {
-            LOG.debug("Reject PING-REQ for unknown member '{}'", event.getProbeMember());
-        }
-    }
+  }
 }

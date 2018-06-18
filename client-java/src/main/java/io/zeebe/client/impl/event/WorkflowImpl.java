@@ -17,73 +17,62 @@ package io.zeebe.client.impl.event;
 
 import io.zeebe.client.api.commands.Workflow;
 
-public class WorkflowImpl implements Workflow
-{
-    private String bpmnProcessId;
-    private int version;
-    private long workflowKey;
-    private String resourceName;
+public class WorkflowImpl implements Workflow {
+  private String bpmnProcessId;
+  private int version;
+  private long workflowKey;
+  private String resourceName;
 
-    @Override
-    public String getBpmnProcessId()
-    {
-        return bpmnProcessId;
-    }
+  @Override
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
+  }
 
-    @Override
-    public int getVersion()
-    {
-        return version;
-    }
+  @Override
+  public int getVersion() {
+    return version;
+  }
 
-    public WorkflowImpl setBpmnProcessId(String bpmnProcessId)
-    {
-        this.bpmnProcessId = bpmnProcessId;
-        return this;
-    }
+  public WorkflowImpl setBpmnProcessId(String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
+    return this;
+  }
 
-    public WorkflowImpl setVersion(int version)
-    {
-        this.version = version;
-        return this;
-    }
+  public WorkflowImpl setVersion(int version) {
+    this.version = version;
+    return this;
+  }
 
-    public void setWorkflowKey(long workflowKey)
-    {
-        this.workflowKey = workflowKey;
-    }
+  public void setWorkflowKey(long workflowKey) {
+    this.workflowKey = workflowKey;
+  }
 
-    @Override
-    public long getWorkflowKey()
-    {
-        return workflowKey;
-    }
+  @Override
+  public long getWorkflowKey() {
+    return workflowKey;
+  }
 
-    @Override
-    public String getResourceName()
-    {
-        return resourceName;
-    }
+  @Override
+  public String getResourceName() {
+    return resourceName;
+  }
 
-    public void setResourceName(String resourceName)
-    {
-        this.resourceName = resourceName;
-    }
+  public void setResourceName(String resourceName) {
+    this.resourceName = resourceName;
+  }
 
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("Workflow [bpmnProcessId=");
-        builder.append(bpmnProcessId);
-        builder.append(", version=");
-        builder.append(version);
-        builder.append(", workflowKey=");
-        builder.append(workflowKey);
-        builder.append(", resourceName=");
-        builder.append(resourceName);
-        builder.append("]");
-        return builder.toString();
-    }
-
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("Workflow [bpmnProcessId=");
+    builder.append(bpmnProcessId);
+    builder.append(", version=");
+    builder.append(version);
+    builder.append(", workflowKey=");
+    builder.append(workflowKey);
+    builder.append(", resourceName=");
+    builder.append(resourceName);
+    builder.append("]");
+    return builder.toString();
+  }
 }

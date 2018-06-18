@@ -15,33 +15,29 @@
  */
 package io.zeebe.gossip;
 
-import java.util.List;
-
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.future.ActorFuture;
+import java.util.List;
 import org.agrona.DirectBuffer;
 
-public interface GossipController
-{
-    /**
-     * Join an existing cluster.
-     *
-     * @param contactPoints known contact points of the cluster
-     */
-    ActorFuture<Void> join(List<SocketAddress> contactPoints);
+public interface GossipController {
+  /**
+   * Join an existing cluster.
+   *
+   * @param contactPoints known contact points of the cluster
+   */
+  ActorFuture<Void> join(List<SocketAddress> contactPoints);
 
-    /**
-     * Leave the current cluster.
-     */
-    ActorFuture<Void> leave();
+  /** Leave the current cluster. */
+  ActorFuture<Void> leave();
 
-    void addMembershipListener(GossipMembershipListener listener);
+  void addMembershipListener(GossipMembershipListener listener);
 
-    void removeMembershipListener(GossipMembershipListener listener);
+  void removeMembershipListener(GossipMembershipListener listener);
 
-    void addCustomEventListener(DirectBuffer eventType, GossipCustomEventListener listener);
+  void addCustomEventListener(DirectBuffer eventType, GossipCustomEventListener listener);
 
-    void removeCustomEventListener(GossipCustomEventListener listener);
+  void removeCustomEventListener(GossipCustomEventListener listener);
 
-    void registerSyncRequestHandler(DirectBuffer eventType, GossipSyncRequestHandler handler);
+  void registerSyncRequestHandler(DirectBuffer eventType, GossipSyncRequestHandler handler);
 }

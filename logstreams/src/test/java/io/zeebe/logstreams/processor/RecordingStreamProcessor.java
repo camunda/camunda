@@ -17,97 +17,83 @@ package io.zeebe.logstreams.processor;
 
 import static org.mockito.Mockito.spy;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import io.zeebe.logstreams.impl.LoggedEventImpl;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
-public class RecordingStreamProcessor implements StreamProcessor
-{
-    private final List<LoggedEvent> events = new ArrayList<>();
+public class RecordingStreamProcessor implements StreamProcessor {
+  private final List<LoggedEvent> events = new ArrayList<>();
 
-    private final AtomicInteger processedEvents = new AtomicInteger(0);
+  private final AtomicInteger processedEvents = new AtomicInteger(0);
 
-    private final StringValueSnapshot snapshot = new StringValueSnapshot();
+  private final StringValueSnapshot snapshot = new StringValueSnapshot();
 
-    private StreamProcessorContext context = null;
+  private StreamProcessorContext context = null;
 
-    private EventProcessor eventProcessor = spy(new EventProcessor()
-    {
-        @Override
-        public void updateState()
-        {
-            processedEvents.incrementAndGet();
-        };
-    });
+  private EventProcessor eventProcessor =
+      spy(
+          new EventProcessor() {
+            @Override
+            public void updateState() {
+              processedEvents.incrementAndGet();
+            };
+          });
 
-    @Override
-    public void onOpen(StreamProcessorContext context)
-    {
-        this.context = context;
+  @Override
+  public void onOpen(StreamProcessorContext context) {
+    this.context = context;
+  }
+
+  @Override
+  public EventProcessor onEvent(LoggedEvent event) {
+    final LoggedEventImpl e = (LoggedEventImpl) event;
+
+    final LoggedEventImpl copy = new LoggedEventImpl();
+    copy.wrap(BufferUtil.cloneBuffer(e.getBuffer()), e.getFragmentOffset());
+
+    events.add(copy);
+
+    if (eventProcessor == null) {
+      processedEvents.incrementAndGet();
     }
 
-    @Override
-    public EventProcessor onEvent(LoggedEvent event)
-    {
-        final LoggedEventImpl e = (LoggedEventImpl) event;
+    return eventProcessor;
+  }
 
-        final LoggedEventImpl copy = new LoggedEventImpl();
-        copy.wrap(BufferUtil.cloneBuffer(e.getBuffer()), e.getFragmentOffset());
+  @Override
+  public SnapshotSupport getStateResource() {
+    return snapshot;
+  }
 
-        events.add(copy);
+  public static RecordingStreamProcessor createSpy() {
+    return spy(new RecordingStreamProcessor());
+  }
 
-        if (eventProcessor == null)
-        {
-            processedEvents.incrementAndGet();
-        }
+  public void suspend() {
+    context.suspendController();
+  }
 
-        return eventProcessor;
-    }
+  public void resume() {
+    context.getActorControl().call(context::resumeController);
+  }
 
-    @Override
-    public SnapshotSupport getStateResource()
-    {
-        return snapshot;
-    }
+  public List<LoggedEvent> getEvents() {
+    return events;
+  }
 
-    public static RecordingStreamProcessor createSpy()
-    {
-        return spy(new RecordingStreamProcessor());
-    }
+  public int getProcessedEventCount() {
+    return processedEvents.get();
+  }
 
-    public void suspend()
-    {
-        context.suspendController();
-    }
+  public StringValueSnapshot getSnapshot() {
+    return snapshot;
+  }
 
-    public void resume()
-    {
-        context.getActorControl().call(context::resumeController);
-    }
-
-    public List<LoggedEvent> getEvents()
-    {
-        return events;
-    }
-
-    public int getProcessedEventCount()
-    {
-        return processedEvents.get();
-    }
-
-    public StringValueSnapshot getSnapshot()
-    {
-        return snapshot;
-    }
-
-    public EventProcessor getEventProcessorSpy()
-    {
-        return eventProcessor;
-    }
-
+  public EventProcessor getEventProcessorSpy() {
+    return eventProcessor;
+  }
 }

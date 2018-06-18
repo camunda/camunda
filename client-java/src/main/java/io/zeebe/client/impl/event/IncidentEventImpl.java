@@ -22,43 +22,38 @@ import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.record.IncidentRecordImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 
-public class IncidentEventImpl extends IncidentRecordImpl implements IncidentEvent
-{
-    @JsonCreator
-    public IncidentEventImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper)
-    {
-        super(objectMapper, RecordType.EVENT);
-    }
+public class IncidentEventImpl extends IncidentRecordImpl implements IncidentEvent {
+  @JsonCreator
+  public IncidentEventImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper) {
+    super(objectMapper, RecordType.EVENT);
+  }
 
-    @JsonIgnore
-    @Override
-    public IncidentState getState()
-    {
-        return IncidentState.valueOf(getMetadata().getIntent());
-    }
+  @JsonIgnore
+  @Override
+  public IncidentState getState() {
+    return IncidentState.valueOf(getMetadata().getIntent());
+  }
 
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("IncidentEvent [state=");
-        builder.append(getState());
-        builder.append(", errorType=");
-        builder.append(getErrorType());
-        builder.append(", errorMessage=");
-        builder.append(getErrorMessage());
-        builder.append(", bpmnProcessId=");
-        builder.append(getBpmnProcessId());
-        builder.append(", workflowInstanceKey=");
-        builder.append(getWorkflowInstanceKey());
-        builder.append(", activityId=");
-        builder.append(getActivityId());
-        builder.append(", activityInstanceKey=");
-        builder.append(getActivityInstanceKey());
-        builder.append(", jobKey=");
-        builder.append(getJobKey());
-        builder.append("]");
-        return builder.toString();
-    }
-
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("IncidentEvent [state=");
+    builder.append(getState());
+    builder.append(", errorType=");
+    builder.append(getErrorType());
+    builder.append(", errorMessage=");
+    builder.append(getErrorMessage());
+    builder.append(", bpmnProcessId=");
+    builder.append(getBpmnProcessId());
+    builder.append(", workflowInstanceKey=");
+    builder.append(getWorkflowInstanceKey());
+    builder.append(", activityId=");
+    builder.append(getActivityId());
+    builder.append(", activityInstanceKey=");
+    builder.append(getActivityInstanceKey());
+    builder.append(", jobKey=");
+    builder.append(getJobKey());
+    builder.append("]");
+    return builder.toString();
+  }
 }

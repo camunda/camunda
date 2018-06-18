@@ -15,45 +15,41 @@
  */
 package io.zeebe.model.bpmn.impl.validation;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 import io.zeebe.model.bpmn.impl.error.ErrorCollector;
 import io.zeebe.model.bpmn.impl.error.InvalidModelException;
 import io.zeebe.model.bpmn.impl.instance.DefinitionsImpl;
 import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
+import java.util.List;
+import java.util.stream.Collectors;
 
-public class BpmnValidator
-{
-    private final ProcessValidator processValidator = new ProcessValidator();
+public class BpmnValidator {
+  private final ProcessValidator processValidator = new ProcessValidator();
 
-    public void validate(DefinitionsImpl definition)
-    {
-        final ErrorCollector validationResult = new ErrorCollector();
+  public void validate(DefinitionsImpl definition) {
+    final ErrorCollector validationResult = new ErrorCollector();
 
-        final List<ProcessImpl> executableProcesses = definition.getProcesses()
-                                                      .stream()
-                                                      .filter(ProcessImpl::isExecutable)
-                                                      .collect(Collectors.toList());
+    final List<ProcessImpl> executableProcesses =
+        definition
+            .getProcesses()
+            .stream()
+            .filter(ProcessImpl::isExecutable)
+            .collect(Collectors.toList());
 
-        if (executableProcesses.isEmpty())
-        {
-            validationResult.addError(definition, "BPMN model must contain at least one executable process.");
-        }
-
-        for (ProcessImpl executableProcess : executableProcesses)
-        {
-            processValidator.validate(validationResult, executableProcess);
-        }
-
-        reportExsitingErrorsOrWarnings(validationResult);
+    if (executableProcesses.isEmpty()) {
+      validationResult.addError(
+          definition, "BPMN model must contain at least one executable process.");
     }
 
-    public void reportExsitingErrorsOrWarnings(ErrorCollector validationResult)
-    {
-        if (validationResult.hasErrors())
-        {
-            throw new InvalidModelException(validationResult.formatErrors());
-        }
+    for (ProcessImpl executableProcess : executableProcesses) {
+      processValidator.validate(validationResult, executableProcess);
     }
+
+    reportExsitingErrorsOrWarnings(validationResult);
+  }
+
+  public void reportExsitingErrorsOrWarnings(ErrorCollector validationResult) {
+    if (validationResult.hasErrors()) {
+      throw new InvalidModelException(validationResult.formatErrors());
+    }
+  }
 }

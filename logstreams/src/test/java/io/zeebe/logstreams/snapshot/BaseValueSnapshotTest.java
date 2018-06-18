@@ -19,33 +19,31 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-
 import org.junit.Test;
 
-public class BaseValueSnapshotTest
-{
+public class BaseValueSnapshotTest {
 
-    @Test
-    public void shouldRecoverFromSnapshot() throws Exception
-    {
-        // given
-        final FooObject foo = new FooObject();
-        foo.setProp1(42);
-        foo.setProp2("bar");
+  @Test
+  public void shouldRecoverFromSnapshot() throws Exception {
+    // given
+    final FooObject foo = new FooObject();
+    foo.setProp1(42);
+    foo.setProp2("bar");
 
-        final BaseValueSnapshotSupport snapshotSupport = new BaseValueSnapshotSupport(foo);
-        final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-        snapshotSupport.writeSnapshot(outStream);
+    final BaseValueSnapshotSupport snapshotSupport = new BaseValueSnapshotSupport(foo);
+    final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+    snapshotSupport.writeSnapshot(outStream);
 
-        final FooObject deserializedFoo = new FooObject();
-        final BaseValueSnapshotSupport deserializingSnapshotSupport = new BaseValueSnapshotSupport(deserializedFoo);
-        final ByteArrayInputStream inStream = new ByteArrayInputStream(outStream.toByteArray());
+    final FooObject deserializedFoo = new FooObject();
+    final BaseValueSnapshotSupport deserializingSnapshotSupport =
+        new BaseValueSnapshotSupport(deserializedFoo);
+    final ByteArrayInputStream inStream = new ByteArrayInputStream(outStream.toByteArray());
 
-        // when
-        deserializingSnapshotSupport.recoverFromSnapshot(inStream);
+    // when
+    deserializingSnapshotSupport.recoverFromSnapshot(inStream);
 
-        // then
-        assertThat(deserializedFoo.getProp1()).isEqualTo(42);
-        assertThat(deserializedFoo.getProp2()).isEqualTo("bar");
-    }
+    // then
+    assertThat(deserializedFoo.getProp1()).isEqualTo(42);
+    assertThat(deserializedFoo.getProp2()).isEqualTo("bar");
+  }
 }

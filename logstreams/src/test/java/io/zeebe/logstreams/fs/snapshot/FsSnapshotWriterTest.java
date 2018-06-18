@@ -20,13 +20,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
-import java.io.File;
-import java.io.IOException;
-import java.security.MessageDigest;
-
 import io.zeebe.logstreams.impl.snapshot.fs.FsReadableSnapshot;
 import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotStorageConfiguration;
 import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotWriter;
+import java.io.File;
+import java.io.IOException;
+import java.security.MessageDigest;
 import org.agrona.BitUtil;
 import org.junit.Before;
 import org.junit.Rule;
@@ -34,132 +33,128 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
-public class FsSnapshotWriterTest
-{
-    protected static final byte[] SNAPSHOT_DATA = getBytes("snapshot");
+public class FsSnapshotWriterTest {
+  protected static final byte[] SNAPSHOT_DATA = getBytes("snapshot");
 
-    @Rule
-    public TemporaryFolder tempFolder = new TemporaryFolder();
+  @Rule public TemporaryFolder tempFolder = new TemporaryFolder();
 
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
+  @Rule public ExpectedException thrown = ExpectedException.none();
 
-    private FsSnapshotStorageConfiguration config;
+  private FsSnapshotStorageConfiguration config;
 
-    private File snapshotFile;
-    private File checksumFile;
+  private File snapshotFile;
+  private File checksumFile;
 
-    private FsReadableSnapshot lastSnapshot;
+  private FsReadableSnapshot lastSnapshot;
 
-    @Before
-    public void init() throws IOException
-    {
-        final String snapshotRootPath = tempFolder.getRoot().getAbsolutePath();
+  @Before
+  public void init() throws IOException {
+    final String snapshotRootPath = tempFolder.getRoot().getAbsolutePath();
 
-        config = new FsSnapshotStorageConfiguration();
-        config.setRootPath(snapshotRootPath);
+    config = new FsSnapshotStorageConfiguration();
+    config.setRootPath(snapshotRootPath);
 
-        snapshotFile = tempFolder.newFile("snapshot.snapshot");
-        checksumFile = new File(tempFolder.getRoot(), "checksum.sha1");
+    snapshotFile = tempFolder.newFile("snapshot.snapshot");
+    checksumFile = new File(tempFolder.getRoot(), "checksum.sha1");
 
-        lastSnapshot = mock(FsReadableSnapshot.class);
-    }
+    lastSnapshot = mock(FsReadableSnapshot.class);
+  }
 
-    @Test
-    public void shouldWriteSnapshotOnCommit() throws Exception
-    {
-        final FsSnapshotWriter fsSnapshotWriter = new FsSnapshotWriter(config, snapshotFile, checksumFile, null);
-        fsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
+  @Test
+  public void shouldWriteSnapshotOnCommit() throws Exception {
+    final FsSnapshotWriter fsSnapshotWriter =
+        new FsSnapshotWriter(config, snapshotFile, checksumFile, null);
+    fsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
 
-        fsSnapshotWriter.commit();
+    fsSnapshotWriter.commit();
 
-        assertThat(snapshotFile).hasBinaryContent(SNAPSHOT_DATA);
-    }
+    assertThat(snapshotFile).hasBinaryContent(SNAPSHOT_DATA);
+  }
 
-    @Test
-    public void shouldWriteChecksumOnCommit() throws Exception
-    {
-        final FsSnapshotWriter fsSnapshotWriter = new FsSnapshotWriter(config, snapshotFile, checksumFile, null);
-        fsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
+  @Test
+  public void shouldWriteChecksumOnCommit() throws Exception {
+    final FsSnapshotWriter fsSnapshotWriter =
+        new FsSnapshotWriter(config, snapshotFile, checksumFile, null);
+    fsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
 
-        fsSnapshotWriter.commit();
+    fsSnapshotWriter.commit();
 
-        final byte[] checksum = MessageDigest.getInstance("SHA1").digest(SNAPSHOT_DATA);
-        final String hexChecksum = BitUtil.toHex(checksum);
+    final byte[] checksum = MessageDigest.getInstance("SHA1").digest(SNAPSHOT_DATA);
+    final String hexChecksum = BitUtil.toHex(checksum);
 
-        assertThat(checksumFile).hasContent(config.checksumContent(hexChecksum, snapshotFile.getName()));
-    }
+    assertThat(checksumFile)
+        .hasContent(config.checksumContent(hexChecksum, snapshotFile.getName()));
+  }
 
-    @Test
-    public void shouldDeleteSnapshotOnAbort() throws Exception
-    {
-        final FsSnapshotWriter fsSnapshotWriter = new FsSnapshotWriter(config, snapshotFile, checksumFile, null);
-        fsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
+  @Test
+  public void shouldDeleteSnapshotOnAbort() throws Exception {
+    final FsSnapshotWriter fsSnapshotWriter =
+        new FsSnapshotWriter(config, snapshotFile, checksumFile, null);
+    fsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
 
-        fsSnapshotWriter.abort();
+    fsSnapshotWriter.abort();
 
-        assertThat(snapshotFile).doesNotExist();
-        assertThat(checksumFile).doesNotExist();
-    }
+    assertThat(snapshotFile).doesNotExist();
+    assertThat(checksumFile).doesNotExist();
+  }
 
-    @Test
-    public void shouldDeleteLastSnapshotOnCommit() throws Exception
-    {
-        final FsSnapshotWriter fsSnapshotWriter = new FsSnapshotWriter(config, snapshotFile, checksumFile, lastSnapshot);
-        fsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
+  @Test
+  public void shouldDeleteLastSnapshotOnCommit() throws Exception {
+    final FsSnapshotWriter fsSnapshotWriter =
+        new FsSnapshotWriter(config, snapshotFile, checksumFile, lastSnapshot);
+    fsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
 
-        fsSnapshotWriter.commit();
+    fsSnapshotWriter.commit();
 
-        verify(lastSnapshot).delete();
-    }
+    verify(lastSnapshot).delete();
+  }
 
-    @Test
-    public void shouldNotDeleteLastSnapshotOnAbort() throws Exception
-    {
-        final FsSnapshotWriter fsSnapshotWriter = new FsSnapshotWriter(config, snapshotFile, checksumFile, lastSnapshot);
-        fsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
+  @Test
+  public void shouldNotDeleteLastSnapshotOnAbort() throws Exception {
+    final FsSnapshotWriter fsSnapshotWriter =
+        new FsSnapshotWriter(config, snapshotFile, checksumFile, lastSnapshot);
+    fsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
 
-        fsSnapshotWriter.abort();
+    fsSnapshotWriter.abort();
 
-        verify(lastSnapshot, never()).delete();
-    }
+    verify(lastSnapshot, never()).delete();
+  }
 
+  @Test
+  public void shouldAbortIfCannotValidateChecksum() throws Exception {
+    // given
+    final FsSnapshotWriter fsSnapshotWriter =
+        new FsSnapshotWriter(config, snapshotFile, checksumFile, lastSnapshot);
+    final byte[] fakeChecksum = new byte[] {1};
 
-    @Test
-    public void shouldAbortIfCannotValidateChecksum() throws Exception
-    {
-        // given
-        final FsSnapshotWriter fsSnapshotWriter = new FsSnapshotWriter(config, snapshotFile, checksumFile, lastSnapshot);
-        final byte[] fakeChecksum = new byte[]{ 1 };
+    // when
+    fsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
 
-        // when
-        fsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
+    // then
+    assertThatThrownBy(() -> fsSnapshotWriter.validateAndCommit(fakeChecksum))
+        .isInstanceOf(RuntimeException.class);
 
-        // then
-        assertThatThrownBy(() -> fsSnapshotWriter.validateAndCommit(fakeChecksum))
-            .isInstanceOf(RuntimeException.class);
+    // assert aborted
+    assertThat(snapshotFile).doesNotExist();
+    assertThat(checksumFile).doesNotExist();
+    verify(lastSnapshot, never()).delete();
+  }
 
-        // assert aborted
-        assertThat(snapshotFile).doesNotExist();
-        assertThat(checksumFile).doesNotExist();
-        verify(lastSnapshot, never()).delete();
-    }
+  @Test
+  public void shouldCommitIfChecksumMatchesExpected() throws Exception {
+    // given
+    final FsSnapshotWriter fsSnapshotWriter =
+        new FsSnapshotWriter(config, snapshotFile, checksumFile, lastSnapshot);
+    final MessageDigest digest = MessageDigest.getInstance(config.getChecksumAlgorithm());
+    final byte[] checksum = digest.digest(SNAPSHOT_DATA);
 
-    @Test
-    public void shouldCommitIfChecksumMatchesExpected() throws Exception
-    {
-        // given
-        final FsSnapshotWriter fsSnapshotWriter = new FsSnapshotWriter(config, snapshotFile, checksumFile, lastSnapshot);
-        final MessageDigest digest = MessageDigest.getInstance(config.getChecksumAlgorithm());
-        final byte[] checksum = digest.digest(SNAPSHOT_DATA);
+    // when
+    fsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
+    fsSnapshotWriter.validateAndCommit(checksum);
 
-        // when
-        fsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
-        fsSnapshotWriter.validateAndCommit(checksum);
-
-        // then
-        verify(lastSnapshot).delete();
-        assertThat(snapshotFile).exists();
-        assertThat(checksumFile).exists();
-    }
+    // then
+    verify(lastSnapshot).delete();
+    assertThat(snapshotFile).exists();
+    assertThat(checksumFile).exists();
+  }
 }

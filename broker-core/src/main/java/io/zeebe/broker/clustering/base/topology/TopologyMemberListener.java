@@ -17,9 +17,8 @@
  */
 package io.zeebe.broker.clustering.base.topology;
 
-public interface TopologyMemberListener
-{
-    void onMemberAdded(NodeInfo memberInfo, Topology topology);
+public interface TopologyMemberListener {
+  void onMemberAdded(NodeInfo memberInfo, Topology topology);
 
-    void onMemberRemoved(NodeInfo memberInfo, Topology topology);
+  void onMemberRemoved(NodeInfo memberInfo, Topology topology);
 }

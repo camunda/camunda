@@ -15,18 +15,14 @@
  */
 package io.zeebe.client.api.commands;
 
-public interface WorkflowRequestStep1 extends FinalCommandStep<Workflows>
-{
+public interface WorkflowRequestStep1 extends FinalCommandStep<Workflows> {
 
-    /**
-     * Filter the workflows by the given BPMN process id . This is the static id
-     * of the process in the BPMN XML (i.e. "&#60;bpmn:process
-     * id='my-workflow'&#62;").
-     *
-     * @param bpmnProcessId
-     *            the BPMN process id of the workflows
-     * @return the builder for this request
-     */
-    WorkflowRequestStep1 bpmnProcessId(String bpmnProcessId);
-
+  /**
+   * Filter the workflows by the given BPMN process id . This is the static id of the process in the
+   * BPMN XML (i.e. "&#60;bpmn:process id='my-workflow'&#62;").
+   *
+   * @param bpmnProcessId the BPMN process id of the workflows
+   * @return the builder for this request
+   */
+  WorkflowRequestStep1 bpmnProcessId(String bpmnProcessId);
 }

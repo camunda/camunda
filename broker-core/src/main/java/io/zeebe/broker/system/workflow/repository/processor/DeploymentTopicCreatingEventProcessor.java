@@ -23,18 +23,15 @@ import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex;
 import io.zeebe.util.buffer.BufferUtil;
 
-public class DeploymentTopicCreatingEventProcessor implements TypedRecordProcessor<TopicRecord>
-{
-    private WorkflowRepositoryIndex index;
+public class DeploymentTopicCreatingEventProcessor implements TypedRecordProcessor<TopicRecord> {
+  private WorkflowRepositoryIndex index;
 
-    public DeploymentTopicCreatingEventProcessor(WorkflowRepositoryIndex index)
-    {
-        this.index = index;
-    }
+  public DeploymentTopicCreatingEventProcessor(WorkflowRepositoryIndex index) {
+    this.index = index;
+  }
 
-    @Override
-    public void updateState(TypedRecord<TopicRecord> event)
-    {
-        index.addTopic(BufferUtil.bufferAsString(event.getValue().getName()));
-    }
+  @Override
+  public void updateState(TypedRecord<TopicRecord> event) {
+    index.addTopic(BufferUtil.bufferAsString(event.getValue().getName()));
+  }
 }

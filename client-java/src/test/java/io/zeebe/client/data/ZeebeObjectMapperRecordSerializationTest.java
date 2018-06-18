@@ -17,11 +17,6 @@ package io.zeebe.client.data;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.*;
-import java.util.*;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.commands.*;
@@ -29,6 +24,10 @@ import io.zeebe.client.api.events.*;
 import io.zeebe.client.api.record.Record;
 import io.zeebe.client.api.record.ZeebeObjectMapper;
 import io.zeebe.test.util.AutoCloseableRule;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.*;
+import java.util.*;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -36,79 +35,70 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class ZeebeObjectMapperRecordSerializationTest
-{
-    private static final String DIRECTORY = "/json/";
+public class ZeebeObjectMapperRecordSerializationTest {
+  private static final String DIRECTORY = "/json/";
 
-    @Parameters(name = "{index}: {0}")
-    public static Collection<Object[]> data()
-    {
-        return Arrays.asList(new Object[][]
-        {
-                { "JobEvent.json", JobEvent.class },
-                { "JobCommand.json", JobCommand.class },
-                { "WorkflowInstanceEvent.json", WorkflowInstanceEvent.class },
-                { "WorkflowInstanceCommand.json", WorkflowInstanceCommand.class },
-                { "DeploymentEvent.json", DeploymentEvent.class },
-                { "DeploymentCommand.json", DeploymentCommand.class },
-                { "DeploymentCommandRejection.json", DeploymentCommand.class },
-                { "IncidentEvent.json", IncidentEvent.class },
-                { "IncidentCommand.json", IncidentCommand.class },
-                { "TopicEvent.json", TopicEvent.class },
-                { "TopicCommand.json", TopicCommand.class },
-                { "RaftEvent.json", RaftEvent.class }
+  @Parameters(name = "{index}: {0}")
+  public static Collection<Object[]> data() {
+    return Arrays.asList(
+        new Object[][] {
+          {"JobEvent.json", JobEvent.class},
+          {"JobCommand.json", JobCommand.class},
+          {"WorkflowInstanceEvent.json", WorkflowInstanceEvent.class},
+          {"WorkflowInstanceCommand.json", WorkflowInstanceCommand.class},
+          {"DeploymentEvent.json", DeploymentEvent.class},
+          {"DeploymentCommand.json", DeploymentCommand.class},
+          {"DeploymentCommandRejection.json", DeploymentCommand.class},
+          {"IncidentEvent.json", IncidentEvent.class},
+          {"IncidentCommand.json", IncidentCommand.class},
+          {"TopicEvent.json", TopicEvent.class},
+          {"TopicCommand.json", TopicCommand.class},
+          {"RaftEvent.json", RaftEvent.class}
         });
-    }
+  }
 
-    @Parameter(0)
-    public String recordFile;
+  @Parameter(0)
+  public String recordFile;
 
-    @Parameter(1)
-    public Class<? extends Record> recordClass;
+  @Parameter(1)
+  public Class<? extends Record> recordClass;
 
-    @Rule
-    public AutoCloseableRule closeables = new AutoCloseableRule();
+  @Rule public AutoCloseableRule closeables = new AutoCloseableRule();
 
-    private ZeebeObjectMapper objectMapper;
-    private ObjectMapper testObjectMapper = new ObjectMapper();
+  private ZeebeObjectMapper objectMapper;
+  private ObjectMapper testObjectMapper = new ObjectMapper();
 
-    @Before
-    public void init()
-    {
-        final ZeebeClient client = ZeebeClient.newClient();
-        closeables.manage(client);
+  @Before
+  public void init() {
+    final ZeebeClient client = ZeebeClient.newClient();
+    closeables.manage(client);
 
-        this.objectMapper = client.objectMapper();
-    }
+    this.objectMapper = client.objectMapper();
+  }
 
-    @Test
-    public void shouldSerializeAndDeserializeRecord() throws Exception
-    {
-        final String json = readFileContent(DIRECTORY + recordFile);
+  @Test
+  public void shouldSerializeAndDeserializeRecord() throws Exception {
+    final String json = readFileContent(DIRECTORY + recordFile);
 
-        final Record deserialiedRecord = objectMapper.fromJson(json, recordClass);
-        final String serializedRecord = objectMapper.toJson(deserialiedRecord);
+    final Record deserialiedRecord = objectMapper.fromJson(json, recordClass);
+    final String serializedRecord = objectMapper.toJson(deserialiedRecord);
 
-        assertThat(readAsMap(serializedRecord)).containsOnly(asEntries(readAsMap(json)));
-    }
+    assertThat(readAsMap(serializedRecord)).containsOnly(asEntries(readAsMap(json)));
+  }
 
-    private String readFileContent(String file) throws IOException, URISyntaxException
-    {
-        final Path path = Paths.get(getClass().getResource(file).toURI());
-        final byte[] bytes = Files.readAllBytes(path);
-        return new String(bytes);
-    }
+  private String readFileContent(String file) throws IOException, URISyntaxException {
+    final Path path = Paths.get(getClass().getResource(file).toURI());
+    final byte[] bytes = Files.readAllBytes(path);
+    return new String(bytes);
+  }
 
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> readAsMap(String json) throws Exception
-    {
-        return testObjectMapper.readValue(json, Map.class);
-    }
+  @SuppressWarnings("unchecked")
+  private Map<String, Object> readAsMap(String json) throws Exception {
+    return testObjectMapper.readValue(json, Map.class);
+  }
 
-    @SuppressWarnings("unchecked")
-    private Map.Entry<String, Object>[] asEntries(Map<String, Object> map)
-    {
-        return map.entrySet().toArray(new Map.Entry[map.size()]);
-    }
-
+  @SuppressWarnings("unchecked")
+  private Map.Entry<String, Object>[] asEntries(Map<String, Object> map) {
+    return map.entrySet().toArray(new Map.Entry[map.size()]);
+  }
 }

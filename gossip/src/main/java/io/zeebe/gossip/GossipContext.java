@@ -20,53 +20,45 @@ import io.zeebe.gossip.membership.MembershipList;
 import io.zeebe.gossip.protocol.GossipEventFactory;
 import io.zeebe.gossip.protocol.GossipEventSender;
 
-public class GossipContext
-{
-    private final GossipConfiguration configuration;
+public class GossipContext {
+  private final GossipConfiguration configuration;
 
-    private final MembershipList memberList;
-    private final DisseminationComponent disseminationComponent;
+  private final MembershipList memberList;
+  private final DisseminationComponent disseminationComponent;
 
-    private final GossipEventFactory gossipEventFactory;
-    private final GossipEventSender gossipEventSender;
+  private final GossipEventFactory gossipEventFactory;
+  private final GossipEventSender gossipEventSender;
 
-    public GossipContext(
-            GossipConfiguration configuration,
-            MembershipList memberList,
-            DisseminationComponent disseminationComponent,
-            GossipEventSender gossipEventSender,
-            GossipEventFactory gossipEventFactory)
-    {
-        this.configuration = configuration;
-        this.memberList = memberList;
-        this.disseminationComponent = disseminationComponent;
-        this.gossipEventSender = gossipEventSender;
-        this.gossipEventFactory = gossipEventFactory;
-    }
+  public GossipContext(
+      GossipConfiguration configuration,
+      MembershipList memberList,
+      DisseminationComponent disseminationComponent,
+      GossipEventSender gossipEventSender,
+      GossipEventFactory gossipEventFactory) {
+    this.configuration = configuration;
+    this.memberList = memberList;
+    this.disseminationComponent = disseminationComponent;
+    this.gossipEventSender = gossipEventSender;
+    this.gossipEventFactory = gossipEventFactory;
+  }
 
-    public GossipConfiguration getConfiguration()
-    {
-        return configuration;
-    }
+  public GossipConfiguration getConfiguration() {
+    return configuration;
+  }
 
-    public MembershipList getMembershipList()
-    {
-        return memberList;
-    }
+  public MembershipList getMembershipList() {
+    return memberList;
+  }
 
-    public DisseminationComponent getDisseminationComponent()
-    {
-        return disseminationComponent;
-    }
+  public DisseminationComponent getDisseminationComponent() {
+    return disseminationComponent;
+  }
 
-    public GossipEventSender getGossipEventSender()
-    {
-        return gossipEventSender;
-    }
+  public GossipEventSender getGossipEventSender() {
+    return gossipEventSender;
+  }
 
-    public GossipEventFactory getGossipEventFactory()
-    {
-        return gossipEventFactory;
-    }
-
+  public GossipEventFactory getGossipEventFactory() {
+    return gossipEventFactory;
+  }
 }

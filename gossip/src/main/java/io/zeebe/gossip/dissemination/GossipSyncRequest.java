@@ -21,46 +21,40 @@ import io.zeebe.util.collection.ReusableObjectList;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class GossipSyncRequest implements Reusable
-{
-    private final ReusableObjectList<GossipSyncResponsePart> parts = new ReusableObjectList<>(() -> new GossipSyncResponsePart());
+public class GossipSyncRequest implements Reusable {
+  private final ReusableObjectList<GossipSyncResponsePart> parts =
+      new ReusableObjectList<>(() -> new GossipSyncResponsePart());
 
-    private final DirectBuffer type = new UnsafeBuffer(0, 0);
+  private final DirectBuffer type = new UnsafeBuffer(0, 0);
 
-    public void wrap(DirectBuffer type)
-    {
-        this.type.wrap(type);
-        this.parts.clear();
-    }
+  public void wrap(DirectBuffer type) {
+    this.type.wrap(type);
+    this.parts.clear();
+  }
 
-    public GossipSyncRequest addPayload(SocketAddress sender, DirectBuffer payload, int offset, int length)
-    {
-        parts.add().wrap(sender, payload, offset, length);
+  public GossipSyncRequest addPayload(
+      SocketAddress sender, DirectBuffer payload, int offset, int length) {
+    parts.add().wrap(sender, payload, offset, length);
 
-        return this;
-    }
+    return this;
+  }
 
-    public GossipSyncRequest addPayload(SocketAddress sender, DirectBuffer payload)
-    {
-        parts.add().wrap(sender, payload);
+  public GossipSyncRequest addPayload(SocketAddress sender, DirectBuffer payload) {
+    parts.add().wrap(sender, payload);
 
-        return this;
-    }
+    return this;
+  }
 
-    public DirectBuffer getType()
-    {
-        return type;
-    }
+  public DirectBuffer getType() {
+    return type;
+  }
 
-    @Override
-    public void reset()
-    {
-        type.wrap(0, 0);
-    }
+  @Override
+  public void reset() {
+    type.wrap(0, 0);
+  }
 
-    public Iterable<GossipSyncResponsePart> getResponse()
-    {
-        return parts;
-    }
-
+  public Iterable<GossipSyncResponsePart> getResponse() {
+    return parts;
+  }
 }

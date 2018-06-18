@@ -15,7 +15,4 @@
  */
 package io.zeebe.model.bpmn.instance;
 
-public interface EndEvent extends FlowNode
-{
-
-}
+public interface EndEvent extends FlowNode {}

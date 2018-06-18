@@ -20,7 +20,6 @@ package io.zeebe.broker.logstreams.processor;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.util.CloseableSilently;
 
-public interface TypedStreamReader extends CloseableSilently
-{
-    <T extends UnpackedObject> TypedRecord<T> readValue(long position, Class<T> eventClass);
+public interface TypedStreamReader extends CloseableSilently {
+  <T extends UnpackedObject> TypedRecord<T> readValue(long position, Class<T> eventClass);
 }

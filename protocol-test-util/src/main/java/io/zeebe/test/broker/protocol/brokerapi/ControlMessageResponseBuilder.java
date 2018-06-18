@@ -15,53 +15,45 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi;
 
+import io.zeebe.test.broker.protocol.MsgPackHelper;
+import io.zeebe.test.util.collection.MapFactoryBuilder;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.test.util.collection.MapFactoryBuilder;
+public class ControlMessageResponseBuilder {
 
-public class ControlMessageResponseBuilder
-{
+  protected final Consumer<MessageBuilder<ControlMessageRequest>> registrationFunction;
+  protected final ControlMessageResponseWriter responseWriter;
 
-    protected final Consumer<MessageBuilder<ControlMessageRequest>> registrationFunction;
-    protected final ControlMessageResponseWriter responseWriter;
+  public ControlMessageResponseBuilder(
+      Consumer<MessageBuilder<ControlMessageRequest>> registrationFunction,
+      MsgPackHelper msgPackConverter) {
+    this.registrationFunction = registrationFunction;
+    this.responseWriter = new ControlMessageResponseWriter(msgPackConverter);
+  }
 
-    public ControlMessageResponseBuilder(
-            Consumer<MessageBuilder<ControlMessageRequest>> registrationFunction,
-            MsgPackHelper msgPackConverter)
-    {
-        this.registrationFunction = registrationFunction;
-        this.responseWriter = new ControlMessageResponseWriter(msgPackConverter);
-    }
+  public ControlMessageResponseBuilder respondWith() {
+    // syntactic sugar
+    return this;
+  }
 
-    public ControlMessageResponseBuilder respondWith()
-    {
-        // syntactic sugar
-        return this;
-    }
+  public ControlMessageResponseBuilder data(Map<String, Object> map) {
+    responseWriter.setDataFunction((re) -> map);
+    return this;
+  }
 
-    public ControlMessageResponseBuilder data(Map<String, Object> map)
-    {
-        responseWriter.setDataFunction((re) -> map);
-        return this;
-    }
+  public MapFactoryBuilder<ControlMessageRequest, ControlMessageResponseBuilder> data() {
+    return new MapFactoryBuilder<>(this, responseWriter::setDataFunction);
+  }
 
-    public MapFactoryBuilder<ControlMessageRequest, ControlMessageResponseBuilder> data()
-    {
-        return new MapFactoryBuilder<>(this, responseWriter::setDataFunction);
-    }
+  public void register() {
+    registrationFunction.accept(responseWriter);
+  }
 
-    public void register()
-    {
-        registrationFunction.accept(responseWriter);
-    }
-
-    public ResponseController registerControlled()
-    {
-        final ResponseController controller = new ResponseController();
-        responseWriter.beforeResponse(controller::waitForNextJoin);
-        register();
-        return controller;
-    }
+  public ResponseController registerControlled() {
+    final ResponseController controller = new ResponseController();
+    responseWriter.beforeResponse(controller::waitForNextJoin);
+    register();
+    return controller;
+  }
 }

@@ -17,32 +17,29 @@ package io.zeebe.util.sched;
 
 import io.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
 
-/**
- * Thread group for tasks that are blocking-I/O bound.
- */
-public class IoBoundThreadGroup extends ActorThreadGroup
-{
-    private IoScheduler ioScheduler;
+/** Thread group for tasks that are blocking-I/O bound. */
+public class IoBoundThreadGroup extends ActorThreadGroup {
+  private IoScheduler ioScheduler;
 
-    public IoBoundThreadGroup(ActorSchedulerBuilder builder)
-    {
-        super(String.format("%s-%s", builder.getSchedulerName(), "zb-io-actors"),
-            builder.getIoBoundActorThreadCount(), builder.getIoDeviceConcurrency().length, builder);
-    }
+  public IoBoundThreadGroup(ActorSchedulerBuilder builder) {
+    super(
+        String.format("%s-%s", builder.getSchedulerName(), "zb-io-actors"),
+        builder.getIoBoundActorThreadCount(),
+        builder.getIoDeviceConcurrency().length,
+        builder);
+  }
 
-    @Override
-    protected TaskScheduler createTaskScheduler(MultiLevelWorkstealingGroup tasks, ActorSchedulerBuilder builder)
-    {
-        if (ioScheduler == null)
-        {
-            ioScheduler = new IoScheduler(tasks::getNextTask, builder.getIoDeviceConcurrency());
-        }
-        return ioScheduler;
+  @Override
+  protected TaskScheduler createTaskScheduler(
+      MultiLevelWorkstealingGroup tasks, ActorSchedulerBuilder builder) {
+    if (ioScheduler == null) {
+      ioScheduler = new IoScheduler(tasks::getNextTask, builder.getIoDeviceConcurrency());
     }
+    return ioScheduler;
+  }
 
-    @Override
-    protected int getLevel(ActorTask actorTask)
-    {
-        return actorTask.getDeviceId();
-    }
+  @Override
+  protected int getLevel(ActorTask actorTask) {
+    return actorTask.getDeviceId();
+  }
 }

@@ -15,6 +15,10 @@
  */
 package io.zeebe.dispatcher;
 
+import static io.zeebe.dispatcher.impl.PositionUtil.position;
+import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_COUNT;
+import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.requiredCapacity;
+
 import io.zeebe.dispatcher.impl.log.LogBuffer;
 import io.zeebe.dispatcher.impl.log.LogBufferAppender;
 import io.zeebe.util.ByteValue;
@@ -23,182 +27,158 @@ import io.zeebe.util.allocation.AllocatedBuffer;
 import io.zeebe.util.allocation.BufferAllocators;
 import io.zeebe.util.allocation.ExternallyAllocatedBuffer;
 import io.zeebe.util.sched.ActorScheduler;
+import java.io.File;
+import java.nio.ByteBuffer;
+import java.util.Objects;
 import org.agrona.BitUtil;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.status.CountersManager;
 
-import java.io.File;
-import java.nio.ByteBuffer;
-import java.util.Objects;
+/** Builder for a {@link Dispatcher} */
+public class DispatcherBuilder {
+  protected boolean allocateInMemory = true;
 
-import static io.zeebe.dispatcher.impl.PositionUtil.position;
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_COUNT;
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.requiredCapacity;
+  protected ByteBuffer rawBuffer;
 
-/**
- * Builder for a {@link Dispatcher}
- *
- */
-public class DispatcherBuilder
-{
-    protected boolean allocateInMemory = true;
+  protected String bufferFileName;
 
-    protected ByteBuffer rawBuffer;
+  protected int bufferSize = 1024 * 1024 * 1024; // default buffer size is 1 Gig
 
-    protected String bufferFileName;
+  protected int frameMaxLength;
 
-    protected int bufferSize = 1024 * 1024 * 1024; // default buffer size is 1 Gig
+  protected CountersManager countersManager;
 
-    protected int frameMaxLength;
+  protected String dispatcherName;
 
-    protected CountersManager countersManager;
+  protected AtomicBuffer countersBuffer;
 
-    protected String dispatcherName;
+  protected ActorScheduler actorScheduler;
 
-    protected AtomicBuffer countersBuffer;
+  protected String[] subscriptionNames;
 
-    protected ActorScheduler actorScheduler;
+  protected int mode = Dispatcher.MODE_PUB_SUB;
 
-    protected String[] subscriptionNames;
+  protected int initialPartitionId = 0;
 
-    protected int mode = Dispatcher.MODE_PUB_SUB;
+  public DispatcherBuilder(final String dispatcherName) {
+    this.dispatcherName = dispatcherName;
+  }
 
-    protected int initialPartitionId = 0;
+  public DispatcherBuilder name(final String name) {
+    this.dispatcherName = name;
+    return this;
+  }
 
-    public DispatcherBuilder(final String dispatcherName)
-    {
-        this.dispatcherName = dispatcherName;
-    }
+  /**
+   * Provide a raw buffer to place the dispatcher's logbuffer in. The dispatcher will place the log
+   * buffer at the beginning of the provided buffer, disregarding position and it's limit. The
+   * provided buffer must be large enough to accommodate the dispatcher
+   *
+   * @see DispatcherBuilder#allocateInFile(String)
+   */
+  public DispatcherBuilder allocateInBuffer(final ByteBuffer rawBuffer) {
+    this.allocateInMemory = false;
+    this.rawBuffer = rawBuffer;
+    return this;
+  }
 
-    public DispatcherBuilder name(final String name)
-    {
-        this.dispatcherName = name;
-        return this;
-    }
+  /**
+   * Allocate the dispatcher's buffer in the provided file by mapping it into memory. The file must
+   * exist. The dispatcher will place it's buffer at the beginning of the file.
+   */
+  public DispatcherBuilder allocateInFile(final String fileName) {
+    this.allocateInMemory = false;
+    this.bufferFileName = fileName;
+    return this;
+  }
 
-    /**
-     * Provide a raw buffer to place the dispatcher's logbuffer in.
-     * The dispatcher will place the log buffer at the beginning of the provided buffer, disregarding position and it's limit.
-     * The provided buffer must be large enough to accommodate the dispatcher
-     *
-     * @see DispatcherBuilder#allocateInFile(String)
-     */
-    public DispatcherBuilder allocateInBuffer(final ByteBuffer rawBuffer)
-    {
-        this.allocateInMemory = false;
-        this.rawBuffer = rawBuffer;
-        return this;
-    }
+  /**
+   * The number of bytes the buffer is be able to contain. Represents the size of the data section.
+   * Additional space will be allocated for the meta-data sections
+   */
+  public DispatcherBuilder bufferSize(final ByteValue byteValue) {
+    this.bufferSize = (int) byteValue.toBytes();
+    return this;
+  }
 
-    /**
-     * Allocate the dispatcher's buffer in the provided file by mapping it into memory. The file must exist.
-     * The dispatcher will place it's buffer at the beginning of the file.
-     */
-    public DispatcherBuilder allocateInFile(final String fileName)
-    {
-        this.allocateInMemory = false;
-        this.bufferFileName = fileName;
-        return this;
-    }
+  public DispatcherBuilder actorScheduler(ActorScheduler actorScheduler) {
+    this.actorScheduler = actorScheduler;
+    return this;
+  }
 
-    /**
-     * The number of bytes the buffer is be able to contain. Represents the size of the data section.
-     * Additional space will be allocated for the meta-data sections
-     */
-    public DispatcherBuilder bufferSize(final ByteValue byteValue)
-    {
-        this.bufferSize = (int) byteValue.toBytes();
-        return this;
-    }
+  /** The max length of the data section of a frame */
+  public DispatcherBuilder frameMaxLength(final int frameMaxLength) {
+    this.frameMaxLength = frameMaxLength;
+    return this;
+  }
 
-    public DispatcherBuilder actorScheduler(ActorScheduler actorScheduler)
-    {
-        this.actorScheduler = actorScheduler;
-        return this;
-    }
+  public DispatcherBuilder initialPartitionId(int initialPartitionId) {
+    EnsureUtil.ensureGreaterThanOrEqual("initial partition id", initialPartitionId, 0);
 
-    /**
-     * The max length of the data section of a frame
-     */
-    public DispatcherBuilder frameMaxLength(final int frameMaxLength)
-    {
-        this.frameMaxLength = frameMaxLength;
-        return this;
-    }
+    this.initialPartitionId = initialPartitionId;
+    return this;
+  }
 
-    public DispatcherBuilder initialPartitionId(int initialPartitionId)
-    {
-        EnsureUtil.ensureGreaterThanOrEqual("initial partition id", initialPartitionId, 0);
+  /**
+   * Predefined subscriptions which will be created on startup in the order as they are declared.
+   */
+  public DispatcherBuilder subscriptions(final String... subscriptionNames) {
+    this.subscriptionNames = subscriptionNames;
+    return this;
+  }
 
-        this.initialPartitionId = initialPartitionId;
-        return this;
-    }
+  /**
+   * Publish-Subscribe-Mode (default): multiple subscriptions can read the same fragment / block
+   * concurrently in any order.
+   *
+   * @see #modePipeline()
+   */
+  public DispatcherBuilder modePubSub() {
+    this.mode = Dispatcher.MODE_PUB_SUB;
+    return this;
+  }
 
-    /**
-     * Predefined subscriptions which will be created on startup in the order as
-     * they are declared.
-     */
-    public DispatcherBuilder subscriptions(final String... subscriptionNames)
-    {
-        this.subscriptionNames = subscriptionNames;
-        return this;
-    }
+  /**
+   * Pipeline-Mode: a subscription can only read a fragment / block if the previous subscription
+   * completes reading. The subscriptions must be created on startup using the builder method {@link
+   * #subscriptions(String...)} that defines the order.
+   *
+   * @see #modePubSub()
+   */
+  public DispatcherBuilder modePipeline() {
+    this.mode = Dispatcher.MODE_PIPELINE;
+    return this;
+  }
 
-    /**
-     * Publish-Subscribe-Mode (default): multiple subscriptions can read the
-     * same fragment / block concurrently in any order.
-     *
-     * @see #modePipeline()
-     */
-    public DispatcherBuilder modePubSub()
-    {
-        this.mode = Dispatcher.MODE_PUB_SUB;
-        return this;
-    }
+  public Dispatcher build() {
+    Objects.requireNonNull(actorScheduler, "Actor scheduler cannot be null.");
 
-    /**
-     * Pipeline-Mode: a subscription can only read a fragment / block if the
-     * previous subscription completes reading. The subscriptions must be
-     * created on startup using the builder method
-     * {@link #subscriptions(String...)} that defines the order.
-     *
-     * @see #modePubSub()
-     */
-    public DispatcherBuilder modePipeline()
-    {
-        this.mode = Dispatcher.MODE_PIPELINE;
-        return this;
-    }
+    final int partitionSize = BitUtil.align(bufferSize / PARTITION_COUNT, 8);
 
-    public Dispatcher build()
-    {
-        Objects.requireNonNull(actorScheduler, "Actor scheduler cannot be null.");
+    final AllocatedBuffer allocatedBuffer = initAllocatedBuffer(partitionSize);
 
-        final int partitionSize = BitUtil.align(bufferSize / PARTITION_COUNT, 8);
+    // allocate the counters
 
-        final AllocatedBuffer allocatedBuffer = initAllocatedBuffer(partitionSize);
+    AtomicPosition publisherLimit = null;
+    AtomicPosition publisherPosition = null;
 
-        // allocate the counters
+    final long initialPosition = position(initialPartitionId, 0);
 
-        AtomicPosition publisherLimit = null;
-        AtomicPosition publisherPosition = null;
+    publisherLimit = new AtomicPosition();
+    publisherLimit.set(initialPosition);
 
-        final long initialPosition = position(initialPartitionId, 0);
+    publisherPosition = new AtomicPosition();
+    publisherPosition.set(initialPosition);
 
-        publisherLimit = new AtomicPosition();
-        publisherLimit.set(initialPosition);
+    // create dispatcher
 
-        publisherPosition = new AtomicPosition();
-        publisherPosition.set(initialPosition);
+    final LogBuffer logBuffer = new LogBuffer(allocatedBuffer, partitionSize, initialPartitionId);
+    final LogBufferAppender logAppender = new LogBufferAppender();
 
-        // create dispatcher
+    final int bufferWindowLength = partitionSize / 4;
 
-        final LogBuffer logBuffer = new LogBuffer(allocatedBuffer, partitionSize, initialPartitionId);
-        final LogBufferAppender logAppender = new LogBufferAppender();
-
-        final int bufferWindowLength = partitionSize / 4;
-
-        final Dispatcher dispatcher = new Dispatcher(
+    final Dispatcher dispatcher =
+        new Dispatcher(
             logBuffer,
             logAppender,
             publisherLimit,
@@ -209,43 +189,35 @@ public class DispatcherBuilder
             dispatcherName,
             actorScheduler.getMetricsManager());
 
-        dispatcher.updatePublisherLimit(); // make subscription initially writable without waiting for conductor to do this
+    dispatcher.updatePublisherLimit(); // make subscription initially writable without waiting for
+    // conductor to do this
 
-        actorScheduler.submitActor(dispatcher, true);
+    actorScheduler.submitActor(dispatcher, true);
 
-        return dispatcher;
-    }
+    return dispatcher;
+  }
 
-    protected AllocatedBuffer initAllocatedBuffer(final int partitionSize)
-    {
-        final int requiredCapacity = requiredCapacity(partitionSize);
+  protected AllocatedBuffer initAllocatedBuffer(final int partitionSize) {
+    final int requiredCapacity = requiredCapacity(partitionSize);
 
-        AllocatedBuffer allocatedBuffer = null;
-        if (allocateInMemory)
-        {
-            allocatedBuffer = BufferAllocators.allocateDirect(requiredCapacity);
+    AllocatedBuffer allocatedBuffer = null;
+    if (allocateInMemory) {
+      allocatedBuffer = BufferAllocators.allocateDirect(requiredCapacity);
+    } else {
+      if (rawBuffer != null) {
+        if (rawBuffer.remaining() < requiredCapacity) {
+          throw new RuntimeException("Buffer size below required capacity of " + requiredCapacity);
         }
-        else
-        {
-            if (rawBuffer != null)
-            {
-                if (rawBuffer.remaining() < requiredCapacity)
-                {
-                    throw new RuntimeException("Buffer size below required capacity of " + requiredCapacity);
-                }
-                allocatedBuffer = new ExternallyAllocatedBuffer(rawBuffer);
-            }
-            else
-            {
-                final File bufferFile = new File(bufferFileName);
-                if (!bufferFile.exists())
-                {
-                    throw new RuntimeException("File " + bufferFileName + " does not exist");
-                }
-
-                allocatedBuffer = BufferAllocators.allocateMappedFile(requiredCapacity, bufferFile);
-            }
+        allocatedBuffer = new ExternallyAllocatedBuffer(rawBuffer);
+      } else {
+        final File bufferFile = new File(bufferFileName);
+        if (!bufferFile.exists()) {
+          throw new RuntimeException("File " + bufferFileName + " does not exist");
         }
-        return allocatedBuffer;
+
+        allocatedBuffer = BufferAllocators.allocateMappedFile(requiredCapacity, bufferFile);
+      }
     }
+    return allocatedBuffer;
+  }
 }

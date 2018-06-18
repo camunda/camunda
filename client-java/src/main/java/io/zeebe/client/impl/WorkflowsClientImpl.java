@@ -20,49 +20,42 @@ import io.zeebe.client.api.commands.*;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.impl.workflow.*;
 
-public class WorkflowsClientImpl implements WorkflowClient
-{
-    private final TopicClientImpl client;
+public class WorkflowsClientImpl implements WorkflowClient {
+  private final TopicClientImpl client;
 
-    public WorkflowsClientImpl(final TopicClientImpl client)
-    {
-        this.client = client;
-    }
+  public WorkflowsClientImpl(final TopicClientImpl client) {
+    this.client = client;
+  }
 
-    @Override
-    public DeployWorkflowCommandStep1 newDeployCommand()
-    {
-        return new DeployWorkflowCommandImpl(client.getCommandManager(), client.getTopic());
-    }
+  @Override
+  public DeployWorkflowCommandStep1 newDeployCommand() {
+    return new DeployWorkflowCommandImpl(client.getCommandManager(), client.getTopic());
+  }
 
-    @Override
-    public CreateWorkflowInstanceCommandStep1 newCreateInstanceCommand()
-    {
-        return new CreateWorkflowInstanceCommandImpl(client.getCommandManager(), client.getObjectMapper(), client.getTopic());
-    }
+  @Override
+  public CreateWorkflowInstanceCommandStep1 newCreateInstanceCommand() {
+    return new CreateWorkflowInstanceCommandImpl(
+        client.getCommandManager(), client.getObjectMapper(), client.getTopic());
+  }
 
-    @Override
-    public CancelWorkflowInstanceCommandStep1 newCancelInstanceCommand(WorkflowInstanceEvent event)
-    {
-        return new CancelWorkflowInstanceCommandImpl(client.getCommandManager(), event);
-    }
+  @Override
+  public CancelWorkflowInstanceCommandStep1 newCancelInstanceCommand(WorkflowInstanceEvent event) {
+    return new CancelWorkflowInstanceCommandImpl(client.getCommandManager(), event);
+  }
 
-    @Override
-    public UpdatePayloadWorkflowInstanceCommandStep1 newUpdatePayloadCommand(WorkflowInstanceEvent event)
-    {
-        return new UpdatePayloadCommandImpl(client.getCommandManager(), event);
-    }
+  @Override
+  public UpdatePayloadWorkflowInstanceCommandStep1 newUpdatePayloadCommand(
+      WorkflowInstanceEvent event) {
+    return new UpdatePayloadCommandImpl(client.getCommandManager(), event);
+  }
 
-    @Override
-    public WorkflowResourceRequestStep1 newResourceRequest()
-    {
-        return new WorkflowResourceRequestImpl(client.getCommandManager(), client.getTopic());
-    }
+  @Override
+  public WorkflowResourceRequestStep1 newResourceRequest() {
+    return new WorkflowResourceRequestImpl(client.getCommandManager(), client.getTopic());
+  }
 
-    @Override
-    public WorkflowRequestStep1 newWorkflowRequest()
-    {
-        return new WorkflowRequestImpl(client.getCommandManager(), client.getTopic());
-    }
-
+  @Override
+  public WorkflowRequestStep1 newWorkflowRequest() {
+    return new WorkflowRequestImpl(client.getCommandManager(), client.getTopic());
+  }
 }

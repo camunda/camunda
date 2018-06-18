@@ -19,7 +19,7 @@ package io.zeebe.broker.workflow;
 
 import io.zeebe.servicecontainer.ServiceName;
 
-public class WorkflowServiceNames
-{
-    public static final ServiceName<WorkflowStreamProcessingManagerService> WORKFLOW_QUEUE_MANAGER = ServiceName.newServiceName("workflow.manager", WorkflowStreamProcessingManagerService.class);
+public class WorkflowServiceNames {
+  public static final ServiceName<WorkflowStreamProcessingManagerService> WORKFLOW_QUEUE_MANAGER =
+      ServiceName.newServiceName("workflow.manager", WorkflowStreamProcessingManagerService.class);
 }

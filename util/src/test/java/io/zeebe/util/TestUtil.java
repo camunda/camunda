@@ -19,33 +19,26 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.function.BooleanSupplier;
 
-public final class TestUtil
-{
+public final class TestUtil {
 
-    public static void waitUntil(BooleanSupplier condition)
-    {
-        boolean isMet = false;
-        int iterations = 0;
+  public static void waitUntil(BooleanSupplier condition) {
+    boolean isMet = false;
+    int iterations = 0;
 
-        while (!isMet && iterations < 100)
-        {
-            isMet = condition.getAsBoolean();
+    while (!isMet && iterations < 100) {
+      isMet = condition.getAsBoolean();
 
-            if (!isMet)
-            {
-                iterations += 1;
+      if (!isMet) {
+        iterations += 1;
 
-                try
-                {
-                    Thread.sleep(10);
-                }
-                catch (InterruptedException e)
-                {
-                    e.printStackTrace();
-                }
-            }
+        try {
+          Thread.sleep(10);
+        } catch (InterruptedException e) {
+          e.printStackTrace();
         }
-
-        assertThat(isMet).isTrue();
+      }
     }
+
+    assertThat(isMet).isTrue();
+  }
 }

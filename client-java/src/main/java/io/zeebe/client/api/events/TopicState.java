@@ -15,7 +15,8 @@
  */
 package io.zeebe.client.api.events;
 
-public enum TopicState
-{
-    CREATING, CREATE_COMPLETE, CREATED;
+public enum TopicState {
+  CREATING,
+  CREATE_COMPLETE,
+  CREATED;
 }

@@ -15,21 +15,6 @@
  */
 package io.zeebe.dispatcher;
 
-import io.zeebe.dispatcher.impl.log.LogBuffer;
-import io.zeebe.dispatcher.impl.log.LogBufferAppender;
-import io.zeebe.dispatcher.impl.log.LogBufferPartition;
-import io.zeebe.util.metrics.MetricsManager;
-import io.zeebe.util.sched.ActorCondition;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.mockito.Mockito;
-
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-
 import static io.zeebe.dispatcher.impl.PositionUtil.position;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.FRAME_ALIGNMENT;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
@@ -40,319 +25,355 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-public class DispatcherTest
-{
+import io.zeebe.dispatcher.impl.log.LogBuffer;
+import io.zeebe.dispatcher.impl.log.LogBufferAppender;
+import io.zeebe.dispatcher.impl.log.LogBufferPartition;
+import io.zeebe.util.metrics.MetricsManager;
+import io.zeebe.util.sched.ActorCondition;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.mockito.Mockito;
 
-    static final byte[] A_MSG_PAYLOAD = "some bytes".getBytes(Charset.forName("utf-8"));
-    static final int A_MSG_PAYLOAD_LENGTH = A_MSG_PAYLOAD.length;
-    static final int A_FRAGMENT_LENGTH = align(A_MSG_PAYLOAD_LENGTH + HEADER_LENGTH, FRAME_ALIGNMENT);
-    static final UnsafeBuffer A_MSG = new UnsafeBuffer(A_MSG_PAYLOAD);
-    static final int AN_INITIAL_PARTITION_ID = 0;
-    static final int A_LOG_WINDOW_LENGTH = 128;
-    static final int A_PARITION_SIZE = 1024;
-    static final int A_STREAM_ID = 20;
+public class DispatcherTest {
 
-    Dispatcher dispatcher;
-    LogBuffer logBuffer;
-    LogBufferPartition logBufferPartition0;
-    LogBufferPartition logBufferPartition1;
-    LogBufferPartition logBufferPartition2;
-    LogBufferAppender logAppender;
-    AtomicPosition publisherLimit;
-    AtomicPosition publisherPosition;
-    Subscription subscriptionSpy;
-    FragmentHandler fragmentHandler;
-    ClaimedFragment claimedFragment;
-    AtomicPosition subscriberPosition;
+  static final byte[] A_MSG_PAYLOAD = "some bytes".getBytes(Charset.forName("utf-8"));
+  static final int A_MSG_PAYLOAD_LENGTH = A_MSG_PAYLOAD.length;
+  static final int A_FRAGMENT_LENGTH = align(A_MSG_PAYLOAD_LENGTH + HEADER_LENGTH, FRAME_ALIGNMENT);
+  static final UnsafeBuffer A_MSG = new UnsafeBuffer(A_MSG_PAYLOAD);
+  static final int AN_INITIAL_PARTITION_ID = 0;
+  static final int A_LOG_WINDOW_LENGTH = 128;
+  static final int A_PARITION_SIZE = 1024;
+  static final int A_STREAM_ID = 20;
 
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
+  Dispatcher dispatcher;
+  LogBuffer logBuffer;
+  LogBufferPartition logBufferPartition0;
+  LogBufferPartition logBufferPartition1;
+  LogBufferPartition logBufferPartition2;
+  LogBufferAppender logAppender;
+  AtomicPosition publisherLimit;
+  AtomicPosition publisherPosition;
+  Subscription subscriptionSpy;
+  FragmentHandler fragmentHandler;
+  ClaimedFragment claimedFragment;
+  AtomicPosition subscriberPosition;
 
-    @Before
-    public void setup()
-    {
-        logBuffer = mock(LogBuffer.class);
-        logBufferPartition0 = mock(LogBufferPartition.class);
-        logBufferPartition1 = mock(LogBufferPartition.class);
-        logBufferPartition2 = mock(LogBufferPartition.class);
+  @Rule public ExpectedException thrown = ExpectedException.none();
 
-        when(logBuffer.getInitialPartitionId()).thenReturn(AN_INITIAL_PARTITION_ID);
-        when(logBuffer.getPartitionCount()).thenReturn(3);
-        when(logBuffer.getPartitionSize()).thenReturn(A_PARITION_SIZE);
-        when(logBuffer.getPartition(0)).thenReturn(logBufferPartition0);
-        when(logBuffer.getPartition(1)).thenReturn(logBufferPartition1);
-        when(logBuffer.getPartition(2)).thenReturn(logBufferPartition2);
-        when(logBuffer.createRawBufferView()).thenReturn(ByteBuffer.allocate(32));
+  @Before
+  public void setup() {
+    logBuffer = mock(LogBuffer.class);
+    logBufferPartition0 = mock(LogBufferPartition.class);
+    logBufferPartition1 = mock(LogBufferPartition.class);
+    logBufferPartition2 = mock(LogBufferPartition.class);
 
-        logAppender = mock(LogBufferAppender.class);
-        publisherLimit = mock(AtomicPosition.class);
-        publisherPosition = mock(AtomicPosition.class);
-        fragmentHandler = mock(FragmentHandler.class);
-        claimedFragment = mock(ClaimedFragment.class);
-        subscriberPosition = mock(AtomicPosition.class);
+    when(logBuffer.getInitialPartitionId()).thenReturn(AN_INITIAL_PARTITION_ID);
+    when(logBuffer.getPartitionCount()).thenReturn(3);
+    when(logBuffer.getPartitionSize()).thenReturn(A_PARITION_SIZE);
+    when(logBuffer.getPartition(0)).thenReturn(logBufferPartition0);
+    when(logBuffer.getPartition(1)).thenReturn(logBufferPartition1);
+    when(logBuffer.getPartition(2)).thenReturn(logBufferPartition2);
+    when(logBuffer.createRawBufferView()).thenReturn(ByteBuffer.allocate(32));
 
-        dispatcher = new Dispatcher(logBuffer,
-                logAppender,
-                publisherLimit,
-                publisherPosition,
-                A_LOG_WINDOW_LENGTH,
-                new String[0],
-                Dispatcher.MODE_PUB_SUB,
-                "test",
-                new MetricsManager())
-        {
-            @Override
-            protected Subscription newSubscription(int subscriberId, String subscriberName, ActorCondition onConsumption)
-            {
-                subscriptionSpy = spy(new Subscription(subscriberPosition, determineLimit(subscriberId), subscriberId, subscriberName, onConsumption, logBuffer, metricsManager.newMetric("metric").type("counter").create()));
-                return subscriptionSpy;
-            }
+    logAppender = mock(LogBufferAppender.class);
+    publisherLimit = mock(AtomicPosition.class);
+    publisherPosition = mock(AtomicPosition.class);
+    fragmentHandler = mock(FragmentHandler.class);
+    claimedFragment = mock(ClaimedFragment.class);
+    subscriberPosition = mock(AtomicPosition.class);
+
+    dispatcher =
+        new Dispatcher(
+            logBuffer,
+            logAppender,
+            publisherLimit,
+            publisherPosition,
+            A_LOG_WINDOW_LENGTH,
+            new String[0],
+            Dispatcher.MODE_PUB_SUB,
+            "test",
+            new MetricsManager()) {
+          @Override
+          protected Subscription newSubscription(
+              int subscriberId, String subscriberName, ActorCondition onConsumption) {
+            subscriptionSpy =
+                spy(
+                    new Subscription(
+                        subscriberPosition,
+                        determineLimit(subscriberId),
+                        subscriberId,
+                        subscriberName,
+                        onConsumption,
+                        logBuffer,
+                        metricsManager.newMetric("metric").type("counter").create()));
+            return subscriptionSpy;
+          }
         };
-    }
+  }
 
-    @Test
-    public void shouldNotWriteBeyondPublisherLimit()
-    {
-        // given
-        // position of 0,0
-        when(logBuffer.getActivePartitionIdVolatile()).thenReturn(0);
-        when(logBufferPartition0.getTailCounterVolatile()).thenReturn(0);
-        // publisher limit of 0
-        when(publisherLimit.get()).thenReturn(position(0, 0));
+  @Test
+  public void shouldNotWriteBeyondPublisherLimit() {
+    // given
+    // position of 0,0
+    when(logBuffer.getActivePartitionIdVolatile()).thenReturn(0);
+    when(logBufferPartition0.getTailCounterVolatile()).thenReturn(0);
+    // publisher limit of 0
+    when(publisherLimit.get()).thenReturn(position(0, 0));
 
-        // if
-        final long newPosition = dispatcher.offer(A_MSG, 0, A_MSG_PAYLOAD_LENGTH);
+    // if
+    final long newPosition = dispatcher.offer(A_MSG, 0, A_MSG_PAYLOAD_LENGTH);
 
-        // then
-        assertThat(newPosition).isEqualTo(-1);
+    // then
+    assertThat(newPosition).isEqualTo(-1);
 
-        verify(publisherLimit).get();
-        verifyNoMoreInteractions(publisherLimit);
-        verifyNoMoreInteractions(logAppender);
-        verify(logBuffer).getActivePartitionIdVolatile();
-        verify(logBuffer).getPartition(0);
-        verify(logBufferPartition0).getTailCounterVolatile();
-    }
+    verify(publisherLimit).get();
+    verifyNoMoreInteractions(publisherLimit);
+    verifyNoMoreInteractions(logAppender);
+    verify(logBuffer).getActivePartitionIdVolatile();
+    verify(logBuffer).getPartition(0);
+    verify(logBufferPartition0).getTailCounterVolatile();
+  }
 
-    @Test
-    public void shouldNotClaimBeyondPublisherLimit()
-    {
-        // given
-        // position of 0,0
-        when(logBuffer.getActivePartitionIdVolatile()).thenReturn(0);
-        when(logBufferPartition0.getTailCounterVolatile()).thenReturn(0);
-        // publisher limit of 0
-        when(publisherLimit.get()).thenReturn(position(0, 0));
+  @Test
+  public void shouldNotClaimBeyondPublisherLimit() {
+    // given
+    // position of 0,0
+    when(logBuffer.getActivePartitionIdVolatile()).thenReturn(0);
+    when(logBufferPartition0.getTailCounterVolatile()).thenReturn(0);
+    // publisher limit of 0
+    when(publisherLimit.get()).thenReturn(position(0, 0));
 
-        // if
-        final long newPosition = dispatcher.claim(claimedFragment, A_MSG_PAYLOAD_LENGTH);
+    // if
+    final long newPosition = dispatcher.claim(claimedFragment, A_MSG_PAYLOAD_LENGTH);
 
-        // then
-        assertThat(newPosition).isEqualTo(-1);
+    // then
+    assertThat(newPosition).isEqualTo(-1);
 
-        verify(publisherLimit).get();
-        verifyNoMoreInteractions(publisherLimit);
-        verifyNoMoreInteractions(logAppender);
-        verifyNoMoreInteractions(claimedFragment);
-        verify(logBuffer).getActivePartitionIdVolatile();
-        verify(logBuffer).getPartition(0);
-        verify(logBufferPartition0).getTailCounterVolatile();
-    }
+    verify(publisherLimit).get();
+    verifyNoMoreInteractions(publisherLimit);
+    verifyNoMoreInteractions(logAppender);
+    verifyNoMoreInteractions(claimedFragment);
+    verify(logBuffer).getActivePartitionIdVolatile();
+    verify(logBuffer).getPartition(0);
+    verify(logBufferPartition0).getTailCounterVolatile();
+  }
 
-    @Test
-    public void shouldWriteUnfragmented()
-    {
-        // given
-        // position is 0,0
-        when(logBuffer.getActivePartitionIdVolatile()).thenReturn(0);
-        when(logBufferPartition0.getTailCounterVolatile()).thenReturn(0);
-        when(publisherLimit.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
+  @Test
+  public void shouldWriteUnfragmented() {
+    // given
+    // position is 0,0
+    when(logBuffer.getActivePartitionIdVolatile()).thenReturn(0);
+    when(logBufferPartition0.getTailCounterVolatile()).thenReturn(0);
+    when(publisherLimit.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
 
-        when(logAppender.appendFrame(logBufferPartition0, 0, A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID)).thenReturn(A_FRAGMENT_LENGTH);
+    when(logAppender.appendFrame(
+            logBufferPartition0, 0, A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID))
+        .thenReturn(A_FRAGMENT_LENGTH);
 
-        // if
-        final long newPosition = dispatcher.offer(A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
+    // if
+    final long newPosition = dispatcher.offer(A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
 
-        // then
-        assertThat(newPosition).isEqualTo(position(0, A_FRAGMENT_LENGTH));
+    // then
+    assertThat(newPosition).isEqualTo(position(0, A_FRAGMENT_LENGTH));
 
-        verify(logAppender).appendFrame(logBufferPartition0, 0, A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
+    verify(logAppender)
+        .appendFrame(logBufferPartition0, 0, A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
 
-        verify(publisherLimit).get();
-        verify(publisherPosition).proposeMaxOrdered(position(0, A_FRAGMENT_LENGTH));
+    verify(publisherLimit).get();
+    verify(publisherPosition).proposeMaxOrdered(position(0, A_FRAGMENT_LENGTH));
 
-        verify(logBuffer).getActivePartitionIdVolatile();
-        verify(logBuffer).getPartition(0);
-        verify(logBufferPartition0).getTailCounterVolatile();
+    verify(logBuffer).getActivePartitionIdVolatile();
+    verify(logBuffer).getPartition(0);
+    verify(logBufferPartition0).getTailCounterVolatile();
+  }
 
-    }
+  @Test
+  public void shouldClaimFragment() {
+    // given
+    // position is 0,0
+    when(logBuffer.getActivePartitionIdVolatile()).thenReturn(0);
+    when(logBufferPartition0.getTailCounterVolatile()).thenReturn(0);
+    when(publisherLimit.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
 
-    @Test
-    public void shouldClaimFragment()
-    {
-        // given
-        // position is 0,0
-        when(logBuffer.getActivePartitionIdVolatile()).thenReturn(0);
-        when(logBufferPartition0.getTailCounterVolatile()).thenReturn(0);
-        when(publisherLimit.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
+    when(logAppender.claim(
+            eq(logBufferPartition0),
+            eq(0),
+            eq(claimedFragment),
+            eq(A_MSG_PAYLOAD_LENGTH),
+            eq(A_STREAM_ID),
+            any()))
+        .thenReturn(A_FRAGMENT_LENGTH);
 
-        when(logAppender.claim(eq(logBufferPartition0), eq(0), eq(claimedFragment), eq(A_MSG_PAYLOAD_LENGTH), eq(A_STREAM_ID), any())).thenReturn(A_FRAGMENT_LENGTH);
+    // if
+    final long newPosition = dispatcher.claim(claimedFragment, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
 
-        // if
-        final long newPosition = dispatcher.claim(claimedFragment, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
+    // then
+    assertThat(newPosition).isEqualTo(position(0, A_FRAGMENT_LENGTH));
 
-        // then
-        assertThat(newPosition).isEqualTo(position(0, A_FRAGMENT_LENGTH));
+    verify(logAppender)
+        .claim(
+            eq(logBufferPartition0),
+            eq(0),
+            eq(claimedFragment),
+            eq(A_MSG_PAYLOAD_LENGTH),
+            eq(A_STREAM_ID),
+            Mockito.any());
 
-        verify(logAppender).claim(eq(logBufferPartition0), eq(0), eq(claimedFragment), eq(A_MSG_PAYLOAD_LENGTH), eq(A_STREAM_ID), Mockito.any());
+    verify(publisherLimit).get();
+    verify(publisherPosition).proposeMaxOrdered(position(0, A_FRAGMENT_LENGTH));
 
-        verify(publisherLimit).get();
-        verify(publisherPosition).proposeMaxOrdered(position(0, A_FRAGMENT_LENGTH));
+    verify(logBuffer).getActivePartitionIdVolatile();
+    verify(logBuffer).getPartition(0);
+    verify(logBufferPartition0).getTailCounterVolatile();
+  }
 
-        verify(logBuffer).getActivePartitionIdVolatile();
-        verify(logBuffer).getPartition(0);
-        verify(logBufferPartition0).getTailCounterVolatile();
+  @Test
+  public void shouldRollPartitionOnPartitionFilled() {
+    // given
+    // position is 0,0
+    when(logBuffer.getActivePartitionIdVolatile()).thenReturn(0);
+    when(logBufferPartition0.getTailCounterVolatile()).thenReturn(0);
+    when(publisherLimit.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
 
-    }
+    when(logAppender.appendFrame(
+            logBufferPartition0, 0, A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID))
+        .thenReturn(-2);
 
-    @Test
-    public void shouldRollPartitionOnPartitionFilled()
-    {
-        // given
-        // position is 0,0
-        when(logBuffer.getActivePartitionIdVolatile()).thenReturn(0);
-        when(logBufferPartition0.getTailCounterVolatile()).thenReturn(0);
-        when(publisherLimit.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
+    // if
+    final long newPosition = dispatcher.offer(A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
 
-        when(logAppender.appendFrame(logBufferPartition0, 0, A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID)).thenReturn(-2);
+    // then
+    assertThat(newPosition).isEqualTo(-2);
 
-        // if
-        final long newPosition = dispatcher.offer(A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
+    verify(publisherLimit).get();
+    verify(publisherPosition).proposeMaxOrdered(-2);
 
-        // then
-        assertThat(newPosition).isEqualTo(-2);
+    verify(logBuffer).getActivePartitionIdVolatile();
+    verify(logBuffer).getPartition(0);
+    verify(logBuffer).onActiveParitionFilled(0);
 
-        verify(publisherLimit).get();
-        verify(publisherPosition).proposeMaxOrdered(-2);
+    verify(logBufferPartition0).getTailCounterVolatile();
+  }
 
-        verify(logBuffer).getActivePartitionIdVolatile();
-        verify(logBuffer).getPartition(0);
-        verify(logBuffer).onActiveParitionFilled(0);
+  @Test
+  public void shouldIgnoreWriteIfPastPartitionEnd() {
+    // given
+    // position is 0,0
+    when(logBuffer.getActivePartitionIdVolatile()).thenReturn(0);
+    when(logBufferPartition0.getTailCounterVolatile()).thenReturn(0);
+    when(publisherLimit.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
 
-        verify(logBufferPartition0).getTailCounterVolatile();
+    when(logAppender.appendFrame(
+            logBufferPartition0, 0, A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID))
+        .thenReturn(-1);
 
-    }
+    // if
+    final long newPosition = dispatcher.offer(A_MSG, 0, A_MSG_PAYLOAD_LENGTH);
 
-    @Test
-    public void shouldIgnoreWriteIfPastPartitionEnd()
-    {
-        // given
-        // position is 0,0
-        when(logBuffer.getActivePartitionIdVolatile()).thenReturn(0);
-        when(logBufferPartition0.getTailCounterVolatile()).thenReturn(0);
-        when(publisherLimit.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
+    // then
+    assertThat(newPosition).isEqualTo(-1);
 
-        when(logAppender.appendFrame(logBufferPartition0, 0, A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID)).thenReturn(-1);
+    verify(publisherLimit).get();
+    verify(publisherPosition).proposeMaxOrdered(-1);
 
-        // if
-        final long newPosition = dispatcher.offer(A_MSG, 0, A_MSG_PAYLOAD_LENGTH);
+    verify(logBuffer).getActivePartitionIdVolatile();
+    verify(logBuffer).getPartition(0);
+    verify(logBuffer, times(0)).onActiveParitionFilled(anyInt());
 
-        // then
-        assertThat(newPosition).isEqualTo(-1);
+    verify(logBufferPartition0).getTailCounterVolatile();
+  }
 
-        verify(publisherLimit).get();
-        verify(publisherPosition).proposeMaxOrdered(-1);
+  @Test
+  public void shouldReadFragmentsFromPartition() {
+    // given
+    dispatcher.doOpenSubscription("test", mock(ActorCondition.class));
+    when(subscriberPosition.get()).thenReturn(0L);
+    when(publisherPosition.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
 
-        verify(logBuffer).getActivePartitionIdVolatile();
-        verify(logBuffer).getPartition(0);
-        verify(logBuffer, times(0)).onActiveParitionFilled(anyInt());
+    doReturn(1)
+        .when(subscriptionSpy)
+        .pollFragments(
+            logBufferPartition0, fragmentHandler, 0, 0, 2, position(0, A_FRAGMENT_LENGTH), false);
 
-        verify(logBufferPartition0).getTailCounterVolatile();
-    }
+    // if
+    final int fragmentsRead = subscriptionSpy.poll(fragmentHandler, 2);
 
-    @Test
-    public void shouldReadFragmentsFromPartition()
-    {
-        // given
-        dispatcher.doOpenSubscription("test", mock(ActorCondition.class));
-        when(subscriberPosition.get()).thenReturn(0L);
-        when(publisherPosition.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
+    // then
+    assertThat(fragmentsRead).isEqualTo(1);
+    verify(subscriberPosition).get();
+    verify(subscriptionSpy)
+        .pollFragments(
+            logBufferPartition0, fragmentHandler, 0, 0, 2, position(0, A_FRAGMENT_LENGTH), false);
+  }
 
-        doReturn(1).when(subscriptionSpy).pollFragments(logBufferPartition0, fragmentHandler, 0, 0, 2, position(0, A_FRAGMENT_LENGTH), false);
+  @Test
+  public void shouldNotReadBeyondPublisherPosition() {
+    // given
+    dispatcher.doOpenSubscription("test", mock(ActorCondition.class));
+    when(subscriptionSpy.getPosition()).thenReturn(0L);
+    when(publisherPosition.get()).thenReturn(0L);
 
-        // if
-        final int fragmentsRead = subscriptionSpy.poll(fragmentHandler, 2);
+    // if
+    final int fragmentsRead = subscriptionSpy.poll(fragmentHandler, 1);
 
-        // then
-        assertThat(fragmentsRead).isEqualTo(1);
-        verify(subscriberPosition).get();
-        verify(subscriptionSpy).pollFragments(logBufferPartition0, fragmentHandler, 0, 0, 2, position(0, A_FRAGMENT_LENGTH), false);
-    }
+    // then
+    assertThat(fragmentsRead).isEqualTo(0);
+  }
 
-    @Test
-    public void shouldNotReadBeyondPublisherPosition()
-    {
-        // given
-        dispatcher.doOpenSubscription("test", mock(ActorCondition.class));
-        when(subscriptionSpy.getPosition()).thenReturn(0L);
-        when(publisherPosition.get()).thenReturn(0L);
+  @Test
+  public void shouldUpdatePublisherLimit() {
+    when(subscriberPosition.get()).thenReturn(position(10, 100));
 
-        // if
-        final int fragmentsRead = subscriptionSpy.poll(fragmentHandler, 1);
+    dispatcher.doOpenSubscription("test", mock(ActorCondition.class));
+    dispatcher.updatePublisherLimit();
 
-        // then
-        assertThat(fragmentsRead).isEqualTo(0);
-    }
+    verify(publisherLimit).proposeMaxOrdered(position(10, 100 + A_LOG_WINDOW_LENGTH));
+  }
 
-    @Test
-    public void shouldUpdatePublisherLimit()
-    {
-        when(subscriberPosition.get()).thenReturn(position(10, 100));
+  @Test
+  public void shouldUpdatePublisherLimitToNextPartition() {
+    when(subscriberPosition.get()).thenReturn(position(10, A_PARITION_SIZE - A_LOG_WINDOW_LENGTH));
 
-        dispatcher.doOpenSubscription("test", mock(ActorCondition.class));
-        dispatcher.updatePublisherLimit();
+    dispatcher.doOpenSubscription("test", mock(ActorCondition.class));
+    dispatcher.updatePublisherLimit();
 
-        verify(publisherLimit).proposeMaxOrdered(position(10, 100 + A_LOG_WINDOW_LENGTH));
-    }
+    verify(publisherLimit).proposeMaxOrdered(position(11, A_LOG_WINDOW_LENGTH));
+  }
 
-    @Test
-    public void shouldUpdatePublisherLimitToNextPartition()
-    {
-        when(subscriberPosition.get()).thenReturn(position(10, A_PARITION_SIZE - A_LOG_WINDOW_LENGTH));
+  @Test
+  public void shouldReadFragmentsFromPartitionOnPeekAndConsume() {
+    // given
+    dispatcher.doOpenSubscription("test", mock(ActorCondition.class));
+    when(subscriberPosition.get()).thenReturn(0L);
+    when(publisherPosition.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
 
-        dispatcher.doOpenSubscription("test", mock(ActorCondition.class));
-        dispatcher.updatePublisherLimit();
+    doReturn(1)
+        .when(subscriptionSpy)
+        .pollFragments(
+            logBufferPartition0, fragmentHandler, 0, 0, 2, position(0, A_FRAGMENT_LENGTH), true);
 
-        verify(publisherLimit).proposeMaxOrdered(position(11, A_LOG_WINDOW_LENGTH));
-    }
+    // if
+    final int fragmentsRead = subscriptionSpy.peekAndConsume(fragmentHandler, 2);
 
-    @Test
-    public void shouldReadFragmentsFromPartitionOnPeekAndConsume()
-    {
-        // given
-        dispatcher.doOpenSubscription("test", mock(ActorCondition.class));
-        when(subscriberPosition.get()).thenReturn(0L);
-        when(publisherPosition.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
+    // then
+    assertThat(fragmentsRead).isEqualTo(1);
+    verify(subscriberPosition).get();
+    verify(subscriptionSpy)
+        .pollFragments(
+            logBufferPartition0, fragmentHandler, 0, 0, 2, position(0, A_FRAGMENT_LENGTH), true);
+  }
 
-        doReturn(1).when(subscriptionSpy).pollFragments(logBufferPartition0, fragmentHandler, 0, 0, 2, position(0, A_FRAGMENT_LENGTH), true);
+  @Test
+  public void shouldNotOpenSubscriptionWithSameName() {
+    thrown.expect(IllegalStateException.class);
+    thrown.expectMessage("subscription with name 's1' already exists");
 
-        // if
-        final int fragmentsRead = subscriptionSpy.peekAndConsume(fragmentHandler, 2);
-
-        // then
-        assertThat(fragmentsRead).isEqualTo(1);
-        verify(subscriberPosition).get();
-        verify(subscriptionSpy).pollFragments(logBufferPartition0, fragmentHandler, 0, 0, 2, position(0, A_FRAGMENT_LENGTH), true);
-    }
-
-    @Test
-    public void shouldNotOpenSubscriptionWithSameName()
-    {
-        thrown.expect(IllegalStateException.class);
-        thrown.expectMessage("subscription with name 's1' already exists");
-
-        dispatcher.doOpenSubscription("s1", mock(ActorCondition.class));
-        dispatcher.doOpenSubscription("s1", mock(ActorCondition.class));
-    }
-
+    dispatcher.doOpenSubscription("s1", mock(ActorCondition.class));
+    dispatcher.doOpenSubscription("s1", mock(ActorCondition.class));
+  }
 }

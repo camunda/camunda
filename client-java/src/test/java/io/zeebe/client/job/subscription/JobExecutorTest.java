@@ -20,32 +20,30 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import org.junit.Test;
-
 import io.zeebe.client.impl.subscription.SubscriberGroups;
 import io.zeebe.client.impl.subscription.SubscriptionExecutor;
 import io.zeebe.client.impl.subscription.job.JobSubscriberGroup;
+import org.junit.Test;
 
-public class JobExecutorTest
-{
-    @Test
-    public void shouldExecuteJobs() throws Exception
-    {
-        // given
-        final SubscriberGroups subscriptions = new SubscriberGroups();
+public class JobExecutorTest {
+  @Test
+  public void shouldExecuteJobs() throws Exception {
+    // given
+    final SubscriberGroups subscriptions = new SubscriberGroups();
 
-        final JobSubscriberGroup subscription = mock(JobSubscriberGroup.class);
-        when(subscription.poll()).thenReturn(34);
-        subscriptions.addGroup(subscription);
+    final JobSubscriberGroup subscription = mock(JobSubscriberGroup.class);
+    when(subscription.poll()).thenReturn(34);
+    subscriptions.addGroup(subscription);
 
-        final SubscriptionExecutor executor = new SubscriptionExecutor(subscriptions, new SubscriberGroups());
+    final SubscriptionExecutor executor =
+        new SubscriptionExecutor(subscriptions, new SubscriberGroups());
 
-        // when
-        final int workCount = executor.doWork();
+    // when
+    final int workCount = executor.doWork();
 
-        // then
-        assertThat(workCount).isEqualTo(34);
+    // then
+    assertThat(workCount).isEqualTo(34);
 
-        verify(subscription).poll();
-    }
+    verify(subscription).poll();
+  }
 }

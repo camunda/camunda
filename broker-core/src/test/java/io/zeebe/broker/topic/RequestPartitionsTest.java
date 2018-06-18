@@ -19,9 +19,6 @@ package io.zeebe.broker.topic;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.List;
-import java.util.Map;
-
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
@@ -29,91 +26,94 @@ import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ControlMessageResponse;
 import io.zeebe.test.broker.protocol.clientapi.ErrorResponse;
+import java.util.List;
+import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 @SuppressWarnings("unchecked")
-public class RequestPartitionsTest
-{
-    public ClientApiRule apiRule = new ClientApiRule(false);
-    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule("zeebe.no-default-topic.cfg.toml");
+public class RequestPartitionsTest {
+  public ClientApiRule apiRule = new ClientApiRule(false);
+  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule("zeebe.no-default-topic.cfg.toml");
 
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
-    @Test
-    public void shouldReturnCreatedPartitions()
-    {
-        // given
-        final String topicName = "foo";
-        final int numPartitions = 2;
+  @Test
+  public void shouldReturnCreatedPartitions() {
+    // given
+    final String topicName = "foo";
+    final int numPartitions = 2;
 
-        apiRule.createTopic(topicName, 2);
+    apiRule.createTopic(topicName, 2);
 
-        // when
-        final ControlMessageResponse response = apiRule.createControlMessageRequest()
+    // when
+    final ControlMessageResponse response =
+        apiRule
+            .createControlMessageRequest()
             .messageType(ControlMessageType.REQUEST_PARTITIONS)
             .partitionId(Protocol.SYSTEM_PARTITION)
             .sendAndAwait();
 
-        // then
-        assertResponse(response, numPartitions, topicName);
-    }
+    // then
+    assertResponse(response, numPartitions, topicName);
+  }
 
-    /**
-     * testing snapshotting
-     */
-    @Test
-    public void shouldReturnCreatedPartitionsAfterRestart()
-    {
-        // given
-        final String topicName = "foo";
-        final int numPartitions = 2;
+  /** testing snapshotting */
+  @Test
+  public void shouldReturnCreatedPartitionsAfterRestart() {
+    // given
+    final String topicName = "foo";
+    final int numPartitions = 2;
 
-        apiRule.createTopic(topicName, 2);
+    apiRule.createTopic(topicName, 2);
 
-        brokerRule.restartBroker();
+    brokerRule.restartBroker();
 
-        // when
-        // have to do this multiple times as the stream processor for answering the request may not be available yet
-        apiRule.waitForTopic(topicName, numPartitions);
+    // when
+    // have to do this multiple times as the stream processor for answering the request may not be
+    // available yet
+    apiRule.waitForTopic(topicName, numPartitions);
 
-        // then
-        assertResponse(apiRule.requestPartitions(), numPartitions, topicName);
-    }
+    // then
+    assertResponse(apiRule.requestPartitions(), numPartitions, topicName);
+  }
 
+  @Test
+  public void shouldRespondWithErrorWhenRequestAddressesNonSystemPartition() {
+    // given
+    apiRule.createTopic("foo", 2);
 
-
-    @Test
-    public void shouldRespondWithErrorWhenRequestAddressesNonSystemPartition()
-    {
-        // given
-        apiRule.createTopic("foo", 2);
-
-        // when
-        // have to do this multiple times as the stream processor for answering the request may not be available yet
-        final ErrorResponse errorResponse = apiRule.createControlMessageRequest()
+    // when
+    // have to do this multiple times as the stream processor for answering the request may not be
+    // available yet
+    final ErrorResponse errorResponse =
+        apiRule
+            .createControlMessageRequest()
             .messageType(ControlMessageType.REQUEST_PARTITIONS)
             .partitionId(Protocol.SYSTEM_PARTITION + 1)
             .send()
             .awaitError();
 
-        // then
-        assertThat(errorResponse.getErrorCode()).isEqualTo(ErrorCode.REQUEST_PROCESSING_FAILURE);
-        assertThat(errorResponse.getErrorData()).isEqualTo("Partitions request must address the system partition " + Protocol.SYSTEM_PARTITION);
-    }
+    // then
+    assertThat(errorResponse.getErrorCode()).isEqualTo(ErrorCode.REQUEST_PROCESSING_FAILURE);
+    assertThat(errorResponse.getErrorData())
+        .isEqualTo(
+            "Partitions request must address the system partition " + Protocol.SYSTEM_PARTITION);
+  }
 
-    private void assertResponse(final ControlMessageResponse response, final int expectedTotalPartitions, final String... expectedTopics)
-    {
-        final Map<String, Object> responseData = response.getData();
-        assertThat(responseData).hasSize(1);
-        final List<Map<String, Object>> partitions = (List<Map<String, Object>>) responseData.get("partitions");
-        assertThat(partitions).isNotNull();
-        assertThat(partitions.size()).isGreaterThanOrEqualTo(expectedTotalPartitions); // system partition included
-        assertThat(partitions).extracting("topic").contains((Object[]) expectedTopics);
-        assertThat(partitions).extracting("id")
-            .doesNotHaveDuplicates();
-    }
-
+  private void assertResponse(
+      final ControlMessageResponse response,
+      final int expectedTotalPartitions,
+      final String... expectedTopics) {
+    final Map<String, Object> responseData = response.getData();
+    assertThat(responseData).hasSize(1);
+    final List<Map<String, Object>> partitions =
+        (List<Map<String, Object>>) responseData.get("partitions");
+    assertThat(partitions).isNotNull();
+    assertThat(partitions.size())
+        .isGreaterThanOrEqualTo(expectedTotalPartitions); // system partition included
+    assertThat(partitions).extracting("topic").contains((Object[]) expectedTopics);
+    assertThat(partitions).extracting("id").doesNotHaveDuplicates();
+  }
 }

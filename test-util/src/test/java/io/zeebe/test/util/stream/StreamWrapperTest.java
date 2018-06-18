@@ -21,25 +21,20 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.junit.Test;
 
-public class StreamWrapperTest
-{
+public class StreamWrapperTest {
 
-    @Test
-    public void shouldSkipElementsBasedOnPredicate()
-    {
-        // given
-        final Stream<Integer> stream = Arrays.asList(1, 2, 3, 4, 5).stream();
-        final StreamWrapper<Integer> wrapper = new StreamWrapper<>(stream);
+  @Test
+  public void shouldSkipElementsBasedOnPredicate() {
+    // given
+    final Stream<Integer> stream = Arrays.asList(1, 2, 3, 4, 5).stream();
+    final StreamWrapper<Integer> wrapper = new StreamWrapper<>(stream);
 
-        // when
-        final List<Integer> result = wrapper.skipUntil(i -> i == 3).collect(Collectors.toList());
+    // when
+    final List<Integer> result = wrapper.skipUntil(i -> i == 3).collect(Collectors.toList());
 
-        // then
-        assertThat(result).containsExactly(3, 4, 5);
-
-
-    }
+    // then
+    assertThat(result).containsExactly(3, 4, 5);
+  }
 }

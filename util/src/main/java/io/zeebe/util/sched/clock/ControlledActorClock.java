@@ -18,106 +18,81 @@ package io.zeebe.util.sched.clock;
 import java.time.Duration;
 import java.time.Instant;
 
-/**
- * For testcases
- *
- */
-public class ControlledActorClock implements ActorClock
-{
-    private volatile long currentTime;
-    private volatile long currentOffset;
+/** For testcases */
+public class ControlledActorClock implements ActorClock {
+  private volatile long currentTime;
+  private volatile long currentOffset;
 
-    public ControlledActorClock()
-    {
-        reset();
-    }
+  public ControlledActorClock() {
+    reset();
+  }
 
-    public void setCurrentTime(long currentTime)
-    {
-        this.currentTime = currentTime;
-    }
+  public void setCurrentTime(long currentTime) {
+    this.currentTime = currentTime;
+  }
 
-    public void setCurrentTime(Instant currentTime)
-    {
-        this.currentTime = currentTime.toEpochMilli();
-    }
+  public void setCurrentTime(Instant currentTime) {
+    this.currentTime = currentTime.toEpochMilli();
+  }
 
-    public void pinCurrentTime()
-    {
-        setCurrentTime(getCurrentTime());
-    }
+  public void pinCurrentTime() {
+    setCurrentTime(getCurrentTime());
+  }
 
-    public void addTime(Duration durationToAdd)
-    {
-        if (usesPointInTime())
-        {
-            currentTime += durationToAdd.toMillis();
-        }
-        else
-        {
-            currentOffset += durationToAdd.toMillis();
-        }
+  public void addTime(Duration durationToAdd) {
+    if (usesPointInTime()) {
+      currentTime += durationToAdd.toMillis();
+    } else {
+      currentOffset += durationToAdd.toMillis();
     }
+  }
 
-    public void reset()
-    {
-        currentTime = -1;
-        currentOffset = 0;
-    }
+  public void reset() {
+    currentTime = -1;
+    currentOffset = 0;
+  }
 
-    @Override
-    public long getTimeMillis()
-    {
-        if (usesPointInTime())
-        {
-            return currentTime;
-        }
-        else
-        {
-            long now = System.currentTimeMillis();
-            if (usesOffset())
-            {
-                now = now + currentOffset;
-            }
-            return now;
-        }
+  @Override
+  public long getTimeMillis() {
+    if (usesPointInTime()) {
+      return currentTime;
+    } else {
+      long now = System.currentTimeMillis();
+      if (usesOffset()) {
+        now = now + currentOffset;
+      }
+      return now;
     }
+  }
 
-    public Instant getCurrentTime()
-    {
-        return Instant.ofEpochMilli(getTimeMillis());
-    }
+  public Instant getCurrentTime() {
+    return Instant.ofEpochMilli(getTimeMillis());
+  }
 
-    protected boolean usesPointInTime()
-    {
-        return currentTime > 0;
-    }
+  protected boolean usesPointInTime() {
+    return currentTime > 0;
+  }
 
-    protected boolean usesOffset()
-    {
-        return currentOffset > 0;
-    }
+  protected boolean usesOffset() {
+    return currentOffset > 0;
+  }
 
-    @Override
-    public boolean update()
-    {
-        return true;
-    }
+  @Override
+  public boolean update() {
+    return true;
+  }
 
-    @Override
-    public long getNanosSinceLastMillisecond()
-    {
-        return 0;
-    }
+  @Override
+  public long getNanosSinceLastMillisecond() {
+    return 0;
+  }
 
-    @Override
-    public long getNanoTime()
-    {
-        return 0;
-    }
+  @Override
+  public long getNanoTime() {
+    return 0;
+  }
 
-    public long getCurrentTimeInMillis()
-    {
-        return getTimeMillis();
-    }
+  public long getCurrentTimeInMillis() {
+    return getTimeMillis();
+  }
 }

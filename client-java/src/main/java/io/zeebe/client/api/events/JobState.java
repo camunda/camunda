@@ -15,13 +15,12 @@
  */
 package io.zeebe.client.api.events;
 
-public enum JobState
-{
-    CREATED,
-    ACTIVATED,
-    COMPLETED,
-    TIMED_OUT,
-    FAILED,
-    RETRIES_UPDATED,
-    CANCELED,
+public enum JobState {
+  CREATED,
+  ACTIVATED,
+  COMPLETED,
+  TIMED_OUT,
+  FAILED,
+  RETRIES_UPDATED,
+  CANCELED,
 }

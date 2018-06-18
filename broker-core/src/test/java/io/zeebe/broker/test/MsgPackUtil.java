@@ -17,59 +17,49 @@
  */
 package io.zeebe.broker.test;
 
-import java.util.function.Consumer;
-
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.msgpack.spec.MsgPackWriter;
+import java.util.function.Consumer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
-public class MsgPackUtil
-{
-    public static final ObjectMapper MSGPACK_MAPPER = new ObjectMapper(new MessagePackFactory());
-    public static final ObjectMapper JSON_MAPPER = new ObjectMapper();
-    public static final String JSON_DOCUMENT = "{'string':'value', 'jsonObject':{'testAttr':'test'}}";
-    public static final String OTHER_DOCUMENT = "{'string':'bar', 'otherObject':{'testAttr':'test'}}";
-    public static final String MERGED_OTHER_WITH_JSON_DOCUMENT = "{'string':'bar', 'jsonObject':{'testAttr':'test'}, 'otherObject':{'testAttr':'test'}}";
-    public static final byte[] MSGPACK_PAYLOAD;
-    public static final byte[] OTHER_PAYLOAD;
+public class MsgPackUtil {
+  public static final ObjectMapper MSGPACK_MAPPER = new ObjectMapper(new MessagePackFactory());
+  public static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+  public static final String JSON_DOCUMENT = "{'string':'value', 'jsonObject':{'testAttr':'test'}}";
+  public static final String OTHER_DOCUMENT = "{'string':'bar', 'otherObject':{'testAttr':'test'}}";
+  public static final String MERGED_OTHER_WITH_JSON_DOCUMENT =
+      "{'string':'bar', 'jsonObject':{'testAttr':'test'}, 'otherObject':{'testAttr':'test'}}";
+  public static final byte[] MSGPACK_PAYLOAD;
+  public static final byte[] OTHER_PAYLOAD;
 
-    static
-    {
-        JSON_MAPPER.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
-        byte[] bytes = null;
-        byte[] otherBytes = null;
-        try
-        {
-            bytes = MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree(JSON_DOCUMENT));
-            otherBytes = MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree(OTHER_DOCUMENT));
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
-        finally
-        {
-            MSGPACK_PAYLOAD = bytes;
-            OTHER_PAYLOAD = otherBytes;
-        }
+  static {
+    JSON_MAPPER.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
+    byte[] bytes = null;
+    byte[] otherBytes = null;
+    try {
+      bytes = MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree(JSON_DOCUMENT));
+      otherBytes = MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree(OTHER_DOCUMENT));
+    } catch (Exception e) {
+      e.printStackTrace();
+    } finally {
+      MSGPACK_PAYLOAD = bytes;
+      OTHER_PAYLOAD = otherBytes;
     }
+  }
 
-    public static MutableDirectBuffer encodeMsgPack(Consumer<MsgPackWriter> arg)
-    {
-        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024 * 4]);
-        encodeMsgPack(buffer, arg);
-        return buffer;
-    }
+  public static MutableDirectBuffer encodeMsgPack(Consumer<MsgPackWriter> arg) {
+    final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024 * 4]);
+    encodeMsgPack(buffer, arg);
+    return buffer;
+  }
 
-    private static void encodeMsgPack(MutableDirectBuffer buffer, Consumer<MsgPackWriter> arg)
-    {
-        final MsgPackWriter writer = new MsgPackWriter();
-        writer.wrap(buffer, 0);
-        arg.accept(writer);
-        buffer.wrap(buffer, 0, writer.getOffset());
-    }
-
+  private static void encodeMsgPack(MutableDirectBuffer buffer, Consumer<MsgPackWriter> arg) {
+    final MsgPackWriter writer = new MsgPackWriter();
+    writer.wrap(buffer, 0);
+    arg.accept(writer);
+    buffer.wrap(buffer, 0, writer.getOffset());
+  }
 }

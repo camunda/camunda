@@ -20,29 +20,26 @@ import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.client.api.clients.WorkflowClient;
 import io.zeebe.client.api.events.DeploymentEvent;
 
-public class WorkflowDeployer
-{
+public class WorkflowDeployer {
 
-    public static void main(String[] args)
-    {
-        final String broker = "localhost:51015";
-        final String topic = "default-topic";
+  public static void main(String[] args) {
+    final String broker = "localhost:51015";
+    final String topic = "default-topic";
 
-        final ZeebeClientBuilder clientBuilder = ZeebeClient
-            .newClientBuilder()
-            .brokerContactPoint(broker);
+    final ZeebeClientBuilder clientBuilder =
+        ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
-        try (ZeebeClient client = clientBuilder.build())
-        {
-            final WorkflowClient workflowClient = client.topicClient(topic)
-                .workflowClient();
+    try (ZeebeClient client = clientBuilder.build()) {
+      final WorkflowClient workflowClient = client.topicClient(topic).workflowClient();
 
-            final DeploymentEvent deploymentEvent = workflowClient.newDeployCommand()
-                .addResourceFromClasspath("demoProcess.bpmn")
-                .send()
-                .join();
+      final DeploymentEvent deploymentEvent =
+          workflowClient
+              .newDeployCommand()
+              .addResourceFromClasspath("demoProcess.bpmn")
+              .send()
+              .join();
 
-            System.out.println(deploymentEvent.getState());
-        }
+      System.out.println(deploymentEvent.getState());
     }
+  }
 }

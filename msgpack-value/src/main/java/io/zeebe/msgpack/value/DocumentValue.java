@@ -22,42 +22,35 @@ import io.zeebe.msgpack.spec.MsgPackType;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class DocumentValue extends BinaryValue
-{
-    public static final DirectBuffer EMPTY_DOCUMENT = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
+public class DocumentValue extends BinaryValue {
+  public static final DirectBuffer EMPTY_DOCUMENT = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
 
-    public DocumentValue()
-    {
+  public DocumentValue() {}
+
+  public DocumentValue(DirectBuffer initialValue, int offset, int length) {
+    super(initialValue, offset, length);
+  }
+
+  @Override
+  public void wrap(DirectBuffer buff, int offset, int length) {
+    final boolean documentIsNil =
+        length == 0 || (length == 1 && buff.getByte(offset) == MsgPackCodes.NIL);
+
+    if (documentIsNil) {
+      buff = EMPTY_DOCUMENT;
+      offset = 0;
+      length = EMPTY_DOCUMENT.capacity();
     }
 
-    public DocumentValue(DirectBuffer initialValue, int offset, int length)
-    {
-        super(initialValue, offset, length);
+    final byte firstByte = buff.getByte(offset);
+    final MsgPackFormat format = MsgPackFormat.valueOf(firstByte);
+    final boolean isValid = format.getType() == MsgPackType.MAP;
+
+    if (!isValid) {
+      throw new IllegalArgumentException(
+          "Document has invalid format. On root level an object is only allowed.");
     }
 
-    @Override
-    public void wrap(DirectBuffer buff, int offset, int length)
-    {
-        final boolean documentIsNil =
-            length == 0 || (length == 1 && buff.getByte(offset) == MsgPackCodes.NIL);
-
-        if (documentIsNil)
-        {
-            buff = EMPTY_DOCUMENT;
-            offset = 0;
-            length = EMPTY_DOCUMENT.capacity();
-        }
-
-
-        final byte firstByte = buff.getByte(offset);
-        final MsgPackFormat format = MsgPackFormat.valueOf(firstByte);
-        final boolean isValid = format.getType() == MsgPackType.MAP;
-
-        if (!isValid)
-        {
-            throw new IllegalArgumentException("Document has invalid format. On root level an object is only allowed.");
-        }
-
-        super.wrap(buff, offset, length);
-    }
+    super.wrap(buff, offset, length);
+  }
 }

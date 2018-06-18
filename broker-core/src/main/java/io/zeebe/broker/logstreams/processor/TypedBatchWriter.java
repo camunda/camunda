@@ -17,23 +17,23 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import java.util.function.Consumer;
-
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.protocol.intent.Intent;
+import java.util.function.Consumer;
 
-public interface TypedBatchWriter
-{
-    TypedBatchWriter addNewCommand(Intent intent, UnpackedObject value);
-    TypedBatchWriter addFollowUpCommand(long key, Intent intent, UnpackedObject value);
+public interface TypedBatchWriter {
+  TypedBatchWriter addNewCommand(Intent intent, UnpackedObject value);
 
-    TypedBatchWriter addNewEvent(Intent intent, UnpackedObject value);
-    TypedBatchWriter addFollowUpEvent(long key, Intent intent, UnpackedObject value);
-    TypedBatchWriter addFollowUpEvent(long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata);
+  TypedBatchWriter addFollowUpCommand(long key, Intent intent, UnpackedObject value);
 
-    /**
-     * @return position of new event, negative value on failure
-     */
-    long write();
+  TypedBatchWriter addNewEvent(Intent intent, UnpackedObject value);
+
+  TypedBatchWriter addFollowUpEvent(long key, Intent intent, UnpackedObject value);
+
+  TypedBatchWriter addFollowUpEvent(
+      long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata);
+
+  /** @return position of new event, negative value on failure */
+  long write();
 }

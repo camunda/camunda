@@ -15,7 +15,6 @@
  */
 package io.zeebe.client.api.commands;
 
-public enum DeploymentCommandName
-{
-    CREATE
+public enum DeploymentCommandName {
+  CREATE
 }

@@ -21,9 +21,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.CoreMatchers.containsString;
 
-import java.time.Duration;
-import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.ZeebeFuture;
@@ -37,247 +34,226 @@ import io.zeebe.client.util.Events;
 import io.zeebe.protocol.clientapi.*;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.brokerapi.*;
+import java.time.Duration;
+import java.util.List;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
-public class ClientCommandManagerTest
-{
+public class ClientCommandManagerTest {
 
-    public ClientRule clientRule = new ClientRule(b -> b.requestTimeout(Duration.ofSeconds(3)));
-    public StubBrokerRule broker = new StubBrokerRule();
+  public ClientRule clientRule = new ClientRule(b -> b.requestTimeout(Duration.ofSeconds(3)));
+  public StubBrokerRule broker = new StubBrokerRule();
 
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(broker).around(clientRule);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(broker).around(clientRule);
 
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
+  @Rule public ExpectedException exception = ExpectedException.none();
 
-    protected ZeebeClient client;
+  protected ZeebeClient client;
 
-    @Before
-    public void setUp()
-    {
-        client =  clientRule.getClient();
-    }
+  @Before
+  public void setUp() {
+    client = clientRule.getClient();
+  }
 
-    @Test
-    public void testInitialTopologyRequest()
-    {
-        // when
-        waitUntil(() -> broker.getReceivedControlMessageRequests().size() == 1);
+  @Test
+  public void testInitialTopologyRequest() {
+    // when
+    waitUntil(() -> broker.getReceivedControlMessageRequests().size() == 1);
 
-        // then
-        assertTopologyRefreshRequests(1);
-    }
+    // then
+    assertTopologyRefreshRequests(1);
+  }
 
-    @Test
-    public void testRefreshTopologyRequest()
-    {
-        // given
-        // initial topology has been fetched
-        waitUntil(() -> broker.getReceivedControlMessageRequests().size() == 1);
+  @Test
+  public void testRefreshTopologyRequest() {
+    // given
+    // initial topology has been fetched
+    waitUntil(() -> broker.getReceivedControlMessageRequests().size() == 1);
 
-        broker.jobs().registerCreateCommand();
+    broker.jobs().registerCreateCommand();
 
-        // extend topology
-        broker.addTopic("other-topic", 0);
+    // extend topology
+    broker.addTopic("other-topic", 0);
 
-        // when
-        final JobEvent jobEvent = client.topicClient("other-topic").jobClient()
-                    .newCreateCommand()
-                    .jobType("foo")
-                    .send()
-                    .join();
+    // when
+    final JobEvent jobEvent =
+        client
+            .topicClient("other-topic")
+            .jobClient()
+            .newCreateCommand()
+            .jobType("foo")
+            .send()
+            .join();
 
-        // then the client has refreshed its topology
-        assertThat(jobEvent).isNotNull();
+    // then the client has refreshed its topology
+    assertThat(jobEvent).isNotNull();
 
-        assertTopologyRefreshRequests(2);
-    }
+    assertTopologyRefreshRequests(2);
+  }
 
-    @Test
-    public void testRefreshTopologyWhenLeaderIsNotKnown()
-    {
-        // given
-        // initial topology has been fetched
-        waitUntil(() -> broker.getReceivedControlMessageRequests().size() == 1);
+  @Test
+  public void testRefreshTopologyWhenLeaderIsNotKnown() {
+    // given
+    // initial topology has been fetched
+    waitUntil(() -> broker.getReceivedControlMessageRequests().size() == 1);
 
-        broker.jobs().registerCompleteCommand();
+    broker.jobs().registerCompleteCommand();
 
-        // extend topology
-        broker.addTopic("other-topic", 1);
+    // extend topology
+    broker.addTopic("other-topic", 1);
 
-        final JobEventImpl baseEvent = Events.exampleJob();
-        baseEvent.setTopicName("other-topic");
-        baseEvent.setPartitionId(1);
+    final JobEventImpl baseEvent = Events.exampleJob();
+    baseEvent.setTopicName("other-topic");
+    baseEvent.setPartitionId(1);
 
-        // when
-        final JobEvent jobEvent = client.topicClient("other-topic").jobClient()
-                .newCompleteCommand(baseEvent)
-                .send()
-                .join();
+    // when
+    final JobEvent jobEvent =
+        client.topicClient("other-topic").jobClient().newCompleteCommand(baseEvent).send().join();
 
-        // then the client has refreshed its topology
-        assertThat(jobEvent).isNotNull();
+    // then the client has refreshed its topology
+    assertThat(jobEvent).isNotNull();
 
-        assertTopologyRefreshRequests(2);
-    }
+    assertTopologyRefreshRequests(2);
+  }
 
-    @Test
-    public void testRequestFailure()
-    {
-        // given
-        broker.onExecuteCommandRequest(ValueType.JOB, JobIntent.CREATE)
-                  .respondWithError()
-                    .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
-                    .errorData("test")
-                  .register();
+  @Test
+  public void testRequestFailure() {
+    // given
+    broker
+        .onExecuteCommandRequest(ValueType.JOB, JobIntent.CREATE)
+        .respondWithError()
+        .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
+        .errorData("test")
+        .register();
 
-        final ZeebeFuture<JobEvent> future = client.topicClient().jobClient()
-                .newCreateCommand()
-                .jobType("foo")
-                .send();
+    final ZeebeFuture<JobEvent> future =
+        client.topicClient().jobClient().newCreateCommand().jobType("foo").send();
 
-        assertThatThrownBy(() -> future.join())
-            .isInstanceOf(RuntimeException.class)
-            .hasMessageContaining("Request exception (REQUEST_PROCESSING_FAILURE): test");
+    assertThatThrownBy(() -> future.join())
+        .isInstanceOf(RuntimeException.class)
+        .hasMessageContaining("Request exception (REQUEST_PROCESSING_FAILURE): test");
 
-        // then
-        assertAtLeastTopologyRefreshRequests(1);
-        assertCreateJobRequests(1);
-    }
+    // then
+    assertAtLeastTopologyRefreshRequests(1);
+    assertCreateJobRequests(1);
+  }
 
-    @Test
-    public void testReadResponseFailure()
-    {
-        // given
-        broker.jobs().registerCreateCommand();
+  @Test
+  public void testReadResponseFailure() {
+    // given
+    broker.jobs().registerCreateCommand();
 
-        final CommandImpl<RecordImpl> command = new CommandImpl<RecordImpl>(((ZeebeClientImpl) client).getCommandManager())
-        {
-            @Override
-            public RecordImpl getCommand()
-            {
-                return new FailingCommand();
-            }
+    final CommandImpl<RecordImpl> command =
+        new CommandImpl<RecordImpl>(((ZeebeClientImpl) client).getCommandManager()) {
+          @Override
+          public RecordImpl getCommand() {
+            return new FailingCommand();
+          }
         };
 
-        // then
-        exception.expect(ClientException.class);
-        exception.expectMessage("Unexpected exception during response handling");
+    // then
+    exception.expect(ClientException.class);
+    exception.expectMessage("Unexpected exception during response handling");
 
-        // when
-        command.send().join();
-    }
+    // when
+    command.send().join();
+  }
 
-    @Test
-    public void testPartitionNotFoundResponse()
-    {
-        // given
-        broker.onExecuteCommandRequest(ValueType.JOB, JobIntent.CREATE)
-            .respondWithError()
-                .errorCode(ErrorCode.PARTITION_NOT_FOUND)
-                .errorData("")
-            .register();
+  @Test
+  public void testPartitionNotFoundResponse() {
+    // given
+    broker
+        .onExecuteCommandRequest(ValueType.JOB, JobIntent.CREATE)
+        .respondWithError()
+        .errorCode(ErrorCode.PARTITION_NOT_FOUND)
+        .errorData("")
+        .register();
 
-        // then
-        exception.expect(ClientException.class);
-        exception.expectMessage(containsString("Request timed out (PT3S)"));
-        // when the partition is repeatedly not found, the client loops
-        // over refreshing the topology and making a request that fails and so on. The timeout
-        // kicks in at any point in that loop, so we cannot assert the exact error message any more specifically.
+    // then
+    exception.expect(ClientException.class);
+    exception.expectMessage(containsString("Request timed out (PT3S)"));
+    // when the partition is repeatedly not found, the client loops
+    // over refreshing the topology and making a request that fails and so on. The timeout
+    // kicks in at any point in that loop, so we cannot assert the exact error message any more
+    // specifically.
 
-        // when
-        client.topicClient().jobClient()
-                .newCreateCommand()
-                .jobType("foo")
-                .send()
-                .join();
-    }
+    // when
+    client.topicClient().jobClient().newCreateCommand().jobType("foo").send().join();
+  }
 
-    protected void assertTopologyRefreshRequests(final int count)
-    {
-        final List<ControlMessageRequest> receivedControlMessageRequests = broker.getReceivedControlMessageRequests();
-        assertThat(receivedControlMessageRequests).hasSize(count);
+  protected void assertTopologyRefreshRequests(final int count) {
+    final List<ControlMessageRequest> receivedControlMessageRequests =
+        broker.getReceivedControlMessageRequests();
+    assertThat(receivedControlMessageRequests).hasSize(count);
 
-        receivedControlMessageRequests.forEach(request ->
-        {
-            assertThat(request.messageType()).isEqualTo(REQUEST_TOPOLOGY);
-            assertThat(request.getData()).isEmpty();
+    receivedControlMessageRequests.forEach(
+        request -> {
+          assertThat(request.messageType()).isEqualTo(REQUEST_TOPOLOGY);
+          assertThat(request.getData()).isEmpty();
         });
-    }
+  }
 
-    protected void assertAtLeastTopologyRefreshRequests(final int count)
-    {
-        final List<ControlMessageRequest> receivedControlMessageRequests = broker.getReceivedControlMessageRequests();
-        assertThat(receivedControlMessageRequests.size()).isGreaterThanOrEqualTo(count);
+  protected void assertAtLeastTopologyRefreshRequests(final int count) {
+    final List<ControlMessageRequest> receivedControlMessageRequests =
+        broker.getReceivedControlMessageRequests();
+    assertThat(receivedControlMessageRequests.size()).isGreaterThanOrEqualTo(count);
 
-        receivedControlMessageRequests.forEach(request ->
-        {
-            assertThat(request.messageType()).isEqualTo(REQUEST_TOPOLOGY);
-            assertThat(request.getData()).isEmpty();
+    receivedControlMessageRequests.forEach(
+        request -> {
+          assertThat(request.messageType()).isEqualTo(REQUEST_TOPOLOGY);
+          assertThat(request.getData()).isEmpty();
         });
-    }
+  }
 
-    protected void assertCreateJobRequests(final int count)
-    {
-        final List<ExecuteCommandRequest> receivedCommandRequests = broker.getReceivedCommandRequests();
-        assertThat(receivedCommandRequests).hasSize(count);
+  protected void assertCreateJobRequests(final int count) {
+    final List<ExecuteCommandRequest> receivedCommandRequests = broker.getReceivedCommandRequests();
+    assertThat(receivedCommandRequests).hasSize(count);
 
-        receivedCommandRequests.forEach(request ->
-        {
-            assertThat(request.valueType()).isEqualTo(ValueType.JOB);
-            assertThat(request.intent()).isEqualTo(JobIntent.CREATE);
+    receivedCommandRequests.forEach(
+        request -> {
+          assertThat(request.valueType()).isEqualTo(ValueType.JOB);
+          assertThat(request.intent()).isEqualTo(JobIntent.CREATE);
         });
+  }
+
+  protected static class FailingCommand extends RecordImpl {
+
+    @JsonCreator
+    public FailingCommand() {
+      super(null, RecordType.COMMAND, ValueType.JOB);
+      this.setTopicName(StubBrokerRule.TEST_TOPIC_NAME);
+      this.setPartitionId(StubBrokerRule.TEST_PARTITION_ID);
+      this.setIntent(JobIntent.CREATE);
     }
 
-    protected static class FailingCommand extends RecordImpl
-    {
-
-        @JsonCreator
-        public FailingCommand()
-        {
-            super(null, RecordType.COMMAND, ValueType.JOB);
-            this.setTopicName(StubBrokerRule.TEST_TOPIC_NAME);
-            this.setPartitionId(StubBrokerRule.TEST_PARTITION_ID);
-            this.setIntent(JobIntent.CREATE);
-        }
-
-        public String getFailingProp()
-        {
-            return "foo";
-        }
-
-        @Override
-        public Class<? extends RecordImpl> getEventClass()
-        {
-            return FailingEvent.class;
-        }
+    public String getFailingProp() {
+      return "foo";
     }
 
-    protected static class FailingEvent extends RecordImpl
-    {
+    @Override
+    public Class<? extends RecordImpl> getEventClass() {
+      return FailingEvent.class;
+    }
+  }
 
-        @JsonCreator
-        public FailingEvent()
-        {
-            super(null, RecordType.EVENT, ValueType.JOB);
-            this.setTopicName(StubBrokerRule.TEST_TOPIC_NAME);
-            this.setPartitionId(StubBrokerRule.TEST_PARTITION_ID);
-            this.setIntent(JobIntent.CREATED);
-        }
+  protected static class FailingEvent extends RecordImpl {
 
-        public void setFailingProp(String prop)
-        {
-            throw new RuntimeException("expected");
-        }
-
-        @Override
-        public Class<? extends RecordImpl> getEventClass()
-        {
-            return FailingEvent.class;
-        }
+    @JsonCreator
+    public FailingEvent() {
+      super(null, RecordType.EVENT, ValueType.JOB);
+      this.setTopicName(StubBrokerRule.TEST_TOPIC_NAME);
+      this.setPartitionId(StubBrokerRule.TEST_PARTITION_ID);
+      this.setIntent(JobIntent.CREATED);
     }
 
+    public void setFailingProp(String prop) {
+      throw new RuntimeException("expected");
+    }
+
+    @Override
+    public Class<? extends RecordImpl> getEventClass() {
+      return FailingEvent.class;
+    }
+  }
 }

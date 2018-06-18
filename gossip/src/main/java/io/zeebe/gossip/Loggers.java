@@ -18,7 +18,6 @@ package io.zeebe.gossip;
 import io.zeebe.util.ZbLogger;
 import org.slf4j.Logger;
 
-public class Loggers
-{
-    public static final Logger GOSSIP_LOGGER = new ZbLogger("io.zeebe.gossip");
+public class Loggers {
+  public static final Logger GOSSIP_LOGGER = new ZbLogger("io.zeebe.gossip");
 }

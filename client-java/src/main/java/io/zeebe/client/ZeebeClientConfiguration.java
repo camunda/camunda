@@ -17,66 +17,40 @@ package io.zeebe.client;
 
 import java.time.Duration;
 
-public interface ZeebeClientConfiguration
-{
-    /**
-     * @see ZeebeClientBuilder#brokerContactPoint(String)
-     */
-    String getBrokerContactPoint();
+public interface ZeebeClientConfiguration {
+  /** @see ZeebeClientBuilder#brokerContactPoint(String) */
+  String getBrokerContactPoint();
 
-    /**
-     * @see ZeebeClientBuilder#requestTimeout(Duration)
-     */
-    Duration getRequestTimeout();
+  /** @see ZeebeClientBuilder#requestTimeout(Duration) */
+  Duration getRequestTimeout();
 
-    /**
-     * @see ZeebeClientBuilder#requestBlocktime(Duration)
-     */
-    Duration getRequestBlocktime();
+  /** @see ZeebeClientBuilder#requestBlocktime(Duration) */
+  Duration getRequestBlocktime();
 
-    /**
-     * @see ZeebeClientBuilder#sendBufferSize(int)
-     */
-    int getSendBufferSize();
+  /** @see ZeebeClientBuilder#sendBufferSize(int) */
+  int getSendBufferSize();
 
-    /**
-     * @see ZeebeClientBuilder#numManagementThreads(int)
-     */
-    int getNumManagementThreads();
+  /** @see ZeebeClientBuilder#numManagementThreads(int) */
+  int getNumManagementThreads();
 
-    /**
-     * @see ZeebeClientBuilder#numSubscriptionExecutionThreads(int)
-     */
-    int getNumSubscriptionExecutionThreads();
+  /** @see ZeebeClientBuilder#numSubscriptionExecutionThreads(int) */
+  int getNumSubscriptionExecutionThreads();
 
-    /**
-     * @see ZeebeClientBuilder#defaultTopicSubscriptionBufferSize(int)
-     */
-    int getDefaultTopicSubscriptionBufferSize();
+  /** @see ZeebeClientBuilder#defaultTopicSubscriptionBufferSize(int) */
+  int getDefaultTopicSubscriptionBufferSize();
 
-    /**
-     * @see ZeebeClientBuilder#defaultJobSubscriptionBufferSize(int)
-     */
-    int getDefaultJobSubscriptionBufferSize();
+  /** @see ZeebeClientBuilder#defaultJobSubscriptionBufferSize(int) */
+  int getDefaultJobSubscriptionBufferSize();
 
-    /**
-     * @see ZeebeClientBuilder#tcpChannelKeepAlivePeriod(Duration)
-     */
-    Duration getTcpChannelKeepAlivePeriod();
+  /** @see ZeebeClientBuilder#tcpChannelKeepAlivePeriod(Duration) */
+  Duration getTcpChannelKeepAlivePeriod();
 
-    /**
-     * @see ZeebeClientBuilder#defaultJobWorkerName(String)
-     */
-    String getDefaultJobWorkerName();
+  /** @see ZeebeClientBuilder#defaultJobWorkerName(String) */
+  String getDefaultJobWorkerName();
 
-    /**
-     * @see ZeebeClientBuilder#defaultJobTimeout(Duration)
-     */
-    Duration getDefaultJobTimeout();
+  /** @see ZeebeClientBuilder#defaultJobTimeout(Duration) */
+  Duration getDefaultJobTimeout();
 
-    /**
-     * @see ZeebeClientBuilder#defaultTopic(String)
-     */
-    String getDefaultTopic();
-
+  /** @see ZeebeClientBuilder#defaultTopic(String) */
+  String getDefaultTopic();
 }

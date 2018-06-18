@@ -15,13 +15,12 @@
  */
 package io.zeebe.model.bpmn.impl;
 
-public interface Result
-{
-    boolean success();
+public interface Result {
+  boolean success();
 
-    boolean hasErrors();
+  boolean hasErrors();
 
-    String format();
+  String format();
 
-    String formatErrors();
+  String formatErrors();
 }

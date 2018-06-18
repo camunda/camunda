@@ -18,7 +18,6 @@ package io.zeebe.msgpack.el;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -26,66 +25,43 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class JsonConditionParserFailureMessageTest
-{
-    @Parameters(name = "{index}: expression = {0}")
-    public static Iterable<Object[]> data()
-    {
-        return Arrays.asList(new Object[][]
-        {
-                { "", "expression is empty" },
-
-                { "foo", "expected comparison, disjunction or conjunction." },
-
-                { "$.foo", "expected comparison operator ('==', '!=', '<', '<=', '>', '>=')" },
-
-                { "$.foo ==", "expected literal (JSON path, string, number, boolean, null)" },
-
-                { "$.foo < 'bar'", "expected number or JSON path" },
-
-                { "$.foo < true", "expected number or JSON path" },
-
-                { "$.foo == { 'a': 2 }", "expected literal (JSON path, string, number, boolean, null)" },
-
-                { "$.foo == [1, 2, 3]", "expected literal (JSON path, string, number, boolean, null)" },
-
-                { "$.foo + 3", "expected comparison operator ('==', '!=', '<', '<=', '>', '>=')" },
-
-                { "$.foo or $.bar", "expected comparison operator ('==', '!=', '<', '<=', '>', '>=')" },
-
-                { "$.foo < 3 &&", "expected comparison" },
-
-                { "$.foo < 3 ||", "expected comparison" },
-
-                { "($.foo < 3", "`)' expected but end of source found" },
-
-                { "$.foo.. < 3", "Unexpected json-path" },
-
-                { "$.foo < " + Double.NaN, "expected number or JSON path" },
-
-                { "$.foo < " + Double.POSITIVE_INFINITY, "expected number or JSON path" },
-
-                { "$.foo < " + Double.NEGATIVE_INFINITY, "expected number or JSON path" },
-
+public class JsonConditionParserFailureMessageTest {
+  @Parameters(name = "{index}: expression = {0}")
+  public static Iterable<Object[]> data() {
+    return Arrays.asList(
+        new Object[][] {
+          {"", "expression is empty"},
+          {"foo", "expected comparison, disjunction or conjunction."},
+          {"$.foo", "expected comparison operator ('==', '!=', '<', '<=', '>', '>=')"},
+          {"$.foo ==", "expected literal (JSON path, string, number, boolean, null)"},
+          {"$.foo < 'bar'", "expected number or JSON path"},
+          {"$.foo < true", "expected number or JSON path"},
+          {"$.foo == { 'a': 2 }", "expected literal (JSON path, string, number, boolean, null)"},
+          {"$.foo == [1, 2, 3]", "expected literal (JSON path, string, number, boolean, null)"},
+          {"$.foo + 3", "expected comparison operator ('==', '!=', '<', '<=', '>', '>=')"},
+          {"$.foo or $.bar", "expected comparison operator ('==', '!=', '<', '<=', '>', '>=')"},
+          {"$.foo < 3 &&", "expected comparison"},
+          {"$.foo < 3 ||", "expected comparison"},
+          {"($.foo < 3", "`)' expected but end of source found"},
+          {"$.foo.. < 3", "Unexpected json-path"},
+          {"$.foo < " + Double.NaN, "expected number or JSON path"},
+          {"$.foo < " + Double.POSITIVE_INFINITY, "expected number or JSON path"},
+          {"$.foo < " + Double.NEGATIVE_INFINITY, "expected number or JSON path"},
         });
-    }
+  }
 
-    @Parameter(0)
-    public String expression;
+  @Parameter(0)
+  public String expression;
 
-    @Parameter(1)
-    public String errorMessage;
+  @Parameter(1)
+  public String errorMessage;
 
-    @Test
-    public void test()
-    {
-        final CompiledJsonCondition condition = JsonConditionFactory.createCondition(expression);
+  @Test
+  public void test() {
+    final CompiledJsonCondition condition = JsonConditionFactory.createCondition(expression);
 
-        assertThat(condition.isValid())
-            .describedAs("is valid")
-            .isFalse();
+    assertThat(condition.isValid()).describedAs("is valid").isFalse();
 
-        assertThat(condition.getErrorMessage()).contains(errorMessage);
-    }
-
+    assertThat(condition.getErrorMessage()).contains(errorMessage);
+  }
 }

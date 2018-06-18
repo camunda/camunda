@@ -19,59 +19,54 @@ package io.zeebe.broker.topic;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.zeebe.broker.clustering.orchestration.topic.PartitionsResponse;
+import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.io.DirectBufferInputStream;
 import org.junit.Test;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+public class PartitionsResponseTest {
 
-import io.zeebe.broker.clustering.orchestration.topic.PartitionsResponse;
-import io.zeebe.util.buffer.BufferUtil;
+  @Test
+  public void shouldEncodePartitions() throws Exception {
+    // given
+    final PartitionsResponse response = new PartitionsResponse();
 
-public class PartitionsResponseTest
-{
+    response.addPartition(1, BufferUtil.wrapString("default-topic"));
+    response.addPartition(2, BufferUtil.wrapString("foo"));
+    response.addPartition(3, BufferUtil.wrapString("foo"));
 
-    @Test
-    public void shouldEncodePartitions() throws Exception
-    {
-        // given
-        final PartitionsResponse response = new PartitionsResponse();
+    // when
+    final UnsafeBuffer buf = new UnsafeBuffer(new byte[response.getLength()]);
+    response.write(buf, 0);
 
-        response.addPartition(1, BufferUtil.wrapString("default-topic"));
-        response.addPartition(2, BufferUtil.wrapString("foo"));
-        response.addPartition(3, BufferUtil.wrapString("foo"));
+    // then
+    final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
+    final JsonNode deserializedResponse = objectMapper.readTree(new DirectBufferInputStream(buf));
 
-        // when
-        final UnsafeBuffer buf = new UnsafeBuffer(new byte[response.getLength()]);
-        response.write(buf, 0);
+    assertThat(deserializedResponse.isObject()).isTrue();
+    assertThat(deserializedResponse.fieldNames()).containsExactly("partitions");
 
-        // then
-        final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
-        final JsonNode deserializedResponse = objectMapper.readTree(new DirectBufferInputStream(buf));
+    final JsonNode partitions = deserializedResponse.get("partitions");
+    assertThat(partitions.isArray()).isTrue();
+    assertThat(partitions.size()).isEqualTo(3);
 
-        assertThat(deserializedResponse.isObject()).isTrue();
-        assertThat(deserializedResponse.fieldNames()).containsExactly("partitions");
+    final JsonNode partition3 = partitions.get(0);
+    assertThat(partition3.isObject()).isTrue();
+    assertThat(partition3.get("topic").textValue()).isEqualTo("default-topic");
+    assertThat(partition3.get("id").numberValue()).isEqualTo(1);
 
-        final JsonNode partitions = deserializedResponse.get("partitions");
-        assertThat(partitions.isArray()).isTrue();
-        assertThat(partitions.size()).isEqualTo(3);
+    final JsonNode partition1 = partitions.get(1);
+    assertThat(partition1.isObject()).isTrue();
+    assertThat(partition1.get("topic").textValue()).isEqualTo("foo");
+    assertThat(partition1.get("id").numberValue()).isEqualTo(2);
 
-        final JsonNode partition3 = partitions.get(0);
-        assertThat(partition3.isObject()).isTrue();
-        assertThat(partition3.get("topic").textValue()).isEqualTo("default-topic");
-        assertThat(partition3.get("id").numberValue()).isEqualTo(1);
-
-        final JsonNode partition1 = partitions.get(1);
-        assertThat(partition1.isObject()).isTrue();
-        assertThat(partition1.get("topic").textValue()).isEqualTo("foo");
-        assertThat(partition1.get("id").numberValue()).isEqualTo(2);
-
-        final JsonNode partition2 = partitions.get(2);
-        assertThat(partition2.isObject()).isTrue();
-        assertThat(partition2.get("topic").textValue()).isEqualTo("foo");
-        assertThat(partition2.get("id").numberValue()).isEqualTo(3);
-
-    }
+    final JsonNode partition2 = partitions.get(2);
+    assertThat(partition2.isObject()).isTrue();
+    assertThat(partition2.get("topic").textValue()).isEqualTo("foo");
+    assertThat(partition2.get("id").numberValue()).isEqualTo(3);
+  }
 }

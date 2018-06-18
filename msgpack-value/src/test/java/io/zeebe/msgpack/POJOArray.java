@@ -18,21 +18,17 @@ package io.zeebe.msgpack;
 import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.value.ValueArray;
 
-public class POJOArray extends UnpackedObject
-{
+public class POJOArray extends UnpackedObject {
 
-    protected ArrayProperty<MinimalPOJO> simpleArrayProp;
+  protected ArrayProperty<MinimalPOJO> simpleArrayProp;
 
-    public POJOArray()
-    {
-        this.simpleArrayProp = new ArrayProperty<>("simpleArray", new MinimalPOJO());
+  public POJOArray() {
+    this.simpleArrayProp = new ArrayProperty<>("simpleArray", new MinimalPOJO());
 
-        this.declareProperty(simpleArrayProp);
-    }
+    this.declareProperty(simpleArrayProp);
+  }
 
-    public ValueArray<MinimalPOJO> simpleArray()
-    {
-        return simpleArrayProp;
-    }
-
+  public ValueArray<MinimalPOJO> simpleArray() {
+    return simpleArrayProp;
+  }
 }

@@ -15,65 +15,54 @@
  */
 package io.zeebe.util.sched;
 
-public class SchedulingHints
-{
-    public static int ioBound(short ioDeviceId)
-    {
-        int hints = 0;
+public class SchedulingHints {
+  public static int ioBound(short ioDeviceId) {
+    int hints = 0;
 
-        hints = setIoBound(hints);
-        hints = setIoDevice(ioDeviceId, hints);
+    hints = setIoBound(hints);
+    hints = setIoDevice(ioDeviceId, hints);
 
-        return hints;
-    }
+    return hints;
+  }
 
-    public static int cpuBound(ActorPriority priority)
-    {
-        int hints = 0;
+  public static int cpuBound(ActorPriority priority) {
+    int hints = 0;
 
-        hints = setCpuBound(hints);
-        hints = setPriority(priority.getPriorityClass(), hints);
+    hints = setCpuBound(hints);
+    hints = setPriority(priority.getPriorityClass(), hints);
 
-        return hints;
-    }
+    return hints;
+  }
 
-    public static int setCpuBound(int hints)
-    {
-        return hints & ~1;
-    }
+  public static int setCpuBound(int hints) {
+    return hints & ~1;
+  }
 
-    public static int setIoBound(int hints)
-    {
-        return hints | 1;
-    }
+  public static int setIoBound(int hints) {
+    return hints | 1;
+  }
 
-    public static boolean isCpuBound(int hints)
-    {
-        return (hints & ~1) == hints;
-    }
+  public static boolean isCpuBound(int hints) {
+    return (hints & ~1) == hints;
+  }
 
-    public static boolean isIoBound(int hints)
-    {
-        return (hints & 1) == hints;
-    }
+  public static boolean isIoBound(int hints) {
+    return (hints & 1) == hints;
+  }
 
-    public static int setIoDevice(short ioDevice, int hints)
-    {
-        return hints | (ioDevice << 1);
-    }
+  public static int setIoDevice(short ioDevice, int hints) {
+    return hints | (ioDevice << 1);
+  }
 
-    public static short getIoDevice(int hints)
-    {
-        return (short) (hints >> 1);
-    }
+  public static short getIoDevice(int hints) {
+    return (short) (hints >> 1);
+  }
 
-    public static int setPriority(short priority, int hints)
-    {
-        return hints | (priority << 1);
-    }
+  public static int setPriority(short priority, int hints) {
+    return hints | (priority << 1);
+  }
 
-    public static short getPriority(int hints)
-    {
-        return (short) (hints >> 1);
-    }
+  public static short getPriority(int hints) {
+    return (short) (hints >> 1);
+  }
 }

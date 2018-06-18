@@ -15,281 +15,265 @@
  */
 package io.zeebe.logstreams.log;
 
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.*;
+import static io.zeebe.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.zeebe.logstreams.impl.CompleteEventsInBlockProcessor;
 import io.zeebe.logstreams.impl.log.fs.FsLogStorage;
 import io.zeebe.logstreams.impl.log.fs.FsLogStorageConfiguration;
 import io.zeebe.util.metrics.MetricsManager;
+import java.nio.ByteBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
-import java.nio.ByteBuffer;
+/** @author Christopher Zell <christopher.zell@camunda.com> */
+public class CompleteInBlockProcessorTest {
+  private static final int SEGMENT_SIZE = 1024 * 16;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.*;
-import static io.zeebe.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
+  protected static final int LENGTH = headerLength(0); // 44 -> 52
+  protected static final int ALIGNED_LEN = alignedFramedLength(LENGTH); // 56 -> 64
 
-/**
- * @author Christopher Zell <christopher.zell@camunda.com>
- */
-public class CompleteInBlockProcessorTest
-{
-    private static final int SEGMENT_SIZE = 1024 * 16;
+  @Rule public TemporaryFolder tempFolder = new TemporaryFolder();
 
-    protected static final int LENGTH = headerLength(0); // 44 -> 52
-    protected static final int ALIGNED_LEN = alignedFramedLength(LENGTH); // 56 -> 64
+  @Rule public ExpectedException thrown = ExpectedException.none();
 
-    @Rule
-    public TemporaryFolder tempFolder = new TemporaryFolder();
+  private CompleteEventsInBlockProcessor processor;
+  private String logPath;
+  private FsLogStorageConfiguration fsStorageConfig;
+  private FsLogStorage fsLogStorage;
+  private long appendedAddress;
 
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
+  @Before
+  public void init() {
+    processor = new CompleteEventsInBlockProcessor();
+    logPath = tempFolder.getRoot().getAbsolutePath();
+    fsStorageConfig = new FsLogStorageConfiguration(SEGMENT_SIZE, logPath, 0, false);
+    fsLogStorage = new FsLogStorage(fsStorageConfig, new MetricsManager(), "topic", 0);
 
-    private CompleteEventsInBlockProcessor processor;
-    private String logPath;
-    private FsLogStorageConfiguration fsStorageConfig;
-    private FsLogStorage fsLogStorage;
-    private long appendedAddress;
+    final ByteBuffer writeBuffer = ByteBuffer.allocate(192);
+    final MutableDirectBuffer directBuffer = new UnsafeBuffer(0, 0);
+    directBuffer.wrap(writeBuffer);
 
-    @Before
-    public void init()
-    {
-        processor = new CompleteEventsInBlockProcessor();
-        logPath = tempFolder.getRoot().getAbsolutePath();
-        fsStorageConfig = new FsLogStorageConfiguration(SEGMENT_SIZE, logPath, 0, false);
-        fsLogStorage = new FsLogStorage(fsStorageConfig, new MetricsManager(), "topic", 0);
+    /*
+    Buffer: [4test4asdf30012345678901234567890123456789]
+    */
+    // small events
+    int idx = 0;
+    directBuffer.putInt(lengthOffset(idx), framedLength(LENGTH));
+    directBuffer.putLong(positionOffset(messageOffset(idx)), 1);
 
-        final ByteBuffer writeBuffer = ByteBuffer.allocate(192);
-        final MutableDirectBuffer directBuffer = new UnsafeBuffer(0, 0);
-        directBuffer.wrap(writeBuffer);
+    idx = ALIGNED_LEN;
+    directBuffer.putInt(lengthOffset(idx), framedLength(LENGTH));
+    directBuffer.putLong(positionOffset(messageOffset(idx)), 2);
 
-        /*
-         Buffer: [4test4asdf30012345678901234567890123456789]
-         */
-        //small events
-        int idx = 0;
-        directBuffer.putInt(lengthOffset(idx), framedLength(LENGTH));
-        directBuffer.putLong(positionOffset(messageOffset(idx)), 1);
+    // a large event
+    idx = 2 * ALIGNED_LEN;
+    directBuffer.putInt(lengthOffset(idx), framedLength(headerLength(256)));
+    directBuffer.putLong(positionOffset(messageOffset(idx)), 3);
 
-        idx = ALIGNED_LEN;
-        directBuffer.putInt(lengthOffset(idx), framedLength(LENGTH));
-        directBuffer.putLong(positionOffset(messageOffset(idx)), 2);
+    fsLogStorage.open();
+    appendedAddress = fsLogStorage.append(writeBuffer);
+  }
 
-        // a large event
-        idx = 2 * ALIGNED_LEN;
-        directBuffer.putInt(lengthOffset(idx), framedLength(headerLength(256)));
-        directBuffer.putLong(positionOffset(messageOffset(idx)), 3);
+  @Test
+  public void shouldReadAndProcessFirstEvent() {
+    // given buffer, which could contain first event
+    final ByteBuffer readBuffer = ByteBuffer.allocate(ALIGNED_LEN);
 
-        fsLogStorage.open();
-        appendedAddress = fsLogStorage.append(writeBuffer);
-    }
+    // when read into buffer and buffer was processed
+    final long result = fsLogStorage.read(readBuffer, appendedAddress, processor);
 
-    @Test
-    public void shouldReadAndProcessFirstEvent()
-    {
-        // given buffer, which could contain first event
-        final ByteBuffer readBuffer = ByteBuffer.allocate(ALIGNED_LEN);
+    // then
+    // result is equal to start address plus event size
+    assertThat(result).isEqualTo(appendedAddress + ALIGNED_LEN);
+    final DirectBuffer buffer = new UnsafeBuffer(0, 0);
+    buffer.wrap(readBuffer);
 
-        // when read into buffer and buffer was processed
-        final long result = fsLogStorage.read(readBuffer, appendedAddress, processor);
+    // first event was read
+    assertThat(buffer.getInt(lengthOffset(0))).isEqualTo(framedLength(LENGTH));
+    assertThat(getPosition(buffer, 0)).isEqualTo(1);
+  }
 
-        // then
-        // result is equal to start address plus event size
-        assertThat(result).isEqualTo(appendedAddress + ALIGNED_LEN);
-        final DirectBuffer buffer = new UnsafeBuffer(0, 0);
-        buffer.wrap(readBuffer);
+  @Test
+  public void shouldReadAndProcessTwoEvents() {
+    // given buffer, which could contain 2 events
+    final ByteBuffer readBuffer = ByteBuffer.allocate(2 * ALIGNED_LEN);
 
-        // first event was read
-        assertThat(buffer.getInt(lengthOffset(0))).isEqualTo(framedLength(LENGTH));
-        assertThat(getPosition(buffer, 0)).isEqualTo(1);
-    }
+    // when read into buffer and buffer was processed
+    final long result = fsLogStorage.read(readBuffer, appendedAddress, processor);
 
-    @Test
-    public void shouldReadAndProcessTwoEvents()
-    {
-        // given buffer, which could contain 2 events
-        final ByteBuffer readBuffer = ByteBuffer.allocate(2 * ALIGNED_LEN);
+    // then
+    // returned address is equal to start address plus two event sizes
+    assertThat(result).isEqualTo(appendedAddress + ALIGNED_LEN * 2);
+    final DirectBuffer buffer = new UnsafeBuffer(0, 0);
+    buffer.wrap(readBuffer);
 
-        // when read into buffer and buffer was processed
-        final long result = fsLogStorage.read(readBuffer, appendedAddress, processor);
+    // first event was read
+    assertThat(buffer.getInt(lengthOffset(0))).isEqualTo(framedLength(LENGTH));
+    assertThat(getPosition(buffer, 0)).isEqualTo(1);
 
-        // then
-        // returned address is equal to start address plus two event sizes
-        assertThat(result).isEqualTo(appendedAddress + ALIGNED_LEN * 2);
-        final DirectBuffer buffer = new UnsafeBuffer(0, 0);
-        buffer.wrap(readBuffer);
+    // second event was read as well
+    assertThat(buffer.getInt(lengthOffset(ALIGNED_LEN))).isEqualTo(framedLength(LENGTH));
+    assertThat(getPosition(buffer, ALIGNED_LEN)).isEqualTo(2);
+  }
 
-        // first event was read
-        assertThat(buffer.getInt(lengthOffset(0))).isEqualTo(framedLength(LENGTH));
-        assertThat(getPosition(buffer, 0)).isEqualTo(1);
+  @Test
+  public void shouldTruncateHalfEvent() {
+    // given buffer, which could contain 1.5 events
+    final ByteBuffer readBuffer = ByteBuffer.allocate((int) (ALIGNED_LEN * 1.5));
 
-        // second event was read as well
-        assertThat(buffer.getInt(lengthOffset(ALIGNED_LEN))).isEqualTo(framedLength(LENGTH));
-        assertThat(getPosition(buffer, ALIGNED_LEN)).isEqualTo(2);
-    }
+    // when read into buffer and buffer was processed
+    final long result = fsLogStorage.read(readBuffer, appendedAddress, processor);
 
-    @Test
-    public void shouldTruncateHalfEvent()
-    {
-        // given buffer, which could contain 1.5 events
-        final ByteBuffer readBuffer = ByteBuffer.allocate((int) (ALIGNED_LEN * 1.5));
+    // then
+    // result is equal to start address plus one event size
+    assertThat(result).isEqualTo(appendedAddress + ALIGNED_LEN);
+    final DirectBuffer buffer = new UnsafeBuffer(0, 0);
+    buffer.wrap(readBuffer);
 
-        // when read into buffer and buffer was processed
-        final long result = fsLogStorage.read(readBuffer, appendedAddress, processor);
+    // and only first event is read
+    assertThat(buffer.getInt(lengthOffset(0))).isEqualTo(framedLength(LENGTH));
+    assertThat(getPosition(buffer, 0)).isEqualTo(1);
 
-        // then
-        // result is equal to start address plus one event size
-        assertThat(result).isEqualTo(appendedAddress + ALIGNED_LEN);
-        final DirectBuffer buffer = new UnsafeBuffer(0, 0);
-        buffer.wrap(readBuffer);
+    // position and limit is reset
+    assertThat(readBuffer.position()).isEqualTo(ALIGNED_LEN);
+    assertThat(readBuffer.limit()).isEqualTo(ALIGNED_LEN);
+  }
 
-        // and only first event is read
-        assertThat(buffer.getInt(lengthOffset(0))).isEqualTo(framedLength(LENGTH));
-        assertThat(getPosition(buffer, 0)).isEqualTo(1);
+  @Test
+  public void shouldTruncateEventWithMissingLen() {
+    // given buffer, which could contain one event and only 3 next bits
+    // so not the complete next message len
+    final ByteBuffer readBuffer = ByteBuffer.allocate((ALIGNED_LEN + 3));
 
-        // position and limit is reset
-        assertThat(readBuffer.position()).isEqualTo(ALIGNED_LEN);
-        assertThat(readBuffer.limit()).isEqualTo(ALIGNED_LEN);
-    }
+    // when read into buffer and buffer was processed
+    final long result = fsLogStorage.read(readBuffer, appendedAddress, processor);
 
-    @Test
-    public void shouldTruncateEventWithMissingLen()
-    {
-        // given buffer, which could contain one event and only 3 next bits
-        // so not the complete next message len
-        final ByteBuffer readBuffer = ByteBuffer.allocate((ALIGNED_LEN + 3));
+    // then
+    // result is equal to start address plus one event size
+    assertThat(result).isEqualTo(appendedAddress + ALIGNED_LEN);
+    final DirectBuffer buffer = new UnsafeBuffer(0, 0);
+    buffer.wrap(readBuffer);
 
-        // when read into buffer and buffer was processed
-        final long result = fsLogStorage.read(readBuffer, appendedAddress, processor);
+    // and only first event is read
+    assertThat(buffer.getInt(lengthOffset(0))).isEqualTo(framedLength(LENGTH));
+    assertThat(getPosition(buffer, 0)).isEqualTo(1);
 
-        // then
-        // result is equal to start address plus one event size
-        assertThat(result).isEqualTo(appendedAddress + ALIGNED_LEN);
-        final DirectBuffer buffer = new UnsafeBuffer(0, 0);
-        buffer.wrap(readBuffer);
+    // position and limit is reset
+    assertThat(readBuffer.position()).isEqualTo(ALIGNED_LEN);
+    assertThat(readBuffer.limit()).isEqualTo(ALIGNED_LEN);
+  }
 
-        // and only first event is read
-        assertThat(buffer.getInt(lengthOffset(0))).isEqualTo(framedLength(LENGTH));
-        assertThat(getPosition(buffer, 0)).isEqualTo(1);
+  @Test
+  public void shouldInsufficientBufferCapacity() {
+    // given buffer, which could not contain an event
+    final ByteBuffer readBuffer = ByteBuffer.allocate((ALIGNED_LEN - 1));
 
-        // position and limit is reset
-        assertThat(readBuffer.position()).isEqualTo(ALIGNED_LEN);
-        assertThat(readBuffer.limit()).isEqualTo(ALIGNED_LEN);
-    }
+    // when read into buffer and buffer was processed
+    final long result = fsLogStorage.read(readBuffer, appendedAddress, processor);
 
-    @Test
-    public void shouldInsufficientBufferCapacity()
-    {
-        // given buffer, which could not contain an event
-        final ByteBuffer readBuffer = ByteBuffer.allocate((ALIGNED_LEN - 1));
+    // then result is OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY
+    assertThat(result).isEqualTo(OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY);
+  }
 
-        // when read into buffer and buffer was processed
-        final long result = fsLogStorage.read(readBuffer, appendedAddress, processor);
+  @Test
+  public void shouldInsufficientBufferCapacityIfEventIsLargerThenBufferCapacity() {
+    // given
+    final ByteBuffer readBuffer = ByteBuffer.allocate(2 * ALIGNED_LEN + ALIGNED_LEN);
 
-        // then result is OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY
-        assertThat(result).isEqualTo(OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY);
-    }
+    // when
+    final long result = fsLogStorage.read(readBuffer, appendedAddress, processor);
 
-    @Test
-    public void shouldInsufficientBufferCapacityIfEventIsLargerThenBufferCapacity()
-    {
-        // given
-        final ByteBuffer readBuffer = ByteBuffer.allocate(2 * ALIGNED_LEN + ALIGNED_LEN);
+    // then
+    assertThat(result).isEqualTo(OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY);
+  }
 
-        // when
-        final long result = fsLogStorage.read(readBuffer, appendedAddress, processor);
+  @Test
+  public void shouldInsufficientBufferCapacityIfPosWasSetAndNewEventCantReadCompletely() {
+    // given
+    final int largeEventMetadataSize = 8;
+    final int writeBufferLength = (3 * ALIGNED_LEN) + largeEventMetadataSize;
+    final ByteBuffer writeBuffer = ByteBuffer.allocate(writeBufferLength);
+    final MutableDirectBuffer directBuffer = new UnsafeBuffer(0, 0);
+    directBuffer.wrap(writeBuffer);
 
-        // then
-        assertThat(result).isEqualTo(OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY);
-    }
+    int idx = 0;
+    directBuffer.putInt(lengthOffset(idx), framedLength(LENGTH));
+    directBuffer.putLong(positionOffset(messageOffset(idx)), 1);
 
-    @Test
-    public void shouldInsufficientBufferCapacityIfPosWasSetAndNewEventCantReadCompletely()
-    {
-        // given
-        final int largeEventMetadataSize = 8;
-        final int writeBufferLength = (3 * ALIGNED_LEN) + largeEventMetadataSize;
-        final ByteBuffer writeBuffer = ByteBuffer.allocate(writeBufferLength);
-        final MutableDirectBuffer directBuffer = new UnsafeBuffer(0, 0);
-        directBuffer.wrap(writeBuffer);
+    idx = ALIGNED_LEN;
+    directBuffer.putInt(lengthOffset(idx), framedLength(LENGTH));
+    directBuffer.putLong(positionOffset(messageOffset(idx)), 2);
 
-        int idx = 0;
-        directBuffer.putInt(lengthOffset(idx), framedLength(LENGTH));
-        directBuffer.putLong(positionOffset(messageOffset(idx)), 1);
+    // a large event
+    idx = 2 * ALIGNED_LEN;
+    directBuffer.putInt(lengthOffset(idx), framedLength(headerLength(largeEventMetadataSize)));
+    directBuffer.putLong(positionOffset(messageOffset(idx)), 3);
 
-        idx = ALIGNED_LEN;
-        directBuffer.putInt(lengthOffset(idx), framedLength(LENGTH));
-        directBuffer.putLong(positionOffset(messageOffset(idx)), 2);
+    final long appendedAddress = fsLogStorage.append(writeBuffer);
 
-        // a large event
-        idx = 2 * ALIGNED_LEN;
-        directBuffer.putInt(lengthOffset(idx), framedLength(headerLength(largeEventMetadataSize)));
-        directBuffer.putLong(positionOffset(messageOffset(idx)), 3);
+    final ByteBuffer smallBuffer = ByteBuffer.allocate(2 * ALIGNED_LEN);
 
-        final long appendedAddress = fsLogStorage.append(writeBuffer);
+    // when
+    final long result = fsLogStorage.read(smallBuffer, appendedAddress, processor);
 
+    // then
+    assertThat(smallBuffer.position()).isEqualTo(smallBuffer.capacity());
 
-        final ByteBuffer smallBuffer = ByteBuffer.allocate(2 * ALIGNED_LEN);
+    // when
+    smallBuffer.position(ALIGNED_LEN);
+    final long newResult = fsLogStorage.read(smallBuffer, result, processor);
 
-        // when
-        final long result = fsLogStorage.read(smallBuffer, appendedAddress, processor);
+    // then
+    assertThat(newResult).isEqualTo(OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY);
 
-        // then
-        assertThat(smallBuffer.position()).isEqualTo(smallBuffer.capacity());
+    // when
+    smallBuffer.limit(ALIGNED_LEN);
+    smallBuffer.position(0);
+    final ByteBuffer largerBuffer = ByteBuffer.allocate(4 * ALIGNED_LEN);
+    largerBuffer.put(smallBuffer);
+    final long opResult = fsLogStorage.read(largerBuffer, result, processor);
 
-        // when
-        smallBuffer.position(ALIGNED_LEN);
-        final long newResult = fsLogStorage.read(smallBuffer, result, processor);
+    // then
+    assertThat(opResult).isGreaterThan(result);
+    assertThat(largerBuffer.position()).isEqualTo(writeBufferLength - ALIGNED_LEN);
+    assertThat(largerBuffer.limit()).isEqualTo(writeBufferLength - ALIGNED_LEN);
+  }
 
-        // then
-        assertThat(newResult).isEqualTo(OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY);
+  @Test
+  public void shouldTruncateBufferOnHalfBufferWasRead() {
+    // given buffer
+    final ByteBuffer readBuffer = ByteBuffer.allocate(alignedFramedLength(headerLength(256)));
 
-        // when
-        smallBuffer.limit(ALIGNED_LEN);
-        smallBuffer.position(0);
-        final ByteBuffer largerBuffer = ByteBuffer.allocate(4 * ALIGNED_LEN);
-        largerBuffer.put(smallBuffer);
-        final long opResult = fsLogStorage.read(largerBuffer, result, processor);
+    // when read into buffer and buffer was processed
+    final long result = fsLogStorage.read(readBuffer, appendedAddress, processor);
 
-        // then
-        assertThat(opResult).isGreaterThan(result);
-        assertThat(largerBuffer.position()).isEqualTo(writeBufferLength - ALIGNED_LEN);
-        assertThat(largerBuffer.limit()).isEqualTo(writeBufferLength - ALIGNED_LEN);
-    }
+    // then only first 2 small events can be read
+    // third event was to large, since position is EQUAL to remaining bytes,
+    // which means buffer is half full, the corresponding next address will be returned
+    // and block idx can for example be created
+    assertThat(result).isEqualTo(appendedAddress + ALIGNED_LEN * 2);
+    final DirectBuffer buffer = new UnsafeBuffer(0, 0);
+    buffer.wrap(readBuffer);
 
-    @Test
-    public void shouldTruncateBufferOnHalfBufferWasRead()
-    {
-        // given buffer
-        final ByteBuffer readBuffer = ByteBuffer.allocate(alignedFramedLength(headerLength(256)));
+    // first event was read
+    assertThat(buffer.getInt(lengthOffset(0))).isEqualTo(framedLength(LENGTH));
+    assertThat(getPosition(buffer, 0)).isEqualTo(1);
 
-        // when read into buffer and buffer was processed
-        final long result = fsLogStorage.read(readBuffer, appendedAddress, processor);
+    // second event was read as well
+    assertThat(buffer.getInt(lengthOffset(ALIGNED_LEN))).isEqualTo(framedLength(LENGTH));
+    assertThat(getPosition(buffer, ALIGNED_LEN)).isEqualTo(2);
 
-        // then only first 2 small events can be read
-        // third event was to large, since position is EQUAL to remaining bytes,
-        // which means buffer is half full, the corresponding next address will be returned
-        // and block idx can for example be created
-        assertThat(result).isEqualTo(appendedAddress + ALIGNED_LEN * 2);
-        final DirectBuffer buffer = new UnsafeBuffer(0, 0);
-        buffer.wrap(readBuffer);
-
-        // first event was read
-        assertThat(buffer.getInt(lengthOffset(0))).isEqualTo(framedLength(LENGTH));
-        assertThat(getPosition(buffer, 0)).isEqualTo(1);
-
-        // second event was read as well
-        assertThat(buffer.getInt(lengthOffset(ALIGNED_LEN))).isEqualTo(framedLength(LENGTH));
-        assertThat(getPosition(buffer, ALIGNED_LEN)).isEqualTo(2);
-
-        // position and limit is reset
-        assertThat(readBuffer.position()).isEqualTo(2 * ALIGNED_LEN);
-        assertThat(readBuffer.limit()).isEqualTo(2 * ALIGNED_LEN);
-    }
+    // position and limit is reset
+    assertThat(readBuffer.position()).isEqualTo(2 * ALIGNED_LEN);
+    assertThat(readBuffer.limit()).isEqualTo(2 * ALIGNED_LEN);
+  }
 }

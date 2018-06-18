@@ -17,31 +17,25 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
+import io.zeebe.logstreams.spi.SnapshotSupport;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import io.zeebe.logstreams.spi.SnapshotSupport;
+public class NoopSnapshotSupport implements SnapshotSupport {
 
-public class NoopSnapshotSupport implements SnapshotSupport
-{
+  @Override
+  public long writeSnapshot(OutputStream outputStream) throws Exception {
+    // do nothing
+    return 0;
+  }
 
-    @Override
-    public long writeSnapshot(OutputStream outputStream) throws Exception
-    {
-        // do nothing
-        return 0;
-    }
+  @Override
+  public void recoverFromSnapshot(InputStream inputStream) throws Exception {
+    // do nothing
+  }
 
-    @Override
-    public void recoverFromSnapshot(InputStream inputStream) throws Exception
-    {
-        // do nothing
-    }
-
-    @Override
-    public void reset()
-    {
-        // do nothing
-    }
-
+  @Override
+  public void reset() {
+    // do nothing
+  }
 }

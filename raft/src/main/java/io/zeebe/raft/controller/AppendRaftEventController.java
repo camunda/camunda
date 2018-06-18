@@ -24,139 +24,122 @@ import io.zeebe.raft.protocol.ConfigurationResponse;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.*;
+import java.time.Duration;
 import org.slf4j.Logger;
 
-import java.time.Duration;
+public class AppendRaftEventController {
+  private static final Logger LOG = Loggers.RAFT_LOGGER;
+  public static final Duration COMMIT_TIMEOUT = Duration.ofSeconds(15);
 
-public class AppendRaftEventController
-{
-    private static final Logger LOG = Loggers.RAFT_LOGGER;
-    public static final Duration COMMIT_TIMEOUT = Duration.ofSeconds(15);
+  private final Raft raft;
+  private final ActorControl actor;
 
-    private final Raft raft;
-    private final ActorControl actor;
+  private final RaftEvent raftEvent = new RaftEvent();
+  private final ConfigurationResponse configurationResponse = new ConfigurationResponse();
+  private final ActorCondition actorCondition;
 
-    private final RaftEvent raftEvent = new RaftEvent();
-    private final ConfigurationResponse configurationResponse = new ConfigurationResponse();
-    private final ActorCondition actorCondition;
+  private long position;
 
-    private long position;
+  // response state
+  private ServerOutput serverOutput;
+  private RemoteAddress remoteAddress;
+  private long requestId;
 
-    // response state
-    private ServerOutput serverOutput;
-    private RemoteAddress remoteAddress;
-    private long requestId;
+  private boolean isHandlingConfigurationChange = false;
+  private ScheduledTimer appendRetry;
 
-    private boolean isHandlingConfigurationChange = false;
-    private ScheduledTimer appendRetry;
+  public AppendRaftEventController(final Raft raft, ActorControl actorControl) {
+    this.raft = raft;
+    this.actor = actorControl;
 
-    public AppendRaftEventController(final Raft raft, ActorControl actorControl)
-    {
-        this.raft = raft;
-        this.actor = actorControl;
+    this.actorCondition = actor.onCondition("raft-event-commited", this::onCommitPositionUpdated);
+  }
 
-        this.actorCondition = actor.onCondition("raft-event-commited", this::onCommitPositionUpdated);
+  public void close() {
+    raft.getLogStream().removeOnCommitPositionUpdatedCondition(actorCondition);
+    actorCondition.cancel();
+
+    if (appendRetry != null) {
+      appendRetry.cancel();
     }
+  }
 
-    public void close()
-    {
-        raft.getLogStream().removeOnCommitPositionUpdatedCondition(actorCondition);
-        actorCondition.cancel();
+  public void prepare(
+      final ServerOutput serverOutput,
+      final RemoteAddress remoteAddress,
+      final long requestId,
+      final RaftIntent intent) {
+    this.serverOutput = serverOutput;
+    this.remoteAddress = remoteAddress;
+    this.requestId = requestId;
+    this.isHandlingConfigurationChange = true;
+    this.raftEvent.setIntent(intent);
+  }
 
-        if (appendRetry != null)
-        {
-            appendRetry.cancel();
-        }
+  public void reset() {
+    this.raft.getLogStream().removeOnCommitPositionUpdatedCondition(actorCondition);
+
+    this.serverOutput = null;
+    this.remoteAddress = null;
+    this.requestId = -1;
+    this.isHandlingConfigurationChange = false;
+
+    if (appendRetry != null) {
+      appendRetry.cancel();
     }
+  }
 
-    public void prepare(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId, final RaftIntent intent)
-    {
-        this.serverOutput = serverOutput;
-        this.remoteAddress = remoteAddress;
-        this.requestId = requestId;
-        this.isHandlingConfigurationChange = true;
-        this.raftEvent.setIntent(intent);
-    }
+  public void appendEvent() {
+    actor.runUntilDone(
+        () -> {
+          final long position = raftEvent.tryWrite(raft);
 
-    public void reset()
-    {
-        this.raft.getLogStream().removeOnCommitPositionUpdatedCondition(actorCondition);
+          if (position >= 0) {
+            actor.done();
 
-        this.serverOutput = null;
-        this.remoteAddress = null;
-        this.requestId = -1;
-        this.isHandlingConfigurationChange = false;
+            this.position = position;
 
-        if (appendRetry != null)
-        {
-            appendRetry.cancel();
-        }
-    }
+            final LogStream logStream = this.raft.getLogStream();
 
-    public void appendEvent()
-    {
-        actor.runUntilDone(() ->
-        {
-            final long position = raftEvent.tryWrite(raft);
+            logStream.registerOnCommitPositionUpdatedCondition(actorCondition);
 
-            if (position >= 0)
-            {
-                actor.done();
-
-                this.position = position;
-
-                final LogStream logStream = this.raft.getLogStream();
-
-                logStream.registerOnCommitPositionUpdatedCondition(actorCondition);
-
-                this.appendRetry = actor.runDelayed(COMMIT_TIMEOUT, () ->
-                {
-                    logStream.removeOnCommitPositionUpdatedCondition(actorCondition);
-                    actor.submit(this::appendEvent);
-                });
-            }
-            else
-            {
-                actor.yield();
-            }
+            this.appendRetry =
+                actor.runDelayed(
+                    COMMIT_TIMEOUT,
+                    () -> {
+                      logStream.removeOnCommitPositionUpdatedCondition(actorCondition);
+                      actor.submit(this::appendEvent);
+                    });
+          } else {
+            actor.yield();
+          }
         });
+  }
+
+  private void onCommitPositionUpdated() {
+    if (isCommitted()) {
+      try {
+        LOG.debug("Raft event for term {} was committed on position {}", raft.getTerm(), position);
+
+        // send response
+        configurationResponse.reset().setSucceeded(true).setRaft(raft);
+
+        raft.sendResponse(serverOutput, remoteAddress, requestId, configurationResponse);
+      } finally {
+        reset();
+      }
     }
+  }
 
-    private void onCommitPositionUpdated()
-    {
-        if (isCommitted())
-        {
-            try
-            {
-                LOG.debug("Raft event for term {} was committed on position {}", raft.getTerm(), position);
+  private boolean isCommitted() {
+    return position >= 0 && position <= raft.getLogStream().getCommitPosition();
+  }
 
-                // send response
-                configurationResponse
-                    .reset()
-                    .setSucceeded(true)
-                    .setRaft(raft);
+  public long getPosition() {
+    return position;
+  }
 
-                raft.sendResponse(serverOutput, remoteAddress, requestId, configurationResponse);
-            }
-            finally
-            {
-                reset();
-            }
-        }
-    }
-
-    private boolean isCommitted()
-    {
-        return position >= 0 && position <= raft.getLogStream().getCommitPosition();
-    }
-
-    public long getPosition()
-    {
-        return position;
-    }
-
-    public boolean isHandlingConfigurationChange()
-    {
-        return isHandlingConfigurationChange;
-    }
+  public boolean isHandlingConfigurationChange() {
+    return isHandlingConfigurationChange;
+  }
 }

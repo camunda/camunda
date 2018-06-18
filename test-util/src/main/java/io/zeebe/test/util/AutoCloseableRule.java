@@ -17,41 +17,32 @@ package io.zeebe.test.util;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.junit.After;
 import org.junit.rules.ExternalResource;
 
 /**
- * Saves you some {@link After} methods by closing {@link AutoCloseable}
- * implementations after the test in LIFO fashion.
+ * Saves you some {@link After} methods by closing {@link AutoCloseable} implementations after the
+ * test in LIFO fashion.
  *
  * @author Lindhauer
  */
-public class AutoCloseableRule extends ExternalResource
-{
+public class AutoCloseableRule extends ExternalResource {
 
-    List<AutoCloseable> thingsToClose = new ArrayList<>();
+  List<AutoCloseable> thingsToClose = new ArrayList<>();
 
-    public void manage(AutoCloseable closeable)
-    {
-        thingsToClose.add(closeable);
+  public void manage(AutoCloseable closeable) {
+    thingsToClose.add(closeable);
+  }
+
+  @Override
+  protected void after() {
+    final int size = thingsToClose.size();
+    for (int i = size - 1; i >= 0; i--) {
+      try {
+        thingsToClose.remove(i).close();
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
     }
-
-    @Override
-    protected void after()
-    {
-        final int size = thingsToClose.size();
-        for (int i = size - 1; i >= 0; i--)
-        {
-            try
-            {
-                thingsToClose.remove(i).close();
-            }
-            catch (Exception e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
+  }
 }

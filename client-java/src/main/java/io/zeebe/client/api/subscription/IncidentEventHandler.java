@@ -18,8 +18,7 @@ package io.zeebe.client.api.subscription;
 import io.zeebe.client.api.events.IncidentEvent;
 
 @FunctionalInterface
-public interface IncidentEventHandler
-{
+public interface IncidentEventHandler {
 
-    void onIncidentEvent(IncidentEvent incidentEvent) throws Exception;
+  void onIncidentEvent(IncidentEvent incidentEvent) throws Exception;
 }

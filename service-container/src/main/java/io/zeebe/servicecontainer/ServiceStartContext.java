@@ -18,31 +18,29 @@ package io.zeebe.servicecontainer;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 
-public interface ServiceStartContext extends ServiceContext
-{
-    String getName();
+public interface ServiceStartContext extends ServiceContext {
+  String getName();
 
-    ServiceName<?> getServiceName();
+  ServiceName<?> getServiceName();
 
-    <S> S getService(ServiceName<S> name);
+  <S> S getService(ServiceName<S> name);
 
-    <S> S getService(String name, Class<S> type);
+  <S> S getService(String name, Class<S> type);
 
-    <S> ServiceBuilder<S> createService(ServiceName<S> name, Service<S> service);
+  <S> ServiceBuilder<S> createService(ServiceName<S> name, Service<S> service);
 
-    CompositeServiceBuilder createComposite(ServiceName<Void> name);
+  CompositeServiceBuilder createComposite(ServiceName<Void> name);
 
-    <S> ActorFuture<Void> removeService(ServiceName<S> name);
+  <S> ActorFuture<Void> removeService(ServiceName<S> name);
 
-    <S> boolean hasService(ServiceName<S> name);
+  <S> boolean hasService(ServiceName<S> name);
 
-    ActorScheduler getScheduler();
+  ActorScheduler getScheduler();
 
-    void async(ActorFuture<?> future, boolean interruptible);
+  void async(ActorFuture<?> future, boolean interruptible);
 
-    @Override
-    default void async(ActorFuture<?> future)
-    {
-        async(future, false);
-    }
+  @Override
+  default void async(ActorFuture<?> future) {
+    async(future, false);
+  }
 }

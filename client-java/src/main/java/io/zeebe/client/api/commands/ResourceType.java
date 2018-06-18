@@ -15,9 +15,8 @@
  */
 package io.zeebe.client.api.commands;
 
-public enum ResourceType
-{
-    BPMN_XML,
+public enum ResourceType {
+  BPMN_XML,
 
-    YAML_WORKFLOW
+  YAML_WORKFLOW
 }

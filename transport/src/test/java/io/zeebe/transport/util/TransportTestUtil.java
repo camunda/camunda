@@ -20,26 +20,21 @@ import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.dispatcher.Dispatcher;
 
-public class TransportTestUtil
-{
+public class TransportTestUtil {
 
-    public static void waitUntilExhausted(Dispatcher dispatcher)
-    {
-        final ClaimedFragment fragment = new ClaimedFragment();
+  public static void waitUntilExhausted(Dispatcher dispatcher) {
+    final ClaimedFragment fragment = new ClaimedFragment();
 
-        // claim until its not possible anymore
-        doRepeatedly(() -> dispatcher.claim(fragment, 1))
-            .until(p ->
-            {
-                if (p < 0)
-                {
-                    return true;
-                }
-                else
-                {
-                    fragment.abort();
-                    return false;
-                }
+    // claim until its not possible anymore
+    doRepeatedly(() -> dispatcher.claim(fragment, 1))
+        .until(
+            p -> {
+              if (p < 0) {
+                return true;
+              } else {
+                fragment.abort();
+                return false;
+              }
             });
-    }
+  }
 }

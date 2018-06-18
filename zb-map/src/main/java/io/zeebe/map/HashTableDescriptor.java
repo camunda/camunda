@@ -20,7 +20,7 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 /**
  * The ZbMap has 2 Buffers: the "hash table buffer" and the "buckets buffer".
  *
- * Hash table buffer layout
+ * <p>Hash table buffer layout
  *
  * <pre>
  *  0               1               2               3
@@ -33,21 +33,17 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
  * ...                                                            |
  *  +-------------------------------------------------------------+
  * </pre>
- *
  */
-public class HashTableDescriptor
-{
-    public static final int HASH_TABLE_SIZE_OFFSET;
-    public static final int HASH_TABLE_OFFSET;
+public class HashTableDescriptor {
+  public static final int HASH_TABLE_SIZE_OFFSET;
+  public static final int HASH_TABLE_OFFSET;
 
-    static
-    {
-        int offset = 0;
+  static {
+    int offset = 0;
 
-        HASH_TABLE_SIZE_OFFSET = offset;
-        offset += SIZE_OF_INT;
+    HASH_TABLE_SIZE_OFFSET = offset;
+    offset += SIZE_OF_INT;
 
-        HASH_TABLE_OFFSET = offset;
-    }
-
+    HASH_TABLE_OFFSET = offset;
+  }
 }

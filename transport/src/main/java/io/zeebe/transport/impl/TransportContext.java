@@ -15,140 +15,116 @@
  */
 package io.zeebe.transport.impl;
 
-import java.time.Duration;
-
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.ServerOutput;
+import java.time.Duration;
 
-public class TransportContext
-{
-    private String name;
-    private int messageMaxLength;
-    private Duration channelKeepAlivePeriod;
+public class TransportContext {
+  private String name;
+  private int messageMaxLength;
+  private Duration channelKeepAlivePeriod;
 
-    private ServerOutput serverOutput;
-    private ClientOutput clientOutput;
+  private ServerOutput serverOutput;
+  private ClientOutput clientOutput;
 
-    private Dispatcher receiveBuffer;
-    private Dispatcher sendBuffer;
+  private Dispatcher receiveBuffer;
+  private Dispatcher sendBuffer;
 
-    private RemoteAddressListImpl remoteAddressList;
+  private RemoteAddressListImpl remoteAddressList;
 
-    private FragmentHandler receiveHandler;
+  private FragmentHandler receiveHandler;
 
-    private ServerSocketBinding serverSocketBinding;
+  private ServerSocketBinding serverSocketBinding;
 
-    private TransportChannelFactory channelFactory;
+  private TransportChannelFactory channelFactory;
 
-    public int getMessageMaxLength()
-    {
-        return messageMaxLength;
-    }
+  public int getMessageMaxLength() {
+    return messageMaxLength;
+  }
 
-    public void setMessageMaxLength(int messageMaxLength)
-    {
-        this.messageMaxLength = messageMaxLength;
-    }
+  public void setMessageMaxLength(int messageMaxLength) {
+    this.messageMaxLength = messageMaxLength;
+  }
 
-    public ServerOutput getServerOutput()
-    {
-        return serverOutput;
-    }
+  public ServerOutput getServerOutput() {
+    return serverOutput;
+  }
 
-    public void setServerOutput(ServerOutput serverOutput)
-    {
-        this.serverOutput = serverOutput;
-    }
+  public void setServerOutput(ServerOutput serverOutput) {
+    this.serverOutput = serverOutput;
+  }
 
-    public ClientOutput getClientOutput()
-    {
-        return clientOutput;
-    }
+  public ClientOutput getClientOutput() {
+    return clientOutput;
+  }
 
-    public void setClientOutput(ClientOutput clientOutput)
-    {
-        this.clientOutput = clientOutput;
-    }
+  public void setClientOutput(ClientOutput clientOutput) {
+    this.clientOutput = clientOutput;
+  }
 
-    public Dispatcher getReceiveBuffer()
-    {
-        return receiveBuffer;
-    }
+  public Dispatcher getReceiveBuffer() {
+    return receiveBuffer;
+  }
 
-    public void setReceiveBuffer(Dispatcher receiveBuffer)
-    {
-        this.receiveBuffer = receiveBuffer;
-    }
+  public void setReceiveBuffer(Dispatcher receiveBuffer) {
+    this.receiveBuffer = receiveBuffer;
+  }
 
-    public RemoteAddressListImpl getRemoteAddressList()
-    {
-        return remoteAddressList;
-    }
+  public RemoteAddressListImpl getRemoteAddressList() {
+    return remoteAddressList;
+  }
 
-    public void setRemoteAddressList(RemoteAddressListImpl remoteAddressList)
-    {
-        this.remoteAddressList = remoteAddressList;
-    }
+  public void setRemoteAddressList(RemoteAddressListImpl remoteAddressList) {
+    this.remoteAddressList = remoteAddressList;
+  }
 
-    public void setReceiveHandler(FragmentHandler receiveHandler)
-    {
-        this.receiveHandler = receiveHandler;
-    }
+  public void setReceiveHandler(FragmentHandler receiveHandler) {
+    this.receiveHandler = receiveHandler;
+  }
 
-    public FragmentHandler getReceiveHandler()
-    {
-        return receiveHandler;
-    }
+  public FragmentHandler getReceiveHandler() {
+    return receiveHandler;
+  }
 
-    public ServerSocketBinding getServerSocketBinding()
-    {
-        return serverSocketBinding;
-    }
+  public ServerSocketBinding getServerSocketBinding() {
+    return serverSocketBinding;
+  }
 
-    public void setServerSocketBinding(ServerSocketBinding serverSocketBinding)
-    {
-        this.serverSocketBinding = serverSocketBinding;
-    }
+  public void setServerSocketBinding(ServerSocketBinding serverSocketBinding) {
+    this.serverSocketBinding = serverSocketBinding;
+  }
 
-    public void setChannelKeepAlivePeriod(Duration channelKeepAlivePeriod)
-    {
-        this.channelKeepAlivePeriod = channelKeepAlivePeriod;
-    }
+  public void setChannelKeepAlivePeriod(Duration channelKeepAlivePeriod) {
+    this.channelKeepAlivePeriod = channelKeepAlivePeriod;
+  }
 
-    public Duration getChannelKeepAlivePeriod()
-    {
-        return channelKeepAlivePeriod;
-    }
+  public Duration getChannelKeepAlivePeriod() {
+    return channelKeepAlivePeriod;
+  }
 
-    public void setChannelFactory(TransportChannelFactory channelFactory)
-    {
-        this.channelFactory = channelFactory;
-    }
+  public void setChannelFactory(TransportChannelFactory channelFactory) {
+    this.channelFactory = channelFactory;
+  }
 
-    public TransportChannelFactory getChannelFactory()
-    {
-        return channelFactory;
-    }
+  public TransportChannelFactory getChannelFactory() {
+    return channelFactory;
+  }
 
-    public void setSendBuffer(Dispatcher sendBuffer)
-    {
-        this.sendBuffer = sendBuffer;
-    }
+  public void setSendBuffer(Dispatcher sendBuffer) {
+    this.sendBuffer = sendBuffer;
+  }
 
-    public Dispatcher getSetSendBuffer()
-    {
-        return sendBuffer;
-    }
+  public Dispatcher getSetSendBuffer() {
+    return sendBuffer;
+  }
 
-    public void setName(String name)
-    {
-        this.name = name;
-    }
+  public void setName(String name) {
+    this.name = name;
+  }
 
-    public String getName()
-    {
-        return name;
-    }
+  public String getName() {
+    return name;
+  }
 }

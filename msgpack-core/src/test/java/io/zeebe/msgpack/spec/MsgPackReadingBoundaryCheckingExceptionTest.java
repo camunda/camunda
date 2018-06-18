@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 package io.zeebe.msgpack.spec;
+
 import static io.zeebe.msgpack.spec.MsgPackCodes.*;
 
 import java.util.Arrays;
 import java.util.function.Consumer;
-
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
@@ -31,78 +31,78 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class MsgPackReadingBoundaryCheckingExceptionTest
-{
+public class MsgPackReadingBoundaryCheckingExceptionTest {
 
-    protected static final String NEGATIVE_BUF_SIZE_EXCEPTION_MSG = "Negative value should not be accepted by size value and unsiged 64bit integer";
+  protected static final String NEGATIVE_BUF_SIZE_EXCEPTION_MSG =
+      "Negative value should not be accepted by size value and unsiged 64bit integer";
 
+  @Rule public ExpectedException exception = ExpectedException.none();
 
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
-    @Parameters(name = "{0}")
-    public static Iterable<Object[]> data()
-    {
-        return Arrays.asList(new Object[][] {
-            {
-                new byte[]{(byte) ARRAY32, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff},
-                codeUnderTest((r) -> r.readArrayHeader())
+  @Parameters(name = "{0}")
+  public static Iterable<Object[]> data() {
+    return Arrays.asList(
+        new Object[][] {
+          {
+            new byte[] {(byte) ARRAY32, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff},
+            codeUnderTest((r) -> r.readArrayHeader())
+          },
+          {
+            new byte[] {(byte) BIN32, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff},
+            codeUnderTest((r) -> r.readBinaryLength())
+          },
+          {
+            new byte[] {(byte) MAP32, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff},
+            codeUnderTest((r) -> r.readMapHeader())
+          },
+          {
+            new byte[] {(byte) STR32, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff},
+            codeUnderTest((r) -> r.readStringLength())
+          },
+          {
+            new byte[] {
+              (byte) UINT64,
+              (byte) 0xff,
+              (byte) 0xff,
+              (byte) 0xff,
+              (byte) 0xff,
+              (byte) 0xff,
+              (byte) 0xff,
+              (byte) 0xff,
+              (byte) 0xff
             },
-            {
-                new byte[]{(byte) BIN32, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff},
-                codeUnderTest((r) -> r.readBinaryLength())
-            },
-            {
-                new byte[]{(byte) MAP32, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff},
-                codeUnderTest((r) -> r.readMapHeader())
-            },
-            {
-                new byte[]{(byte) STR32, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff},
-                codeUnderTest((r) -> r.readStringLength())
-            },
-            {
-                new byte[]{(byte) UINT64, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff},
-                codeUnderTest((r) -> r.readInteger())
-            }
+            codeUnderTest((r) -> r.readInteger())
+          }
         });
-    }
+  }
 
+  @Parameter(0)
+  public byte[] testingBuf;
 
+  @Parameter(1)
+  public Consumer<MsgPackReader> codeUnderTest;
 
-    @Parameter(0)
+  protected MsgPackReader reader;
 
-    public byte[] testingBuf;
+  @Before
+  public void setUp() {
+    reader = new MsgPackReader();
+  }
 
-    @Parameter(1)
-    public Consumer<MsgPackReader> codeUnderTest;
+  @Test
+  public void shouldNotReadNegativeValue() {
+    // given
+    final DirectBuffer negativeTestingBuf = new UnsafeBuffer(testingBuf);
+    reader.wrap(negativeTestingBuf, 0, negativeTestingBuf.capacity());
 
-    protected MsgPackReader reader;
+    // then
+    exception.expect(RuntimeException.class);
+    exception.expectMessage(NEGATIVE_BUF_SIZE_EXCEPTION_MSG);
 
-    @Before
-    public void setUp()
-    {
-        reader = new MsgPackReader();
-    }
+    // when
+    codeUnderTest.accept(reader);
+  }
 
-    @Test
-    public void shouldNotReadNegativeValue()
-    {
-        // given
-        final DirectBuffer negativeTestingBuf = new UnsafeBuffer(testingBuf);
-        reader.wrap(negativeTestingBuf, 0, negativeTestingBuf.capacity());
-
-        // then
-        exception.expect(RuntimeException.class);
-        exception.expectMessage(NEGATIVE_BUF_SIZE_EXCEPTION_MSG);
-
-        // when
-        codeUnderTest.accept(reader);
-    }
-
-
-
-    protected static Consumer<MsgPackReader> codeUnderTest(Consumer<MsgPackReader> arg)
-    {
-        return arg;
-    }
+  protected static Consumer<MsgPackReader> codeUnderTest(Consumer<MsgPackReader> arg) {
+    return arg;
+  }
 }

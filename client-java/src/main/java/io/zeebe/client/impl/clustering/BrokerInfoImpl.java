@@ -15,74 +15,63 @@
  */
 package io.zeebe.client.impl.clustering;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.zeebe.client.api.commands.BrokerInfo;
 import io.zeebe.client.api.commands.PartitionInfo;
+import java.util.ArrayList;
+import java.util.List;
 
-public class BrokerInfoImpl implements BrokerInfo
-{
-    private String host;
-    private int port;
+public class BrokerInfoImpl implements BrokerInfo {
+  private String host;
+  private int port;
 
-    private List<PartitionInfo> partitions = new ArrayList<>();
+  private List<PartitionInfo> partitions = new ArrayList<>();
 
-    public BrokerInfoImpl setHost(final String host)
-    {
-        this.host = host;
-        return this;
-    }
+  public BrokerInfoImpl setHost(final String host) {
+    this.host = host;
+    return this;
+  }
 
-    public BrokerInfoImpl setPort(final int port)
-    {
-        this.port = port;
-        return this;
-    }
+  public BrokerInfoImpl setPort(final int port) {
+    this.port = port;
+    return this;
+  }
 
-    @Override
-    public List<PartitionInfo> getPartitions()
-    {
-        return partitions;
-    }
+  @Override
+  public List<PartitionInfo> getPartitions() {
+    return partitions;
+  }
 
-    @JsonDeserialize(contentAs = PartitionInfoImpl.class)
-    public void setPartitions(List<PartitionInfo> partitions)
-    {
-        this.partitions = partitions;
-    }
+  @JsonDeserialize(contentAs = PartitionInfoImpl.class)
+  public void setPartitions(List<PartitionInfo> partitions) {
+    this.partitions = partitions;
+  }
 
-    @Override
-    public String getHost()
-    {
-        return host;
-    }
+  @Override
+  public String getHost() {
+    return host;
+  }
 
-    @Override
-    public int getPort()
-    {
-        return port;
-    }
+  @Override
+  public int getPort() {
+    return port;
+  }
 
-    @Override
-    public String getAddress()
-    {
-        return String.format("%s:%d", host, port);
-    }
+  @Override
+  public String getAddress() {
+    return String.format("%s:%d", host, port);
+  }
 
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("BrokerInfo [host=");
-        builder.append(host);
-        builder.append(", port=");
-        builder.append(port);
-        builder.append(", partitions=");
-        builder.append(partitions);
-        builder.append("]");
-        return builder.toString();
-    }
-
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("BrokerInfo [host=");
+    builder.append(host);
+    builder.append(", port=");
+    builder.append(port);
+    builder.append(", partitions=");
+    builder.append(partitions);
+    builder.append("]");
+    return builder.toString();
+  }
 }

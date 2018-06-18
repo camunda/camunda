@@ -15,7 +15,6 @@
  */
 package io.zeebe.broker.it.util;
 
-
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.api.clients.TopicClient;
 import io.zeebe.client.api.commands.JobCommand;
@@ -24,188 +23,163 @@ import io.zeebe.client.api.commands.WorkflowInstanceCommand;
 import io.zeebe.client.api.commands.WorkflowInstanceCommandName;
 import io.zeebe.client.api.events.*;
 import io.zeebe.client.api.subscription.TopicSubscription;
-import org.junit.rules.ExternalResource;
-
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.junit.rules.ExternalResource;
 
-public class TopicEventRecorder extends ExternalResource
-{
-    private static final String SUBSCRIPTION_NAME = "event-recorder";
+public class TopicEventRecorder extends ExternalResource {
+  private static final String SUBSCRIPTION_NAME = "event-recorder";
 
-    private final List<JobEvent> jobEvents = new CopyOnWriteArrayList<>();
-    private final List<JobCommand> jobCommands = new CopyOnWriteArrayList<>();
+  private final List<JobEvent> jobEvents = new CopyOnWriteArrayList<>();
+  private final List<JobCommand> jobCommands = new CopyOnWriteArrayList<>();
 
-    private final List<WorkflowInstanceEvent> wfInstanceEvents = new CopyOnWriteArrayList<>();
-    private final List<WorkflowInstanceCommand> wfInstanceCommands = new CopyOnWriteArrayList<>();
+  private final List<WorkflowInstanceEvent> wfInstanceEvents = new CopyOnWriteArrayList<>();
+  private final List<WorkflowInstanceCommand> wfInstanceCommands = new CopyOnWriteArrayList<>();
 
-    private final List<IncidentEvent> incidentEvents = new CopyOnWriteArrayList<>();
+  private final List<IncidentEvent> incidentEvents = new CopyOnWriteArrayList<>();
 
-    private final ClientRule clientRule;
-    private String topicName;
+  private final ClientRule clientRule;
+  private String topicName;
 
-    protected TopicSubscription subscription;
-    protected final boolean autoRecordEvents;
+  protected TopicSubscription subscription;
+  protected final boolean autoRecordEvents;
 
-    public TopicEventRecorder(final ClientRule clientRule)
-    {
-        this(clientRule, true);
+  public TopicEventRecorder(final ClientRule clientRule) {
+    this(clientRule, true);
+  }
+
+  public TopicEventRecorder(final ClientRule clientRule, boolean autoRecordEvents) {
+    this(clientRule, null, autoRecordEvents);
+  }
+
+  public TopicEventRecorder(
+      final ClientRule clientRule, final String topicName, boolean autoRecordEvents) {
+    this.clientRule = clientRule;
+    this.topicName = topicName;
+    this.autoRecordEvents = autoRecordEvents;
+  }
+
+  @Override
+  protected void before() {
+    if (topicName == null) {
+      topicName = clientRule.getDefaultTopic();
     }
 
-    public TopicEventRecorder(final ClientRule clientRule, boolean autoRecordEvents)
-    {
-        this(clientRule, null, autoRecordEvents);
+    if (autoRecordEvents) {
+      startRecordingEvents();
     }
+  }
 
-    public TopicEventRecorder(
-            final ClientRule clientRule,
-            final String topicName,
-            boolean autoRecordEvents)
-    {
-        this.clientRule = clientRule;
-        this.topicName = topicName;
-        this.autoRecordEvents = autoRecordEvents;
+  @Override
+  protected void after() {
+    stopRecordingEvents();
+  }
+
+  public void startRecordingEvents() {
+    if (subscription == null) {
+      clientRule.waitUntilTopicsExists(topicName);
+
+      final TopicClient client = clientRule.getClient().topicClient(topicName);
+
+      subscription =
+          client
+              .newSubscription()
+              .name(SUBSCRIPTION_NAME)
+              .jobEventHandler(e -> jobEvents.add(e))
+              .jobCommandHandler(jobCommands::add)
+              .workflowInstanceEventHandler(e -> wfInstanceEvents.add(e))
+              .workflowInstanceCommandHandler(wfInstanceCommands::add)
+              .incidentEventHandler(e -> incidentEvents.add(e))
+              .open();
+    } else {
+      throw new RuntimeException("Subscription already open");
     }
+  }
 
-    @Override
-    protected void before()
-    {
-        if (topicName == null)
-        {
-            topicName = clientRule.getDefaultTopic();
-        }
-
-        if (autoRecordEvents)
-        {
-            startRecordingEvents();
-        }
+  public void stopRecordingEvents() {
+    if (subscription != null) {
+      subscription.close();
+      subscription = null;
     }
+  }
 
-    @Override
-    protected void after()
-    {
-        stopRecordingEvents();
-    }
+  public boolean hasWorkflowInstanceEvent(final WorkflowInstanceState state) {
+    return wfInstanceEvents.stream().anyMatch(state(state));
+  }
 
-    public void startRecordingEvents()
-    {
-        if (subscription == null)
-        {
-            clientRule.waitUntilTopicsExists(topicName);
+  public List<WorkflowInstanceEvent> getWorkflowInstanceEvents(final WorkflowInstanceState state) {
+    return wfInstanceEvents.stream().filter(state(state)).collect(Collectors.toList());
+  }
 
-            final TopicClient client = clientRule.getClient().topicClient(topicName);
+  public WorkflowInstanceEvent getSingleWorkflowInstanceEvent(WorkflowInstanceState state) {
+    return wfInstanceEvents
+        .stream()
+        .filter(state(state))
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("no event found"));
+  }
 
-            subscription = client.newSubscription()
-                .name(SUBSCRIPTION_NAME)
-                .jobEventHandler(e -> jobEvents.add(e))
-                .jobCommandHandler(jobCommands::add)
-                .workflowInstanceEventHandler(e -> wfInstanceEvents.add(e))
-                .workflowInstanceCommandHandler(wfInstanceCommands::add)
-                .incidentEventHandler(e -> incidentEvents.add(e))
-                .open();
-        }
-        else
-        {
-            throw new RuntimeException("Subscription already open");
-        }
-    }
+  public WorkflowInstanceCommand getSingleWorkflowInstanceCommand(
+      WorkflowInstanceCommandName cmdName) {
+    return wfInstanceCommands
+        .stream()
+        .filter(workflowInstanceCommand(cmdName))
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("no event found"));
+  }
 
-    public void stopRecordingEvents()
-    {
-        if (subscription != null)
-        {
-            subscription.close();
-            subscription = null;
-        }
-    }
+  public boolean hasJobEvent(final Predicate<JobEvent> matcher) {
+    return jobEvents.stream().anyMatch(matcher);
+  }
 
-    public boolean hasWorkflowInstanceEvent(final WorkflowInstanceState state)
-    {
-        return wfInstanceEvents.stream().anyMatch(state(state));
-    }
+  public boolean hasJobEvent(JobState state) {
+    return jobEvents.stream().anyMatch(state(state));
+  }
 
-    public List<WorkflowInstanceEvent> getWorkflowInstanceEvents(final WorkflowInstanceState state)
-    {
-        return wfInstanceEvents.stream().filter(state(state)).collect(Collectors.toList());
-    }
+  public boolean hasJobCommand(final Predicate<JobCommand> matcher) {
+    return jobCommands.stream().anyMatch(matcher);
+  }
 
-    public WorkflowInstanceEvent getSingleWorkflowInstanceEvent(WorkflowInstanceState state)
-    {
-        return wfInstanceEvents.stream().filter(state(state)).findFirst().orElseThrow(() -> new AssertionError("no event found"));
-    }
+  public List<JobEvent> getJobEvents(JobState state) {
+    return jobEvents.stream().filter(state(state)).collect(Collectors.toList());
+  }
 
-    public WorkflowInstanceCommand getSingleWorkflowInstanceCommand(WorkflowInstanceCommandName cmdName)
-    {
-        return wfInstanceCommands.stream().filter(workflowInstanceCommand(cmdName)).findFirst().orElseThrow(() -> new AssertionError("no event found"));
-    }
+  public List<JobCommand> getJobCommands(final Predicate<JobCommand> matcher) {
+    return jobCommands.stream().filter(matcher).collect(Collectors.toList());
+  }
 
-    public boolean hasJobEvent(final Predicate<JobEvent> matcher)
-    {
-        return jobEvents.stream().anyMatch(matcher);
-    }
+  public boolean hasIncidentEvent(IncidentState state) {
+    return incidentEvents.stream().anyMatch(state(state));
+  }
 
-    public boolean hasJobEvent(JobState state)
-    {
-        return jobEvents.stream().anyMatch(state(state));
-    }
+  public static Predicate<WorkflowInstanceEvent> state(final WorkflowInstanceState state) {
+    return e -> e.getState().equals(state);
+  }
 
-    public boolean hasJobCommand(final Predicate<JobCommand> matcher)
-    {
-        return jobCommands.stream().anyMatch(matcher);
-    }
+  public static Predicate<JobEvent> state(final JobState state) {
+    return e -> e.getState().equals(state);
+  }
 
-    public List<JobEvent> getJobEvents(JobState state)
-    {
-        return jobEvents.stream().filter(state(state)).collect(Collectors.toList());
-    }
+  public static Predicate<JobCommand> jobCommand(final JobCommandName command) {
+    return e -> e.getName().equals(command);
+  }
 
-    public List<JobCommand> getJobCommands(final Predicate<JobCommand> matcher)
-    {
-        return jobCommands.stream().filter(matcher).collect(Collectors.toList());
-    }
+  public static Predicate<JobEvent> jobType(final String type) {
+    return e -> e.getType().equals(type);
+  }
 
-    public boolean hasIncidentEvent(IncidentState state)
-    {
-        return incidentEvents.stream().anyMatch(state(state));
-    }
+  public static Predicate<JobEvent> jobRetries(final int retries) {
+    return e -> e.getRetries() == retries;
+  }
 
-    public static Predicate<WorkflowInstanceEvent> state(final WorkflowInstanceState state)
-    {
-        return e -> e.getState().equals(state);
-    }
+  public static Predicate<IncidentEvent> state(final IncidentState state) {
+    return e -> e.getState().equals(state);
+  }
 
-    public static Predicate<JobEvent> state(final JobState state)
-    {
-        return e -> e.getState().equals(state);
-    }
-
-    public static Predicate<JobCommand> jobCommand(final JobCommandName command)
-    {
-        return e -> e.getName().equals(command);
-    }
-
-    public static Predicate<JobEvent> jobType(final String type)
-    {
-        return e -> e.getType().equals(type);
-    }
-
-    public static Predicate<JobEvent> jobRetries(final int retries)
-    {
-        return e -> e.getRetries() == retries;
-    }
-
-    public static Predicate<IncidentEvent> state(final IncidentState state)
-    {
-        return e -> e.getState().equals(state);
-    }
-
-
-
-    public static Predicate<WorkflowInstanceCommand> workflowInstanceCommand(final WorkflowInstanceCommandName command)
-    {
-        return e -> e.getName().equals(command);
-    }
-
+  public static Predicate<WorkflowInstanceCommand> workflowInstanceCommand(
+      final WorkflowInstanceCommandName command) {
+    return e -> e.getName().equals(command);
+  }
 }

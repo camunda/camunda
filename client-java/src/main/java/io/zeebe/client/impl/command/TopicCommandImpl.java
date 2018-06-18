@@ -18,7 +18,6 @@ package io.zeebe.client.impl.command;
 import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import io.zeebe.client.api.commands.TopicCommand;
 import io.zeebe.client.api.commands.TopicCommandName;
 import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
@@ -26,39 +25,33 @@ import io.zeebe.client.impl.record.TopicRecordImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.intent.TopicIntent;
 
-public class TopicCommandImpl extends TopicRecordImpl implements TopicCommand
-{
-    @JsonCreator
-    public TopicCommandImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper)
-    {
-        super(objectMapper, RecordType.COMMAND);
-    }
+public class TopicCommandImpl extends TopicRecordImpl implements TopicCommand {
+  @JsonCreator
+  public TopicCommandImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper) {
+    super(objectMapper, RecordType.COMMAND);
+  }
 
-    public TopicCommandImpl(TopicIntent intent)
-    {
-        super(null, RecordType.COMMAND);
-        setIntent(intent);
-    }
+  public TopicCommandImpl(TopicIntent intent) {
+    super(null, RecordType.COMMAND);
+    setIntent(intent);
+  }
 
-    @JsonIgnore
-    @Override
-    public TopicCommandName getCommandName()
-    {
-        return TopicCommandName.valueOf(getMetadata().getIntent());
-    }
+  @JsonIgnore
+  @Override
+  public TopicCommandName getCommandName() {
+    return TopicCommandName.valueOf(getMetadata().getIntent());
+  }
 
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("TopicCommand [command=");
-        builder.append(getName());
-        builder.append(", name=");
-        builder.append(getName());
-        builder.append(", partitions=");
-        builder.append(getPartitions());
-        builder.append("]");
-        return builder.toString();
-    }
-
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("TopicCommand [command=");
+    builder.append(getName());
+    builder.append(", name=");
+    builder.append(getName());
+    builder.append(", partitions=");
+    builder.append(getPartitions());
+    builder.append("]");
+    return builder.toString();
+  }
 }

@@ -17,6 +17,8 @@
  */
 package io.zeebe.broker.transport.clientapi;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
@@ -24,44 +26,38 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
+public class ErrorResponseWriterTest {
+  private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
+  private final ErrorResponseDecoder responseDecoder = new ErrorResponseDecoder();
 
-public class ErrorResponseWriterTest
-{
-    private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-    private final ErrorResponseDecoder responseDecoder = new ErrorResponseDecoder();
+  private ErrorResponseWriter responseWriter;
 
-    private ErrorResponseWriter responseWriter;
+  @Before
+  public void setup() {
+    responseWriter = new ErrorResponseWriter(null);
+  }
 
-    @Before
-    public void setup()
-    {
-        responseWriter = new ErrorResponseWriter(null);
-    }
+  @Test
+  public void shouldWriteResponse() {
+    responseWriter.errorCode(ErrorCode.PARTITION_NOT_FOUND).errorMessage("error message");
+    final UnsafeBuffer buf = new UnsafeBuffer(new byte[responseWriter.getLength()]);
 
-    @Test
-    public void shouldWriteResponse()
-    {
-        responseWriter
-            .errorCode(ErrorCode.PARTITION_NOT_FOUND)
-            .errorMessage("error message");
-        final UnsafeBuffer buf = new UnsafeBuffer(new byte[responseWriter.getLength()]);
+    // when
+    responseWriter.write(buf, 0);
 
-        // when
-        responseWriter.write(buf, 0);
+    // then
+    int offset = 0;
+    messageHeaderDecoder.wrap(buf, offset);
+    assertThat(messageHeaderDecoder.schemaId()).isEqualTo(responseDecoder.sbeSchemaId());
+    assertThat(messageHeaderDecoder.version()).isEqualTo(responseDecoder.sbeSchemaVersion());
+    assertThat(messageHeaderDecoder.templateId()).isEqualTo(responseDecoder.sbeTemplateId());
+    assertThat(messageHeaderDecoder.blockLength()).isEqualTo(responseDecoder.sbeBlockLength());
 
-        // then
-        int offset = 0;
-        messageHeaderDecoder.wrap(buf, offset);
-        assertThat(messageHeaderDecoder.schemaId()).isEqualTo(responseDecoder.sbeSchemaId());
-        assertThat(messageHeaderDecoder.version()).isEqualTo(responseDecoder.sbeSchemaVersion());
-        assertThat(messageHeaderDecoder.templateId()).isEqualTo(responseDecoder.sbeTemplateId());
-        assertThat(messageHeaderDecoder.blockLength()).isEqualTo(responseDecoder.sbeBlockLength());
+    offset += messageHeaderDecoder.encodedLength();
 
-        offset += messageHeaderDecoder.encodedLength();
-
-        responseDecoder.wrap(buf, offset, responseDecoder.sbeBlockLength(), responseDecoder.sbeSchemaVersion());
-        assertThat(responseDecoder.errorCode()).isEqualTo(ErrorCode.PARTITION_NOT_FOUND);
-        assertThat(responseDecoder.errorData()).isEqualTo("error message");
-    }
+    responseDecoder.wrap(
+        buf, offset, responseDecoder.sbeBlockLength(), responseDecoder.sbeSchemaVersion());
+    assertThat(responseDecoder.errorCode()).isEqualTo(ErrorCode.PARTITION_NOT_FOUND);
+    assertThat(responseDecoder.errorData()).isEqualTo("error message");
+  }
 }

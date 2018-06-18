@@ -17,29 +17,24 @@
  */
 package io.zeebe.broker.clustering.base.raft;
 
-public class RaftConfigurationMetadataMember
-{
-    private String host;
-    private int port;
+public class RaftConfigurationMetadataMember {
+  private String host;
+  private int port;
 
-    public RaftConfigurationMetadataMember()
-    {
-        this("", 0);
-    }
+  public RaftConfigurationMetadataMember() {
+    this("", 0);
+  }
 
-    public RaftConfigurationMetadataMember(String host, int port)
-    {
-        this.host = host;
-        this.port = port;
-    }
+  public RaftConfigurationMetadataMember(String host, int port) {
+    this.host = host;
+    this.port = port;
+  }
 
-    public String getHost()
-    {
-        return host;
-    }
+  public String getHost() {
+    return host;
+  }
 
-    public int getPort()
-    {
-        return port;
-    }
+  public int getPort() {
+    return port;
+  }
 }

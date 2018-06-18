@@ -19,129 +19,109 @@ package io.zeebe.broker.clustering.base.raft;
 
 import static io.zeebe.util.EnsureUtil.ensureGreaterThan;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.zeebe.util.ByteValue;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import io.zeebe.util.ByteValue;
+public class RaftConfigurationMetadata {
+  private String topicName;
+  private int partitionId;
+  private int replicationFactor;
+  private int term;
+  private String votedForHost;
+  private int votedForPort;
 
-public class RaftConfigurationMetadata
-{
-    private String topicName;
-    private int partitionId;
-    private int replicationFactor;
-    private int term;
-    private String votedForHost;
-    private int votedForPort;
+  @JsonProperty("segmentSize")
+  private long logSegmentSize;
 
-    @JsonProperty("segmentSize")
-    private long logSegmentSize;
+  private List<RaftConfigurationMetadataMember> members;
 
-    private List<RaftConfigurationMetadataMember> members;
+  public RaftConfigurationMetadata() {
+    topicName = "";
+    partitionId = -1;
+    replicationFactor = -1;
+    logSegmentSize = ByteValue.ofMegabytes(512).toBytes();
+    term = 0;
+    votedForHost = "";
+    votedForPort = 0;
+    members = new ArrayList<>();
+  }
 
-    public RaftConfigurationMetadata()
-    {
-        topicName = "";
-        partitionId = -1;
-        replicationFactor = -1;
-        logSegmentSize = ByteValue.ofMegabytes(512).toBytes();
-        term = 0;
-        votedForHost = "";
-        votedForPort = 0;
-        members = new ArrayList<>();
-    }
+  public String getTopicName() {
+    return topicName;
+  }
 
-    public String getTopicName()
-    {
-        return topicName;
-    }
+  public void setTopicName(final String topicName) {
+    ensureGreaterThan("Topic name length", topicName.length(), 0);
+    this.topicName = topicName;
+  }
 
-    public void setTopicName(final String topicName)
-    {
-        ensureGreaterThan("Topic name length", topicName.length(), 0);
-        this.topicName = topicName;
-    }
+  public int getPartitionId() {
+    return partitionId;
+  }
 
-    public int getPartitionId()
-    {
-        return partitionId;
-    }
+  public int getReplicationFactor() {
+    return replicationFactor;
+  }
 
-    public int getReplicationFactor()
-    {
-        return replicationFactor;
-    }
+  public void setPartitionId(final int partitionId) {
+    this.partitionId = partitionId;
+  }
 
-    public void setPartitionId(final int partitionId)
-    {
-        this.partitionId = partitionId;
-    }
+  public void setReplicationFactor(int replicationFactor) {
+    this.replicationFactor = replicationFactor;
+  }
 
-    public void setReplicationFactor(int replicationFactor)
-    {
-        this.replicationFactor = replicationFactor;
-    }
+  public int getTerm() {
+    return term;
+  }
 
-    public int getTerm()
-    {
-        return term;
-    }
+  public void setTerm(final int term) {
+    this.term = term;
+  }
 
-    public void setTerm(final int term)
-    {
-        this.term = term;
-    }
+  public int getVotedForPort() {
+    return votedForPort;
+  }
 
-    public int getVotedForPort()
-    {
-        return votedForPort;
-    }
+  public String getVotedForHost() {
+    return votedForHost;
+  }
 
-    public String getVotedForHost()
-    {
-        return votedForHost;
-    }
+  public void setVotedForHost(final String votedForHost) {
+    this.votedForHost = votedForHost;
+  }
 
-    public void setVotedForHost(final String votedForHost)
-    {
-        this.votedForHost = votedForHost;
-    }
+  public void setVotedForPort(final int votedForPort) {
+    this.votedForPort = votedForPort;
+  }
 
-    public void setVotedForPort(final int votedForPort)
-    {
-        this.votedForPort = votedForPort;
-    }
+  public List<RaftConfigurationMetadataMember> getMembers() {
+    return members;
+  }
 
-    public List<RaftConfigurationMetadataMember> getMembers()
-    {
-        return members;
-    }
+  public void setMembers(final List<RaftConfigurationMetadataMember> members) {
+    this.members.clear();
+    this.members.addAll(members);
+  }
 
-    public void setMembers(final List<RaftConfigurationMetadataMember> members)
-    {
-        this.members.clear();
-        this.members.addAll(members);
-    }
+  public long getLogSegmentSize() {
+    return logSegmentSize;
+  }
 
-    public long getLogSegmentSize()
-    {
-        return logSegmentSize;
-    }
+  public void setLogSegmentSize(long logSegmentSize) {
+    this.logSegmentSize = logSegmentSize;
+  }
 
-    public void setLogSegmentSize(long logSegmentSize)
-    {
-        this.logSegmentSize = logSegmentSize;
-    }
-
-    public void copy(RaftConfigurationMetadata source)
-    {
-        setLogSegmentSize(source.getLogSegmentSize());
-        setPartitionId(source.getPartitionId());
-        setReplicationFactor(source.getReplicationFactor());
-        setTerm(source.getTerm());
-        setTopicName(source.getTopicName());
-        setMembers(source.getMembers());
-        setVotedForHost(source.getVotedForHost());
-        setVotedForPort(source.getVotedForPort());
-    }
+  public void copy(RaftConfigurationMetadata source) {
+    setLogSegmentSize(source.getLogSegmentSize());
+    setPartitionId(source.getPartitionId());
+    setReplicationFactor(source.getReplicationFactor());
+    setTerm(source.getTerm());
+    setTopicName(source.getTopicName());
+    setMembers(source.getMembers());
+    setVotedForHost(source.getVotedForHost());
+    setVotedForPort(source.getVotedForPort());
+  }
 }

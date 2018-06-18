@@ -17,59 +17,52 @@
  */
 package io.zeebe.broker.job;
 
+import io.zeebe.broker.job.processor.JobSubscription;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
 
-import io.zeebe.broker.job.processor.JobSubscription;
+public class Subscriptions {
+  private final Long2ObjectHashMap<JobSubscription> subscriptions = new Long2ObjectHashMap<>();
 
-public class Subscriptions
-{
-    private final Long2ObjectHashMap<JobSubscription> subscriptions = new Long2ObjectHashMap<>();
+  public void addSubscription(JobSubscription subscription) {
+    subscriptions.put(subscription.getSubscriberKey(), subscription);
+  }
 
-    public void addSubscription(JobSubscription subscription)
-    {
-        subscriptions.put(subscription.getSubscriberKey(), subscription);
+  public void removeSubscription(long subscriberKey) {
+    subscriptions.remove(subscriberKey);
+  }
+
+  public void removeSubscriptionsForPartition(int partitionId) {
+    final Iterator<JobSubscription> iterator = subscriptions.values().iterator();
+
+    while (iterator.hasNext()) {
+      if (iterator.next().getPartitionId() == partitionId) {
+        iterator.remove();
+      }
     }
+  }
 
-    public void removeSubscription(long subscriberKey)
-    {
-        subscriptions.remove(subscriberKey);
-    }
+  public JobSubscription getSubscription(long subscriberKey) {
+    return subscriptions.get(subscriberKey);
+  }
 
-    public void removeSubscriptionsForPartition(int partitionId)
-    {
-        final Iterator<JobSubscription> iterator = subscriptions.values().iterator();
+  public List<JobSubscription> getSubscriptionsForChannel(int channel) {
+    return subscriptions
+        .values()
+        .stream()
+        .filter(s -> s.getStreamId() == channel)
+        .collect(Collectors.toList());
+  }
 
-        while (iterator.hasNext())
-        {
-            if (iterator.next().getPartitionId() == partitionId)
-            {
-                iterator.remove();
-            }
-        }
-    }
-
-    public JobSubscription getSubscription(long subscriberKey)
-    {
-        return subscriptions.get(subscriberKey);
-    }
-
-    public List<JobSubscription> getSubscriptionsForChannel(int channel)
-    {
-        return subscriptions.values().stream()
-            .filter(s -> s.getStreamId() == channel)
-            .collect(Collectors.toList());
-    }
-
-    public int getSubscriptionsForPartitionAndType(int partition, DirectBuffer type)
-    {
-        return (int) subscriptions.values()
+  public int getSubscriptionsForPartitionAndType(int partition, DirectBuffer type) {
+    return (int)
+        subscriptions
+            .values()
             .stream()
             .filter(s -> s.getPartitionId() == partition && type.equals(s.getJobType()))
             .count();
-    }
+  }
 }

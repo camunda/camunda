@@ -15,7 +15,7 @@
  */
 package io.zeebe.client.api.commands;
 
-public enum PartitionBrokerRole
-{
-    LEADER, FOLLOWER
+public enum PartitionBrokerRole {
+  LEADER,
+  FOLLOWER
 }

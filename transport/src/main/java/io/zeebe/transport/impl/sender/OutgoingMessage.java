@@ -16,40 +16,33 @@
 package io.zeebe.transport.impl.sender;
 
 import java.nio.ByteBuffer;
-
 import org.agrona.MutableDirectBuffer;
 
-public class OutgoingMessage
-{
-    private final TransportHeaderWriter headerWriter = new TransportHeaderWriter();
+public class OutgoingMessage {
+  private final TransportHeaderWriter headerWriter = new TransportHeaderWriter();
 
-    private final int remoteStreamId;
+  private final int remoteStreamId;
 
-    private final MutableDirectBuffer buffer;
+  private final MutableDirectBuffer buffer;
 
-    public OutgoingMessage(int remoteStreamId, MutableDirectBuffer buffer)
-    {
-        this.remoteStreamId = remoteStreamId;
-        this.buffer = buffer;
-    }
+  public OutgoingMessage(int remoteStreamId, MutableDirectBuffer buffer) {
+    this.remoteStreamId = remoteStreamId;
+    this.buffer = buffer;
+  }
 
-    public int getRemoteStreamId()
-    {
-        return remoteStreamId;
-    }
+  public int getRemoteStreamId() {
+    return remoteStreamId;
+  }
 
-    public MutableDirectBuffer getBuffer()
-    {
-        return buffer;
-    }
+  public MutableDirectBuffer getBuffer() {
+    return buffer;
+  }
 
-    public TransportHeaderWriter getHeaderWriter()
-    {
-        return headerWriter;
-    }
+  public TransportHeaderWriter getHeaderWriter() {
+    return headerWriter;
+  }
 
-    public ByteBuffer getAllocatedBuffer()
-    {
-        return buffer.byteBuffer();
-    }
+  public ByteBuffer getAllocatedBuffer() {
+    return buffer.byteBuffer();
+  }
 }

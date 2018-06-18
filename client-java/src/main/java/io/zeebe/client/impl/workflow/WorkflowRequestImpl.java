@@ -22,57 +22,48 @@ import io.zeebe.client.impl.RequestManager;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 
-public class WorkflowRequestImpl extends ControlMessageRequest<Workflows> implements WorkflowRequestStep1
-{
-    private final Request request;
+public class WorkflowRequestImpl extends ControlMessageRequest<Workflows>
+    implements WorkflowRequestStep1 {
+  private final Request request;
 
-    public WorkflowRequestImpl(RequestManager client, String topic)
-    {
-        super(client, ControlMessageType.LIST_WORKFLOWS, WorkflowsImpl.class);
+  public WorkflowRequestImpl(RequestManager client, String topic) {
+    super(client, ControlMessageType.LIST_WORKFLOWS, WorkflowsImpl.class);
 
-        setTargetPartition(Protocol.SYSTEM_PARTITION);
+    setTargetPartition(Protocol.SYSTEM_PARTITION);
 
-        request = new Request(topic);
+    request = new Request(topic);
+  }
+
+  @Override
+  public WorkflowRequestStep1 bpmnProcessId(String bpmnProcessId) {
+    request.setBpmnProcessId(bpmnProcessId);
+    return this;
+  }
+
+  @Override
+  public Object getRequest() {
+    return request;
+  }
+
+  class Request {
+    private final String topicName;
+
+    private String bpmnProcessId;
+
+    Request(String topicName) {
+      this.topicName = topicName;
     }
 
-    @Override
-    public WorkflowRequestStep1 bpmnProcessId(String bpmnProcessId)
-    {
-        request.setBpmnProcessId(bpmnProcessId);
-        return this;
+    public String getBpmnProcessId() {
+      return bpmnProcessId;
     }
 
-    @Override
-    public Object getRequest()
-    {
-        return request;
+    public void setBpmnProcessId(String bpmnProcessId) {
+      this.bpmnProcessId = bpmnProcessId;
     }
 
-    class Request
-    {
-        private final String topicName;
-
-        private String bpmnProcessId;
-
-        Request(String topicName)
-        {
-            this.topicName = topicName;
-        }
-
-        public String getBpmnProcessId()
-        {
-            return bpmnProcessId;
-        }
-
-        public void setBpmnProcessId(String bpmnProcessId)
-        {
-            this.bpmnProcessId = bpmnProcessId;
-        }
-
-        public String getTopicName()
-        {
-            return topicName;
-        }
+    public String getTopicName() {
+      return topicName;
     }
-
+  }
 }

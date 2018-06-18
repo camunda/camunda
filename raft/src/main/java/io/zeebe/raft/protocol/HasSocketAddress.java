@@ -17,9 +17,7 @@ package io.zeebe.raft.protocol;
 
 import io.zeebe.transport.SocketAddress;
 
-public interface HasSocketAddress
-{
+public interface HasSocketAddress {
 
-    SocketAddress getSocketAddress();
-
+  SocketAddress getSocketAddress();
 }

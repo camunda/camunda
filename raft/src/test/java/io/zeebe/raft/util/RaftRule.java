@@ -24,12 +24,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
-import java.lang.reflect.Field;
-import java.nio.file.Files;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
@@ -52,6 +46,11 @@ import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.channel.OneToOneRingBufferChannel;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import java.lang.reflect.Field;
+import java.nio.file.Files;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
@@ -60,451 +59,442 @@ import org.mockito.ArgumentMatcher;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-public class RaftRule extends ExternalResource implements RaftStateListener
-{
-    public static final FragmentHandler NOOP_FRAGMENT_HANDLER = (buffer, offset, length, streamId, isMarkedFailed) -> FragmentHandler.CONSUME_FRAGMENT_RESULT;
+public class RaftRule extends ExternalResource implements RaftStateListener {
+  public static final FragmentHandler NOOP_FRAGMENT_HANDLER =
+      (buffer, offset, length, streamId, isMarkedFailed) -> FragmentHandler.CONSUME_FRAGMENT_RESULT;
 
-    protected final ServiceContainer serviceContainer;
-    protected final ActorScheduler actorScheduler;
-    protected final RaftConfiguration configuration;
-    protected final SocketAddress socketAddress;
-    protected final String topicName;
-    protected final int partition;
-    protected final RaftConfigurationEvent configurationEvent = new RaftConfigurationEvent();
-    protected final LogStreamWriterImpl writer = new LogStreamWriterImpl();
-    protected final List<RaftRule> members;
-    protected final RecordMetadata metadata = new RecordMetadata();
+  protected final ServiceContainer serviceContainer;
+  protected final ActorScheduler actorScheduler;
+  protected final RaftConfiguration configuration;
+  protected final SocketAddress socketAddress;
+  protected final String topicName;
+  protected final int partition;
+  protected final RaftConfigurationEvent configurationEvent = new RaftConfigurationEvent();
+  protected final LogStreamWriterImpl writer = new LogStreamWriterImpl();
+  protected final List<RaftRule> members;
+  protected final RecordMetadata metadata = new RecordMetadata();
 
-    protected ClientTransport clientTransport;
-    protected ClientOutput spyClientOutput;
+  protected ClientTransport clientTransport;
+  protected ClientOutput spyClientOutput;
 
-    protected ServerTransport serverTransport;
+  protected ServerTransport serverTransport;
 
-    protected LogStream logStream;
-    protected Raft raft;
-    private ActorControl raftActor;
-    protected BufferedLogStreamReader uncommittedReader;
-    protected BufferedLogStreamReader committedReader;
+  protected LogStream logStream;
+  protected Raft raft;
+  private ActorControl raftActor;
+  protected BufferedLogStreamReader uncommittedReader;
+  protected BufferedLogStreamReader committedReader;
 
-    private InMemoryRaftPersistentStorage persistentStorage;
+  private InMemoryRaftPersistentStorage persistentStorage;
 
-    protected final List<RaftState> raftStateChanges = new ArrayList<>();
-    protected Set<Integer> interrupedStreams = Collections.synchronizedSet(new HashSet<>());
-    private ServiceName<Raft> raftServiceName;
+  protected final List<RaftState> raftStateChanges = new ArrayList<>();
+  protected Set<Integer> interrupedStreams = Collections.synchronizedSet(new HashSet<>());
+  private ServiceName<Raft> raftServiceName;
 
-    public RaftRule(final ServiceContainerRule serviceContainerRule, final String host, final int port, final String topicName, final int partition, final RaftRule... members)
-    {
-        this(serviceContainerRule, new RaftConfiguration().setLeaveTimeout("10s"), host, port, topicName, partition, members);
-    }
+  public RaftRule(
+      final ServiceContainerRule serviceContainerRule,
+      final String host,
+      final int port,
+      final String topicName,
+      final int partition,
+      final RaftRule... members) {
+    this(
+        serviceContainerRule,
+        new RaftConfiguration().setLeaveTimeout("10s"),
+        host,
+        port,
+        topicName,
+        partition,
+        members);
+  }
 
-    public RaftRule(final ServiceContainerRule serviceContainerRule, final RaftConfiguration configuration, final String host, final int port, final String topicName, final int partition, final RaftRule... members)
-    {
-        this.actorScheduler = serviceContainerRule.getActorScheduler();
-        this.serviceContainer = serviceContainerRule.get();
-        this.configuration = configuration;
-        this.socketAddress = new SocketAddress(host, port);
+  public RaftRule(
+      final ServiceContainerRule serviceContainerRule,
+      final RaftConfiguration configuration,
+      final String host,
+      final int port,
+      final String topicName,
+      final int partition,
+      final RaftRule... members) {
+    this.actorScheduler = serviceContainerRule.getActorScheduler();
+    this.serviceContainer = serviceContainerRule.get();
+    this.configuration = configuration;
+    this.socketAddress = new SocketAddress(host, port);
 
-        this.topicName = topicName;
-        this.partition = partition;
-        this.members = members != null ? Arrays.asList(members) : Collections.emptyList();
-    }
+    this.topicName = topicName;
+    this.partition = partition;
+    this.members = members != null ? Arrays.asList(members) : Collections.emptyList();
+  }
 
-    @Override
-    protected void before() throws Throwable
-    {
-        final String name = socketAddress.toString();
-        final String logName = String.format("%s-%d-%d", topicName, partition, socketAddress.port());
+  @Override
+  protected void before() throws Throwable {
+    final String name = socketAddress.toString();
+    final String logName = String.format("%s-%d-%d", topicName, partition, socketAddress.port());
 
-        final RaftApiMessageHandler raftApiMessageHandler = new RaftApiMessageHandler();
+    final RaftApiMessageHandler raftApiMessageHandler = new RaftApiMessageHandler();
 
-        serverTransport =
-            Transports.newServerTransport()
-                      .bindAddress(socketAddress.toInetSocketAddress())
-                      .scheduler(actorScheduler)
-                      .build(raftApiMessageHandler, raftApiMessageHandler);
+    serverTransport =
+        Transports.newServerTransport()
+            .bindAddress(socketAddress.toInetSocketAddress())
+            .scheduler(actorScheduler)
+            .build(raftApiMessageHandler, raftApiMessageHandler);
 
-        clientTransport =
-            Transports.newClientTransport()
-                      .scheduler(actorScheduler)
-                      .build();
+    clientTransport = Transports.newClientTransport().scheduler(actorScheduler).build();
 
-        logStream =
-            LogStreams.createFsLogStream(wrapString(topicName), partition)
-                      .logName(logName)
-                      .deleteOnClose(true)
-                      .logDirectory(Files.createTempDirectory("raft-test-" + socketAddress.port() + "-").toString())
-                      .serviceContainer(serviceContainer)
-                      .build()
-                      .join();
+    logStream =
+        LogStreams.createFsLogStream(wrapString(topicName), partition)
+            .logName(logName)
+            .deleteOnClose(true)
+            .logDirectory(
+                Files.createTempDirectory("raft-test-" + socketAddress.port() + "-").toString())
+            .serviceContainer(serviceContainer)
+            .build()
+            .join();
 
-        persistentStorage = new InMemoryRaftPersistentStorage(logStream);
-        final OneToOneRingBufferChannel messageBuffer = new OneToOneRingBufferChannel(new UnsafeBuffer(new byte[(MemberReplicateLogController.REMOTE_BUFFER_SIZE) + RingBufferDescriptor.TRAILER_LENGTH]));
+    persistentStorage = new InMemoryRaftPersistentStorage(logStream);
+    final OneToOneRingBufferChannel messageBuffer =
+        new OneToOneRingBufferChannel(
+            new UnsafeBuffer(
+                new byte
+                    [(MemberReplicateLogController.REMOTE_BUFFER_SIZE)
+                        + RingBufferDescriptor.TRAILER_LENGTH]));
 
-        spyClientOutput = spy(clientTransport.getOutput());
-        final ClientTransport spyClientTransport = spy(clientTransport);
-        when(spyClientTransport.getOutput()).thenReturn(spyClientOutput);
+    spyClientOutput = spy(clientTransport.getOutput());
+    final ClientTransport spyClientTransport = spy(clientTransport);
+    when(spyClientTransport.getOutput()).thenReturn(spyClientOutput);
 
-        doAnswer(new Answer<Boolean>()
-        {
-            @Override
-            public Boolean answer(InvocationOnMock invocation) throws Throwable
-            {
+    doAnswer(
+            new Answer<Boolean>() {
+              @Override
+              public Boolean answer(InvocationOnMock invocation) throws Throwable {
                 final TransportMessage msg = invocation.getArgument(0);
                 final int stream = readRemoteStreamId(msg);
 
-                if (interrupedStreams.contains(stream))
-                {
-                    return true;
+                if (interrupedStreams.contains(stream)) {
+                  return true;
+                } else {
+                  return (Boolean) invocation.callRealMethod();
                 }
-                else
-                {
-                    return (Boolean) invocation.callRealMethod();
-                }
-            }
-        }).when(spyClientOutput).sendMessage(any(TransportMessage.class));
+              }
+            })
+        .when(spyClientOutput)
+        .sendMessage(any(TransportMessage.class));
 
-        raft = new Raft(logName, configuration, socketAddress, spyClientTransport, persistentStorage, messageBuffer, this)
-        {
-            @Override
-            protected void onActorStarting()
-            {
-                raftActor = actor;
-                super.onActorStarting();
-            }
+    raft =
+        new Raft(
+            logName,
+            configuration,
+            socketAddress,
+            spyClientTransport,
+            persistentStorage,
+            messageBuffer,
+            this) {
+          @Override
+          protected void onActorStarting() {
+            raftActor = actor;
+            super.onActorStarting();
+          }
         };
-        raftApiMessageHandler.registerRaft(raft);
-        raft.addMembersWhenJoined(members.stream().map(RaftRule::getSocketAddress).collect(Collectors.toList()));
+    raftApiMessageHandler.registerRaft(raft);
+    raft.addMembersWhenJoined(
+        members.stream().map(RaftRule::getSocketAddress).collect(Collectors.toList()));
 
-        uncommittedReader = new BufferedLogStreamReader(logStream, true);
-        committedReader = new BufferedLogStreamReader(logStream, false);
+    uncommittedReader = new BufferedLogStreamReader(logStream, true);
+    committedReader = new BufferedLogStreamReader(logStream, false);
 
-        raftServiceName = raftServiceName(name);
-        serviceContainer.createService(raftServiceName, raft)
-            .dependency(LogStreamServiceNames.logStreamServiceName(logName), raft.getLogStreamInjector())
-            .install()
-            .join();
+    raftServiceName = raftServiceName(name);
+    serviceContainer
+        .createService(raftServiceName, raft)
+        .dependency(
+            LogStreamServiceNames.logStreamServiceName(logName), raft.getLogStreamInjector())
+        .install()
+        .join();
+  }
+
+  @Override
+  protected void after() {
+    if (serviceContainer.hasService(raftServiceName)) {
+      closeRaft();
     }
 
-    @Override
-    protected void after()
-    {
-        if (serviceContainer.hasService(raftServiceName))
-        {
-            closeRaft();
-        }
+    logStream.close();
 
-        logStream.close();
+    serverTransport.close();
+    clientTransport.close();
 
-        serverTransport.close();
-        clientTransport.close();
+    uncommittedReader.close();
+    committedReader.close();
+  }
 
-        uncommittedReader.close();
-        committedReader.close();
-    }
+  public void closeRaft() {
+    LogUtil.catchAndLog(
+        Loggers.RAFT_LOGGER,
+        () -> serviceContainer.removeService(raftServiceName).get(5, TimeUnit.SECONDS));
+  }
 
-    public void closeRaft()
-    {
-        LogUtil.catchAndLog(Loggers.RAFT_LOGGER, () -> serviceContainer.removeService(raftServiceName).get(5, TimeUnit.SECONDS));
-    }
+  public boolean isClosed() {
+    return !serviceContainer.hasService(raftServiceName);
+  }
 
-    public boolean isClosed()
-    {
-        return !serviceContainer.hasService(raftServiceName);
-    }
+  public SocketAddress getSocketAddress() {
+    return socketAddress;
+  }
 
-    public SocketAddress getSocketAddress()
-    {
-        return socketAddress;
-    }
+  public LogStream getLogStream() {
+    return logStream;
+  }
 
-    public LogStream getLogStream()
-    {
-        return logStream;
-    }
+  public int getTerm() {
+    return raft.getTerm();
+  }
 
-    public int getTerm()
-    {
-        return raft.getTerm();
-    }
+  public Raft getRaft() {
+    return raft;
+  }
 
-    public Raft getRaft()
-    {
-        return raft;
-    }
+  public int getMemberSize() {
+    return raft.getMemberSize();
+  }
 
-    public int getMemberSize()
-    {
-        return raft.getMemberSize();
-    }
+  public RaftConfiguration getConfiguration() {
+    return raft.getConfiguration();
+  }
 
-    public RaftConfiguration getConfiguration()
-    {
-        return raft.getConfiguration();
-    }
+  public RaftState getState() {
+    return raft.getState();
+  }
 
-    public RaftState getState()
-    {
-        return raft.getState();
-    }
+  @Override
+  public void onStateChange(Raft raft, RaftState raftState) {
+    final int partitionId = raft.getPartitionId();
+    final DirectBuffer topicName = raft.getTopicName();
+    final SocketAddress socketAddress = raft.getSocketAddress();
 
-    @Override
-    public void onStateChange(Raft raft, RaftState raftState)
-    {
-        final int partitionId = raft.getPartitionId();
-        final DirectBuffer topicName = raft.getTopicName();
-        final SocketAddress socketAddress = raft.getSocketAddress();
+    assertThat(partitionId).isEqualTo(raft.getLogStream().getPartitionId());
+    assertThat(topicName).isEqualByComparingTo(raft.getLogStream().getTopicName());
+    assertThat(socketAddress).isEqualTo(raft.getSocketAddress());
 
-        assertThat(partitionId).isEqualTo(raft.getLogStream().getPartitionId());
-        assertThat(topicName).isEqualByComparingTo(raft.getLogStream().getTopicName());
-        assertThat(socketAddress).isEqualTo(raft.getSocketAddress());
+    raftStateChanges.add(raftState);
+  }
 
-        raftStateChanges.add(raftState);
-    }
+  public List<RaftState> getRaftStateChanges() {
+    return raftStateChanges;
+  }
 
-    public List<RaftState> getRaftStateChanges()
-    {
-        return raftStateChanges;
-    }
+  public InMemoryRaftPersistentStorage getPersistentStorage() {
+    return persistentStorage;
+  }
 
-    public InMemoryRaftPersistentStorage getPersistentStorage()
-    {
-        return persistentStorage;
-    }
+  public void clearSubscription() {
+    raft.clearReceiveBuffer().join();
+  }
 
-    public void clearSubscription()
-    {
-        raft.clearReceiveBuffer().join();
-    }
+  public boolean isLeader() {
+    return getState() == LEADER;
+  }
 
-    public boolean isLeader()
-    {
-        return getState() == LEADER;
-    }
+  public boolean isJoined() {
+    return raft.isJoined();
+  }
 
-    public boolean isJoined()
-    {
-        return raft.isJoined();
-    }
+  public EventInfo writeEvent(final String message) {
+    writer.wrap(logStream);
 
-    public EventInfo writeEvent(final String message)
-    {
-        writer.wrap(logStream);
+    final EventInfo[] eventInfo = new EventInfo[1];
 
-        final EventInfo[] eventInfo = new EventInfo[1];
+    final DirectBuffer value = wrapString(message);
 
-        final DirectBuffer value = wrapString(message);
-
-        TestUtil.doRepeatedly(() -> writer.positionAsKey().metadataWriter(metadata.reset()).value(value).tryWrite())
-                .until(position ->
-                {
-                    if (position != null && position >= 0)
-                    {
-                        eventInfo[0] = new EventInfo(position, raft.getTerm(), message);
-                        return true;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }, "Failed to write event with message {}", message);
-
-        return eventInfo[0];
-    }
-
-    public EventInfo writeEvents(final String... messages)
-    {
-        EventInfo eventInfo = null;
-
-        for (final String message : messages)
-        {
-            eventInfo = writeEvent(message);
-        }
-
-        return eventInfo;
-    }
-
-    public boolean eventAppended(final EventInfo eventInfo)
-    {
-        uncommittedReader.seek(eventInfo.getPosition());
-
-        if (uncommittedReader.hasNext())
-        {
-            final EventInfo event = new EventInfo(uncommittedReader.next());
-            return event.equals(eventInfo);
-        }
-
-        return false;
-    }
-
-    public boolean eventCommitted(final EventInfo eventInfo)
-    {
-        final boolean isCommitted = logStream.getCommitPosition() >= eventInfo.getPosition();
-
-        return isCommitted && eventAppended(eventInfo);
-    }
-
-    public boolean eventsCommitted(final String... messages)
-    {
-        committedReader.seekToFirstEvent();
-
-        final RecordMetadata metadata = new RecordMetadata();
-
-        return
-            Arrays.stream(messages)
-                  .allMatch(message ->
-                  {
-                      while (committedReader.hasNext())
-                      {
-                          final LoggedEvent event = committedReader.next();
-                          event.readMetadata(metadata);
-
-                          if (metadata.getValueType() == ValueType.NULL_VAL)
-                          {
-                              try
-                              {
-                                  final String value = bufferAsString(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
-
-                                  return message.equals(value);
-                              }
-                              catch (final Exception e)
-                              {
-                                  // ignore
-                              }
-                          }
-                      }
-
-                      return false;
-                  });
-    }
-
-    public boolean eventCommitted(final int term, final ValueType eventType)
-    {
-        committedReader.seekToFirstEvent();
-
-        while (committedReader.hasNext())
-        {
-            final LoggedEvent event = committedReader.next();
-            event.readMetadata(metadata);
-
-            if (event.getRaftTerm() == term && metadata.getValueType() == eventType)
-            {
+    TestUtil.doRepeatedly(
+            () -> writer.positionAsKey().metadataWriter(metadata.reset()).value(value).tryWrite())
+        .until(
+            position -> {
+              if (position != null && position >= 0) {
+                eventInfo[0] = new EventInfo(position, raft.getTerm(), message);
                 return true;
-            }
-            else if (event.getRaftTerm() > term)
-            {
-                // early abort which assumes that terms are always increasing
+              } else {
                 return false;
-            }
-        }
+              }
+            },
+            "Failed to write event with message {}",
+            message);
 
-        return false;
+    return eventInfo[0];
+  }
+
+  public EventInfo writeEvents(final String... messages) {
+    EventInfo eventInfo = null;
+
+    for (final String message : messages) {
+      eventInfo = writeEvent(message);
     }
 
-    public boolean raftEventCommitted(final int term, final RaftRule... members)
-    {
-        committedReader.seekToFirstEvent();
+    return eventInfo;
+  }
 
-        final Set<SocketAddress> expected;
+  public boolean eventAppended(final EventInfo eventInfo) {
+    uncommittedReader.seek(eventInfo.getPosition());
 
-        if (members == null)
-        {
-            expected = Collections.emptySet();
-        }
-        else
-        {
-            expected = Arrays.stream(members).map(RaftRule::getSocketAddress).collect(Collectors.toSet());
-        }
+    if (uncommittedReader.hasNext()) {
+      final EventInfo event = new EventInfo(uncommittedReader.next());
+      return event.equals(eventInfo);
+    }
 
+    return false;
+  }
 
-        while (committedReader.hasNext())
-        {
-            final LoggedEvent event = committedReader.next();
-            event.readMetadata(metadata);
+  public boolean eventCommitted(final EventInfo eventInfo) {
+    final boolean isCommitted = logStream.getCommitPosition() >= eventInfo.getPosition();
 
-            if (event.getRaftTerm() == term && metadata.getValueType() == ValueType.RAFT)
-            {
-                event.readValue(configurationEvent);
+    return isCommitted && eventAppended(eventInfo);
+  }
 
-                final Iterator<RaftConfigurationEventMember> configurationMembers = configurationEvent.members().iterator();
+  public boolean eventsCommitted(final String... messages) {
+    committedReader.seekToFirstEvent();
 
-                final Set<SocketAddress> found = new HashSet<>();
+    final RecordMetadata metadata = new RecordMetadata();
 
-                while (configurationMembers.hasNext())
-                {
-                    final RaftConfigurationEventMember configurationMember = configurationMembers.next();
-                    found.add(configurationMember.getSocketAddress());
+    return Arrays.stream(messages)
+        .allMatch(
+            message -> {
+              while (committedReader.hasNext()) {
+                final LoggedEvent event = committedReader.next();
+                event.readMetadata(metadata);
+
+                if (metadata.getValueType() == ValueType.NULL_VAL) {
+                  try {
+                    final String value =
+                        bufferAsString(
+                            event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
+
+                    return message.equals(value);
+                  } catch (final Exception e) {
+                    // ignore
+                  }
                 }
+              }
 
-                if (expected.equals(found))
-                {
-                    return true;
-                }
-            }
-            else if (event.getRaftTerm() > term)
-            {
-                // early abort which assumes that terms are always increasing
-                return false;
-            }
-        }
+              return false;
+            });
+  }
 
+  public boolean eventCommitted(final int term, final ValueType eventType) {
+    committedReader.seekToFirstEvent();
+
+    while (committedReader.hasNext()) {
+      final LoggedEvent event = committedReader.next();
+      event.readMetadata(metadata);
+
+      if (event.getRaftTerm() == term && metadata.getValueType() == eventType) {
+        return true;
+      } else if (event.getRaftTerm() > term) {
+        // early abort which assumes that terms are always increasing
         return false;
+      }
     }
 
-    @Override
-    public String toString()
-    {
-        return raft.toString();
+    return false;
+  }
+
+  public boolean raftEventCommitted(final int term, final RaftRule... members) {
+    committedReader.seekToFirstEvent();
+
+    final Set<SocketAddress> expected;
+
+    if (members == null) {
+      expected = Collections.emptySet();
+    } else {
+      expected = Arrays.stream(members).map(RaftRule::getSocketAddress).collect(Collectors.toSet());
     }
 
+    while (committedReader.hasNext()) {
+      final LoggedEvent event = committedReader.next();
+      event.readMetadata(metadata);
 
-    public void interruptConnectionTo(RaftRule other)
-    {
-        raftActor.call(() ->
-        {
-            final ArgumentMatcher<RemoteAddress> remoteAddressMatcher = r -> other.socketAddress.equals(r.getAddress());
+      if (event.getRaftTerm() == term && metadata.getValueType() == ValueType.RAFT) {
+        event.readValue(configurationEvent);
 
-            doReturn(CompletableActorFuture.completedExceptionally(new RequestTimeoutException("connection is interrupted")))
-                .when(spyClientOutput)
-                .sendRequest(argThat(remoteAddressMatcher), any());
+        final Iterator<RaftConfigurationEventMember> configurationMembers =
+            configurationEvent.members().iterator();
 
-            doReturn(CompletableActorFuture.completedExceptionally(new RequestTimeoutException("timeout to " + other.socketAddress)))
-                .when(spyClientOutput)
-                .sendRequest(argThat(remoteAddressMatcher), any(), any());
+        final Set<SocketAddress> found = new HashSet<>();
 
-            final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(other.getSocketAddress());
-            interrupedStreams.add(remoteAddress.getStreamId());
-
-        }).join();
-
-    }
-
-    private int readRemoteStreamId(TransportMessage transportMessage)
-    {
-        final Class<TransportMessage> transportMessageClass = TransportMessage.class;
-        int value;
-        try
-        {
-            final Field remoteStreamId = transportMessageClass.getDeclaredField("remoteStreamId");
-            remoteStreamId.setAccessible(true);
-            value = (int) remoteStreamId.get(transportMessage);
+        while (configurationMembers.hasNext()) {
+          final RaftConfigurationEventMember configurationMember = configurationMembers.next();
+          found.add(configurationMember.getSocketAddress());
         }
-        catch (Exception e)
-        {
-            value = -1;
+
+        if (expected.equals(found)) {
+          return true;
         }
-        return value;
+      } else if (event.getRaftTerm() > term) {
+        // early abort which assumes that terms are always increasing
+        return false;
+      }
     }
 
-    public void reconnectTo(RaftRule other)
-    {
-        raftActor.call(() ->
-        {
-            final ArgumentMatcher<RemoteAddress> remoteAddressMatcher = r -> r.getAddress().equals(other.socketAddress);
-            doCallRealMethod().when(spyClientOutput).sendRequest(argThat(remoteAddressMatcher), any());
-            doCallRealMethod().when(spyClientOutput).sendRequest(argThat(remoteAddressMatcher), any(), any());
-            final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(other.getSocketAddress());
-            interrupedStreams.remove(remoteAddress.getStreamId());
+    return false;
+  }
 
-        }).join();
+  @Override
+  public String toString() {
+    return raft.toString();
+  }
+
+  public void interruptConnectionTo(RaftRule other) {
+    raftActor
+        .call(
+            () -> {
+              final ArgumentMatcher<RemoteAddress> remoteAddressMatcher =
+                  r -> other.socketAddress.equals(r.getAddress());
+
+              doReturn(
+                      CompletableActorFuture.completedExceptionally(
+                          new RequestTimeoutException("connection is interrupted")))
+                  .when(spyClientOutput)
+                  .sendRequest(argThat(remoteAddressMatcher), any());
+
+              doReturn(
+                      CompletableActorFuture.completedExceptionally(
+                          new RequestTimeoutException("timeout to " + other.socketAddress)))
+                  .when(spyClientOutput)
+                  .sendRequest(argThat(remoteAddressMatcher), any(), any());
+
+              final RemoteAddress remoteAddress =
+                  clientTransport.registerRemoteAddress(other.getSocketAddress());
+              interrupedStreams.add(remoteAddress.getStreamId());
+            })
+        .join();
+  }
+
+  private int readRemoteStreamId(TransportMessage transportMessage) {
+    final Class<TransportMessage> transportMessageClass = TransportMessage.class;
+    int value;
+    try {
+      final Field remoteStreamId = transportMessageClass.getDeclaredField("remoteStreamId");
+      remoteStreamId.setAccessible(true);
+      value = (int) remoteStreamId.get(transportMessage);
+    } catch (Exception e) {
+      value = -1;
     }
+    return value;
+  }
+
+  public void reconnectTo(RaftRule other) {
+    raftActor
+        .call(
+            () -> {
+              final ArgumentMatcher<RemoteAddress> remoteAddressMatcher =
+                  r -> r.getAddress().equals(other.socketAddress);
+              doCallRealMethod()
+                  .when(spyClientOutput)
+                  .sendRequest(argThat(remoteAddressMatcher), any());
+              doCallRealMethod()
+                  .when(spyClientOutput)
+                  .sendRequest(argThat(remoteAddressMatcher), any(), any());
+              final RemoteAddress remoteAddress =
+                  clientTransport.registerRemoteAddress(other.getSocketAddress());
+              interrupedStreams.remove(remoteAddress.getStreamId());
+            })
+        .join();
+  }
 }

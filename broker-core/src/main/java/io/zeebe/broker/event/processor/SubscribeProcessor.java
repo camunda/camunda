@@ -28,192 +28,169 @@ import io.zeebe.protocol.intent.SubscriberIntent;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 
-public class SubscribeProcessor implements EventProcessor
-{
-    protected final int maximumNameLength;
-    protected final TopicSubscriptionManagementProcessor manager;
+public class SubscribeProcessor implements EventProcessor {
+  protected final int maximumNameLength;
+  protected final TopicSubscriptionManagementProcessor manager;
 
-    protected LoggedEvent event;
-    protected RecordMetadata metadata;
-    protected TopicSubscriberEvent subscriberEvent;
+  protected LoggedEvent event;
+  protected RecordMetadata metadata;
+  protected TopicSubscriberEvent subscriberEvent;
 
-    protected EventProcessor state;
-    protected final RequestFailureProcessor failedRequestState = new RequestFailureProcessor();
-    protected final CreateSubscriptionServiceProcessor createProcessorState = new CreateSubscriptionServiceProcessor();
-    protected final AwaitSubscriptionServiceProcessor awaitProcessorState = new AwaitSubscriptionServiceProcessor();
-    protected final SubscriptionServiceSuccessProcessor successState = new SubscriptionServiceSuccessProcessor();
+  protected EventProcessor state;
+  protected final RequestFailureProcessor failedRequestState = new RequestFailureProcessor();
+  protected final CreateSubscriptionServiceProcessor createProcessorState =
+      new CreateSubscriptionServiceProcessor();
+  protected final AwaitSubscriptionServiceProcessor awaitProcessorState =
+      new AwaitSubscriptionServiceProcessor();
+  protected final SubscriptionServiceSuccessProcessor successState =
+      new SubscriptionServiceSuccessProcessor();
 
-    public SubscribeProcessor(
-            int maximumNameLength,
-            TopicSubscriptionManagementProcessor manager)
-    {
-        this.maximumNameLength = maximumNameLength;
-        this.manager = manager;
+  public SubscribeProcessor(int maximumNameLength, TopicSubscriptionManagementProcessor manager) {
+    this.maximumNameLength = maximumNameLength;
+    this.manager = manager;
+  }
+
+  public void wrap(
+      LoggedEvent event, RecordMetadata metadata, TopicSubscriberEvent subscriberEvent) {
+    this.event = event;
+    this.metadata = metadata;
+    this.subscriberEvent = subscriberEvent;
+  }
+
+  @Override
+  public void processEvent(EventLifecycleContext ctx) {
+    final DirectBuffer subscriptionName = subscriberEvent.getName();
+
+    if (subscriptionName.capacity() > maximumNameLength) {
+      failedRequestState.wrapError(
+          "Cannot open topic subscription '"
+              + subscriberEvent.getNameAsString()
+              + "'. Subscription name must be "
+              + maximumNameLength
+              + " characters or shorter.");
+      state = failedRequestState;
+    } else if (subscriberEvent.getBufferSize() <= 0) {
+      failedRequestState.wrapError(
+          "Cannot open topic subscription '"
+              + subscriberEvent.getNameAsString()
+              + "'. Buffer size must be greater than 0.");
+      state = failedRequestState;
+    } else {
+      state = createProcessorState;
     }
+  }
 
-    public void wrap(LoggedEvent event, RecordMetadata metadata, TopicSubscriberEvent subscriberEvent)
-    {
-        this.event = event;
-        this.metadata = metadata;
-        this.subscriberEvent = subscriberEvent;
+  @Override
+  public long writeEvent(LogStreamWriter writer) {
+    return state.writeEvent(writer);
+  }
+
+  @Override
+  public boolean executeSideEffects() {
+    return state.executeSideEffects();
+  }
+
+  protected class RequestFailureProcessor implements EventProcessor {
+    protected String error;
+
+    public void wrapError(String error) {
+      this.error = error;
     }
 
     @Override
-    public void processEvent(EventLifecycleContext ctx)
-    {
-        final DirectBuffer subscriptionName = subscriberEvent.getName();
-
-        if (subscriptionName.capacity() > maximumNameLength)
-        {
-            failedRequestState.wrapError("Cannot open topic subscription '" + subscriberEvent.getNameAsString() +
-                    "'. Subscription name must be " + maximumNameLength + " characters or shorter.");
-            state = failedRequestState;
-        }
-        else if (subscriberEvent.getBufferSize() <= 0)
-        {
-            failedRequestState.wrapError("Cannot open topic subscription '" + subscriberEvent.getNameAsString() +
-                                         "'. Buffer size must be greater than 0.");
-            state = failedRequestState;
-        }
-        else
-        {
-            state = createProcessorState;
-        }
+    public boolean executeSideEffects() {
+      return manager.writeRequestResponseError(metadata, error);
     }
 
     @Override
-    public long writeEvent(LogStreamWriter writer)
-    {
-        return state.writeEvent(writer);
+    public long writeEvent(LogStreamWriter writer) {
+      // in the future, we can write a SUBSCRIBE_FAILED event here,
+      // but at the moment that would make no difference for the user
+      return 0L;
+    }
+  }
+
+  protected class CreateSubscriptionServiceProcessor implements EventProcessor {
+
+    @Override
+    public boolean executeSideEffects() {
+      final DirectBuffer subscriptionName = subscriberEvent.getName();
+      final long resumePosition =
+          manager.determineResumePosition(
+              subscriptionName,
+              subscriberEvent.getStartPosition(),
+              subscriberEvent.getForceStart());
+
+      final TopicSubscriptionPushProcessor processor =
+          new TopicSubscriptionPushProcessor(
+              metadata.getRequestStreamId(),
+              event.getKey(),
+              resumePosition,
+              subscriptionName,
+              subscriberEvent.getBufferSize(),
+              manager.getEventWriterFactory().get());
+
+      final ActorFuture<StreamProcessorService> future = manager.openPushProcessorAsync(processor);
+
+      awaitProcessorState.wrap(future);
+      successState.wrap(processor);
+      state = awaitProcessorState;
+
+      return false;
+    }
+  }
+
+  protected class AwaitSubscriptionServiceProcessor implements EventProcessor {
+    protected ActorFuture<StreamProcessorService> streamProcessorServiceFuture;
+
+    public void wrap(ActorFuture<StreamProcessorService> future) {
+      this.streamProcessorServiceFuture = future;
     }
 
     @Override
-    public boolean executeSideEffects()
-    {
-        return state.executeSideEffects();
+    public boolean executeSideEffects() {
+      if (!streamProcessorServiceFuture.isDone()) {
+        // waiting
+      } else if (streamProcessorServiceFuture.isCompletedExceptionally()) {
+        final String errorMessage = streamProcessorServiceFuture.getException().getMessage();
+
+        failedRequestState.wrapError(errorMessage);
+        state = failedRequestState;
+      } else {
+        state = successState;
+      }
+      return false;
+    }
+  }
+
+  protected class SubscriptionServiceSuccessProcessor implements EventProcessor {
+
+    protected TopicSubscriptionPushProcessor processor;
+
+    public void wrap(TopicSubscriptionPushProcessor processor) {
+      this.processor = processor;
     }
 
-    protected class RequestFailureProcessor implements EventProcessor
-    {
-        protected String error;
+    @Override
+    public boolean executeSideEffects() {
+      // success response is written on SUBSCRIBED event, as only then it is guaranteed that
+      //   the start position is persisted
 
-        public void wrapError(String error)
-        {
-            this.error = error;
-        }
-
-        @Override
-        public boolean executeSideEffects()
-        {
-            return manager.writeRequestResponseError(metadata, error);
-        }
-
-        @Override
-        public long writeEvent(LogStreamWriter writer)
-        {
-            // in the future, we can write a SUBSCRIBE_FAILED event here,
-            // but at the moment that would make no difference for the user
-            return 0L;
-        }
-
+      manager.registerPushProcessor(processor);
+      return true;
     }
 
-    protected class CreateSubscriptionServiceProcessor implements EventProcessor
-    {
+    @Override
+    public long writeEvent(LogStreamWriter writer) {
+      metadata.protocolVersion(Protocol.PROTOCOL_VERSION).intent(SubscriberIntent.SUBSCRIBED);
 
-        @Override
-        public boolean executeSideEffects()
-        {
-            final DirectBuffer subscriptionName = subscriberEvent.getName();
-            final long resumePosition = manager.determineResumePosition(
-                    subscriptionName,
-                    subscriberEvent.getStartPosition(),
-                    subscriberEvent.getForceStart());
+      subscriberEvent.setStartPosition(processor.getStartPosition());
 
-            final TopicSubscriptionPushProcessor processor = new TopicSubscriptionPushProcessor(
-                metadata.getRequestStreamId(),
-                event.getKey(),
-                resumePosition,
-                subscriptionName,
-                subscriberEvent.getBufferSize(),
-                manager.getEventWriterFactory().get());
-
-            final ActorFuture<StreamProcessorService> future = manager.openPushProcessorAsync(processor);
-
-            awaitProcessorState.wrap(future);
-            successState.wrap(processor);
-            state = awaitProcessorState;
-
-            return false;
-        }
+      return writer
+          .metadataWriter(metadata)
+          .valueWriter(subscriberEvent)
+          .key(event.getKey())
+          .tryWrite();
     }
-
-    protected class AwaitSubscriptionServiceProcessor implements EventProcessor
-    {
-        protected ActorFuture<StreamProcessorService> streamProcessorServiceFuture;
-
-        public void wrap(ActorFuture<StreamProcessorService> future)
-        {
-            this.streamProcessorServiceFuture = future;
-        }
-
-        @Override
-        public boolean executeSideEffects()
-        {
-            if (!streamProcessorServiceFuture.isDone())
-            {
-                // waiting
-            }
-            else if (streamProcessorServiceFuture.isCompletedExceptionally())
-            {
-                final String errorMessage = streamProcessorServiceFuture.getException().getMessage();
-
-                failedRequestState.wrapError(errorMessage);
-                state = failedRequestState;
-            }
-            else
-            {
-                state = successState;
-            }
-            return false;
-        }
-    }
-
-    protected class SubscriptionServiceSuccessProcessor implements EventProcessor
-    {
-
-        protected TopicSubscriptionPushProcessor processor;
-
-        public void wrap(TopicSubscriptionPushProcessor processor)
-        {
-            this.processor = processor;
-        }
-
-        @Override
-        public boolean executeSideEffects()
-        {
-            // success response is written on SUBSCRIBED event, as only then it is guaranteed that
-            //   the start position is persisted
-
-            manager.registerPushProcessor(processor);
-            return true;
-        }
-
-        @Override
-        public long writeEvent(LogStreamWriter writer)
-        {
-            metadata
-                .protocolVersion(Protocol.PROTOCOL_VERSION)
-                .intent(SubscriberIntent.SUBSCRIBED);
-
-            subscriberEvent
-                .setStartPosition(processor.getStartPosition());
-
-            return writer
-                .metadataWriter(metadata)
-                .valueWriter(subscriberEvent)
-                .key(event.getKey())
-                .tryWrite();
-        }
-    }
+  }
 }

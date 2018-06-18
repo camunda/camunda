@@ -17,32 +17,26 @@
  */
 package io.zeebe.broker.system.configuration;
 
-import java.io.File;
-import java.io.InputStream;
-
 import com.moandjiezana.toml.Toml;
 import io.zeebe.broker.Loggers;
+import java.io.File;
+import java.io.InputStream;
 import org.slf4j.Logger;
 
-public class TomlConfigurationReader
-{
-    public static final Logger LOG = Loggers.SYSTEM_LOGGER;
+public class TomlConfigurationReader {
+  public static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
-    public BrokerCfg read(String filePath)
-    {
-        final File file = new File(filePath);
+  public BrokerCfg read(String filePath) {
+    final File file = new File(filePath);
 
-        LOG.info("Using configuration file " + file.getAbsolutePath());
+    LOG.info("Using configuration file " + file.getAbsolutePath());
 
-        return new Toml().read(file)
-            .to(BrokerCfg.class);
-    }
+    return new Toml().read(file).to(BrokerCfg.class);
+  }
 
-    public BrokerCfg read(InputStream configStream)
-    {
-        LOG.info("Reading configuration from input stream");
+  public BrokerCfg read(InputStream configStream) {
+    LOG.info("Reading configuration from input stream");
 
-        return new Toml().read(configStream)
-            .to(BrokerCfg.class);
-    }
+    return new Toml().read(configStream).to(BrokerCfg.class);
+  }
 }

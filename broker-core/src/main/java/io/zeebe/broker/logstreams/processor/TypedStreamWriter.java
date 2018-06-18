@@ -17,54 +17,43 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import java.util.function.Consumer;
-
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.protocol.intent.Intent;
+import java.util.function.Consumer;
 
-public interface TypedStreamWriter
-{
-    /**
-     * @return position of new event, negative value on failure
-     */
-    long writeRejection(TypedRecord<? extends UnpackedObject> command, RejectionType type, String reason);
+public interface TypedStreamWriter {
+  /** @return position of new event, negative value on failure */
+  long writeRejection(
+      TypedRecord<? extends UnpackedObject> command, RejectionType type, String reason);
 
-    /**
-     * @return position of new event, negative value on failure
-     */
-    long writeRejection(TypedRecord<? extends UnpackedObject> command, RejectionType type, String reason, Consumer<RecordMetadata> metadata);
+  /** @return position of new event, negative value on failure */
+  long writeRejection(
+      TypedRecord<? extends UnpackedObject> command,
+      RejectionType type,
+      String reason,
+      Consumer<RecordMetadata> metadata);
 
-    /**
-     * @return position of new event, negative value on failure
-     */
-    long writeNewCommand(Intent intent, UnpackedObject value);
+  /** @return position of new event, negative value on failure */
+  long writeNewCommand(Intent intent, UnpackedObject value);
 
-    /**
-     * @return position of new event, negative value on failure
-     */
-    long writeFollowUpCommand(long key, Intent intent, UnpackedObject value);
+  /** @return position of new event, negative value on failure */
+  long writeFollowUpCommand(long key, Intent intent, UnpackedObject value);
 
-    /**
-     * @return position of new event, negative value on failure
-     */
-    long writeFollowUpCommand(long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata);
+  /** @return position of new event, negative value on failure */
+  long writeFollowUpCommand(
+      long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata);
 
-    /**
-     * @return position of new event, negative value on failure
-     */
-    long writeNewEvent(Intent intent, UnpackedObject value);
+  /** @return position of new event, negative value on failure */
+  long writeNewEvent(Intent intent, UnpackedObject value);
 
-    /**
-     * @return position of new event, negative value on failure
-     */
-    long writeFollowUpEvent(long key, Intent intent, UnpackedObject value);
+  /** @return position of new event, negative value on failure */
+  long writeFollowUpEvent(long key, Intent intent, UnpackedObject value);
 
-    /**
-     * @return position of new event, negative value on failure
-     */
-    long writeFollowUpEvent(long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata);
+  /** @return position of new event, negative value on failure */
+  long writeFollowUpEvent(
+      long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata);
 
-    TypedBatchWriter newBatch();
+  TypedBatchWriter newBatch();
 }

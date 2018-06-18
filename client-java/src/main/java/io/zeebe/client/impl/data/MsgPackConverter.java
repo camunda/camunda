@@ -17,99 +17,85 @@ package io.zeebe.client.impl.data;
 
 import static io.zeebe.util.StringUtil.getBytes;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-
 import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.MappingJsonFactory;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
-public class MsgPackConverter
-{
-    protected static final JsonEncoding JSON_ENCODING = JsonEncoding.UTF8;
-    protected static final Charset JSON_CHARSET = StandardCharsets.UTF_8;
+public class MsgPackConverter {
+  protected static final JsonEncoding JSON_ENCODING = JsonEncoding.UTF8;
+  protected static final Charset JSON_CHARSET = StandardCharsets.UTF_8;
 
-    protected final JsonFactory msgPackFactory = new MessagePackFactory()
-            .setReuseResourceInGenerator(false)
-            .setReuseResourceInParser(false);
-    protected final JsonFactory jsonFactory = new MappingJsonFactory();
+  protected final JsonFactory msgPackFactory =
+      new MessagePackFactory().setReuseResourceInGenerator(false).setReuseResourceInParser(false);
+  protected final JsonFactory jsonFactory = new MappingJsonFactory();
 
-    public byte[] convertToMsgPack(String json)
-    {
-        final byte[] jsonBytes = getBytes(json, JSON_CHARSET);
-        final ByteArrayInputStream inputStream = new ByteArrayInputStream(jsonBytes);
-        return convertToMsgPack(inputStream);
+  public byte[] convertToMsgPack(String json) {
+    final byte[] jsonBytes = getBytes(json, JSON_CHARSET);
+    final ByteArrayInputStream inputStream = new ByteArrayInputStream(jsonBytes);
+    return convertToMsgPack(inputStream);
+  }
+
+  public byte[] convertToMsgPack(final InputStream inputStream) {
+    try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+      convert(inputStream, outputStream, jsonFactory, msgPackFactory);
+
+      return outputStream.toByteArray();
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to convert JSON to MessagePack", e);
+    }
+  }
+
+  public String convertToJson(byte[] msgPack) {
+    final byte[] jsonBytes = convertToJsonBytes(msgPack);
+    return new String(jsonBytes, JSON_CHARSET);
+  }
+
+  public InputStream convertToJsonInputStream(byte[] msgPack) {
+    final byte[] jsonBytes = convertToJsonBytes(msgPack);
+    return new ByteArrayInputStream(jsonBytes);
+  }
+
+  protected byte[] convertToJsonBytes(byte[] msgPack) {
+    final InputStream inputStream = new ByteArrayInputStream(msgPack);
+
+    try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+      convert(inputStream, outputStream, msgPackFactory, jsonFactory);
+
+      final byte[] jsonBytes = outputStream.toByteArray();
+      return jsonBytes;
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to convert MessagePack to JSON", e);
+    }
+  }
+
+  protected void convert(
+      InputStream in, OutputStream out, JsonFactory inFormat, JsonFactory outFormat)
+      throws Exception {
+    final JsonParser parser = inFormat.createParser(in);
+    final JsonGenerator generator = outFormat.createGenerator(out, JSON_ENCODING);
+    final JsonToken token = parser.nextToken();
+    if (token != JsonToken.START_OBJECT
+        && token != JsonToken.START_ARRAY
+        && token != JsonToken.VALUE_NULL) {
+      throw new RuntimeException("Document does not begin with an object or array");
     }
 
-    public byte[] convertToMsgPack(final InputStream inputStream)
-    {
-        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream())
-        {
-            convert(inputStream, outputStream, jsonFactory, msgPackFactory);
+    generator.copyCurrentStructure(parser);
 
-            return outputStream.toByteArray();
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException("Failed to convert JSON to MessagePack", e);
-        }
+    if (parser.nextToken() != null) {
+      throw new RuntimeException("Document has more content than a single object/array");
     }
 
-    public String convertToJson(byte[] msgPack)
-    {
-        final byte[] jsonBytes = convertToJsonBytes(msgPack);
-        return new String(jsonBytes, JSON_CHARSET);
-    }
-
-    public InputStream convertToJsonInputStream(byte[] msgPack)
-    {
-        final byte[] jsonBytes = convertToJsonBytes(msgPack);
-        return new ByteArrayInputStream(jsonBytes);
-    }
-
-    protected byte[] convertToJsonBytes(byte[] msgPack)
-    {
-        final InputStream inputStream = new ByteArrayInputStream(msgPack);
-
-        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream())
-        {
-            convert(inputStream, outputStream, msgPackFactory, jsonFactory);
-
-            final byte[] jsonBytes = outputStream.toByteArray();
-            return jsonBytes;
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException("Failed to convert MessagePack to JSON", e);
-        }
-    }
-
-    protected void convert(InputStream in, OutputStream out, JsonFactory inFormat, JsonFactory outFormat) throws Exception
-    {
-        final JsonParser parser = inFormat.createParser(in);
-        final JsonGenerator generator = outFormat.createGenerator(out, JSON_ENCODING);
-        final JsonToken token = parser.nextToken();
-        if (token != JsonToken.START_OBJECT && token != JsonToken.START_ARRAY && token != JsonToken.VALUE_NULL)
-        {
-            throw new RuntimeException("Document does not begin with an object or array");
-        }
-
-        generator.copyCurrentStructure(parser);
-
-        if (parser.nextToken() != null)
-        {
-            throw new RuntimeException("Document has more content than a single object/array");
-        }
-
-        generator.flush();
-    }
-
+    generator.flush();
+  }
 }

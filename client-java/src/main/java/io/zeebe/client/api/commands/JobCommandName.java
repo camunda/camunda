@@ -15,13 +15,12 @@
  */
 package io.zeebe.client.api.commands;
 
-public enum JobCommandName
-{
-    CREATE,
-    ACTIVATE,
-    COMPLETE,
-    TIME_OUT,
-    FAIL,
-    UPDATE_RETRIES,
-    CANCEL,
+public enum JobCommandName {
+  CREATE,
+  ACTIVATE,
+  COMPLETE,
+  TIME_OUT,
+  FAIL,
+  UPDATE_RETRIES,
+  CANCEL,
 }

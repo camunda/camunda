@@ -15,47 +15,39 @@
  */
 package io.zeebe.model.bpmn.impl.instance;
 
+import io.zeebe.msgpack.el.CompiledJsonCondition;
 import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlValue;
 
-import io.zeebe.msgpack.el.CompiledJsonCondition;
+public class ConditionExpressionImpl {
+  private String text = "";
 
-public class ConditionExpressionImpl
-{
-    private String text = "";
+  private CompiledJsonCondition condition;
 
-    private CompiledJsonCondition condition;
+  public String getText() {
+    return text;
+  }
 
-    public String getText()
-    {
-        return text;
-    }
+  @XmlValue
+  public void setText(String text) {
+    this.text = text;
+  }
 
-    @XmlValue
-    public void setText(String text)
-    {
-        this.text = text;
-    }
+  @XmlTransient
+  public void setCondition(CompiledJsonCondition condition) {
+    this.condition = condition;
+  }
 
-    @XmlTransient
-    public void setCondition(CompiledJsonCondition condition)
-    {
-        this.condition = condition;
-    }
+  public CompiledJsonCondition getCondition() {
+    return condition;
+  }
 
-    public CompiledJsonCondition getCondition()
-    {
-        return condition;
-    }
-
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("ConditionExpression [");
-        builder.append(text);
-        builder.append("]");
-        return builder.toString();
-    }
-
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("ConditionExpression [");
+    builder.append(text);
+    builder.append("]");
+    return builder.toString();
+  }
 }

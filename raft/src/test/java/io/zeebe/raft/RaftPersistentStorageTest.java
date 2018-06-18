@@ -23,34 +23,32 @@ import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class RaftPersistentStorageTest
-{
-    public ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
-    public ServiceContainerRule serviceContainer = new ServiceContainerRule(actorScheduler);
+public class RaftPersistentStorageTest {
+  public ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
+  public ServiceContainerRule serviceContainer = new ServiceContainerRule(actorScheduler);
 
-    public RaftRule raft1 = new RaftRule(serviceContainer, "localhost", 8001, "default", 0);
-    public RaftRule raft2 = new RaftRule(serviceContainer, "localhost", 8002, "default", 0, raft1);
+  public RaftRule raft1 = new RaftRule(serviceContainer, "localhost", 8001, "default", 0);
+  public RaftRule raft2 = new RaftRule(serviceContainer, "localhost", 8002, "default", 0, raft1);
 
-    @Rule
-    public RaftClusterRule cluster = new RaftClusterRule(actorScheduler, serviceContainer, raft1, raft2);
+  @Rule
+  public RaftClusterRule cluster =
+      new RaftClusterRule(actorScheduler, serviceContainer, raft1, raft2);
 
-    @Test
-    public void shouldPersistConfiguration()
-    {
-        // given
-        cluster.awaitInitialEventCommittedOnAll(1);
-        cluster.awaitRaftEventCommittedOnAll(1);
+  @Test
+  public void shouldPersistConfiguration() {
+    // given
+    cluster.awaitInitialEventCommittedOnAll(1);
+    cluster.awaitRaftEventCommittedOnAll(1);
 
-        // then
-        InMemoryRaftPersistentStorage storage = raft1.getPersistentStorage();
-        assertThat(storage.getTerm()).isEqualTo(1);
-        assertThat(storage.getVotedFor()).isEqualTo(raft1.getSocketAddress());
-        assertThat(storage.getMembers()).containsExactly(raft2.getSocketAddress());
+    // then
+    InMemoryRaftPersistentStorage storage = raft1.getPersistentStorage();
+    assertThat(storage.getTerm()).isEqualTo(1);
+    assertThat(storage.getVotedFor()).isEqualTo(raft1.getSocketAddress());
+    assertThat(storage.getMembers()).containsExactly(raft2.getSocketAddress());
 
-        storage = raft2.getPersistentStorage();
-        assertThat(storage.getTerm()).isEqualTo(1);
-        assertThat(storage.getVotedFor()).isEqualTo(null);
-        assertThat(storage.getMembers()).containsExactly(raft1.getSocketAddress());
-    }
-
+    storage = raft2.getPersistentStorage();
+    assertThat(storage.getTerm()).isEqualTo(1);
+    assertThat(storage.getVotedFor()).isEqualTo(null);
+    assertThat(storage.getMembers()).containsExactly(raft1.getSocketAddress());
+  }
 }

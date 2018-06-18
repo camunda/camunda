@@ -17,38 +17,31 @@ package io.zeebe.util.collection;
 
 import java.util.Iterator;
 
-public class IntListIterator implements IntIterator
-{
+public class IntListIterator implements IntIterator {
 
-    protected final Iterator<Integer> innerIterator;
+  protected final Iterator<Integer> innerIterator;
 
-    public IntListIterator(Iterable<Integer> iterable)
-    {
-        innerIterator = iterable.iterator();
+  public IntListIterator(Iterable<Integer> iterable) {
+    innerIterator = iterable.iterator();
+  }
+
+  @Override
+  public boolean hasNext() {
+    return innerIterator.hasNext();
+  }
+
+  @Override
+  public Integer next() {
+    return innerIterator.next();
+  }
+
+  @Override
+  public int nextInt() {
+    final Integer nextValue = next();
+    if (nextValue == null) {
+      throw new RuntimeException("unexpected null value");
     }
 
-    @Override
-    public boolean hasNext()
-    {
-        return innerIterator.hasNext();
-    }
-
-    @Override
-    public Integer next()
-    {
-        return innerIterator.next();
-    }
-
-    @Override
-    public int nextInt()
-    {
-        final Integer nextValue = next();
-        if (nextValue == null)
-        {
-            throw new RuntimeException("unexpected null value");
-        }
-
-        return nextValue;
-    }
-
+    return nextValue;
+  }
 }

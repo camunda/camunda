@@ -15,140 +15,131 @@
  */
 package io.zeebe.gossip.dissemination;
 
-import java.util.Iterator;
-
 import io.zeebe.gossip.*;
 import io.zeebe.gossip.membership.Member;
 import io.zeebe.gossip.membership.MembershipList;
 import io.zeebe.gossip.protocol.*;
 import io.zeebe.util.collection.ReusableObjectList;
+import java.util.Iterator;
 
-public class DisseminationComponent implements MembershipEventSupplier, MembershipEventConsumer, CustomEventSupplier, CustomEventConsumer
-{
-    private final GossipConfiguration configuration;
-    private final MembershipList memberList;
+public class DisseminationComponent
+    implements MembershipEventSupplier,
+        MembershipEventConsumer,
+        CustomEventSupplier,
+        CustomEventConsumer {
+  private final GossipConfiguration configuration;
+  private final MembershipList memberList;
 
-    private final ReusableObjectList<BufferedEvent<MembershipEvent>> membershipEventBuffer;
-    private final ReusableObjectList<BufferedEvent<CustomEvent>> customEventBuffer;
+  private final ReusableObjectList<BufferedEvent<MembershipEvent>> membershipEventBuffer;
+  private final ReusableObjectList<BufferedEvent<CustomEvent>> customEventBuffer;
 
-    private final BufferedEventIterator<MembershipEvent> membershipEventViewIterator = new BufferedEventIterator<>(false);
-    private final BufferedEventIterator<MembershipEvent> membershipEventDrainIterator = new BufferedEventIterator<>(true);
+  private final BufferedEventIterator<MembershipEvent> membershipEventViewIterator =
+      new BufferedEventIterator<>(false);
+  private final BufferedEventIterator<MembershipEvent> membershipEventDrainIterator =
+      new BufferedEventIterator<>(true);
 
-    private final BufferedEventIterator<CustomEvent> customEventViewIterator = new BufferedEventIterator<>(false);
-    private final BufferedEventIterator<CustomEvent> customEventDrainIterator = new BufferedEventIterator<>(true);
+  private final BufferedEventIterator<CustomEvent> customEventViewIterator =
+      new BufferedEventIterator<>(false);
+  private final BufferedEventIterator<CustomEvent> customEventDrainIterator =
+      new BufferedEventIterator<>(true);
 
-    public DisseminationComponent(GossipConfiguration configuration, MembershipList memberList)
-    {
-        this.configuration = configuration;
-        this.memberList = memberList;
+  public DisseminationComponent(GossipConfiguration configuration, MembershipList memberList) {
+    this.configuration = configuration;
+    this.memberList = memberList;
 
-        this.membershipEventBuffer = new ReusableObjectList<>(() -> new BufferedEvent<>(new MembershipEvent()));
-        this.customEventBuffer = new ReusableObjectList<>(() -> new BufferedEvent<>(new CustomEvent()));
+    this.membershipEventBuffer =
+        new ReusableObjectList<>(() -> new BufferedEvent<>(new MembershipEvent()));
+    this.customEventBuffer = new ReusableObjectList<>(() -> new BufferedEvent<>(new CustomEvent()));
 
-        memberList.addListener(new GossipMembershipListener()
-        {
+    memberList.addListener(
+        new GossipMembershipListener() {
 
-            @Override
-            public void onRemove(Member member)
-            {
-                updateEventSpreadLimit();
-            }
+          @Override
+          public void onRemove(Member member) {
+            updateEventSpreadLimit();
+          }
 
-            @Override
-            public void onAdd(Member member)
-            {
-                updateEventSpreadLimit();
-            }
+          @Override
+          public void onAdd(Member member) {
+            updateEventSpreadLimit();
+          }
         });
-    }
+  }
 
-    private void updateEventSpreadLimit()
-    {
-        final int clusterSize = 1 + memberList.size();
-        final int multiplier = configuration.getRetransmissionMultiplier();
+  private void updateEventSpreadLimit() {
+    final int clusterSize = 1 + memberList.size();
+    final int multiplier = configuration.getRetransmissionMultiplier();
 
-        final int spreadLimit = GossipMath.gossipPeriodsToSpread(multiplier, clusterSize);
+    final int spreadLimit = GossipMath.gossipPeriodsToSpread(multiplier, clusterSize);
 
-        membershipEventDrainIterator.setSpreadLimit(spreadLimit);
-        customEventDrainIterator.setSpreadLimit(spreadLimit);
-    }
+    membershipEventDrainIterator.setSpreadLimit(spreadLimit);
+    customEventDrainIterator.setSpreadLimit(spreadLimit);
+  }
 
-    public MembershipEvent addMembershipEvent()
-    {
-        return membershipEventBuffer.add().getEvent();
-    }
+  public MembershipEvent addMembershipEvent() {
+    return membershipEventBuffer.add().getEvent();
+  }
 
-    public CustomEvent addCustomEvent()
-    {
-        return customEventBuffer.add().getEvent();
-    }
+  public CustomEvent addCustomEvent() {
+    return customEventBuffer.add().getEvent();
+  }
 
-    @Override
-    public int membershipEventSize()
-    {
-        return membershipEventBuffer.size();
-    }
+  @Override
+  public int membershipEventSize() {
+    return membershipEventBuffer.size();
+  }
 
-    @Override
-    public Iterator<MembershipEvent> membershipEventViewIterator(int max)
-    {
-        membershipEventViewIterator.wrap(membershipEventBuffer.iterator(), max);
+  @Override
+  public Iterator<MembershipEvent> membershipEventViewIterator(int max) {
+    membershipEventViewIterator.wrap(membershipEventBuffer.iterator(), max);
 
-        return membershipEventViewIterator;
-    }
+    return membershipEventViewIterator;
+  }
 
-    @Override
-    public Iterator<MembershipEvent> membershipEventDrainIterator(int max)
-    {
-        membershipEventDrainIterator.wrap(membershipEventBuffer.iterator(), max);
+  @Override
+  public Iterator<MembershipEvent> membershipEventDrainIterator(int max) {
+    membershipEventDrainIterator.wrap(membershipEventBuffer.iterator(), max);
 
-        return membershipEventDrainIterator;
-    }
+    return membershipEventDrainIterator;
+  }
 
+  @Override
+  public int customEventSize() {
+    return customEventBuffer.size();
+  }
 
-    @Override
-    public int customEventSize()
-    {
-        return customEventBuffer.size();
-    }
+  @Override
+  public Iterator<CustomEvent> customEventViewIterator(int max) {
+    customEventViewIterator.wrap(customEventBuffer.iterator(), max);
 
-    @Override
-    public Iterator<CustomEvent> customEventViewIterator(int max)
-    {
-        customEventViewIterator.wrap(customEventBuffer.iterator(), max);
+    return customEventViewIterator;
+  }
 
-        return customEventViewIterator;
-    }
+  @Override
+  public Iterator<CustomEvent> customEventDrainIterator(int max) {
+    customEventDrainIterator.wrap(customEventBuffer.iterator(), max);
 
-    @Override
-    public Iterator<CustomEvent> customEventDrainIterator(int max)
-    {
-        customEventDrainIterator.wrap(customEventBuffer.iterator(), max);
+    return customEventDrainIterator;
+  }
 
-        return customEventDrainIterator;
-    }
+  @Override
+  public boolean consumeMembershipEvent(MembershipEvent event) {
+    addMembershipEvent()
+        .type(event.getType())
+        .address(event.getAddress())
+        .gossipTerm(event.getGossipTerm());
 
-    @Override
-    public boolean consumeMembershipEvent(MembershipEvent event)
-    {
-        addMembershipEvent()
-            .type(event.getType())
-            .address(event.getAddress())
-            .gossipTerm(event.getGossipTerm());
+    return true;
+  }
 
-        return true;
-    }
+  @Override
+  public boolean consumeCustomEvent(CustomEvent event) {
+    addCustomEvent()
+        .senderAddress(event.getSenderAddress())
+        .senderGossipTerm(event.getSenderGossipTerm())
+        .type(event.getType())
+        .payload(event.getPayload());
 
-    @Override
-    public boolean consumeCustomEvent(CustomEvent event)
-    {
-        addCustomEvent()
-            .senderAddress(event.getSenderAddress())
-            .senderGossipTerm(event.getSenderGossipTerm())
-            .type(event.getType())
-            .payload(event.getPayload());
-
-        return true;
-    }
-
+    return true;
+  }
 }

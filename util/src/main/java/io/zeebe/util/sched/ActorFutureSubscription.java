@@ -18,41 +18,35 @@ package io.zeebe.util.sched;
 import io.zeebe.util.sched.ActorTask.ActorLifecyclePhase;
 import io.zeebe.util.sched.future.ActorFuture;
 
-public class ActorFutureSubscription implements ActorSubscription
-{
-    private final ActorJob callbackJob;
-    private ActorFuture<?> future;
-    private final int phaseMask;
+public class ActorFutureSubscription implements ActorSubscription {
+  private final ActorJob callbackJob;
+  private ActorFuture<?> future;
+  private final int phaseMask;
 
-    public ActorFutureSubscription(ActorFuture<?> future, ActorJob callbackJob, int phaseMask)
-    {
-        this.future = future;
-        this.callbackJob = callbackJob;
-        this.phaseMask = phaseMask;
-    }
+  public ActorFutureSubscription(ActorFuture<?> future, ActorJob callbackJob, int phaseMask) {
+    this.future = future;
+    this.callbackJob = callbackJob;
+    this.phaseMask = phaseMask;
+  }
 
-    @Override
-    public boolean triggersInPhase(ActorLifecyclePhase phase)
-    {
-        // triggers in all phases
-        return phase != ActorLifecyclePhase.CLOSED && (phase.getValue() & phaseMask) > 0;
-    }
+  @Override
+  public boolean triggersInPhase(ActorLifecyclePhase phase) {
+    // triggers in all phases
+    return phase != ActorLifecyclePhase.CLOSED && (phase.getValue() & phaseMask) > 0;
+  }
 
-    @Override
-    public boolean poll()
-    {
-        return future.isDone();
-    }
+  @Override
+  public boolean poll() {
+    return future.isDone();
+  }
 
-    @Override
-    public ActorJob getJob()
-    {
-        return callbackJob;
-    }
+  @Override
+  public ActorJob getJob() {
+    return callbackJob;
+  }
 
-    @Override
-    public boolean isRecurring()
-    {
-        return false;
-    }
+  @Override
+  public boolean isRecurring() {
+    return false;
+  }
 }

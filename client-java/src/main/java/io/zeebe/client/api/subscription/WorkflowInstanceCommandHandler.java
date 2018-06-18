@@ -18,12 +18,10 @@ package io.zeebe.client.api.subscription;
 import io.zeebe.client.api.commands.WorkflowInstanceCommand;
 
 @FunctionalInterface
-public interface WorkflowInstanceCommandHandler
-{
+public interface WorkflowInstanceCommandHandler {
 
-    void onWorkflowInstanceCommand(WorkflowInstanceCommand workflowInstanceCommand);
+  void onWorkflowInstanceCommand(WorkflowInstanceCommand workflowInstanceCommand);
 
-    default void onWorkflowInstanceCommandRejection(WorkflowInstanceCommand workflowInstanceCommand)
-    {
-    };
+  default void onWorkflowInstanceCommandRejection(
+      WorkflowInstanceCommand workflowInstanceCommand) {};
 }

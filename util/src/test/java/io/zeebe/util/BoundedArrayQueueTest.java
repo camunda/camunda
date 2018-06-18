@@ -19,49 +19,42 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.Test;
 
-public class BoundedArrayQueueTest
-{
+public class BoundedArrayQueueTest {
 
-    @Test
-    public void shouldRetrieveAddedElements()
-    {
-        // given
-        final int numElements = 4;
-        final BoundedArrayQueue<Integer> queue = new BoundedArrayQueue<>(numElements);
+  @Test
+  public void shouldRetrieveAddedElements() {
+    // given
+    final int numElements = 4;
+    final BoundedArrayQueue<Integer> queue = new BoundedArrayQueue<>(numElements);
 
-        for (int i = 0; i < numElements; i++)
-        {
-            queue.add(i);
-        }
-
-
-        for (int i = 0; i < numElements; i++)
-        {
-            // when
-            final Integer queueHead = queue.poll();
-            // then
-            assertThat(queueHead).isEqualTo(i);
-        }
+    for (int i = 0; i < numElements; i++) {
+      queue.add(i);
     }
 
-    @Test
-    public void shouldRetrieveLessElementsThanAdded()
-    {
-        // given
-        final int numElements = 3;
-        final BoundedArrayQueue<Integer> queue = new BoundedArrayQueue<>(numElements); // => queueCapacity becomes next power of two == 4
-
-        for (int i = 0; i < numElements; i++)
-        {
-            queue.add(i);
-        }
-
-        for (int i = 0; i < numElements; i++)
-        {
-            // when
-            final Integer queueHead = queue.poll();
-            // then
-            assertThat(queueHead).isEqualTo(i);
-        }
+    for (int i = 0; i < numElements; i++) {
+      // when
+      final Integer queueHead = queue.poll();
+      // then
+      assertThat(queueHead).isEqualTo(i);
     }
+  }
+
+  @Test
+  public void shouldRetrieveLessElementsThanAdded() {
+    // given
+    final int numElements = 3;
+    final BoundedArrayQueue<Integer> queue =
+        new BoundedArrayQueue<>(numElements); // => queueCapacity becomes next power of two == 4
+
+    for (int i = 0; i < numElements; i++) {
+      queue.add(i);
+    }
+
+    for (int i = 0; i < numElements; i++) {
+      // when
+      final Integer queueHead = queue.poll();
+      // then
+      assertThat(queueHead).isEqualTo(i);
+    }
+  }
 }

@@ -21,93 +21,78 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.*;
 import org.agrona.DirectBuffer;
 
-public class WorkflowMetadata extends UnpackedObject
-{
-    private LongProperty workflowKeyProp = new LongProperty("workflowKey", -1);
-    private IntegerProperty versionProp = new IntegerProperty("version", -1);
-    private StringProperty topicNameProp = new StringProperty("topicName");
-    private StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId");
-    private StringProperty resourceNameProp = new StringProperty("resourceName");
+public class WorkflowMetadata extends UnpackedObject {
+  private LongProperty workflowKeyProp = new LongProperty("workflowKey", -1);
+  private IntegerProperty versionProp = new IntegerProperty("version", -1);
+  private StringProperty topicNameProp = new StringProperty("topicName");
+  private StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId");
+  private StringProperty resourceNameProp = new StringProperty("resourceName");
 
-    public WorkflowMetadata()
-    {
-        declareProperty(workflowKeyProp)
-            .declareProperty(topicNameProp)
-            .declareProperty(versionProp)
-            .declareProperty(bpmnProcessIdProp)
-            .declareProperty(resourceNameProp);
-    }
+  public WorkflowMetadata() {
+    declareProperty(workflowKeyProp)
+        .declareProperty(topicNameProp)
+        .declareProperty(versionProp)
+        .declareProperty(bpmnProcessIdProp)
+        .declareProperty(resourceNameProp);
+  }
 
-    public long getWorkflowKey()
-    {
-        return workflowKeyProp.getValue();
-    }
+  public long getWorkflowKey() {
+    return workflowKeyProp.getValue();
+  }
 
-    public WorkflowMetadata setWorkflowKey(long key)
-    {
-        workflowKeyProp.setValue(key);
-        return this;
-    }
+  public WorkflowMetadata setWorkflowKey(long key) {
+    workflowKeyProp.setValue(key);
+    return this;
+  }
 
-    public int getVersion()
-    {
-        return versionProp.getValue();
-    }
+  public int getVersion() {
+    return versionProp.getValue();
+  }
 
-    public WorkflowMetadata setVersion(int version)
-    {
-        versionProp.setValue(version);
-        return this;
-    }
+  public WorkflowMetadata setVersion(int version) {
+    versionProp.setValue(version);
+    return this;
+  }
 
-    public DirectBuffer getTopicName()
-    {
-        return topicNameProp.getValue();
-    }
+  public DirectBuffer getTopicName() {
+    return topicNameProp.getValue();
+  }
 
-    public WorkflowMetadata setTopicName(DirectBuffer topicName)
-    {
-        topicNameProp.setValue(topicName);
-        return this;
-    }
+  public WorkflowMetadata setTopicName(DirectBuffer topicName) {
+    topicNameProp.setValue(topicName);
+    return this;
+  }
 
-    public DirectBuffer getBpmnProcessId()
-    {
-        return bpmnProcessIdProp.getValue();
-    }
+  public DirectBuffer getBpmnProcessId() {
+    return bpmnProcessIdProp.getValue();
+  }
 
-    public WorkflowMetadata setBpmnProcessId(DirectBuffer directBuffer)
-    {
-        bpmnProcessIdProp.setValue(directBuffer);
-        return this;
-    }
+  public WorkflowMetadata setBpmnProcessId(DirectBuffer directBuffer) {
+    bpmnProcessIdProp.setValue(directBuffer);
+    return this;
+  }
 
-    public WorkflowMetadata setBpmnProcessId(String value)
-    {
-        bpmnProcessIdProp.setValue(value);
-        return this;
-    }
+  public WorkflowMetadata setBpmnProcessId(String value) {
+    bpmnProcessIdProp.setValue(value);
+    return this;
+  }
 
-    public WorkflowMetadata setTopicName(String topicName)
-    {
-        this.topicNameProp.setValue(topicName);
-        return this;
-    }
+  public WorkflowMetadata setTopicName(String topicName) {
+    this.topicNameProp.setValue(topicName);
+    return this;
+  }
 
-    public DirectBuffer getResourceName()
-    {
-        return resourceNameProp.getValue();
-    }
+  public DirectBuffer getResourceName() {
+    return resourceNameProp.getValue();
+  }
 
-    public WorkflowMetadata setResourceName(DirectBuffer resourceName)
-    {
-        resourceNameProp.setValue(resourceName);
-        return this;
-    }
+  public WorkflowMetadata setResourceName(DirectBuffer resourceName) {
+    resourceNameProp.setValue(resourceName);
+    return this;
+  }
 
-    public WorkflowMetadata setResourceName(String resourceName)
-    {
-        resourceNameProp.setValue(resourceName);
-        return this;
-    }
+  public WorkflowMetadata setResourceName(String resourceName) {
+    resourceNameProp.setValue(resourceName);
+    return this;
+  }
 }

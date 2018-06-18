@@ -21,34 +21,26 @@ import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.DispatcherBuilder;
 import io.zeebe.servicecontainer.*;
 
-public class DispatcherService implements Service<Dispatcher>
-{
-    protected DispatcherBuilder dispatcherBuilder;
-    protected Dispatcher dispatcher;
+public class DispatcherService implements Service<Dispatcher> {
+  protected DispatcherBuilder dispatcherBuilder;
+  protected Dispatcher dispatcher;
 
-    public DispatcherService(DispatcherBuilder builder)
-    {
-        this.dispatcherBuilder = builder;
-    }
+  public DispatcherService(DispatcherBuilder builder) {
+    this.dispatcherBuilder = builder;
+  }
 
-    @Override
-    public void start(ServiceStartContext ctx)
-    {
-        dispatcher = dispatcherBuilder
-                .name(ctx.getName())
-                .actorScheduler(ctx.getScheduler())
-                .build();
-    }
+  @Override
+  public void start(ServiceStartContext ctx) {
+    dispatcher = dispatcherBuilder.name(ctx.getName()).actorScheduler(ctx.getScheduler()).build();
+  }
 
-    @Override
-    public void stop(ServiceStopContext ctx)
-    {
-        ctx.async(dispatcher.closeAsync());
-    }
+  @Override
+  public void stop(ServiceStopContext ctx) {
+    ctx.async(dispatcher.closeAsync());
+  }
 
-    @Override
-    public Dispatcher get()
-    {
-        return dispatcher;
-    }
+  @Override
+  public Dispatcher get() {
+    return dispatcher;
+  }
 }

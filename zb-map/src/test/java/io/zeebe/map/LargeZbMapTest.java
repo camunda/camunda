@@ -21,149 +21,127 @@ import static io.zeebe.map.ZbMapTest.removeValue;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.map.types.LongKeyHandler;
+import io.zeebe.map.types.LongValueHandler;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
-
-import io.zeebe.map.types.LongKeyHandler;
-import io.zeebe.map.types.LongValueHandler;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-/**
- *
- */
-public class LargeZbMapTest
-{
+/** */
+public class LargeZbMapTest {
 
-    public static final int DATA_SET_SIZE = 5_000_000;
+  public static final int DATA_SET_SIZE = 5_000_000;
 
-    private ZbMap<LongKeyHandler, LongValueHandler> zbMap;
+  private ZbMap<LongKeyHandler, LongValueHandler> zbMap;
 
-    @Before
-    public void setUp()
-    {
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 4, SIZE_OF_LONG, SIZE_OF_LONG)
-        { };
+  @Before
+  public void setUp() {
+    zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 4, SIZE_OF_LONG, SIZE_OF_LONG) {};
+  }
+
+  @After
+  public void tearDown() {
+    zbMap.close();
+  }
+
+  @Test
+  public void shouldPutAndRemoveLargeSetOfRandomValues() {
+    // given
+    final Random random = new Random(100);
+
+    final Set<Long> values = new HashSet<>();
+    while (values.size() < DATA_SET_SIZE) {
+      final long i = Math.abs(random.nextLong());
+
+      putValue(zbMap, i, i);
+
+      values.add(i);
     }
 
-    @After
-    public void tearDown()
-    {
-        zbMap.close();
+    // when
+    int removedValues = 0;
+    for (final Long value : values) {
+      final boolean removed = removeValue(zbMap, value);
+
+      if (removed) {
+        removedValues += 1;
+      }
     }
 
-    @Test
-    public void shouldPutAndRemoveLargeSetOfRandomValues()
-    {
-        // given
-        final Random random = new Random(100);
+    // then
+    // block count is equal to the missing values
+    assertThat(removedValues).isEqualTo(values.size());
 
-        final Set<Long> values = new HashSet<>();
-        while (values.size() < DATA_SET_SIZE)
-        {
-            final long i = Math.abs(random.nextLong());
+    // hash table was shrinked and bucket buffers are released
+    assertThat(zbMap.getHashTable().getCapacity()).isEqualTo(8);
+    assertThat(zbMap.getBucketBufferArray().getBucketBufferCount()).isEqualTo(1);
+    assertThat(zbMap.getBucketBufferArray().getBucketCount()).isEqualTo(1);
+    assertThat(zbMap.getBucketBufferArray().getBlockCount()).isEqualTo(0);
+    assertThat(zbMap.getBucketBufferArray().realAddresses.length).isEqualTo(32);
+  }
 
-            putValue(zbMap, i, i);
-
-            values.add(i);
-        }
-
-        // when
-        int removedValues = 0;
-        for (final Long value : values)
-        {
-            final boolean removed = removeValue(zbMap, value);
-
-            if (removed)
-            {
-                removedValues += 1;
-            }
-        }
-
-        // then
-        // block count is equal to the missing values
-        assertThat(removedValues).isEqualTo(values.size());
-
-        // hash table was shrinked and bucket buffers are released
-        assertThat(zbMap.getHashTable().getCapacity()).isEqualTo(8);
-        assertThat(zbMap.getBucketBufferArray().getBucketBufferCount()).isEqualTo(1);
-        assertThat(zbMap.getBucketBufferArray().getBucketCount()).isEqualTo(1);
-        assertThat(zbMap.getBucketBufferArray().getBlockCount()).isEqualTo(0);
-        assertThat(zbMap.getBucketBufferArray().realAddresses.length).isEqualTo(32);
+  @Test
+  public void shouldPutAndRemoveLargeSetOfValues() {
+    // given
+    for (int i = 0; i < DATA_SET_SIZE; i++) {
+      putValue(zbMap, i, i);
     }
 
-    @Test
-    public void shouldPutAndRemoveLargeSetOfValues()
-    {
-        // given
-        for (int i = 0; i < DATA_SET_SIZE; i++)
-        {
-            putValue(zbMap, i, i);
-        }
+    // when
+    int removedValues = 0;
+    for (int i = 0; i < DATA_SET_SIZE; i++) {
 
-        // when
-        int removedValues = 0;
-        for (int i = 0; i < DATA_SET_SIZE; i++)
-        {
-
-            final boolean removed = removeValue(zbMap, i);
-            if (removed)
-            {
-                removedValues += 1;
-            }
-        }
-
-        // then
-        // block count is equal to the missing values
-        assertThat(removedValues).isEqualTo(DATA_SET_SIZE);
-
-        // hash table was shrinked and bucket buffers are released
-        assertThat(zbMap.getHashTable().getCapacity()).isEqualTo(8);
-        assertThat(zbMap.getBucketBufferArray().getBucketBufferCount()).isEqualTo(1);
-        assertThat(zbMap.getBucketBufferArray().getBucketCount()).isEqualTo(1);
-        assertThat(zbMap.getBucketBufferArray().getBlockCount()).isEqualTo(0);
-        assertThat(zbMap.getBucketBufferArray().realAddresses.length).isEqualTo(32);
+      final boolean removed = removeValue(zbMap, i);
+      if (removed) {
+        removedValues += 1;
+      }
     }
 
-    @Test
-    public void shouldPutAndGetElements()
-    {
-        // given
-        for (int i = 0; i < DATA_SET_SIZE; i++)
-        {
-            putValue(zbMap, i, i);
-        }
+    // then
+    // block count is equal to the missing values
+    assertThat(removedValues).isEqualTo(DATA_SET_SIZE);
 
-        // when then
-        for (int i = 0; i < DATA_SET_SIZE; i++)
-        {
-            assertThat(getValue(zbMap, i, -1)).isEqualTo(i);
-        }
+    // hash table was shrinked and bucket buffers are released
+    assertThat(zbMap.getHashTable().getCapacity()).isEqualTo(8);
+    assertThat(zbMap.getBucketBufferArray().getBucketBufferCount()).isEqualTo(1);
+    assertThat(zbMap.getBucketBufferArray().getBucketCount()).isEqualTo(1);
+    assertThat(zbMap.getBucketBufferArray().getBlockCount()).isEqualTo(0);
+    assertThat(zbMap.getBucketBufferArray().realAddresses.length).isEqualTo(32);
+  }
+
+  @Test
+  public void shouldPutAndGetElements() {
+    // given
+    for (int i = 0; i < DATA_SET_SIZE; i++) {
+      putValue(zbMap, i, i);
     }
 
-    @Test
-    public void shouldPutRandomElements()
-    {
-        // given
-        final long[] keys = new long[DATA_SET_SIZE];
-        final Random random = new Random();
-        for (int k = 0; k < keys.length; k++)
-        {
-            keys[k] = Math.abs(random.nextLong());
-        }
-
-        // when
-        for (int i = 0; i < DATA_SET_SIZE; i++)
-        {
-            putValue(zbMap, keys[i], i);
-        }
-
-        // then
-        for (int i = 0; i < DATA_SET_SIZE; i++)
-        {
-            assertThat(getValue(zbMap, keys[i], -1)).isEqualTo(i);
-        }
+    // when then
+    for (int i = 0; i < DATA_SET_SIZE; i++) {
+      assertThat(getValue(zbMap, i, -1)).isEqualTo(i);
     }
+  }
+
+  @Test
+  public void shouldPutRandomElements() {
+    // given
+    final long[] keys = new long[DATA_SET_SIZE];
+    final Random random = new Random();
+    for (int k = 0; k < keys.length; k++) {
+      keys[k] = Math.abs(random.nextLong());
+    }
+
+    // when
+    for (int i = 0; i < DATA_SET_SIZE; i++) {
+      putValue(zbMap, keys[i], i);
+    }
+
+    // then
+    for (int i = 0; i < DATA_SET_SIZE; i++) {
+      assertThat(getValue(zbMap, keys[i], -1)).isEqualTo(i);
+    }
+  }
 }

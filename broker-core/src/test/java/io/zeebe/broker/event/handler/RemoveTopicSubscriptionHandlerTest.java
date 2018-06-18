@@ -17,6 +17,11 @@
  */
 package io.zeebe.broker.event.handler;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.when;
+
 import io.zeebe.broker.event.processor.CloseSubscriptionRequest;
 import io.zeebe.broker.event.processor.TopicSubscriptionService;
 import io.zeebe.broker.transport.clientapi.BufferingServerOutput;
@@ -27,6 +32,7 @@ import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
+import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
@@ -36,87 +42,73 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.function.Consumer;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.when;
-
 @Ignore
-public class RemoveTopicSubscriptionHandlerTest
-{
+public class RemoveTopicSubscriptionHandlerTest {
 
-    protected FuturePool futurePool;
+  protected FuturePool futurePool;
 
-    @Mock
-    protected TopicSubscriptionService subscriptionService;
+  @Mock protected TopicSubscriptionService subscriptionService;
 
-    @Rule
-    public ControlledActorSchedulerRule actorSchedulerRule = new ControlledActorSchedulerRule();
+  @Rule public ControlledActorSchedulerRule actorSchedulerRule = new ControlledActorSchedulerRule();
 
-    protected BufferingServerOutput output;
+  protected BufferingServerOutput output;
 
-    @Before
-    public void setUp()
-    {
-        MockitoAnnotations.initMocks(this);
+  @Before
+  public void setUp() {
+    MockitoAnnotations.initMocks(this);
 
-        output = new BufferingServerOutput();
+    output = new BufferingServerOutput();
 
-        futurePool = new FuturePool();
-        when(subscriptionService.closeSubscriptionAsync(anyInt(), anyLong())).thenAnswer((invocation) -> futurePool.next());
+    futurePool = new FuturePool();
+    when(subscriptionService.closeSubscriptionAsync(anyInt(), anyLong()))
+        .thenAnswer((invocation) -> futurePool.next());
+  }
+
+  @Test
+  public void shouldWriteErrorOnFailure() {
+    // given
+    final RemoveTopicSubscriptionHandler handler =
+        new RemoveTopicSubscriptionHandler(output, subscriptionService);
+
+    final RecordMetadata metadata = new RecordMetadata();
+    metadata.requestStreamId(14);
+
+    final DirectBuffer request = encode(new CloseSubscriptionRequest().setSubscriberKey(5L));
+    actorSchedulerRule.submitActor(
+        new Handler((actor) -> handler.handle(actor, 0, request, metadata)));
+    actorSchedulerRule.workUntilDone();
+
+    // when
+    futurePool.at(0).completeExceptionally(new RuntimeException("foo"));
+    actorSchedulerRule.workUntilDone();
+
+    // then
+    assertThat(output.getSentResponses()).hasSize(1);
+
+    final ErrorResponseDecoder errorDecoder = output.getAsErrorResponse(0);
+
+    assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.REQUEST_PROCESSING_FAILURE);
+    assertThat(errorDecoder.errorData()).isEqualTo("Cannot close topic subscription. foo");
+  }
+
+  protected static final DirectBuffer encode(UnpackedObject obj) {
+    final UnsafeBuffer buffer = new UnsafeBuffer(new byte[obj.getLength()]);
+    obj.write(buffer, 0);
+    return buffer;
+  }
+
+  class Handler extends Actor {
+
+    private final Consumer<ActorControl> handler;
+
+    Handler(final Consumer<ActorControl> handler) {
+
+      this.handler = handler;
     }
 
-    @Test
-    public void shouldWriteErrorOnFailure()
-    {
-        // given
-        final RemoveTopicSubscriptionHandler handler = new RemoveTopicSubscriptionHandler(output, subscriptionService);
-
-        final RecordMetadata metadata = new RecordMetadata();
-        metadata.requestStreamId(14);
-
-        final DirectBuffer request = encode(new CloseSubscriptionRequest().setSubscriberKey(5L));
-        actorSchedulerRule.submitActor(new Handler((actor) -> handler.handle(actor, 0, request, metadata)));
-        actorSchedulerRule.workUntilDone();
-
-        // when
-        futurePool.at(0).completeExceptionally(new RuntimeException("foo"));
-        actorSchedulerRule.workUntilDone();
-
-        // then
-        assertThat(output.getSentResponses()).hasSize(1);
-
-        final ErrorResponseDecoder errorDecoder = output.getAsErrorResponse(0);
-
-        assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.REQUEST_PROCESSING_FAILURE);
-        assertThat(errorDecoder.errorData()).isEqualTo("Cannot close topic subscription. foo");
+    @Override
+    protected void onActorStarted() {
+      handler.accept(actor);
     }
-
-    protected static final DirectBuffer encode(UnpackedObject obj)
-    {
-        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[obj.getLength()]);
-        obj.write(buffer, 0);
-        return buffer;
-    }
-
-    class Handler extends Actor
-    {
-
-        private final Consumer<ActorControl> handler;
-
-        Handler(final Consumer<ActorControl> handler)
-        {
-
-            this.handler = handler;
-        }
-
-
-        @Override
-        protected void onActorStarted()
-        {
-            handler.accept(actor);
-        }
-    }
+  }
 }

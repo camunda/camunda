@@ -21,36 +21,29 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.StringProperty;
 import org.agrona.DirectBuffer;
 
-public class ListWorkflowsControlRequest extends UnpackedObject
-{
-    private StringProperty topicNameProp = new StringProperty("topicName");
-    private StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
+public class ListWorkflowsControlRequest extends UnpackedObject {
+  private StringProperty topicNameProp = new StringProperty("topicName");
+  private StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
 
-    public ListWorkflowsControlRequest()
-    {
-        declareProperty(topicNameProp)
-            .declareProperty(bpmnProcessIdProp);
-    }
+  public ListWorkflowsControlRequest() {
+    declareProperty(topicNameProp).declareProperty(bpmnProcessIdProp);
+  }
 
-    public DirectBuffer getTopicName()
-    {
-        return topicNameProp.getValue();
-    }
+  public DirectBuffer getTopicName() {
+    return topicNameProp.getValue();
+  }
 
-    public ListWorkflowsControlRequest setTopicName(String topicName)
-    {
-        topicNameProp.setValue(topicName);
-        return this;
-    }
+  public ListWorkflowsControlRequest setTopicName(String topicName) {
+    topicNameProp.setValue(topicName);
+    return this;
+  }
 
-    public DirectBuffer getBpmnProcessId()
-    {
-        return bpmnProcessIdProp.getValue();
-    }
+  public DirectBuffer getBpmnProcessId() {
+    return bpmnProcessIdProp.getValue();
+  }
 
-    public ListWorkflowsControlRequest setBpmnProcessId(DirectBuffer directBuffer)
-    {
-        bpmnProcessIdProp.setValue(directBuffer);
-        return this;
-    }
+  public ListWorkflowsControlRequest setBpmnProcessId(DirectBuffer directBuffer) {
+    bpmnProcessIdProp.setValue(directBuffer);
+    return this;
+  }
 }

@@ -15,171 +15,140 @@
  */
 package io.zeebe.transport.impl.sender;
 
-import java.time.Duration;
-import java.util.Deque;
-import java.util.LinkedList;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-
 import io.zeebe.transport.*;
 import io.zeebe.transport.impl.ClientResponseImpl;
 import io.zeebe.transport.impl.IncomingResponse;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import java.time.Duration;
+import java.util.Deque;
+import java.util.LinkedList;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
-public class OutgoingRequest
-{
-    private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
+public class OutgoingRequest {
+  private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
-    private final TransportHeaderWriter headerWriter = new TransportHeaderWriter();
+  private final TransportHeaderWriter headerWriter = new TransportHeaderWriter();
 
-    private final ActorFuture<ClientResponse> responseFuture = new CompletableActorFuture<>();
+  private final ActorFuture<ClientResponse> responseFuture = new CompletableActorFuture<>();
 
-    private final Supplier<RemoteAddress> remoteAddressSupplier;
+  private final Supplier<RemoteAddress> remoteAddressSupplier;
 
-    private final Predicate<DirectBuffer> retryPredicate;
+  private final Predicate<DirectBuffer> retryPredicate;
 
-    private final Duration timeout;
+  private final Duration timeout;
 
-    private final Deque<RemoteAddress> remotesTried = new LinkedList<>();
+  private final Deque<RemoteAddress> remotesTried = new LinkedList<>();
 
-    private final MutableDirectBuffer requestBuffer;
+  private final MutableDirectBuffer requestBuffer;
 
-    private long timerId = -1;
+  private long timerId = -1;
 
-    private long lastRequestId = -1;
+  private long lastRequestId = -1;
 
-    private boolean isTimedout;
+  private boolean isTimedout;
 
-    public OutgoingRequest(Supplier<RemoteAddress> remoteAddressSupplier,
-        Predicate<DirectBuffer> retryPredicate,
-        UnsafeBuffer requestBuffer,
-        Duration timeout)
-    {
-        this.remoteAddressSupplier = remoteAddressSupplier;
-        this.retryPredicate = retryPredicate;
-        this.requestBuffer = requestBuffer;
-        this.timeout = timeout;
+  public OutgoingRequest(
+      Supplier<RemoteAddress> remoteAddressSupplier,
+      Predicate<DirectBuffer> retryPredicate,
+      UnsafeBuffer requestBuffer,
+      Duration timeout) {
+    this.remoteAddressSupplier = remoteAddressSupplier;
+    this.retryPredicate = retryPredicate;
+    this.requestBuffer = requestBuffer;
+    this.timeout = timeout;
+  }
+
+  public ActorFuture<ClientResponse> getResponseFuture() {
+    return responseFuture;
+  }
+
+  public RemoteAddress getNextRemoteAddress() {
+    return remoteAddressSupplier.get();
+  }
+
+  public boolean tryComplete(IncomingResponse incomingResponse) {
+    final DirectBuffer data = incomingResponse.getResponseBuffer();
+
+    if (responseFuture.isDone()) {
+      return true;
+    } else if (!retryPredicate.test(data)) {
+      try {
+        final RemoteAddress remoteAddress = remotesTried.peekFirst();
+        final ClientResponseImpl response = new ClientResponseImpl(incomingResponse, remoteAddress);
+        responseFuture.complete(response);
+      } catch (Exception e) {
+        LOG.debug("Could not complete request future", e);
+      }
+
+      return true;
+    } else {
+      // should retry
+      return false;
     }
+  }
 
-    public ActorFuture<ClientResponse> getResponseFuture()
-    {
-        return responseFuture;
+  public void fail(Throwable throwable) {
+    try {
+      responseFuture.completeExceptionally(throwable);
+    } catch (Exception e) {
+      LOG.debug("Could not complete request future exceptionally", e);
     }
+  }
 
-    public RemoteAddress getNextRemoteAddress()
-    {
-        return remoteAddressSupplier.get();
+  public DirectBuffer getRequestBuffer() {
+    return requestBuffer;
+  }
+
+  public RemoteAddress getCurrentRemoteAddress() {
+    return remotesTried.peekFirst();
+  }
+
+  public Duration getTimeout() {
+    return timeout;
+  }
+
+  public void markRemoteAddress(RemoteAddress remoteAddress) {
+    if (!remoteAddress.equals(remotesTried.peekFirst())) {
+      remotesTried.push(remoteAddress);
     }
+  }
 
-    public boolean tryComplete(IncomingResponse incomingResponse)
-    {
-        final DirectBuffer data = incomingResponse.getResponseBuffer();
+  public TransportHeaderWriter getHeaderWriter() {
+    return headerWriter;
+  }
 
-        if (responseFuture.isDone())
-        {
-            return true;
-        }
-        else if (!retryPredicate.test(data))
-        {
-            try
-            {
-                final RemoteAddress remoteAddress = remotesTried.peekFirst();
-                final ClientResponseImpl response = new ClientResponseImpl(incomingResponse, remoteAddress);
-                responseFuture.complete(response);
-            }
-            catch (Exception e)
-            {
-                LOG.debug("Could not complete request future", e);
-            }
+  public void setTimerId(long timerId) {
+    this.timerId = timerId;
+  }
 
-            return true;
-        }
-        else
-        {
-            // should retry
-            return false;
-        }
-    }
+  public boolean hasTimeoutScheduled() {
+    return timerId != -1;
+  }
 
-    public void fail(Throwable throwable)
-    {
-        try
-        {
-            responseFuture.completeExceptionally(throwable);
-        }
-        catch (Exception e)
-        {
-            LOG.debug("Could not complete request future exceptionally", e);
-        }
-    }
+  public long getTimerId() {
+    return timerId;
+  }
 
-    public DirectBuffer getRequestBuffer()
-    {
-        return requestBuffer;
-    }
+  public long getLastRequestId() {
+    return lastRequestId;
+  }
 
-    public RemoteAddress getCurrentRemoteAddress()
-    {
-        return remotesTried.peekFirst();
-    }
+  public void setLastRequestId(long requestId) {
+    this.lastRequestId = requestId;
+  }
 
-    public Duration getTimeout()
-    {
-        return timeout;
-    }
+  public void timeout() {
+    isTimedout = true;
+    fail(new RequestTimeoutException("Request timed out after " + timeout));
+  }
 
-    public void markRemoteAddress(RemoteAddress remoteAddress)
-    {
-        if (!remoteAddress.equals(remotesTried.peekFirst()))
-        {
-            remotesTried.push(remoteAddress);
-        }
-    }
-
-    public TransportHeaderWriter getHeaderWriter()
-    {
-        return headerWriter;
-    }
-
-    public void setTimerId(long timerId)
-    {
-        this.timerId = timerId;
-    }
-
-    public boolean hasTimeoutScheduled()
-    {
-        return timerId != -1;
-    }
-
-    public long getTimerId()
-    {
-        return timerId;
-    }
-
-    public long getLastRequestId()
-    {
-        return lastRequestId;
-    }
-
-    public void setLastRequestId(long requestId)
-    {
-        this.lastRequestId = requestId;
-    }
-
-    public void timeout()
-    {
-        isTimedout = true;
-        fail(new RequestTimeoutException("Request timed out after " + timeout));
-    }
-
-    public boolean isTimedout()
-    {
-        return isTimedout;
-    }
-
+  public boolean isTimedout() {
+    return isTimedout;
+  }
 }

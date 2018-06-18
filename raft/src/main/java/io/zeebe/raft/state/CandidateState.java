@@ -21,43 +21,36 @@ import io.zeebe.raft.controller.VoteRequestHandler;
 import io.zeebe.raft.protocol.AppendRequest;
 import io.zeebe.util.sched.ActorControl;
 
-public class CandidateState extends AbstractRaftState
-{
-    protected final ConsensusRequestController voteController;
+public class CandidateState extends AbstractRaftState {
+  protected final ConsensusRequestController voteController;
 
-    public CandidateState(Raft raft, ActorControl raftActor)
-    {
-        super(raft, raftActor);
-        voteController = new ConsensusRequestController(raft, raftActor, new VoteRequestHandler());
-    }
+  public CandidateState(Raft raft, ActorControl raftActor) {
+    super(raft, raftActor);
+    voteController = new ConsensusRequestController(raft, raftActor, new VoteRequestHandler());
+  }
 
-    @Override
-    public RaftState getState()
-    {
-        return RaftState.CANDIDATE;
-    }
+  @Override
+  public RaftState getState() {
+    return RaftState.CANDIDATE;
+  }
 
-    @Override
-    protected void onEnterState()
-    {
-        super.onEnterState();
-        voteController.sendRequest();
-    }
+  @Override
+  protected void onEnterState() {
+    super.onEnterState();
+    voteController.sendRequest();
+  }
 
-    @Override
-    protected void onLeaveState()
-    {
-        voteController.close();
-        super.onLeaveState();
-    }
+  @Override
+  protected void onLeaveState() {
+    voteController.close();
+    super.onLeaveState();
+  }
 
-    @Override
-    public void appendRequest(final AppendRequest appendRequest)
-    {
-        if (raft.isTermCurrent(appendRequest))
-        {
-            // received append request from new leader
-            raft.becomeFollower(appendRequest.getTerm());
-        }
+  @Override
+  public void appendRequest(final AppendRequest appendRequest) {
+    if (raft.isTermCurrent(appendRequest)) {
+      // received append request from new leader
+      raft.becomeFollower(appendRequest.getTerm());
     }
+  }
 }

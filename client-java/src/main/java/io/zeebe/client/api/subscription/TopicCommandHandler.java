@@ -18,12 +18,8 @@ package io.zeebe.client.api.subscription;
 import io.zeebe.client.api.commands.TopicCommand;
 
 @FunctionalInterface
-public interface TopicCommandHandler
-{
-    void onTopicCommand(TopicCommand topicCommand);
+public interface TopicCommandHandler {
+  void onTopicCommand(TopicCommand topicCommand);
 
-    default void onTopicCommandRejection(TopicCommand topicCommand)
-    {
-    };
-
+  default void onTopicCommandRejection(TopicCommand topicCommand) {};
 }

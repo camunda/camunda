@@ -17,10 +17,6 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
@@ -35,162 +31,142 @@ import io.zeebe.servicecontainer.*;
 import io.zeebe.util.EnsureUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
-public class StreamProcessorServiceFactory implements Service<StreamProcessorServiceFactory>
-{
-    private final ServiceContainer serviceContainer;
-    private final Duration snapshotPeriod;
-    private ActorScheduler actorScheduler;
+public class StreamProcessorServiceFactory implements Service<StreamProcessorServiceFactory> {
+  private final ServiceContainer serviceContainer;
+  private final Duration snapshotPeriod;
+  private ActorScheduler actorScheduler;
 
-    public StreamProcessorServiceFactory(ServiceContainer serviceContainer, Duration snapshotPeriod)
-    {
-        this.serviceContainer = serviceContainer;
-        this.snapshotPeriod = snapshotPeriod;
+  public StreamProcessorServiceFactory(ServiceContainer serviceContainer, Duration snapshotPeriod) {
+    this.serviceContainer = serviceContainer;
+    this.snapshotPeriod = snapshotPeriod;
+  }
+
+  @Override
+  public void start(ServiceStartContext startContext) {
+    this.actorScheduler = startContext.getScheduler();
+  }
+
+  @Override
+  public StreamProcessorServiceFactory get() {
+    return this;
+  }
+
+  public Builder createService(Partition partition, ServiceName<Partition> serviceName) {
+    return new Builder(partition, serviceName);
+  }
+
+  public class Builder {
+    private final LogStream logStream;
+    private final SnapshotStorage snapshotStorage;
+
+    private String processorName;
+    private int processorId = -1;
+    private StreamProcessor streamProcessor;
+    private final List<ServiceName<?>> additionalDependencies = new ArrayList<>();
+
+    protected MetadataFilter customEventFilter;
+    protected boolean readOnly = false;
+
+    public Builder(Partition partition, ServiceName<Partition> serviceName) {
+      this.logStream = partition.getLogStream();
+      snapshotStorage = partition.getSnapshotStorage();
+      this.additionalDependencies.add(serviceName);
+    }
+
+    public Builder processorId(int processorId) {
+      this.processorId = processorId;
+      return this;
+    }
+
+    public Builder processorName(String processorName) {
+      this.processorName = processorName;
+      return this;
+    }
+
+    public Builder processor(StreamProcessor processor) {
+      this.streamProcessor = processor;
+      return this;
+    }
+
+    public Builder processor(TypedStreamProcessor processor) {
+      this.streamProcessor = processor;
+      this.customEventFilter = processor.buildTypeFilter();
+      return this;
+    }
+
+    public Builder eventFilter(MetadataFilter eventFilter) {
+      this.customEventFilter = eventFilter;
+      return this;
+    }
+
+    public Builder readOnly(boolean readOnly) {
+      this.readOnly = readOnly;
+      return this;
+    }
+
+    public Builder additionalDependencies(ServiceName<?>... additionalDependencies) {
+      for (ServiceName<?> serviceName : additionalDependencies) {
+        this.additionalDependencies.add(serviceName);
+      }
+      return this;
+    }
+
+    public ActorFuture<StreamProcessorService> build() {
+      EnsureUtil.ensureNotNull("stream processor", streamProcessor);
+      EnsureUtil.ensureNotNullOrEmpty("processor name", processorName);
+      EnsureUtil.ensureGreaterThan("process id", processorId, -1);
+
+      MetadataFilter metadataFilter = new VersionFilter();
+      if (customEventFilter != null) {
+        metadataFilter = metadataFilter.and(customEventFilter);
+      }
+      final EventFilter eventFilter = new MetadataEventFilter(metadataFilter);
+
+      return LogStreams.createStreamProcessor(processorName, processorId, streamProcessor)
+          .actorScheduler(actorScheduler)
+          .serviceContainer(serviceContainer)
+          .snapshotStorage(snapshotStorage)
+          .snapshotPeriod(snapshotPeriod)
+          .logStream(logStream)
+          .eventFilter(eventFilter)
+          .readOnly(readOnly)
+          .additionalDependencies(additionalDependencies)
+          .build();
+    }
+  }
+
+  private static class MetadataEventFilter implements EventFilter {
+
+    protected final RecordMetadata metadata = new RecordMetadata();
+    protected final MetadataFilter metadataFilter;
+
+    MetadataEventFilter(MetadataFilter metadataFilter) {
+      this.metadataFilter = metadataFilter;
     }
 
     @Override
-    public void start(ServiceStartContext startContext)
-    {
-        this.actorScheduler = startContext.getScheduler();
+    public boolean applies(LoggedEvent event) {
+      event.readMetadata(metadata);
+      return metadataFilter.applies(metadata);
     }
+  }
 
+  private final class VersionFilter implements MetadataFilter {
     @Override
-    public StreamProcessorServiceFactory get()
-    {
-        return this;
+    public boolean applies(RecordMetadata m) {
+      if (m.getProtocolVersion() > Protocol.PROTOCOL_VERSION) {
+        throw new RuntimeException(
+            String.format(
+                "Cannot handle event with version newer "
+                    + "than what is implemented by broker (%d > %d)",
+                m.getProtocolVersion(), Protocol.PROTOCOL_VERSION));
+      }
+
+      return true;
     }
-
-    public Builder createService(Partition partition, ServiceName<Partition> serviceName)
-    {
-        return new Builder(partition, serviceName);
-    }
-
-    public class Builder
-    {
-        private final LogStream logStream;
-        private final SnapshotStorage snapshotStorage;
-
-        private String processorName;
-        private int processorId = -1;
-        private StreamProcessor streamProcessor;
-        private final List<ServiceName<?>> additionalDependencies = new ArrayList<>();
-
-        protected MetadataFilter customEventFilter;
-        protected boolean readOnly = false;
-
-
-        public Builder(Partition partition, ServiceName<Partition> serviceName)
-        {
-            this.logStream = partition.getLogStream();
-            snapshotStorage = partition.getSnapshotStorage();
-            this.additionalDependencies.add(serviceName);
-        }
-
-        public Builder processorId(int processorId)
-        {
-            this.processorId = processorId;
-            return this;
-        }
-
-        public Builder processorName(String processorName)
-        {
-            this.processorName = processorName;
-            return this;
-        }
-
-        public Builder processor(StreamProcessor processor)
-        {
-            this.streamProcessor = processor;
-            return this;
-        }
-
-        public Builder processor(TypedStreamProcessor processor)
-        {
-            this.streamProcessor = processor;
-            this.customEventFilter = processor.buildTypeFilter();
-            return this;
-        }
-
-        public Builder eventFilter(MetadataFilter eventFilter)
-        {
-            this.customEventFilter = eventFilter;
-            return this;
-        }
-
-        public Builder readOnly(boolean readOnly)
-        {
-            this.readOnly = readOnly;
-            return this;
-        }
-
-        public Builder additionalDependencies(ServiceName<?>... additionalDependencies)
-        {
-            for (ServiceName<?> serviceName : additionalDependencies)
-            {
-                this.additionalDependencies.add(serviceName);
-            }
-            return this;
-        }
-
-        public ActorFuture<StreamProcessorService> build()
-        {
-            EnsureUtil.ensureNotNull("stream processor", streamProcessor);
-            EnsureUtil.ensureNotNullOrEmpty("processor name", processorName);
-            EnsureUtil.ensureGreaterThan("process id", processorId, -1);
-
-            MetadataFilter metadataFilter = new VersionFilter();
-            if (customEventFilter != null)
-            {
-                metadataFilter = metadataFilter.and(customEventFilter);
-            }
-            final EventFilter eventFilter = new MetadataEventFilter(metadataFilter);
-
-            return LogStreams.createStreamProcessor(processorName, processorId, streamProcessor)
-                .actorScheduler(actorScheduler)
-                .serviceContainer(serviceContainer)
-                .snapshotStorage(snapshotStorage)
-                .snapshotPeriod(snapshotPeriod)
-                .logStream(logStream)
-                .eventFilter(eventFilter)
-                .readOnly(readOnly)
-                .additionalDependencies(additionalDependencies)
-                .build();
-        }
-    }
-
-    private static class MetadataEventFilter implements EventFilter
-    {
-
-        protected final RecordMetadata metadata = new RecordMetadata();
-        protected final MetadataFilter metadataFilter;
-
-        MetadataEventFilter(MetadataFilter metadataFilter)
-        {
-            this.metadataFilter = metadataFilter;
-        }
-
-        @Override
-        public boolean applies(LoggedEvent event)
-        {
-            event.readMetadata(metadata);
-            return metadataFilter.applies(metadata);
-        }
-
-    }
-
-    private final class VersionFilter implements MetadataFilter
-    {
-        @Override
-        public boolean applies(RecordMetadata m)
-        {
-            if (m.getProtocolVersion() > Protocol.PROTOCOL_VERSION)
-            {
-                throw new RuntimeException(String.format("Cannot handle event with version newer " +
-                        "than what is implemented by broker (%d > %d)", m.getProtocolVersion(), Protocol.PROTOCOL_VERSION));
-            }
-
-            return true;
-        }
-    }
-
+  }
 }

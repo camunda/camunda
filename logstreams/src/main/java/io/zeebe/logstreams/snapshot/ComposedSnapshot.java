@@ -20,158 +20,131 @@ import static io.zeebe.util.StreamUtil.writeLong;
 import static org.agrona.BitUtil.SIZE_OF_BYTE;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
+import io.zeebe.logstreams.spi.ComposableSnapshotSupport;
+import io.zeebe.logstreams.spi.SnapshotSupport;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import io.zeebe.logstreams.spi.ComposableSnapshotSupport;
-import io.zeebe.logstreams.spi.SnapshotSupport;
+/** A composition of one or more snapshots which are combined to a single snapshot. */
+public class ComposedSnapshot implements SnapshotSupport {
+  protected final ComposableSnapshotSupport[] parts;
+  protected final byte count;
+  protected long processedBytes;
 
-/**
- * A composition of one or more snapshots which are combined to a single snapshot.
- */
-public class ComposedSnapshot implements SnapshotSupport
-{
-    protected final ComposableSnapshotSupport[] parts;
-    protected final byte count;
-    protected long processedBytes;
+  public ComposedSnapshot(ComposableSnapshotSupport... parts) {
+    this.parts = parts;
+    this.count = (byte) parts.length;
 
-    public ComposedSnapshot(ComposableSnapshotSupport... parts)
-    {
-        this.parts = parts;
-        this.count = (byte) parts.length;
-
-        if (count != parts.length)
-        {
-            throw new IllegalArgumentException("Cannot contain more than 255 parts");
-        }
-
-        if (count < 1)
-        {
-            throw new IllegalArgumentException("must contains at least one part");
-        }
+    if (count != parts.length) {
+      throw new IllegalArgumentException("Cannot contain more than 255 parts");
     }
 
-    public long getProcessedBytes()
-    {
-        return processedBytes;
+    if (count < 1) {
+      throw new IllegalArgumentException("must contains at least one part");
+    }
+  }
+
+  public long getProcessedBytes() {
+    return processedBytes;
+  }
+
+  @Override
+  public long writeSnapshot(OutputStream outputStream) throws Exception {
+    outputStream.write(count);
+    long writtenBytes = SIZE_OF_BYTE;
+
+    for (byte i = 0; i < count; i++) {
+      final ComposableSnapshotSupport part = parts[i];
+      final long mapSize = part.snapshotSize();
+      writeLong(outputStream, mapSize);
+      writtenBytes += SIZE_OF_LONG;
+      part.writeSnapshot(outputStream);
+      writtenBytes += mapSize;
+    }
+    processedBytes = writtenBytes;
+
+    return processedBytes;
+  }
+
+  @Override
+  public void recoverFromSnapshot(InputStream inputStream) throws Exception {
+    final LimitedInputStream limitedInputStream = new LimitedInputStream(inputStream);
+    final byte dataCount = limitedInputStream.readByte();
+    long bytesRead = SIZE_OF_BYTE;
+
+    if (dataCount != count) {
+      throw new IllegalStateException(
+          "illegal data of composed snapshot, expected " + count + " parts but found " + dataCount);
+    }
+
+    for (byte idx = 0; idx < count; idx++) {
+      limitedInputStream.reset();
+      final long mapSize = readLong(inputStream);
+      bytesRead += SIZE_OF_LONG;
+      limitedInputStream.setLimit(mapSize);
+      parts[idx].recoverFromSnapshot(limitedInputStream);
+      bytesRead += mapSize;
+    }
+    processedBytes = bytesRead;
+  }
+
+  @Override
+  public void reset() {
+    for (int i = 0; i < count; i++) {
+      parts[i].reset();
+    }
+  }
+
+  private static final class LimitedInputStream extends InputStream {
+    private long byteCount = 0L;
+    private long limit = Long.MAX_VALUE;
+    private final InputStream inputStream;
+
+    LimitedInputStream(InputStream inputStream) {
+      this.inputStream = inputStream;
     }
 
     @Override
-    public long writeSnapshot(OutputStream outputStream) throws Exception
-    {
-        outputStream.write(count);
-        long writtenBytes = SIZE_OF_BYTE;
+    public void reset() {
+      byteCount = 0L;
+      limit = Long.MAX_VALUE;
+    }
 
-        for (byte i = 0; i < count; i++)
-        {
-            final ComposableSnapshotSupport part = parts[i];
-            final long mapSize = part.snapshotSize();
-            writeLong(outputStream, mapSize);
-            writtenBytes += SIZE_OF_LONG;
-            part.writeSnapshot(outputStream);
-            writtenBytes += mapSize;
-        }
-        processedBytes = writtenBytes;
+    public void setLimit(long limit) {
+      this.limit = limit;
+    }
 
-        return processedBytes;
+    public byte readByte() throws IOException {
+      return (byte) read();
     }
 
     @Override
-    public void recoverFromSnapshot(InputStream inputStream) throws Exception
-    {
-        final LimitedInputStream limitedInputStream = new LimitedInputStream(inputStream);
-        final byte dataCount = limitedInputStream.readByte();
-        long bytesRead = SIZE_OF_BYTE;
-
-        if (dataCount != count)
-        {
-            throw new IllegalStateException("illegal data of composed snapshot, expected " + count + " parts but found " + dataCount);
-        }
-
-        for (byte idx = 0; idx < count; idx++)
-        {
-            limitedInputStream.reset();
-            final long mapSize = readLong(inputStream);
-            bytesRead += SIZE_OF_LONG;
-            limitedInputStream.setLimit(mapSize);
-            parts[idx].recoverFromSnapshot(limitedInputStream);
-            bytesRead += mapSize;
-        }
-        processedBytes = bytesRead;
+    public int read() throws IOException {
+      if (byteCount >= limit) {
+        return 0;
+      } else {
+        ++byteCount;
+        return inputStream.read();
+      }
     }
 
     @Override
-    public void reset()
-    {
-        for (int i = 0; i < count; i++)
-        {
-            parts[i].reset();
-        }
+    public int read(byte b[], int off, int len) throws IOException {
+      if (byteCount >= limit) {
+        return -1;
+      }
+      if (byteCount + len >= limit) {
+        len = (int) (limit - byteCount);
+      }
+      final int readCount = inputStream.read(b, off, len);
+      byteCount += readCount;
+      return readCount;
     }
 
-    private static final class LimitedInputStream extends InputStream
-    {
-        private long byteCount = 0L;
-        private long limit = Long.MAX_VALUE;
-        private final InputStream inputStream;
-
-        LimitedInputStream(InputStream inputStream)
-        {
-            this.inputStream = inputStream;
-        }
-
-        @Override
-        public void reset()
-        {
-            byteCount = 0L;
-            limit = Long.MAX_VALUE;
-        }
-
-        public void setLimit(long limit)
-        {
-            this.limit = limit;
-        }
-
-        public byte readByte() throws IOException
-        {
-            return (byte) read();
-        }
-
-        @Override
-        public int read() throws IOException
-        {
-            if (byteCount >= limit)
-            {
-                return 0;
-            }
-            else
-            {
-                ++byteCount;
-                return inputStream.read();
-            }
-        }
-
-        @Override
-        public int read(byte b[], int off, int len) throws IOException
-        {
-            if (byteCount >= limit)
-            {
-                return -1;
-            }
-            if (byteCount + len >= limit)
-            {
-                len = (int) (limit - byteCount);
-            }
-            final int readCount = inputStream.read(b, off, len);
-            byteCount += readCount;
-            return readCount;
-        }
-
-        @Override
-        public int read(byte b[]) throws IOException
-        {
-            return this.read(b, 0, b.length);
-        }
+    @Override
+    public int read(byte b[]) throws IOException {
+      return this.read(b, 0, b.length);
     }
+  }
 }

@@ -20,10 +20,9 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
- **
- * BucketBufferArray layout
+ * * BucketBufferArray layout
  *
- * The main BucketBufferArray header contains the following information's: *
+ * <p>The main BucketBufferArray header contains the following information's: *
  *
  * <pre>
  *  0               1               2               3
@@ -40,16 +39,14 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  *  +-------------------------------------------------------------+
  * </pre>
  *
- * The BUCKET BUFFER COUNT contains the count of all existing bucket buffers.
- * The BUCKET COUNT contains the count of all existing buckets.
- * The BLOCK COUNT contains the count of all existing block.
- * The last two headers are mainly used to calculate fast the load factor and also be available after
- * deserialization.
- * The HIGHEST BUCKET ID is used to determine whether the hash table can be resized or not.
+ * The BUCKET BUFFER COUNT contains the count of all existing bucket buffers. The BUCKET COUNT
+ * contains the count of all existing buckets. The BLOCK COUNT contains the count of all existing
+ * block. The last two headers are mainly used to calculate fast the load factor and also be
+ * available after deserialization. The HIGHEST BUCKET ID is used to determine whether the hash
+ * table can be resized or not.
  *
- * There can exist multiple BucketBuffers, each of them have the same layout.
- * These BucketBuffers can contain till 32 buckets. The current bucket count is
- * stored in the BUCKET COUNT header.
+ * <p>There can exist multiple BucketBuffers, each of them have the same layout. These BucketBuffers
+ * can contain till 32 buckets. The current bucket count is stored in the BUCKET COUNT header.
  *
  * <pre>
  *  +----------------------------+
@@ -86,7 +83,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  *
  * The block data contains the blocks
  *
- * Each block has the following layout
+ * <p>Each block has the following layout
  *
  * <pre>
  *  0               1               2               3
@@ -99,87 +96,81 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  * ...                                                            |
  *  +-------------------------------------------------------------+
  * </pre>
- *
  */
-public class BucketBufferArrayDescriptor
-{
+public class BucketBufferArrayDescriptor {
 
-    public static final int MAIN_BUFFER_COUNT_OFFSET;
-    public static final int MAIN_BUCKET_COUNT_OFFSET;
-    public static final int MAIN_BLOCK_COUNT_OFFSET;
-    public static final int MAIN_HIGHEST_BUCKET_ID;
-    public static final int MAIN_BUCKET_BUFFER_HEADER_LEN;
+  public static final int MAIN_BUFFER_COUNT_OFFSET;
+  public static final int MAIN_BUCKET_COUNT_OFFSET;
+  public static final int MAIN_BLOCK_COUNT_OFFSET;
+  public static final int MAIN_HIGHEST_BUCKET_ID;
+  public static final int MAIN_BUCKET_BUFFER_HEADER_LEN;
 
-    public static final int BUCKET_BUFFER_BUCKET_COUNT_OFFSET;
-    public static final int BUCKET_BUFFER_HEADER_LENGTH;
+  public static final int BUCKET_BUFFER_BUCKET_COUNT_OFFSET;
+  public static final int BUCKET_BUFFER_HEADER_LENGTH;
 
-    public static final int BUCKET_FILL_COUNT_OFFSET;
-    public static final int BUCKET_ID_OFFSET;
-    public static final int BUCKET_DEPTH_OFFSET;
-    public static final int BUCKET_OVERFLOW_POINTER_OFFSET;
+  public static final int BUCKET_FILL_COUNT_OFFSET;
+  public static final int BUCKET_ID_OFFSET;
+  public static final int BUCKET_DEPTH_OFFSET;
+  public static final int BUCKET_OVERFLOW_POINTER_OFFSET;
 
-    public static final int BUCKET_HEADER_LENGTH;
-    public static final int BUCKET_DATA_OFFSET;
+  public static final int BUCKET_HEADER_LENGTH;
+  public static final int BUCKET_DATA_OFFSET;
 
-    public static final int BLOCK_KEY_OFFSET;
+  public static final int BLOCK_KEY_OFFSET;
 
-    static
-    {
-        int offset = 0;
-        // MAIN BUCKET BUFFER ARRAY HEADER ////////////////
-        MAIN_BUFFER_COUNT_OFFSET = offset;
-        offset += SIZE_OF_INT;
+  static {
+    int offset = 0;
+    // MAIN BUCKET BUFFER ARRAY HEADER ////////////////
+    MAIN_BUFFER_COUNT_OFFSET = offset;
+    offset += SIZE_OF_INT;
 
-        MAIN_BUCKET_COUNT_OFFSET = offset;
-        offset += SIZE_OF_INT;
+    MAIN_BUCKET_COUNT_OFFSET = offset;
+    offset += SIZE_OF_INT;
 
-        MAIN_BLOCK_COUNT_OFFSET = offset;
-        offset += SIZE_OF_LONG;
+    MAIN_BLOCK_COUNT_OFFSET = offset;
+    offset += SIZE_OF_LONG;
 
-        MAIN_HIGHEST_BUCKET_ID = offset;
-        offset += SIZE_OF_INT;
+    MAIN_HIGHEST_BUCKET_ID = offset;
+    offset += SIZE_OF_INT;
 
-        MAIN_BUCKET_BUFFER_HEADER_LEN = offset;
+    MAIN_BUCKET_BUFFER_HEADER_LEN = offset;
 
-        // BUCKET BUFFER HEADER ////////////////
-        offset = 0;
-        BUCKET_BUFFER_BUCKET_COUNT_OFFSET = 0;
-        offset += SIZE_OF_INT;
+    // BUCKET BUFFER HEADER ////////////////
+    offset = 0;
+    BUCKET_BUFFER_BUCKET_COUNT_OFFSET = 0;
+    offset += SIZE_OF_INT;
 
-        BUCKET_BUFFER_HEADER_LENGTH = offset;
+    BUCKET_BUFFER_HEADER_LENGTH = offset;
 
-        // BUCKET HEADER ////////////////
-        offset = 0;
+    // BUCKET HEADER ////////////////
+    offset = 0;
 
-        BUCKET_FILL_COUNT_OFFSET = offset;
-        offset += SIZE_OF_INT;
+    BUCKET_FILL_COUNT_OFFSET = offset;
+    offset += SIZE_OF_INT;
 
-        BUCKET_ID_OFFSET = offset;
-        offset += SIZE_OF_INT;
+    BUCKET_ID_OFFSET = offset;
+    offset += SIZE_OF_INT;
 
-        BUCKET_DEPTH_OFFSET = offset;
-        offset += SIZE_OF_INT;
+    BUCKET_DEPTH_OFFSET = offset;
+    offset += SIZE_OF_INT;
 
-        BUCKET_OVERFLOW_POINTER_OFFSET = offset;
-        offset += SIZE_OF_LONG;
+    BUCKET_OVERFLOW_POINTER_OFFSET = offset;
+    offset += SIZE_OF_LONG;
 
-        BUCKET_DATA_OFFSET = offset;
+    BUCKET_DATA_OFFSET = offset;
 
-        BUCKET_HEADER_LENGTH = offset;
+    BUCKET_HEADER_LENGTH = offset;
 
-        // BLOCK HEADER ////////////////
-        offset = 0;
-        BLOCK_KEY_OFFSET = offset;
-    }
+    // BLOCK HEADER ////////////////
+    offset = 0;
+    BLOCK_KEY_OFFSET = offset;
+  }
 
-    public static int getBlockLength(final int keyLength, final int valueLength)
-    {
-        return addExact(keyLength, valueLength);
-    }
+  public static int getBlockLength(final int keyLength, final int valueLength) {
+    return addExact(keyLength, valueLength);
+  }
 
-    public static long getBlockValueOffset(final long offset, final int keyLength)
-    {
-        return offset + BLOCK_KEY_OFFSET + keyLength;
-    }
-
+  public static long getBlockValueOffset(final long offset, final int keyLength) {
+    return offset + BLOCK_KEY_OFFSET + keyLength;
+  }
 }

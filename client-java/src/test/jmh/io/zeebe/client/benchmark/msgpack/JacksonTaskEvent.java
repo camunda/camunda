@@ -17,71 +17,58 @@ package io.zeebe.client.benchmark.msgpack;
 
 import java.util.Map;
 
-public class JacksonTaskEvent implements TaskEvent
-{
-    private TaskEventType eventType;
-    private long lockTime;
-    private String type;
-    private Map<String, String> headers;
-    private byte[] payload;
+public class JacksonTaskEvent implements TaskEvent {
+  private TaskEventType eventType;
+  private long lockTime;
+  private String type;
+  private Map<String, String> headers;
+  private byte[] payload;
 
-    public TaskEventType getEventType()
-    {
-        return eventType;
-    }
+  public TaskEventType getEventType() {
+    return eventType;
+  }
 
-    public void setEventType(TaskEventType eventType)
-    {
-        this.eventType = eventType;
-    }
+  public void setEventType(TaskEventType eventType) {
+    this.eventType = eventType;
+  }
 
-    public Long getLockTime()
-    {
-        return lockTime;
-    }
+  public Long getLockTime() {
+    return lockTime;
+  }
 
-    public void setLockTime(long lockTime)
-    {
-        this.lockTime = lockTime;
-    }
+  public void setLockTime(long lockTime) {
+    this.lockTime = lockTime;
+  }
 
-    public String getType()
-    {
-        return type;
-    }
+  public String getType() {
+    return type;
+  }
 
-    public void setType(String type)
-    {
-        this.type = type;
-    }
+  public void setType(String type) {
+    this.type = type;
+  }
 
-    public Map<String, String> getHeaders()
-    {
-        return headers;
-    }
+  public Map<String, String> getHeaders() {
+    return headers;
+  }
 
-    public void setHeaders(Map<String, String> headers)
-    {
-        this.headers = headers;
-    }
+  public void setHeaders(Map<String, String> headers) {
+    this.headers = headers;
+  }
 
-    public byte[] getPayload()
-    {
-        return payload;
-    }
+  public byte[] getPayload() {
+    return payload;
+  }
 
-    public void setPayload(byte[] payload)
-    {
-        this.payload = payload;
-    }
+  public void setPayload(byte[] payload) {
+    this.payload = payload;
+  }
 
-    public void reset()
-    {
-        eventType = null;
-        lockTime = -1L;
-        type = null;
-        headers = null;
-        payload = null;
-    }
-
+  public void reset() {
+    eventType = null;
+    lockTime = -1L;
+    type = null;
+    headers = null;
+    payload = null;
+  }
 }

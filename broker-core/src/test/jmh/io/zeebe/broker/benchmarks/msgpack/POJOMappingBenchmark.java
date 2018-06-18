@@ -17,9 +17,8 @@
  */
 package io.zeebe.broker.benchmarks.msgpack;
 
-import java.util.concurrent.TimeUnit;
-
 import io.zeebe.broker.job.data.JobRecord;
+import java.util.concurrent.TimeUnit;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.openjdk.jmh.annotations.*;
@@ -28,56 +27,49 @@ import org.openjdk.jmh.annotations.*;
 @Fork(1)
 @Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
-public class POJOMappingBenchmark
-{
+public class POJOMappingBenchmark {
 
-    @Benchmark
-    @Threads(1)
-    public void performReadingOptimalOrder(final POJOMappingContext ctx)
-    {
-        final JobRecord jobRecord = ctx.getJobRecord();
-        final DirectBuffer encodedJobEvent = ctx.getOptimalOrderEncodedJobEvent();
+  @Benchmark
+  @Threads(1)
+  public void performReadingOptimalOrder(final POJOMappingContext ctx) {
+    final JobRecord jobRecord = ctx.getJobRecord();
+    final DirectBuffer encodedJobEvent = ctx.getOptimalOrderEncodedJobEvent();
 
-        jobRecord.reset();
-        jobRecord.wrap(encodedJobEvent, 0, encodedJobEvent.capacity());
-    }
+    jobRecord.reset();
+    jobRecord.wrap(encodedJobEvent, 0, encodedJobEvent.capacity());
+  }
 
-    @Benchmark
-    @Threads(1)
-    public void performReadingReverseOrder(final POJOMappingContext ctx)
-    {
-        final JobRecord jobRecord = ctx.getJobRecord();
-        final DirectBuffer encodedJobEvent = ctx.getReverseOrderEncodedJobEvent();
+  @Benchmark
+  @Threads(1)
+  public void performReadingReverseOrder(final POJOMappingContext ctx) {
+    final JobRecord jobRecord = ctx.getJobRecord();
+    final DirectBuffer encodedJobEvent = ctx.getReverseOrderEncodedJobEvent();
 
-        jobRecord.reset();
-        jobRecord.wrap(encodedJobEvent, 0, encodedJobEvent.capacity());
-    }
+    jobRecord.reset();
+    jobRecord.wrap(encodedJobEvent, 0, encodedJobEvent.capacity());
+  }
 
-    @Benchmark
-    @Threads(1)
-    public void performMappingCycleOptimalEncodedOrder(final POJOMappingContext ctx)
-    {
-        final JobRecord jobRecord = ctx.getJobRecord();
-        final DirectBuffer encodedJobEvent = ctx.getOptimalOrderEncodedJobEvent();
-        final MutableDirectBuffer writeBuffer = ctx.getWriteBuffer();
+  @Benchmark
+  @Threads(1)
+  public void performMappingCycleOptimalEncodedOrder(final POJOMappingContext ctx) {
+    final JobRecord jobRecord = ctx.getJobRecord();
+    final DirectBuffer encodedJobEvent = ctx.getOptimalOrderEncodedJobEvent();
+    final MutableDirectBuffer writeBuffer = ctx.getWriteBuffer();
 
-        jobRecord.reset();
-        jobRecord.wrap(encodedJobEvent, 0, encodedJobEvent.capacity());
-        jobRecord.write(writeBuffer, 0);
-    }
+    jobRecord.reset();
+    jobRecord.wrap(encodedJobEvent, 0, encodedJobEvent.capacity());
+    jobRecord.write(writeBuffer, 0);
+  }
 
-    @Benchmark
-    @Threads(1)
-    public void performMappingCycleReverseEncodedOrder(final POJOMappingContext ctx)
-    {
-        final JobRecord jobRecord = ctx.getJobRecord();
-        final DirectBuffer encodedJobEvent = ctx.getReverseOrderEncodedJobEvent();
-        final MutableDirectBuffer writeBuffer = ctx.getWriteBuffer();
+  @Benchmark
+  @Threads(1)
+  public void performMappingCycleReverseEncodedOrder(final POJOMappingContext ctx) {
+    final JobRecord jobRecord = ctx.getJobRecord();
+    final DirectBuffer encodedJobEvent = ctx.getReverseOrderEncodedJobEvent();
+    final MutableDirectBuffer writeBuffer = ctx.getWriteBuffer();
 
-        jobRecord.reset();
-        jobRecord.wrap(encodedJobEvent, 0, encodedJobEvent.capacity());
-        jobRecord.write(writeBuffer, 0);
-    }
-
-
+    jobRecord.reset();
+    jobRecord.wrap(encodedJobEvent, 0, encodedJobEvent.capacity());
+    jobRecord.write(writeBuffer, 0);
+  }
 }

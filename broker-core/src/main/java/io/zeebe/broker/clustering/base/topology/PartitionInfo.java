@@ -17,70 +17,63 @@
  */
 package io.zeebe.broker.clustering.base.topology;
 
-import java.util.Objects;
-
 import io.zeebe.util.buffer.BufferUtil;
+import java.util.Objects;
 import org.agrona.DirectBuffer;
 
-public class PartitionInfo
-{
-    private final String topicName;
-    private final DirectBuffer topicNameBuffer;
-    private final int partitionId;
-    private final int replicationFactor;
+public class PartitionInfo {
+  private final String topicName;
+  private final DirectBuffer topicNameBuffer;
+  private final int partitionId;
+  private final int replicationFactor;
 
-    public PartitionInfo(final DirectBuffer topicNameBuffer, final int partitionId, final int replicationFactor)
-    {
-        this.topicName = BufferUtil.bufferAsString(topicNameBuffer);
-        this.topicNameBuffer = topicNameBuffer;
-        this.partitionId = partitionId;
-        this.replicationFactor = replicationFactor;
-    }
+  public PartitionInfo(
+      final DirectBuffer topicNameBuffer, final int partitionId, final int replicationFactor) {
+    this.topicName = BufferUtil.bufferAsString(topicNameBuffer);
+    this.topicNameBuffer = topicNameBuffer;
+    this.partitionId = partitionId;
+    this.replicationFactor = replicationFactor;
+  }
 
-    public String getTopicName()
-    {
-        return topicName;
-    }
+  public String getTopicName() {
+    return topicName;
+  }
 
-    public DirectBuffer getTopicNameBuffer()
-    {
-        return topicNameBuffer;
-    }
+  public DirectBuffer getTopicNameBuffer() {
+    return topicNameBuffer;
+  }
 
-    public int getPartitionId()
-    {
-        return partitionId;
-    }
+  public int getPartitionId() {
+    return partitionId;
+  }
 
-    public int getReplicationFactor()
-    {
-        return replicationFactor;
-    }
+  public int getReplicationFactor() {
+    return replicationFactor;
+  }
 
-    @Override
-    public boolean equals(final Object o)
-    {
-        if (this == o)
-        {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass())
-        {
-            return false;
-        }
-        final PartitionInfo that = (PartitionInfo) o;
-        return partitionId == that.partitionId && replicationFactor == that.replicationFactor && BufferUtil.equals(topicNameBuffer, that.topicNameBuffer);
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
     }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final PartitionInfo that = (PartitionInfo) o;
+    return partitionId == that.partitionId
+        && replicationFactor == that.replicationFactor
+        && BufferUtil.equals(topicNameBuffer, that.topicNameBuffer);
+  }
 
-    @Override
-    public int hashCode()
-    {
-        return Objects.hash(topicNameBuffer, partitionId, replicationFactor);
-    }
+  @Override
+  public int hashCode() {
+    return Objects.hash(topicNameBuffer, partitionId, replicationFactor);
+  }
 
-    @Override
-    public String toString()
-    {
-        return String.format("Partition{topic=%s, partitionId=%d, replicationFactor=%d}", topicName, partitionId, replicationFactor);
-    }
+  @Override
+  public String toString() {
+    return String.format(
+        "Partition{topic=%s, partitionId=%d, replicationFactor=%d}",
+        topicName, partitionId, replicationFactor);
+  }
 }

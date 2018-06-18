@@ -15,18 +15,17 @@
  */
 package io.zeebe.transport;
 
-public interface RemoteAddressList
-{
+public interface RemoteAddressList {
 
-    RemoteAddress getByStreamId(int streamId);
+  RemoteAddress getByStreamId(int streamId);
 
-    RemoteAddress getByAddress(SocketAddress inetSocketAddress);
+  RemoteAddress getByAddress(SocketAddress inetSocketAddress);
 
-    void retire(RemoteAddress remote);
+  void retire(RemoteAddress remote);
 
-    void deactivate(RemoteAddress remote);
+  void deactivate(RemoteAddress remote);
 
-    void deactivateAll();
+  void deactivateAll();
 
-    RemoteAddress register(SocketAddress inetSocketAddress);
+  RemoteAddress register(SocketAddress inetSocketAddress);
 }

@@ -24,55 +24,58 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.servicecontainer.ServiceName;
 
-public class LogStreamServiceNames
-{
-    public static final ServiceName<Void> logStreamRootServiceName(String logName)
-    {
-        return ServiceName.newServiceName(String.format("logstream.%s", logName), Void.class);
-    }
+public class LogStreamServiceNames {
+  public static final ServiceName<Void> logStreamRootServiceName(String logName) {
+    return ServiceName.newServiceName(String.format("logstream.%s", logName), Void.class);
+  }
 
-    public static final ServiceName<LogStream> logStreamServiceName(String logName)
-    {
-        return ServiceName.newServiceName(String.format("logstream.%s.service", logName), LogStream.class);
-    }
+  public static final ServiceName<LogStream> logStreamServiceName(String logName) {
+    return ServiceName.newServiceName(
+        String.format("logstream.%s.service", logName), LogStream.class);
+  }
 
-    public static final ServiceName<LogStorage> logStorageServiceName(String logName)
-    {
-        return ServiceName.newServiceName(String.format("logstream.%s.storage", logName), LogStorage.class);
-    }
+  public static final ServiceName<LogStorage> logStorageServiceName(String logName) {
+    return ServiceName.newServiceName(
+        String.format("logstream.%s.storage", logName), LogStorage.class);
+  }
 
-    public static final ServiceName<LogStorageAppender> logStorageAppenderServiceName(String logName)
-    {
-        return ServiceName.newServiceName(String.format("logstream.%s.storage.appender", logName), LogStorageAppender.class);
-    }
+  public static final ServiceName<LogStorageAppender> logStorageAppenderServiceName(
+      String logName) {
+    return ServiceName.newServiceName(
+        String.format("logstream.%s.storage.appender", logName), LogStorageAppender.class);
+  }
 
-    public static final ServiceName<LogBlockIndex> logBlockIndexServiceName(String logName)
-    {
-        return ServiceName.newServiceName(String.format("logstream.%s.blockIdx", logName), LogBlockIndex.class);
-    }
+  public static final ServiceName<LogBlockIndex> logBlockIndexServiceName(String logName) {
+    return ServiceName.newServiceName(
+        String.format("logstream.%s.blockIdx", logName), LogBlockIndex.class);
+  }
 
-    public static final ServiceName<LogBlockIndexWriter> logBlockIndexWriterService(String logName)
-    {
-        return ServiceName.newServiceName(String.format("logstream.%s.blockIdx.writer", logName), LogBlockIndexWriter.class);
-    }
+  public static final ServiceName<LogBlockIndexWriter> logBlockIndexWriterService(String logName) {
+    return ServiceName.newServiceName(
+        String.format("logstream.%s.blockIdx.writer", logName), LogBlockIndexWriter.class);
+  }
 
-    public static final ServiceName<Dispatcher> logWriteBufferServiceName(String logName)
-    {
-        return ServiceName.newServiceName(String.format("logstream.%s.writeBuffer", logName), Dispatcher.class);
-    }
+  public static final ServiceName<Dispatcher> logWriteBufferServiceName(String logName) {
+    return ServiceName.newServiceName(
+        String.format("logstream.%s.writeBuffer", logName), Dispatcher.class);
+  }
 
-    public static final ServiceName<Subscription> logWriteBufferSubscriptionServiceName(String logName, String subscriptionName)
-    {
-        return ServiceName.newServiceName(String.format("logstream.%s.writeBuffer.subscription.%s", logName, subscriptionName), Subscription.class);
-    }
+  public static final ServiceName<Subscription> logWriteBufferSubscriptionServiceName(
+      String logName, String subscriptionName) {
+    return ServiceName.newServiceName(
+        String.format("logstream.%s.writeBuffer.subscription.%s", logName, subscriptionName),
+        Subscription.class);
+  }
 
-    public static final ServiceName<Void> logStorageAppenderRootService(String logName)
-    {
-        return ServiceName.newServiceName(String.format("logstream.%s.storage.appender-root", logName), Void.class);
-    }
+  public static final ServiceName<Void> logStorageAppenderRootService(String logName) {
+    return ServiceName.newServiceName(
+        String.format("logstream.%s.storage.appender-root", logName), Void.class);
+  }
 
-    public static final ServiceName<StreamProcessorService> streamProcessorService(String logName, String processorName)
-    {
-        return ServiceName.newServiceName(String.format("logstream.%s.processor.%s", logName, processorName), StreamProcessorService.class);
-    }
+  public static final ServiceName<StreamProcessorService> streamProcessorService(
+      String logName, String processorName) {
+    return ServiceName.newServiceName(
+        String.format("logstream.%s.processor.%s", logName, processorName),
+        StreamProcessorService.class);
+  }
 }

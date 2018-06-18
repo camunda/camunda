@@ -15,131 +15,123 @@
  */
 package io.zeebe.util.sched.channel;
 
+import static org.mockito.Mockito.*;
+
 import io.zeebe.util.sched.ActorCondition;
 import org.junit.Test;
 
-import static org.mockito.Mockito.*;
+public class ActorConditionsTest {
 
-public class ActorConditionsTest
-{
+  @Test
+  public void shouldAddCondition() {
+    // given
+    final ActorConditions actorConditions = new ActorConditions();
 
-    @Test
-    public void shouldAddCondition()
-    {
-        // given
-        final ActorConditions actorConditions = new ActorConditions();
+    // when
+    final ActorCondition condition = mock(ActorCondition.class);
+    actorConditions.registerConsumer(condition);
 
-        // when
-        final ActorCondition condition = mock(ActorCondition.class);
-        actorConditions.registerConsumer(condition);
+    // then
+    actorConditions.signalConsumers();
+    verify(condition).signal();
+  }
 
-        // then
-        actorConditions.signalConsumers();
-        verify(condition).signal();
-    }
+  @Test
+  public void shouldAddConditions() {
+    // given
+    final ActorConditions actorConditions = new ActorConditions();
 
-    @Test
-    public void shouldAddConditions()
-    {
-        // given
-        final ActorConditions actorConditions = new ActorConditions();
+    // when
+    final ActorCondition condition1 = mock(ActorCondition.class);
+    actorConditions.registerConsumer(condition1);
 
-        // when
-        final ActorCondition condition1 = mock(ActorCondition.class);
-        actorConditions.registerConsumer(condition1);
+    final ActorCondition condition2 = mock(ActorCondition.class);
+    actorConditions.registerConsumer(condition2);
 
-        final ActorCondition condition2 = mock(ActorCondition.class);
-        actorConditions.registerConsumer(condition2);
+    final ActorCondition condition3 = mock(ActorCondition.class);
+    actorConditions.registerConsumer(condition3);
 
-        final ActorCondition condition3 = mock(ActorCondition.class);
-        actorConditions.registerConsumer(condition3);
+    // then
+    actorConditions.signalConsumers();
+    verify(condition1).signal();
+    verify(condition2).signal();
+    verify(condition3).signal();
+  }
 
-        // then
-        actorConditions.signalConsumers();
-        verify(condition1).signal();
-        verify(condition2).signal();
-        verify(condition3).signal();
-    }
+  @Test
+  public void shouldRemoveCondition() {
+    // given
+    final ActorConditions actorConditions = new ActorConditions();
+    final ActorCondition condition = mock(ActorCondition.class);
+    actorConditions.registerConsumer(condition);
 
-    @Test
-    public void shouldRemoveCondition()
-    {
-        // given
-        final ActorConditions actorConditions = new ActorConditions();
-        final ActorCondition condition = mock(ActorCondition.class);
-        actorConditions.registerConsumer(condition);
+    // when
+    actorConditions.removeConsumer(condition);
 
-        // when
-        actorConditions.removeConsumer(condition);
+    // then
+    actorConditions.signalConsumers();
+    verify(condition, never()).signal();
+  }
 
-        // then
-        actorConditions.signalConsumers();
-        verify(condition, never()).signal();
-    }
+  @Test
+  public void shouldRemoveNotRegisteredCondition() {
+    // given
+    final ActorConditions actorConditions = new ActorConditions();
+    final ActorCondition condition = mock(ActorCondition.class);
+    final ActorCondition notRegistered = mock(ActorCondition.class);
+    actorConditions.registerConsumer(condition);
 
-    @Test
-    public void shouldRemoveNotRegisteredCondition()
-    {
-        // given
-        final ActorConditions actorConditions = new ActorConditions();
-        final ActorCondition condition = mock(ActorCondition.class);
-        final ActorCondition notRegistered = mock(ActorCondition.class);
-        actorConditions.registerConsumer(condition);
+    // when
+    actorConditions.removeConsumer(notRegistered);
 
-        // when
-        actorConditions.removeConsumer(notRegistered);
+    // then
+    actorConditions.signalConsumers();
+    verify(condition).signal();
+  }
 
-        // then
-        actorConditions.signalConsumers();
-        verify(condition).signal();
-    }
+  @Test
+  public void shouldRemoveConditionInMiddle() {
+    // given
+    final ActorConditions actorConditions = new ActorConditions();
+    final ActorCondition condition1 = mock(ActorCondition.class);
+    actorConditions.registerConsumer(condition1);
 
-    @Test
-    public void shouldRemoveConditionInMiddle()
-    {
-        // given
-        final ActorConditions actorConditions = new ActorConditions();
-        final ActorCondition condition1 = mock(ActorCondition.class);
-        actorConditions.registerConsumer(condition1);
+    final ActorCondition condition2 = mock(ActorCondition.class);
+    actorConditions.registerConsumer(condition2);
 
-        final ActorCondition condition2 = mock(ActorCondition.class);
-        actorConditions.registerConsumer(condition2);
+    final ActorCondition condition3 = mock(ActorCondition.class);
+    actorConditions.registerConsumer(condition3);
 
-        final ActorCondition condition3 = mock(ActorCondition.class);
-        actorConditions.registerConsumer(condition3);
+    // when
+    actorConditions.removeConsumer(condition2);
 
-        // when
-        actorConditions.removeConsumer(condition2);
+    // then
+    actorConditions.signalConsumers();
+    verify(condition1).signal();
+    verify(condition2, never()).signal();
+    verify(condition3).signal();
+  }
 
-        // then
-        actorConditions.signalConsumers();
-        verify(condition1).signal();
-        verify(condition2, never()).signal();
-        verify(condition3).signal();
-    }
+  @Test
+  public void shouldRemoveFirstCondition() {
+    // given
+    final ActorConditions actorConditions = new ActorConditions();
+    final ActorCondition condition1 = mock(ActorCondition.class);
+    actorConditions.registerConsumer(condition1);
 
-    @Test
-    public void shouldRemoveFirstCondition()
-    {
-        // given
-        final ActorConditions actorConditions = new ActorConditions();
-        final ActorCondition condition1 = mock(ActorCondition.class);
-        actorConditions.registerConsumer(condition1);
+    final ActorCondition condition2 = mock(ActorCondition.class);
+    actorConditions.registerConsumer(condition2);
 
-        final ActorCondition condition2 = mock(ActorCondition.class);
-        actorConditions.registerConsumer(condition2);
+    final ActorCondition condition3 = mock(ActorCondition.class);
+    actorConditions.registerConsumer(condition3);
 
-        final ActorCondition condition3 = mock(ActorCondition.class);
-        actorConditions.registerConsumer(condition3);
+    // when
+    actorConditions.removeConsumer(condition1);
 
-        // when
-        actorConditions.removeConsumer(condition1);
-
-        // then
-        actorConditions.signalConsumers();
-        verify(condition1, never()).signal();
-        verify(condition2).signal();
-        verify(condition3).signal();
-    }
-
+    // then
+    actorConditions.signalConsumers();
+    verify(condition1, never()).signal();
+    verify(condition2).signal();
+    verify(condition3).signal();
+  }
 }

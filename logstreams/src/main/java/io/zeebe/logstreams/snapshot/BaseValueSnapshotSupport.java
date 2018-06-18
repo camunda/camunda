@@ -15,65 +15,58 @@
  */
 package io.zeebe.logstreams.snapshot;
 
-import java.io.InputStream;
-import java.io.OutputStream;
-
 import io.zeebe.logstreams.spi.ComposableSnapshotSupport;
 import io.zeebe.msgpack.spec.MsgPackReader;
 import io.zeebe.msgpack.spec.MsgPackWriter;
 import io.zeebe.msgpack.value.BaseValue;
 import io.zeebe.util.StreamUtil;
+import java.io.InputStream;
+import java.io.OutputStream;
 import org.agrona.ExpandableArrayBuffer;
 
-public class BaseValueSnapshotSupport implements ComposableSnapshotSupport
-{
+public class BaseValueSnapshotSupport implements ComposableSnapshotSupport {
 
-    protected final BaseValue value;
-    protected final MsgPackWriter writer = new MsgPackWriter();
-    protected final MsgPackReader reader = new MsgPackReader();
+  protected final BaseValue value;
+  protected final MsgPackWriter writer = new MsgPackWriter();
+  protected final MsgPackReader reader = new MsgPackReader();
 
-    /*
-     * This implementation via an intermediate buffer is not the most efficient, because
-     * it requires an extra intermediate copy of the serialized value; directly writing/reading to/from the
-     * streams would be more efficient, but extending MsgPackReader/Writer is no quick win
-     * (=> reading primitives instead of single bytes; byte order; skipping values efficiently).
-     *
-     * This implementation should be ok for rather small objects.
-     */
-    protected final ExpandableArrayBuffer ioBuffer = new ExpandableArrayBuffer();
+  /*
+   * This implementation via an intermediate buffer is not the most efficient, because
+   * it requires an extra intermediate copy of the serialized value; directly writing/reading to/from the
+   * streams would be more efficient, but extending MsgPackReader/Writer is no quick win
+   * (=> reading primitives instead of single bytes; byte order; skipping values efficiently).
+   *
+   * This implementation should be ok for rather small objects.
+   */
+  protected final ExpandableArrayBuffer ioBuffer = new ExpandableArrayBuffer();
 
-    public BaseValueSnapshotSupport(BaseValue value)
-    {
-        this.value = value;
-    }
+  public BaseValueSnapshotSupport(BaseValue value) {
+    this.value = value;
+  }
 
-    @Override
-    public long writeSnapshot(OutputStream outputStream) throws Exception
-    {
-        writer.wrap(ioBuffer, 0);
-        final int length = value.getEncodedLength();
-        value.write(writer);
-        outputStream.write(ioBuffer.byteArray(), 0, length);
-        return length;
-    }
+  @Override
+  public long writeSnapshot(OutputStream outputStream) throws Exception {
+    writer.wrap(ioBuffer, 0);
+    final int length = value.getEncodedLength();
+    value.write(writer);
+    outputStream.write(ioBuffer.byteArray(), 0, length);
+    return length;
+  }
 
-    @Override
-    public void recoverFromSnapshot(InputStream inputStream) throws Exception
-    {
-        final int length = StreamUtil.read(inputStream, ioBuffer, 0);
-        reader.wrap(ioBuffer, 0, length);
-        value.read(reader);
-    }
+  @Override
+  public void recoverFromSnapshot(InputStream inputStream) throws Exception {
+    final int length = StreamUtil.read(inputStream, ioBuffer, 0);
+    reader.wrap(ioBuffer, 0, length);
+    value.read(reader);
+  }
 
-    @Override
-    public void reset()
-    {
-        value.reset();
-    }
+  @Override
+  public void reset() {
+    value.reset();
+  }
 
-    @Override
-    public long snapshotSize()
-    {
-        return value.getEncodedLength();
-    }
+  @Override
+  public long snapshotSize() {
+    return value.getEncodedLength();
+  }
 }

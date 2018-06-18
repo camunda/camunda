@@ -24,90 +24,81 @@ import io.zeebe.util.sched.future.ActorFuture;
 import org.junit.*;
 import org.junit.rules.Timeout;
 
-public class GossipLeaveTest
-{
-    private GossipRule gossip1 = new GossipRule("localhost:8001");
-    private GossipRule gossip2 = new GossipRule("localhost:8002");
-    private GossipRule gossip3 = new GossipRule("localhost:8003");
+public class GossipLeaveTest {
+  private GossipRule gossip1 = new GossipRule("localhost:8001");
+  private GossipRule gossip2 = new GossipRule("localhost:8002");
+  private GossipRule gossip3 = new GossipRule("localhost:8003");
 
-    @Rule
-    public GossipClusterRule cluster = new GossipClusterRule(gossip1, gossip2, gossip3);
+  @Rule public GossipClusterRule cluster = new GossipClusterRule(gossip1, gossip2, gossip3);
 
-    @Rule
-    public Timeout timeout = Timeout.seconds(10);
+  @Rule public Timeout timeout = Timeout.seconds(10);
 
-    @Before
-    public void init()
-    {
-        gossip2.join(gossip1).join();
-        gossip3.join(gossip1).join();
+  @Before
+  public void init() {
+    gossip2.join(gossip1).join();
+    gossip3.join(gossip1).join();
 
-        cluster.waitUntil(() -> gossip2.hasMember(gossip3));
-        cluster.waitUntil(() -> gossip3.hasMember(gossip2));
+    cluster.waitUntil(() -> gossip2.hasMember(gossip3));
+    cluster.waitUntil(() -> gossip3.hasMember(gossip2));
 
-        gossip1.clearReceivedEvents();
-        gossip2.clearReceivedEvents();
-        gossip3.clearReceivedEvents();
-    }
+    gossip1.clearReceivedEvents();
+    gossip2.clearReceivedEvents();
+    gossip3.clearReceivedEvents();
+  }
 
-    @Test
-    public void shouldSpreadLeaveEvent()
-    {
-        // when
-        gossip3.leave().join();
+  @Test
+  public void shouldSpreadLeaveEvent() {
+    // when
+    gossip3.leave().join();
 
-        // then
-        assertThat(gossip1.receivedMembershipEvent(MembershipEventType.LEAVE, gossip3)).isTrue();
-        assertThat(gossip2.receivedMembershipEvent(MembershipEventType.LEAVE, gossip3)).isTrue();
-    }
+    // then
+    assertThat(gossip1.receivedMembershipEvent(MembershipEventType.LEAVE, gossip3)).isTrue();
+    assertThat(gossip2.receivedMembershipEvent(MembershipEventType.LEAVE, gossip3)).isTrue();
+  }
 
-    @Test
-    public void shouldRemoveMemberOnLeave()
-    {
-        // when
-        gossip3.leave().join();
+  @Test
+  public void shouldRemoveMemberOnLeave() {
+    // when
+    gossip3.leave().join();
 
-        // then
-        assertThat(gossip1.hasMember(gossip3)).isFalse();
-        assertThat(gossip2.hasMember(gossip3)).isFalse();
-    }
+    // then
+    assertThat(gossip1.hasMember(gossip3)).isFalse();
+    assertThat(gossip2.hasMember(gossip3)).isFalse();
+  }
 
-    @Test
-    public void shouldCompleteFutureWhenTimeoutIsReached()
-    {
-        // given
-        cluster.interruptConnectionBetween(gossip3, gossip1);
+  @Test
+  public void shouldCompleteFutureWhenTimeoutIsReached() {
+    // given
+    cluster.interruptConnectionBetween(gossip3, gossip1);
 
-        // when
-        final ActorFuture<Void> future = gossip3.leave();
+    // when
+    final ActorFuture<Void> future = gossip3.leave();
 
-        // then
-        cluster.waitUntil(() -> future.isDone());
+    // then
+    cluster.waitUntil(() -> future.isDone());
 
-        future.join();
-    }
+    future.join();
+  }
 
-    @Test
-    public void shouldLeaveWhenNotJoined()
-    {
-        // given
-        gossip3.leave().join();
+  @Test
+  public void shouldLeaveWhenNotJoined() {
+    // given
+    gossip3.leave().join();
 
-        // when
-        gossip3.leave().join();
-    }
+    // when
+    gossip3.leave().join();
+  }
 
-    @Test
-    public void shouldLeaveWhenHaveNoMembers()
-    {
-        // given
-        gossip2.leave().join();
-        gossip3.leave().join();
+  @Test
+  public void shouldLeaveWhenHaveNoMembers() {
+    // given
+    gossip2.leave().join();
+    gossip3.leave().join();
 
-        assertThat(gossip1.hasMember(gossip2)).isFalse();
-        assertThat(gossip1.hasMember(gossip3)).isFalse();
+    assertThat(gossip1.hasMember(gossip2)).isFalse();
+    assertThat(gossip1.hasMember(gossip3)).isFalse();
 
-        // when
-        gossip1.leave().join();
-    }
+    // when
+    gossip1.leave().join();
+  }
 }

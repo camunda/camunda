@@ -20,102 +20,87 @@ package io.zeebe.broker.clustering.api;
 import static io.zeebe.clustering.management.ErrorResponseEncoder.dataCharacterEncoding;
 import static io.zeebe.clustering.management.ErrorResponseEncoder.dataHeaderLength;
 
-import java.io.UnsupportedEncodingException;
-
 import io.zeebe.broker.util.SbeBufferWriterReader;
 import io.zeebe.clustering.management.ErrorResponseCode;
 import io.zeebe.clustering.management.ErrorResponseDecoder;
 import io.zeebe.clustering.management.ErrorResponseEncoder;
 import io.zeebe.util.buffer.BufferUtil;
+import java.io.UnsupportedEncodingException;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class ErrorResponse extends SbeBufferWriterReader<ErrorResponseEncoder, ErrorResponseDecoder>
-{
-    private final ErrorResponseEncoder bodyEncoder = new ErrorResponseEncoder();
-    private final ErrorResponseDecoder bodyDecoder = new ErrorResponseDecoder();
+public class ErrorResponse
+    extends SbeBufferWriterReader<ErrorResponseEncoder, ErrorResponseDecoder> {
+  private final ErrorResponseEncoder bodyEncoder = new ErrorResponseEncoder();
+  private final ErrorResponseDecoder bodyDecoder = new ErrorResponseDecoder();
 
-    private ErrorResponseCode code = ErrorResponseCode.NULL_VAL;
-    private final DirectBuffer data = new UnsafeBuffer();
+  private ErrorResponseCode code = ErrorResponseCode.NULL_VAL;
+  private final DirectBuffer data = new UnsafeBuffer();
 
-    @Override
-    public void reset()
-    {
-        super.reset();
-        data.wrap(ArrayUtil.EMPTY_BYTE_ARRAY);
-        code = ErrorResponseCode.NULL_VAL;
+  @Override
+  public void reset() {
+    super.reset();
+    data.wrap(ArrayUtil.EMPTY_BYTE_ARRAY);
+    code = ErrorResponseCode.NULL_VAL;
+  }
+
+  public ErrorResponse setCode(ErrorResponseCode code) {
+    this.code = code;
+    return this;
+  }
+
+  public ErrorResponseCode getCode() {
+    return code;
+  }
+
+  public ErrorResponse setData(final String data) {
+    try {
+      final byte[] encoded = data.getBytes(dataCharacterEncoding());
+      this.data.wrap(encoded);
+    } catch (final UnsupportedEncodingException ex) {
+      LangUtil.rethrowUnchecked(ex);
     }
 
-    public ErrorResponse setCode(ErrorResponseCode code)
-    {
-        this.code = code;
-        return this;
-    }
+    return this;
+  }
 
-    public ErrorResponseCode getCode()
-    {
-        return code;
-    }
+  public DirectBuffer getData() {
+    return data;
+  }
 
-    public ErrorResponse setData(final String data)
-    {
-        try
-        {
-            final byte[] encoded = data.getBytes(dataCharacterEncoding());
-            this.data.wrap(encoded);
-        }
-        catch (final UnsupportedEncodingException ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
+  public String getMessage() {
+    return BufferUtil.bufferAsString(data);
+  }
 
-        return this;
-    }
+  @Override
+  protected ErrorResponseEncoder getBodyEncoder() {
+    return bodyEncoder;
+  }
 
-    public DirectBuffer getData()
-    {
-        return data;
-    }
+  @Override
+  protected ErrorResponseDecoder getBodyDecoder() {
+    return bodyDecoder;
+  }
 
-    public String getMessage()
-    {
-        return BufferUtil.bufferAsString(data);
-    }
+  @Override
+  public int getLength() {
+    return super.getLength() + dataHeaderLength() + data.capacity();
+  }
 
-    @Override
-    protected ErrorResponseEncoder getBodyEncoder()
-    {
-        return bodyEncoder;
-    }
+  @Override
+  public void wrap(DirectBuffer buffer, int offset, int length) {
+    super.wrap(buffer, offset, length);
+    code = bodyDecoder.code();
+    data.wrap(buffer, bodyDecoder.limit() + dataHeaderLength(), bodyDecoder.dataLength());
+  }
 
-    @Override
-    protected ErrorResponseDecoder getBodyDecoder()
-    {
-        return bodyDecoder;
-    }
-
-    @Override
-    public int getLength()
-    {
-        return super.getLength() + dataHeaderLength() + data.capacity();
-    }
-
-    @Override
-    public void wrap(DirectBuffer buffer, int offset, int length)
-    {
-        super.wrap(buffer, offset, length);
-        code = bodyDecoder.code();
-        data.wrap(buffer, bodyDecoder.limit() + dataHeaderLength(), bodyDecoder.dataLength());
-    }
-
-    @Override
-    public void write(MutableDirectBuffer buffer, int offset)
-    {
-        super.write(buffer, offset);
-        bodyEncoder.code(code);
-        bodyEncoder.putData(data, 0, data.capacity());
-    }
+  @Override
+  public void write(MutableDirectBuffer buffer, int offset) {
+    super.write(buffer, offset);
+    bodyEncoder.code(code);
+    bodyEncoder.putData(data, 0, data.capacity());
+  }
 }

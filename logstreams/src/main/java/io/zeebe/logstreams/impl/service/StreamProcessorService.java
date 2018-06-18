@@ -19,53 +19,44 @@ import io.zeebe.logstreams.processor.StreamProcessorController;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.util.sched.future.ActorFuture;
 
-public class StreamProcessorService implements Service<StreamProcessorService>
-{
-    private final StreamProcessorController controller;
-    private final ServiceContainer serviceContainer;
-    private final ServiceName<StreamProcessorService> serviceName;
+public class StreamProcessorService implements Service<StreamProcessorService> {
+  private final StreamProcessorController controller;
+  private final ServiceContainer serviceContainer;
+  private final ServiceName<StreamProcessorService> serviceName;
 
-    public StreamProcessorService(
-            StreamProcessorController controller,
-            ServiceContainer serviceContainer,
-            ServiceName<StreamProcessorService> serviceName)
-    {
-        this.controller = controller;
-        this.serviceContainer = serviceContainer;
-        this.serviceName = serviceName;
-    }
+  public StreamProcessorService(
+      StreamProcessorController controller,
+      ServiceContainer serviceContainer,
+      ServiceName<StreamProcessorService> serviceName) {
+    this.controller = controller;
+    this.serviceContainer = serviceContainer;
+    this.serviceName = serviceName;
+  }
 
-    @Override
-    public void start(ServiceStartContext startContext)
-    {
-        startContext.async(controller.openAsync());
-    }
+  @Override
+  public void start(ServiceStartContext startContext) {
+    startContext.async(controller.openAsync());
+  }
 
-    @Override
-    public void stop(ServiceStopContext stopContext)
-    {
-        stopContext.async(controller.closeAsync());
-    }
+  @Override
+  public void stop(ServiceStopContext stopContext) {
+    stopContext.async(controller.closeAsync());
+  }
 
-    @Override
-    public StreamProcessorService get()
-    {
-        return this;
-    }
+  @Override
+  public StreamProcessorService get() {
+    return this;
+  }
 
-    public ActorFuture<Void> closeAsync()
-    {
-        return serviceContainer.removeService(serviceName);
-    }
+  public ActorFuture<Void> closeAsync() {
+    return serviceContainer.removeService(serviceName);
+  }
 
-    public void close()
-    {
-        closeAsync().join();
-    }
+  public void close() {
+    closeAsync().join();
+  }
 
-    public StreamProcessorController getController()
-    {
-        return controller;
-    }
-
+  public StreamProcessorController getController() {
+    return controller;
+  }
 }

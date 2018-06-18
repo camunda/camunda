@@ -15,6 +15,10 @@
  */
 package io.zeebe.client.job.subscription;
 
+import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientConfiguration;
@@ -36,13 +40,6 @@ import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.RemoteAddress;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -53,164 +50,86 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
-import static io.zeebe.test.util.TestUtil.waitUntil;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
+public class JobWorkerTest {
+  private static final int NUM_EXECUTION_THREADS = 2;
 
-public class JobWorkerTest
-{
-    private static final int NUM_EXECUTION_THREADS = 2;
+  private static final JobHandler DO_NOTHING = (c, t) -> {};
 
-    private static final JobHandler DO_NOTHING = (c, t) ->
-    { };
+  public ClientRule clientRule =
+      new ClientRule(b -> b.numSubscriptionExecutionThreads(NUM_EXECUTION_THREADS));
+  public StubBrokerRule broker = new StubBrokerRule();
 
-    public ClientRule clientRule = new ClientRule(b -> b.numSubscriptionExecutionThreads(NUM_EXECUTION_THREADS));
-    public StubBrokerRule broker = new StubBrokerRule();
+  protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
 
-    protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
+  protected final Object monitor = new Object();
 
-    protected final Object monitor = new Object();
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(broker).around(clientRule);
 
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(broker).around(clientRule);
+  @Rule public ExpectedException exception = ExpectedException.none();
 
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
+  @Rule public AutoCloseableRule closeables = new AutoCloseableRule();
 
-    @Rule
-    public AutoCloseableRule closeables = new AutoCloseableRule();
+  protected ZeebeClient client;
 
-    protected ZeebeClient client;
+  @Before
+  public void setUp() {
+    this.client = clientRule.getClient();
+  }
 
-    @Before
-    public void setUp()
-    {
-        this.client = clientRule.getClient();
-    }
+  @After
+  public void after() {
+    continueJobHandlingThreads();
+  }
 
-    @After
-    public void after()
-    {
-        continueJobHandlingThreads();
-    }
+  @Test
+  public void shouldOpenSubscription() {
+    // given
+    broker.stubJobSubscriptionApi(123L);
 
-    @Test
-    public void shouldOpenSubscription()
-    {
-        // given
-        broker.stubJobSubscriptionApi(123L);
-
-        // when
-        final JobWorker subscription =
-            clientRule.jobClient()
-                .newWorker()
-                .jobType("bar")
-                .handler(DO_NOTHING)
-                .name("foo")
-                .timeout(10000L)
-                .bufferSize(456)
-                .open();
-
-        // then
-        assertThat(subscription.isOpen()).isTrue();
-        assertThat(subscription.isClosed()).isFalse();
-
-        final ControlMessageRequest subscriptionRequest = getSubscribeRequests().findFirst().get();
-        assertThat(subscriptionRequest.messageType()).isEqualByComparingTo(ControlMessageType.ADD_JOB_SUBSCRIPTION);
-        assertThat(subscriptionRequest.partitionId()).isEqualTo(clientRule.getDefaultPartitionId());
-
-        assertThat(subscriptionRequest.getData()).contains(
-                entry("worker", "foo"),
-                entry("timeout", 10000),
-                entry("jobType", "bar"),
-                entry("credits", 456));
-    }
-
-    @Test
-    public void shouldCloseSubscription()
-    {
-        // given
-        broker.stubJobSubscriptionApi(123L);
-
-        final JobWorker subscription =
-            clientRule.jobClient()
-                .newWorker()
-                .jobType("bar")
-                .handler(DO_NOTHING)
-                .name("foo")
-                .timeout(10000L)
-                .open();
-
-        // when
-        subscription.close();
-
-        // then
-        assertThat(subscription.isClosed()).isTrue();
-        assertThat(subscription.isOpen()).isFalse();
-
-        final ControlMessageRequest subscriptionRequest = getUnsubscribeRequests().findFirst().get();
-        assertThat(subscriptionRequest.messageType()).isEqualByComparingTo(ControlMessageType.REMOVE_JOB_SUBSCRIPTION);
-
-        assertThat(subscriptionRequest.partitionId()).isEqualTo(clientRule.getDefaultPartitionId());
-        assertThat(subscriptionRequest.getData()).contains(entry("subscriberKey", 123));
-    }
-
-    @Test
-    public void shouldValidateNullJobType()
-    {
-        // given
-        broker.stubJobSubscriptionApi(123L);
-
-        // then
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("jobType must not be null");
-
-        // when
-        clientRule.jobClient()
+    // when
+    final JobWorker subscription =
+        clientRule
+            .jobClient()
             .newWorker()
-            .jobType(null)
+            .jobType("bar")
             .handler(DO_NOTHING)
             .name("foo")
             .timeout(10000L)
+            .bufferSize(456)
             .open();
-    }
 
-    @Test
-    public void shouldValidateNullJobHandler()
-    {
-        // given
-        broker.stubJobSubscriptionApi(123L);
+    // then
+    assertThat(subscription.isOpen()).isTrue();
+    assertThat(subscription.isClosed()).isFalse();
 
-        // then
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("handler must not be null");
+    final ControlMessageRequest subscriptionRequest = getSubscribeRequests().findFirst().get();
+    assertThat(subscriptionRequest.messageType())
+        .isEqualByComparingTo(ControlMessageType.ADD_JOB_SUBSCRIPTION);
+    assertThat(subscriptionRequest.partitionId()).isEqualTo(clientRule.getDefaultPartitionId());
 
-        // when
-        clientRule.jobClient()
-            .newWorker()
-            .jobType("bar")
-            .handler(null)
-            .name("foo")
-            .timeout(10000L)
-            .open();
-    }
+    assertThat(subscriptionRequest.getData())
+        .contains(
+            entry("worker", "foo"),
+            entry("timeout", 10000),
+            entry("jobType", "bar"),
+            entry("credits", 456));
+  }
 
-    @Test
-    public void shouldUseDefaultBufferSize()
-    {
-        // given
-        final int bufferSize = 975;
+  @Test
+  public void shouldCloseSubscription() {
+    // given
+    broker.stubJobSubscriptionApi(123L);
 
-        final ZeebeClient configuredClient = ZeebeClient.newClientBuilder()
-            .defaultJobSubscriptionBufferSize(bufferSize)
-            .build();
-        closeables.manage(configuredClient);
-
-        broker.stubJobSubscriptionApi(123L);
-
-        // when
-        configuredClient.topicClient().jobClient()
+    final JobWorker subscription =
+        clientRule
+            .jobClient()
             .newWorker()
             .jobType("bar")
             .handler(DO_NOTHING)
@@ -218,367 +137,467 @@ public class JobWorkerTest
             .timeout(10000L)
             .open();
 
-        // then
-        final ControlMessageRequest subscriptionRequest = getSubscribeRequests().findFirst().get();
-        assertThat(subscriptionRequest.messageType()).isEqualByComparingTo(ControlMessageType.ADD_JOB_SUBSCRIPTION);
+    // when
+    subscription.close();
 
-        assertThat(subscriptionRequest.getData()).containsEntry("credits", bufferSize);
-    }
+    // then
+    assertThat(subscription.isClosed()).isTrue();
+    assertThat(subscription.isOpen()).isFalse();
 
-    @Test
-    public void shouldUseBufferSizeDefinedViaBuilder()
-    {
-        // given
-        final int bufferSize = 975;
-        broker.stubJobSubscriptionApi(123L);
+    final ControlMessageRequest subscriptionRequest = getUnsubscribeRequests().findFirst().get();
+    assertThat(subscriptionRequest.messageType())
+        .isEqualByComparingTo(ControlMessageType.REMOVE_JOB_SUBSCRIPTION);
 
-        // when
-        clientRule.jobClient()
-            .newWorker()
-            .jobType("bar")
-            .handler(DO_NOTHING)
-            .name("foo")
-            .timeout(10000L)
-            .bufferSize(bufferSize)
-            .open();
+    assertThat(subscriptionRequest.partitionId()).isEqualTo(clientRule.getDefaultPartitionId());
+    assertThat(subscriptionRequest.getData()).contains(entry("subscriberKey", 123));
+  }
 
-        // then
-        final ControlMessageRequest subscriptionRequest = getSubscribeRequests().findFirst().get();
-        assertThat(subscriptionRequest.messageType()).isEqualByComparingTo(ControlMessageType.ADD_JOB_SUBSCRIPTION);
+  @Test
+  public void shouldValidateNullJobType() {
+    // given
+    broker.stubJobSubscriptionApi(123L);
 
-        assertThat(subscriptionRequest.getData()).containsEntry("credits", bufferSize);
-    }
+    // then
+    exception.expect(RuntimeException.class);
+    exception.expectMessage("jobType must not be null");
 
-    @Test
-    public void shouldValidateTimeoutPositive()
-    {
-        // given
-        broker.stubJobSubscriptionApi(123L);
+    // when
+    clientRule
+        .jobClient()
+        .newWorker()
+        .jobType(null)
+        .handler(DO_NOTHING)
+        .name("foo")
+        .timeout(10000L)
+        .open();
+  }
 
-        // then
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("timeout must be greater than 0");
+  @Test
+  public void shouldValidateNullJobHandler() {
+    // given
+    broker.stubJobSubscriptionApi(123L);
 
-        // when
-        clientRule.jobClient()
-            .newWorker()
-            .jobType("bar")
-            .handler(DO_NOTHING)
-            .name("foo")
-            .timeout(-1L)
-            .open();
-    }
+    // then
+    exception.expect(RuntimeException.class);
+    exception.expectMessage("handler must not be null");
 
-    @Test
-    public void shouldOpenSubscriptionWithTimeoutAsDuration()
-    {
-        // given
-        broker.stubJobSubscriptionApi(123L);
+    // when
+    clientRule
+        .jobClient()
+        .newWorker()
+        .jobType("bar")
+        .handler(null)
+        .name("foo")
+        .timeout(10000L)
+        .open();
+  }
 
-        // when
-        clientRule.jobClient()
-            .newWorker()
-            .jobType("bar")
-            .handler(DO_NOTHING)
-            .name("foo")
-            .timeout(Duration.ofDays(10))
-            .open();
+  @Test
+  public void shouldUseDefaultBufferSize() {
+    // given
+    final int bufferSize = 975;
 
-        // then
-        final ControlMessageRequest subscriptionRequest = getSubscribeRequests().findFirst().get();
+    final ZeebeClient configuredClient =
+        ZeebeClient.newClientBuilder().defaultJobSubscriptionBufferSize(bufferSize).build();
+    closeables.manage(configuredClient);
 
-        assertThat(subscriptionRequest.getData()).contains(
-                entry("timeout", (int) TimeUnit.DAYS.toMillis(10L)));
-    }
+    broker.stubJobSubscriptionApi(123L);
 
-    @Test
-    public void shouldThrowExceptionWhenSubscriptionCannotBeOpened()
-    {
-        // given
-        broker.onControlMessageRequest(r -> r.messageType() == ControlMessageType.ADD_JOB_SUBSCRIPTION)
-            .respondWithError()
-            .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
-            .errorData("does not compute")
-            .register();
+    // when
+    configuredClient
+        .topicClient()
+        .jobClient()
+        .newWorker()
+        .jobType("bar")
+        .handler(DO_NOTHING)
+        .name("foo")
+        .timeout(10000L)
+        .open();
 
-        // then
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("Could not open subscription");
+    // then
+    final ControlMessageRequest subscriptionRequest = getSubscribeRequests().findFirst().get();
+    assertThat(subscriptionRequest.messageType())
+        .isEqualByComparingTo(ControlMessageType.ADD_JOB_SUBSCRIPTION);
 
-        // when
-        clientRule.jobClient()
-            .newWorker()
-            .jobType("bar")
-            .handler(DO_NOTHING)
-            .name("foo")
-            .timeout(Duration.ofDays(10))
-            .open();
-    }
+    assertThat(subscriptionRequest.getData()).containsEntry("credits", bufferSize);
+  }
 
-    @Test
-    public void shouldInvokeJobHandler() throws IOException
-    {
-        // given
-        broker.stubJobSubscriptionApi(123L);
-        broker.jobs().registerCompleteCommand();
+  @Test
+  public void shouldUseBufferSizeDefinedViaBuilder() {
+    // given
+    final int bufferSize = 975;
+    broker.stubJobSubscriptionApi(123L);
 
-        final RecordingJobHandler handler = new RecordingJobHandler();
-        clientRule.jobClient()
-            .newWorker()
-            .jobType("bar")
-            .handler(handler)
-            .name("foo")
-            .timeout(Duration.ofDays(10))
-            .open();
+    // when
+    clientRule
+        .jobClient()
+        .newWorker()
+        .jobType("bar")
+        .handler(DO_NOTHING)
+        .name("foo")
+        .timeout(10000L)
+        .bufferSize(bufferSize)
+        .open();
 
-        final RemoteAddress clientAddress = getSubscribeRequests().findFirst().get().getSource();
+    // then
+    final ControlMessageRequest subscriptionRequest = getSubscribeRequests().findFirst().get();
+    assertThat(subscriptionRequest.messageType())
+        .isEqualByComparingTo(ControlMessageType.ADD_JOB_SUBSCRIPTION);
 
-        final MsgPackHelper msgPackHelper = new MsgPackHelper();
-        final Map<String, Object> jobPayload = new HashMap<>();
-        jobPayload.put("payloadKey", "payloadValue");
+    assertThat(subscriptionRequest.getData()).containsEntry("credits", bufferSize);
+  }
 
-        final Map<String, Object> jobHeaders = new HashMap<>();
-        jobPayload.put("headerKey", "headerValue");
-        final long deadline = System.currentTimeMillis();
+  @Test
+  public void shouldValidateTimeoutPositive() {
+    // given
+    broker.stubJobSubscriptionApi(123L);
 
-        // when
-        broker.newSubscribedEvent()
-            .partitionId(StubBrokerRule.TEST_PARTITION_ID)
-            .key(3L)
-            .position(5L)
-            .sourceRecordPosition(4L)
-            .recordType(RecordType.EVENT)
-            .valueType(ValueType.JOB)
-            .intent(JobIntent.ACTIVATED)
-            .subscriberKey(123L)
-            .subscriptionType(SubscriptionType.JOB_SUBSCRIPTION)
-            .value()
-                .put("type", "type")
-                .put("deadline", deadline)
-                .put("retries", 3)
-                .put("payload", msgPackHelper.encodeAsMsgPack(jobPayload))
-                .put("headers", jobHeaders)
-                .done()
-            .push(clientAddress);
+    // then
+    exception.expect(RuntimeException.class);
+    exception.expectMessage("timeout must be greater than 0");
 
-        // then
-        TestUtil.waitUntil(() -> !handler.getHandledJobs().isEmpty());
+    // when
+    clientRule
+        .jobClient()
+        .newWorker()
+        .jobType("bar")
+        .handler(DO_NOTHING)
+        .name("foo")
+        .timeout(-1L)
+        .open();
+  }
 
-        assertThat(handler.getHandledJobs()).hasSize(1);
+  @Test
+  public void shouldOpenSubscriptionWithTimeoutAsDuration() {
+    // given
+    broker.stubJobSubscriptionApi(123L);
 
-        final JobEvent job = handler.getHandledJobs().get(0);
+    // when
+    clientRule
+        .jobClient()
+        .newWorker()
+        .jobType("bar")
+        .handler(DO_NOTHING)
+        .name("foo")
+        .timeout(Duration.ofDays(10))
+        .open();
 
-        assertThat(job.getMetadata().getKey()).isEqualTo(3L);
-        assertThat(job.getMetadata().getSourceRecordPosition()).isEqualTo(4L);
-        assertThat(job.getType()).isEqualTo("type");
-        assertThat(job.getHeaders()).isEqualTo(jobHeaders);
-        assertThat(job.getDeadline()).isEqualTo(Instant.ofEpochMilli(deadline));
+    // then
+    final ControlMessageRequest subscriptionRequest = getSubscribeRequests().findFirst().get();
 
-        final ObjectMapper objectMapper = new ObjectMapper();
-        @SuppressWarnings("unchecked")
-        final Map<String, Object> receivedPayload = objectMapper.readValue(job.getPayload(), Map.class);
-        assertThat(receivedPayload).isEqualTo(jobPayload);
-    }
+    assertThat(subscriptionRequest.getData())
+        .contains(entry("timeout", (int) TimeUnit.DAYS.toMillis(10L)));
+  }
 
-    @Test
-    public void shouldInvokeJobHandlerWithTwoSubscriptions()
-    {
-        // given
-        broker.stubJobSubscriptionApi(123L);
-        broker.jobs().registerCompleteCommand();
+  @Test
+  public void shouldThrowExceptionWhenSubscriptionCannotBeOpened() {
+    // given
+    broker
+        .onControlMessageRequest(r -> r.messageType() == ControlMessageType.ADD_JOB_SUBSCRIPTION)
+        .respondWithError()
+        .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
+        .errorData("does not compute")
+        .register();
 
-        final RecordingJobHandler handler1 = new RecordingJobHandler();
-        clientRule.jobClient()
-            .newWorker()
-            .jobType("bar")
-            .handler(handler1)
-            .name("foo")
-            .timeout(Duration.ofDays(10))
-            .open();
+    // then
+    exception.expect(RuntimeException.class);
+    exception.expectMessage("Could not open subscription");
 
-        final RecordingJobHandler handler2 = new RecordingJobHandler();
+    // when
+    clientRule
+        .jobClient()
+        .newWorker()
+        .jobType("bar")
+        .handler(DO_NOTHING)
+        .name("foo")
+        .timeout(Duration.ofDays(10))
+        .open();
+  }
 
-        clientRule.jobClient()
-            .newWorker()
-            .jobType("bar")
-            .handler(handler2)
-            .name("bar")
-            .timeout(Duration.ofDays(10))
-            .open();
+  @Test
+  public void shouldInvokeJobHandler() throws IOException {
+    // given
+    broker.stubJobSubscriptionApi(123L);
+    broker.jobs().registerCompleteCommand();
 
-        final RemoteAddress clientAddress = getSubscribeRequests().findFirst().get().getSource();
+    final RecordingJobHandler handler = new RecordingJobHandler();
+    clientRule
+        .jobClient()
+        .newWorker()
+        .jobType("bar")
+        .handler(handler)
+        .name("foo")
+        .timeout(Duration.ofDays(10))
+        .open();
 
-        // when
-        broker.pushActivatedJob(clientAddress, 123L, 4L, 5L, "foo", "type1");
-        broker.pushActivatedJob(clientAddress, 124L, 5L, 6L, "bar", "type2");
+    final RemoteAddress clientAddress = getSubscribeRequests().findFirst().get().getSource();
 
-        // then
-        TestUtil.waitUntil(() -> !handler1.getHandledJobs().isEmpty());
-        TestUtil.waitUntil(() -> !handler2.getHandledJobs().isEmpty());
+    final MsgPackHelper msgPackHelper = new MsgPackHelper();
+    final Map<String, Object> jobPayload = new HashMap<>();
+    jobPayload.put("payloadKey", "payloadValue");
 
-        assertThat(handler1.getHandledJobs()).hasSize(1);
-        assertThat(handler2.getHandledJobs()).hasSize(1);
+    final Map<String, Object> jobHeaders = new HashMap<>();
+    jobPayload.put("headerKey", "headerValue");
+    final long deadline = System.currentTimeMillis();
 
-        final JobEvent job1 = handler1.getHandledJobs().get(0);
+    // when
+    broker
+        .newSubscribedEvent()
+        .partitionId(StubBrokerRule.TEST_PARTITION_ID)
+        .key(3L)
+        .position(5L)
+        .sourceRecordPosition(4L)
+        .recordType(RecordType.EVENT)
+        .valueType(ValueType.JOB)
+        .intent(JobIntent.ACTIVATED)
+        .subscriberKey(123L)
+        .subscriptionType(SubscriptionType.JOB_SUBSCRIPTION)
+        .value()
+        .put("type", "type")
+        .put("deadline", deadline)
+        .put("retries", 3)
+        .put("payload", msgPackHelper.encodeAsMsgPack(jobPayload))
+        .put("headers", jobHeaders)
+        .done()
+        .push(clientAddress);
 
-        assertThat(job1.getMetadata().getKey()).isEqualTo(4L);
-        assertThat(job1.getType()).isEqualTo("type1");
+    // then
+    TestUtil.waitUntil(() -> !handler.getHandledJobs().isEmpty());
 
-        final JobEvent job2 = handler2.getHandledJobs().get(0);
+    assertThat(handler.getHandledJobs()).hasSize(1);
 
-        assertThat(job2.getMetadata().getKey()).isEqualTo(5L);
-        assertThat(job2.getType()).isEqualTo("type2");
-    }
+    final JobEvent job = handler.getHandledJobs().get(0);
 
-    @Test
-    public void shouldNotAutocompleteJob() throws InterruptedException
-    {
-        // given
-        broker.stubJobSubscriptionApi(123L);
-        broker.jobs().registerCompleteCommand();
+    assertThat(job.getMetadata().getKey()).isEqualTo(3L);
+    assertThat(job.getMetadata().getSourceRecordPosition()).isEqualTo(4L);
+    assertThat(job.getType()).isEqualTo("type");
+    assertThat(job.getHeaders()).isEqualTo(jobHeaders);
+    assertThat(job.getDeadline()).isEqualTo(Instant.ofEpochMilli(deadline));
 
-        final RecordingJobHandler handler = new RecordingJobHandler();
-        clientRule.jobClient()
-            .newWorker()
-            .jobType("bar")
-            .handler(handler)
-            .name("foo")
-            .timeout(10000L)
-            .open();
+    final ObjectMapper objectMapper = new ObjectMapper();
+    @SuppressWarnings("unchecked")
+    final Map<String, Object> receivedPayload = objectMapper.readValue(job.getPayload(), Map.class);
+    assertThat(receivedPayload).isEqualTo(jobPayload);
+  }
 
-        final RemoteAddress clientAddress = getSubscribeRequests().findFirst().get().getSource();
+  @Test
+  public void shouldInvokeJobHandlerWithTwoSubscriptions() {
+    // given
+    broker.stubJobSubscriptionApi(123L);
+    broker.jobs().registerCompleteCommand();
 
-        // when
-        broker.pushActivatedJob(clientAddress, 123L, 4L, 5L, "foo", "bar");
+    final RecordingJobHandler handler1 = new RecordingJobHandler();
+    clientRule
+        .jobClient()
+        .newWorker()
+        .jobType("bar")
+        .handler(handler1)
+        .name("foo")
+        .timeout(Duration.ofDays(10))
+        .open();
 
-        // then
-        Thread.sleep(1000L);
+    final RecordingJobHandler handler2 = new RecordingJobHandler();
 
-        assertThat(broker.getReceivedCommandRequests().stream()
+    clientRule
+        .jobClient()
+        .newWorker()
+        .jobType("bar")
+        .handler(handler2)
+        .name("bar")
+        .timeout(Duration.ofDays(10))
+        .open();
+
+    final RemoteAddress clientAddress = getSubscribeRequests().findFirst().get().getSource();
+
+    // when
+    broker.pushActivatedJob(clientAddress, 123L, 4L, 5L, "foo", "type1");
+    broker.pushActivatedJob(clientAddress, 124L, 5L, 6L, "bar", "type2");
+
+    // then
+    TestUtil.waitUntil(() -> !handler1.getHandledJobs().isEmpty());
+    TestUtil.waitUntil(() -> !handler2.getHandledJobs().isEmpty());
+
+    assertThat(handler1.getHandledJobs()).hasSize(1);
+    assertThat(handler2.getHandledJobs()).hasSize(1);
+
+    final JobEvent job1 = handler1.getHandledJobs().get(0);
+
+    assertThat(job1.getMetadata().getKey()).isEqualTo(4L);
+    assertThat(job1.getType()).isEqualTo("type1");
+
+    final JobEvent job2 = handler2.getHandledJobs().get(0);
+
+    assertThat(job2.getMetadata().getKey()).isEqualTo(5L);
+    assertThat(job2.getType()).isEqualTo("type2");
+  }
+
+  @Test
+  public void shouldNotAutocompleteJob() throws InterruptedException {
+    // given
+    broker.stubJobSubscriptionApi(123L);
+    broker.jobs().registerCompleteCommand();
+
+    final RecordingJobHandler handler = new RecordingJobHandler();
+    clientRule
+        .jobClient()
+        .newWorker()
+        .jobType("bar")
+        .handler(handler)
+        .name("foo")
+        .timeout(10000L)
+        .open();
+
+    final RemoteAddress clientAddress = getSubscribeRequests().findFirst().get().getSource();
+
+    // when
+    broker.pushActivatedJob(clientAddress, 123L, 4L, 5L, "foo", "bar");
+
+    // then
+    Thread.sleep(1000L);
+
+    assertThat(
+            broker
+                .getReceivedCommandRequests()
+                .stream()
                 .filter(r -> r.valueType() == ValueType.JOB)
-                .count()).isEqualTo(0);
-    }
+                .count())
+        .isEqualTo(0);
+  }
 
-    @Test
-    public void shouldCompleteJobWithPayload()
-    {
-        // given
-        broker.stubJobSubscriptionApi(123L);
-        broker.jobs().registerCompleteCommand();
+  @Test
+  public void shouldCompleteJobWithPayload() {
+    // given
+    broker.stubJobSubscriptionApi(123L);
+    broker.jobs().registerCompleteCommand();
 
-        clientRule.jobClient()
-            .newWorker()
-            .jobType("bar")
-            .handler((c, t) -> c.newCompleteCommand(t).payload("{\"a\": 1}").send().join())
-            .name("foo")
-            .timeout(10000L)
-            .open();
+    clientRule
+        .jobClient()
+        .newWorker()
+        .jobType("bar")
+        .handler((c, t) -> c.newCompleteCommand(t).payload("{\"a\": 1}").send().join())
+        .name("foo")
+        .timeout(10000L)
+        .open();
 
-        final RemoteAddress eventSource = getSubscribeRequests().findFirst().get().getSource();
+    final RemoteAddress eventSource = getSubscribeRequests().findFirst().get().getSource();
 
-        // when
-        broker.pushActivatedJob(eventSource, 123L, 4L, 5L, "foo", "bar");
+    // when
+    broker.pushActivatedJob(eventSource, 123L, 4L, 5L, "foo", "bar");
 
-        // then
-        final ExecuteCommandRequest jobRequest = TestUtil.doRepeatedly(() -> broker.getReceivedCommandRequests().stream()
-                .filter(r -> r.valueType() == ValueType.JOB)
-                .findFirst())
+    // then
+    final ExecuteCommandRequest jobRequest =
+        TestUtil.doRepeatedly(
+                () ->
+                    broker
+                        .getReceivedCommandRequests()
+                        .stream()
+                        .filter(r -> r.valueType() == ValueType.JOB)
+                        .findFirst())
             .until(r -> r.isPresent())
             .get();
 
-        assertThat(jobRequest.partitionId()).isEqualTo(clientRule.getDefaultPartitionId());
-        assertThat(jobRequest.key()).isEqualTo(4L);
-        assertThat(jobRequest.intent()).isEqualTo(JobIntent.COMPLETE);
-        assertThat(jobRequest.sourceRecordPosition()).isEqualTo(5L);
-        assertThat(jobRequest.getCommand())
-            .containsEntry("type", "bar")
-            .containsEntry("worker", "foo")
-            .containsEntry("payload", msgPackConverter.convertToMsgPack("{\"a\": 1}"));
-    }
+    assertThat(jobRequest.partitionId()).isEqualTo(clientRule.getDefaultPartitionId());
+    assertThat(jobRequest.key()).isEqualTo(4L);
+    assertThat(jobRequest.intent()).isEqualTo(JobIntent.COMPLETE);
+    assertThat(jobRequest.sourceRecordPosition()).isEqualTo(5L);
+    assertThat(jobRequest.getCommand())
+        .containsEntry("type", "bar")
+        .containsEntry("worker", "foo")
+        .containsEntry("payload", msgPackConverter.convertToMsgPack("{\"a\": 1}"));
+  }
 
-    @Test
-    public void shouldCompleteJobWithoutPayload()
-    {
-        // given
-        broker.stubJobSubscriptionApi(123L);
-        broker.jobs().registerCompleteCommand();
+  @Test
+  public void shouldCompleteJobWithoutPayload() {
+    // given
+    broker.stubJobSubscriptionApi(123L);
+    broker.jobs().registerCompleteCommand();
 
-        clientRule.jobClient()
-            .newWorker()
-            .jobType("bar")
-            .handler((c, t) -> c.newCompleteCommand(t).withoutPayload().send().join())
-            .name("foo")
-            .timeout(10000L)
-            .open();
+    clientRule
+        .jobClient()
+        .newWorker()
+        .jobType("bar")
+        .handler((c, t) -> c.newCompleteCommand(t).withoutPayload().send().join())
+        .name("foo")
+        .timeout(10000L)
+        .open();
 
-        final RemoteAddress eventSource = getSubscribeRequests().findFirst().get().getSource();
+    final RemoteAddress eventSource = getSubscribeRequests().findFirst().get().getSource();
 
-        // when
-        broker.pushActivatedJob(eventSource, 123L, 4L, 5L, "foo", "bar");
+    // when
+    broker.pushActivatedJob(eventSource, 123L, 4L, 5L, "foo", "bar");
 
-        // then
-        final ExecuteCommandRequest jobRequest = TestUtil.doRepeatedly(() -> broker.getReceivedCommandRequests().stream()
-                .filter(r -> r.valueType() == ValueType.JOB)
-                .findFirst())
+    // then
+    final ExecuteCommandRequest jobRequest =
+        TestUtil.doRepeatedly(
+                () ->
+                    broker
+                        .getReceivedCommandRequests()
+                        .stream()
+                        .filter(r -> r.valueType() == ValueType.JOB)
+                        .findFirst())
             .until(r -> r.isPresent())
             .get();
 
-        assertThat(jobRequest.partitionId()).isEqualTo(clientRule.getDefaultPartitionId());
-        assertThat(jobRequest.key()).isEqualTo(4L);
-        assertThat(jobRequest.intent()).isEqualTo(JobIntent.COMPLETE);
-        assertThat(jobRequest.sourceRecordPosition()).isEqualTo(5L);
-        assertThat(jobRequest.getCommand())
-            .containsEntry("type", "bar")
-            .containsEntry("worker", "foo")
-            .doesNotContainKey("payload");
-    }
+    assertThat(jobRequest.partitionId()).isEqualTo(clientRule.getDefaultPartitionId());
+    assertThat(jobRequest.key()).isEqualTo(4L);
+    assertThat(jobRequest.intent()).isEqualTo(JobIntent.COMPLETE);
+    assertThat(jobRequest.sourceRecordPosition()).isEqualTo(5L);
+    assertThat(jobRequest.getCommand())
+        .containsEntry("type", "bar")
+        .containsEntry("worker", "foo")
+        .doesNotContainKey("payload");
+  }
 
-    @Test
-    public void shouldMarkJobAsFailedOnExpcetion()
-    {
-        // given
-        broker.stubJobSubscriptionApi(123L);
-        broker.jobs().registerFailCommand();
+  @Test
+  public void shouldMarkJobAsFailedOnExpcetion() {
+    // given
+    broker.stubJobSubscriptionApi(123L);
+    broker.jobs().registerFailCommand();
 
-        clientRule.jobClient()
-            .newWorker()
-            .jobType("bar")
-            .handler((c, t) ->
-            {
-                throw new RuntimeException("expected failure");
+    clientRule
+        .jobClient()
+        .newWorker()
+        .jobType("bar")
+        .handler(
+            (c, t) -> {
+              throw new RuntimeException("expected failure");
             })
-            .name("foo")
-            .timeout(10000L)
-            .open();
+        .name("foo")
+        .timeout(10000L)
+        .open();
 
-        final RemoteAddress clientAddress = getSubscribeRequests().findFirst().get().getSource();
+    final RemoteAddress clientAddress = getSubscribeRequests().findFirst().get().getSource();
 
-        // when
-        broker.pushActivatedJob(clientAddress, 123L, 4L, 5L, "foo", "bar");
+    // when
+    broker.pushActivatedJob(clientAddress, 123L, 4L, 5L, "foo", "bar");
 
-        // then
-        final ExecuteCommandRequest jobRequest = TestUtil.doRepeatedly(() -> broker.getReceivedCommandRequests().stream()
-                .filter(r -> r.valueType() == ValueType.JOB)
-                .findFirst())
+    // then
+    final ExecuteCommandRequest jobRequest =
+        TestUtil.doRepeatedly(
+                () ->
+                    broker
+                        .getReceivedCommandRequests()
+                        .stream()
+                        .filter(r -> r.valueType() == ValueType.JOB)
+                        .findFirst())
             .until(r -> r.isPresent())
             .get();
 
-        assertThat(jobRequest.partitionId()).isEqualTo(clientRule.getDefaultPartitionId());
-        assertThat(jobRequest.key()).isEqualTo(4L);
-        assertThat(jobRequest.intent()).isEqualTo(JobIntent.FAIL);
-        assertThat(jobRequest.sourceRecordPosition()).isEqualTo(5L);
-        assertThat(jobRequest.getCommand())
-            .containsEntry("type", "bar")
-            .containsEntry("worker", "foo");
-    }
+    assertThat(jobRequest.partitionId()).isEqualTo(clientRule.getDefaultPartitionId());
+    assertThat(jobRequest.key()).isEqualTo(4L);
+    assertThat(jobRequest.intent()).isEqualTo(JobIntent.FAIL);
+    assertThat(jobRequest.sourceRecordPosition()).isEqualTo(5L);
+    assertThat(jobRequest.getCommand()).containsEntry("type", "bar").containsEntry("worker", "foo");
+  }
 
-    @Test
-    public void shouldCloseSubscriptionOnChannelClose() throws InterruptedException
-    {
-        // given
-        broker.stubJobSubscriptionApi(123L);
+  @Test
+  public void shouldCloseSubscriptionOnChannelClose() throws InterruptedException {
+    // given
+    broker.stubJobSubscriptionApi(123L);
 
-        final JobWorker subscription = clientRule.jobClient()
+    final JobWorker subscription =
+        clientRule
+            .jobClient()
             .newWorker()
             .jobType("bar")
             .handler(DO_NOTHING)
@@ -586,315 +605,307 @@ public class JobWorkerTest
             .timeout(10000L)
             .open();
 
-        // when
-        broker.closeTransport();
-        Thread.sleep(500L); // let subscriber attempt reopening
-        clientRule.getClock().addTime(Duration.ofSeconds(60)); // make request time out immediately
+    // when
+    broker.closeTransport();
+    Thread.sleep(500L); // let subscriber attempt reopening
+    clientRule.getClock().addTime(Duration.ofSeconds(60)); // make request time out immediately
 
-        // then
-        TestUtil.waitUntil(() -> subscription.isClosed());
-        assertThat(subscription.isClosed()).isTrue();
+    // then
+    TestUtil.waitUntil(() -> subscription.isClosed());
+    assertThat(subscription.isClosed()).isTrue();
+  }
+
+  protected void continueJobHandlingThreads() {
+    synchronized (monitor) {
+      monitor.notifyAll();
+    }
+  }
+
+  /**
+   * This tests a case that should not occur under normal circumstances, but might occur in case of
+   * inconsistencies between broker and client state (e.g. due to bugs in either of them)
+   */
+  @Test
+  public void shouldRetryWithMoreJobsThanSubscriptionCapacity() throws InterruptedException {
+    // given
+    broker.stubJobSubscriptionApi(123L);
+    broker.jobs().registerCompleteCommand();
+
+    final WaitingJobHandler handler = new WaitingJobHandler();
+    final ZeebeClientConfiguration clientConfig = client.getConfiguration();
+    final int numExecutionThreads = clientConfig.getNumSubscriptionExecutionThreads();
+    final int jobCapacity = 4;
+
+    clientRule
+        .jobClient()
+        .newWorker()
+        .jobType("foo")
+        .handler(handler)
+        .name("owner")
+        .timeout(10000L)
+        .open();
+
+    final RemoteAddress clientAddress =
+        broker
+            .getReceivedControlMessageRequestsByType(ControlMessageType.ADD_JOB_SUBSCRIPTION)
+            .get(0)
+            .getSource();
+
+    for (int i = 0; i < jobCapacity + numExecutionThreads; i++) {
+      broker.pushActivatedJob(clientAddress, 123L, i, i, "owner", "foo");
     }
 
+    TestUtil.waitUntil(() -> handler.numWaitingThreads.get() > 0);
 
-    protected void continueJobHandlingThreads()
-    {
-        synchronized (monitor)
-        {
-            monitor.notifyAll();
-        }
-    }
+    // pushing one more event, exceeding client capacity
+    broker.pushActivatedJob(
+        clientAddress, 123L, Integer.MAX_VALUE, Integer.MAX_VALUE, "owner", "foo");
 
+    // waiting for the client to receive all pending jobs
+    Thread.sleep(500L);
 
-    /**
-     * This tests a case that should not occur under normal circumstances, but might occur
-     * in case of inconsistencies between broker and client state (e.g. due to bugs in either of them)
-     */
-    @Test
-    public void shouldRetryWithMoreJobsThanSubscriptionCapacity() throws InterruptedException
-    {
-        // given
-        broker.stubJobSubscriptionApi(123L);
-        broker.jobs().registerCompleteCommand();
+    // when
+    handler.shouldWait = false;
+    continueJobHandlingThreads();
 
-        final WaitingJobHandler handler = new WaitingJobHandler();
-        final ZeebeClientConfiguration clientConfig = client.getConfiguration();
-        final int numExecutionThreads = clientConfig.getNumSubscriptionExecutionThreads();
-        final int jobCapacity = 4;
+    // then the additional event is handled nevertheless (i.e. client applies backpressure)
+    TestUtil.waitUntil(
+        () -> handler.numHandledEvents.get() == jobCapacity + numExecutionThreads + 1);
+  }
 
-        clientRule.jobClient()
-            .newWorker()
-            .jobType("foo")
-            .handler(handler)
-            .name("owner")
-            .timeout(10000L)
-            .open();
+  /** i.e. if signalling job failure itself fails */
+  @Test
+  public void shouldNotLoseCreditsOnFailureToReportJobFailure() throws InterruptedException {
+    // given
+    broker.stubJobSubscriptionApi(123L);
+    failJobFailure();
 
-        final RemoteAddress clientAddress = broker.getReceivedControlMessageRequestsByType(ControlMessageType.ADD_JOB_SUBSCRIPTION).get(0).getSource();
+    final int subscriptionCapacity = 8;
+    final AtomicInteger failedJobs = new AtomicInteger(0);
 
-        for (int i = 0; i < jobCapacity + numExecutionThreads; i++)
-        {
-            broker.pushActivatedJob(clientAddress, 123L, i, i, "owner", "foo");
-        }
-
-        TestUtil.waitUntil(() -> handler.numWaitingThreads.get() > 0);
-
-        // pushing one more event, exceeding client capacity
-        broker.pushActivatedJob(clientAddress, 123L, Integer.MAX_VALUE, Integer.MAX_VALUE, "owner", "foo");
-
-        // waiting for the client to receive all pending jobs
-        Thread.sleep(500L);
-
-        // when
-        handler.shouldWait = false;
-        continueJobHandlingThreads();
-
-        // then the additional event is handled nevertheless (i.e. client applies backpressure)
-        TestUtil.waitUntil(() -> handler.numHandledEvents.get() == jobCapacity + numExecutionThreads + 1);
-    }
-
-    /**
-     * i.e. if signalling job failure itself fails
-     */
-    @Test
-    public void shouldNotLoseCreditsOnFailureToReportJobFailure() throws InterruptedException
-    {
-        // given
-        broker.stubJobSubscriptionApi(123L);
-        failJobFailure();
-
-        final int subscriptionCapacity = 8;
-        final AtomicInteger failedJobs = new AtomicInteger(0);
-
-        final JobHandler jobHandler = (c, t) ->
-        {
-            failedJobs.incrementAndGet();
-            throw new RuntimeException("foo");
+    final JobHandler jobHandler =
+        (c, t) -> {
+          failedJobs.incrementAndGet();
+          throw new RuntimeException("foo");
         };
 
-        clientRule.jobClient()
-            .newWorker()
-            .jobType("foo")
-            .handler(jobHandler)
-            .name("owner")
-            .timeout(10000L)
-            .bufferSize(subscriptionCapacity)
-            .open();
+    clientRule
+        .jobClient()
+        .newWorker()
+        .jobType("foo")
+        .handler(jobHandler)
+        .name("owner")
+        .timeout(10000L)
+        .bufferSize(subscriptionCapacity)
+        .open();
 
-        final RemoteAddress clientAddress = broker.getReceivedControlMessageRequestsByType(ControlMessageType.ADD_JOB_SUBSCRIPTION).get(0).getSource();
+    final RemoteAddress clientAddress =
+        broker
+            .getReceivedControlMessageRequestsByType(ControlMessageType.ADD_JOB_SUBSCRIPTION)
+            .get(0)
+            .getSource();
 
-        for (int i = 0; i < subscriptionCapacity; i++)
-        {
-            broker.pushActivatedJob(clientAddress, 123L, i, i, "owner", "foo");
+    for (int i = 0; i < subscriptionCapacity; i++) {
+      broker.pushActivatedJob(clientAddress, 123L, i, i, "owner", "foo");
+    }
+
+    // when
+    TestUtil.waitUntil(() -> failedJobs.get() == 8);
+    // give the client a bit of time to submit credits; this is not coupled to any defined event, so
+    // we just sleep for a bit
+    Thread.sleep(500L);
+
+    // then
+    final List<ControlMessageRequest> creditRequests =
+        getCreditRequests().collect(Collectors.toList());
+
+    assertThat(creditRequests).isNotEmpty();
+    final int numSubmittedCredits =
+        creditRequests.stream().mapToInt((r) -> (int) r.getData().get("credits")).sum();
+    assertThat(numSubmittedCredits).isGreaterThan(0);
+  }
+
+  @Test
+  public void shouldReopenSubscriptionAfterChannelInterruption() {
+    // given
+    broker.stubJobSubscriptionApi(123L);
+
+    clientRule
+        .jobClient()
+        .newWorker()
+        .jobType("foo")
+        .handler(DO_NOTHING)
+        .name("owner")
+        .timeout(10000L)
+        .open();
+
+    // when
+    broker.interruptAllServerChannels();
+
+    // then
+    TestUtil.waitUntil(() -> getSubscribeRequests().count() == 2);
+
+    final ControlMessageRequest reopenRequest = getSubscribeRequests().skip(1).findFirst().get();
+    assertThat(reopenRequest.getData())
+        .contains(entry("worker", "owner"), entry("timeout", 10000), entry("jobType", "foo"));
+  }
+
+  @Test
+  public void shouldSendCorrectCreditsRequest() {
+    // given
+    broker.stubJobSubscriptionApi(123L);
+
+    // when
+    new IncreaseJobSubscriptionCreditsCmdImpl(
+            ((ZeebeClientImpl) client).getCommandManager(), StubBrokerRule.TEST_PARTITION_ID)
+        .subscriberKey(456L)
+        .credits(123)
+        .send()
+        .join();
+
+    // then
+    final List<ControlMessageRequest> controlMessageRequests =
+        broker
+            .getReceivedControlMessageRequests()
+            .stream()
+            .filter(r -> r.messageType() == ControlMessageType.INCREASE_JOB_SUBSCRIPTION_CREDITS)
+            .collect(Collectors.toList());
+
+    assertThat(controlMessageRequests).hasSize(1);
+
+    final ControlMessageRequest request = controlMessageRequests.get(0);
+    assertThat(request.messageType())
+        .isEqualTo(ControlMessageType.INCREASE_JOB_SUBSCRIPTION_CREDITS);
+    assertThat(request.getData()).contains(entry("credits", 123), entry("subscriberKey", 456));
+  }
+
+  @Test
+  public void shouldNotAttemptReplenishmentForZeroCredits() throws InterruptedException {
+    // given
+    final int subscriptionCapacity = 16;
+    final int replenishmentThreshold =
+        (int) (Math.ceil(subscriptionCapacity * Subscriber.REPLENISHMENT_THRESHOLD));
+    final int jobsToHandleBeforeReplenishment = subscriptionCapacity - replenishmentThreshold;
+
+    broker.stubJobSubscriptionApi(123L);
+
+    final WaitingJobHandler handler = new WaitingJobHandler();
+    handler.shouldWait = false;
+
+    clientRule
+        .jobClient()
+        .newWorker()
+        .jobType("type")
+        .handler(handler)
+        .name("owner")
+        .timeout(10000L)
+        .bufferSize(subscriptionCapacity)
+        .open();
+
+    final RemoteAddress clientAddress = getSubscribeRequests().findFirst().get().getSource();
+
+    // handling these jobs should not yet trigger replenishment; the next handled job would
+    for (int i = 0; i < jobsToHandleBeforeReplenishment; i++) {
+      broker.pushActivatedJob(clientAddress, 123L, 4L + i, 5L + i, "foo", "type");
+    }
+    waitUntil(() -> handler.numHandledEvents.get() == jobsToHandleBeforeReplenishment);
+
+    handler.shouldWait = true;
+    for (int i = 0; i < NUM_EXECUTION_THREADS; i++) {
+      broker.pushActivatedJob(clientAddress, 123L, 4L + i, 5L + i, "foo", "type");
+    }
+    waitUntil(() -> handler.numWaitingThreads.get() == NUM_EXECUTION_THREADS);
+
+    // when all job handling threads trigger credit replenishment
+    continueJobHandlingThreads();
+
+    // then
+    waitUntil(() -> getCreditRequests().count() >= 1);
+
+    Thread.sleep(500L); // waiting for potentially more credit requests
+    final List<ControlMessageRequest> creditRequests =
+        getCreditRequests().collect(Collectors.toList());
+    assertThat(creditRequests.size()).isGreaterThanOrEqualTo(1);
+
+    int totalReplenishedCredits = 0;
+    for (ControlMessageRequest request : creditRequests) {
+      final int replenishedCredits = (int) request.getData().get("credits");
+      assertThat(replenishedCredits).isGreaterThan(0);
+      totalReplenishedCredits += replenishedCredits;
+    }
+
+    assertThat(totalReplenishedCredits).isGreaterThanOrEqualTo(jobsToHandleBeforeReplenishment + 1);
+  }
+
+  @Test
+  public void shouldApplyDefaultsToWorkerNameAndTimeout() {
+    // given
+    broker.stubJobSubscriptionApi(123L);
+
+    // when
+    clientRule.jobClient().newWorker().jobType("bar").handler(DO_NOTHING).open();
+
+    // then
+    final ControlMessageRequest subscriptionRequest = getSubscribeRequests().findFirst().get();
+    assertThat(subscriptionRequest.messageType())
+        .isEqualByComparingTo(ControlMessageType.ADD_JOB_SUBSCRIPTION);
+
+    assertThat(subscriptionRequest.getData())
+        .containsEntry("worker", client.getConfiguration().getDefaultJobWorkerName())
+        .containsEntry(
+            "timeout", (int) client.getConfiguration().getDefaultJobTimeout().toMillis());
+  }
+
+  protected void failJobFailure() {
+    broker
+        .onExecuteCommandRequest(ValueType.JOB, JobIntent.FAIL)
+        .respondWithError()
+        .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
+        .errorData("failed to fail job")
+        .register();
+  }
+
+  protected Stream<ControlMessageRequest> getSubscribeRequests() {
+    return broker
+        .getReceivedControlMessageRequests()
+        .stream()
+        .filter((r) -> r.messageType() == ControlMessageType.ADD_JOB_SUBSCRIPTION);
+  }
+
+  protected Stream<ControlMessageRequest> getUnsubscribeRequests() {
+    return broker
+        .getReceivedControlMessageRequests()
+        .stream()
+        .filter((r) -> r.messageType() == ControlMessageType.REMOVE_JOB_SUBSCRIPTION);
+  }
+
+  private Stream<ControlMessageRequest> getCreditRequests() {
+    return broker
+        .getReceivedControlMessageRequests()
+        .stream()
+        .filter((r) -> r.messageType() == ControlMessageType.INCREASE_JOB_SUBSCRIPTION_CREDITS);
+  }
+
+  protected class WaitingJobHandler implements JobHandler {
+    protected AtomicInteger numHandledEvents = new AtomicInteger(0);
+    protected AtomicInteger numWaitingThreads = new AtomicInteger(0);
+    protected boolean shouldWait = true;
+
+    @Override
+    public void handle(JobClient client, JobEvent workItemEvent) {
+      try {
+        if (shouldWait) {
+          synchronized (monitor) {
+            numWaitingThreads.incrementAndGet();
+            monitor.wait();
+            numWaitingThreads.decrementAndGet();
+          }
         }
 
-
-        // when
-        TestUtil.waitUntil(() -> failedJobs.get() == 8);
-        // give the client a bit of time to submit credits; this is not coupled to any defined event, so we just sleep for a bit
-        Thread.sleep(500L);
-
-        // then
-        final List<ControlMessageRequest> creditRequests = getCreditRequests().collect(Collectors.toList());
-
-        assertThat(creditRequests).isNotEmpty();
-        final int numSubmittedCredits = creditRequests.stream().mapToInt((r) -> (int) r.getData().get("credits")).sum();
-        assertThat(numSubmittedCredits).isGreaterThan(0);
+        numHandledEvents.incrementAndGet();
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
     }
-
-
-    @Test
-    public void shouldReopenSubscriptionAfterChannelInterruption()
-    {
-        // given
-        broker.stubJobSubscriptionApi(123L);
-
-        clientRule.jobClient()
-            .newWorker()
-            .jobType("foo")
-            .handler(DO_NOTHING)
-            .name("owner")
-            .timeout(10000L)
-            .open();
-
-        // when
-        broker.interruptAllServerChannels();
-
-        // then
-        TestUtil.waitUntil(() -> getSubscribeRequests().count() == 2);
-
-        final ControlMessageRequest reopenRequest = getSubscribeRequests().skip(1).findFirst().get();
-        assertThat(reopenRequest.getData()).contains(
-            entry("worker", "owner"),
-            entry("timeout", 10000),
-            entry("jobType", "foo"));
-    }
-
-    @Test
-    public void shouldSendCorrectCreditsRequest()
-    {
-        // given
-        broker.stubJobSubscriptionApi(123L);
-
-        // when
-        new IncreaseJobSubscriptionCreditsCmdImpl(((ZeebeClientImpl) client).getCommandManager(), StubBrokerRule.TEST_PARTITION_ID)
-            .subscriberKey(456L)
-            .credits(123)
-            .send()
-            .join();
-
-        // then
-        final List<ControlMessageRequest> controlMessageRequests = broker.getReceivedControlMessageRequests()
-                .stream()
-                .filter(r -> r.messageType() == ControlMessageType.INCREASE_JOB_SUBSCRIPTION_CREDITS)
-                .collect(Collectors.toList());
-
-        assertThat(controlMessageRequests).hasSize(1);
-
-        final ControlMessageRequest request = controlMessageRequests.get(0);
-        assertThat(request.messageType()).isEqualTo(ControlMessageType.INCREASE_JOB_SUBSCRIPTION_CREDITS);
-        assertThat(request.getData())
-            .contains(
-                    entry("credits", 123),
-                    entry("subscriberKey", 456));
-    }
-
-    @Test
-    public void shouldNotAttemptReplenishmentForZeroCredits() throws InterruptedException
-    {
-        // given
-        final int subscriptionCapacity = 16;
-        final int replenishmentThreshold = (int) (Math.ceil(subscriptionCapacity * Subscriber.REPLENISHMENT_THRESHOLD));
-        final int jobsToHandleBeforeReplenishment = subscriptionCapacity - replenishmentThreshold;
-
-        broker.stubJobSubscriptionApi(123L);
-
-        final WaitingJobHandler handler = new WaitingJobHandler();
-        handler.shouldWait = false;
-
-        clientRule.jobClient()
-            .newWorker()
-            .jobType("type")
-            .handler(handler)
-            .name("owner")
-            .timeout(10000L)
-            .bufferSize(subscriptionCapacity)
-            .open();
-
-        final RemoteAddress clientAddress = getSubscribeRequests().findFirst().get().getSource();
-
-        // handling these jobs should not yet trigger replenishment; the next handled job would
-        for (int i = 0; i < jobsToHandleBeforeReplenishment; i++)
-        {
-            broker.pushActivatedJob(clientAddress, 123L, 4L + i, 5L + i, "foo", "type");
-        }
-        waitUntil(() -> handler.numHandledEvents.get() == jobsToHandleBeforeReplenishment);
-
-        handler.shouldWait = true;
-        for (int i = 0; i < NUM_EXECUTION_THREADS; i++)
-        {
-            broker.pushActivatedJob(clientAddress, 123L, 4L + i, 5L + i, "foo", "type");
-        }
-        waitUntil(() -> handler.numWaitingThreads.get() == NUM_EXECUTION_THREADS);
-
-        // when all job handling threads trigger credit replenishment
-        continueJobHandlingThreads();
-
-        // then
-        waitUntil(() -> getCreditRequests().count() >= 1);
-
-        Thread.sleep(500L); // waiting for potentially more credit requests
-        final List<ControlMessageRequest> creditRequests = getCreditRequests().collect(Collectors.toList());
-        assertThat(creditRequests.size()).isGreaterThanOrEqualTo(1);
-
-        int totalReplenishedCredits = 0;
-        for (ControlMessageRequest request : creditRequests)
-        {
-            final int replenishedCredits = (int) request.getData().get("credits");
-            assertThat(replenishedCredits).isGreaterThan(0);
-            totalReplenishedCredits += replenishedCredits;
-        }
-
-        assertThat(totalReplenishedCredits).isGreaterThanOrEqualTo(jobsToHandleBeforeReplenishment + 1);
-    }
-
-    @Test
-    public void shouldApplyDefaultsToWorkerNameAndTimeout()
-    {
-        // given
-        broker.stubJobSubscriptionApi(123L);
-
-        // when
-        clientRule.jobClient()
-            .newWorker()
-            .jobType("bar")
-            .handler(DO_NOTHING)
-            .open();
-
-        // then
-        final ControlMessageRequest subscriptionRequest = getSubscribeRequests().findFirst().get();
-        assertThat(subscriptionRequest.messageType()).isEqualByComparingTo(ControlMessageType.ADD_JOB_SUBSCRIPTION);
-
-        assertThat(subscriptionRequest.getData())
-            .containsEntry("worker", client.getConfiguration().getDefaultJobWorkerName())
-            .containsEntry("timeout", (int) client.getConfiguration().getDefaultJobTimeout().toMillis());
-    }
-
-    protected void failJobFailure()
-    {
-        broker.onExecuteCommandRequest(ValueType.JOB, JobIntent.FAIL)
-            .respondWithError()
-            .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
-            .errorData("failed to fail job")
-            .register();
-    }
-
-    protected Stream<ControlMessageRequest> getSubscribeRequests()
-    {
-        return broker.getReceivedControlMessageRequests().stream()
-                .filter((r) -> r.messageType() == ControlMessageType.ADD_JOB_SUBSCRIPTION);
-    }
-
-    protected Stream<ControlMessageRequest> getUnsubscribeRequests()
-    {
-        return broker.getReceivedControlMessageRequests().stream()
-                .filter((r) -> r.messageType() == ControlMessageType.REMOVE_JOB_SUBSCRIPTION);
-    }
-
-    private Stream<ControlMessageRequest> getCreditRequests()
-    {
-        return broker.getReceivedControlMessageRequests().stream()
-            .filter((r) -> r.messageType() == ControlMessageType.INCREASE_JOB_SUBSCRIPTION_CREDITS);
-    }
-
-    protected class WaitingJobHandler implements JobHandler
-    {
-        protected AtomicInteger numHandledEvents = new AtomicInteger(0);
-        protected AtomicInteger numWaitingThreads = new AtomicInteger(0);
-        protected boolean shouldWait = true;
-
-        @Override
-        public void handle(JobClient client, JobEvent workItemEvent)
-        {
-            try
-            {
-                if (shouldWait)
-                {
-                    synchronized (monitor)
-                    {
-                        numWaitingThreads.incrementAndGet();
-                        monitor.wait();
-                        numWaitingThreads.decrementAndGet();
-                    }
-                }
-
-                numHandledEvents.incrementAndGet();
-            }
-            catch (InterruptedException e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
-
-    }
+  }
 }

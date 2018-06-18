@@ -20,69 +20,58 @@ package io.zeebe.broker.transport.controlmessage;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
+import io.zeebe.protocol.Protocol;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import io.zeebe.protocol.Protocol;
+public class ControlMessageRequestHeaderDescriptor {
+  public static final int STREAM_ID_OFFSET;
+  public static final int REQUEST_ID_OFFSET;
 
-public class ControlMessageRequestHeaderDescriptor
-{
-    public static final int STREAM_ID_OFFSET;
-    public static final int REQUEST_ID_OFFSET;
+  public static final int HEADER_LENGTH;
 
-    public static final int HEADER_LENGTH;
+  static {
+    int offset = 0;
 
-    static
-    {
-        int offset = 0;
+    STREAM_ID_OFFSET = offset;
+    offset += SIZE_OF_INT;
 
-        STREAM_ID_OFFSET = offset;
-        offset += SIZE_OF_INT;
+    REQUEST_ID_OFFSET = offset;
+    offset += SIZE_OF_LONG;
 
-        REQUEST_ID_OFFSET = offset;
-        offset += SIZE_OF_LONG;
+    HEADER_LENGTH = offset;
+  }
 
-        HEADER_LENGTH = offset;
-    }
+  public static int framedLength(int messageLength) {
+    return HEADER_LENGTH + messageLength;
+  }
 
-    public static int framedLength(int messageLength)
-    {
-        return HEADER_LENGTH + messageLength;
-    }
+  public static int headerLength() {
+    return HEADER_LENGTH;
+  }
 
-    public static int headerLength()
-    {
-        return HEADER_LENGTH;
-    }
+  protected final UnsafeBuffer buffer = new UnsafeBuffer(new byte[HEADER_LENGTH]);
 
-    protected final UnsafeBuffer buffer = new UnsafeBuffer(new byte[HEADER_LENGTH]);
+  public ControlMessageRequestHeaderDescriptor wrap(DirectBuffer buffer, int offset) {
+    this.buffer.wrap(buffer, offset, HEADER_LENGTH);
+    return this;
+  }
 
-    public ControlMessageRequestHeaderDescriptor wrap(DirectBuffer buffer, int offset)
-    {
-        this.buffer.wrap(buffer, offset, HEADER_LENGTH);
-        return this;
-    }
+  public ControlMessageRequestHeaderDescriptor streamId(int streamId) {
+    buffer.putInt(STREAM_ID_OFFSET, streamId, Protocol.ENDIANNESS);
+    return this;
+  }
 
-    public ControlMessageRequestHeaderDescriptor streamId(int streamId)
-    {
-        buffer.putInt(STREAM_ID_OFFSET, streamId, Protocol.ENDIANNESS);
-        return this;
-    }
+  public ControlMessageRequestHeaderDescriptor requestId(long requestId) {
+    buffer.putLong(REQUEST_ID_OFFSET, requestId, Protocol.ENDIANNESS);
+    return this;
+  }
 
-    public ControlMessageRequestHeaderDescriptor requestId(long requestId)
-    {
-        buffer.putLong(REQUEST_ID_OFFSET, requestId, Protocol.ENDIANNESS);
-        return this;
-    }
+  public int streamId() {
+    return buffer.getInt(STREAM_ID_OFFSET, Protocol.ENDIANNESS);
+  }
 
-    public int streamId()
-    {
-        return buffer.getInt(STREAM_ID_OFFSET, Protocol.ENDIANNESS);
-    }
-
-    public long requestId()
-    {
-        return buffer.getLong(REQUEST_ID_OFFSET, Protocol.ENDIANNESS);
-    }
-
+  public long requestId() {
+    return buffer.getLong(REQUEST_ID_OFFSET, Protocol.ENDIANNESS);
+  }
 }

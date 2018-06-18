@@ -15,20 +15,13 @@
  */
 package io.zeebe.client.api.commands;
 
-public interface DeploymentResource
-{
-    /**
-     * @return the resource for deployment
-     */
-    byte[] getResource();
+public interface DeploymentResource {
+  /** @return the resource for deployment */
+  byte[] getResource();
 
-    /**
-     * @return the type of the resource
-     */
-    ResourceType getResourceType();
+  /** @return the type of the resource */
+  ResourceType getResourceType();
 
-    /**
-     * @return the name of the resource
-     */
-    String getResourceName();
+  /** @return the name of the resource */
+  String getResourceName();
 }

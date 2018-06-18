@@ -17,17 +17,9 @@
  */
 package io.zeebe.broker.clustering.orchestration.state;
 
-public interface KnownTopicsListener
-{
+public interface KnownTopicsListener {
 
-    default void topicAdded(String topicName)
-    {
+  default void topicAdded(String topicName) {}
 
-    }
-
-    default void topicCreated(String topicName)
-    {
-
-    }
-
+  default void topicCreated(String topicName) {}
 }

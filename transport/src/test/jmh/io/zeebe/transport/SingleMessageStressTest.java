@@ -15,10 +15,9 @@
  */
 package io.zeebe.transport;
 
+import io.zeebe.util.sched.ActorScheduler;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import io.zeebe.util.sched.ActorScheduler;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -28,127 +27,108 @@ import org.openjdk.jmh.annotations.*;
 @Fork(1)
 @Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
-public class SingleMessageStressTest
-{
-    static final AtomicInteger THREAD_ID = new AtomicInteger(0);
-    private static final int BURST_SIZE = 1_000;
+public class SingleMessageStressTest {
+  static final AtomicInteger THREAD_ID = new AtomicInteger(0);
+  private static final int BURST_SIZE = 1_000;
 
-    private static final MutableDirectBuffer MSG = new UnsafeBuffer(new byte[576]);
+  private static final MutableDirectBuffer MSG = new UnsafeBuffer(new byte[576]);
 
-    @Benchmark
-    @Threads(1)
-    public void sendBurstSync(BenchmarkContext ctx) throws InterruptedException
-    {
-        final ClientOutput output = ctx.output;
-        final RemoteAddress remote = ctx.remote;
-        final TransportMessage message = ctx.transportMessage;
+  @Benchmark
+  @Threads(1)
+  public void sendBurstSync(BenchmarkContext ctx) throws InterruptedException {
+    final ClientOutput output = ctx.output;
+    final RemoteAddress remote = ctx.remote;
+    final TransportMessage message = ctx.transportMessage;
 
-        for (int i = 0; i < BURST_SIZE; i++)
-        {
-            message.reset().remoteAddress(remote)
-                .buffer(MSG);
+    for (int i = 0; i < BURST_SIZE; i++) {
+      message.reset().remoteAddress(remote).buffer(MSG);
 
-            while (!output.sendMessage(message))
-            {
-                // spin
-            }
+      while (!output.sendMessage(message)) {
+        // spin
+      }
 
-            while (!ctx.messagesReceived.compareAndSet(1, 0))
-            {
-                // spin
-            }
-        }
+      while (!ctx.messagesReceived.compareAndSet(1, 0)) {
+        // spin
+      }
     }
+  }
 
-    @Benchmark
-    @Threads(1)
-    public void sendBurstAsync(BenchmarkContext ctx) throws InterruptedException
-    {
-        ctx.messagesReceived.set(0);
+  @Benchmark
+  @Threads(1)
+  public void sendBurstAsync(BenchmarkContext ctx) throws InterruptedException {
+    ctx.messagesReceived.set(0);
 
-        final ClientOutput output = ctx.output;
-        final RemoteAddress remote = ctx.remote;
-        final TransportMessage message = ctx.transportMessage;
+    final ClientOutput output = ctx.output;
+    final RemoteAddress remote = ctx.remote;
+    final TransportMessage message = ctx.transportMessage;
 
-        int requestsSent = 0;
+    int requestsSent = 0;
 
-        do
-        {
-            if (requestsSent < BURST_SIZE)
-            {
-                message.reset()
-                    .remoteAddress(remote)
-                    .buffer(MSG);
+    do {
+      if (requestsSent < BURST_SIZE) {
+        message.reset().remoteAddress(remote).buffer(MSG);
 
-                if (output.sendMessage(message))
-                {
-                    requestsSent++;
-                }
-            }
+        if (output.sendMessage(message)) {
+          requestsSent++;
         }
-        while (ctx.messagesReceived.get() < BURST_SIZE);
-    }
+      }
+    } while (ctx.messagesReceived.get() < BURST_SIZE);
+  }
 
-    @State(Scope.Benchmark)
-    public static class BenchmarkContext implements ClientInputListener
-    {
-        private final TransportMessage transportMessage = new TransportMessage();
+  @State(Scope.Benchmark)
+  public static class BenchmarkContext implements ClientInputListener {
+    private final TransportMessage transportMessage = new TransportMessage();
 
-        private final ActorScheduler scheduler = ActorScheduler.newActorScheduler()
+    private final ActorScheduler scheduler =
+        ActorScheduler.newActorScheduler()
             .setIoBoundActorThreadCount(0)
             .setCpuBoundActorThreadCount(2)
             .build();
 
-        private ClientTransport clientTransport;
+    private ClientTransport clientTransport;
 
-        private ServerTransport serverTransport;
+    private ServerTransport serverTransport;
 
-        private ClientOutput output;
+    private ClientOutput output;
 
-        private RemoteAddress remote;
+    private RemoteAddress remote;
 
-        private AtomicInteger messagesReceived = new AtomicInteger(0);
+    private AtomicInteger messagesReceived = new AtomicInteger(0);
 
-        @Setup
-        public void setUp()
-        {
-            scheduler.start();
+    @Setup
+    public void setUp() {
+      scheduler.start();
 
-            final SocketAddress addr = new SocketAddress("localhost", 51115);
+      final SocketAddress addr = new SocketAddress("localhost", 51115);
 
-            clientTransport = Transports.newClientTransport()
-                .scheduler(scheduler)
-                .inputListener(this)
-                .build();
+      clientTransport =
+          Transports.newClientTransport().scheduler(scheduler).inputListener(this).build();
 
-            serverTransport = Transports.newServerTransport()
-                .bindAddress(addr.toInetSocketAddress())
-                .scheduler(scheduler)
-                .build(new EchoMessageHandler(), null);
+      serverTransport =
+          Transports.newServerTransport()
+              .bindAddress(addr.toInetSocketAddress())
+              .scheduler(scheduler)
+              .build(new EchoMessageHandler(), null);
 
-            output = clientTransport.getOutput();
+      output = clientTransport.getOutput();
 
-            remote = clientTransport.registerRemoteAndAwaitChannel(addr);
-        }
-
-        @TearDown
-        public void tearDown() throws InterruptedException, ExecutionException, TimeoutException
-        {
-            serverTransport.close();
-            clientTransport.close();
-            scheduler.stop().get();
-        }
-
-        @Override
-        public void onResponse(int streamId, long requestId, DirectBuffer buffer, int offset, int length)
-        {
-
-        }
-
-        @Override
-        public void onMessage(int streamId, DirectBuffer buffer, int offset, int length)
-        {
-            messagesReceived.incrementAndGet();
-        }
+      remote = clientTransport.registerRemoteAndAwaitChannel(addr);
     }
+
+    @TearDown
+    public void tearDown() throws InterruptedException, ExecutionException, TimeoutException {
+      serverTransport.close();
+      clientTransport.close();
+      scheduler.stop().get();
+    }
+
+    @Override
+    public void onResponse(
+        int streamId, long requestId, DirectBuffer buffer, int offset, int length) {}
+
+    @Override
+    public void onMessage(int streamId, DirectBuffer buffer, int offset, int length) {
+      messagesReceived.incrementAndGet();
+    }
+  }
 }

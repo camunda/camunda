@@ -20,20 +20,20 @@ import io.zeebe.model.bpmn.impl.error.ErrorCollector;
 import io.zeebe.model.bpmn.impl.metadata.TaskDefinitionImpl;
 import org.agrona.DirectBuffer;
 
-public class TaskDefinitionValidator
-{
-    public void validate(ErrorCollector validationResult, TaskDefinitionImpl taskDefinition)
-    {
-        final DirectBuffer taskType = taskDefinition.getTypeAsBuffer();
-        if (taskType == null || taskType.capacity() == 0)
-        {
-            validationResult.addError(taskDefinition, String.format("A task definition must contain a '%s' attribute which specifies the type of the task.", BpmnConstants.ZEEBE_ATTRIBUTE_TASK_TYPE));
-        }
-
-        final int retries = taskDefinition.getRetries();
-        if (retries < 1)
-        {
-            validationResult.addError(taskDefinition, "The task retries must be greater than 0.");
-        }
+public class TaskDefinitionValidator {
+  public void validate(ErrorCollector validationResult, TaskDefinitionImpl taskDefinition) {
+    final DirectBuffer taskType = taskDefinition.getTypeAsBuffer();
+    if (taskType == null || taskType.capacity() == 0) {
+      validationResult.addError(
+          taskDefinition,
+          String.format(
+              "A task definition must contain a '%s' attribute which specifies the type of the task.",
+              BpmnConstants.ZEEBE_ATTRIBUTE_TASK_TYPE));
     }
+
+    final int retries = taskDefinition.getRetries();
+    if (retries < 1) {
+      validationResult.addError(taskDefinition, "The task retries must be greater than 0.");
+    }
+  }
 }

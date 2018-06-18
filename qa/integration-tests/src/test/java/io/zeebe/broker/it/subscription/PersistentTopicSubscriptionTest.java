@@ -17,105 +17,101 @@ package io.zeebe.broker.it.subscription;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.broker.it.ClientRule;
+import io.zeebe.broker.it.EmbeddedBrokerRule;
+import io.zeebe.client.api.clients.TopicClient;
+import io.zeebe.client.api.subscription.TopicSubscription;
+import io.zeebe.test.util.TestUtil;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
-import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.client.api.clients.TopicClient;
-import io.zeebe.client.api.subscription.TopicSubscription;
-import io.zeebe.test.util.TestUtil;
+public class PersistentTopicSubscriptionTest {
+  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
-public class PersistentTopicSubscriptionTest
-{
-    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  public ClientRule clientRule = new ClientRule();
 
-    public ClientRule clientRule = new ClientRule();
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
-    @Rule
-    public RuleChain ruleChain = RuleChain
-        .outerRule(brokerRule)
-        .around(clientRule);
+  @Rule public ExpectedException exception = ExpectedException.none();
 
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
+  protected TopicClient client;
+  protected RecordingEventHandler recordingHandler;
 
-    protected TopicClient client;
-    protected RecordingEventHandler recordingHandler;
+  @Before
+  public void setUp() {
+    this.client = clientRule.getClient().topicClient();
+    this.recordingHandler = new RecordingEventHandler();
+  }
 
-    @Before
-    public void setUp()
-    {
-        this.client = clientRule.getClient().topicClient();
-        this.recordingHandler = new RecordingEventHandler();
-    }
+  @Test
+  public void shouldResumeSubscriptionOnRestart() {
+    // given a first job
+    client
+        .jobClient()
+        .newCreateCommand()
+        .jobType("foo")
+        .addCustomHeader("key", "value")
+        .payload("{}")
+        .send()
+        .join();
 
-    @Test
-    public void shouldResumeSubscriptionOnRestart()
-    {
-        // given a first job
-        client.jobClient().newCreateCommand()
-            .jobType("foo")
-            .addCustomHeader("key", "value")
-            .payload("{}")
-            .send()
-            .join();
+    final String subscriptionName = "foo";
 
-        final String subscriptionName = "foo";
-
-        final TopicSubscription subscription = client.newSubscription()
+    final TopicSubscription subscription =
+        client
+            .newSubscription()
             .name(subscriptionName)
             .recordHandler(recordingHandler)
             .startAtHeadOfTopic()
             .open();
 
-        // that was received by the subscription
-        TestUtil.waitUntil(() -> recordingHandler.numJobRecords() == 2);
+    // that was received by the subscription
+    TestUtil.waitUntil(() -> recordingHandler.numJobRecords() == 2);
 
-        subscription.close();
+    subscription.close();
 
-        final long lastEventPosition = recordingHandler.getRecords()
-                .get(recordingHandler.numRecords() - 1)
-                .getMetadata()
-                .getPosition();
+    final long lastEventPosition =
+        recordingHandler
+            .getRecords()
+            .get(recordingHandler.numRecords() - 1)
+            .getMetadata()
+            .getPosition();
 
-        recordingHandler.reset();
+    recordingHandler.reset();
 
-        // and a second not-yet-received job
-        client.jobClient().newCreateCommand()
-            .jobType("foo")
-            .addCustomHeader("key", "value")
-            .payload("{}")
-            .send()
-            .join();
+    // and a second not-yet-received job
+    client
+        .jobClient()
+        .newCreateCommand()
+        .jobType("foo")
+        .addCustomHeader("key", "value")
+        .payload("{}")
+        .send()
+        .join();
 
-        // when
-        restartBroker();
+    // when
+    restartBroker();
 
-        client.newSubscription()
-            .name(subscriptionName)
-            .recordHandler(recordingHandler)
-            .startAtHeadOfTopic()
-            .open();
+    client
+        .newSubscription()
+        .name(subscriptionName)
+        .recordHandler(recordingHandler)
+        .startAtHeadOfTopic()
+        .open();
 
-        // then
-        TestUtil.waitUntil(() -> recordingHandler.numRecords() > 0);
+    // then
+    TestUtil.waitUntil(() -> recordingHandler.numRecords() > 0);
 
-        final long firstEventPositionAfterReopen = recordingHandler.getRecords()
-                .get(0)
-                .getMetadata()
-                .getPosition();
+    final long firstEventPositionAfterReopen =
+        recordingHandler.getRecords().get(0).getMetadata().getPosition();
 
-        assertThat(firstEventPositionAfterReopen).isGreaterThan(lastEventPosition);
-    }
+    assertThat(firstEventPositionAfterReopen).isGreaterThan(lastEventPosition);
+  }
 
-
-    protected void restartBroker()
-    {
-        brokerRule.restartBroker();
-    }
-
+  protected void restartBroker() {
+    brokerRule.restartBroker();
+  }
 }

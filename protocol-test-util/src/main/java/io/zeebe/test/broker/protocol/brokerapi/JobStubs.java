@@ -17,107 +17,98 @@ package io.zeebe.test.broker.protocol.brokerapi;
 
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
-
 import java.util.function.Consumer;
 
-public class JobStubs
-{
+public class JobStubs {
 
-    private StubBrokerRule broker;
+  private StubBrokerRule broker;
 
-    public JobStubs(StubBrokerRule broker)
-    {
-        this.broker = broker;
-    }
+  public JobStubs(StubBrokerRule broker) {
+    this.broker = broker;
+  }
 
-    public void registerCreateCommand()
-    {
-        registerCreateCommand(r ->
-        { });
-    }
+  public void registerCreateCommand() {
+    registerCreateCommand(r -> {});
+  }
 
-    public void registerCreateCommand(Consumer<ExecuteCommandResponseBuilder> modifier)
-    {
-        final ExecuteCommandResponseBuilder builder =
-            broker.onExecuteCommandRequest(ValueType.JOB, JobIntent.CREATE)
-                .respondWith()
-                .event()
-                .intent(JobIntent.CREATED)
-                .key(r -> r.key())
-                .value()
-                  .allOf((r) -> r.getCommand())
-                  .done();
+  public void registerCreateCommand(Consumer<ExecuteCommandResponseBuilder> modifier) {
+    final ExecuteCommandResponseBuilder builder =
+        broker
+            .onExecuteCommandRequest(ValueType.JOB, JobIntent.CREATE)
+            .respondWith()
+            .event()
+            .intent(JobIntent.CREATED)
+            .key(r -> r.key())
+            .value()
+            .allOf((r) -> r.getCommand())
+            .done();
 
-        modifier.accept(builder);
+    modifier.accept(builder);
 
-        builder.register();
-    }
+    builder.register();
+  }
 
-    public void registerCompleteCommand()
-    {
-        registerCompleteCommand(r ->
-        { });
-    }
+  public void registerCompleteCommand() {
+    registerCompleteCommand(r -> {});
+  }
 
-    public void registerCompleteCommand(Consumer<ExecuteCommandResponseBuilder> modifier)
-    {
-        final ExecuteCommandResponseBuilder builder =
-            broker.onExecuteCommandRequest(ValueType.JOB, JobIntent.COMPLETE)
-                .respondWith()
-                .event()
-                .intent(JobIntent.COMPLETED)
-                .key(r -> r.key())
-                .value()
-                  .allOf((r) -> r.getCommand())
-                  .done();
+  public void registerCompleteCommand(Consumer<ExecuteCommandResponseBuilder> modifier) {
+    final ExecuteCommandResponseBuilder builder =
+        broker
+            .onExecuteCommandRequest(ValueType.JOB, JobIntent.COMPLETE)
+            .respondWith()
+            .event()
+            .intent(JobIntent.COMPLETED)
+            .key(r -> r.key())
+            .value()
+            .allOf((r) -> r.getCommand())
+            .done();
 
-        modifier.accept(builder);
+    modifier.accept(builder);
 
-        builder.register();
-    }
+    builder.register();
+  }
 
-    public void registerFailCommand()
-    {
-        registerFailCommand(r ->
-        { });
-    }
+  public void registerFailCommand() {
+    registerFailCommand(r -> {});
+  }
 
-    public void registerFailCommand(Consumer<ExecuteCommandResponseBuilder> modifier)
-    {
-        final ExecuteCommandResponseBuilder builder =
-            broker.onExecuteCommandRequest(ValueType.JOB, JobIntent.FAIL)
-                .respondWith()
-                .event()
-                .intent(JobIntent.FAILED)
-                .key(r -> r.key())
-                .value()
-                  .allOf((r) -> r.getCommand())
-                  .done();
+  public void registerFailCommand(Consumer<ExecuteCommandResponseBuilder> modifier) {
+    final ExecuteCommandResponseBuilder builder =
+        broker
+            .onExecuteCommandRequest(ValueType.JOB, JobIntent.FAIL)
+            .respondWith()
+            .event()
+            .intent(JobIntent.FAILED)
+            .key(r -> r.key())
+            .value()
+            .allOf((r) -> r.getCommand())
+            .done();
 
-        modifier.accept(builder);
+    modifier.accept(builder);
 
-        builder.register();
-    }
+    builder.register();
+  }
 
-    public void registerUpdateRetriesCommand()
-    {
-        registerUpdateRetriesCommand(b -> { });
-    }
+  public void registerUpdateRetriesCommand() {
+    registerUpdateRetriesCommand(b -> {});
+  }
 
-    public void registerUpdateRetriesCommand(Consumer<ExecuteCommandResponseBuilder> modifier)
-    {
-        final ExecuteCommandResponseBuilder builder = broker.onExecuteCommandRequest(ValueType.JOB, JobIntent.UPDATE_RETRIES)
+  public void registerUpdateRetriesCommand(Consumer<ExecuteCommandResponseBuilder> modifier) {
+    final ExecuteCommandResponseBuilder builder =
+        broker
+            .onExecuteCommandRequest(ValueType.JOB, JobIntent.UPDATE_RETRIES)
             .respondWith()
             .event()
             .intent(JobIntent.RETRIES_UPDATED)
             .key(r -> r.key())
             .value()
-              .allOf((r) -> r.getCommand())
-              .put("state", "RETRIES_UPDATED")
-              .done();
+            .allOf((r) -> r.getCommand())
+            .put("state", "RETRIES_UPDATED")
+            .done();
 
-        modifier.accept(builder);
+    modifier.accept(builder);
 
-        builder.register();
-    }
+    builder.register();
+  }
 }

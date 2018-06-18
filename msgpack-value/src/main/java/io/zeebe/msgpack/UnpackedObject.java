@@ -23,43 +23,38 @@ import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class UnpackedObject extends ObjectValue implements Recyclable, BufferReader, BufferWriter
-{
+public class UnpackedObject extends ObjectValue implements Recyclable, BufferReader, BufferWriter {
 
-    protected final MsgPackReader reader = new MsgPackReader();
-    protected final MsgPackWriter writer = new MsgPackWriter();
+  protected final MsgPackReader reader = new MsgPackReader();
+  protected final MsgPackWriter writer = new MsgPackWriter();
 
+  public void wrap(DirectBuffer buff) {
+    wrap(buff, 0, buff.capacity());
+  }
 
-    public void wrap(DirectBuffer buff)
-    {
-        wrap(buff, 0, buff.capacity());
+  @Override
+  public void wrap(DirectBuffer buff, int offset, int length) {
+    reader.wrap(buff, offset, length);
+    try {
+      read(reader);
+    } catch (final Exception e) {
+      throw new RuntimeException(
+          "Could not deserialize object. Deserialization stuck at offset "
+              + reader.getOffset()
+              + " of length "
+              + length,
+          e);
     }
+  }
 
-    @Override
-    public void wrap(DirectBuffer buff, int offset, int length)
-    {
-        reader.wrap(buff, offset, length);
-        try
-        {
-            read(reader);
-        }
-        catch (final Exception e)
-        {
-            throw new RuntimeException("Could not deserialize object. Deserialization stuck at offset " + reader.getOffset() + " of length " + length, e);
-        }
-    }
+  @Override
+  public int getLength() {
+    return getEncodedLength();
+  }
 
-    @Override
-    public int getLength()
-    {
-        return getEncodedLength();
-    }
-
-    @Override
-    public void write(MutableDirectBuffer buffer, int offset)
-    {
-        writer.wrap(buffer, offset);
-        write(writer);
-    }
-
+  @Override
+  public void write(MutableDirectBuffer buffer, int offset) {
+    writer.wrap(buffer, offset);
+    write(writer);
+  }
 }

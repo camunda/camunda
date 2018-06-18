@@ -19,11 +19,6 @@ package io.zeebe.broker.job.processor;
 
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
-import java.util.Iterator;
-
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-
 import io.zeebe.broker.job.JobQueueManagerService;
 import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
@@ -39,107 +34,103 @@ import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.util.sched.ScheduledTimer;
 import io.zeebe.util.sched.clock.ActorClock;
+import java.util.Iterator;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
-public class JobTimeOutStreamProcessor implements StreamProcessorLifecycleAware
-{
-    protected static final int MAP_VALUE_MAX_LENGTH = SIZE_OF_LONG + SIZE_OF_LONG;
+public class JobTimeOutStreamProcessor implements StreamProcessorLifecycleAware {
+  protected static final int MAP_VALUE_MAX_LENGTH = SIZE_OF_LONG + SIZE_OF_LONG;
 
-    protected Long2BytesZbMap expirationMap = new Long2BytesZbMap(MAP_VALUE_MAX_LENGTH);
+  protected Long2BytesZbMap expirationMap = new Long2BytesZbMap(MAP_VALUE_MAX_LENGTH);
 
-    private UnsafeBuffer mapAccessBuffer = new UnsafeBuffer(new byte[MAP_VALUE_MAX_LENGTH]);
+  private UnsafeBuffer mapAccessBuffer = new UnsafeBuffer(new byte[MAP_VALUE_MAX_LENGTH]);
 
-    private ScheduledTimer timer;
-    private TypedStreamWriter writer;
-    private TypedStreamReader reader;
+  private ScheduledTimer timer;
+  private TypedStreamWriter writer;
+  private TypedStreamReader reader;
 
-    @Override
-    public void onOpen(TypedStreamProcessor streamProcessor)
-    {
-        timer = streamProcessor.getActor().runAtFixedRate(JobQueueManagerService.TIME_OUT_INTERVAL, this::timeOutJobs);
-        this.writer = streamProcessor.getEnvironment().buildStreamWriter();
-        this.reader = streamProcessor.getEnvironment().buildStreamReader();
+  @Override
+  public void onOpen(TypedStreamProcessor streamProcessor) {
+    timer =
+        streamProcessor
+            .getActor()
+            .runAtFixedRate(JobQueueManagerService.TIME_OUT_INTERVAL, this::timeOutJobs);
+    this.writer = streamProcessor.getEnvironment().buildStreamWriter();
+    this.reader = streamProcessor.getEnvironment().buildStreamReader();
+  }
+
+  @Override
+  public void onClose() {
+    if (timer != null) {
+      timer.cancel();
+      timer = null;
     }
 
-    @Override
-    public void onClose()
-    {
-        if (timer != null)
-        {
-            timer.cancel();
-            timer = null;
+    // TODO: check all locations where we need to close readers
+    this.reader.close();
+  }
+
+  private void timeOutJobs() {
+    final Iterator<Long2BytesZbMapEntry> iterator = expirationMap.iterator();
+
+    while (iterator.hasNext()) {
+      final Long2BytesZbMapEntry entry = iterator.next();
+
+      final DirectBuffer value = entry.getValue();
+
+      final long eventPosition = value.getLong(0);
+      final long deadline = value.getLong(SIZE_OF_LONG);
+
+      if (isExpired(deadline)) {
+        // TODO: would be nicer to have a consumable channel for timed-out timers
+        //   that we can stop consuming/yield on backpressure
+
+        final TypedRecord<JobRecord> event = reader.readValue(eventPosition, JobRecord.class);
+        final long position =
+            writer.writeFollowUpCommand(event.getKey(), JobIntent.TIME_OUT, event.getValue());
+        final boolean success = position >= 0;
+
+        if (!success) {
+          return;
         }
-
-        // TODO: check all locations where we need to close readers
-        this.reader.close();
+      }
     }
+  }
 
-    private void timeOutJobs()
-    {
-        final Iterator<Long2BytesZbMapEntry> iterator = expirationMap.iterator();
+  private boolean isExpired(long deadline) {
+    return deadline <= ActorClock.currentTimeMillis();
+  }
 
-        while (iterator.hasNext())
-        {
-            final Long2BytesZbMapEntry entry = iterator.next();
+  public TypedStreamProcessor createStreamProcessor(TypedStreamEnvironment environment) {
+    final TypedRecordProcessor<JobRecord> registerJob =
+        new TypedRecordProcessor<JobRecord>() {
+          @Override
+          public void updateState(TypedRecord<JobRecord> event) {
+            final long deadline = event.getValue().getDeadline();
 
-            final DirectBuffer value = entry.getValue();
+            mapAccessBuffer.putLong(0, event.getPosition());
+            mapAccessBuffer.putLong(SIZE_OF_LONG, deadline);
 
-            final long eventPosition = value.getLong(0);
-            final long deadline = value.getLong(SIZE_OF_LONG);
-
-            if (isExpired(deadline))
-            {
-                // TODO: would be nicer to have a consumable channel for timed-out timers
-                //   that we can stop consuming/yield on backpressure
-
-                final TypedRecord<JobRecord> event = reader.readValue(eventPosition, JobRecord.class);
-                final long position = writer.writeFollowUpCommand(event.getKey(), JobIntent.TIME_OUT, event.getValue());
-                final boolean success = position >= 0;
-
-                if (!success)
-                {
-                    return;
-                }
-            }
-        }
-    }
-
-    private boolean isExpired(long deadline)
-    {
-        return deadline <= ActorClock.currentTimeMillis();
-    }
-
-    public TypedStreamProcessor createStreamProcessor(TypedStreamEnvironment environment)
-    {
-        final TypedRecordProcessor<JobRecord> registerJob = new TypedRecordProcessor<JobRecord>()
-        {
-            @Override
-            public void updateState(TypedRecord<JobRecord> event)
-            {
-                final long deadline = event.getValue().getDeadline();
-
-                mapAccessBuffer.putLong(0, event.getPosition());
-                mapAccessBuffer.putLong(SIZE_OF_LONG, deadline);
-
-                expirationMap.put(event.getKey(), mapAccessBuffer);
-            }
+            expirationMap.put(event.getKey(), mapAccessBuffer);
+          }
         };
 
-        final TypedRecordProcessor<JobRecord> unregisterJob = new TypedRecordProcessor<JobRecord>()
-        {
-            @Override
-            public void updateState(TypedRecord<JobRecord> event)
-            {
-                expirationMap.remove(event.getKey());
-            }
+    final TypedRecordProcessor<JobRecord> unregisterJob =
+        new TypedRecordProcessor<JobRecord>() {
+          @Override
+          public void updateState(TypedRecord<JobRecord> event) {
+            expirationMap.remove(event.getKey());
+          }
         };
 
-        return environment.newStreamProcessor()
-            .onEvent(ValueType.JOB, JobIntent.ACTIVATED, registerJob)
-            .onEvent(ValueType.JOB, JobIntent.TIMED_OUT, unregisterJob)
-            .onEvent(ValueType.JOB, JobIntent.COMPLETED, unregisterJob)
-            .onEvent(ValueType.JOB, JobIntent.FAILED, unregisterJob)
-            .withListener(this)
-            .withStateResource(expirationMap)
-            .build();
-    }
+    return environment
+        .newStreamProcessor()
+        .onEvent(ValueType.JOB, JobIntent.ACTIVATED, registerJob)
+        .onEvent(ValueType.JOB, JobIntent.TIMED_OUT, unregisterJob)
+        .onEvent(ValueType.JOB, JobIntent.COMPLETED, unregisterJob)
+        .onEvent(ValueType.JOB, JobIntent.FAILED, unregisterJob)
+        .withListener(this)
+        .withStateResource(expirationMap)
+        .build();
+  }
 }

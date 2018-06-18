@@ -26,124 +26,107 @@ import io.zeebe.msgpack.spec.MsgPackHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class WorkflowInstanceRecord extends UnpackedObject
-{
-    public static final DirectBuffer EMPTY_PAYLOAD = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
+public class WorkflowInstanceRecord extends UnpackedObject {
+  public static final DirectBuffer EMPTY_PAYLOAD = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
 
-    public static final String PROP_WORKFLOW_BPMN_PROCESS_ID = "bpmnProcessId";
-    public static final String PROP_WORKFLOW_INSTANCE_KEY = "workflowInstanceKey";
-    public static final String PROP_WORKFLOW_ACTIVITY_ID = "activityId";
-    public static final String PROP_WORKFLOW_VERSION = "version";
-    public static final String PROP_WORKFLOW_KEY = "workflowKey";
-    public static final String PROP_WORKFLOW_PAYLOAD = "payload";
+  public static final String PROP_WORKFLOW_BPMN_PROCESS_ID = "bpmnProcessId";
+  public static final String PROP_WORKFLOW_INSTANCE_KEY = "workflowInstanceKey";
+  public static final String PROP_WORKFLOW_ACTIVITY_ID = "activityId";
+  public static final String PROP_WORKFLOW_VERSION = "version";
+  public static final String PROP_WORKFLOW_KEY = "workflowKey";
+  public static final String PROP_WORKFLOW_PAYLOAD = "payload";
 
-    private final StringProperty bpmnProcessIdProp = new StringProperty(PROP_WORKFLOW_BPMN_PROCESS_ID, "");
-    private final IntegerProperty versionProp = new IntegerProperty(PROP_WORKFLOW_VERSION, -1);
-    private final LongProperty workflowKeyProp = new LongProperty(PROP_WORKFLOW_KEY, -1L);
+  private final StringProperty bpmnProcessIdProp =
+      new StringProperty(PROP_WORKFLOW_BPMN_PROCESS_ID, "");
+  private final IntegerProperty versionProp = new IntegerProperty(PROP_WORKFLOW_VERSION, -1);
+  private final LongProperty workflowKeyProp = new LongProperty(PROP_WORKFLOW_KEY, -1L);
 
-    private final LongProperty workflowInstanceKeyProp = new LongProperty(PROP_WORKFLOW_INSTANCE_KEY, -1L);
-    private final StringProperty activityIdProp = new StringProperty(PROP_WORKFLOW_ACTIVITY_ID, "");
+  private final LongProperty workflowInstanceKeyProp =
+      new LongProperty(PROP_WORKFLOW_INSTANCE_KEY, -1L);
+  private final StringProperty activityIdProp = new StringProperty(PROP_WORKFLOW_ACTIVITY_ID, "");
 
-    private final DocumentProperty payloadProp = new DocumentProperty(PROP_WORKFLOW_PAYLOAD);
+  private final DocumentProperty payloadProp = new DocumentProperty(PROP_WORKFLOW_PAYLOAD);
 
-    public WorkflowInstanceRecord()
-    {
-        this
-            .declareProperty(bpmnProcessIdProp)
-            .declareProperty(versionProp)
-            .declareProperty(workflowKeyProp)
-            .declareProperty(workflowInstanceKeyProp)
-            .declareProperty(activityIdProp)
-            .declareProperty(payloadProp);
-    }
+  public WorkflowInstanceRecord() {
+    this.declareProperty(bpmnProcessIdProp)
+        .declareProperty(versionProp)
+        .declareProperty(workflowKeyProp)
+        .declareProperty(workflowInstanceKeyProp)
+        .declareProperty(activityIdProp)
+        .declareProperty(payloadProp);
+  }
 
-    public DirectBuffer getBpmnProcessId()
-    {
-        return bpmnProcessIdProp.getValue();
-    }
+  public DirectBuffer getBpmnProcessId() {
+    return bpmnProcessIdProp.getValue();
+  }
 
-    public WorkflowInstanceRecord setBpmnProcessId(DirectBuffer directBuffer)
-    {
-        bpmnProcessIdProp.setValue(directBuffer);
-        return this;
-    }
+  public WorkflowInstanceRecord setBpmnProcessId(DirectBuffer directBuffer) {
+    bpmnProcessIdProp.setValue(directBuffer);
+    return this;
+  }
 
-    public WorkflowInstanceRecord setBpmnProcessId(DirectBuffer directBuffer, int offset, int length)
-    {
-        bpmnProcessIdProp.setValue(directBuffer, offset, length);
-        return this;
-    }
+  public WorkflowInstanceRecord setBpmnProcessId(
+      DirectBuffer directBuffer, int offset, int length) {
+    bpmnProcessIdProp.setValue(directBuffer, offset, length);
+    return this;
+  }
 
-    public DirectBuffer getActivityId()
-    {
-        return activityIdProp.getValue();
-    }
+  public DirectBuffer getActivityId() {
+    return activityIdProp.getValue();
+  }
 
-    public WorkflowInstanceRecord setActivityId(String activityId)
-    {
-        this.activityIdProp.setValue(activityId);
-        return this;
-    }
+  public WorkflowInstanceRecord setActivityId(String activityId) {
+    this.activityIdProp.setValue(activityId);
+    return this;
+  }
 
-    public WorkflowInstanceRecord setActivityId(DirectBuffer activityId)
-    {
-        return setActivityId(activityId, 0, activityId.capacity());
-    }
+  public WorkflowInstanceRecord setActivityId(DirectBuffer activityId) {
+    return setActivityId(activityId, 0, activityId.capacity());
+  }
 
-    public WorkflowInstanceRecord setActivityId(DirectBuffer activityId, int offset, int length)
-    {
-        this.activityIdProp.setValue(activityId, offset, length);
-        return this;
-    }
+  public WorkflowInstanceRecord setActivityId(DirectBuffer activityId, int offset, int length) {
+    this.activityIdProp.setValue(activityId, offset, length);
+    return this;
+  }
 
-    public Long getWorkflowInstanceKey()
-    {
-        return workflowInstanceKeyProp.getValue();
-    }
+  public Long getWorkflowInstanceKey() {
+    return workflowInstanceKeyProp.getValue();
+  }
 
-    public WorkflowInstanceRecord setWorkflowInstanceKey(long workflowInstanceKey)
-    {
-        this.workflowInstanceKeyProp.setValue(workflowInstanceKey);
-        return this;
-    }
+  public WorkflowInstanceRecord setWorkflowInstanceKey(long workflowInstanceKey) {
+    this.workflowInstanceKeyProp.setValue(workflowInstanceKey);
+    return this;
+  }
 
-    public int getVersion()
-    {
-        return versionProp.getValue();
-    }
+  public int getVersion() {
+    return versionProp.getValue();
+  }
 
-    public WorkflowInstanceRecord setVersion(int version)
-    {
-        this.versionProp.setValue(version);
-        return this;
-    }
+  public WorkflowInstanceRecord setVersion(int version) {
+    this.versionProp.setValue(version);
+    return this;
+  }
 
-    public long getWorkflowKey()
-    {
-        return workflowKeyProp.getValue();
-    }
+  public long getWorkflowKey() {
+    return workflowKeyProp.getValue();
+  }
 
-    public WorkflowInstanceRecord setWorkflowKey(long workflowKey)
-    {
-        this.workflowKeyProp.setValue(workflowKey);
-        return this;
-    }
+  public WorkflowInstanceRecord setWorkflowKey(long workflowKey) {
+    this.workflowKeyProp.setValue(workflowKey);
+    return this;
+  }
 
-    public DirectBuffer getPayload()
-    {
-        return payloadProp.getValue();
-    }
+  public DirectBuffer getPayload() {
+    return payloadProp.getValue();
+  }
 
-    public WorkflowInstanceRecord setPayload(DirectBuffer payload)
-    {
-        payloadProp.setValue(payload);
-        return this;
-    }
+  public WorkflowInstanceRecord setPayload(DirectBuffer payload) {
+    payloadProp.setValue(payload);
+    return this;
+  }
 
-    public WorkflowInstanceRecord setPayload(DirectBuffer payload, int offset, int length)
-    {
-        payloadProp.setValue(payload, offset, length);
-        return this;
-    }
-
+  public WorkflowInstanceRecord setPayload(DirectBuffer payload, int offset, int length) {
+    payloadProp.setValue(payload, offset, length);
+    return this;
+  }
 }

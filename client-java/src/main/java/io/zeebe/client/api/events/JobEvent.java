@@ -17,10 +17,7 @@ package io.zeebe.client.api.events;
 
 import io.zeebe.client.api.record.JobRecord;
 
-public interface JobEvent extends JobRecord
-{
-    /**
-     * @return the current state
-     */
-    JobState getState();
+public interface JobEvent extends JobRecord {
+  /** @return the current state */
+  JobState getState();
 }

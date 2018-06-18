@@ -17,94 +17,92 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import java.nio.charset.StandardCharsets;
-
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.transport.ServerOutput;
+import java.nio.charset.StandardCharsets;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
-public class TypedResponseWriterImpl implements TypedResponseWriter
-{
-    protected CommandResponseWriter writer;
-    protected int partitionId;
+public class TypedResponseWriterImpl implements TypedResponseWriter {
+  protected CommandResponseWriter writer;
+  protected int partitionId;
 
-    private final UnsafeBuffer stringWrapper = new UnsafeBuffer(0, 0);
+  private final UnsafeBuffer stringWrapper = new UnsafeBuffer(0, 0);
 
-    public TypedResponseWriterImpl(ServerOutput output, int partitionId)
-    {
-        this.writer = new CommandResponseWriter(output);
-        this.partitionId = partitionId;
-    }
+  public TypedResponseWriterImpl(ServerOutput output, int partitionId) {
+    this.writer = new CommandResponseWriter(output);
+    this.partitionId = partitionId;
+  }
 
-    @Override
-    public boolean writeRejection(TypedRecord<?> record, RejectionType rejectionType, String rejectionReason)
-    {
-        final byte[] bytes = rejectionReason.getBytes(StandardCharsets.UTF_8);
-        stringWrapper.wrap(bytes);
-        return write(RecordType.COMMAND_REJECTION, record.getMetadata().getIntent(), rejectionType, stringWrapper, record);
-    }
+  @Override
+  public boolean writeRejection(
+      TypedRecord<?> record, RejectionType rejectionType, String rejectionReason) {
+    final byte[] bytes = rejectionReason.getBytes(StandardCharsets.UTF_8);
+    stringWrapper.wrap(bytes);
+    return write(
+        RecordType.COMMAND_REJECTION,
+        record.getMetadata().getIntent(),
+        rejectionType,
+        stringWrapper,
+        record);
+  }
 
-    @Override
-    public boolean writeRejection(TypedRecord<?> record, RejectionType type, DirectBuffer reason)
-    {
-        return write(RecordType.COMMAND_REJECTION, record.getMetadata().getIntent(), type, reason, record);
-    }
+  @Override
+  public boolean writeRejection(TypedRecord<?> record, RejectionType type, DirectBuffer reason) {
+    return write(
+        RecordType.COMMAND_REJECTION, record.getMetadata().getIntent(), type, reason, record);
+  }
 
-    @Override
-    public boolean writeRecord(Intent intent, TypedRecord<?> record)
-    {
-        stringWrapper.wrap(0, 0);
-        return write(RecordType.EVENT, intent, RejectionType.NULL_VAL, stringWrapper, record);
-    }
+  @Override
+  public boolean writeRecord(Intent intent, TypedRecord<?> record) {
+    stringWrapper.wrap(0, 0);
+    return write(RecordType.EVENT, intent, RejectionType.NULL_VAL, stringWrapper, record);
+  }
 
-    @Override
-    public boolean writeRecordUnchanged(TypedRecord<?> record)
-    {
-        final RecordMetadata metadata = record.getMetadata();
+  @Override
+  public boolean writeRecordUnchanged(TypedRecord<?> record) {
+    final RecordMetadata metadata = record.getMetadata();
 
-        return writer
-            .partitionId(partitionId)
-            .position(record.getPosition())
-            .sourcePosition(record.getSourcePosition())
-            .key(record.getKey())
-            .timestamp(record.getTimestamp())
-            .intent(metadata.getIntent())
-            .recordType(metadata.getRecordType())
-            .valueType(metadata.getValueType())
-            .rejectionType(metadata.getRejectionType())
-            .rejectionReason(metadata.getRejectionReason())
-            .valueWriter(record.getValue())
-            .tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId());
-    }
+    return writer
+        .partitionId(partitionId)
+        .position(record.getPosition())
+        .sourcePosition(record.getSourcePosition())
+        .key(record.getKey())
+        .timestamp(record.getTimestamp())
+        .intent(metadata.getIntent())
+        .recordType(metadata.getRecordType())
+        .valueType(metadata.getValueType())
+        .rejectionType(metadata.getRejectionType())
+        .rejectionReason(metadata.getRejectionReason())
+        .valueWriter(record.getValue())
+        .tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId());
+  }
 
-    private boolean write(
-            RecordType type,
-            Intent intent,
-            RejectionType rejectionType,
-            DirectBuffer rejectionReason,
-            TypedRecord<?> record)
-    {
-        final RecordMetadata metadata = record.getMetadata();
+  private boolean write(
+      RecordType type,
+      Intent intent,
+      RejectionType rejectionType,
+      DirectBuffer rejectionReason,
+      TypedRecord<?> record) {
+    final RecordMetadata metadata = record.getMetadata();
 
-        return writer
-            .partitionId(partitionId)
-            .position(0) // TODO: this depends on the value of written event => https://github.com/zeebe-io/zeebe/issues/374
-            .sourcePosition(record.getPosition())
-            .key(record.getKey())
-            .timestamp(record.getTimestamp())
-            .intent(intent)
-            .recordType(type)
-            .valueType(metadata.getValueType())
-            .rejectionType(rejectionType)
-            .rejectionReason(rejectionReason)
-            .valueWriter(record.getValue())
-            .tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId());
-    }
-
+    return writer
+        .partitionId(partitionId)
+        .position(0) // TODO: this depends on the value of written event =>
+        // https://github.com/zeebe-io/zeebe/issues/374
+        .sourcePosition(record.getPosition())
+        .key(record.getKey())
+        .timestamp(record.getTimestamp())
+        .intent(intent)
+        .recordType(type)
+        .valueType(metadata.getValueType())
+        .rejectionType(rejectionType)
+        .rejectionReason(rejectionReason)
+        .valueWriter(record.getValue())
+        .tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId());
+  }
 }

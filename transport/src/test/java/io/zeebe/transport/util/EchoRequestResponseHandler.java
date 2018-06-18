@@ -18,21 +18,23 @@ package io.zeebe.transport.util;
 import io.zeebe.transport.*;
 import org.agrona.DirectBuffer;
 
-public class EchoRequestResponseHandler implements ServerRequestHandler
-{
+public class EchoRequestResponseHandler implements ServerRequestHandler {
 
-    protected ServerResponse response = new ServerResponse();
+  protected ServerResponse response = new ServerResponse();
 
-    @Override
-    public boolean onRequest(ServerOutput output, RemoteAddress remoteAddress, DirectBuffer buffer, int offset,
-            int length, long requestId)
-    {
-        response
-            .reset()
-            .buffer(buffer, offset, length)
-            .requestId(requestId)
-            .remoteStreamId(remoteAddress.getStreamId());
-        return output.sendResponse(response);
-    }
-
+  @Override
+  public boolean onRequest(
+      ServerOutput output,
+      RemoteAddress remoteAddress,
+      DirectBuffer buffer,
+      int offset,
+      int length,
+      long requestId) {
+    response
+        .reset()
+        .buffer(buffer, offset, length)
+        .requestId(requestId)
+        .remoteStreamId(remoteAddress.getStreamId());
+    return output.sendResponse(response);
+  }
 }

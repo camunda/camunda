@@ -15,14 +15,9 @@
  */
 package io.zeebe.client.impl;
 
-/**
- * Implementations must be thread-safe.
- */
-public interface RequestDispatchStrategy
-{
+/** Implementations must be thread-safe. */
+public interface RequestDispatchStrategy {
 
-    /**
-     * @return -1 if no partition can be determined
-     */
-    int determinePartition(String topic);
+  /** @return -1 if no partition can be determined */
+  int determinePartition(String topic);
 }

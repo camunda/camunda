@@ -15,10 +15,6 @@
  */
 package io.zeebe.util.sched.testing;
 
-import java.time.Duration;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ThreadPoolExecutor;
-
 import io.zeebe.util.sched.*;
 import io.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
 import io.zeebe.util.sched.ActorScheduler.ActorThreadFactory;
@@ -27,21 +23,23 @@ import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.metrics.ActorThreadMetrics;
+import java.time.Duration;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadPoolExecutor;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
 
-public class ControlledActorSchedulerRule extends ExternalResource
-{
-    private final ActorScheduler actorScheduler;
-    private final ControlledActorThread controlledActorTaskRunner;
-    private final ThreadPoolExecutor blockingTasksRunner;
-    private final ControlledActorClock clock = new ControlledActorClock();
+public class ControlledActorSchedulerRule extends ExternalResource {
+  private final ActorScheduler actorScheduler;
+  private final ControlledActorThread controlledActorTaskRunner;
+  private final ThreadPoolExecutor blockingTasksRunner;
+  private final ControlledActorClock clock = new ControlledActorClock();
 
-    public ControlledActorSchedulerRule()
-    {
-        final ControlledActorThreadFactory actorTaskRunnerFactory = new ControlledActorThreadFactory();
-        final ActorTimerQueue timerQueue = new ActorTimerQueue(clock, 1);
-        final ActorSchedulerBuilder builder = ActorScheduler.newActorScheduler()
+  public ControlledActorSchedulerRule() {
+    final ControlledActorThreadFactory actorTaskRunnerFactory = new ControlledActorThreadFactory();
+    final ActorTimerQueue timerQueue = new ActorTimerQueue(clock, 1);
+    final ActorSchedulerBuilder builder =
+        ActorScheduler.newActorScheduler()
             .setActorClock(clock)
             .setCpuBoundActorThreadCount(1)
             .setIoBoundActorThreadCount(0)
@@ -49,107 +47,92 @@ public class ControlledActorSchedulerRule extends ExternalResource
             .setBlockingTasksShutdownTime(Duration.ofSeconds(0))
             .setActorTimerQueue(timerQueue);
 
-        actorScheduler = builder.build();
-        controlledActorTaskRunner = actorTaskRunnerFactory.controlledThread;
-        blockingTasksRunner = builder.getBlockingTasksRunner();
+    actorScheduler = builder.build();
+    controlledActorTaskRunner = actorTaskRunnerFactory.controlledThread;
+    blockingTasksRunner = builder.getBlockingTasksRunner();
+  }
+
+  @Override
+  protected void before() throws Throwable {
+    actorScheduler.start();
+  }
+
+  @Override
+  protected void after() {
+    actorScheduler.stop();
+  }
+
+  public ActorFuture<Void> submitActor(Actor actor) {
+    return actorScheduler.submitActor(actor);
+  }
+
+  public ActorScheduler get() {
+    return actorScheduler;
+  }
+
+  public void awaitBlockingTasksCompleted(int i) {
+    final long currentTimeMillis = System.currentTimeMillis();
+
+    while (System.currentTimeMillis() - currentTimeMillis < 5000) {
+      final long completedTaskCount = blockingTasksRunner.getCompletedTaskCount();
+      if (completedTaskCount >= i) {
+        return;
+      }
     }
 
-    @Override
-    protected void before() throws Throwable
-    {
-        actorScheduler.start();
-    }
+    Assert.fail("could not complete " + i + " blocking tasks within 5s");
+  }
 
-    @Override
-    protected void after()
-    {
-        actorScheduler.stop();
-    }
+  public void workUntilDone() {
+    controlledActorTaskRunner.workUntilDone();
+  }
 
-    public ActorFuture<Void> submitActor(Actor actor)
-    {
-        return actorScheduler.submitActor(actor);
-    }
+  public void waitForTimer(final Duration timeToWait) {
+    clock.addTime(timeToWait);
+    workUntilDone();
+  }
 
-    public ActorScheduler get()
-    {
-        return actorScheduler;
-    }
+  public <T> ActorFuture<T> call(Callable<T> callable) {
+    final ActorFuture<T> future = new CompletableActorFuture<>();
 
-    public void awaitBlockingTasksCompleted(int i)
-    {
-        final long currentTimeMillis = System.currentTimeMillis();
-
-        while (System.currentTimeMillis() - currentTimeMillis < 5000)
-        {
-            final long completedTaskCount = blockingTasksRunner.getCompletedTaskCount();
-            if (completedTaskCount >= i)
-            {
-                return;
-            }
-        }
-
-        Assert.fail("could not complete " + i + " blocking tasks within 5s");
-    }
-
-    public void workUntilDone()
-    {
-        controlledActorTaskRunner.workUntilDone();
-    }
-
-    public void waitForTimer(final Duration timeToWait)
-    {
-        clock.addTime(timeToWait);
-        workUntilDone();
-    }
-
-    public <T> ActorFuture<T> call(Callable<T> callable)
-    {
-        final ActorFuture<T> future = new CompletableActorFuture<>();
-
-        submitActor(new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                actor.run(() ->
-                {
-                    try
-                    {
-                        future.complete(callable.call());
-                    }
-                    catch (Exception e)
-                    {
-                        future.completeExceptionally(e);
-                    }
+    submitActor(
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            actor.run(
+                () -> {
+                  try {
+                    future.complete(callable.call());
+                  } catch (Exception e) {
+                    future.completeExceptionally(e);
+                  }
                 });
-            }
+          }
         });
 
-        return future;
-    }
+    return future;
+  }
 
-    static class ControlledActorThreadFactory implements ActorThreadFactory
-    {
-        private ControlledActorThread controlledThread;
+  static class ControlledActorThreadFactory implements ActorThreadFactory {
+    private ControlledActorThread controlledThread;
 
-        @Override
-        public ActorThread newThread(
-                String name,
-                int id,
-                ActorThreadGroup threadGroup,
-                TaskScheduler taskScheduler,
-                ActorClock clock,
-                ActorThreadMetrics metrics,
-                ActorTimerQueue timerQueue)
-        {
-            controlledThread = new ControlledActorThread(name, id, threadGroup, taskScheduler, clock, metrics, timerQueue);
-            return controlledThread;
-        }
+    @Override
+    public ActorThread newThread(
+        String name,
+        int id,
+        ActorThreadGroup threadGroup,
+        TaskScheduler taskScheduler,
+        ActorClock clock,
+        ActorThreadMetrics metrics,
+        ActorTimerQueue timerQueue) {
+      controlledThread =
+          new ControlledActorThread(
+              name, id, threadGroup, taskScheduler, clock, metrics, timerQueue);
+      return controlledThread;
     }
+  }
 
-    public ControlledActorClock getClock()
-    {
-        return clock;
-    }
+  public ControlledActorClock getClock() {
+    return clock;
+  }
 }

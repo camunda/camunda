@@ -15,141 +15,101 @@
  */
 package io.zeebe.client.impl.data;
 
+import io.zeebe.client.cmd.ClientException;
 import java.io.InputStream;
 import java.util.Map;
 
-import io.zeebe.client.cmd.ClientException;
+public class PayloadField {
+  private final ZeebeObjectMapperImpl objectMapper;
+  private final MsgPackConverter msgPackConverter;
 
-public class PayloadField
-{
-    private final ZeebeObjectMapperImpl objectMapper;
-    private final MsgPackConverter msgPackConverter;
+  private byte[] msgPack;
 
-    private byte[] msgPack;
+  public PayloadField(ZeebeObjectMapperImpl objectMapper) {
+    this.objectMapper = objectMapper;
+    this.msgPackConverter = objectMapper.getMsgPackConverter();
+  }
 
-    public PayloadField(ZeebeObjectMapperImpl objectMapper)
-    {
-        this.objectMapper = objectMapper;
-        this.msgPackConverter = objectMapper.getMsgPackConverter();
+  public PayloadField(PayloadField other) {
+    this.objectMapper = other.objectMapper;
+    this.msgPackConverter = other.msgPackConverter;
+    this.msgPack = other.msgPack;
+  }
+
+  public byte[] getMsgPack() {
+    return msgPack;
+  }
+
+  public void setMsgPack(byte[] msgPack) {
+    this.msgPack = msgPack;
+  }
+
+  public String getAsJsonString() {
+    if (msgPack != null) {
+      return msgPackConverter.convertToJson(msgPack);
+    } else {
+      return null;
     }
+  }
 
-    public PayloadField(PayloadField other)
-    {
-        this.objectMapper = other.objectMapper;
-        this.msgPackConverter = other.msgPackConverter;
-        this.msgPack = other.msgPack;
+  public Map<String, Object> getAsMap() {
+    if (msgPack != null) {
+      try {
+        return objectMapper.fromMsgpackAsMap(msgPack);
+      } catch (Exception e) {
+        final String json = getAsJsonString();
+
+        throw new ClientException(String.format("Failed deserialize JSON '%s' to map", json), e);
+      }
+    } else {
+      return null;
     }
+  }
 
-    public byte[] getMsgPack()
-    {
-        return msgPack;
+  public <T> T getAsType(Class<T> type) {
+    if (msgPack != null) {
+      try {
+        return objectMapper.fromMsgpackAsType(msgPack, type);
+      } catch (Exception e) {
+        final String json = getAsJsonString();
+
+        throw new ClientException(
+            String.format("Failed deserialize JSON '%s' to type '%s'", json, type.getName()), e);
+      }
+    } else {
+      return null;
     }
+  }
 
-    public void setMsgPack(byte[] msgPack)
-    {
-        this.msgPack = msgPack;
+  public void setJson(String json) {
+    if (json != null) {
+      msgPack = msgPackConverter.convertToMsgPack(json);
+    } else {
+      msgPack = null;
     }
+  }
 
-    public String getAsJsonString()
-    {
-        if (msgPack != null)
-        {
-            return msgPackConverter.convertToJson(msgPack);
-        }
-        else
-        {
-            return null;
-        }
+  public void setJson(InputStream stream) {
+    if (stream != null) {
+      msgPack = this.msgPackConverter.convertToMsgPack(stream);
+    } else {
+      msgPack = null;
     }
+  }
 
-    public Map<String, Object> getAsMap()
-    {
-        if (msgPack != null)
-        {
-            try
-            {
-                return objectMapper.fromMsgpackAsMap(msgPack);
-            }
-            catch (Exception e)
-            {
-                final String json = getAsJsonString();
-
-                throw new ClientException(String.format("Failed deserialize JSON '%s' to map", json), e);
-            }
-        }
-        else
-        {
-            return null;
-        }
+  public void setAsMap(Map<String, Object> payload) {
+    if (payload != null) {
+      msgPack = objectMapper.toMsgpack(payload);
+    } else {
+      msgPack = null;
     }
+  }
 
-    public <T> T getAsType(Class<T> type)
-    {
-        if (msgPack != null)
-        {
-            try
-            {
-                return objectMapper.fromMsgpackAsType(msgPack, type);
-            }
-            catch (Exception e)
-            {
-                final String json = getAsJsonString();
-
-                throw new ClientException(String.format("Failed deserialize JSON '%s' to type '%s'", json, type.getName()), e);
-            }
-        }
-        else
-        {
-            return null;
-        }
+  public void setAsObject(Object payload) {
+    if (payload != null) {
+      msgPack = objectMapper.toMsgpack(payload);
+    } else {
+      msgPack = null;
     }
-
-    public void setJson(String json)
-    {
-        if (json != null)
-        {
-            msgPack = msgPackConverter.convertToMsgPack(json);
-        }
-        else
-        {
-            msgPack = null;
-        }
-    }
-
-    public void setJson(InputStream stream)
-    {
-        if (stream != null)
-        {
-            msgPack = this.msgPackConverter.convertToMsgPack(stream);
-        }
-        else
-        {
-            msgPack = null;
-        }
-    }
-
-    public void setAsMap(Map<String, Object> payload)
-    {
-        if (payload != null)
-        {
-            msgPack = objectMapper.toMsgpack(payload);
-        }
-        else
-        {
-            msgPack = null;
-        }
-    }
-
-    public void setAsObject(Object payload)
-    {
-        if (payload != null)
-        {
-            msgPack = objectMapper.toMsgpack(payload);
-        }
-        else
-        {
-            msgPack = null;
-        }
-    }
-
+  }
 }

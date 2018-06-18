@@ -15,59 +15,49 @@
  */
 package io.zeebe.client.api.commands;
 
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import java.io.InputStream;
 import java.util.Map;
 
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
+public interface UpdatePayloadWorkflowInstanceCommandStep1 {
+  /**
+   * Set the new payload of the workflow instance.
+   *
+   * @param payload the payload (JSON) as stream
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
+  UpdatePayloadWorkflowInstanceCommandStep2 payload(InputStream payload);
 
-public interface UpdatePayloadWorkflowInstanceCommandStep1
-{
-    /**
-     * Set the new payload of the workflow instance.
-     *
-     * @param payload
-     *            the payload (JSON) as stream
-     *
-     * @return the builder for this command. Call {@link #send()} to
-     *         complete the command and send it to the broker.
-     */
-    UpdatePayloadWorkflowInstanceCommandStep2 payload(InputStream payload);
+  /**
+   * Set the new payload of the workflow instance.
+   *
+   * @param payload the payload (JSON) as String
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
+  UpdatePayloadWorkflowInstanceCommandStep2 payload(String payload);
 
-    /**
-     * Set the new payload of the workflow instance.
-     *
-     * @param payload
-     *            the payload (JSON) as String
-     *
-     * @return the builder for this command. Call {@link #send()} to
-     *         complete the command and send it to the broker.
-     */
-    UpdatePayloadWorkflowInstanceCommandStep2 payload(String payload);
+  /**
+   * Set the new payload of the workflow instance.
+   *
+   * @param payload the payload as map
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
+  UpdatePayloadWorkflowInstanceCommandStep2 payload(Map<String, Object> payload);
 
-    /**
-     * Set the new payload of the workflow instance.
-     *
-     * @param payload
-     *            the payload as map
-     *
-     * @return the builder for this command. Call {@link #send()} to
-     *         complete the command and send it to the broker.
-     */
-    UpdatePayloadWorkflowInstanceCommandStep2 payload(Map<String, Object> payload);
+  /**
+   * Set the new payload of the workflow instance.
+   *
+   * @param payload the payload as object
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
+  UpdatePayloadWorkflowInstanceCommandStep2 payload(Object payload);
 
-    /**
-     * Set the new payload of the workflow instance.
-     *
-     * @param payload
-     *            the payload as object
-     *
-     * @return the builder for this command. Call {@link #send()} to
-     *         complete the command and send it to the broker.
-     */
-    UpdatePayloadWorkflowInstanceCommandStep2 payload(Object payload);
-
-    interface UpdatePayloadWorkflowInstanceCommandStep2 extends FinalCommandStep<WorkflowInstanceEvent>
-    {
-        // the place for new optional parameters
-    }
+  interface UpdatePayloadWorkflowInstanceCommandStep2
+      extends FinalCommandStep<WorkflowInstanceEvent> {
+    // the place for new optional parameters
+  }
 }

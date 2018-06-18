@@ -19,34 +19,29 @@ import io.zeebe.transport.ClientResponse;
 import io.zeebe.transport.RemoteAddress;
 import org.agrona.DirectBuffer;
 
-public class ClientResponseImpl implements ClientResponse
-{
-    private final RemoteAddress remoteAddres;
-    private final long requestId;
-    private final DirectBuffer responseBuffer;
+public class ClientResponseImpl implements ClientResponse {
+  private final RemoteAddress remoteAddres;
+  private final long requestId;
+  private final DirectBuffer responseBuffer;
 
-    public ClientResponseImpl(IncomingResponse incomingResponse, RemoteAddress remoteAddress)
-    {
-        this.remoteAddres = remoteAddress;
-        this.requestId = incomingResponse.getRequestId();
-        this.responseBuffer = incomingResponse.getResponseBuffer();
-    }
+  public ClientResponseImpl(IncomingResponse incomingResponse, RemoteAddress remoteAddress) {
+    this.remoteAddres = remoteAddress;
+    this.requestId = incomingResponse.getRequestId();
+    this.responseBuffer = incomingResponse.getResponseBuffer();
+  }
 
-    @Override
-    public RemoteAddress getRemoteAddress()
-    {
-        return remoteAddres;
-    }
+  @Override
+  public RemoteAddress getRemoteAddress() {
+    return remoteAddres;
+  }
 
-    @Override
-    public long getRequestId()
-    {
-        return requestId;
-    }
+  @Override
+  public long getRequestId() {
+    return requestId;
+  }
 
-    @Override
-    public DirectBuffer getResponseBuffer()
-    {
-        return responseBuffer;
-    }
+  @Override
+  public DirectBuffer getResponseBuffer() {
+    return responseBuffer;
+  }
 }

@@ -24,84 +24,74 @@ import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.servicecontainer.*;
 
-public class LogWriteBufferService implements Service<Dispatcher>
-{
-    private final Injector<LogStorage> logStorageInjector = new Injector<>();
-    private final Injector<LogBlockIndex> logBlockIndexInjector = new Injector<>();
+public class LogWriteBufferService implements Service<Dispatcher> {
+  private final Injector<LogStorage> logStorageInjector = new Injector<>();
+  private final Injector<LogBlockIndex> logBlockIndexInjector = new Injector<>();
 
-    protected DispatcherBuilder dispatcherBuilder;
-    protected Dispatcher dispatcher;
+  protected DispatcherBuilder dispatcherBuilder;
+  protected Dispatcher dispatcher;
 
-    public LogWriteBufferService(DispatcherBuilder builder)
-    {
-        this.dispatcherBuilder = builder;
-    }
+  public LogWriteBufferService(DispatcherBuilder builder) {
+    this.dispatcherBuilder = builder;
+  }
 
-    @Override
-    public void start(ServiceStartContext ctx)
-    {
-        ctx.run(() ->
-        {
-            final int partitionId = determineInitialPartitionId();
+  @Override
+  public void start(ServiceStartContext ctx) {
+    ctx.run(
+        () -> {
+          final int partitionId = determineInitialPartitionId();
 
-            dispatcher = dispatcherBuilder
-                .initialPartitionId(partitionId + 1)
-                .name(ctx.getName())
-                .actorScheduler(ctx.getScheduler())
-                .build();
+          dispatcher =
+              dispatcherBuilder
+                  .initialPartitionId(partitionId + 1)
+                  .name(ctx.getName())
+                  .actorScheduler(ctx.getScheduler())
+                  .build();
         });
+  }
+
+  @Override
+  public void stop(ServiceStopContext ctx) {
+    ctx.async(dispatcher.closeAsync());
+  }
+
+  private int determineInitialPartitionId() {
+    final LogStorage logStorage = logStorageInjector.getValue();
+    final LogBlockIndex logBlockIndex = logBlockIndexInjector.getValue();
+
+    try (BufferedLogStreamReader logReader = new BufferedLogStreamReader(true)) {
+      logReader.wrap(logStorage, logBlockIndex);
+
+      long lastPosition = 0;
+
+      // Get position of last entry
+      logReader.seekToLastEvent();
+      if (logReader.hasNext()) {
+        final LoggedEvent lastEntry = logReader.next();
+        lastPosition = lastEntry.getPosition();
+      }
+
+      // dispatcher needs to generate positions greater than the last position
+      int partitionId = 0;
+
+      if (lastPosition > 0) {
+        partitionId = PositionUtil.partitionId(lastPosition);
+      }
+
+      return partitionId;
     }
+  }
 
-    @Override
-    public void stop(ServiceStopContext ctx)
-    {
-        ctx.async(dispatcher.closeAsync());
-    }
+  @Override
+  public Dispatcher get() {
+    return dispatcher;
+  }
 
-    private int determineInitialPartitionId()
-    {
-        final LogStorage logStorage = logStorageInjector.getValue();
-        final LogBlockIndex logBlockIndex = logBlockIndexInjector.getValue();
+  public Injector<LogBlockIndex> getLogBlockIndexInjector() {
+    return logBlockIndexInjector;
+  }
 
-        try (BufferedLogStreamReader logReader = new BufferedLogStreamReader(true))
-        {
-            logReader.wrap(logStorage, logBlockIndex);
-
-            long lastPosition = 0;
-
-            // Get position of last entry
-            logReader.seekToLastEvent();
-            if (logReader.hasNext())
-            {
-                final LoggedEvent lastEntry = logReader.next();
-                lastPosition = lastEntry.getPosition();
-            }
-
-            // dispatcher needs to generate positions greater than the last position
-            int partitionId = 0;
-
-            if (lastPosition > 0)
-            {
-                partitionId = PositionUtil.partitionId(lastPosition);
-            }
-
-            return partitionId;
-        }
-    }
-
-    @Override
-    public Dispatcher get()
-    {
-        return dispatcher;
-    }
-
-    public Injector<LogBlockIndex> getLogBlockIndexInjector()
-    {
-        return logBlockIndexInjector;
-    }
-
-    public Injector<LogStorage> getLogStorageInjector()
-    {
-        return logStorageInjector;
-    }
+  public Injector<LogStorage> getLogStorageInjector() {
+    return logStorageInjector;
+  }
 }

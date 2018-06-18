@@ -15,100 +15,85 @@
  */
 package io.zeebe.model.bpmn.impl.error;
 
+import io.zeebe.model.bpmn.impl.Result;
+import io.zeebe.model.bpmn.impl.instance.BaseElement;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.zeebe.model.bpmn.impl.Result;
-import io.zeebe.model.bpmn.impl.instance.BaseElement;
+public class ErrorCollector implements Result {
+  private static final String MESSAGE = "[line:%s] (%s) %s";
 
-public class ErrorCollector implements Result
-{
-    private static final String MESSAGE = "[line:%s] (%s) %s";
+  private final List<Entry> errors = new ArrayList<>();
 
-    private final List<Entry> errors = new ArrayList<>();
+  public void addError(BaseElement element, String message) {
+    errors.add(new Entry(message, element));
+  }
 
-    public void addError(BaseElement element, String message)
-    {
-        errors.add(new Entry(message, element));
+  @Override
+  public boolean success() {
+    return !hasErrors();
+  }
+
+  @Override
+  public boolean hasErrors() {
+    return !errors.isEmpty();
+  }
+
+  @Override
+  public String format() {
+    final StringBuilder builder = new StringBuilder();
+
+    formatErrors(builder);
+    return builder.toString();
+  }
+
+  private void formatErrors(StringBuilder builder) {
+    for (Entry error : errors) {
+      builder.append(
+          String.format(
+              MESSAGE, getLine(error.element), getElementName(error.element), error.message));
+      builder.append("\n");
     }
+  }
 
-    @Override
-    public boolean success()
-    {
-        return !hasErrors();
+  @Override
+  public String formatErrors() {
+    final StringBuilder builder = new StringBuilder();
+    formatErrors(builder);
+    return builder.toString();
+  }
+
+  private String getElementName(BaseElement element) {
+    String name = "unknown";
+    final String elementName = element.getElementName();
+    final String namespace = element.getNamespace();
+    if (elementName != null) {
+      name = namespace + ":" + elementName;
     }
+    return name;
+  }
 
-    @Override
-    public boolean hasErrors()
-    {
-        return !errors.isEmpty();
+  private String getLine(BaseElement element) {
+    String line = "unknown";
+    final Integer lineNumber = element.getLineNumber();
+    if (lineNumber != null) {
+      line = String.valueOf(lineNumber);
     }
+    return line;
+  }
 
-    @Override
-    public String format()
-    {
-        final StringBuilder builder = new StringBuilder();
+  private class Entry {
+    private String message;
+    private BaseElement element;
 
-        formatErrors(builder);
-        return builder.toString();
+    Entry(String message, BaseElement element) {
+      this.message = message;
+      this.element = element == null ? new BaseElement() : element;
     }
+  }
 
-    private void formatErrors(StringBuilder builder)
-    {
-        for (Entry error : errors)
-        {
-            builder.append(String.format(MESSAGE, getLine(error.element), getElementName(error.element), error.message));
-            builder.append("\n");
-        }
-    }
-
-    @Override
-    public String formatErrors()
-    {
-        final StringBuilder builder = new StringBuilder();
-        formatErrors(builder);
-        return builder.toString();
-    }
-
-    private String getElementName(BaseElement element)
-    {
-        String name = "unknown";
-        final String elementName = element.getElementName();
-        final String namespace = element.getNamespace();
-        if (elementName != null)
-        {
-            name = namespace + ":" + elementName;
-        }
-        return name;
-    }
-
-    private String getLine(BaseElement element)
-    {
-        String line = "unknown";
-        final Integer lineNumber = element.getLineNumber();
-        if (lineNumber != null)
-        {
-            line = String.valueOf(lineNumber);
-        }
-        return line;
-    }
-
-    private class Entry
-    {
-        private String message;
-        private BaseElement element;
-
-        Entry(String message, BaseElement element)
-        {
-            this.message = message;
-            this.element = element == null ? new BaseElement() : element;
-        }
-    }
-
-    @Override
-    public String toString()
-    {
-        return format();
-    }
-
+  @Override
+  public String toString() {
+    return format();
+  }
 }

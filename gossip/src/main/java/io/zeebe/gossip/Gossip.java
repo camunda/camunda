@@ -17,9 +17,6 @@ package io.zeebe.gossip;
 
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import java.time.Duration;
-import java.util.List;
-
 import io.zeebe.clustering.gossip.GossipEventType;
 import io.zeebe.clustering.gossip.MembershipEventType;
 import io.zeebe.gossip.dissemination.*;
@@ -31,229 +28,226 @@ import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import java.time.Duration;
+import java.util.List;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
 /**
  * Implementation of the SWIM (Scalable Weakly-consistent Infection-style Membership) protocol.
- * <p>
- * Note that implementation is designed to run on a single thread as an actor.
  *
+ * <p>Note that implementation is designed to run on a single thread as an actor.
  */
-public class Gossip extends Actor implements GossipController, GossipEventPublisher
-{
-    private static final Logger LOG = Loggers.GOSSIP_LOGGER;
+public class Gossip extends Actor implements GossipController, GossipEventPublisher {
+  private static final Logger LOG = Loggers.GOSSIP_LOGGER;
 
-    private final GossipConfiguration configuration;
-    private final MembershipList membershipList;
-    private final DisseminationComponent disseminationComponent;
+  private final GossipConfiguration configuration;
+  private final MembershipList membershipList;
+  private final DisseminationComponent disseminationComponent;
 
-    private final JoinController joinController;
-    private final PingController pingController;
-    private final SyncRequestEventHandler syncRequestHandler;
+  private final JoinController joinController;
+  private final PingController pingController;
+  private final SyncRequestEventHandler syncRequestHandler;
 
-    private final CustomEventListenerConsumer customEventListenerConsumer;
-    private final BufferingServerTransport serverTransport;
-    private final GossipRequestHandler requestHandler;
-    private final String gossipName;
+  private final CustomEventListenerConsumer customEventListenerConsumer;
+  private final BufferingServerTransport serverTransport;
+  private final GossipRequestHandler requestHandler;
+  private final String gossipName;
 
-    public Gossip(
-            final SocketAddress socketAddress,
-            final BufferingServerTransport serverTransport,
-            final ClientTransport clientTransport,
-            final GossipConfiguration configuration)
-    {
-        gossipName = socketAddress.toString();
-        this.serverTransport = serverTransport;
-        this.configuration = configuration;
+  public Gossip(
+      final SocketAddress socketAddress,
+      final BufferingServerTransport serverTransport,
+      final ClientTransport clientTransport,
+      final GossipConfiguration configuration) {
+    gossipName = socketAddress.toString();
+    this.serverTransport = serverTransport;
+    this.configuration = configuration;
 
-        membershipList = new MembershipList(socketAddress, this::onSuspectMember);
-        disseminationComponent = new DisseminationComponent(configuration, membershipList);
+    membershipList = new MembershipList(socketAddress, this::onSuspectMember);
+    disseminationComponent = new DisseminationComponent(configuration, membershipList);
 
-        customEventListenerConsumer = new CustomEventListenerConsumer();
-        final CustomEventSyncResponseSupplier customEventSyncRequestSupplier = new CustomEventSyncResponseSupplier();
+    customEventListenerConsumer = new CustomEventListenerConsumer();
+    final CustomEventSyncResponseSupplier customEventSyncRequestSupplier =
+        new CustomEventSyncResponseSupplier();
 
-        final GossipEventFactory gossipEventFactory = new GossipEventFactory(configuration, membershipList, disseminationComponent, customEventSyncRequestSupplier, customEventListenerConsumer);
-        final GossipEventSender gossipEventSender = new GossipEventSender(clientTransport, serverTransport, membershipList, gossipEventFactory);
+    final GossipEventFactory gossipEventFactory =
+        new GossipEventFactory(
+            configuration,
+            membershipList,
+            disseminationComponent,
+            customEventSyncRequestSupplier,
+            customEventListenerConsumer);
+    final GossipEventSender gossipEventSender =
+        new GossipEventSender(clientTransport, serverTransport, membershipList, gossipEventFactory);
 
-        final GossipContext context = new GossipContext(configuration, membershipList, disseminationComponent, gossipEventSender, gossipEventFactory);
+    final GossipContext context =
+        new GossipContext(
+            configuration,
+            membershipList,
+            disseminationComponent,
+            gossipEventSender,
+            gossipEventFactory);
 
-        joinController = new JoinController(context, actor);
-        pingController = new PingController(context, actor);
-        syncRequestHandler = new SyncRequestEventHandler(context, customEventSyncRequestSupplier, actor);
+    joinController = new JoinController(context, actor);
+    pingController = new PingController(context, actor);
+    syncRequestHandler =
+        new SyncRequestEventHandler(context, customEventSyncRequestSupplier, actor);
 
-        requestHandler = new GossipRequestHandler(gossipEventFactory);
-        requestHandler.registerGossipEventConsumer(GossipEventType.PING, new PingEventHandler(context));
-        requestHandler.registerGossipEventConsumer(GossipEventType.PING_REQ, new PingReqEventHandler(context, actor));
-        requestHandler.registerGossipEventConsumer(GossipEventType.SYNC_REQUEST, syncRequestHandler);
-    }
+    requestHandler = new GossipRequestHandler(gossipEventFactory);
+    requestHandler.registerGossipEventConsumer(GossipEventType.PING, new PingEventHandler(context));
+    requestHandler.registerGossipEventConsumer(
+        GossipEventType.PING_REQ, new PingReqEventHandler(context, actor));
+    requestHandler.registerGossipEventConsumer(GossipEventType.SYNC_REQUEST, syncRequestHandler);
+  }
 
-    @Override
-    protected void onActorStarting()
-    {
-        final ActorFuture<ServerInputSubscription> openSubscriptionFuture =
-            serverTransport.openSubscription("gossip", null, requestHandler);
+  @Override
+  protected void onActorStarting() {
+    final ActorFuture<ServerInputSubscription> openSubscriptionFuture =
+        serverTransport.openSubscription("gossip", null, requestHandler);
 
-        actor.runOnCompletion(openSubscriptionFuture, (subscription, failure) ->
-        {
-            if (failure == null)
-            {
-                actor.consume(subscription, () ->
-                {
-                    if (subscription.poll(1) <= 0)
-                    {
-                        actor.yield();
-                    }
+    actor.runOnCompletion(
+        openSubscriptionFuture,
+        (subscription, failure) -> {
+          if (failure == null) {
+            actor.consume(
+                subscription,
+                () -> {
+                  if (subscription.poll(1) <= 0) {
+                    actor.yield();
+                  }
                 });
-            }
-            else
-            {
-                LOG.error("Failed to open subscription", failure);
-            }
+          } else {
+            LOG.error("Failed to open subscription", failure);
+          }
         });
 
-        membershipList.addListener(new GossipMembershipListener()
-        {
-            @Override
-            public void onAdd(Member member)
-            {
-                // start ping when the first member is added
-                if (membershipList.size() == 1)
-                {
-                    actor.submit(pingController::sendPing);
-                }
+    membershipList.addListener(
+        new GossipMembershipListener() {
+          @Override
+          public void onAdd(Member member) {
+            // start ping when the first member is added
+            if (membershipList.size() == 1) {
+              actor.submit(pingController::sendPing);
             }
+          }
 
-            @Override
-            public void onRemove(Member member)
-            {
-                // ping is stopped when the last member is removed
-            }
+          @Override
+          public void onRemove(Member member) {
+            // ping is stopped when the last member is removed
+          }
         });
-    }
+  }
 
-    public ActorFuture<Void> close()
-    {
-        return actor.close();
-    }
+  public ActorFuture<Void> close() {
+    return actor.close();
+  }
 
-    private void onSuspectMember(Member member)
-    {
-        final GossipTerm suspicionTerm = new GossipTerm().wrap(member.getTerm());
+  private void onSuspectMember(Member member) {
+    final GossipTerm suspicionTerm = new GossipTerm().wrap(member.getTerm());
 
-        final int multiplier = configuration.getSuspicionMultiplier();
-        final int clusterSize = 1 + membershipList.size();
-        final Duration probeInterval = configuration.getProbeIntervalDuration();
-        final Duration suspicionTimeout = GossipMath.suspicionTimeout(multiplier, clusterSize, probeInterval);
+    final int multiplier = configuration.getSuspicionMultiplier();
+    final int clusterSize = 1 + membershipList.size();
+    final Duration probeInterval = configuration.getProbeIntervalDuration();
+    final Duration suspicionTimeout =
+        GossipMath.suspicionTimeout(multiplier, clusterSize, probeInterval);
 
-        actor.runDelayed(suspicionTimeout, () ->
-        {
-            // ensure that the member is still suspected
-            if (member.getTerm().isEqual(suspicionTerm))
-            {
-                LOG.info("Remove suspicious member '{}'", member.getId());
+    actor.runDelayed(
+        suspicionTimeout,
+        () -> {
+          // ensure that the member is still suspected
+          if (member.getTerm().isEqual(suspicionTerm)) {
+            LOG.info("Remove suspicious member '{}'", member.getId());
 
-                membershipList.removeMember(member.getAddress());
+            membershipList.removeMember(member.getAddress());
 
-                LOG.trace("Spread CONFIRM event about '{}'", member.getId());
+            LOG.trace("Spread CONFIRM event about '{}'", member.getId());
 
-                disseminationComponent.addMembershipEvent()
-                    .address(member.getAddress())
-                    .gossipTerm(member.getTerm())
-                    .type(MembershipEventType.CONFIRM);
-            }
+            disseminationComponent
+                .addMembershipEvent()
+                .address(member.getAddress())
+                .gossipTerm(member.getTerm())
+                .type(MembershipEventType.CONFIRM);
+          }
         });
-    }
+  }
 
-    @Override
-    public String getName()
-    {
-        return gossipName;
-    }
+  @Override
+  public String getName() {
+    return gossipName;
+  }
 
-    @Override
-    public ActorFuture<Void> join(List<SocketAddress> contactPoints)
-    {
-        final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+  @Override
+  public ActorFuture<Void> join(List<SocketAddress> contactPoints) {
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
 
-        actor.call(() -> joinController.join(contactPoints, future));
+    actor.call(() -> joinController.join(contactPoints, future));
 
-        return future;
-    }
+    return future;
+  }
 
-    @Override
-    public ActorFuture<Void> leave()
-    {
-        final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+  @Override
+  public ActorFuture<Void> leave() {
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
 
-        actor.call(() -> joinController.leave(future));
+    actor.call(() -> joinController.leave(future));
 
-        return future;
-    }
+    return future;
+  }
 
-    @Override
-    public void publishEvent(DirectBuffer typeBuffer, DirectBuffer payloadBuffer, int offset, int length)
-    {
-        // copy the buffer because of the asynchronous execution
-        final DirectBuffer type = BufferUtil.cloneBuffer(typeBuffer);
-        final DirectBuffer payload = BufferUtil.cloneBuffer(payloadBuffer, offset, length);
+  @Override
+  public void publishEvent(
+      DirectBuffer typeBuffer, DirectBuffer payloadBuffer, int offset, int length) {
+    // copy the buffer because of the asynchronous execution
+    final DirectBuffer type = BufferUtil.cloneBuffer(typeBuffer);
+    final DirectBuffer payload = BufferUtil.cloneBuffer(payloadBuffer, offset, length);
 
-        actor.call(() ->
-        {
-            final Member self = membershipList.self();
+    actor.call(
+        () -> {
+          final Member self = membershipList.self();
 
-            GossipTerm currentTerm = self.getTermForEventType(type);
-            if (currentTerm == null)
-            {
-                currentTerm = new GossipTerm()
-                    .epoch(self.getTerm().getEpoch())
-                    .heartbeat(0);
+          GossipTerm currentTerm = self.getTermForEventType(type);
+          if (currentTerm == null) {
+            currentTerm = new GossipTerm().epoch(self.getTerm().getEpoch()).heartbeat(0);
 
-                self.addTermForEventType(type, currentTerm);
-            }
-            else
-            {
-                currentTerm.increment();
-            }
+            self.addTermForEventType(type, currentTerm);
+          } else {
+            currentTerm.increment();
+          }
 
-            LOG.trace("Spread custom event of type '{}', in term {}", bufferAsString(type), currentTerm);
+          LOG.trace(
+              "Spread custom event of type '{}', in term {}", bufferAsString(type), currentTerm);
 
-            disseminationComponent.addCustomEvent()
-                .senderAddress(self.getAddress())
-                .senderGossipTerm(currentTerm)
-                .type(type)
-                .payload(payload, offset, length);
+          disseminationComponent
+              .addCustomEvent()
+              .senderAddress(self.getAddress())
+              .senderGossipTerm(currentTerm)
+              .type(type)
+              .payload(payload, offset, length);
         });
-    }
+  }
 
-    @Override
-    public void addMembershipListener(GossipMembershipListener listener)
-    {
-        actor.call(() -> membershipList.addListener(listener));
-    }
+  @Override
+  public void addMembershipListener(GossipMembershipListener listener) {
+    actor.call(() -> membershipList.addListener(listener));
+  }
 
-    @Override
-    public void removeMembershipListener(GossipMembershipListener listener)
-    {
-        actor.call(() -> membershipList.removeListener(listener));
-    }
+  @Override
+  public void removeMembershipListener(GossipMembershipListener listener) {
+    actor.call(() -> membershipList.removeListener(listener));
+  }
 
-    @Override
-    public void addCustomEventListener(DirectBuffer eventType, GossipCustomEventListener listener)
-    {
-        actor.call(() -> customEventListenerConsumer.addCustomEventListener(eventType, listener));
-    }
+  @Override
+  public void addCustomEventListener(DirectBuffer eventType, GossipCustomEventListener listener) {
+    actor.call(() -> customEventListenerConsumer.addCustomEventListener(eventType, listener));
+  }
 
-    @Override
-    public void removeCustomEventListener(GossipCustomEventListener listener)
-    {
-        actor.call(() -> customEventListenerConsumer.removeCustomEventListener(listener));
-    }
+  @Override
+  public void removeCustomEventListener(GossipCustomEventListener listener) {
+    actor.call(() -> customEventListenerConsumer.removeCustomEventListener(listener));
+  }
 
-    @Override
-    public void registerSyncRequestHandler(DirectBuffer eventType, GossipSyncRequestHandler handler)
-    {
-        actor.call(() -> syncRequestHandler.registerSyncRequestHandler(eventType, handler));
-    }
-
+  @Override
+  public void registerSyncRequestHandler(DirectBuffer eventType, GossipSyncRequestHandler handler) {
+    actor.call(() -> syncRequestHandler.registerSyncRequestHandler(eventType, handler));
+  }
 }

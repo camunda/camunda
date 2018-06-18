@@ -17,70 +17,58 @@
  */
 package io.zeebe.broker.system.configuration;
 
-public class NetworkCfg implements ConfigurationEntry
-{
-    private String host = "0.0.0.0";
-    private String defaultSendBufferSize = "16M";
+public class NetworkCfg implements ConfigurationEntry {
+  private String host = "0.0.0.0";
+  private String defaultSendBufferSize = "16M";
 
-    private SocketBindingClientApiCfg client = new SocketBindingClientApiCfg();
-    private SocketBindingManagementCfg management = new SocketBindingManagementCfg();
-    private SocketBindingReplicationCfg replication = new SocketBindingReplicationCfg();
+  private SocketBindingClientApiCfg client = new SocketBindingClientApiCfg();
+  private SocketBindingManagementCfg management = new SocketBindingManagementCfg();
+  private SocketBindingReplicationCfg replication = new SocketBindingReplicationCfg();
 
-    @Override
-    public void init(BrokerCfg brokerCfg, String brokerBase)
-    {
-        client.applyDefaults(this);
-        management.applyDefaults(this);
-        replication.applyDefaults(this);
-    }
+  @Override
+  public void init(BrokerCfg brokerCfg, String brokerBase) {
+    client.applyDefaults(this);
+    management.applyDefaults(this);
+    replication.applyDefaults(this);
+  }
 
-    public String getHost()
-    {
-        return host;
-    }
+  public String getHost() {
+    return host;
+  }
 
-    public void setHost(String host)
-    {
-        this.host = host;
-    }
+  public void setHost(String host) {
+    this.host = host;
+  }
 
-    public String getDefaultSendBufferSize()
-    {
-        return defaultSendBufferSize;
-    }
+  public String getDefaultSendBufferSize() {
+    return defaultSendBufferSize;
+  }
 
-    public void setDefaultSendBufferSize(String defaultSendBufferSize)
-    {
-        this.defaultSendBufferSize = defaultSendBufferSize;
-    }
+  public void setDefaultSendBufferSize(String defaultSendBufferSize) {
+    this.defaultSendBufferSize = defaultSendBufferSize;
+  }
 
-    public SocketBindingClientApiCfg getClient()
-    {
-        return client;
-    }
+  public SocketBindingClientApiCfg getClient() {
+    return client;
+  }
 
-    public void setClient(SocketBindingClientApiCfg clientApi)
-    {
-        this.client = clientApi;
-    }
+  public void setClient(SocketBindingClientApiCfg clientApi) {
+    this.client = clientApi;
+  }
 
-    public SocketBindingManagementCfg getManagement()
-    {
-        return management;
-    }
+  public SocketBindingManagementCfg getManagement() {
+    return management;
+  }
 
-    public void setManagement(SocketBindingManagementCfg managementApi)
-    {
-        this.management = managementApi;
-    }
+  public void setManagement(SocketBindingManagementCfg managementApi) {
+    this.management = managementApi;
+  }
 
-    public SocketBindingReplicationCfg getReplication()
-    {
-        return replication;
-    }
+  public SocketBindingReplicationCfg getReplication() {
+    return replication;
+  }
 
-    public void setReplication(SocketBindingReplicationCfg replicationApi)
-    {
-        this.replication = replicationApi;
-    }
+  public void setReplication(SocketBindingReplicationCfg replicationApi) {
+    this.replication = replicationApi;
+  }
 }

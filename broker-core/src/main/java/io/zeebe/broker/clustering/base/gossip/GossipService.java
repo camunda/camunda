@@ -23,59 +23,48 @@ import io.zeebe.gossip.GossipConfiguration;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.*;
 
-/**
- * Start / stop gossip on broker start / stop
- */
-public class GossipService implements Service<Gossip>
-{
-    private final Injector<ClientTransport> clientTransportInjector = new Injector<>();
-    private final Injector<BufferingServerTransport> bufferingServerTransportInjector = new Injector<>();
-    private final BrokerCfg configuration;
+/** Start / stop gossip on broker start / stop */
+public class GossipService implements Service<Gossip> {
+  private final Injector<ClientTransport> clientTransportInjector = new Injector<>();
+  private final Injector<BufferingServerTransport> bufferingServerTransportInjector =
+      new Injector<>();
+  private final BrokerCfg configuration;
 
-    private Gossip gossip;
+  private Gossip gossip;
 
-    public GossipService(BrokerCfg configuration)
-    {
-        this.configuration = configuration;
-    }
+  public GossipService(BrokerCfg configuration) {
+    this.configuration = configuration;
+  }
 
-    @Override
-    public void start(ServiceStartContext startContext)
-    {
-        final BufferingServerTransport serverTransport = bufferingServerTransportInjector.getValue();
-        final ClientTransport clientTransport = clientTransportInjector.getValue();
+  @Override
+  public void start(ServiceStartContext startContext) {
+    final BufferingServerTransport serverTransport = bufferingServerTransportInjector.getValue();
+    final ClientTransport clientTransport = clientTransportInjector.getValue();
 
-        final SocketAddress bindHost = configuration.getNetwork()
-            .getManagement()
-            .toSocketAddress();
+    final SocketAddress bindHost = configuration.getNetwork().getManagement().toSocketAddress();
 
-        final GossipConfiguration gossipConfiguration = configuration.getGossip();
+    final GossipConfiguration gossipConfiguration = configuration.getGossip();
 
-        gossip = new Gossip(bindHost, serverTransport, clientTransport, gossipConfiguration);
+    gossip = new Gossip(bindHost, serverTransport, clientTransport, gossipConfiguration);
 
-        startContext.async(startContext.getScheduler().submitActor(gossip));
-    }
+    startContext.async(startContext.getScheduler().submitActor(gossip));
+  }
 
-    @Override
-    public void stop(ServiceStopContext stopContext)
-    {
-        stopContext.async(gossip.close());
-    }
+  @Override
+  public void stop(ServiceStopContext stopContext) {
+    stopContext.async(gossip.close());
+  }
 
-    @Override
-    public Gossip get()
-    {
-        return gossip;
-    }
+  @Override
+  public Gossip get() {
+    return gossip;
+  }
 
-    public Injector<ClientTransport> getClientTransportInjector()
-    {
-        return clientTransportInjector;
-    }
+  public Injector<ClientTransport> getClientTransportInjector() {
+    return clientTransportInjector;
+  }
 
-    public Injector<BufferingServerTransport> getBufferingServerTransportInjector()
-    {
-        return bufferingServerTransportInjector;
-    }
-
+  public Injector<BufferingServerTransport> getBufferingServerTransportInjector() {
+    return bufferingServerTransportInjector;
+  }
 }

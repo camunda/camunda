@@ -17,33 +17,28 @@ package io.zeebe.client.impl.subscription.topic;
 
 import java.lang.reflect.Array;
 
-public class BiEnumMap<K1 extends Enum<K1>, K2 extends Enum<K2>, V>
-{
-    private final V[] elements;
-    private final int key2Cardinality;
+public class BiEnumMap<K1 extends Enum<K1>, K2 extends Enum<K2>, V> {
+  private final V[] elements;
+  private final int key2Cardinality;
 
-    @SuppressWarnings("unchecked")
-    public BiEnumMap(Class<K1> key1Class, Class<K2> key2Class, Class<?> valueClass)
-    {
-        final int key1Cardinality = key1Class.getEnumConstants().length;
-        this.key2Cardinality = key2Class.getEnumConstants().length;
-        final int cardinality = key1Cardinality * key2Cardinality;
+  @SuppressWarnings("unchecked")
+  public BiEnumMap(Class<K1> key1Class, Class<K2> key2Class, Class<?> valueClass) {
+    final int key1Cardinality = key1Class.getEnumConstants().length;
+    this.key2Cardinality = key2Class.getEnumConstants().length;
+    final int cardinality = key1Cardinality * key2Cardinality;
 
-        this.elements = (V[]) Array.newInstance(valueClass, cardinality);
-    }
+    this.elements = (V[]) Array.newInstance(valueClass, cardinality);
+  }
 
-    private int mapToIndex(K1 key1, K2 key2)
-    {
-        return (key1.ordinal() * key2Cardinality) + key2.ordinal();
-    }
+  private int mapToIndex(K1 key1, K2 key2) {
+    return (key1.ordinal() * key2Cardinality) + key2.ordinal();
+  }
 
-    public V get(K1 key1, K2 key2)
-    {
-        return elements[mapToIndex(key1, key2)];
-    }
+  public V get(K1 key1, K2 key2) {
+    return elements[mapToIndex(key1, key2)];
+  }
 
-    public void put(K1 key1, K2 key2, V value)
-    {
-        elements[mapToIndex(key1, key2)] = value;
-    }
+  public void put(K1 key1, K2 key2, V value) {
+    elements[mapToIndex(key1, key2)] = value;
+  }
 }

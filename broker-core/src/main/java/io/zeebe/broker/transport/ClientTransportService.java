@@ -17,58 +17,54 @@
  */
 package io.zeebe.broker.transport;
 
-import java.util.Collection;
-
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.*;
 import io.zeebe.transport.impl.memory.NonBlockingMemoryPool;
 import io.zeebe.transport.impl.memory.UnboundedMemoryPool;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorScheduler;
+import java.util.Collection;
 
-public class ClientTransportService implements Service<ClientTransport>
-{
-    protected final Collection<SocketAddress> defaultEndpoints;
-    private final ByteValue messageBufferSize;
+public class ClientTransportService implements Service<ClientTransport> {
+  protected final Collection<SocketAddress> defaultEndpoints;
+  private final ByteValue messageBufferSize;
 
-    protected ClientTransport transport;
+  protected ClientTransport transport;
 
-    public ClientTransportService(Collection<SocketAddress> defaultEndpoints, ByteValue messageBufferSize)
-    {
-        this.defaultEndpoints = defaultEndpoints;
-        this.messageBufferSize = messageBufferSize;
-    }
+  public ClientTransportService(
+      Collection<SocketAddress> defaultEndpoints, ByteValue messageBufferSize) {
+    this.defaultEndpoints = defaultEndpoints;
+    this.messageBufferSize = messageBufferSize;
+  }
 
-    @Override
-    public void start(ServiceStartContext startContext)
-    {
-        final ActorScheduler scheduler = startContext.getScheduler();
+  @Override
+  public void start(ServiceStartContext startContext) {
+    final ActorScheduler scheduler = startContext.getScheduler();
 
-        final ClientTransportBuilder transportBuilder = Transports.newClientTransport();
+    final ClientTransportBuilder transportBuilder = Transports.newClientTransport();
 
-        transport = transportBuilder
+    transport =
+        transportBuilder
             .messageMemoryPool(new NonBlockingMemoryPool(messageBufferSize))
-            // client transport in broker should no do any high volume interactions using request/resp
+            // client transport in broker should no do any high volume interactions using
+            // request/resp
             .requestMemoryPool(new UnboundedMemoryPool())
             .scheduler(scheduler)
             .build();
 
-        if (defaultEndpoints != null)
-        {
-            // make transport open and manage channels to the default endpoints
-            defaultEndpoints.forEach(s -> transport.registerRemoteAddress(s));
-        }
+    if (defaultEndpoints != null) {
+      // make transport open and manage channels to the default endpoints
+      defaultEndpoints.forEach(s -> transport.registerRemoteAddress(s));
     }
+  }
 
-    @Override
-    public void stop(ServiceStopContext stopContext)
-    {
-        stopContext.async(transport.closeAsync());
-    }
+  @Override
+  public void stop(ServiceStopContext stopContext) {
+    stopContext.async(transport.closeAsync());
+  }
 
-    @Override
-    public ClientTransport get()
-    {
-        return transport;
-    }
+  @Override
+  public ClientTransport get() {
+    return transport;
+  }
 }

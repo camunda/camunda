@@ -21,50 +21,42 @@ import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 
-public class UntypedRecordImpl extends RecordImpl
-{
-    private final PayloadField content;
+public class UntypedRecordImpl extends RecordImpl {
+  private final PayloadField content;
 
-    public UntypedRecordImpl(
-            final ZeebeObjectMapperImpl objectMapper,
-            final RecordType recordType,
-            final ValueType valueType,
-            final byte[] rawContent)
-    {
-        super(objectMapper, recordType, valueType);
+  public UntypedRecordImpl(
+      final ZeebeObjectMapperImpl objectMapper,
+      final RecordType recordType,
+      final ValueType valueType,
+      final byte[] rawContent) {
+    super(objectMapper, recordType, valueType);
 
-        this.content = new PayloadField(objectMapper);
-        this.content.setMsgPack(rawContent);
-    }
+    this.content = new PayloadField(objectMapper);
+    this.content.setMsgPack(rawContent);
+  }
 
-    public byte[] getAsMsgPack()
-    {
-        return content.getMsgPack();
-    }
+  public byte[] getAsMsgPack() {
+    return content.getMsgPack();
+  }
 
-    public <T extends Record> T asRecordType(Class<T> recordClass)
-    {
-        return objectMapper.asRecordType(this, recordClass);
-    }
+  public <T extends Record> T asRecordType(Class<T> recordClass) {
+    return objectMapper.asRecordType(this, recordClass);
+  }
 
-    @Override
-    public Class<? extends RecordImpl> getEventClass()
-    {
-        // not available for an untyped record
-        throw new UnsupportedOperationException();
-    }
+  @Override
+  public Class<? extends RecordImpl> getEventClass() {
+    // not available for an untyped record
+    throw new UnsupportedOperationException();
+  }
 
-    @Override
-    public String toJson()
-    {
-        // not available for an untyped record
-        throw new UnsupportedOperationException();
-    }
+  @Override
+  public String toJson() {
+    // not available for an untyped record
+    throw new UnsupportedOperationException();
+  }
 
-    @Override
-    public String toString()
-    {
-        return "UntypedRecord [metadata=" + getMetadata() + "]";
-    }
-
+  @Override
+  public String toString() {
+    return "UntypedRecord [metadata=" + getMetadata() + "]";
+  }
 }

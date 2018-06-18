@@ -32,123 +32,116 @@ import io.zeebe.client.util.Events;
 import io.zeebe.test.util.AutoCloseableRule;
 import org.junit.*;
 
-public class ZeebeObjectMapperTest
-{
+public class ZeebeObjectMapperTest {
 
-    @Rule
-    public AutoCloseableRule closeables = new AutoCloseableRule();
+  @Rule public AutoCloseableRule closeables = new AutoCloseableRule();
 
-    private ZeebeObjectMapper objectMapper;
+  private ZeebeObjectMapper objectMapper;
 
-    @Before
-    public void init()
-    {
-        final ZeebeClient client = ZeebeClient.newClient();
-        closeables.manage(client);
+  @Before
+  public void init() {
+    final ZeebeClient client = ZeebeClient.newClient();
+    closeables.manage(client);
 
-        this.objectMapper = client.objectMapper();
-    }
+    this.objectMapper = client.objectMapper();
+  }
 
-    @Test
-    public void shouldSerializeRecordToJson()
-    {
-        // given
-        final ZeebeObjectMapperImpl mockMapper = mock(ZeebeObjectMapperImpl.class);
-        final JobEvent jobEvent = new JobEventImpl(mockMapper);
+  @Test
+  public void shouldSerializeRecordToJson() {
+    // given
+    final ZeebeObjectMapperImpl mockMapper = mock(ZeebeObjectMapperImpl.class);
+    final JobEvent jobEvent = new JobEventImpl(mockMapper);
 
-        // when
-        jobEvent.toJson();
+    // when
+    jobEvent.toJson();
 
-        // then
-        verify(mockMapper).toJson(jobEvent);
-    }
+    // then
+    verify(mockMapper).toJson(jobEvent);
+  }
 
-    @Test
-    public void shouldSerializeJobRecordWithPayload()
-    {
-        // given
-        final JobEventImpl jobEvent = Events.exampleJob();
-        jobEvent.setPayload("{\"foo\":\"bar\"}");
+  @Test
+  public void shouldSerializeJobRecordWithPayload() {
+    // given
+    final JobEventImpl jobEvent = Events.exampleJob();
+    jobEvent.setPayload("{\"foo\":\"bar\"}");
 
-        // when / then
-        final String json = objectMapper.toJson(jobEvent);
-        assertThat(json).contains("\"payload\":{\"foo\":\"bar\"}");
+    // when / then
+    final String json = objectMapper.toJson(jobEvent);
+    assertThat(json).contains("\"payload\":{\"foo\":\"bar\"}");
 
-        final JobEvent deserializedRecord = objectMapper.fromJson(json, JobEvent.class);
-        assertThat(deserializedRecord.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
-    }
+    final JobEvent deserializedRecord = objectMapper.fromJson(json, JobEvent.class);
+    assertThat(deserializedRecord.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
+  }
 
-    @Test
-    public void shouldSerializeJobRecordWithoutPayload()
-    {
-        // given
-        final JobEventImpl jobEvent = Events.exampleJob();
-        jobEvent.clearPayload();
+  @Test
+  public void shouldSerializeJobRecordWithoutPayload() {
+    // given
+    final JobEventImpl jobEvent = Events.exampleJob();
+    jobEvent.clearPayload();
 
-        // when / then
-        final String json = objectMapper.toJson(jobEvent);
-        assertThat(json).contains("\"payload\":null");
+    // when / then
+    final String json = objectMapper.toJson(jobEvent);
+    assertThat(json).contains("\"payload\":null");
 
-        final JobEvent deserializedRecord = objectMapper.fromJson(json, JobEvent.class);
-        assertThat(deserializedRecord.getPayload()).isNull();
-    }
+    final JobEvent deserializedRecord = objectMapper.fromJson(json, JobEvent.class);
+    assertThat(deserializedRecord.getPayload()).isNull();
+  }
 
-    @Test
-    public void shouldSerializeWorkflowInstanceRecordWithPayload()
-    {
-        // given
-        final WorkflowInstanceEventImpl wfInstanceEvent = Events.exampleWorfklowInstance();
-        wfInstanceEvent.setPayload("{\"foo\":\"bar\"}");
+  @Test
+  public void shouldSerializeWorkflowInstanceRecordWithPayload() {
+    // given
+    final WorkflowInstanceEventImpl wfInstanceEvent = Events.exampleWorfklowInstance();
+    wfInstanceEvent.setPayload("{\"foo\":\"bar\"}");
 
-        // when / then
-        final String json = objectMapper.toJson(wfInstanceEvent);
-        assertThat(json).contains("\"payload\":{\"foo\":\"bar\"}");
+    // when / then
+    final String json = objectMapper.toJson(wfInstanceEvent);
+    assertThat(json).contains("\"payload\":{\"foo\":\"bar\"}");
 
-        final WorkflowInstanceEvent deserializedRecord = objectMapper.fromJson(json, WorkflowInstanceEvent.class);
-        assertThat(deserializedRecord.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
-    }
+    final WorkflowInstanceEvent deserializedRecord =
+        objectMapper.fromJson(json, WorkflowInstanceEvent.class);
+    assertThat(deserializedRecord.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
+  }
 
-    @Test
-    public void shouldSerializeWorkflowInstanceRecordWithoutPayload()
-    {
-        // given
-        final WorkflowInstanceEventImpl wfInstanceEvent = Events.exampleWorfklowInstance();
-        wfInstanceEvent.clearPayload();
+  @Test
+  public void shouldSerializeWorkflowInstanceRecordWithoutPayload() {
+    // given
+    final WorkflowInstanceEventImpl wfInstanceEvent = Events.exampleWorfklowInstance();
+    wfInstanceEvent.clearPayload();
 
-        // when / then
-        final String json = objectMapper.toJson(wfInstanceEvent);
-        assertThat(json).contains("\"payload\":null");
+    // when / then
+    final String json = objectMapper.toJson(wfInstanceEvent);
+    assertThat(json).contains("\"payload\":null");
 
-        final WorkflowInstanceEvent deserializedRecord = objectMapper.fromJson(json, WorkflowInstanceEvent.class);
-        assertThat(deserializedRecord.getPayload()).isNull();
-    }
+    final WorkflowInstanceEvent deserializedRecord =
+        objectMapper.fromJson(json, WorkflowInstanceEvent.class);
+    assertThat(deserializedRecord.getPayload()).isNull();
+  }
 
-    @Test
-    public void shouldThrowExceptionIfDeserializationFails()
-    {
-        assertThatThrownBy(() -> objectMapper.fromJson("invalid", JobEvent.class))
-            .isInstanceOf(ClientException.class)
-            .hasMessage("Failed deserialize JSON 'invalid' to object of type 'io.zeebe.client.api.events.JobEvent'");
-    }
+  @Test
+  public void shouldThrowExceptionIfDeserializationFails() {
+    assertThatThrownBy(() -> objectMapper.fromJson("invalid", JobEvent.class))
+        .isInstanceOf(ClientException.class)
+        .hasMessage(
+            "Failed deserialize JSON 'invalid' to object of type 'io.zeebe.client.api.events.JobEvent'");
+  }
 
-    @Test
-    public void shouldThrowExceptionIfDeserializeToWrongRecord()
-    {
-        final String json = Events.exampleJob().toJson();
+  @Test
+  public void shouldThrowExceptionIfDeserializeToWrongRecord() {
+    final String json = Events.exampleJob().toJson();
 
-        assertThatThrownBy(() ->  objectMapper.fromJson(json, WorkflowInstanceEvent.class))
-            .isInstanceOf(ClientException.class)
-            .hasMessage("Cannot deserialize JSON to object of type 'io.zeebe.client.api.events.WorkflowInstanceEvent'. Incompatible type for record 'EVENT - JOB'.");
-    }
+    assertThatThrownBy(() -> objectMapper.fromJson(json, WorkflowInstanceEvent.class))
+        .isInstanceOf(ClientException.class)
+        .hasMessage(
+            "Cannot deserialize JSON to object of type 'io.zeebe.client.api.events.WorkflowInstanceEvent'. Incompatible type for record 'EVENT - JOB'.");
+  }
 
-    @Test
-    public void shouldThrowExceptionIfDeserializeToImplClass()
-    {
-        final String json = Events.exampleJob().toJson();
+  @Test
+  public void shouldThrowExceptionIfDeserializeToImplClass() {
+    final String json = Events.exampleJob().toJson();
 
-        assertThatThrownBy(() -> objectMapper.fromJson(json, JobEventImpl.class))
-            .isInstanceOf(ClientException.class)
-            .hasMessage("Cannot deserialize JSON: unknown record class 'io.zeebe.client.impl.event.JobEventImpl'");
-    }
-
+    assertThatThrownBy(() -> objectMapper.fromJson(json, JobEventImpl.class))
+        .isInstanceOf(ClientException.class)
+        .hasMessage(
+            "Cannot deserialize JSON: unknown record class 'io.zeebe.client.impl.event.JobEventImpl'");
+  }
 }

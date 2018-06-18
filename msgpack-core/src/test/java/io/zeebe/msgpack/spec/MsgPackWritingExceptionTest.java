@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 package io.zeebe.msgpack.spec;
+
+import io.zeebe.msgpack.spec.MsgPackUtil.CheckedConsumer;
 import java.util.Arrays;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import io.zeebe.msgpack.spec.MsgPackUtil.CheckedConsumer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -28,73 +29,54 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class MsgPackWritingExceptionTest
-{
+public class MsgPackWritingExceptionTest {
 
-    protected static final int BUFFER_CAPACITY = 1024;
-    protected static final int WRITE_OFFSET = 123;
-    protected MutableDirectBuffer actualValueBuffer = new UnsafeBuffer(new byte[BUFFER_CAPACITY]);
-    protected static final String NEGATIVE_BUF_SIZE_EXCEPTION_MSG = "Negative value should not be accepted by size value and unsiged 64bit integer";
+  protected static final int BUFFER_CAPACITY = 1024;
+  protected static final int WRITE_OFFSET = 123;
+  protected MutableDirectBuffer actualValueBuffer = new UnsafeBuffer(new byte[BUFFER_CAPACITY]);
+  protected static final String NEGATIVE_BUF_SIZE_EXCEPTION_MSG =
+      "Negative value should not be accepted by size value and unsiged 64bit integer";
 
+  @Rule public ExpectedException exception = ExpectedException.none();
 
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
-    @Parameters(name = "{0}")
-    public static Iterable<Object[]> data()
-    {
-        return Arrays.asList(new Object[][] {
-            {
-                NEGATIVE_BUF_SIZE_EXCEPTION_MSG,
-                codeUnderTest((r) -> r.writeArrayHeader(-1))
-            },
-            {
-                NEGATIVE_BUF_SIZE_EXCEPTION_MSG,
-                codeUnderTest((r) -> r.writeBinaryHeader(-1))
-            },
-            {
-                NEGATIVE_BUF_SIZE_EXCEPTION_MSG,
-                codeUnderTest((r) -> r.writeMapHeader(-1))
-            },
-            {
-                NEGATIVE_BUF_SIZE_EXCEPTION_MSG,
-                codeUnderTest((r) -> r.writeStringHeader(-1))
-            }
+  @Parameters(name = "{0}")
+  public static Iterable<Object[]> data() {
+    return Arrays.asList(
+        new Object[][] {
+          {NEGATIVE_BUF_SIZE_EXCEPTION_MSG, codeUnderTest((r) -> r.writeArrayHeader(-1))},
+          {NEGATIVE_BUF_SIZE_EXCEPTION_MSG, codeUnderTest((r) -> r.writeBinaryHeader(-1))},
+          {NEGATIVE_BUF_SIZE_EXCEPTION_MSG, codeUnderTest((r) -> r.writeMapHeader(-1))},
+          {NEGATIVE_BUF_SIZE_EXCEPTION_MSG, codeUnderTest((r) -> r.writeStringHeader(-1))}
         });
-    }
+  }
 
-    @Parameter(0)
-    public String expectedExceptionMessage;
+  @Parameter(0)
+  public String expectedExceptionMessage;
 
-    @Parameter(1)
-    public CheckedConsumer<MsgPackWriter> codeUnderTest;
+  @Parameter(1)
+  public CheckedConsumer<MsgPackWriter> codeUnderTest;
 
+  @Before
+  public void setUp() {
+    Arrays.fill(actualValueBuffer.byteArray(), (byte) 0);
+  }
 
+  @Test
+  public void shouldNotReadNegativeSize() throws Exception {
+    // given
+    final MsgPackWriter writer = new MsgPackWriter();
+    writer.wrap(actualValueBuffer, WRITE_OFFSET);
 
-    @Before
-    public void setUp()
-    {
-        Arrays.fill(actualValueBuffer.byteArray(), (byte) 0);
-    }
+    // then
+    exception.expect(RuntimeException.class);
+    exception.expectMessage(expectedExceptionMessage);
 
-    @Test
-    public void shouldNotReadNegativeSize() throws Exception
-    {
-        // given
-        final MsgPackWriter writer = new MsgPackWriter();
-        writer.wrap(actualValueBuffer, WRITE_OFFSET);
+    // when
+    codeUnderTest.accept(writer);
+  }
 
-        // then
-        exception.expect(RuntimeException.class);
-        exception.expectMessage(expectedExceptionMessage);
-
-        // when
-        codeUnderTest.accept(writer);
-    }
-
-
-    protected static CheckedConsumer<MsgPackWriter> codeUnderTest(CheckedConsumer<MsgPackWriter> arg)
-    {
-        return arg;
-    }
+  protected static CheckedConsumer<MsgPackWriter> codeUnderTest(
+      CheckedConsumer<MsgPackWriter> arg) {
+    return arg;
+  }
 }

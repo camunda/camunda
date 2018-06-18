@@ -20,37 +20,30 @@ import io.zeebe.protocol.clientapi.ErrorCode;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 
-public class BrokerRequestExceptionMatcher extends BaseMatcher<BrokerErrorException>
-{
+public class BrokerRequestExceptionMatcher extends BaseMatcher<BrokerErrorException> {
 
-    protected ErrorCode expectedDetailCode;
+  protected ErrorCode expectedDetailCode;
 
-    public static BrokerRequestExceptionMatcher brokerException(ErrorCode expectedDetailCode)
-    {
-        final BrokerRequestExceptionMatcher matcher = new BrokerRequestExceptionMatcher();
-        matcher.expectedDetailCode = expectedDetailCode;
-        return matcher;
+  public static BrokerRequestExceptionMatcher brokerException(ErrorCode expectedDetailCode) {
+    final BrokerRequestExceptionMatcher matcher = new BrokerRequestExceptionMatcher();
+    matcher.expectedDetailCode = expectedDetailCode;
+    return matcher;
+  }
+
+  @Override
+  public boolean matches(Object item) {
+    if (item == null || !(item instanceof BrokerErrorException)) {
+      return false;
     }
 
-    @Override
-    public boolean matches(Object item)
-    {
-        if (item == null || !(item instanceof BrokerErrorException))
-        {
-            return false;
-        }
+    final BrokerErrorException exception = (BrokerErrorException) item;
 
-        final BrokerErrorException exception = (BrokerErrorException) item;
+    return expectedDetailCode == exception.getErrorCode();
+  }
 
-        return expectedDetailCode == exception.getErrorCode();
-    }
-
-    @Override
-    public void describeTo(Description description)
-    {
-        description.appendText(BrokerErrorException.class.getSimpleName());
-        description.appendText(" with detail code " + expectedDetailCode);
-
-    }
-
+  @Override
+  public void describeTo(Description description) {
+    description.appendText(BrokerErrorException.class.getSimpleName());
+    description.appendText(" with detail code " + expectedDetailCode);
+  }
 }

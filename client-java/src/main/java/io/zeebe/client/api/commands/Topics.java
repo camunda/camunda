@@ -17,11 +17,7 @@ package io.zeebe.client.api.commands;
 
 import java.util.List;
 
-public interface Topics
-{
-    /**
-     * @return all available topics
-     */
-    List<Topic> getTopics();
-
+public interface Topics {
+  /** @return all available topics */
+  List<Topic> getTopics();
 }

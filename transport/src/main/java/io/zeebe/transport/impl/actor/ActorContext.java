@@ -20,96 +20,78 @@ import io.zeebe.transport.impl.sender.Sender;
 import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.future.ActorFuture;
 
-public abstract class ActorContext
-{
-    private Conductor conductor;
-    private Sender sender;
-    private Receiver receiver;
+public abstract class ActorContext {
+  private Conductor conductor;
+  private Sender sender;
+  private Receiver receiver;
 
-    private MetricsManager metricsManager;
+  private MetricsManager metricsManager;
 
-    public void setConductor(Conductor clientConductor)
-    {
-        this.conductor = clientConductor;
-    }
+  public void setConductor(Conductor clientConductor) {
+    this.conductor = clientConductor;
+  }
 
-    public void setReceiver(Receiver receiver)
-    {
-        this.receiver = receiver;
-    }
+  public void setReceiver(Receiver receiver) {
+    this.receiver = receiver;
+  }
 
-    public void removeListener(TransportListener listener)
-    {
-        conductor.removeListener(listener);
-    }
+  public void removeListener(TransportListener listener) {
+    conductor.removeListener(listener);
+  }
 
-    public ActorFuture<Void> registerListener(TransportListener channelListener)
-    {
-        return conductor.registerListener(channelListener);
-    }
+  public ActorFuture<Void> registerListener(TransportListener channelListener) {
+    return conductor.registerListener(channelListener);
+  }
 
-    public ActorFuture<Void> onClose()
-    {
-        return conductor.close();
-    }
+  public ActorFuture<Void> onClose() {
+    return conductor.close();
+  }
 
-    public ActorFuture<Void> closeAllOpenChannels()
-    {
-        return conductor.closeCurrentChannels();
-    }
+  public ActorFuture<Void> closeAllOpenChannels() {
+    return conductor.closeCurrentChannels();
+  }
 
-    public ActorFuture<Void> interruptAllChannels()
-    {
-        return conductor.interruptAllChannels();
-    }
+  public ActorFuture<Void> interruptAllChannels() {
+    return conductor.interruptAllChannels();
+  }
 
-    public ActorFuture<Void> closeReceiver()
-    {
-        return receiver.close();
-    }
+  public ActorFuture<Void> closeReceiver() {
+    return receiver.close();
+  }
 
-    public Conductor getConductor()
-    {
-        return conductor;
-    }
+  public Conductor getConductor() {
+    return conductor;
+  }
 
-    public ClientConductor getClientConductor()
-    {
-        return (ClientConductor) conductor;
-    }
+  public ClientConductor getClientConductor() {
+    return (ClientConductor) conductor;
+  }
 
-    public ServerConductor getServerConductor()
-    {
-        return (ServerConductor) conductor;
-    }
+  public ServerConductor getServerConductor() {
+    return (ServerConductor) conductor;
+  }
 
-    public Receiver getReceiver()
-    {
-        return receiver;
-    }
+  public Receiver getReceiver() {
+    return receiver;
+  }
 
-    public MetricsManager getMetricsManager()
-    {
-        return metricsManager;
-    }
+  public MetricsManager getMetricsManager() {
+    return metricsManager;
+  }
 
-    public void setMetricsManager(MetricsManager metricsManager)
-    {
-        this.metricsManager = metricsManager;
-    }
+  public void setMetricsManager(MetricsManager metricsManager) {
+    this.metricsManager = metricsManager;
+  }
 
-    public Sender getSender()
-    {
-        return sender;
-    }
+  public Sender getSender() {
+    return sender;
+  }
 
-    public void setSender(Sender sender)
-    {
-        this.sender = sender;
-    }
+  public void setSender(Sender sender) {
+    this.sender = sender;
+  }
 
-    public ActorFuture<Void> closeSender()
-    {
-        return sender.close();
-    }
+  public ActorFuture<Void> closeSender() {
+    return sender.close();
+  }
 }

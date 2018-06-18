@@ -18,7 +18,6 @@ package io.zeebe.model.bpmn.impl;
 import io.zeebe.util.ZbLogger;
 import org.slf4j.Logger;
 
-public class Loggers
-{
-    public static final Logger MODEL_API_LOGGER = new ZbLogger("io.zeebe.model.bpmn");
+public class Loggers {
+  public static final Logger MODEL_API_LOGGER = new ZbLogger("io.zeebe.model.bpmn");
 }

@@ -18,8 +18,6 @@ package io.zeebe.raft.controller;
 import static io.zeebe.raft.AppendRequestEncoder.previousEventPositionNullValue;
 import static io.zeebe.raft.AppendRequestEncoder.previousEventTermNullValue;
 
-import java.time.Duration;
-
 import io.zeebe.logstreams.impl.LoggedEventImpl;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.log.*;
@@ -32,368 +30,297 @@ import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.*;
 import io.zeebe.util.sched.*;
 import io.zeebe.util.sched.clock.ActorClock;
+import java.time.Duration;
 import org.slf4j.Logger;
 
-/**
- * Per-follower replication controller
- */
-public class MemberReplicateLogController extends Actor implements Service<Void>
-{
-    /**
-     * TODO: remove constant, follower should tell us on join or other request
-     */
-    public static final int REMOTE_BUFFER_SIZE = 1024 * 1024 * 2;
+/** Per-follower replication controller */
+public class MemberReplicateLogController extends Actor implements Service<Void> {
+  /** TODO: remove constant, follower should tell us on join or other request */
+  public static final int REMOTE_BUFFER_SIZE = 1024 * 1024 * 2;
 
-    private static final Logger LOG = Loggers.RAFT_LOGGER;
-    private static final boolean IS_TRACE_ENABLED = LOG.isTraceEnabled();
+  private static final Logger LOG = Loggers.RAFT_LOGGER;
+  private static final boolean IS_TRACE_ENABLED = LOG.isTraceEnabled();
 
-    private final AppendRequest appendRequest = new AppendRequest();
-    private final TransportMessage transportMessage = new TransportMessage();
+  private final AppendRequest appendRequest = new AppendRequest();
+  private final TransportMessage transportMessage = new TransportMessage();
 
-    private final BackpressureHelper backpressureHelper = new BackpressureHelper(REMOTE_BUFFER_SIZE);
+  private final BackpressureHelper backpressureHelper = new BackpressureHelper(REMOTE_BUFFER_SIZE);
 
-    private long lastRequestTimestamp;
+  private long lastRequestTimestamp;
 
-    final Runnable sendNextEventsFn = this::sendNextEvents;
+  final Runnable sendNextEventsFn = this::sendNextEvents;
 
-    private final Raft raft;
-    private final LogStream logStream;
-    private final Duration heartbeatInterval;
-    private final RemoteAddress remoteAddress;
-    private final ClientOutput clientOutput;
+  private final Raft raft;
+  private final LogStream logStream;
+  private final Duration heartbeatInterval;
+  private final RemoteAddress remoteAddress;
+  private final ClientOutput clientOutput;
 
-    private final BufferedLogStreamReader reader;
-    private LoggedEventImpl bufferedEvent;
-    private long previousPosition;
-    private int previousTerm;
+  private final BufferedLogStreamReader reader;
+  private LoggedEventImpl bufferedEvent;
+  private long previousPosition;
+  private int previousTerm;
 
-    private ActorCondition appenderCondition;
-    private final String name;
+  private ActorCondition appenderCondition;
+  private final String name;
 
-    private RaftMember member;
+  private RaftMember member;
 
-    public MemberReplicateLogController(Raft raft, RaftMember member, ClientTransport clientTransport)
-    {
-        this.member = member;
-        this.remoteAddress = member.getRemoteAddress();
-        this.name = String.format("raft-repl-%s-%s", raft.getName(), remoteAddress.toString());
+  public MemberReplicateLogController(
+      Raft raft, RaftMember member, ClientTransport clientTransport) {
+    this.member = member;
+    this.remoteAddress = member.getRemoteAddress();
+    this.name = String.format("raft-repl-%s-%s", raft.getName(), remoteAddress.toString());
 
-        this.raft = raft;
-        this.heartbeatInterval = raft.getConfiguration().getHeartbeatIntervalDuration();
-        this.clientOutput = clientTransport.getOutput();
-        this.logStream = raft.getLogStream();
-        this.reader = new BufferedLogStreamReader(logStream, true);
+    this.raft = raft;
+    this.heartbeatInterval = raft.getConfiguration().getHeartbeatIntervalDuration();
+    this.clientOutput = clientTransport.getOutput();
+    this.logStream = raft.getLogStream();
+    this.reader = new BufferedLogStreamReader(logStream, true);
+  }
+
+  @Override
+  public String getName() {
+    return name;
+  }
+
+  @Override
+  public void start(ServiceStartContext startContext) {
+    startContext.async(startContext.getScheduler().submitActor(this, true));
+  }
+
+  @Override
+  public void stop(ServiceStopContext stopContext) {
+    stopContext.async(actor.close());
+  }
+
+  @Override
+  protected void onActorStarted() {
+    member.setReplicationController(this);
+
+    if (IS_TRACE_ENABLED) {
+      LOG.trace("started");
     }
 
-    @Override
-    public String getName()
-    {
-        return name;
+    actor.runAtFixedRate(heartbeatInterval, this::onHeartbeatTimerFired);
+    appenderCondition = actor.onCondition("data-appended", this::onAppendPositionChanged);
+    raft.getLogStream().registerOnAppendCondition(appenderCondition);
+
+    reset();
+  }
+
+  @Override
+  protected void onActorClosing() {
+    member.setReplicationController(null);
+
+    raft.getLogStream().removeOnCommitPositionUpdatedCondition(appenderCondition);
+  }
+
+  @Override
+  protected void onActorClosed() {
+    if (IS_TRACE_ENABLED) {
+      LOG.trace("closed");
     }
 
-    @Override
-    public void start(ServiceStartContext startContext)
-    {
-        startContext.async(startContext.getScheduler().submitActor(this, true));
+    reader.close();
+  }
+
+  private void onHeartbeatTimerFired() {
+    if (IS_TRACE_ENABLED) {
+      LOG.trace("heartbeat timer fired");
     }
 
-    @Override
-    public void stop(ServiceStopContext stopContext)
-    {
-        stopContext.async(actor.close());
+    actor.runUntilDone(sendNextEventsFn);
+  }
+
+  private void onAppendPositionChanged() {
+    if (IS_TRACE_ENABLED) {
+      LOG.trace("events appended");
     }
 
-    @Override
-    protected void onActorStarted()
-    {
-        member.setReplicationController(this);
+    actor.runUntilDone(sendNextEventsFn);
+  }
 
-        if (IS_TRACE_ENABLED)
-        {
-            LOG.trace("started");
-        }
-
-        actor.runAtFixedRate(heartbeatInterval, this::onHeartbeatTimerFired);
-        appenderCondition = actor.onCondition("data-appended", this::onAppendPositionChanged);
-        raft.getLogStream().registerOnAppendCondition(appenderCondition);
-
-        reset();
-    }
-
-    @Override
-    protected void onActorClosing()
-    {
-        member.setReplicationController(null);
-
-        raft.getLogStream().removeOnCommitPositionUpdatedCondition(appenderCondition);
-    }
-
-    @Override
-    protected void onActorClosed()
-    {
-        if (IS_TRACE_ENABLED)
-        {
-            LOG.trace("closed");
-        }
-
-        reader.close();
-    }
-
-    private void onHeartbeatTimerFired()
-    {
-        if (IS_TRACE_ENABLED)
-        {
-            LOG.trace("heartbeat timer fired");
-        }
-
-        actor.runUntilDone(sendNextEventsFn);
-    }
-
-    private void onAppendPositionChanged()
-    {
-        if (IS_TRACE_ENABLED)
-        {
-            LOG.trace("events appended");
-        }
-
-        actor.runUntilDone(sendNextEventsFn);
-    }
-
-    public void onFollowerHasAcknowledgedPosition(long position)
-    {
-        actor.run(() ->
-        {
-            if (IS_TRACE_ENABLED)
-            {
-                LOG.trace("follower acknowledged position {}", position);
-            }
-            backpressureHelper.onEventAcknowledged(position);
-            actor.runUntilDone(sendNextEventsFn);
+  public void onFollowerHasAcknowledgedPosition(long position) {
+    actor.run(
+        () -> {
+          if (IS_TRACE_ENABLED) {
+            LOG.trace("follower acknowledged position {}", position);
+          }
+          backpressureHelper.onEventAcknowledged(position);
+          actor.runUntilDone(sendNextEventsFn);
         });
-    }
+  }
 
-    public void onFollowerHasFailedPosition(long position)
-    {
-        actor.run(() ->
-        {
-            if (IS_TRACE_ENABLED)
-            {
-                LOG.trace("follower failed position {}", position);
-            }
-            backpressureHelper.reset();
-            resetToPosition(position);
-            actor.runUntilDone(sendNextEventsFn);
+  public void onFollowerHasFailedPosition(long position) {
+    actor.run(
+        () -> {
+          if (IS_TRACE_ENABLED) {
+            LOG.trace("follower failed position {}", position);
+          }
+          backpressureHelper.reset();
+          resetToPosition(position);
+          actor.runUntilDone(sendNextEventsFn);
         });
+  }
+
+  private void sendNextEvents() {
+    if (IS_TRACE_ENABLED) {
+      LOG.trace("try send next event to {}", remoteAddress);
     }
 
-    private void sendNextEvents()
-    {
-        if (IS_TRACE_ENABLED)
-        {
-            LOG.trace("try send next event to {}", remoteAddress);
+    actor.setPriority(ActorPriority.REGULAR);
+
+    final LoggedEventImpl nextEvent = getNextEvent();
+
+    appendRequest
+        .reset()
+        .setRaft(raft)
+        .setPreviousEventPosition(previousPosition)
+        .setPreviousEventTerm(previousTerm)
+        .setEvent(nextEvent);
+
+    final int requestSize = appendRequest.getLength();
+    final long now = ActorClock.currentTimeMillis();
+    final boolean isHeartbeatTimeout = now - lastRequestTimestamp >= heartbeatInterval.toMillis();
+    final boolean isBackpressured = !backpressureHelper.canSend(requestSize);
+    final boolean trySend = isHeartbeatTimeout || (nextEvent != null && !isBackpressured);
+
+    if (trySend) {
+      transportMessage.reset().remoteAddress(remoteAddress).writer(appendRequest);
+
+      if (clientOutput.sendMessage(transportMessage)) {
+        lastRequestTimestamp = now;
+
+        if (nextEvent != null) {
+          backpressureHelper.onEventSent(nextEvent.getPosition(), requestSize);
+          setPreviousEvent(nextEvent);
+        }
+      } else {
+        setBufferedEvent(nextEvent);
+
+        if (isHeartbeatTimeout) {
+          actor.setPriority(ActorPriority.HIGH);
+        } else {
+          actor.setPriority(ActorPriority.LOW);
         }
 
-        actor.setPriority(ActorPriority.REGULAR);
-
-        final LoggedEventImpl nextEvent = getNextEvent();
-
-        appendRequest.reset()
-            .setRaft(raft)
-            .setPreviousEventPosition(previousPosition)
-            .setPreviousEventTerm(previousTerm)
-            .setEvent(nextEvent);
-
-        final int requestSize = appendRequest.getLength();
-        final long now = ActorClock.currentTimeMillis();
-        final boolean isHeartbeatTimeout = now - lastRequestTimestamp >= heartbeatInterval.toMillis();
-        final boolean isBackpressured = !backpressureHelper.canSend(requestSize);
-        final boolean trySend = isHeartbeatTimeout || (nextEvent != null && !isBackpressured);
-
-        if (trySend)
-        {
-            transportMessage.reset()
-                .remoteAddress(remoteAddress)
-                .writer(appendRequest);
-
-            if (clientOutput.sendMessage(transportMessage))
-            {
-                lastRequestTimestamp = now;
-
-                if (nextEvent != null)
-                {
-                    backpressureHelper.onEventSent(nextEvent.getPosition(), requestSize);
-                    setPreviousEvent(nextEvent);
-                }
-            }
-            else
-            {
-                setBufferedEvent(nextEvent);
-
-                if (isHeartbeatTimeout)
-                {
-                    actor.setPriority(ActorPriority.HIGH);
-                }
-                else
-                {
-                    actor.setPriority(ActorPriority.LOW);
-                }
-
-                actor.yield();
-            }
-        }
-        else
-        {
-            actor.done();
-        }
+        actor.yield();
+      }
+    } else {
+      actor.done();
     }
+  }
 
-    private void setBufferedEvent(final LoggedEventImpl bufferedEvent)
-    {
-        this.bufferedEvent = bufferedEvent;
+  private void setBufferedEvent(final LoggedEventImpl bufferedEvent) {
+    this.bufferedEvent = bufferedEvent;
+  }
+
+  private LoggedEventImpl discardBufferedEvent() {
+    final LoggedEventImpl event = bufferedEvent;
+    bufferedEvent = null;
+    return event;
+  }
+
+  private void reset() {
+    setPreviousEventToEndOfLog();
+  }
+
+  private LoggedEventImpl getNextEvent() {
+    if (bufferedEvent != null) {
+      return discardBufferedEvent();
+    } else if (reader.hasNext()) {
+      return (LoggedEventImpl) reader.next();
+    } else {
+      return null;
     }
+  }
 
-    private LoggedEventImpl discardBufferedEvent()
-    {
-        final LoggedEventImpl event = bufferedEvent;
-        bufferedEvent = null;
-        return event;
-    }
-
-    private void reset()
-    {
-        setPreviousEventToEndOfLog();
-    }
-
-    private LoggedEventImpl getNextEvent()
-    {
-        if (bufferedEvent != null)
-        {
-            return discardBufferedEvent();
-        }
-        else if (reader.hasNext())
-        {
-            return (LoggedEventImpl) reader.next();
-        }
-        else
-        {
-            return null;
-        }
-    }
-
-    private void resetToPosition(final long eventPosition)
-    {
-        if (eventPosition >= 0)
-        {
-            final LoggedEvent previousEvent = getEventAtPosition(eventPosition);
-            if (previousEvent != null)
-            {
-                setPreviousEvent(previousEvent);
-            }
-            else
-            {
-                final LogBlockIndex logBlockIndex = logStream.getLogBlockIndex();
-                final long blockPosition = logBlockIndex.lookupBlockPosition(eventPosition);
-
-                if (blockPosition > 0)
-                {
-                    reader.seek(blockPosition);
-                }
-                else
-                {
-                    reader.seekToFirstEvent();
-                }
-
-                long previousPosition = -1;
-
-                while (reader.hasNext())
-                {
-                    final LoggedEvent next = reader.next();
-
-                    if (next.getPosition() < eventPosition)
-                    {
-                        previousPosition = next.getPosition();
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-
-                if (previousPosition >= 0)
-                {
-                    setPreviousEvent(previousPosition);
-                }
-                else
-                {
-                    setPreviousEventToStartOfLog();
-                }
-            }
-        }
-        else
-        {
-            setPreviousEventToStartOfLog();
-        }
-    }
-
-    private LoggedEvent getEventAtPosition(final long position)
-    {
-        if (reader.seek(position) && reader.hasNext())
-        {
-            return reader.next();
-        }
-        else
-        {
-            return null;
-        }
-    }
-
-    private void setPreviousEventToEndOfLog()
-    {
-        discardBufferedEvent();
-
-        reader.seekToLastEvent();
-
-        final LoggedEventImpl lastEvent = getNextEvent();
-        setPreviousEvent(lastEvent);
-    }
-
-    private void setPreviousEventToStartOfLog()
-    {
-        discardBufferedEvent();
-
-        reader.seekToFirstEvent();
-
-        setPreviousEvent(null);
-    }
-
-    private void setPreviousEvent(final long previousPosition)
-    {
-        discardBufferedEvent();
-
-        final LoggedEvent previousEvent = getEventAtPosition(previousPosition);
-
+  private void resetToPosition(final long eventPosition) {
+    if (eventPosition >= 0) {
+      final LoggedEvent previousEvent = getEventAtPosition(eventPosition);
+      if (previousEvent != null) {
         setPreviousEvent(previousEvent);
-    }
+      } else {
+        final LogBlockIndex logBlockIndex = logStream.getLogBlockIndex();
+        final long blockPosition = logBlockIndex.lookupBlockPosition(eventPosition);
 
-    private void setPreviousEvent(final LoggedEvent previousEvent)
-    {
-        discardBufferedEvent();
-
-        if (previousEvent != null)
-        {
-            previousPosition = previousEvent.getPosition();
-            previousTerm = previousEvent.getRaftTerm();
+        if (blockPosition > 0) {
+          reader.seek(blockPosition);
+        } else {
+          reader.seekToFirstEvent();
         }
-        else
-        {
-            previousPosition = previousEventPositionNullValue();
-            previousTerm = previousEventTermNullValue();
-        }
-    }
 
-    @Override
-    public Void get()
-    {
-        return null;
+        long previousPosition = -1;
+
+        while (reader.hasNext()) {
+          final LoggedEvent next = reader.next();
+
+          if (next.getPosition() < eventPosition) {
+            previousPosition = next.getPosition();
+          } else {
+            break;
+          }
+        }
+
+        if (previousPosition >= 0) {
+          setPreviousEvent(previousPosition);
+        } else {
+          setPreviousEventToStartOfLog();
+        }
+      }
+    } else {
+      setPreviousEventToStartOfLog();
     }
+  }
+
+  private LoggedEvent getEventAtPosition(final long position) {
+    if (reader.seek(position) && reader.hasNext()) {
+      return reader.next();
+    } else {
+      return null;
+    }
+  }
+
+  private void setPreviousEventToEndOfLog() {
+    discardBufferedEvent();
+
+    reader.seekToLastEvent();
+
+    final LoggedEventImpl lastEvent = getNextEvent();
+    setPreviousEvent(lastEvent);
+  }
+
+  private void setPreviousEventToStartOfLog() {
+    discardBufferedEvent();
+
+    reader.seekToFirstEvent();
+
+    setPreviousEvent(null);
+  }
+
+  private void setPreviousEvent(final long previousPosition) {
+    discardBufferedEvent();
+
+    final LoggedEvent previousEvent = getEventAtPosition(previousPosition);
+
+    setPreviousEvent(previousEvent);
+  }
+
+  private void setPreviousEvent(final LoggedEvent previousEvent) {
+    discardBufferedEvent();
+
+    if (previousEvent != null) {
+      previousPosition = previousEvent.getPosition();
+      previousTerm = previousEvent.getRaftTerm();
+    } else {
+      previousPosition = previousEventPositionNullValue();
+      previousTerm = previousEventTermNullValue();
+    }
+  }
+
+  @Override
+  public Void get() {
+    return null;
+  }
 }

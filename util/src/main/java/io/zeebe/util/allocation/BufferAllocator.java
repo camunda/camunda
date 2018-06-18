@@ -15,9 +15,7 @@
  */
 package io.zeebe.util.allocation;
 
-public interface BufferAllocator
-{
+public interface BufferAllocator {
 
-    AllocatedBuffer allocate(int capacity);
-
+  AllocatedBuffer allocate(int capacity);
 }

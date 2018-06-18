@@ -21,53 +21,46 @@ import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.transport.SocketAddress;
 import org.agrona.DirectBuffer;
 
-public class RaftConfigurationEventMember extends UnpackedObject
-{
-    protected StringProperty hostProp = new StringProperty("host");
-    protected IntegerProperty portProp = new IntegerProperty("port");
+public class RaftConfigurationEventMember extends UnpackedObject {
+  protected StringProperty hostProp = new StringProperty("host");
+  protected IntegerProperty portProp = new IntegerProperty("port");
 
-    public RaftConfigurationEventMember()
-    {
-        declareProperty(hostProp);
-        declareProperty(portProp);
-    }
+  public RaftConfigurationEventMember() {
+    declareProperty(hostProp);
+    declareProperty(portProp);
+  }
 
-    public DirectBuffer getHost()
-    {
-        return hostProp.getValue();
-    }
+  public DirectBuffer getHost() {
+    return hostProp.getValue();
+  }
 
-    public RaftConfigurationEventMember setHost(final DirectBuffer buffer, final int offset, final int length)
-    {
-        hostProp.setValue(buffer, offset, length);
-        return this;
-    }
+  public RaftConfigurationEventMember setHost(
+      final DirectBuffer buffer, final int offset, final int length) {
+    hostProp.setValue(buffer, offset, length);
+    return this;
+  }
 
-    public int getPort()
-    {
-        return portProp.getValue();
-    }
+  public int getPort() {
+    return portProp.getValue();
+  }
 
-    public RaftConfigurationEventMember setPort(final int port)
-    {
-        portProp.setValue(port);
-        return this;
-    }
+  public RaftConfigurationEventMember setPort(final int port) {
+    portProp.setValue(port);
+    return this;
+  }
 
-    public RaftConfigurationEventMember setSocketAddress(final SocketAddress address)
-    {
-        setHost(address.getHostBuffer(), 0, address.hostLength());
-        setPort(address.port());
+  public RaftConfigurationEventMember setSocketAddress(final SocketAddress address) {
+    setHost(address.getHostBuffer(), 0, address.hostLength());
+    setPort(address.port());
 
-        return this;
-    }
+    return this;
+  }
 
-    public SocketAddress getSocketAddress()
-    {
-        final SocketAddress socketAddress = new SocketAddress();
-        final DirectBuffer host = getHost();
-        socketAddress.host(host, 0, host.capacity());
-        socketAddress.port(getPort());
-        return socketAddress;
-    }
+  public SocketAddress getSocketAddress() {
+    final SocketAddress socketAddress = new SocketAddress();
+    final DirectBuffer host = getHost();
+    socketAddress.host(host, 0, host.capacity());
+    socketAddress.port(getPort());
+    return socketAddress;
+  }
 }

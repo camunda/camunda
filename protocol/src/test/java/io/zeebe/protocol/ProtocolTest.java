@@ -18,16 +18,12 @@ package io.zeebe.protocol;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.ByteOrder;
-
 import org.junit.Test;
 
-public class ProtocolTest
-{
+public class ProtocolTest {
 
-    @Test
-    public void testEndiannessConstant()
-    {
-        assertThat(Protocol.ENDIANNESS).isEqualTo(ByteOrder.LITTLE_ENDIAN);
-    }
-
+  @Test
+  public void testEndiannessConstant() {
+    assertThat(Protocol.ENDIANNESS).isEqualTo(ByteOrder.LITTLE_ENDIAN);
+  }
 }

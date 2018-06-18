@@ -26,51 +26,45 @@ import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.*;
 
-/**
- *
- */
-public class MembershipEventUpdaterTest
-{
-    private static final GossipConfiguration CONFIGURATION = new GossipConfiguration();
+/** */
+public class MembershipEventUpdaterTest {
+  private static final GossipConfiguration CONFIGURATION = new GossipConfiguration();
 
-    private MembershipList membershipList;
-    private DisseminationComponent disseminationComponent;
-    private MembershipEventUpdater membershipEventUpdater;
-    private final SocketAddress memberAddress = new SocketAddress("localhost", 8181);
+  private MembershipList membershipList;
+  private DisseminationComponent disseminationComponent;
+  private MembershipEventUpdater membershipEventUpdater;
+  private final SocketAddress memberAddress = new SocketAddress("localhost", 8181);
 
-    @Rule
-    public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
+  @Rule public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
 
-    @Before
-    public void setUp()
-    {
-        // Needs to be done inside an actor, because we need access to the ActorClock in GossipTerm
-        actorSchedulerRule.submitActor(new Actor()
-        {
-            @Override
-            protected void onActorStarting()
-            {
-                membershipList = new MembershipList(new SocketAddress(), (member) ->
-                {
-                });
+  @Before
+  public void setUp() {
+    // Needs to be done inside an actor, because we need access to the ActorClock in GossipTerm
+    actorSchedulerRule
+        .submitActor(
+            new Actor() {
+              @Override
+              protected void onActorStarting() {
+                membershipList = new MembershipList(new SocketAddress(), (member) -> {});
 
                 disseminationComponent = new DisseminationComponent(CONFIGURATION, membershipList);
-                membershipEventUpdater = new MembershipEventUpdater(membershipList, disseminationComponent);
-            }
-        }).join();
-    }
+                membershipEventUpdater =
+                    new MembershipEventUpdater(membershipList, disseminationComponent);
+              }
+            })
+        .join();
+  }
 
-    private boolean consumed = false;
+  private boolean consumed = false;
 
-    @Test
-    public void shouldNotConsumeOldRemoveEvent()
-    {
-        // given
-        actorSchedulerRule.submitActor(new Actor()
-        {
-            @Override
-            protected void onActorStarting()
-            {
+  @Test
+  public void shouldNotConsumeOldRemoveEvent() {
+    // given
+    actorSchedulerRule
+        .submitActor(
+            new Actor() {
+              @Override
+              protected void onActorStarting() {
                 final GossipTerm oldTerm = new GossipTerm().epoch(1);
                 final GossipTerm newTerm = new GossipTerm().epoch(2);
 
@@ -83,12 +77,13 @@ public class MembershipEventUpdaterTest
                 membershipEvent.gossipTerm(oldTerm);
 
                 consumed = membershipEventUpdater.consumeMembershipEvent(membershipEvent);
-            }
-        }).join();
+              }
+            })
+        .join();
 
-        // then
-        assertThat(consumed).isFalse();
-        assertThat(membershipList.get(memberAddress).getStatus()).isEqualByComparingTo(MembershipStatus.ALIVE);
-    }
-
+    // then
+    assertThat(consumed).isFalse();
+    assertThat(membershipList.get(memberAddress).getStatus())
+        .isEqualByComparingTo(MembershipStatus.ALIVE);
+  }
 }

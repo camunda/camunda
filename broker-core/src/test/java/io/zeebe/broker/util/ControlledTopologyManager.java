@@ -17,92 +17,79 @@
  */
 package io.zeebe.broker.util;
 
-import java.util.function.Function;
-
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.topology.*;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import java.util.function.Function;
 
-public class ControlledTopologyManager implements TopologyManager
-{
-    private final Topology topology;
-    private Throwable queryError;
+public class ControlledTopologyManager implements TopologyManager {
+  private final Topology topology;
+  private Throwable queryError;
 
-    public ControlledTopologyManager()
-    {
-        this(new NodeInfo(new SocketAddress("0.0.0.0", 0),
-                new SocketAddress("0.0.0.0", 1),
-                new SocketAddress("0.0.0.0", 2)));
+  public ControlledTopologyManager() {
+    this(
+        new NodeInfo(
+            new SocketAddress("0.0.0.0", 0),
+            new SocketAddress("0.0.0.0", 1),
+            new SocketAddress("0.0.0.0", 2)));
+  }
+
+  public ControlledTopologyManager(final NodeInfo localNodeInfo) {
+    this.topology = new Topology(localNodeInfo);
+  }
+
+  public Topology getTopology() {
+    return topology;
+  }
+
+  public void setQueryError(Throwable queryError) {
+    this.queryError = queryError;
+  }
+
+  public void setPartitionLeader(final Partition partition, final NodeInfo leaderInfo) {
+    final PartitionInfo partitionInfo = partition.getInfo();
+    topology.updatePartition(
+        partitionInfo.getPartitionId(),
+        partitionInfo.getTopicNameBuffer(),
+        partitionInfo.getReplicationFactor(),
+        leaderInfo,
+        RaftState.LEADER);
+  }
+
+  @Override
+  public <R> ActorFuture<R> query(Function<ReadableTopology, R> query) {
+    if (queryError != null) {
+      return CompletableActorFuture.completedExceptionally(queryError);
+    } else {
+      return CompletableActorFuture.completed(query.apply(topology));
     }
+  }
 
-    public ControlledTopologyManager(final NodeInfo localNodeInfo)
-    {
-        this.topology = new Topology(localNodeInfo);
-    }
+  @Override
+  public ActorFuture<TopologyDto> getTopologyDto() {
+    return CompletableActorFuture.completed(topology.asDto());
+  }
 
-    public Topology getTopology()
-    {
-        return topology;
-    }
+  @Override
+  public void removeTopologyMemberListener(TopologyMemberListener listener) {
+    throw new UnsupportedOperationException("not implemented yet");
+  }
 
-    public void setQueryError(Throwable queryError)
-    {
-        this.queryError = queryError;
-    }
+  @Override
+  public void addTopologyMemberListener(TopologyMemberListener listener) {
+    throw new UnsupportedOperationException("not implemented yet");
+  }
 
-    public void setPartitionLeader(final Partition partition, final NodeInfo leaderInfo)
-    {
-        final PartitionInfo partitionInfo = partition.getInfo();
-        topology.updatePartition(partitionInfo.getPartitionId(),
-                partitionInfo.getTopicNameBuffer(),
-                partitionInfo.getReplicationFactor(),
-                leaderInfo,
-                RaftState.LEADER);
-    }
+  @Override
+  public void removeTopologyPartitionListener(TopologyPartitionListener listener) {
+    throw new UnsupportedOperationException("not implemented yet");
+  }
 
-    @Override
-    public <R> ActorFuture<R> query(Function<ReadableTopology, R> query)
-    {
-        if (queryError != null)
-        {
-            return CompletableActorFuture.completedExceptionally(queryError);
-        }
-        else
-        {
-            return CompletableActorFuture.completed(query.apply(topology));
-        }
-    }
-
-    @Override
-    public ActorFuture<TopologyDto> getTopologyDto()
-    {
-        return CompletableActorFuture.completed(topology.asDto());
-    }
-
-    @Override
-    public void removeTopologyMemberListener(TopologyMemberListener listener)
-    {
-        throw new UnsupportedOperationException("not implemented yet");
-    }
-
-    @Override
-    public void addTopologyMemberListener(TopologyMemberListener listener)
-    {
-        throw new UnsupportedOperationException("not implemented yet");
-    }
-
-    @Override
-    public void removeTopologyPartitionListener(TopologyPartitionListener listener)
-    {
-        throw new UnsupportedOperationException("not implemented yet");
-    }
-
-    @Override
-    public void addTopologyPartitionListener(TopologyPartitionListener listener)
-    {
-        throw new UnsupportedOperationException("not implemented yet");
-    }
+  @Override
+  public void addTopologyPartitionListener(TopologyPartitionListener listener) {
+    throw new UnsupportedOperationException("not implemented yet");
+  }
 }

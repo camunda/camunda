@@ -18,191 +18,157 @@ package io.zeebe.util.collection;
 import java.util.*;
 import java.util.function.Supplier;
 
-/**
- * An expendable list of reusable objects.
- */
-public class ReusableObjectList<T extends Reusable> implements Iterable<T>
-{
-    private final ObjectIterator iterator = new ObjectIterator();
+/** An expendable list of reusable objects. */
+public class ReusableObjectList<T extends Reusable> implements Iterable<T> {
+  private final ObjectIterator iterator = new ObjectIterator();
 
-    private final List<ReusableElement> elements;
-    private final Supplier<T> elementFactory;
+  private final List<ReusableElement> elements;
+  private final Supplier<T> elementFactory;
 
-    private int size = 0;
+  private int size = 0;
 
-    public ReusableObjectList(Supplier<T> elementFactory)
-    {
-        this.elements = new ArrayList<>();
-        this.elementFactory = elementFactory;
-    }
+  public ReusableObjectList(Supplier<T> elementFactory) {
+    this.elements = new ArrayList<>();
+    this.elementFactory = elementFactory;
+  }
 
-    public T add()
-    {
-        for (int i = 0; i < elements.size(); i++)
-        {
-            final ReusableElement element = elements.get(i);
-            if (!element.isSet())
-            {
-                element.set(true);
-
-                size += 1;
-
-                return element.getElement();
-            }
-        }
-
-        // expend list
-        final T newElement = elementFactory.get();
-
-        elements.add(new ReusableElement(newElement));
+  public T add() {
+    for (int i = 0; i < elements.size(); i++) {
+      final ReusableElement element = elements.get(i);
+      if (!element.isSet()) {
+        element.set(true);
 
         size += 1;
 
-        return newElement;
+        return element.getElement();
+      }
     }
 
-    public void remove(T element)
-    {
-        for (int i = 0; i < elements.size(); i++)
-        {
-            final ReusableElement e = elements.get(i);
-            if (e.getElement() ==  element)
-            {
-                e.getElement().reset();
-                e.set(false);
+    // expend list
+    final T newElement = elementFactory.get();
 
-                size -= 1;
-            }
-        }
+    elements.add(new ReusableElement(newElement));
+
+    size += 1;
+
+    return newElement;
+  }
+
+  public void remove(T element) {
+    for (int i = 0; i < elements.size(); i++) {
+      final ReusableElement e = elements.get(i);
+      if (e.getElement() == element) {
+        e.getElement().reset();
+        e.set(false);
+
+        size -= 1;
+      }
+    }
+  }
+
+  public T poll() {
+    for (int i = 0; i < elements.size(); i++) {
+      final ReusableElement element = elements.get(i);
+
+      if (element.isSet()) {
+        element.set(false);
+        size -= 1;
+
+        return element.getElement();
+      }
+    }
+    return null;
+  }
+
+  public int size() {
+    return size;
+  }
+
+  public void clear() {
+    for (ReusableElement element : elements) {
+      element.getElement().reset();
+      element.set(false);
     }
 
-    public T poll()
-    {
-        for (int i = 0; i < elements.size(); i++)
-        {
-            final ReusableElement element = elements.get(i);
+    size = 0;
+  }
 
-            if (element.isSet())
-            {
-                element.set(false);
-                size -= 1;
+  @Override
+  public Iterator<T> iterator() {
+    iterator.reset();
 
-                return element.getElement();
-            }
-        }
-        return null;
-    }
+    return iterator;
+  }
 
-    public int size()
-    {
-        return size;
-    }
+  private class ObjectIterator implements Iterator<T> {
+    private ReusableElement current = null;
 
-    public void clear()
-    {
-        for (ReusableElement element : elements)
-        {
-            element.getElement().reset();
-            element.set(false);
-        }
+    private int index = 0;
 
-        size = 0;
+    public void reset() {
+      index = 0;
+      current = null;
     }
 
     @Override
-    public Iterator<T> iterator()
-    {
-        iterator.reset();
+    public boolean hasNext() {
+      for (int i = index; i < elements.size(); i++) {
+        final ReusableElement element = elements.get(i);
 
-        return iterator;
+        if (element.isSet()) {
+          index = i;
+          return true;
+        }
+      }
+
+      return false;
     }
 
-    private class ObjectIterator implements Iterator<T>
-    {
-        private ReusableElement current = null;
+    @Override
+    public T next() {
+      if (hasNext()) {
+        current = elements.get(index);
 
-        private int index = 0;
+        index += 1;
 
-        public void reset()
-        {
-            index = 0;
-            current = null;
-        }
-
-        @Override
-        public boolean hasNext()
-        {
-            for (int i = index; i < elements.size(); i++)
-            {
-                final ReusableElement element = elements.get(i);
-
-                if (element.isSet())
-                {
-                    index = i;
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        @Override
-        public T next()
-        {
-            if (hasNext())
-            {
-                current = elements.get(index);
-
-                index += 1;
-
-                return current.getElement();
-            }
-            else
-            {
-                throw new NoSuchElementException();
-            }
-        }
-
-        @Override
-        public void remove()
-        {
-            if (current == null)
-            {
-                throw new IllegalStateException();
-            }
-
-            current.getElement().reset();
-            current.set(false);
-
-            size -= 1;
-        }
+        return current.getElement();
+      } else {
+        throw new NoSuchElementException();
+      }
     }
 
-    private class ReusableElement
-    {
-        private final T element;
+    @Override
+    public void remove() {
+      if (current == null) {
+        throw new IllegalStateException();
+      }
 
-        private boolean isSet = true;
+      current.getElement().reset();
+      current.set(false);
 
-        ReusableElement(T element)
-        {
-            this.element = element;
-        }
+      size -= 1;
+    }
+  }
 
-        public boolean isSet()
-        {
-            return isSet;
-        }
+  private class ReusableElement {
+    private final T element;
 
-        public void set(boolean isSet)
-        {
-            this.isSet = isSet;
-        }
+    private boolean isSet = true;
 
-        public T getElement()
-        {
-            return element;
-        }
+    ReusableElement(T element) {
+      this.element = element;
     }
 
+    public boolean isSet() {
+      return isSet;
+    }
+
+    public void set(boolean isSet) {
+      this.isSet = isSet;
+    }
+
+    public T getElement() {
+      return element;
+    }
+  }
 }

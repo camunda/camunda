@@ -15,50 +15,42 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi;
 
-import java.util.function.Consumer;
-
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
+import java.util.function.Consumer;
 
-public class ErrorResponseBuilder<R>
-{
-    protected final Consumer<MessageBuilder<R>> registrationFunction;
-    protected final ErrorResponseWriter<R> commandResponseWriter;
+public class ErrorResponseBuilder<R> {
+  protected final Consumer<MessageBuilder<R>> registrationFunction;
+  protected final ErrorResponseWriter<R> commandResponseWriter;
 
-    public ErrorResponseBuilder(
-            Consumer<MessageBuilder<R>> registrationFunction,
-            MsgPackHelper msgPackConverter)
-    {
-        this.registrationFunction = registrationFunction;
-        this.commandResponseWriter = new ErrorResponseWriter<>(msgPackConverter);
-    }
+  public ErrorResponseBuilder(
+      Consumer<MessageBuilder<R>> registrationFunction, MsgPackHelper msgPackConverter) {
+    this.registrationFunction = registrationFunction;
+    this.commandResponseWriter = new ErrorResponseWriter<>(msgPackConverter);
+  }
 
-    public ErrorResponseBuilder<R> errorCode(ErrorCode errorCode)
-    {
-        this.commandResponseWriter.setErrorCode(errorCode);
-        return this;
-    }
+  public ErrorResponseBuilder<R> errorCode(ErrorCode errorCode) {
+    this.commandResponseWriter.setErrorCode(errorCode);
+    return this;
+  }
 
-    public ErrorResponseBuilder<R> errorData(String errorData)
-    {
-        this.commandResponseWriter.setErrorData(errorData);
-        return this;
-    }
+  public ErrorResponseBuilder<R> errorData(String errorData) {
+    this.commandResponseWriter.setErrorData(errorData);
+    return this;
+  }
 
-    public void register()
-    {
-        registrationFunction.accept(commandResponseWriter);
-    }
+  public void register() {
+    registrationFunction.accept(commandResponseWriter);
+  }
 
-    /**
-     * Blocks before responding; continues sending the response only when {@link ResponseController#unblockNextResponse()} is called.
-     */
-    public ResponseController registerControlled()
-    {
-        final ResponseController controller = new ResponseController();
-        commandResponseWriter.beforeResponse(controller::waitForNextJoin);
-        register();
-        return controller;
-    }
-
+  /**
+   * Blocks before responding; continues sending the response only when {@link
+   * ResponseController#unblockNextResponse()} is called.
+   */
+  public ResponseController registerControlled() {
+    final ResponseController controller = new ResponseController();
+    commandResponseWriter.beforeResponse(controller::waitForNextJoin);
+    register();
+    return controller;
+  }
 }

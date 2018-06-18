@@ -21,106 +21,98 @@ import io.zeebe.raft.*;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class VoteResponse extends AbstractRaftMessage implements HasTerm
-{
+public class VoteResponse extends AbstractRaftMessage implements HasTerm {
 
-    private final VoteResponseDecoder bodyDecoder = new VoteResponseDecoder();
-    private final VoteResponseEncoder bodyEncoder = new VoteResponseEncoder();
+  private final VoteResponseDecoder bodyDecoder = new VoteResponseDecoder();
+  private final VoteResponseEncoder bodyEncoder = new VoteResponseEncoder();
 
-    private int term;
-    private boolean granted;
+  private int term;
+  private boolean granted;
 
-    public VoteResponse()
-    {
-        reset();
-    }
+  public VoteResponse() {
+    reset();
+  }
 
-    public VoteResponse reset()
-    {
-        term = termNullValue();
-        granted = false;
+  public VoteResponse reset() {
+    term = termNullValue();
+    granted = false;
 
-        return this;
-    }
+    return this;
+  }
 
-    @Override
-    public int getTerm()
-    {
-        return term;
-    }
+  @Override
+  public int getTerm() {
+    return term;
+  }
 
-    public VoteResponse setTerm(final int term)
-    {
-        this.term = term;
-        return this;
-    }
+  public VoteResponse setTerm(final int term) {
+    this.term = term;
+    return this;
+  }
 
-    public boolean isGranted()
-    {
-        return granted;
-    }
+  public boolean isGranted() {
+    return granted;
+  }
 
-    public VoteResponse setGranted(final boolean granted)
-    {
-        this.granted = granted;
-        return this;
-    }
+  public VoteResponse setGranted(final boolean granted) {
+    this.granted = granted;
+    return this;
+  }
 
-    @Override
-    protected int getVersion()
-    {
-        return bodyDecoder.sbeSchemaVersion();
-    }
+  @Override
+  protected int getVersion() {
+    return bodyDecoder.sbeSchemaVersion();
+  }
 
-    @Override
-    protected int getSchemaId()
-    {
-        return bodyDecoder.sbeSchemaId();
-    }
+  @Override
+  protected int getSchemaId() {
+    return bodyDecoder.sbeSchemaId();
+  }
 
-    @Override
-    protected int getTemplateId()
-    {
-        return bodyDecoder.sbeTemplateId();
-    }
+  @Override
+  protected int getTemplateId() {
+    return bodyDecoder.sbeTemplateId();
+  }
 
-    @Override
-    public int getLength()
-    {
-        return headerEncoder.encodedLength() + bodyEncoder.sbeBlockLength();
+  @Override
+  public int getLength() {
+    return headerEncoder.encodedLength() + bodyEncoder.sbeBlockLength();
+  }
 
-    }
+  @Override
+  public void wrap(final DirectBuffer buffer, int offset, final int length) {
+    final int frameEnd = offset + length;
 
-    @Override
-    public void wrap(final DirectBuffer buffer, int offset, final int length)
-    {
-        final int frameEnd = offset + length;
+    headerDecoder.wrap(buffer, offset);
+    offset += headerDecoder.encodedLength();
 
-        headerDecoder.wrap(buffer, offset);
-        offset += headerDecoder.encodedLength();
+    bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
-        bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
+    term = bodyDecoder.term();
+    granted = bodyDecoder.granted() == BooleanType.TRUE;
 
-        term = bodyDecoder.term();
-        granted = bodyDecoder.granted() == BooleanType.TRUE;
+    assert bodyDecoder.limit() == frameEnd
+        : "Decoder read only to position "
+            + bodyDecoder.limit()
+            + " but expected "
+            + frameEnd
+            + " as final position";
+  }
 
-        assert bodyDecoder.limit() == frameEnd : "Decoder read only to position " + bodyDecoder.limit() + " but expected " + frameEnd + " as final position";
-    }
+  @Override
+  public void write(final MutableDirectBuffer buffer, int offset) {
+    headerEncoder
+        .wrap(buffer, offset)
+        .blockLength(bodyEncoder.sbeBlockLength())
+        .templateId(bodyEncoder.sbeTemplateId())
+        .schemaId(bodyEncoder.sbeSchemaId())
+        .version(bodyEncoder.sbeSchemaVersion());
 
-    @Override
-    public void write(final MutableDirectBuffer buffer, int offset)
-    {
-        headerEncoder.wrap(buffer, offset)
-                     .blockLength(bodyEncoder.sbeBlockLength())
-                     .templateId(bodyEncoder.sbeTemplateId())
-                     .schemaId(bodyEncoder.sbeSchemaId())
-                     .version(bodyEncoder.sbeSchemaVersion());
+    offset += headerEncoder.encodedLength();
 
-        offset += headerEncoder.encodedLength();
-
-        bodyEncoder.wrap(buffer, offset)
-                   .term(term)
-                   .granted(granted ? BooleanType.TRUE : BooleanType.FALSE);
-    }
-
+    bodyEncoder
+        .wrap(buffer, offset)
+        .term(term)
+        .granted(granted ? BooleanType.TRUE : BooleanType.FALSE);
+  }
 }

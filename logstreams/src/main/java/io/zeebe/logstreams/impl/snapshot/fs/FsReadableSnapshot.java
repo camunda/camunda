@@ -15,6 +15,9 @@
  */
 package io.zeebe.logstreams.impl.snapshot.fs;
 
+import io.zeebe.logstreams.snapshot.InvalidSnapshotException;
+import io.zeebe.logstreams.spi.ReadableSnapshot;
+import io.zeebe.util.FileUtil;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
@@ -25,183 +28,151 @@ import java.io.InputStreamReader;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.util.Arrays;
-
 import org.agrona.BitUtil;
 import org.agrona.LangUtil;
-import io.zeebe.logstreams.snapshot.InvalidSnapshotException;
-import io.zeebe.logstreams.spi.ReadableSnapshot;
-import io.zeebe.util.FileUtil;
 
-public class FsReadableSnapshot implements ReadableSnapshot
-{
-    protected final FsSnapshotStorageConfiguration config;
+public class FsReadableSnapshot implements ReadableSnapshot {
+  protected final FsSnapshotStorageConfiguration config;
 
-    protected final File dataFile;
-    protected final File checksumFile;
+  protected final File dataFile;
+  protected final File checksumFile;
 
-    protected final String name;
-    protected final boolean replicable;
-    protected final long position;
+  protected final String name;
+  protected final boolean replicable;
+  protected final long position;
 
-    protected byte[] checksum;
-    protected DigestInputStream inputStream;
+  protected byte[] checksum;
+  protected DigestInputStream inputStream;
 
-    public FsReadableSnapshot(FsSnapshotStorageConfiguration config, File dataFile, File checksumFile, long position)
-    {
-        this.config = config;
-        this.dataFile = dataFile;
-        this.checksumFile = checksumFile;
-        this.position = position;
-        this.name = config.getSnapshotNameFromFileName(dataFile.getName());
-        this.replicable = config.isReplicable(this.name);
+  public FsReadableSnapshot(
+      FsSnapshotStorageConfiguration config, File dataFile, File checksumFile, long position) {
+    this.config = config;
+    this.dataFile = dataFile;
+    this.checksumFile = checksumFile;
+    this.position = position;
+    this.name = config.getSnapshotNameFromFileName(dataFile.getName());
+    this.replicable = config.isReplicable(this.name);
 
-        tryInit();
+    tryInit();
+  }
+
+  protected void tryInit() {
+    try {
+      this.inputStream = initDataInputStream();
+
+      final String checksumFileContent = readChecksumContent(checksumFile);
+
+      this.checksum = extractChecksum(checksumFileContent);
+      final String dataFileName = extractDataFileName(checksumFileContent);
+
+      if (!dataFileName.equals(dataFile.getName())) {
+        throw new RuntimeException("Read invalid snapshot, file name doesn't match.");
+      }
+    } catch (Exception e) {
+      LangUtil.rethrowUnchecked(e);
+    }
+  }
+
+  protected DigestInputStream initDataInputStream() throws Exception {
+    final MessageDigest messageDigest = MessageDigest.getInstance(config.getChecksumAlgorithm());
+
+    final FileInputStream fileInputStream = new FileInputStream(dataFile);
+    final BufferedInputStream bufferedInputStream = new BufferedInputStream(fileInputStream);
+
+    return new DigestInputStream(bufferedInputStream, messageDigest);
+  }
+
+  protected String readChecksumContent(File checksumFile) throws IOException {
+    final String checksumLine;
+
+    try (FileInputStream fileInputStream = new FileInputStream(checksumFile);
+        InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream);
+        BufferedReader bufferedReader = new BufferedReader(inputStreamReader); ) {
+      checksumLine = bufferedReader.readLine();
+
+      if (checksumLine == null || checksumLine.isEmpty()) {
+        throw new RuntimeException("Read invalid checksum file, no content");
+      }
     }
 
-    protected void tryInit()
-    {
-        try
-        {
-            this.inputStream = initDataInputStream();
+    return checksumLine;
+  }
 
-            final String checksumFileContent = readChecksumContent(checksumFile);
-
-            this.checksum = extractChecksum(checksumFileContent);
-            final String dataFileName = extractDataFileName(checksumFileContent);
-
-            if (!dataFileName.equals(dataFile.getName()))
-            {
-                throw new RuntimeException("Read invalid snapshot, file name doesn't match.");
-            }
-        }
-        catch (Exception e)
-        {
-            LangUtil.rethrowUnchecked(e);
-        }
+  protected byte[] extractChecksum(String content) {
+    final String checksumString = config.extractDigestFromChecksumContent(content);
+    if (checksumString.isEmpty()) {
+      throw new RuntimeException("Read invalid checksum file, missing checksum.");
     }
 
-    protected DigestInputStream initDataInputStream() throws Exception
-    {
-        final MessageDigest messageDigest = MessageDigest.getInstance(config.getChecksumAlgorithm());
+    return BitUtil.fromHex(checksumString);
+  }
 
-        final FileInputStream fileInputStream = new FileInputStream(dataFile);
-        final BufferedInputStream bufferedInputStream = new BufferedInputStream(fileInputStream);
-
-        return new DigestInputStream(bufferedInputStream, messageDigest);
+  protected String extractDataFileName(String content) {
+    final String fileName = config.extractDataFileNameFromChecksumContent(content);
+    if (fileName.isEmpty()) {
+      throw new RuntimeException("Read invalid checksum file, missing data file name.");
     }
 
-    protected String readChecksumContent(File checksumFile) throws IOException
-    {
-        final String checksumLine;
+    return fileName;
+  }
 
-        try
-        (
-            FileInputStream fileInputStream = new FileInputStream(checksumFile);
-            InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream);
-            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-        )
-        {
-            checksumLine = bufferedReader.readLine();
+  @Override
+  public void validateAndClose() throws InvalidSnapshotException {
+    final MessageDigest messageDigest = inputStream.getMessageDigest();
 
-            if (checksumLine == null || checksumLine.isEmpty())
-            {
-                throw new RuntimeException("Read invalid checksum file, no content");
-            }
-        }
+    FileUtil.closeSilently(inputStream);
 
-        return checksumLine;
+    final byte[] digestOfBytesRead = messageDigest.digest();
+    final boolean digestsEqual = Arrays.equals(digestOfBytesRead, checksum);
+
+    if (!digestsEqual) {
+      throw new InvalidSnapshotException("Read invalid snapshot, checksum doesn't match.");
     }
+  }
 
-    protected byte[] extractChecksum(String content)
-    {
-        final String checksumString = config.extractDigestFromChecksumContent(content);
-        if (checksumString.isEmpty())
-        {
-            throw new RuntimeException("Read invalid checksum file, missing checksum.");
-        }
+  @Override
+  public void delete() {
+    FileUtil.closeSilently(inputStream);
 
-        return BitUtil.fromHex(checksumString);
-    }
+    dataFile.delete();
+    checksumFile.delete();
+  }
 
-    protected String extractDataFileName(String content)
-    {
-        final String fileName = config.extractDataFileNameFromChecksumContent(content);
-        if (fileName.isEmpty())
-        {
-            throw new RuntimeException("Read invalid checksum file, missing data file name.");
-        }
+  @Override
+  public long getPosition() {
+    return position;
+  }
 
-        return fileName;
-    }
+  @Override
+  public InputStream getData() {
+    return inputStream;
+  }
 
-    @Override
-    public void validateAndClose() throws InvalidSnapshotException
-    {
-        final MessageDigest messageDigest = inputStream.getMessageDigest();
+  public File getChecksumFile() {
+    return checksumFile;
+  }
 
-        FileUtil.closeSilently(inputStream);
+  public File getDataFile() {
+    return dataFile;
+  }
 
-        final byte[] digestOfBytesRead = messageDigest.digest();
-        final boolean digestsEqual = Arrays.equals(digestOfBytesRead, checksum);
+  @Override
+  public String getName() {
+    return name;
+  }
 
-        if (!digestsEqual)
-        {
-            throw new InvalidSnapshotException("Read invalid snapshot, checksum doesn't match.");
-        }
-    }
+  @Override
+  public long getSize() {
+    return dataFile.length();
+  }
 
-    @Override
-    public void delete()
-    {
-        FileUtil.closeSilently(inputStream);
+  @Override
+  public byte[] getChecksum() {
+    return checksum;
+  }
 
-        dataFile.delete();
-        checksumFile.delete();
-    }
-
-    @Override
-    public long getPosition()
-    {
-        return position;
-    }
-
-    @Override
-    public InputStream getData()
-    {
-        return inputStream;
-    }
-
-    public File getChecksumFile()
-    {
-        return checksumFile;
-    }
-
-    public File getDataFile()
-    {
-        return dataFile;
-    }
-
-    @Override
-    public String getName()
-    {
-        return name;
-    }
-
-    @Override
-    public long getSize()
-    {
-        return dataFile.length();
-    }
-
-    @Override
-    public byte[] getChecksum()
-    {
-        return checksum;
-    }
-
-    @Override
-    public boolean isReplicable()
-    {
-        return replicable;
-    }
+  @Override
+  public boolean isReplicable() {
+    return replicable;
+  }
 }

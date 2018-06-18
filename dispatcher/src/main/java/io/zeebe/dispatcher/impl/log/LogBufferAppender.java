@@ -15,153 +15,137 @@
  */
 package io.zeebe.dispatcher.impl.log;
 
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
 import static org.agrona.BitUtil.align;
 import static org.agrona.UnsafeAccess.UNSAFE;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
 
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.dispatcher.ClaimedFragmentBatch;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
+public class LogBufferAppender {
+  public static final int RESULT_PADDING_AT_END_OF_PARTITION = -2;
+  public static final int RESULT_END_OF_PARTITION = -1;
 
-public class LogBufferAppender
-{
-    public static final int RESULT_PADDING_AT_END_OF_PARTITION = -2;
-    public static final int RESULT_END_OF_PARTITION = -1;
+  @SuppressWarnings("restriction")
+  public int appendFrame(
+      final LogBufferPartition partition,
+      final int activePartitionId,
+      final DirectBuffer msg,
+      final int start,
+      final int length,
+      final int streamId) {
+    final int partitionSize = partition.getPartitionSize();
+    final int framedLength = framedLength(length);
+    final int alignedFrameLength = alignedLength(framedLength);
 
-    @SuppressWarnings("restriction")
-    public int appendFrame(
-            final LogBufferPartition partition,
-            final int activePartitionId,
-            final DirectBuffer msg,
-            final int start,
-            final int length,
-            final int streamId)
-    {
-        final int partitionSize = partition.getPartitionSize();
-        final int framedLength = framedLength(length);
-        final int alignedFrameLength = alignedLength(framedLength);
+    // move the tail of the partition
+    final int frameOffset = partition.getAndAddTail(alignedFrameLength);
 
-        // move the tail of the partition
-        final int frameOffset = partition.getAndAddTail(alignedFrameLength);
+    int newTail = frameOffset + alignedFrameLength;
 
-        int newTail = frameOffset + alignedFrameLength;
+    if (newTail <= (partitionSize - HEADER_LENGTH)) {
+      final UnsafeBuffer buffer = partition.getDataBuffer();
 
-        if (newTail <= (partitionSize - HEADER_LENGTH))
-        {
-            final UnsafeBuffer buffer = partition.getDataBuffer();
+      // write negative length field
+      buffer.putIntOrdered(lengthOffset(frameOffset), -framedLength);
+      UNSAFE.storeFence();
+      buffer.putShort(typeOffset(frameOffset), TYPE_MESSAGE);
+      buffer.putInt(streamIdOffset(frameOffset), streamId);
+      buffer.putBytes(messageOffset(frameOffset), msg, start, length);
 
-            // write negative length field
-            buffer.putIntOrdered(lengthOffset(frameOffset), -framedLength);
-            UNSAFE.storeFence();
-            buffer.putShort(typeOffset(frameOffset), TYPE_MESSAGE);
-            buffer.putInt(streamIdOffset(frameOffset), streamId);
-            buffer.putBytes(messageOffset(frameOffset), msg, start, length);
-
-            // commit the message
-            buffer.putIntOrdered(lengthOffset(frameOffset), framedLength);
-        }
-        else
-        {
-            newTail = onEndOfPartition(partition, frameOffset);
-        }
-
-        return newTail;
+      // commit the message
+      buffer.putIntOrdered(lengthOffset(frameOffset), framedLength);
+    } else {
+      newTail = onEndOfPartition(partition, frameOffset);
     }
 
-    @SuppressWarnings("restriction")
-    public int claim(
-            final LogBufferPartition partition,
-            final int activePartitionId,
-            final ClaimedFragment claim,
-            final int length,
-            final int streamId,
-            Runnable onComplete)
-    {
-        final int partitionSize = partition.getPartitionSize();
-        final int framedMessageLength = framedLength(length);
-        final int alignedFrameLength = alignedLength(framedMessageLength);
+    return newTail;
+  }
 
-        // move the tail of the partition
-        final int frameOffset = partition.getAndAddTail(alignedFrameLength);
+  @SuppressWarnings("restriction")
+  public int claim(
+      final LogBufferPartition partition,
+      final int activePartitionId,
+      final ClaimedFragment claim,
+      final int length,
+      final int streamId,
+      Runnable onComplete) {
+    final int partitionSize = partition.getPartitionSize();
+    final int framedMessageLength = framedLength(length);
+    final int alignedFrameLength = alignedLength(framedMessageLength);
 
-        int newTail = frameOffset + alignedFrameLength;
+    // move the tail of the partition
+    final int frameOffset = partition.getAndAddTail(alignedFrameLength);
 
-        if (newTail <= (partitionSize - HEADER_LENGTH))
-        {
-            final UnsafeBuffer buffer = partition.getDataBuffer();
+    int newTail = frameOffset + alignedFrameLength;
 
-            // write negative length field
-            buffer.putIntOrdered(lengthOffset(frameOffset), -framedMessageLength);
-            UNSAFE.storeFence();
-            buffer.putShort(typeOffset(frameOffset), TYPE_MESSAGE);
-            buffer.putInt(streamIdOffset(frameOffset), streamId);
+    if (newTail <= (partitionSize - HEADER_LENGTH)) {
+      final UnsafeBuffer buffer = partition.getDataBuffer();
 
-            claim.wrap(buffer, frameOffset, framedMessageLength, onComplete);
-            // Do not commit the message
-        }
-        else
-        {
-            newTail = onEndOfPartition(partition, frameOffset);
-        }
+      // write negative length field
+      buffer.putIntOrdered(lengthOffset(frameOffset), -framedMessageLength);
+      UNSAFE.storeFence();
+      buffer.putShort(typeOffset(frameOffset), TYPE_MESSAGE);
+      buffer.putInt(streamIdOffset(frameOffset), streamId);
 
-        return newTail;
+      claim.wrap(buffer, frameOffset, framedMessageLength, onComplete);
+      // Do not commit the message
+    } else {
+      newTail = onEndOfPartition(partition, frameOffset);
     }
 
-    public int claim(
-            final LogBufferPartition partition,
-            final int activePartitionId,
-            final ClaimedFragmentBatch batch,
-            final int fragmentCount,
-            final int batchLength,
-            final Runnable onComplete)
-    {
-        final int partitionSize = partition.getPartitionSize();
-        // reserve enough space for frame alignment because each batch fragment must start on an aligned position
-        final int framedMessageLength = batchLength + fragmentCount * (HEADER_LENGTH + FRAME_ALIGNMENT) + FRAME_ALIGNMENT;
-        final int alignedFrameLength = align(framedMessageLength, FRAME_ALIGNMENT);
+    return newTail;
+  }
 
-        // move the tail of the partition
-        final int frameOffset = partition.getAndAddTail(alignedFrameLength);
+  public int claim(
+      final LogBufferPartition partition,
+      final int activePartitionId,
+      final ClaimedFragmentBatch batch,
+      final int fragmentCount,
+      final int batchLength,
+      final Runnable onComplete) {
+    final int partitionSize = partition.getPartitionSize();
+    // reserve enough space for frame alignment because each batch fragment must start on an aligned
+    // position
+    final int framedMessageLength =
+        batchLength + fragmentCount * (HEADER_LENGTH + FRAME_ALIGNMENT) + FRAME_ALIGNMENT;
+    final int alignedFrameLength = align(framedMessageLength, FRAME_ALIGNMENT);
 
-        int newTail = frameOffset + alignedFrameLength;
+    // move the tail of the partition
+    final int frameOffset = partition.getAndAddTail(alignedFrameLength);
 
-        if (newTail <= (partitionSize - HEADER_LENGTH))
-        {
-            final UnsafeBuffer buffer = partition.getDataBuffer();
-            // all fragment data are written using the claimed batch
-            batch.wrap(buffer, activePartitionId, frameOffset, alignedFrameLength, onComplete);
-        }
-        else
-        {
-            newTail = onEndOfPartition(partition, frameOffset);
-        }
+    int newTail = frameOffset + alignedFrameLength;
 
-        return newTail;
+    if (newTail <= (partitionSize - HEADER_LENGTH)) {
+      final UnsafeBuffer buffer = partition.getDataBuffer();
+      // all fragment data are written using the claimed batch
+      batch.wrap(buffer, activePartitionId, frameOffset, alignedFrameLength, onComplete);
+    } else {
+      newTail = onEndOfPartition(partition, frameOffset);
     }
 
-    @SuppressWarnings("restriction")
-    protected int onEndOfPartition(final LogBufferPartition partition, final int partitionOffset)
-    {
-        int newTail = RESULT_END_OF_PARTITION;
+    return newTail;
+  }
 
-        final int padLength = partition.getPartitionSize() - partitionOffset;
+  @SuppressWarnings("restriction")
+  protected int onEndOfPartition(final LogBufferPartition partition, final int partitionOffset) {
+    int newTail = RESULT_END_OF_PARTITION;
 
-        if (padLength >= HEADER_LENGTH)
-        {
-            // this message tripped the end of the partition, fill buffer with padding
-            final UnsafeBuffer buffer = partition.getDataBuffer();
-            buffer.putIntOrdered(lengthOffset(partitionOffset), -padLength);
-            UNSAFE.storeFence();
-            buffer.putShort(typeOffset(partitionOffset), TYPE_PADDING);
-            buffer.putIntOrdered(lengthOffset(partitionOffset), padLength);
+    final int padLength = partition.getPartitionSize() - partitionOffset;
 
-            newTail = RESULT_PADDING_AT_END_OF_PARTITION;
-        }
+    if (padLength >= HEADER_LENGTH) {
+      // this message tripped the end of the partition, fill buffer with padding
+      final UnsafeBuffer buffer = partition.getDataBuffer();
+      buffer.putIntOrdered(lengthOffset(partitionOffset), -padLength);
+      UNSAFE.storeFence();
+      buffer.putShort(typeOffset(partitionOffset), TYPE_PADDING);
+      buffer.putIntOrdered(lengthOffset(partitionOffset), padLength);
 
-        return newTail;
+      newTail = RESULT_PADDING_AT_END_OF_PARTITION;
     }
 
-
+    return newTail;
+  }
 }

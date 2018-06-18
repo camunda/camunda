@@ -25,83 +25,75 @@ import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import org.junit.*;
 
-public class ActorRecyclingTest
-{
-    @Rule
-    public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
+public class ActorRecyclingTest {
+  @Rule
+  public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
 
-    @Test
-    public void shouldPerformFullLifecycleAfterRecycle()
-    {
-        // given
-        final LifecycleRecordingActor actor = new LifecycleRecordingActor();
-        schedulerRule.submitActor(actor);
-        actor.close();
-        schedulerRule.workUntilDone();
-        actor.phases.clear();
+  @Test
+  public void shouldPerformFullLifecycleAfterRecycle() {
+    // given
+    final LifecycleRecordingActor actor = new LifecycleRecordingActor();
+    schedulerRule.submitActor(actor);
+    actor.close();
+    schedulerRule.workUntilDone();
+    actor.phases.clear();
 
-        // when
-        schedulerRule.submitActor(actor);
-        actor.close();
-        schedulerRule.workUntilDone();
+    // when
+    schedulerRule.submitActor(actor);
+    actor.close();
+    schedulerRule.workUntilDone();
 
-        // then
-        assertThat(actor.phases).isEqualTo(FULL_LIFECYCLE);
-    }
+    // then
+    assertThat(actor.phases).isEqualTo(FULL_LIFECYCLE);
+  }
 
-    @Test
-    public void shouldReturnNonCompletedFutureAfterRecycle()
-    {
-        // given
-        final LifecycleRecordingActor actor = new LifecycleRecordingActor();
-        schedulerRule.submitActor(actor);
-        actor.close();
-        schedulerRule.workUntilDone();
+  @Test
+  public void shouldReturnNonCompletedFutureAfterRecycle() {
+    // given
+    final LifecycleRecordingActor actor = new LifecycleRecordingActor();
+    schedulerRule.submitActor(actor);
+    actor.close();
+    schedulerRule.workUntilDone();
 
-        // when
-        final ActorFuture<Void> actorStartedFuture = schedulerRule.submitActor(actor);
-        assertThat(actorStartedFuture).isNotDone();
-    }
+    // when
+    final ActorFuture<Void> actorStartedFuture = schedulerRule.submitActor(actor);
+    assertThat(actorStartedFuture).isNotDone();
+  }
 
-    @Test
-    public void shouldNotExecutePreviouslySubmittedJobs()
-    {
-        // given
-        final Runnable action = mock(Runnable.class);
-        final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
-        {
-            @Override
-            public void onActorCloseRequested()
-            {
-                blockPhase(future);
-            }
+  @Test
+  public void shouldNotExecutePreviouslySubmittedJobs() {
+    // given
+    final Runnable action = mock(Runnable.class);
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+          @Override
+          public void onActorCloseRequested() {
+            blockPhase(future);
+          }
         };
-        schedulerRule.submitActor(actor);
-        actor.close();
-        schedulerRule.workUntilDone();
-        actor.control().run(action); // submit during close requested phase
+    schedulerRule.submitActor(actor);
+    actor.close();
+    schedulerRule.workUntilDone();
+    actor.control().run(action); // submit during close requested phase
 
-        future.complete(null); // allow the actor to close
-        schedulerRule.workUntilDone();
+    future.complete(null); // allow the actor to close
+    schedulerRule.workUntilDone();
 
-        // when
-        schedulerRule.submitActor(actor);
-        schedulerRule.workUntilDone();
+    // when
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
 
-        // then
-        verifyZeroInteractions(action);
-    }
+    // then
+    verifyZeroInteractions(action);
+  }
 
-    @Test
-    @Ignore("TODO")
-    public void shouldNotRecycleIfNotClosed()
-    {
-        // given
-        final LifecycleRecordingActor actor = new LifecycleRecordingActor();
-        schedulerRule.submitActor(actor);
-        schedulerRule.submitActor(actor);
-    }
-
-
+  @Test
+  @Ignore("TODO")
+  public void shouldNotRecycleIfNotClosed() {
+    // given
+    final LifecycleRecordingActor actor = new LifecycleRecordingActor();
+    schedulerRule.submitActor(actor);
+    schedulerRule.submitActor(actor);
+  }
 }

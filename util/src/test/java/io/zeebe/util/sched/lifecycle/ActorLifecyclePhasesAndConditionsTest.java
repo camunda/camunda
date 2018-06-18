@@ -23,183 +23,169 @@ import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ActorLifecyclePhasesAndConditionsTest
-{
-    @Rule
-    public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
+public class ActorLifecyclePhasesAndConditionsTest {
+  @Rule
+  public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
 
-    @Test
-    public void shouldNotExecuteConditionalJobsInStartingPhase() throws Exception
-    {
-        // given
-        final Runnable runnable = mock(Runnable.class);
-        final CompletableActorFuture<ActorCondition> conditionFuture = new CompletableActorFuture<>();
-        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
-        {
-            @Override
-            public void onActorStarting()
-            {
-                conditionFuture.complete(actor.onCondition("condition", runnable));
-                blockPhase();
-            }
+  @Test
+  public void shouldNotExecuteConditionalJobsInStartingPhase() throws Exception {
+    // given
+    final Runnable runnable = mock(Runnable.class);
+    final CompletableActorFuture<ActorCondition> conditionFuture = new CompletableActorFuture<>();
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+          @Override
+          public void onActorStarting() {
+            conditionFuture.complete(actor.onCondition("condition", runnable));
+            blockPhase();
+          }
         };
 
-        schedulerRule.submitActor(actor);
-        schedulerRule.workUntilDone();
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
 
-        final ActorCondition condition = conditionFuture.join();
+    final ActorCondition condition = conditionFuture.join();
 
-        // when
-        condition.signal();
-        schedulerRule.workUntilDone();
+    // when
+    condition.signal();
+    schedulerRule.workUntilDone();
 
-        // then
-        verify(runnable, times(0)).run();
-    }
+    // then
+    verify(runnable, times(0)).run();
+  }
 
-    @Test
-    public void shouldExecuteConditionalJobsInStartingPhaseWhenInStartedPhase() throws Exception
-    {
-        // given
-        final Runnable runnable = mock(Runnable.class);
-        final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-        final CompletableActorFuture<ActorCondition> conditionFuture = new CompletableActorFuture<>();
-        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
-        {
-            @Override
-            public void onActorStarting()
-            {
-                conditionFuture.complete(actor.onCondition("condition", runnable));
-                blockPhase(future);
-            }
+  @Test
+  public void shouldExecuteConditionalJobsInStartingPhaseWhenInStartedPhase() throws Exception {
+    // given
+    final Runnable runnable = mock(Runnable.class);
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+    final CompletableActorFuture<ActorCondition> conditionFuture = new CompletableActorFuture<>();
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+          @Override
+          public void onActorStarting() {
+            conditionFuture.complete(actor.onCondition("condition", runnable));
+            blockPhase(future);
+          }
         };
-        schedulerRule.submitActor(actor);
-        schedulerRule.workUntilDone();
-        conditionFuture.join().signal();
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
+    conditionFuture.join().signal();
 
-        // then
-        verify(runnable, times(0)).run();
+    // then
+    verify(runnable, times(0)).run();
 
-        // when then
-        future.complete(null);
-        schedulerRule.workUntilDone();
-        verify(runnable, times(1)).run();
-    }
+    // when then
+    future.complete(null);
+    schedulerRule.workUntilDone();
+    verify(runnable, times(1)).run();
+  }
 
-    @Test
-    public void shouldExecuteConditionalJobsInStartedPhase() throws Exception
-    {
-        // given
-        final Runnable runnable = mock(Runnable.class);
-        final CompletableActorFuture<ActorCondition> conditionFuture = new CompletableActorFuture<>();
-        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
-        {
-            @Override
-            public void onActorStarted()
-            {
-                conditionFuture.complete(actor.onCondition("condition", runnable));
-                blockPhase();
-            }
+  @Test
+  public void shouldExecuteConditionalJobsInStartedPhase() throws Exception {
+    // given
+    final Runnable runnable = mock(Runnable.class);
+    final CompletableActorFuture<ActorCondition> conditionFuture = new CompletableActorFuture<>();
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+          @Override
+          public void onActorStarted() {
+            conditionFuture.complete(actor.onCondition("condition", runnable));
+            blockPhase();
+          }
         };
 
-        schedulerRule.submitActor(actor);
-        schedulerRule.workUntilDone();
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
 
-        final ActorCondition condition = conditionFuture.join();
+    final ActorCondition condition = conditionFuture.join();
 
-        // when
-        condition.signal();
-        schedulerRule.workUntilDone();
+    // when
+    condition.signal();
+    schedulerRule.workUntilDone();
 
-        // then
-        verify(runnable, times(1)).run();
-    }
+    // then
+    verify(runnable, times(1)).run();
+  }
 
-    @Test
-    public void shouldNotExecuteConditionalJobsInCloseRequestedPhase() throws Exception
-    {
-        // given
-        final Runnable runnable = mock(Runnable.class);
-        final CompletableActorFuture<ActorCondition> conditionFuture = new CompletableActorFuture<>();
-        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
-        {
-            @Override
-            public void onActorCloseRequested()
-            {
-                conditionFuture.complete(actor.onCondition("condition", runnable));
-                blockPhase();
-            }
+  @Test
+  public void shouldNotExecuteConditionalJobsInCloseRequestedPhase() throws Exception {
+    // given
+    final Runnable runnable = mock(Runnable.class);
+    final CompletableActorFuture<ActorCondition> conditionFuture = new CompletableActorFuture<>();
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+          @Override
+          public void onActorCloseRequested() {
+            conditionFuture.complete(actor.onCondition("condition", runnable));
+            blockPhase();
+          }
         };
 
-        schedulerRule.submitActor(actor);
-        actor.close();
-        schedulerRule.workUntilDone();
+    schedulerRule.submitActor(actor);
+    actor.close();
+    schedulerRule.workUntilDone();
 
-        // when
-        final ActorCondition condition = conditionFuture.join();
-        condition.signal();
-        schedulerRule.workUntilDone();
+    // when
+    final ActorCondition condition = conditionFuture.join();
+    condition.signal();
+    schedulerRule.workUntilDone();
 
-        // then
-        verify(runnable, times(0)).run();
-    }
+    // then
+    verify(runnable, times(0)).run();
+  }
 
-    @Test
-    public void shouldNotExecuteConditionalJobsInClosingPhase() throws Exception
-    {
-        // given
-        final Runnable runnable = mock(Runnable.class);
-        final CompletableActorFuture<ActorCondition> conditionFuture = new CompletableActorFuture<>();
-        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
-        {
-            @Override
-            public void onActorClosing()
-            {
-                conditionFuture.complete(actor.onCondition("condition", runnable));
-                blockPhase();
-            }
+  @Test
+  public void shouldNotExecuteConditionalJobsInClosingPhase() throws Exception {
+    // given
+    final Runnable runnable = mock(Runnable.class);
+    final CompletableActorFuture<ActorCondition> conditionFuture = new CompletableActorFuture<>();
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+          @Override
+          public void onActorClosing() {
+            conditionFuture.complete(actor.onCondition("condition", runnable));
+            blockPhase();
+          }
         };
 
-        schedulerRule.submitActor(actor);
-        actor.close();
-        schedulerRule.workUntilDone();
+    schedulerRule.submitActor(actor);
+    actor.close();
+    schedulerRule.workUntilDone();
 
-        // when
-        final ActorCondition condition = conditionFuture.join();
-        condition.signal();
-        schedulerRule.workUntilDone();
+    // when
+    final ActorCondition condition = conditionFuture.join();
+    condition.signal();
+    schedulerRule.workUntilDone();
 
-        // then
-        verify(runnable, times(0)).run();
-    }
+    // then
+    verify(runnable, times(0)).run();
+  }
 
-    @Test
-    public void shouldNotExecuteConditionalJobsInClosedPhase() throws Exception
-    {
-        // given
-        final Runnable runnable = mock(Runnable.class);
-        final CompletableActorFuture<ActorCondition> conditionFuture = new CompletableActorFuture<>();
-        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
-        {
-            @Override
-            public void onActorClosed()
-            {
-                conditionFuture.complete(actor.onCondition("condition", runnable));
-                blockPhase();
-            }
+  @Test
+  public void shouldNotExecuteConditionalJobsInClosedPhase() throws Exception {
+    // given
+    final Runnable runnable = mock(Runnable.class);
+    final CompletableActorFuture<ActorCondition> conditionFuture = new CompletableActorFuture<>();
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+          @Override
+          public void onActorClosed() {
+            conditionFuture.complete(actor.onCondition("condition", runnable));
+            blockPhase();
+          }
         };
 
-        schedulerRule.submitActor(actor);
-        actor.close();
-        schedulerRule.workUntilDone();
+    schedulerRule.submitActor(actor);
+    actor.close();
+    schedulerRule.workUntilDone();
 
-        // when
-        final ActorCondition condition = conditionFuture.join();
-        condition.signal();
-        schedulerRule.workUntilDone();
+    // when
+    final ActorCondition condition = conditionFuture.join();
+    condition.signal();
+    schedulerRule.workUntilDone();
 
-        // then
-        verify(runnable, times(0)).run();
-    }
-
+    // then
+    verify(runnable, times(0)).run();
+  }
 }

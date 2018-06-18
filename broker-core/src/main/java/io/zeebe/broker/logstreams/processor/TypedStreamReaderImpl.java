@@ -17,10 +17,6 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.Map;
-
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
@@ -29,48 +25,46 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.util.ReflectUtil;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.Map;
 
-public class TypedStreamReaderImpl implements TypedStreamReader
-{
-    protected final LogStreamReader reader;
-    protected final TypedEventImpl event = new TypedEventImpl();
-    protected final RecordMetadata metadata = new RecordMetadata();
-    protected final Map<Class<? extends UnpackedObject>, UnpackedObject> eventCache;
+public class TypedStreamReaderImpl implements TypedStreamReader {
+  protected final LogStreamReader reader;
+  protected final TypedEventImpl event = new TypedEventImpl();
+  protected final RecordMetadata metadata = new RecordMetadata();
+  protected final Map<Class<? extends UnpackedObject>, UnpackedObject> eventCache;
 
-    public TypedStreamReaderImpl(LogStream stream, EnumMap<ValueType, Class<? extends UnpackedObject>> eventRegistry)
-    {
-        this.reader = new BufferedLogStreamReader(stream);
-        this.eventCache = new HashMap<>();
-        eventRegistry.forEach((t, c) -> eventCache.put(c, ReflectUtil.newInstance(c)));
+  public TypedStreamReaderImpl(
+      LogStream stream, EnumMap<ValueType, Class<? extends UnpackedObject>> eventRegistry) {
+    this.reader = new BufferedLogStreamReader(stream);
+    this.eventCache = new HashMap<>();
+    eventRegistry.forEach((t, c) -> eventCache.put(c, ReflectUtil.newInstance(c)));
+  }
+
+  @Override
+  @SuppressWarnings({"unchecked"})
+  public <T extends UnpackedObject> TypedRecord<T> readValue(long position, Class<T> eventClass) {
+    final boolean success = reader.seek(position);
+    if (!success) {
+      throw new RuntimeException("Could not find an event at position " + position);
     }
 
-    @Override
-    @SuppressWarnings({"unchecked"})
-    public <T extends UnpackedObject> TypedRecord<T> readValue(long position, Class<T> eventClass)
-    {
-        final boolean success = reader.seek(position);
-        if (!success)
-        {
-            throw new RuntimeException("Could not find an event at position " + position);
-        }
+    final LoggedEvent rawEvent = reader.next();
+    metadata.reset();
+    rawEvent.readMetadata(metadata);
 
-        final LoggedEvent rawEvent = reader.next();
-        metadata.reset();
-        rawEvent.readMetadata(metadata);
+    final UnpackedObject value = eventCache.get(eventClass);
+    value.reset();
+    rawEvent.readValue(value);
 
-        final UnpackedObject value = eventCache.get(eventClass);
-        value.reset();
-        rawEvent.readValue(value);
+    event.wrap(rawEvent, metadata, value);
 
-        event.wrap(rawEvent, metadata, value);
+    return event;
+  }
 
-        return event;
-    }
-
-    @Override
-    public void close()
-    {
-        reader.close();
-    }
-
+  @Override
+  public void close() {
+    reader.close();
+  }
 }

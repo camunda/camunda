@@ -22,26 +22,21 @@ import io.zeebe.gossip.protocol.GossipEventConsumer;
 import io.zeebe.gossip.protocol.GossipEventSender;
 import org.slf4j.Logger;
 
-public class PingEventHandler implements GossipEventConsumer
-{
-    private static final Logger LOG = Loggers.GOSSIP_LOGGER;
+public class PingEventHandler implements GossipEventConsumer {
+  private static final Logger LOG = Loggers.GOSSIP_LOGGER;
 
-    private final GossipEventSender gossipEventSender;
+  private final GossipEventSender gossipEventSender;
 
-    public PingEventHandler(GossipContext context)
-    {
-        this.gossipEventSender = context.getGossipEventSender();
+  public PingEventHandler(GossipContext context) {
+    this.gossipEventSender = context.getGossipEventSender();
+  }
+
+  @Override
+  public void accept(GossipEvent event, long requestId, int streamId) {
+    if (LOG.isTraceEnabled()) {
+      LOG.trace("Send ACK to '{}'", event.getSender());
     }
 
-    @Override
-    public void accept(GossipEvent event, long requestId, int streamId)
-    {
-        if (LOG.isTraceEnabled())
-        {
-            LOG.trace("Send ACK to '{}'", event.getSender());
-        }
-
-        gossipEventSender.responseAck(requestId, streamId);
-    }
-
+    gossipEventSender.responseAck(requestId, streamId);
+  }
 }

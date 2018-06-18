@@ -23,51 +23,48 @@ import io.zeebe.client.impl.record.WorkflowInstanceRecordImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-public class WorkflowInstanceCommandImpl extends WorkflowInstanceRecordImpl implements WorkflowInstanceCommand
-{
-    @JsonCreator
-    public WorkflowInstanceCommandImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper)
-    {
-        super(objectMapper, RecordType.COMMAND);
-    }
+public class WorkflowInstanceCommandImpl extends WorkflowInstanceRecordImpl
+    implements WorkflowInstanceCommand {
+  @JsonCreator
+  public WorkflowInstanceCommandImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper) {
+    super(objectMapper, RecordType.COMMAND);
+  }
 
-    public WorkflowInstanceCommandImpl(ZeebeObjectMapperImpl objectMapper, WorkflowInstanceIntent intent)
-    {
-        super(objectMapper, RecordType.COMMAND);
-        setIntent(intent);
-    }
+  public WorkflowInstanceCommandImpl(
+      ZeebeObjectMapperImpl objectMapper, WorkflowInstanceIntent intent) {
+    super(objectMapper, RecordType.COMMAND);
+    setIntent(intent);
+  }
 
-    public WorkflowInstanceCommandImpl(WorkflowInstanceRecordImpl base, WorkflowInstanceIntent intent)
-    {
-        super(base, intent);
-    }
+  public WorkflowInstanceCommandImpl(
+      WorkflowInstanceRecordImpl base, WorkflowInstanceIntent intent) {
+    super(base, intent);
+  }
 
-    @JsonIgnore
-    @Override
-    public WorkflowInstanceCommandName getName()
-    {
-        return WorkflowInstanceCommandName.valueOf(getMetadata().getIntent());
-    }
+  @JsonIgnore
+  @Override
+  public WorkflowInstanceCommandName getName() {
+    return WorkflowInstanceCommandName.valueOf(getMetadata().getIntent());
+  }
 
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("WorkflowInstanceCommand [command=");
-        builder.append(getName());
-        builder.append(", workflowInstanceKey=");
-        builder.append(getWorkflowInstanceKey());
-        builder.append(", workflowKey=");
-        builder.append(getWorkflowKey());
-        builder.append(", bpmnProcessId=");
-        builder.append(getBpmnProcessId());
-        builder.append(", version=");
-        builder.append(getVersion());
-        builder.append(", activityId=");
-        builder.append(getActivityId());
-        builder.append(", payload=");
-        builder.append(getPayload());
-        builder.append("]");
-        return builder.toString();
-    }
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("WorkflowInstanceCommand [command=");
+    builder.append(getName());
+    builder.append(", workflowInstanceKey=");
+    builder.append(getWorkflowInstanceKey());
+    builder.append(", workflowKey=");
+    builder.append(getWorkflowKey());
+    builder.append(", bpmnProcessId=");
+    builder.append(getBpmnProcessId());
+    builder.append(", version=");
+    builder.append(getVersion());
+    builder.append(", activityId=");
+    builder.append(getActivityId());
+    builder.append(", payload=");
+    builder.append(getPayload());
+    builder.append("]");
+    return builder.toString();
+  }
 }

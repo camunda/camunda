@@ -22,32 +22,27 @@ import io.zeebe.client.impl.record.TopicSubscriptionRecordImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.intent.SubscriptionIntent;
 
-public class TopicSubscriptionCommandImpl extends TopicSubscriptionRecordImpl
-{
-    @JsonCreator
-    public TopicSubscriptionCommandImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper)
-    {
-        super(objectMapper, RecordType.COMMAND);
-    }
+public class TopicSubscriptionCommandImpl extends TopicSubscriptionRecordImpl {
+  @JsonCreator
+  public TopicSubscriptionCommandImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper) {
+    super(objectMapper, RecordType.COMMAND);
+  }
 
-    public TopicSubscriptionCommandImpl(SubscriptionIntent intent)
-    {
-        super(null, RecordType.COMMAND);
-        setIntent(intent);
-    }
+  public TopicSubscriptionCommandImpl(SubscriptionIntent intent) {
+    super(null, RecordType.COMMAND);
+    setIntent(intent);
+  }
 
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("TopicSubscriptionCommand [command=");
-        builder.append(getMetadata().getIntent());
-        builder.append(", name=");
-        builder.append(getName());
-        builder.append(", ackPosition=");
-        builder.append(getAckPosition());
-        builder.append("]");
-        return builder.toString();
-    }
-
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("TopicSubscriptionCommand [command=");
+    builder.append(getMetadata().getIntent());
+    builder.append(", name=");
+    builder.append(getName());
+    builder.append(", ackPosition=");
+    builder.append(getAckPosition());
+    builder.append("]");
+    return builder.toString();
+  }
 }

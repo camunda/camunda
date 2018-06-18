@@ -15,41 +15,39 @@
  */
 package io.zeebe.protocol.intent;
 
-public enum TopicIntent implements Intent
-{
-    CREATE((short) 0),
-    CREATING((short) 1),
-    CREATE_COMPLETE((short) 2),
-    CREATED((short) 3);
+public enum TopicIntent implements Intent {
+  CREATE((short) 0),
+  CREATING((short) 1),
+  CREATE_COMPLETE((short) 2),
+  CREATED((short) 3);
 
-    private short value;
+  private short value;
 
-    TopicIntent(short value)
-    {
-        this.value = value;
+  TopicIntent(short value) {
+    this.value = value;
+  }
+
+  public short getIntent() {
+    return value;
+  }
+
+  public static Intent from(short value) {
+    switch (value) {
+      case 0:
+        return CREATE;
+      case 1:
+        return CREATING;
+      case 2:
+        return CREATE_COMPLETE;
+      case 3:
+        return CREATED;
+      default:
+        return Intent.UNKNOWN;
     }
+  }
 
-    public short getIntent()
-    {
-        return value;
-    }
-
-    public static Intent from(short value)
-    {
-        switch (value)
-        {
-            case 0: return CREATE;
-            case 1: return CREATING;
-            case 2: return CREATE_COMPLETE;
-            case 3: return CREATED;
-            default: return Intent.UNKNOWN;
-        }
-    }
-
-    @Override
-    public short value()
-    {
-        return value;
-    }
-
+  @Override
+  public short value() {
+    return value;
+  }
 }

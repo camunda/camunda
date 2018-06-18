@@ -15,84 +15,71 @@
  */
 package io.zeebe.client.impl.data;
 
-import java.io.IOException;
-
 import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import java.io.IOException;
 
-public class MsgpackPayloadModule extends SimpleModule
-{
+public class MsgpackPayloadModule extends SimpleModule {
+  private static final long serialVersionUID = 1L;
+
+  public MsgpackPayloadModule(ZeebeObjectMapperImpl objectMapper) {
+    addSerializer(PayloadField.class, new MsgpackPayloadSerializer());
+    addDeserializer(PayloadField.class, new MsgpackPayloadDeserializer(objectMapper));
+  }
+
+  class MsgpackPayloadSerializer extends StdSerializer<PayloadField> {
+
     private static final long serialVersionUID = 1L;
 
-    public MsgpackPayloadModule(ZeebeObjectMapperImpl objectMapper)
-    {
-        addSerializer(PayloadField.class, new MsgpackPayloadSerializer());
-        addDeserializer(PayloadField.class, new MsgpackPayloadDeserializer(objectMapper));
+    protected MsgpackPayloadSerializer() {
+      this(null);
     }
 
-    class MsgpackPayloadSerializer extends StdSerializer<PayloadField>
-    {
-
-        private static final long serialVersionUID = 1L;
-
-        protected MsgpackPayloadSerializer()
-        {
-            this(null);
-        }
-
-        protected MsgpackPayloadSerializer(Class<PayloadField> t)
-        {
-            super(t);
-        }
-
-        @Override
-        public void serialize(PayloadField value, JsonGenerator gen, SerializerProvider provider) throws IOException
-        {
-            final byte[] bytes = value.getMsgPack();
-
-            if (bytes == null)
-            {
-                // currently, the broker doesn't support null as payload
-                throw new IllegalArgumentException("can't serialize 'null' as payload");
-            }
-            else
-            {
-                gen.writeBinary(value.getMsgPack());
-            }
-        }
+    protected MsgpackPayloadSerializer(Class<PayloadField> t) {
+      super(t);
     }
 
-    class MsgpackPayloadDeserializer extends StdDeserializer<PayloadField>
-    {
-        private static final long serialVersionUID = 1L;
+    @Override
+    public void serialize(PayloadField value, JsonGenerator gen, SerializerProvider provider)
+        throws IOException {
+      final byte[] bytes = value.getMsgPack();
 
-        private ZeebeObjectMapperImpl objectMapper;
+      if (bytes == null) {
+        // currently, the broker doesn't support null as payload
+        throw new IllegalArgumentException("can't serialize 'null' as payload");
+      } else {
+        gen.writeBinary(value.getMsgPack());
+      }
+    }
+  }
 
-        protected MsgpackPayloadDeserializer(ZeebeObjectMapperImpl objectMapper)
-        {
-            this((Class<?>) null);
-            this.objectMapper = objectMapper;
-        }
+  class MsgpackPayloadDeserializer extends StdDeserializer<PayloadField> {
+    private static final long serialVersionUID = 1L;
 
-        protected MsgpackPayloadDeserializer(Class<?> vc)
-        {
-            super(vc);
-        }
+    private ZeebeObjectMapperImpl objectMapper;
 
-        @Override
-        public PayloadField deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException
-        {
-            final byte[] msgpackPayload = p.getBinaryValue();
-
-            final PayloadField payload = new PayloadField(objectMapper);
-            payload.setMsgPack(msgpackPayload);
-
-            return payload;
-        }
+    protected MsgpackPayloadDeserializer(ZeebeObjectMapperImpl objectMapper) {
+      this((Class<?>) null);
+      this.objectMapper = objectMapper;
     }
 
+    protected MsgpackPayloadDeserializer(Class<?> vc) {
+      super(vc);
+    }
+
+    @Override
+    public PayloadField deserialize(JsonParser p, DeserializationContext ctxt)
+        throws IOException, JsonProcessingException {
+      final byte[] msgpackPayload = p.getBinaryValue();
+
+      final PayloadField payload = new PayloadField(objectMapper);
+      payload.setMsgPack(msgpackPayload);
+
+      return payload;
+    }
+  }
 }

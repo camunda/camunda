@@ -17,29 +17,28 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-public class StreamProcessorIds
-{
-    // a stream processor partitionId should be unique to distinguish event producers
+public class StreamProcessorIds {
+  // a stream processor partitionId should be unique to distinguish event producers
 
-    public static final int JOB_QUEUE_STREAM_PROCESSOR_ID = 10;
+  public static final int JOB_QUEUE_STREAM_PROCESSOR_ID = 10;
 
-    public static final int JOB_ACTIVATE_STREAM_PROCESSOR_ID = 20;
+  public static final int JOB_ACTIVATE_STREAM_PROCESSOR_ID = 20;
 
-    public static final int JOB_TIME_OUT_STREAM_PROCESSOR_ID = 30;
+  public static final int JOB_TIME_OUT_STREAM_PROCESSOR_ID = 30;
 
-    public static final int TOPIC_SUBSCRIPTION_PUSH_PROCESSOR_ID = 40;
+  public static final int TOPIC_SUBSCRIPTION_PUSH_PROCESSOR_ID = 40;
 
-    public static final int TOPIC_SUBSCRIPTION_MANAGEMENT_PROCESSOR_ID = 50;
+  public static final int TOPIC_SUBSCRIPTION_MANAGEMENT_PROCESSOR_ID = 50;
 
-    public static final int DEPLOYMENT_PROCESSOR_ID = 60;
+  public static final int DEPLOYMENT_PROCESSOR_ID = 60;
 
-    public static final int WORKFLOW_INSTANCE_PROCESSOR_ID = 70;
+  public static final int WORKFLOW_INSTANCE_PROCESSOR_ID = 70;
 
-    public static final int INCIDENT_PROCESSOR_ID = 80;
+  public static final int INCIDENT_PROCESSOR_ID = 80;
 
-    public static final int SYSTEM_CREATE_TOPIC_PROCESSOR_ID = 1000;
-    public static final int SYSTEM_COLLECT_PARTITION_PROCESSOR_ID = 1001;
-    public static final int SYSTEM_ID_PROCESSOR_ID = 1002;
+  public static final int SYSTEM_CREATE_TOPIC_PROCESSOR_ID = 1000;
+  public static final int SYSTEM_COLLECT_PARTITION_PROCESSOR_ID = 1001;
+  public static final int SYSTEM_ID_PROCESSOR_ID = 1002;
 
-    public static final int CLUSTER_TOPIC_STATE = 2000;
+  public static final int CLUSTER_TOPIC_STATE = 2000;
 }

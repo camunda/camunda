@@ -19,57 +19,46 @@ package io.zeebe.broker.system.configuration;
 
 import io.zeebe.transport.SocketAddress;
 
-public abstract class SocketBindingCfg
-{
-    protected String host;
-    protected int port;
-    protected String sendBufferSize;
+public abstract class SocketBindingCfg {
+  protected String host;
+  protected int port;
+  protected String sendBufferSize;
 
-    public SocketAddress toSocketAddress()
-    {
-        return new SocketAddress(host, port);
+  public SocketAddress toSocketAddress() {
+    return new SocketAddress(host, port);
+  }
+
+  public void applyDefaults(NetworkCfg networkCfg) {
+    if (host == null) {
+      host = networkCfg.getHost();
     }
 
-    public void applyDefaults(NetworkCfg networkCfg)
-    {
-        if (host == null)
-        {
-            host = networkCfg.getHost();
-        }
-
-        if (sendBufferSize == null)
-        {
-            sendBufferSize = networkCfg.getDefaultSendBufferSize();
-        }
+    if (sendBufferSize == null) {
+      sendBufferSize = networkCfg.getDefaultSendBufferSize();
     }
+  }
 
-    public String getHost()
-    {
-        return host;
-    }
+  public String getHost() {
+    return host;
+  }
 
-    public void setHost(String host)
-    {
-        this.host = host;
-    }
+  public void setHost(String host) {
+    this.host = host;
+  }
 
-    public int getPort()
-    {
-        return port;
-    }
+  public int getPort() {
+    return port;
+  }
 
-    public void setPort(int port)
-    {
-        this.port = port;
-    }
+  public void setPort(int port) {
+    this.port = port;
+  }
 
-    public String getSendBufferSize()
-    {
-        return sendBufferSize;
-    }
+  public String getSendBufferSize() {
+    return sendBufferSize;
+  }
 
-    public void setSendBufferSize(String sendBufferSize)
-    {
-        this.sendBufferSize = sendBufferSize;
-    }
+  public void setSendBufferSize(String sendBufferSize) {
+    this.sendBufferSize = sendBufferSize;
+  }
 }

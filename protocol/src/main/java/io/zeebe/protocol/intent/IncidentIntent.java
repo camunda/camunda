@@ -15,49 +15,50 @@
  */
 package io.zeebe.protocol.intent;
 
-public enum IncidentIntent implements Intent
-{
-    CREATE((short) 0),
-    CREATED((short) 1),
+public enum IncidentIntent implements Intent {
+  CREATE((short) 0),
+  CREATED((short) 1),
 
-    RESOLVE((short) 2),
-    RESOLVED((short) 3),
-    RESOLVE_FAILED((short) 4),
+  RESOLVE((short) 2),
+  RESOLVED((short) 3),
+  RESOLVE_FAILED((short) 4),
 
-    DELETE((short) 5),
-    DELETED((short) 6);
+  DELETE((short) 5),
+  DELETED((short) 6);
 
-    private short value;
+  private short value;
 
-    IncidentIntent(short value)
-    {
-        this.value = value;
+  IncidentIntent(short value) {
+    this.value = value;
+  }
+
+  public short getIntent() {
+    return value;
+  }
+
+  public static Intent from(short value) {
+    switch (value) {
+      case 0:
+        return CREATE;
+      case 1:
+        return CREATED;
+      case 2:
+        return RESOLVE;
+      case 3:
+        return RESOLVED;
+      case 4:
+        return RESOLVE_FAILED;
+      case 5:
+        return DELETE;
+      case 6:
+        return DELETED;
+      default:
+        return Intent.UNKNOWN;
     }
+  }
 
-    public short getIntent()
-    {
-        return value;
-    }
-
-    public static Intent from(short value)
-    {
-        switch (value)
-        {
-            case 0: return CREATE;
-            case 1: return CREATED;
-            case 2: return RESOLVE;
-            case 3: return RESOLVED;
-            case 4: return RESOLVE_FAILED;
-            case 5: return DELETE;
-            case 6: return DELETED;
-            default: return Intent.UNKNOWN;
-        }
-    }
-
-    @Override
-    public short value()
-    {
-        return value;
-    }
-
+  @Override
+  public short value() {
+    return value;
+  }
 }

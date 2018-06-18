@@ -17,42 +17,34 @@ package io.zeebe.gossip.dissemination;
 
 import io.zeebe.util.collection.Reusable;
 
-public class BufferedEvent<T> implements Reusable, Comparable<BufferedEvent<T>>
-{
-    private final T event;
+public class BufferedEvent<T> implements Reusable, Comparable<BufferedEvent<T>> {
+  private final T event;
 
-    private int spreadCount = 0;
+  private int spreadCount = 0;
 
-    public BufferedEvent(T event)
-    {
-        this.event = event;
-    }
+  public BufferedEvent(T event) {
+    this.event = event;
+  }
 
-    public T getEvent()
-    {
-        return event;
-    }
+  public T getEvent() {
+    return event;
+  }
 
-    public int getSpreadCount()
-    {
-        return spreadCount;
-    }
+  public int getSpreadCount() {
+    return spreadCount;
+  }
 
-    public void incrementSpreadCount()
-    {
-        this.spreadCount += 1;
-    }
+  public void incrementSpreadCount() {
+    this.spreadCount += 1;
+  }
 
-    @Override
-    public void reset()
-    {
-        this.spreadCount = 0;
-    }
+  @Override
+  public void reset() {
+    this.spreadCount = 0;
+  }
 
-    @Override
-    public int compareTo(BufferedEvent<T> o)
-    {
-        return spreadCount - o.spreadCount;
-    }
-
+  @Override
+  public int compareTo(BufferedEvent<T> o) {
+    return spreadCount - o.spreadCount;
+  }
 }

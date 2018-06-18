@@ -19,23 +19,17 @@ import io.zeebe.client.impl.ControlMessageRequest;
 import io.zeebe.client.impl.RequestManager;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 
-public class CloseTopicSubscriptionCommandImpl extends ControlMessageRequest<Void>
-{
-    private CloseSubscriptionRequest request = new CloseSubscriptionRequest();
+public class CloseTopicSubscriptionCommandImpl extends ControlMessageRequest<Void> {
+  private CloseSubscriptionRequest request = new CloseSubscriptionRequest();
 
-    public CloseTopicSubscriptionCommandImpl(final RequestManager commandManager, int partitionId, long subscriberKey)
-    {
-        super(commandManager,
-                ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION,
-                partitionId,
-                Void.class);
-        this.request.setSubscriberKey(subscriberKey);
-    }
+  public CloseTopicSubscriptionCommandImpl(
+      final RequestManager commandManager, int partitionId, long subscriberKey) {
+    super(commandManager, ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION, partitionId, Void.class);
+    this.request.setSubscriberKey(subscriberKey);
+  }
 
-    @Override
-    public Object getRequest()
-    {
-        return request;
-    }
-
+  @Override
+  public Object getRequest() {
+    return request;
+  }
 }

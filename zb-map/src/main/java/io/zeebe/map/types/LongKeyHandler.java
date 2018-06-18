@@ -21,51 +21,43 @@ import org.agrona.UnsafeAccess;
 import sun.misc.Unsafe;
 
 @SuppressWarnings("restriction")
-public class LongKeyHandler implements KeyHandler
-{
-    private static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
+public class LongKeyHandler implements KeyHandler {
+  private static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
 
-    public long theKey;
+  public long theKey;
 
-    @Override
-    public void setKeyLength(int keyLength)
-    {
-        // ignore
-    }
+  @Override
+  public void setKeyLength(int keyLength) {
+    // ignore
+  }
 
-    @Override
-    public int keyHashCode()
-    {
-        return (int) (theKey ^ ((theKey >>> 32) ^ ((theKey >>> 8) ^ ((theKey >> 3)))));
-    }
+  @Override
+  public int keyHashCode() {
+    return (int) (theKey ^ ((theKey >>> 32) ^ ((theKey >>> 8) ^ ((theKey >> 3)))));
+  }
 
-    @Override
-    public String toString()
-    {
-        return Long.valueOf(theKey).toString();
-    }
+  @Override
+  public String toString() {
+    return Long.valueOf(theKey).toString();
+  }
 
-    @Override
-    public int getKeyLength()
-    {
-        return BitUtil.SIZE_OF_LONG;
-    }
+  @Override
+  public int getKeyLength() {
+    return BitUtil.SIZE_OF_LONG;
+  }
 
-    @Override
-    public void readKey(long keyAddr)
-    {
-        theKey = UNSAFE.getLong(keyAddr);
-    }
+  @Override
+  public void readKey(long keyAddr) {
+    theKey = UNSAFE.getLong(keyAddr);
+  }
 
-    @Override
-    public void writeKey(long keyAddr)
-    {
-        UNSAFE.putLong(keyAddr, theKey);
-    }
+  @Override
+  public void writeKey(long keyAddr) {
+    UNSAFE.putLong(keyAddr, theKey);
+  }
 
-    @Override
-    public boolean keyEquals(long keyAddr)
-    {
-        return UNSAFE.getLong(keyAddr) == theKey;
-    }
+  @Override
+  public boolean keyEquals(long keyAddr) {
+    return UNSAFE.getLong(keyAddr) == theKey;
+  }
 }

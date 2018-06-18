@@ -17,64 +17,53 @@
  */
 package io.zeebe.broker.clustering.base.raft;
 
+import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.broker.system.configuration.DataCfg;
+import io.zeebe.servicecontainer.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
-import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.broker.system.configuration.DataCfg;
-import io.zeebe.servicecontainer.*;
+public class RaftPersistentConfigurationManagerService
+    implements Service<RaftPersistentConfigurationManager> {
+  private RaftPersistentConfigurationManager service;
+  private BrokerCfg configuration;
 
-public class RaftPersistentConfigurationManagerService implements Service<RaftPersistentConfigurationManager>
-{
-    private RaftPersistentConfigurationManager service;
-    private BrokerCfg configuration;
+  public RaftPersistentConfigurationManagerService(BrokerCfg configuration) {
+    this.configuration = configuration;
+  }
 
-    public RaftPersistentConfigurationManagerService(BrokerCfg configuration)
-    {
-        this.configuration = configuration;
-    }
+  @Override
+  public void start(ServiceStartContext startContext) {
+    final DataCfg dataConfiguration = configuration.getData();
 
-    @Override
-    public void start(ServiceStartContext startContext)
-    {
-        final DataCfg dataConfiguration = configuration.getData();
+    final String[] directories = dataConfiguration.getDirectories();
 
-        final String[] directories = dataConfiguration.getDirectories();
+    for (String directory : directories) {
+      final File configDirectory = new File(directory);
 
-        for (String directory : directories)
-        {
-            final File configDirectory = new File(directory);
-
-            if (!configDirectory.exists())
-            {
-                try
-                {
-                    configDirectory.getParentFile().mkdirs();
-                    Files.createDirectory(configDirectory.toPath());
-                }
-                catch (final IOException e)
-                {
-                    throw new RuntimeException("Unable to create directory " + configDirectory, e);
-                }
-            }
+      if (!configDirectory.exists()) {
+        try {
+          configDirectory.getParentFile().mkdirs();
+          Files.createDirectory(configDirectory.toPath());
+        } catch (final IOException e) {
+          throw new RuntimeException("Unable to create directory " + configDirectory, e);
         }
-
-        service = new RaftPersistentConfigurationManager(configuration.getData());
-
-        startContext.async(startContext.getScheduler().submitActor(service));
+      }
     }
 
-    @Override
-    public void stop(ServiceStopContext stopContext)
-    {
-        stopContext.async(service.close());
-    }
+    service = new RaftPersistentConfigurationManager(configuration.getData());
 
-    @Override
-    public RaftPersistentConfigurationManager get()
-    {
-        return service;
-    }
+    startContext.async(startContext.getScheduler().submitActor(service));
+  }
 
+  @Override
+  public void stop(ServiceStopContext stopContext) {
+    stopContext.async(service.close());
+  }
+
+  @Override
+  public RaftPersistentConfigurationManager get() {
+    return service;
+  }
 }

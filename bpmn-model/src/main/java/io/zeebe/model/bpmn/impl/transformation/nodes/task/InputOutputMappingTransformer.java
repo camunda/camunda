@@ -15,6 +15,10 @@
  */
 package io.zeebe.model.bpmn.impl.transformation.nodes.task;
 
+import static io.zeebe.msgpack.mapping.Mapping.JSON_ROOT_PATH;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+
 import io.zeebe.model.bpmn.impl.error.ErrorCollector;
 import io.zeebe.model.bpmn.impl.metadata.InputOutputMappingImpl;
 import io.zeebe.model.bpmn.impl.metadata.MappingImpl;
@@ -22,69 +26,58 @@ import io.zeebe.model.bpmn.instance.OutputBehavior;
 import io.zeebe.msgpack.jsonpath.JsonPathQuery;
 import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;
 import io.zeebe.msgpack.mapping.Mapping;
-
 import java.util.List;
 
-import static io.zeebe.msgpack.mapping.Mapping.JSON_ROOT_PATH;
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
+public class InputOutputMappingTransformer {
+  public void transform(ErrorCollector errorCollector, InputOutputMappingImpl inputOutputMapping) {
+    final String outputBehaviorString = inputOutputMapping.getOutputBehaviorString();
+    final OutputBehavior outputBehavior =
+        OutputBehavior.valueOf(outputBehaviorString.toUpperCase());
+    inputOutputMapping.setOutputBehavior(outputBehavior);
 
-public class InputOutputMappingTransformer
-{
-    public void transform(ErrorCollector errorCollector, InputOutputMappingImpl inputOutputMapping)
-    {
-        final String outputBehaviorString = inputOutputMapping.getOutputBehaviorString();
-        final OutputBehavior outputBehavior = OutputBehavior.valueOf(outputBehaviorString.toUpperCase());
-        inputOutputMapping.setOutputBehavior(outputBehavior);
+    final Mapping[] inputMappings = createMappings(errorCollector, inputOutputMapping.getInputs());
+    inputOutputMapping.setInputMappings(inputMappings);
 
-        final Mapping[] inputMappings = createMappings(errorCollector, inputOutputMapping.getInputs());
-        inputOutputMapping.setInputMappings(inputMappings);
+    final Mapping[] outputMappings =
+        createMappings(errorCollector, inputOutputMapping.getOutputs());
+    inputOutputMapping.setOutputMappings(outputMappings);
+  }
 
-        final Mapping[] outputMappings = createMappings(errorCollector, inputOutputMapping.getOutputs());
-        inputOutputMapping.setOutputMappings(outputMappings);
+  private Mapping[] createMappings(
+      ErrorCollector errorCollector, final List<MappingImpl> mappings) {
+    final Mapping[] map;
+
+    if (mappings.size() == 1 && !isRootMapping(mappings.get(0))) {
+      map = new Mapping[] {createMapping(errorCollector, mappings.get(0))};
+    } else if (mappings.size() > 1) {
+      map = new Mapping[mappings.size()];
+
+      for (int i = 0; i < mappings.size(); i++) {
+        map[i] = createMapping(errorCollector, mappings.get(i));
+      }
+    } else {
+      map = new Mapping[0];
     }
 
-    private Mapping[] createMappings(ErrorCollector errorCollector, final List<MappingImpl> mappings)
-    {
-        final Mapping[] map;
+    return map;
+  }
 
-        if (mappings.size() == 1 && !isRootMapping(mappings.get(0)))
-        {
-            map = new Mapping[] { createMapping(errorCollector, mappings.get(0)) };
-        }
-        else if (mappings.size() > 1)
-        {
-            map = new Mapping[mappings.size()];
+  private boolean isRootMapping(MappingImpl mapping) {
+    return mapping.getSource().equals(JSON_ROOT_PATH) && mapping.getTarget().equals(JSON_ROOT_PATH);
+  }
 
-            for (int i = 0; i < mappings.size(); i++)
-            {
-                map[i] = createMapping(errorCollector, mappings.get(i));
-            }
-        }
-        else
-        {
-            map = new Mapping[0];
-        }
+  private Mapping createMapping(ErrorCollector errorCollector, MappingImpl mapping) {
+    final JsonPathQueryCompiler queryCompiler = new JsonPathQueryCompiler();
+    final JsonPathQuery query = queryCompiler.compile(mapping.getSource());
 
-        return map;
+    if (!query.isValid()) {
+      errorCollector.addError(
+          mapping,
+          String.format(
+              "JSON path query '%s' is not valid! Reason: %s",
+              bufferAsString(query.getExpression()), query.getErrorReason()));
     }
 
-    private boolean isRootMapping(MappingImpl mapping)
-    {
-        return mapping.getSource().equals(JSON_ROOT_PATH) && mapping.getTarget().equals(JSON_ROOT_PATH);
-    }
-
-    private Mapping createMapping(ErrorCollector errorCollector, MappingImpl mapping)
-    {
-        final JsonPathQueryCompiler queryCompiler = new JsonPathQueryCompiler();
-        final JsonPathQuery query = queryCompiler.compile(mapping.getSource());
-
-        if (!query.isValid())
-        {
-            errorCollector.addError(mapping, String.format("JSON path query '%s' is not valid! Reason: %s",
-                bufferAsString(query.getExpression()), query.getErrorReason()));
-        }
-
-        return new Mapping(query, wrapString(mapping.getTarget()));
-    }
+    return new Mapping(query, wrapString(mapping.getTarget()));
+  }
 }

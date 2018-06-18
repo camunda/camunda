@@ -24,114 +24,96 @@ import io.zeebe.protocol.Protocol;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class JobRecord extends UnpackedObject
-{
-    protected static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
+public class JobRecord extends UnpackedObject {
+  protected static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
 
-    private final LongProperty deadlineProp = new LongProperty("deadline", Protocol.INSTANT_NULL_VALUE);
-    private final StringProperty workerProp = new StringProperty("worker", "");
-    private final IntegerProperty retriesProp = new IntegerProperty("retries", -1);
-    private final StringProperty typeProp = new StringProperty("type");
-    private final ObjectProperty<JobHeaders> headersProp = new ObjectProperty<>("headers", new JobHeaders());
-    private final PackedProperty customHeadersProp = new PackedProperty("customHeaders", NO_HEADERS);
-    private final DocumentProperty payloadProp = new DocumentProperty("payload");
+  private final LongProperty deadlineProp =
+      new LongProperty("deadline", Protocol.INSTANT_NULL_VALUE);
+  private final StringProperty workerProp = new StringProperty("worker", "");
+  private final IntegerProperty retriesProp = new IntegerProperty("retries", -1);
+  private final StringProperty typeProp = new StringProperty("type");
+  private final ObjectProperty<JobHeaders> headersProp =
+      new ObjectProperty<>("headers", new JobHeaders());
+  private final PackedProperty customHeadersProp = new PackedProperty("customHeaders", NO_HEADERS);
+  private final DocumentProperty payloadProp = new DocumentProperty("payload");
 
-    public JobRecord()
-    {
-        this
-            .declareProperty(deadlineProp)
-            .declareProperty(workerProp)
-            .declareProperty(retriesProp)
-            .declareProperty(typeProp)
-            .declareProperty(headersProp)
-            .declareProperty(customHeadersProp)
-            .declareProperty(payloadProp);
-    }
+  public JobRecord() {
+    this.declareProperty(deadlineProp)
+        .declareProperty(workerProp)
+        .declareProperty(retriesProp)
+        .declareProperty(typeProp)
+        .declareProperty(headersProp)
+        .declareProperty(customHeadersProp)
+        .declareProperty(payloadProp);
+  }
 
-    public long getDeadline()
-    {
-        return deadlineProp.getValue();
-    }
+  public long getDeadline() {
+    return deadlineProp.getValue();
+  }
 
-    public JobRecord setDeadline(long val)
-    {
-        deadlineProp.setValue(val);
-        return this;
-    }
+  public JobRecord setDeadline(long val) {
+    deadlineProp.setValue(val);
+    return this;
+  }
 
-    public DirectBuffer getWorker()
-    {
-        return workerProp.getValue();
-    }
+  public DirectBuffer getWorker() {
+    return workerProp.getValue();
+  }
 
-    public JobRecord setWorker(DirectBuffer worker)
-    {
-        return setWorker(worker, 0, worker.capacity());
-    }
+  public JobRecord setWorker(DirectBuffer worker) {
+    return setWorker(worker, 0, worker.capacity());
+  }
 
-    public JobRecord setWorker(DirectBuffer worker, int offset, int length)
-    {
-        workerProp.setValue(worker, offset, length);
-        return this;
-    }
+  public JobRecord setWorker(DirectBuffer worker, int offset, int length) {
+    workerProp.setValue(worker, offset, length);
+    return this;
+  }
 
-    public int getRetries()
-    {
-        return retriesProp.getValue();
-    }
+  public int getRetries() {
+    return retriesProp.getValue();
+  }
 
-    public JobRecord setRetries(int retries)
-    {
-        retriesProp.setValue(retries);
-        return this;
-    }
+  public JobRecord setRetries(int retries) {
+    retriesProp.setValue(retries);
+    return this;
+  }
 
-    public DirectBuffer getType()
-    {
-        return typeProp.getValue();
-    }
+  public DirectBuffer getType() {
+    return typeProp.getValue();
+  }
 
-    public JobRecord setType(DirectBuffer buf)
-    {
-        return setType(buf, 0, buf.capacity());
-    }
+  public JobRecord setType(DirectBuffer buf) {
+    return setType(buf, 0, buf.capacity());
+  }
 
-    public JobRecord setType(DirectBuffer buf, int offset, int length)
-    {
-        typeProp.setValue(buf, offset, length);
-        return this;
-    }
+  public JobRecord setType(DirectBuffer buf, int offset, int length) {
+    typeProp.setValue(buf, offset, length);
+    return this;
+  }
 
-    public DirectBuffer getPayload()
-    {
-        return payloadProp.getValue();
-    }
+  public DirectBuffer getPayload() {
+    return payloadProp.getValue();
+  }
 
-    public JobRecord setPayload(DirectBuffer payload)
-    {
-        payloadProp.setValue(payload);
+  public JobRecord setPayload(DirectBuffer payload) {
+    payloadProp.setValue(payload);
 
-        return this;
-    }
+    return this;
+  }
 
-    public JobHeaders headers()
-    {
-        return headersProp.getValue();
-    }
+  public JobHeaders headers() {
+    return headersProp.getValue();
+  }
 
-    public void setCustomHeaders(DirectBuffer buffer, int offset, int length)
-    {
-        customHeadersProp.setValue(buffer, offset, length);
-    }
+  public void setCustomHeaders(DirectBuffer buffer, int offset, int length) {
+    customHeadersProp.setValue(buffer, offset, length);
+  }
 
-    public void setCustomHeaders(DirectBuffer buffer)
-    {
-        customHeadersProp.setValue(buffer, 0, buffer.capacity());
-    }
+  public void setCustomHeaders(DirectBuffer buffer) {
+    customHeadersProp.setValue(buffer, 0, buffer.capacity());
+  }
 
-    public DirectBuffer getCustomHeaders()
-    {
-        return customHeadersProp.getValue();
-    }
+  public DirectBuffer getCustomHeaders() {
+    return customHeadersProp.getValue();
+  }
 }
-

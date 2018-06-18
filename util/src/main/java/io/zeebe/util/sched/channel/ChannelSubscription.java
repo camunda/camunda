@@ -15,7 +15,6 @@
  */
 package io.zeebe.util.sched.channel;
 
-public interface ChannelSubscription
-{
-    void cancel();
+public interface ChannelSubscription {
+  void cancel();
 }

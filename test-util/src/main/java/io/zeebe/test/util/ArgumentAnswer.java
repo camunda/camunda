@@ -23,19 +23,16 @@ import org.mockito.stubbing.Answer;
  *
  * @author Lindhauer
  */
-public class ArgumentAnswer<T> implements Answer<T>
-{
+public class ArgumentAnswer<T> implements Answer<T> {
 
-    protected int argIndex;
+  protected int argIndex;
 
-    public ArgumentAnswer(int argIndex)
-    {
-        this.argIndex = argIndex;
-    }
+  public ArgumentAnswer(int argIndex) {
+    this.argIndex = argIndex;
+  }
 
-    @Override
-    public T answer(InvocationOnMock invocation) throws Throwable
-    {
-        return (T) invocation.getArguments()[argIndex];
-    }
+  @Override
+  public T answer(InvocationOnMock invocation) throws Throwable {
+    return (T) invocation.getArguments()[argIndex];
+  }
 }

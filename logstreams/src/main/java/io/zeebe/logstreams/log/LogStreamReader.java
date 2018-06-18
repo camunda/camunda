@@ -15,9 +15,8 @@
  */
 package io.zeebe.logstreams.log;
 
-import java.util.Iterator;
-
 import io.zeebe.util.CloseableSilently;
+import java.util.Iterator;
 
 /**
  * Reads the log stream in an iterator-like pattern. Common usage:
@@ -36,60 +35,48 @@ import io.zeebe.util.CloseableSilently;
  * }
  * </code>
  * </pre>
- *
  */
-public interface LogStreamReader extends Iterator<LoggedEvent>, CloseableSilently
-{
-    /**
-     * Initialize the reader and seek to the first event.
-     *
-     * @param log
-     *            the stream which provides the log
-     */
-    void wrap(LogStream log);
+public interface LogStreamReader extends Iterator<LoggedEvent>, CloseableSilently {
+  /**
+   * Initialize the reader and seek to the first event.
+   *
+   * @param log the stream which provides the log
+   */
+  void wrap(LogStream log);
 
-    /**
-     * Initialize the reader and seek to the given log position.
-     *
-     * @param log
-     *            the stream which provides the log
-     * @param position
-     *            the position in the log to seek to
-     */
-    void wrap(LogStream log, long position);
+  /**
+   * Initialize the reader and seek to the given log position.
+   *
+   * @param log the stream which provides the log
+   * @param position the position in the log to seek to
+   */
+  void wrap(LogStream log, long position);
 
-    /**
-     * Seek to the given log position if exists. Otherwise, it seek to the next position after this.
-     *
-     * @param position
-     *            the position in the log to seek to
-     *
-     * @return <code>true</code>, if the given position exists.
-     */
-    boolean seek(long position);
+  /**
+   * Seek to the given log position if exists. Otherwise, it seek to the next position after this.
+   *
+   * @param position the position in the log to seek to
+   * @return <code>true</code>, if the given position exists.
+   */
+  boolean seek(long position);
 
-    /**
-     * Seek to the log position of the first event.
-     */
-    void seekToFirstEvent();
+  /** Seek to the log position of the first event. */
+  void seekToFirstEvent();
 
-    /**
-     * Seek to the log position of the last event.
-     */
-    void seekToLastEvent();
+  /** Seek to the log position of the last event. */
+  void seekToLastEvent();
 
-    /**
-     * Returns the current log position of the reader.
-     *
-     * @return the current log position, or negative value if the log is empty
-     *         or not initialized
-     */
-    long getPosition();
+  /**
+   * Returns the current log position of the reader.
+   *
+   * @return the current log position, or negative value if the log is empty or not initialized
+   */
+  long getPosition();
 
-    /**
-     * Returns true if the log stream reader was closed.
-     *
-     * @return true if closed, false otherwise
-     */
-    boolean isClosed();
+  /**
+   * Returns true if the log stream reader was closed.
+   *
+   * @return true if closed, false otherwise
+   */
+  boolean isClosed();
 }

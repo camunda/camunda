@@ -17,64 +17,53 @@
  */
 package io.zeebe.broker.clustering.orchestration.topic;
 
+import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.ArrayProperty;
+import io.zeebe.msgpack.property.IntegerProperty;
+import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.msgpack.value.IntegerValue;
 import io.zeebe.msgpack.value.ValueArray;
 import org.agrona.DirectBuffer;
 
-import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.IntegerProperty;
-import io.zeebe.msgpack.property.StringProperty;
+public class TopicRecord extends UnpackedObject {
+  protected final StringProperty name = new StringProperty("name");
+  protected final IntegerProperty partitions = new IntegerProperty("partitions");
+  protected final IntegerProperty replicationFactor = new IntegerProperty("replicationFactor", 1);
+  protected final ArrayProperty<IntegerValue> partitionIds =
+      new ArrayProperty<>("partitionIds", new IntegerValue());
 
-public class TopicRecord extends UnpackedObject
-{
-    protected final StringProperty name = new StringProperty("name");
-    protected final IntegerProperty partitions = new IntegerProperty("partitions");
-    protected final IntegerProperty replicationFactor = new IntegerProperty("replicationFactor", 1);
-    protected final ArrayProperty<IntegerValue> partitionIds = new ArrayProperty<>("partitionIds", new IntegerValue());
+  public TopicRecord() {
+    this.declareProperty(name)
+        .declareProperty(partitions)
+        .declareProperty(replicationFactor)
+        .declareProperty(partitionIds);
+  }
 
-    public TopicRecord()
-    {
-        this
-            .declareProperty(name)
-            .declareProperty(partitions)
-            .declareProperty(replicationFactor)
-            .declareProperty(partitionIds);
-    }
+  public DirectBuffer getName() {
+    return name.getValue();
+  }
 
-    public DirectBuffer getName()
-    {
-        return name.getValue();
-    }
+  public void setName(DirectBuffer name) {
+    this.name.setValue(name);
+  }
 
-    public void setName(DirectBuffer name)
-    {
-        this.name.setValue(name);
-    }
+  public int getPartitions() {
+    return partitions.getValue();
+  }
 
-    public int getPartitions()
-    {
-        return partitions.getValue();
-    }
+  public void setPartitions(int partitions) {
+    this.partitions.setValue(partitions);
+  }
 
-    public void setPartitions(int partitions)
-    {
-        this.partitions.setValue(partitions);
-    }
+  public void setReplicationFactor(int replicationFactor) {
+    this.replicationFactor.setValue(replicationFactor);
+  }
 
-    public void setReplicationFactor(int replicationFactor)
-    {
-        this.replicationFactor.setValue(replicationFactor);
-    }
+  public int getReplicationFactor() {
+    return replicationFactor.getValue();
+  }
 
-    public int getReplicationFactor()
-    {
-        return replicationFactor.getValue();
-    }
-
-    public ValueArray<IntegerValue> getPartitionIds()
-    {
-        return partitionIds;
-    }
-
+  public ValueArray<IntegerValue> getPartitionIds() {
+    return partitionIds;
+  }
 }

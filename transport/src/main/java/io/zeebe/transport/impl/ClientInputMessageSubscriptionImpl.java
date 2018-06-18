@@ -21,53 +21,47 @@ import io.zeebe.transport.*;
 import io.zeebe.util.sched.ActorCondition;
 import org.agrona.DirectBuffer;
 
-public class ClientInputMessageSubscriptionImpl implements ClientInputMessageSubscription
-{
-    protected final Subscription subscription;
-    protected final FragmentHandler messageHandler;
+public class ClientInputMessageSubscriptionImpl implements ClientInputMessageSubscription {
+  protected final Subscription subscription;
+  protected final FragmentHandler messageHandler;
 
-    public ClientInputMessageSubscriptionImpl(
-        Subscription subscription,
-        ClientMessageHandler messageHandler,
-        ClientOutput output,
-        RemoteAddressList remoteAddresses)
-    {
-        this.subscription = subscription;
-        this.messageHandler = new FragmentHandler()
-        {
-            @Override
-            public int onFragment(DirectBuffer buffer, int offset, int length, int streamId, boolean isMarkedFailed)
-            {
-                final RemoteAddress remoteAddress = remoteAddresses.getByStreamId(streamId);
-                final boolean success = messageHandler.onMessage(output, remoteAddress, buffer, offset, length);
+  public ClientInputMessageSubscriptionImpl(
+      Subscription subscription,
+      ClientMessageHandler messageHandler,
+      ClientOutput output,
+      RemoteAddressList remoteAddresses) {
+    this.subscription = subscription;
+    this.messageHandler =
+        new FragmentHandler() {
+          @Override
+          public int onFragment(
+              DirectBuffer buffer, int offset, int length, int streamId, boolean isMarkedFailed) {
+            final RemoteAddress remoteAddress = remoteAddresses.getByStreamId(streamId);
+            final boolean success =
+                messageHandler.onMessage(output, remoteAddress, buffer, offset, length);
 
-                return success ? CONSUME_FRAGMENT_RESULT : POSTPONE_FRAGMENT_RESULT;
-            }
+            return success ? CONSUME_FRAGMENT_RESULT : POSTPONE_FRAGMENT_RESULT;
+          }
         };
-    }
+  }
 
-    @Override
-    public int poll()
-    {
-        return subscription.peekAndConsume(messageHandler, Integer.MAX_VALUE);
-    }
+  @Override
+  public int poll() {
+    return subscription.peekAndConsume(messageHandler, Integer.MAX_VALUE);
+  }
 
-    @Override
-    public boolean hasAvailable()
-    {
-        return subscription.hasAvailable();
-    }
+  @Override
+  public boolean hasAvailable() {
+    return subscription.hasAvailable();
+  }
 
-    @Override
-    public void registerConsumer(ActorCondition listener)
-    {
-        subscription.registerConsumer(listener);
-    }
+  @Override
+  public void registerConsumer(ActorCondition listener) {
+    subscription.registerConsumer(listener);
+  }
 
-    @Override
-    public void removeConsumer(ActorCondition listener)
-    {
-        subscription.removeConsumer(listener);
-    }
-
+  @Override
+  public void removeConsumer(ActorCondition listener) {
+    subscription.removeConsumer(listener);
+  }
 }

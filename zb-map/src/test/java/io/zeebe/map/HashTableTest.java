@@ -22,134 +22,120 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-/**
- *
- */
-public class HashTableTest
-{
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
+/** */
+public class HashTableTest {
+  @Rule public ExpectedException expectedException = ExpectedException.none();
 
-    @Test
-    public void shouldResizeHashTable()
-    {
-        // given
-        final HashTable hashTable = new HashTable(1);
-        hashTable.setBucketAddress(0, 167);
+  @Test
+  public void shouldResizeHashTable() {
+    // given
+    final HashTable hashTable = new HashTable(1);
+    hashTable.setBucketAddress(0, 167);
 
-        // when
-        hashTable.resize(2);
+    // when
+    hashTable.resize(2);
 
-        // then
-        assertThat(hashTable.getLength()).isEqualTo(2 * SIZE_OF_LONG);
-        assertThat(hashTable.getBucketAddress(0)).isEqualTo(167);
+    // then
+    assertThat(hashTable.getLength()).isEqualTo(2 * SIZE_OF_LONG);
+    assertThat(hashTable.getBucketAddress(0)).isEqualTo(167);
+  }
+
+  @Test
+  public void shouldShrinkHashTable() {
+    // given
+    final HashTable hashTable = new HashTable(4);
+    hashTable.setBucketAddress(0, 167);
+
+    // when
+    hashTable.resize(2);
+
+    // then
+    assertThat(hashTable.getLength()).isEqualTo(2 * SIZE_OF_LONG);
+    assertThat(hashTable.getBucketAddress(0)).isEqualTo(167);
+  }
+
+  @Test
+  public void shouldUpdateHashTable() {
+    // given
+    final HashTable hashTable = new HashTable(64);
+
+    // when
+    hashTable.updateTable(2, 1, 0xFF);
+
+    // then
+    assertThat(hashTable.getBucketAddress(0)).isEqualTo(0);
+    for (int i = 1; i < 64; i += 4) {
+      assertThat(hashTable.getBucketAddress(i)).isEqualTo(0xFF);
     }
+  }
 
-    @Test
-    public void shouldShrinkHashTable()
-    {
-        // given
-        final HashTable hashTable = new HashTable(4);
-        hashTable.setBucketAddress(0, 167);
+  @Test
+  public void shouldGetCapacity() {
+    // given
+    final HashTable hashTable = new HashTable(4);
 
-        // when
-        hashTable.resize(2);
+    // when
+    assertThat(hashTable.getCapacity()).isEqualTo(4);
+    assertThat(hashTable.getLength()).isEqualTo(4 * SIZE_OF_LONG);
+  }
 
-        // then
-        assertThat(hashTable.getLength()).isEqualTo(2 * SIZE_OF_LONG);
-        assertThat(hashTable.getBucketAddress(0)).isEqualTo(167);
-    }
+  @Test
+  public void shouldNotCreateToLargeHashTable() {
+    // expect
+    expectedException.expect(ArithmeticException.class);
+    expectedException.expectMessage("integer overflow");
 
-    @Test
-    public void shouldUpdateHashTable()
-    {
-        // given
-        final HashTable hashTable = new HashTable(64);
+    // when
+    new HashTable(1 << 60);
+  }
 
-        // when
-        hashTable.updateTable(2, 1, 0xFF);
+  @Test
+  public void shouldNotResizeToLargeHashTable() {
+    // given
+    final HashTable hashTable = new HashTable(1);
 
-        // then
-        assertThat(hashTable.getBucketAddress(0)).isEqualTo(0);
-        for (int i = 1; i < 64; i += 4)
-        {
-            assertThat(hashTable.getBucketAddress(i)).isEqualTo(0xFF);
-        }
-    }
+    // expect
+    expectedException.expect(ArithmeticException.class);
+    expectedException.expectMessage("integer overflow");
 
-    @Test
-    public void shouldGetCapacity()
-    {
-        // given
-        final HashTable hashTable = new HashTable(4);
+    // when
+    hashTable.resize(1 << 60);
+  }
 
-        // when
-        assertThat(hashTable.getCapacity()).isEqualTo(4);
-        assertThat(hashTable.getLength()).isEqualTo(4 * SIZE_OF_LONG);
-    }
+  @Test
+  public void shouldUseNextPowerOfTwoOnResize() {
+    // given
+    final HashTable hashTable = new HashTable(1);
 
-    @Test
-    public void shouldNotCreateToLargeHashTable()
-    {
-        // expect
-        expectedException.expect(ArithmeticException.class);
-        expectedException.expectMessage("integer overflow");
+    // when
+    hashTable.resize(3);
 
-        // when
-        new HashTable(1 << 60);
-    }
+    // then
+    assertThat(hashTable.getLength()).isEqualTo(4 * SIZE_OF_LONG);
+  }
 
-    @Test
-    public void shouldNotResizeToLargeHashTable()
-    {
-        // given
-        final HashTable hashTable = new HashTable(1);
+  @Test
+  public void shouldUseGivenPowerOfTwoOnResize() {
+    // given
+    final HashTable hashTable = new HashTable(1);
 
-        // expect
-        expectedException.expect(ArithmeticException.class);
-        expectedException.expectMessage("integer overflow");
+    // when
+    hashTable.resize(4);
 
-        // when
-        hashTable.resize(1 << 60);
-    }
+    // then
+    assertThat(hashTable.getLength()).isEqualTo(4 * SIZE_OF_LONG);
+  }
 
-    @Test
-    public void shouldUseNextPowerOfTwoOnResize()
-    {
-        // given
-        final HashTable hashTable = new HashTable(1);
+  @Test
+  public void shouldThrowExceptionOnToLargeIdx() {
+    // given
+    final HashTable hashTable = new HashTable(1);
 
-        // when
-        hashTable.resize(3);
+    // expect
+    expectedException.expect(IllegalArgumentException.class);
+    expectedException.expectMessage("Bucket id 1 is larger then capacity of 1");
 
-        // then
-        assertThat(hashTable.getLength()).isEqualTo(4 * SIZE_OF_LONG);
-    }
-
-    @Test
-    public void shouldUseGivenPowerOfTwoOnResize()
-    {
-        // given
-        final HashTable hashTable = new HashTable(1);
-
-        // when
-        hashTable.resize(4);
-
-        // then
-        assertThat(hashTable.getLength()).isEqualTo(4 * SIZE_OF_LONG);
-    }
-
-    @Test
-    public void shouldThrowExceptionOnToLargeIdx()
-    {
-        // given
-        final HashTable hashTable = new HashTable(1);
-
-        // expect
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("Bucket id 1 is larger then capacity of 1");
-
-        // when
-        hashTable.getBucketAddress(1);
-    }
+    // when
+    hashTable.getBucketAddress(1);
+  }
 }

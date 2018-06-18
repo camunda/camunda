@@ -23,67 +23,57 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.*;
 import org.agrona.DirectBuffer;
 
-public class DeployedWorkflow extends UnpackedObject
-{
-    private final StringProperty bpmnProcessIdProp = new StringProperty(PROP_WORKFLOW_BPMN_PROCESS_ID);
-    private final IntegerProperty versionProp = new IntegerProperty(PROP_WORKFLOW_VERSION);
-    private final LongProperty keyProp = new LongProperty(PROP_WORKFLOW_KEY);
-    private final StringProperty resourceNameProp = new StringProperty("resourceName");
+public class DeployedWorkflow extends UnpackedObject {
+  private final StringProperty bpmnProcessIdProp =
+      new StringProperty(PROP_WORKFLOW_BPMN_PROCESS_ID);
+  private final IntegerProperty versionProp = new IntegerProperty(PROP_WORKFLOW_VERSION);
+  private final LongProperty keyProp = new LongProperty(PROP_WORKFLOW_KEY);
+  private final StringProperty resourceNameProp = new StringProperty("resourceName");
 
-    public DeployedWorkflow()
-    {
-        this.declareProperty(bpmnProcessIdProp)
-            .declareProperty(versionProp)
-            .declareProperty(keyProp)
-            .declareProperty(resourceNameProp);
-    }
+  public DeployedWorkflow() {
+    this.declareProperty(bpmnProcessIdProp)
+        .declareProperty(versionProp)
+        .declareProperty(keyProp)
+        .declareProperty(resourceNameProp);
+  }
 
-    public DirectBuffer getBpmnProcessId()
-    {
-        return bpmnProcessIdProp.getValue();
-    }
+  public DirectBuffer getBpmnProcessId() {
+    return bpmnProcessIdProp.getValue();
+  }
 
-    public DeployedWorkflow setBpmnProcessId(DirectBuffer bpmnProcessId)
-    {
-        return setBpmnProcessId(bpmnProcessId, 0, bpmnProcessId.capacity());
-    }
+  public DeployedWorkflow setBpmnProcessId(DirectBuffer bpmnProcessId) {
+    return setBpmnProcessId(bpmnProcessId, 0, bpmnProcessId.capacity());
+  }
 
-    public DeployedWorkflow setBpmnProcessId(DirectBuffer bpmnProcessId, int offset, int length)
-    {
-        this.bpmnProcessIdProp.setValue(bpmnProcessId, offset, length);
-        return this;
-    }
+  public DeployedWorkflow setBpmnProcessId(DirectBuffer bpmnProcessId, int offset, int length) {
+    this.bpmnProcessIdProp.setValue(bpmnProcessId, offset, length);
+    return this;
+  }
 
-    public int getVersion()
-    {
-        return versionProp.getValue();
-    }
+  public int getVersion() {
+    return versionProp.getValue();
+  }
 
-    public DeployedWorkflow setVersion(int version)
-    {
-        this.versionProp.setValue(version);
-        return this;
-    }
+  public DeployedWorkflow setVersion(int version) {
+    this.versionProp.setValue(version);
+    return this;
+  }
 
-    public long getKey()
-    {
-        return keyProp.getValue();
-    }
+  public long getKey() {
+    return keyProp.getValue();
+  }
 
-    public DeployedWorkflow setKey(long key)
-    {
-        this.keyProp.setValue(key);
-        return this;
-    }
+  public DeployedWorkflow setKey(long key) {
+    this.keyProp.setValue(key);
+    return this;
+  }
 
-    public DirectBuffer getResourceName()
-    {
-        return resourceNameProp.getValue();
-    }
+  public DirectBuffer getResourceName() {
+    return resourceNameProp.getValue();
+  }
 
-    public DeployedWorkflow setResourceName(DirectBuffer resourceName)
-    {
-        this.resourceNameProp.setValue(resourceName);
-        return this;
-    }
+  public DeployedWorkflow setResourceName(DirectBuffer resourceName) {
+    this.resourceNameProp.setValue(resourceName);
+    return this;
+  }
 }

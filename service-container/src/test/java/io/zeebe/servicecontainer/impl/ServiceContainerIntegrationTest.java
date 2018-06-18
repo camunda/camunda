@@ -15,9 +15,6 @@
  */
 package io.zeebe.servicecontainer.impl;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.*;
 
 import io.zeebe.servicecontainer.*;
@@ -25,168 +22,156 @@ import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
-
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public class ServiceContainerIntegrationTest
-{
-    final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
-    final ServiceContainerRule serviceContainerRule = new ServiceContainerRule(actorSchedulerRule);
+public class ServiceContainerIntegrationTest {
+  final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
+  final ServiceContainerRule serviceContainerRule = new ServiceContainerRule(actorSchedulerRule);
 
-    @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(serviceContainerRule);
+  @Rule
+  public final RuleChain ruleChain =
+      RuleChain.outerRule(actorSchedulerRule).around(serviceContainerRule);
 
-    @Test
-    public void testInstall()
-    {
-        final ServiceContainer serviceContainer = serviceContainerRule.get();
+  @Test
+  public void testInstall() {
+    final ServiceContainer serviceContainer = serviceContainerRule.get();
 
-        final List<ActorFuture<Void>> futures = new ArrayList<>();
+    final List<ActorFuture<Void>> futures = new ArrayList<>();
 
-        for (int i = 0; i < 1_000; i++)
-        {
-            final ServiceBuilder<Void> builder = serviceContainer.createService(ServiceName.newServiceName("service" + i, Void.class), new TestService());
+    for (int i = 0; i < 1_000; i++) {
+      final ServiceBuilder<Void> builder =
+          serviceContainer.createService(
+              ServiceName.newServiceName("service" + i, Void.class), new TestService());
 
-            if (i < (1_000 - 1))
-            {
-                builder.dependency(ServiceName.newServiceName("service" + (i + 1), Void.class));
-            }
+      if (i < (1_000 - 1)) {
+        builder.dependency(ServiceName.newServiceName("service" + (i + 1), Void.class));
+      }
 
-            futures.add(builder.install());
-        }
-
-        futures.forEach((f) -> f.join());
+      futures.add(builder.install());
     }
 
-    @Test
-    public void testInstallAsync()
-    {
-        final ServiceContainer serviceContainer = serviceContainerRule.get();
+    futures.forEach((f) -> f.join());
+  }
 
-        final List<ActorFuture<Void>> futures = new ArrayList<>();
-        final List<TestService> services = new ArrayList<>();
+  @Test
+  public void testInstallAsync() {
+    final ServiceContainer serviceContainer = serviceContainerRule.get();
 
-        for (int i = 0; i < 1_000; i++)
-        {
-            final TestService service = new TestService();
-            service.future = new CompletableActorFuture<>();
-            services.add(service);
-            final ServiceBuilder<Void> builder = serviceContainer.createService(ServiceName.newServiceName("service" + i, Void.class), service);
+    final List<ActorFuture<Void>> futures = new ArrayList<>();
+    final List<TestService> services = new ArrayList<>();
 
-            if (i < (1_000 - 1))
-            {
-                builder.dependency(ServiceName.newServiceName("service" + (i + 1), Void.class));
-            }
+    for (int i = 0; i < 1_000; i++) {
+      final TestService service = new TestService();
+      service.future = new CompletableActorFuture<>();
+      services.add(service);
+      final ServiceBuilder<Void> builder =
+          serviceContainer.createService(
+              ServiceName.newServiceName("service" + i, Void.class), service);
 
-            futures.add(builder.install());
-        }
+      if (i < (1_000 - 1)) {
+        builder.dependency(ServiceName.newServiceName("service" + (i + 1), Void.class));
+      }
 
-        for (int i = 999; i >= 0; i--)
-        {
-            services.get(i).future.complete(null);
-        }
-
-
-        futures.forEach((f) -> f.join());
+      futures.add(builder.install());
     }
 
-    @Test
-    public void testInstallComposite()
-    {
-        final ServiceContainer serviceContainer = serviceContainerRule.get();
-
-        final List<ActorFuture<Void>> futures = new ArrayList<>();
-        final List<TestService> services = new ArrayList<>();
-
-        final CompositeServiceBuilder installOperation = serviceContainer.createComposite(ServiceName.newServiceName("composite", Void.class));
-
-        for (int i = 0; i < 1_000; i++)
-        {
-            final TestService service = new TestService();
-            service.future = new CompletableActorFuture<>();
-            services.add(service);
-            final ServiceBuilder<Void> builder = installOperation.createService(ServiceName.newServiceName("service" + i, Void.class), service);
-
-            if (i < (1_000 - 1))
-            {
-                builder.dependency(ServiceName.newServiceName("service" + (i + 1), Void.class));
-            }
-
-            futures.add(builder.install());
-        }
-
-        final ActorFuture<Void> future = installOperation.install();
-
-        for (int i = 999; i >= 0; i--)
-        {
-            services.get(i).future.complete(null);
-        }
-
-        future.join();
+    for (int i = 999; i >= 0; i--) {
+      services.get(i).future.complete(null);
     }
 
-    @Test
-    public void testFailInstallComposite()
-    {
-        final ServiceContainer serviceContainer = serviceContainerRule.get();
+    futures.forEach((f) -> f.join());
+  }
 
-        final List<ActorFuture<Void>> futures = new ArrayList<>();
-        final List<TestService> services = new ArrayList<>();
+  @Test
+  public void testInstallComposite() {
+    final ServiceContainer serviceContainer = serviceContainerRule.get();
 
-        final CompositeServiceBuilder installOperation = serviceContainer.createComposite(ServiceName.newServiceName("composite", Void.class));
+    final List<ActorFuture<Void>> futures = new ArrayList<>();
+    final List<TestService> services = new ArrayList<>();
 
-        for (int i = 0; i < 1_000; i++)
-        {
-            final TestService service = new TestService();
-            service.future = new CompletableActorFuture<>();
-            services.add(service);
-            final ServiceBuilder<Void> builder = installOperation.createService(ServiceName.newServiceName("service" + i, Void.class), service);
+    final CompositeServiceBuilder installOperation =
+        serviceContainer.createComposite(ServiceName.newServiceName("composite", Void.class));
 
-            if (i < (1_000 - 1))
-            {
-                builder.dependency(ServiceName.newServiceName("service" + (i + 1), Void.class));
-            }
+    for (int i = 0; i < 1_000; i++) {
+      final TestService service = new TestService();
+      service.future = new CompletableActorFuture<>();
+      services.add(service);
+      final ServiceBuilder<Void> builder =
+          installOperation.createService(
+              ServiceName.newServiceName("service" + i, Void.class), service);
 
-            futures.add(builder.install());
-        }
+      if (i < (1_000 - 1)) {
+        builder.dependency(ServiceName.newServiceName("service" + (i + 1), Void.class));
+      }
 
-        final ActorFuture<Void> future = installOperation.install();
-
-        services.get(999).future.completeExceptionally(new RuntimeException());
-
-        for (int i = 998; i >= 0; i--)
-        {
-            services.get(i).future.complete(null);
-        }
-
-        assertThatThrownBy(() -> future.join()).hasMessageContaining("Could not complete installation");
+      futures.add(builder.install());
     }
 
-    class TestService implements Service<Void>
-    {
-        CompletableActorFuture<Void> future;
+    final ActorFuture<Void> future = installOperation.install();
 
-        @Override
-        public void start(ServiceStartContext startContext)
-        {
-            if (future != null)
-            {
-                startContext.async(future);
-            }
-        }
-
-        @Override
-        public void stop(ServiceStopContext stopContext)
-        {
-        }
-
-        @Override
-        public Void get()
-        {
-            return null;
-        }
-
+    for (int i = 999; i >= 0; i--) {
+      services.get(i).future.complete(null);
     }
+
+    future.join();
+  }
+
+  @Test
+  public void testFailInstallComposite() {
+    final ServiceContainer serviceContainer = serviceContainerRule.get();
+
+    final List<ActorFuture<Void>> futures = new ArrayList<>();
+    final List<TestService> services = new ArrayList<>();
+
+    final CompositeServiceBuilder installOperation =
+        serviceContainer.createComposite(ServiceName.newServiceName("composite", Void.class));
+
+    for (int i = 0; i < 1_000; i++) {
+      final TestService service = new TestService();
+      service.future = new CompletableActorFuture<>();
+      services.add(service);
+      final ServiceBuilder<Void> builder =
+          installOperation.createService(
+              ServiceName.newServiceName("service" + i, Void.class), service);
+
+      if (i < (1_000 - 1)) {
+        builder.dependency(ServiceName.newServiceName("service" + (i + 1), Void.class));
+      }
+
+      futures.add(builder.install());
+    }
+
+    final ActorFuture<Void> future = installOperation.install();
+
+    services.get(999).future.completeExceptionally(new RuntimeException());
+
+    for (int i = 998; i >= 0; i--) {
+      services.get(i).future.complete(null);
+    }
+
+    assertThatThrownBy(() -> future.join()).hasMessageContaining("Could not complete installation");
+  }
+
+  class TestService implements Service<Void> {
+    CompletableActorFuture<Void> future;
+
+    @Override
+    public void start(ServiceStartContext startContext) {
+      if (future != null) {
+        startContext.async(future);
+      }
+    }
+
+    @Override
+    public void stop(ServiceStopContext stopContext) {}
+
+    @Override
+    public Void get() {
+      return null;
+    }
+  }
 }

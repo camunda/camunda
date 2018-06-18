@@ -15,8 +15,6 @@
  */
 package io.zeebe.raft.event;
 
-import java.util.List;
-
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.value.ValueArray;
@@ -26,56 +24,49 @@ import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.protocol.intent.RaftIntent;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftMember;
+import java.util.List;
 
-public class RaftEvent
-{
-    public final LogStreamWriter logStreamWriter = new LogStreamWriterImpl();
-    public final RecordMetadata metadata = new RecordMetadata();
-    public final RaftConfigurationEvent configuration = new RaftConfigurationEvent();
+public class RaftEvent {
+  public final LogStreamWriter logStreamWriter = new LogStreamWriterImpl();
+  public final RecordMetadata metadata = new RecordMetadata();
+  public final RaftConfigurationEvent configuration = new RaftConfigurationEvent();
 
-    public RaftIntent intent;
+  public RaftIntent intent;
 
-    public RaftEvent reset()
-    {
-        logStreamWriter.reset();
-        metadata.reset();
-        configuration.reset();
+  public RaftEvent reset() {
+    logStreamWriter.reset();
+    metadata.reset();
+    configuration.reset();
 
-        return this;
+    return this;
+  }
+
+  public RaftEvent setIntent(final RaftIntent intent) {
+    this.intent = intent;
+    return this;
+  }
+
+  public long tryWrite(final Raft raft) {
+    logStreamWriter.wrap(raft.getLogStream());
+
+    metadata.reset().valueType(ValueType.RAFT).recordType(RecordType.EVENT).intent(intent);
+
+    configuration.reset();
+
+    final ValueArray<RaftConfigurationEventMember> configurationMembers = configuration.members();
+
+    // add self also to configuration
+    configurationMembers.add().setSocketAddress(raft.getSocketAddress());
+
+    final List<RaftMember> memberList = raft.getRaftMembers().getMemberList();
+    for (final RaftMember member : memberList) {
+      configurationMembers.add().setSocketAddress(member.getRemoteAddress().getAddress());
     }
 
-    public RaftEvent setIntent(final RaftIntent intent)
-    {
-        this.intent = intent;
-        return this;
-    }
-
-    public long tryWrite(final Raft raft)
-    {
-        logStreamWriter.wrap(raft.getLogStream());
-
-        metadata.reset()
-            .valueType(ValueType.RAFT)
-            .recordType(RecordType.EVENT)
-            .intent(intent);
-
-        configuration.reset();
-
-        final ValueArray<RaftConfigurationEventMember> configurationMembers = configuration.members();
-
-        // add self also to configuration
-        configurationMembers.add().setSocketAddress(raft.getSocketAddress());
-
-        final List<RaftMember> memberList = raft.getRaftMembers().getMemberList();
-        for (final RaftMember member : memberList)
-        {
-            configurationMembers.add().setSocketAddress(member.getRemoteAddress().getAddress());
-        }
-
-        return logStreamWriter
-            .positionAsKey()
-            .metadataWriter(metadata)
-            .valueWriter(configuration)
-            .tryWrite();
-    }
+    return logStreamWriter
+        .positionAsKey()
+        .metadataWriter(metadata)
+        .valueWriter(configuration)
+        .tryWrite();
+  }
 }

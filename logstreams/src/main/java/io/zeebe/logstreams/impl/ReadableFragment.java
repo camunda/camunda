@@ -17,17 +17,16 @@ package io.zeebe.logstreams.impl;
 
 import org.agrona.DirectBuffer;
 
-public interface ReadableFragment
-{
-    int getStreamId();
+public interface ReadableFragment {
+  int getStreamId();
 
-    int getType();
+  int getType();
 
-    int getVersion();
+  int getVersion();
 
-    int getMessageOffset();
+  int getMessageOffset();
 
-    int getMessageLength();
+  int getMessageLength();
 
-    DirectBuffer getBuffer();
+  DirectBuffer getBuffer();
 }

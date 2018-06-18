@@ -15,80 +15,67 @@
  */
 package io.zeebe.util.sched.testing;
 
-import io.zeebe.util.sched.FutureUtil;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
+import io.zeebe.util.sched.FutureUtil;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.junit.rules.ExternalResource;
 
-public class ActorSchedulerRule extends ExternalResource
-{
-    private final ActorScheduler actorScheduler;
-    private ActorSchedulerBuilder builder;
+public class ActorSchedulerRule extends ExternalResource {
+  private final ActorScheduler actorScheduler;
+  private ActorSchedulerBuilder builder;
 
-    public ActorSchedulerRule(int numOfThreads, ActorClock clock)
-    {
-        this(numOfThreads, 2, clock);
-    }
+  public ActorSchedulerRule(int numOfThreads, ActorClock clock) {
+    this(numOfThreads, 2, clock);
+  }
 
-    public ActorSchedulerRule(int numOfThreads, int numOfIoThreads, ActorClock clock)
-    {
-        builder = ActorScheduler.newActorScheduler()
-                                .setCpuBoundActorThreadCount(numOfThreads)
-                                .setIoBoundActorThreadCount(numOfIoThreads)
-                                .setActorClock(clock);
+  public ActorSchedulerRule(int numOfThreads, int numOfIoThreads, ActorClock clock) {
+    builder =
+        ActorScheduler.newActorScheduler()
+            .setCpuBoundActorThreadCount(numOfThreads)
+            .setIoBoundActorThreadCount(numOfIoThreads)
+            .setActorClock(clock);
 
-        actorScheduler = builder
-            .build();
-    }
+    actorScheduler = builder.build();
+  }
 
-    public ActorSchedulerRule(int numOfThreads)
-    {
-        this(numOfThreads, null);
-    }
+  public ActorSchedulerRule(int numOfThreads) {
+    this(numOfThreads, null);
+  }
 
-    public ActorSchedulerRule(ActorClock clock)
-    {
-        this(Math.max(1, Runtime.getRuntime().availableProcessors() - 2), clock);
-    }
+  public ActorSchedulerRule(ActorClock clock) {
+    this(Math.max(1, Runtime.getRuntime().availableProcessors() - 2), clock);
+  }
 
+  public ActorSchedulerRule() {
+    this(null);
+  }
 
-    public ActorSchedulerRule()
-    {
-        this(null);
-    }
+  @Override
+  protected void before() {
+    actorScheduler.start();
+  }
 
-    @Override
-    protected void before()
-    {
-        actorScheduler.start();
-    }
+  @Override
+  protected void after() {
+    FutureUtil.join(actorScheduler.stop());
+  }
 
-    @Override
-    protected void after()
-    {
-        FutureUtil.join(actorScheduler.stop());
-    }
+  public ActorFuture<Void> submitActor(Actor actor) {
+    return actorScheduler.submitActor(actor);
+  }
 
-    public ActorFuture<Void> submitActor(Actor actor)
-    {
-        return actorScheduler.submitActor(actor);
-    }
+  public ActorFuture<Void> submitActor(Actor actor, boolean useCountersManager) {
+    return actorScheduler.submitActor(actor, useCountersManager);
+  }
 
-    public ActorFuture<Void> submitActor(Actor actor, boolean useCountersManager)
-    {
-        return actorScheduler.submitActor(actor, useCountersManager);
-    }
+  public ActorScheduler get() {
+    return actorScheduler;
+  }
 
-    public ActorScheduler get()
-    {
-        return actorScheduler;
-    }
-
-    public ActorSchedulerBuilder getBuilder()
-    {
-        return builder;
-    }
+  public ActorSchedulerBuilder getBuilder() {
+    return builder;
+  }
 }

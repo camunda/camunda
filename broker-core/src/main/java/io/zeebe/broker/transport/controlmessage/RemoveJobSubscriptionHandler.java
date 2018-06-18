@@ -26,46 +26,49 @@ import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 
-public class RemoveJobSubscriptionHandler extends AbstractControlMessageHandler
-{
-    protected final JobSubscriptionRequest subscription = new JobSubscriptionRequest();
+public class RemoveJobSubscriptionHandler extends AbstractControlMessageHandler {
+  protected final JobSubscriptionRequest subscription = new JobSubscriptionRequest();
 
-    protected final JobSubscriptionManager manager;
+  protected final JobSubscriptionManager manager;
 
-    public RemoveJobSubscriptionHandler(final ServerOutput output, final JobSubscriptionManager manager)
-    {
-        super(output);
-        this.manager = manager;
-    }
+  public RemoveJobSubscriptionHandler(
+      final ServerOutput output, final JobSubscriptionManager manager) {
+    super(output);
+    this.manager = manager;
+  }
 
-    @Override
-    public ControlMessageType getMessageType()
-    {
-        return ControlMessageType.REMOVE_JOB_SUBSCRIPTION;
-    }
+  @Override
+  public ControlMessageType getMessageType() {
+    return ControlMessageType.REMOVE_JOB_SUBSCRIPTION;
+  }
 
-    @Override
-    public void handle(final ActorControl actor, final int partitionId, final DirectBuffer buffer, final RecordMetadata eventMetadata)
-    {
-        final int requestStreamId = eventMetadata.getRequestStreamId();
-        final long requestId = eventMetadata.getRequestId();
+  @Override
+  public void handle(
+      final ActorControl actor,
+      final int partitionId,
+      final DirectBuffer buffer,
+      final RecordMetadata eventMetadata) {
+    final int requestStreamId = eventMetadata.getRequestStreamId();
+    final long requestId = eventMetadata.getRequestId();
 
-        subscription.reset();
-        subscription.wrap(buffer);
+    subscription.reset();
+    subscription.wrap(buffer);
 
-        final long subscriberKey = subscription.getSubscriberKey();
-        final ActorFuture<Void> future = manager.removeSubscription(subscriberKey);
-        actor.runOnCompletion(future, (aVoid, throwable) ->
-        {
-            if (throwable == null)
-            {
-                sendResponse(actor, requestStreamId, requestId, subscription);
-            }
-            else
-            {
-                sendErrorResponse(actor, requestStreamId, requestId, "Cannot remove job subscription. %s", throwable.getMessage());
-            }
+    final long subscriberKey = subscription.getSubscriberKey();
+    final ActorFuture<Void> future = manager.removeSubscription(subscriberKey);
+    actor.runOnCompletion(
+        future,
+        (aVoid, throwable) -> {
+          if (throwable == null) {
+            sendResponse(actor, requestStreamId, requestId, subscription);
+          } else {
+            sendErrorResponse(
+                actor,
+                requestStreamId,
+                requestId,
+                "Cannot remove job subscription. %s",
+                throwable.getMessage());
+          }
         });
-    }
-
+  }
 }

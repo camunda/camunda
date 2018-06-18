@@ -19,69 +19,55 @@ package io.zeebe.broker.job.map;
 
 import static org.agrona.BitUtil.SIZE_OF_SHORT;
 
+import io.zeebe.map.Long2BytesZbMap;
 import java.nio.ByteOrder;
-
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import io.zeebe.map.Long2BytesZbMap;
-
 /**
  * Maps <b>job instance key</b> to
- *
- * <li> state
- * <li> worker length
- * <li> worker (max 64 chars)
+ * <li>state
+ * <li>worker length
+ * <li>worker (max 64 chars)
  */
-public class JobInstanceMap
-{
-    private static final int MAP_VALUE_SIZE = SIZE_OF_SHORT;
-    private static final int STATE_OFFSET = 0;
+public class JobInstanceMap {
+  private static final int MAP_VALUE_SIZE = SIZE_OF_SHORT;
+  private static final int STATE_OFFSET = 0;
 
-    private static final ByteOrder BYTE_ORDER = ByteOrder.LITTLE_ENDIAN;
+  private static final ByteOrder BYTE_ORDER = ByteOrder.LITTLE_ENDIAN;
 
-    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[MAP_VALUE_SIZE]);
+  private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[MAP_VALUE_SIZE]);
 
-    private final Long2BytesZbMap map;
+  private final Long2BytesZbMap map;
 
-    public JobInstanceMap()
-    {
-        this.map = new Long2BytesZbMap(MAP_VALUE_SIZE);
+  public JobInstanceMap() {
+    this.map = new Long2BytesZbMap(MAP_VALUE_SIZE);
+  }
+
+  public void remove(long workflowInstanceKey) {
+    map.remove(workflowInstanceKey);
+  }
+
+  public Long2BytesZbMap getMap() {
+    return map;
+  }
+
+  public short getJobState(long key) {
+    final DirectBuffer result = map.get(key);
+
+    if (result != null) {
+      return result.getShort(STATE_OFFSET, BYTE_ORDER);
+    } else {
+      return -1;
     }
+  }
 
-    public void remove(long workflowInstanceKey)
-    {
-        map.remove(workflowInstanceKey);
-    }
+  public void putJobInstance(long jobInstanceKey, short state) {
+    buffer.putShort(STATE_OFFSET, state, BYTE_ORDER);
+    map.put(jobInstanceKey, buffer);
+  }
 
-    public Long2BytesZbMap getMap()
-    {
-        return map;
-    }
-
-    public short getJobState(long key)
-    {
-        final DirectBuffer result = map.get(key);
-
-        if (result != null)
-        {
-            return result.getShort(STATE_OFFSET, BYTE_ORDER);
-        }
-        else
-        {
-            return -1;
-        }
-    }
-
-    public void putJobInstance(long jobInstanceKey, short state)
-    {
-        buffer.putShort(STATE_OFFSET, state, BYTE_ORDER);
-        map.put(jobInstanceKey, buffer);
-    }
-
-    public void close()
-    {
-        map.close();
-    }
-
+  public void close() {
+    map.close();
+  }
 }

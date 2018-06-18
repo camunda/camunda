@@ -16,26 +16,28 @@
 package io.zeebe.model.bpmn.impl.validation.nodes.task;
 
 import io.zeebe.model.bpmn.BpmnConstants;
-import io.zeebe.model.bpmn.impl.metadata.TaskHeadersImpl;
 import io.zeebe.model.bpmn.impl.error.ErrorCollector;
-
+import io.zeebe.model.bpmn.impl.metadata.TaskHeadersImpl;
 import java.util.Map;
 
-public class TaskHeadersValidator
-{
-    public void validate(ErrorCollector validationResult, TaskHeadersImpl taskHeaders)
-    {
-        for (Map.Entry<String, String> header : taskHeaders.asMap().entrySet())
-        {
-            if (header.getKey() == null)
-            {
-                validationResult.addError(taskHeaders, String.format("A task header must contain a '%s' attribute.", BpmnConstants.ZEEBE_ATTRIBUTE_TASK_HEADER_KEY));
-            }
+public class TaskHeadersValidator {
+  public void validate(ErrorCollector validationResult, TaskHeadersImpl taskHeaders) {
+    for (Map.Entry<String, String> header : taskHeaders.asMap().entrySet()) {
+      if (header.getKey() == null) {
+        validationResult.addError(
+            taskHeaders,
+            String.format(
+                "A task header must contain a '%s' attribute.",
+                BpmnConstants.ZEEBE_ATTRIBUTE_TASK_HEADER_KEY));
+      }
 
-            if (header.getValue() == null)
-            {
-                validationResult.addError(taskHeaders, String.format("A task header must contain a '%s' attribute.", BpmnConstants.ZEEBE_ATTRIBUTE_TASK_HEADER_VALUE));
-            }
-        }
+      if (header.getValue() == null) {
+        validationResult.addError(
+            taskHeaders,
+            String.format(
+                "A task header must contain a '%s' attribute.",
+                BpmnConstants.ZEEBE_ATTRIBUTE_TASK_HEADER_VALUE));
+      }
     }
+  }
 }

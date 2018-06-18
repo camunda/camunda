@@ -17,89 +17,72 @@ package io.zeebe.map;
 
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
-import java.util.Iterator;
-
 import io.zeebe.map.iterator.Bytes2LongZbMapEntry;
 import io.zeebe.map.types.ByteArrayKeyHandler;
 import io.zeebe.map.types.LongValueHandler;
+import java.util.Iterator;
 import org.agrona.DirectBuffer;
 
-public class Bytes2LongZbMap extends ZbMap<ByteArrayKeyHandler, LongValueHandler> implements Iterable<Bytes2LongZbMapEntry>
-{
-    private ZbMapIterator<ByteArrayKeyHandler, LongValueHandler, Bytes2LongZbMapEntry> iterator;
+public class Bytes2LongZbMap extends ZbMap<ByteArrayKeyHandler, LongValueHandler>
+    implements Iterable<Bytes2LongZbMapEntry> {
+  private ZbMapIterator<ByteArrayKeyHandler, LongValueHandler, Bytes2LongZbMapEntry> iterator;
 
-    public Bytes2LongZbMap(int maxKeyLength)
-    {
-        super(maxKeyLength, SIZE_OF_LONG);
+  public Bytes2LongZbMap(int maxKeyLength) {
+    super(maxKeyLength, SIZE_OF_LONG);
+  }
+
+  public Bytes2LongZbMap(final int tableSize, final int blockCount, final int maxKeyLength) {
+    super(tableSize, blockCount, maxKeyLength, SIZE_OF_LONG);
+  }
+
+  public long get(byte[] key, long missingValue) {
+    keyHandler.setKey(key);
+    valueHandler.theValue = missingValue;
+    get();
+    return valueHandler.theValue;
+  }
+
+  public long get(DirectBuffer buffer, int offset, int length, long missingValue) {
+    keyHandler.setKey(buffer, offset, length);
+    valueHandler.theValue = missingValue;
+    get();
+    return valueHandler.theValue;
+  }
+
+  public boolean put(byte[] key, long value) {
+    keyHandler.setKey(key);
+    valueHandler.theValue = value;
+    return put();
+  }
+
+  public boolean put(DirectBuffer buffer, int offset, int length, long value) {
+    keyHandler.setKey(buffer, offset, length);
+    valueHandler.theValue = value;
+    return put();
+  }
+
+  public long remove(byte[] key, long missingValue) {
+    keyHandler.setKey(key);
+    valueHandler.theValue = missingValue;
+    remove();
+    return valueHandler.theValue;
+  }
+
+  public long remove(DirectBuffer buffer, int offset, int length, long missingValue) {
+    keyHandler.setKey(buffer, offset, length);
+    valueHandler.theValue = missingValue;
+    remove();
+    return valueHandler.theValue;
+  }
+
+  @Override
+  public Iterator<Bytes2LongZbMapEntry> iterator() {
+    if (iterator == null) {
+      iterator = new ZbMapIterator<>(this, new Bytes2LongZbMapEntry());
+    } else {
+      iterator.reset();
     }
 
-    public Bytes2LongZbMap(
-            final int tableSize,
-            final int blockCount,
-            final int maxKeyLength)
-    {
-        super(tableSize, blockCount, maxKeyLength, SIZE_OF_LONG);
-    }
-
-    public long get(byte[] key, long missingValue)
-    {
-        keyHandler.setKey(key);
-        valueHandler.theValue = missingValue;
-        get();
-        return valueHandler.theValue;
-    }
-
-    public long get(DirectBuffer buffer, int offset, int length, long missingValue)
-    {
-        keyHandler.setKey(buffer, offset, length);
-        valueHandler.theValue = missingValue;
-        get();
-        return valueHandler.theValue;
-    }
-
-    public boolean put(byte[] key, long value)
-    {
-        keyHandler.setKey(key);
-        valueHandler.theValue = value;
-        return put();
-    }
-
-    public boolean put(DirectBuffer buffer, int offset, int length, long value)
-    {
-        keyHandler.setKey(buffer, offset, length);
-        valueHandler.theValue = value;
-        return put();
-    }
-
-    public long remove(byte[] key, long missingValue)
-    {
-        keyHandler.setKey(key);
-        valueHandler.theValue = missingValue;
-        remove();
-        return valueHandler.theValue;
-    }
-
-    public long remove(DirectBuffer buffer, int offset, int length, long missingValue)
-    {
-        keyHandler.setKey(buffer, offset, length);
-        valueHandler.theValue = missingValue;
-        remove();
-        return valueHandler.theValue;
-    }
-
-    @Override
-    public Iterator<Bytes2LongZbMapEntry> iterator()
-    {
-        if (iterator == null)
-        {
-            iterator = new ZbMapIterator<>(this, new Bytes2LongZbMapEntry());
-        }
-        else
-        {
-            iterator.reset();
-        }
-
-        return iterator;
-    }
-
+    return iterator;
+  }
 }

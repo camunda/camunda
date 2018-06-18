@@ -17,29 +17,24 @@ package io.zeebe.test.broker.protocol.brokerapi;
 
 import java.util.concurrent.CyclicBarrier;
 
-public class ResponseController
-{
+public class ResponseController {
 
-    protected CyclicBarrier barrier = new CyclicBarrier(2); // two parties: broker thread responding and test thread signalling
+  protected CyclicBarrier barrier =
+      new CyclicBarrier(2); // two parties: broker thread responding and test thread signalling
 
-    /**
-     * Unblocks the sender for sending this response. If the sender is not yet blocked, the calling thread
-     * is blocked until then.
-     */
-    public void unblockNextResponse()
-    {
-        waitForNextJoin();
+  /**
+   * Unblocks the sender for sending this response. If the sender is not yet blocked, the calling
+   * thread is blocked until then.
+   */
+  public void unblockNextResponse() {
+    waitForNextJoin();
+  }
+
+  protected void waitForNextJoin() {
+    try {
+      barrier.await();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
     }
-
-    protected void waitForNextJoin()
-    {
-        try
-        {
-            barrier.await();
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
+  }
 }

@@ -18,8 +18,7 @@ package io.zeebe.client.api.subscription;
 import io.zeebe.client.api.events.JobEvent;
 
 @FunctionalInterface
-public interface JobEventHandler
-{
+public interface JobEventHandler {
 
-    void onJobEvent(JobEvent jobEvent) throws Exception;
+  void onJobEvent(JobEvent jobEvent) throws Exception;
 }

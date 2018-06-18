@@ -15,9 +15,6 @@
  */
 package io.zeebe.client.impl.data;
 
-import java.io.*;
-import java.util.Map;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -27,189 +24,163 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.zeebe.client.api.record.*;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.impl.record.*;
+import java.io.*;
+import java.util.Map;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
-public class ZeebeObjectMapperImpl implements ZeebeObjectMapper
-{
-    private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE = new TypeReference<Map<String, Object>>()
-    { };
+public class ZeebeObjectMapperImpl implements ZeebeObjectMapper {
+  private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE =
+      new TypeReference<Map<String, Object>>() {};
 
-    private final ObjectMapper msgpackObjectMapper;
-    private final ObjectMapper jsonObjectMapper;
+  private final ObjectMapper msgpackObjectMapper;
+  private final ObjectMapper jsonObjectMapper;
 
-    private final MsgPackConverter msgPackConverter;
+  private final MsgPackConverter msgPackConverter;
 
-    public ZeebeObjectMapperImpl()
-    {
-        this.msgPackConverter = new MsgPackConverter();
+  public ZeebeObjectMapperImpl() {
+    this.msgPackConverter = new MsgPackConverter();
 
-        final InjectableValues.Std injectableValues = new InjectableValues.Std();
-        injectableValues.addValue(ZeebeObjectMapperImpl.class, this);
+    final InjectableValues.Std injectableValues = new InjectableValues.Std();
+    injectableValues.addValue(ZeebeObjectMapperImpl.class, this);
 
-        msgpackObjectMapper = createMsgpackObjectMapper(injectableValues);
-        jsonObjectMapper = createDefaultObjectMapper(injectableValues);
+    msgpackObjectMapper = createMsgpackObjectMapper(injectableValues);
+    jsonObjectMapper = createDefaultObjectMapper(injectableValues);
+  }
+
+  private ObjectMapper createDefaultObjectMapper(InjectableValues injectableValues) {
+    final ObjectMapper objectMapper = new ObjectMapper();
+    objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+    objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+    objectMapper.setInjectableValues(injectableValues);
+
+    objectMapper.registerModule(new JavaTimeModule()); // to serialize INSTANT
+    objectMapper.registerModule(new JsonPayloadModule(this));
+
+    return objectMapper;
+  }
+
+  private ObjectMapper createMsgpackObjectMapper(InjectableValues injectableValues) {
+    final MessagePackFactory msgpackFactory =
+        new MessagePackFactory().setReuseResourceInGenerator(false).setReuseResourceInParser(false);
+    final ObjectMapper objectMapper = new ObjectMapper(msgpackFactory);
+
+    objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+    objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+
+    objectMapper.addMixIn(RecordImpl.class, MsgpackRecordMixin.class);
+
+    objectMapper.setInjectableValues(injectableValues);
+
+    objectMapper.registerModule(new MsgpackInstantModule());
+    objectMapper.registerModule(new MsgpackPayloadModule(this));
+
+    return objectMapper;
+  }
+
+  @Override
+  public String toJson(Record record) {
+    try {
+      return jsonObjectMapper.writeValueAsString(record);
+    } catch (JsonProcessingException e) {
+      throw new ClientException(
+          String.format("Failed to serialize object '%s' to JSON", record), e);
+    }
+  }
+
+  @Override
+  public <T extends Record> T fromJson(String json, Class<T> recordClass) {
+    final Class<T> implClass = RecordClassMapping.getRecordImplClass(recordClass);
+    if (implClass == null) {
+      throw new ClientException(
+          String.format(
+              "Cannot deserialize JSON: unknown record class '%s'", recordClass.getName()));
     }
 
-    private ObjectMapper createDefaultObjectMapper(InjectableValues injectableValues)
-    {
-        final ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+    try {
+      final T record = jsonObjectMapper.readValue(json, implClass);
 
-        objectMapper.setInjectableValues(injectableValues);
+      // verify that the record is de-serialized into the correct type
+      final RecordMetadata metadata = record.getMetadata();
+      final Class<RecordImpl> recordImplClass =
+          RecordClassMapping.getRecordImplClass(metadata.getRecordType(), metadata.getValueType());
+      if (!implClass.equals(recordImplClass)) {
+        throw new ClientException(
+            String.format(
+                "Cannot deserialize JSON to object of type '%s'. Incompatible type for record '%s - %s'.",
+                recordClass.getName(), metadata.getRecordType(), metadata.getValueType()));
+      }
 
-        objectMapper.registerModule(new JavaTimeModule()); // to serialize INSTANT
-        objectMapper.registerModule(new JsonPayloadModule(this));
-
-        return objectMapper;
+      return record;
+    } catch (IOException e) {
+      throw new ClientException(
+          String.format(
+              "Failed deserialize JSON '%s' to object of type '%s'", json, recordClass.getName()),
+          e);
     }
+  }
 
-    private ObjectMapper createMsgpackObjectMapper(InjectableValues injectableValues)
-    {
-        final MessagePackFactory msgpackFactory = new MessagePackFactory().setReuseResourceInGenerator(false).setReuseResourceInParser(false);
-        final ObjectMapper objectMapper = new ObjectMapper(msgpackFactory);
-
-        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-
-        objectMapper.addMixIn(RecordImpl.class, MsgpackRecordMixin.class);
-
-        objectMapper.setInjectableValues(injectableValues);
-
-        objectMapper.registerModule(new MsgpackInstantModule());
-        objectMapper.registerModule(new MsgpackPayloadModule(this));
-
-        return objectMapper;
+  public <T extends Record> T asRecordType(UntypedRecordImpl record, Class<T> recordClass) {
+    try {
+      return msgpackObjectMapper.readValue(record.getAsMsgPack(), recordClass);
+    } catch (IOException e) {
+      throw new RuntimeException(
+          String.format("Failed deserialize JSON to object of type '%s'", recordClass), e);
     }
+  }
 
-    @Override
-    public String toJson(Record record)
-    {
-        try
-        {
-            return jsonObjectMapper.writeValueAsString(record);
-        }
-        catch (JsonProcessingException e)
-        {
-            throw new ClientException(String.format("Failed to serialize object '%s' to JSON", record), e);
-        }
+  public void toMsgpack(OutputStream outputStream, Object value) {
+    try {
+      msgpackObjectMapper.writeValue(outputStream, value);
+    } catch (IOException e) {
+      throw new RuntimeException(
+          String.format("Failed to serialize object '%s' to Msgpack JSON", value), e);
     }
+  }
 
-    @Override
-    public <T extends Record> T fromJson(String json, Class<T> recordClass)
-    {
-        final Class<T> implClass = RecordClassMapping.getRecordImplClass(recordClass);
-        if (implClass == null)
-        {
-            throw new ClientException(String.format("Cannot deserialize JSON: unknown record class '%s'", recordClass.getName()));
-        }
-
-        try
-        {
-            final T record = jsonObjectMapper.readValue(json, implClass);
-
-            // verify that the record is de-serialized into the correct type
-            final RecordMetadata metadata = record.getMetadata();
-            final Class<RecordImpl> recordImplClass = RecordClassMapping.getRecordImplClass(metadata.getRecordType(), metadata.getValueType());
-            if (!implClass.equals(recordImplClass))
-            {
-                throw new ClientException(
-                        String.format("Cannot deserialize JSON to object of type '%s'. Incompatible type for record '%s - %s'.",
-                                      recordClass.getName(),
-                                      metadata.getRecordType(),
-                                      metadata.getValueType()));
-            }
-
-            return record;
-        }
-        catch (IOException e)
-        {
-            throw new ClientException(String.format("Failed deserialize JSON '%s' to object of type '%s'", json, recordClass.getName()), e);
-        }
+  public byte[] toMsgpack(Object value) {
+    try {
+      return msgpackObjectMapper.writeValueAsBytes(value);
+    } catch (IOException e) {
+      throw new ClientException(
+          String.format("Failed to serialize object '%s' to Msgpack JSON", value), e);
     }
+  }
 
-    public <T extends Record> T asRecordType(UntypedRecordImpl record, Class<T> recordClass)
-    {
-        try
-        {
-            return msgpackObjectMapper.readValue(record.getAsMsgPack(), recordClass);
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(String.format("Failed deserialize JSON to object of type '%s'", recordClass), e);
-        }
+  public <T> T fromMsgpack(InputStream inputStream, Class<T> valueType) {
+    try {
+      return msgpackObjectMapper.readValue(inputStream, valueType);
+    } catch (IOException e) {
+      throw new RuntimeException(
+          String.format("Failed deserialize Msgpack JSON stream to object of type '%s'", valueType),
+          e);
     }
+  }
 
-    public void toMsgpack(OutputStream outputStream, Object value)
-    {
-        try
-        {
-            msgpackObjectMapper.writeValue(outputStream, value);
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(String.format("Failed to serialize object '%s' to Msgpack JSON", value), e);
-        }
+  public Map<String, Object> fromMsgpackAsMap(byte[] msgpack) {
+    try {
+      return msgpackObjectMapper.readValue(msgpack, MAP_TYPE_REFERENCE);
+    } catch (IOException e) {
+      throw new RuntimeException("Failed deserialize Msgpack JSON to map", e);
     }
+  }
 
-    public byte[] toMsgpack(Object value)
-    {
-        try
-        {
-            return msgpackObjectMapper.writeValueAsBytes(value);
-        }
-        catch (IOException e)
-        {
-            throw new ClientException(String.format("Failed to serialize object '%s' to Msgpack JSON", value), e);
-        }
+  public <T> T fromMsgpackAsType(byte[] msgpack, Class<T> type) {
+    try {
+      return msgpackObjectMapper.readValue(msgpack, type);
+    } catch (IOException e) {
+      throw new RuntimeException(
+          String.format("Failed deserialize Msgpack JSON to type '%s'", type.getName()), e);
     }
+  }
 
-    public <T> T fromMsgpack(InputStream inputStream, Class<T> valueType)
-    {
-        try
-        {
-            return msgpackObjectMapper.readValue(inputStream, valueType);
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(String.format("Failed deserialize Msgpack JSON stream to object of type '%s'", valueType), e);
-        }
-    }
+  public MsgPackConverter getMsgPackConverter() {
+    return msgPackConverter;
+  }
 
-    public Map<String, Object> fromMsgpackAsMap(byte[] msgpack)
-    {
-        try
-        {
-            return msgpackObjectMapper.readValue(msgpack, MAP_TYPE_REFERENCE);
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException("Failed deserialize Msgpack JSON to map", e);
-        }
-    }
-
-    public <T> T fromMsgpackAsType(byte[] msgpack, Class<T> type)
-    {
-        try
-        {
-            return msgpackObjectMapper.readValue(msgpack, type);
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(String.format("Failed deserialize Msgpack JSON to type '%s'", type.getName()), e);
-        }
-    }
-
-    public MsgPackConverter getMsgPackConverter()
-    {
-        return msgPackConverter;
-    }
-
-    abstract class MsgpackRecordMixin
-    {
-        // records from broker does't have metadata inside (instead it's part of SBE layer)
-        @JsonIgnore
-        abstract RecordMetadataImpl getMetadata();
-    }
-
+  abstract class MsgpackRecordMixin {
+    // records from broker does't have metadata inside (instead it's part of SBE layer)
+    @JsonIgnore
+    abstract RecordMetadataImpl getMetadata();
+  }
 }

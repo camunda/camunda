@@ -25,87 +25,87 @@ import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.slf4j.Logger;
 
-public class JobSubscriber extends Subscriber
-{
-    private static final Logger LOGGER = Loggers.TASK_SUBSCRIPTION_LOGGER;
+public class JobSubscriber extends Subscriber {
+  private static final Logger LOGGER = Loggers.TASK_SUBSCRIPTION_LOGGER;
 
-    private final ZeebeClientImpl client;
-    private final JobClient jobClient;
-    private final JobSubscriptionSpec subscription;
+  private final ZeebeClientImpl client;
+  private final JobClient jobClient;
+  private final JobSubscriptionSpec subscription;
 
-    public JobSubscriber(
-            ZeebeClientImpl client,
-            JobSubscriptionSpec subscription,
-            long subscriberKey,
-            RemoteAddress eventSource,
-            int partition,
-            SubscriberGroup<JobSubscriber> group,
-            SubscriptionManager acquisition)
-    {
-        super(subscriberKey, partition, subscription.getCapacity(), eventSource, group, acquisition);
-        this.client = client;
-        this.jobClient = client.topicClient(subscription.getTopic()).jobClient();
-        this.subscription = subscription;
-    }
+  public JobSubscriber(
+      ZeebeClientImpl client,
+      JobSubscriptionSpec subscription,
+      long subscriberKey,
+      RemoteAddress eventSource,
+      int partition,
+      SubscriberGroup<JobSubscriber> group,
+      SubscriptionManager acquisition) {
+    super(subscriberKey, partition, subscription.getCapacity(), eventSource, group, acquisition);
+    this.client = client;
+    this.jobClient = client.topicClient(subscription.getTopic()).jobClient();
+    this.subscription = subscription;
+  }
 
-    public int pollEvents(JobHandler jobHandler)
-    {
-        final int polledEvents = pollEvents((e) ->
-        {
-            final JobEventImpl jobEvent = e.asRecordType(JobEventImpl.class);
-            jobEvent.updateMetadata(e.getMetadata());
+  public int pollEvents(JobHandler jobHandler) {
+    final int polledEvents =
+        pollEvents(
+            (e) -> {
+              final JobEventImpl jobEvent = e.asRecordType(JobEventImpl.class);
+              jobEvent.updateMetadata(e.getMetadata());
 
-            try
-            {
+              try {
                 jobHandler.handle(jobClient, jobEvent);
-            }
-            catch (Exception handlingException)
-            {
-                LOGGER.info("An error occurred when handling job " + jobEvent.getMetadata().getKey() +
-                        ". Reporting failure to broker.", handlingException);
-                try
-                {
-                    jobClient.newFailCommand(jobEvent)
-                        .retries(jobEvent.getRetries() - 1)
-                        .send();
+              } catch (Exception handlingException) {
+                LOGGER.info(
+                    "An error occurred when handling job "
+                        + jobEvent.getMetadata().getKey()
+                        + ". Reporting failure to broker.",
+                    handlingException);
+                try {
+                  jobClient.newFailCommand(jobEvent).retries(jobEvent.getRetries() - 1).send();
+                } catch (Exception failureException) {
+                  LOGGER.info(
+                      "Could not report failure of job "
+                          + jobEvent.getMetadata().getKey()
+                          + " to broker. Continuing with next job",
+                      failureException);
                 }
-                catch (Exception failureException)
-                {
-                    LOGGER.info("Could not report failure of job " + jobEvent.getMetadata().getKey() +
-                        " to broker. Continuing with next job", failureException);
-                }
-            }
-        });
+              }
+            });
 
-        return polledEvents;
-    }
+    return polledEvents;
+  }
 
-    @Override
-    protected ActorFuture<?> requestEventSourceReplenishment(int eventsProcessed)
-    {
-        return new IncreaseJobSubscriptionCreditsCmdImpl(client.getCommandManager(), partitionId)
-            .subscriberKey(subscriberKey)
-            .credits(eventsProcessed)
-            .send();
-    }
+  @Override
+  protected ActorFuture<?> requestEventSourceReplenishment(int eventsProcessed) {
+    return new IncreaseJobSubscriptionCreditsCmdImpl(client.getCommandManager(), partitionId)
+        .subscriberKey(subscriberKey)
+        .credits(eventsProcessed)
+        .send();
+  }
 
-    @Override
-    public ActorFuture<Void> requestSubscriptionClose()
-    {
-        return new CloseJobSubscriptionCommandImpl(client.getCommandManager(), partitionId, subscriberKey)
-                .send();
-    }
+  @Override
+  public ActorFuture<Void> requestSubscriptionClose() {
+    return new CloseJobSubscriptionCommandImpl(
+            client.getCommandManager(), partitionId, subscriberKey)
+        .send();
+  }
 
-    @Override
-    public String toString()
-    {
-        return "JobSubscriber[topic=" + subscription.getTopic() + ", partition=" + partitionId +
-                ", jobType=" + subscription.getJobType() + ", subscriberKey=" + subscriberKey + "]";
-    }
+  @Override
+  public String toString() {
+    return "JobSubscriber[topic="
+        + subscription.getTopic()
+        + ", partition="
+        + partitionId
+        + ", jobType="
+        + subscription.getJobType()
+        + ", subscriberKey="
+        + subscriberKey
+        + "]";
+  }
 
-    @Override
-    public String getTopicName()
-    {
-        return subscription.getTopic();
-    }
+  @Override
+  public String getTopicName() {
+    return subscription.getTopic();
+  }
 }

@@ -17,28 +17,19 @@ package io.zeebe.gossip;
 
 import org.agrona.DirectBuffer;
 
-/**
- * Publish custom events via Gossip's infection-style protocol.
- */
-public interface GossipEventPublisher
-{
-    /**
-     * Publish a custom event.
-     *
-     * @param type
-     *            the type of the event
-     * @param payload
-     *            the event as payload
-     * @param offset
-     *            the payload buffer's offset
-     * @param length
-     *            the payload buffer's length
-     */
-    void publishEvent(DirectBuffer type, DirectBuffer payload, int offset, int length);
+/** Publish custom events via Gossip's infection-style protocol. */
+public interface GossipEventPublisher {
+  /**
+   * Publish a custom event.
+   *
+   * @param type the type of the event
+   * @param payload the event as payload
+   * @param offset the payload buffer's offset
+   * @param length the payload buffer's length
+   */
+  void publishEvent(DirectBuffer type, DirectBuffer payload, int offset, int length);
 
-    default void publishEvent(DirectBuffer type, DirectBuffer payload)
-    {
-        publishEvent(type, payload, 0, payload.capacity());
-    }
-
+  default void publishEvent(DirectBuffer type, DirectBuffer payload) {
+    publishEvent(type, payload, 0, payload.capacity());
+  }
 }

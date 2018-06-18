@@ -16,16 +16,13 @@
 package io.zeebe.model.bpmn.instance;
 
 import java.util.Map;
-
 import org.agrona.DirectBuffer;
 
-public interface TaskHeaders
-{
+public interface TaskHeaders {
 
-    DirectBuffer asMsgpackEncoded();
+  DirectBuffer asMsgpackEncoded();
 
-    Map<String, String> asMap();
+  Map<String, String> asMap();
 
-    boolean isEmpty();
-
+  boolean isEmpty();
 }

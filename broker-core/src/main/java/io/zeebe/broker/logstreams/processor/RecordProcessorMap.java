@@ -17,117 +17,93 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import java.util.Iterator;
-
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.Intent;
+import java.util.Iterator;
 
-@SuppressWarnings({ "rawtypes" })
-public class RecordProcessorMap
-{
-    private final TypedRecordProcessor[] elements;
+@SuppressWarnings({"rawtypes"})
+public class RecordProcessorMap {
+  private final TypedRecordProcessor[] elements;
 
-    private final int valueTypeCardinality;
-    private final int intentCardinality;
+  private final int valueTypeCardinality;
+  private final int intentCardinality;
 
-    private final ValueIterator valueIt = new ValueIterator();
+  private final ValueIterator valueIt = new ValueIterator();
 
-    public <R extends Enum<R>, S extends Enum<S>> RecordProcessorMap()
-    {
-        final int recordTypeCardinality = RecordType.class.getEnumConstants().length;
-        this.valueTypeCardinality = ValueType.class.getEnumConstants().length;
-        this.intentCardinality = Intent.maxCardinality();
+  public <R extends Enum<R>, S extends Enum<S>> RecordProcessorMap() {
+    final int recordTypeCardinality = RecordType.class.getEnumConstants().length;
+    this.valueTypeCardinality = ValueType.class.getEnumConstants().length;
+    this.intentCardinality = Intent.maxCardinality();
 
-        final int cardinality =
-                recordTypeCardinality
-                * valueTypeCardinality
-                * intentCardinality;
-        this.elements = new TypedRecordProcessor[cardinality];
+    final int cardinality = recordTypeCardinality * valueTypeCardinality * intentCardinality;
+    this.elements = new TypedRecordProcessor[cardinality];
+  }
+
+  public TypedRecordProcessor get(RecordType key1, ValueType key2, int key3) {
+    final int index = mapToIndex(key1, key2, key3);
+
+    if (index >= 0) {
+      return elements[index];
+    } else {
+      return null;
+    }
+  }
+
+  public void put(RecordType key1, ValueType key2, int key3, TypedRecordProcessor value) {
+    final int index = mapToIndex(key1, key2, key3);
+
+    if (index < 0) {
+      throw new RuntimeException("Invalid intent value " + key3);
+    }
+    elements[index] = value;
+  }
+
+  public boolean containsKey(RecordType key1, ValueType key2, int key3) {
+    final int index = mapToIndex(key1, key2, key3);
+    return index >= 0 && elements[index] != null;
+  }
+
+  private int mapToIndex(RecordType key1, ValueType key2, int key3) {
+    if (key3 >= intentCardinality) {
+      return -1;
     }
 
-    public TypedRecordProcessor get(RecordType key1, ValueType key2, int key3)
-    {
-        final int index = mapToIndex(key1, key2, key3);
+    return (key1.ordinal() * valueTypeCardinality * intentCardinality)
+        + (key2.ordinal() * intentCardinality)
+        + key3;
+  }
 
-        if (index >= 0)
-        {
-            return elements[index];
-        }
-        else
-        {
-            return null;
-        }
+  /** BEWARE: does not detect concurrent modifications and behaves incorrectly in this case */
+  public Iterator<TypedRecordProcessor> values() {
+    valueIt.init();
+    return valueIt;
+  }
+
+  private class ValueIterator implements Iterator<TypedRecordProcessor> {
+    private int next;
+
+    private void scanToNext() {
+      do {
+        next++;
+      } while (next < elements.length && elements[next] == null);
     }
 
-    public void put(RecordType key1, ValueType key2, int key3, TypedRecordProcessor value)
-    {
-        final int index = mapToIndex(key1, key2, key3);
-
-        if (index < 0)
-        {
-            throw new RuntimeException("Invalid intent value " + key3);
-        }
-        elements[index] = value;
+    public void init() {
+      next = -1;
+      scanToNext();
     }
 
-    public boolean containsKey(RecordType key1, ValueType key2, int key3)
-    {
-        final int index = mapToIndex(key1, key2, key3);
-        return index >= 0 && elements[index] != null;
+    @Override
+    public boolean hasNext() {
+      return next < elements.length;
     }
 
-    private int mapToIndex(RecordType key1, ValueType key2, int key3)
-    {
-        if (key3 >= intentCardinality)
-        {
-            return -1;
-        }
-
-        return (key1.ordinal() * valueTypeCardinality * intentCardinality) + (key2.ordinal() * intentCardinality) + key3;
+    @Override
+    public TypedRecordProcessor next() {
+      final TypedRecordProcessor element = elements[next];
+      scanToNext();
+      return element;
     }
-
-    /**
-     * BEWARE: does not detect concurrent modifications and behaves incorrectly in this case
-     */
-    public Iterator<TypedRecordProcessor> values()
-    {
-        valueIt.init();
-        return valueIt;
-    }
-
-    private class ValueIterator implements Iterator<TypedRecordProcessor>
-    {
-        private int next;
-
-        private void scanToNext()
-        {
-            do
-            {
-                next++;
-            }
-            while (next < elements.length && elements[next] == null);
-        }
-
-        public void init()
-        {
-            next = -1;
-            scanToNext();
-        }
-
-        @Override
-        public boolean hasNext()
-        {
-            return next < elements.length;
-        }
-
-        @Override
-        public TypedRecordProcessor next()
-        {
-            final TypedRecordProcessor element = elements[next];
-            scanToNext();
-            return element;
-        }
-
-    }
+  }
 }

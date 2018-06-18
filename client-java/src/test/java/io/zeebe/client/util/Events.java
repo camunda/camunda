@@ -15,8 +15,6 @@
  */
 package io.zeebe.client.util;
 
-import java.time.Instant;
-
 import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.event.JobEventImpl;
 import io.zeebe.client.impl.event.WorkflowInstanceEventImpl;
@@ -24,44 +22,43 @@ import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
+import java.time.Instant;
 import org.assertj.core.util.Maps;
 
-public class Events
-{
+public class Events {
 
-    public static JobEventImpl exampleJob()
-    {
-        final JobEventImpl baseEvent = new JobEventImpl(new ZeebeObjectMapperImpl());
-        baseEvent.setIntent(JobIntent.CREATED);
-        baseEvent.setHeaders(Maps.newHashMap("defaultHeaderKey", "defaultHeaderVal"));
-        baseEvent.setCustomHeaders(Maps.newHashMap("customHeaderKey", "customHeaderVal"));
-        baseEvent.setKey(79);
-        baseEvent.setWorker("foo");
-        baseEvent.setDeadline(Instant.now());
-        baseEvent.setPartitionId(StubBrokerRule.TEST_PARTITION_ID);
-        baseEvent.setPayload("{\"key\":\"val\"}");
-        baseEvent.setRetries(123);
-        baseEvent.setTopicName(ClientApiRule.DEFAULT_TOPIC_NAME);
-        baseEvent.setType("taskTypeFoo");
-        baseEvent.setPosition(456);
+  public static JobEventImpl exampleJob() {
+    final JobEventImpl baseEvent = new JobEventImpl(new ZeebeObjectMapperImpl());
+    baseEvent.setIntent(JobIntent.CREATED);
+    baseEvent.setHeaders(Maps.newHashMap("defaultHeaderKey", "defaultHeaderVal"));
+    baseEvent.setCustomHeaders(Maps.newHashMap("customHeaderKey", "customHeaderVal"));
+    baseEvent.setKey(79);
+    baseEvent.setWorker("foo");
+    baseEvent.setDeadline(Instant.now());
+    baseEvent.setPartitionId(StubBrokerRule.TEST_PARTITION_ID);
+    baseEvent.setPayload("{\"key\":\"val\"}");
+    baseEvent.setRetries(123);
+    baseEvent.setTopicName(ClientApiRule.DEFAULT_TOPIC_NAME);
+    baseEvent.setType("taskTypeFoo");
+    baseEvent.setPosition(456);
 
-        return baseEvent;
-    }
+    return baseEvent;
+  }
 
-    public static WorkflowInstanceEventImpl exampleWorfklowInstance()
-    {
-        final WorkflowInstanceEventImpl baseEvent = new WorkflowInstanceEventImpl(new ZeebeObjectMapperImpl());
-        baseEvent.setIntent(WorkflowInstanceIntent.CREATED);
-        baseEvent.setActivityId("some_activity");
-        baseEvent.setBpmnProcessId("some_proceess");
-        baseEvent.setKey(89);
-        baseEvent.setPayload("{\"key\":\"val\"}");
-        baseEvent.setPartitionId(StubBrokerRule.TEST_PARTITION_ID);
-        baseEvent.setTopicName(ClientApiRule.DEFAULT_TOPIC_NAME);
-        baseEvent.setVersion(123);
-        baseEvent.setWorkflowInstanceKey(456L);
-        baseEvent.setWorkflowKey(789L);
+  public static WorkflowInstanceEventImpl exampleWorfklowInstance() {
+    final WorkflowInstanceEventImpl baseEvent =
+        new WorkflowInstanceEventImpl(new ZeebeObjectMapperImpl());
+    baseEvent.setIntent(WorkflowInstanceIntent.CREATED);
+    baseEvent.setActivityId("some_activity");
+    baseEvent.setBpmnProcessId("some_proceess");
+    baseEvent.setKey(89);
+    baseEvent.setPayload("{\"key\":\"val\"}");
+    baseEvent.setPartitionId(StubBrokerRule.TEST_PARTITION_ID);
+    baseEvent.setTopicName(ClientApiRule.DEFAULT_TOPIC_NAME);
+    baseEvent.setVersion(123);
+    baseEvent.setWorkflowInstanceKey(456L);
+    baseEvent.setWorkflowKey(789L);
 
-        return baseEvent;
-    }
+    return baseEvent;
+  }
 }

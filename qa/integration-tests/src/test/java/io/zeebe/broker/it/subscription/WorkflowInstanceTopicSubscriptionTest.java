@@ -17,15 +17,6 @@ package io.zeebe.broker.it.subscription;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.client.api.clients.TopicClient;
@@ -36,111 +27,107 @@ import io.zeebe.client.api.subscription.WorkflowInstanceEventHandler;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.test.util.TestUtil;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
 
-public class WorkflowInstanceTopicSubscriptionTest
-{
-    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+public class WorkflowInstanceTopicSubscriptionTest {
+  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
-    public ClientRule clientRule = new ClientRule();
+  public ClientRule clientRule = new ClientRule();
 
-    @Rule
-    public RuleChain ruleChain = RuleChain
-        .outerRule(brokerRule)
-        .around(clientRule);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
-    protected TopicClient client;
+  protected TopicClient client;
 
-    @Before
-    public void setUp()
-    {
-        this.client = clientRule.getClient().topicClient();
+  @Before
+  public void setUp() {
+    this.client = clientRule.getClient().topicClient();
 
-        final WorkflowDefinition workflow = Bpmn.createExecutableWorkflow("process")
-                .startEvent("a")
-                .endEvent("b")
-                .done();
+    final WorkflowDefinition workflow =
+        Bpmn.createExecutableWorkflow("process").startEvent("a").endEvent("b").done();
 
-        client.workflowClient()
-            .newDeployCommand()
-            .addWorkflowModel(workflow, "workflow.bpmn")
-            .send()
-            .join();
-    }
+    client
+        .workflowClient()
+        .newDeployCommand()
+        .addWorkflowModel(workflow, "workflow.bpmn")
+        .send()
+        .join();
+  }
 
-    @Test
-    public void shouldReceiveWorkflowInstanceEvents()
-    {
-        // given
-        final WorkflowInstanceEvent workflowInstance = client.workflowClient().newCreateInstanceCommand()
+  @Test
+  public void shouldReceiveWorkflowInstanceEvents() {
+    // given
+    final WorkflowInstanceEvent workflowInstance =
+        client
+            .workflowClient()
+            .newCreateInstanceCommand()
             .bpmnProcessId("process")
             .latestVersion()
             .payload("{\"foo\":123}")
             .send()
             .join();
 
-        final RecordingWorkflowEventHandler handler = new RecordingWorkflowEventHandler();
+    final RecordingWorkflowEventHandler handler = new RecordingWorkflowEventHandler();
 
-        // when
-        client.newSubscription()
-            .name("test")
-            .workflowInstanceEventHandler(handler)
-            .startAtHeadOfTopic()
-            .open();
+    // when
+    client
+        .newSubscription()
+        .name("test")
+        .workflowInstanceEventHandler(handler)
+        .startAtHeadOfTopic()
+        .open();
 
-        // then
-        TestUtil.waitUntil(() -> handler.numRecords() >= 2);
+    // then
+    TestUtil.waitUntil(() -> handler.numRecords() >= 2);
 
-        final WorkflowInstanceEvent event = handler.getEvent(1);
-        assertThat(event.getState()).isEqualTo(WorkflowInstanceState.START_EVENT_OCCURRED);
-        assertThat(event.getBpmnProcessId()).isEqualTo("process");
-        assertThat(event.getVersion()).isEqualTo(1);
-        assertThat(event.getWorkflowInstanceKey()).isEqualTo(workflowInstance.getWorkflowInstanceKey());
-        assertThat(event.getActivityId()).isEqualTo("a");
-        assertThat(event.getPayload()).isEqualTo("{\"foo\":123}");
+    final WorkflowInstanceEvent event = handler.getEvent(1);
+    assertThat(event.getState()).isEqualTo(WorkflowInstanceState.START_EVENT_OCCURRED);
+    assertThat(event.getBpmnProcessId()).isEqualTo("process");
+    assertThat(event.getVersion()).isEqualTo(1);
+    assertThat(event.getWorkflowInstanceKey()).isEqualTo(workflowInstance.getWorkflowInstanceKey());
+    assertThat(event.getActivityId()).isEqualTo("a");
+    assertThat(event.getPayload()).isEqualTo("{\"foo\":123}");
+  }
+
+  @Test
+  public void shouldInvokeDefaultHandler() throws IOException {
+    client
+        .workflowClient()
+        .newCreateInstanceCommand()
+        .bpmnProcessId("process")
+        .latestVersion()
+        .payload("{\"foo\":123}")
+        .send()
+        .join();
+
+    final RecordingEventHandler handler = new RecordingEventHandler();
+
+    // when no POJO handler is registered
+    client.newSubscription().name("sub-2").recordHandler(handler).startAtHeadOfTopic().open();
+
+    // then
+    TestUtil.waitUntil(() -> handler.numRecordsOfType(ValueType.WORKFLOW_INSTANCE) >= 3);
+  }
+
+  protected static class RecordingWorkflowEventHandler implements WorkflowInstanceEventHandler {
+    protected List<WorkflowInstanceEvent> events = new ArrayList<>();
+
+    @Override
+    public void onWorkflowInstanceEvent(WorkflowInstanceEvent event) throws Exception {
+      this.events.add(event);
     }
 
-    @Test
-    public void shouldInvokeDefaultHandler() throws IOException
-    {
-        client.workflowClient().newCreateInstanceCommand()
-            .bpmnProcessId("process")
-            .latestVersion()
-            .payload("{\"foo\":123}")
-            .send()
-            .join();
-
-        final RecordingEventHandler handler = new RecordingEventHandler();
-
-        // when no POJO handler is registered
-        client.newSubscription()
-            .name("sub-2")
-            .recordHandler(handler)
-            .startAtHeadOfTopic()
-            .open();
-
-        // then
-        TestUtil.waitUntil(() -> handler.numRecordsOfType(ValueType.WORKFLOW_INSTANCE) >= 3);
+    public WorkflowInstanceEvent getEvent(int index) {
+      return events.get(index);
     }
 
-    protected static class RecordingWorkflowEventHandler implements WorkflowInstanceEventHandler
-    {
-        protected List<WorkflowInstanceEvent> events = new ArrayList<>();
-
-        @Override
-        public void onWorkflowInstanceEvent(WorkflowInstanceEvent event) throws Exception
-        {
-            this.events.add(event);
-        }
-
-        public WorkflowInstanceEvent getEvent(int index)
-        {
-            return events.get(index);
-        }
-
-        public int numRecords()
-        {
-            return events.size();
-        }
-
+    public int numRecords() {
+      return events.size();
     }
+  }
 }

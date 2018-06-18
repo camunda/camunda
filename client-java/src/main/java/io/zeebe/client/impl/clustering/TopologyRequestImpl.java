@@ -15,38 +15,33 @@
  */
 package io.zeebe.client.impl.clustering;
 
-import java.util.HashMap;
-
 import io.zeebe.client.api.commands.Topology;
 import io.zeebe.client.api.commands.TopologyRequestStep1;
 import io.zeebe.client.impl.ControlMessageRequest;
 import io.zeebe.client.impl.RequestManager;
 import io.zeebe.protocol.clientapi.ControlMessageType;
+import java.util.HashMap;
 
-public class TopologyRequestImpl extends ControlMessageRequest<Topology> implements TopologyRequestStep1
-{
-    private static final Object EMPTY_REQUEST = new HashMap<>();
+public class TopologyRequestImpl extends ControlMessageRequest<Topology>
+    implements TopologyRequestStep1 {
+  private static final Object EMPTY_REQUEST = new HashMap<>();
 
-    private final ClientTopologyManager topologyManager;
+  private final ClientTopologyManager topologyManager;
 
-    public TopologyRequestImpl(RequestManager commandManager, ClientTopologyManager topologyManager)
-    {
-        super(commandManager, ControlMessageType.REQUEST_TOPOLOGY, TopologyImpl.class);
-        this.topologyManager = topologyManager;
+  public TopologyRequestImpl(RequestManager commandManager, ClientTopologyManager topologyManager) {
+    super(commandManager, ControlMessageType.REQUEST_TOPOLOGY, TopologyImpl.class);
+    this.topologyManager = topologyManager;
+  }
+
+  @Override
+  public void onResponse(Topology response) {
+    if (topologyManager != null) {
+      topologyManager.provideTopology(response);
     }
+  }
 
-    @Override
-    public void onResponse(Topology response)
-    {
-        if (topologyManager != null)
-        {
-            topologyManager.provideTopology(response);
-        }
-    }
-
-    @Override
-    public Object getRequest()
-    {
-        return EMPTY_REQUEST;
-    }
+  @Override
+  public Object getRequest() {
+    return EMPTY_REQUEST;
+  }
 }

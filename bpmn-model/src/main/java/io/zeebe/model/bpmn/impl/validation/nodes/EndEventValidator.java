@@ -15,16 +15,13 @@
  */
 package io.zeebe.model.bpmn.impl.validation.nodes;
 
-import io.zeebe.model.bpmn.impl.instance.EndEventImpl;
 import io.zeebe.model.bpmn.impl.error.ErrorCollector;
+import io.zeebe.model.bpmn.impl.instance.EndEventImpl;
 
-public class EndEventValidator
-{
-    public void validate(ErrorCollector validationResult, EndEventImpl endEvent)
-    {
-        if (!endEvent.getOutgoingSequenceFlows().isEmpty())
-        {
-            validationResult.addError(endEvent, "An end event must not have an outgoing sequence flow.");
-        }
+public class EndEventValidator {
+  public void validate(ErrorCollector validationResult, EndEventImpl endEvent) {
+    if (!endEvent.getOutgoingSequenceFlows().isEmpty()) {
+      validationResult.addError(endEvent, "An end event must not have an outgoing sequence flow.");
     }
+  }
 }

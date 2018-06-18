@@ -15,177 +15,170 @@
  */
 package io.zeebe.raft.protocol;
 
-import static io.zeebe.raft.ConfigurationResponseEncoder.termNullValue;
 import static io.zeebe.raft.ConfigurationResponseEncoder.MembersEncoder.*;
-
-import java.util.ArrayList;
-import java.util.List;
+import static io.zeebe.raft.ConfigurationResponseEncoder.termNullValue;
 
 import io.zeebe.raft.*;
 import io.zeebe.transport.SocketAddress;
+import java.util.ArrayList;
+import java.util.List;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class ConfigurationResponse extends AbstractRaftMessage implements HasTerm
-{
+public class ConfigurationResponse extends AbstractRaftMessage implements HasTerm {
 
-    protected final ConfigurationResponseDecoder bodyDecoder = new ConfigurationResponseDecoder();
-    protected final ConfigurationResponseEncoder bodyEncoder = new ConfigurationResponseEncoder();
+  protected final ConfigurationResponseDecoder bodyDecoder = new ConfigurationResponseDecoder();
+  protected final ConfigurationResponseEncoder bodyEncoder = new ConfigurationResponseEncoder();
 
-    // read + write
-    protected int term;
-    protected boolean succeeded;
+  // read + write
+  protected int term;
+  protected boolean succeeded;
 
-    // read
-    protected List<SocketAddress> readMembers = new ArrayList<>();
+  // read
+  protected List<SocketAddress> readMembers = new ArrayList<>();
 
-    // write
-    protected List<SocketAddress> writeMembers = new ArrayList<>();
+  // write
+  protected List<SocketAddress> writeMembers = new ArrayList<>();
 
-    public ConfigurationResponse()
-    {
-        reset();
-    }
+  public ConfigurationResponse() {
+    reset();
+  }
 
-    public ConfigurationResponse reset()
-    {
-        term = termNullValue();
-        succeeded = false;
+  public ConfigurationResponse reset() {
+    term = termNullValue();
+    succeeded = false;
 
-        readMembers.clear();
+    readMembers.clear();
 
-        writeMembers.clear();
+    writeMembers.clear();
 
-        return this;
-    }
+    return this;
+  }
 
-    @Override
-    protected int getVersion()
-    {
-        return bodyDecoder.sbeSchemaVersion();
-    }
+  @Override
+  protected int getVersion() {
+    return bodyDecoder.sbeSchemaVersion();
+  }
 
-    @Override
-    protected int getSchemaId()
-    {
-        return bodyDecoder.sbeSchemaId();
-    }
+  @Override
+  protected int getSchemaId() {
+    return bodyDecoder.sbeSchemaId();
+  }
 
-    @Override
-    protected int getTemplateId()
-    {
-        return bodyDecoder.sbeTemplateId();
-    }
+  @Override
+  protected int getTemplateId() {
+    return bodyDecoder.sbeTemplateId();
+  }
 
-    @Override
-    public int getTerm()
-    {
-        return term;
-    }
+  @Override
+  public int getTerm() {
+    return term;
+  }
 
-    public boolean isSucceeded()
-    {
-        return succeeded;
-    }
+  public boolean isSucceeded() {
+    return succeeded;
+  }
 
-    public ConfigurationResponse setSucceeded(final boolean succeeded)
-    {
-        this.succeeded = succeeded;
-        return this;
-    }
+  public ConfigurationResponse setSucceeded(final boolean succeeded) {
+    this.succeeded = succeeded;
+    return this;
+  }
 
-    public List<SocketAddress> getMembers()
-    {
-        return readMembers;
-    }
+  public List<SocketAddress> getMembers() {
+    return readMembers;
+  }
 
-    public ConfigurationResponse setRaft(final Raft raft)
-    {
-        term = raft.getTerm();
-        writeMembers.add(raft.getSocketAddress());
+  public ConfigurationResponse setRaft(final Raft raft) {
+    term = raft.getTerm();
+    writeMembers.add(raft.getSocketAddress());
 
-        final List<RaftMember> memberList = raft.getRaftMembers().getMemberList();
-        memberList.forEach((m) ->
-        {
-            writeMembers.add(m.getRemoteAddress().getAddress());
+    final List<RaftMember> memberList = raft.getRaftMembers().getMemberList();
+    memberList.forEach(
+        (m) -> {
+          writeMembers.add(m.getRemoteAddress().getAddress());
         });
 
-        return this;
+    return this;
+  }
+
+  @Override
+  public int getLength() {
+    final int membersCount = writeMembers.size();
+
+    int length =
+        headerEncoder.encodedLength()
+            + bodyEncoder.sbeBlockLength()
+            + sbeHeaderSize()
+            + (sbeBlockLength() + hostHeaderLength()) * membersCount;
+
+    for (int i = 0; i < membersCount; i++) {
+      length += writeMembers.get(i).hostLength();
     }
 
-    @Override
-    public int getLength()
-    {
-        final int membersCount = writeMembers.size();
+    return length;
+  }
 
-        int length = headerEncoder.encodedLength() +
-            bodyEncoder.sbeBlockLength() +
-            sbeHeaderSize() + (sbeBlockLength() + hostHeaderLength()) * membersCount;
+  @Override
+  public void wrap(final DirectBuffer buffer, int offset, final int length) {
+    reset();
 
-        for (int i = 0; i < membersCount; i++)
-        {
-            length += writeMembers.get(i).hostLength();
-        }
+    final int frameEnd = offset + length;
 
-        return length;
+    headerDecoder.wrap(buffer, offset);
+    offset += headerDecoder.encodedLength();
+
+    bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
+
+    term = bodyDecoder.term();
+    succeeded = bodyDecoder.succeeded() == BooleanType.TRUE;
+
+    for (final ConfigurationResponseDecoder.MembersDecoder decoder : bodyDecoder.members()) {
+      final SocketAddress socketAddress = new SocketAddress();
+      socketAddress.port(decoder.port());
+
+      final int hostLength = decoder.hostLength();
+      final MutableDirectBuffer endpointBuffer = socketAddress.getHostBuffer();
+      socketAddress.hostLength(hostLength);
+      decoder.getHost(endpointBuffer, 0, hostLength);
+
+      // TODO: make this garbage free or not!?
+      readMembers.add(socketAddress);
     }
 
-    @Override
-    public void wrap(final DirectBuffer buffer, int offset, final int length)
-    {
-        reset();
+    assert bodyDecoder.limit() == frameEnd
+        : "Decoder read only to position "
+            + bodyDecoder.limit()
+            + " but expected "
+            + frameEnd
+            + " as final position";
+  }
 
-        final int frameEnd = offset + length;
+  @Override
+  public void write(final MutableDirectBuffer buffer, int offset) {
+    headerEncoder
+        .wrap(buffer, offset)
+        .blockLength(bodyEncoder.sbeBlockLength())
+        .templateId(bodyEncoder.sbeTemplateId())
+        .schemaId(bodyEncoder.sbeSchemaId())
+        .version(bodyEncoder.sbeSchemaVersion());
 
-        headerDecoder.wrap(buffer, offset);
-        offset += headerDecoder.encodedLength();
+    offset += headerEncoder.encodedLength();
 
-        bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
+    bodyEncoder
+        .wrap(buffer, offset)
+        .term(term)
+        .succeeded(succeeded ? BooleanType.TRUE : BooleanType.FALSE);
 
-        term = bodyDecoder.term();
-        succeeded = bodyDecoder.succeeded() == BooleanType.TRUE;
+    final int membersCount = writeMembers.size();
 
-        for (final ConfigurationResponseDecoder.MembersDecoder decoder : bodyDecoder.members())
-        {
-            final SocketAddress socketAddress = new SocketAddress();
-            socketAddress.port(decoder.port());
-
-            final int hostLength = decoder.hostLength();
-            final MutableDirectBuffer endpointBuffer = socketAddress.getHostBuffer();
-            socketAddress.hostLength(hostLength);
-            decoder.getHost(endpointBuffer, 0, hostLength);
-
-            // TODO: make this garbage free or not!?
-            readMembers.add(socketAddress);
-        }
-
-        assert bodyDecoder.limit() == frameEnd : "Decoder read only to position " + bodyDecoder.limit() + " but expected " + frameEnd + " as final position";
+    final ConfigurationResponseEncoder.MembersEncoder encoder =
+        bodyEncoder.membersCount(membersCount);
+    for (int i = 0; i < membersCount; i++) {
+      final SocketAddress socketAddress = writeMembers.get(i);
+      encoder
+          .next()
+          .port(socketAddress.port())
+          .putHost(socketAddress.getHostBuffer(), 0, socketAddress.hostLength());
     }
-
-    @Override
-    public void write(final MutableDirectBuffer buffer, int offset)
-    {
-        headerEncoder.wrap(buffer, offset)
-                     .blockLength(bodyEncoder.sbeBlockLength())
-                     .templateId(bodyEncoder.sbeTemplateId())
-                     .schemaId(bodyEncoder.sbeSchemaId())
-                     .version(bodyEncoder.sbeSchemaVersion());
-
-        offset += headerEncoder.encodedLength();
-
-        bodyEncoder.wrap(buffer, offset)
-                   .term(term)
-                   .succeeded(succeeded ? BooleanType.TRUE : BooleanType.FALSE);
-
-        final int membersCount = writeMembers.size();
-
-        final ConfigurationResponseEncoder.MembersEncoder encoder = bodyEncoder.membersCount(membersCount);
-        for (int i = 0; i < membersCount; i++)
-        {
-            final SocketAddress socketAddress = writeMembers.get(i);
-            encoder.next()
-                   .port(socketAddress.port())
-                   .putHost(socketAddress.getHostBuffer(), 0, socketAddress.hostLength());
-        }
-    }
+  }
 }

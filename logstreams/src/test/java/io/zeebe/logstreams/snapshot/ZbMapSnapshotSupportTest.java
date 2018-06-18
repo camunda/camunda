@@ -15,122 +15,112 @@
  */
 package io.zeebe.logstreams.snapshot;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.zeebe.map.Long2LongZbMap;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import org.agrona.IoUtil;
 import org.junit.After;
 import org.junit.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
+public class ZbMapSnapshotSupportTest {
+  private Long2LongZbMap long2LongZbMap;
+  private ZbMapSnapshotSupport<Long2LongZbMap> snapshotSupport;
 
-import static org.assertj.core.api.Assertions.assertThat;
+  protected void initIndex(int indexSize, int blockLength) {
+    long2LongZbMap = new Long2LongZbMap(indexSize, blockLength);
+    snapshotSupport = new ZbMapSnapshotSupport<>(long2LongZbMap);
+  }
 
-public class ZbMapSnapshotSupportTest
-{
-    private Long2LongZbMap long2LongZbMap;
-    private ZbMapSnapshotSupport<Long2LongZbMap> snapshotSupport;
+  @After
+  public void closeIndex() {
+    long2LongZbMap.close();
+  }
 
-    protected void initIndex(int indexSize, int blockLength)
-    {
-        long2LongZbMap = new Long2LongZbMap(indexSize, blockLength);
-        snapshotSupport = new ZbMapSnapshotSupport<>(long2LongZbMap);
+  @Test
+  public void shouldRecover() throws Exception {
+    initIndex(16, 1);
+
+    long2LongZbMap.put(0, 10);
+    long2LongZbMap.put(1, 11);
+
+    final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    snapshotSupport.writeSnapshot(outputStream);
+
+    long2LongZbMap.clear();
+
+    final ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
+    snapshotSupport.recoverFromSnapshot(inputStream);
+
+    assertThat(long2LongZbMap.get(0, -1)).isEqualTo(10);
+    assertThat(long2LongZbMap.get(1, -1)).isEqualTo(11);
+  }
+
+  @Test
+  public void shouldReset() throws Exception {
+    initIndex(16, 1);
+
+    assertThat(long2LongZbMap.bucketCount()).isEqualTo(1);
+
+    long2LongZbMap.put(0, 10);
+    long2LongZbMap.put(1, 11);
+
+    assertThat(long2LongZbMap.bucketCount()).isEqualTo(2);
+
+    snapshotSupport.reset();
+
+    assertThat(long2LongZbMap.get(0, -1)).isEqualTo(-1);
+    assertThat(long2LongZbMap.get(1, -1)).isEqualTo(-1);
+
+    // should only have the initial block
+    assertThat(long2LongZbMap.bucketCount()).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldRecoverAnEmptyIndex() throws Exception {
+    initIndex(16, 1);
+
+    assertThat(long2LongZbMap.bucketCount()).isEqualTo(1);
+
+    final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    snapshotSupport.writeSnapshot(outputStream);
+
+    snapshotSupport.reset();
+
+    final ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
+    snapshotSupport.recoverFromSnapshot(inputStream);
+
+    // should only have the initial block
+    assertThat(long2LongZbMap.bucketCount()).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldRecoverWhenIndexLargerThanSnapshotBuffer() throws Exception {
+    // given
+    // note: this test uses an internal parameter for setup, which is of course not guaranteed to be
+    //   used for anything.
+    //   However, this is probably more focused than just testing with a "very large" index
+    final int snapshotBufferSize = IoUtil.BLOCK_SIZE;
+    final int numEntries = (snapshotBufferSize / 16) + 1;
+    initIndex(numEntries, numEntries);
+
+    for (int i = 0; i < numEntries; i++) {
+      long2LongZbMap.put(i, i);
     }
 
-    @After
-    public void closeIndex()
-    {
-        long2LongZbMap.close();
+    final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+    // when
+    snapshotSupport.writeSnapshot(outputStream);
+    long2LongZbMap.clear();
+
+    // then
+    final ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
+    snapshotSupport.recoverFromSnapshot(inputStream);
+
+    for (int i = 0; i < numEntries; i++) {
+      assertThat(long2LongZbMap.get(i, -1)).isEqualTo(i);
     }
-
-    @Test
-    public void shouldRecover() throws Exception
-    {
-        initIndex(16, 1);
-
-        long2LongZbMap.put(0, 10);
-        long2LongZbMap.put(1, 11);
-
-        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        snapshotSupport.writeSnapshot(outputStream);
-
-        long2LongZbMap.clear();
-
-        final ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
-        snapshotSupport.recoverFromSnapshot(inputStream);
-
-        assertThat(long2LongZbMap.get(0, -1)).isEqualTo(10);
-        assertThat(long2LongZbMap.get(1, -1)).isEqualTo(11);
-    }
-
-    @Test
-    public void shouldReset() throws Exception
-    {
-        initIndex(16, 1);
-
-        assertThat(long2LongZbMap.bucketCount()).isEqualTo(1);
-
-        long2LongZbMap.put(0, 10);
-        long2LongZbMap.put(1, 11);
-
-        assertThat(long2LongZbMap.bucketCount()).isEqualTo(2);
-
-        snapshotSupport.reset();
-
-        assertThat(long2LongZbMap.get(0, -1)).isEqualTo(-1);
-        assertThat(long2LongZbMap.get(1, -1)).isEqualTo(-1);
-
-        // should only have the initial block
-        assertThat(long2LongZbMap.bucketCount()).isEqualTo(1);
-    }
-
-    @Test
-    public void shouldRecoverAnEmptyIndex() throws Exception
-    {
-        initIndex(16, 1);
-
-        assertThat(long2LongZbMap.bucketCount()).isEqualTo(1);
-
-        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        snapshotSupport.writeSnapshot(outputStream);
-
-        snapshotSupport.reset();
-
-        final ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
-        snapshotSupport.recoverFromSnapshot(inputStream);
-
-        // should only have the initial block
-        assertThat(long2LongZbMap.bucketCount()).isEqualTo(1);
-    }
-
-    @Test
-    public void shouldRecoverWhenIndexLargerThanSnapshotBuffer() throws Exception
-    {
-        // given
-        // note: this test uses an internal parameter for setup, which is of course not guaranteed to be
-        //   used for anything.
-        //   However, this is probably more focused than just testing with a "very large" index
-        final int snapshotBufferSize = IoUtil.BLOCK_SIZE;
-        final int numEntries = (snapshotBufferSize / 16) + 1;
-        initIndex(numEntries, numEntries);
-
-        for (int i = 0; i < numEntries; i++)
-        {
-            long2LongZbMap.put(i, i);
-        }
-
-        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-
-        // when
-        snapshotSupport.writeSnapshot(outputStream);
-        long2LongZbMap.clear();
-
-        // then
-        final ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
-        snapshotSupport.recoverFromSnapshot(inputStream);
-
-        for (int i = 0; i < numEntries; i++)
-        {
-            assertThat(long2LongZbMap.get(i, -1)).isEqualTo(i);
-        }
-    }
+  }
 }

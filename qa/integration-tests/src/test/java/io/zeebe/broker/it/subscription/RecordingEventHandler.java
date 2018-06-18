@@ -17,68 +17,60 @@ package io.zeebe.broker.it.subscription;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.client.api.record.Record;
+import io.zeebe.client.api.record.RecordMetadata;
+import io.zeebe.client.api.record.ValueType;
+import io.zeebe.client.api.subscription.RecordHandler;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
-import io.zeebe.client.api.record.Record;
-import io.zeebe.client.api.record.RecordMetadata;
-import io.zeebe.client.api.record.ValueType;
-import io.zeebe.client.api.subscription.RecordHandler;
+public class RecordingEventHandler implements RecordHandler {
 
-public class RecordingEventHandler implements RecordHandler
-{
+  protected List<Record> records = new CopyOnWriteArrayList<>();
 
-    protected List<Record> records = new CopyOnWriteArrayList<>();
+  @Override
+  public void onRecord(Record event) {
+    this.records.add(event);
+  }
 
-    @Override
-    public void onRecord(Record event)
-    {
-        this.records.add(event);
-    }
+  public int numRecords() {
+    return records.size();
+  }
 
-    public int numRecords()
-    {
-        return records.size();
-    }
+  public int numRecordsOfType(ValueType type) {
+    return (int) records.stream().filter(e -> e.getMetadata().getValueType() == type).count();
+  }
 
-    public int numRecordsOfType(ValueType type)
-    {
-        return (int) records.stream().filter(e -> e.getMetadata().getValueType() == type).count();
-    }
+  public int numJobRecords() {
+    return numRecordsOfType(ValueType.JOB);
+  }
 
-    public int numJobRecords()
-    {
-        return numRecordsOfType(ValueType.JOB);
-    }
+  public int numRaftRecords() {
+    return numRecordsOfType(ValueType.RAFT);
+  }
 
-    public int numRaftRecords()
-    {
-        return numRecordsOfType(ValueType.RAFT);
-    }
+  public List<Record> getRecords() {
+    return records;
+  }
 
-    public List<Record> getRecords()
-    {
-        return records;
-    }
+  public void assertJobRecord(int index, long taskKey, String intent) throws IOException {
+    final List<Record> taskEvents =
+        records
+            .stream()
+            .filter(e -> e.getMetadata().getValueType() == ValueType.JOB)
+            .collect(Collectors.toList());
 
-    public void assertJobRecord(int index, long taskKey, String intent) throws IOException
-    {
-        final List<Record> taskEvents = records.stream()
-                .filter(e -> e.getMetadata().getValueType() == ValueType.JOB)
-                .collect(Collectors.toList());
+    final Record taskEvent = taskEvents.get(index);
 
-        final Record taskEvent = taskEvents.get(index);
+    final RecordMetadata eventMetadata = taskEvent.getMetadata();
+    assertThat(eventMetadata.getValueType()).isEqualTo(ValueType.JOB);
+    assertThat(eventMetadata.getKey()).isEqualTo(taskKey);
+    assertThat(eventMetadata.getIntent()).isEqualTo(intent);
+  }
 
-        final RecordMetadata eventMetadata = taskEvent.getMetadata();
-        assertThat(eventMetadata.getValueType()).isEqualTo(ValueType.JOB);
-        assertThat(eventMetadata.getKey()).isEqualTo(taskKey);
-        assertThat(eventMetadata.getIntent()).isEqualTo(intent);
-    }
-
-    public void reset()
-    {
-        this.records.clear();
-    }
+  public void reset() {
+    this.records.clear();
+  }
 }

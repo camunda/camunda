@@ -26,21 +26,6 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TemporaryFolder;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.mockito.stubbing.Answer;
-
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
 import io.zeebe.broker.job.data.JobRecord;
@@ -70,383 +55,436 @@ import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.impl.RemoteAddressImpl;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TemporaryFolder;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.mockito.stubbing.Answer;
 
-public class ClientApiMessageHandlerTest
-{
-    private static final int REQUEST_ID = 5;
-    private static final int RAFT_TERM = 10;
-    protected static final RemoteAddress DEFAULT_ADDRESS = new RemoteAddressImpl(21, new SocketAddress("foo", 4242));
+public class ClientApiMessageHandlerTest {
+  private static final int REQUEST_ID = 5;
+  private static final int RAFT_TERM = 10;
+  protected static final RemoteAddress DEFAULT_ADDRESS =
+      new RemoteAddressImpl(21, new SocketAddress("foo", 4242));
 
-    protected static final DirectBuffer LOG_STREAM_TOPIC_NAME = wrapString("test-topic");
-    protected static final int LOG_STREAM_PARTITION_ID = 1;
+  protected static final DirectBuffer LOG_STREAM_TOPIC_NAME = wrapString("test-topic");
+  protected static final int LOG_STREAM_PARTITION_ID = 1;
 
-    protected static final byte[] JOB_EVENT;
-    static
-    {
-        final JobRecord jobEvent = new JobRecord()
-                .setType(wrapString("test"));
+  protected static final byte[] JOB_EVENT;
 
-        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[jobEvent.getEncodedLength()]);
-        jobEvent.write(buffer, 0);
+  static {
+    final JobRecord jobEvent = new JobRecord().setType(wrapString("test"));
 
-        JOB_EVENT = buffer.byteArray();
-    }
+    final UnsafeBuffer buffer = new UnsafeBuffer(new byte[jobEvent.getEncodedLength()]);
+    jobEvent.write(buffer, 0);
 
-    protected final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024 * 1024]);
-    protected final UnsafeBuffer sendBuffer = new UnsafeBuffer(new byte[1024 * 1024]);
+    JOB_EVENT = buffer.byteArray();
+  }
 
-    protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-    protected final ExecuteCommandRequestEncoder commandRequestEncoder = new ExecuteCommandRequestEncoder();
-    protected final ControlMessageRequestEncoder controlRequestEncoder = new ControlMessageRequestEncoder();
-    protected final ControlMessageRequestDecoder controlRequestDecoder = new ControlMessageRequestDecoder();
-    protected final ControlMessageRequestHeaderDescriptor controlMessageRequestHeaderDescriptor = new ControlMessageRequestHeaderDescriptor();
+  protected final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024 * 1024]);
+  protected final UnsafeBuffer sendBuffer = new UnsafeBuffer(new byte[1024 * 1024]);
 
-    int fragmentOffset = 0;
+  protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+  protected final ExecuteCommandRequestEncoder commandRequestEncoder =
+      new ExecuteCommandRequestEncoder();
+  protected final ControlMessageRequestEncoder controlRequestEncoder =
+      new ControlMessageRequestEncoder();
+  protected final ControlMessageRequestDecoder controlRequestDecoder =
+      new ControlMessageRequestDecoder();
+  protected final ControlMessageRequestHeaderDescriptor controlMessageRequestHeaderDescriptor =
+      new ControlMessageRequestHeaderDescriptor();
 
-    private LogStream logStream;
-    private ClientApiMessageHandler messageHandler;
+  int fragmentOffset = 0;
 
-    @Mock
-    private Dispatcher mockControlMessageDispatcher;
+  private LogStream logStream;
+  private ClientApiMessageHandler messageHandler;
 
-    public TemporaryFolder tempFolder = new TemporaryFolder();
+  @Mock private Dispatcher mockControlMessageDispatcher;
 
-    public ActorSchedulerRule agentRunnerService = new ActorSchedulerRule();
+  public TemporaryFolder tempFolder = new TemporaryFolder();
 
-    public ServiceContainerRule serviceContainerRule = new ServiceContainerRule(agentRunnerService);
+  public ActorSchedulerRule agentRunnerService = new ActorSchedulerRule();
 
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(tempFolder)
-        .around(agentRunnerService)
-        .around(serviceContainerRule);
+  public ServiceContainerRule serviceContainerRule = new ServiceContainerRule(agentRunnerService);
 
+  @Rule
+  public RuleChain ruleChain =
+      RuleChain.outerRule(tempFolder).around(agentRunnerService).around(serviceContainerRule);
 
+  protected BufferingServerOutput serverOutput;
 
-    protected BufferingServerOutput serverOutput;
+  @Before
+  public void setup() {
+    MockitoAnnotations.initMocks(this);
 
-    @Before
-    public void setup()
-    {
-        MockitoAnnotations.initMocks(this);
+    serverOutput = new BufferingServerOutput();
 
-        serverOutput = new BufferingServerOutput();
-
-        logStream = LogStreams.createFsLogStream(LOG_STREAM_TOPIC_NAME, LOG_STREAM_PARTITION_ID)
+    logStream =
+        LogStreams.createFsLogStream(LOG_STREAM_TOPIC_NAME, LOG_STREAM_PARTITION_ID)
             .logRootPath(tempFolder.getRoot().getAbsolutePath())
             .serviceContainer(serviceContainerRule.get())
             .logName("Test")
-            .build().join();
+            .build()
+            .join();
 
-        logStream.openAppender().join();
+    logStream.openAppender().join();
 
-        messageHandler = new ClientApiMessageHandler(mockControlMessageDispatcher);
+    messageHandler = new ClientApiMessageHandler(mockControlMessageDispatcher);
 
-        final Partition partition = new Partition(new PartitionInfo(LOG_STREAM_TOPIC_NAME, LOG_STREAM_PARTITION_ID, 1), RaftState.LEADER)
-        {
-            @Override
-            public LogStream getLogStream()
-            {
-                return logStream;
-            }
+    final Partition partition =
+        new Partition(
+            new PartitionInfo(LOG_STREAM_TOPIC_NAME, LOG_STREAM_PARTITION_ID, 1),
+            RaftState.LEADER) {
+          @Override
+          public LogStream getLogStream() {
+            return logStream;
+          }
         };
 
-        messageHandler.addPartition(partition);
-        logStream.setTerm(RAFT_TERM);
-    }
+    messageHandler.addPartition(partition);
+    logStream.setTerm(RAFT_TERM);
+  }
+
+  @After
+  public void cleanUp() {
+    logStream.close();
+  }
+
+  @Test
+  public void shouldHandleCommandRequest() throws InterruptedException, ExecutionException {
+    // given
+    final int writtenLength =
+        writeCommandRequestToBuffer(
+            buffer, LOG_STREAM_PARTITION_ID, null, ValueType.JOB, JobIntent.CREATE);
+
+    // when
+    final boolean isHandled =
+        messageHandler.onRequest(
+            serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
+
+    // then
+    assertThat(isHandled).isTrue();
+
+    final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream, true);
+    waitForAvailableEvent(logStreamReader);
+
+    final LoggedEvent loggedEvent = logStreamReader.next();
 
-    @After
-    public void cleanUp()
-    {
-        logStream.close();
-    }
+    final byte[] valueBuffer = new byte[JOB_EVENT.length];
+    loggedEvent
+        .getValueBuffer()
+        .getBytes(loggedEvent.getValueOffset(), valueBuffer, 0, loggedEvent.getValueLength());
 
-    @Test
-    public void shouldHandleCommandRequest() throws InterruptedException, ExecutionException
-    {
-        // given
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, null, ValueType.JOB, JobIntent.CREATE);
+    assertThat(loggedEvent.getValueLength()).isEqualTo(JOB_EVENT.length);
+    assertThat(valueBuffer).isEqualTo(JOB_EVENT);
 
-        // when
-        final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
+    final RecordMetadata eventMetadata = new RecordMetadata();
+    loggedEvent.readMetadata(eventMetadata);
 
-        // then
-        assertThat(isHandled).isTrue();
+    assertThat(eventMetadata.getRequestId()).isEqualTo(REQUEST_ID);
+    assertThat(eventMetadata.getRequestStreamId()).isEqualTo(DEFAULT_ADDRESS.getStreamId());
+  }
 
-        final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream, true);
-        waitForAvailableEvent(logStreamReader);
+  @Test
+  public void shouldWriteCommandRequestProtocolVersion()
+      throws InterruptedException, ExecutionException {
+    // given
+    final short clientProtocolVersion = Protocol.PROTOCOL_VERSION - 1;
+    final int writtenLength =
+        writeCommandRequestToBuffer(
+            buffer,
+            LOG_STREAM_PARTITION_ID,
+            clientProtocolVersion,
+            ValueType.JOB,
+            JobIntent.CREATE);
 
-        final LoggedEvent loggedEvent = logStreamReader.next();
+    // when
+    final boolean isHandled =
+        messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, 123);
 
-        final byte[] valueBuffer = new byte[JOB_EVENT.length];
-        loggedEvent.getValueBuffer().getBytes(loggedEvent.getValueOffset(), valueBuffer, 0, loggedEvent.getValueLength());
+    // then
+    assertThat(isHandled).isTrue();
 
-        assertThat(loggedEvent.getValueLength()).isEqualTo(JOB_EVENT.length);
-        assertThat(valueBuffer).isEqualTo(JOB_EVENT);
+    final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream, true);
+    waitForAvailableEvent(logStreamReader);
 
-        final RecordMetadata eventMetadata = new RecordMetadata();
-        loggedEvent.readMetadata(eventMetadata);
+    final LoggedEvent loggedEvent = logStreamReader.next();
+    final RecordMetadata eventMetadata = new RecordMetadata();
+    loggedEvent.readMetadata(eventMetadata);
 
-        assertThat(eventMetadata.getRequestId()).isEqualTo(REQUEST_ID);
-        assertThat(eventMetadata.getRequestStreamId()).isEqualTo(DEFAULT_ADDRESS.getStreamId());
-    }
+    assertThat(eventMetadata.getProtocolVersion()).isEqualTo(clientProtocolVersion);
+  }
+
+  @Test
+  public void shouldWriteCommandRequestEventType() throws InterruptedException, ExecutionException {
+    // given
+    final int writtenLength =
+        writeCommandRequestToBuffer(
+            buffer, LOG_STREAM_PARTITION_ID, null, ValueType.JOB, JobIntent.CREATE);
+
+    // when
+    final boolean isHandled =
+        messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, 123);
+
+    // then
+    assertThat(isHandled).isTrue();
 
-    @Test
-    public void shouldWriteCommandRequestProtocolVersion() throws InterruptedException, ExecutionException
-    {
-        // given
-        final short clientProtocolVersion = Protocol.PROTOCOL_VERSION - 1;
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, clientProtocolVersion, ValueType.JOB, JobIntent.CREATE);
+    final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream, true);
+    waitForAvailableEvent(logStreamReader);
 
-        // when
-        final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, 123);
+    final LoggedEvent loggedEvent = logStreamReader.next();
+    final RecordMetadata eventMetadata = new RecordMetadata();
+    loggedEvent.readMetadata(eventMetadata);
 
-        // then
-        assertThat(isHandled).isTrue();
+    assertThat(eventMetadata.getValueType()).isEqualTo(ValueType.JOB);
+    assertThat(eventMetadata.getIntent()).isEqualTo(JobIntent.CREATE);
+  }
+
+  @Test
+  public void shouldHandleControlRequest() {
+    // given
+    final int writtenLength = writeControlRequestToBuffer(buffer);
 
-        final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream, true);
-        waitForAvailableEvent(logStreamReader);
+    when(mockControlMessageDispatcher.claim(any(ClaimedFragment.class), anyInt()))
+        .thenAnswer(claimFragment(0));
 
-        final LoggedEvent loggedEvent = logStreamReader.next();
-        final RecordMetadata eventMetadata = new RecordMetadata();
-        loggedEvent.readMetadata(eventMetadata);
+    // when
+    final boolean isHandled =
+        messageHandler.onRequest(
+            serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
 
-        assertThat(eventMetadata.getProtocolVersion()).isEqualTo(clientProtocolVersion);
-    }
+    // then
+    assertThat(isHandled).isTrue();
 
-    @Test
-    public void shouldWriteCommandRequestEventType() throws InterruptedException, ExecutionException
-    {
-        // given
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, null, ValueType.JOB, JobIntent.CREATE);
+    verify(mockControlMessageDispatcher).claim(any(ClaimedFragment.class), anyInt());
 
-        // when
-        final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, 123);
+    int offset = fragmentOffset;
 
-        // then
-        assertThat(isHandled).isTrue();
+    controlMessageRequestHeaderDescriptor.wrap(sendBuffer, offset);
 
-        final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream, true);
-        waitForAvailableEvent(logStreamReader);
+    assertThat(controlMessageRequestHeaderDescriptor.streamId())
+        .isEqualTo(DEFAULT_ADDRESS.getStreamId());
+    assertThat(controlMessageRequestHeaderDescriptor.requestId()).isEqualTo(REQUEST_ID);
 
-        final LoggedEvent loggedEvent = logStreamReader.next();
-        final RecordMetadata eventMetadata = new RecordMetadata();
-        loggedEvent.readMetadata(eventMetadata);
+    offset += ControlMessageRequestHeaderDescriptor.headerLength();
 
-        assertThat(eventMetadata.getValueType()).isEqualTo(ValueType.JOB);
-        assertThat(eventMetadata.getIntent()).isEqualTo(JobIntent.CREATE);
-    }
+    headerEncoder.wrap(sendBuffer, offset);
 
-    @Test
-    public void shouldHandleControlRequest()
-    {
-        // given
-        final int writtenLength = writeControlRequestToBuffer(buffer);
+    offset += headerEncoder.encodedLength();
+
+    controlRequestDecoder.wrap(
+        sendBuffer,
+        offset,
+        controlRequestDecoder.sbeBlockLength(),
+        controlRequestDecoder.sbeSchemaVersion());
 
-        when(mockControlMessageDispatcher.claim(any(ClaimedFragment.class), anyInt())).thenAnswer(claimFragment(0));
+    final byte[] requestData =
+        readBytes(controlRequestDecoder::getData, controlRequestDecoder::dataLength);
 
-        // when
-        final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
+    assertThat(requestData).isEqualTo(JOB_EVENT);
+  }
 
-        // then
-        assertThat(isHandled).isTrue();
+  @Test
+  public void shouldSendErrorMessageIfTopicNotFound() {
+    // given
+    final int writtenLength =
+        writeCommandRequestToBuffer(buffer, 99, null, ValueType.JOB, JobIntent.CREATE);
 
-        verify(mockControlMessageDispatcher).claim(any(ClaimedFragment.class), anyInt());
+    // when
+    final boolean isHandled =
+        messageHandler.onRequest(
+            serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
+
+    // then
+    assertThat(isHandled).isTrue();
+
+    final List<DirectBuffer> sentResponses = serverOutput.getSentResponses();
+    assertThat(sentResponses).hasSize(1);
+
+    final ErrorResponseDecoder errorDecoder = serverOutput.getAsErrorResponse(0);
+
+    assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.PARTITION_NOT_FOUND);
+    assertThat(errorDecoder.errorData())
+        .isEqualTo("Cannot execute command. Partition with id '99' not found");
+  }
+
+  @Test
+  public void shouldNotHandleUnkownRequest() throws InterruptedException, ExecutionException {
+    // given
+    headerEncoder
+        .wrap(buffer, 0)
+        .blockLength(commandRequestEncoder.sbeBlockLength())
+        .schemaId(commandRequestEncoder.sbeSchemaId())
+        .templateId(999)
+        .version(1);
 
-        int offset = fragmentOffset;
+    // when
+    final boolean isHandled =
+        messageHandler.onRequest(
+            serverOutput, DEFAULT_ADDRESS, buffer, 0, headerEncoder.encodedLength(), REQUEST_ID);
+
+    // then
+    assertThat(isHandled).isTrue();
 
-        controlMessageRequestHeaderDescriptor.wrap(sendBuffer, offset);
+    assertThat(serverOutput.getSentResponses()).hasSize(1);
+
+    final ErrorResponseDecoder errorDecoder = serverOutput.getAsErrorResponse(0);
+
+    assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.MESSAGE_NOT_SUPPORTED);
+    assertThat(errorDecoder.errorData())
+        .isEqualTo("Cannot handle message. Template id '999' is not supported.");
+  }
 
-        assertThat(controlMessageRequestHeaderDescriptor.streamId()).isEqualTo(DEFAULT_ADDRESS.getStreamId());
-        assertThat(controlMessageRequestHeaderDescriptor.requestId()).isEqualTo(REQUEST_ID);
+  @Test
+  public void shouldSendErrorMessageOnRequestWithNewerProtocolVersion() {
+    // given
+    final int writtenLength =
+        writeCommandRequestToBuffer(
+            buffer, LOG_STREAM_PARTITION_ID, Short.MAX_VALUE, ValueType.JOB, JobIntent.CREATE);
 
-        offset += ControlMessageRequestHeaderDescriptor.headerLength();
+    // when
+    final boolean isHandled =
+        messageHandler.onRequest(
+            serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
 
-        headerEncoder.wrap(sendBuffer, offset);
+    // then
+    assertThat(isHandled).isTrue();
 
-        offset += headerEncoder.encodedLength();
+    assertThat(serverOutput.getSentResponses()).hasSize(1);
+
+    final ErrorResponseDecoder errorDecoder = serverOutput.getAsErrorResponse(0);
 
-        controlRequestDecoder.wrap(sendBuffer, offset, controlRequestDecoder.sbeBlockLength(), controlRequestDecoder.sbeSchemaVersion());
+    assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.INVALID_CLIENT_VERSION);
+    assertThat(errorDecoder.errorData())
+        .isEqualTo(
+            String.format(
+                "Client has newer version than broker (%d > %d)",
+                (int) Short.MAX_VALUE, ExecuteCommandRequestEncoder.SCHEMA_VERSION));
+  }
 
-        final byte[] requestData = readBytes(controlRequestDecoder::getData, controlRequestDecoder::dataLength);
+  @Test
+  public void shouldSendErrorMessageOnInvalidRequest()
+      throws InterruptedException, ExecutionException {
+    // given
+    // request is invalid because Value type DEPLOYMENT does not match value contents, i.e. required
+    // values are not present
+    final int writtenLength =
+        writeCommandRequestToBuffer(
+            buffer, LOG_STREAM_PARTITION_ID, null, ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
 
-        assertThat(requestData).isEqualTo(JOB_EVENT);
-    }
+    // when
+    final boolean isHandled =
+        messageHandler.onRequest(
+            serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
 
-    @Test
-    public void shouldSendErrorMessageIfTopicNotFound()
-    {
-        // given
-        final int writtenLength = writeCommandRequestToBuffer(buffer, 99, null, ValueType.JOB, JobIntent.CREATE);
+    // then
+    assertThat(isHandled).isTrue();
 
-        // when
-        final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
+    assertThat(serverOutput.getSentResponses()).hasSize(1);
 
-        // then
-        assertThat(isHandled).isTrue();
+    final ErrorResponseDecoder errorDecoder = serverOutput.getAsErrorResponse(0);
 
-        final List<DirectBuffer> sentResponses = serverOutput.getSentResponses();
-        assertThat(sentResponses).hasSize(1);
+    assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.INVALID_MESSAGE);
+    assertThat(errorDecoder.errorData())
+        .contains("Cannot deserialize command:")
+        .contains("Property 'topicName' has no valid value");
+  }
 
-        final ErrorResponseDecoder errorDecoder = serverOutput.getAsErrorResponse(0);
+  @Test
+  public void shouldSendErrorMessageOnUnsupportedRequest()
+      throws InterruptedException, ExecutionException {
+    // given
+    final int writtenLength =
+        writeCommandRequestToBuffer(
+            buffer, LOG_STREAM_PARTITION_ID, null, ValueType.SBE_UNKNOWN, Intent.UNKNOWN);
 
-        assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.PARTITION_NOT_FOUND);
-        assertThat(errorDecoder.errorData()).isEqualTo("Cannot execute command. Partition with id '99' not found");
-    }
+    // when
+    final boolean isHandled =
+        messageHandler.onRequest(
+            serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
 
-    @Test
-    public void shouldNotHandleUnkownRequest() throws InterruptedException, ExecutionException
-    {
-        // given
-        headerEncoder.wrap(buffer, 0)
-            .blockLength(commandRequestEncoder.sbeBlockLength())
-            .schemaId(commandRequestEncoder.sbeSchemaId())
-            .templateId(999)
-            .version(1);
+    // then
+    assertThat(isHandled).isTrue();
 
-        // when
-        final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, headerEncoder.encodedLength(), REQUEST_ID);
+    assertThat(serverOutput.getSentResponses()).hasSize(1);
 
-        // then
-        assertThat(isHandled).isTrue();
+    final ErrorResponseDecoder errorDecoder = serverOutput.getAsErrorResponse(0);
 
-        assertThat(serverOutput.getSentResponses()).hasSize(1);
+    assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.MESSAGE_NOT_SUPPORTED);
+    assertThat(errorDecoder.errorData())
+        .isEqualTo("Cannot execute command. Invalid event type 'NULL_VAL'.");
+  }
 
-        final ErrorResponseDecoder errorDecoder = serverOutput.getAsErrorResponse(0);
+  protected int writeCommandRequestToBuffer(
+      UnsafeBuffer buffer, int partitionId, Short protocolVersion, ValueType type, Intent intent) {
+    int offset = 0;
 
-        assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.MESSAGE_NOT_SUPPORTED);
-        assertThat(errorDecoder.errorData()).isEqualTo("Cannot handle message. Template id '999' is not supported.");
-    }
+    final int protocolVersionToWrite =
+        protocolVersion != null ? protocolVersion : commandRequestEncoder.sbeSchemaVersion();
+    final ValueType eventTypeToWrite = type != null ? type : ValueType.NULL_VAL;
 
-    @Test
-    public void shouldSendErrorMessageOnRequestWithNewerProtocolVersion()
-    {
-        // given
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, Short.MAX_VALUE, ValueType.JOB, JobIntent.CREATE);
+    headerEncoder
+        .wrap(buffer, offset)
+        .blockLength(commandRequestEncoder.sbeBlockLength())
+        .schemaId(commandRequestEncoder.sbeSchemaId())
+        .templateId(commandRequestEncoder.sbeTemplateId())
+        .version(protocolVersionToWrite);
 
-        // when
-        final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
+    offset += headerEncoder.encodedLength();
 
-        // then
-        assertThat(isHandled).isTrue();
+    commandRequestEncoder.wrap(buffer, offset);
 
-        assertThat(serverOutput.getSentResponses()).hasSize(1);
+    commandRequestEncoder
+        .partitionId(partitionId)
+        .valueType(eventTypeToWrite)
+        .intent(intent.value())
+        .putValue(JOB_EVENT, 0, JOB_EVENT.length);
 
-        final ErrorResponseDecoder errorDecoder = serverOutput.getAsErrorResponse(0);
+    return headerEncoder.encodedLength() + commandRequestEncoder.encodedLength();
+  }
 
-        assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.INVALID_CLIENT_VERSION);
-        assertThat(errorDecoder.errorData()).isEqualTo(String.format("Client has newer version than broker (%d > %d)", (int) Short.MAX_VALUE, ExecuteCommandRequestEncoder.SCHEMA_VERSION));
-    }
+  private int writeControlRequestToBuffer(UnsafeBuffer buffer) {
+    int offset = 0;
 
-    @Test
-    public void shouldSendErrorMessageOnInvalidRequest() throws InterruptedException, ExecutionException
-    {
-        // given
-        // request is invalid because Value type DEPLOYMENT does not match value contents, i.e. required values are not present
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, null, ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
+    headerEncoder
+        .wrap(buffer, offset)
+        .blockLength(controlRequestEncoder.sbeBlockLength())
+        .schemaId(controlRequestEncoder.sbeSchemaId())
+        .templateId(controlRequestEncoder.sbeTemplateId())
+        .version(controlRequestEncoder.sbeSchemaVersion());
 
-        // when
-        final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
+    offset += headerEncoder.encodedLength();
 
-        // then
-        assertThat(isHandled).isTrue();
+    controlRequestEncoder.wrap(buffer, offset);
 
-        assertThat(serverOutput.getSentResponses()).hasSize(1);
+    controlRequestEncoder.putData(JOB_EVENT, 0, JOB_EVENT.length);
 
-        final ErrorResponseDecoder errorDecoder = serverOutput.getAsErrorResponse(0);
+    return headerEncoder.encodedLength() + controlRequestEncoder.encodedLength();
+  }
 
-        assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.INVALID_MESSAGE);
-        assertThat(errorDecoder.errorData())
-            .contains("Cannot deserialize command:")
-            .contains("Property 'topicName' has no valid value");
-    }
+  protected Answer<?> claimFragment(final long offset) {
+    return invocation -> {
+      final ClaimedFragment claimedFragment = (ClaimedFragment) invocation.getArguments()[0];
+      final int length = (int) invocation.getArguments()[1];
 
-    @Test
-    public void shouldSendErrorMessageOnUnsupportedRequest() throws InterruptedException, ExecutionException
-    {
-        // given
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, null, ValueType.SBE_UNKNOWN, Intent.UNKNOWN);
+      fragmentOffset = claimedFragment.getOffset();
 
-        // when
-        final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
+      claimedFragment.wrap(sendBuffer, 0, alignedFramedLength(length), () -> {});
 
-        // then
-        assertThat(isHandled).isTrue();
+      final long claimedPosition = offset + alignedFramedLength(length);
+      return claimedPosition;
+    };
+  }
 
-        assertThat(serverOutput.getSentResponses()).hasSize(1);
-
-        final ErrorResponseDecoder errorDecoder = serverOutput.getAsErrorResponse(0);
-
-        assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.MESSAGE_NOT_SUPPORTED);
-        assertThat(errorDecoder.errorData()).isEqualTo("Cannot execute command. Invalid event type 'NULL_VAL'.");
-    }
-
-    protected int writeCommandRequestToBuffer(UnsafeBuffer buffer, int partitionId, Short protocolVersion, ValueType type, Intent intent)
-    {
-        int offset = 0;
-
-        final int protocolVersionToWrite = protocolVersion != null ? protocolVersion : commandRequestEncoder.sbeSchemaVersion();
-        final ValueType eventTypeToWrite = type != null ? type : ValueType.NULL_VAL;
-
-        headerEncoder.wrap(buffer, offset)
-            .blockLength(commandRequestEncoder.sbeBlockLength())
-            .schemaId(commandRequestEncoder.sbeSchemaId())
-            .templateId(commandRequestEncoder.sbeTemplateId())
-            .version(protocolVersionToWrite);
-
-        offset += headerEncoder.encodedLength();
-
-        commandRequestEncoder.wrap(buffer, offset);
-
-        commandRequestEncoder
-            .partitionId(partitionId)
-            .valueType(eventTypeToWrite)
-            .intent(intent.value())
-            .putValue(JOB_EVENT, 0, JOB_EVENT.length);
-
-        return headerEncoder.encodedLength() +
-                commandRequestEncoder.encodedLength();
-    }
-
-    private int writeControlRequestToBuffer(UnsafeBuffer buffer)
-    {
-        int offset = 0;
-
-        headerEncoder.wrap(buffer, offset)
-            .blockLength(controlRequestEncoder.sbeBlockLength())
-            .schemaId(controlRequestEncoder.sbeSchemaId())
-            .templateId(controlRequestEncoder.sbeTemplateId())
-            .version(controlRequestEncoder.sbeSchemaVersion());
-
-        offset += headerEncoder.encodedLength();
-
-        controlRequestEncoder.wrap(buffer, offset);
-
-        controlRequestEncoder.putData(JOB_EVENT, 0, JOB_EVENT.length);
-
-        return headerEncoder.encodedLength() +
-                controlRequestEncoder.encodedLength();
-    }
-
-    protected Answer<?> claimFragment(final long offset)
-    {
-        return invocation ->
-        {
-            final ClaimedFragment claimedFragment = (ClaimedFragment) invocation.getArguments()[0];
-            final int length = (int) invocation.getArguments()[1];
-
-            fragmentOffset = claimedFragment.getOffset();
-
-            claimedFragment.wrap(sendBuffer, 0, alignedFramedLength(length), () ->
-            { });
-
-            final long claimedPosition = offset + alignedFramedLength(length);
-            return claimedPosition;
-        };
-    }
-
-    protected void waitForAvailableEvent(BufferedLogStreamReader logStreamReader)
-    {
-        TestUtil.waitUntil(() -> logStreamReader.hasNext());
-    }
-
+  protected void waitForAvailableEvent(BufferedLogStreamReader logStreamReader) {
+    TestUtil.waitUntil(() -> logStreamReader.hasNext());
+  }
 }

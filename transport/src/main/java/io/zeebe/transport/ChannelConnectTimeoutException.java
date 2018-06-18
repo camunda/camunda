@@ -15,14 +15,11 @@
  */
 package io.zeebe.transport;
 
-public class ChannelConnectTimeoutException extends TransportException
-{
+public class ChannelConnectTimeoutException extends TransportException {
 
-    private static final long serialVersionUID = 1L;
+  private static final long serialVersionUID = 1L;
 
-    public ChannelConnectTimeoutException(String message)
-    {
-        super(message);
-    }
-
+  public ChannelConnectTimeoutException(String message) {
+    super(message);
+  }
 }

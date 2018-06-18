@@ -15,55 +15,42 @@
  */
 package io.zeebe.client.event;
 
+import io.zeebe.client.api.record.Record;
+import io.zeebe.client.api.subscription.RecordHandler;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import io.zeebe.client.api.record.Record;
-import io.zeebe.client.api.subscription.RecordHandler;
+public class ParallelismDetectionHandler implements RecordHandler {
 
-public class ParallelismDetectionHandler implements RecordHandler
-{
+  protected AtomicBoolean executing = new AtomicBoolean(false);
+  protected AtomicBoolean parallelInvocationDetected = new AtomicBoolean(false);
+  protected AtomicInteger numInvocations = new AtomicInteger(0);
+  protected long timeout;
 
-    protected AtomicBoolean executing = new AtomicBoolean(false);
-    protected AtomicBoolean parallelInvocationDetected = new AtomicBoolean(false);
-    protected AtomicInteger numInvocations = new AtomicInteger(0);
-    protected long timeout;
+  public ParallelismDetectionHandler(Duration duration) {
+    this.timeout = duration.toMillis();
+  }
 
-    public ParallelismDetectionHandler(Duration duration)
-    {
-        this.timeout = duration.toMillis();
+  @Override
+  public void onRecord(Record record) throws Exception {
+    numInvocations.incrementAndGet();
+    if (executing.compareAndSet(false, true)) {
+      try {
+        Thread.sleep(timeout);
+      } finally {
+        executing.set(false);
+      }
+    } else {
+      parallelInvocationDetected.set(true);
     }
+  }
 
-    @Override
-    public void onRecord(Record record) throws Exception
-    {
-        numInvocations.incrementAndGet();
-        if (executing.compareAndSet(false, true))
-        {
-            try
-            {
-                Thread.sleep(timeout);
-            }
-            finally
-            {
-                executing.set(false);
-            }
-        }
-        else
-        {
-            parallelInvocationDetected.set(true);
-        }
-    }
+  public boolean hasDetectedParallelism() {
+    return parallelInvocationDetected.get();
+  }
 
-    public boolean hasDetectedParallelism()
-    {
-        return parallelInvocationDetected.get();
-    }
-
-    public int numInvocations()
-    {
-        return numInvocations.get();
-    }
-
+  public int numInvocations() {
+    return numInvocations.get();
+  }
 }

@@ -21,54 +21,46 @@ import io.zeebe.raft.protocol.PollResponse;
 import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 
-public class PollRequestHandler implements ConsensusRequestHandler
-{
-    private final PollRequest pollRequest = new PollRequest();
-    private final PollResponse pollResponse = new PollResponse();
+public class PollRequestHandler implements ConsensusRequestHandler {
+  private final PollRequest pollRequest = new PollRequest();
+  private final PollResponse pollResponse = new PollResponse();
 
-    @Override
-    public String requestName()
-    {
-        return "poll";
-    }
+  @Override
+  public String requestName() {
+    return "poll";
+  }
 
-    @Override
-    public BufferWriter createRequest(final Raft raft, final long lastEventPosition, final int lastTerm)
-    {
-        return pollRequest.reset()
-            .setRaft(raft)
-            .setLastEventPosition(lastEventPosition)
-            .setLastEventTerm(lastTerm);
-    }
+  @Override
+  public BufferWriter createRequest(
+      final Raft raft, final long lastEventPosition, final int lastTerm) {
+    return pollRequest
+        .reset()
+        .setRaft(raft)
+        .setLastEventPosition(lastEventPosition)
+        .setLastEventTerm(lastTerm);
+  }
 
-    @Override
-    public boolean isResponseGranted(final Raft raft, final DirectBuffer responseBuffer)
-    {
-        pollResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
+  @Override
+  public boolean isResponseGranted(final Raft raft, final DirectBuffer responseBuffer) {
+    pollResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
 
-        // only register response from the current term
-        return !raft.mayStepDown(pollResponse) &&
-            raft.isTermCurrent(pollResponse) &&
-            pollResponse.isGranted();
-    }
+    // only register response from the current term
+    return !raft.mayStepDown(pollResponse)
+        && raft.isTermCurrent(pollResponse)
+        && pollResponse.isGranted();
+  }
 
-    @Override
-    public void consensusGranted(final Raft raft)
-    {
-        raft.becomeCandidate(raft.getTerm() + 1);
-    }
+  @Override
+  public void consensusGranted(final Raft raft) {
+    raft.becomeCandidate(raft.getTerm() + 1);
+  }
 
-    @Override
-    public void consensusFailed(final Raft raft)
-    {
+  @Override
+  public void consensusFailed(final Raft raft) {}
 
-    }
-
-    @Override
-    public void reset()
-    {
-        pollRequest.reset();
-        pollResponse.reset();
-    }
-
+  @Override
+  public void reset() {
+    pollRequest.reset();
+    pollResponse.reset();
+  }
 }

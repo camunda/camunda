@@ -15,7 +15,6 @@
  */
 package io.zeebe.servicecontainer;
 
-public interface ServiceContext extends io.zeebe.util.sched.AsyncContext
-{
-    void run(Runnable action);
+public interface ServiceContext extends io.zeebe.util.sched.AsyncContext {
+  void run(Runnable action);
 }

@@ -15,127 +15,106 @@
  */
 package io.zeebe.logstreams.util;
 
-import java.util.function.Consumer;
-
 import io.zeebe.logstreams.log.*;
 import io.zeebe.test.util.TestUtil;
+import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.junit.rules.ExternalResource;
 
-public class LogStreamWriterRule extends ExternalResource
-{
-    private LogStreamRule logStreamRule;
+public class LogStreamWriterRule extends ExternalResource {
+  private LogStreamRule logStreamRule;
 
-    private LogStream logStream;
-    private LogStreamWriter logStreamWriter;
+  private LogStream logStream;
+  private LogStreamWriter logStreamWriter;
 
-    public LogStreamWriterRule(final LogStreamRule logStreamRule)
-    {
-        this.logStreamRule = logStreamRule;
+  public LogStreamWriterRule(final LogStreamRule logStreamRule) {
+    this.logStreamRule = logStreamRule;
+  }
+
+  @Override
+  protected void before() {
+    this.logStream = logStreamRule.getLogStream();
+    this.logStreamWriter = new LogStreamWriterImpl(logStream);
+  }
+
+  @Override
+  protected void after() {
+    logStreamWriter = null;
+    logStream = null;
+  }
+
+  public void wrap(LogStreamRule rule) {
+    this.logStream = rule.getLogStream();
+    this.logStreamWriter.wrap(logStream);
+  }
+
+  public long writeEvents(final int count, final DirectBuffer event) {
+    return writeEvents(count, event, false);
+  }
+
+  public long writeEvents(final int count, final DirectBuffer event, final boolean commit) {
+    long lastPosition = -1;
+    for (int i = 1; i <= count; i++) {
+      final long key = i;
+      lastPosition = writeEventInternal(w -> w.key(key).value(event));
     }
 
-    @Override
-    protected void before()
-    {
-        this.logStream = logStreamRule.getLogStream();
-        this.logStreamWriter = new LogStreamWriterImpl(logStream);
+    waitForPositionToBeAppended(lastPosition);
+
+    if (commit) {
+      logStream.setCommitPosition(lastPosition);
     }
 
-    @Override
-    protected void after()
-    {
-        logStreamWriter = null;
-        logStream = null;
+    return lastPosition;
+  }
+
+  public long writeEvent(final DirectBuffer event) {
+    return writeEvent(event, false);
+  }
+
+  public long writeEvent(final DirectBuffer event, final boolean commit) {
+    return writeEvent(w -> w.positionAsKey().value(event), commit);
+  }
+
+  public long writeEvent(final Consumer<LogStreamWriter> writer, final boolean commit) {
+    final long position = writeEventInternal(writer);
+
+    waitForPositionToBeAppended(position);
+
+    if (commit) {
+      logStream.setCommitPosition(position);
     }
 
-    public void wrap(LogStreamRule rule)
-    {
-        this.logStream = rule.getLogStream();
-        this.logStreamWriter.wrap(logStream);
-    }
+    return position;
+  }
 
-    public long writeEvents(final int count, final DirectBuffer event)
-    {
-        return writeEvents(count, event, false);
-    }
+  private long writeEventInternal(final Consumer<LogStreamWriter> writer) {
+    long position;
+    do {
+      position = tryWrite(writer);
+    } while (position == -1);
 
-    public long writeEvents(final int count, final DirectBuffer event, final boolean commit)
-    {
-        long lastPosition = -1;
-        for (int i = 1; i <= count; i++)
-        {
-            final long key = i;
-            lastPosition = writeEventInternal(w -> w.key(key).value(event));
-        }
+    return position;
+  }
 
-        waitForPositionToBeAppended(lastPosition);
+  public long tryWrite(final DirectBuffer value) {
+    return tryWrite(w -> w.positionAsKey().value(value));
+  }
 
-        if (commit)
-        {
-            logStream.setCommitPosition(lastPosition);
-        }
+  public long tryWrite(final long key, final DirectBuffer value) {
+    return tryWrite(w -> w.key(key).value(value));
+  }
 
-        return lastPosition;
+  public long tryWrite(final Consumer<LogStreamWriter> writer) {
+    writer.accept(logStreamWriter);
 
-    }
+    return logStreamWriter.tryWrite();
+  }
 
-    public long writeEvent(final DirectBuffer event)
-    {
-        return writeEvent(event, false);
-    }
-
-    public long writeEvent(final DirectBuffer event, final boolean commit)
-    {
-        return writeEvent(w -> w.positionAsKey().value(event), commit);
-    }
-
-    public long writeEvent(final Consumer<LogStreamWriter> writer, final boolean commit)
-    {
-        final long position = writeEventInternal(writer);
-
-        waitForPositionToBeAppended(position);
-
-        if (commit)
-        {
-            logStream.setCommitPosition(position);
-        }
-
-        return position;
-    }
-
-    private long writeEventInternal(final Consumer<LogStreamWriter> writer)
-    {
-        long position;
-        do
-        {
-            position = tryWrite(writer);
-        }
-        while (position == -1);
-
-        return position;
-    }
-
-    public long tryWrite(final DirectBuffer value)
-    {
-        return tryWrite(w -> w.positionAsKey().value(value));
-    }
-
-    public long tryWrite(final long key, final DirectBuffer value)
-    {
-        return tryWrite(w -> w.key(key).value(value));
-    }
-
-    public long tryWrite(final Consumer<LogStreamWriter> writer)
-    {
-        writer.accept(logStreamWriter);
-
-        return logStreamWriter.tryWrite();
-    }
-
-    public void waitForPositionToBeAppended(final long position)
-    {
-        TestUtil.waitUntil(() -> logStream.getLogStorageAppender().getCurrentAppenderPosition() > position,
-            "Failed to wait for position {} to be appended", position);
-    }
-
+  public void waitForPositionToBeAppended(final long position) {
+    TestUtil.waitUntil(
+        () -> logStream.getLogStorageAppender().getCurrentAppenderPosition() > position,
+        "Failed to wait for position {} to be appended",
+        position);
+  }
 }

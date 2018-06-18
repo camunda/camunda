@@ -19,34 +19,37 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.client.api.events.TopicEvent;
 
-public class TopicCreator
-{
+public class TopicCreator {
 
-    public static void main(final String[] args)
-    {
-        final String broker = "localhost:51015";
-        final String topic = "test";
-        final int partitions = 1;
-        final int replicationFactor = 1;
+  public static void main(final String[] args) {
+    final String broker = "localhost:51015";
+    final String topic = "test";
+    final int partitions = 1;
+    final int replicationFactor = 1;
 
-        final ZeebeClientBuilder clientBuilder = ZeebeClient
-            .newClientBuilder()
-            .brokerContactPoint(broker);
+    final ZeebeClientBuilder clientBuilder =
+        ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
-        try (ZeebeClient client = clientBuilder.build())
-        {
-            System.out.println("Creating topic " + topic +
-                " with " + partitions + " partition(s) " +
-                "with contact point " + broker);
+    try (ZeebeClient client = clientBuilder.build()) {
+      System.out.println(
+          "Creating topic "
+              + topic
+              + " with "
+              + partitions
+              + " partition(s) "
+              + "with contact point "
+              + broker);
 
-            final TopicEvent topicEvent = client.newCreateTopicCommand()
-                .name(topic)
-                .partitions(partitions)
-                .replicationFactor(replicationFactor)
-                .send()
-                .join();
+      final TopicEvent topicEvent =
+          client
+              .newCreateTopicCommand()
+              .name(topic)
+              .partitions(partitions)
+              .replicationFactor(replicationFactor)
+              .send()
+              .join();
 
-            System.out.println(topicEvent.getState());
-        }
+      System.out.println(topicEvent.getState());
     }
+  }
 }

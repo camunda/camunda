@@ -18,17 +18,18 @@ package io.zeebe.logstreams.processor;
 import io.zeebe.util.metrics.Metric;
 import io.zeebe.util.metrics.MetricsManager;
 
-public class StreamProcessorMetrics
-{
-    private final Metric eventsProcessedCountMetric;
-    private final Metric eventsWrittenCountMetric;
-    private final Metric eventsSkippedCountMetric;
-    private final Metric snapshotSizeMetric;
-    private final Metric snapshotTimeMillisMetric;
+public class StreamProcessorMetrics {
+  private final Metric eventsProcessedCountMetric;
+  private final Metric eventsWrittenCountMetric;
+  private final Metric eventsSkippedCountMetric;
+  private final Metric snapshotSizeMetric;
+  private final Metric snapshotTimeMillisMetric;
 
-    public StreamProcessorMetrics(MetricsManager metricsManager, String processorName, String topicName, String partitionId)
-    {
-        eventsProcessedCountMetric = metricsManager.newMetric("streamprocessor_events_count")
+  public StreamProcessorMetrics(
+      MetricsManager metricsManager, String processorName, String topicName, String partitionId) {
+    eventsProcessedCountMetric =
+        metricsManager
+            .newMetric("streamprocessor_events_count")
             .type("counter")
             .label("processor", processorName)
             .label("action", "processed")
@@ -36,7 +37,9 @@ public class StreamProcessorMetrics
             .label("partition", partitionId)
             .create();
 
-        eventsWrittenCountMetric = metricsManager.newMetric("streamprocessor_events_count")
+    eventsWrittenCountMetric =
+        metricsManager
+            .newMetric("streamprocessor_events_count")
             .type("counter")
             .label("processor", processorName)
             .label("action", "written")
@@ -44,7 +47,9 @@ public class StreamProcessorMetrics
             .label("partition", partitionId)
             .create();
 
-        eventsSkippedCountMetric = metricsManager.newMetric("streamprocessor_events_count")
+    eventsSkippedCountMetric =
+        metricsManager
+            .newMetric("streamprocessor_events_count")
             .type("counter")
             .label("processor", processorName)
             .label("action", "skipped")
@@ -52,53 +57,50 @@ public class StreamProcessorMetrics
             .label("partition", partitionId)
             .create();
 
-        snapshotSizeMetric = metricsManager.newMetric("streamprocessor_snapshot_last_size_bytes")
+    snapshotSizeMetric =
+        metricsManager
+            .newMetric("streamprocessor_snapshot_last_size_bytes")
             .type("gauge")
             .label("processor", processorName)
             .label("topic", topicName)
             .label("partition", partitionId)
             .create();
 
-        snapshotTimeMillisMetric = metricsManager.newMetric("streamprocessor_snapshot_last_duration_millis")
+    snapshotTimeMillisMetric =
+        metricsManager
+            .newMetric("streamprocessor_snapshot_last_duration_millis")
             .type("gauge")
             .label("processor", processorName)
             .label("topic", topicName)
             .label("partition", partitionId)
             .create();
-    }
+  }
 
-    public void close()
-    {
-        eventsProcessedCountMetric.close();
-        eventsSkippedCountMetric.close();
-        eventsWrittenCountMetric.close();
-        snapshotTimeMillisMetric.close();
-        snapshotSizeMetric.close();
-    }
+  public void close() {
+    eventsProcessedCountMetric.close();
+    eventsSkippedCountMetric.close();
+    eventsWrittenCountMetric.close();
+    snapshotTimeMillisMetric.close();
+    snapshotSizeMetric.close();
+  }
 
-    public void incrementEventsProcessedCount()
-    {
-        eventsProcessedCountMetric.incrementOrdered();
-    }
+  public void incrementEventsProcessedCount() {
+    eventsProcessedCountMetric.incrementOrdered();
+  }
 
-    public void incrementEventsSkippedCount()
-    {
-        eventsSkippedCountMetric.incrementOrdered();
-    }
+  public void incrementEventsSkippedCount() {
+    eventsSkippedCountMetric.incrementOrdered();
+  }
 
-    public void incrementEventsWrittenCount()
-    {
-        eventsWrittenCountMetric.incrementOrdered();
-    }
+  public void incrementEventsWrittenCount() {
+    eventsWrittenCountMetric.incrementOrdered();
+  }
 
-    public void recordSnapshotSize(long size)
-    {
-        snapshotSizeMetric.setOrdered(size);
-    }
+  public void recordSnapshotSize(long size) {
+    snapshotSizeMetric.setOrdered(size);
+  }
 
-    public void recordSnapshotCreationTime(long creationTime)
-    {
-        snapshotTimeMillisMetric.setOrdered(creationTime);
-    }
-
+  public void recordSnapshotCreationTime(long creationTime) {
+    snapshotTimeMillisMetric.setOrdered(creationTime);
+  }
 }

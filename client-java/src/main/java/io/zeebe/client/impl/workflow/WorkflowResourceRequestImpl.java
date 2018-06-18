@@ -25,102 +25,87 @@ import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 
 public class WorkflowResourceRequestImpl extends ControlMessageRequest<WorkflowResource>
-        implements WorkflowResourceRequestStep1, WorkflowResourceRequestStep2, WorkflowResourceRequestStep3
-{
-    private static final int LATEST_VERSION = -1;
+    implements WorkflowResourceRequestStep1,
+        WorkflowResourceRequestStep2,
+        WorkflowResourceRequestStep3 {
+  private static final int LATEST_VERSION = -1;
 
-    private final Request request;
+  private final Request request;
 
-    public WorkflowResourceRequestImpl(RequestManager client, String topic)
-    {
-        super(client, ControlMessageType.GET_WORKFLOW, WorkflowResourceImpl.class);
+  public WorkflowResourceRequestImpl(RequestManager client, String topic) {
+    super(client, ControlMessageType.GET_WORKFLOW, WorkflowResourceImpl.class);
 
-        setTargetPartition(Protocol.SYSTEM_PARTITION);
+    setTargetPartition(Protocol.SYSTEM_PARTITION);
 
-        request = new Request(topic);
+    request = new Request(topic);
+  }
+
+  @Override
+  public WorkflowResourceRequestStep3 version(int version) {
+    request.setVersion(version);
+    return this;
+  }
+
+  @Override
+  public WorkflowResourceRequestStep3 latestVersion() {
+    request.setVersion(LATEST_VERSION);
+    return this;
+  }
+
+  @Override
+  public WorkflowResourceRequestStep2 bpmnProcessId(String bpmnProcessId) {
+    request.setBpmnProcessId(bpmnProcessId);
+    return this;
+  }
+
+  @Override
+  public WorkflowResourceRequestStep3 workflowKey(long workflowKey) {
+    request.setWorkflowKey(workflowKey);
+    return this;
+  }
+
+  @Override
+  public Object getRequest() {
+    return request;
+  }
+
+  class Request {
+    private final String topicName;
+
+    private String bpmnProcessId;
+    private int version = -1;
+    private long workflowKey = -1L;
+
+    Request(String topicName) {
+      this.topicName = topicName;
     }
 
-    @Override
-    public WorkflowResourceRequestStep3 version(int version)
-    {
-        request.setVersion(version);
-        return this;
+    public String getBpmnProcessId() {
+      return bpmnProcessId;
     }
 
-    @Override
-    public WorkflowResourceRequestStep3 latestVersion()
-    {
-        request.setVersion(LATEST_VERSION);
-        return this;
+    public void setBpmnProcessId(String bpmnProcessId) {
+      this.bpmnProcessId = bpmnProcessId;
     }
 
-    @Override
-    public WorkflowResourceRequestStep2 bpmnProcessId(String bpmnProcessId)
-    {
-        request.setBpmnProcessId(bpmnProcessId);
-        return this;
+    public int getVersion() {
+      return version;
     }
 
-    @Override
-    public WorkflowResourceRequestStep3 workflowKey(long workflowKey)
-    {
-        request.setWorkflowKey(workflowKey);
-        return this;
+    public void setVersion(int version) {
+      this.version = version;
     }
 
-    @Override
-    public Object getRequest()
-    {
-        return request;
+    public long getWorkflowKey() {
+      return workflowKey;
     }
 
-    class Request
-    {
-        private final String topicName;
-
-        private String bpmnProcessId;
-        private int version = -1;
-        private long workflowKey = -1L;
-
-        Request(String topicName)
-        {
-            this.topicName = topicName;
-        }
-
-        public String getBpmnProcessId()
-        {
-            return bpmnProcessId;
-        }
-
-        public void setBpmnProcessId(String bpmnProcessId)
-        {
-            this.bpmnProcessId = bpmnProcessId;
-        }
-
-        public int getVersion()
-        {
-            return version;
-        }
-
-        public void setVersion(int version)
-        {
-            this.version = version;
-        }
-
-        public long getWorkflowKey()
-        {
-            return workflowKey;
-        }
-
-        public void setWorkflowKey(long workflowKey)
-        {
-            this.workflowKey = workflowKey;
-        }
-
-        public String getTopicName()
-        {
-            return topicName;
-        }
+    public void setWorkflowKey(long workflowKey) {
+      this.workflowKey = workflowKey;
     }
 
+    public String getTopicName() {
+      return topicName;
+    }
+  }
 }

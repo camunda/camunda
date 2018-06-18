@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.clustering.base.topology;
 
-public interface TopologyPartitionListener
-{
-    void onPartitionUpdated(PartitionInfo partitionInfo, NodeInfo member);
+public interface TopologyPartitionListener {
+  void onPartitionUpdated(PartitionInfo partitionInfo, NodeInfo member);
 }

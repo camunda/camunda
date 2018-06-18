@@ -20,17 +20,16 @@ package io.zeebe.broker.logstreams.processor;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.RecordMetadata;
 
-public interface TypedRecord<T extends UnpackedObject>
-{
-    long getPosition();
+public interface TypedRecord<T extends UnpackedObject> {
+  long getPosition();
 
-    long getSourcePosition();
+  long getSourcePosition();
 
-    long getKey();
+  long getKey();
 
-    long getTimestamp();
+  long getTimestamp();
 
-    RecordMetadata getMetadata();
+  RecordMetadata getMetadata();
 
-    T getValue();
+  T getValue();
 }

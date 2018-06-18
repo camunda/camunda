@@ -16,43 +16,33 @@
 package io.zeebe.util.collection;
 
 import java.util.NoSuchElementException;
-
 import org.agrona.collections.IntArrayList;
 
-public class IntArrayListIterator implements IntIterator
-{
-    private IntArrayList list = null;
-    private int cursor = 0;
+public class IntArrayListIterator implements IntIterator {
+  private IntArrayList list = null;
+  private int cursor = 0;
 
-    public void wrap(IntArrayList list)
-    {
-        this.list = list;
-        cursor = 0;
+  public void wrap(IntArrayList list) {
+    this.list = list;
+    cursor = 0;
+  }
+
+  @Override
+  public boolean hasNext() {
+    return list.size() - cursor > 0;
+  }
+
+  @Override
+  public int nextInt() {
+    if (!hasNext()) {
+      throw new NoSuchElementException();
+    } else {
+      return list.getInt(cursor++);
     }
+  }
 
-    @Override
-    public boolean hasNext()
-    {
-        return list.size() - cursor > 0;
-    }
-
-    @Override
-    public int nextInt()
-    {
-        if (!hasNext())
-        {
-            throw new NoSuchElementException();
-        }
-        else
-        {
-            return list.getInt(cursor++);
-        }
-    }
-
-    @Override
-    public Integer next()
-    {
-        return nextInt();
-    }
-
+  @Override
+  public Integer next() {
+    return nextInt();
+  }
 }

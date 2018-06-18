@@ -20,41 +20,37 @@ import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.regex.Matcher;
 
-public class TestFileUtil
-{
+public class TestFileUtil {
 
-    /**
-     * Ant-style property substitution
-     */
-    public static InputStream readAsTextFileAndReplace(InputStream inputStream, Charset charset, Map<String, String> properties)
-    {
-        final String fileContent;
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, charset)))
-        {
-            final StringBuilder sb = new StringBuilder();
+  /** Ant-style property substitution */
+  public static InputStream readAsTextFileAndReplace(
+      InputStream inputStream, Charset charset, Map<String, String> properties) {
+    final String fileContent;
+    try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, charset))) {
+      final StringBuilder sb = new StringBuilder();
 
-            reader.lines().forEach((line) ->
-            {
+      reader
+          .lines()
+          .forEach(
+              (line) -> {
                 String replacingLine = line;
 
-                for (Map.Entry<String, String> replacement : properties.entrySet())
-                {
-                    final String property = "\\$\\{" + replacement.getKey() + "\\}";
-                    replacingLine = replacingLine.replaceAll(property, Matcher.quoteReplacement(replacement.getValue()));
+                for (Map.Entry<String, String> replacement : properties.entrySet()) {
+                  final String property = "\\$\\{" + replacement.getKey() + "\\}";
+                  replacingLine =
+                      replacingLine.replaceAll(
+                          property, Matcher.quoteReplacement(replacement.getValue()));
                 }
 
                 sb.append(replacingLine);
                 sb.append("\n");
-            });
+              });
 
-            fileContent = sb.toString();
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
-
-
-        return new ByteArrayInputStream(fileContent.getBytes(charset));
+      fileContent = sb.toString();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
+
+    return new ByteArrayInputStream(fileContent.getBytes(charset));
+  }
 }

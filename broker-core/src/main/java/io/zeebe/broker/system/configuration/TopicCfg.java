@@ -17,45 +17,45 @@
  */
 package io.zeebe.broker.system.configuration;
 
-public class TopicCfg
-{
-    private String name = "";
-    private int partitions = 0;
-    private int replicationFactor = 0;
+public class TopicCfg {
+  private String name = "";
+  private int partitions = 0;
+  private int replicationFactor = 0;
 
-    public String getName()
-    {
-        return name;
-    }
+  public String getName() {
+    return name;
+  }
 
-    public void setName(String name)
-    {
-        this.name = name;
-    }
+  public void setName(String name) {
+    this.name = name;
+  }
 
-    public int getPartitions()
-    {
-        return partitions;
-    }
+  public int getPartitions() {
+    return partitions;
+  }
 
-    public void setPartitions(int partitions)
-    {
-        this.partitions = partitions;
-    }
+  public void setPartitions(int partitions) {
+    this.partitions = partitions;
+  }
 
-    public int getReplicationFactor()
-    {
-        return replicationFactor;
-    }
+  public int getReplicationFactor() {
+    return replicationFactor;
+  }
 
-    public void setReplicationFactor(int replicationFactor)
-    {
-        this.replicationFactor = replicationFactor;
-    }
+  public void setReplicationFactor(int replicationFactor) {
+    this.replicationFactor = replicationFactor;
+  }
 
-    @Override
-    public String toString()
-    {
-        return "TopicCfg{" + "name='" + name + '\'' + ", partitions=" + partitions + ", replicationFactor=" + replicationFactor + '}';
-    }
+  @Override
+  public String toString() {
+    return "TopicCfg{"
+        + "name='"
+        + name
+        + '\''
+        + ", partitions="
+        + partitions
+        + ", replicationFactor="
+        + replicationFactor
+        + '}';
+  }
 }

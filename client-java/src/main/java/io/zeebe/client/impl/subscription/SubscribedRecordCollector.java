@@ -17,10 +17,6 @@ package io.zeebe.client.impl.subscription;
 
 import static io.zeebe.util.VarDataUtil.readBytes;
 
-import java.nio.charset.StandardCharsets;
-
-import org.agrona.DirectBuffer;
-
 import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.record.UntypedRecordImpl;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
@@ -33,92 +29,86 @@ import io.zeebe.protocol.intent.Intent;
 import io.zeebe.transport.ClientMessageHandler;
 import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.RemoteAddress;
+import java.nio.charset.StandardCharsets;
+import org.agrona.DirectBuffer;
 
-public class SubscribedRecordCollector implements ClientMessageHandler
-{
-    private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-    private final SubscribedRecordDecoder subscribedRecordDecoder = new SubscribedRecordDecoder();
+public class SubscribedRecordCollector implements ClientMessageHandler {
+  private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
+  private final SubscribedRecordDecoder subscribedRecordDecoder = new SubscribedRecordDecoder();
 
-    private final SubscribedEventHandler eventHandler;
-    private final ZeebeObjectMapperImpl objectMapper;
+  private final SubscribedEventHandler eventHandler;
+  private final ZeebeObjectMapperImpl objectMapper;
 
-    public SubscribedRecordCollector(
-            SubscribedEventHandler eventHandler,
-            ZeebeObjectMapperImpl objectMapper)
-    {
-        this.eventHandler = eventHandler;
-        this.objectMapper = objectMapper;
+  public SubscribedRecordCollector(
+      SubscribedEventHandler eventHandler, ZeebeObjectMapperImpl objectMapper) {
+    this.eventHandler = eventHandler;
+    this.objectMapper = objectMapper;
+  }
+
+  @Override
+  public boolean onMessage(
+      ClientOutput output,
+      RemoteAddress remoteAddress,
+      DirectBuffer buffer,
+      int offset,
+      int length) {
+    messageHeaderDecoder.wrap(buffer, offset);
+
+    offset += MessageHeaderDecoder.ENCODED_LENGTH;
+
+    final int templateId = messageHeaderDecoder.templateId();
+
+    final boolean messageHandled;
+
+    if (templateId == SubscribedRecordDecoder.TEMPLATE_ID) {
+
+      subscribedRecordDecoder.wrap(
+          buffer, offset, messageHeaderDecoder.blockLength(), messageHeaderDecoder.version());
+
+      final int partitionId = subscribedRecordDecoder.partitionId();
+      final long position = subscribedRecordDecoder.position();
+      final long sourceRecordPosition = subscribedRecordDecoder.sourceRecordPosition();
+      final long key = subscribedRecordDecoder.key();
+      final long subscriberKey = subscribedRecordDecoder.subscriberKey();
+      final RecordType recordType = subscribedRecordDecoder.recordType();
+      final SubscriptionType subscriptionType = subscribedRecordDecoder.subscriptionType();
+      final ValueType valueType = subscribedRecordDecoder.valueType();
+      final Intent intent = Intent.fromProtocolValue(valueType, subscribedRecordDecoder.intent());
+      final long timestamp = subscribedRecordDecoder.timestamp();
+      final RejectionType rejectionType = subscribedRecordDecoder.rejectionType();
+
+      final byte[] valueBuffer =
+          readBytes(subscribedRecordDecoder::getValue, subscribedRecordDecoder::valueLength);
+
+      final int rejectionReasonLength = subscribedRecordDecoder.rejectionReasonLength();
+      final String rejectionReason;
+      if (rejectionReasonLength > 0) {
+        rejectionReason =
+            new String(
+                readBytes(subscribedRecordDecoder::getRejectionReason, rejectionReasonLength),
+                StandardCharsets.UTF_8);
+      } else {
+        rejectionReason = null;
+      }
+
+      final UntypedRecordImpl event =
+          new UntypedRecordImpl(objectMapper, recordType, valueType, valueBuffer);
+
+      event.setPartitionId(partitionId);
+      event.setPosition(position);
+      event.setKey(key);
+      event.setSourceRecordPosition(sourceRecordPosition);
+      event.setIntent(intent);
+      event.setTimestamp(timestamp);
+      event.setRejectionType(rejectionType);
+      event.setRejectioReason(rejectionReason);
+
+      messageHandled = eventHandler.onEvent(subscriptionType, subscriberKey, event);
+    } else {
+      // ignoring
+      messageHandled = true;
     }
 
-    @Override
-    public boolean onMessage(ClientOutput output, RemoteAddress remoteAddress, DirectBuffer buffer, int offset,
-            int length)
-    {
-        messageHeaderDecoder.wrap(buffer, offset);
-
-        offset += MessageHeaderDecoder.ENCODED_LENGTH;
-
-        final int templateId = messageHeaderDecoder.templateId();
-
-        final boolean messageHandled;
-
-        if (templateId == SubscribedRecordDecoder.TEMPLATE_ID)
-        {
-
-            subscribedRecordDecoder.wrap(buffer, offset, messageHeaderDecoder.blockLength(), messageHeaderDecoder.version());
-
-            final int partitionId = subscribedRecordDecoder.partitionId();
-            final long position = subscribedRecordDecoder.position();
-            final long sourceRecordPosition = subscribedRecordDecoder.sourceRecordPosition();
-            final long key = subscribedRecordDecoder.key();
-            final long subscriberKey = subscribedRecordDecoder.subscriberKey();
-            final RecordType recordType = subscribedRecordDecoder.recordType();
-            final SubscriptionType subscriptionType = subscribedRecordDecoder.subscriptionType();
-            final ValueType valueType = subscribedRecordDecoder.valueType();
-            final Intent intent = Intent.fromProtocolValue(valueType, subscribedRecordDecoder.intent());
-            final long timestamp = subscribedRecordDecoder.timestamp();
-            final RejectionType rejectionType = subscribedRecordDecoder.rejectionType();
-
-            final byte[] valueBuffer = readBytes(subscribedRecordDecoder::getValue, subscribedRecordDecoder::valueLength);
-
-            final int rejectionReasonLength = subscribedRecordDecoder.rejectionReasonLength();
-            final String rejectionReason;
-            if (rejectionReasonLength > 0)
-            {
-                rejectionReason = new String(
-                    readBytes(subscribedRecordDecoder::getRejectionReason, rejectionReasonLength),
-                    StandardCharsets.UTF_8);
-            }
-            else
-            {
-                rejectionReason = null;
-            }
-
-            final UntypedRecordImpl event = new UntypedRecordImpl(
-                    objectMapper,
-                    recordType,
-                    valueType,
-                    valueBuffer);
-
-            event.setPartitionId(partitionId);
-            event.setPosition(position);
-            event.setKey(key);
-            event.setSourceRecordPosition(sourceRecordPosition);
-            event.setIntent(intent);
-            event.setTimestamp(timestamp);
-            event.setRejectionType(rejectionType);
-            event.setRejectioReason(rejectionReason);
-
-            messageHandled = eventHandler.onEvent(subscriptionType, subscriberKey, event);
-        }
-        else
-        {
-            // ignoring
-            messageHandled = true;
-        }
-
-
-        return messageHandled;
-    }
-
+    return messageHandled;
+  }
 }

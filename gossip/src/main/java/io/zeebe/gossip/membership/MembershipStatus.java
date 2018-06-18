@@ -15,11 +15,10 @@
  */
 package io.zeebe.gossip.membership;
 
-public enum MembershipStatus
-{
-    ALIVE,
+public enum MembershipStatus {
+  ALIVE,
 
-    SUSPECT,
+  SUSPECT,
 
-    DEAD;
+  DEAD;
 }

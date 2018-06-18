@@ -18,8 +18,7 @@ package io.zeebe.client.api.subscription;
 import io.zeebe.client.api.events.RaftEvent;
 
 @FunctionalInterface
-public interface RaftEventHandler
-{
+public interface RaftEventHandler {
 
-    void onRaftEvent(RaftEvent raftEvent);
+  void onRaftEvent(RaftEvent raftEvent);
 }

@@ -26,30 +26,26 @@ import io.zeebe.client.impl.record.RecordImpl;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.util.EnsureUtil;
 
-public class FailJobCommandImpl extends CommandImpl<JobEvent> implements FailJobCommandStep1, FailJobCommandStep2
-{
-    private final JobCommandImpl command;
+public class FailJobCommandImpl extends CommandImpl<JobEvent>
+    implements FailJobCommandStep1, FailJobCommandStep2 {
+  private final JobCommandImpl command;
 
-    public FailJobCommandImpl(RequestManager commandManager, JobEvent event)
-    {
-        super(commandManager);
+  public FailJobCommandImpl(RequestManager commandManager, JobEvent event) {
+    super(commandManager);
 
-        EnsureUtil.ensureNotNull("base event", event);
+    EnsureUtil.ensureNotNull("base event", event);
 
-        command = new JobCommandImpl((JobEventImpl) event, JobIntent.FAIL);
-    }
+    command = new JobCommandImpl((JobEventImpl) event, JobIntent.FAIL);
+  }
 
-    @Override
-    public FailJobCommandStep2 retries(int remaingRetries)
-    {
-        command.setRetries(remaingRetries);
-        return this;
-    }
+  @Override
+  public FailJobCommandStep2 retries(int remaingRetries) {
+    command.setRetries(remaingRetries);
+    return this;
+  }
 
-    @Override
-    public RecordImpl getCommand()
-    {
-        return command;
-    }
-
+  @Override
+  public RecordImpl getCommand() {
+    return command;
+  }
 }

@@ -22,50 +22,49 @@ import io.zeebe.model.bpmn.impl.instance.FlowNodeImpl;
 import io.zeebe.model.bpmn.impl.instance.SequenceFlowImpl;
 import io.zeebe.msgpack.el.CompiledJsonCondition;
 import io.zeebe.msgpack.el.JsonConditionFactory;
-import org.agrona.DirectBuffer;
-
 import java.util.List;
 import java.util.Map;
+import org.agrona.DirectBuffer;
 
-public class SequenceFlowTransformer
-{
-    public void transform(ErrorCollector errorCollector, List<SequenceFlowImpl> sequenceFlows, Map<DirectBuffer, FlowElementImpl> flowElementsById)
-    {
-        for (int s = 0; s < sequenceFlows.size(); s++)
-        {
-            final SequenceFlowImpl sequenceFlow = sequenceFlows.get(s);
+public class SequenceFlowTransformer {
+  public void transform(
+      ErrorCollector errorCollector,
+      List<SequenceFlowImpl> sequenceFlows,
+      Map<DirectBuffer, FlowElementImpl> flowElementsById) {
+    for (int s = 0; s < sequenceFlows.size(); s++) {
+      final SequenceFlowImpl sequenceFlow = sequenceFlows.get(s);
 
-            final FlowElementImpl sourceElement = flowElementsById.get(sequenceFlow.getSourceRefAsBuffer());
-            if (sourceElement != null)
-            {
-                sequenceFlow.setSourceNode((FlowNodeImpl) sourceElement);
-            }
+      final FlowElementImpl sourceElement =
+          flowElementsById.get(sequenceFlow.getSourceRefAsBuffer());
+      if (sourceElement != null) {
+        sequenceFlow.setSourceNode((FlowNodeImpl) sourceElement);
+      }
 
-            final FlowElementImpl targetElement = flowElementsById.get(sequenceFlow.getTargetRefAsBuffer());
-            if (targetElement != null)
-            {
-                sequenceFlow.setTargetNode((FlowNodeImpl) targetElement);
-            }
+      final FlowElementImpl targetElement =
+          flowElementsById.get(sequenceFlow.getTargetRefAsBuffer());
+      if (targetElement != null) {
+        sequenceFlow.setTargetNode((FlowNodeImpl) targetElement);
+      }
 
-            if (sequenceFlow.hasCondition())
-            {
-                createCondition(errorCollector, sequenceFlow);
-            }
-        }
+      if (sequenceFlow.hasCondition()) {
+        createCondition(errorCollector, sequenceFlow);
+      }
+    }
+  }
+
+  private void createCondition(ErrorCollector errorCollector, SequenceFlowImpl sequenceFlow) {
+    final ConditionExpressionImpl conditionExpression = sequenceFlow.getConditionExpression();
+    final CompiledJsonCondition condition =
+        JsonConditionFactory.createCondition(conditionExpression.getText());
+
+    if (!condition.isValid()) {
+      errorCollector.addError(
+          sequenceFlow,
+          String.format(
+              "The condition '%s' is not valid: %s",
+              condition.getExpression(), condition.getErrorMessage()));
     }
 
-    private void createCondition(ErrorCollector errorCollector, SequenceFlowImpl sequenceFlow)
-    {
-        final ConditionExpressionImpl conditionExpression = sequenceFlow.getConditionExpression();
-        final CompiledJsonCondition condition = JsonConditionFactory.createCondition(conditionExpression.getText());
-
-        if (!condition.isValid())
-        {
-            errorCollector.addError(sequenceFlow,
-                String.format("The condition '%s' is not valid: %s",
-                    condition.getExpression(), condition.getErrorMessage()));
-        }
-
-        conditionExpression.setCondition(condition);
-    }
+    conditionExpression.setCondition(condition);
+  }
 }

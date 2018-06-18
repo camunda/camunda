@@ -15,33 +15,27 @@
  */
 package io.zeebe.client.event;
 
+import io.zeebe.client.api.record.Record;
 import java.util.function.Predicate;
 
-import io.zeebe.client.api.record.Record;
+public class FailingHandler extends RecordingHandler {
 
-public class FailingHandler extends RecordingHandler
-{
+  protected Predicate<Record> failureCondition;
 
-    protected Predicate<Record> failureCondition;
+  public FailingHandler(Predicate<Record> failureCondition) {
+    this.failureCondition = failureCondition;
+  }
 
-    public FailingHandler(Predicate<Record> failureCondition)
-    {
-        this.failureCondition = failureCondition;
+  public FailingHandler() {
+    this(e -> true);
+  }
+
+  @Override
+  public void onRecord(Record record) {
+    super.onRecord(record);
+
+    if (failureCondition.test(record)) {
+      throw new RuntimeException("Handler invocation fails");
     }
-
-    public FailingHandler()
-    {
-        this (e -> true);
-    }
-
-    @Override
-    public void onRecord(Record record)
-    {
-        super.onRecord(record);
-
-        if (failureCondition.test(record))
-        {
-            throw new RuntimeException("Handler invocation fails");
-        }
-    }
+  }
 }

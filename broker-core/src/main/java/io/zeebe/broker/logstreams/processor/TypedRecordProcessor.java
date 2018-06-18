@@ -21,43 +21,26 @@ import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.logstreams.processor.EventProcessor;
 import io.zeebe.msgpack.UnpackedObject;
 
-public interface TypedRecordProcessor<T extends UnpackedObject> extends StreamProcessorLifecycleAware
-{
-    /**
-     * @see EventProcessor#processEvent()
-     */
-    default void processRecord(TypedRecord<T> record)
-    {
-    }
+public interface TypedRecordProcessor<T extends UnpackedObject>
+    extends StreamProcessorLifecycleAware {
+  /** @see EventProcessor#processEvent() */
+  default void processRecord(TypedRecord<T> record) {}
 
-    /**
-     * @see EventProcessor#processEvent()
-     */
-    default void processRecord(TypedRecord<T> record, EventLifecycleContext ctx)
-    {
-        processRecord(record);
-    }
+  /** @see EventProcessor#processEvent() */
+  default void processRecord(TypedRecord<T> record, EventLifecycleContext ctx) {
+    processRecord(record);
+  }
 
-    /**
-     * @see EventProcessor#executeSideEffects()
-     */
-    default boolean executeSideEffects(TypedRecord<T> record, TypedResponseWriter responseWriter)
-    {
-        return true;
-    }
+  /** @see EventProcessor#executeSideEffects() */
+  default boolean executeSideEffects(TypedRecord<T> record, TypedResponseWriter responseWriter) {
+    return true;
+  }
 
-    /**
-     * @see EventProcessor#writeEvent(io.zeebe.logstreams.log.LogStreamWriter)
-     */
-    default long writeRecord(TypedRecord<T> record, TypedStreamWriter writer)
-    {
-        return 0;
-    }
+  /** @see EventProcessor#writeEvent(io.zeebe.logstreams.log.LogStreamWriter) */
+  default long writeRecord(TypedRecord<T> record, TypedStreamWriter writer) {
+    return 0;
+  }
 
-    /**
-     * @see EventProcessor#updateState()
-     */
-    default void updateState(TypedRecord<T> record)
-    {
-    }
+  /** @see EventProcessor#updateState() */
+  default void updateState(TypedRecord<T> record) {}
 }

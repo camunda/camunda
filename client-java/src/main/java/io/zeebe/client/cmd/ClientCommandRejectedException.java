@@ -15,28 +15,20 @@
  */
 package io.zeebe.client.cmd;
 
-/**
- * A client command was rejected by the broker.
- */
-public class ClientCommandRejectedException extends ClientException
-{
-    private static final long serialVersionUID = 1L;
+/** A client command was rejected by the broker. */
+public class ClientCommandRejectedException extends ClientException {
+  private static final long serialVersionUID = 1L;
 
-    public ClientCommandRejectedException(String errorMessage)
-    {
-        super(errorMessage);
-    }
+  public ClientCommandRejectedException(String errorMessage) {
+    super(errorMessage);
+  }
 
-    public ClientCommandRejectedException(String errorMessage, Throwable cause)
-    {
-        super(errorMessage, cause);
-    }
+  public ClientCommandRejectedException(String errorMessage, Throwable cause) {
+    super(errorMessage, cause);
+  }
 
-
-
-    @Override
-    public ClientException newInCurrentContext()
-    {
-        throw new ClientCommandRejectedException(getMessage(), this);
-    }
+  @Override
+  public ClientException newInCurrentContext() {
+    throw new ClientCommandRejectedException(getMessage(), this);
+  }
 }

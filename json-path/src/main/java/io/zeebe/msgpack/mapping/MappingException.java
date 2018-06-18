@@ -16,16 +16,13 @@
 package io.zeebe.msgpack.mapping;
 
 /**
- * Represents the exception which will be thrown if something
- * during the mapping of documents goes wrong.
+ * Represents the exception which will be thrown if something during the mapping of documents goes
+ * wrong.
  */
-public class MappingException extends RuntimeException
-{
-    private static final long serialVersionUID = 1L;
+public class MappingException extends RuntimeException {
+  private static final long serialVersionUID = 1L;
 
-    public MappingException(String msg)
-    {
-        super(msg);
-    }
-
+  public MappingException(String msg) {
+    super(msg);
+  }
 }

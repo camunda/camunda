@@ -20,19 +20,26 @@ import io.zeebe.transport.impl.TransportContext;
 import io.zeebe.transport.impl.actor.ActorContext;
 import io.zeebe.util.sched.future.ActorFuture;
 
-public class BufferingServerTransport extends ServerTransport
-{
-    protected final Dispatcher receiveBuffer;
+public class BufferingServerTransport extends ServerTransport {
+  protected final Dispatcher receiveBuffer;
 
-    public BufferingServerTransport(ActorContext transportActorContext, TransportContext transportContext)
-    {
-        super(transportActorContext, transportContext);
-        receiveBuffer = transportContext.getReceiveBuffer();
-    }
+  public BufferingServerTransport(
+      ActorContext transportActorContext, TransportContext transportContext) {
+    super(transportActorContext, transportContext);
+    receiveBuffer = transportContext.getReceiveBuffer();
+  }
 
-    public ActorFuture<ServerInputSubscription> openSubscription(String subscriptionName, ServerMessageHandler messageHandler, ServerRequestHandler requestHandler)
-    {
-        return transportActorContext.getServerConductor()
-                .openInputSubscription(subscriptionName, output, transportContext.getRemoteAddressList(), messageHandler, requestHandler);
-    }
+  public ActorFuture<ServerInputSubscription> openSubscription(
+      String subscriptionName,
+      ServerMessageHandler messageHandler,
+      ServerRequestHandler requestHandler) {
+    return transportActorContext
+        .getServerConductor()
+        .openInputSubscription(
+            subscriptionName,
+            output,
+            transportContext.getRemoteAddressList(),
+            messageHandler,
+            requestHandler);
+  }
 }

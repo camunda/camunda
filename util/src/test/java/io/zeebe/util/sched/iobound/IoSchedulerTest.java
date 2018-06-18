@@ -19,65 +19,61 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.*;
 
-import java.util.function.IntFunction;
-
 import io.zeebe.util.sched.ActorTask;
 import io.zeebe.util.sched.IoScheduler;
+import java.util.function.IntFunction;
 import org.junit.Test;
 import org.mockito.InOrder;
 
 @SuppressWarnings("unchecked")
-public class IoSchedulerTest
-{
-    @Test
-    public void shouldLimitMaxConcurrency()
-    {
-        // given
+public class IoSchedulerTest {
+  @Test
+  public void shouldLimitMaxConcurrency() {
+    // given
 
-        final ActorTask task = mock(ActorTask.class);
-        final IntFunction<ActorTask> getTaskFn = mock(IntFunction.class);
+    final ActorTask task = mock(ActorTask.class);
+    final IntFunction<ActorTask> getTaskFn = mock(IntFunction.class);
 
-        when(getTaskFn.apply(anyInt())).thenReturn(task);
+    when(getTaskFn.apply(anyInt())).thenReturn(task);
 
-        final IoScheduler ioScheduler = new IoScheduler(getTaskFn, new int[] {1, 2});
+    final IoScheduler ioScheduler = new IoScheduler(getTaskFn, new int[] {1, 2});
 
-        // when + then
+    // when + then
 
-        assertThat(ioScheduler.getNextTask(null)).isNotNull();
-        assertThat(ioScheduler.getNextTask(null)).isNotNull();
-        assertThat(ioScheduler.getNextTask(null)).isNotNull();
-        assertThat(ioScheduler.getNextTask(null)).isNull();
+    assertThat(ioScheduler.getNextTask(null)).isNotNull();
+    assertThat(ioScheduler.getNextTask(null)).isNotNull();
+    assertThat(ioScheduler.getNextTask(null)).isNotNull();
+    assertThat(ioScheduler.getNextTask(null)).isNull();
 
-        final InOrder inOrder = inOrder(getTaskFn);
-        inOrder.verify(getTaskFn, times(1)).apply(0);
-        inOrder.verify(getTaskFn, times(2)).apply(1);
-        inOrder.verifyNoMoreInteractions();
-    }
+    final InOrder inOrder = inOrder(getTaskFn);
+    inOrder.verify(getTaskFn, times(1)).apply(0);
+    inOrder.verify(getTaskFn, times(2)).apply(1);
+    inOrder.verifyNoMoreInteractions();
+  }
 
-    @Test
-    public void shouldReleaseTasks()
-    {
-        // given
+  @Test
+  public void shouldReleaseTasks() {
+    // given
 
-        final ActorTask task = mock(ActorTask.class);
-        final IntFunction<ActorTask> getTaskFn = mock(IntFunction.class);
+    final ActorTask task = mock(ActorTask.class);
+    final IntFunction<ActorTask> getTaskFn = mock(IntFunction.class);
 
-        when(getTaskFn.apply(anyInt())).thenReturn(task);
+    when(getTaskFn.apply(anyInt())).thenReturn(task);
 
-        final IoScheduler ioScheduler = new IoScheduler(getTaskFn, new int[] {1, 2});
+    final IoScheduler ioScheduler = new IoScheduler(getTaskFn, new int[] {1, 2});
 
-        assertThat(ioScheduler.getNextTask(null)).isNotNull();
-        assertThat(ioScheduler.getNextTask(null)).isNotNull();
-        assertThat(ioScheduler.getNextTask(null)).isNotNull();
+    assertThat(ioScheduler.getNextTask(null)).isNotNull();
+    assertThat(ioScheduler.getNextTask(null)).isNotNull();
+    assertThat(ioScheduler.getNextTask(null)).isNotNull();
 
-        // when
+    // when
 
-        when(task.getDeviceId()).thenReturn(0);
-        ioScheduler.onTaskReleased(task);
+    when(task.getDeviceId()).thenReturn(0);
+    ioScheduler.onTaskReleased(task);
 
-        // then
+    // then
 
-        assertThat(ioScheduler.getNextTask(null)).isNotNull();
-        assertThat(ioScheduler.getNextTask(null)).isNull();
-    }
+    assertThat(ioScheduler.getNextTask(null)).isNotNull();
+    assertThat(ioScheduler.getNextTask(null)).isNull();
+  }
 }

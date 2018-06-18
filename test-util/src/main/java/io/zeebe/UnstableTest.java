@@ -16,9 +16,7 @@
 package io.zeebe;
 
 /**
- * <p>
- *     Marker interface used to categorize unstable tests.
- * </p>
+ * Marker interface used to categorize unstable tests.
  *
  * <pre>
  * Usage:
@@ -26,8 +24,5 @@ package io.zeebe;
  *   {@literal @}Category(io.zeebe.UnstableTest)
  *    public void myUnstableTest()
  * </pre>
- *
  */
-public interface UnstableTest
-{
-}
+public interface UnstableTest {}

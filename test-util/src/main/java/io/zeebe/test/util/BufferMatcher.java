@@ -16,45 +16,37 @@
 package io.zeebe.test.util;
 
 import java.util.Arrays;
-
+import org.agrona.DirectBuffer;
 import org.mockito.ArgumentMatcher;
 
-import org.agrona.DirectBuffer;
+public class BufferMatcher implements ArgumentMatcher<DirectBuffer> {
+  protected byte[] expectedBytes;
+  protected int position = 0;
 
-public class BufferMatcher implements ArgumentMatcher<DirectBuffer>
-{
-    protected byte[] expectedBytes;
-    protected int position = 0;
-
-    @Override
-    public boolean matches(DirectBuffer argument)
-    {
-        if (argument == null)
-        {
-            return false;
-        }
-
-        final byte[] actualBytes = new byte[expectedBytes.length];
-
-        // TODO: try-catch in case buffer has not expected size
-        argument.getBytes(position, actualBytes, 0, actualBytes.length);
-
-        return Arrays.equals(expectedBytes, actualBytes);
+  @Override
+  public boolean matches(DirectBuffer argument) {
+    if (argument == null) {
+      return false;
     }
 
-    public static BufferMatcher hasBytes(byte[] bytes)
-    {
-        final BufferMatcher matcher = new BufferMatcher();
+    final byte[] actualBytes = new byte[expectedBytes.length];
 
-        matcher.expectedBytes = bytes;
+    // TODO: try-catch in case buffer has not expected size
+    argument.getBytes(position, actualBytes, 0, actualBytes.length);
 
-        return matcher;
-    }
+    return Arrays.equals(expectedBytes, actualBytes);
+  }
 
-    public BufferMatcher atPosition(int position)
-    {
-        this.position = position;
-        return this;
-    }
+  public static BufferMatcher hasBytes(byte[] bytes) {
+    final BufferMatcher matcher = new BufferMatcher();
 
+    matcher.expectedBytes = bytes;
+
+    return matcher;
+  }
+
+  public BufferMatcher atPosition(int position) {
+    this.position = position;
+    return this;
+  }
 }

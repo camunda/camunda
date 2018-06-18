@@ -21,69 +21,57 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.*;
 import org.agrona.DirectBuffer;
 
-public class TopicSubscriberEvent extends UnpackedObject
-{
-    // negative value for end of log
-    protected LongProperty startPositionProp = new LongProperty("startPosition", -1L);
+public class TopicSubscriberEvent extends UnpackedObject {
+  // negative value for end of log
+  protected LongProperty startPositionProp = new LongProperty("startPosition", -1L);
 
-    protected IntegerProperty bufferSizeProp = new IntegerProperty("bufferSize");
+  protected IntegerProperty bufferSizeProp = new IntegerProperty("bufferSize");
 
-    protected StringProperty nameProp = new StringProperty("name");
+  protected StringProperty nameProp = new StringProperty("name");
 
-    // true if startPosition should override any previously acknowledged position
-    protected BooleanProperty forceStartProp = new BooleanProperty("forceStart", false);
+  // true if startPosition should override any previously acknowledged position
+  protected BooleanProperty forceStartProp = new BooleanProperty("forceStart", false);
 
-    public TopicSubscriberEvent()
-    {
-        this
-            .declareProperty(startPositionProp)
-            .declareProperty(nameProp)
-            .declareProperty(bufferSizeProp)
-            .declareProperty(forceStartProp);
-    }
+  public TopicSubscriberEvent() {
+    this.declareProperty(startPositionProp)
+        .declareProperty(nameProp)
+        .declareProperty(bufferSizeProp)
+        .declareProperty(forceStartProp);
+  }
 
-    public TopicSubscriberEvent setStartPosition(long startPosition)
-    {
-        this.startPositionProp.setValue(startPosition);
-        return this;
-    }
+  public TopicSubscriberEvent setStartPosition(long startPosition) {
+    this.startPositionProp.setValue(startPosition);
+    return this;
+  }
 
-    public long getStartPosition()
-    {
-        return startPositionProp.getValue();
-    }
+  public long getStartPosition() {
+    return startPositionProp.getValue();
+  }
 
-    public TopicSubscriberEvent setBufferSize(int bufferSize)
-    {
-        this.bufferSizeProp.setValue(bufferSize);
-        return this;
-    }
+  public TopicSubscriberEvent setBufferSize(int bufferSize) {
+    this.bufferSizeProp.setValue(bufferSize);
+    return this;
+  }
 
-    public int getBufferSize()
-    {
-        return bufferSizeProp.getValue();
-    }
+  public int getBufferSize() {
+    return bufferSizeProp.getValue();
+  }
 
-    public String getNameAsString()
-    {
-        final DirectBuffer stringBuffer = nameProp.getValue();
-        return stringBuffer.getStringWithoutLengthUtf8(0, stringBuffer.capacity());
-    }
+  public String getNameAsString() {
+    final DirectBuffer stringBuffer = nameProp.getValue();
+    return stringBuffer.getStringWithoutLengthUtf8(0, stringBuffer.capacity());
+  }
 
-    public DirectBuffer getName()
-    {
-        return nameProp.getValue();
-    }
+  public DirectBuffer getName() {
+    return nameProp.getValue();
+  }
 
-    public TopicSubscriberEvent setName(String name)
-    {
-        nameProp.setValue(name);
-        return this;
-    }
+  public TopicSubscriberEvent setName(String name) {
+    nameProp.setValue(name);
+    return this;
+  }
 
-    public boolean getForceStart()
-    {
-        return forceStartProp.getValue();
-    }
-
+  public boolean getForceStart() {
+    return forceStartProp.getValue();
+  }
 }

@@ -15,33 +15,20 @@
  */
 package io.zeebe.logstreams.spi;
 
-/**
- * Encapsulates snapshot metadata
- */
-public interface SnapshotMetadata
-{
-    /**
-     * @return the name of the snapshot
-     */
-    String getName();
+/** Encapsulates snapshot metadata */
+public interface SnapshotMetadata {
+  /** @return the name of the snapshot */
+  String getName();
 
-    /**
-     * @return the log position when the snapshot was taken
-     */
-    long getPosition();
+  /** @return the log position when the snapshot was taken */
+  long getPosition();
 
-    /**
-     * @return the size (in bytes) of the snapshot
-     */
-    long getSize();
+  /** @return the size (in bytes) of the snapshot */
+  long getSize();
 
-    /**
-     * @return true if the snapshot should be replicated, false otherwise
-     */
-    boolean isReplicable();
+  /** @return true if the snapshot should be replicated, false otherwise */
+  boolean isReplicable();
 
-    /**
-     * @return the checksum of the snapshot
-     */
-    byte[] getChecksum();
+  /** @return the checksum of the snapshot */
+  byte[] getChecksum();
 }

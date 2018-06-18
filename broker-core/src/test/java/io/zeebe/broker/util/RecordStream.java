@@ -17,8 +17,6 @@
  */
 package io.zeebe.broker.util;
 
-import java.util.stream.Stream;
-
 import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.job.data.JobRecord;
@@ -26,43 +24,34 @@ import io.zeebe.broker.system.workflow.repository.data.DeploymentRecord;
 import io.zeebe.broker.topic.Records;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.test.util.stream.StreamWrapper;
+import java.util.stream.Stream;
 
-public class RecordStream extends StreamWrapper<LoggedEvent>
-{
+public class RecordStream extends StreamWrapper<LoggedEvent> {
 
-    public RecordStream(Stream<LoggedEvent> stream)
-    {
-        super(stream);
-    }
+  public RecordStream(Stream<LoggedEvent> stream) {
+    super(stream);
+  }
 
-    public TypedRecordStream<JobRecord> onlyJobRecords()
-    {
-        return new TypedRecordStream<>(
-            filter(Records::isJobRecord)
-            .map(e -> CopiedTypedEvent.toTypedEvent(e, JobRecord.class)));
-    }
+  public TypedRecordStream<JobRecord> onlyJobRecords() {
+    return new TypedRecordStream<>(
+        filter(Records::isJobRecord).map(e -> CopiedTypedEvent.toTypedEvent(e, JobRecord.class)));
+  }
 
-    public TypedRecordStream<IncidentRecord> onlyIncidentRecords()
-    {
-        return new TypedRecordStream<>(
-            filter(Records::isIncidentRecord)
+  public TypedRecordStream<IncidentRecord> onlyIncidentRecords() {
+    return new TypedRecordStream<>(
+        filter(Records::isIncidentRecord)
             .map(e -> CopiedTypedEvent.toTypedEvent(e, IncidentRecord.class)));
-    }
+  }
 
-
-    public TypedRecordStream<DeploymentRecord> onlyDeploymentRecords()
-    {
-        return new TypedRecordStream<>(
-            filter(Records::isDeploymentRecord)
+  public TypedRecordStream<DeploymentRecord> onlyDeploymentRecords() {
+    return new TypedRecordStream<>(
+        filter(Records::isDeploymentRecord)
             .map(e -> CopiedTypedEvent.toTypedEvent(e, DeploymentRecord.class)));
-    }
+  }
 
-    public TypedRecordStream<TopicRecord> onlyTopicRecords()
-    {
-        return new TypedRecordStream<>(
-            filter(Records::isTopicRecord)
+  public TypedRecordStream<TopicRecord> onlyTopicRecords() {
+    return new TypedRecordStream<>(
+        filter(Records::isTopicRecord)
             .map(e -> CopiedTypedEvent.toTypedEvent(e, TopicRecord.class)));
-    }
-
-
+  }
 }

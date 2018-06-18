@@ -19,13 +19,6 @@ package io.zeebe.broker.clustering.orchestration.state;
 
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.streamProcessorService;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Function;
-
-import org.agrona.DirectBuffer;
-import org.slf4j.Logger;
-
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
@@ -51,142 +44,131 @@ import io.zeebe.transport.ServerTransport;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
+import org.agrona.DirectBuffer;
+import org.slf4j.Logger;
 
-public class KnownTopics implements Service<KnownTopics>, StreamProcessorLifecycleAware
-{
-    private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
+public class KnownTopics implements Service<KnownTopics>, StreamProcessorLifecycleAware {
+  private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
-    private final Injector<Partition> partitionInjector = new Injector<>();
-    private final Injector<ServerTransport> serverTransportInjector = new Injector<>();
-    private final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector = new Injector<>();
+  private final Injector<Partition> partitionInjector = new Injector<>();
+  private final Injector<ServerTransport> serverTransportInjector = new Injector<>();
+  private final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector =
+      new Injector<>();
 
-    private final TopicCreateProcessor topicCreateProcessor;
-    private final TopicCreatedProcessor topicCreatedProcessor;
+  private final TopicCreateProcessor topicCreateProcessor;
+  private final TopicCreatedProcessor topicCreatedProcessor;
 
-    private final List<KnownTopicsListener> topicsListeners = new ArrayList<>();
+  private final List<KnownTopicsListener> topicsListeners = new ArrayList<>();
 
-    private final ArrayValue<TopicInfo> knownTopics = new ArrayValue<>(new TopicInfo());
-    private ActorControl actor;
-    private ServiceContainer serviceContainer;
-    private ServiceName<StreamProcessorService> streamProcessorServiceName;
+  private final ArrayValue<TopicInfo> knownTopics = new ArrayValue<>(new TopicInfo());
+  private ActorControl actor;
+  private ServiceContainer serviceContainer;
+  private ServiceName<StreamProcessorService> streamProcessorServiceName;
 
-    public KnownTopics(final ServiceContainer serviceContainer)
-    {
-        this.serviceContainer = serviceContainer;
-        topicCreateProcessor = new TopicCreateProcessor(this::topicExists, this::notifyTopicAdded, this::addTopic);
-        topicCreatedProcessor = new TopicCreatedProcessor(this::topicCreated, this::notifyTopicCreated, this::completeTopicCreation);
-    }
+  public KnownTopics(final ServiceContainer serviceContainer) {
+    this.serviceContainer = serviceContainer;
+    topicCreateProcessor =
+        new TopicCreateProcessor(this::topicExists, this::notifyTopicAdded, this::addTopic);
+    topicCreatedProcessor =
+        new TopicCreatedProcessor(
+            this::topicCreated, this::notifyTopicCreated, this::completeTopicCreation);
+  }
 
-    @Override
-    public KnownTopics get()
-    {
-        return this;
-    }
+  @Override
+  public KnownTopics get() {
+    return this;
+  }
 
-    public void registerTopicListener(final KnownTopicsListener topicsListener)
-    {
-        actor.run(() -> topicsListeners.add(topicsListener));
-    }
+  public void registerTopicListener(final KnownTopicsListener topicsListener) {
+    actor.run(() -> topicsListeners.add(topicsListener));
+  }
 
-    private boolean topicExists(final DirectBuffer topicName)
-    {
-        return getTopic(topicName) != null;
-    }
+  private boolean topicExists(final DirectBuffer topicName) {
+    return getTopic(topicName) != null;
+  }
 
-    private boolean topicCreated(final DirectBuffer topicName)
-    {
-        final TopicInfo topicInfo = getTopic(topicName);
-        return topicInfo != null && topicInfo.getPartitionIds().iterator().hasNext();
-    }
+  private boolean topicCreated(final DirectBuffer topicName) {
+    final TopicInfo topicInfo = getTopic(topicName);
+    return topicInfo != null && topicInfo.getPartitionIds().iterator().hasNext();
+  }
 
-    private TopicInfo getTopic(final DirectBuffer topicName)
-    {
-        for (final TopicInfo topicInfo : knownTopics)
-        {
-            if (topicInfo.getTopicNameBuffer().equals(topicName))
-            {
-                return topicInfo;
-            }
-        }
-
-        return null;
-    }
-
-
-    private void addTopic(final long key, final TopicRecord topicEvent)
-    {
-        final TopicInfo topicInfo = createTopicInfo(key, topicEvent);
-
-        final ValueArray<IntegerValue> partitionIds = topicInfo.getPartitionIds();
-        topicEvent.getPartitionIds().forEach(id -> partitionIds.add().setValue(id.getValue()));
-
-        LOG.info("Adding topic {}", topicInfo);
-
-    }
-
-    private void notifyTopicAdded(final DirectBuffer topicName)
-    {
-        final String name = BufferUtil.bufferAsString(topicName);
-        topicsListeners.forEach(l -> l.topicAdded(name));
-    }
-
-    private void notifyTopicCreated(final DirectBuffer topicName)
-    {
-        final String name = BufferUtil.bufferAsString(topicName);
-        topicsListeners.forEach(l -> l.topicCreated(name));
-    }
-
-    private TopicInfo createTopicInfo(final long key, final TopicRecord topicEvent)
-    {
-        final TopicInfo topicInfo = knownTopics.add();
-        topicInfo.setTopicName(topicEvent.getName())
-                 .setPartitionCount(topicEvent.getPartitions())
-                 .setReplicationFactor(topicEvent.getReplicationFactor())
-                 .setKey(key);
-
+  private TopicInfo getTopic(final DirectBuffer topicName) {
+    for (final TopicInfo topicInfo : knownTopics) {
+      if (topicInfo.getTopicNameBuffer().equals(topicName)) {
         return topicInfo;
+      }
     }
 
-    private TopicInfo getOrCreateTopicInfo(final long key, final TopicRecord topicEvent)
-    {
-        final TopicInfo topicInfo = getTopic(topicEvent.getName());
+    return null;
+  }
 
-        if (topicInfo != null)
-        {
-            return topicInfo;
-        }
-        else
-        {
-            return createTopicInfo(key, topicEvent);
-        }
+  private void addTopic(final long key, final TopicRecord topicEvent) {
+    final TopicInfo topicInfo = createTopicInfo(key, topicEvent);
+
+    final ValueArray<IntegerValue> partitionIds = topicInfo.getPartitionIds();
+    topicEvent.getPartitionIds().forEach(id -> partitionIds.add().setValue(id.getValue()));
+
+    LOG.info("Adding topic {}", topicInfo);
+  }
+
+  private void notifyTopicAdded(final DirectBuffer topicName) {
+    final String name = BufferUtil.bufferAsString(topicName);
+    topicsListeners.forEach(l -> l.topicAdded(name));
+  }
+
+  private void notifyTopicCreated(final DirectBuffer topicName) {
+    final String name = BufferUtil.bufferAsString(topicName);
+    topicsListeners.forEach(l -> l.topicCreated(name));
+  }
+
+  private TopicInfo createTopicInfo(final long key, final TopicRecord topicEvent) {
+    final TopicInfo topicInfo = knownTopics.add();
+    topicInfo
+        .setTopicName(topicEvent.getName())
+        .setPartitionCount(topicEvent.getPartitions())
+        .setReplicationFactor(topicEvent.getReplicationFactor())
+        .setKey(key);
+
+    return topicInfo;
+  }
+
+  private TopicInfo getOrCreateTopicInfo(final long key, final TopicRecord topicEvent) {
+    final TopicInfo topicInfo = getTopic(topicEvent.getName());
+
+    if (topicInfo != null) {
+      return topicInfo;
+    } else {
+      return createTopicInfo(key, topicEvent);
     }
+  }
 
-    private void completeTopicCreation(final long key, final TopicRecord topicEvent)
-    {
-        final TopicInfo topicInfo = getOrCreateTopicInfo(key, topicEvent);
+  private void completeTopicCreation(final long key, final TopicRecord topicEvent) {
+    final TopicInfo topicInfo = getOrCreateTopicInfo(key, topicEvent);
 
-        final ArrayProperty<IntegerValue> partitionIds = topicInfo.partitionIds;
-        partitionIds.reset();
-        topicEvent.getPartitionIds().forEach(id -> partitionIds.add().setValue(id.getValue()));
+    final ArrayProperty<IntegerValue> partitionIds = topicInfo.partitionIds;
+    partitionIds.reset();
+    topicEvent.getPartitionIds().forEach(id -> partitionIds.add().setValue(id.getValue()));
 
-        LOG.info("Updating topic {}", topicInfo);
-    }
+    LOG.info("Updating topic {}", topicInfo);
+  }
 
+  @Override
+  public void onOpen(final TypedStreamProcessor streamProcessor) {
+    actor = streamProcessor.getActor();
+  }
 
-    @Override
-    public void onOpen(final TypedStreamProcessor streamProcessor)
-    {
-        actor = streamProcessor.getActor();
-    }
+  @Override
+  public void start(final ServiceStartContext startContext) {
+    final Partition partition = partitionInjector.getValue();
+    final ServerTransport serverTransport = serverTransportInjector.getValue();
+    final StreamProcessorServiceFactory streamProcessorServiceFactory =
+        streamProcessorServiceFactoryInjector.getValue();
 
-    @Override
-    public void start(final ServiceStartContext startContext)
-    {
-        final Partition partition = partitionInjector.getValue();
-        final ServerTransport serverTransport = serverTransportInjector.getValue();
-        final StreamProcessorServiceFactory streamProcessorServiceFactory = streamProcessorServiceFactoryInjector.getValue();
-
-        final TypedStreamProcessor streamProcessor = new TypedStreamEnvironment(partition.getLogStream(), serverTransport.getOutput())
+    final TypedStreamProcessor streamProcessor =
+        new TypedStreamEnvironment(partition.getLogStream(), serverTransport.getOutput())
             .newStreamProcessor()
             .onCommand(ValueType.TOPIC, TopicIntent.CREATE, topicCreateProcessor)
             .onEvent(ValueType.TOPIC, TopicIntent.CREATE_COMPLETE, topicCreatedProcessor)
@@ -194,44 +176,41 @@ public class KnownTopics implements Service<KnownTopics>, StreamProcessorLifecyc
             .withStateResource(knownTopics)
             .build();
 
-        final String streamProcessorName = "topics";
-        streamProcessorServiceName = streamProcessorService(partitionInjector.getValue().getLogStream().getLogName(), streamProcessorName);
-        final ActorFuture<StreamProcessorService> future = streamProcessorServiceFactory.createService(partition, partitionInjector.getInjectedServiceName())
-                                                                                        .processor(streamProcessor)
-                                                                                        .processorId(StreamProcessorIds.CLUSTER_TOPIC_STATE)
-                                                                                        .processorName(streamProcessorName)
-                                                                                        .build();
+    final String streamProcessorName = "topics";
+    streamProcessorServiceName =
+        streamProcessorService(
+            partitionInjector.getValue().getLogStream().getLogName(), streamProcessorName);
+    final ActorFuture<StreamProcessorService> future =
+        streamProcessorServiceFactory
+            .createService(partition, partitionInjector.getInjectedServiceName())
+            .processor(streamProcessor)
+            .processorId(StreamProcessorIds.CLUSTER_TOPIC_STATE)
+            .processorName(streamProcessorName)
+            .build();
 
-        startContext.async(future);
+    startContext.async(future);
+  }
+
+  @Override
+  public void stop(final ServiceStopContext stopContext) {
+    if (serviceContainer.hasService(streamProcessorServiceName)) {
+      stopContext.async(serviceContainer.removeService(streamProcessorServiceName));
     }
+  }
 
-    @Override
-    public void stop(final ServiceStopContext stopContext)
-    {
-        if (serviceContainer.hasService(streamProcessorServiceName))
-        {
-            stopContext.async(serviceContainer.removeService(streamProcessorServiceName));
-        }
-    }
+  public Injector<Partition> getPartitionInjector() {
+    return partitionInjector;
+  }
 
-    public Injector<Partition> getPartitionInjector()
-    {
-        return partitionInjector;
-    }
+  public Injector<ServerTransport> getServerTransportInjector() {
+    return serverTransportInjector;
+  }
 
-    public Injector<ServerTransport> getServerTransportInjector()
-    {
-        return serverTransportInjector;
-    }
+  public Injector<StreamProcessorServiceFactory> getStreamProcessorServiceFactoryInjector() {
+    return streamProcessorServiceFactoryInjector;
+  }
 
-    public Injector<StreamProcessorServiceFactory> getStreamProcessorServiceFactoryInjector()
-    {
-        return streamProcessorServiceFactoryInjector;
-    }
-
-    public <R> ActorFuture<R> queryTopics(final Function<Iterable<TopicInfo>, R> query)
-    {
-        return actor.call(() -> query.apply(knownTopics));
-    }
-
+  public <R> ActorFuture<R> queryTopics(final Function<Iterable<TopicInfo>, R> query) {
+    return actor.call(() -> query.apply(knownTopics));
+  }
 }

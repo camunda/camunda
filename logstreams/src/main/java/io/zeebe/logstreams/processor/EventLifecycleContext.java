@@ -18,46 +18,43 @@ package io.zeebe.logstreams.processor;
 import io.zeebe.util.sched.AsyncContext;
 import io.zeebe.util.sched.future.ActorFuture;
 
-public class EventLifecycleContext implements AsyncContext
-{
-    private ActorFuture<?> future;
+public class EventLifecycleContext implements AsyncContext {
+  private ActorFuture<?> future;
 
-    /**
-     * <strong>Use with care</strong>
-     * <p>
-     * If you need to perform an async action (like fetching some data) while processing the event, you
-     * can supply a future here. Note that:
-     * <ul>
-     * <li>the async action should not be a side effect (in that case use {@link StreamProcessorController#executeSideEffects()}).</li>
-     * <li>if the outcome of the action influences the outcome of processing the event (ie. based on the return
-     * value of the async action either a command succeeds or is rejected, make sure that reprocessing produces the
-     * same results. There are two cases:</li>
-     * <ul>
-     * <li>In case the async action always returns the same data no extra care is necessary</li>
-     * <li>In case the async action does not always return the same data, make sure to a) send responses to a client
-     * based on the event that is written to the stream, b) do not update state on the command but rather on the event.</li>
-     * </ul>
-     * </ul>
-     */
+  /**
+   * <strong>Use with care</strong>
+   *
+   * <p>If you need to perform an async action (like fetching some data) while processing the event,
+   * you can supply a future here. Note that:
+   *
+   * <ul>
+   *   <li>the async action should not be a side effect (in that case use {@link
+   *       StreamProcessorController#executeSideEffects()}).
+   *   <li>if the outcome of the action influences the outcome of processing the event (ie. based on
+   *       the return value of the async action either a command succeeds or is rejected, make sure
+   *       that reprocessing produces the same results. There are two cases:
+   *       <ul>
+   *         <li>In case the async action always returns the same data no extra care is necessary
+   *         <li>In case the async action does not always return the same data, make sure to a) send
+   *             responses to a client based on the event that is written to the stream, b) do not
+   *             update state on the command but rather on the event.
+   *       </ul>
+   * </ul>
+   */
+  @Override
+  public void async(ActorFuture<?> future) {
+    this.future = future;
+  }
 
-    @Override
-    public void async(ActorFuture<?> future)
-    {
-        this.future = future;
-    }
+  void reset() {
+    future = null;
+  }
 
-    void reset()
-    {
-        future = null;
-    }
+  boolean hasFuture() {
+    return future != null;
+  }
 
-    boolean hasFuture()
-    {
-        return future != null;
-    }
-
-    ActorFuture<?> getFuture()
-    {
-        return future;
-    }
+  ActorFuture<?> getFuture() {
+    return future;
+  }
 }

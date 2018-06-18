@@ -15,19 +15,13 @@
  */
 package io.zeebe.client.api.events;
 
+import io.zeebe.client.api.record.Record;
 import java.util.List;
 
-import io.zeebe.client.api.record.Record;
+public interface RaftEvent extends Record {
+  /** @return the list of members, can be null */
+  List<RaftMember> getMembers();
 
-public interface RaftEvent extends Record
-{
-    /**
-     * @return the list of members, can be null
-     */
-    List<RaftMember> getMembers();
-
-    /**
-     * @return the current state
-     */
-    RaftState getState();
+  /** @return the current state */
+  RaftState getState();
 }

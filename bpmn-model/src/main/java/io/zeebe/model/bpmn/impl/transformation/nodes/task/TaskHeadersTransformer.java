@@ -15,50 +15,46 @@
  */
 package io.zeebe.model.bpmn.impl.transformation.nodes.task;
 
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+
 import io.zeebe.model.bpmn.impl.metadata.TaskHeaderImpl;
 import io.zeebe.model.bpmn.impl.metadata.TaskHeadersImpl;
 import io.zeebe.msgpack.spec.MsgPackWriter;
+import java.util.List;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import java.util.List;
+public class TaskHeadersTransformer {
+  private static final int INITIAL_SIZE_KEY_VALUE_PAIR = 128;
 
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
+  private final MsgPackWriter msgPackWriter = new MsgPackWriter();
 
-public class TaskHeadersTransformer
-{
-    private static final int INITIAL_SIZE_KEY_VALUE_PAIR = 128;
+  public void transform(TaskHeadersImpl taskHeaders) {
+    final MutableDirectBuffer buffer = new UnsafeBuffer(0, 0);
 
-    private final MsgPackWriter msgPackWriter = new MsgPackWriter();
+    final List<TaskHeaderImpl> headers = taskHeaders.getTaskHeaders();
 
-    public void transform(TaskHeadersImpl taskHeaders)
-    {
-        final MutableDirectBuffer buffer = new UnsafeBuffer(0, 0);
+    if (!headers.isEmpty()) {
+      final ExpandableArrayBuffer expandableBuffer =
+          new ExpandableArrayBuffer(INITIAL_SIZE_KEY_VALUE_PAIR * headers.size());
+      msgPackWriter.wrap(expandableBuffer, 0);
+      msgPackWriter.writeMapHeader(headers.size());
 
-        final List<TaskHeaderImpl> headers = taskHeaders.getTaskHeaders();
+      for (int h = 0; h < headers.size(); h++) {
+        final TaskHeaderImpl header = headers.get(h);
 
-        if (!headers.isEmpty())
-        {
-            final ExpandableArrayBuffer expandableBuffer = new ExpandableArrayBuffer(INITIAL_SIZE_KEY_VALUE_PAIR * headers.size());
-            msgPackWriter.wrap(expandableBuffer, 0);
-            msgPackWriter.writeMapHeader(headers.size());
+        final DirectBuffer key = wrapString(header.getKey());
+        msgPackWriter.writeString(key);
 
-            for (int h = 0; h < headers.size(); h++)
-            {
-                final TaskHeaderImpl header = headers.get(h);
+        final DirectBuffer value = wrapString(header.getValue());
+        msgPackWriter.writeString(value);
+      }
 
-                final DirectBuffer key = wrapString(header.getKey());
-                msgPackWriter.writeString(key);
-
-                final DirectBuffer value = wrapString(header.getValue());
-                msgPackWriter.writeString(value);
-            }
-
-            buffer.wrap(expandableBuffer.byteArray(), 0, msgPackWriter.getOffset());
-        }
-
-        taskHeaders.setEncodedMsgpack(buffer);
+      buffer.wrap(expandableBuffer.byteArray(), 0, msgPackWriter.getOffset());
     }
+
+    taskHeaders.setEncodedMsgpack(buffer);
+  }
 }

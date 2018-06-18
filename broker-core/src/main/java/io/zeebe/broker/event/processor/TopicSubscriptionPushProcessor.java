@@ -29,103 +29,93 @@ import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.util.collection.LongRingBuffer;
 import org.agrona.DirectBuffer;
 
-public class TopicSubscriptionPushProcessor implements StreamProcessor, EventProcessor
-{
+public class TopicSubscriptionPushProcessor implements StreamProcessor, EventProcessor {
 
-    protected final RecordMetadata metadata = new RecordMetadata();
+  protected final RecordMetadata metadata = new RecordMetadata();
 
-    protected LoggedEvent event;
+  protected LoggedEvent event;
 
-    protected final int clientStreamId;
-    protected final long subscriberKey;
-    protected long startPosition;
-    protected final DirectBuffer name;
-    protected final String nameString;
-    protected int logStreamPartitionId;
+  protected final int clientStreamId;
+  protected final long subscriberKey;
+  protected long startPosition;
+  protected final DirectBuffer name;
+  protected final String nameString;
+  protected int logStreamPartitionId;
 
-    protected final SnapshotSupport snapshotSupport = new NoopSnapshotSupport();
-    protected final SubscribedRecordWriter channelWriter;
+  protected final SnapshotSupport snapshotSupport = new NoopSnapshotSupport();
+  protected final SubscribedRecordWriter channelWriter;
 
-    protected LongRingBuffer pendingEvents;
-    private StreamProcessorContext context;
+  protected LongRingBuffer pendingEvents;
+  private StreamProcessorContext context;
 
-    public TopicSubscriptionPushProcessor(
-            int clientStreamId,
-            long subscriberKey,
-            long startPosition,
-            DirectBuffer name,
-            int bufferSize,
-            SubscribedRecordWriter channelWriter)
-    {
-        this.channelWriter = channelWriter;
-        this.clientStreamId = clientStreamId;
-        this.subscriberKey = subscriberKey;
-        this.startPosition = startPosition;
-        this.name = cloneBuffer(name);
-        this.nameString = name.getStringWithoutLengthUtf8(0, name.capacity());
+  public TopicSubscriptionPushProcessor(
+      int clientStreamId,
+      long subscriberKey,
+      long startPosition,
+      DirectBuffer name,
+      int bufferSize,
+      SubscribedRecordWriter channelWriter) {
+    this.channelWriter = channelWriter;
+    this.clientStreamId = clientStreamId;
+    this.subscriberKey = subscriberKey;
+    this.startPosition = startPosition;
+    this.name = cloneBuffer(name);
+    this.nameString = name.getStringWithoutLengthUtf8(0, name.capacity());
 
-        this.pendingEvents = new LongRingBuffer(bufferSize);
+    this.pendingEvents = new LongRingBuffer(bufferSize);
+  }
+
+  @Override
+  public void onOpen(StreamProcessorContext context) {
+    this.context = context;
+    final LogStreamReader logReader = context.getLogStreamReader();
+
+    final LogStream logStream = context.getLogStream();
+    this.logStreamPartitionId = logStream.getPartitionId();
+
+    setToStartPosition(logReader);
+    context.suspendController();
+  }
+
+  /**
+   * @return the position at which this processor actually started. This may be different than the
+   *     constructor argument
+   */
+  public long getStartPosition() {
+    return startPosition;
+  }
+
+  protected void setToStartPosition(LogStreamReader logReader) {
+    if (startPosition >= 0) {
+      logReader.seek(startPosition);
+    } else {
+      logReader.seekToLastEvent();
+
+      if (logReader.hasNext()) {
+        logReader.next();
+      }
     }
 
-    @Override
-    public void onOpen(StreamProcessorContext context)
-    {
-        this.context = context;
-        final LogStreamReader logReader = context.getLogStreamReader();
+    startPosition = logReader.getPosition();
+  }
 
-        final LogStream logStream = context.getLogStream();
-        this.logStreamPartitionId = logStream.getPartitionId();
+  @Override
+  public SnapshotSupport getStateResource() {
+    return snapshotSupport;
+  }
 
-        setToStartPosition(logReader);
-        context.suspendController();
-    }
+  @Override
+  public EventProcessor onEvent(LoggedEvent event) {
+    this.event = event;
+    return this;
+  }
 
-    /**
-     * @return the position at which this processor actually started. This may be different than the constructor argument
-     */
-    public long getStartPosition()
-    {
-        return startPosition;
-    }
+  @Override
+  public boolean executeSideEffects() {
+    event.readMetadata(metadata);
 
-    protected void setToStartPosition(LogStreamReader logReader)
-    {
-        if (startPosition >= 0)
-        {
-            logReader.seek(startPosition);
-        }
-        else
-        {
-            logReader.seekToLastEvent();
-
-            if (logReader.hasNext())
-            {
-                logReader.next();
-            }
-        }
-
-        startPosition = logReader.getPosition();
-    }
-
-    @Override
-    public SnapshotSupport getStateResource()
-    {
-        return snapshotSupport;
-    }
-
-    @Override
-    public EventProcessor onEvent(LoggedEvent event)
-    {
-        this.event = event;
-        return this;
-    }
-
-    @Override
-    public boolean executeSideEffects()
-    {
-        event.readMetadata(metadata);
-
-        final boolean success = channelWriter
+    final boolean success =
+        channelWriter
             .partitionId(logStreamPartitionId)
             .valueType(metadata.getValueType())
             .recordType(metadata.getRecordType())
@@ -141,60 +131,54 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
             .value(event.getValueBuffer(), event.getValueOffset(), event.getValueLength())
             .tryWriteMessage(clientStreamId);
 
-        if (success)
-        {
-            final boolean elementAdded = pendingEvents.addElementToHead(event.getPosition());
-            if (!elementAdded)
-            {
-                throw new RuntimeException("Cannot record pending event " + elementAdded);
-            }
+    if (success) {
+      final boolean elementAdded = pendingEvents.addElementToHead(event.getPosition());
+      if (!elementAdded) {
+        throw new RuntimeException("Cannot record pending event " + elementAdded);
+      }
 
-            if (pendingEvents.isSaturated())
-            {
-                this.context.suspendController();
-            }
-        }
-
-        return success;
+      if (pendingEvents.isSaturated()) {
+        this.context.suspendController();
+      }
     }
 
-    public int getChannelId()
-    {
-        return clientStreamId;
-    }
+    return success;
+  }
 
-    public String getNameAsString()
-    {
-        return nameString;
-    }
+  public int getChannelId() {
+    return clientStreamId;
+  }
 
-    public void onAck(long eventPosition)
-    {
-        context.getActorControl().call(() ->
-        {
-            pendingEvents.consumeAscendingUntilInclusive(eventPosition);
-            if (!pendingEvents.isSaturated())
-            {
+  public String getNameAsString() {
+    return nameString;
+  }
+
+  public void onAck(long eventPosition) {
+    context
+        .getActorControl()
+        .call(
+            () -> {
+              pendingEvents.consumeAscendingUntilInclusive(eventPosition);
+              if (!pendingEvents.isSaturated()) {
                 this.context.resumeController();
-            }
-        });
-    }
+              }
+            });
+  }
 
-    public DirectBuffer getName()
-    {
-        return name;
-    }
+  public DirectBuffer getName() {
+    return name;
+  }
 
-    public long getSubscriptionId()
-    {
-        return subscriberKey;
-    }
+  public long getSubscriptionId() {
+    return subscriberKey;
+  }
 
-    public void enable()
-    {
-        context.getActorControl().call(() ->
-        {
-            this.context.resumeController();
-        });
-    }
+  public void enable() {
+    context
+        .getActorControl()
+        .call(
+            () -> {
+              this.context.resumeController();
+            });
+  }
 }

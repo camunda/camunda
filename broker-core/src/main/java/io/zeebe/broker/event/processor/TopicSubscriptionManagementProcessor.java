@@ -17,9 +17,6 @@
  */
 package io.zeebe.broker.event.processor;
 
-import java.util.Iterator;
-import java.util.function.Supplier;
-
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.logstreams.processor.*;
@@ -41,375 +38,333 @@ import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import java.util.Iterator;
+import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 
-public class TopicSubscriptionManagementProcessor implements StreamProcessor
-{
+public class TopicSubscriptionManagementProcessor implements StreamProcessor {
 
-    protected static final int MAXIMUM_SUBSCRIPTION_NAME_LENGTH = 32;
+  protected static final int MAXIMUM_SUBSCRIPTION_NAME_LENGTH = 32;
 
-    protected final SnapshotSupport snapshotResource;
+  protected final SnapshotSupport snapshotResource;
 
-    protected LogStream logStream;
-    protected int logStreamPartitionId;
+  protected LogStream logStream;
+  protected int logStreamPartitionId;
 
-    protected final Partition partition;
-    protected final ServiceName<Partition> partitionServiceName;
+  protected final Partition partition;
+  protected final ServiceName<Partition> partitionServiceName;
 
-    protected final MetadataFilter pushProcessorEventFilter;
+  protected final MetadataFilter pushProcessorEventFilter;
 
-    protected final SubscriptionRegistry subscriptionRegistry = new SubscriptionRegistry();
+  protected final SubscriptionRegistry subscriptionRegistry = new SubscriptionRegistry();
 
-    protected final ErrorResponseWriter errorWriter;
-    protected final CommandResponseWriter responseWriter;
-    protected final Supplier<SubscribedRecordWriter> eventWriterFactory;
-    protected final StreamProcessorServiceFactory streamProcessorServiceFactory;
-    protected final ServiceContainer serviceContext;
-    protected final Bytes2LongZbMap ackMap;
+  protected final ErrorResponseWriter errorWriter;
+  protected final CommandResponseWriter responseWriter;
+  protected final Supplier<SubscribedRecordWriter> eventWriterFactory;
+  protected final StreamProcessorServiceFactory streamProcessorServiceFactory;
+  protected final ServiceContainer serviceContext;
+  protected final Bytes2LongZbMap ackMap;
 
-    private ActorControl actor;
+  private ActorControl actor;
 
-    protected final AckProcessor ackProcessor = new AckProcessor();
-    protected final SubscribeProcessor subscribeProcessor = new SubscribeProcessor(MAXIMUM_SUBSCRIPTION_NAME_LENGTH, this);
-    protected final SubscribedProcessor subscribedProcessor = new SubscribedProcessor();
+  protected final AckProcessor ackProcessor = new AckProcessor();
+  protected final SubscribeProcessor subscribeProcessor =
+      new SubscribeProcessor(MAXIMUM_SUBSCRIPTION_NAME_LENGTH, this);
+  protected final SubscribedProcessor subscribedProcessor = new SubscribedProcessor();
 
-    protected final RecordMetadata metadata = new RecordMetadata();
-    protected final TopicSubscriptionEvent subscriptionEvent = new TopicSubscriptionEvent();
-    protected final TopicSubscriberEvent subscriberEvent = new TopicSubscriberEvent();
-    protected LoggedEvent currentEvent;
+  protected final RecordMetadata metadata = new RecordMetadata();
+  protected final TopicSubscriptionEvent subscriptionEvent = new TopicSubscriptionEvent();
+  protected final TopicSubscriberEvent subscriberEvent = new TopicSubscriberEvent();
+  protected LoggedEvent currentEvent;
 
+  public TopicSubscriptionManagementProcessor(
+      Partition partition,
+      ServiceName<Partition> partitionServiceName,
+      MetadataFilter pushProcessorEventFilter,
+      CommandResponseWriter responseWriter,
+      ErrorResponseWriter errorWriter,
+      Supplier<SubscribedRecordWriter> eventWriterFactory,
+      StreamProcessorServiceFactory streamProcessorServiceFactory,
+      ServiceContainer serviceContainer) {
+    this.partition = partition;
+    this.partitionServiceName = partitionServiceName;
+    this.pushProcessorEventFilter = pushProcessorEventFilter;
+    this.responseWriter = responseWriter;
+    this.errorWriter = errorWriter;
+    this.eventWriterFactory = eventWriterFactory;
+    this.ackMap = new Bytes2LongZbMap(MAXIMUM_SUBSCRIPTION_NAME_LENGTH);
+    this.snapshotResource = new ZbMapSnapshotSupport<>(ackMap);
+    this.serviceContext = serviceContainer;
+    this.streamProcessorServiceFactory = streamProcessorServiceFactory;
+  }
 
-    public TopicSubscriptionManagementProcessor(Partition partition,
-            ServiceName<Partition> partitionServiceName,
-            MetadataFilter pushProcessorEventFilter,
-            CommandResponseWriter responseWriter,
-            ErrorResponseWriter errorWriter,
-            Supplier<SubscribedRecordWriter> eventWriterFactory,
-            StreamProcessorServiceFactory streamProcessorServiceFactory,
-            ServiceContainer serviceContainer)
-    {
-        this.partition = partition;
-        this.partitionServiceName = partitionServiceName;
-        this.pushProcessorEventFilter = pushProcessorEventFilter;
-        this.responseWriter = responseWriter;
-        this.errorWriter = errorWriter;
-        this.eventWriterFactory = eventWriterFactory;
-        this.ackMap = new Bytes2LongZbMap(MAXIMUM_SUBSCRIPTION_NAME_LENGTH);
-        this.snapshotResource = new ZbMapSnapshotSupport<>(ackMap);
-        this.serviceContext = serviceContainer;
-        this.streamProcessorServiceFactory = streamProcessorServiceFactory;
+  public Supplier<SubscribedRecordWriter> getEventWriterFactory() {
+    return eventWriterFactory;
+  }
+
+  @Override
+  public void onOpen(StreamProcessorContext context) {
+    this.actor = context.getActorControl();
+
+    final LogStream logStream = context.getLogStream();
+    this.logStreamPartitionId = logStream.getPartitionId();
+
+    this.logStream = logStream;
+  }
+
+  @Override
+  public void onClose() {
+    ackMap.close();
+  }
+
+  @Override
+  public SnapshotSupport getStateResource() {
+    return snapshotResource;
+  }
+
+  public LogStream getLogStream() {
+    return logStream;
+  }
+
+  @Override
+  public EventProcessor onEvent(LoggedEvent event) {
+
+    metadata.reset();
+    event.readMetadata(metadata);
+    currentEvent = event;
+
+    if (metadata.getValueType() == ValueType.SUBSCRIPTION) {
+      return onSubscriptionEvent(event);
+    } else if (metadata.getValueType() == ValueType.SUBSCRIBER) {
+      return onSubscriberEvent(event);
+    } else {
+      return null;
     }
+  }
 
-    public Supplier<SubscribedRecordWriter> getEventWriterFactory()
-    {
-        return eventWriterFactory;
+  protected EventProcessor onSubscriberEvent(LoggedEvent event) {
+    subscriberEvent.reset();
+    subscriberEvent.wrap(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
+
+    if (metadata.getIntent() == SubscriberIntent.SUBSCRIBE) {
+      subscribeProcessor.wrap(currentEvent, metadata, subscriberEvent);
+      return subscribeProcessor;
+    } else if (metadata.getIntent() == SubscriberIntent.SUBSCRIBED) {
+      return subscribedProcessor;
+    } else {
+      return null;
     }
+  }
 
-    @Override
-    public void onOpen(StreamProcessorContext context)
-    {
-        this.actor = context.getActorControl();
+  protected EventProcessor onSubscriptionEvent(LoggedEvent event) {
+    subscriptionEvent.reset();
+    subscriptionEvent.wrap(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
 
-        final LogStream logStream = context.getLogStream();
-        this.logStreamPartitionId = logStream.getPartitionId();
-
-        this.logStream = logStream;
+    if (metadata.getIntent() == SubscriptionIntent.ACKNOWLEDGE) {
+      return ackProcessor;
+    } else {
+      return null;
     }
+  }
 
-    @Override
-    public void onClose()
-    {
-        ackMap.close();
-    }
+  protected void putAck(DirectBuffer subscriptionName, long ackPosition) {
+    ackMap.put(subscriptionName, 0, subscriptionName.capacity(), ackPosition);
+  }
 
-    @Override
-    public SnapshotSupport getStateResource()
-    {
-        return snapshotResource;
-    }
+  public ActorFuture<Void> closePushProcessorAsync(long subscriberKey) {
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+    actor.call(
+        () -> {
+          final TopicSubscriptionPushProcessor processor =
+              subscriptionRegistry.removeProcessorByKey(subscriberKey);
 
-    public LogStream getLogStream()
-    {
-        return logStream;
-    }
-
-    @Override
-    public EventProcessor onEvent(LoggedEvent event)
-    {
-
-        metadata.reset();
-        event.readMetadata(metadata);
-        currentEvent = event;
-
-        if (metadata.getValueType() == ValueType.SUBSCRIPTION)
-        {
-            return onSubscriptionEvent(event);
-        }
-        else if (metadata.getValueType() == ValueType.SUBSCRIBER)
-        {
-            return onSubscriberEvent(event);
-        }
-        else
-        {
-            return null;
-        }
-    }
-
-    protected EventProcessor onSubscriberEvent(LoggedEvent event)
-    {
-        subscriberEvent.reset();
-        subscriberEvent.wrap(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
-
-        if (metadata.getIntent() == SubscriberIntent.SUBSCRIBE)
-        {
-            subscribeProcessor.wrap(currentEvent, metadata, subscriberEvent);
-            return subscribeProcessor;
-        }
-        else if (metadata.getIntent() == SubscriberIntent.SUBSCRIBED)
-        {
-            return subscribedProcessor;
-        }
-        else
-        {
-            return null;
-        }
-    }
-
-    protected EventProcessor onSubscriptionEvent(LoggedEvent event)
-    {
-        subscriptionEvent.reset();
-        subscriptionEvent.wrap(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
-
-        if (metadata.getIntent() == SubscriptionIntent.ACKNOWLEDGE)
-        {
-            return ackProcessor;
-        }
-        else
-        {
-            return null;
-        }
-    }
-
-    protected void putAck(DirectBuffer subscriptionName, long ackPosition)
-    {
-        ackMap.put(subscriptionName, 0, subscriptionName.capacity(), ackPosition);
-    }
-
-    public ActorFuture<Void> closePushProcessorAsync(long subscriberKey)
-    {
-        final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-        actor.call(() ->
-        {
-            final TopicSubscriptionPushProcessor processor = subscriptionRegistry.removeProcessorByKey(subscriberKey);
-
-            if (processor != null)
-            {
-                final ActorFuture<Void> closeFuture = closePushProcessor(processor);
-                actor.runOnCompletion(closeFuture, (aVoid, throwable) ->
-                {
-                    if (throwable == null)
-                    {
-                        future.complete(null);
-                    }
-                    else
-                    {
-                        future.completeExceptionally(throwable);
-                    }
+          if (processor != null) {
+            final ActorFuture<Void> closeFuture = closePushProcessor(processor);
+            actor.runOnCompletion(
+                closeFuture,
+                (aVoid, throwable) -> {
+                  if (throwable == null) {
+                    future.complete(null);
+                  } else {
+                    future.completeExceptionally(throwable);
+                  }
                 });
-            }
-            else
-            {
-                future.complete(null);
-            }
+          } else {
+            future.complete(null);
+          }
         });
-        return future;
+    return future;
+  }
+
+  protected ActorFuture<Void> closePushProcessor(TopicSubscriptionPushProcessor processor) {
+    final ServiceName<StreamProcessorService> pushProcessorServiceName =
+        LogStreamServiceNames.streamProcessorService(
+            logStream.getLogName(), pushProcessorName(processor));
+    return serviceContext.removeService(pushProcessorServiceName);
+  }
+
+  public long determineResumePosition(
+      DirectBuffer subscriptionName, long startPosition, boolean forceStart) {
+    final long lastAckedPosition =
+        ackMap.get(subscriptionName, 0, subscriptionName.capacity(), -1L);
+
+    if (forceStart) {
+      return startPosition;
+    } else {
+      if (lastAckedPosition >= 0) {
+        return lastAckedPosition + 1;
+      } else {
+        return startPosition;
+      }
     }
+  }
 
-    protected ActorFuture<Void> closePushProcessor(TopicSubscriptionPushProcessor processor)
-    {
-        final ServiceName<StreamProcessorService> pushProcessorServiceName = LogStreamServiceNames.streamProcessorService(logStream.getLogName(), pushProcessorName(processor));
-        return serviceContext.removeService(pushProcessorServiceName);
-    }
+  public ActorFuture<StreamProcessorService> openPushProcessorAsync(
+      final TopicSubscriptionPushProcessor processor) {
+    return streamProcessorServiceFactory
+        .createService(partition, partitionServiceName)
+        .processor(processor)
+        .processorId(StreamProcessorIds.TOPIC_SUBSCRIPTION_PUSH_PROCESSOR_ID)
+        .processorName(pushProcessorName(processor))
+        .eventFilter(pushProcessorEventFilter)
+        .additionalDependencies(partitionServiceName)
+        .readOnly(true)
+        .build();
+  }
 
-    public long determineResumePosition(DirectBuffer subscriptionName, long startPosition, boolean forceStart)
-    {
-        final long lastAckedPosition = ackMap.get(subscriptionName, 0, subscriptionName.capacity(), -1L);
+  public boolean writeRequestResponseError(RecordMetadata metadata, String error) {
+    return errorWriter
+        .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
+        .errorMessage(error)
+        .tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId());
+  }
 
-        if (forceStart)
-        {
-            return startPosition;
-        }
-        else
-        {
-            if (lastAckedPosition >= 0)
-            {
-                return lastAckedPosition + 1;
+  public void registerPushProcessor(TopicSubscriptionPushProcessor processor) {
+    subscriptionRegistry.addSubscription(processor);
+  }
+
+  public void onClientChannelCloseAsync(int channelId) {
+    actor.call(
+        () -> {
+          final Iterator<TopicSubscriptionPushProcessor> subscriptionsIt =
+              subscriptionRegistry.iterateSubscriptions();
+
+          while (subscriptionsIt.hasNext()) {
+            final TopicSubscriptionPushProcessor processor = subscriptionsIt.next();
+            if (processor.getChannelId() == channelId) {
+              subscriptionsIt.remove();
+              closePushProcessor(processor);
             }
-            else
-            {
-                return startPosition;
-            }
-        }
+          }
+        });
+  }
+
+  public static MetadataFilter filter() {
+    return (m) ->
+        ValueType.SUBSCRIPTION == m.getValueType() || ValueType.SUBSCRIBER == m.getValueType();
+  }
+
+  protected class AckProcessor implements EventProcessor {
+    @Override
+    public long writeEvent(LogStreamWriter writer) {
+      metadata
+          .recordType(RecordType.EVENT)
+          .valueType(ValueType.SUBSCRIPTION)
+          .intent(SubscriptionIntent.ACKNOWLEDGED)
+          .protocolVersion(Protocol.PROTOCOL_VERSION);
+
+      return writer
+          .key(currentEvent.getKey())
+          .metadataWriter(metadata)
+          .valueWriter(subscriptionEvent)
+          .tryWrite();
     }
 
-    public ActorFuture<StreamProcessorService> openPushProcessorAsync(final TopicSubscriptionPushProcessor processor)
-    {
-        return streamProcessorServiceFactory.createService(partition, partitionServiceName)
-                .processor(processor)
-                .processorId(StreamProcessorIds.TOPIC_SUBSCRIPTION_PUSH_PROCESSOR_ID)
-                .processorName(pushProcessorName(processor))
-                .eventFilter(pushProcessorEventFilter)
-                .additionalDependencies(partitionServiceName)
-                .readOnly(true)
-                .build();
-    }
+    @Override
+    public boolean executeSideEffects() {
+      final TopicSubscriptionPushProcessor subscriptionProcessor =
+          subscriptionRegistry.getProcessorByName(subscriptionEvent.getName());
 
+      if (subscriptionProcessor != null) {
+        subscriptionProcessor.onAck(subscriptionEvent.getAckPosition());
+      }
 
-    public boolean writeRequestResponseError(RecordMetadata metadata, String error)
-    {
-        return errorWriter
-            .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
-            .errorMessage(error)
+      if (metadata.getRequestId() >= 0) {
+        return responseWriter
+            .partitionId(logStreamPartitionId)
+            .valueWriter(subscriptionEvent)
+            .key(currentEvent.getKey())
+            .timestamp(currentEvent.getTimestamp())
+            .recordType(RecordType.EVENT)
+            .valueType(ValueType.SUBSCRIPTION)
+            .intent(SubscriptionIntent.ACKNOWLEDGED)
             .tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId());
+      } else {
+        return true;
+      }
     }
 
-    public void registerPushProcessor(TopicSubscriptionPushProcessor processor)
-    {
-        subscriptionRegistry.addSubscription(processor);
+    @Override
+    public void updateState() {
+      putAck(subscriptionEvent.getName(), subscriptionEvent.getAckPosition());
+    }
+  }
+
+  protected class SubscribedProcessor implements EventProcessor {
+
+    @Override
+    public boolean executeSideEffects() {
+
+      final boolean responseWritten =
+          responseWriter
+              .partitionId(logStreamPartitionId)
+              .recordType(RecordType.EVENT)
+              .valueType(ValueType.SUBSCRIBER)
+              .intent(SubscriberIntent.SUBSCRIBED)
+              .valueWriter(subscriberEvent)
+              .position(currentEvent.getPosition())
+              .key(currentEvent.getKey())
+              .timestamp(currentEvent.getTimestamp())
+              .tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId());
+
+      if (responseWritten) {
+        Loggers.SERVICES_LOGGER.debug(
+            "Topic push processor for partition {} successfully opened. Send response for request {}",
+            logStreamPartitionId,
+            metadata.getRequestId());
+        final TopicSubscriptionPushProcessor pushProcessor =
+            subscriptionRegistry.getProcessorByName(subscriberEvent.getName());
+        pushProcessor.enable();
+      }
+
+      return responseWritten;
     }
 
-    public void onClientChannelCloseAsync(int channelId)
-    {
-        actor.call(() ->
-        {
-            final Iterator<TopicSubscriptionPushProcessor> subscriptionsIt = subscriptionRegistry.iterateSubscriptions();
+    @Override
+    public long writeEvent(LogStreamWriter writer) {
+      final DirectBuffer openedSubscriptionName = subscriberEvent.getName();
 
-            while (subscriptionsIt.hasNext())
-            {
-                final TopicSubscriptionPushProcessor processor = subscriptionsIt.next();
-                if (processor.getChannelId() == channelId)
-                {
-                    subscriptionsIt.remove();
-                    closePushProcessor(processor);
-                }
-            }
-        });
+      subscriptionEvent.reset();
+      subscriptionEvent
+          .setName(openedSubscriptionName, 0, openedSubscriptionName.capacity())
+          .setAckPosition(subscriberEvent.getStartPosition() - 1);
+
+      metadata
+          .recordType(RecordType.COMMAND)
+          .valueType(ValueType.SUBSCRIPTION)
+          .intent(SubscriptionIntent.ACKNOWLEDGE)
+          .requestStreamId(-1)
+          .requestId(-1);
+
+      return writer
+          .key(currentEvent.getKey())
+          .metadataWriter(metadata)
+          .valueWriter(subscriptionEvent)
+          .tryWrite();
     }
+  }
 
-    public static MetadataFilter filter()
-    {
-        return (m) -> ValueType.SUBSCRIPTION == m.getValueType() || ValueType.SUBSCRIBER == m.getValueType();
-    }
-
-    protected class AckProcessor implements EventProcessor
-    {
-        @Override
-        public long writeEvent(LogStreamWriter writer)
-        {
-            metadata
-                .recordType(RecordType.EVENT)
-                .valueType(ValueType.SUBSCRIPTION)
-                .intent(SubscriptionIntent.ACKNOWLEDGED)
-                .protocolVersion(Protocol.PROTOCOL_VERSION);
-
-            return writer
-                .key(currentEvent.getKey())
-                .metadataWriter(metadata)
-                .valueWriter(subscriptionEvent)
-                .tryWrite();
-        }
-
-        @Override
-        public boolean executeSideEffects()
-        {
-            final TopicSubscriptionPushProcessor subscriptionProcessor = subscriptionRegistry.getProcessorByName(subscriptionEvent.getName());
-
-            if (subscriptionProcessor != null)
-            {
-                subscriptionProcessor.onAck(subscriptionEvent.getAckPosition());
-            }
-
-            if (metadata.getRequestId() >= 0)
-            {
-                return responseWriter
-                    .partitionId(logStreamPartitionId)
-                    .valueWriter(subscriptionEvent)
-                    .key(currentEvent.getKey())
-                    .timestamp(currentEvent.getTimestamp())
-                    .recordType(RecordType.EVENT)
-                    .valueType(ValueType.SUBSCRIPTION)
-                    .intent(SubscriptionIntent.ACKNOWLEDGED)
-                    .tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId());
-            }
-            else
-            {
-                return true;
-            }
-        }
-
-        @Override
-        public void updateState()
-        {
-            putAck(subscriptionEvent.getName(), subscriptionEvent.getAckPosition());
-        }
-    }
-
-    protected class SubscribedProcessor implements EventProcessor
-    {
-
-        @Override
-        public boolean executeSideEffects()
-        {
-
-            final boolean responseWritten = responseWriter
-                    .partitionId(logStreamPartitionId)
-                    .recordType(RecordType.EVENT)
-                    .valueType(ValueType.SUBSCRIBER)
-                    .intent(SubscriberIntent.SUBSCRIBED)
-                    .valueWriter(subscriberEvent)
-                    .position(currentEvent.getPosition())
-                    .key(currentEvent.getKey())
-                    .timestamp(currentEvent.getTimestamp())
-                    .tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId());
-
-            if (responseWritten)
-            {
-                Loggers.SERVICES_LOGGER.debug("Topic push processor for partition {} successfully opened. Send response for request {}", logStreamPartitionId, metadata.getRequestId());
-                final TopicSubscriptionPushProcessor pushProcessor = subscriptionRegistry.getProcessorByName(subscriberEvent.getName());
-                pushProcessor.enable();
-            }
-
-            return responseWritten;
-        }
-
-        @Override
-        public long writeEvent(LogStreamWriter writer)
-        {
-            final DirectBuffer openedSubscriptionName = subscriberEvent.getName();
-
-            subscriptionEvent.reset();
-            subscriptionEvent
-                .setName(openedSubscriptionName, 0, openedSubscriptionName.capacity())
-                .setAckPosition(subscriberEvent.getStartPosition() - 1);
-
-            metadata
-                .recordType(RecordType.COMMAND)
-                .valueType(ValueType.SUBSCRIPTION)
-                .intent(SubscriptionIntent.ACKNOWLEDGE)
-                .requestStreamId(-1)
-                .requestId(-1);
-
-            return writer
-                    .key(currentEvent.getKey())
-                    .metadataWriter(metadata)
-                    .valueWriter(subscriptionEvent)
-                    .tryWrite();
-        }
-    }
-
-    private static String pushProcessorName(final TopicSubscriptionPushProcessor processor)
-    {
-        return String.format("topic-push.%s", processor.getNameAsString());
-    }
-
+  private static String pushProcessorName(final TopicSubscriptionPushProcessor processor) {
+    return String.format("topic-push.%s", processor.getNameAsString());
+  }
 }

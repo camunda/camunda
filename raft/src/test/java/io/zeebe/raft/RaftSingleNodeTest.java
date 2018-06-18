@@ -17,54 +17,48 @@ package io.zeebe.raft;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.List;
-
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.raft.util.EventInfo;
 import io.zeebe.raft.util.RaftClusterRule;
 import io.zeebe.raft.util.RaftRule;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class RaftSingleNodeTest
-{
-    public ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
+public class RaftSingleNodeTest {
+  public ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
 
-    public ServiceContainerRule serviceContainer = new ServiceContainerRule(actorScheduler);
+  public ServiceContainerRule serviceContainer = new ServiceContainerRule(actorScheduler);
 
-    public RaftRule raft1 = new RaftRule(serviceContainer, "localhost", 8001, "default", 0);
+  public RaftRule raft1 = new RaftRule(serviceContainer, "localhost", 8001, "default", 0);
 
-    @Rule
-    public RaftClusterRule cluster = new RaftClusterRule(actorScheduler, serviceContainer, raft1);
+  @Rule
+  public RaftClusterRule cluster = new RaftClusterRule(actorScheduler, serviceContainer, raft1);
 
-    @Test
-    public void shouldJoinCluster()
-    {
-        // given
-        final RaftRule leader = cluster.awaitLeader();
+  @Test
+  public void shouldJoinCluster() {
+    // given
+    final RaftRule leader = cluster.awaitLeader();
 
-        // then
-        cluster.awaitInitialEventCommittedOnAll(leader.getTerm());
+    // then
+    cluster.awaitInitialEventCommittedOnAll(leader.getTerm());
 
-        final List<RaftState> raftStateChanges = leader.getRaftStateChanges();
-        assertThat(raftStateChanges).contains(RaftState.LEADER);
-    }
+    final List<RaftState> raftStateChanges = leader.getRaftStateChanges();
+    assertThat(raftStateChanges).contains(RaftState.LEADER);
+  }
 
+  @Test
+  public void shouldCommitEntries() {
+    // given
+    final RaftRule leader = cluster.awaitLeader();
 
-    @Test
-    public void shouldCommitEntries()
-    {
-        // given
-        final RaftRule leader = cluster.awaitLeader();
+    // when
+    final EventInfo eventInfo = leader.writeEvents("foo", "bar", "end");
 
-        // when
-        final EventInfo eventInfo = leader.writeEvents("foo", "bar", "end");
-
-        // then
-        cluster.awaitEventCommittedOnAll(eventInfo);
-        cluster.awaitEventsCommittedOnAll("foo", "bar", "end");
-    }
-
+    // then
+    cluster.awaitEventCommittedOnAll(eventInfo);
+    cluster.awaitEventsCommittedOnAll("foo", "bar", "end");
+  }
 }

@@ -18,23 +18,22 @@ package io.zeebe.model.bpmn.impl.transformation.nodes;
 import io.zeebe.model.bpmn.impl.instance.ExclusiveGatewayImpl;
 import io.zeebe.model.bpmn.impl.instance.SequenceFlowImpl;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class ExclusiveGatewayTransformer
-{
-    public void transform(List<ExclusiveGatewayImpl> exclusiveGateways)
-    {
-        for (int e = 0; e < exclusiveGateways.size(); e++)
-        {
-            final ExclusiveGatewayImpl exclusiveGateway = exclusiveGateways.get(e);
+public class ExclusiveGatewayTransformer {
+  public void transform(List<ExclusiveGatewayImpl> exclusiveGateways) {
+    for (int e = 0; e < exclusiveGateways.size(); e++) {
+      final ExclusiveGatewayImpl exclusiveGateway = exclusiveGateways.get(e);
 
-            final List<SequenceFlow> sequenceFlowsWithConditions = exclusiveGateway.getOutgoing().stream()
-                .filter(SequenceFlowImpl::hasCondition)
-                .collect(Collectors.toList());
+      final List<SequenceFlow> sequenceFlowsWithConditions =
+          exclusiveGateway
+              .getOutgoing()
+              .stream()
+              .filter(SequenceFlowImpl::hasCondition)
+              .collect(Collectors.toList());
 
-            exclusiveGateway.setOutgoingSequenceFlowsWithConditions(sequenceFlowsWithConditions);
-        }
+      exclusiveGateway.setOutgoingSequenceFlowsWithConditions(sequenceFlowsWithConditions);
     }
+  }
 }

@@ -20,40 +20,32 @@ import io.zeebe.client.impl.event.TopicSubscriptionEventImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 
-public abstract class TopicSubscriptionRecordImpl extends RecordImpl
-{
-    private String name;
-    private long ackPosition = -1L;
+public abstract class TopicSubscriptionRecordImpl extends RecordImpl {
+  private String name;
+  private long ackPosition = -1L;
 
-    public TopicSubscriptionRecordImpl(ZeebeObjectMapperImpl objectMapper, RecordType recordType)
-    {
-        super(objectMapper, recordType, ValueType.SUBSCRIPTION);
-    }
+  public TopicSubscriptionRecordImpl(ZeebeObjectMapperImpl objectMapper, RecordType recordType) {
+    super(objectMapper, recordType, ValueType.SUBSCRIPTION);
+  }
 
-    public String getName()
-    {
-        return name;
-    }
+  public String getName() {
+    return name;
+  }
 
-    public void setName(String subscriptionName)
-    {
-        this.name = subscriptionName;
-    }
+  public void setName(String subscriptionName) {
+    this.name = subscriptionName;
+  }
 
-    public long getAckPosition()
-    {
-        return ackPosition;
-    }
+  public long getAckPosition() {
+    return ackPosition;
+  }
 
-    public void setAckPosition(long ackPosition)
-    {
-        this.ackPosition = ackPosition;
-    }
+  public void setAckPosition(long ackPosition) {
+    this.ackPosition = ackPosition;
+  }
 
-    @Override
-    public Class<? extends RecordImpl> getEventClass()
-    {
-        return TopicSubscriptionEventImpl.class;
-    }
-
+  @Override
+  public Class<? extends RecordImpl> getEventClass() {
+    return TopicSubscriptionEventImpl.class;
+  }
 }

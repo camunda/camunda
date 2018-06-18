@@ -15,9 +15,6 @@
  */
 package io.zeebe.client.impl.job;
 
-import java.io.InputStream;
-import java.util.Map;
-
 import io.zeebe.client.api.commands.CompleteJobCommandStep1;
 import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.impl.CommandImpl;
@@ -27,59 +24,53 @@ import io.zeebe.client.impl.event.JobEventImpl;
 import io.zeebe.client.impl.record.RecordImpl;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.util.EnsureUtil;
+import java.io.InputStream;
+import java.util.Map;
 
-public class CompleteJobCommandImpl extends CommandImpl<JobEvent> implements CompleteJobCommandStep1
-{
-    private final JobCommandImpl command;
+public class CompleteJobCommandImpl extends CommandImpl<JobEvent>
+    implements CompleteJobCommandStep1 {
+  private final JobCommandImpl command;
 
-    public CompleteJobCommandImpl(RequestManager commandManager, JobEvent event)
-    {
-        super(commandManager);
+  public CompleteJobCommandImpl(RequestManager commandManager, JobEvent event) {
+    super(commandManager);
 
-        EnsureUtil.ensureNotNull("base event", event);
+    EnsureUtil.ensureNotNull("base event", event);
 
-        command = new JobCommandImpl((JobEventImpl) event, JobIntent.COMPLETE);
-    }
+    command = new JobCommandImpl((JobEventImpl) event, JobIntent.COMPLETE);
+  }
 
-    @Override
-    public CompleteJobCommandStep1 payload(InputStream payload)
-    {
-        command.setPayload(payload);
-        return this;
-    }
+  @Override
+  public CompleteJobCommandStep1 payload(InputStream payload) {
+    command.setPayload(payload);
+    return this;
+  }
 
-    @Override
-    public CompleteJobCommandStep1 payload(String payload)
-    {
-        command.setPayload(payload);
-        return this;
-    }
+  @Override
+  public CompleteJobCommandStep1 payload(String payload) {
+    command.setPayload(payload);
+    return this;
+  }
 
-    @Override
-    public CompleteJobCommandStep1 payload(Map<String, Object> payload)
-    {
-        command.setPayload(payload);
-        return this;
-    }
+  @Override
+  public CompleteJobCommandStep1 payload(Map<String, Object> payload) {
+    command.setPayload(payload);
+    return this;
+  }
 
-    @Override
-    public CompleteJobCommandStep1 payload(Object payload)
-    {
-        command.setPayload(payload);
-        return this;
-    }
+  @Override
+  public CompleteJobCommandStep1 payload(Object payload) {
+    command.setPayload(payload);
+    return this;
+  }
 
-    @Override
-    public CompleteJobCommandStep1 withoutPayload()
-    {
-        command.clearPayload();
-        return this;
-    }
+  @Override
+  public CompleteJobCommandStep1 withoutPayload() {
+    command.clearPayload();
+    return this;
+  }
 
-    @Override
-    public RecordImpl getCommand()
-    {
-        return command;
-    }
-
+  @Override
+  public RecordImpl getCommand() {
+    return command;
+  }
 }

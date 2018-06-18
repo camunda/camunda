@@ -15,61 +15,51 @@
  */
 package io.zeebe.dispatcher.impl.log;
 
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
 import static org.assertj.core.api.Assertions.*;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
-
 import io.zeebe.dispatcher.ClaimedFragment;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.agrona.concurrent.UnsafeBuffer;
+public class ClaimedFragmentTest {
+  private static final Runnable DO_NOTHING = () -> {};
 
-public class ClaimedFragmentTest
-{
-    private static final Runnable DO_NOTHING = () ->
-    {
-    };
+  private static final int A_FRAGMENT_LENGTH = 1024;
+  UnsafeBuffer underlyingBuffer;
+  ClaimedFragment claimedFragment;
 
-    private static final int A_FRAGMENT_LENGTH = 1024;
-    UnsafeBuffer underlyingBuffer;
-    ClaimedFragment claimedFragment;
+  @Before
+  public void setup() {
+    underlyingBuffer = new UnsafeBuffer(new byte[A_FRAGMENT_LENGTH]);
+    claimedFragment = new ClaimedFragment();
+  }
 
-    @Before
-    public void setup()
-    {
-        underlyingBuffer = new UnsafeBuffer(new byte[A_FRAGMENT_LENGTH]);
-        claimedFragment = new ClaimedFragment();
-    }
+  @Test
+  public void shouldCommit() {
+    // given
+    final AtomicBoolean isSet = new AtomicBoolean(false);
+    claimedFragment.wrap(underlyingBuffer, 0, A_FRAGMENT_LENGTH, () -> isSet.set(true));
 
-    @Test
-    public void shouldCommit()
-    {
-        // given
-        final AtomicBoolean isSet = new AtomicBoolean(false);
-        claimedFragment.wrap(underlyingBuffer, 0, A_FRAGMENT_LENGTH, () -> isSet.set(true));
+    // if
+    claimedFragment.commit();
 
-        // if
-        claimedFragment.commit();
+    // then
+    assertThat(underlyingBuffer.getInt(lengthOffset(0))).isEqualTo(A_FRAGMENT_LENGTH);
+    assertThat(claimedFragment.getOffset()).isEqualTo(HEADER_LENGTH);
+    assertThat(claimedFragment.getLength()).isEqualTo(-HEADER_LENGTH);
+    assertThat(isSet).isTrue();
+  }
 
-        // then
-        assertThat(underlyingBuffer.getInt(lengthOffset(0))).isEqualTo(A_FRAGMENT_LENGTH);
-        assertThat(claimedFragment.getOffset()).isEqualTo(HEADER_LENGTH);
-        assertThat(claimedFragment.getLength()).isEqualTo(-HEADER_LENGTH);
-        assertThat(isSet).isTrue();
-    }
+  @Test
+  public void shouldReturnOffsetAndLength() {
+    // if
+    claimedFragment.wrap(underlyingBuffer, 0, A_FRAGMENT_LENGTH, DO_NOTHING);
 
-    @Test
-    public void shouldReturnOffsetAndLength()
-    {
-        // if
-        claimedFragment.wrap(underlyingBuffer, 0, A_FRAGMENT_LENGTH, DO_NOTHING);
-
-        // then
-        assertThat(claimedFragment.getOffset()).isEqualTo(HEADER_LENGTH);
-        assertThat(claimedFragment.getLength()).isEqualTo(A_FRAGMENT_LENGTH - HEADER_LENGTH);
-    }
-
+    // then
+    assertThat(claimedFragment.getOffset()).isEqualTo(HEADER_LENGTH);
+    assertThat(claimedFragment.getLength()).isEqualTo(A_FRAGMENT_LENGTH - HEADER_LENGTH);
+  }
 }

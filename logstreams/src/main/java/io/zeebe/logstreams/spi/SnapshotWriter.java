@@ -17,58 +17,46 @@ package io.zeebe.logstreams.spi;
 
 import java.io.OutputStream;
 
-/**
- * Writer to create a snapshot.
- */
-public interface SnapshotWriter
-{
+/** Writer to create a snapshot. */
+public interface SnapshotWriter {
 
-    /**
-     * Returns the output stream of the snapshot which should be used to write
-     * the snapshot data. Finish the write operation with {@link #commit()} or
-     * {@link #abort()}.
-     *
-     * @return the snapshot output stream
-     */
-    OutputStream getOutputStream();
+  /**
+   * Returns the output stream of the snapshot which should be used to write the snapshot data.
+   * Finish the write operation with {@link #commit()} or {@link #abort()}.
+   *
+   * @return the snapshot output stream
+   */
+  OutputStream getOutputStream();
 
-    /**
-     * Completes the snapshot by closing the output stream and writing the
-     * checksum.
-     *
-     * @throws Exception
-     *             if fails to write the checksum
-     */
-    void commit() throws Exception;
+  /**
+   * Completes the snapshot by closing the output stream and writing the checksum.
+   *
+   * @throws Exception if fails to write the checksum
+   */
+  void commit() throws Exception;
 
-    /**
-     * Refuse the snapshot by closing the output stream and deleting the
-     * snapshot data.
-     */
-    void abort();
+  /** Refuse the snapshot by closing the output stream and deleting the snapshot data. */
+  void abort();
 
-    /**
-     * Writes the given snapshot to the output stream.
-     *
-     * @param snapshotSupport
-     *            the snapshot object
-     * @return
-     * @throws Exception
-     *             if fails to write the snapshot
-     */
-    default long writeSnapshot(SnapshotSupport snapshotSupport) throws Exception
-    {
-        return snapshotSupport.writeSnapshot(getOutputStream());
-    }
+  /**
+   * Writes the given snapshot to the output stream.
+   *
+   * @param snapshotSupport the snapshot object
+   * @return
+   * @throws Exception if fails to write the snapshot
+   */
+  default long writeSnapshot(SnapshotSupport snapshotSupport) throws Exception {
+    return snapshotSupport.writeSnapshot(getOutputStream());
+  }
 
-    /**
-     * Completes the snapshot by closing the output stream and writing its checksum,
-     * iff the checksum is equal to the given checksum.
-     *
-     * It will call abort on exception, or if the checksums do not match.
-     *
-     * @param checksum checksum to check against
-     * @throws Exception
-     */
-    void validateAndCommit(byte[] checksum) throws Exception;
+  /**
+   * Completes the snapshot by closing the output stream and writing its checksum, iff the checksum
+   * is equal to the given checksum.
+   *
+   * <p>It will call abort on exception, or if the checksums do not match.
+   *
+   * @param checksum checksum to check against
+   * @throws Exception
+   */
+  void validateAndCommit(byte[] checksum) throws Exception;
 }

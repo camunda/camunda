@@ -19,65 +19,54 @@ import io.zeebe.client.impl.ControlMessageRequest;
 import io.zeebe.client.impl.RequestManager;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 
-public class CreateJobSubscriptionCommandImpl extends ControlMessageRequest<JobSubscriptionImpl>
-{
-    protected JobSubscriptionImpl subscription;
+public class CreateJobSubscriptionCommandImpl extends ControlMessageRequest<JobSubscriptionImpl> {
+  protected JobSubscriptionImpl subscription;
 
-    public CreateJobSubscriptionCommandImpl(RequestManager client, int partition)
-    {
-        super(client, ControlMessageType.ADD_JOB_SUBSCRIPTION, partition, JobSubscriptionImpl.class);
-        this.subscription = new JobSubscriptionImpl();
-        this.subscription.setPartitionId(partition);
-    }
+  public CreateJobSubscriptionCommandImpl(RequestManager client, int partition) {
+    super(client, ControlMessageType.ADD_JOB_SUBSCRIPTION, partition, JobSubscriptionImpl.class);
+    this.subscription = new JobSubscriptionImpl();
+    this.subscription.setPartitionId(partition);
+  }
 
-    public CreateJobSubscriptionCommandImpl(RequestManager client, String topic)
-    {
-        super(client, ControlMessageType.ADD_JOB_SUBSCRIPTION, topic, JobSubscriptionImpl.class);
-        this.subscription = new JobSubscriptionImpl();
-        this.subscription.setPartitionId(-1);
-    }
+  public CreateJobSubscriptionCommandImpl(RequestManager client, String topic) {
+    super(client, ControlMessageType.ADD_JOB_SUBSCRIPTION, topic, JobSubscriptionImpl.class);
+    this.subscription = new JobSubscriptionImpl();
+    this.subscription.setPartitionId(-1);
+  }
 
-    public CreateJobSubscriptionCommandImpl worker(final String worker)
-    {
-        this.subscription.setWorker(worker);
-        return this;
-    }
+  public CreateJobSubscriptionCommandImpl worker(final String worker) {
+    this.subscription.setWorker(worker);
+    return this;
+  }
 
-    public CreateJobSubscriptionCommandImpl initialCredits(final int initialCredits)
-    {
-        this.subscription.setCredits(initialCredits);
-        return this;
-    }
+  public CreateJobSubscriptionCommandImpl initialCredits(final int initialCredits) {
+    this.subscription.setCredits(initialCredits);
+    return this;
+  }
 
-    public CreateJobSubscriptionCommandImpl timeout(final long timeout)
-    {
-        this.subscription.setTimeout(timeout);
-        return this;
-    }
+  public CreateJobSubscriptionCommandImpl timeout(final long timeout) {
+    this.subscription.setTimeout(timeout);
+    return this;
+  }
 
-    public CreateJobSubscriptionCommandImpl jobType(final String jobType)
-    {
-        this.subscription.setJobType(jobType);
-        return this;
-    }
+  public CreateJobSubscriptionCommandImpl jobType(final String jobType) {
+    this.subscription.setJobType(jobType);
+    return this;
+  }
 
-    @Override
-    public void setTargetPartition(int targetPartition)
-    {
-        super.setTargetPartition(targetPartition);
-        subscription.setPartitionId(targetPartition);
-    }
+  @Override
+  public void setTargetPartition(int targetPartition) {
+    super.setTargetPartition(targetPartition);
+    subscription.setPartitionId(targetPartition);
+  }
 
-    @Override
-    public void onResponse(JobSubscriptionImpl response)
-    {
-        response.setPartitionId(targetPartition);
-    }
+  @Override
+  public void onResponse(JobSubscriptionImpl response) {
+    response.setPartitionId(targetPartition);
+  }
 
-    @Override
-    public Object getRequest()
-    {
-        return subscription;
-    }
-
+  @Override
+  public Object getRequest() {
+    return subscription;
+  }
 }

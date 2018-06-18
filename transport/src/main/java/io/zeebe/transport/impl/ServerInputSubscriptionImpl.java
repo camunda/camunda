@@ -20,49 +20,43 @@ import io.zeebe.dispatcher.Subscription;
 import io.zeebe.transport.*;
 import io.zeebe.util.sched.ActorCondition;
 
-public class ServerInputSubscriptionImpl implements ServerInputSubscription
-{
-    protected final Subscription subscription;
-    protected final FragmentHandler fragmentHandler;
+public class ServerInputSubscriptionImpl implements ServerInputSubscription {
+  protected final Subscription subscription;
+  protected final FragmentHandler fragmentHandler;
 
-    public ServerInputSubscriptionImpl(
-            ServerOutput output,
-            Subscription subscription,
-            RemoteAddressList addressList,
-            ServerMessageHandler messageHandler,
-            ServerRequestHandler requestHandler)
-    {
-        this.subscription = subscription;
-        this.fragmentHandler = new ServerReceiveHandler(output, addressList, messageHandler, requestHandler, null);
-    }
+  public ServerInputSubscriptionImpl(
+      ServerOutput output,
+      Subscription subscription,
+      RemoteAddressList addressList,
+      ServerMessageHandler messageHandler,
+      ServerRequestHandler requestHandler) {
+    this.subscription = subscription;
+    this.fragmentHandler =
+        new ServerReceiveHandler(output, addressList, messageHandler, requestHandler, null);
+  }
 
-    @Override
-    public int poll()
-    {
-        return poll(Integer.MAX_VALUE);
-    }
+  @Override
+  public int poll() {
+    return poll(Integer.MAX_VALUE);
+  }
 
-    @Override
-    public boolean hasAvailable()
-    {
-        return subscription.hasAvailable();
-    }
+  @Override
+  public boolean hasAvailable() {
+    return subscription.hasAvailable();
+  }
 
-    @Override
-    public void registerConsumer(ActorCondition onDataAvailable)
-    {
-        subscription.registerConsumer(onDataAvailable);
-    }
+  @Override
+  public void registerConsumer(ActorCondition onDataAvailable) {
+    subscription.registerConsumer(onDataAvailable);
+  }
 
-    @Override
-    public void removeConsumer(ActorCondition onDataAvailable)
-    {
-        subscription.removeConsumer(onDataAvailable);
-    }
+  @Override
+  public void removeConsumer(ActorCondition onDataAvailable) {
+    subscription.removeConsumer(onDataAvailable);
+  }
 
-    @Override
-    public int poll(int maxCount)
-    {
-        return subscription.poll(fragmentHandler, maxCount);
-    }
+  @Override
+  public int poll(int maxCount) {
+    return subscription.poll(fragmentHandler, maxCount);
+  }
 }

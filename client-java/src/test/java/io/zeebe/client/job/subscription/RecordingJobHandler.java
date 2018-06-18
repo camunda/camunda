@@ -15,62 +15,50 @@
  */
 package io.zeebe.client.job.subscription;
 
+import io.zeebe.client.api.clients.JobClient;
+import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.client.api.subscription.JobHandler;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import io.zeebe.client.api.clients.JobClient;
-import io.zeebe.client.api.events.JobEvent;
-import io.zeebe.client.api.subscription.JobHandler;
+public class RecordingJobHandler implements JobHandler {
+  protected List<JobEvent> handledJobs = Collections.synchronizedList(new ArrayList<>());
+  protected int nextTaskHandler = 0;
+  protected final JobHandler[] taskHandlers;
 
-public class RecordingJobHandler implements JobHandler
-{
-    protected List<JobEvent> handledJobs = Collections.synchronizedList(new ArrayList<>());
-    protected int nextTaskHandler = 0;
-    protected final JobHandler[] taskHandlers;
-
-    public RecordingJobHandler()
-    {
-        this((c, t) ->
-        {
-            // do nothing
+  public RecordingJobHandler() {
+    this(
+        (c, t) -> {
+          // do nothing
         });
+  }
+
+  public RecordingJobHandler(JobHandler... taskHandlers) {
+    this.taskHandlers = taskHandlers;
+  }
+
+  @Override
+  public void handle(JobClient client, JobEvent workItemEvent) {
+    final JobHandler handler = taskHandlers[nextTaskHandler];
+    nextTaskHandler = Math.min(nextTaskHandler + 1, taskHandlers.length - 1);
+
+    try {
+      handler.handle(client, workItemEvent);
+    } finally {
+      handledJobs.add(workItemEvent);
     }
+  }
 
-    public RecordingJobHandler(JobHandler... taskHandlers)
-    {
-        this.taskHandlers = taskHandlers;
-    }
+  public List<JobEvent> getHandledJobs() {
+    return handledJobs;
+  }
 
-    @Override
-    public void handle(JobClient client, JobEvent workItemEvent)
-    {
-        final JobHandler handler = taskHandlers[nextTaskHandler];
-        nextTaskHandler = Math.min(nextTaskHandler + 1, taskHandlers.length - 1);
+  public int numHandledJobs() {
+    return handledJobs.size();
+  }
 
-        try
-        {
-            handler.handle(client, workItemEvent);
-        }
-        finally
-        {
-            handledJobs.add(workItemEvent);
-        }
-    }
-
-    public List<JobEvent> getHandledJobs()
-    {
-        return handledJobs;
-    }
-
-    public int numHandledJobs()
-    {
-        return handledJobs.size();
-    }
-
-    public void clear()
-    {
-        handledJobs.clear();
-    }
-
+  public void clear() {
+    handledJobs.clear();
+  }
 }

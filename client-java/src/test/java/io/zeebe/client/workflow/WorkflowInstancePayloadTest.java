@@ -18,9 +18,6 @@ package io.zeebe.client.workflow;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.impl.data.MsgPackConverter;
@@ -30,153 +27,147 @@ import io.zeebe.protocol.clientapi.*;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.transport.RemoteAddress;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
-public class WorkflowInstancePayloadTest
-{
+public class WorkflowInstancePayloadTest {
 
-    public ClientRule clientRule = new ClientRule();
-    public StubBrokerRule brokerRule = new StubBrokerRule();
+  public ClientRule clientRule = new ClientRule();
+  public StubBrokerRule brokerRule = new StubBrokerRule();
 
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
+  @Rule public ExpectedException exception = ExpectedException.none();
 
-    private final MsgPackConverter converter = new MsgPackConverter();
+  private final MsgPackConverter converter = new MsgPackConverter();
 
-    private RemoteAddress clientAddress;
-    private List<WorkflowInstanceEvent> events;
+  private RemoteAddress clientAddress;
+  private List<WorkflowInstanceEvent> events;
 
-    @Before
-    public void init()
-    {
-        brokerRule.stubTopicSubscriptionApi(123);
+  @Before
+  public void init() {
+    brokerRule.stubTopicSubscriptionApi(123);
 
-        events = new ArrayList<>();
-        clientRule
-            .topicClient()
-            .newSubscription()
-            .name("test")
-            .workflowInstanceEventHandler(events::add)
-            .open();
+    events = new ArrayList<>();
+    clientRule
+        .topicClient()
+        .newSubscription()
+        .name("test")
+        .workflowInstanceEventHandler(events::add)
+        .open();
 
-        clientAddress = brokerRule.getReceivedCommandRequests().get(0).getSource();
-    }
+    clientAddress = brokerRule.getReceivedCommandRequests().get(0).getSource();
+  }
 
-    private WorkflowInstanceEvent workflowInstanceEventWithPayload(byte[] payload)
-    {
-        brokerRule.newSubscribedEvent()
-            .partitionId(StubBrokerRule.TEST_PARTITION_ID)
-            .key(4L)
-            .position(5L)
-            .recordType(RecordType.EVENT)
-            .valueType(ValueType.WORKFLOW_INSTANCE)
-            .intent(WorkflowInstanceIntent.CREATED)
-            .subscriberKey(123L)
-            .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION)
-            .value()
-                .put("workflowInstanceKey", 1)
-                .put("bpmnProcessId", "workflow")
-                .put("version", 1)
-                .put("workflowKey", 2)
-                .put("payload", payload)
-                .done()
-            .push(clientAddress);
+  private WorkflowInstanceEvent workflowInstanceEventWithPayload(byte[] payload) {
+    brokerRule
+        .newSubscribedEvent()
+        .partitionId(StubBrokerRule.TEST_PARTITION_ID)
+        .key(4L)
+        .position(5L)
+        .recordType(RecordType.EVENT)
+        .valueType(ValueType.WORKFLOW_INSTANCE)
+        .intent(WorkflowInstanceIntent.CREATED)
+        .subscriberKey(123L)
+        .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION)
+        .value()
+        .put("workflowInstanceKey", 1)
+        .put("bpmnProcessId", "workflow")
+        .put("version", 1)
+        .put("workflowKey", 2)
+        .put("payload", payload)
+        .done()
+        .push(clientAddress);
 
-        waitUntil(() -> events.size() > 0);
+    waitUntil(() -> events.size() > 0);
 
-        return events.get(0);
-    }
+    return events.get(0);
+  }
 
-    @Test
-    public void shouldGetPayloadAsString()
-    {
-        final WorkflowInstanceEvent event = workflowInstanceEventWithPayload(converter.convertToMsgPack("{\"foo\":\"bar\"}"));
+  @Test
+  public void shouldGetPayloadAsString() {
+    final WorkflowInstanceEvent event =
+        workflowInstanceEventWithPayload(converter.convertToMsgPack("{\"foo\":\"bar\"}"));
 
-        assertThat(event.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
-    }
+    assertThat(event.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
+  }
 
-    @Test
-    public void shouldGetPayloadAsMap()
-    {
-        final WorkflowInstanceEvent event = workflowInstanceEventWithPayload(converter.convertToMsgPack("{\"foo\":\"bar\"}"));
+  @Test
+  public void shouldGetPayloadAsMap() {
+    final WorkflowInstanceEvent event =
+        workflowInstanceEventWithPayload(converter.convertToMsgPack("{\"foo\":\"bar\"}"));
 
-        assertThat(event.getPayloadAsMap()).hasSize(1).containsEntry("foo", "bar");
-    }
+    assertThat(event.getPayloadAsMap()).hasSize(1).containsEntry("foo", "bar");
+  }
 
-    @Test
-    public void shouldGetPayloadAsType()
-    {
-        final WorkflowInstanceEvent event = workflowInstanceEventWithPayload(converter.convertToMsgPack("{\"foo\":\"bar\"}"));
+  @Test
+  public void shouldGetPayloadAsType() {
+    final WorkflowInstanceEvent event =
+        workflowInstanceEventWithPayload(converter.convertToMsgPack("{\"foo\":\"bar\"}"));
 
-        final PayloadObject payload = event.getPayloadAsType(PayloadObject.class);
+    final PayloadObject payload = event.getPayloadAsType(PayloadObject.class);
 
-        assertThat(payload).isNotNull();
-        assertThat(payload.foo).isEqualTo("bar");
-    }
+    assertThat(payload).isNotNull();
+    assertThat(payload.foo).isEqualTo("bar");
+  }
 
-    @Test
-    public void shouldGetNilPayloadAsString()
-    {
-        final WorkflowInstanceEvent event = workflowInstanceEventWithPayload(MsgPackHelper.NIL);
+  @Test
+  public void shouldGetNilPayloadAsString() {
+    final WorkflowInstanceEvent event = workflowInstanceEventWithPayload(MsgPackHelper.NIL);
 
-        assertThat(event.getPayload()).isEqualTo("null");
-    }
+    assertThat(event.getPayload()).isEqualTo("null");
+  }
 
-    @Test
-    public void shouldGetNilPayloadAsMap()
-    {
-        final WorkflowInstanceEvent event = workflowInstanceEventWithPayload(MsgPackHelper.NIL);
+  @Test
+  public void shouldGetNilPayloadAsMap() {
+    final WorkflowInstanceEvent event = workflowInstanceEventWithPayload(MsgPackHelper.NIL);
 
-        assertThat(event.getPayloadAsMap()).isNull();
-    }
+    assertThat(event.getPayloadAsMap()).isNull();
+  }
 
-    @Test
-    public void shouldGetEmptyPayloadAsString()
-    {
-        final WorkflowInstanceEvent event = workflowInstanceEventWithPayload(MsgPackHelper.EMTPY_OBJECT);
+  @Test
+  public void shouldGetEmptyPayloadAsString() {
+    final WorkflowInstanceEvent event =
+        workflowInstanceEventWithPayload(MsgPackHelper.EMTPY_OBJECT);
 
-        assertThat(event.getPayload()).isEqualTo("{}");
-    }
+    assertThat(event.getPayload()).isEqualTo("{}");
+  }
 
-    @Test
-    public void shouldGetEmptyPayloadAsMap()
-    {
-        final WorkflowInstanceEvent event = workflowInstanceEventWithPayload(MsgPackHelper.EMTPY_OBJECT);
+  @Test
+  public void shouldGetEmptyPayloadAsMap() {
+    final WorkflowInstanceEvent event =
+        workflowInstanceEventWithPayload(MsgPackHelper.EMTPY_OBJECT);
 
-        assertThat(event.getPayloadAsMap()).isEmpty();
-    }
+    assertThat(event.getPayloadAsMap()).isEmpty();
+  }
 
-    @Test
-    public void shouldGetEmptyPayloadAsType()
-    {
-        final WorkflowInstanceEvent event = workflowInstanceEventWithPayload(MsgPackHelper.EMTPY_OBJECT);
+  @Test
+  public void shouldGetEmptyPayloadAsType() {
+    final WorkflowInstanceEvent event =
+        workflowInstanceEventWithPayload(MsgPackHelper.EMTPY_OBJECT);
 
-        final PayloadObject payload = event.getPayloadAsType(PayloadObject.class);
+    final PayloadObject payload = event.getPayloadAsType(PayloadObject.class);
 
-        assertThat(payload).isNotNull();
-        assertThat(payload.foo).isNull();
-    }
+    assertThat(payload).isNotNull();
+    assertThat(payload.foo).isNull();
+  }
 
-    @Test
-    public void shouldThrowExceptionIfFailedToDeserializablePayload()
-    {
-        final WorkflowInstanceEvent event = workflowInstanceEventWithPayload(converter.convertToMsgPack("{\"foo\":123}"));
+  @Test
+  public void shouldThrowExceptionIfFailedToDeserializablePayload() {
+    final WorkflowInstanceEvent event =
+        workflowInstanceEventWithPayload(converter.convertToMsgPack("{\"foo\":123}"));
 
-        exception.expect(ClientException.class);
-        exception.expectMessage("Failed deserialize JSON '{\"foo\":123}' to type '" + PayloadObject.class.getName() + "'");
+    exception.expect(ClientException.class);
+    exception.expectMessage(
+        "Failed deserialize JSON '{\"foo\":123}' to type '" + PayloadObject.class.getName() + "'");
 
-        event.getPayloadAsType(PayloadObject.class);
-    }
+    event.getPayloadAsType(PayloadObject.class);
+  }
 
-    public static class PayloadObject
-    {
-        public String foo;
-    }
-
-
+  public static class PayloadObject {
+    public String foo;
+  }
 }

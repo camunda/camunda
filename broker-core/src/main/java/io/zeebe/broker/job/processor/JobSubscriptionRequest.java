@@ -21,79 +21,66 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.*;
 import org.agrona.DirectBuffer;
 
-public class JobSubscriptionRequest extends UnpackedObject
-{
-    protected LongProperty subscriberKeyProp = new LongProperty("subscriberKey", -1);
+public class JobSubscriptionRequest extends UnpackedObject {
+  protected LongProperty subscriberKeyProp = new LongProperty("subscriberKey", -1);
 
-    protected StringProperty jobTypeProp = new StringProperty("jobType", "");
+  protected StringProperty jobTypeProp = new StringProperty("jobType", "");
 
-    protected LongProperty timeoutProp = new LongProperty("timeout", -1);
-    protected StringProperty workerProp = new StringProperty("worker", "");
+  protected LongProperty timeoutProp = new LongProperty("timeout", -1);
+  protected StringProperty workerProp = new StringProperty("worker", "");
 
-    protected IntegerProperty creditsProp = new IntegerProperty("credits", -1);
+  protected IntegerProperty creditsProp = new IntegerProperty("credits", -1);
 
-    public JobSubscriptionRequest()
-    {
-        this.declareProperty(subscriberKeyProp)
-            .declareProperty(jobTypeProp)
-            .declareProperty(timeoutProp)
-            .declareProperty(workerProp)
-            .declareProperty(creditsProp);
-    }
+  public JobSubscriptionRequest() {
+    this.declareProperty(subscriberKeyProp)
+        .declareProperty(jobTypeProp)
+        .declareProperty(timeoutProp)
+        .declareProperty(workerProp)
+        .declareProperty(creditsProp);
+  }
 
-    public JobSubscriptionRequest setSubscriberKey(long subscriberKey)
-    {
-        this.subscriberKeyProp.setValue(subscriberKey);
-        return this;
-    }
+  public JobSubscriptionRequest setSubscriberKey(long subscriberKey) {
+    this.subscriberKeyProp.setValue(subscriberKey);
+    return this;
+  }
 
-    public JobSubscriptionRequest setJobType(DirectBuffer jobType)
-    {
-        this.jobTypeProp.setValue(jobType);
-        return this;
-    }
+  public JobSubscriptionRequest setJobType(DirectBuffer jobType) {
+    this.jobTypeProp.setValue(jobType);
+    return this;
+  }
 
-    public JobSubscriptionRequest setTimeout(long timeout)
-    {
-        this.timeoutProp.setValue(timeout);
-        return this;
-    }
+  public JobSubscriptionRequest setTimeout(long timeout) {
+    this.timeoutProp.setValue(timeout);
+    return this;
+  }
 
-    public JobSubscriptionRequest setCredits(int credits)
-    {
-        this.creditsProp.setValue(credits);
-        return this;
-    }
+  public JobSubscriptionRequest setCredits(int credits) {
+    this.creditsProp.setValue(credits);
+    return this;
+  }
 
-    public JobSubscriptionRequest setWorker(DirectBuffer worker)
-    {
-        this.workerProp.setValue(worker);
-        return this;
-    }
+  public JobSubscriptionRequest setWorker(DirectBuffer worker) {
+    this.workerProp.setValue(worker);
+    return this;
+  }
 
-    public long getSubscriberKey()
-    {
-        return subscriberKeyProp.getValue();
-    }
+  public long getSubscriberKey() {
+    return subscriberKeyProp.getValue();
+  }
 
-    public DirectBuffer getJobType()
-    {
-        return jobTypeProp.getValue();
-    }
+  public DirectBuffer getJobType() {
+    return jobTypeProp.getValue();
+  }
 
-    public long getTimeout()
-    {
-        return timeoutProp.getValue();
-    }
+  public long getTimeout() {
+    return timeoutProp.getValue();
+  }
 
-    public int getCredits()
-    {
-        return creditsProp.getValue();
-    }
+  public int getCredits() {
+    return creditsProp.getValue();
+  }
 
-    public DirectBuffer getWorker()
-    {
-        return workerProp.getValue();
-    }
-
+  public DirectBuffer getWorker() {
+    return workerProp.getValue();
+  }
 }

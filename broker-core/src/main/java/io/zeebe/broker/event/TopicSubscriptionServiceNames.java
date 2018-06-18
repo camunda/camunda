@@ -20,9 +20,8 @@ package io.zeebe.broker.event;
 import io.zeebe.broker.event.processor.TopicSubscriptionService;
 import io.zeebe.servicecontainer.ServiceName;
 
-public class TopicSubscriptionServiceNames
-{
+public class TopicSubscriptionServiceNames {
 
-    public static final ServiceName<TopicSubscriptionService> TOPIC_SUBSCRIPTION_SERVICE = ServiceName.newServiceName("log.subscription.manager", TopicSubscriptionService.class);
-
+  public static final ServiceName<TopicSubscriptionService> TOPIC_SUBSCRIPTION_SERVICE =
+      ServiceName.newServiceName("log.subscription.manager", TopicSubscriptionService.class);
 }

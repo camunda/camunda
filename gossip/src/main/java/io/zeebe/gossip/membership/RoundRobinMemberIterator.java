@@ -15,80 +15,64 @@
  */
 package io.zeebe.gossip.membership;
 
-import java.util.*;
-
 import io.zeebe.gossip.GossipMembershipListener;
+import java.util.*;
 import org.agrona.collections.IntArrayList;
 
-public class RoundRobinMemberIterator implements Iterator<Member>, GossipMembershipListener
-{
-    private final Random random = new Random();
+public class RoundRobinMemberIterator implements Iterator<Member>, GossipMembershipListener {
+  private final Random random = new Random();
 
-    private final List<Member> members;
+  private final List<Member> members;
 
-    private final IntArrayList playList = new IntArrayList();
-    private int index = 0;
+  private final IntArrayList playList = new IntArrayList();
+  private int index = 0;
 
-    public RoundRobinMemberIterator(MembershipList list)
-    {
-        this.members = list.getMembersView();
+  public RoundRobinMemberIterator(MembershipList list) {
+    this.members = list.getMembersView();
 
-        list.addListener(this);
-    }
+    list.addListener(this);
+  }
 
-    @Override
-    public boolean hasNext()
-    {
-        return playList.size() > 0;
-    }
+  @Override
+  public boolean hasNext() {
+    return playList.size() > 0;
+  }
 
-    @Override
-    public Member next()
-    {
-        if (hasNext())
-        {
-            if (index >= playList.size())
-            {
-                if (playList.size() > 2)
-                {
-                    Collections.shuffle(playList, random);
-                }
-
-                index = 0;
-            }
-
-            final int nextMember = playList.getInt(index);
-            index += 1;
-
-            return members.get(nextMember);
+  @Override
+  public Member next() {
+    if (hasNext()) {
+      if (index >= playList.size()) {
+        if (playList.size() > 2) {
+          Collections.shuffle(playList, random);
         }
-        else
-        {
-            throw new NoSuchElementException();
-        }
+
+        index = 0;
+      }
+
+      final int nextMember = playList.getInt(index);
+      index += 1;
+
+      return members.get(nextMember);
+    } else {
+      throw new NoSuchElementException();
     }
+  }
 
-    @Override
-    public void onAdd(Member member)
-    {
-        final int i = members.indexOf(member);
+  @Override
+  public void onAdd(Member member) {
+    final int i = members.indexOf(member);
 
-        if (index < playList.size())
-        {
-            playList.addInt(index, i);
-        }
-        else
-        {
-            playList.addInt(i);
-        }
+    if (index < playList.size()) {
+      playList.addInt(index, i);
+    } else {
+      playList.addInt(i);
     }
+  }
 
-    @Override
-    public void onRemove(Member member)
-    {
-        final int i = members.indexOf(member);
+  @Override
+  public void onRemove(Member member) {
+    final int i = members.indexOf(member);
 
-        playList.removeInt(i);
-    }
-
+    playList.removeInt(i);
+  }
 }

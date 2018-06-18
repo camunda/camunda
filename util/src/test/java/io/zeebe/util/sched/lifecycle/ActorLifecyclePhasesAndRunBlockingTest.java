@@ -17,190 +17,174 @@ package io.zeebe.util.sched.lifecycle;
 
 import static org.mockito.Mockito.*;
 
-import java.util.function.Consumer;
-
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
+import java.util.function.Consumer;
 import org.junit.Rule;
 import org.junit.Test;
 
 @SuppressWarnings("unchecked")
-public class ActorLifecyclePhasesAndRunBlockingTest
-{
-    @Rule
-    public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
+public class ActorLifecyclePhasesAndRunBlockingTest {
+  @Rule
+  public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
 
-    @Test
-    public void shouldNotExecuteCompletionConsumerInStartingPhase() throws Exception
-    {
-        // given
-        final Runnable runnable = mock(Runnable.class);
-        final Consumer<Throwable> completionConsumer = mock(Consumer.class);
-        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
-        {
-            @Override
-            public void onActorStarting()
-            {
-                actor.runBlocking(runnable, completionConsumer);
-                blockPhase();
-            }
+  @Test
+  public void shouldNotExecuteCompletionConsumerInStartingPhase() throws Exception {
+    // given
+    final Runnable runnable = mock(Runnable.class);
+    final Consumer<Throwable> completionConsumer = mock(Consumer.class);
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+          @Override
+          public void onActorStarting() {
+            actor.runBlocking(runnable, completionConsumer);
+            blockPhase();
+          }
         };
 
-        // when
-        schedulerRule.submitActor(actor);
-        schedulerRule.workUntilDone();
-        schedulerRule.awaitBlockingTasksCompleted(1);
-        schedulerRule.workUntilDone();
+    // when
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
+    schedulerRule.awaitBlockingTasksCompleted(1);
+    schedulerRule.workUntilDone();
 
-        // then
-        verify(runnable, times(1)).run();
-        verifyZeroInteractions(completionConsumer);
-    }
+    // then
+    verify(runnable, times(1)).run();
+    verifyZeroInteractions(completionConsumer);
+  }
 
-
-    @Test
-    public void shouldExecuteCompletionConsumerInStartingPhaseWhenInStartedPhase() throws Exception
-    {
-        // given
-        final Runnable runnable = mock(Runnable.class);
-        final Consumer<Throwable> completionConsumer = mock(Consumer.class);
-        final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
-        {
-            @Override
-            public void onActorStarting()
-            {
-                actor.runBlocking(runnable, completionConsumer);
-                blockPhase(future);
-            }
+  @Test
+  public void shouldExecuteCompletionConsumerInStartingPhaseWhenInStartedPhase() throws Exception {
+    // given
+    final Runnable runnable = mock(Runnable.class);
+    final Consumer<Throwable> completionConsumer = mock(Consumer.class);
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+          @Override
+          public void onActorStarting() {
+            actor.runBlocking(runnable, completionConsumer);
+            blockPhase(future);
+          }
         };
-        schedulerRule.submitActor(actor);
-        schedulerRule.workUntilDone();
-        schedulerRule.awaitBlockingTasksCompleted(1);
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
+    schedulerRule.awaitBlockingTasksCompleted(1);
 
-        // when
-        schedulerRule.workUntilDone();
-        verify(runnable, times(1)).run();
-        verifyZeroInteractions(completionConsumer);
+    // when
+    schedulerRule.workUntilDone();
+    verify(runnable, times(1)).run();
+    verifyZeroInteractions(completionConsumer);
 
-        // when then
-        future.complete(null);
-        schedulerRule.workUntilDone();
-        verify(completionConsumer, times(1)).accept(eq(null));
-    }
+    // when then
+    future.complete(null);
+    schedulerRule.workUntilDone();
+    verify(completionConsumer, times(1)).accept(eq(null));
+  }
 
-    @Test
-    public void shouldExecuteCompletionConsumerInStartedPhase() throws Exception
-    {
-        // given
-        final Runnable runnable = mock(Runnable.class);
-        final Consumer<Throwable> completionConsumer = mock(Consumer.class);
+  @Test
+  public void shouldExecuteCompletionConsumerInStartedPhase() throws Exception {
+    // given
+    final Runnable runnable = mock(Runnable.class);
+    final Consumer<Throwable> completionConsumer = mock(Consumer.class);
 
-        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
-        {
-            @Override
-            public void onActorStarted()
-            {
-                actor.runBlocking(runnable, completionConsumer);
-            }
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+          @Override
+          public void onActorStarted() {
+            actor.runBlocking(runnable, completionConsumer);
+          }
         };
 
-        // when
-        schedulerRule.submitActor(actor);
-        schedulerRule.workUntilDone();
-        schedulerRule.awaitBlockingTasksCompleted(1);
-        schedulerRule.workUntilDone();
+    // when
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
+    schedulerRule.awaitBlockingTasksCompleted(1);
+    schedulerRule.workUntilDone();
 
-        // then
-        verify(runnable, times(1)).run();
-        verify(completionConsumer, times(1)).accept(eq(null));
-    }
+    // then
+    verify(runnable, times(1)).run();
+    verify(completionConsumer, times(1)).accept(eq(null));
+  }
 
-    @Test
-    public void shouldNotExecuteCompletionConsumerInCloseRequestedPhase() throws Exception
-    {
-        // given
-        final Runnable runnable = mock(Runnable.class);
-        final Consumer<Throwable> completionConsumer = mock(Consumer.class);
+  @Test
+  public void shouldNotExecuteCompletionConsumerInCloseRequestedPhase() throws Exception {
+    // given
+    final Runnable runnable = mock(Runnable.class);
+    final Consumer<Throwable> completionConsumer = mock(Consumer.class);
 
-        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
-        {
-            @Override
-            public void onActorCloseRequested()
-            {
-                actor.runBlocking(runnable, completionConsumer);
-                blockPhase();
-            }
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+          @Override
+          public void onActorCloseRequested() {
+            actor.runBlocking(runnable, completionConsumer);
+            blockPhase();
+          }
         };
 
-        // when
-        schedulerRule.submitActor(actor);
-        actor.close();
-        schedulerRule.workUntilDone();
-        schedulerRule.awaitBlockingTasksCompleted(1);
-        schedulerRule.workUntilDone();
+    // when
+    schedulerRule.submitActor(actor);
+    actor.close();
+    schedulerRule.workUntilDone();
+    schedulerRule.awaitBlockingTasksCompleted(1);
+    schedulerRule.workUntilDone();
 
-        // then
-        verify(runnable, times(1)).run();
-        verifyZeroInteractions(completionConsumer);
-    }
+    // then
+    verify(runnable, times(1)).run();
+    verifyZeroInteractions(completionConsumer);
+  }
 
-    @Test
-    public void shouldNotExecuteCompletionConsumerInClosingPhase() throws Exception
-    {
-        // given
-        final Runnable runnable = mock(Runnable.class);
-        final Consumer<Throwable> completionConsumer = mock(Consumer.class);
+  @Test
+  public void shouldNotExecuteCompletionConsumerInClosingPhase() throws Exception {
+    // given
+    final Runnable runnable = mock(Runnable.class);
+    final Consumer<Throwable> completionConsumer = mock(Consumer.class);
 
-        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
-        {
-            @Override
-            public void onActorClosing()
-            {
-                actor.runBlocking(runnable, completionConsumer);
-                blockPhase();
-            }
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+          @Override
+          public void onActorClosing() {
+            actor.runBlocking(runnable, completionConsumer);
+            blockPhase();
+          }
         };
 
-        // when
-        schedulerRule.submitActor(actor);
-        actor.close();
-        schedulerRule.workUntilDone();
-        schedulerRule.awaitBlockingTasksCompleted(1);
-        schedulerRule.workUntilDone();
+    // when
+    schedulerRule.submitActor(actor);
+    actor.close();
+    schedulerRule.workUntilDone();
+    schedulerRule.awaitBlockingTasksCompleted(1);
+    schedulerRule.workUntilDone();
 
-        // then
-        verify(runnable, times(1)).run();
-        verifyZeroInteractions(completionConsumer);
-    }
+    // then
+    verify(runnable, times(1)).run();
+    verifyZeroInteractions(completionConsumer);
+  }
 
-    @Test
-    public void shouldNotExecuteCompletionConsumerInClosedPhase() throws Exception
-    {
-        // given
-        final Runnable runnable = mock(Runnable.class);
-        final Consumer<Throwable> completionConsumer = mock(Consumer.class);
+  @Test
+  public void shouldNotExecuteCompletionConsumerInClosedPhase() throws Exception {
+    // given
+    final Runnable runnable = mock(Runnable.class);
+    final Consumer<Throwable> completionConsumer = mock(Consumer.class);
 
-        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
-        {
-            @Override
-            public void onActorClosed()
-            {
-                actor.runBlocking(runnable, completionConsumer);
-                blockPhase();
-            }
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+          @Override
+          public void onActorClosed() {
+            actor.runBlocking(runnable, completionConsumer);
+            blockPhase();
+          }
         };
 
-        // when
-        schedulerRule.submitActor(actor);
-        actor.close();
-        schedulerRule.workUntilDone();
-        schedulerRule.awaitBlockingTasksCompleted(1);
-        schedulerRule.workUntilDone();
+    // when
+    schedulerRule.submitActor(actor);
+    actor.close();
+    schedulerRule.workUntilDone();
+    schedulerRule.awaitBlockingTasksCompleted(1);
+    schedulerRule.workUntilDone();
 
-        // then
-        verify(runnable, times(1)).run();
-        verifyZeroInteractions(completionConsumer);
-    }
-
+    // then
+    verify(runnable, times(1)).run();
+    verifyZeroInteractions(completionConsumer);
+  }
 }

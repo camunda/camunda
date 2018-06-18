@@ -17,10 +17,7 @@ package io.zeebe.client.api.commands;
 
 import java.util.List;
 
-public interface Workflows
-{
-    /**
-     * @return all deployed workflows
-     */
-    List<Workflow> getWorkflows();
+public interface Workflows {
+  /** @return all deployed workflows */
+  List<Workflow> getWorkflows();
 }

@@ -23,18 +23,6 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import org.agrona.DirectBuffer;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-
 import io.zeebe.broker.clustering.api.CreatePartitionRequest;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.protocol.Protocol;
@@ -50,258 +38,252 @@ import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.buffer.BufferUtil;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.agrona.DirectBuffer;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
 
-public class CreateTopicTest
-{
-    protected static final SocketAddress BROKER_MGMT_ADDRESS = new SocketAddress("localhost", 51016);
-    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+public class CreateTopicTest {
+  protected static final SocketAddress BROKER_MGMT_ADDRESS = new SocketAddress("localhost", 51016);
+  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
-    public ClientApiRule apiRule = new ClientApiRule();
+  public ClientApiRule apiRule = new ClientApiRule();
 
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
-    @Test
-    public void shouldCreateTopic()
-    {
-        // given
-        final String topicName = "newTopic";
+  @Test
+  public void shouldCreateTopic() {
+    // given
+    final String topicName = "newTopic";
 
-        // when
-        final ExecuteCommandResponse response = apiRule.createTopic(topicName, 2);
+    // when
+    final ExecuteCommandResponse response = apiRule.createTopic(topicName, 2);
 
-        // then
-        assertThat(response.getValue())
-            .containsExactly(
-                entry("name", topicName),
-                entry("partitions", 2),
-                entry("replicationFactor", 1),
-                entry("partitionIds", Collections.EMPTY_LIST)
-            );
+    // then
+    assertThat(response.getValue())
+        .containsExactly(
+            entry("name", topicName),
+            entry("partitions", 2),
+            entry("replicationFactor", 1),
+            entry("partitionIds", Collections.EMPTY_LIST));
 
-        assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
-        assertThat(response.intent()).isEqualTo(TopicIntent.CREATING);
-    }
+    assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
+    assertThat(response.intent()).isEqualTo(TopicIntent.CREATING);
+  }
 
-    @Test
-    public void shouldNotCreateSystemTopic()
-    {
-        // when
-        final ExecuteCommandResponse response = apiRule.createTopic(Protocol.SYSTEM_TOPIC, 2);
+  @Test
+  public void shouldNotCreateSystemTopic() {
+    // when
+    final ExecuteCommandResponse response = apiRule.createTopic(Protocol.SYSTEM_TOPIC, 2);
 
-        // then
-        assertThat(response.getValue())
-            .containsExactly(
-                entry("name", Protocol.SYSTEM_TOPIC),
-                entry("partitions", 2),
-                entry("replicationFactor", 1),
-                entry("partitionIds", Collections.EMPTY_LIST)
-            );
+    // then
+    assertThat(response.getValue())
+        .containsExactly(
+            entry("name", Protocol.SYSTEM_TOPIC),
+            entry("partitions", 2),
+            entry("replicationFactor", 1),
+            entry("partitionIds", Collections.EMPTY_LIST));
 
-        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-        assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-        assertThat(response.rejectionReason()).isEqualTo("Topic exists already");
-        assertThat(response.intent()).isEqualTo(TopicIntent.CREATE);
-    }
+    assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
+    assertThat(response.rejectionReason()).isEqualTo("Topic exists already");
+    assertThat(response.intent()).isEqualTo(TopicIntent.CREATE);
+  }
 
-    @Test
-    public void shouldNotCreateExistingTopic()
-    {
-        // given
-        final String topicName = "newTopic";
-        apiRule.createTopic(topicName, 2);
+  @Test
+  public void shouldNotCreateExistingTopic() {
+    // given
+    final String topicName = "newTopic";
+    apiRule.createTopic(topicName, 2);
 
-        // when
-        final ExecuteCommandResponse response = apiRule.createTopic(topicName, 2);
+    // when
+    final ExecuteCommandResponse response = apiRule.createTopic(topicName, 2);
 
-        // then
-        assertThat(response.getValue())
-            .containsExactly(
-                entry("name", topicName),
-                entry("partitions", 2),
-                entry("replicationFactor", 1),
-                entry("partitionIds", Collections.EMPTY_LIST)
-            );
+    // then
+    assertThat(response.getValue())
+        .containsExactly(
+            entry("name", topicName),
+            entry("partitions", 2),
+            entry("replicationFactor", 1),
+            entry("partitionIds", Collections.EMPTY_LIST));
 
-        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-        assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-        assertThat(response.rejectionReason()).isEqualTo("Topic exists already");
-        assertThat(response.intent()).isEqualTo(TopicIntent.CREATE);
-    }
+    assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
+    assertThat(response.rejectionReason()).isEqualTo("Topic exists already");
+    assertThat(response.intent()).isEqualTo(TopicIntent.CREATE);
+  }
 
-    @Test
-    public void shouldNotCreateTopicWithZeroPartitions()
-    {
-        // given
-        final String topicName = "newTopic";
-        final int numberOfPartitions = 0;
+  @Test
+  public void shouldNotCreateTopicWithZeroPartitions() {
+    // given
+    final String topicName = "newTopic";
+    final int numberOfPartitions = 0;
 
-        // when
-        final ExecuteCommandResponse response = apiRule.createTopic(topicName, numberOfPartitions);
+    // when
+    final ExecuteCommandResponse response = apiRule.createTopic(topicName, numberOfPartitions);
 
-        // then
-        assertThat(response.getValue())
-            .containsExactly(
-                entry("name", topicName),
-                entry("partitions", numberOfPartitions),
-                entry("replicationFactor", 1),
-                entry("partitionIds", Collections.EMPTY_LIST)
-            );
+    // then
+    assertThat(response.getValue())
+        .containsExactly(
+            entry("name", topicName),
+            entry("partitions", numberOfPartitions),
+            entry("replicationFactor", 1),
+            entry("partitionIds", Collections.EMPTY_LIST));
 
-        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-        assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-        assertThat(response.rejectionReason()).isEqualTo("Topic must have at least one partition");
-        assertThat(response.intent()).isEqualTo(TopicIntent.CREATE);
-    }
+    assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+    assertThat(response.rejectionReason()).isEqualTo("Topic must have at least one partition");
+    assertThat(response.intent()).isEqualTo(TopicIntent.CREATE);
+  }
 
-    @Test
-    public void shouldNotCreateTopicWithNegativePartitions()
-    {
-        // given
-        final String topicName = "newTopic";
-        final int numberOfPartitions = -100;
+  @Test
+  public void shouldNotCreateTopicWithNegativePartitions() {
+    // given
+    final String topicName = "newTopic";
+    final int numberOfPartitions = -100;
 
-        // when
-        final ExecuteCommandResponse response = apiRule.createTopic(topicName, numberOfPartitions);
+    // when
+    final ExecuteCommandResponse response = apiRule.createTopic(topicName, numberOfPartitions);
 
-        // then
-        assertThat(response.getValue())
-            .containsExactly(
-                entry("name", topicName),
-                entry("partitions", numberOfPartitions),
-                entry("replicationFactor", 1),
-                entry("partitionIds", Collections.EMPTY_LIST)
-            );
-    }
+    // then
+    assertThat(response.getValue())
+        .containsExactly(
+            entry("name", topicName),
+            entry("partitions", numberOfPartitions),
+            entry("replicationFactor", 1),
+            entry("partitionIds", Collections.EMPTY_LIST));
+  }
 
-    @Test
-    public void shouldNotCreateTopicWithZeroReplicationFactor()
-    {
-        // given
-        final String topicName = "newTopic";
+  @Test
+  public void shouldNotCreateTopicWithZeroReplicationFactor() {
+    // given
+    final String topicName = "newTopic";
 
-        // when
-        final ExecuteCommandResponse response = apiRule.createTopic(topicName, 1, 0);
+    // when
+    final ExecuteCommandResponse response = apiRule.createTopic(topicName, 1, 0);
 
-        // then
-        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-        assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-        assertThat(response.rejectionReason()).isEqualTo("Topic must have at least one replica");
-        assertThat(response.intent()).isEqualTo(TopicIntent.CREATE);
+    // then
+    assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+    assertThat(response.rejectionReason()).isEqualTo("Topic must have at least one replica");
+    assertThat(response.intent()).isEqualTo(TopicIntent.CREATE);
 
-        assertThat(response.getValue())
-            .containsExactly(
-                entry("name", topicName),
-                entry("partitions", 1),
-                entry("replicationFactor", 0),
-                entry("partitionIds", Collections.EMPTY_LIST)
-            );
-    }
+    assertThat(response.getValue())
+        .containsExactly(
+            entry("name", topicName),
+            entry("partitions", 1),
+            entry("replicationFactor", 0),
+            entry("partitionIds", Collections.EMPTY_LIST));
+  }
 
-    @Test
-    public void shouldNotCreateTopicWithNegativeReplicationFactor()
-    {
-        // given
-        final String topicName = "newTopic";
+  @Test
+  public void shouldNotCreateTopicWithNegativeReplicationFactor() {
+    // given
+    final String topicName = "newTopic";
 
-        // when
-        final ExecuteCommandResponse response = apiRule.createTopic(topicName, 1, -1);
+    // when
+    final ExecuteCommandResponse response = apiRule.createTopic(topicName, 1, -1);
 
-        // then
-        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-        assertThat(response.intent()).isEqualTo(TopicIntent.CREATE);
+    // then
+    assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(response.intent()).isEqualTo(TopicIntent.CREATE);
 
-        assertThat(response.getValue())
-            .containsExactly(
-                entry("name", topicName),
-                entry("partitions", 1),
-                entry("replicationFactor", -1),
-                entry("partitionIds", Collections.EMPTY_LIST)
-            );
+    assertThat(response.getValue())
+        .containsExactly(
+            entry("name", topicName),
+            entry("partitions", 1),
+            entry("replicationFactor", -1),
+            entry("partitionIds", Collections.EMPTY_LIST));
 
-        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-        assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-        assertThat(response.rejectionReason()).isEqualTo("Topic must have at least one replica");
-        assertThat(response.intent()).isEqualTo(TopicIntent.CREATE);
-    }
+    assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+    assertThat(response.rejectionReason()).isEqualTo("Topic must have at least one replica");
+    assertThat(response.intent()).isEqualTo(TopicIntent.CREATE);
+  }
 
-    @Test
-    public void shouldCreateTopicAfterRejection()
-    {
+  @Test
+  public void shouldCreateTopicAfterRejection() {
 
-        // given a rejected creation request
-        final String topicName = "newTopic";
-        apiRule.createTopic(topicName, 0);
+    // given a rejected creation request
+    final String topicName = "newTopic";
+    apiRule.createTopic(topicName, 0);
 
-        // when I send a valid creation request for the same topic
-        final ExecuteCommandResponse response = apiRule.createTopic(topicName, 1);
+    // when I send a valid creation request for the same topic
+    final ExecuteCommandResponse response = apiRule.createTopic(topicName, 1);
 
-        // then this is successful
-        assertThat(response.getValue())
-            .containsExactly(
-                entry("name", topicName),
-                entry("partitions", 1),
-                entry("replicationFactor", 1),
-                entry("partitionIds", Collections.EMPTY_LIST)
-            );
+    // then this is successful
+    assertThat(response.getValue())
+        .containsExactly(
+            entry("name", topicName),
+            entry("partitions", 1),
+            entry("replicationFactor", 1),
+            entry("partitionIds", Collections.EMPTY_LIST));
 
-        assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
-        assertThat(response.intent()).isEqualTo(TopicIntent.CREATING);
-    }
+    assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
+    assertThat(response.intent()).isEqualTo(TopicIntent.CREATING);
+  }
 
-    @Test
-    public void shouldRejectPartitionCreationAndNotBreak()
-    {
-        // given
-        final ClientTransport transport = apiRule.getTransport();
-        final RemoteAddress remoteAddress = transport.registerRemoteAndAwaitChannel(BROKER_MGMT_ADDRESS);
-        final ClientOutput output = transport.getOutput();
+  @Test
+  public void shouldRejectPartitionCreationAndNotBreak() {
+    // given
+    final ClientTransport transport = apiRule.getTransport();
+    final RemoteAddress remoteAddress =
+        transport.registerRemoteAndAwaitChannel(BROKER_MGMT_ADDRESS);
+    final ClientOutput output = transport.getOutput();
 
-        final CreatePartitionRequest partitionMessage = new CreatePartitionRequest();
+    final CreatePartitionRequest partitionMessage = new CreatePartitionRequest();
 
-        final DirectBuffer topicName = BufferUtil.wrapString("foo");
-        final int partition1 = 142;
-        final int partition2 = 143;
+    final DirectBuffer topicName = BufferUtil.wrapString("foo");
+    final int partition1 = 142;
+    final int partition2 = 143;
 
-        partitionMessage.topicName(topicName);
-        partitionMessage.partitionId(partition1);
-        partitionMessage.replicationFactor(1);
+    partitionMessage.topicName(topicName);
+    partitionMessage.partitionId(partition1);
+    partitionMessage.replicationFactor(1);
 
-        doRepeatedly(() -> output.sendRequest(remoteAddress, partitionMessage)).until(r -> r != null); // => should create partition
-        doRepeatedly(() -> output.sendRequest(remoteAddress, partitionMessage)).until(r -> r != null); // => should be rejected/ignored
+    doRepeatedly(() -> output.sendRequest(remoteAddress, partitionMessage))
+        .until(r -> r != null); // => should create partition
+    doRepeatedly(() -> output.sendRequest(remoteAddress, partitionMessage))
+        .until(r -> r != null); // => should be rejected/ignored
 
-        // when creating another partition
-        partitionMessage.partitionId(partition2);
-        doRepeatedly(() -> output.sendRequest(remoteAddress, partitionMessage)).until(r -> r != null);
+    // when creating another partition
+    partitionMessage.partitionId(partition2);
+    doRepeatedly(() -> output.sendRequest(remoteAddress, partitionMessage)).until(r -> r != null);
 
-        // then this should be successful (i.e. the rejected request should not have jammed the broker)
-        waitUntil(() -> arePublished(partition1, partition2));
-    }
+    // then this should be successful (i.e. the rejected request should not have jammed the broker)
+    waitUntil(() -> arePublished(partition1, partition2));
+  }
 
-    protected boolean arePublished(int... partitions)
-    {
-        final ControlMessageResponse response = apiRule.createControlMessageRequest()
+  protected boolean arePublished(int... partitions) {
+    final ControlMessageResponse response =
+        apiRule
+            .createControlMessageRequest()
             .messageType(ControlMessageType.REQUEST_TOPOLOGY)
             .sendAndAwait();
 
-        final Set<Integer> expectedPartitions = Arrays.stream(partitions).boxed().collect(Collectors.toSet());
+    final Set<Integer> expectedPartitions =
+        Arrays.stream(partitions).boxed().collect(Collectors.toSet());
 
-        final Map<String, Object> topology = response.getData();
-        final List<Map<String, Object>> brokers = (List<Map<String, Object>>) topology.get("brokers");
+    final Map<String, Object> topology = response.getData();
+    final List<Map<String, Object>> brokers = (List<Map<String, Object>>) topology.get("brokers");
 
-        for (Map<String, Object> broker : brokers)
-        {
-            final List<Map<String, Object>> brokerPartitionStates = (List<Map<String, Object>>) broker.get("partitions");
-            for (Map<String, Object> brokerPartitionState : brokerPartitionStates)
-            {
-                final String state = brokerPartitionState.get("state").toString();
-                if (state.equals(LEADER_STATE))
-                {
-                    expectedPartitions.remove(brokerPartitionState.get("partitionId"));
-                }
-            }
+    for (Map<String, Object> broker : brokers) {
+      final List<Map<String, Object>> brokerPartitionStates =
+          (List<Map<String, Object>>) broker.get("partitions");
+      for (Map<String, Object> brokerPartitionState : brokerPartitionStates) {
+        final String state = brokerPartitionState.get("state").toString();
+        if (state.equals(LEADER_STATE)) {
+          expectedPartitions.remove(brokerPartitionState.get("partitionId"));
         }
-
-        return expectedPartitions.isEmpty();
+      }
     }
+
+    return expectedPartitions.isEmpty();
+  }
 }

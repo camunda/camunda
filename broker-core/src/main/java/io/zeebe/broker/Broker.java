@@ -17,8 +17,6 @@
  */
 package io.zeebe.broker;
 
-import java.io.InputStream;
-
 import io.zeebe.broker.clustering.ClusterComponent;
 import io.zeebe.broker.job.JobQueueComponent;
 import io.zeebe.broker.logstreams.LogStreamsComponent;
@@ -29,74 +27,66 @@ import io.zeebe.broker.transport.TransportComponent;
 import io.zeebe.broker.workflow.WorkflowComponent;
 import io.zeebe.util.LogUtil;
 import io.zeebe.util.sched.clock.ActorClock;
+import java.io.InputStream;
 import org.slf4j.Logger;
 
-public class Broker implements AutoCloseable
-{
-    public static final Logger LOG = Loggers.SYSTEM_LOGGER;
+public class Broker implements AutoCloseable {
+  public static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
-    public static final String VERSION;
+  public static final String VERSION;
 
-    static
-    {
-        final String version = Broker.class.getPackage().getImplementationVersion();
-        VERSION = version != null ? version : "development";
-    }
+  static {
+    final String version = Broker.class.getPackage().getImplementationVersion();
+    VERSION = version != null ? version : "development";
+  }
 
-    protected final SystemContext brokerContext;
-    protected boolean isClosed = false;
+  protected final SystemContext brokerContext;
+  protected boolean isClosed = false;
 
-    public Broker(String configFileLocation, String basePath, ActorClock clock)
-    {
-        this(new SystemContext(configFileLocation, basePath, clock));
-    }
+  public Broker(String configFileLocation, String basePath, ActorClock clock) {
+    this(new SystemContext(configFileLocation, basePath, clock));
+  }
 
-    public Broker(InputStream configStream, String basePath, ActorClock clock)
-    {
-        this(new SystemContext(configStream, basePath, clock));
-    }
+  public Broker(InputStream configStream, String basePath, ActorClock clock) {
+    this(new SystemContext(configStream, basePath, clock));
+  }
 
-    public Broker(BrokerCfg cfg, String basePath, ActorClock clock)
-    {
-        this(new SystemContext(cfg, basePath, clock));
-    }
+  public Broker(BrokerCfg cfg, String basePath, ActorClock clock) {
+    this(new SystemContext(cfg, basePath, clock));
+  }
 
-    public Broker(SystemContext systemContext)
-    {
-        this.brokerContext = systemContext;
-        LogUtil.doWithMDC(systemContext.getDiagnosticContext(), () -> start());
-    }
+  public Broker(SystemContext systemContext) {
+    this.brokerContext = systemContext;
+    LogUtil.doWithMDC(systemContext.getDiagnosticContext(), () -> start());
+  }
 
-    protected void start()
-    {
-        LOG.info("Version: {}", VERSION);
+  protected void start() {
+    LOG.info("Version: {}", VERSION);
 
-        brokerContext.addComponent(new SystemComponent());
-        brokerContext.addComponent(new TransportComponent());
-        brokerContext.addComponent(new LogStreamsComponent());
-        brokerContext.addComponent(new JobQueueComponent());
-        brokerContext.addComponent(new WorkflowComponent());
-        brokerContext.addComponent(new ClusterComponent());
+    brokerContext.addComponent(new SystemComponent());
+    brokerContext.addComponent(new TransportComponent());
+    brokerContext.addComponent(new LogStreamsComponent());
+    brokerContext.addComponent(new JobQueueComponent());
+    brokerContext.addComponent(new WorkflowComponent());
+    brokerContext.addComponent(new ClusterComponent());
 
-        brokerContext.init();
-    }
+    brokerContext.init();
+  }
 
-    @Override
-    public void close()
-    {
-        LogUtil.doWithMDC(brokerContext.getDiagnosticContext(), () ->
-        {
-            if (!isClosed)
-            {
-                brokerContext.close();
-                isClosed = true;
-                LOG.info("Broker closed");
-            }
+  @Override
+  public void close() {
+    LogUtil.doWithMDC(
+        brokerContext.getDiagnosticContext(),
+        () -> {
+          if (!isClosed) {
+            brokerContext.close();
+            isClosed = true;
+            LOG.info("Broker closed");
+          }
         });
-    }
+  }
 
-    public SystemContext getBrokerContext()
-    {
-        return brokerContext;
-    }
+  public SystemContext getBrokerContext() {
+    return brokerContext;
+  }
 }

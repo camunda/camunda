@@ -15,75 +15,70 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi.data;
 
+import io.zeebe.transport.SocketAddress;
 import java.util.*;
 
-import io.zeebe.transport.SocketAddress;
+public class TopologyBroker {
+  private List<BrokerPartitionState> partitions = new ArrayList<>();
 
-public class TopologyBroker
-{
-    private List<BrokerPartitionState> partitions = new ArrayList<>();
+  protected final String host;
+  protected final int port;
+  private SocketAddress address;
 
-    protected final String host;
-    protected final int port;
-    private SocketAddress address;
+  public TopologyBroker(final String host, final int port) {
+    this.host = host;
+    this.port = port;
+    address = new SocketAddress(host, port);
+  }
 
-    public TopologyBroker(final String host, final int port)
-    {
-        this.host = host;
-        this.port = port;
-        address = new SocketAddress(host, port);
+  public String getHost() {
+    return host;
+  }
+
+  public int getPort() {
+    return port;
+  }
+
+  public List<BrokerPartitionState> getPartitions() {
+    return partitions;
+  }
+
+  public TopologyBroker addPartition(BrokerPartitionState brokerPartitionState) {
+    partitions.add(brokerPartitionState);
+    return this;
+  }
+
+  public SocketAddress getAddress() {
+    return address;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
     }
-
-    public String getHost()
-    {
-        return host;
+    if (o == null || getClass() != o.getClass()) {
+      return false;
     }
+    final TopologyBroker that = (TopologyBroker) o;
+    return Objects.equals(address, that.address);
+  }
 
-    public int getPort()
-    {
-        return port;
-    }
+  @Override
+  public int hashCode() {
+    return Objects.hash(address);
+  }
 
-    public List<BrokerPartitionState> getPartitions()
-    {
-        return partitions;
-    }
-
-    public TopologyBroker addPartition(BrokerPartitionState brokerPartitionState)
-    {
-        partitions.add(brokerPartitionState);
-        return this;
-    }
-
-    public SocketAddress getAddress()
-    {
-        return address;
-    }
-
-    @Override
-    public boolean equals(Object o)
-    {
-        if (this == o)
-        {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass())
-        {
-            return false;
-        }
-        final TopologyBroker that = (TopologyBroker) o;
-        return Objects.equals(address, that.address);
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return Objects.hash(address);
-    }
-
-    @Override
-    public String toString()
-    {
-        return "TopologyBroker{" + "partitions=" + partitions + ", host='" + host + '\'' + ", port=" + port + '}';
-    }
+  @Override
+  public String toString() {
+    return "TopologyBroker{"
+        + "partitions="
+        + partitions
+        + ", host='"
+        + host
+        + '\''
+        + ", port="
+        + port
+        + '}';
+  }
 }

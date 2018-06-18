@@ -15,31 +15,25 @@
  */
 package io.zeebe.map.iterator;
 
-import org.agrona.DirectBuffer;
-
 import io.zeebe.map.types.ByteArrayValueHandler;
 import io.zeebe.map.types.LongKeyHandler;
+import org.agrona.DirectBuffer;
 
-public class Long2BytesZbMapEntry implements ZbMapEntry<LongKeyHandler, ByteArrayValueHandler>
-{
-    private long key;
-    private DirectBuffer value;
+public class Long2BytesZbMapEntry implements ZbMapEntry<LongKeyHandler, ByteArrayValueHandler> {
+  private long key;
+  private DirectBuffer value;
 
-    @Override
-    public void read(LongKeyHandler keyHander, ByteArrayValueHandler valueHandler)
-    {
-        key = keyHander.theKey;
-        value = valueHandler.valueBuffer;
-    }
+  @Override
+  public void read(LongKeyHandler keyHander, ByteArrayValueHandler valueHandler) {
+    key = keyHander.theKey;
+    value = valueHandler.valueBuffer;
+  }
 
-    public long getKey()
-    {
-        return key;
-    }
+  public long getKey() {
+    return key;
+  }
 
-    public DirectBuffer getValue()
-    {
-        return value;
-    }
-
+  public DirectBuffer getValue() {
+    return value;
+  }
 }

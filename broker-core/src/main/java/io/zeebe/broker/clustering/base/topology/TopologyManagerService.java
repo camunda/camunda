@@ -25,60 +25,53 @@ import io.zeebe.raft.Raft;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.SocketAddress;
 
-public class TopologyManagerService implements Service<TopologyManager>
-{
-    private TopologyManagerImpl topologyManager;
+public class TopologyManagerService implements Service<TopologyManager> {
+  private TopologyManagerImpl topologyManager;
 
-    private final Injector<Gossip> gossipInjector = new Injector<>();
+  private final Injector<Gossip> gossipInjector = new Injector<>();
 
-    private final ServiceGroupReference<Raft> raftReference = ServiceGroupReference.<Raft>create()
-        .onAdd((name, raft) -> topologyManager.onRaftStarted(raft))
-        .onRemove((name, raft) -> topologyManager.onRaftRemoved(raft))
-        .build();
+  private final ServiceGroupReference<Raft> raftReference =
+      ServiceGroupReference.<Raft>create()
+          .onAdd((name, raft) -> topologyManager.onRaftStarted(raft))
+          .onRemove((name, raft) -> topologyManager.onRaftRemoved(raft))
+          .build();
 
-    private final NodeInfo localMember;
+  private final NodeInfo localMember;
 
-    public TopologyManagerService(NetworkCfg cfg)
-    {
-        final SocketAddress managementApi = cfg.getManagement().toSocketAddress();
-        final SocketAddress clientApi = cfg.getClient().toSocketAddress();
-        final SocketAddress replicationApi = cfg.getReplication().toSocketAddress();
+  public TopologyManagerService(NetworkCfg cfg) {
+    final SocketAddress managementApi = cfg.getManagement().toSocketAddress();
+    final SocketAddress clientApi = cfg.getClient().toSocketAddress();
+    final SocketAddress replicationApi = cfg.getReplication().toSocketAddress();
 
-        localMember = new NodeInfo(clientApi, managementApi, replicationApi);
-    }
+    localMember = new NodeInfo(clientApi, managementApi, replicationApi);
+  }
 
-    @Override
-    public void start(ServiceStartContext startContext)
-    {
-        final Gossip gossip = gossipInjector.getValue();
+  @Override
+  public void start(ServiceStartContext startContext) {
+    final Gossip gossip = gossipInjector.getValue();
 
-        topologyManager = new TopologyManagerImpl(gossip, localMember);
+    topologyManager = new TopologyManagerImpl(gossip, localMember);
 
-        startContext.createService(LOCAL_NODE, new LocalNodeService(localMember))
-            .install();
+    startContext.createService(LOCAL_NODE, new LocalNodeService(localMember)).install();
 
-        startContext.async(startContext.getScheduler().submitActor(topologyManager));
-    }
+    startContext.async(startContext.getScheduler().submitActor(topologyManager));
+  }
 
-    @Override
-    public void stop(ServiceStopContext stopContext)
-    {
-        stopContext.async(topologyManager.close());
-    }
+  @Override
+  public void stop(ServiceStopContext stopContext) {
+    stopContext.async(topologyManager.close());
+  }
 
-    @Override
-    public TopologyManager get()
-    {
-        return topologyManager;
-    }
+  @Override
+  public TopologyManager get() {
+    return topologyManager;
+  }
 
-    public ServiceGroupReference<Raft> getRaftReference()
-    {
-        return raftReference;
-    }
+  public ServiceGroupReference<Raft> getRaftReference() {
+    return raftReference;
+  }
 
-    public Injector<Gossip> getGossipInjector()
-    {
-        return gossipInjector;
-    }
+  public Injector<Gossip> getGossipInjector() {
+    return gossipInjector;
+  }
 }

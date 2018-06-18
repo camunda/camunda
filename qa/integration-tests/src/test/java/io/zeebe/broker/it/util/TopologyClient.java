@@ -15,10 +15,6 @@
  */
 package io.zeebe.broker.it.util;
 
-import java.time.Duration;
-import java.util.Collections;
-import java.util.List;
-
 import io.zeebe.client.api.commands.BrokerInfo;
 import io.zeebe.client.impl.ControlMessageRequestHandler;
 import io.zeebe.client.impl.ZeebeClientImpl;
@@ -29,48 +25,52 @@ import io.zeebe.transport.ClientResponse;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
+import java.time.Duration;
+import java.util.Collections;
+import java.util.List;
 import org.agrona.DirectBuffer;
 
-public class TopologyClient
-{
+public class TopologyClient {
 
-    private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-    private final ClientTransport transport;
-    private final ControlMessageRequestHandler requestHandler;
+  private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
+  private final ClientTransport transport;
+  private final ControlMessageRequestHandler requestHandler;
 
-    public TopologyClient(final ZeebeClientImpl zeebeClient)
-    {
-        transport = zeebeClient.getTransport();
-        requestHandler = new ControlMessageRequestHandler(zeebeClient.getObjectMapper(), new TopologyRequestImpl(null, null));
+  public TopologyClient(final ZeebeClientImpl zeebeClient) {
+    transport = zeebeClient.getTransport();
+    requestHandler =
+        new ControlMessageRequestHandler(
+            zeebeClient.getObjectMapper(), new TopologyRequestImpl(null, null));
+  }
+
+  public List<BrokerInfo> requestTopologyFromBroker(final SocketAddress socketAddress) {
+    final RemoteAddress remoteAddress = transport.registerRemoteAndAwaitChannel(socketAddress);
+    final ClientResponse response =
+        transport
+            .getOutput()
+            .sendRequest(remoteAddress, requestHandler, Duration.ofSeconds(5))
+            .join();
+    final DirectBuffer responseBuffer = response.getResponseBuffer();
+
+    messageHeaderDecoder.wrap(responseBuffer, 0);
+
+    final int blockLength = messageHeaderDecoder.blockLength();
+    final int version = messageHeaderDecoder.version();
+
+    final int responseMessageOffset = messageHeaderDecoder.encodedLength();
+
+    if (requestHandler.handlesResponse(messageHeaderDecoder)) {
+      try {
+        final TopologyImpl topology =
+            (TopologyImpl)
+                requestHandler.getResult(
+                    responseBuffer, responseMessageOffset, blockLength, version);
+        return topology.getBrokers();
+      } catch (final Exception e) {
+        // ignore
+      }
     }
 
-    public List<BrokerInfo> requestTopologyFromBroker(final SocketAddress socketAddress)
-    {
-        final RemoteAddress remoteAddress = transport.registerRemoteAndAwaitChannel(socketAddress);
-        final ClientResponse response = transport.getOutput().sendRequest(remoteAddress, requestHandler, Duration.ofSeconds(5)).join();
-        final DirectBuffer responseBuffer = response.getResponseBuffer();
-
-        messageHeaderDecoder.wrap(responseBuffer, 0);
-
-        final int blockLength = messageHeaderDecoder.blockLength();
-        final int version = messageHeaderDecoder.version();
-
-        final int responseMessageOffset = messageHeaderDecoder.encodedLength();
-
-        if (requestHandler.handlesResponse(messageHeaderDecoder))
-        {
-            try
-            {
-                final TopologyImpl topology = (TopologyImpl) requestHandler.getResult(responseBuffer, responseMessageOffset, blockLength, version);
-                return topology.getBrokers();
-            }
-            catch (final Exception e)
-            {
-                // ignore
-            }
-        }
-
-        return Collections.emptyList();
-    }
-
+    return Collections.emptyList();
+  }
 }

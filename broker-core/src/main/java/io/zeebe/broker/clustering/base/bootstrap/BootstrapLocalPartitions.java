@@ -22,8 +22,6 @@ import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.parti
 import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_CLIENT_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.clientTransport;
 
-import java.util.List;
-
 import io.zeebe.broker.clustering.base.partitions.PartitionInstallService;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfiguration;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
@@ -31,59 +29,67 @@ import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.util.buffer.BufferUtil;
+import java.util.List;
 
 /**
- * Always installed on broker startup: reads configuration of all locally available
- * partitions and starts the corresponding services (raft, logstream, partition ...)
+ * Always installed on broker startup: reads configuration of all locally available partitions and
+ * starts the corresponding services (raft, logstream, partition ...)
  */
-public class BootstrapLocalPartitions implements Service<Object>
-{
-    private final Injector<RaftPersistentConfigurationManager> configurationManagerInjector = new Injector<>();
-    private final BrokerCfg brokerCfg;
+public class BootstrapLocalPartitions implements Service<Object> {
+  private final Injector<RaftPersistentConfigurationManager> configurationManagerInjector =
+      new Injector<>();
+  private final BrokerCfg brokerCfg;
 
-    public BootstrapLocalPartitions(BrokerCfg brokerCfg)
-    {
-        this.brokerCfg = brokerCfg;
-    }
+  public BootstrapLocalPartitions(BrokerCfg brokerCfg) {
+    this.brokerCfg = brokerCfg;
+  }
 
-    @Override
-    public void start(ServiceStartContext startContext)
-    {
-        final RaftPersistentConfigurationManager configurationManager = configurationManagerInjector.getValue();
+  @Override
+  public void start(ServiceStartContext startContext) {
+    final RaftPersistentConfigurationManager configurationManager =
+        configurationManagerInjector.getValue();
 
-        startContext.run(() ->
-        {
-            final List<RaftPersistentConfiguration> configurations = configurationManager.getConfigurations().join();
+    startContext.run(
+        () -> {
+          final List<RaftPersistentConfiguration> configurations =
+              configurationManager.getConfigurations().join();
 
-            for (RaftPersistentConfiguration configuration : configurations)
-            {
-                installPartition(startContext, configuration);
-            }
+          for (RaftPersistentConfiguration configuration : configurations) {
+            installPartition(startContext, configuration);
+          }
         });
-    }
+  }
 
-    private void installPartition(ServiceStartContext startContext, RaftPersistentConfiguration configuration)
-    {
-        final String partitionName = String.format("%s-%d", BufferUtil.bufferAsString(configuration.getTopicName()), configuration.getPartitionId());
-        final ServiceName<Void> partitionInstallServiceName = partitionInstallServiceName(partitionName);
-        final boolean isInternalSystemPartition = configuration.getPartitionId() == Protocol.SYSTEM_PARTITION;
+  private void installPartition(
+      ServiceStartContext startContext, RaftPersistentConfiguration configuration) {
+    final String partitionName =
+        String.format(
+            "%s-%d",
+            BufferUtil.bufferAsString(configuration.getTopicName()),
+            configuration.getPartitionId());
+    final ServiceName<Void> partitionInstallServiceName =
+        partitionInstallServiceName(partitionName);
+    final boolean isInternalSystemPartition =
+        configuration.getPartitionId() == Protocol.SYSTEM_PARTITION;
 
-        final PartitionInstallService partitionInstallService = new PartitionInstallService(brokerCfg, configuration, isInternalSystemPartition);
+    final PartitionInstallService partitionInstallService =
+        new PartitionInstallService(brokerCfg, configuration, isInternalSystemPartition);
 
-        startContext.createService(partitionInstallServiceName, partitionInstallService)
-            .dependency(LOCAL_NODE, partitionInstallService.getLocalNodeInjector())
-            .dependency(clientTransport(REPLICATION_API_CLIENT_NAME), partitionInstallService.getClientTransportInjector())
-            .install();
-    }
+    startContext
+        .createService(partitionInstallServiceName, partitionInstallService)
+        .dependency(LOCAL_NODE, partitionInstallService.getLocalNodeInjector())
+        .dependency(
+            clientTransport(REPLICATION_API_CLIENT_NAME),
+            partitionInstallService.getClientTransportInjector())
+        .install();
+  }
 
-    @Override
-    public Object get()
-    {
-        return null;
-    }
+  @Override
+  public Object get() {
+    return null;
+  }
 
-    public Injector<RaftPersistentConfigurationManager> getConfigurationManagerInjector()
-    {
-        return configurationManagerInjector;
-    }
+  public Injector<RaftPersistentConfigurationManager> getConfigurationManagerInjector() {
+    return configurationManagerInjector;
+  }
 }

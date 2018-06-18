@@ -17,43 +17,36 @@ package io.zeebe.client.impl.event;
 
 import io.zeebe.client.api.events.RaftMember;
 
-public class RaftMemberImpl implements RaftMember
-{
-    private String host;
-    private int port;
+public class RaftMemberImpl implements RaftMember {
+  private String host;
+  private int port;
 
-    @Override
-    public String getHost()
-    {
-        return host;
-    }
+  @Override
+  public String getHost() {
+    return host;
+  }
 
-    public void setHost(String host)
-    {
-        this.host = host;
-    }
+  public void setHost(String host) {
+    this.host = host;
+  }
 
-    @Override
-    public int getPort()
-    {
-        return port;
-    }
+  @Override
+  public int getPort() {
+    return port;
+  }
 
-    public void setPort(int port)
-    {
-        this.port = port;
-    }
+  public void setPort(int port) {
+    this.port = port;
+  }
 
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("RaftMember [host=");
-        builder.append(host);
-        builder.append(", port=");
-        builder.append(port);
-        builder.append("]");
-        return builder.toString();
-    }
-
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("RaftMember [host=");
+    builder.append(host);
+    builder.append(", port=");
+    builder.append(port);
+    builder.append("]");
+    return builder.toString();
+  }
 }

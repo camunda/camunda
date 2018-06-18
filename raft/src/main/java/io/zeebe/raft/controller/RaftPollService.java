@@ -23,93 +23,79 @@ import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.ScheduledTimer;
 
-public class RaftPollService implements Service<Void>
-{
-    private final Raft raft;
-    private final ActorControl raftActor;
-    private final Heartbeat heartbeat;
+public class RaftPollService implements Service<Void> {
+  private final Raft raft;
+  private final ActorControl raftActor;
+  private final Heartbeat heartbeat;
 
-    private final ConsensusRequestController pollController;
+  private final ConsensusRequestController pollController;
 
-    private ScheduledTimer scheduledElection;
+  private ScheduledTimer scheduledElection;
 
-    public RaftPollService(final Raft raft, final ActorControl raftActor)
-    {
-        this.raft = raft;
-        this.raftActor = raftActor;
-        this.heartbeat = raft.getHeartbeat();
+  public RaftPollService(final Raft raft, final ActorControl raftActor) {
+    this.raft = raft;
+    this.raftActor = raftActor;
+    this.heartbeat = raft.getHeartbeat();
 
-        pollController = new ConsensusRequestController(raft, raftActor, new PollRequestHandler()
-        {
+    pollController =
+        new ConsensusRequestController(
+            raft,
+            raftActor,
+            new PollRequestHandler() {
 
-            @Override
-            public void consensusFailed(final Raft raft)
-            {
+              @Override
+              public void consensusFailed(final Raft raft) {
                 super.consensusFailed(raft);
                 scheduleElectionTimer();
-            }
-        });
+              }
+            });
+  }
+
+  @Override
+  public Void get() {
+    return null;
+  }
+
+  @Override
+  public void start(ServiceStartContext startContext) {
+    raftActor.call(this::initPoll);
+  }
+
+  @Override
+  public void stop(ServiceStopContext stopContext) {
+    stopContext.run(this::stopPoll);
+  }
+
+  private void stopPoll() {
+    if (scheduledElection != null) {
+      scheduledElection.cancel();
     }
 
-    @Override
-    public Void get()
-    {
-        return null;
-    }
+    pollController.close();
+  }
 
-    @Override
-    public void start(ServiceStartContext startContext)
-    {
-        raftActor.call(this::initPoll);
+  private void initPoll() {
+    if (raft.getMemberSize() == 0) {
+      onElectionTimeout();
+    } else {
+      scheduleElectionTimer();
     }
+  }
 
-    @Override
-    public void stop(ServiceStopContext stopContext)
-    {
-        stopContext.run(this::stopPoll);
+  protected void scheduleElectionTimer() {
+    scheduledElection =
+        raftActor.runDelayed(heartbeat.nextElectionTimeout(), this::electionTimeoutCallback);
+  }
+
+  private void electionTimeoutCallback() {
+    if (heartbeat.shouldElect()) {
+      onElectionTimeout();
+    } else {
+      scheduleElectionTimer();
     }
+  }
 
-    private void stopPoll()
-    {
-        if (scheduledElection != null)
-        {
-            scheduledElection.cancel();
-        }
-
-        pollController.close();
-    }
-
-    private void initPoll()
-    {
-        if (raft.getMemberSize() == 0)
-        {
-            onElectionTimeout();
-        }
-        else
-        {
-            scheduleElectionTimer();
-        }
-    }
-
-    protected void scheduleElectionTimer()
-    {
-        scheduledElection = raftActor.runDelayed(heartbeat.nextElectionTimeout(), this::electionTimeoutCallback);
-    }
-
-    private void electionTimeoutCallback()
-    {
-        if (heartbeat.shouldElect())
-        {
-            onElectionTimeout();
-        }
-        else
-        {
-            scheduleElectionTimer();
-        }
-    }
-
-    protected void onElectionTimeout()
-    {
-        pollController.sendRequest();
-    }
+  protected void onElectionTimeout() {
+    pollController.sendRequest();
+  }
 }

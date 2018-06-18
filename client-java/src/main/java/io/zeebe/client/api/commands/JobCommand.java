@@ -17,8 +17,7 @@ package io.zeebe.client.api.commands;
 
 import io.zeebe.client.api.record.JobRecord;
 
-public interface JobCommand extends JobRecord
-{
+public interface JobCommand extends JobRecord {
 
-    JobCommandName getName();
+  JobCommandName getName();
 }

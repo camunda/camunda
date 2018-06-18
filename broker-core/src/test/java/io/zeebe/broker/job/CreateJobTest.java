@@ -19,48 +19,45 @@ package io.zeebe.broker.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.Map;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
+import java.util.Map;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
 
-public class CreateJobTest
-{
-    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+public class CreateJobTest {
+  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
-    public ClientApiRule apiRule = new ClientApiRule();
+  public ClientApiRule apiRule = new ClientApiRule();
 
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
-    @Test
-    public void shouldCreateJob()
-    {
-        // when
-        final ExecuteCommandResponse resp = apiRule.createCmdRequest()
+  @Test
+  public void shouldCreateJob() {
+    // when
+    final ExecuteCommandResponse resp =
+        apiRule
+            .createCmdRequest()
             .type(ValueType.JOB, JobIntent.CREATE)
             .command()
-                .put("type", "theJobType")
-                .done()
+            .put("type", "theJobType")
+            .done()
             .sendAndAwait();
 
-        // then
-        assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.position()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.sourceRecordPosition()).isEqualTo(resp.key());
-        assertThat(resp.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
-        assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
-        assertThat(resp.intent()).isEqualTo(JobIntent.CREATED);
+    // then
+    assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
+    assertThat(resp.position()).isGreaterThanOrEqualTo(0L);
+    assertThat(resp.sourceRecordPosition()).isEqualTo(resp.key());
+    assertThat(resp.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
+    assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
+    assertThat(resp.intent()).isEqualTo(JobIntent.CREATED);
 
-        final Map<String, Object> event = resp.getValue();
-        assertThat(event).containsEntry("type", "theJobType");
-    }
+    final Map<String, Object> event = resp.getValue();
+    assertThat(event).containsEntry("type", "theJobType");
+  }
 }

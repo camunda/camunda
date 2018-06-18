@@ -17,8 +17,7 @@ package io.zeebe.client.api.commands;
 
 import io.zeebe.client.api.record.WorkflowInstanceRecord;
 
-public interface WorkflowInstanceCommand extends WorkflowInstanceRecord
-{
+public interface WorkflowInstanceCommand extends WorkflowInstanceRecord {
 
-    WorkflowInstanceCommandName getName();
+  WorkflowInstanceCommandName getName();
 }

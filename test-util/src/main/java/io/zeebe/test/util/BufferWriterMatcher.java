@@ -15,90 +15,74 @@
  */
 package io.zeebe.test.util;
 
+import io.zeebe.util.buffer.BufferReader;
+import io.zeebe.util.buffer.BufferWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
-
-import io.zeebe.util.buffer.BufferReader;
-import io.zeebe.util.buffer.BufferWriter;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.hamcrest.Matcher;
 import org.mockito.ArgumentMatcher;
 
-import org.agrona.concurrent.UnsafeBuffer;
-
 /**
- * Note: this matcher does not work when a {@link BufferWriter} is reused throughout a test.
- * Mockito only captures the reference, so after the test the {@link BufferWriter} contains the latest state.
+ * Note: this matcher does not work when a {@link BufferWriter} is reused throughout a test. Mockito
+ * only captures the reference, so after the test the {@link BufferWriter} contains the latest
+ * state.
  *
  * @author Lindhauer
  */
-public class BufferWriterMatcher<T extends BufferReader> implements ArgumentMatcher<BufferWriter>
-{
-    protected T reader;
+public class BufferWriterMatcher<T extends BufferReader> implements ArgumentMatcher<BufferWriter> {
+  protected T reader;
 
-    protected List<BufferReaderMatch<T>> propertyMatchers = new ArrayList<>();
+  protected List<BufferReaderMatch<T>> propertyMatchers = new ArrayList<>();
 
-    public BufferWriterMatcher(T reader)
-    {
-        this.reader = reader;
+  public BufferWriterMatcher(T reader) {
+    this.reader = reader;
+  }
+
+  @Override
+  public boolean matches(BufferWriter argument) {
+    if (argument == null) {
+      return false;
     }
 
-    @Override
-    public boolean matches(BufferWriter argument)
-    {
-        if (argument == null)
-        {
-            return false;
-        }
+    final UnsafeBuffer buffer = new UnsafeBuffer(new byte[argument.getLength()]);
+    argument.write(buffer, 0);
 
-        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[argument.getLength()]);
-        argument.write(buffer, 0);
+    reader.wrap(buffer, 0, buffer.capacity());
 
-        reader.wrap(buffer, 0, buffer.capacity());
-
-        for (BufferReaderMatch<T> matcher : propertyMatchers)
-        {
-            if (!matcher.matches(reader))
-            {
-                return false;
-            }
-        }
-
-
-        return true;
+    for (BufferReaderMatch<T> matcher : propertyMatchers) {
+      if (!matcher.matches(reader)) {
+        return false;
+      }
     }
 
-    public BufferWriterMatcher<T> matching(Function<T, Object> actualProperty, Object expectedValue)
-    {
-        final BufferReaderMatch<T> match = new BufferReaderMatch<>();
-        match.propertyExtractor = actualProperty;
+    return true;
+  }
 
-        if (expectedValue instanceof Matcher)
-        {
-            match.expectedValueMatcher = (Matcher<?>) expectedValue;
-        }
-        else
-        {
-            match.expectedValue = expectedValue;
-        }
+  public BufferWriterMatcher<T> matching(Function<T, Object> actualProperty, Object expectedValue) {
+    final BufferReaderMatch<T> match = new BufferReaderMatch<>();
+    match.propertyExtractor = actualProperty;
 
-        propertyMatchers.add(match);
-
-        return this;
+    if (expectedValue instanceof Matcher) {
+      match.expectedValueMatcher = (Matcher<?>) expectedValue;
+    } else {
+      match.expectedValue = expectedValue;
     }
 
-    public static <T extends BufferReader> BufferWriterMatcher<T> writesProperties(Class<T> readerClass)
-    {
-        try
-        {
-            final BufferWriterMatcher<T> matcher = new BufferWriterMatcher<>(readerClass.newInstance());
+    propertyMatchers.add(match);
 
+    return this;
+  }
 
-            return matcher;
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException("Could not construct matcher", e);
-        }
+  public static <T extends BufferReader> BufferWriterMatcher<T> writesProperties(
+      Class<T> readerClass) {
+    try {
+      final BufferWriterMatcher<T> matcher = new BufferWriterMatcher<>(readerClass.newInstance());
+
+      return matcher;
+    } catch (Exception e) {
+      throw new RuntimeException("Could not construct matcher", e);
     }
+  }
 }

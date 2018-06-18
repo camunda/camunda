@@ -15,78 +15,61 @@
  */
 package io.zeebe.raft.backpressure;
 
-public class BackpressureHelper
-{
-    /**
-     * records the size in bytes of each event by position. Required when the follower
-     * acknowledges positions.
-     */
-    private final EventSizesByPosition eventSizesByPosition = new EventSizesByPosition();
+public class BackpressureHelper {
+  /**
+   * records the size in bytes of each event by position. Required when the follower acknowledges
+   * positions.
+   */
+  private final EventSizesByPosition eventSizesByPosition = new EventSizesByPosition();
 
-    /**
-     * The size of the remote buffer in bytes
-     */
-    private int remoteBufferSize;
+  /** The size of the remote buffer in bytes */
+  private int remoteBufferSize;
 
-    /**
-     * The number of bytes that are currently "in flight". Sent, but not acknowledged
-     */
-    private int currentInFlight = 0;
+  /** The number of bytes that are currently "in flight". Sent, but not acknowledged */
+  private int currentInFlight = 0;
 
-    /**
-     * First Event needs to be acknowledged before the next one can be sent
-     */
-    private boolean isFirstEventAcknowledged;
+  /** First Event needs to be acknowledged before the next one can be sent */
+  private boolean isFirstEventAcknowledged;
 
-    private boolean isFirstEventSent;
+  private boolean isFirstEventSent;
 
-    /**
-     * Initializes the backpressure helper with a remote buffersize
-     *
-     * @param remoteBufferSize size of the remote buffer in bytes
-     */
-    public BackpressureHelper(int remoteBufferSize)
-    {
-        this.remoteBufferSize = remoteBufferSize - (int) (remoteBufferSize * 0.2);
+  /**
+   * Initializes the backpressure helper with a remote buffersize
+   *
+   * @param remoteBufferSize size of the remote buffer in bytes
+   */
+  public BackpressureHelper(int remoteBufferSize) {
+    this.remoteBufferSize = remoteBufferSize - (int) (remoteBufferSize * 0.2);
+  }
+
+  public void onEventSent(long position, int eventSize) {
+    if (!isFirstEventSent && !isFirstEventAcknowledged) {
+      isFirstEventSent = true;
     }
 
-    public void onEventSent(long position, int eventSize)
-    {
-        if (!isFirstEventSent && !isFirstEventAcknowledged)
-        {
-            isFirstEventSent = true;
-        }
+    eventSizesByPosition.add(position, eventSize);
+    currentInFlight += eventSize;
+  }
 
-        eventSizesByPosition.add(position, eventSize);
-        currentInFlight += eventSize;
+  public void onEventAcknowledged(long position) {
+    if (isFirstEventSent && !isFirstEventAcknowledged) {
+      isFirstEventAcknowledged = true;
     }
+    currentInFlight -= eventSizesByPosition.markConsumed(position);
+  }
 
-    public void onEventAcknowledged(long position)
-    {
-        if (isFirstEventSent && !isFirstEventAcknowledged)
-        {
-            isFirstEventAcknowledged = true;
-        }
-        currentInFlight -= eventSizesByPosition.markConsumed(position);
-    }
+  public void reset() {
+    eventSizesByPosition.reset();
+    currentInFlight = 0;
+    isFirstEventSent = false;
+    isFirstEventAcknowledged = false;
+  }
 
-    public void reset()
-    {
-        eventSizesByPosition.reset();
-        currentInFlight = 0;
-        isFirstEventSent = false;
-        isFirstEventAcknowledged = false;
+  public boolean canSend(int bytes) {
+    if (!isFirstEventSent) {
+      return true;
+    } else {
+      return remoteBufferSize > currentInFlight + bytes;
     }
-
-    public boolean canSend(int bytes)
-    {
-        if (!isFirstEventSent)
-        {
-            return true;
-        }
-        else
-        {
-            return remoteBufferSize > currentInFlight + bytes;
-        }
-    }
+  }
 }

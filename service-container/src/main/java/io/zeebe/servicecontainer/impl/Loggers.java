@@ -18,9 +18,7 @@ package io.zeebe.servicecontainer.impl;
 import io.zeebe.util.ZbLogger;
 import org.slf4j.Logger;
 
-public class Loggers
-{
+public class Loggers {
 
-    public static final Logger SERVICE_CONTAINER_LOGGER = new ZbLogger("io.zeebe.servicecontainer");
-
+  public static final Logger SERVICE_CONTAINER_LOGGER = new ZbLogger("io.zeebe.servicecontainer");
 }

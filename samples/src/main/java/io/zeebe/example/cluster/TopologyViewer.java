@@ -19,33 +19,37 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.client.api.commands.Topology;
 
-public class TopologyViewer
-{
+public class TopologyViewer {
 
-    public static void main(final String[] args)
-    {
-        final String broker = "127.0.0.1:51015";
+  public static void main(final String[] args) {
+    final String broker = "127.0.0.1:51015";
 
-        final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder()
-            .brokerContactPoint(broker);
+    final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
-        try (ZeebeClient client = builder.build())
-        {
-            System.out.println("Requesting topology with initial contact point " + broker);
+    try (ZeebeClient client = builder.build()) {
+      System.out.println("Requesting topology with initial contact point " + broker);
 
-            final Topology topology = client.newTopologyRequest()
-                .send()
-                .join();
+      final Topology topology = client.newTopologyRequest().send().join();
 
-            System.out.println("Topology:");
-            topology.getBrokers().forEach(b ->
-            {
+      System.out.println("Topology:");
+      topology
+          .getBrokers()
+          .forEach(
+              b -> {
                 System.out.println("    " + b.getAddress());
-                b.getPartitions().forEach(p -> System.out.println("      " + p.getTopicName() + "." +
-                    p.getPartitionId() + " - " + p.getRole()));
-            });
+                b.getPartitions()
+                    .forEach(
+                        p ->
+                            System.out.println(
+                                "      "
+                                    + p.getTopicName()
+                                    + "."
+                                    + p.getPartitionId()
+                                    + " - "
+                                    + p.getRole()));
+              });
 
-            System.out.println("Done.");
-        }
+      System.out.println("Done.");
     }
+  }
 }

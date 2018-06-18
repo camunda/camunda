@@ -15,9 +15,8 @@
  */
 package io.zeebe.client.api.commands;
 
-public enum IncidentCommandName
-{
-    CREATE,
-    RESOLVE,
-    DELETE,
+public enum IncidentCommandName {
+  CREATE,
+  RESOLVE,
+  DELETE,
 }

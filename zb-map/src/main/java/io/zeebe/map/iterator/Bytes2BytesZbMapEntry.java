@@ -15,32 +15,27 @@
  */
 package io.zeebe.map.iterator;
 
+import io.zeebe.map.types.ByteArrayKeyHandler;
+import io.zeebe.map.types.ByteArrayValueHandler;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import io.zeebe.map.types.ByteArrayKeyHandler;
-import io.zeebe.map.types.ByteArrayValueHandler;
+public class Bytes2BytesZbMapEntry
+    implements ZbMapEntry<ByteArrayKeyHandler, ByteArrayValueHandler> {
+  private UnsafeBuffer key = new UnsafeBuffer(0, 0);
+  private UnsafeBuffer value = new UnsafeBuffer(0, 0);
 
-public class Bytes2BytesZbMapEntry implements ZbMapEntry<ByteArrayKeyHandler, ByteArrayValueHandler>
-{
-    private UnsafeBuffer key = new UnsafeBuffer(0, 0);
-    private UnsafeBuffer value = new UnsafeBuffer(0, 0);
+  @Override
+  public void read(ByteArrayKeyHandler keyHandler, ByteArrayValueHandler valueHandler) {
+    key.wrap(keyHandler.keyBuffer);
+    value.wrap(valueHandler.valueBuffer);
+  }
 
-    @Override
-    public void read(ByteArrayKeyHandler keyHandler, ByteArrayValueHandler valueHandler)
-    {
-        key.wrap(keyHandler.keyBuffer);
-        value.wrap(valueHandler.valueBuffer);
-    }
+  public DirectBuffer getKey() {
+    return key;
+  }
 
-    public DirectBuffer getKey()
-    {
-        return key;
-    }
-
-    public DirectBuffer getValue()
-    {
-        return value;
-    }
-
+  public DirectBuffer getValue() {
+    return value;
+  }
 }

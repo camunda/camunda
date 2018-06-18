@@ -17,80 +17,70 @@ package io.zeebe.client.impl.subscription.job;
 
 import io.zeebe.client.api.subscription.JobHandler;
 
-public class JobSubscriptionSpec
-{
+public class JobSubscriptionSpec {
 
-    protected final String topic;
-    protected final JobHandler jobHandler;
-    protected final String jobType;
-    protected final long timeout;
-    protected final String worker;
-    protected final int capacity;
+  protected final String topic;
+  protected final JobHandler jobHandler;
+  protected final String jobType;
+  protected final long timeout;
+  protected final String worker;
+  protected final int capacity;
 
-    public JobSubscriptionSpec(
-            String topic,
-            JobHandler jobHandler,
-            String taskType,
-            long timeout,
-            String worker,
-            int capacity)
-    {
-        this.topic = topic;
-        this.jobHandler = jobHandler;
-        this.jobType = taskType;
-        this.timeout = timeout;
-        this.worker = worker;
-        this.capacity = capacity;
-    }
+  public JobSubscriptionSpec(
+      String topic,
+      JobHandler jobHandler,
+      String taskType,
+      long timeout,
+      String worker,
+      int capacity) {
+    this.topic = topic;
+    this.jobHandler = jobHandler;
+    this.jobType = taskType;
+    this.timeout = timeout;
+    this.worker = worker;
+    this.capacity = capacity;
+  }
 
-    public String getTopic()
-    {
-        return topic;
-    }
+  public String getTopic() {
+    return topic;
+  }
 
-    public JobHandler getJobHandler()
-    {
-        return jobHandler;
-    }
+  public JobHandler getJobHandler() {
+    return jobHandler;
+  }
 
-    public String getJobType()
-    {
-        return jobType;
-    }
+  public String getJobType() {
+    return jobType;
+  }
 
-    public long getTimeout()
-    {
-        return timeout;
-    }
+  public long getTimeout() {
+    return timeout;
+  }
 
-    public String getWorker()
-    {
-        return worker;
-    }
+  public String getWorker() {
+    return worker;
+  }
 
-    public int getCapacity()
-    {
-        return capacity;
-    }
+  public int getCapacity() {
+    return capacity;
+  }
 
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("[topic=");
-        builder.append(topic);
-        builder.append(", jobHandler=");
-        builder.append(jobHandler);
-        builder.append(", jobType=");
-        builder.append(jobType);
-        builder.append(", lockTime=");
-        builder.append(timeout);
-        builder.append(", lockOwner=");
-        builder.append(worker);
-        builder.append(", capacity=");
-        builder.append(capacity);
-        builder.append("]");
-        return builder.toString();
-    }
-
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("[topic=");
+    builder.append(topic);
+    builder.append(", jobHandler=");
+    builder.append(jobHandler);
+    builder.append(", jobType=");
+    builder.append(jobType);
+    builder.append(", lockTime=");
+    builder.append(timeout);
+    builder.append(", lockOwner=");
+    builder.append(worker);
+    builder.append(", capacity=");
+    builder.append(capacity);
+    builder.append("]");
+    return builder.toString();
+  }
 }
