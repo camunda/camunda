@@ -51,12 +51,16 @@ class Diagram extends React.Component {
     this.containerNode = node;
   };
 
+  handleZoom = step => {
+    this.Viewer.get('zoomScroll').stepZoom(step);
+  };
+
   handleZoomIn = () => {
-    this.Viewer.get('zoomScroll').stepZoom(0.1);
+    this.handleZoom(0.1);
   };
 
   handleZoomOut = () => {
-    this.Viewer.get('zoomScroll').stepZoom(-0.1);
+    this.handleZoom(-0.1);
   };
 
   handleZoomReset = () => {
