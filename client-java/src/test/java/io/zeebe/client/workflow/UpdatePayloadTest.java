@@ -15,11 +15,6 @@
  */
 package io.zeebe.client.workflow;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
-
-import java.util.Collections;
-
 import io.zeebe.client.api.clients.WorkflowClient;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.api.events.WorkflowInstanceState;
@@ -33,9 +28,16 @@ import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
+
+import java.util.Collections;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 
 public class UpdatePayloadTest
@@ -63,7 +65,7 @@ public class UpdatePayloadTest
                 .topicClient()
                 .workflowClient();
 
-        brokerRule.workflowInstances().registerUpdatedPayloadCommand(-1L);
+        brokerRule.workflowInstances().registerUpdatedPayloadCommand();
     }
 
     @Test
@@ -77,7 +79,7 @@ public class UpdatePayloadTest
         baseEvent.setWorkflowInstanceKey(1L);
 
         brokerRule.workflowInstances()
-            .registerUpdatedPayloadCommand(4L);
+            .registerUpdatedPayloadCommand(b -> b.sourceRecordPosition(4L));
 
         // when
         final WorkflowInstanceEvent workflowInstanceEvent = workflowTopicClient.newUpdatePayloadCommand(baseEvent)
@@ -91,7 +93,7 @@ public class UpdatePayloadTest
         final ExecuteCommandRequest request = brokerRule.getReceivedCommandRequests().get(0);
         assertThat(request.valueType()).isEqualTo(ValueType.WORKFLOW_INSTANCE);
         assertThat(request.intent()).isEqualTo(WorkflowInstanceIntent.UPDATE_PAYLOAD);
-        assertThat(request.sourceRecordPosition()).isEqualTo(1L);
+        assertThat(request.sourceRecordPosition()).isEqualTo(3L);
         assertThat(request.key()).isEqualTo(2L);
         assertThat(request.partitionId()).isEqualTo(baseEvent.getMetadata().getPartitionId());
         assertThat(request.position()).isEqualTo(baseEvent.getMetadata().getPosition());
@@ -104,7 +106,7 @@ public class UpdatePayloadTest
                 entry("activityId", baseEvent.getActivityId()),
                 entry("payload", ENCODED_PAYLOAD));
 
-        assertThat(workflowInstanceEvent.getSourceRecordPosition()).isEqualTo(4L);
+        assertThat(workflowInstanceEvent.getMetadata().getSourceRecordPosition()).isEqualTo(4L);
         assertThat(workflowInstanceEvent.getState()).isEqualTo(WorkflowInstanceState.PAYLOAD_UPDATED);
     }
 

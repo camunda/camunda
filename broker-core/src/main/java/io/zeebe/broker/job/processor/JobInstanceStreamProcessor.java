@@ -116,6 +116,7 @@ public class JobInstanceStreamProcessor
                         .intent(JobIntent.ACTIVATED)
                         .partitionId(logStreamPartitionId)
                         .position(command.getPosition())
+                        .sourceRecordPosition(command.getPosition())
                         .key(command.getKey())
                         .timestamp(command.getTimestamp())
                         .subscriberKey(metadata.getSubscriberKey())

@@ -15,8 +15,6 @@
  */
 package io.zeebe.client.impl.record;
 
-import java.time.Instant;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.client.api.record.Record;
 import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
@@ -24,6 +22,8 @@ import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.Intent;
+
+import java.time.Instant;
 
 public abstract class RecordImpl implements Record
 {
@@ -79,13 +79,6 @@ public abstract class RecordImpl implements Record
     public void setPosition(long position)
     {
         this.metadata.setPosition(position);
-    }
-
-    @Override
-    @JsonIgnore
-    public long getSourceRecordPosition()
-    {
-        return metadata.getSourceRecordPosition();
     }
 
     public void setSourceRecordPosition(long sourceRecordPosition)

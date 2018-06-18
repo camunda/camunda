@@ -39,6 +39,10 @@ public interface RecordMetadata
     long getPosition();
 
     /**
+     * Returns the position of the source record, which means the record that causes
+     * this current record. It can be unset, if it is an command like workflow instance create,
+     * then the returned value will be -1 otherwise the value will be >= 0.
+     *
      * @return the unique position of the source record. Records are
      *         ordered by position.
      */

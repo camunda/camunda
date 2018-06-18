@@ -15,14 +15,6 @@
  */
 package io.zeebe.client.job;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-
 import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.events.JobState;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
@@ -32,6 +24,13 @@ import io.zeebe.client.util.Events;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 public class FailJobTest
 {
@@ -53,7 +52,7 @@ public class FailJobTest
         baseEvent.setPosition(2L);
         baseEvent.setSourceRecordPosition(1L);
 
-        brokerRule.jobs().registerFailCommand(3L);
+        brokerRule.jobs().registerFailCommand(r -> r.sourceRecordPosition(2L));
 
         // when
         final JobEvent jobEvent = clientRule.jobClient()
@@ -67,7 +66,7 @@ public class FailJobTest
         assertThat(request.valueType()).isEqualTo(io.zeebe.protocol.clientapi.ValueType.JOB);
         assertThat(request.partitionId()).isEqualTo(StubBrokerRule.TEST_PARTITION_ID);
         assertThat(request.intent()).isEqualTo(JobIntent.FAIL);
-        assertThat(request.sourceRecordPosition()).isEqualTo(1L);
+        assertThat(request.sourceRecordPosition()).isEqualTo(2L);
 
         assertThat(request.getCommand()).containsOnly(
                 entry("deadline", baseEvent.getDeadline().toEpochMilli()),
@@ -81,8 +80,7 @@ public class FailJobTest
         assertThat(jobEvent.getMetadata().getKey()).isEqualTo(baseEvent.getKey());
         assertThat(jobEvent.getMetadata().getTopicName()).isEqualTo(StubBrokerRule.TEST_TOPIC_NAME);
         assertThat(jobEvent.getMetadata().getPartitionId()).isEqualTo(StubBrokerRule.TEST_PARTITION_ID);
-        assertThat(jobEvent.getMetadata().getSourceRecordPosition()).isEqualTo(3L);
-        assertThat(jobEvent.getSourceRecordPosition()).isEqualTo(3L);
+        assertThat(jobEvent.getMetadata().getSourceRecordPosition()).isEqualTo(2L);
 
         assertThat(jobEvent.getState()).isEqualTo(JobState.FAILED);
         assertThat(jobEvent.getHeaders()).isEqualTo(baseEvent.getHeaders());

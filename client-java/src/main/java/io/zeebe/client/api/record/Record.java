@@ -43,9 +43,4 @@ public interface Record
      */
     long getKey();
 
-    /**
-     * @return the unique position of the source record. Records are
-     *         ordered by position.
-     */
-    long getSourceRecordPosition();
 }

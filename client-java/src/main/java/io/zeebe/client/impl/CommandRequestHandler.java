@@ -76,7 +76,7 @@ public class CommandRequestHandler implements RequestResponseHandler
 
         encoder
             .partitionId(metadata.getPartitionId())
-            .sourceRecordPosition(metadata.getSourceRecordPosition())
+            .sourceRecordPosition(metadata.getPosition())
             .position(metadata.getPosition());
 
         if (metadata.getKey() < 0)

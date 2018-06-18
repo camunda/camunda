@@ -36,14 +36,22 @@ public interface TypedResponseWriter
     boolean writeRejection(TypedRecord<?> record, RejectionType type, DirectBuffer reason);
 
     /**
-     * @return true if successful
-     */
-    boolean writeEvent(Intent intent, TypedRecord<?> record);
-
-    /*
-     * Writes event as it is
+     * Writes the given record as response,
+     * the source record position will be set to the record position.
      *
      * @return true if successful
      */
-    boolean writeEventUnchanged(TypedRecord<?> record);
+    boolean writeRecord(Intent intent, TypedRecord<?> record);
+
+    /*
+     * <p>
+     * Writes the given record *unchanged* as response. This method should be used, if the record is already commited and
+     * the source position should not change.
+     * </p>
+     *
+     * <p>The other write methods will use the record position as source record position.</p>
+     *
+     * @return true if successful
+     */
+    boolean writeRecordUnchanged(TypedRecord<?> record);
 }

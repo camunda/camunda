@@ -15,13 +15,6 @@
  */
 package io.zeebe.client.workflow;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.util.*;
-
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.commands.Workflow;
 import io.zeebe.client.api.events.DeploymentEvent;
@@ -34,9 +27,21 @@ import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
+
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class CreateDeploymentTest
 {
@@ -85,7 +90,7 @@ public class CreateDeploymentTest
 
         assertThat(deployment.getDeploymentTopic()).isEqualTo("test-topic");
         assertThat(deployment.getMetadata().getTopicName()).isEqualTo(Protocol.SYSTEM_TOPIC);
-        assertThat(deployment.getSourceRecordPosition()).isEqualTo(1L);
+        assertThat(deployment.getMetadata().getSourceRecordPosition()).isEqualTo(1L);
     }
 
     @Test
@@ -130,13 +135,13 @@ public class CreateDeploymentTest
         assertThat(deployment.getMetadata().getKey()).isEqualTo(2L);
         assertThat(deployment.getMetadata().getTopicName()).isEqualTo(Protocol.SYSTEM_TOPIC);
         assertThat(deployment.getMetadata().getPartitionId()).isEqualTo(Protocol.SYSTEM_PARTITION);
+        assertThat(deployment.getMetadata().getSourceRecordPosition()).isEqualTo(1L);
 
         assertThat(deployment.getDeployedWorkflows()).hasSize(2);
         assertThat(deployment.getDeployedWorkflows()).extracting(Workflow::getBpmnProcessId).contains("foo", "bar");
         assertThat(deployment.getDeployedWorkflows()).extracting(Workflow::getVersion).contains(1, 2);
         assertThat(deployment.getDeployedWorkflows()).extracting(Workflow::getWorkflowKey).contains(2L, 3L);
         assertThat(deployment.getDeployedWorkflows()).extracting(Workflow::getResourceName).contains("foo.bpmn", "bar.bpmn");
-        assertThat(deployment.getSourceRecordPosition()).isEqualTo(1L);
     }
 
     @Test

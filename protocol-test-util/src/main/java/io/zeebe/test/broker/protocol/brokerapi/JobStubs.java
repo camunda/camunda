@@ -15,10 +15,10 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi;
 
-import java.util.function.Consumer;
-
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
+
+import java.util.function.Consumer;
 
 public class JobStubs
 {
@@ -76,9 +76,10 @@ public class JobStubs
         builder.register();
     }
 
-    public void registerFailCommand(long sourceRecordPosition)
+    public void registerFailCommand()
     {
-        registerFailCommand(r -> r.sourceRecordPosition(sourceRecordPosition));
+        registerFailCommand(r ->
+        { });
     }
 
     public void registerFailCommand(Consumer<ExecuteCommandResponseBuilder> modifier)
@@ -98,9 +99,9 @@ public class JobStubs
         builder.register();
     }
 
-    public void registerUpdateRetriesCommand(long sourceRecordPosition)
+    public void registerUpdateRetriesCommand()
     {
-        registerUpdateRetriesCommand(b -> b.sourceRecordPosition(sourceRecordPosition));
+        registerUpdateRetriesCommand(b -> { });
     }
 
     public void registerUpdateRetriesCommand(Consumer<ExecuteCommandResponseBuilder> modifier)

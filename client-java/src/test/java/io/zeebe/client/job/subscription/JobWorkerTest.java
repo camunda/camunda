@@ -15,21 +15,6 @@
  */
 package io.zeebe.client.job.subscription;
 
-import static io.zeebe.test.util.TestUtil.waitUntil;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
-
-import java.io.IOException;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientConfiguration;
@@ -45,13 +30,33 @@ import io.zeebe.client.util.ClientRule;
 import io.zeebe.protocol.clientapi.*;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.test.broker.protocol.brokerapi.*;
+import io.zeebe.test.broker.protocol.brokerapi.ControlMessageRequest;
+import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
+import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.RemoteAddress;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
+
+import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 public class JobWorkerTest
 {
@@ -311,7 +316,7 @@ public class JobWorkerTest
     }
 
     @Test
-    public void shouldInvokeJobHandler() throws JsonParseException, JsonMappingException, IOException
+    public void shouldInvokeJobHandler() throws IOException
     {
         // given
         broker.stubJobSubscriptionApi(123L);
@@ -364,7 +369,7 @@ public class JobWorkerTest
         final JobEvent job = handler.getHandledJobs().get(0);
 
         assertThat(job.getMetadata().getKey()).isEqualTo(3L);
-        assertThat(job.getSourceRecordPosition()).isEqualTo(4L);
+        assertThat(job.getMetadata().getSourceRecordPosition()).isEqualTo(4L);
         assertThat(job.getType()).isEqualTo("type");
         assertThat(job.getHeaders()).isEqualTo(jobHeaders);
         assertThat(job.getDeadline()).isEqualTo(Instant.ofEpochMilli(deadline));
@@ -484,7 +489,7 @@ public class JobWorkerTest
         assertThat(jobRequest.partitionId()).isEqualTo(clientRule.getDefaultPartitionId());
         assertThat(jobRequest.key()).isEqualTo(4L);
         assertThat(jobRequest.intent()).isEqualTo(JobIntent.COMPLETE);
-        assertThat(jobRequest.sourceRecordPosition()).isEqualTo(4L);
+        assertThat(jobRequest.sourceRecordPosition()).isEqualTo(5L);
         assertThat(jobRequest.getCommand())
             .containsEntry("type", "bar")
             .containsEntry("worker", "foo")
@@ -521,7 +526,7 @@ public class JobWorkerTest
         assertThat(jobRequest.partitionId()).isEqualTo(clientRule.getDefaultPartitionId());
         assertThat(jobRequest.key()).isEqualTo(4L);
         assertThat(jobRequest.intent()).isEqualTo(JobIntent.COMPLETE);
-        assertThat(jobRequest.sourceRecordPosition()).isEqualTo(4L);
+        assertThat(jobRequest.sourceRecordPosition()).isEqualTo(5L);
         assertThat(jobRequest.getCommand())
             .containsEntry("type", "bar")
             .containsEntry("worker", "foo")
@@ -533,7 +538,7 @@ public class JobWorkerTest
     {
         // given
         broker.stubJobSubscriptionApi(123L);
-        broker.jobs().registerFailCommand(3L);
+        broker.jobs().registerFailCommand();
 
         clientRule.jobClient()
             .newWorker()
@@ -561,7 +566,7 @@ public class JobWorkerTest
         assertThat(jobRequest.partitionId()).isEqualTo(clientRule.getDefaultPartitionId());
         assertThat(jobRequest.key()).isEqualTo(4L);
         assertThat(jobRequest.intent()).isEqualTo(JobIntent.FAIL);
-        assertThat(jobRequest.sourceRecordPosition()).isEqualTo(4L);
+        assertThat(jobRequest.sourceRecordPosition()).isEqualTo(5L);
         assertThat(jobRequest.getCommand())
             .containsEntry("type", "bar")
             .containsEntry("worker", "foo");

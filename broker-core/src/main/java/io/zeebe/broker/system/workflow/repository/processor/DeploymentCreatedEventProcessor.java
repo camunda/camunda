@@ -37,7 +37,7 @@ public class DeploymentCreatedEventProcessor implements TypedRecordProcessor<Dep
     @Override
     public boolean executeSideEffects(TypedRecord<DeploymentRecord> event, TypedResponseWriter responseWriter)
     {
-        return responseWriter.writeEventUnchanged(event);
+        return responseWriter.writeRecordUnchanged(event);
     }
 
     @Override

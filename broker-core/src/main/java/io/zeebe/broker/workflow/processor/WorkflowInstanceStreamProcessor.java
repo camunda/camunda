@@ -350,7 +350,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         public boolean executeSideEffects(TypedRecord<WorkflowInstanceRecord> record, TypedResponseWriter responseWriter)
         {
             workflowInstanceEventCreate.incrementOrdered();
-            return responseWriter.writeEventUnchanged(record);
+            return responseWriter.writeRecordUnchanged(record);
         }
 
         @Override
@@ -371,7 +371,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         @Override
         public boolean executeSideEffects(TypedRecord<WorkflowInstanceRecord> record, TypedResponseWriter responseWriter)
         {
-            return responseWriter.writeEventUnchanged(record);
+            return responseWriter.writeRecordUnchanged(record);
         }
     }
 
@@ -983,7 +983,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         {
             if (isCanceled)
             {
-                return responseWriter.writeEvent(WorkflowInstanceIntent.CANCELED, record);
+                return responseWriter.writeRecord(WorkflowInstanceIntent.CANCELED, record);
             }
             else
             {

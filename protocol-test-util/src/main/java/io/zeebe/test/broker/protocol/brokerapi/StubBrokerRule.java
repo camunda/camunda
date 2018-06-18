@@ -81,7 +81,7 @@ public class StubBrokerRule extends ExternalResource
     }
 
     @Override
-    protected void before() throws Throwable
+    protected void before()
     {
         msgPackHelper = new MsgPackHelper();
 

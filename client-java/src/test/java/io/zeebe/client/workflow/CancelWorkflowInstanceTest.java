@@ -15,15 +15,6 @@
  */
 package io.zeebe.client.workflow;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
-
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.api.events.WorkflowInstanceState;
@@ -35,6 +26,14 @@ import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 public class CancelWorkflowInstanceTest
 {
@@ -63,7 +62,7 @@ public class CancelWorkflowInstanceTest
         baseEvent.setPosition(2L);
         baseEvent.setSourceRecordPosition(1L);
 
-        brokerRule.workflowInstances().registerCancelCommand(3L);
+        brokerRule.workflowInstances().registerCancelCommand(b -> b.sourceRecordPosition(2L));
 
         // when
         final WorkflowInstanceEvent workflowInstanceEvent = clientRule.workflowClient()
@@ -78,7 +77,7 @@ public class CancelWorkflowInstanceTest
         assertThat(commandRequest.valueType()).isEqualTo(ValueType.WORKFLOW_INSTANCE);
         assertThat(commandRequest.intent()).isEqualTo(WorkflowInstanceIntent.CANCEL);
         assertThat(commandRequest.key()).isEqualTo(baseEvent.getKey());
-        assertThat(commandRequest.sourceRecordPosition()).isEqualTo(1L);
+        assertThat(commandRequest.sourceRecordPosition()).isEqualTo(2L);
         assertThat(commandRequest.partitionId()).isEqualTo(baseEvent.getMetadata().getPartitionId());
         assertThat(commandRequest.position()).isEqualTo(baseEvent.getMetadata().getPosition());
 
@@ -91,7 +90,7 @@ public class CancelWorkflowInstanceTest
               entry("payload", baseEvent.getPayloadField().getMsgPack()));
 
         assertThat(workflowInstanceEvent.getState()).isEqualTo(WorkflowInstanceState.CANCELED);
-        assertThat(workflowInstanceEvent.getSourceRecordPosition()).isEqualTo(3L);
+        assertThat(workflowInstanceEvent.getMetadata().getSourceRecordPosition()).isEqualTo(2L);
     }
 
     @Test

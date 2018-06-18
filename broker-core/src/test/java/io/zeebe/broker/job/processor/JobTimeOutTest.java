@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.job.processor;
 
+import static io.zeebe.protocol.intent.JobIntent.ACTIVATE;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -149,12 +151,53 @@ public class JobTimeOutTest
             .containsExactly(
                 JobIntent.CREATE,
                 JobIntent.CREATED,
-                JobIntent.ACTIVATE,
+                ACTIVATE,
                 JobIntent.ACTIVATED,
                 JobIntent.TIME_OUT,
                 JobIntent.TIMED_OUT,
-                JobIntent.ACTIVATE,
+                ACTIVATE,
                 JobIntent.ACTIVATED);
+    }
+
+    @Test
+    public void shouldSetCorrectSourcePositionAfterJobTimeOut()
+    {
+        // given
+        final String jobType = "foo";
+        createJob(jobType);
+
+        final long timeout = 1000L;
+        apiRule.openJobSubscription(apiRule.getDefaultPartitionId(), jobType, timeout);
+
+        waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 1);
+        apiRule.moveMessageStreamToTail();
+
+        // when expired
+        doRepeatedly(() ->
+        {
+            brokerRule.getClock().addTime(JobQueueManagerService.TIME_OUT_INTERVAL);
+        }).until(v -> apiRule.numSubscribedEventsAvailable() == 1);
+
+        // then activated again
+        final SubscribedRecord jobActiviated = apiRule.subscribedEvents().findAny().get();
+        final TestTopicClient topicClient = apiRule.topic();
+        final SubscribedRecord firstActivateCommand = topicClient
+            .receiveRecords()
+            .ofTypeJob()
+            .withIntent(ACTIVATE)
+            .findFirst()
+            .get();
+        assertThat(jobActiviated.sourceRecordPosition()).isNotEqualTo(firstActivateCommand.position());
+
+        final SubscribedRecord secondActivateCommand = topicClient
+            .receiveRecords()
+            .ofTypeJob()
+            .withIntent(ACTIVATE)
+            .skipUntil(s -> s.position() > firstActivateCommand.position())
+            .findFirst()
+            .get();
+
+        assertThat(jobActiviated.sourceRecordPosition()).isEqualTo(secondActivateCommand.position());
     }
 
     @Test

@@ -55,7 +55,7 @@ public class CommandProcessorImpl<T extends UnpackedObject> implements TypedReco
         {
             if (isAccepted)
             {
-                return responseWriter.writeEvent(newState, record);
+                return responseWriter.writeRecord(newState, record);
             }
             else
             {

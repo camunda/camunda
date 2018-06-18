@@ -125,15 +125,18 @@ public class JobSubscriptionTest
 
 
         // then
+        final SubscribedRecord activatedJobFromSubscription = apiRule.subscribedEvents().findAny().get();
+
         final SubscribedRecord createJobCommand = testClient.receiveFirstJobCommand(JobIntent.CREATE);
         final SubscribedRecord createdJobEvent = testClient.receiveFirstJobEvent(JobIntent.CREATED);
-        final SubscribedRecord activeJobCommand = testClient.receiveFirstJobCommand(JobIntent.ACTIVATE);
+        final SubscribedRecord activateJobCommand = testClient.receiveFirstJobCommand(JobIntent.ACTIVATE);
         final SubscribedRecord activatedJobEvent = testClient.receiveFirstJobEvent(JobIntent.ACTIVATED);
 
         assertThat(response.sourceRecordPosition()).isEqualTo(createJobCommand.position());
         assertThat(createdJobEvent.sourceRecordPosition()).isEqualTo(createJobCommand.position());
-        assertThat(activeJobCommand.sourceRecordPosition()).isEqualTo(createdJobEvent.position());
-        assertThat(activatedJobEvent.sourceRecordPosition()).isEqualTo(activeJobCommand.position());
+        assertThat(activateJobCommand.sourceRecordPosition()).isEqualTo(createdJobEvent.position());
+        assertThat(activatedJobFromSubscription.sourceRecordPosition()).isEqualTo(activateJobCommand.position());
+        assertThat(activatedJobEvent.sourceRecordPosition()).isEqualTo(activateJobCommand.position());
     }
 
     @Test

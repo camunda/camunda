@@ -92,7 +92,7 @@ public class TopicCreateProcessor implements TypedRecordProcessor<TopicRecord>
     {
         if (isCreating)
         {
-            final boolean written = responseWriter.writeEvent(TopicIntent.CREATING, command);
+            final boolean written = responseWriter.writeRecord(TopicIntent.CREATING, command);
 
             if (written)
             {

@@ -15,12 +15,6 @@
  */
 package io.zeebe.client.workflow;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
-
-import java.io.ByteArrayInputStream;
-import java.util.Collections;
-
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.commands.CreateWorkflowInstanceCommandStep1;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
@@ -33,9 +27,17 @@ import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
+
+import java.io.ByteArrayInputStream;
+import java.util.Collections;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 
 public class CreateWorkflowInstanceTest
@@ -95,7 +97,7 @@ public class CreateWorkflowInstanceTest
         assertThat(workflowInstance.getWorkflowInstanceKey()).isEqualTo(1);
         assertThat(workflowInstance.getPayload()).isNull();
         assertThat(workflowInstance.getPayloadAsMap()).isNull();
-        assertThat(workflowInstance.getSourceRecordPosition()).isEqualTo(1);
+        assertThat(workflowInstance.getMetadata().getSourceRecordPosition()).isEqualTo(1);
     }
 
     @Test
@@ -134,7 +136,7 @@ public class CreateWorkflowInstanceTest
         assertThat(workflowInstance.getVersion()).isEqualTo(1);
         assertThat(workflowInstance.getWorkflowInstanceKey()).isEqualTo(1);
         assertThat(workflowInstance.getPayload()).isEqualTo(payload);
-        assertThat(workflowInstance.getSourceRecordPosition()).isEqualTo(1);
+        assertThat(workflowInstance.getMetadata().getSourceRecordPosition()).isEqualTo(1);
         assertThat(workflowInstance.getPayloadAsMap()).containsOnly(entry("bar", 4));
     }
 
@@ -168,7 +170,7 @@ public class CreateWorkflowInstanceTest
         assertThat(workflowInstance.getBpmnProcessId()).isEqualTo("foo");
         assertThat(workflowInstance.getVersion()).isEqualTo(2);
         assertThat(workflowInstance.getWorkflowInstanceKey()).isEqualTo(1);
-        assertThat(workflowInstance.getSourceRecordPosition()).isEqualTo(1);
+        assertThat(workflowInstance.getMetadata().getSourceRecordPosition()).isEqualTo(1);
     }
 
     @Test
@@ -199,7 +201,7 @@ public class CreateWorkflowInstanceTest
 
         assertThat(workflowInstance.getWorkflowKey()).isEqualTo(2);
         assertThat(workflowInstance.getWorkflowInstanceKey()).isEqualTo(1);
-        assertThat(workflowInstance.getSourceRecordPosition()).isEqualTo(1);
+        assertThat(workflowInstance.getMetadata().getSourceRecordPosition()).isEqualTo(1);
     }
 
     @Test

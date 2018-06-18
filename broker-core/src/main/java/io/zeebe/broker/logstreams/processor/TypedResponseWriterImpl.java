@@ -57,14 +57,14 @@ public class TypedResponseWriterImpl implements TypedResponseWriter
     }
 
     @Override
-    public boolean writeEvent(Intent intent, TypedRecord<?> record)
+    public boolean writeRecord(Intent intent, TypedRecord<?> record)
     {
         stringWrapper.wrap(0, 0);
         return write(RecordType.EVENT, intent, RejectionType.NULL_VAL, stringWrapper, record);
     }
 
     @Override
-    public boolean writeEventUnchanged(TypedRecord<?> record)
+    public boolean writeRecordUnchanged(TypedRecord<?> record)
     {
         final RecordMetadata metadata = record.getMetadata();
 

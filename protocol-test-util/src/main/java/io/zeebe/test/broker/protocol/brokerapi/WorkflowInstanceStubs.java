@@ -15,10 +15,10 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi;
 
-import java.util.function.Consumer;
-
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+
+import java.util.function.Consumer;
 
 public class WorkflowInstanceStubs
 {
@@ -52,9 +52,9 @@ public class WorkflowInstanceStubs
         builder.register();
     }
 
-    public void registerCancelCommand(long sourceRecordPosition)
+    public void registerCancelCommand()
     {
-        registerCancelCommand(b -> b.sourceRecordPosition(sourceRecordPosition));
+        registerCancelCommand(b -> { });
     }
 
     public void registerCancelCommand(Consumer<ExecuteCommandResponseBuilder> modifier)
@@ -73,9 +73,9 @@ public class WorkflowInstanceStubs
         builder.register();
     }
 
-    public void registerUpdatedPayloadCommand(long sourceRecordPosition)
+    public void registerUpdatedPayloadCommand()
     {
-        registerUpdatedPayloadCommand(b -> b.sourceRecordPosition(sourceRecordPosition));
+        registerUpdatedPayloadCommand(b -> { });
     }
 
     public void registerUpdatedPayloadCommand(Consumer<ExecuteCommandResponseBuilder> modifier)
