@@ -3,11 +3,12 @@ import PropTypes from 'prop-types';
 
 import Panel from 'modules/components/Panel';
 import Diagram from 'modules/components/Diagram';
+import StateIcon from 'modules/components/StateIcon';
 import {formatDate} from 'modules/utils';
 
 import * as Styled from './styled';
 
-export default function DiagramPanel({instance, stateIcon}) {
+export default function DiagramPanel({instance}) {
   return (
     <Panel>
       <Panel.Header>
@@ -15,7 +16,8 @@ export default function DiagramPanel({instance, stateIcon}) {
           <tbody>
             <tr>
               <td>
-                {stateIcon} {instance.workflowDefinitionId}
+                <StateIcon stateName={instance.stateName} />
+                {instance.workflowDefinitionId}
               </td>
               <td>{instance.id}</td>
               <td>{formatDate(instance.startDate)}</td>
@@ -43,6 +45,5 @@ DiagramPanel.propTypes = {
     endDate: PropTypes.string,
     stateName: PropTypes.string.isRequired,
     errorMessage: PropTypes.string
-  }),
-  stateIcon: PropTypes.element.isRequired
+  })
 };

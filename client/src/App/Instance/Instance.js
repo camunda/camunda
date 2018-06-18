@@ -85,7 +85,6 @@ export default class Instance extends Component {
 
     const instanceId = this.props.match.params.id;
     const {stateName} = this.state.instance;
-    const stateIcon = <StateIcon stateName={stateName} />;
 
     return (
       <Fragment>
@@ -96,16 +95,13 @@ export default class Instance extends Component {
           incidents={328}
           detail={
             <Fragment>
-              {stateIcon} Instance {instanceId}
+              <StateIcon stateName={stateName} /> Instance {instanceId}
             </Fragment>
           }
         />
         <Styled.Instance>
           <Styled.Top>
-            <DiagramPanel
-              instance={this.state.instance}
-              stateIcon={stateIcon}
-            />
+            <DiagramPanel instance={this.state.instance} />
           </Styled.Top>
           <Styled.Bottom>
             <Panel>
