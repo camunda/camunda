@@ -25,6 +25,7 @@ export const Header = themed(styled.div`
   font-size: 15px;
   font-weight: bold;
   padding: 9px 10px;
+  border-radius: ${props => (props.isRounded ? '3px 3px 0 0' : 0)};
 `);
 
 export const Content = styled.div`

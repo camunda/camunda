@@ -53,8 +53,10 @@ export default class Filter extends Component {
         />
         <Styled.Filter>
           <Styled.Left>
-            <Panel>
-              <Panel.Header foldButtonType="left">Filters</Panel.Header>
+            <Panel isRounded>
+              <Panel.Header isRounded foldButtonType="left">
+                Filters
+              </Panel.Header>
               <Panel.Body>
                 <InstancesFilter
                   filter={this.state.filter}
@@ -66,8 +68,8 @@ export default class Filter extends Component {
           </Styled.Left>
           <Styled.Right>
             <Styled.Top>
-              <Panel>
-                <Panel.Header>Process Definition Name</Panel.Header>
+              <Panel isRounded>
+                <Panel.Header isRounded>Process Definition Name</Panel.Header>
                 <Panel.Body>Process Definition Name content</Panel.Body>
               </Panel>
             </Styled.Top>

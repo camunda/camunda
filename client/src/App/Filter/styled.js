@@ -14,6 +14,7 @@ export const Filter = styled.div`
 export const Left = styled.div`
   display: flex;
   width: 320px;
+  margin-right: 1px;
 `;
 
 export const Right = styled.div`

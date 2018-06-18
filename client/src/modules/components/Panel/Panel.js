@@ -11,12 +11,17 @@ class Panel extends Component {
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
       PropTypes.node
-    ])
+    ]),
+    isRounded: PropTypes.bool
+  };
+
+  static defaultProps = {
+    isRounded: false
   };
 
   render() {
     const {children} = this.props;
-    return <Styled.Panel>{children}</Styled.Panel>;
+    return <Styled.Panel {...this.props}>{children}</Styled.Panel>;
   }
 }
 

@@ -5,9 +5,10 @@ import FoldButton from 'modules/components/FoldButton';
 
 import * as Styled from './styled.js';
 
-export default function PanelHeader({headline, foldButtonType, children}) {
+export default function PanelHeader(props) {
+  const {foldButtonType, children} = props;
   return (
-    <Styled.Header>
+    <Styled.Header {...props}>
       {children}
       {foldButtonType && <FoldButton type={foldButtonType} />}
     </Styled.Header>
@@ -19,5 +20,10 @@ PanelHeader.propTypes = {
   children: PropTypes.oneOfType([
     PropTypes.arrayOf(PropTypes.node),
     PropTypes.node
-  ])
+  ]),
+  isRounded: PropTypes.bool
+};
+
+PanelHeader.defaultProps = {
+  isRounded: false
 };
