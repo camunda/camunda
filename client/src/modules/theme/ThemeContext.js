@@ -51,17 +51,19 @@ class ThemeProvider extends React.Component {
   }
 }
 
-const themed = StyledComponent => {
+const themed = Component => {
   function Themed(props) {
     return (
       <ThemeConsumer>
-        {theme => <StyledComponent {...theme} {...props} />}
+        {theme => <Component {...theme} {...props} />}
       </ThemeConsumer>
     );
   }
 
-  Themed.displayName = `Themed(${StyledComponent.displayName ||
-    StyledComponent.name ||
+  Themed.WrappedComponent = Component;
+
+  Themed.displayName = `Themed(${Component.displayName ||
+    Component.name ||
     'Component'})`;
 
   return Themed;
