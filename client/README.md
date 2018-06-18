@@ -47,6 +47,7 @@ Related files should be close to each other. React components usually consist of
 - Component.test.js
 - service.js
 - service.test.js
+- api.js
 - index.js
 
 ### Component.js
@@ -65,6 +66,10 @@ Should contain all business logic and manage backend communication for a compone
 
 Should test the service. You should not need enzyme here as the service should be independent from React or any rendered component.
 
+### api.js
+
+Should contain the logic of the APIs calls for fetching or updating data. The stored methods should only connect to the API and return the responses. No extra logic is to be performed in this files. This file should be independent from React.
+
 ### index.js
 
 Defines the public interface of the directory. Usually re-exports the default component export as a named export. In some cases, it might also export other resources.
@@ -77,6 +82,46 @@ Some components are used throughout the whole application. To avoid long parent 
 
 > For readability, any global module in the `src/modules` directory should be imported relatively to `modules`.  
 > e.g. "`import {post} from 'modules/request'`
+
+### Styling normal React components
+
+If you use the styled(MyComponent) notation and MyComponent does not render the passed-in className prop, then no styles will be applied. To avoid this issue, make sure your component attaches the passed-in className to a DOM node:
+
+```js
+class MyComponent extends React.Component {
+  render() {
+    // Attach the passed-in className to the DOM node
+    return <div className={this.props.className} />;
+  }
+}
+```
+
+The safer way is to pass the whole props object:
+
+```js
+class MyComponent extends React.Component {
+  render() {
+    return <div {...props} />;
+  }
+}
+```
+Read more on [styled-components](https://www.styled-components.com/docs/advanced#styling-normal-react-components).
+
+
+### Event handler naming
+
+**For props**
+When defining the prop names, prefix with on*, as in onClick, onDeleteItem, etc.
+
+**For component methods**
+When passing down a function to a child component that contains logic related to an action, use the handle* prefix, as is handleClick, handle DeleteItem.
+
+As below, put the noun first (Alert), then the verb (Click). Then, as other events pile up around that concept, they are grouped together nicely:
+
+```js
+onAlertClick={handleAlertClick}
+onAlertHover={handleAlertHover}
+```
 
 ### Forwarding Refs
 
