@@ -1,0 +1,11 @@
+status = [
+  "continuous-integration/jenkins/branch"
+]
+
+pr_status = [
+  "continuous-integration/jenkins/branch"
+]
+
+required_approvals = 1
+
+delete_merged_branches = true
