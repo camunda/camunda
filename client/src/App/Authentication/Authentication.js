@@ -1,5 +1,6 @@
 import React from 'react';
-import {Redirect} from 'react-router-dom';
+import PropTypes from 'prop-types';
+import {Redirect, withRouter} from 'react-router-dom';
 
 import {setResponseInterceptor} from 'modules/request';
 
@@ -8,6 +9,12 @@ class Authentication extends React.Component {
     super(props);
     setResponseInterceptor(this.interceptResponse);
   }
+
+  static propTypes = {
+    location: PropTypes.shape({
+      pathname: PropTypes.string.isRequired
+    }).isRequired
+  };
 
   defaultState = {forceRedirect: false};
 
@@ -32,11 +39,17 @@ class Authentication extends React.Component {
 
   render() {
     return this.state.forceRedirect ? (
-      <Redirect to="/login" />
+      <Redirect
+        to={{
+          pathname: '/login',
+          state: {referrer: this.props.location.pathname}
+        }}
+        push={true}
+      />
     ) : (
       this.props.children
     );
   }
 }
 
-export default Authentication;
+export default withRouter(Authentication);

@@ -1,5 +1,19 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`Login redirection should redirect to home page on successful login 1`] = `
+<Redirect
+  push={false}
+  to="/"
+/>
+`;
+
+exports[`Login redirection should redirect to referrer page on successful login 1`] = `
+<Redirect
+  push={false}
+  to="/some/page"
+/>
+`;
+
 exports[`Login should display an error on unsuccessful login 1`] = `
 <styled.form
   onSubmit={[Function]}
@@ -33,13 +47,6 @@ exports[`Login should display an error on unsuccessful login 1`] = `
     type="submit"
   />
 </styled.form>
-`;
-
-exports[`Login should redirect to home page on successful login 1`] = `
-<Redirect
-  push={false}
-  to="/"
-/>
 `;
 
 exports[`Login should render login form by default 1`] = `

@@ -4,17 +4,20 @@ import {shallow} from 'enzyme';
 
 import {setResponseInterceptor} from 'modules/request';
 
-import Authentication from './Authentication';
+import AuthenticationWithRouter from './Authentication';
+
+const {WrappedComponent: Authentication} = AuthenticationWithRouter;
 
 jest.mock('modules/request');
 
 describe('Authentication', () => {
   let Child, node;
+  const mockLocation = {pathname: '/some/page'};
 
   beforeEach(() => {
     Child = () => <span>I am a child component</span>;
     node = shallow(
-      <Authentication>
+      <Authentication location={mockLocation}>
         <Child />
       </Authentication>
     );
@@ -31,6 +34,12 @@ describe('Authentication', () => {
   });
 
   it('should redirect to login when forceRedirect is true', () => {
+    // given
+    const expectedTo = {
+      pathname: '/login',
+      state: {referrer: mockLocation.pathname}
+    };
+
     // when
     node.setState({forceRedirect: true});
 
@@ -38,7 +47,7 @@ describe('Authentication', () => {
     expect(node.find(Child)).toHaveLength(0);
     const RedirectNode = node.find(Redirect);
     expect(RedirectNode).toHaveLength(1);
-    expect(RedirectNode.prop('to')).toBe('/login');
+    expect(RedirectNode.prop('to')).toEqual(expectedTo);
     expect(node).toMatchSnapshot();
   });
 

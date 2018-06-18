@@ -19,7 +19,7 @@ describe('Login', () => {
   let node;
 
   beforeEach(() => {
-    node = shallow(<Login />);
+    node = shallow(<Login location={{}} />);
   });
 
   it('should reset the response interceptor', () => {
@@ -84,29 +84,53 @@ describe('Login', () => {
     expect(node.state('password')).toEqual(password);
   });
 
-  it('should redirect to home page on successful login', async () => {
-    // mock api.login
-    const originalLogin = api.login;
+  describe('redirection', () => {
+    let originalLogin = api.login;
+    let username, password;
     api.login = mockResolvedAsyncFn();
 
-    // given
-    const username = node.state('username');
-    const password = node.state('password');
+    beforeEach(() => {
+      api.login.mockClear();
+      username = node.state('username');
+      password = node.state('password');
+    });
 
-    // when
-    node.instance().handleLogin({preventDefault: () => {}});
-    await flushPromises();
-    node.update();
+    afterAll(() => {
+      // reset api.login
+      api.login = originalLogin.bind(api);
+    });
 
-    // then
-    expect(api.login).toBeCalledWith({username, password});
-    const RedirectNode = node.find(Redirect);
-    expect(RedirectNode).toHaveLength(1);
-    expect(RedirectNode.prop('to')).toBe('/');
-    expect(node).toMatchSnapshot();
+    it('should redirect to home page on successful login', async () => {
+      // when
+      node.instance().handleLogin({preventDefault: () => {}});
+      await flushPromises();
+      node.update();
 
-    // reset api.login
-    api.login = originalLogin.bind(api);
+      // then
+      expect(api.login).toBeCalledWith({username, password});
+      const RedirectNode = node.find(Redirect);
+      expect(RedirectNode).toHaveLength(1);
+      expect(RedirectNode.prop('to')).toBe('/');
+      expect(node).toMatchSnapshot();
+    });
+
+    it('should redirect to referrer page on successful login', async () => {
+      // given
+      const referrer = '/some/page';
+      node.setProps({location: {state: {referrer}}});
+
+      // when
+      node.instance().handleLogin({preventDefault: () => {}});
+      await flushPromises();
+      node.update();
+
+      // then
+      expect(api.login).toBeCalledWith({username, password});
+      const RedirectNode = node.find(Redirect);
+      expect(RedirectNode).toHaveLength(1);
+      expect(RedirectNode.prop('to')).toBe(referrer);
+      expect(node).toMatchSnapshot();
+    });
   });
 
   it('should display an error on unsuccessful login', async () => {

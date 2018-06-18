@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import {Redirect} from 'react-router-dom';
 
 import {login} from './api';
@@ -10,6 +11,10 @@ class Login extends React.Component {
     super(props);
     resetResponseInterceptor();
   }
+
+  static propTypes = {
+    location: PropTypes.object.isRequired
+  };
 
   state = {
     username: '',
@@ -35,9 +40,11 @@ class Login extends React.Component {
 
   render() {
     const {username, password, forceRedirect, error} = this.state;
+
     // case of successful login
     if (forceRedirect) {
-      return <Redirect to={'/'} />;
+      const locationState = this.props.location.state || {referrer: '/'};
+      return <Redirect to={locationState.referrer} />;
     }
 
     // default render
