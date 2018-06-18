@@ -49,6 +49,7 @@ Related files should be close to each other. React components usually consist of
 - service.test.js
 - api.js
 - index.js
+- Readme.js
 
 ### Component.js
 
@@ -74,11 +75,16 @@ Should contain the logic of the APIs calls for fetching or updating data. The st
 
 Defines the public interface of the directory. Usually re-exports the default component export as a named export. In some cases, it might also export other resources.
 
+
+### Readme.js
+
+Documentation of the component for react-styleguidist. Add this file only to the components you want to appear in styleguide. Details on [react-styleguist](https://react-styleguidist.js.org/docs/documenting.html).
+
 ## Developing UI components
 
 ### The `src/modules` directory
 
-Some components are used throughout the whole application. To avoid long parent chains when importing, like (`import Input from '../../../component/Input'`), please use `import Input from 'modules/components/Input'`. 
+Some components are used throughout the whole application. To avoid long parent chains when importing, like (`import Input from '../../../component/Input'`), please use `import Input from 'modules/components/Input'`.
 
 > For readability, any global module in the `src/modules` directory should be imported relatively to `modules`.  
 > e.g. "`import {post} from 'modules/request'`
