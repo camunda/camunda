@@ -4,10 +4,9 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
-import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
+import org.camunda.operate.es.writer.EntityStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +36,7 @@ public class WorkflowEventTransformer implements WorkflowInstanceEventHandler {
   }
 
   @Autowired
-  private BlockingQueue<OperateEntity> operateEntities;
+  private EntityStorage entityStorage;
 
   @Override
   public void onWorkflowInstanceEvent(WorkflowInstanceEvent event) throws Exception {
@@ -58,7 +57,7 @@ public class WorkflowEventTransformer implements WorkflowInstanceEventHandler {
       }
 
       //TODO will wait till capacity available, can throw InterruptedException
-      operateEntities.put(entity);
+      entityStorage.getOperateEntititesQueue(event.getMetadata().getTopicName()).put(entity);
     }
   }
 

@@ -4,7 +4,6 @@ import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
 import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.property.OperateProperties;
 import org.elasticsearch.action.bulk.BulkItemResponse;
@@ -66,7 +65,7 @@ public class ElasticsearchBulkProcessor extends Thread {
   }
 
   @Autowired
-  private BlockingQueue<OperateEntity> operateEntitiesQueue;
+  private EntityStorage entityStorage;
 
   @Autowired
   private OperateProperties operateProperties;
@@ -74,21 +73,31 @@ public class ElasticsearchBulkProcessor extends Thread {
   @Override
   public void run() {
     while (true) {
-      List<OperateEntity> entitiesToPersist = new ArrayList<>();
+      try {
+        final int batchSize = operateProperties.getElasticsearch().getInsertBatchSize();
+        int entitiesCount = 0;
+        for (String topicName : operateProperties.getZeebe().getTopics()) {
+          List<OperateEntity> entitiesToPersist = new ArrayList<>();
+          entityStorage.getOperateEntititesQueue(topicName).drainTo(entitiesToPersist, batchSize);
+          if (entitiesToPersist.size() > 0) {
+            entitiesCount += entitiesToPersist.size();
+            persistOperateEntities(entitiesToPersist);
+          }
 
-      final int batchSize = operateProperties.getElasticsearch().getInsertBatchSize();
-      operateEntitiesQueue.drainTo(entitiesToPersist, batchSize);
-
-      //TODO we can implement backoff strategy, if there is not enough data
-      if (entitiesToPersist.size() > 0) {
-        persistOperateEntities(entitiesToPersist);
-      } else {
-        try {
-          Thread.sleep(1000);
-        } catch (InterruptedException e) {
-          //
         }
+
+        //TODO we can implement backoff strategy, if there is not enough data
+        if (entitiesCount == 0) {
+          try {
+            Thread.sleep(1000);
+          } catch (InterruptedException e) {
+
+          }
+        }
+      } catch (Exception ex) {
+        //retry
       }
+
     }
   }
 

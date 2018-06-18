@@ -16,7 +16,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.events.TopicEvent;
 import io.zeebe.client.api.subscription.JobWorker;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 
@@ -35,6 +34,9 @@ public class ZeebeDemoDataGenerator {
 
   @Autowired
   private OperateProperties operateProperties;
+
+  @Autowired
+  private ZeebeUtil zeebeUtil;
 
   private Random random = new Random();
 
@@ -86,7 +88,7 @@ public class ZeebeDemoDataGenerator {
         subscription.close();
       }
       //      updateRetriesIncidentSubscription.close();
-      logger.info("Subscriptions canceled");
+      logger.info("Subscriptions for demo data generation was canceled");
     }, 2, TimeUnit.MINUTES);
   }
 
@@ -183,31 +185,19 @@ public class ZeebeDemoDataGenerator {
       .open();
   }
 
-  private void createTopic() {
+  public void createTopic() {
     final String topic = operateProperties.getZeebe().getTopics().get(0);
-    final TopicEvent event = client.newCreateTopicCommand()
-      .name(topic)
-      .partitions(1)
-      .replicationFactor(1)
-      .send().join();
-    logger.info("Topic created: " + event.getState());
+    zeebeUtil.createTopic(topic);
   }
 
 
   private void deployVersion1() {
     final String topic = operateProperties.getZeebe().getTopics().get(0);
     //deploy workflows v.1
-    client.topicClient(topic).workflowClient()
-      .newDeployCommand()
-      .addResourceFromClasspath("demoProcess_v_1.bpmn")
-      .send().join();
-    logger.info("Workflows demoProcess_v_1 was deployed");
+    final String classpathResource = "demoProcess_v_1.bpmn";
+    zeebeUtil.deployWorkflowToTheTopic(topic, classpathResource);
 
-    client.topicClient(topic).workflowClient()
-      .newDeployCommand()
-      .addResourceFromClasspath("orderProcess_v_1.bpmn")
-      .send().join();
-    logger.info("Workflows orderProcess_v_1 was deployed");
+    zeebeUtil.deployWorkflowToTheTopic(topic, "orderProcess_v_1.bpmn");
 
   }
 
@@ -215,21 +205,10 @@ public class ZeebeDemoDataGenerator {
     final String topic = operateProperties.getZeebe().getTopics().get(0);
     final int instancesCount = random.nextInt(50) + 50;
     for (int i = 0; i < instancesCount; i++) {
-      client.topicClient(topic).workflowClient()
-        .newCreateInstanceCommand().bpmnProcessId("demoProcess")
-        .latestVersion()
-        .payload("{\"a\": \"b\"}")
-        .send().join();
-      logger.info("Workflow instance created for workflow demoProcess");
+      zeebeUtil.startWorkflowInstance(topic, "demoProcess", "{\"a\": \"b\"}");
 
       if (version < 3) {
-        client.topicClient(topic).workflowClient()
-          .newCreateInstanceCommand().bpmnProcessId("orderProcess")
-          .latestVersion()
-          .payload("{\"a\": \"b\"}")
-          .send().join();
-        logger.info("Workflow instance created for workflow orderProcess");
-
+        zeebeUtil.startWorkflowInstance(topic, "orderProcess", "{\"a\": \"b\"}");
       }
 
     }
@@ -238,27 +217,15 @@ public class ZeebeDemoDataGenerator {
   private void deployVersion2() {
     final String topic = operateProperties.getZeebe().getTopics().get(0);
     //deploy workflows v.1
-    client.topicClient(topic).workflowClient()
-      .newDeployCommand()
-      .addResourceFromClasspath("demoProcess_v_2.bpmn")
-      .send().join();
-    logger.info("Worflows demoProcess_v_2 was deployed");
+    zeebeUtil.deployWorkflowToTheTopic(topic, "demoProcess_v_2.bpmn");
 
-    client.topicClient(topic).workflowClient()
-      .newDeployCommand()
-      .addResourceFromClasspath("orderProcess_v_2.bpmn")
-      .send().join();
-    logger.info("Worflows orderProcess_v_2 was deployed");
+    zeebeUtil.deployWorkflowToTheTopic(topic, "orderProcess_v_2.bpmn");
   }
 
   private void deployVersion3() {
     final String topic = operateProperties.getZeebe().getTopics().get(0);
     //deploy workflows v.1
-    client.topicClient(topic).workflowClient()
-      .newDeployCommand()
-      .addResourceFromClasspath("demoProcess_v_3.bpmn")
-      .send().join();
-    logger.info("Worflows demoProcess_v_3 was deployed");
+    zeebeUtil.deployWorkflowToTheTopic(topic, "demoProcess_v_3.bpmn");
   }
 
 

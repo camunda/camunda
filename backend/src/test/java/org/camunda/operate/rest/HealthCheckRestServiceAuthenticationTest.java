@@ -3,7 +3,6 @@ package org.camunda.operate.rest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.camunda.operate.TestApplication;
-import org.camunda.operate.rest.dto.HealthStateDto;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;

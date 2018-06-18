@@ -2,9 +2,8 @@ package org.camunda.operate.zeebe;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
 import org.camunda.operate.entities.IncidentEntity;
-import org.camunda.operate.entities.OperateEntity;
+import org.camunda.operate.es.writer.EntityStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +30,7 @@ public class IncidentEventTransformer implements IncidentEventHandler {
   }
 
   @Autowired
-  private BlockingQueue<OperateEntity> operateEntities;
+  private EntityStorage entityStorage;
 
   @Override
   public void onIncidentEvent(IncidentEvent event) throws Exception {
@@ -64,7 +63,7 @@ public class IncidentEventTransformer implements IncidentEventHandler {
       }
 
       //TODO will wait till capacity available, can throw InterruptedException
-      operateEntities.put(incidentEntity);
+      entityStorage.getOperateEntititesQueue(event.getMetadata().getTopicName()).put(incidentEntity);
     }
   }
 }
