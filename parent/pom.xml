@@ -23,9 +23,6 @@
     <additionalparam>-Xdoclint:none</additionalparam>
     <checkstyle.config.location>.checkstyle.xml</checkstyle.config.location>
 
-    <!-- zb-build-tools -->
-    <version.build-tools>0.2.0-SNAPSHOT</version.build-tools>
-
     <!-- EXTERNAL LIBS -->
     <version.agrona>0.9.13</version.agrona>
     <version.junit>4.12</version.junit>
@@ -421,5 +418,30 @@
       </plugin>
     </plugins>
   </build>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-build-tools</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <profiles>
+    <profile>
+      <id>skip-unstable-tests</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <excludedGroups>io.zeebe.UnstableTest</excludedGroups>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
 </project>

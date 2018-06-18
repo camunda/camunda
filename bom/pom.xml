@@ -31,6 +31,7 @@
     <version.zb-transport>${project.version}</version.zb-transport>
     <version.zb-util>${project.version}</version.zb-util>
     <version.zeebe-test>${project.version}</version.zeebe-test>
+    <version.build-tools>${project.version}</version.build-tools>
 
     <!-- release parent settings -->
     <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/zeebe-io-snapshots/</nexus.snapshot.repository>
@@ -152,8 +153,40 @@
         <artifactId>zeebe-test</artifactId>
         <version>${version.zeebe-test}</version>
       </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-build-tools</artifactId>
+        <version>${version.build-tools}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
+
+  <repositories>
+    <repository>
+      <id>zeebe</id>
+      <name>Zeebe Repository</name>
+      <url>https://app.camunda.com/nexus/content/repositories/zeebe-io/</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+
+    <repository>
+      <id>zeebe-snapshots</id>
+      <name>Zeebe Snapshot Repository</name>
+      <url>https://app.camunda.com/nexus/content/repositories/zeebe-io-snapshots/</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
 
   <scm>
     <url>https://github.com/zeebe-io/zeebe</url>
