@@ -39,6 +39,7 @@
     <module>msgpack-value</module>
     <module>json-el</module>
     <module>json-path</module>
+    <module>build-tools</module>
   </modules>
 
   <repositories>
