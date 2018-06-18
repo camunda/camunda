@@ -56,6 +56,7 @@
     <plugin.version.scala>3.2.1</plugin.version.scala>
     <plugin.version.antrun>1.8</plugin.version.antrun>
     <plugin.version.versions>2.5</plugin.version.versions>
+    <plugin.version.fmt>2.5.0</plugin.version.fmt>
   </properties>
 
   <dependencyManagement>
@@ -370,6 +371,23 @@
           <version>${plugin.version.versions}</version>
         </plugin>
 
+        <!-- Google code format plugin -->
+        <plugin>
+          <groupId>com.coveo</groupId>
+          <artifactId>fmt-maven-plugin</artifactId>
+          <version>${plugin.version.fmt}</version>
+          <executions>
+            <execution>
+              <goals>
+                <goal>format</goal>
+              </goals>
+            </execution>
+          </executions>
+          <configuration>
+            <additionalSourceDirectories>${project.basedir}/src/test/jmh</additionalSourceDirectories>
+          </configuration>
+        </plugin>
+
       </plugins>
 
     </pluginManagement>
@@ -393,6 +411,11 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
+      </plugin>
+
+      <plugin>
+        <groupId>com.coveo</groupId>
+        <artifactId>fmt-maven-plugin</artifactId>
       </plugin>
     </plugins>
   </build>
