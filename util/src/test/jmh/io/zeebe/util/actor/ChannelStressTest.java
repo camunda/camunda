@@ -120,12 +120,13 @@ public class ChannelStressTest {
         actor.consume(
             channel,
             () -> {
-              Integer messageId = null;
-              while (((messageId) = channel.poll()) != null) {
+              Integer messageId;
+              do {
+                messageId = channel.poll();
                 if (messageId != null && messageId >= 0) {
                   burstCompleteFields[messageId].set(true);
                 }
-              }
+              } while (messageId != null);
             });
       }
 
