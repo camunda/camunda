@@ -42,7 +42,10 @@ export default class InstancesList extends React.Component {
         workflowDefinitionId: (
           <React.Fragment>
             <Styled.CheckAll>
-              <Checkbox checked={false} onChange={() => {}} />
+              <Checkbox
+                checked={this.areAllInstancesSelected()}
+                onChange={this.handleToggleSelectAll}
+              />
             </Styled.CheckAll>
             Workflow Definition
           </React.Fragment>
@@ -55,6 +58,24 @@ export default class InstancesList extends React.Component {
       order: ['workflowDefinitionId', 'id', 'startDate', 'endDate', 'actions'],
       selectionCheck: ({id}) => this.isSelected(id)
     };
+  };
+
+  areAllInstancesSelected = () => {
+    const {
+      selection: {list, isBlacklist},
+      total
+    } = this.props;
+
+    return (
+      (isBlacklist && list.size === 0) || (!isBlacklist && list.size === total)
+    );
+  };
+
+  handleToggleSelectAll = ({target: {checked}}) => {
+    this.props.updateSelection({
+      isBlacklist: {$set: checked},
+      list: {$set: new Set()}
+    });
   };
 
   formatData = instance => {
@@ -76,11 +97,18 @@ export default class InstancesList extends React.Component {
     return isBlacklist;
   };
 
+  findInSelectionList = id => {
+    const {list} = this.props.selection;
+    for (let instance of list) {
+      if (instance.id === id) {
+        return instance;
+      }
+    }
+  };
+
   addSelection = instance => {
-    const {list, isBlacklist} = this.props.selection;
-    const isSelected =
-      (isBlacklist && !list.has(instance)) ||
-      (!isBlacklist && list.has(instance));
+    const {isBlacklist} = this.props.selection;
+    const isSelected = this.isSelected(instance.id);
     return (
       <React.Fragment>
         <Styled.SelectionStatusIndicator selected={isSelected} />
@@ -90,7 +118,9 @@ export default class InstancesList extends React.Component {
             const newState = evt.target.checked;
             if (isBlacklist) {
               if (newState) {
-                this.props.updateSelection({list: {$remove: [instance]}});
+                this.props.updateSelection({
+                  list: {$remove: [this.findInSelectionList(instance.id)]}
+                });
               } else {
                 this.props.updateSelection({list: {$add: [instance]}});
               }
@@ -98,7 +128,9 @@ export default class InstancesList extends React.Component {
               if (newState) {
                 this.props.updateSelection({list: {$add: [instance]}});
               } else {
-                this.props.updateSelection({list: {$remove: [instance]}});
+                this.props.updateSelection({
+                  list: {$remove: [this.findInSelectionList(instance.id)]}
+                });
               }
             }
           }}

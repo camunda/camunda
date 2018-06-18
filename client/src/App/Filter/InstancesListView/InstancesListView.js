@@ -24,11 +24,7 @@ export default class InstancesListView extends React.Component {
   state = {
     firstElement: 0,
     instances: null,
-    entriesPerPage: null,
-    selection: {
-      list: new Set(),
-      isBlacklist: false
-    }
+    entriesPerPage: null
   };
 
   render() {
@@ -38,13 +34,12 @@ export default class InstancesListView extends React.Component {
         <Panel.Body>
           <InstancesList
             data={this.state.instances}
-            selection={this.state.selection}
+            selection={this.props.selection}
+            total={this.props.instancesInFilter}
             updateEntriesPerPage={entriesPerPage =>
               this.setState({entriesPerPage})
             }
-            updateSelection={change => {
-              this.setState({selection: update(this.state.selection, change)});
-            }}
+            updateSelection={this.props.updateSelection}
           />
         </Panel.Body>
         <Panel.Footer>

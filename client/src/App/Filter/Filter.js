@@ -14,7 +14,11 @@ import * as Styled from './styled.js';
 
 export default class Filter extends Component {
   state = {
-    filter: {running: true}
+    filter: {running: true},
+    selection: {
+      list: new Set(),
+      isBlacklist: false
+    }
   };
 
   handleFilterChange = async change => {
@@ -28,6 +32,15 @@ export default class Filter extends Component {
     });
   };
 
+  getSelectionCount = () => {
+    const {
+      filterCount,
+      selection: {list, isBlacklist}
+    } = this.state;
+
+    return isBlacklist ? filterCount - list.size : list.size;
+  };
+
   render() {
     return (
       <div>
@@ -35,7 +48,7 @@ export default class Filter extends Component {
           active="instances"
           instances={14576}
           filters={this.state.filterCount}
-          selections={24}
+          selections={this.getSelectionCount()}
           incidents={328}
         />
         <Styled.Filter>
@@ -61,6 +74,12 @@ export default class Filter extends Component {
             <Styled.Bottom>
               <InstancesListView
                 instancesInFilter={this.state.filterCount}
+                updateSelection={change => {
+                  this.setState({
+                    selection: update(this.state.selection, change)
+                  });
+                }}
+                selection={this.state.selection}
                 filter={this.state.filter}
               />
             </Styled.Bottom>
