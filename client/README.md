@@ -78,7 +78,7 @@ Defines the public interface of the directory. Usually re-exports the default co
 
 ### The `src/modules` directory
 
-Some components are used throughout the whole application. To avoid long parent chains when importing those (`import {Input} from '../../../components'`), we are utilizing the module resolution mechanism of npm, so that we can write `import {Input} from 'modules/components'`. To do so, the [`src/modules`](src/modules) directory is symlinked to `src/node_modules`. That way, everything in the [`src/modules`](src/modules) directory is available in the whole application without the need of relative paths.
+Some components are used throughout the whole application. To avoid long parent chains when importing, like (`import Input from '../../../component/Input'`), please use `import Input from 'modules/components/Input'`. 
 
 > For readability, any global module in the `src/modules` directory should be imported relatively to `modules`.  
 > e.g. "`import {post} from 'modules/request'`
