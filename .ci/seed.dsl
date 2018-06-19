@@ -13,7 +13,7 @@ def dslScriptPathToMonitor = '''\
 .ci/views/.*\\.dsl
 '''
 
-def setBrokenPageAsDefault = '''\
+def setBrokenViewAsDefault = '''\
 import jenkins.model.Jenkins
 
 def jenkins = Jenkins.instance
@@ -58,9 +58,11 @@ def seedJob = job('seed-job-optimize') {
       removedJobAction('DELETE')
       removedViewAction('DELETE')
       failOnMissingPlugin(true)
+      ignoreMissingFiles(false)
       unstableOnDeprecation(true)
+      sandbox(true)
     }
-    systemGroovyCommand(setBrokenPageAsDefault)
+    systemGroovyCommand(setBrokenViewAsDefault)
   }
 
   wrappers {
@@ -106,7 +108,7 @@ multibranchPipelineJob('camunda-optimize') {
 
   orphanedItemStrategy {
     discardOldItems {
-      daysToKeep 0
+      daysToKeep(0)
     }
   }
 }
