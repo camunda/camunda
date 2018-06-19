@@ -30,10 +30,10 @@ export default class Analysis extends React.Component {
   }
 
   componentDidMount = async () => {
-    const avaliableDefinitions = await loadProcessDefinitions();
-    if (avaliableDefinitions.length === 1) {
-      const theOnlyKey = avaliableDefinitions[0].key;
-      const latestVersion = avaliableDefinitions[0].versions[0].version;
+    const availableDefinitions = await loadProcessDefinitions();
+    if (availableDefinitions.length === 1) {
+      const theOnlyKey = availableDefinitions[0].key;
+      const latestVersion = availableDefinitions[0].versions[0].version;
 
       this.setState({
         config: {

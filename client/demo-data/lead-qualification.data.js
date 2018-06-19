@@ -6,6 +6,19 @@ exports.resources = [
   getResource(resource)
 ];
 
+const generateStringValue = () => {
+  let str = '';
+  const cons = ['B','C','D','F','G','H','J','K','L','M','N','P','Q','R','S','T','V','W','X','Z'];
+  const voc = ['A', 'E', 'I', 'O', 'U', 'Y'];
+  str+= Math.random() < 0.1 ? voc[Math.floor(Math.random() * 6)] : '';
+  for (i = 0; i < 2 + Math.floor(Math.random() * 5); i++) {
+    str+= cons[Math.floor(Math.random() * 20)] + voc[Math.floor(Math.random() * 6)]
+    str+= Math.random() < 0.15 ? voc[Math.floor(Math.random() * 6)] : '';
+    str+= Math.random() < 0.4 ? cons[Math.floor(Math.random() * 20)] : '';
+  }
+  return str;
+}
+
 exports.instances = generateInstances(resource, 1000, (index) => {
   return {
     variables: {
@@ -17,7 +30,7 @@ exports.instances = generateInstances(resource, 1000, (index) => {
         value: 100 * Math.random(),
         type: 'Double'
       },
-      String: getEngineValue(`sampleStringVar${index + 1}`),
+      String: getEngineValue(generateStringValue()),
       UserTask_0w1r7lc: {
         value: Math.floor(10000 * Math.random()),
         type: 'Long'

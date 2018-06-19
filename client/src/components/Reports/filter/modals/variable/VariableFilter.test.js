@@ -20,9 +20,19 @@ jest.mock('components', () => {
     return <div {...allowedProps}>{props.children}</div>;
   };
 
+  const TypeaheadMultipleSelection = props => {
+    const allowedProps = {...props};
+    delete allowedProps.toggleValue;
+    delete allowedProps.setPrefix;
+    delete allowedProps.availableValues;
+    delete allowedProps.selectedValues;
+    return <div {...allowedProps}>{props.availableValues.concat(props.selectedValues)}</div>;
+  };
+
   return {
     Modal,
     Typeahead,
+    TypeaheadMultipleSelection,
     Button: props => <button {...props}>{props.children}</button>,
     Input: props => {
       const allowedProps = {...props};
@@ -282,6 +292,16 @@ describe('number variables', () => {
 });
 
 describe('string variables', () => {
+  it('should the typeahead if variable is of a type string', async () => {
+    const node = mount(
+      <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
+    );
+
+    await node.instance().selectVariable({name: 'foo', type: 'String'});
+
+    expect(node).toIncludeText('TypeaheadMultipleSelection');
+  });
+
   it('should load 10 values initially', async () => {
     const node = mount(
       <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
@@ -306,53 +326,22 @@ describe('string variables', () => {
     expect(node).toIncludeText('value3');
   });
 
-  it('should add a value to the list of values when the checkbox is clicked', () => {
-    const node = mount(
-      <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
-    );
-    node.setState({
-      selectedVariable: {name: 'foo', type: 'String'},
-      availableValues: ['value1', 'value2', 'value3']
-    });
-
-    node
-      .find('input[type="checkbox"]')
-      .at(1)
-      .simulate('change', {target: {checked: true, value: 'value2'}});
-
-    expect(node.state().values).toEqual(['value2']);
-  });
-
-  it('should load 10 more values if the user wants more', () => {
+  it.only('should load 10 more values if the user wants more', () => {
     const node = mount(
       <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
     );
     node.setState({
       selectedVariable: {name: 'foo', type: 'String'},
       availableValues: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-      valuesAreComplete: false
+      valuesAreComplete: false,
+      valuesLoaded: 10
     });
-
-    node.find('.VariableFilter__valueFields button').simulate('click');
+    node
+      .find('.VariableFilter__load-more-button')
+      .at(1)
+      .simulate('click');
 
     expect(loadValues).toHaveBeenCalledWith('procDefKey', '1', 'foo', 'String', 0, 21, '');
-  });
-
-  it('should request the values filtered by prefix entered in the input', () => {
-    const node = mount(
-      <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
-    );
-
-    node.setState({
-      selectedVariable: {name: 'foo', type: 'String'}
-    });
-
-    node
-      .find('.VariableFilter__string-value-input')
-      .first()
-      .simulate('change', {target: {value: 'eeeee'}});
-
-    expect(loadValues).toHaveBeenCalledWith('procDefKey', '1', 'foo', 'String', 0, 11, 'eeeee');
   });
 });
 

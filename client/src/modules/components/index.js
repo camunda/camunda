@@ -26,3 +26,4 @@ export {ErrorPage} from './ErrorPage';
 export {ErrorMessage} from './ErrorMessage';
 export {Typeahead} from './Typeahead';
 export {LabeledInput} from './LabeledInput';
+export {TypeaheadMultipleSelection} from './TypeaheadMultipleSelection';

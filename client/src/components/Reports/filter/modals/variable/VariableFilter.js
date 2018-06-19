@@ -1,7 +1,16 @@
 import React from 'react';
 import classnames from 'classnames';
 import debounce from 'debounce';
-import {Modal, Button, Input, ControlGroup, ButtonGroup, ErrorMessage, Typeahead} from 'components';
+import {
+  Modal,
+  Button,
+  Input,
+  ControlGroup,
+  ButtonGroup,
+  ErrorMessage,
+  Typeahead,
+  TypeaheadMultipleSelection
+} from 'components';
 
 import {loadVariables, loadValues} from './service';
 import {numberParser} from 'services';
@@ -21,7 +30,9 @@ export default class VariableFilter extends React.Component {
       availableValues: [],
       valuesAreComplete: false,
       loading: false,
-      valuePrefix: ''
+      valuePrefix: '',
+      valuesLoaded: 0,
+      toShowUnselectedValues: valuesToLoad
     };
   }
 
@@ -43,6 +54,13 @@ export default class VariableFilter extends React.Component {
     }
   };
 
+  notSelectedAvailableValues = availableValues =>
+    availableValues.filter(value => !this.state.values.includes(value));
+  selectedAvailableValues = availableValues =>
+    availableValues.filter(value => this.state.values.includes(value));
+  availableSelectedValues = availableValues =>
+    this.state.values.filter(value => availableValues.includes(value));
+
   loadAvailableValues = debounce(async ({name, type}, more) => {
     this.setState(
       {
@@ -55,15 +73,24 @@ export default class VariableFilter extends React.Component {
           name,
           type,
           0,
-          valuesToLoad + 1 + (more ? this.state.availableValues.length : 0),
+          this.state.valuesLoaded + valuesToLoad + this.state.values.length + 1,
           this.state.valuePrefix
         );
 
+        let toShowUnselectedValues = this.state.toShowUnselectedValues + (more ? valuesToLoad : 0);
+
+        const availableValues = this.selectedAvailableValues(values).concat(
+          this.notSelectedAvailableValues(values).splice(0, toShowUnselectedValues)
+        );
+
         const valuesAreComplete =
-          values.length !== valuesToLoad + 1 + (more ? this.state.availableValues.length : 0);
+          values.length <
+          this.state.valuesLoaded + valuesToLoad + this.availableSelectedValues(values).length + 1;
 
         this.setState({
-          availableValues: valuesAreComplete ? values : values.splice(0, values.length - 1),
+          availableValues,
+          valuesLoaded: availableValues.length,
+          toShowUnselectedValues,
           valuesAreComplete,
           loading: false
         });
@@ -321,88 +348,35 @@ export default class VariableFilter extends React.Component {
     }
   };
 
-  setValuePrefix = evt => {
+  setValuePrefix = async evt => {
+    const queryIncluded = this.state.valuePrefix.slice(0, -1) === evt.target.value;
     this.setState({
-      valuePrefix: evt.target.value
-    });
-  };
-
-  mapSelectedValues = values => {
-    return (
-      values.length > 0 && (
-        <div>
-          {values.map((value, idx) => {
-            return (
-              <li key={idx} className="VariableFilter__valueListItem">
-                <label>
-                  <Input type="checkbox" checked value={value} onChange={this.toggleValue} />
-                  {value}
-                </label>
-              </li>
-            );
-          })}
-          <hr />
-        </div>
-      )
-    );
-  };
-
-  mapAvaliableValues = (availableValues, selectedValues) => {
-    return availableValues.map((value, idx) => {
-      if (!selectedValues.includes(value))
-        return (
-          <li key={idx} className="VariableFilter__valueListItem">
-            <label>
-              <Input
-                type="checkbox"
-                checked={selectedValues.includes(value)}
-                value={value}
-                onChange={this.toggleValue}
-              />
-              {value}
-            </label>
-          </li>
-        );
-      return null;
+      valuePrefix: evt.target.value,
+      valuesLoaded: queryIncluded ? this.state.values.length : 0,
+      toShowUnselectedValues: valuesToLoad
     });
   };
 
   renderValueFields = (type, availableValues, values) => {
     switch (type) {
       case 'String':
-        const input = (
-          <Input className="VariableFilter__string-value-input" onChange={this.setValuePrefix} />
-        );
-
-        if (availableValues.length === 0) {
-          return (
-            <div className="VariableFilter__string-value-selection">
-              {input}
-              <ul className="VariableFilter__valueList">
-                {this.mapSelectedValues(values)}
-                <li>No values match the query</li>
-              </ul>
-            </div>
-          );
-        }
         return (
           <div className="VariableFilter__string-value-selection">
-            {input}
-            <ul className="VariableFilter__valueList">
-              {this.mapSelectedValues(values)}
-              {this.mapAvaliableValues(availableValues, values)}
-              {!this.state.valuesAreComplete && (
-                <li>
-                  <Button
-                    className="VariableFilter__load-more-button"
-                    onClick={this.loadMore}
-                    disabled={this.state.loading}
-                  >
-                    {this.state.loading ? 'loading...' : 'Load More'}
-                  </Button>
-                </li>
-              )}
-            </ul>
+            <TypeaheadMultipleSelection
+              availableValues={availableValues}
+              selectedValues={values}
+              setPrefix={this.setValuePrefix}
+              toggleValue={this.toggleValue}
+            />
+            {!this.state.valuesAreComplete && (
+              <Button
+                className="VariableFilter__load-more-button"
+                onClick={this.loadMore}
+                disabled={this.state.loading}
+              >
+                {this.state.loading ? 'loading...' : 'Load More'}
+              </Button>
+            )}
           </div>
         );
       case 'Boolean':
