@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.UnstableCI;
 import io.zeebe.broker.Broker;
+import io.zeebe.broker.clustering.base.snapshots.SnapshotReplicationService;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.api.commands.Partition;
 import io.zeebe.client.api.commands.Topic;
@@ -35,6 +36,7 @@ import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.SocketAddress;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -201,6 +203,32 @@ public class SnapshotReplicationTest {
     // then
     assertThat(followerStorage.listSnapshots().size()).isEqualTo(1);
     assertReplicated(followerStorage, snapshots[1]);
+  }
+
+  @Test
+  public void shouldReplicateLargeSnapshot() throws Exception {
+    // given
+    final Topic topic = clusteringRule.getInternalSystemTopic();
+    final SocketAddress leaderAddress =
+        clusteringRule.getLeaderAddressForPartition(topic.getPartitions().get(0).getId());
+    final SocketAddress followerAddress =
+        clusteringRule.getFollowerAddressForPartition(topic.getPartitions().get(0).getId());
+    final SnapshotStorage leaderStorage = getSnapshotStorage(topic, leaderAddress);
+    final SnapshotStorage followerStorage = getSnapshotStorage(topic, followerAddress);
+
+    // should require 4 requests to fetch all bytes
+    final byte[] contents = new byte[SnapshotReplicationService.DEFAULT_CHUNK_LENGTH * 4];
+    new Random().nextBytes(contents);
+
+    final TestSnapshot snapshot = new TestSnapshot("snap", 1L, new String(contents));
+
+    // when
+    snapshot.write(leaderStorage);
+    waitForReplication(followerStorage, snapshot);
+
+    // then
+    assertThat(followerStorage.listSnapshots().size()).isEqualTo(1);
+    assertReplicated(followerStorage, snapshot);
   }
 
   private SnapshotStorage getSnapshotStorage(final Topic topic, final SocketAddress address)

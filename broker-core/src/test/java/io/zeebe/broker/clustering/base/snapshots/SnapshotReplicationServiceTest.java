@@ -57,10 +57,6 @@ public class SnapshotReplicationServiceTest {
   private TemporaryFolder tempFolder = new TemporaryFolder();
   private ControlledActorSchedulerRule actorSchedulerRule = new ControlledActorSchedulerRule();
   private ServiceContainerRule serviceContainerRule = new ServiceContainerRule(actorSchedulerRule);
-
-  // TODO: currently it's manually synchronized to the private retry interval in
-  // SnapshotReplicationService
-  private final Duration errorRetryInterval = Duration.ofSeconds(1);
   private final Duration snapshotPollInterval = Duration.ofSeconds(1);
 
   @Rule
@@ -103,7 +99,7 @@ public class SnapshotReplicationServiceTest {
 
     // when
     topologyManager.setPartitionLeader(partition, leaderNodeInfo);
-    actorSchedulerRule.waitForTimer(errorRetryInterval);
+    actorSchedulerRule.waitForTimer(SnapshotReplicationService.ERROR_RETRY_INTERVAL);
 
     // then
     assertThat(output.getSentRequests().size()).isEqualTo(1);
@@ -128,7 +124,7 @@ public class SnapshotReplicationServiceTest {
 
     // when
     topologyManager.setQueryError(null);
-    actorSchedulerRule.waitForTimer(errorRetryInterval);
+    actorSchedulerRule.waitForTimer(SnapshotReplicationService.ERROR_RETRY_INTERVAL);
 
     // then
     assertThat(output.getSentRequests().size()).isEqualTo(1);
@@ -157,7 +153,7 @@ public class SnapshotReplicationServiceTest {
     topologyManager.setPartitionLeader(partition, newLeader);
     output.getLastRequest().respondWith(new RuntimeException("network error"));
     actorSchedulerRule.workUntilDone();
-    actorSchedulerRule.waitForTimer(errorRetryInterval);
+    actorSchedulerRule.waitForTimer(SnapshotReplicationService.ERROR_RETRY_INTERVAL);
 
     // then
     verify(transport).registerRemoteAddress(newLeader.getManagementApiAddress());
@@ -183,7 +179,7 @@ public class SnapshotReplicationServiceTest {
     // when
     output.getLastRequest().respondWith(response);
     actorSchedulerRule.workUntilDone();
-    actorSchedulerRule.waitForTimer(errorRetryInterval);
+    actorSchedulerRule.waitForTimer(SnapshotReplicationService.ERROR_RETRY_INTERVAL);
 
     // then
     assertThat(output.getSentRequests().size()).isEqualTo(2);
@@ -224,7 +220,7 @@ public class SnapshotReplicationServiceTest {
     assertThat(storage.listSnapshots()).isEmpty();
 
     // when
-    actorSchedulerRule.waitForTimer(errorRetryInterval);
+    actorSchedulerRule.waitForTimer(SnapshotReplicationService.ERROR_RETRY_INTERVAL);
 
     // then
     assertFetchingSnapshot(snapshots[1]);
@@ -278,28 +274,27 @@ public class SnapshotReplicationServiceTest {
 
   @Test
   public void shouldPollSnapshotsOnAbortIfNoMoreToReplicate() throws Exception {
-      // given
-      final ErrorResponse errorResponse =
-          new ErrorResponse().setCode(ErrorResponseCode.READ_ERROR).setData("could not read");
-      final SnapshotMetadata[] snapshots =
-          new SnapshotMetadata[] {createSnapshot("foo", 3L, "foo")};
+    // given
+    final ErrorResponse errorResponse =
+        new ErrorResponse().setCode(ErrorResponseCode.READ_ERROR).setData("could not read");
+    final SnapshotMetadata[] snapshots = new SnapshotMetadata[] {createSnapshot("foo", 3L, "foo")};
 
-      // when
-      installService();
-      output.getLastRequest().respondWith(generateListSnapshotsResponse(snapshots));
-      actorSchedulerRule.workUntilDone();
+    // when
+    installService();
+    output.getLastRequest().respondWith(generateListSnapshotsResponse(snapshots));
+    actorSchedulerRule.workUntilDone();
 
-      // then
-      assertFetchingSnapshot(snapshots[0]);
+    // then
+    assertFetchingSnapshot(snapshots[0]);
 
-      // when
-      output.getLastRequest().respondWith(errorResponse);
-      actorSchedulerRule.workUntilDone();
-      actorSchedulerRule.waitForTimer(snapshotPollInterval);
+    // when
+    output.getLastRequest().respondWith(errorResponse);
+    actorSchedulerRule.workUntilDone();
+    actorSchedulerRule.waitForTimer(snapshotPollInterval);
 
-      // then
-      assertThat(output.getLastRequest().getTemplateId())
-          .isEqualTo(ListSnapshotsRequestEncoder.TEMPLATE_ID);
+    // then
+    assertThat(output.getLastRequest().getTemplateId())
+        .isEqualTo(ListSnapshotsRequestEncoder.TEMPLATE_ID);
   }
 
   private void installService() {

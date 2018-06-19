@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.clustering.base.snapshots;
 
-import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.api.*;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
@@ -54,6 +53,8 @@ import org.slf4j.Logger;
 public class SnapshotReplicationService extends Actor
     implements Service<SnapshotReplicationService> {
   private static final Logger LOG = new ZbLogger(SnapshotReplicationService.class);
+  public static final int DEFAULT_CHUNK_LENGTH = ServerTransportBuilder.DEFAULT_MAX_MESSAGE_LENGTH;
+  public static final Duration ERROR_RETRY_INTERVAL = Duration.ofSeconds(1);
 
   private final Injector<ClientTransport> managementClientApiInjector = new Injector<>();
   private ClientTransport clientTransport;
@@ -77,7 +78,6 @@ public class SnapshotReplicationService extends Actor
       new FetchSnapshotChunkResponse();
 
   private final Duration pollInterval;
-  private final Duration errorRetryInterval = Duration.ofSeconds(1);
   private RemoteAddress leaderNodeAddress;
 
   // Used to properly calculate polling intervals (since replication operation can take a while)
@@ -121,24 +121,23 @@ public class SnapshotReplicationService extends Actor
     this.pollLeaderForSnapshots();
   }
 
-    @Override
-    protected void onActorClosing()
-    {
-        snapshotsToReplicate.clear(); // clear before aborting to avoid trying to replicate the next one
-        abortCurrentSnapshotReplication();
-    }
+  @Override
+  protected void onActorClosing() {
+    snapshotsToReplicate.clear(); // clear before aborting to avoid trying to replicate the next one
+    abortCurrentSnapshotReplication();
+  }
 
-    private void pollLeaderForSnapshots() {
+  private void pollLeaderForSnapshots() {
     final ActorFuture<NodeInfo> topologyQuery = topologyManager.query(this::getLeaderInfo);
     actor.runOnCompletion(
         topologyQuery,
         (leaderInfo, error) -> {
           if (error != null) {
             LOG.error("Failed to query topology for leader info, retrying", error);
-            actor.runDelayed(errorRetryInterval, this::pollLeaderForSnapshots);
+            actor.runDelayed(ERROR_RETRY_INTERVAL, this::pollLeaderForSnapshots);
           } else if (leaderInfo == null) {
             LOG.trace("Waiting for leader node info, retrying");
-            actor.runDelayed(errorRetryInterval, this::pollLeaderForSnapshots);
+            actor.runDelayed(ERROR_RETRY_INTERVAL, this::pollLeaderForSnapshots);
           } else {
             leaderNodeAddress =
                 clientTransport.registerRemoteAddress(leaderInfo.getManagementApiAddress());
@@ -162,7 +161,7 @@ public class SnapshotReplicationService extends Actor
         (clientResponse, error) -> {
           if (error != null) {
             LOG.error("Error listing snapshots from leader", error);
-            actor.runDelayed(errorRetryInterval, this::pollLeaderForSnapshots);
+            actor.runDelayed(ERROR_RETRY_INTERVAL, this::pollLeaderForSnapshots);
           } else {
             handleListSnapshotsResponse(clientResponse.getResponseBuffer());
           }
@@ -183,7 +182,7 @@ public class SnapshotReplicationService extends Actor
   private void handleListSnapshotsResponse(final DirectBuffer buffer) {
     if (isErrorResponse(buffer)) {
       logErrorResponse("Error listing snapshots", buffer);
-      actor.runDelayed(errorRetryInterval, this::pollSnapshots);
+      actor.runDelayed(ERROR_RETRY_INTERVAL, this::pollSnapshots);
       return;
     }
 
@@ -297,7 +296,7 @@ public class SnapshotReplicationService extends Actor
         .setPartitionId(partition.getInfo().getPartitionId())
         .setName(currentReplicatingSnapshot.getName())
         .setLogPosition(currentReplicatingSnapshot.getLogPosition())
-        .setChunkLength(ServerTransportBuilder.DEFAULT_MAX_MESSAGE_LENGTH)
+        .setChunkLength(DEFAULT_CHUNK_LENGTH)
         .setChunkOffset(chunkOffset);
   }
 
