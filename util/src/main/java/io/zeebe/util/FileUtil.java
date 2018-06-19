@@ -120,13 +120,14 @@ public class FileUtil {
     }
   }
 
-    /**
-     * Overwrites file at dest with src. Initially tries to simply move file, and only replaces
-     * the existing file if it failed to do an atomic move.
-     * @param src file to move
-     * @param dest file to overwrite (if existing)
-     * @throws IOException see {@link Files#move(Path, Path, CopyOption...)}
-     */
+  /**
+   * Overwrites file at dest with src. Initially tries to simply move file, and only replaces the
+   * existing file if it failed to do an atomic move.
+   *
+   * @param src file to move
+   * @param dest file to overwrite (if existing)
+   * @throws IOException see {@link Files#move(Path, Path, CopyOption...)}
+   */
   public static void replace(Path src, Path dest) throws IOException {
     try {
       Files.move(src, dest, ATOMIC_MOVE);

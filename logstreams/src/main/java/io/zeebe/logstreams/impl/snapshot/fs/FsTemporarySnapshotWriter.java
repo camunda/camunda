@@ -15,9 +15,8 @@
  */
 package io.zeebe.logstreams.impl.snapshot.fs;
 
-import java.io.File;
-
 import io.zeebe.util.FileUtil;
+import java.io.File;
 
 /**
  * Extends FsSnapshotWriter, delegating the write of the checksum + data to it, and moving the data
@@ -42,12 +41,12 @@ public class FsTemporarySnapshotWriter extends FsSnapshotWriter {
   @Override
   protected void commit(final byte[] checksum) throws Exception {
     try {
-        writeChecksumFile(checksum);
-        FileUtil.replace(dataFile.toPath(), snapshotFile.toPath());
-        dataFile.delete();
+      writeChecksumFile(checksum);
+      FileUtil.replace(dataFile.toPath(), snapshotFile.toPath());
+      dataFile.delete();
     } catch (final Exception ex) {
-        abort();
-        throw ex;
+      abort();
+      throw ex;
     }
 
     deleteLastSnapshot();

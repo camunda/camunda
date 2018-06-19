@@ -19,11 +19,10 @@ import static io.zeebe.util.StringUtil.getBytes;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.zeebe.logstreams.impl.snapshot.fs.*;
 import java.io.File;
 import java.nio.file.Files;
 import java.security.MessageDigest;
-
-import io.zeebe.logstreams.impl.snapshot.fs.*;
 import org.agrona.BitUtil;
 import org.junit.Before;
 import org.junit.Rule;
