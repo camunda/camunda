@@ -1,7 +1,7 @@
 // vim: set filetype=groovy:
 
 def jdkVersion = 'jdk-8-latest'
-def mavenVersion = 'maven-3.3-latest'
+def mavenVersion = 'maven-3.5-latest'
 def mavenSettingsConfig = 'camunda-maven-settings'
 
 def joinJmhResults = '''\
@@ -22,7 +22,7 @@ pipeline {
         stage('Install') {
             steps {
                 withMaven(jdk: jdkVersion, maven: mavenVersion, mavenSettingsConfig: mavenSettingsConfig) {
-                    sh 'mvn -B clean com.mycila:license-maven-plugin:check install -DskipTests'
+                    sh 'mvn -B clean com.mycila:license-maven-plugin:check com.coveo:fmt-maven-plugin:check install -DskipTests'
                 }
             }
         }
