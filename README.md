@@ -22,6 +22,15 @@ Zeebe scales orchestration of workers and microservices using visual workflows. 
 
 Zeebe is currently a tech preview and not meant for production use - See [Roadmap](https://github.com/zeebe-io/zeebe/blob/master/ROADMAP.md).
 
+## Links
+
+* [Web Site](https://zeebe.io)
+* [Documentation](https://docs.zeebe.io)
+* [Issue Tracker](https://github.com/zeebe-io/zeebe/issues)
+* [Slack Channel](https://zeebe-slackin.herokuapp.com/)
+* [User Forum](https://forum.zeebe.io)
+* [Contribution Guidelines](/CONTRIBUTING.md)
+
 ## Documentation
 
 * [Introduction](https://docs.zeebe.io/introduction/README.html)
@@ -29,10 +38,6 @@ Zeebe is currently a tech preview and not meant for production use - See [Roadma
 * [Configuration](https://docs.zeebe.io/operations/the-zeebecfgtoml-file.html)
 * [Java Client](https://docs.zeebe.io/java-client/README.html)
 * [BPMN Workflows](https://docs.zeebe.io/bpmn-workflows/README.html)
-
-## Getting Help
-
-[Forum](https://forum.zeebe.io/)
 
 ## Contributing
 
