@@ -300,30 +300,30 @@ public class SnapshotReplicationServiceTest {
 
   @Test
   public void shouldNotRemoveLastReplicatedSnapshotWhenClosing() throws Exception {
-      // given
-      final ServiceName<SnapshotReplicationService> serviceName = snapshotReplicationServiceName(partition);
-      final SnapshotMetadata[] snapshots =
-          new SnapshotMetadata[] {createSnapshot("foo", 3L, "foo")};
+    // given
+    final ServiceName<SnapshotReplicationService> serviceName =
+        snapshotReplicationServiceName(partition);
+    final SnapshotMetadata[] snapshots = new SnapshotMetadata[] {createSnapshot("foo", 3L, "foo")};
 
-      // when
-      installService();
-      output.getLastRequest().respondWith(generateListSnapshotsResponse(snapshots));
-      actorSchedulerRule.workUntilDone();
-      FetchSnapshotChunkRequest request =
-          (FetchSnapshotChunkRequest) output.getLastRequest().getRequest();
-      output.getLastRequest().respondWith(generateFetchSnapshotChunkResponse("foo", request));
-      actorSchedulerRule.workUntilDone();
+    // when
+    installService();
+    output.getLastRequest().respondWith(generateListSnapshotsResponse(snapshots));
+    actorSchedulerRule.workUntilDone();
+    final FetchSnapshotChunkRequest request =
+        (FetchSnapshotChunkRequest) output.getLastRequest().getRequest();
+    output.getLastRequest().respondWith(generateFetchSnapshotChunkResponse("foo", request));
+    actorSchedulerRule.workUntilDone();
 
-      // then
-      assertReplicated(snapshots[0], "foo");
+    // then
+    assertReplicated(snapshots[0], "foo");
 
-      // when
-      serviceContainerRule.get().removeService(serviceName);
-      actorSchedulerRule.workUntilDone();
+    // when
+    serviceContainerRule.get().removeService(serviceName);
+    actorSchedulerRule.workUntilDone();
 
-      // then
-      assertThat(serviceContainerRule.get().hasService(serviceName)).isFalse();
-      assertReplicated(snapshots[0], "foo");
+    // then
+    assertThat(serviceContainerRule.get().hasService(serviceName)).isFalse();
+    assertReplicated(snapshots[0], "foo");
   }
 
   private void installService() {
@@ -372,7 +372,7 @@ public class SnapshotReplicationServiceTest {
       final String contents, final FetchSnapshotChunkRequest request) {
     final byte[] data = getBytes(contents);
     final int length = Math.min(request.getChunkLength(), data.length);
-    return new FetchSnapshotChunkResponse().setData(data, (int)request.getChunkOffset(), length);
+    return new FetchSnapshotChunkResponse().setData(data, (int) request.getChunkOffset(), length);
   }
 
   private ListSnapshotsResponse generateListSnapshotsResponse(final SnapshotMetadata[] snapshots) {
