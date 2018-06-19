@@ -39,7 +39,6 @@ public class FsSnapshotWriter implements SnapshotWriter {
   protected final FsReadableSnapshot lastSnapshot;
 
   protected DigestOutputStream dataOutputStream;
-  protected BufferedOutputStream checksumOutputStream;
 
   public FsSnapshotWriter(
       FsSnapshotStorageConfiguration config,
@@ -51,11 +50,10 @@ public class FsSnapshotWriter implements SnapshotWriter {
     this.checksumFile = checksumFile;
     this.lastSnapshot = lastSnapshot;
 
-    initOutputStreams(config, snapshotFile, checksumFile);
+    initOutputStreams(config, snapshotFile);
   }
 
-  protected void initOutputStreams(
-      FsSnapshotStorageConfiguration config, File snapshotFile, File checksumFile) {
+  protected void initOutputStreams(FsSnapshotStorageConfiguration config, File snapshotFile) {
     try {
       final MessageDigest messageDigest = MessageDigest.getInstance(config.getChecksumAlgorithm());
 
@@ -76,14 +74,14 @@ public class FsSnapshotWriter implements SnapshotWriter {
 
   @Override
   public void commit() throws Exception {
-    writeToDisk(closeAndGetChecksum());
+    commit(closeAndGetChecksum());
   }
 
   @Override
   public void validateAndCommit(final byte[] checksum) throws Exception {
     final byte[] writtenChecksum = closeAndGetChecksum();
     if (Arrays.equals(writtenChecksum, checksum)) {
-      writeToDisk(checksum);
+      commit(checksum);
     } else {
       abort();
       throw new RuntimeException(
@@ -96,7 +94,6 @@ public class FsSnapshotWriter implements SnapshotWriter {
   @Override
   public void abort() {
     FileUtil.closeSilently(dataOutputStream);
-    FileUtil.closeSilently(checksumOutputStream);
     dataFile.delete();
     checksumFile.delete();
   }
@@ -113,7 +110,7 @@ public class FsSnapshotWriter implements SnapshotWriter {
     return dataFile.getName();
   }
 
-  protected byte[] closeAndGetChecksum() throws Exception {
+  private byte[] closeAndGetChecksum() throws Exception {
     final byte[] checksum;
 
     try {
@@ -128,26 +125,34 @@ public class FsSnapshotWriter implements SnapshotWriter {
     return checksum;
   }
 
-  protected void writeToDisk(final byte[] checksum) throws Exception {
+  protected void commit(final byte[] checksum) throws Exception {
     try {
-      Files.createFile(checksumFile.toPath());
+      writeChecksumFile(checksum);
+    } catch (final Exception ex) {
+      abort();
+      throw ex;
+    }
 
-      final FileOutputStream checksumFileOutputStream = new FileOutputStream(checksumFile);
-      checksumOutputStream = new BufferedOutputStream(checksumFileOutputStream);
+    deleteLastSnapshot();
+  }
 
+  protected void writeChecksumFile(final byte[] checksum) throws Exception {
+    Files.createFile(checksumFile.toPath());
+
+    try (FileOutputStream checksumFileOutputStream = new FileOutputStream(checksumFile);
+        BufferedOutputStream checksumOutputStream =
+            new BufferedOutputStream(checksumFileOutputStream); ) {
       final String checksumHex = BitUtil.toHex(checksum);
       final String checksumFileContents = config.checksumContent(checksumHex, getDataFileName());
 
       checksumOutputStream.write(getBytes(checksumFileContents));
-      checksumOutputStream.close();
+    }
+  }
 
-      if (lastSnapshot != null) {
-        LOG.info("Delete last snapshot file {}.", lastSnapshot.getDataFile());
-        lastSnapshot.delete();
-      }
-    } catch (final Exception ex) {
-      abort();
-      throw ex;
+  protected void deleteLastSnapshot() {
+    if (lastSnapshot != null) {
+      LOG.info("Delete last snapshot file {}.", lastSnapshot.getDataFile());
+      lastSnapshot.delete();
     }
   }
 }

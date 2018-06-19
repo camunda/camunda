@@ -16,8 +16,8 @@
 package io.zeebe.logstreams.impl.snapshot.fs;
 
 import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
+
+import io.zeebe.util.FileUtil;
 
 /**
  * Extends FsSnapshotWriter, delegating the write of the checksum + data to it, and moving the data
@@ -40,26 +40,19 @@ public class FsTemporarySnapshotWriter extends FsSnapshotWriter {
   }
 
   @Override
-  protected void writeToDisk(byte[] checksum) throws Exception {
+  protected void commit(final byte[] checksum) throws Exception {
     try {
-      super.writeToDisk(checksum);
-
-      // TODO: evaluate if REPLACE_EXISTING is safe here
-      Files.move(
-          dataFile.toPath(),
-          snapshotFile.toPath(),
-          StandardCopyOption.ATOMIC_MOVE,
-          StandardCopyOption.REPLACE_EXISTING);
-
-      //noinspection ResultOfMethodCallIgnored
-      dataFile.delete();
+        writeChecksumFile(checksum);
+        FileUtil.replace(dataFile.toPath(), snapshotFile.toPath());
+        dataFile.delete();
     } catch (final Exception ex) {
-      abort();
-      throw ex;
+        abort();
+        throw ex;
     }
+
+    deleteLastSnapshot();
   }
 
-  @SuppressWarnings("ResultOfMethodCallIgnored")
   @Override
   public void abort() {
     super.abort();

@@ -16,14 +16,14 @@
 package io.zeebe.logstreams.fs.snapshot;
 
 import static io.zeebe.util.StringUtil.getBytes;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotStorageConfiguration;
-import io.zeebe.logstreams.impl.snapshot.fs.FsTemporarySnapshotWriter;
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.security.MessageDigest;
+
+import io.zeebe.logstreams.impl.snapshot.fs.*;
 import org.agrona.BitUtil;
 import org.junit.Before;
 import org.junit.Rule;
@@ -40,19 +40,23 @@ public class FsTemporarySnapshotWriterTest {
   private File checksumFile;
   private File temporaryFile;
   private FsTemporarySnapshotWriter writer;
+  private FsReadableSnapshot lastSnapshot;
 
   @Before
-  public void init() throws IOException {
+  public void init() throws Exception {
     final String snapshotRootPath = tempFolder.getRoot().getAbsolutePath();
 
     config = new FsSnapshotStorageConfiguration();
     config.setRootPath(snapshotRootPath);
 
+    lastSnapshot = createLastSnapshot();
     temporaryFile = tempFolder.newFile("test1239489485.tmp");
-    snapshotFile = new File(tempFolder.getRoot(), "snapshot.snapshot");
-    checksumFile = new File(tempFolder.getRoot(), "checksum.sha1");
+    snapshotFile = new File(tempFolder.getRoot(), "snapshot-2.snapshot");
+    checksumFile = new File(tempFolder.getRoot(), "checksum-2.sha1");
 
-    writer = new FsTemporarySnapshotWriter(config, temporaryFile, checksumFile, snapshotFile, null);
+    writer =
+        new FsTemporarySnapshotWriter(
+            config, temporaryFile, checksumFile, snapshotFile, lastSnapshot);
   }
 
   @Test
@@ -100,5 +104,37 @@ public class FsTemporarySnapshotWriterTest {
     assertThat(Files.readAllBytes(snapshotFile.toPath())).isEqualTo(SNAPSHOT_DATA);
     assertThat(new String(Files.readAllBytes(checksumFile.toPath())))
         .isEqualTo(config.checksumContent(checksum, snapshotFile.getName()));
+    assertThat(lastSnapshot.getDataFile()).doesNotExist();
+    assertThat(lastSnapshot.getChecksumFile()).doesNotExist();
+  }
+
+  @Test
+  public void shouldStillHaveLastSnapshotIfFailToMoveTemporaryFile() throws Exception {
+    // given
+    final byte[] badChecksum = new byte[] {0};
+    final FsTemporarySnapshotWriter writer =
+        new FsTemporarySnapshotWriter(
+            config, temporaryFile, checksumFile, snapshotFile, lastSnapshot);
+
+    // when
+    writer.getOutputStream().write(SNAPSHOT_DATA);
+    assertThatThrownBy(() -> writer.validateAndCommit(badChecksum))
+        .isInstanceOf(RuntimeException.class);
+
+    // then
+    assertThat(temporaryFile).doesNotExist();
+    assertThat(checksumFile).doesNotExist();
+    assertThat(snapshotFile).doesNotExist();
+    assertThat(lastSnapshot.getChecksumFile()).exists();
+    assertThat(lastSnapshot.getDataFile()).exists();
+  }
+
+  private FsReadableSnapshot createLastSnapshot() throws Exception {
+    final FsSnapshotStorage storage = new FsSnapshotStorage(config);
+    final FsSnapshotWriter writer = storage.createSnapshot("snapshot", 1);
+    writer.getOutputStream().write(SNAPSHOT_DATA);
+    writer.commit();
+
+    return storage.getLastSnapshot("snapshot");
   }
 }
