@@ -30,7 +30,15 @@ pipeline {
         stage('Tests') {
             steps {
                 withMaven(jdk: jdkVersion, maven: mavenVersion, mavenSettingsConfig: mavenSettingsConfig) {
-                    sh 'mvn -B generate-sources source:jar javadoc:jar deploy -P skip-unstable-ci'
+                    sh 'mvn -B verify -P skip-unstable-ci'
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                withMaven(jdk: jdkVersion, maven: mavenVersion, mavenSettingsConfig: mavenSettingsConfig) {
+                    sh 'mvn -B generate-sources source:jar javadoc:jar deploy -DskipTests'
                 }
             }
         }
