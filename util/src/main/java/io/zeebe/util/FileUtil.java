@@ -16,6 +16,8 @@
 package io.zeebe.util;
 
 import static java.nio.file.FileVisitResult.CONTINUE;
+import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 import java.io.Closeable;
 import java.io.File;
@@ -115,6 +117,22 @@ public class FileUtil {
       Files.move(sourcePath, targetPath, options);
     } catch (Exception e) {
       LangUtil.rethrowUnchecked(e);
+    }
+  }
+
+    /**
+     * Overwrites file at dest with src. Initially tries to simply move file, and only replaces
+     * the existing file if it failed to do an atomic move.
+     * @param src file to move
+     * @param dest file to overwrite (if existing)
+     * @throws IOException see {@link Files#move(Path, Path, CopyOption...)}
+     */
+  public static void replace(Path src, Path dest) throws IOException {
+    try {
+      Files.move(src, dest, ATOMIC_MOVE);
+    } catch (final FileAlreadyExistsException e) {
+      // failed with atomic move, lets try again with normal replace move
+      Files.move(src, dest, REPLACE_EXISTING);
     }
   }
 

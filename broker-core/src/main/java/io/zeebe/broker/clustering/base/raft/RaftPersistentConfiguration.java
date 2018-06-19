@@ -18,17 +18,15 @@
 package io.zeebe.broker.clustering.base.raft;
 
 import static io.zeebe.util.EnsureUtil.ensureNotNull;
-import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import io.zeebe.raft.RaftPersistentStorage;
 import io.zeebe.transport.SocketAddress;
+import io.zeebe.util.FileUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import java.io.*;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -191,12 +189,7 @@ public class RaftPersistentConfiguration implements RaftPersistentStorage {
     }
 
     try {
-      try {
-        Files.move(tmpPath, path, ATOMIC_MOVE);
-      } catch (final Exception e) {
-        // failed with atomic move, lets try again with normal replace move
-        Files.move(tmpPath, path, REPLACE_EXISTING);
-      }
+      FileUtil.replace(tmpPath, path);
     } catch (final IOException e) {
       throw new RuntimeException("Unable to replace raft storage", e);
     }
