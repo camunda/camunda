@@ -20,9 +20,9 @@ import io.zeebe.client.api.subscription.WorkflowInstanceEventHandler;
  */
 @Component
 @Profile("zeebe")
-public class WorkflowEventTransformer implements WorkflowInstanceEventHandler {
+public class WorkflowInstanceEventTransformer implements WorkflowInstanceEventHandler {
 
-  private Logger logger = LoggerFactory.getLogger(WorkflowEventTransformer.class);
+  private Logger logger = LoggerFactory.getLogger(WorkflowInstanceEventTransformer.class);
 
   private static final Set<io.zeebe.client.api.events.WorkflowInstanceState> STATES = new HashSet<>();
   private static final Set<io.zeebe.client.api.events.WorkflowInstanceState> END_STATES = new HashSet<>();
@@ -46,7 +46,7 @@ public class WorkflowEventTransformer implements WorkflowInstanceEventHandler {
 
       WorkflowInstanceEntity entity = new WorkflowInstanceEntity();
       entity.setId(String.valueOf(event.getWorkflowInstanceKey()));
-      entity.setWorkflowDefinitionId(String.valueOf(event.getWorkflowKey()));
+      entity.setWorkflowId(String.valueOf(event.getWorkflowKey()));
       entity.setBusinessKey(event.getBpmnProcessId());
       if (END_STATES.contains(event.getState())) {
         entity.setEndDate(OffsetDateTime.ofInstant(event.getMetadata().getTimestamp(), ZoneOffset.UTC));

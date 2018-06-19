@@ -68,7 +68,7 @@ public class EsDemoDataGenerator {
           workflowInstance.getIncidents().add(createIncident(IncidentState.RESOLVED));
         }
 
-        workflowInstance.setWorkflowDefinitionId(UUID.randomUUID().toString());
+        workflowInstance.setWorkflowId(UUID.randomUUID().toString());
         workflowInstances.add(workflowInstance);
       }
 

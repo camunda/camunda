@@ -14,7 +14,9 @@ package org.camunda.operate.rest;
 
 import static org.camunda.operate.rest.WorkflowRestService.WORKFLOW_URL;
 
+import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.es.reader.WorkflowReader;
+import org.camunda.operate.rest.dto.WorkflowDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,7 +35,14 @@ public class WorkflowRestService {
   public static final String WORKFLOW_URL = "/api/workflows";
 
   @GetMapping(path = "/{id}/xml")
-  public String getDiagram(@PathVariable("id") String workflowId) {
+  public String getWorkflowDiagram(@PathVariable("id") String workflowId) {
     return workflowReader.getDiagram(workflowId);
   }
+
+  @GetMapping(path = "/{id}")
+  public WorkflowDto getWorkflow(@PathVariable("id") String workflowId) {
+    final WorkflowEntity workflowEntity = workflowReader.getWorkflowById(workflowId);
+    return WorkflowDto.createFrom(workflowEntity);
+  }
+
 }

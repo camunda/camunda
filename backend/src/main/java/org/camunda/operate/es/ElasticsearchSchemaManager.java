@@ -70,7 +70,7 @@ public class ElasticsearchSchemaManager {
    * @return true is Elasticsearch schema already exists, false otherwise
    */
   private boolean schemaAlreadyExists() {
-    IndicesExistsResponse response = esClient.admin().indices().prepareExists("workflow-definition").get();
+    IndicesExistsResponse response = esClient.admin().indices().prepareExists("workflow").get();
     return response.isExists();
   }
 

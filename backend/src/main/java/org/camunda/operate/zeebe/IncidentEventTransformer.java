@@ -20,7 +20,7 @@ import io.zeebe.client.api.subscription.IncidentEventHandler;
 @Profile("zeebe")
 public class IncidentEventTransformer implements IncidentEventHandler {
 
-  private Logger logger = LoggerFactory.getLogger(WorkflowEventTransformer.class);
+  private Logger logger = LoggerFactory.getLogger(WorkflowInstanceEventTransformer.class);
 
   private final static Set<IncidentState> EVENTS = new HashSet<>();
 

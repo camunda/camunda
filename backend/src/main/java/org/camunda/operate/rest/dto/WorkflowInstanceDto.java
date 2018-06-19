@@ -13,7 +13,7 @@ public class WorkflowInstanceDto {
 
   private String id;
 
-  private String workflowDefinitionId;
+  private String workflowId;
 
   private OffsetDateTime startDate;
   private OffsetDateTime endDate;
@@ -32,12 +32,12 @@ public class WorkflowInstanceDto {
     this.id = id;
   }
 
-  public String getWorkflowDefinitionId() {
-    return workflowDefinitionId;
+  public String getWorkflowId() {
+    return workflowId;
   }
 
-  public void setWorkflowDefinitionId(String workflowDefinitionId) {
-    this.workflowDefinitionId = workflowDefinitionId;
+  public void setWorkflowId(String workflowId) {
+    this.workflowId = workflowId;
   }
 
   public OffsetDateTime getStartDate() {
@@ -90,7 +90,7 @@ public class WorkflowInstanceDto {
     workflowInstance.setStartDate(workflowInstanceEntity.getStartDate());
     workflowInstance.setEndDate(workflowInstanceEntity.getEndDate());
     workflowInstance.setState(workflowInstanceEntity.getState());
-    workflowInstance.setWorkflowDefinitionId(workflowInstanceEntity.getWorkflowDefinitionId());
+    workflowInstance.setWorkflowId(workflowInstanceEntity.getWorkflowId());
     workflowInstance.setIncidents(IncidentDto.createFrom(workflowInstanceEntity.getIncidents()));
     return workflowInstance;
   }
@@ -118,7 +118,7 @@ public class WorkflowInstanceDto {
 
     if (id != null ? !id.equals(that.id) : that.id != null)
       return false;
-    if (workflowDefinitionId != null ? !workflowDefinitionId.equals(that.workflowDefinitionId) : that.workflowDefinitionId != null)
+    if (workflowId != null ? !workflowId.equals(that.workflowId) : that.workflowId != null)
       return false;
     if (startDate != null ? !startDate.equals(that.startDate) : that.startDate != null)
       return false;
@@ -134,7 +134,7 @@ public class WorkflowInstanceDto {
   @Override
   public int hashCode() {
     int result = id != null ? id.hashCode() : 0;
-    result = 31 * result + (workflowDefinitionId != null ? workflowDefinitionId.hashCode() : 0);
+    result = 31 * result + (workflowId != null ? workflowId.hashCode() : 0);
     result = 31 * result + (startDate != null ? startDate.hashCode() : 0);
     result = 31 * result + (endDate != null ? endDate.hashCode() : 0);
     result = 31 * result + (state != null ? state.hashCode() : 0);

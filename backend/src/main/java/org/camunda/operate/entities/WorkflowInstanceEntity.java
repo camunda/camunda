@@ -3,14 +3,13 @@ package org.camunda.operate.entities;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import org.camunda.operate.property.OperateProperties;
 
 /**
  * @author Svetlana Dorokhova.
  */
 public class WorkflowInstanceEntity extends OperateEntity {
 
-  private String workflowDefinitionId;
+  private String workflowId;
 
   private OffsetDateTime startDate;
   private OffsetDateTime endDate;
@@ -21,12 +20,12 @@ public class WorkflowInstanceEntity extends OperateEntity {
 
   private List<IncidentEntity> incidents = new ArrayList<>();
 
-  public String getWorkflowDefinitionId() {
-    return workflowDefinitionId;
+  public String getWorkflowId() {
+    return workflowId;
   }
 
-  public void setWorkflowDefinitionId(String workflowDefinitionId) {
-    this.workflowDefinitionId = workflowDefinitionId;
+  public void setWorkflowId(String workflowId) {
+    this.workflowId = workflowId;
   }
 
   public OffsetDateTime getStartDate() {
@@ -80,7 +79,7 @@ public class WorkflowInstanceEntity extends OperateEntity {
 
     WorkflowInstanceEntity that = (WorkflowInstanceEntity) o;
 
-    if (workflowDefinitionId != null ? !workflowDefinitionId.equals(that.workflowDefinitionId) : that.workflowDefinitionId != null)
+    if (workflowId != null ? !workflowId.equals(that.workflowId) : that.workflowId != null)
       return false;
     if (startDate != null ? !startDate.equals(that.startDate) : that.startDate != null)
       return false;
@@ -96,7 +95,7 @@ public class WorkflowInstanceEntity extends OperateEntity {
   @Override
   public int hashCode() {
     int result = super.hashCode();
-    result = 31 * result + (workflowDefinitionId != null ? workflowDefinitionId.hashCode() : 0);
+    result = 31 * result + (workflowId != null ? workflowId.hashCode() : 0);
     result = 31 * result + (startDate != null ? startDate.hashCode() : 0);
     result = 31 * result + (endDate != null ? endDate.hashCode() : 0);
     result = 31 * result + (state != null ? state.hashCode() : 0);

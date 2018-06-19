@@ -4,6 +4,9 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import org.camunda.operate.es.ElasticsearchConnector;
 import org.camunda.operate.es.writer.EntityStorage;
 import org.camunda.operate.property.OperateProperties;
@@ -25,10 +28,10 @@ import io.zeebe.client.api.subscription.WorkflowInstanceEventHandler;
 @Component
 @Configuration
 @Profile("zeebe")
-@DependsOn("entityStorage")
+@DependsOn({"entityStorage"})
 public class ZeebeConnector {
 
-  private Logger logger = LoggerFactory.getLogger(ElasticsearchConnector.class);
+  private Logger logger = LoggerFactory.getLogger(ZeebeConnector.class);
 
   @Autowired
   private OperateProperties operateProperties;
@@ -43,6 +46,8 @@ public class ZeebeConnector {
   private EntityStorage entityStorage;
 
   private Map<String, TopicSubscription> topicSubscriptions = new HashMap<>();
+
+  private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
   @Bean(destroyMethod = "close")
   public ZeebeClient zeebeClient() {
@@ -60,17 +65,28 @@ public class ZeebeConnector {
   @PostConstruct
   public void startCheckingSubscriptions() {
 
-    checkAndCreateTopicSubscriptions();
-    logger.info("Subscriptions for demo data generation was canceled");
+    for (String topic : operateProperties.getZeebe().getTopics()) {
+      checkAndCreateTopicSubscriptions(topic);
+    }
 
   }
 
-  public void checkAndCreateTopicSubscriptions() {
-    for (String topic: operateProperties.getZeebe().getTopics()) {
+  public void checkAndCreateTopicSubscriptions(String topic) {
+    try {
       if (topicSubscriptions.get(topic) == null || !topicSubscriptions.get(topic).isOpen()) {
         topicSubscriptions.put(topic, createTopicSubscription(topic));
       }
+      logger.info("Subscriptions for topic [{}] was created", topic);
+    } catch (Exception ex) {
+      logger.error("Could not open topic subscription to Zeebe. Retrying...", ex);
+      scheduleSubscriptionRetry(topic);
     }
+  }
+
+  private void scheduleSubscriptionRetry(String topic) {
+    scheduler.schedule(() -> {
+      checkAndCreateTopicSubscriptions(topic);
+    }, 2, TimeUnit.SECONDS);
   }
 
   public void removeTopicSubscription(String topicName) {
@@ -78,22 +94,16 @@ public class ZeebeConnector {
   }
 
   private TopicSubscription createTopicSubscription(String topicName) {
-    try {
-      entityStorage.addQueueForTopic(topicName);
-      return zeebeClient() //TODO ???
-        .topicClient(topicName)
-        .newSubscription()
-        .name(operateProperties.getZeebe().getWorker())
-        .workflowInstanceEventHandler(workflowInstanceEventHandler)
-        .incidentEventHandler(incidentEventTransformer)
-        .startAtHeadOfTopic()   //TODO
-        .forcedStart()          //TODO
-        .open();
-    } catch (Exception e) {
-      logger.error("Could not open topic subscription to Zeebe. Please check if the broker is up running!", e);
-      //TODO retry etc.
-      return null;
-    }
+    entityStorage.addQueueForTopic(topicName);
+    return zeebeClient() //TODO ???
+      .topicClient(topicName)
+      .newSubscription()
+      .name(operateProperties.getZeebe().getWorker())
+      .workflowInstanceEventHandler(workflowInstanceEventHandler)
+      .incidentEventHandler(incidentEventTransformer)
+      .startAtHeadOfTopic()   //TODO
+      .forcedStart()          //TODO
+      .open();
   }
 
   public Map<String, TopicSubscription> getTopicSubscriptions() {

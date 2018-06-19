@@ -53,13 +53,15 @@ public class ElasticsearchBulkProcessor extends Thread {
   }
 
   protected void processBulkRequest(BulkRequestBuilder bulkRequest) throws InterruptedException, java.util.concurrent.ExecutionException {
-    final BulkResponse bulkItemResponses = bulkRequest.execute().get();
-    final BulkItemResponse[] items = bulkItemResponses.getItems();
-    for (BulkItemResponse responseItem: items) {
-      if (responseItem.isFailed()) {
-        logger.error(String.format("%s failed for type [%s] and id [%s]: %s", responseItem.getOpType(), responseItem.getType(), responseItem.getId(),
-          responseItem.getFailureMessage()), responseItem.getFailure().getCause());
-        throw new RuntimeException("Operation failed: " + responseItem.getFailureMessage(), responseItem.getFailure().getCause());     //TODO
+    if (bulkRequest.request().requests().size() > 0) {
+      final BulkResponse bulkItemResponses = bulkRequest.execute().get();
+      final BulkItemResponse[] items = bulkItemResponses.getItems();
+      for (BulkItemResponse responseItem : items) {
+        if (responseItem.isFailed()) {
+          logger.error(String.format("%s failed for type [%s] and id [%s]: %s", responseItem.getOpType(), responseItem.getType(), responseItem.getId(),
+            responseItem.getFailureMessage()), responseItem.getFailure().getCause());
+          throw new RuntimeException("Operation failed: " + responseItem.getFailureMessage(), responseItem.getFailure().getCause());     //TODO
+        }
       }
     }
   }

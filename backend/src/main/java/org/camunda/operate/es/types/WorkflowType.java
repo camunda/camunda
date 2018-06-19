@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 @Profile("elasticsearch")
 public class WorkflowType extends StrictTypeMappingCreator {
 
-  public static final String TYPE = "workflow-definition";
+  public static final String TYPE = "workflow";
 
   public static final String ID = "id";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";

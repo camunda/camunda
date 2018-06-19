@@ -5,8 +5,10 @@ import java.util.HashMap;
 import java.util.Map;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperateEntity;
+import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.es.types.WorkflowInstanceType;
+import org.camunda.operate.es.types.WorkflowType;
 import org.elasticsearch.action.update.UpdateRequestBuilder;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -127,11 +129,32 @@ public class ElasticsearchRequestCreatorsHolder {
     };
   }
 
+  /**
+   *
+   * @return
+   */
+  public ElasticsearchRequestCreator<WorkflowEntity> workflowEntityEsRequestCreator() {
+    return (bulkRequestBuilder, entity) -> {
+      try {
+        return bulkRequestBuilder.add(
+          esClient
+            .prepareIndex(WorkflowType.TYPE, WorkflowType.TYPE, entity.getId())
+            .setSource(objectMapper.writeValueAsString(entity), XContentType.JSON)
+        );
+      } catch (JsonProcessingException e) {
+        //TODO
+        logger.error("Error preparing the query to upsert workflow instance", e);
+        return bulkRequestBuilder;
+      }
+    };
+  }
+
   @Bean
   public Map<Class<? extends OperateEntity>, ElasticsearchRequestCreator> getEsRequestMapping() {
     Map<Class<? extends OperateEntity>, ElasticsearchRequestCreator> map = new HashMap<>();
     map.put(WorkflowInstanceEntity.class, workflowInstanceEntityEsRequestCreator());
     map.put(IncidentEntity.class, incidentEntityEsRequestCreator());
+    map.put(WorkflowEntity.class, workflowEntityEsRequestCreator());
     return map;
   }
 

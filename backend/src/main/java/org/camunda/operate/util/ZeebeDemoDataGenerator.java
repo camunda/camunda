@@ -46,6 +46,7 @@ public class ZeebeDemoDataGenerator {
       createTopic();
     } catch (ClientCommandRejectedException ex) {
       //data already exists
+      logger.debug("Topic [{}] already exists.", operateProperties.getZeebe().getTopics().get(0));
       return;
     }
     deployVersion1();
@@ -88,7 +89,7 @@ public class ZeebeDemoDataGenerator {
         subscription.close();
       }
       //      updateRetriesIncidentSubscription.close();
-      logger.info("Subscriptions for demo data generation was canceled");
+      logger.info("Subscriptions for demo data generation were canceled");
     }, 2, TimeUnit.MINUTES);
   }
 
@@ -188,6 +189,7 @@ public class ZeebeDemoDataGenerator {
   public void createTopic() {
     final String topic = operateProperties.getZeebe().getTopics().get(0);
     zeebeUtil.createTopic(topic);
+    logger.debug("Topic [{}] was created.", operateProperties.getZeebe().getTopics().get(0));
   }
 
 

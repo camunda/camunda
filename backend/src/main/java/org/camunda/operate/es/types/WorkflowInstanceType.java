@@ -14,7 +14,7 @@ public class WorkflowInstanceType extends StrictTypeMappingCreator {
   public static final String TYPE = "workflow-instance";
 
   public static final String ID = "id";
-  public static final String WORKFLOW_DEFINITION_ID = "workflowDefinitionId";
+  public static final String WORKFLOW_ID = "workflowId";
   public static final String WORKFLOW_INSTANCE_ID = "workflowInstanceId";
   public static final String START_DATE = "startDate";
   public static final String END_DATE = "endDate";
@@ -41,7 +41,7 @@ public class WorkflowInstanceType extends StrictTypeMappingCreator {
       .startObject(ID)
         .field("type", "keyword")
       .endObject()
-      .startObject(WORKFLOW_DEFINITION_ID)
+      .startObject(WORKFLOW_ID)
         .field("type", "keyword")
       .endObject()
       .startObject(BUSINESS_KEY)
