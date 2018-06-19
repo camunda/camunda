@@ -51,6 +51,7 @@ public class POJOMappingContext {
     final DirectBuffer payload =
         write(
             (w) -> {
+              w.writeMapHeader(4);
               w.writeString(BufferUtil.wrapString("key1"));
               w.writeString(BufferUtil.wrapString("aValue"));
               w.writeString(BufferUtil.wrapString("key2"));
