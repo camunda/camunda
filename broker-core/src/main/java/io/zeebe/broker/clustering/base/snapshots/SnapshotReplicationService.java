@@ -123,8 +123,8 @@ public class SnapshotReplicationService extends Actor
 
   @Override
   protected void onActorClosing() {
-    snapshotsToReplicate.clear(); // clear before aborting to avoid trying to replicate the next one
-    abortCurrentSnapshotReplication();
+    snapshotsToReplicate.clear();
+    abortCurrentReplication();
   }
 
   private void pollLeaderForSnapshots() {
@@ -235,7 +235,7 @@ public class SnapshotReplicationService extends Actor
             // TODO: on transport error, should it start back at pollLeaderForSnapshots or
             // pollSnapshots?
             LOG.error("Error fetching chunk", error);
-            abortCurrentSnapshotReplication();
+            abortAndReplicateNext();
           } else {
             handleFetchSnapshotChunkResponse(clientResponse.getResponseBuffer());
           }
@@ -245,7 +245,7 @@ public class SnapshotReplicationService extends Actor
   private void handleFetchSnapshotChunkResponse(final DirectBuffer buffer) {
     if (isErrorResponse(buffer)) {
       logErrorResponse("Error fetching chunk", buffer);
-      abortCurrentSnapshotReplication();
+      abortAndReplicateNext();
       return;
     }
 
@@ -256,7 +256,7 @@ public class SnapshotReplicationService extends Actor
       StreamUtil.write(chunk, currentSnapshotWriter.getOutputStream());
     } catch (final Exception ex) {
       LOG.error("Error writing chunk", ex);
-      abortCurrentSnapshotReplication();
+      abortAndReplicateNext();
       return;
     }
 
@@ -273,21 +273,24 @@ public class SnapshotReplicationService extends Actor
       currentSnapshotWriter.validateAndCommit(currentReplicatingSnapshot.getChecksum());
     } catch (final Exception ex) {
       LOG.error("Error committing, aborting", ex);
-      abortCurrentSnapshotReplication();
+      abortAndReplicateNext();
       return;
     }
 
     replicateNextSnapshot();
   }
 
-  private void abortCurrentSnapshotReplication() {
+  private void abortCurrentReplication() {
     chunkOffset = 0;
     currentReplicatingSnapshot = null;
 
     if (currentSnapshotWriter != null) {
       currentSnapshotWriter.abort();
     }
+  }
 
+  private void abortAndReplicateNext() {
+    abortCurrentReplication();
     this.replicateNextSnapshot();
   }
 
