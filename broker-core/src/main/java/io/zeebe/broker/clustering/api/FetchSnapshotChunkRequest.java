@@ -39,7 +39,7 @@ public class FetchSnapshotChunkRequest
   private int partitionId = partitionIdNullValue();
   private final UnsafeBuffer name = new UnsafeBuffer(0, 0);
   private long logPosition = logPositionNullValue();
-  private int chunkOffset = chunkOffsetNullValue();
+  private long chunkOffset = chunkOffsetNullValue();
   private int chunkLength = chunkLengthNullValue();
 
   @Override
@@ -84,11 +84,11 @@ public class FetchSnapshotChunkRequest
     return this;
   }
 
-  public int getChunkOffset() {
+  public long getChunkOffset() {
     return chunkOffset;
   }
 
-  public FetchSnapshotChunkRequest setChunkOffset(final int chunkOffset) {
+  public FetchSnapshotChunkRequest setChunkOffset(final long chunkOffset) {
     this.chunkOffset = chunkOffset;
     return this;
   }

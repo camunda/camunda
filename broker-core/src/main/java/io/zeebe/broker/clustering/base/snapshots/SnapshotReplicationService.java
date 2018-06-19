@@ -47,8 +47,6 @@ import org.slf4j.Logger;
 /**
  * Replicates all snapshots from the leader of a given partition. Depends on the followerService for
  * a given partition to ensure correct lifecycle.
- *
- * <p>TODO: simplify class to not keep so much state (split into separate fetch operation class?)
  */
 public class SnapshotReplicationService extends Actor
     implements Service<SnapshotReplicationService> {
@@ -88,7 +86,7 @@ public class SnapshotReplicationService extends Actor
       new ArrayDeque<>();
   private SnapshotWriter currentSnapshotWriter;
   private ListSnapshotsResponse.SnapshotMetadata currentReplicatingSnapshot;
-  private int chunkOffset;
+  private long chunkOffset;
 
   public SnapshotReplicationService(final Duration pollInterval) {
     this.pollInterval = pollInterval;
@@ -228,12 +226,11 @@ public class SnapshotReplicationService extends Actor
   private void replicateSnapshot() {
     final ActorFuture<ClientResponse> awaitFetchChunk =
         clientTransport.getOutput().sendRequest(leaderNodeAddress, requestForNextChunk());
+
     actor.runOnCompletion(
         awaitFetchChunk,
         (clientResponse, error) -> {
           if (error != null) {
-            // TODO: on transport error, should it start back at pollLeaderForSnapshots or
-            // pollSnapshots?
             LOG.error("Error fetching chunk", error);
             abortAndReplicateNext();
           } else {
@@ -271,6 +268,7 @@ public class SnapshotReplicationService extends Actor
   private void finalizeSnapshot() {
     try {
       currentSnapshotWriter.validateAndCommit(currentReplicatingSnapshot.getChecksum());
+      currentSnapshotWriter = null;
     } catch (final Exception ex) {
       LOG.error("Error committing, aborting", ex);
       abortAndReplicateNext();

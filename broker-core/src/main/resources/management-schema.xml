@@ -93,7 +93,7 @@
     <sbe:message name="FetchSnapshotChunkRequest" id="8">
         <field name="partitionId" id="0" type="uint16" />
         <field name="logPosition" id="1" type="uint64" />
-        <field name="chunkOffset" id="2" type="int32" />
+        <field name="chunkOffset" id="2" type="uint64" />
         <field name="chunkLength" id="3" type="int32" />
         <data name="name" id="4" type="varDataEncoding" />
     </sbe:message>

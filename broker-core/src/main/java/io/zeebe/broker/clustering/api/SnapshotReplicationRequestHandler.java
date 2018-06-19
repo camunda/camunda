@@ -100,7 +100,7 @@ public class SnapshotReplicationRequestHandler {
     }
 
     final String name = BufferUtil.bufferAsString(fetchSnapshotChunkRequest.getName());
-    final int chunkOffset = fetchSnapshotChunkRequest.getChunkOffset();
+    final long chunkOffset = fetchSnapshotChunkRequest.getChunkOffset();
     final int maxChunkLength = fetchSnapshotChunkRequest.getChunkLength();
     final SnapshotStorage storage = partition.getSnapshotStorage();
 
@@ -124,7 +124,7 @@ public class SnapshotReplicationRequestHandler {
   private BufferWriter handleFetchSnapshotChunk(
       final SnapshotStorage storage,
       final String name,
-      final int chunkOffset,
+      final long chunkOffset,
       final int chunkLength) {
     final ReadableSnapshot snapshot;
 
@@ -143,7 +143,7 @@ public class SnapshotReplicationRequestHandler {
   }
 
   private BufferWriter readSnapshotChunk(
-      final ReadableSnapshot snapshot, final int chunkOffset, final int maxChunkLength) {
+      final ReadableSnapshot snapshot, final long chunkOffset, final int maxChunkLength) {
     if (chunkOffset < 0) {
       return prepareError(ErrorResponseCode.INVALID_PARAMETERS, INVALID_CHUNK_OFFSET_MESSAGE);
     }
@@ -160,7 +160,7 @@ public class SnapshotReplicationRequestHandler {
 
     int bytesRead = 0;
     try (InputStream snapshotData = snapshot.getData()) {
-      final int bytesSkipped = (int) snapshotData.skip(chunkOffset);
+      final long bytesSkipped = snapshotData.skip(chunkOffset);
       if (bytesSkipped < chunkOffset) {
         return prepareError(ErrorResponseCode.READ_ERROR, SEEK_ERROR_MESSAGE);
       }
