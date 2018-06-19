@@ -20,6 +20,7 @@ package io.zeebe.broker.event;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
+import io.zeebe.UnstableCI;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
@@ -50,6 +51,7 @@ import java.util.stream.Collectors;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.RuleChain;
 
 public class TopicSubscriptionTest {
@@ -533,6 +535,7 @@ public class TopicSubscriptionTest {
   }
 
   @Test
+  @Category(UnstableCI.class)
   public void shouldCloseSubscriptionOnTransportChannelClose() {
     // given
     ExecuteCommandResponse subscriptionResponse = apiRule.openTopicSubscription("foo", 0).await();
