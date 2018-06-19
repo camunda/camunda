@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Profile("elasticsearch")
-public class WorkflowDefinitionType extends StrictTypeMappingCreator {
+public class WorkflowType extends StrictTypeMappingCreator {
 
   public static final String TYPE = "workflow-definition";
 
