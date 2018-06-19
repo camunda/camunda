@@ -5,6 +5,11 @@ There are three kinds of tests in the backend:
 * [Integration tests](#integration-testing)
 * [Performance tests](#performance-testing)
 
+## Prerequisites
+
+* You need to have a recent version of Docker and `docker-compose` installed.
+* `docker` and `docker-compose` commands must be usable without `sudo`. See [Docker website]I(https://docs.docker.com/install/linux/linux-postinstall/) how to archieve that.
+
 ## Unit testing
 
 Run the following command to run the unit tests:
@@ -34,7 +39,7 @@ The spring context enables you to instantiate an object of each class used in Op
 
 This project has integration tests implemented that rely on following facts:
 
-* tomcat is with engine, engine-rest and engine-purge modules is started and is listening to port 48080
+* tomcat is with engine, engine-rest and engine-purge modules is started and is listening to port 8080
 for HTTP requests
 * elasticsearch is started and is listening to port 9300 for TCP connections, as well as as port 9200
 for HTTP connections
@@ -50,28 +55,22 @@ in order to debug your test locally you have the following options:
 If you just want to run all tests in one command without making additional
 efforts, just run the following:
 ```
-mvn -Pit clean verify
+mvn -Pproduction,it clean verify
 ```
 
-Elasticsearch and the engine are setup automatically.
+Elasticsearch and the engine are setup automatically through Docker.
 
 ### Run tests manually
 
 Especially, if you want to debug a test, it can make sense to setup the
 environment manually to step through a failing test case.
 
-First, run tomcat with the engine deployed:
+Start Tomcat with the engine deployed and Elasticsearch together using the following cmdline:
 ```
-mvn -Pit cargo:run
-```
-
-Second, run elastic search instance with proper configuration
-```
-mvn -Pit elasticsearch:runforked
-./target/elasticsearch0/bin/elasticsearch
+mvn -Pproduction,it pre-integration-test
 ```
 
-Now you should be able to run your tests in your preferred IDE.
+This basically spins up the integration test environment using Docker. Now you should be able to run your tests in your preferred IDE.
 
 ### Writing your own test
 

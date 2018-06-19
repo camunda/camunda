@@ -14,12 +14,9 @@ import org.glassfish.jersey.client.ClientProperties;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.junit.runners.model.TestTimedOutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.core.Response;
 import java.io.File;
@@ -38,13 +35,13 @@ import static org.junit.Assert.assertThat;
  * Verify that optimize is basically working even if ES connection
  * is not present or lost
  */
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/unit/applicationContext.xml"})
 public class ResilienceTest {
 
   private File esFolder;
   private Logger logger = LoggerFactory.getLogger(getClass());
 
+  public static final int ES_TRANSPORT_PORT = 9302;
+  public static final int ES_HTTP_PORT = 9202;
   public static final long TIMEOUT_CONNECTION_STATUS = 10_000;
 
   @After
@@ -91,7 +88,7 @@ public class ResilienceTest {
   public void testCrashOfEsDuringRuntime () throws Exception {
     //given
     Node testNode = elasticSearchTestNode();
-    EmbeddedOptimizeRule optimize = new EmbeddedOptimizeRule();
+    EmbeddedOptimizeRule optimize = new EmbeddedOptimizeRule("classpath:unit/applicationContext.xml");
     optimize.startOptimize();
 
     //then
@@ -157,11 +154,14 @@ public class ResilienceTest {
   public Node elasticSearchTestNode() throws NodeValidationException, IOException, InterruptedException {
     ArrayList<Class<? extends Plugin>> classpathPlugins = new ArrayList<>();
     classpathPlugins.add(Netty4Plugin.class);
+
     Node node = new MyNode(
         Settings.builder()
             .put("transport.type", "netty4")
+            .put("transport.tcp.port", ES_TRANSPORT_PORT)
             .put("http.type", "netty4")
             .put("http.enabled", "true")
+            .put("http.port", ES_HTTP_PORT)
             .put("path.home", esFolder.getAbsolutePath())
             .build(),
         classpathPlugins);

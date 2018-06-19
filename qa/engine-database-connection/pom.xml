@@ -8,7 +8,6 @@
         <version>2.1.0-SNAPSHOT</version>
     </parent>
 
-    <version>2.1.0-SNAPSHOT</version>
     <artifactId>engine-database-connection</artifactId>
     <packaging>jar</packaging>
 
@@ -28,7 +27,7 @@
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <version>1.4.190</version>
+            <version>1.4.196</version>
         </dependency>
 
     </dependencies>

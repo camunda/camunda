@@ -176,7 +176,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
           .prepareRefresh()
           .get();
     } catch (IndexNotFoundException e) {
-      //nothing to do
+      logger.error("should not happen", e);
     }
   }
 

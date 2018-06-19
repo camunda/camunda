@@ -8,9 +8,7 @@
     <version>2.1.0-SNAPSHOT</version>
   </parent>
 
-  <groupId>org.camunda.optimize</groupId>
   <artifactId>import-performance-tests</artifactId>
-  <version>2.1.0-SNAPSHOT</version>
 
   <dependencies>
     <dependency>
@@ -118,42 +116,8 @@
       <build>
         <plugins>
           <plugin>
-            <groupId>com.github.alexcojocaru</groupId>
-            <artifactId>elasticsearch-maven-plugin</artifactId>
-            <!-- REPLACE THE FOLLOWING WITH THE PLUGIN VERSION YOU NEED -->
-            <version>${elasticsearch.plugin.version}</version>
-            <configuration>
-              <version>${elasticsearch.version}</version>
-              <clusterName>elasticsearch</clusterName>
-              <transportPort>9300</transportPort>
-              <httpPort>9200</httpPort>
-              <timeout>60</timeout>
-              <skip>${skipTests}</skip>
-            </configuration>
-            <executions>
-              <!--
-                  The elasticsearch maven plugin goals are by default bound to the
-                  pre-integration-test and post-integration-test phases
-              -->
-              <execution>
-                <id>start-elasticsearch</id>
-                <phase>pre-integration-test</phase>
-                <goals>
-                  <goal>runforked</goal>
-                </goals>
-              </execution>
-              <execution>
-                <id>stop-elasticsearch</id>
-                <phase>post-integration-test</phase>
-                <goals>
-                  <goal>stop</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>
-            <version>${failsafe.version}</version>
             <executions>
               <execution>
                 <goals>
@@ -193,6 +157,7 @@
   <build>
     <plugins>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <executions>
           <execution>

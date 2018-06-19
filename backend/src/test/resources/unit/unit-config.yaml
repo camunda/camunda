@@ -12,6 +12,7 @@ import:
 container:
   checkMetadata: false
 es:
+  port: 9302
   sampler:
     interval: 100
 alerting:

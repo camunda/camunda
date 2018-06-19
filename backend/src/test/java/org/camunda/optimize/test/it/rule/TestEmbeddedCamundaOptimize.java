@@ -71,7 +71,10 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
    * optimize instance for all tests.
    */
   public static TestEmbeddedCamundaOptimize getInstance() {
-    return getInstance(DEFAULT_CONTEXT_LOCATION);
+    if (testOptimizeInstance == null) {
+      testOptimizeInstance = new TestEmbeddedCamundaOptimize(DEFAULT_CONTEXT_LOCATION);
+    }
+    return testOptimizeInstance;
   }
 
   /**
@@ -81,7 +84,7 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
    * @param contextLocation - must be not null
    * @return static instance of embedded Optimize
    */
-  private static TestEmbeddedCamundaOptimize getInstance(String contextLocation) {
+  public static TestEmbeddedCamundaOptimize getInstance(String contextLocation) {
     if (testOptimizeInstance == null) {
       testOptimizeInstance = new TestEmbeddedCamundaOptimize(contextLocation);
     }

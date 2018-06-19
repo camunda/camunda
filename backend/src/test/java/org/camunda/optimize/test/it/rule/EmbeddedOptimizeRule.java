@@ -40,6 +40,7 @@ import java.util.concurrent.CountDownLatch;
  */
 public class EmbeddedOptimizeRule extends TestWatcher {
 
+  private String context = null;
   private Logger logger = LoggerFactory.getLogger(EmbeddedOptimizeRule.class);
 
   /**
@@ -50,6 +51,12 @@ public class EmbeddedOptimizeRule extends TestWatcher {
    *
    * NOTE: this will not store indexes in the ES.
    */
+  public EmbeddedOptimizeRule() {}
+
+  public EmbeddedOptimizeRule(String context) {
+    this.context = context;
+  }
+
   public void scheduleAllJobsAndImportEngineEntities() {
 
     ElasticsearchImportJobExecutor elasticsearchImportJobExecutor = getElasticsearchImportJobExecutor();
@@ -132,7 +139,11 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
   private TestEmbeddedCamundaOptimize getOptimize() {
-    return TestEmbeddedCamundaOptimize.getInstance();
+    if (context != null) {
+      return TestEmbeddedCamundaOptimize.getInstance(context);
+    } else {
+      return TestEmbeddedCamundaOptimize.getInstance();
+    }
   }
 
   private ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {

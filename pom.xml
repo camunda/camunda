@@ -35,38 +35,63 @@
     <hamcrest.version>1.3</hamcrest.version>
     <junit.version>4.12</junit.version>
     <quartz.version>2.3.0</quartz.version>
-    <failsafe.version>2.20</failsafe.version>
 
     <logback.version>1.2.3</logback.version>
     <slf4j.version>1.7.25</slf4j.version>
+
+    <skip.docker>false</skip.docker>
+    <database>h2</database>
+    <docker.compose.file>docker-compose.yml</docker.compose.file>
   </properties>
 
   <profiles>
     <profile>
-      <id>production</id>
+      <id>engine-latest</id>
       <activation>
         <activeByDefault>true</activeByDefault>
       </activation>
       <properties>
         <camunda.engine.version>7.10.0-SNAPSHOT</camunda.engine.version>
-        <version.tomcat>9.0.5</version.tomcat>
+        <it.test.excludedGroups>org.camunda.optimize.test.it.Engine77</it.test.excludedGroups>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>engine-7.9</id>
+      <properties>
+        <camunda.engine.version>7.9.0</camunda.engine.version>
+        <it.test.excludedGroups>org.camunda.optimize.test.it.Engine77</it.test.excludedGroups>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>engine-7.8</id>
+      <properties>
+        <camunda.engine.version>7.8.0</camunda.engine.version>
         <it.test.excludedGroups>org.camunda.optimize.test.it.Engine77</it.test.excludedGroups>
       </properties>
     </profile>
 
     <profile>
       <id>engine-7.7</id>
-
       <properties>
         <camunda.engine.version>7.7.0</camunda.engine.version>
-        <version.tomcat>8.0.24</version.tomcat>
-        <it.test.excludedGroups>org.camunda.optimize.test.it.Engine78</it.test.excludedGroups>
       </properties>
+    </profile>
 
+    <profile>
+      <id>postgresql</id>
+      <properties>
+        <database>postgresql</database>
+        <docker.compose.file>docker-compose.postgresql.yml</docker.compose.file>
+      </properties>
     </profile>
 
     <profile>
       <id>release</id>
+      <properties>
+        <skip.docker>true</skip.docker>
+      </properties>
       <build>
         <plugins>
           <plugin>
@@ -145,6 +170,73 @@
       </build>
     </profile>
   </profiles>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>templating-maven-plugin</artifactId>
+          <version>1.0.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>build-helper-maven-plugin</artifactId>
+          <version>3.0.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>3.1.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>2.21.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-failsafe-plugin</artifactId>
+          <version>2.21.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-war-plugin</artifactId>
+          <version>3.2.1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <version>2.4.1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>3.1.1</version>
+        </plugin>
+        <plugin>
+          <groupId>com.webcohesion.enunciate</groupId>
+          <artifactId>enunciate-maven-plugin</artifactId>
+          <version>2.10.1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>exec-maven-plugin</artifactId>
+          <version>1.6.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-antrun-plugin</artifactId>
+          <version>1.8</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.cargo</groupId>
+          <artifactId>cargo-maven2-plugin</artifactId>
+          <version>1.6.8</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
 
   <distributionManagement>
     <snapshotRepository>

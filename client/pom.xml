@@ -33,14 +33,14 @@
       <build>
         <plugins>
           <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-antrun-plugin</artifactId>
-            <version>1.7</version>
             <executions>
               <execution>
                 <phase>generate-sources</phase>
                 <configuration>
                   <tasks>
-                    <exec executable="/bin/bash" failonerror="true">
+                    <exec executable="/bin/sh" failonerror="true">
                       <arg value="-i" />
                       <arg value="build_client.sh" />
                       <arg value="${project.basedir}" />
@@ -68,8 +68,8 @@
       <build>
         <plugins>
           <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-antrun-plugin</artifactId>
-            <version>1.7</version>
             <executions>
               <execution>
                 <phase>generate-sources</phase>

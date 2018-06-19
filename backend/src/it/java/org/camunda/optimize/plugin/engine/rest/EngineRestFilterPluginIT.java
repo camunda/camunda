@@ -1,20 +1,8 @@
 package org.camunda.optimize.plugin.engine.rest;
 
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.plugin.EngineRestFilterProvider;
-import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EngineConfiguration;
@@ -29,6 +17,17 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class EngineRestFilterPluginIT {
 
@@ -64,7 +63,10 @@ public class EngineRestFilterPluginIT {
     engineConfiguration.getAuthentication().setEnabled(true);
     engineConfiguration.getAuthentication().setPassword("kermit");
     engineConfiguration.getAuthentication().setUser("kermit");
-    engineConfiguration.setRest("http://localhost:48080/engine-rest-custom");
+    engineConfiguration.setRest(
+        engineConfiguration.getRest()
+        .replace("engine-rest", "engine-rest-custom")
+    );
     engineRule.addUser("kermit", "kermit");
     engineRule.grantAllAuthorizations("kermit");
     embeddedOptimizeRule.reloadConfiguration();
@@ -76,7 +78,10 @@ public class EngineRestFilterPluginIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     engineConfiguration.getAuthentication().setEnabled(false);
-    engineConfiguration.setRest("http://localhost:48080/engine-rest");
+    engineConfiguration.setRest(
+        engineConfiguration.getRest()
+        .replace("engine-rest-custom", "engine-rest")
+    );
 
     // then
     allEntriesInElasticsearchHaveAllData(elasticSearchRule.getProcessInstanceType());

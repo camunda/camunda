@@ -13,7 +13,6 @@
   <properties>
     <jetty.version>9.2.21.v20170120</jetty.version>
     <jersey.version>2.26</jersey.version>
-    <skip.elasticsearch>false</skip.elasticsearch>
     <skip.unit.tests>${skipTests}</skip.unit.tests>
   </properties>
 
@@ -337,12 +336,13 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.20</version>
         <configuration>
           <workingDirectory>${project.build.directory}</workingDirectory>
           <argLine>-Xmx1024m -XX:MaxPermSize=256m</argLine>
           <skipTests>${skip.unit.tests}</skipTests>
           <trimStackTrace>false</trimStackTrace>
+          <forkCount>${env.LIMITS_CPU:-1}</forkCount>
+          <reuseForks>true</reuseForks>
         </configuration>
       </plugin>
 
@@ -374,7 +374,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>2.4.3</version>
         <executions>
           <execution>
             <phase>package</phase>
@@ -427,9 +426,11 @@
     <testResources>
       <testResource>
         <directory>src/it/resources</directory>
+        <filtering>true</filtering>
       </testResource>
       <testResource>
         <directory>src/test/resources</directory>
+        <filtering>true</filtering>
       </testResource>
     </testResources>
   </build>
@@ -445,7 +446,6 @@
           <plugin>
             <groupId>com.webcohesion.enunciate</groupId>
             <artifactId>enunciate-maven-plugin</artifactId>
-            <version>2.10.1</version>
             <executions>
               <execution>
                 <goals>
@@ -454,7 +454,6 @@
                 <configuration>
                   <!-- the directory where to put the docs -->
                   <docsDir>${project.build.directory}/docs</docsDir>
-
                 </configuration>
               </execution>
             </executions>
@@ -489,25 +488,11 @@
     </profile>
 
     <profile>
-      <id>jenkins</id>
-      <properties>
-        <skip.elasticsearch>true</skip.elasticsearch>
-      </properties>
-    </profile>
-
-    <profile>
       <id>it</id>
 
       <properties>
-        <engine.runtime>${project.build.directory}/camunda-tomcat</engine.runtime>
-        <tomcat.runtime>${engine.runtime}/server/apache-tomcat-${version.tomcat}</tomcat.runtime>
+        <tomcat.connector.http.port>8080</tomcat.connector.http.port>
         <http.port>${tomcat.connector.http.port}</http.port>
-
-        <tomcat.connector.http.port>48080</tomcat.connector.http.port>
-        <tomcat.connector.http.redirectPort>48443</tomcat.connector.http.redirectPort>
-        <tomcat.connector.ajp.port>48009</tomcat.connector.ajp.port>
-        <tomcat.connector.ajp.redirectPort>48443</tomcat.connector.ajp.redirectPort>
-        <tomcat.server.port>48005</tomcat.server.port>
 
         <cargo.timeout>240000</cargo.timeout>
         <cargo.deploy.timeout>60000</cargo.deploy.timeout>
@@ -516,36 +501,17 @@
 
       <dependencies>
         <dependency>
-          <groupId>org.camunda.bpm.tomcat</groupId>
-          <artifactId>camunda-tomcat-assembly</artifactId>
-          <version>${camunda.engine.version}</version>
-          <type>tar.gz</type>
+          <groupId>com.h2database</groupId>
+          <artifactId>h2</artifactId>
+          <version>1.4.196</version>
           <scope>test</scope>
-          <exclusions>
-            <exclusion>
-              <artifactId>slf4j-api</artifactId>
-              <groupId>org.slf4j</groupId>
-            </exclusion>
-          </exclusions>
         </dependency>
-
         <dependency>
-          <groupId>org.camunda.bpm.webapp</groupId>
-          <artifactId>camunda-webapp-tomcat</artifactId>
-          <version>${camunda.engine.version}</version>
-          <type>war</type>
+          <groupId>org.postgresql</groupId>
+          <artifactId>postgresql</artifactId>
+          <version>42.2.2</version>
           <scope>test</scope>
         </dependency>
-
-        <dependency>
-          <groupId>org.camunda.bpm</groupId>
-          <artifactId>camunda-engine-rest</artifactId>
-          <scope>test</scope>
-          <type>war</type>
-          <classifier>tomcat</classifier>
-          <version>${camunda.engine.version}</version>
-        </dependency>
-
         <dependency>
           <groupId>org.camunda.optimize</groupId>
           <artifactId>engine-rest-secure</artifactId>
@@ -553,7 +519,6 @@
           <type>war</type>
           <version>${project.version}</version>
         </dependency>
-        
         <dependency>
           <groupId>org.camunda.optimize</groupId>
           <artifactId>engine-rest-custom</artifactId>
@@ -561,16 +526,6 @@
           <type>war</type>
           <version>${project.version}</version>
         </dependency>
-        
-
-        <dependency>
-          <groupId>org.camunda.bpm.example</groupId>
-          <artifactId>camunda-example-invoice</artifactId>
-          <scope>test</scope>
-          <type>war</type>
-          <version>${camunda.engine.version}</version>
-        </dependency>
-
         <dependency>
           <groupId>org.camunda.optimize</groupId>
           <artifactId>engine-purge</artifactId>
@@ -578,59 +533,19 @@
           <type>war</type>
           <version>${project.version}</version>
         </dependency>
-
         <dependency>
           <groupId>org.camunda.optimize</groupId>
           <artifactId>engine-database-connection</artifactId>
-          <scope>test</scope>
           <version>${project.version}</version>
+          <scope>test</scope>
         </dependency>
-
-
       </dependencies>
 
       <build>
         <plugins>
-
           <plugin>
-            <groupId>com.github.alexcojocaru</groupId>
-            <artifactId>elasticsearch-maven-plugin</artifactId>
-            <!-- REPLACE THE FOLLOWING WITH THE PLUGIN VERSION YOU NEED -->
-            <version>${elasticsearch.plugin.version}</version>
-            <configuration>
-              <version>${elasticsearch.version}</version>
-              <clusterName>elasticsearch</clusterName>
-              <transportPort>9300</transportPort>
-              <timeout>60</timeout>
-              <httpPort>9200</httpPort>
-              <pathConf>${project.basedir}/src/test/es_conf</pathConf>
-              <skip>${skip.elasticsearch}</skip>
-              <logLevel>ERROR</logLevel>
-            </configuration>
-            <executions>
-              <!--
-                  The elasticsearch maven plugin goals are by default bound to the
-                  pre-integration-test and post-integration-test phases
-              -->
-              <execution>
-                <id>start-elasticsearch</id>
-                <phase>pre-integration-test</phase>
-                <goals>
-                  <goal>runforked</goal>
-                </goals>
-              </execution>
-              <execution>
-                <id>stop-elasticsearch</id>
-                <phase>post-integration-test</phase>
-                <goals>
-                  <goal>stop</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>
-            <version>${failsafe.version}</version>
             <configuration>
               <excludedGroups>${it.test.excludedGroups}</excludedGroups>
               <redirectTestOutputToFile>true</redirectTestOutputToFile>
@@ -640,6 +555,12 @@
                   <value>org.camunda.optimize.test.it.rule.StartOptimizeExecutionListener</value>
                 </property>
               </properties>
+              <systemProperties>
+                <property>
+                  <name>database</name>
+                  <value>${database}</value>
+                </property>
+              </systemProperties>
             </configuration>
             <executions>
               <execution>
@@ -656,93 +577,121 @@
             <artifactId>maven-dependency-plugin</artifactId>
             <executions>
               <execution>
-                <phase>generate-resources</phase>
+                <id>copy-dependencies</id>
+                <phase>pre-integration-test</phase>
                 <goals>
-                  <goal>unpack</goal>
+                  <goal>copy-dependencies</goal>
                 </goals>
                 <configuration>
-                  <artifactItems>
-                    <artifactItem>
-                      <groupId>org.camunda.bpm.tomcat</groupId>
-                      <artifactId>camunda-tomcat-assembly</artifactId>
-                      <version>${camunda.engine.version}</version>
-                      <type>tar.gz</type>
-                      <outputDirectory>${engine.runtime}</outputDirectory>
-                      <overWrite>true</overWrite>
-                    </artifactItem>
-                  </artifactItems>
+                  <includeArtifactIds>engine-database-connection</includeArtifactIds>
+                  <outputDirectory>${project.build.directory}/qa-libs</outputDirectory>
+                  <overWriteReleases>false</overWriteReleases>
+                  <overWriteSnapshots>true</overWriteSnapshots>
+                  <excludeTransitive>true</excludeTransitive>
+                  <stripVersion>true</stripVersion>
                 </configuration>
               </execution>
             </executions>
           </plugin>
-
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>docker-start</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <configuration>
+                  <skip>${skip.docker}</skip>
+                  <executable>docker-compose</executable>
+                  <workingDirectory>..</workingDirectory>
+                  <arguments>
+                    <argument>-f</argument>
+                    <argument>${docker.compose.file}</argument>
+                    <argument>up</argument>
+                    <argument>-d</argument>
+                    <argument>--force-recreate</argument>
+                    <argument>--renew-anon-volumes</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+              <execution>
+                <id>docker-remove</id>
+                <phase>post-integration-test</phase>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <configuration>
+                  <skip>${skip.docker}</skip>
+                  <executable>docker-compose</executable>
+                  <workingDirectory>..</workingDirectory>
+                  <arguments>
+                    <argument>-f</argument>
+                    <argument>${docker.compose.file}</argument>
+                    <argument>rm</argument>
+                    <argument>-sfv</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>check-cambpm-is-up</id>
+                <phase>pre-integration-test</phase>
+                <configuration>
+                  <target name="check-cambpm-is-running" description="Check whether CamBPM is running">
+                    <echo message="Checking CamBPM is running"/>
+                    <waitfor maxwait="60" maxwaitunit="second" checkevery="1" checkeveryunit="second">
+                      <socket server="localhost" port="${tomcat.connector.http.port}" />
+                    </waitfor>
+                    <waitfor maxwait="60" maxwaitunit="second" checkevery="1" checkeveryunit="second">
+                      <http url="http://admin:admin@localhost:${tomcat.connector.http.port}/manager/text/list"/>
+                    </waitfor>
+                    <echo message="CamBPM is running"/>
+                  </target>
+                </configuration>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
           <plugin>
             <groupId>org.codehaus.cargo</groupId>
             <artifactId>cargo-maven2-plugin</artifactId>
-            <version>1.6.2</version>
             <executions>
               <execution>
                 <id>start-container</id>
                 <phase>pre-integration-test</phase>
                 <goals>
-                  <goal>start</goal>
-                </goals>
-              </execution>
-              <execution>
-                <id>stop-container</id>
-                <phase>post-integration-test</phase>
-                <goals>
-                  <goal>stop</goal>
+                  <goal>deploy</goal>
                 </goals>
               </execution>
             </executions>
             <configuration>
               <!-- Container configuration -->
               <container>
-                <type>installed</type>
+                <type>remote</type>
                 <containerId>tomcat8x</containerId>
-                <append>false</append>
-                <home>${tomcat.runtime}</home>
-                <timeout>${cargo.timeout}</timeout>
-                <log>${tomcat.runtime}/logs/catalina.out</log>
-                <dependencies>
-                  <dependency>
-                    <groupId>org.camunda.optimize</groupId>
-                    <artifactId>engine-database-connection</artifactId>
-                  </dependency>
-                </dependencies>
               </container>
               <configuration>
-                <type>standalone</type>
-                <home>${project.build.directory}/cargo-config-tomcat</home>
+                <type>runtime</type>
                 <properties>
+                  <cargo.remote.username>admin</cargo.remote.username>
+                  <cargo.remote.password>admin</cargo.remote.password>
                   <cargo.servlet.port>${tomcat.connector.http.port}</cargo.servlet.port>
-                  <cargo.tomcat.ajp.port>${tomcat.connector.ajp.port}</cargo.tomcat.ajp.port>
-                  <cargo.start.jvmargs>-Djava.security.egd=file:/dev/./urandom</cargo.start.jvmargs>
                 </properties>
-                <files>
-                  <copy>
-                    <configfile>true</configfile>
-                    <file>${project.basedir}/src/test/resources/tomcat/bpm-platform.xml</file>
-                    <tofile>conf/bpm-platform.xml</tofile>
-                    <overwrite>true</overwrite>
-                  </copy>
-                </files>
               </configuration>
+              <deployer>
+                <type>remote</type>
+              </deployer>
               <deployables>
-                <deployable>
-                  <groupId>org.camunda.bpm</groupId>
-                  <artifactId>camunda-engine-rest</artifactId>
-                  <type>war</type>
-                  <classifier>tomcat</classifier>
-                  <pingURL>
-                    http://localhost:${tomcat.connector.http.port}/engine-rest/engine/default/process-definition
-                  </pingURL>
-                  <pingTimeout>${cargo.deploy.timeout}</pingTimeout>
-                  <properties>
-                    <context>engine-rest</context>
-                  </properties>
-                </deployable>
                 <deployable>
                   <groupId>org.camunda.optimize</groupId>
                   <artifactId>engine-rest-secure</artifactId>
@@ -768,24 +717,6 @@
                   </properties>
                 </deployable>
                 <deployable>
-                  <groupId>org.camunda.bpm.webapp</groupId>
-                  <artifactId>camunda-webapp-tomcat</artifactId>
-                  <type>war</type>
-                  <pingURL>http://localhost:${tomcat.connector.http.port}/camunda</pingURL>
-                  <pingTimeout>${cargo.deploy.timeout}</pingTimeout>
-                  <properties>
-                    <context>camunda</context>
-                  </properties>
-                </deployable>
-                <deployable>
-                  <groupId>org.camunda.bpm.example</groupId>
-                  <artifactId>camunda-example-invoice</artifactId>
-                  <type>war</type>
-                  <properties>
-                    <context>invoice</context>
-                  </properties>
-                </deployable>
-                <deployable>
                   <groupId>org.camunda.optimize</groupId>
                   <artifactId>engine-purge</artifactId>
                   <type>war</type>
@@ -794,7 +725,6 @@
                   </properties>
                 </deployable>
               </deployables>
-              <wait>false</wait>
             </configuration>
           </plugin>
         </plugins>
@@ -814,63 +744,6 @@
             <filtering>true</filtering>
           </resource>
         </resources>
-      </build>
-    </profile>
-
-    <profile>
-      <!-- should be activated with IT profile simultaneously,
-       since properties are taken from there -->
-      <id>package-engine</id>
-
-      <build>
-        <plugins>
-
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-assembly-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>unpack-engine</id>
-                <phase>generate-resources</phase>
-                <goals>
-                  <goal>single</goal>
-                </goals>
-                <configuration>
-                  <attach>false</attach>
-                  <descriptors>
-                    <descriptor>unpack-engine-webapps.xml</descriptor>
-                  </descriptors>
-                  <archiveBaseDirectory>/</archiveBaseDirectory>
-                  <appendAssemblyId>false</appendAssemblyId>
-                  <outputDirectory>${engine.runtime}</outputDirectory>
-                  <tarLongFileMode>gnu</tarLongFileMode>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-antrun-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>prepare</id>
-                <phase>generate-resources</phase>
-                <configuration>
-                  <tasks>
-                    <echo message="unpacking engine-rest" />
-                    <unzip src="target/camunda-tomcat/${project.build.finalName}.zip" dest="target/camunda-tomcat/" />
-                    <delete file="target/camunda-tomcat/${project.build.finalName}.zip" />
-                  </tasks>
-                </configuration>
-                <goals>
-                  <goal>run</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-
-        </plugins>
       </build>
     </profile>
   </profiles>

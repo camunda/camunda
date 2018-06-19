@@ -8,10 +8,7 @@
     <version>2.1.0-SNAPSHOT</version>
   </parent>
 
-  <groupId>org.camunda.optimize</groupId>
   <artifactId>upgrade-optimize</artifactId>
-  <version>2.1.0-SNAPSHOT</version>
-
 
   <dependencyManagement>
     <dependencies>
@@ -37,7 +34,7 @@
     <dependency>
       <groupId>org.camunda.optimize</groupId>
       <artifactId>optimize-backend</artifactId>
-      <version>${parent.version}</version>
+      <version>${project.parent.version}</version>
       <exclusions>
         <exclusion>
           <artifactId>spring-beans</artifactId>
@@ -57,16 +54,6 @@
       <groupId>org.elasticsearch.client</groupId>
       <artifactId>elasticsearch-rest-client</artifactId>
       <version>${elasticsearch.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.fasterxml.jackson.datatype</groupId>
-      <artifactId>jackson-datatype-jsr310</artifactId>
     </dependency>
 
     <dependency>
@@ -106,7 +93,6 @@
       <artifactId>json-path</artifactId>
       <version>${jsonpath.version}</version>
     </dependency>
-
   </dependencies>
 
   <build>
@@ -134,7 +120,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>3.1.1</version>
         <executions>
           <execution>
             <phase>package</phase>
@@ -153,43 +138,6 @@
       </plugin>
 
       <plugin>
-        <groupId>com.github.alexcojocaru</groupId>
-        <artifactId>elasticsearch-maven-plugin</artifactId>
-        <!-- REPLACE THE FOLLOWING WITH THE PLUGIN VERSION YOU NEED -->
-        <version>${elasticsearch.plugin.version}</version>
-        <configuration>
-          <version>${elasticsearch.version}</version>
-          <clusterName>elasticsearch</clusterName>
-          <transportPort>9300</transportPort>
-          <timeout>60</timeout>
-          <httpPort>9200</httpPort>
-          <pathConf>${project.basedir}/src/test/es_conf</pathConf>
-          <skip>${skip.elasticsearch}</skip>
-          <logLevel>ERROR</logLevel>
-        </configuration>
-        <executions>
-          <!--
-              The elasticsearch maven plugin goals are by default bound to the
-              pre-integration-test and post-integration-test phases
-          -->
-          <execution>
-            <id>start-elasticsearch</id>
-            <phase>test-compile</phase>
-            <goals>
-              <goal>runforked</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>stop-elasticsearch</id>
-            <phase>package</phase>
-            <goals>
-              <goal>stop</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>templating-maven-plugin</artifactId>
         <executions>
@@ -197,6 +145,73 @@
             <id>filtering-java-templates</id>
             <goals>
               <goal>filter-sources</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>docker-start</id>
+            <phase>test-compile</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <skip>${skip.docker}</skip>
+              <executable>docker-compose</executable>
+              <workingDirectory>..</workingDirectory>
+              <arguments>
+                <argument>up</argument>
+                <argument>-d</argument>
+                <argument>--force-recreate</argument>
+                <argument>--renew-anon-volumes</argument>
+                <argument>elasticsearch</argument>
+               </arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>docker-stop</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <skip>${skip.docker}</skip>
+              <executable>docker-compose</executable>
+              <workingDirectory>..</workingDirectory>
+              <arguments>
+                <argument>rm</argument>
+                <argument>-sfv</argument>
+              </arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>check-es-is-up</id>
+            <phase>test-compile</phase>
+            <configuration>
+              <target name="check-es-is-up" description="Check whether ES is running">
+                <echo message="Check ES is running"/>
+                <waitfor maxwait="60" maxwaitunit="second" checkevery="1" checkeveryunit="second">
+                  <socket server="localhost" port="9200"/>
+                </waitfor>
+                <waitfor maxwait="60" maxwaitunit="second" checkevery="1" checkeveryunit="second">
+                  <http url="http://localhost:9200/_cluster/state"/>
+                </waitfor>
+                <echo message="ES is running"/>
+              </target>
+            </configuration>
+            <goals>
+              <goal>run</goal>
             </goals>
           </execution>
         </executions>

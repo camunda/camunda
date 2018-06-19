@@ -17,10 +17,10 @@
       <property name="authorizationEnabled">true</property>
       <property name="jobExecutorDeploymentAware">true</property>
 
-      <property name="jdbcUrl">jdbc:h2:mem:camunda1;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE</property>
-      <property name="jdbcDriver">org.h2.Driver</property>
-      <property name="jdbcUsername">sa</property>
-      <property name="jdbcPassword"></property>
+      <property name="jdbcUrl">jdbc:postgresql://postgres:5432/engine</property>
+      <property name="jdbcDriver">org.postgresql.Driver</property>
+      <property name="jdbcUsername">camunda</property>
+      <property name="jdbcPassword">camunda</property>
 
     </properties>
 
@@ -39,11 +39,6 @@
       <plugin>
         <class>org.camunda.connect.plugin.impl.ConnectProcessEnginePlugin</class>
       </plugin>
-
-      <plugin>
-        <class>org.camunda.bpm.platform.plugin.database.connection.DatabaseConnectionPlugin</class>
-      </plugin>
-
     </plugins>
   </process-engine>
 
@@ -61,7 +56,6 @@
       <property name="jdbcDriver">org.h2.Driver</property>
       <property name="jdbcUsername">sa</property>
       <property name="jdbcPassword"></property>
-
     </properties>
 
     <plugins>
@@ -79,10 +73,7 @@
       <plugin>
         <class>org.camunda.connect.plugin.impl.ConnectProcessEnginePlugin</class>
       </plugin>
-
-
     </plugins>
-
 
   </process-engine>
 

@@ -46,6 +46,8 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 
 public class ImportIT  {
 
+  public static final String HTTP_LOCALHOST = "http://localhost:8080";
+  
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -89,7 +91,7 @@ public class ImportIT  {
     engineConfiguration.getAuthentication().setEnabled(true);
     engineConfiguration.getAuthentication().setPassword("kermit");
     engineConfiguration.getAuthentication().setUser("kermit");
-    engineConfiguration.setRest("http://localhost:48080/engine-rest-secure");
+    engineConfiguration.setRest(HTTP_LOCALHOST + "/engine-rest-secure");
     engineRule.addUser("kermit", "kermit");
     engineRule.grantAllAuthorizations("kermit");
     embeddedOptimizeRule.reloadConfiguration();
@@ -100,7 +102,7 @@ public class ImportIT  {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     engineConfiguration.getAuthentication().setEnabled(false);
-    engineConfiguration.setRest("http://localhost:48080/engine-rest");
+    engineConfiguration.setRest(HTTP_LOCALHOST + "/engine-rest");
 
     //then
     allEntriesInElasticsearchHaveAllData(elasticSearchRule.getProcessInstanceType());

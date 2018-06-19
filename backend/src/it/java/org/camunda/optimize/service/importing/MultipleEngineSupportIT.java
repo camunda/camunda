@@ -41,8 +41,9 @@ import static org.hamcrest.core.IsNull.notNullValue;
 
 public class MultipleEngineSupportIT {
 
-  private static final String REST_ENDPOINT = "http://localhost:48080/engine-rest";
-  private static final String SECURE_REST_ENDPOINT = "http://localhost:48080/engine-rest-secure";
+  private static final String REST_ENDPOINT = "http://localhost:8080/engine-rest";
+  private static final String SECURE_REST_ENDPOINT = "http://localhost:8080/engine-rest-secure";
+
   private final String SECOND_ENGINE_ALIAS = "secondTestEngine";
   private EngineIntegrationRule defaultEngineRule = new EngineIntegrationRule();
   private EngineIntegrationRule secondEngineRule =
