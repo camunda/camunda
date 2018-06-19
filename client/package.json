@@ -31,6 +31,7 @@
     "build-js": "react-scripts build",
     "build": "npm-run-all build-css build-js",
     "test": "react-scripts test --env=jsdom",
+    "test:ci": "CI=true react-scripts test --env=jsdom --maxWorkers=$LIMITS_CPU --ci --testResultsProcessor='jest-junit'",
     "eject": "react-scripts eject",
     "postinstall": "node scripts/wireModules",
     "start-backend": "node scripts/start-backend",
@@ -42,6 +43,14 @@
       "git add"
     ]
   },
+  "jest-junit": {
+    "suiteName": "client",
+    "output": "./jest-test-results.xml",
+    "suiteNameTemplate": "{filename}",
+    "classNameTemplate": "client.{filename}",
+    "titleTemplate": "{title}",
+    "ancestorSeparator": " @ "
+  },
   "devDependencies": {
     "camunda-bpm-sdk-js": "camunda/camunda-bpm-sdk-js",
     "chalk": "^2.1.0",
@@ -50,6 +59,7 @@
     "eslint-plugin-prettier": "^2.6.0",
     "husky": "^0.14.3",
     "jest-enzyme": "^4.0.1",
+    "jest-junit": "^5.0.0",
     "js-yaml": "^3.10.0",
     "license-checker": "^14.0.0",
     "lint-staged": "^7.0.0",
