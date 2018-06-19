@@ -35,7 +35,7 @@ export const CompletedIcon = styled(StateCompleted)`
   })};
 `;
 
-export const CanceledIcon = styled(Stop)`
+export const CancelledIcon = styled(Stop)`
   ${iconPosition};
   color: ${themeStyle({
     dark: '#ffffff',
