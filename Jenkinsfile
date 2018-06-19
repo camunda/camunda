@@ -44,6 +44,7 @@ pipeline {
         }
 
         stage('Deploy') {
+            when { branch 'develop' }
             steps {
                 withMaven(jdk: jdkVersion, maven: mavenVersion, mavenSettingsConfig: mavenSettingsConfig) {
                     sh 'mvn -B generate-sources source:jar javadoc:jar deploy -DskipTests'
