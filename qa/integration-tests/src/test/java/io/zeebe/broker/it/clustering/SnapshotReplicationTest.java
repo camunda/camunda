@@ -20,6 +20,7 @@ import static io.zeebe.broker.logstreams.LogStreamServiceNames.snapshotStorageSe
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logBlockIndexWriterService;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.UnstableCI;
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.api.commands.Partition;
@@ -36,9 +37,11 @@ import java.util.Arrays;
 import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
+@Category(UnstableCI.class)
 public class SnapshotReplicationTest {
   private static final String BROKER_1_TOML = "zeebe.cluster.snapshotReplication.1.cfg.toml";
   private static final String BROKER_2_TOML = "zeebe.cluster.snapshotReplication.2.cfg.toml";

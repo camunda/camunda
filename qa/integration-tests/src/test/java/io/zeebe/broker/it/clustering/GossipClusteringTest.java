@@ -17,6 +17,7 @@ package io.zeebe.broker.it.clustering;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.UnstableCI;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.api.commands.BrokerInfo;
 import io.zeebe.test.util.AutoCloseableRule;
@@ -24,10 +25,11 @@ import io.zeebe.transport.SocketAddress;
 import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
-/** */
+@Category(UnstableCI.class)
 public class GossipClusteringTest {
   private static final int PARTITION_COUNT = 5;
 
