@@ -62,7 +62,9 @@ def seedJob = job('seed-job-optimize') {
       unstableOnDeprecation(true)
       sandbox(true)
     }
-    systemGroovyCommand(setBrokenViewAsDefault)
+    systemGroovyCommand(setBrokenViewAsDefault) {
+      sandbox(true)
+    }
   }
 
   wrappers {
