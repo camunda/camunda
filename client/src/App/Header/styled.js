@@ -51,11 +51,11 @@ export const ListLink = themed(styled.span`
   }
 `);
 
-export const Detail = styled.span`
+export const Detail = themed(styled.span`
   padding-left: 20px;
   margin-left: 20px;
   border-left: 1px solid ${separator};
-`;
+`);
 
 export const ProfileDropdown = styled.span`
   margin-right: 8px;
