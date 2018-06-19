@@ -1,52 +1,91 @@
-import React from 'react';
-export const Batch = jest.fn();
-export const StateIconIncident = jest.fn();
-export const StateOk = jest.fn();
-export const StateCompleted = jest.fn();
-export const Stop = jest.fn();
-export const Check = jest.fn();
-export const CloseLarge = jest.fn();
-export const Close = jest.fn();
-export const Date = jest.fn();
-export const Delete = jest.fn();
-export const DiagramReset = jest.fn();
-export const Document = jest.fn();
-export const DownBar = jest.fn();
-export const Down = jest.fn();
-export const Edit = jest.fn();
-export const FlownodeActivityIncident = jest.fn();
-export const FlownodeActivity = jest.fn();
-export const FlownodeEventCompleted = jest.fn();
-export const FlownodeEventIncident = jest.fn();
-export const FlownodeEvent = jest.fn();
-export const FlownodeGatewayCompleted = jest.fn();
-export const FlownodeGatewayIncident = jest.fn();
-export const FlownodeGateway = jest.fn();
-export const InstanceHistoryIconCancelDark = jest.fn();
-export const InstanceHistoryIconCancelLight = jest.fn();
-export const InstanceHistoryIconEditDark = jest.fn();
-export const InstanceHistoryIconEditLight = jest.fn();
-export const InstanceHistoryIconErrorCancel = jest.fn();
-export const InstanceHistoryIconErrorRetry = jest.fn();
-export const InstanceHistoryIconIncidentActive = jest.fn();
-export const InstanceHistoryIconIncidentDark = jest.fn();
-export const InstanceHistoryIconIncidentLight = jest.fn();
-export const InstanceHistoryIconRetryDark = jest.fn();
-export const InstanceHistoryIconRetryLight = jest.fn();
-export const LeftBar = jest.fn();
-export const Left = jest.fn();
-export const Logo = jest.fn();
-export const Minus = jest.fn();
-export const PlusCircledSolid = jest.fn();
-export const PlusCircled = jest.fn();
-export const Plus = jest.fn();
-export const RemoveItem = jest.fn();
-export const Retry = jest.fn();
-export const RightBar = jest.fn();
-export const Right = jest.fn();
-export const SelectAll = jest.fn();
-export const StateIconFlownodeActivityIncident = jest.fn();
-export const StateIconGatewayIncident = jest.fn();
-export const UpBar = jest.fn();
-export const Up = jest.fn();
-export const Warning = jest.fn();
+const generateMockIcon = (displayName = 'Icon') => {
+  const IconComponent = jest.fn();
+  IconComponent.displayName = displayName;
+  return IconComponent;
+};
+
+export const Batch = generateMockIcon('Batch');
+export const StateIconIncident = generateMockIcon('StateIconIncident');
+export const StateOk = generateMockIcon('StateOk');
+export const StateCompleted = generateMockIcon('StateCompleted');
+export const Stop = generateMockIcon('Stop');
+export const Check = generateMockIcon('Check');
+export const CloseLarge = generateMockIcon('CloseLarge');
+export const Close = generateMockIcon('Close');
+export const Date = generateMockIcon('Date');
+export const Delete = generateMockIcon('Delete');
+export const DiagramReset = generateMockIcon('DiagramReset');
+export const Document = generateMockIcon('Document');
+export const DownBar = generateMockIcon('DownBar');
+export const Down = generateMockIcon('Down');
+export const Edit = generateMockIcon('Edit');
+export const FlownodeActivityIncident = generateMockIcon(
+  'FlownodeActivityIncident'
+);
+export const FlownodeActivity = generateMockIcon('FlownodeActivity');
+export const FlownodeEventCompleted = generateMockIcon(
+  'FlownodeEventCompleted'
+);
+export const FlownodeEventIncident = generateMockIcon('FlownodeEventIncident');
+export const FlownodeEvent = generateMockIcon('FlownodeEvent');
+export const FlownodeGatewayCompleted = generateMockIcon(
+  'FlownodeGatewayCompleted'
+);
+export const FlownodeGatewayIncident = generateMockIcon(
+  'FlownodeGatewayIncident'
+);
+export const FlownodeGateway = generateMockIcon('FlownodeGateway');
+export const InstanceHistoryIconCancelDark = generateMockIcon(
+  'InstanceHistoryIconCancelDark'
+);
+export const InstanceHistoryIconCancelLight = generateMockIcon(
+  'InstanceHistoryIconCancelLight'
+);
+export const InstanceHistoryIconEditDark = generateMockIcon(
+  'InstanceHistoryIconEditDark'
+);
+export const InstanceHistoryIconEditLight = generateMockIcon(
+  'InstanceHistoryIconEditLight'
+);
+export const InstanceHistoryIconErrorCancel = generateMockIcon(
+  'InstanceHistoryIconErrorCancel'
+);
+export const InstanceHistoryIconErrorRetry = generateMockIcon(
+  'InstanceHistoryIconErrorRetry'
+);
+export const InstanceHistoryIconIncidentActive = generateMockIcon(
+  'InstanceHistoryIconIncidentActive'
+);
+export const InstanceHistoryIconIncidentDark = generateMockIcon(
+  'InstanceHistoryIconIncidentDark'
+);
+export const InstanceHistoryIconIncidentLight = generateMockIcon(
+  'InstanceHistoryIconIncidentLight'
+);
+export const InstanceHistoryIconRetryDark = generateMockIcon(
+  'InstanceHistoryIconRetryDark'
+);
+export const InstanceHistoryIconRetryLight = generateMockIcon(
+  'InstanceHistoryIconRetryLight'
+);
+export const LeftBar = generateMockIcon('LeftBar');
+export const Left = generateMockIcon('Left');
+export const Logo = generateMockIcon('Logo');
+export const Minus = generateMockIcon('Minus');
+export const PlusCircledSolid = generateMockIcon('PlusCircledSolid');
+export const PlusCircled = generateMockIcon('PlusCircled');
+export const Plus = generateMockIcon('Plus');
+export const RemoveItem = generateMockIcon('RemoveItem');
+export const Retry = generateMockIcon('Retry');
+export const RightBar = generateMockIcon('RightBar');
+export const Right = generateMockIcon('Right');
+export const SelectAll = generateMockIcon('SelectAll');
+export const StateIconFlownodeActivityIncident = generateMockIcon(
+  'StateIconFlownodeActivityIncident'
+);
+export const StateIconGatewayIncident = generateMockIcon(
+  'StateIconGatewayIncident'
+);
+export const UpBar = generateMockIcon('UpBar');
+export const Up = generateMockIcon('Up');
+export const Warning = generateMockIcon('Warning');
