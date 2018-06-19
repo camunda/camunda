@@ -1,0 +1,21 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`DiagramControls should render diagram controls 1`] = `
+<styled.div>
+  <Styled(Themed(styled.button))
+    onClick={[Function]}
+  >
+    <DiagramReset />
+  </Styled(Themed(styled.button))>
+  <Themed(Styled(Themed(styled.button)))
+    onClick={[Function]}
+  >
+    <Plus />
+  </Themed(Styled(Themed(styled.button)))>
+  <Themed(Styled(Themed(styled.button)))
+    onClick={[Function]}
+  >
+    <Minus />
+  </Themed(Styled(Themed(styled.button)))>
+</styled.div>
+`;

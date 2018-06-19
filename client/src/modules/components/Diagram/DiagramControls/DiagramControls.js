@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 import {DiagramReset, Plus, Minus} from 'modules/components/Icon';
 
@@ -23,3 +24,9 @@ export default function DiagramControls({
     </Styled.DiagramControls>
   );
 }
+
+DiagramControls.propTypes = {
+  handleZoomReset: PropTypes.func.isRequired,
+  handleZoomIn: PropTypes.func.isRequired,
+  handleZoomOut: PropTypes.func.isRequired
+};
