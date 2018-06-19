@@ -69,7 +69,6 @@ public class SchemaInitializerIT {
     assertTypeExists(embeddedOptimizeRule.getConfigurationService().getDurationHeatmapTargetValueType());
     assertTypeExists(embeddedOptimizeRule.getConfigurationService().getImportIndexType());
     assertTypeExists(embeddedOptimizeRule.getConfigurationService().getProcessDefinitionType());
-    assertTypeExists(embeddedOptimizeRule.getConfigurationService().getProcessDefinitionXmlType());
   }
 
   private void assertTypeExists(String type) {

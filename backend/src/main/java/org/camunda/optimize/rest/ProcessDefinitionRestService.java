@@ -1,8 +1,8 @@
 package org.camunda.optimize.rest;
 
+import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
-import org.camunda.optimize.dto.optimize.query.definition.ExtendedProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.definition.ProcessDefinitionGroupOptimizeDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.es.reader.BranchAnalysisReader;
@@ -44,7 +44,7 @@ public class ProcessDefinitionRestService {
    */
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public Collection<ExtendedProcessDefinitionOptimizeDto> getProcessDefinitions(
+  public Collection<ProcessDefinitionOptimizeDto> getProcessDefinitions(
       @Context ContainerRequestContext requestContext,
       @QueryParam("includeXml") boolean includeXml) {
 

@@ -39,7 +39,6 @@ public interface ConfigurationServiceConstants {
   String PROCESS_INSTANCE_TYPE = "$.import.data.process-instance.elasticsearchType";
   String DURATION_HEATMAP_TARGET_VALUE_TYPE = "$.es.heatmap.duration.targetValueType";
   String PROCESS_DEFINITION_TYPE = "$.import.data.process-definition.elasticsearchType";
-  String PROCESS_DEFINITION_XML_TYPE = "$.import.data.process-definition-xml.elasticsearchType";
   String IMPORT_INDEX_TYPE = "$.import.indexType";
   String IMPORT_INDEX_AUTO_STORAGE_INTERVAL = "$.import.importIndexStorageIntervalInSec";
   String LICENSE_TYPE = "$.es.licenseType";

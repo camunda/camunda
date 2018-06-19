@@ -1,13 +1,12 @@
 package org.camunda.optimize.service.es.report.command;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionXmlOptimizeDto;
+import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.service.es.filter.QueryFilterEnhancer;
 import org.camunda.optimize.service.es.report.command.util.ReportConstants;
-import org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -23,9 +22,10 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType.BPMN_20_XML;
-import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType.ENGINE;
-import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType.PROCESS_DEFINITION_ID;
+import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.ENGINE;
+import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.FLOW_NODE_NAMES;
+import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_ID;
+import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_XML;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
@@ -67,8 +67,8 @@ public abstract class ReportCommand <T extends ReportResultDto>  implements Comm
     return query;
   }
 
-  protected ProcessDefinitionXmlOptimizeDto fetchLatestDefinitionXml() {
-    ProcessDefinitionXmlOptimizeDto result = null;
+  protected ProcessDefinitionOptimizeDto fetchLatestDefinitionXml() {
+    ProcessDefinitionOptimizeDto result = null;
     BoolQueryBuilder query = boolQuery()
         .must(termQuery("processDefinitionKey", reportData.getProcessDefinitionKey()));
 
@@ -88,18 +88,18 @@ public abstract class ReportCommand <T extends ReportResultDto>  implements Comm
         String processDefinitionId = processInstanceDto.getProcessDefinitionId();
 
         GetResponse response = esclient.prepareGet(
-            configurationService.getOptimizeIndex(configurationService.getProcessDefinitionXmlType()),
-            configurationService.getProcessDefinitionXmlType(),
+            configurationService.getOptimizeIndex(configurationService.getProcessDefinitionType()),
+            configurationService.getProcessDefinitionType(),
             processDefinitionId)
             .get();
 
-        result = new ProcessDefinitionXmlOptimizeDto ();
-        result.setBpmn20Xml(response.getSource().get(BPMN_20_XML).toString());
-        result.setProcessDefinitionId(response.getSource().get(PROCESS_DEFINITION_ID).toString());
+        result = new ProcessDefinitionOptimizeDto ();
+        result.setBpmn20Xml(response.getSource().get(PROCESS_DEFINITION_XML).toString());
+        result.setId(response.getSource().get(PROCESS_DEFINITION_ID).toString());
         if (response.getSource().get(ENGINE) != null) {
           result.setEngine(response.getSource().get(ENGINE).toString());
         }
-        result.setFlowNodeNames((Map<String, String>) response.getSource().get(ProcessDefinitionXmlType.FLOW_NODE_NAMES));
+        result.setFlowNodeNames((Map<String, String>) response.getSource().get(FLOW_NODE_NAMES));
 
       } catch (IOException e) {
         logger.error("can't parse process instance", e);

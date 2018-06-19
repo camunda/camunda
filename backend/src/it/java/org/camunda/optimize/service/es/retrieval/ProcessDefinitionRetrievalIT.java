@@ -3,7 +3,7 @@ package org.camunda.optimize.service.es.retrieval;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.definition.ExtendedProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -20,6 +20,7 @@ import java.util.List;
 
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.ALL_VERSIONS;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 
@@ -55,15 +56,15 @@ public class ProcessDefinitionRetrievalIT {
             .request()
             .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .get();
-    List<ExtendedProcessDefinitionOptimizeDto> definitions =
-        response.readEntity(new GenericType<List<ExtendedProcessDefinitionOptimizeDto>>() {
+    List<ProcessDefinitionOptimizeDto> definitions =
+        response.readEntity(new GenericType<List<ProcessDefinitionOptimizeDto>>() {
         });
 
     assertThat(definitions.size(), is(11));
   }
 
   @Test
-  public void getProcessDefinitions() throws Exception {
+  public void getProcessDefinitionsWithoutXml() throws Exception {
 
     // given
     String processId = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
@@ -74,11 +75,12 @@ public class ProcessDefinitionRetrievalIT {
     // when
     Response response =
         embeddedOptimizeRule.target("process-definition")
+            .queryParam("includeXml", false)
             .request()
             .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .get();
-    List<ExtendedProcessDefinitionOptimizeDto> definitions =
-        response.readEntity(new GenericType<List<ExtendedProcessDefinitionOptimizeDto>>() {
+    List<ProcessDefinitionOptimizeDto> definitions =
+        response.readEntity(new GenericType<List<ProcessDefinitionOptimizeDto>>() {
         });
 
     // then
@@ -86,6 +88,7 @@ public class ProcessDefinitionRetrievalIT {
     assertThat(definitions.size(), is(1));
     assertThat(definitions.get(0).getId(), is(processDefinitionId));
     assertThat(definitions.get(0).getKey(), is(processId));
+    assertThat(definitions.get(0).getBpmn20Xml(), nullValue());
   }
 
   @Test
@@ -110,8 +113,8 @@ public class ProcessDefinitionRetrievalIT {
             .request()
             .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .get();
-    List<ExtendedProcessDefinitionOptimizeDto> definitions =
-        response.readEntity(new GenericType<List<ExtendedProcessDefinitionOptimizeDto>>() {
+    List<ProcessDefinitionOptimizeDto> definitions =
+        response.readEntity(new GenericType<List<ProcessDefinitionOptimizeDto>>() {
         });
 
     // then
@@ -137,8 +140,8 @@ public class ProcessDefinitionRetrievalIT {
             .request()
             .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .get();
-    List<ExtendedProcessDefinitionOptimizeDto> definitions =
-        response.readEntity(new GenericType<List<ExtendedProcessDefinitionOptimizeDto>>() {
+    List<ProcessDefinitionOptimizeDto> definitions =
+        response.readEntity(new GenericType<List<ProcessDefinitionOptimizeDto>>() {
         });
 
     // then

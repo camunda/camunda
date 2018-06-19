@@ -4,7 +4,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
-import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionXmlOptimizeDto;
+import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
@@ -43,9 +43,9 @@ public class ProcessDefinitionXmlImportService {
 
     boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
-      List<ProcessDefinitionXmlOptimizeDto> newOptimizeEntities =
+      List<ProcessDefinitionOptimizeDto> newOptimizeEntities =
         mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
-      ElasticsearchImportJob<ProcessDefinitionXmlOptimizeDto> elasticsearchImportJob =
+      ElasticsearchImportJob<ProcessDefinitionOptimizeDto> elasticsearchImportJob =
         createElasticsearchImportJob(newOptimizeEntities);
       addElasticsearchImportJobToQueue(elasticsearchImportJob);
     }
@@ -59,23 +59,23 @@ public class ProcessDefinitionXmlImportService {
     }
   }
 
-  private List<ProcessDefinitionXmlOptimizeDto> mapEngineEntitiesToOptimizeEntities(List<ProcessDefinitionXmlEngineDto> engineEntities) {
+  private List<ProcessDefinitionOptimizeDto> mapEngineEntitiesToOptimizeEntities(List<ProcessDefinitionXmlEngineDto> engineEntities) {
     return engineEntities
       .stream().map(this::mapEngineEntityToOptimizeEntity)
       .collect(Collectors.toList());
   }
 
-  private ElasticsearchImportJob<ProcessDefinitionXmlOptimizeDto>
-  createElasticsearchImportJob(List<ProcessDefinitionXmlOptimizeDto> processDefinitions) {
+  private ElasticsearchImportJob<ProcessDefinitionOptimizeDto> createElasticsearchImportJob(
+      List<ProcessDefinitionOptimizeDto> processDefinitions) {
     ProcessDefinitionXmlElasticsearchImportJob procDefImportJob = new ProcessDefinitionXmlElasticsearchImportJob(processDefinitionXmlWriter);
     procDefImportJob.setEntitiesToImport(processDefinitions);
     return procDefImportJob;
   }
 
-  private ProcessDefinitionXmlOptimizeDto mapEngineEntityToOptimizeEntity(ProcessDefinitionXmlEngineDto engineEntity) {
-    ProcessDefinitionXmlOptimizeDto optimizeDto = new ProcessDefinitionXmlOptimizeDto();
+  private ProcessDefinitionOptimizeDto mapEngineEntityToOptimizeEntity(ProcessDefinitionXmlEngineDto engineEntity) {
+    ProcessDefinitionOptimizeDto optimizeDto = new ProcessDefinitionOptimizeDto();
     optimizeDto.setBpmn20Xml(engineEntity.getBpmn20Xml());
-    optimizeDto.setProcessDefinitionId(engineEntity.getId());
+    optimizeDto.setId(engineEntity.getId());
     optimizeDto.setFlowNodeNames(constructFlowNodeNames(engineEntity.getBpmn20Xml()));
     optimizeDto.setEngine(engineContext.getEngineAlias());
     return optimizeDto;

@@ -3,7 +3,7 @@ package org.camunda.optimize.service.security;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
-import org.camunda.optimize.dto.optimize.query.definition.ExtendedProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -49,7 +49,7 @@ public class SessionServiceIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
-    List<ExtendedProcessDefinitionOptimizeDto> definitions = retrieveProcessDefinitionsAsKermitUser();
+    List<ProcessDefinitionOptimizeDto> definitions = retrieveProcessDefinitionsAsKermitUser();
 
     //then
     assertThat(definitions.size(), is(1));
@@ -67,7 +67,7 @@ public class SessionServiceIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    List<ExtendedProcessDefinitionOptimizeDto> definitions = retrieveProcessDefinitionsAsKermitUser();
+    List<ProcessDefinitionOptimizeDto> definitions = retrieveProcessDefinitionsAsKermitUser();
 
     // then
     assertThat(definitions.size(), is(0));
@@ -84,7 +84,7 @@ public class SessionServiceIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    List<ExtendedProcessDefinitionOptimizeDto> definitions = retrieveProcessDefinitionsAsKermitUser();
+    List<ProcessDefinitionOptimizeDto> definitions = retrieveProcessDefinitionsAsKermitUser();
 
     // then
     assertThat(definitions.size(), is(1));
@@ -103,7 +103,7 @@ public class SessionServiceIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    List<ExtendedProcessDefinitionOptimizeDto> definitions = retrieveProcessDefinitionsAsKermitUser();
+    List<ProcessDefinitionOptimizeDto> definitions = retrieveProcessDefinitionsAsKermitUser();
 
     // then
     assertThat(definitions.size(), is(0));
@@ -120,7 +120,7 @@ public class SessionServiceIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    List<ExtendedProcessDefinitionOptimizeDto> definitions = retrieveProcessDefinitionsAsKermitUser();
+    List<ProcessDefinitionOptimizeDto> definitions = retrieveProcessDefinitionsAsKermitUser();
 
     // then
     assertThat(definitions.size(), is(1));
@@ -138,7 +138,7 @@ public class SessionServiceIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    List<ExtendedProcessDefinitionOptimizeDto> definitions = retrieveProcessDefinitionsAsKermitUser();
+    List<ProcessDefinitionOptimizeDto> definitions = retrieveProcessDefinitionsAsKermitUser();
 
     // then
     assertThat(definitions.size(), is(0));
@@ -154,7 +154,7 @@ public class SessionServiceIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    List<ExtendedProcessDefinitionOptimizeDto> definitions = retrieveProcessDefinitionsAsKermitUser();
+    List<ProcessDefinitionOptimizeDto> definitions = retrieveProcessDefinitionsAsKermitUser();
 
     // then
     assertThat(definitions.size(), is(1));
@@ -172,7 +172,7 @@ public class SessionServiceIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    List<ExtendedProcessDefinitionOptimizeDto> definitions = retrieveProcessDefinitionsAsKermitUser();
+    List<ProcessDefinitionOptimizeDto> definitions = retrieveProcessDefinitionsAsKermitUser();
 
     // then
     assertThat(definitions.size(), is(0));
@@ -188,7 +188,7 @@ public class SessionServiceIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    List<ExtendedProcessDefinitionOptimizeDto> definitions = retrieveProcessDefinitionsAsKermitUser();
+    List<ProcessDefinitionOptimizeDto> definitions = retrieveProcessDefinitionsAsKermitUser();
 
     // then
     assertThat(definitions.size(), is(1));
@@ -206,7 +206,7 @@ public class SessionServiceIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
-    List<ExtendedProcessDefinitionOptimizeDto> definitions = retrieveProcessDefinitionsAsKermitUser();
+    List<ProcessDefinitionOptimizeDto> definitions = retrieveProcessDefinitionsAsKermitUser();
 
     //then
     assertThat(definitions.size(), is(1));
@@ -292,8 +292,8 @@ public class SessionServiceIT {
         .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
         .get();
     assertThat(response.getStatus(), is(200));
-    List<ExtendedProcessDefinitionOptimizeDto> genzosDefinitions =
-      response.readEntity(new GenericType<List<ExtendedProcessDefinitionOptimizeDto>>() {});
+    List<ProcessDefinitionOptimizeDto> genzosDefinitions =
+      response.readEntity(new GenericType<List<ProcessDefinitionOptimizeDto>>() {});
 
     // then
     assertThat(genzosDefinitions.size(), is(0));
@@ -309,7 +309,7 @@ public class SessionServiceIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    List<ExtendedProcessDefinitionOptimizeDto> definitions = retrieveProcessDefinitionsAsKermitUser();
+    List<ProcessDefinitionOptimizeDto> definitions = retrieveProcessDefinitionsAsKermitUser();
 
     // then
     assertThat(definitions.size(), is(1));
@@ -327,7 +327,7 @@ public class SessionServiceIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    List<ExtendedProcessDefinitionOptimizeDto> definitions = retrieveProcessDefinitionsAsKermitUser();
+    List<ProcessDefinitionOptimizeDto> definitions = retrieveProcessDefinitionsAsKermitUser();
 
     // then
     assertThat(definitions.size(), is(2));
@@ -472,14 +472,14 @@ public class SessionServiceIT {
     engineRule.grantUserOptimizeAccess("kermit");
   }
 
-  private List<ExtendedProcessDefinitionOptimizeDto> retrieveProcessDefinitionsAsKermitUser() {
+  private List<ProcessDefinitionOptimizeDto> retrieveProcessDefinitionsAsKermitUser() {
     Response response =
       embeddedOptimizeRule.target("process-definition")
         .request()
         .header(HttpHeaders.AUTHORIZATION, createAuthenticationHeaderForKermit())
         .get();
     assertThat(response.getStatus(), is(200));
-    return response.readEntity(new GenericType<List<ExtendedProcessDefinitionOptimizeDto>>() {});
+    return response.readEntity(new GenericType<List<ProcessDefinitionOptimizeDto>>() {});
   }
 
   private String deploySimpleProcessDefinition(String processId) throws IOException {

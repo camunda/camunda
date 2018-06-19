@@ -2,7 +2,7 @@ package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionXmlOptimizeDto;
+import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -19,8 +19,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType.BPMN_20_XML;
-import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType.FLOW_NODE_NAMES;
+import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.FLOW_NODE_NAMES;
+import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_XML;
 
 @Component
 public class ProcessDefinitionXmlWriter {
@@ -34,11 +34,11 @@ public class ProcessDefinitionXmlWriter {
   @Autowired
   private ObjectMapper objectMapper;
 
-  public void importProcessDefinitionXmls(List<ProcessDefinitionXmlOptimizeDto> xmls) {
+  public void importProcessDefinitionXmls(List<ProcessDefinitionOptimizeDto> xmls) {
     logger.debug("writing [{}] process definition XMLs to ES", xmls.size());
     BulkRequestBuilder processDefinitionXmlBulkRequest = esclient.prepareBulk();
 
-    for (ProcessDefinitionXmlOptimizeDto procDefXml : xmls) {
+    for (ProcessDefinitionOptimizeDto procDefXml : xmls) {
       addImportProcessDefinitionXmlRequest(processDefinitionXmlBulkRequest, procDefXml);
     }
 
@@ -56,11 +56,11 @@ public class ProcessDefinitionXmlWriter {
   }
 
   private void addImportProcessDefinitionXmlRequest(BulkRequestBuilder bulkRequest,
-                                                    ProcessDefinitionXmlOptimizeDto newEntryIfAbsent) {
+                                                    ProcessDefinitionOptimizeDto newEntryIfAbsent) {
 
     Map<String, Object> params = new HashMap<>();
     params.put(FLOW_NODE_NAMES, newEntryIfAbsent.getFlowNodeNames());
-    params.put(BPMN_20_XML, newEntryIfAbsent.getBpmn20Xml());
+    params.put(PROCESS_DEFINITION_XML, newEntryIfAbsent.getBpmn20Xml());
 
     Script updateScript = new Script(
         ScriptType.INLINE,
@@ -79,9 +79,9 @@ public class ProcessDefinitionXmlWriter {
 
     bulkRequest.add(esclient
         .prepareUpdate(
-            configurationService.getOptimizeIndex(configurationService.getProcessDefinitionXmlType()),
-            configurationService.getProcessDefinitionXmlType(),
-            newEntryIfAbsent.getProcessDefinitionId()
+            configurationService.getOptimizeIndex(configurationService.getProcessDefinitionType()),
+            configurationService.getProcessDefinitionType(),
+            newEntryIfAbsent.getId()
         )
         .setScript(updateScript)
         .setUpsert(source, XContentType.JSON)

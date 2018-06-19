@@ -1,6 +1,6 @@
 package org.camunda.optimize.service.es.report.command;
 
-import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionXmlOptimizeDto;
+import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
 import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 
@@ -14,7 +14,7 @@ public abstract class FlowNodeGroupingCommand extends ReportCommand<MapReportRes
   protected MapReportResultDto filterResultDataBasedOnPD(MapReportResultDto evaluationResult) {
     MapReportResultDto resultDto = evaluationResult;
     if (ReportConstants.ALL_VERSIONS.equalsIgnoreCase(reportData.getProcessDefinitionVersion())) {
-      ProcessDefinitionXmlOptimizeDto latestXml = super.fetchLatestDefinitionXml();
+      ProcessDefinitionOptimizeDto latestXml = super.fetchLatestDefinitionXml();
       Map<String, Long> filteredNodes = new HashMap<>();
 
       for (Map.Entry<String, Long> node : resultDto.getResult().entrySet()) {

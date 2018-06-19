@@ -1,15 +1,15 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.SimpleEventDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
-import org.camunda.optimize.dto.optimize.query.definition.ExtendedProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.definition.ProcessDefinitionGroupOptimizeDto;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -26,6 +26,7 @@ import java.io.InputStreamReader;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -55,6 +56,13 @@ public class ProcessDefinitionRestServiceIT {
   private static final String TEST_ENGINE = "1";
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+
+  private ConfigurationService configurationService;
+
+  @Before
+  public void init() {
+    configurationService = embeddedOptimizeRule.getConfigurationService();
+  }
 
   @Rule
   public RuleChain chain = RuleChain
@@ -86,8 +94,8 @@ public class ProcessDefinitionRestServiceIT {
 
     // then the status code is okay
     assertThat(response.getStatus(), is(200));
-    List<ExtendedProcessDefinitionOptimizeDto> definitions =
-        response.readEntity(new GenericType<List<ExtendedProcessDefinitionOptimizeDto>>() {
+    List<ProcessDefinitionOptimizeDto> definitions =
+        response.readEntity(new GenericType<List<ProcessDefinitionOptimizeDto>>() {
         });
     assertThat(definitions, is(notNullValue()));
     assertThat(definitions.get(0).getId(), is(ID));
@@ -97,9 +105,7 @@ public class ProcessDefinitionRestServiceIT {
   public void getProcessDefinitionsWithXml() {
     //given
     String expectedProcessDefinitionId = ID;
-
     createProcessDefinition(expectedProcessDefinitionId, KEY);
-    createProcessDefinitionXml(expectedProcessDefinitionId);
 
     // when
     Response response =
@@ -111,32 +117,27 @@ public class ProcessDefinitionRestServiceIT {
 
     // then the status code is okay
     assertThat(response.getStatus(), is(200));
-    List<ExtendedProcessDefinitionOptimizeDto> definitions =
-        response.readEntity(new GenericType<List<ExtendedProcessDefinitionOptimizeDto>>() {
+    List<ProcessDefinitionOptimizeDto> definitions =
+        response.readEntity(new GenericType<List<ProcessDefinitionOptimizeDto>>() {
         });
     assertThat(definitions, is(notNullValue()));
     assertThat(definitions.get(0).getId(), is(expectedProcessDefinitionId));
     assertThat(definitions.get(0).getBpmn20Xml(), is("test"));
   }
 
-  private void createProcessDefinitionXml(String expectedProcessDefinitionXmlId) {
-    ProcessDefinitionXmlOptimizeDto expectedXml = new ProcessDefinitionXmlOptimizeDto();
-    expectedXml.setBpmn20Xml(BPMN_20_XML);
-    expectedXml.setProcessDefinitionId(expectedProcessDefinitionXmlId);
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionXmlType(), expectedProcessDefinitionXmlId, expectedXml);
-  }
-
   private void createProcessDefinition(String expectedProcessDefinitionId, String key) {
-    createProcessDefinition(expectedProcessDefinitionId, key, 0);
+    createProcessDefinition(expectedProcessDefinitionId, key, "0");
   }
 
-  private void createProcessDefinition(String expectedProcessDefinitionId, String key, int version) {
+  private void createProcessDefinition(String expectedProcessDefinitionId, String key, String version) {
     ProcessDefinitionOptimizeDto expected = new ProcessDefinitionOptimizeDto();
     expected.setId(expectedProcessDefinitionId);
     expected.setKey(key);
     expected.setVersion(version);
+    expected.setBpmn20Xml(BPMN_20_XML);
+    expected.setFlowNodeNames(new HashMap<>());
     expected.setEngine(TEST_ENGINE);
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionType(), expectedProcessDefinitionId, expected);
+    elasticSearchRule.addEntryToElasticsearch(configurationService.getProcessDefinitionType(), expectedProcessDefinitionId, expected);
   }
 
 
@@ -158,12 +159,12 @@ public class ProcessDefinitionRestServiceIT {
   @Test
   public void getProcessDefinitionXml() {
     //given
-    ProcessDefinitionXmlOptimizeDto expectedXml = new ProcessDefinitionXmlOptimizeDto();
+    ProcessDefinitionOptimizeDto expectedXml = new ProcessDefinitionOptimizeDto();
     expectedXml.setBpmn20Xml("ProcessModelXml");
-    expectedXml.setProcessDefinitionKey("aProcDefKey");
-    expectedXml.setProcessDefinitionVersion("aProcDefVersion");
-    expectedXml.setProcessDefinitionId("aProcDefId");
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionXmlType(), ID, expectedXml);
+    expectedXml.setKey("aProcDefKey");
+    expectedXml.setVersion("aProcDefVersion");
+    expectedXml.setId("aProcDefId");
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionType(), ID, expectedXml);
 
     // when
     Response response =
@@ -184,12 +185,12 @@ public class ProcessDefinitionRestServiceIT {
   @Test
   public void getProcessDefinitionXmlWithNonsenseVersionReturns404Code() {
     //given
-    ProcessDefinitionXmlOptimizeDto expectedXml = new ProcessDefinitionXmlOptimizeDto();
+    ProcessDefinitionOptimizeDto expectedXml = new ProcessDefinitionOptimizeDto();
     expectedXml.setBpmn20Xml("ProcessModelXml");
-    expectedXml.setProcessDefinitionKey("aProcDefKey");
-    expectedXml.setProcessDefinitionVersion("aProcDefVersion");
-    expectedXml.setProcessDefinitionId("aProcDefId");
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionXmlType(), ID, expectedXml);
+    expectedXml.setKey("aProcDefKey");
+    expectedXml.setVersion("aProcDefVersion");
+    expectedXml.setId("aProcDefId");
+    elasticSearchRule.addEntryToElasticsearch(configurationService.getProcessDefinitionType(), ID, expectedXml);
 
     // when
     Response response =
@@ -210,12 +211,12 @@ public class ProcessDefinitionRestServiceIT {
   @Test
   public void getProcessDefinitionXmlWithNonsenseKeyReturns404Code() {
     //given
-    ProcessDefinitionXmlOptimizeDto expectedXml = new ProcessDefinitionXmlOptimizeDto();
+    ProcessDefinitionOptimizeDto expectedXml = new ProcessDefinitionOptimizeDto();
     expectedXml.setBpmn20Xml("ProcessModelXml");
-    expectedXml.setProcessDefinitionKey("aProcDefKey");
-    expectedXml.setProcessDefinitionVersion("aProcDefVersion");
-    expectedXml.setProcessDefinitionId("aProcDefId");
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionXmlType(), ID, expectedXml);
+    expectedXml.setKey("aProcDefKey");
+    expectedXml.setVersion("aProcDefVersion");
+    expectedXml.setId("aProcDefId");
+    elasticSearchRule.addEntryToElasticsearch(configurationService.getProcessDefinitionType(), ID, expectedXml);
 
     // when
     Response response =
@@ -297,36 +298,36 @@ public class ProcessDefinitionRestServiceIT {
     ProcessDefinitionGroupOptimizeDto procDefs1 = actual.get(0);
     assertThat(procDefs1.getKey(), is("procDefKey1"));
     assertThat(procDefs1.getVersions().size(), is(3));
-    assertThat(procDefs1.getVersions().get(0).getVersion(), is(2L));
-    assertThat(procDefs1.getVersions().get(1).getVersion(), is(1L));
-    assertThat(procDefs1.getVersions().get(2).getVersion(), is(0L));
+    assertThat(procDefs1.getVersions().get(0).getVersion(), is("2"));
+    assertThat(procDefs1.getVersions().get(1).getVersion(), is("1"));
+    assertThat(procDefs1.getVersions().get(2).getVersion(), is("0"));
     ProcessDefinitionGroupOptimizeDto procDefs2 = actual.get(1);
     assertThat(procDefs2.getKey(), is("procDefKey2"));
     assertThat(procDefs2.getVersions().size(), is(2));
-    assertThat(procDefs2.getVersions().get(0).getVersion(), is(1L));
-    assertThat(procDefs2.getVersions().get(1).getVersion(), is(0L));
+    assertThat(procDefs2.getVersions().get(0).getVersion(), is("1"));
+    assertThat(procDefs2.getVersions().get(1).getVersion(), is("0"));
   }
 
   private void createProcessDefinitionsForKey(String key, int count) {
     IntStream.range(0, count).forEach(
       i -> {
         String constructedId = "id-" + key + "-version-" + i;
-        createProcessDefinition(constructedId, key, i);
+        createProcessDefinition(constructedId, key, String.valueOf(i) );
       }
     );
   }
 
   private void setupFullInstanceFlow() throws IOException {
 
-    ProcessDefinitionXmlOptimizeDto processDefinitionXmlDto = new ProcessDefinitionXmlOptimizeDto();
-    processDefinitionXmlDto.setProcessDefinitionId(PROCESS_DEFINITION_ID);
-    processDefinitionXmlDto.setProcessDefinitionKey(PROCESS_DEFINITION_KEY);
-    processDefinitionXmlDto.setProcessDefinitionVersion(PROCESS_DEFINITION_VERSION_1);
+    ProcessDefinitionOptimizeDto processDefinitionXmlDto = new ProcessDefinitionOptimizeDto();
+    processDefinitionXmlDto.setId(PROCESS_DEFINITION_ID);
+    processDefinitionXmlDto.setKey(PROCESS_DEFINITION_KEY);
+    processDefinitionXmlDto.setVersion(PROCESS_DEFINITION_VERSION_1);
     processDefinitionXmlDto.setBpmn20Xml(readDiagram(DIAGRAM));
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionXmlType(), PROCESS_DEFINITION_ID, processDefinitionXmlDto);
-    processDefinitionXmlDto.setProcessDefinitionId(PROCESS_DEFINITION_ID_2);
-    processDefinitionXmlDto.setProcessDefinitionVersion(PROCESS_DEFINITION_VERSION_2);
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionXmlType(), PROCESS_DEFINITION_ID_2, processDefinitionXmlDto);
+    elasticSearchRule.addEntryToElasticsearch(configurationService.getProcessDefinitionType(), PROCESS_DEFINITION_ID, processDefinitionXmlDto);
+    processDefinitionXmlDto.setId(PROCESS_DEFINITION_ID_2);
+    processDefinitionXmlDto.setVersion(PROCESS_DEFINITION_VERSION_2);
+    elasticSearchRule.addEntryToElasticsearch(configurationService.getProcessDefinitionType(), PROCESS_DEFINITION_ID_2, processDefinitionXmlDto);
 
     ProcessInstanceDto procInst = new ProcessInstanceDto();
     procInst.setProcessDefinitionId(PROCESS_DEFINITION_ID);

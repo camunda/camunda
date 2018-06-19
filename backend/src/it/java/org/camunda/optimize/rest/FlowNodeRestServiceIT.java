@@ -1,7 +1,6 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -30,7 +29,7 @@ public class FlowNodeRestServiceIT {
   @Test
   public void mapFlowNodeWithoutAuthentication() {
     //given
-    createProcessDefinition("aKey", 1L);
+    createProcessDefinition("aKey", "1");
     FlowNodeIdsToNamesRequestDto flowNodeIdsToNamesRequestDto = new FlowNodeIdsToNamesRequestDto();
     flowNodeIdsToNamesRequestDto.setProcessDefinitionKey("aKey");
     flowNodeIdsToNamesRequestDto.setProcessDefinitionVersion("1");
@@ -46,7 +45,7 @@ public class FlowNodeRestServiceIT {
     assertThat(response.getStatus(), is(200));
   }
 
-  private void createProcessDefinition(String processDefinitionKey, Long processDefinitionVersion) {
+  private void createProcessDefinition(String processDefinitionKey, String processDefinitionVersion) {
     ProcessDefinitionOptimizeDto expected = new ProcessDefinitionOptimizeDto();
     String expectedProcessDefinitionId = processDefinitionKey + ":" + processDefinitionVersion;
     expected.setId(expectedProcessDefinitionId);
@@ -57,13 +56,13 @@ public class FlowNodeRestServiceIT {
     createProcessDefinitionXml(processDefinitionKey, processDefinitionVersion);
   }
 
-  private void createProcessDefinitionXml(String processDefinitionKey, Long processDefinitionVersion) {
-    ProcessDefinitionXmlOptimizeDto expectedXml = new ProcessDefinitionXmlOptimizeDto();
+  private void createProcessDefinitionXml(String processDefinitionKey, String processDefinitionVersion) {
+    ProcessDefinitionOptimizeDto expectedXml = new ProcessDefinitionOptimizeDto();
     String expectedProcessDefinitionId = processDefinitionKey + ":" + processDefinitionVersion;
     expectedXml.setBpmn20Xml("XML123");
-    expectedXml.setProcessDefinitionKey(processDefinitionKey);
-    expectedXml.setProcessDefinitionVersion(processDefinitionVersion.toString());
-    expectedXml.setProcessDefinitionId(expectedProcessDefinitionId);
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionXmlType(), expectedProcessDefinitionId, expectedXml);
+    expectedXml.setKey(processDefinitionKey);
+    expectedXml.setVersion(processDefinitionVersion);
+    expectedXml.setId(expectedProcessDefinitionId);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionType(), expectedProcessDefinitionId, expectedXml);
   }
 }

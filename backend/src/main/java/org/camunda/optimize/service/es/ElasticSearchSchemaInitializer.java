@@ -8,8 +8,6 @@ import org.camunda.optimize.service.es.schema.type.DurationHeatmapTargetValueTyp
 import org.camunda.optimize.service.es.schema.type.LicenseType;
 import org.camunda.optimize.service.es.schema.type.MetadataType;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
-import org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlTrackingType;
-import org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.es.schema.type.ReportShareType;
 import org.camunda.optimize.service.es.schema.type.ReportType;
@@ -39,9 +37,6 @@ public class ElasticSearchSchemaInitializer {
   private ProcessDefinitionType processDefinitionType;
 
   @Autowired
-  private ProcessDefinitionXmlType processDefinitionXmlType;
-
-  @Autowired
   private LicenseType licenseType;
 
   @Autowired
@@ -49,9 +44,6 @@ public class ElasticSearchSchemaInitializer {
 
   @Autowired
   private ImportIndexType importIndexType;
-
-  @Autowired
-  private ProcessDefinitionXmlTrackingType processDefinitionXmlTrackingType;
 
   @Autowired
   private TimestampBasedImportIndexType timestampBasedImportIndexType;
@@ -91,9 +83,7 @@ public class ElasticSearchSchemaInitializer {
 
   @PostConstruct
   public void initializeMappings() {
-    schemaManager.addMapping(processDefinitionXmlTrackingType);
     schemaManager.addMapping(processDefinitionType);
-    schemaManager.addMapping(processDefinitionXmlType);
     schemaManager.addMapping(importIndexType);
     schemaManager.addMapping(targetValueType);
     schemaManager.addMapping(processInstanceType);

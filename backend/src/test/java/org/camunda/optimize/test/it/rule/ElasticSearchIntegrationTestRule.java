@@ -316,10 +316,6 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     return properties.getProperty("camunda.optimize.es.dashboard.type");
   }
 
-  public String getProcessDefinitionXmlType() {
-    return properties.getProperty("camunda.optimize.es.procdef.xml.type");
-  }
-
   public String getProcessInstanceType() {
     return properties.getProperty("camunda.optimize.es.process.instance.type");
   }

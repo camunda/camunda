@@ -17,15 +17,17 @@ import org.springframework.stereotype.Component;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType.ENGINE;
-import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType.BPMN_20_XML;
-import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType.PROCESS_DEFINITION_ID;
+import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.ENGINE;
+import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_XML;
+import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_ID;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessDefinitionXmlImportIndexHandler extends ScrollBasedImportIndexHandler {
+
+  public static final String PROCESS_DEFINITION_XML_IMPORT_INDEX_DOC_ID = "processDefinitionXmlImportIndex";
 
   public ProcessDefinitionXmlImportIndexHandler(EngineContext engineContext) {
     this.engineContext = engineContext;
@@ -54,14 +56,14 @@ public class ProcessDefinitionXmlImportIndexHandler extends ScrollBasedImportInd
     esclient
       .admin()
       .indices()
-      .prepareRefresh(configurationService.getOptimizeIndex(configurationService.getProcessDefinitionXmlType()))
+      .prepareRefresh(configurationService.getOptimizeIndex(configurationService.getProcessDefinitionType()))
       .get();
   }
 
   private QueryBuilder buildBasicQuery() {
     BoolQueryBuilder query = QueryBuilders.boolQuery();
     query
-      .mustNot(existsQuery(BPMN_20_XML))
+      .mustNot(existsQuery(PROCESS_DEFINITION_XML))
       .must(termQuery(ENGINE, engineContext.getEngineAlias()));
     return query;
   }
@@ -74,8 +76,8 @@ public class ProcessDefinitionXmlImportIndexHandler extends ScrollBasedImportInd
     QueryBuilder query;
     query = buildBasicQuery();
     SearchResponse scrollResp = esclient
-        .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessDefinitionXmlType()))
-        .setTypes(configurationService.getProcessDefinitionXmlType())
+        .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessDefinitionType()))
+        .setTypes(configurationService.getProcessDefinitionType())
         .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
         .setQuery(query)
         .setFetchSource(false)
@@ -94,6 +96,6 @@ public class ProcessDefinitionXmlImportIndexHandler extends ScrollBasedImportInd
 
   @Override
   protected String getElasticsearchTypeForStoring() {
-    return configurationService.getProcessDefinitionXmlType();
+    return PROCESS_DEFINITION_XML_IMPORT_INDEX_DOC_ID;
   }
 }

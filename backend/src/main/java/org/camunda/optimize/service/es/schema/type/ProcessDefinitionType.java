@@ -10,9 +10,12 @@ import java.io.IOException;
 public class ProcessDefinitionType extends StrictTypeMappingCreator {
 
   public static final String PROCESS_DEFINITION_ID = "id";
-  public static final String DEFINITION_KEY = "key";
+  public static final String PROCESS_DEFINITION_KEY = "key";
+  public static final String PROCESS_DEFINITION_VERSION = "version";
+  public static final String PROCESS_DEFINITION_NAME = "name";
+  public static final String PROCESS_DEFINITION_XML = "bpmn20Xml";
+  public static final String FLOW_NODE_NAMES = "flowNodeNames";
   public static final String ENGINE = "engine";
-  public static final String VERSION = "version";
 
   @Override
   public String getType() {
@@ -25,17 +28,25 @@ public class ProcessDefinitionType extends StrictTypeMappingCreator {
       .startObject(PROCESS_DEFINITION_ID)
         .field("type", "keyword")
       .endObject()
-      .startObject(DEFINITION_KEY)
+      .startObject(PROCESS_DEFINITION_KEY)
         .field("type", "keyword")
       .endObject()
-      .startObject(VERSION)
-        .field("type", "long")
+      .startObject(PROCESS_DEFINITION_VERSION)
+        .field("type", "keyword")
       .endObject()
       .startObject(ENGINE)
         .field("type", "keyword")
       .endObject()
-      .startObject("name")
+      .startObject(PROCESS_DEFINITION_NAME)
         .field("type", "keyword")
+      .endObject()
+      .startObject(FLOW_NODE_NAMES)
+        .field("type", "object")
+        .field("enabled", "false")
+      .endObject()
+      .startObject(PROCESS_DEFINITION_XML)
+        .field("type", "text")
+        .field("index", true)
       .endObject();
   }
 

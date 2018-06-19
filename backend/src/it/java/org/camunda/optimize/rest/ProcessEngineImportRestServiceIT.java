@@ -2,7 +2,7 @@ package org.camunda.optimize.rest;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.query.definition.ExtendedProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -35,7 +35,7 @@ public class ProcessEngineImportRestServiceIT {
   private static final String PROCESS_ID = "aProcessId";
 
   @Test
-  public void importDataFromEngine() throws Exception {
+  public void importDataFromEngine() {
     //given
     BpmnModelInstance processModel = Bpmn.createExecutableProcess(PROCESS_ID)
         .startEvent()
@@ -55,8 +55,8 @@ public class ProcessEngineImportRestServiceIT {
 
     //then
     assertThat(response.getStatus(),is(200));
-    List<ExtendedProcessDefinitionOptimizeDto> definitions =
-        response.readEntity(new GenericType<List<ExtendedProcessDefinitionOptimizeDto>>(){});
+    List<ProcessDefinitionOptimizeDto> definitions =
+        response.readEntity(new GenericType<List<ProcessDefinitionOptimizeDto>>(){});
 
     assertThat(definitions,is(notNullValue()));
     assertThat(definitions.size(), is(1));

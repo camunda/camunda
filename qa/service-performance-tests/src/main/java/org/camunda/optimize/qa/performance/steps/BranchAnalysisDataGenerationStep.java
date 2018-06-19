@@ -7,7 +7,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
 import org.camunda.bpm.model.bpmn.instance.StartEvent;
-import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionXmlOptimizeDto;
+import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.qa.performance.framework.PerfTestContext;
 import org.camunda.optimize.qa.performance.framework.PerfTestStepResult;
 import org.camunda.optimize.qa.performance.util.IdGenerator;
@@ -55,14 +55,14 @@ public class BranchAnalysisDataGenerationStep extends DataGenerationStep {
 
   protected void addModelToElasticsearch(BpmnModelInstance instance) {
     String xml = Bpmn.convertToString(instance);
-    ProcessDefinitionXmlOptimizeDto dto = new ProcessDefinitionXmlOptimizeDto();
+    ProcessDefinitionOptimizeDto dto = new ProcessDefinitionOptimizeDto();
     dto.setBpmn20Xml(xml);
     String processDefinitionId = context.getParameter("processDefinitionId").toString();
     String processDefinitionKey = context.getParameter("processDefinitionKey").toString();
     String processDefinitionVersion = context.getParameter("processDefinitionVersion").toString();
-    dto.setProcessDefinitionId( processDefinitionId);
-    dto.setProcessDefinitionKey(processDefinitionKey);
-    dto.setProcessDefinitionVersion(processDefinitionVersion);
+    dto.setId( processDefinitionId);
+    dto.setKey(processDefinitionKey);
+    dto.setVersion(processDefinitionVersion);
     ObjectMapper mapper = new ObjectMapper();
     try {
 

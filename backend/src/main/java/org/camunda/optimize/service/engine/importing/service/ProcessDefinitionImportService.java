@@ -70,7 +70,7 @@ public class ProcessDefinitionImportService {
     optimizeDto.setName(engineEntity.getName());
     optimizeDto.setKey(engineEntity.getKey());
     optimizeDto.setId(engineEntity.getId());
-    optimizeDto.setVersion(engineEntity.getVersion());
+    optimizeDto.setVersion(String.valueOf(engineEntity.getVersion()));
     optimizeDto.setEngine(engineContext.getEngineAlias());
     return optimizeDto;
   }

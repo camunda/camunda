@@ -69,19 +69,6 @@ public class ImportIT  {
   }
 
   @Test
-  public void allProcessDefinitionXmlFieldDataOfImportIsAvailable() {
-    //given
-    deployAndStartSimpleServiceTask();
-
-    //when
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    //then
-    allEntriesInElasticsearchHaveAllData(elasticSearchRule.getProcessDefinitionXmlType());
-  }
-
-  @Test
   public void allEventFieldDataOfImportIsAvailable() {
     //given
     deployAndStartSimpleServiceTask();

@@ -51,7 +51,6 @@ public class ConfigurationService {
   private String processDefinitionEndpoint;
 
   private String processDefinitionType;
-  private String processDefinitionXmlType;
   private String importIndexType;
   private String durationHeatmapTargetValueType;
   private String processInstanceType;
@@ -293,13 +292,6 @@ public class ConfigurationService {
       processDefinitionEndpoint = jsonContext.read(ConfigurationServiceConstants.PROCESS_DEFINITION_ENDPOINT);
     }
     return processDefinitionEndpoint;
-  }
-
-  public String getProcessDefinitionXmlType() {
-    if (processDefinitionXmlType == null) {
-      processDefinitionXmlType = jsonContext.read(ConfigurationServiceConstants.PROCESS_DEFINITION_XML_TYPE);
-    }
-    return processDefinitionXmlType;
   }
 
   public String getAnalyzerName() {
@@ -810,10 +802,6 @@ public class ConfigurationService {
 
   public void setProcessDefinitionEndpoint(String processDefinitionEndpoint) {
     this.processDefinitionEndpoint = processDefinitionEndpoint;
-  }
-
-  public void setProcessDefinitionXmlType(String processDefinitionXmlType) {
-    this.processDefinitionXmlType = processDefinitionXmlType;
   }
 
   public void setImportIndexAutoStorageIntervalInSec(Integer importIndexAutoStorageIntervalInSec) {
