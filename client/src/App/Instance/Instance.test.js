@@ -36,7 +36,7 @@ const INSTANCE = {
 // mock api
 api.workflowInstance = mockResolvedAsyncFn(INSTANCE);
 
-describe.only('Instance', () => {
+describe('Instance', () => {
   let node;
 
   beforeEach(() => {
@@ -71,14 +71,14 @@ describe.only('Instance', () => {
     expect(node.find(Copyright)).toHaveLength(1);
   });
 
-  it.only('should render InstanceDetail in the Header as a detail', async () => {
+  it('should render InstanceDetail in the Header as a detail', async () => {
     await node.instance().componentDidMount();
     node.update();
     const Detail = node.find(Header).prop('detail');
     expect(Detail.type).toBe(InstanceDetail);
   });
 
-  it.only('should InstanceDetail in the Header with the instance id', async () => {
+  it('should InstanceDetail in the Header with the instance id', async () => {
     await node.instance().componentDidMount();
     node.update();
     const Detail = node.find(Header).prop('detail');
