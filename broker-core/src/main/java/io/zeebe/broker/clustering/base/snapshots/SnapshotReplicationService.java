@@ -35,6 +35,7 @@ import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerTransportBuilder;
 import io.zeebe.util.StreamUtil;
+import io.zeebe.util.ZbLogger;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -52,7 +53,7 @@ import org.slf4j.Logger;
  */
 public class SnapshotReplicationService extends Actor
     implements Service<SnapshotReplicationService> {
-  private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
+  private static final Logger LOG = new ZbLogger(SnapshotReplicationService.class);
 
   private final Injector<ClientTransport> managementClientApiInjector = new Injector<>();
   private ClientTransport clientTransport;
@@ -100,17 +101,13 @@ public class SnapshotReplicationService extends Actor
     topologyManager = topologyManagerInjector.getValue();
     listSnapshotsRequest.setPartitionId(partition.getInfo().getPartitionId());
 
-    LOG.debug("Starting snapshot replication service for partition {}", partition.getInfo());
+    LOG.debug("Starting replication for partition {}", partition.getInfo());
     startContext.async(startContext.getScheduler().submitActor(this));
   }
 
   @Override
   public void stop(ServiceStopContext stopContext) {
-    LOG.debug("Stopping snapshot replication service for partition {}", partition.getInfo());
-
-    snapshotsToReplicate.clear(); // clear before aborting to avoid trying to replicate the next one
-    abortCurrentSnapshotReplication();
-
+    LOG.debug("Stopping replication for partition {}", partition.getInfo());
     stopContext.async(actor.close());
   }
 
@@ -124,7 +121,14 @@ public class SnapshotReplicationService extends Actor
     this.pollLeaderForSnapshots();
   }
 
-  private void pollLeaderForSnapshots() {
+    @Override
+    protected void onActorClosing()
+    {
+        snapshotsToReplicate.clear(); // clear before aborting to avoid trying to replicate the next one
+        abortCurrentSnapshotReplication();
+    }
+
+    private void pollLeaderForSnapshots() {
     final ActorFuture<NodeInfo> topologyQuery = topologyManager.query(this::getLeaderInfo);
     actor.runOnCompletion(
         topologyQuery,
@@ -178,7 +182,7 @@ public class SnapshotReplicationService extends Actor
 
   private void handleListSnapshotsResponse(final DirectBuffer buffer) {
     if (isErrorResponse(buffer)) {
-      logErrorResponse("Error listing snapshots for replication", buffer);
+      logErrorResponse("Error listing snapshots", buffer);
       actor.runDelayed(errorRetryInterval, this::pollSnapshots);
       return;
     }
@@ -214,7 +218,7 @@ public class SnapshotReplicationService extends Actor
                   currentReplicatingSnapshot.getName(),
                   currentReplicatingSnapshot.getLogPosition());
     } catch (final Exception ex) {
-      LOG.error("Could not create temporary snapshot writer", ex);
+      LOG.error("Could not create writer for {}", currentReplicatingSnapshot, ex);
       replicateNextSnapshot();
       return;
     }
@@ -231,7 +235,7 @@ public class SnapshotReplicationService extends Actor
           if (error != null) {
             // TODO: on transport error, should it start back at pollLeaderForSnapshots or
             // pollSnapshots?
-            LOG.error("Error fetching snapshot chunk", error);
+            LOG.error("Error fetching chunk", error);
             abortCurrentSnapshotReplication();
           } else {
             handleFetchSnapshotChunkResponse(clientResponse.getResponseBuffer());
@@ -241,7 +245,7 @@ public class SnapshotReplicationService extends Actor
 
   private void handleFetchSnapshotChunkResponse(final DirectBuffer buffer) {
     if (isErrorResponse(buffer)) {
-      logErrorResponse("Error fetching snapshot chunk", buffer);
+      logErrorResponse("Error fetching chunk", buffer);
       abortCurrentSnapshotReplication();
       return;
     }
@@ -252,7 +256,7 @@ public class SnapshotReplicationService extends Actor
     try {
       StreamUtil.write(chunk, currentSnapshotWriter.getOutputStream());
     } catch (final Exception ex) {
-      LOG.error("Error writing snapshot chunk", ex);
+      LOG.error("Error writing chunk", ex);
       abortCurrentSnapshotReplication();
       return;
     }
@@ -269,7 +273,7 @@ public class SnapshotReplicationService extends Actor
     try {
       currentSnapshotWriter.validateAndCommit(currentReplicatingSnapshot.getChecksum());
     } catch (final Exception ex) {
-      LOG.error("Error committing temporary snapshot, aborting", ex);
+      LOG.error("Error committing, aborting", ex);
       abortCurrentSnapshotReplication();
       return;
     }
@@ -285,9 +289,7 @@ public class SnapshotReplicationService extends Actor
       currentSnapshotWriter.abort();
     }
 
-    if (!snapshotsToReplicate.isEmpty()) {
-      this.replicateNextSnapshot();
-    }
+    this.replicateNextSnapshot();
   }
 
   private FetchSnapshotChunkRequest requestForNextChunk() {

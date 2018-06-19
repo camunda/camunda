@@ -61,12 +61,12 @@ public class SnapshotReplicationServiceTest {
   // TODO: currently it's manually synchronized to the private retry interval in
   // SnapshotReplicationService
   private final Duration errorRetryInterval = Duration.ofSeconds(1);
+  private final Duration snapshotPollInterval = Duration.ofSeconds(1);
 
   @Rule
   public RuleChain ruleChain =
       RuleChain.outerRule(tempFolder).around(actorSchedulerRule).around(serviceContainerRule);
 
-  private final Duration snapshotPollInterval = Duration.ofSeconds(1);
   private final SnapshotReplicationService service =
       new SnapshotReplicationService(snapshotPollInterval);
   private final ControlledTopologyManager topologyManager = spy(new ControlledTopologyManager());
@@ -269,11 +269,37 @@ public class SnapshotReplicationServiceTest {
     assertReplicated(snapshots[1], "bar");
 
     // when
-    actorSchedulerRule.waitForTimer(Duration.ofSeconds(1));
+    actorSchedulerRule.waitForTimer(snapshotPollInterval);
 
     // then
     assertThat(output.getLastRequest().getTemplateId())
         .isEqualTo(ListSnapshotsRequestEncoder.TEMPLATE_ID);
+  }
+
+  @Test
+  public void shouldPollSnapshotsOnAbortIfNoMoreToReplicate() throws Exception {
+      // given
+      final ErrorResponse errorResponse =
+          new ErrorResponse().setCode(ErrorResponseCode.READ_ERROR).setData("could not read");
+      final SnapshotMetadata[] snapshots =
+          new SnapshotMetadata[] {createSnapshot("foo", 3L, "foo")};
+
+      // when
+      installService();
+      output.getLastRequest().respondWith(generateListSnapshotsResponse(snapshots));
+      actorSchedulerRule.workUntilDone();
+
+      // then
+      assertFetchingSnapshot(snapshots[0]);
+
+      // when
+      output.getLastRequest().respondWith(errorResponse);
+      actorSchedulerRule.workUntilDone();
+      actorSchedulerRule.waitForTimer(snapshotPollInterval);
+
+      // then
+      assertThat(output.getLastRequest().getTemplateId())
+          .isEqualTo(ListSnapshotsRequestEncoder.TEMPLATE_ID);
   }
 
   private void installService() {
