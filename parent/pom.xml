@@ -245,6 +245,12 @@
             <failIfNoTests>false</failIfNoTests>
             <trimStackTrace>false</trimStackTrace>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
+            <properties>
+              <property>
+                <name>listener</name>
+                <value>io.zeebe.ZeebeTestListener</value>
+              </property>
+            </properties>
           </configuration>
         </plugin>
 
