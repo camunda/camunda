@@ -2,19 +2,12 @@
 .idea/
 target/
 **/dependency-reduced-pom.xml
-
 # eclipse
 .classpath
-.settings
 .project
-
-# terraform
-*.tfvars
-terraform.tfstate
-# ansible
-hosts
-.aws/ansible/group_vars/all/vault.yml
-*.retry
+.settings
+.npmcache
+.retry
 nohup.out
 errorShots/
 .DS_Store
