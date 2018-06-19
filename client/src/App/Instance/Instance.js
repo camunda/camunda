@@ -2,12 +2,13 @@ import React, {Component, Fragment} from 'react';
 import PropTypes from 'prop-types';
 
 import Panel from 'modules/components/Panel';
-import StateIcon from 'modules/components/StateIcon';
 import Copyright from 'modules/components/Copyright';
+import InstanceDetail from './InstanceDetail';
 
 import Header from '../Header';
 import DiagramPanel from './DiagramPanel';
 
+import {extractInstanceStats} from './service';
 import * as Styled from './styled';
 import * as api from './api';
 
@@ -25,10 +26,16 @@ export default class Instance extends Component {
     loaded: false
   };
 
+  fetchWorkflowInstance = async id => {
+    const data = await api.workflowInstance(id);
+    return data;
+  };
+
   async componentDidMount() {
     const id = this.props.match.params.id;
-    const response = await api.workflowInstance(id);
-    const instanceStats = this.extractInstanceStats(response);
+    const response = await this.fetchWorkflowInstance(id);
+    const instanceStats = extractInstanceStats(response);
+
     this.setState({
       loaded: true,
       instance: {
@@ -37,46 +44,6 @@ export default class Instance extends Component {
       }
     });
   }
-
-  /**
-   * extracts only necessary statistics from instance statistics response
-   */
-  extractInstanceStats = ({
-    workflowDefinitionId,
-    startDate,
-    endDate,
-    state,
-    incidents
-  }) => {
-    let instanceStats = {
-      workflowDefinitionId,
-      startDate,
-      endDate,
-      stateName: state
-    };
-
-    if (state === 'COMPLETED' || state === 'CANCELLED') {
-      return instanceStats;
-    }
-
-    // get the active incident
-    const activeIncident =
-      incidents &&
-      incidents.length &&
-      incidents.filter(({state}) => state === 'ACTIVE')[0];
-
-    if (!activeIncident) {
-      return instanceStats;
-    }
-
-    instanceStats = {
-      ...instanceStats,
-      stateName: 'INCIDENT',
-      errorMessage: activeIncident.errorMessage
-    };
-
-    return instanceStats;
-  };
 
   render() {
     if (!this.state.loaded) {
@@ -94,9 +61,7 @@ export default class Instance extends Component {
           selections={24}
           incidents={328}
           detail={
-            <Fragment>
-              <StateIcon stateName={stateName} /> Instance {instanceId}
-            </Fragment>
+            <InstanceDetail stateName={stateName} instanceId={instanceId} />
           }
         />
         <Styled.Instance>
