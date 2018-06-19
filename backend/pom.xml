@@ -645,6 +645,7 @@
                 <id>check-cambpm-is-up</id>
                 <phase>pre-integration-test</phase>
                 <configuration>
+                  <skip>${skip.docker}</skip>
                   <target name="check-cambpm-is-running" description="Check whether CamBPM is running">
                     <echo message="Checking CamBPM is running"/>
                     <waitfor maxwait="60" maxwaitunit="second" checkevery="1" checkeveryunit="second">

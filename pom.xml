@@ -99,7 +99,11 @@
             <artifactId>maven-release-plugin</artifactId>
             <version>2.5.3</version>
             <configuration>
-              <releaseProfiles>production</releaseProfiles>
+              <releaseProfiles>production,engine-latest</releaseProfiles>
+              <!--branchName>release-ci3</branchName>
+              <pushChanges>false</pushChanges>
+              <localCheckout>true</localCheckout>
+              <allowTimestampedSnapshots>true</allowTimestampedSnapshots-->
             </configuration>
           </plugin>
           <plugin>

@@ -199,6 +199,7 @@
             <id>check-es-is-up</id>
             <phase>test-compile</phase>
             <configuration>
+              <skip>${skip.docker}</skip>
               <target name="check-es-is-up" description="Check whether ES is running">
                 <echo message="Check ES is running"/>
                 <waitfor maxwait="60" maxwaitunit="second" checkevery="1" checkeveryunit="second">
