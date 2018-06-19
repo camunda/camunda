@@ -33,6 +33,14 @@ pipeline {
                     sh 'mvn -B verify -P skip-unstable-ci'
                 }
             }
+            post {
+                always {
+                    junit testResults: '**/target/*-reports/**/*.xml', allowEmptyResults: true
+                }
+                failure {
+                    archiveArtifacts artifacts: '**/target/*-reports/**/*-output.txt,**/**/*.dumpstream', allowEmptyArchive: true
+                }
+            }
         }
 
         stage('Deploy') {
@@ -62,9 +70,6 @@ pipeline {
     post {
         changed {
             sendBuildStatusNotificationToDevelopers(currentBuild.result)
-        }
-        always {
-            junit testResults: '**/target/*-reports/**/*.xml', allowEmptyResults: true
         }
     }
 }
