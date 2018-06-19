@@ -297,7 +297,7 @@ pipeline {
       }
       steps {
         container('maven') {
-          runMaven('-Pproduction -Dskip.fe.build -DskipTests deploy -T\$LIMITS_CPU')
+          runMaven('-Pproduction -Dskip.fe.build -DskipTests deploy')
         }
       }
     }
