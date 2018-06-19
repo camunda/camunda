@@ -170,12 +170,6 @@ public abstract class JobRecordImpl extends RecordImpl implements JobRecord {
     }
   }
 
-  public void clearPayload() {
-    // set field to null so that it is not serialized to Msgpack
-    // - currently, the broker doesn't support null as payload
-    payload = null;
-  }
-
   @Override
   public Integer getRetries() {
     return retries;

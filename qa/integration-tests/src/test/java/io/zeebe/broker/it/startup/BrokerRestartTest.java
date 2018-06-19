@@ -27,12 +27,7 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.commands.BrokerInfo;
 import io.zeebe.client.api.commands.PartitionInfo;
 import io.zeebe.client.api.commands.Topology;
-import io.zeebe.client.api.events.DeploymentEvent;
-import io.zeebe.client.api.events.IncidentState;
-import io.zeebe.client.api.events.JobEvent;
-import io.zeebe.client.api.events.JobState;
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
-import io.zeebe.client.api.events.WorkflowInstanceState;
+import io.zeebe.client.api.events.*;
 import io.zeebe.client.api.subscription.JobWorker;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.model.bpmn.Bpmn;
@@ -74,6 +69,7 @@ public class BrokerRestartTest {
           .serviceTask("task", t -> t.taskType("test").input("$.foo", "$.foo"))
           .endEvent("end")
           .done();
+  public static final String NULL_PAYLOAD = null;
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
@@ -139,7 +135,7 @@ public class BrokerRestartTest {
         .getJobClient()
         .newWorker()
         .jobType("foo")
-        .handler((client, job) -> client.newCompleteCommand(job).withoutPayload().send())
+        .handler((client, job) -> client.newCompleteCommand(job).payload(NULL_PAYLOAD).send())
         .open();
 
     // then
@@ -204,7 +200,7 @@ public class BrokerRestartTest {
         .getJobClient()
         .newWorker()
         .jobType("foo")
-        .handler((client, job) -> client.newCompleteCommand(job).withoutPayload().send())
+        .handler((client, job) -> client.newCompleteCommand(job).payload(NULL_PAYLOAD).send())
         .open();
 
     waitUntil(() -> eventRecorder.getJobEvents(JobState.CREATED).size() > 1);
@@ -216,7 +212,7 @@ public class BrokerRestartTest {
         .getJobClient()
         .newWorker()
         .jobType("bar")
-        .handler((client, job) -> client.newCompleteCommand(job).withoutPayload().send())
+        .handler((client, job) -> client.newCompleteCommand(job).payload(NULL_PAYLOAD).send())
         .open();
 
     // then
@@ -287,7 +283,7 @@ public class BrokerRestartTest {
         .getJobClient()
         .newWorker()
         .jobType("foo")
-        .handler((client, job) -> client.newCompleteCommand(job).withoutPayload().send())
+        .handler((client, job) -> client.newCompleteCommand(job).payload(NULL_PAYLOAD).send())
         .open();
 
     // then

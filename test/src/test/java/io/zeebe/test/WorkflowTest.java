@@ -58,7 +58,7 @@ public class WorkflowTest {
         .jobClient()
         .newWorker()
         .jobType("task")
-        .handler((c, j) -> c.newCompleteCommand(j).withoutPayload().send().join())
+        .handler((c, j) -> c.newCompleteCommand(j).payload((String) null).send().join())
         .name("test")
         .open();
 

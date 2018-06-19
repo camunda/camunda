@@ -15,9 +15,7 @@
  */
 package io.zeebe.broker.it.job;
 
-import static io.zeebe.broker.it.util.TopicEventRecorder.jobCommand;
-import static io.zeebe.broker.it.util.TopicEventRecorder.jobRetries;
-import static io.zeebe.broker.it.util.TopicEventRecorder.state;
+import static io.zeebe.broker.it.util.TopicEventRecorder.*;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -47,6 +45,8 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
 public class JobWorkerTest {
+  public static final String NULL_PAYLOAD = null;
+
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
   public ClientRule clientRule = new ClientRule();
@@ -250,7 +250,7 @@ public class JobWorkerTest {
             (c, j) -> {
               throw new RuntimeException("expected failure");
             },
-            (c, j) -> c.newCompleteCommand(j).withoutPayload().send().join());
+            (c, j) -> c.newCompleteCommand(j).payload(NULL_PAYLOAD).send().join());
 
     // when
     jobClient
@@ -311,7 +311,7 @@ public class JobWorkerTest {
             (c, j) -> {
               throw new RuntimeException("expected failure");
             },
-            (c, j) -> c.newCompleteCommand(j).withoutPayload().send().join());
+            (c, j) -> c.newCompleteCommand(j).payload(NULL_PAYLOAD).send().join());
 
     jobClient
         .newWorker()
@@ -374,7 +374,8 @@ public class JobWorkerTest {
   public void shouldGiveJobToSingleSubscription() {
     // given
     final RecordingJobHandler jobHandler =
-        new RecordingJobHandler((c, t) -> c.newCompleteCommand(t).withoutPayload().send().join());
+        new RecordingJobHandler(
+            (c, t) -> c.newCompleteCommand(t).payload(NULL_PAYLOAD).send().join());
 
     jobClient
         .newWorker()

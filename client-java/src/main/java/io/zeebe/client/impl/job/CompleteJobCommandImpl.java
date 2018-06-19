@@ -64,12 +64,6 @@ public class CompleteJobCommandImpl extends CommandImpl<JobEvent>
   }
 
   @Override
-  public CompleteJobCommandStep1 withoutPayload() {
-    command.clearPayload();
-    return this;
-  }
-
-  @Override
   public RecordImpl getCommand() {
     return command;
   }

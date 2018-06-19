@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import io.zeebe.msgpack.spec.MsgPackHelper;
 import java.io.IOException;
 
 public class MsgpackPayloadModule extends SimpleModule {
@@ -49,8 +50,7 @@ public class MsgpackPayloadModule extends SimpleModule {
       final byte[] bytes = value.getMsgPack();
 
       if (bytes == null) {
-        // currently, the broker doesn't support null as payload
-        throw new IllegalArgumentException("can't serialize 'null' as payload");
+        gen.writeBinary(MsgPackHelper.EMTPY_OBJECT);
       } else {
         gen.writeBinary(value.getMsgPack());
       }
