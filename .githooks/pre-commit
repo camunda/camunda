@@ -1,0 +1,19 @@
+#!/bin/bash
+
+set -e
+
+# 1. get all added (A), copied (C) and modified (M) java files which are staged
+# 2. get the first part of the path which we assume is a maven module
+# 3. join the maven modules to build
+modules=$(git diff --staged --diff-filter=ACM --name-only \*.java | cut -d / -f 1 | sort -u | paste -d , -s)
+
+# If any maven module was changed check if the license headers, foramt and style is correct
+if [ -n "${modules}" ]; then
+    echo "Checking license header, code format and style for maven modules '${modules}'"
+    # some JVM options to reduce JVM startup time, should be fine as the maven process is only shortliving
+    export MAVEN_OPTS="-client -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Xverify:none"
+
+    # run maven in offline mode, quiet (only errors) and with a thread per core
+    # specify checkstyle xml based on the multi module project root directory (requires maven 3.3.1+)
+    mvn -o -q -T 1C -pl ${modules} com.mycila:license-maven-plugin:check com.coveo:fmt-maven-plugin:check checkstyle:check -Dcheckstyle.config.location='${maven.multiModuleProjectDirectory}/build-tools/src/main/resources/check/.checkstyle.xml'
+fi
