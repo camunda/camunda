@@ -1,77 +1,197 @@
 import React from 'react';
-import BPMNViewer from 'bpmn-js/lib/NavigatedViewer';
 import {shallow} from 'enzyme';
 
-import {mockResolvedAsyncFn} from 'modules/testUtils';
+import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
+import {Colors} from 'modules/theme';
 
 import ThemedDiagram from './Diagram';
 import * as api from './api';
+import * as Styled from './styled';
+import DiagramControls from './DiagramControls';
 
 const {WrappedComponent: Diagram} = ThemedDiagram;
 
 // mocking
-jest.mock('bpmn-js/lib/NavigatedViewer');
 const xmlMock = '<foo />';
 api.getWorkflowXML = mockResolvedAsyncFn(xmlMock);
 
 describe('Diagram', () => {
   const workflowDefinitionId = 'some-id';
-  let node;
 
   beforeEach(() => {
-    node = shallow(
-      <Diagram workflowDefinitionId={workflowDefinitionId} theme={'dark'} />
-    );
+    api.getWorkflowXML.mockClear();
   });
 
   it('should set initial containerNode and Viewer to null', () => {
     // given
-    const diagramInstance = new Diagram();
+    const nodeInstance = new Diagram();
 
     // then
-    expect(diagramInstance.Viewer).toBe(null);
-    expect(diagramInstance.containerNode).toBe(null);
+    expect(nodeInstance.Viewer).toBe(null);
+    expect(nodeInstance.containerNode).toBe(null);
+    expect(nodeInstance.workflowXML).toBe(null);
   });
 
-  // TODO:
-  // 2- should call api.getWorkflowXML with workflowDefinitionId
-  // 3- should initiate BPMNViewer with correct config
-  // 4- should call Viewer.importXML and handle error correctly
-  // and call handleZoom
-  // 8- render
+  it('should render Diagram with controls', async () => {
+    // given
+    const node = shallow(
+      <Diagram workflowDefinitionId={workflowDefinitionId} theme={'dark'} />
+    );
+    const nodeInstance = node.instance();
+    await flushPromises();
+
+    // then
+    expect(node.find(Styled.Diagram)).toHaveLength(1);
+    const DiagramCanvasNode = node.find(Styled.DiagramCanvas);
+    expect(DiagramCanvasNode).toHaveLength(1);
+    expect(DiagramCanvasNode.prop('innerRef')).toBe(nodeInstance.containerRef);
+    const DiagramControlsNode = node.find(DiagramControls);
+    expect(DiagramControlsNode).toHaveLength(1);
+    expect(DiagramControlsNode.prop('handleZoomIn')).toBe(
+      nodeInstance.handleZoomIn
+    );
+    expect(DiagramControlsNode.prop('handleZoomOut')).toBe(
+      nodeInstance.handleZoomOut
+    );
+    expect(DiagramControlsNode.prop('handleZoomReset')).toBe(
+      nodeInstance.handleZoomReset
+    );
+    expect(node).toMatchSnapshot();
+  });
+
+  it('should reinitiate the Viewer when theme changes', async () => {
+    // given
+    const node = shallow(
+      <Diagram workflowDefinitionId={workflowDefinitionId} theme={'dark'} />
+    );
+    const nodeInstance = node.instance();
+    const initViewerSpy = jest.spyOn(nodeInstance, 'initViewer');
+    await flushPromises();
+    initViewerSpy.mockClear();
+
+    // when
+    node.setProps({theme: 'light'});
+
+    // then
+    expect(initViewerSpy).toHaveBeenCalledTimes(1);
+  });
+
   describe('componentDidMount', async () => {
-    it('should get xml from api and import it in Viewer', async () => {
-      // when
-      await node.instance().componentDidMount();
+    it('should get xml from api and initiate Viewer', async () => {
+      // given
+      const node = shallow(
+        <Diagram workflowDefinitionId={workflowDefinitionId} theme={'dark'} />
+      );
+      const nodeInstance = node.instance();
+      const initViewerSpy = jest.spyOn(nodeInstance, 'initViewer');
+      await flushPromises();
 
       // then
       expect(api.getWorkflowXML).toBeCalledWith(workflowDefinitionId);
+      expect(nodeInstance.workflowXML).toBe(xmlMock);
+      expect(initViewerSpy).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('initViewer', () => {
+    it('should detach Viewer if it exists', async () => {
+      // given
+      const node = shallow(
+        <Diagram workflowDefinitionId={workflowDefinitionId} theme={'dark'} />
+      );
+      const nodeInstance = node.instance();
+      await flushPromises();
+
+      // when
+      const {detach} = nodeInstance.Viewer;
+      nodeInstance.initViewer();
+
+      // then
+      expect(detach).toHaveBeenCalledTimes(1);
+    });
+
+    it('should initiate dark BPMNViewer if theme is dark', async () => {
+      // given
+      const node = shallow(
+        <Diagram workflowDefinitionId={workflowDefinitionId} theme={'dark'} />
+      );
+      const nodeInstance = node.instance();
+      await flushPromises();
+
+      //then
+      const {container, bpmnRenderer} = nodeInstance.Viewer;
+      expect(container).toBe(nodeInstance.containerNode);
+      expect(bpmnRenderer).toEqual({
+        defaultFillColor: Colors.uiDark02,
+        defaultStrokeColor: Colors.darkDiagram
+      });
+    });
+
+    it('should initiate light BPMNViewer if theme is light', async () => {
+      // given
+      const node = shallow(
+        <Diagram workflowDefinitionId={workflowDefinitionId} theme={'light'} />
+      );
+      await flushPromises();
+      const nodeInstance = node.instance();
+
+      //then
+      const {container, bpmnRenderer} = nodeInstance.Viewer;
+      expect(container).toBe(nodeInstance.containerNode);
+      expect(bpmnRenderer).toEqual({
+        defaultFillColor: Colors.uiLight04,
+        defaultStrokeColor: Colors.uiLight06
+      });
+    });
+
+    it('should import the xml in the Viewer and reset zoom', async () => {
+      // given
+      const node = shallow(
+        <Diagram workflowDefinitionId={workflowDefinitionId} theme={'light'} />
+      );
+      const nodeInstance = node.instance();
+      const handleZoomResetSpy = jest.spyOn(nodeInstance, 'handleZoomReset');
+      await flushPromises();
+
+      // then
+      const args = nodeInstance.Viewer.importXML.mock.calls[0];
+      expect(args[0]).toBe(nodeInstance.workflowXML);
+      expect(typeof args[1]).toBe('function');
+      expect(handleZoomResetSpy).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('containerRef', () => {
-    it('should set containerNode to provided node', () => {
+    it('should set containerNode to provided node', async () => {
       // given
-      const diagramInstance = new Diagram();
+      const node = shallow(
+        <Diagram workflowDefinitionId={workflowDefinitionId} theme={'dark'} />
+      );
+      await flushPromises();
+      const nodeInstance = node.instance();
       const someNode = 'some/node';
 
       // when
-      diagramInstance.containerRef(someNode);
+      nodeInstance.containerRef(someNode);
 
       // then
-      expect(diagramInstance.containerNode).toBe(someNode);
+      expect(nodeInstance.containerNode).toBe(someNode);
     });
   });
 
   describe('handleZoom', () => {
     it('should call stepZoom with provided step', async () => {
       // given
-      await node.instance().componentDidMount();
+      const node = shallow(
+        <Diagram workflowDefinitionId={workflowDefinitionId} theme={'dark'} />
+      );
+      const nodeInstance = node.instance();
+      await flushPromises();
       const step = 1;
-      const stepZoomMock = node.instance().Viewer.zoomScroll.stepZoom;
+      const stepZoomMock = nodeInstance.Viewer.zoomScroll.stepZoom;
 
       // when
-      node.instance().handleZoom(step);
+      nodeInstance.handleZoom(step);
 
       // then
       expect(stepZoomMock).toBeCalledWith(step);
@@ -79,12 +199,17 @@ describe('Diagram', () => {
   });
 
   describe('handleZoomIn', () => {
-    it('should call handleZoom with 0.1 step', () => {
+    it('should call handleZoom with 0.1 step', async () => {
       // given
-      const handleZoomSpy = jest.spyOn(node.instance(), 'handleZoom');
+      const node = shallow(
+        <Diagram workflowDefinitionId={workflowDefinitionId} theme={'dark'} />
+      );
+      const nodeInstance = node.instance();
+      await flushPromises();
+      const handleZoomSpy = jest.spyOn(nodeInstance, 'handleZoom');
 
       // when
-      node.instance().handleZoomIn();
+      nodeInstance.handleZoomIn();
 
       // then
       expect(handleZoomSpy).toBeCalledWith(0.1);
@@ -92,12 +217,17 @@ describe('Diagram', () => {
   });
 
   describe('handleZoomOut', () => {
-    it('should call handleZoom with -0.1 step', () => {
+    it('should call handleZoom with -0.1 step', async () => {
       // given
-      const handleZoomSpy = jest.spyOn(node.instance(), 'handleZoom');
+      const node = shallow(
+        <Diagram workflowDefinitionId={workflowDefinitionId} theme={'dark'} />
+      );
+      const nodeInstance = node.instance();
+      await flushPromises();
+      const handleZoomSpy = jest.spyOn(nodeInstance, 'handleZoom');
 
       // when
-      node.instance().handleZoomOut();
+      nodeInstance.handleZoomOut();
 
       // then
       expect(handleZoomSpy).toBeCalledWith(-0.1);
@@ -107,11 +237,15 @@ describe('Diagram', () => {
   describe('handleZoomReset', () => {
     it('should reset zoom in canvas', async () => {
       // given
-      await node.instance().componentDidMount();
-      const zoom = node.instance().Viewer.canvas.zoom;
+      const node = shallow(
+        <Diagram workflowDefinitionId={workflowDefinitionId} theme={'dark'} />
+      );
+      const nodeInstance = node.instance();
+      await flushPromises();
+      const zoom = nodeInstance.Viewer.canvas.zoom;
 
       // when
-      node.instance().handleZoomReset();
+      nodeInstance.handleZoomReset();
 
       // then
       expect(zoom).toBeCalledWith('fit-viewport', 'auto');

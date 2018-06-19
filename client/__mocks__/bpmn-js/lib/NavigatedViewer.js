@@ -1,22 +1,16 @@
 class Viewer {
-  constructor() {
+  constructor({container, bpmnRenderer} = {}) {
     this.canvas = {zoom: jest.fn()};
     this.zoomScroll = {stepZoom: jest.fn()};
+    this.container = container;
+    this.bpmnRenderer = bpmnRenderer;
   }
 
-  importError = null;
+  importXML = jest.fn((_, callback) => {
+    callback();
+  });
 
-  mockSuccessfulImportXML = () => {
-    this.importError = null;
-  };
-
-  mockUnsuccessfulImportXML = () => {
-    this.importError = 'Error importing diagram';
-  };
-
-  importXML = (_, callback) => {
-    callback(this.importError);
-  };
+  detach = jest.fn();
 
   get = key => this[key];
 }

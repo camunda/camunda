@@ -17,10 +17,21 @@ class Diagram extends React.Component {
     super(props);
     this.containerNode = null;
     this.Viewer = null;
+    this.workflowXML = null;
   }
 
   async componentDidMount() {
-    const xml = await api.getWorkflowXML(this.props.workflowDefinitionId);
+    this.workflowXML = await api.getWorkflowXML(
+      this.props.workflowDefinitionId
+    );
+    this.initViewer();
+  }
+
+  initViewer = () => {
+    // detach Viewer if it exists
+    if (this.Viewer) {
+      this.Viewer.detach();
+    }
 
     // colors config for bpmnRenderer
     const bpmnRenderer = {
@@ -39,13 +50,14 @@ class Diagram extends React.Component {
       bpmnRenderer
     });
 
-    this.Viewer.importXML(xml, e => {
+    this.Viewer.importXML(this.workflowXML, e => {
+      // TODO: Error should be handled correctly
       if (e) {
-        return console.log('oops error importing: ', e);
+        return console.log('Error rendering diagram:', e);
       }
       this.handleZoomReset();
     });
-  }
+  };
 
   containerRef = node => {
     this.containerNode = node;
@@ -79,6 +91,10 @@ class Diagram extends React.Component {
         />
       </Styled.Diagram>
     );
+  }
+
+  componentDidUpdate() {
+    this.initViewer();
   }
 }
 

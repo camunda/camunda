@@ -1,0 +1,14 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Diagram should render Diagram with controls 1`] = `
+<styled.div>
+  <styled.div
+    innerRef={[Function]}
+  />
+  <DiagramControls
+    handleZoomIn={[Function]}
+    handleZoomOut={[Function]}
+    handleZoomReset={[Function]}
+  />
+</styled.div>
+`;
