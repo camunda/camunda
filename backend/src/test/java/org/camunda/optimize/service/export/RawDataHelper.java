@@ -20,6 +20,7 @@ public class RawDataHelper {
     instance_1.setProcessDefinitionKey("test_key");
     instance_1.setStartDate(OffsetDateTime.parse(FIXED_TIME));
     instance_1.setEndDate(OffsetDateTime.parse(FIXED_TIME));
+    instance_1.setBusinessKey("aBusinessKey");
     Map<String, Object> vars_1 = new HashMap<>();
     vars_1.put("1", "test");
     instance_1.setVariables(vars_1);

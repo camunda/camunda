@@ -25,7 +25,7 @@ public class CSVUtilsTest {
 
     //then
     assertThat(result.size(), is(4));
-    assertThat(result.get(0).length, is(8));
+    assertThat(result.get(0).length, is(9));
   }
 
 }
