@@ -28,7 +28,7 @@ it('includes the version number retrieved from back-end', async () => {
   const version = 'alpha';
   getOptimizeVersion.mockReturnValue(version);
 
-  const node = await mount(<Footer version={version} />);
+  const node = await mount(<Footer />);
   expect(node).toIncludeText(version);
 });
 
@@ -69,7 +69,7 @@ it('does not display the loading indicator if is not importing', () => {
 });
 
 it('displays the connection status', () => {
-  const node = mount(<Footer version="2.0.0" />);
+  const node = mount(<Footer />);
 
   node.setState({
     engineConnections: {
