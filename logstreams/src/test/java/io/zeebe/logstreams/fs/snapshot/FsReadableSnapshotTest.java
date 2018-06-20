@@ -58,14 +58,6 @@ public class FsReadableSnapshotTest {
   }
 
   @Test
-  public void shouldGetPosition() {
-    final FsReadableSnapshot fsReadableSnapshot =
-        new FsReadableSnapshot(config, dataFile, checksumFile, 100);
-
-    assertThat(fsReadableSnapshot.getPosition()).isEqualTo(100);
-  }
-
-  @Test
   public void shouldGetData() {
     final FsReadableSnapshot fsReadableSnapshot =
         new FsReadableSnapshot(config, dataFile, checksumFile, 100);
@@ -113,66 +105,6 @@ public class FsReadableSnapshotTest {
     thrown.expectMessage("Read invalid snapshot, checksum doesn't match");
 
     fsReadableSnapshot.validateAndClose();
-  }
-
-  @Test
-  public void shouldFailToValidateIfFileNameDoesntMatch() throws Exception {
-    final File corruptedChecksumFile =
-        createChecksumFile("corrupted-checksum.sha1", SNAPSHOT_DATA, "other-snapshot.snapshot");
-
-    thrown.expect(RuntimeException.class);
-    thrown.expectMessage("Read invalid snapshot, file name doesn't match");
-
-    new FsReadableSnapshot(config, dataFile, corruptedChecksumFile, 100);
-  }
-
-  @Test
-  public void shouldFailToValidateIfChecksumFileIsEmpty() throws Exception {
-    final File emptyChecksumFile = tempFolder.newFile("invalid-checksum.sha1");
-
-    thrown.expect(RuntimeException.class);
-    thrown.expectMessage("Read invalid checksum file, no content");
-
-    new FsReadableSnapshot(config, dataFile, emptyChecksumFile, 100);
-  }
-
-  @Test
-  public void shouldFailToValidateIfChecksumFileIsInvalid() throws Exception {
-    final File invalidChecksumFile = tempFolder.newFile("invalid-checksum.sha1");
-    Files.write(invalidChecksumFile.toPath(), getBytes("invalid-content"));
-
-    thrown.expect(RuntimeException.class);
-    thrown.expectMessage("Read invalid checksum file");
-
-    new FsReadableSnapshot(config, dataFile, invalidChecksumFile, 100);
-  }
-
-  @Test
-  public void shouldReturnIdAsSnapshotName() {
-    // given
-    final FsReadableSnapshot snapshot = new FsReadableSnapshot(config, dataFile, checksumFile, 100);
-
-    // then
-    assertThat(snapshot.getName()).isEqualTo("snapshot");
-  }
-
-  @Test
-  public void shouldReturnCorrectLengthForGivenSnapshot() {
-    // given
-    final FsReadableSnapshot snapshot = new FsReadableSnapshot(config, dataFile, checksumFile, 100);
-
-    // then
-    assertThat(snapshot.getSize()).isEqualTo(SNAPSHOT_DATA.length);
-  }
-
-  @Test
-  public void shouldReturnCorrectChecksum() throws Exception {
-    // given
-    final FsReadableSnapshot snapshot = new FsReadableSnapshot(config, dataFile, checksumFile, 100);
-    final byte[] checksum = MessageDigest.getInstance("SHA1").digest(SNAPSHOT_DATA);
-
-    // then
-    assertThat(snapshot.getChecksum()).isEqualTo(checksum);
   }
 
   protected File createDataFile(String fileName, byte[] content) throws IOException {

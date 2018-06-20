@@ -16,15 +16,16 @@
 package io.zeebe.logstreams.impl.snapshot.fs;
 
 import io.zeebe.logstreams.spi.SnapshotMetadata;
+import io.zeebe.util.LangUtil;
 import java.io.*;
 import org.agrona.BitUtil;
 
 public class FsSnapshotMetadata implements SnapshotMetadata {
-  private final String name;
-  private final long position;
-  private final long size;
-  private final boolean replicable;
-  private final byte[] checksum;
+  protected final String name;
+  protected final long position;
+  protected final long size;
+  protected final byte[] checksum;
+  protected final boolean replicable;
 
   public FsSnapshotMetadata(
       final String name,
@@ -42,13 +43,14 @@ public class FsSnapshotMetadata implements SnapshotMetadata {
   public FsSnapshotMetadata(
       final FsSnapshotStorageConfiguration config,
       final File snapshotFile,
-      final File checksumFile) {
+      final File checksumFile,
+      final long position) {
     this.name = config.getSnapshotNameFromFileName(snapshotFile.getName());
-    this.position = config.getPositionOfSnapshotFile(snapshotFile, this.name);
+    this.position = position;
     this.size = snapshotFile.length();
     this.replicable = config.isReplicable(this.name);
 
-    this.checksum = extractChecksum(config, checksumFile);
+    this.checksum = extractAndValidateChecksum(config, snapshotFile, checksumFile);
   }
 
   @Override
@@ -76,16 +78,58 @@ public class FsSnapshotMetadata implements SnapshotMetadata {
     return checksum;
   }
 
-  private byte[] extractChecksum(
-      final FsSnapshotStorageConfiguration config, final File checksumFile) {
+  private byte[] extractAndValidateChecksum(
+      final FsSnapshotStorageConfiguration config,
+      final File snapshotFile,
+      final File checksumFile) {
+    final String checksumFileContent = readChecksumContent(checksumFile);
+
+    final byte[] checksum = extractChecksum(config, checksumFileContent);
+    final String dataFileName = extractDataFileName(config, checksumFileContent);
+
+    if (!dataFileName.equals(snapshotFile.getName())) {
+      throw new RuntimeException("Read invalid snapshot, file name doesn't match.");
+    }
+
+    return checksum;
+  }
+
+  private String readChecksumContent(final File checksumFile) {
+    final String checksumLine;
+
     try (FileInputStream fileInputStream = new FileInputStream(checksumFile);
         InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream);
-        BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
-      final String contents = bufferedReader.readLine();
-      final String hexChecksum = config.extractDigestFromChecksumContent(contents);
-      return BitUtil.fromHex(hexChecksum);
+        BufferedReader bufferedReader = new BufferedReader(inputStreamReader); ) {
+      checksumLine = bufferedReader.readLine();
+
+      if (checksumLine == null || checksumLine.isEmpty()) {
+        throw new RuntimeException("Read invalid checksum file, no content");
+      }
     } catch (final IOException ex) {
+      LangUtil.rethrowUnchecked(ex);
       return null;
     }
+
+    return checksumLine;
+  }
+
+  private byte[] extractChecksum(
+      final FsSnapshotStorageConfiguration config, final String content) {
+    final String checksumString = config.extractDigestFromChecksumContent(content);
+    if (checksumString.isEmpty()) {
+      throw new RuntimeException("Read invalid checksum file, missing checksum.");
+    }
+
+    return BitUtil.fromHex(checksumString);
+  }
+
+  private String extractDataFileName(
+      final FsSnapshotStorageConfiguration config, final String content) {
+    final String fileName = config.extractDataFileNameFromChecksumContent(content);
+    if (fileName.isEmpty()) {
+      throw new RuntimeException("Read invalid checksum file, missing data file name.");
+    }
+
+    return fileName;
   }
 }

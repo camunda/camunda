@@ -122,7 +122,14 @@ public class FsSnapshotStorage implements SnapshotStorage {
 
         if (isCommitted(snapshotFile, snapshotName)) {
           final File checksumFile = getChecksumFile(snapshotFile, snapshotName);
-          snapshots.add(new FsSnapshotMetadata(cfg, snapshotFile, checksumFile));
+          final long logPosition = position(snapshotFile, snapshotName);
+          try {
+            final SnapshotMetadata snapshotMetadata =
+                new FsSnapshotMetadata(cfg, snapshotFile, checksumFile, logPosition);
+            snapshots.add(snapshotMetadata);
+          } catch (final Exception ex) {
+            LOG.error("Failed to read snapshot metadata", ex);
+          }
         }
       }
     }
@@ -166,11 +173,7 @@ public class FsSnapshotStorage implements SnapshotStorage {
   }
 
   private boolean isCommitted(final File snapshotFile, final String name) {
-    final long logPosition = position(snapshotFile, name);
-    final String checksumFileName = cfg.checksumFileName(name, logPosition);
-    final File checksumFile = new File(checksumFileName);
-
-    // TODO: is this the best way?
+    final File checksumFile = getChecksumFile(snapshotFile, name);
     return checksumFile.exists();
   }
 }

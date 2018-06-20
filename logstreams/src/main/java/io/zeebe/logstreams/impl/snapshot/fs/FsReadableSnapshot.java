@@ -19,39 +19,28 @@ import io.zeebe.logstreams.snapshot.InvalidSnapshotException;
 import io.zeebe.logstreams.spi.ReadableSnapshot;
 import io.zeebe.util.FileUtil;
 import java.io.BufferedInputStream;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.util.Arrays;
-import org.agrona.BitUtil;
 import org.agrona.LangUtil;
 
-public class FsReadableSnapshot implements ReadableSnapshot {
+public class FsReadableSnapshot extends FsSnapshotMetadata implements ReadableSnapshot {
   protected final FsSnapshotStorageConfiguration config;
 
   protected final File dataFile;
   protected final File checksumFile;
-
-  protected final String name;
-  protected final boolean replicable;
-  protected final long position;
-
-  protected byte[] checksum;
   protected DigestInputStream inputStream;
 
   public FsReadableSnapshot(
       FsSnapshotStorageConfiguration config, File dataFile, File checksumFile, long position) {
+    super(config, dataFile, checksumFile, position);
+
     this.config = config;
     this.dataFile = dataFile;
     this.checksumFile = checksumFile;
-    this.position = position;
-    this.name = config.getSnapshotNameFromFileName(dataFile.getName());
-    this.replicable = config.isReplicable(this.name);
 
     tryInit();
   }
@@ -59,15 +48,6 @@ public class FsReadableSnapshot implements ReadableSnapshot {
   protected void tryInit() {
     try {
       this.inputStream = initDataInputStream();
-
-      final String checksumFileContent = readChecksumContent(checksumFile);
-
-      this.checksum = extractChecksum(checksumFileContent);
-      final String dataFileName = extractDataFileName(checksumFileContent);
-
-      if (!dataFileName.equals(dataFile.getName())) {
-        throw new RuntimeException("Read invalid snapshot, file name doesn't match.");
-      }
     } catch (Exception e) {
       LangUtil.rethrowUnchecked(e);
     }
@@ -80,40 +60,6 @@ public class FsReadableSnapshot implements ReadableSnapshot {
     final BufferedInputStream bufferedInputStream = new BufferedInputStream(fileInputStream);
 
     return new DigestInputStream(bufferedInputStream, messageDigest);
-  }
-
-  protected String readChecksumContent(File checksumFile) throws IOException {
-    final String checksumLine;
-
-    try (FileInputStream fileInputStream = new FileInputStream(checksumFile);
-        InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream);
-        BufferedReader bufferedReader = new BufferedReader(inputStreamReader); ) {
-      checksumLine = bufferedReader.readLine();
-
-      if (checksumLine == null || checksumLine.isEmpty()) {
-        throw new RuntimeException("Read invalid checksum file, no content");
-      }
-    }
-
-    return checksumLine;
-  }
-
-  protected byte[] extractChecksum(String content) {
-    final String checksumString = config.extractDigestFromChecksumContent(content);
-    if (checksumString.isEmpty()) {
-      throw new RuntimeException("Read invalid checksum file, missing checksum.");
-    }
-
-    return BitUtil.fromHex(checksumString);
-  }
-
-  protected String extractDataFileName(String content) {
-    final String fileName = config.extractDataFileNameFromChecksumContent(content);
-    if (fileName.isEmpty()) {
-      throw new RuntimeException("Read invalid checksum file, missing data file name.");
-    }
-
-    return fileName;
   }
 
   @Override
@@ -139,11 +85,6 @@ public class FsReadableSnapshot implements ReadableSnapshot {
   }
 
   @Override
-  public long getPosition() {
-    return position;
-  }
-
-  @Override
   public InputStream getData() {
     return inputStream;
   }
@@ -154,25 +95,5 @@ public class FsReadableSnapshot implements ReadableSnapshot {
 
   public File getDataFile() {
     return dataFile;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-
-  @Override
-  public long getSize() {
-    return dataFile.length();
-  }
-
-  @Override
-  public byte[] getChecksum() {
-    return checksum;
-  }
-
-  @Override
-  public boolean isReplicable() {
-    return replicable;
   }
 }
