@@ -1,0 +1,48 @@
+version: '2.4'
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:${ES_VERSION:-6.0.0}
+    container_name: elasticsearch
+    environment:
+      - cluster.name=elasticsearch
+      - bootstrap.memory_lock=true
+      - discovery.type=single-node
+      - action.auto_create_index=false
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - 9200:9200
+      - 9300:9300
+    restart: always
+    cpu_count: 2
+    mem_limit: 2g
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cat/health | grep -q green"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  cambpm:
+    image: camunda/camunda-bpm-platform:${CAMBPM_VERSION:-7.10.0-SNAPSHOT}
+    container_name: cambpm
+    environment:
+      - TZ=Europe/Berlin
+    ports:
+      - 8080:8080
+      - 9092:9092
+    volumes:
+#      - "./backend/target/cambpm_logs:/camunda/logs"
+      - "./demo-data/easy-optimize-data-preparation-plugin-1.0.0.jar:/camunda/lib/easy-optimize-data-preparation-plugin-1.0.0.jar"
+      - "./demo-data/bpm-platform.h2.xml:/camunda/conf/bpm-platform.xml"
+    restart: always
+    cpu_count: 1
+    mem_limit: 2g
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:8080/engine-rest/engine | grep -q default"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+

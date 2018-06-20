@@ -6,53 +6,17 @@ const fs = require('fs');
 const CamundaClient = require('camunda-bpm-sdk-js').Client;
 const chalk = require('chalk');
 const utils = require('./utils');
-let {c7ports} = require('./config');
-
-const tmpDir = path.resolve(__dirname, '..', 'tmp');
-
-const bpmPlatformXmlDir = path.resolve(tmpDir, 'engine_8050/server/apache-tomcat-9.0.5/conf/bpm-platform.xml');
-const dataPreparationPlugin = '      <plugin>\n        <class>org.camunda.bpm.platform.plugin.optimize.data.preparation.EasyOptimizeDataPreparationPlugin</class>\n      </plugin>\n'
-const pluginJarSrc = './demo-data/easy-optimize-data-preparation-plugin-1.0.0.jar';
-const pluginJarDest = path.resolve(tmpDir, 'engine_8050/server/apache-tomcat-9.0.5/lib');
+let {c7port} = require('./config');
 
 const maxConnections = 5;
 // it can be configured, but it would pain in ass, so it is better
 // to just remove it than configure it to be inside tmpDir
-const databaseDir = path.resolve(__dirname, '..', 'camunda-h2-dbs');
 const demoDataDir = path.resolve(__dirname, '..', 'demo-data');
 
-if (process.argv[2] === 'start') {
-  const portsArg = process.argv[3];
 
-  if (portsArg && portsArg.length) {
-    const ports = portsArg.split(',').map(port => +port);
+exports.deployEngineData = deployEngineData;
 
-    if (ports.every(port => !isNaN(port))) {
-      c7ports = ports;
-    }
-  }
-
-  init(c7ports).catch(console.error);
-}
-
-exports.init = init;
-
-function init(ports = c7ports) {
-  shell.rm('-rf', tmpDir);
-  shell.rm('-rf', databaseDir);
-  const extractTarget = path.resolve(tmpDir, `engine_${ports}`);
-  shell.mkdir('-p', extractTarget);
-  const engineFolder = path.resolve(__dirname, '../..', 'backend/target/camunda-tomcat');
-  shell.cp('-r', engineFolder+ "/*", extractTarget);
-  shell.cp(pluginJarSrc, pluginJarDest);
-  const data = fs.readFileSync(bpmPlatformXmlDir, 'utf-8');
-  const newData = data.split('<plugins>')[0] + '<plugins>\n' + dataPreparationPlugin + data.split('<plugins>')[1]
-  fs.writeFileSync(bpmPlatformXmlDir, newData);
-  return utils.runInSequence(ports, startEngine, 1);
-}
-
-function startEngine(c7port) {
-  const extractTarget = path.resolve(tmpDir, `engine_${c7port}`);
+function deployEngineData() {
   const engineUrl = `http://localhost:${c7port}`;
   const camAPI = new CamundaClient({
     mock: false,
@@ -64,79 +28,21 @@ function startEngine(c7port) {
   const variableService = new camAPI.resource('variable');
 
   return new Promise((resolve, reject) => {
-    changeServerConfig();
     resolve();
   })
     .then(startServer)
     .then(deployDefinitions)
     .then(startInstances)
-    .then(completeTasks);
-
-  function changeServerConfig() {
-
-    const configFile = utils.findPath(extractTarget, [
-      'server',
-      /tomcat/,
-      'conf',
-      'server.xml'
-    ]);
-
-    const startScript = path.resolve(
-      extractTarget,
-      utils.isWindows ? 'start-camunda.bat' : 'start-camunda.sh'
-    );
-
-    utils.changeFile(configFile, [
-      {
-        regexp: /port="8080"/g,
-        replacement: `port="${c7port}"`
-      },
-      {
-        regexp: /port="8005"/g,
-        replacement: `port="${c7port + 1000}"`
-      },
-      {
-        regexp: /port="8009"/g,
-        replacement: `port="${c7port + 1500}"`
-      },
-      {
-        regexp: /redirectPort="8443"/g,
-        replacement: `redirectPort="${c7port + 2500}"`
-      }
-    ]);
-
-    utils.changeFile(startScript, {
-      regexp: /http:\/\/localhost:8080/g,
-      replacement: `http://localhost:${c7port}`
-    });
-  }
+    .then(completeTasks)
+    .catch(console.error);
 
   function startServer() {
-    const tomcatDir = utils.findPath(extractTarget, [
-      'server',
-      /tomcat/
-    ]);
-    const startScript = utils.findPath(tomcatDir, [
-      'bin',
-      utils.isWindows ? 'catalina.bat' : 'catalina.sh'
-    ]);
-
-    console.log(`Starting new instance of engine for ${c7port}...`);
-
-    shell.exec(startScript + ' run', {
-      async:true,
-      env: Object.assign(
-        process.env,
-        {
-          CATALINA_HOME: tomcatDir,
-        }
-      )
-    });
-
+    console.log('Wait for engine rest endpoint to be up!')
     return utils.waitForServer(engineUrl);
-  }
+}
 
   function deployDefinitions() {
+    console.log('Deploy definitions!')
     const demoDataModules = utils
       .findFile(demoDataDir, '.data.js', true)
       .sort();
@@ -191,6 +97,7 @@ function startEngine(c7port) {
   }
 
   function startInstances(modules) {
+    console.log('Start instances!')
     return utils.runInSequence(
       modules,
       startModuleInstances,
@@ -223,6 +130,7 @@ function startEngine(c7port) {
   }
 
   function completeTasks(modules) {
+    console.log('Complete tasks!')
     return utils.runInSequence(
       modules,
       completeModuleTasks,

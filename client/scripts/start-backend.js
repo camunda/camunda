@@ -10,39 +10,71 @@ const {c7ports} = require('./config');
 const isWindows = utils.isWindows;
 const runWithColor = utils.runWithColor;
 
-let offlineMode = false;
-process.argv.forEach(function (val, index, array) {
-  if (val === '--o') {
-    offlineMode = true;
-  }
-});
-
 const mvnCwd = path.resolve(__dirname, '..', '..');
 
 if (!process.env.FAST_BUILD) {
-  const onlineModeMavenCmd = 'mvn clean package -DskipTests -Pit,skip.fe.build,package-engine';
+  const mavenCmd = 'mvn clean package -DskipTests -Dskip.docker -Pskip.fe.build';
 
-  const offlineModeMavenCmd = 'mvn clean package -o -DskipTests -Pit,skip.fe.build,package-engine';
-  const mvnCleanPackageCmd = offlineMode ? offlineModeMavenCmd : onlineModeMavenCmd;
+  console.log();
+  console.log(chalk.green('###########################################################################'));
+  console.log(chalk.green('####  Building Camunda Optimize...                                      ###'));
+  console.log(chalk.green('###########################################################################'));
+  console.log();
 
-  const mvnCleanPackage = runWithColor(mvnCleanPackageCmd, 'maven', chalk.green, {
+  const mvnCleanPackage = runWithColor(mavenCmd, 'maven', chalk.green, {
     cwd: mvnCwd
   });
 
-  mvnCleanPackage.on('close', startBackend);
+  mvnCleanPackage.on('close', startDocker);
 } else {
-  startBackend(0);
+  startBackend();
 }
 
-function startBackend(code) {
+function startDocker() {
+  console.log();
+  console.log(chalk.green('###########################################################################'));
+  console.log(chalk.green('####  Camunda Optimize has been built!                                 ###'));
+  console.log(chalk.green('###########################################################################'));
+  console.log();
+
+  console.log();
+  console.log(chalk.blue('###########################################################################'));
+  console.log(chalk.blue('####  Starting docker with Camunda Platform Engine and Elasticsearch... ###'));
+  console.log(chalk.blue('###########################################################################'));
+  console.log();
+
+  const docker = runWithColor('docker-compose up -d', 'docker', chalk.blue);
+  docker.on('close', deployEngineData);
+}
+
+function deployEngineData() {
+  console.log();
+  console.log(chalk.blue('###########################################################################'));
+  console.log(chalk.blue('####    Camunda Platform Engine and Elasticsearch have been started!   ###'));
+  console.log(chalk.blue('###########################################################################'));
+  console.log();
+
+  console.log();
+  console.log(chalk.magenta('###########################################################################'));
+  console.log(chalk.magenta('####  Deploying engine data...                                          ###'));
+  console.log(chalk.magenta('###########################################################################'));
+  console.log();
+  const deployDataPromise =
+    engine.deployEngineData()
+        .then(startBackend)
+        .catch(console.error);
+}
+
+function startBackend() {
+  console.log();
+  console.log(chalk.magenta('###########################################################################'));
+  console.log(chalk.magenta('####  Engine data has been deployed!                                   ###'));
+  console.log(chalk.magenta('###########################################################################'));
+  console.log();
+
   const distro = path.resolve(mvnCwd, 'distro', 'target');
   const extractDir = path.resolve(distro, 'distro');
   const archive = utils.findFile(distro, '.tar.gz');
-
-  const engineInitPromise = engine.init().catch(error => {
-    console.error(chalk.red(JSON.stringify(error, null, 2)));
-    shell.exit(0);
-  });
 
   console.log('Start extracting', archive);
 
@@ -54,86 +86,21 @@ function startBackend(code) {
     });
 
   function startBackend() {
-    engineInitPromise
-      .then(() => {
-        console.log(chalk.green('ENGINE STARTED!!!'));
+    console.log();
+    console.log(chalk.cyan('###########################################################################'));
+    console.log(chalk.cyan('####  Starting Optimize Backend...                                      ###'));
+    console.log(chalk.cyan('###########################################################################'));
+    console.log();
 
-        console.log('Starting elastic search...');
+    const backendJar = utils.findFile(extractDir, '.jar');
+    const environmentDir = path.resolve(extractDir, 'environment');
+    const classpathSeparator = isWindows ? ';' : ':' ;
+    const classpath = environmentDir + classpathSeparator + backendJar;
 
-        const elasticSearchJvmOptions = utils.findPath(extractDir, [
-          'server',
-          /^elastic/,
-          'config',
-          'jvm.options'
-        ]);
+    console.log("Classpath: " + classpath);
 
-        utils.changeFile(elasticSearchJvmOptions, [
-          {
-            regexp: /-Xms2g/g,
-            replacement: '-Xms256m'
-          },
-          {
-            regexp: /-Xmx2g/g,
-            replacement: '-Xmx256m'
-          }
-        ]);
+    runWithColor('java -cp ' + classpath + ' org.camunda.optimize.Main', 'BE', chalk.cyan);
 
-        const elasticSearch = utils.findPath(extractDir, [
-          'server',
-          /^elastic/,
-          'bin',
-          isWindows ? 'elasticsearch.bat' : 'elasticsearch'
-        ]);
-
-        runWithColor(elasticSearch, 'Elastic Search', chalk.blue);
-
-        return utils.waitForServer('http://localhost:9200', 10)
-          .then(() => {
-            console.log('Elastic search has been started!');
-            console.log('Starting backend...');
-            const backendJar = utils.findFile(extractDir, '.jar');
-            const config = utils.findPath(extractDir, [
-              'environment',
-              'environment-config.yaml'
-            ]);
-            const environmentDir = path.resolve(extractDir, 'environment');
-            const classpathSeparator = isWindows ? ';' : ':' ;
-            const classpath = environmentDir + classpathSeparator + backendJar;
-
-            utils.changeYAMLFile(config, content => {
-              return Object.assign(
-                content,
-                {
-                  engines: c7ports.reduce((engines, port) => {
-                    return Object.assign(
-                      engines,
-                      {
-                        [`engine_${port}`]: {
-                          name: 'default',
-                          rest: `http://localhost:${port}/engine-rest`,
-                          authentication: {
-                            enabled: false,
-                            password: '',
-                            user: ''
-                          },
-                          webapps: {
-                            endpoint: `http://localhost:${port}/camunda`,
-                            enabled: true
-                          }
-                        }
-                      }
-                    );
-                  }, {})
-                }
-              );
-            });
-
-            runWithColor('java -cp ' + classpath + ' org.camunda.optimize.Main', 'BE', chalk.green);
-
-            return utils.waitForServer('http://localhost:8090');
-          }).catch(() => {
-            console.log('Could not start Elasticsearch. Please check your Elasticsearch connection!');
-          });
-      });
+    return utils.waitForServer('http://localhost:8090');
   }
 }
