@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.clustering.base.snapshots;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.api.*;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
@@ -34,7 +35,6 @@ import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerTransportBuilder;
 import io.zeebe.util.StreamUtil;
-import io.zeebe.util.ZbLogger;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -50,7 +50,7 @@ import org.slf4j.Logger;
  */
 public class SnapshotReplicationService extends Actor
     implements Service<SnapshotReplicationService> {
-  private static final Logger LOG = new ZbLogger(SnapshotReplicationService.class);
+  private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
   public static final int DEFAULT_CHUNK_LENGTH = ServerTransportBuilder.DEFAULT_MAX_MESSAGE_LENGTH;
   public static final Duration ERROR_RETRY_INTERVAL = Duration.ofSeconds(1);
 
@@ -77,6 +77,7 @@ public class SnapshotReplicationService extends Actor
 
   private final Duration pollInterval;
   private RemoteAddress leaderNodeAddress;
+  private String actorName;
 
   // Used to properly calculate polling intervals (since replication operation can take a while)
   private long lastPollEpoch;
@@ -98,6 +99,10 @@ public class SnapshotReplicationService extends Actor
     partition = partitionInjector.getValue();
     topologyManager = topologyManagerInjector.getValue();
     listSnapshotsRequest.setPartitionId(partition.getInfo().getPartitionId());
+    actorName =
+        String.format(
+            "%s-%d-snap-repl",
+            partition.getInfo().getTopicName(), partition.getInfo().getPartitionId());
 
     LOG.debug("Starting replication for partition {}", partition.getInfo());
     startContext.async(startContext.getScheduler().submitActor(this));
@@ -123,6 +128,11 @@ public class SnapshotReplicationService extends Actor
   protected void onActorClosing() {
     snapshotsToReplicate.clear();
     abortCurrentReplication();
+  }
+
+  @Override
+  public String getName() {
+    return actorName == null ? super.getName() : actorName;
   }
 
   private void pollLeaderForSnapshots() {
