@@ -248,7 +248,16 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
       final Supplier<BufferWriter> responseSupplier) {
     actor.runUntilDone(
         () -> {
-          final BufferWriter responseWriter = responseSupplier.get();
+          final BufferWriter responseWriter;
+
+          try {
+            responseWriter = responseSupplier.get();
+          } catch (final Exception ex) {
+            LOG.error("Error generating server response", ex);
+            actor.done();
+            return;
+          }
+
           final ServerResponse response =
               new ServerResponse()
                   .reset()
