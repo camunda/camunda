@@ -41,7 +41,7 @@ public class WorkflowRestService {
 
   @GetMapping(path = "/{id}")
   public WorkflowDto getWorkflow(@PathVariable("id") String workflowId) {
-    final WorkflowEntity workflowEntity = workflowReader.getWorkflowById(workflowId);
+    final WorkflowEntity workflowEntity = workflowReader.getWorkflow(workflowId);
     return WorkflowDto.createFrom(workflowEntity);
   }
 

@@ -1,7 +1,14 @@
 package org.camunda.operate.es.reader;
 
+import static org.camunda.operate.es.types.WorkflowType.BPMN_XML;
+import static org.camunda.operate.es.types.WorkflowType.ID;
+import static org.camunda.operate.es.types.WorkflowType.TYPE;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+
 import java.io.IOException;
 import java.util.Map;
+
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.es.types.WorkflowType;
 import org.camunda.operate.rest.exception.NotFoundException;
@@ -16,11 +23,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
-import static org.camunda.operate.es.types.WorkflowType.BPMN_XML;
-import static org.camunda.operate.es.types.WorkflowType.ID;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @Component
 @Profile("elasticsearch")
@@ -36,18 +40,10 @@ public class WorkflowReader {
   private ObjectMapper objectMapper;
 
   public String getDiagram(String workflowId) {
-    BoolQueryBuilder query = boolQuery().must(termQuery(ID, workflowId));
+    GetResponse response = esClient.prepareGet(TYPE, TYPE, workflowId).setFetchSource(BPMN_XML, null).get();
 
-    SearchResponse response = esClient
-        .prepareSearch(WorkflowType.TYPE)
-        .setQuery(query)
-        .setFetchSource(BPMN_XML, null)
-        .setSize(1)
-        .get();
-
-    if (response.getHits().getTotalHits() > 0) {
-      SearchHit hit = response.getHits().getAt(0);
-      Map<String, Object> result = hit.getSourceAsMap();
+    if (response.isExists()) {
+      Map<String, Object> result = response.getSourceAsMap();
       return (String) result.get(BPMN_XML);
     }
     else {
@@ -55,9 +51,15 @@ public class WorkflowReader {
     }
   }
 
-  public WorkflowEntity getWorkflowById(String workflowId) {
-    final GetResponse getResponse = esClient.prepareGet(WorkflowType.TYPE, WorkflowType.TYPE, workflowId).get();
-    return fromSearchHit(getResponse.getSourceAsString());
+  public WorkflowEntity getWorkflow(String workflowId) {
+    final GetResponse response = esClient.prepareGet(TYPE, TYPE, workflowId).get();
+
+    if (response.isExists()) {
+      return fromSearchHit(response.getSourceAsString());
+    }
+    else {
+      throw new NotFoundException(String.format("Could not find workflow with id '%s'.", workflowId));
+    }
   }
 
   private WorkflowEntity fromSearchHit(String workflowString) {
