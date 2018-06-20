@@ -22,7 +22,7 @@ describe('DiagramBar', () => {
     const mockErrorMessage = 'error';
     mockInstance = {
       ...mockInstance,
-      stateName: 'INCIDENT',
+      state: 'ACTIVE',
       incidents: [{state: 'ACTIVE', errorMessage: mockErrorMessage}]
     };
     const node = shallow(<DiagramBar instance={mockInstance} />);

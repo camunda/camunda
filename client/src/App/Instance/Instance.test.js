@@ -61,7 +61,7 @@ describe('Instance', () => {
     expect(spyFetch.mock.calls[0][0]).toEqual(INSTANCE.id);
   });
 
-  it.skip('should change state after data fetching', async () => {
+  it('should change state after data fetching', async () => {
     const node = shallow(component);
     // fetch data
     await node.instance().componentDidMount();
@@ -104,7 +104,7 @@ describe('Instance', () => {
     expect(Detail.type).toBe(InstanceDetail);
   });
 
-  it('should InstanceDetail in the Header with the instance id', async () => {
+  it('should render InstanceDetail in the Header with the instance id', async () => {
     const node = shallow(component);
     // fetch data
     await node.instance().componentDidMount();
