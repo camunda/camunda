@@ -1,7 +1,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import * as utils from 'modules/utils';
+import * as utils from 'modules/utils/utils';
 
 import ThemedStateIcon from './StateIcon';
 import * as Styled from './styled';
