@@ -11,7 +11,7 @@ import {getData} from './api';
 export default class InstancesListView extends React.Component {
   state = {
     firstElement: 0,
-    instances: null,
+    instances: [],
     entriesPerPage: 0
   };
 

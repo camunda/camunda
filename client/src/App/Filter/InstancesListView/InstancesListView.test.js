@@ -16,6 +16,7 @@ const filter = {};
 const total = 27;
 
 jest.mock('./api');
+getData.mockReturnValue([{id: 1}]);
 
 describe('InstancesListView', () => {
   let node;

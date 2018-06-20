@@ -1,4 +1,6 @@
 import React from 'react';
+import PropTypes from 'prop-types';
+
 import Table from 'modules/components/Table';
 import Checkbox from 'modules/components/Checkbox';
 import StateIcon from 'modules/components/StateIcon';
@@ -9,6 +11,16 @@ import {formatDate} from 'modules/utils';
 export default class InstancesList extends React.Component {
   state = {
     rowsToDisplay: null
+  };
+
+  static propTypes = {
+    data: PropTypes.arrayOf(PropTypes.object).isRequired,
+    onSelectionUpdate: PropTypes.func.isRequired,
+    onEntriesPerPageChange: PropTypes.func.isRequired,
+    selection: PropTypes.shape({
+      list: PropTypes.instanceOf(Set),
+      isBlacklist: PropTypes.bool
+    }).isRequired
   };
 
   render() {
@@ -72,7 +84,7 @@ export default class InstancesList extends React.Component {
   };
 
   handleToggleSelectAll = ({target: {checked}}) => {
-    this.props.updateSelection({
+    this.props.onSelectionUpdate({
       isBlacklist: {$set: checked},
       list: {$set: new Set()}
     });
@@ -118,17 +130,17 @@ export default class InstancesList extends React.Component {
             const newState = evt.target.checked;
             if (isBlacklist) {
               if (newState) {
-                this.props.updateSelection({
+                this.props.onSelectionUpdate({
                   list: {$remove: [this.findInSelectionList(instance.id)]}
                 });
               } else {
-                this.props.updateSelection({list: {$add: [instance]}});
+                this.props.onSelectionUpdate({list: {$add: [instance]}});
               }
             } else {
               if (newState) {
-                this.props.updateSelection({list: {$add: [instance]}});
+                this.props.onSelectionUpdate({list: {$add: [instance]}});
               } else {
-                this.props.updateSelection({
+                this.props.onSelectionUpdate({
                   list: {$remove: [this.findInSelectionList(instance.id)]}
                 });
               }
