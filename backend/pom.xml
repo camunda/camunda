@@ -82,6 +82,17 @@
       <artifactId>javax.json</artifactId>
       <version>1.1.2</version>
     </dependency>
+    <!-- SWAGGER -->
+    <dependency>
+      <groupId>io.springfox</groupId>
+      <artifactId>springfox-swagger2</artifactId>
+      <version>2.8.0</version>
+    </dependency>
+    <dependency>
+      <groupId>io.springfox</groupId>
+      <artifactId>springfox-swagger-ui</artifactId>
+      <version>2.8.0</version>
+    </dependency>
 
   </dependencies>
 
@@ -90,6 +101,7 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+        <version>${spring.boot.version}</version>
         <executions>
             <execution>
                 <goals>
@@ -103,8 +115,8 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.7.0</version>
         <configuration>
-          <source>1.8</source>
-          <target>1.8</target>
+          <source>${java.version}</source>
+          <target>${java.version}</target>
         </configuration>
       </plugin>
       <plugin>
@@ -145,7 +157,7 @@
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>exec-maven-plugin</artifactId>
-            <version>1.1.1</version>
+            <version>1.6.0</version>
             <executions>
               <execution>
                 <id>docker-start</id>

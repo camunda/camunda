@@ -1,3 +1,4 @@
+springfox.documentation.swagger.v2.path: /documentation
 camunda.bpm.operate:
   elasticsearch:
     clusterName: docker-cluster

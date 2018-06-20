@@ -37,6 +37,15 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
   public static final String LOGIN_RESOURCE = "/api/login";
   public static final String LOGOUT_RESOURCE = "/api/logout";
 
+  private static final String[] AUTH_WHITELIST = {
+    // -- swagger ui
+    "/swagger-resources",
+    "/swagger-resources/**",
+    "/swagger-ui.html",
+    "/documentation",
+    "/webjars/**"
+  };
+
   @Bean
   public UserDetailsService userDetailsService() {
     String password = passwordEncoder().encode("demo");
@@ -61,7 +70,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     http
       .csrf().disable()
       .authorizeRequests()
-        .anyRequest().authenticated()
+        .antMatchers(AUTH_WHITELIST).permitAll()
+        .antMatchers("/**").authenticated()
       .and()
         .formLogin()
           .loginProcessingUrl(LOGIN_RESOURCE)
