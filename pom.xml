@@ -52,30 +52,23 @@
       </activation>
       <properties>
         <camunda.engine.version>7.10.0-SNAPSHOT</camunda.engine.version>
-        <it.test.excludedGroups>org.camunda.optimize.test.it.Engine77</it.test.excludedGroups>
+        <web.xml>latest</web.xml>
       </properties>
     </profile>
 
     <profile>
       <id>engine-7.9</id>
       <properties>
-        <camunda.engine.version>7.9.0</camunda.engine.version>
-        <it.test.excludedGroups>org.camunda.optimize.test.it.Engine77</it.test.excludedGroups>
+        <camunda.engine.version>7.9.1-SNAPSHOT</camunda.engine.version>
+        <web.xml>latest</web.xml>
       </properties>
     </profile>
 
     <profile>
       <id>engine-7.8</id>
       <properties>
-        <camunda.engine.version>7.8.0</camunda.engine.version>
-        <it.test.excludedGroups>org.camunda.optimize.test.it.Engine77</it.test.excludedGroups>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>engine-7.7</id>
-      <properties>
-        <camunda.engine.version>7.7.0</camunda.engine.version>
+        <camunda.engine.version>7.8.7-SNAPSHOT</camunda.engine.version>
+        <web.xml>7.8</web.xml>
       </properties>
     </profile>
 

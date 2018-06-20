@@ -3,13 +3,11 @@ package org.camunda.optimize.service.es.retrieval;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
-import org.camunda.optimize.test.it.Engine78;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.junit.rules.RuleChain;
 
 import javax.ws.rs.client.WebTarget;
@@ -25,10 +23,7 @@ import java.util.Map;
 import java.util.stream.IntStream;
 
 import static junit.framework.TestCase.assertTrue;
-import static org.camunda.optimize.rest.VariableRestService.NAME;
-import static org.camunda.optimize.rest.VariableRestService.PROCESS_DEFINITION_KEY;
-import static org.camunda.optimize.rest.VariableRestService.PROCESS_DEFINITION_VERSION;
-import static org.camunda.optimize.rest.VariableRestService.TYPE;
+import static org.camunda.optimize.rest.VariableRestService.*;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -175,7 +170,6 @@ public class VariableValueRetrievalIT {
   }
 
   @Test
-  @Category(Engine78.class)
   public void retrieveValuesForAllPrimitiveTypes() throws Exception {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();

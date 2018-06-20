@@ -109,7 +109,8 @@ void integrationTestSteps(String engineVersion = 'latest') {
     ''')
   }
   container('maven') {
-    installDockerCompose()
+    installDockerBinaries()
+    sh ("""echo '${REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin""")
     setupPermissionsForHostDirs('backend')
     runMaven("-T\$LIMITS_CPU -Pproduction,it,engine-${engineVersion},postgresql -pl backend -am install")
   }
@@ -123,26 +124,47 @@ void setupPermissionsForHostDirs(String directory) {
   """)
 }
 
-void archiveTestArtifacts(String directory) {
+void archiveTestArtifacts(String srcDirectory, String destDirectory = null) {
   container('maven') {
     // fix permissions for jnlp slave as maven user is root so we can archive the artifacts
-    sh """#!/bin/bash -ex
-      chown -R 10000:10000 ${directory}/target/{es_logs,es_snapshots,cambpm_logs}
-    """
+    sh ("""#!/bin/bash -ex
+      chown -R 10000:10000 ${srcDirectory}/target/{es_logs,es_snapshots,cambpm_logs}
+    """)
+  }
+
+  if (destDirectory != null) {
+    sh ("""
+      mkdir -p ${destDirectory}
+      cp -R ${srcDirectory}/target/es_* ${srcDirectory}/target/cambpm_logs ${destDirectory}
+    """)
+  } else {
+    destDirectory = srcDirectory
   }
 
   archiveArtifacts(
-    artifacts: "${directory}/target/es_*/**/*,${directory}/target/cambpm_logs/**/*,**/target/*-reports/**/*.txt",
+    artifacts: "${destDirectory}/**/*",
+    allowEmptyResults: true,
+    onlyIfSuccessful: false
+  )
+
+  archiveArtifacts(
+    artifacts: "**/target/*-reports/**/*.txt",
     allowEmptyResults: true,
     onlyIfSuccessful: false
   )
 }
 
-void installDockerCompose(version = '1.21.2') {
+void installDockerBinaries() {
   sh("""
-    curl -sSL https://github.com/docker/compose/releases/download/${version}/docker-compose-Linux-x86_64 -o /usr/local/bin/docker-compose
+    curl -sSL https://github.com/docker/compose/releases/download/1.21.2/docker-compose-Linux-x86_64 -o /usr/local/bin/docker-compose
     chmod +x /usr/local/bin/docker-compose
     docker-compose version
+    
+    curl -sSL https://download.docker.com/linux/static/stable/x86_64/docker-18.03.1-ce.tgz | \
+      tar xvzf - && \
+      mv docker/* /usr/local/bin/
+    docker info
+    docker version
   """)
 }
 
@@ -166,6 +188,7 @@ pipeline {
   environment {
     NODE_ENV = "ci"
     NEXUS = credentials("camunda-nexus")
+    REGISTRY = credentials('docker-registry-ci3')
   }
 
   options {
@@ -180,7 +203,7 @@ pipeline {
         stage('Backend') {
           steps {
             container('maven') {
-              installDockerCompose()
+              installDockerBinaries()
               setupPermissionsForHostDirs('upgrade')
               runMaven('-Dskip.fe.build=true -T\$LIMITS_CPU install')
             }
@@ -221,62 +244,71 @@ pipeline {
               yaml mavenNodeJSDindAgent(env)
             }
           }
+          environment {
+            CAMBPM_VERSION = "7.10.0-SNAPSHOT"
+          }
           steps {
             integrationTestSteps('latest')
           }
           post {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-              archiveTestArtifacts('backend')
+              archiveTestArtifacts('backend', 'latest')
             }
           }
         }
-//        stage('IT 7.9') {
-//          when {
-//            beforeAgent true
-//            branch 'master'
-//          }
-//          agent {
-//            kubernetes {
-//              cloud 'optimize-ci'
-//              label "optimize-ci-build-it-7.9_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
-//              defaultContainer 'jnlp'
-//              yaml mavenNodeJSDindAgent(env)
-//            }
-//          }
-//          steps {
-//            integrationTestSteps('7.9')
-//          }
-//          post {
-//            always {
-//              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-//              archiveTestArtifacts('backend')
-//            }
-//          }
-//        }
-//        stage('IT 7.8') {
-//          when {
-//            beforeAgent true
-//            branch 'master'
-//          }
-//          agent {
-//            kubernetes {
-//              cloud 'optimize-ci'
-//              label "optimize-ci-build-it-7.8_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
-//              defaultContainer 'jnlp'
-//              yaml mavenNodeJSDindAgent(env)
-//            }
-//          }
-//          steps {
-//            integrationTestSteps('7.8')
-//          }
-//          post {
-//            always {
-//              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-//              archiveTestArtifacts('backend')
-//            }
-//          }
-//        }
+        stage('IT 7.9') {
+          when {
+            beforeAgent true
+            branch 'master'
+          }
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build-it-7.9_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml mavenNodeJSDindAgent(env)
+            }
+          }
+          environment {
+            CAMBPM_VERSION = "7.9.1-SNAPSHOT"
+          }
+          steps {
+            integrationTestSteps('7.9')
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+              archiveTestArtifacts('backend', '7_9')
+            }
+          }
+        }
+        stage('IT 7.8') {
+          when {
+            beforeAgent true
+            branch 'master'
+          }
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build-it-7.8_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml mavenNodeJSDindAgent(env)
+            }
+          }
+          environment {
+            CAMBPM_VERSION = "7.8.7-SNAPSHOT"
+          }
+          steps {
+            integrationTestSteps('7.8')
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+              archiveTestArtifacts('backend', '7_8')
+            }
+          }
+        }
       }
     }
     stage('RESTAPI Docs') {
@@ -309,7 +341,6 @@ pipeline {
         VERSION = readMavenPom().getVersion().replace('-SNAPSHOT', '')
         SNAPSHOT = readMavenPom().getVersion().contains('SNAPSHOT')
         COMMIT_ID = getGitCommitHash()
-        REGISTRY = credentials('docker-registry-ci3')
       }
       steps {
         container('docker') {

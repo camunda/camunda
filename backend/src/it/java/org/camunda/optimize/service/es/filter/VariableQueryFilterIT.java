@@ -8,7 +8,6 @@ import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportResultDto;
-import org.camunda.optimize.test.it.Engine78;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -641,7 +640,6 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  @Category(Engine78.class)
   public void dateLessThanVariableFilter() throws Exception {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
@@ -664,7 +662,6 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  @Category(Engine78.class)
   public void dateLessThanEqualVariableFilter() throws Exception {
     // given
     OffsetDateTime now = nowDate();
@@ -689,7 +686,6 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  @Category(Engine78.class)
   public void dateGreaterThanVariableFilter() throws Exception {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
@@ -714,7 +710,6 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  @Category(Engine78.class)
   public void dateGreaterThanEqualVariableFilter() throws Exception {
     // given
     OffsetDateTime now = nowDate();
@@ -739,7 +734,6 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  @Category(Engine78.class)
   public void dateEqualVariableFilter() throws Exception {
     // given
     OffsetDateTime now = nowDate();
@@ -764,7 +758,6 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  @Category(Engine78.class)
   public void dateUnequalVariableFilter() throws Exception {
 
     // given
@@ -790,7 +783,6 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  @Category(Engine78.class)
   public void dateWithinRangeVariableFilter() throws Exception {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
@@ -818,7 +810,6 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  @Category(Engine78.class)
   public void dateOffRangeVariableFilter() throws Exception {
     // given
     OffsetDateTime now = nowDate();

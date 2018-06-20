@@ -68,11 +68,16 @@
                 <exclude>WEB-INF/web.xml</exclude>
               </excludes>
             </overlay>
-
           </overlays>
+
+            <webResources>
+              <resource>
+                <directory>src/main/runtime/${web.xml}</directory>
+              </resource>
+            </webResources>
+
         </configuration>
       </plugin>
     </plugins>
   </build>
-
 </project>
