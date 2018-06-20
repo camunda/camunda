@@ -17,11 +17,15 @@
  */
 package io.zeebe.broker.transport;
 
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.*;
 import io.zeebe.transport.impl.memory.NonBlockingMemoryPool;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorScheduler;
+import java.io.Closeable;
 import java.net.InetSocketAddress;
 import org.slf4j.Logger;
 
@@ -69,6 +73,10 @@ public class ServerTransportService implements Service<ServerTransport> {
   @Override
   public ServerTransport get() {
     return serverTransport;
+  }
+
+  public Closeable getReleasingResourcesDelegate() {
+    return () -> serverTransport.releaseResources();
   }
 
   public Injector<ServerRequestHandler> getRequestHandlerInjector() {
