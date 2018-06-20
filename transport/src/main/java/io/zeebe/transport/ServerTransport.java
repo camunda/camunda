@@ -62,8 +62,4 @@ public class ServerTransport implements AutoCloseable {
   public void close() {
     closeAsync().join();
   }
-
-  public void releaseResources() {
-    serverSocketBinding.releaseMedia();
-  }
 }

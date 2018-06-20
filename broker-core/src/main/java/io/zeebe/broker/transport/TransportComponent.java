@@ -78,7 +78,6 @@ public class TransportComponent implements Component {
 
     final ActorFuture<ServerTransport> replactionApiFuture =
         bindNonBufferingProtocolEndpoint(
-            context,
             serviceContainer,
             REPLICATION_API_SERVER_NAME,
             networkCfg.getReplication(),
@@ -89,7 +88,6 @@ public class TransportComponent implements Component {
 
     final ActorFuture<BufferingServerTransport> managementApiFuture =
         bindBufferingProtocolEndpoint(
-            context,
             serviceContainer,
             MANAGEMENT_API_SERVER_NAME,
             networkCfg.getManagement(),
@@ -99,7 +97,6 @@ public class TransportComponent implements Component {
 
     final ActorFuture<ServerTransport> clientApiFuture =
         bindNonBufferingProtocolEndpoint(
-            context,
             serviceContainer,
             CLIENT_API_SERVER_NAME,
             networkCfg.getClient(),
@@ -164,7 +161,6 @@ public class TransportComponent implements Component {
   }
 
   protected ActorFuture<BufferingServerTransport> bindBufferingProtocolEndpoint(
-      SystemContext systemContext,
       ServiceContainer serviceContainer,
       String name,
       SocketBindingCfg socketBindingCfg,
@@ -173,7 +169,6 @@ public class TransportComponent implements Component {
     final SocketAddress bindAddr = socketBindingCfg.toSocketAddress();
 
     return createBufferingServerTransport(
-        systemContext,
         serviceContainer,
         name,
         bindAddr.toInetSocketAddress(),
@@ -182,7 +177,6 @@ public class TransportComponent implements Component {
   }
 
   protected ActorFuture<ServerTransport> bindNonBufferingProtocolEndpoint(
-      SystemContext systemContext,
       ServiceContainer serviceContainer,
       String name,
       SocketBindingCfg socketBindingCfg,
@@ -192,7 +186,6 @@ public class TransportComponent implements Component {
     final SocketAddress bindAddr = socketBindingCfg.toSocketAddress();
 
     return createServerTransport(
-        systemContext,
         serviceContainer,
         name,
         bindAddr.toInetSocketAddress(),
@@ -202,7 +195,6 @@ public class TransportComponent implements Component {
   }
 
   protected ActorFuture<ServerTransport> createServerTransport(
-      SystemContext systemContext,
       ServiceContainer serviceContainer,
       String name,
       InetSocketAddress bindAddress,
@@ -212,8 +204,6 @@ public class TransportComponent implements Component {
     final ServerTransportService service =
         new ServerTransportService(name, bindAddress, sendBufferSize);
 
-    systemContext.addResourceReleasingDelegate(service.getReleasingResourcesDelegate());
-
     return serviceContainer
         .createService(TransportServiceNames.serverTransport(name), service)
         .dependency(requestHandlerDependency, service.getRequestHandlerInjector())
@@ -222,7 +212,6 @@ public class TransportComponent implements Component {
   }
 
   protected ActorFuture<BufferingServerTransport> createBufferingServerTransport(
-      SystemContext systemContext,
       ServiceContainer serviceContainer,
       String name,
       InetSocketAddress bindAddress,
@@ -234,7 +223,6 @@ public class TransportComponent implements Component {
     final BufferingServerTransportService service =
         new BufferingServerTransportService(name, bindAddress, sendBufferSize);
 
-    systemContext.addResourceReleasingDelegate(service.getReleasingResourcesDelegate());
     return serviceContainer
         .createService(TransportServiceNames.bufferingServerTransport(name), service)
         .dependency(receiveBufferName, service.getReceiveBufferInjector())

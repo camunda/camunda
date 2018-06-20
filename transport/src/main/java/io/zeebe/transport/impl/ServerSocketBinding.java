@@ -95,10 +95,6 @@ public class ServerSocketBinding {
     } catch (Exception e) {
       LOG.debug("Failed to close selectors", e);
     }
-    releaseMedia();
-  }
-
-  public void releaseMedia() {
     try {
       media.close();
     } catch (IOException e) {

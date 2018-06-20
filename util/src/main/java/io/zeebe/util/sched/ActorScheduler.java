@@ -19,14 +19,13 @@ import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.metrics.ActorThreadMetrics;
-import org.agrona.ExpandableArrayBuffer;
-
 import java.io.IOException;
 import java.io.PrintStream;
 import java.time.Duration;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import org.agrona.ExpandableArrayBuffer;
 
 public class ActorScheduler {
   private final AtomicReference<SchedulerState> state = new AtomicReference<>();
@@ -135,11 +134,6 @@ public class ActorScheduler {
     } catch (IOException e) {
       e.printStackTrace();
     }
-  }
-
-  public void setBlockingTasksShutdownTime(int seconds)
-  {
-      actorTaskExecutor.setBlockingTasksShutdownTime(Duration.ofSeconds(seconds));
   }
 
   public static ActorSchedulerBuilder newActorScheduler() {

@@ -19,16 +19,12 @@ package io.zeebe.broker.transport;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.BufferingServerTransport;
 import io.zeebe.transport.Transports;
 import io.zeebe.transport.impl.memory.NonBlockingMemoryPool;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorScheduler;
-import java.io.Closeable;
 import java.net.InetSocketAddress;
 import org.slf4j.Logger;
 
@@ -78,9 +74,5 @@ public class BufferingServerTransportService implements Service<BufferingServerT
 
   public Injector<Dispatcher> getReceiveBufferInjector() {
     return receiveBufferInjector;
-  }
-
-  public Closeable getReleasingResourcesDelegate() {
-    return () -> serverTransport.releaseResources();
   }
 }
