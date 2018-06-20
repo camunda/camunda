@@ -136,6 +136,10 @@ public class ActorScheduler {
     }
   }
 
+  public void setBlockingTasksShutdownTime(int seconds) {
+    actorTaskExecutor.setBlockingTasksShutdownTime(Duration.ofSeconds(seconds));
+  }
+
   public static ActorSchedulerBuilder newActorScheduler() {
     return new ActorSchedulerBuilder();
   }
