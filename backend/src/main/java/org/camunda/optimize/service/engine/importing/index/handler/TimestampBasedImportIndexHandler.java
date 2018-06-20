@@ -14,7 +14,6 @@ import javax.annotation.PostConstruct;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
 public abstract class TimestampBasedImportIndexHandler
@@ -68,9 +67,7 @@ public abstract class TimestampBasedImportIndexHandler
   @Override
   public TimestampBasedImportPage getNextPage() {
     TimestampBasedImportPage page = new TimestampBasedImportPage();
-    // we have to add one millisecond because the operator for comparing (finished after) timestamps
-    // in the engine is >= . Therefore we add one count of the smallest unit to achieve the > operator
-    page.setTimestampOfLastEntity(timestampOfLastEntity.plus(1L, ChronoUnit.MILLIS));
+    page.setTimestampOfLastEntity(timestampOfLastEntity);
     return page;
   }
 

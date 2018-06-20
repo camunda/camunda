@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -93,6 +94,7 @@ public class VariableUpdateInstanceImportService {
     variableDto.setProcessInstanceId(pluginVariableDto.getProcessInstanceId());
     variableDto.setProcessDefinitionId(pluginVariableDto.getProcessDefinitionId());
     variableDto.setProcessDefinitionKey(pluginVariableDto.getProcessDefinitionKey());
+    variableDto.setVersion(pluginVariableDto.getVersion());
     return variableDto;
   }
 
@@ -113,33 +115,39 @@ public class VariableUpdateInstanceImportService {
     optimizeDto.setProcessDefinitionId(engineEntity.getProcessDefinitionId());
     optimizeDto.setProcessDefinitionKey(engineEntity.getProcessDefinitionKey());
     optimizeDto.setProcessInstanceId(engineEntity.getProcessInstanceId());
+    optimizeDto.setVersion(engineEntity.getSequenceCounter());
 
     return optimizeDto;
   }
 
   private boolean isValidVariable(PluginVariableDto variableDto) {
     if (variableDto == null) {
-      logger.debug("Refuse to add null variable from import adapter plugin.");
+      logger.warn("Refuse to add null variable from import adapter plugin.");
       return false;
     } else if (isNullOrEmpty(variableDto.getName())) {
-      logger.debug("Refuse to add variable with id [{}] from variable import adapter plugin. Variable has no name.",
+      logger.warn("Refuse to add variable with id [{}] from variable import adapter plugin. Variable has no name.",
         variableDto.getId());
       return false;
     } else if (isNullOrEmpty(variableDto.getType()) || !isVariableTypeSupported(variableDto.getType())) {
-      logger.debug("Refuse to add variable [{}] from variable import adapter plugin. Variable has no type or type is not supported.",
+      logger.warn("Refuse to add variable [{}] from variable import adapter plugin. Variable has no type or type is not supported.",
         variableDto.getName());
       return false;
     } else if (isNullOrEmpty(variableDto.getProcessInstanceId())) {
-      logger.debug("Refuse to add variable [{}] from variable import adapter plugin. Variable has no process instance id.",
+      logger.warn("Refuse to add variable [{}] from variable import adapter plugin. Variable has no process instance id.",
         variableDto.getName());
       return false;
     } else if (isNullOrEmpty(variableDto.getProcessDefinitionId())) {
-      logger.debug("Refuse to add variable [{}] from variable import adapter plugin. Variable has no process definition id.",
+      logger.warn("Refuse to add variable [{}] from variable import adapter plugin. Variable has no process definition id.",
         variableDto.getName());
       return false;
     } else if (isNullOrEmpty(variableDto.getProcessDefinitionKey())) {
-      logger.debug("Refuse to add variable [{}] from variable import adapter plugin. Variable has no process definition key.",
+      logger.warn("Refuse to add variable [{}] from variable import adapter plugin. Variable has no process definition key.",
         variableDto.getName());
+      return false;
+    }  else if (isNullOrZero(variableDto.getVersion())) {
+      logger.warn("Refuse to add variable [{}] with version [{}] from variable import adapter plugin. Variable has no version or version is invalid.",
+        variableDto.getName(),
+        variableDto.getVersion());
       return false;
     }
     return true;
@@ -147,6 +155,10 @@ public class VariableUpdateInstanceImportService {
 
   private boolean isNullOrEmpty(String value) {
     return value == null || value.isEmpty();
+  }
+
+  private boolean isNullOrZero(Long value) {
+    return value == null || value.equals(0L);
   }
 
   private ElasticsearchImportJob<VariableDto> createElasticsearchImportJob(List<VariableDto> processInstances) {

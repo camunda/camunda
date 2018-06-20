@@ -26,7 +26,13 @@ public class VariableUpdateWriter extends VariableWriter {
           "${typeName}Entries.put(var.id, var);" +
         "}" +
         "for (def var : params.${typeName}) {" +
-          "${typeName}Entries.put(var.id, var);" +
+          "${typeName}Entries.compute(var.id, (k, v) -> { " +
+          "  if (v == null) {" +
+          "    return var;"   +
+          "  } else {" +
+          "    return v.version > var.version? v : var;" +
+          "  }" +
+          "});" +
         "}" +
         "ctx._source.${typeName} = ${typeName}Entries.values();\n";
       String resolvedVariableScript = sub.replace(variableScript);

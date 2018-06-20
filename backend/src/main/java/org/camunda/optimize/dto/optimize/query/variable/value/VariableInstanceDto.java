@@ -7,6 +7,7 @@ public abstract class VariableInstanceDto<T> implements OptimizeDto {
   private String id;
   private String name;
   private String type;
+  private Long version;
 
   public String getId() {
     return id;
@@ -30,6 +31,14 @@ public abstract class VariableInstanceDto<T> implements OptimizeDto {
 
   public void setType(String type) {
     this.type = type;
+  }
+
+  public Long getVersion() {
+    return version;
+  }
+
+  public void setVersion(Long version) {
+    this.version = version;
   }
 
   public abstract T getValue();

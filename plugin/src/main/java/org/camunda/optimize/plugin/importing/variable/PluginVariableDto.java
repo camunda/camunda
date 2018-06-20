@@ -49,6 +49,15 @@ public class PluginVariableDto {
    */
   private String processInstanceId;
 
+  /**
+   * The version of the variable value. While a process instance is running
+   * the same variable can be updated several times. This value indicates
+   * which update number this variable is.
+   *
+   * Note: This field is required in order to be imported to Optimize.
+   */
+  private Long version;
+
   public String getId() {
     return id;
   }
@@ -103,5 +112,13 @@ public class PluginVariableDto {
 
   public void setProcessInstanceId(String processInstanceId) {
     this.processInstanceId = processInstanceId;
+  }
+
+  public Long getVersion() {
+    return version;
+  }
+
+  public void setVersion(Long version) {
+    this.version = version;
   }
 }

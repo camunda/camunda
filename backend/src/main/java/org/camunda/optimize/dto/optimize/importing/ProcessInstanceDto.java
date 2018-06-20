@@ -36,25 +36,25 @@ public class ProcessInstanceDto implements OptimizeDto {
   protected List<BooleanVariableDto> booleanVariables = new ArrayList<>();
 
   public void addVariableInstance(VariableInstanceDto variableInstanceDto) {
-    if( variableInstanceDto instanceof StringVariableDto) {
+    if (variableInstanceDto instanceof StringVariableDto) {
       StringVariableDto stringInstance = (StringVariableDto) variableInstanceDto;
       stringVariables.add(stringInstance);
-    } else if ( variableInstanceDto instanceof  IntegerVariableDto) {
+    } else if (variableInstanceDto instanceof IntegerVariableDto) {
       IntegerVariableDto integerVariableDto = (IntegerVariableDto) variableInstanceDto;
       integerVariables.add(integerVariableDto);
-    } else if ( variableInstanceDto instanceof  LongVariableDto) {
+    } else if (variableInstanceDto instanceof LongVariableDto) {
       LongVariableDto longVariableDto = (LongVariableDto) variableInstanceDto;
       longVariables.add(longVariableDto);
-    } else if ( variableInstanceDto instanceof  ShortVariableDto) {
+    } else if (variableInstanceDto instanceof ShortVariableDto) {
       ShortVariableDto shortVariableDto = (ShortVariableDto) variableInstanceDto;
       shortVariables.add(shortVariableDto);
-    } else if ( variableInstanceDto instanceof  DoubleVariableDto) {
+    } else if (variableInstanceDto instanceof DoubleVariableDto) {
       DoubleVariableDto doubleVariableDto = (DoubleVariableDto) variableInstanceDto;
       doubleVariables.add(doubleVariableDto);
-    } else if ( variableInstanceDto instanceof  BooleanVariableDto) {
+    } else if (variableInstanceDto instanceof BooleanVariableDto) {
       BooleanVariableDto booleanVariableDto = (BooleanVariableDto) variableInstanceDto;
       booleanVariables.add(booleanVariableDto);
-    } else if ( variableInstanceDto instanceof  DateVariableDto) {
+    } else if (variableInstanceDto instanceof DateVariableDto) {
       DateVariableDto dateVariableDto = (DateVariableDto) variableInstanceDto;
       dateVariables.add(dateVariableDto);
     }

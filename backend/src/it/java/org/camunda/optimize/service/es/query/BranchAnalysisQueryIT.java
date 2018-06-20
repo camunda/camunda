@@ -44,7 +44,6 @@ public class BranchAnalysisQueryIT {
   public static final String PROCESS_DEFINITION_KEY = "aProcessDefinitionKey";
   public static final String PROCESS_DEFINITION_VERSION = "1";
   private Logger logger = LoggerFactory.getLogger(BranchAnalysisQueryIT.class);
-  private static final String PROCESS_DEFINITION_ID = "procDef1";
   private static final String GATEWAY_ACTIVITY = "gw_1";
 
   private static final String GATEWAY_B = "gw_b";

@@ -193,14 +193,19 @@ public class VariableImportIT {
   }
 
   @Test
-  public void variableUpdateImportContinuesAfterFirstUpdate() {
+  public void onlyTheLatestVariableValueUpdateIsImported() {
     //given
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .startEvent()
       .serviceTask()
         .camundaExpression("${true}")
         .camundaOutputParameter("stringVar", "foo")
-      .userTask()
+      .serviceTask()
+        .camundaExpression("${true}")
+        .camundaOutputParameter("stringVar", "foo1")
+      .serviceTask()
+        .camundaExpression("${true}")
+        .camundaOutputParameter("stringVar", "bar")
       .endEvent()
       .done();
 
@@ -225,6 +230,7 @@ public class VariableImportIT {
 
     //then
     assertThat(variableValues.size(), is(1));
+    assertThat(variableValues.get(0), is("bar"));
   }
 
   @Test
@@ -236,12 +242,6 @@ public class VariableImportIT {
         .camundaExpression("${true}")
         .camundaOutputParameter("stringVar", "foo")
         .camundaOutputParameter("anotherVar", "1")
-      .scriptTask()
-        .scriptFormat("groovy")
-        // we need to wait 1 second to make sure that the next
-        // variable update does not happen at the exact same time.
-        // This will be fixed with OPT-1250
-        .scriptText("sleep(1);")
       .serviceTask()
         .camundaExpression("${true}")
         .camundaOutputParameter("stringVar", "bar")

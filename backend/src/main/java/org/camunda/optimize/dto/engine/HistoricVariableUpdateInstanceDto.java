@@ -11,6 +11,7 @@ public class HistoricVariableUpdateInstanceDto implements EngineDto {
   private String value;
   private OffsetDateTime time;
   private long revision;
+  private long sequenceCounter;
 
   private String processDefinitionKey;
   private String processDefinitionId;
@@ -95,5 +96,13 @@ public class HistoricVariableUpdateInstanceDto implements EngineDto {
 
   public void setProcessInstanceId(String processInstanceId) {
     this.processInstanceId = processInstanceId;
+  }
+
+  public long getSequenceCounter() {
+    return sequenceCounter;
+  }
+
+  public void setSequenceCounter(long sequenceCounter) {
+    this.sequenceCounter = sequenceCounter;
   }
 }

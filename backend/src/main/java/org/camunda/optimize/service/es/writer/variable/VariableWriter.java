@@ -244,6 +244,7 @@ public abstract class VariableWriter {
     variableInstanceDto.setType(var.getType());
     variableInstanceDto.setId(var.getId());
     variableInstanceDto.setName(var.getName());
+    variableInstanceDto.setVersion(var.getVersion());
     return variableInstanceDto;
   }
 

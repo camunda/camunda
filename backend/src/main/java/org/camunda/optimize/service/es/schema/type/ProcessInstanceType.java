@@ -36,6 +36,7 @@ public class ProcessInstanceType extends StrictTypeMappingCreator {
   public static final String VARIABLE_NAME = "name";
   public static final String VARIABLE_TYPE = "type";
   public static final String VARIABLE_VALUE = "value";
+  public static final String VARIABLE_VERSION = "version";
 
   public static final String ENGINE = "engine";
 
@@ -164,6 +165,9 @@ public class ProcessInstanceType extends StrictTypeMappingCreator {
       .endObject()
       .startObject(VARIABLE_VALUE)
         .field("type", type)
+      .endObject()
+      .startObject(VARIABLE_VERSION)
+        .field("type", "long")
       .endObject();
   }
 
