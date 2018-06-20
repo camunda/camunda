@@ -1,0 +1,29 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`StateIcon should render Active Icon 1`] = `
+<Styled(StateOk)
+  someProp="some prop"
+  theme="dark"
+/>
+`;
+
+exports[`StateIcon should render Cancelled Icon 1`] = `
+<Styled(Stop)
+  someProp="some prop"
+  theme="dark"
+/>
+`;
+
+exports[`StateIcon should render Completed Icon 1`] = `
+<Styled(StateCompleted)
+  someProp="some prop"
+  theme="dark"
+/>
+`;
+
+exports[`StateIcon should render Incident Icon 1`] = `
+<Styled(StateIconIncident)
+  someProp="some prop"
+  theme="dark"
+/>
+`;
