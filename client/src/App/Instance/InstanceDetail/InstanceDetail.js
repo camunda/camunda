@@ -1,10 +1,10 @@
 import React, {Fragment} from 'react';
 import StateIcon from 'modules/components/StateIcon';
 
-export default function InstaceDetail({stateName, instanceId}) {
+export default function InstaceDetail({instance}) {
   return (
     <Fragment>
-      <StateIcon stateName={stateName} /> Instance {instanceId}
+      <StateIcon instance={instance} /> Instance {instance.id}
     </Fragment>
   );
 }

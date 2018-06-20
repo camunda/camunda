@@ -8,6 +8,7 @@ import {formatDate} from 'modules/utils';
 
 import DiagramPanel from './DiagramPanel';
 import * as Styled from './styled';
+import DiagramBar from './DiagramBar';
 
 describe('DiagramPanel', () => {
   let mockInstance = {
@@ -15,7 +16,7 @@ describe('DiagramPanel', () => {
     workflowId: 'bar',
     startDate: 'Wed Jun 20 2018 08:57:20',
     endDate: formatDate(null),
-    stateName: 'ACTIVE'
+    state: 'ACTIVE'
   };
 
   it('should render panel header and body', () => {
@@ -41,7 +42,7 @@ describe('DiagramPanel', () => {
     expect(tdNodes).toHaveLength(4);
     const StateIconNode = tdNodes.at(0).find(StateIcon);
     expect(StateIconNode).toHaveLength(1);
-    expect(StateIconNode.prop('stateName')).toBe(mockInstance.stateName);
+    expect(StateIconNode.prop('instance')).toBe(mockInstance);
     expect(tdNodes.at(0).text()).toContain(mockInstance.workflowId);
     expect(node.find(Panel.Body)).toHaveLength(1);
     expect(tdNodes.at(2).text()).toContain(formattedStartDate);
@@ -49,31 +50,12 @@ describe('DiagramPanel', () => {
 
     const PanelBodyNode = node.find(Panel.Body);
     expect(PanelBodyNode).toHaveLength(1);
+    const DiagramBarNode = PanelBodyNode.find(DiagramBar);
+    expect(DiagramBarNode).toHaveLength(1);
+    expect(DiagramBarNode.prop('instance')).toBe(mockInstance);
     const DiagramNode = PanelBodyNode.find(Diagram);
     expect(DiagramNode).toHaveLength(1);
     expect(DiagramNode.prop('workflowId')).toBe(mockInstance.workflowId);
-    expect(node).toMatchSnapshot();
-  });
-
-  it('should show incident when there is one', () => {
-    // given
-    mockInstance = {
-      ...mockInstance,
-      stateName: 'INCIDENT',
-      errorMessage: 'error'
-    };
-    const node = shallow(<DiagramPanel instance={mockInstance} />);
-
-    // then
-    const PanelBodyNode = node.find(Panel.Body);
-    const StyledIncidentMessageNode = PanelBodyNode.find(
-      Styled.IncidentMessage
-    );
-    expect(StyledIncidentMessageNode).toHaveLength(1);
-    expect(StyledIncidentMessageNode.dive().text()).toContain('Incident:');
-    expect(StyledIncidentMessageNode.dive().text()).toContain(
-      mockInstance.errorMessage
-    );
     expect(node).toMatchSnapshot();
   });
 });

@@ -135,7 +135,7 @@ export default class InstancesList extends React.Component {
             }
           }}
         />
-        <StateIcon stateName={instance.state} />
+        <StateIcon instance={instance} />
         {instance.workflowDefinitionId}
       </React.Fragment>
     );

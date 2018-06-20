@@ -12,7 +12,15 @@ exports[`DiagramPanel should render panel header and body 1`] = `
         <tr>
           <td>
             <Themed(StateIcon)
-              stateName="ACTIVE"
+              instance={
+                Object {
+                  "endDate": "--",
+                  "id": "foo",
+                  "startDate": "Wed Jun 20 2018 08:57:20",
+                  "state": "ACTIVE",
+                  "workflowId": "bar",
+                }
+              }
             />
             bar
           </td>
@@ -30,50 +38,17 @@ exports[`DiagramPanel should render panel header and body 1`] = `
     </styled.table>
   </PanelHeader>
   <PanelBody>
-    <Themed(Diagram)
-      workflowId="bar"
+    <DiagramBar
+      instance={
+        Object {
+          "endDate": "--",
+          "id": "foo",
+          "startDate": "Wed Jun 20 2018 08:57:20",
+          "state": "ACTIVE",
+          "workflowId": "bar",
+        }
+      }
     />
-  </PanelBody>
-</Panel>
-`;
-
-exports[`DiagramPanel should show incident when there is one 1`] = `
-<Panel
-  isRounded={false}
->
-  <PanelHeader
-    isRounded={false}
-  >
-    <styled.table>
-      <tbody>
-        <tr>
-          <td>
-            <Themed(StateIcon)
-              stateName="INCIDENT"
-            />
-            bar
-          </td>
-          <td>
-            foo
-          </td>
-          <td>
-            20 Jun 2018 | 08:57:20
-          </td>
-          <td>
-            Invalid Date
-          </td>
-        </tr>
-      </tbody>
-    </styled.table>
-  </PanelHeader>
-  <PanelBody>
-    <styled.div>
-      <strong>
-        Incident:
-      </strong>
-       
-      error
-    </styled.div>
     <Themed(Diagram)
       workflowId="bar"
     />

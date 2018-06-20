@@ -8,7 +8,6 @@ import InstanceDetail from './InstanceDetail';
 import Header from '../Header';
 import DiagramPanel from './DiagramPanel';
 
-import {extractInstanceStats} from './service';
 import * as Styled from './styled';
 import * as api from './api';
 
@@ -33,15 +32,11 @@ export default class Instance extends Component {
 
   async componentDidMount() {
     const id = this.props.match.params.id;
-    const response = await this.fetchWorkflowInstance(id);
-    const instanceStats = extractInstanceStats(response);
+    const instance = await this.fetchWorkflowInstance(id);
 
     this.setState({
       loaded: true,
-      instance: {
-        id,
-        ...instanceStats
-      }
+      instance
     });
   }
 
@@ -50,9 +45,6 @@ export default class Instance extends Component {
       return 'Loading';
     }
 
-    const instanceId = this.props.match.params.id;
-    const {stateName} = this.state.instance;
-
     return (
       <Fragment>
         <Header
@@ -60,9 +52,7 @@ export default class Instance extends Component {
           filters={9263}
           selections={24}
           incidents={328}
-          detail={
-            <InstanceDetail stateName={stateName} instanceId={instanceId} />
-          }
+          detail={<InstanceDetail instance={this.state.instance} />}
         />
         <Styled.Instance>
           <Styled.Top>

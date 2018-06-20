@@ -6,6 +6,7 @@ import Diagram from 'modules/components/Diagram';
 import StateIcon from 'modules/components/StateIcon';
 import {formatDate} from 'modules/utils';
 
+import DiagramBar from './DiagramBar';
 import * as Styled from './styled';
 
 export default function DiagramPanel({instance}) {
@@ -16,7 +17,7 @@ export default function DiagramPanel({instance}) {
           <tbody>
             <tr>
               <td>
-                <StateIcon stateName={instance.stateName} />
+                <StateIcon instance={instance} />
                 {instance.workflowId}
               </td>
               <td>{instance.id}</td>
@@ -27,11 +28,7 @@ export default function DiagramPanel({instance}) {
         </Styled.DiagramPanelHeader>
       </Panel.Header>
       <Panel.Body>
-        {instance.stateName === 'INCIDENT' && (
-          <Styled.IncidentMessage>
-            <strong>Incident:</strong> {instance.errorMessage}
-          </Styled.IncidentMessage>
-        )}
+        <DiagramBar instance={instance} />
         <Diagram workflowId={instance.workflowId} />
       </Panel.Body>
     </Panel>
@@ -44,7 +41,7 @@ DiagramPanel.propTypes = {
     workflowId: PropTypes.string.isRequired,
     startDate: PropTypes.string.isRequired,
     endDate: PropTypes.string,
-    stateName: PropTypes.string.isRequired,
+    state: PropTypes.string.isRequired,
     errorMessage: PropTypes.string
   })
 };

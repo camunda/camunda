@@ -2,6 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import {themed} from 'modules/theme';
+import {getInstanceState} from 'modules/utils';
 
 import * as Styled from './styled';
 
@@ -12,14 +13,18 @@ const stateIconsMap = {
   CANCELLED: Styled.CancelledIcon
 };
 
-function StateIcon({stateName, toggleTheme, ...props}) {
-  const TargetComponent = stateIconsMap[stateName];
+function StateIcon({instance, toggleTheme, ...props}) {
+  const computedState = getInstanceState(instance);
+  const TargetComponent = stateIconsMap[computedState];
   return <TargetComponent {...props} />;
 }
 
 export default themed(StateIcon);
 
 StateIcon.propTypes = {
-  stateName: PropTypes.oneOf(['INCIDENT', 'ACTIVE', 'COMPLETED', 'CANCELLED']),
+  instance: PropTypes.shape({
+    incidents: PropTypes.arrayOf(PropTypes.object).isRequired,
+    state: PropTypes.string.isRequired
+  }).isRequired,
   theme: PropTypes.string.isRequired
 };

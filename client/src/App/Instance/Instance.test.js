@@ -111,6 +111,6 @@ describe('Instance', () => {
     node.update();
 
     const Detail = node.find(Header).prop('detail');
-    expect(Detail.props.instanceId).toEqual(INSTANCE.id);
+    expect(Detail.props.instance).toEqual(INSTANCE);
   });
 });

@@ -1,8 +1,19 @@
 Example:
-
 ```js
-<StateIcon stateName="INCIDENT"/>
-<StateIcon stateName="ACTIVE"/>
-<StateIcon stateName="COMPLETED"/>
-<StateIcon stateName="CANCELLED"/>
+<StateIcon instance={{
+  state: 'ACTIVE',
+  incidents: []
+}}/>
+<StateIcon instance={{
+  state: 'INCIDENT',
+  incidents: [{ state: 'ACTIVE'}]
+}}/>
+<StateIcon instance={{
+  state: 'COMPLETED',
+  incidents: []
+}}/>
+<StateIcon instance={{
+  state: 'CANCELLED',
+  incidents: []
+}}/>
 ```
