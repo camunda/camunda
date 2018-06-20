@@ -53,17 +53,21 @@ spec:
     command: ["cat"]
     tty: true
     env:
+      - name: LIMITS_CPU
+        valueFrom:
+          resourceFieldRef:
+            resource: limits.cpu
       - name: JAVA_TOOL_OPTIONS
         value: |
           -XX:+UnlockExperimentalVMOptions
           -XX:+UseCGroupMemoryLimitForHeap
-          -XX:MaxRAMFraction=1
+          -XX:MaxRAMFraction=\$(LIMITS_CPU)
     resources:
       limits:
-        cpu: 1
+        cpu: 2
         memory: 2Gi
       requests:
-        cpu: 1
+        cpu: 2
         memory: 2Gi
   - name: node
     image: ${NODEJS_DOCKER_IMAGE()}
@@ -189,7 +193,7 @@ pipeline {
             container('maven') {
               sh '''
                 cd ./backend
-                mvn verify -P -docker -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+                mvn verify -P -docker -B -T$LIMITS_CPU --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
               '''
             }
           }

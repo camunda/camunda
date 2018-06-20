@@ -124,6 +124,8 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>2.16</version>
         <configuration>
+          <forkCount>${env.LIMITS_CPU}</forkCount>
+          <reuseForks>true</reuseForks>
           <redirectTestOutputToFile>true</redirectTestOutputToFile>
         </configuration>
       </plugin>
@@ -132,6 +134,8 @@
         <artifactId>maven-failsafe-plugin</artifactId>
         <version>2.18.1</version>
         <configuration>
+          <forkCount>${env.LIMITS_CPU}</forkCount>
+          <reuseForks>true</reuseForks>
           <redirectTestOutputToFile>true</redirectTestOutputToFile>
         </configuration>
         <executions>
