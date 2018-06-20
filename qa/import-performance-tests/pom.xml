@@ -10,6 +10,10 @@
 
   <artifactId>import-performance-tests</artifactId>
 
+  <properties>
+    <skip.tests>true</skip.tests>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.camunda.optimize</groupId>
@@ -82,93 +86,25 @@
     </dependency>
   </dependencies>
 
-  <profiles>
-    <profile>
-      <id>test-only</id>
-
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>surefire-it</id>
-                <phase>integration-test</phase>
-                <goals>
-                  <goal>test</goal>
-                </goals>
-                <configuration>
-                  <includes>
-                    <include>**/*PerformanceTest*</include>
-                  </includes>
-                  <skipTests>false</skipTests>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-
-    </profile>
-
-    <profile>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>integration-test</goal>
-                  <goal>verify</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>surefire-it</id>
-                <phase>integration-test</phase>
-                <goals>
-                  <goal>test</goal>
-                </goals>
-                <configuration>
-                  <includes>
-                    <include>**/*PerformanceTest*</include>
-                  </includes>
-                  <skipTests>false</skipTests>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-
-        </plugins>
-      </build>
-    </profile>
-
-  </profiles>
-
   <build>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>default-test</id>
-            <configuration>
-              <skipTests>true</skipTests>
-            </configuration>
-          </execution>
-        </executions>
+        <configuration>
+          <skipTests>${skip.tests}</skipTests>
+        </configuration>
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>performance-test</id>
+      <properties>
+        <skip.tests>false</skip.tests>
+      </properties>
+    </profile>
+  </profiles>
 
 </project>

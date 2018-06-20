@@ -1,74 +1,170 @@
 #!/usr/bin/env groovy
 
-// https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
-def backendModuleName = "backend"
+// general properties for CI execution
+def static NODE_POOL() { return "slaves" }
+def static MAVEN_DOCKER_IMAGE() { return "maven:3.5.3-jdk-8-slim" }
+def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) { return "camunda/camunda-bpm-platform:${cambpmVersion}" }
+def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) { return "docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}" }
 
-def startElasticsearch() {
-  stopAllOptimizeComponents()
-  script {
-    sh 'sh ./.ci/scripts/start-es-performance.sh'
-  }
+static String mavenElasticsearchAgent(env, esVersion = '6.0.0', cambpmVersion = '7.10.0-SNAPSHOT') {
+  return """
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    agent: optimize-ci-build
+spec:
+  nodeSelector:
+    cloud.google.com/gke-nodepool: ${NODE_POOL()}
+  initContainers:
+  - name: init-sysctl
+    image: ${MAVEN_DOCKER_IMAGE()}
+    command:
+    - sysctl
+    - -w
+    - vm.max_map_count=262144
+    securityContext:
+      privileged: true
+  containers:
+  - name: maven
+    image: ${MAVEN_DOCKER_IMAGE()}
+    command: ["cat"]
+    tty: true
+    env:
+      # every JVM process will get a 1/4 of HEAP from total memory
+      - name: JAVA_TOOL_OPTIONS
+        value: |
+          -XX:+UnlockExperimentalVMOptions
+          -XX:+UseCGroupMemoryLimitForHeap
+      - name: LIMITS_CPU
+        valueFrom:
+          resourceFieldRef:
+            resource: limits.cpu
+      - name: TZ
+        value: Europe/Berlin
+      - name: DOCKER_HOST
+        value: tcp://localhost:2375
+    resources:
+      limits:
+        cpu: 2
+        memory: 4Gi
+      requests:
+        cpu: 2
+        memory: 4Gi
+  - name: cambpm
+    image: ${CAMBPM_DOCKER_IMAGE(cambpmVersion)}
+    env:
+      - name: DB_DRIVER
+        value: org.postgresql.Driver
+      - name: DB_USERNAME
+        value: camunda
+      - name: DB_PASSWORD
+        value: camunda123
+      - name: DB_URL
+        value: jdbc:postgresql://opt-ci-perf.db:5432/optimize-ci-performance
+      - name: TZ
+        value: Europe/Berlin
+      - name: WAIT_FOR
+        value: opt-ci-perf.db:5432
+    resources:
+      limits:
+        cpu: 6
+        memory: 6Gi
+      requests:
+        cpu: 6
+        memory: 6Gi
+  - name: elasticsearch
+    image: ${ELASTICSEARCH_DOCKER_IMAGE(esVersion)}
+    env:
+    - name: ES_JAVA_OPTS
+      value: "-Xms6g -Xmx6g"
+    - name: cluster.name
+      value: elasticsearch
+    - name: discovery.type
+      value: single-node
+    - name: action.auto_create_index
+      value: false
+    - name: bootstrap.memory_lock
+      value: true
+    securityContext:
+      capabilities:
+        add:
+          - IPC_LOCK
+    ports:
+    - containerPort: 9200
+      name: es-http
+      protocol: TCP
+    - containerPort: 9300
+      name: es-transport
+      protocol: TCP
+    resources:
+      limits:
+        cpu: 12
+        memory: 12Gi
+      requests:
+        cpu: 12
+        memory: 12Gi
+"""
 }
 
-def startEngine() {
-  script {
-    sh 'sh ./.ci/scripts/start-engine.sh'
-  }
-}
+void buildNotification(String buildStatus) {
+  // build status of null means successful
+  buildStatus = buildStatus ?: 'SUCCESS'
 
-def stopAllOptimizeComponents() {
-  script {
-    sh 'sh ./.ci/scripts/kill-all-components.sh'
+  String buildResultUrl = "${env.BUILD_URL}"
+  if(env.RUN_DISPLAY_URL) {
+    buildResultUrl = "${env.RUN_DISPLAY_URL}"
   }
-}
 
+  def subject = "[${buildStatus}] - ${env.JOB_NAME} - Build #${env.BUILD_NUMBER}"
+  def body = "See: ${buildResultUrl}"
+  def recipients = [[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']]
+
+  emailext subject: subject, body: body, recipientProviders: recipients
+}
 
 pipeline {
 
-  triggers {
-    cron('H 3 * * *')
+  agent {
+    kubernetes {
+      cloud 'optimize-ci'
+      label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+      defaultContainer 'jnlp'
+      yaml mavenElasticsearchAgent(env, params.ES_VERSION, params.CAMBPM_VERSION)
+    }
   }
 
-  agent { label 'optimize-build' }
-  // Environment
   environment {
-    DISPLAY = ":0"
-    NODE_ENV = "ci"
-    MAVEN_OPTS = "-Xmx2048m -Xms512m -XX:PermSize=256m -XX:MaxPermSize=1024m"
-    CAMBPM_VERSION = "7.10.0"
-    SNAPSHOT = "true"
+    NEXUS = credentials("camunda-nexus")
   }
 
   options {
-    // General Jenkins job properties
-    buildDiscarder(logRotator(numToKeepStr: '10'))
-    // "wrapper" steps that should wrap the entire build execution
+    buildDiscarder(logRotator(numToKeepStr: '50'))
     timestamps()
-    timeout(time: 6, unit: 'HOURS')
+    timeout(time: 30, unit: 'MINUTES')
   }
 
   stages {
     stage('Prepare') {
       steps {
-        git url: 'git@github.com:camunda/camunda-optimize', branch: 'master', credentialsId: 'camunda-jenkins-github-ssh', poll: false
-
-        configFileProvider([
-            configFile(fileId: 'camunda-maven-settings', replaceTokens: true, targetLocation: 'settings.xml')
-        ]) {}
+        git url: 'git@github.com:camunda/camunda-optimize',
+            branch: "${params.BRANCH}",
+            credentialsId: 'camunda-jenkins-github-ssh',
+            poll: false
       }
     }
     stage('Performance') {
       steps {
-        sh 'mvn -DskipTests -s settings.xml clean install'
-        startElasticsearch()
-        startEngine()
-        sh 'mvn -Ptest-only -f qa/import-performance-tests/pom.xml -s settings.xml clean install'
+        container('maven') {
+          sh 'mvn -T\$LIMITS_CPU -DskipTests -Dskip.fe.build -Dskip.docker -s settings.xml clean install -B'
+          sh 'mvn -Pperformance-test -f qa/import-performance-tests/pom.xml -s settings.xml clean test -B'
+        }
       }
       post {
         always {
-          sh 'curl localhost:9200/optimize-process-instance/_count?pretty'
-          stopAllOptimizeComponents()
-          archiveArtifacts artifacts:  backendModuleName + '/target/it-elasticsearch/**/logs/*.log', onlyIfSuccessful: false
+          container('maven') {
+            sh 'curl localhost:9200/_cat/indices?v'
+          }
         }
       }
     }
@@ -76,13 +172,7 @@ pipeline {
 
   post {
     changed {
-      emailext subject: "[Jenkins-Optimize] - Status[${currentBuild.rawBuild.result}] - ${env.JOB_NAME} - Build #${env.BUILD_NUMBER}",
-          body: """\
-${env.JOB_NAME} - Build # ${env.BUILD_NUMBER}:
-Status: ${currentBuild.rawBuild.result}
-Check console output at ${env.BUILD_URL} to view the results.
-""",
-          recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']]
+      buildNotification(currentBuild.result)
     }
   }
 }

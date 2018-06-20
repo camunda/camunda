@@ -1,8 +1,8 @@
-def githubOrga = 'camunda'
-def gitRepository = 'camunda-optimize'
-def gitBranch = 'master'
+pipelineJob('performance-large-dataset') {
 
-pipelineJob('Performance Large Dataset') {
+  displayName 'Performance Large Dataset'
+  description 'Test Optimize Performance against large dataset.'
+
   definition {
     cps {
       script(readFileFromWorkspace('.ci/pipelines/performance_large.groovy'))
@@ -10,22 +10,15 @@ pipelineJob('Performance Large Dataset') {
     }
   }
 
+  parameters {
+    stringParam('BRANCH', 'master', 'Branch to use for performance tests.')
+    stringParam('CAMBPM_VERSION', '7.10.0-SNAPSHOT', 'Camunda BPM version to use.')
+    stringParam('ES_VERSION', '6.0.0', 'Elasticsearch version to use.')
+  }
+
   jdk '(Default)'
 
   triggers {
     cron('H 3 * * *')
-  }
-
-  publishers {
-    extendedEmail {
-      triggers {
-        statusChanged {
-          sendTo {
-            culprits()
-            requester()
-          }
-        }
-      }
-    }
   }
 }
