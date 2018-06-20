@@ -221,7 +221,11 @@
             <includeTestSourceDirectory>true</includeTestSourceDirectory>
             <encoding>UTF-8</encoding>
             <failOnViolation>true</failOnViolation>
-            <sourceDirectories>${project.build.sourceDirectory},${project.build.testSourceDirectory},${project.basedir}/src/test/jmh</sourceDirectories>
+            <sourceDirectories>
+              <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
+              <sourceDirectory>${project.build.testSourceDirectory}</sourceDirectory>
+              <sourceDirectory>${project.basedir}/src/test/jmh</sourceDirectory>
+            </sourceDirectories>
           </configuration>
           <executions>
             <execution>
