@@ -1,22 +1,35 @@
 import {format} from 'date-fns';
 
+export const INSTANCE_STATE = {
+  ACTIVE: 'ACTIVE',
+  COMPLETED: 'COMPLETED',
+  CANCELED: 'CANCELED',
+  INCIDENT: 'INCIDENT'
+};
+
 export function formatDate(dateString) {
   return dateString ? format(dateString, 'D MMM YYYY | HH:mm:ss') : '--';
 }
 
 export const getActiveIncident = incidents => {
-  return (
-    incidents &&
-    incidents.length &&
-    incidents.filter(({state}) => state === 'ACTIVE')[0]
-  );
+  let activeIncident = null;
+
+  if (incidents && incidents.length) {
+    activeIncident = incidents.filter(
+      ({state}) => state === INSTANCE_STATE.ACTIVE
+    )[0];
+  }
+
+  return activeIncident;
 };
 
 export function getInstanceState({state, incidents}) {
-  if (state === 'COMPLETED' || state === 'CANCELED') {
+  if (state === INSTANCE_STATE.COMPLETED || state === INSTANCE_STATE.CANCELED) {
     return state;
   }
-  return getActiveIncident(incidents) ? 'INCIDENT' : 'ACTIVE';
+  const hasActiveIncident = !!getActiveIncident(incidents);
+
+  return hasActiveIncident ? INSTANCE_STATE.INCIDENT : INSTANCE_STATE.ACTIVE;
 }
 
 export function getIncidentMessage({incidents}) {
