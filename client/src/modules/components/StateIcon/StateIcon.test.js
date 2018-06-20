@@ -65,7 +65,7 @@ describe('StateIcon', () => {
     expect(node).toMatchSnapshot();
   });
 
-  it('should render CANCELED Icon', () => {
+  it('should render Canceled Icon', () => {
     // given
     const someProp = 'some prop';
     utils.getInstanceState = jest.fn(() => utils.INSTANCE_STATE.CANCELED);
@@ -75,7 +75,7 @@ describe('StateIcon', () => {
 
     // then
     expect(utils.getInstanceState.mock.calls[0][0]).toBe(mockInstance);
-    const IncidentIconNode = node.find(Styled.CANCELEDIcon);
+    const IncidentIconNode = node.find(Styled.CanceledIcon);
     expect(IncidentIconNode).toHaveLength(1);
     expect(IncidentIconNode.prop('theme')).toBe('dark');
     expect(IncidentIconNode.prop('someProp')).toBe(someProp);

@@ -1,82 +1,77 @@
 import * as utils from './utils';
 
-const active = {state: utils.INSTANCE_STATE.ACTIVE, incidents: []};
+const {ACTIVE, INCIDENT, COMPLETED, CANCELED} = utils.INSTANCE_STATE;
+
+const active = {state: ACTIVE, incidents: []};
 const activeWithIncidents = {
-  state: utils.INSTANCE_STATE.ACTIVE,
+  state: ACTIVE,
   incidents: [
     {
       id: '4295776400',
       errorType: 'IO_MAPPING_ERROR',
       errorMessage:
         'Could not apply output mappings: Task was completed without payload',
-      state: utils.INSTANCE_STATE.ACTIVE,
+      state: ACTIVE,
       activityId: 'taskA'
     }
   ]
 };
-const completed = {state: utils.INSTANCE_STATE.COMPLETED, incidents: []};
-const canceled = {state: utils.INSTANCE_STATE.CANCELED, incidents: []};
+const completed = {state: COMPLETED, incidents: []};
+const canceled = {state: CANCELED, incidents: []};
 
-describe('utils.getActiveIncident', () => {
-  it('should return an object if an instance has incidents', () => {
-    expect(utils.getActiveIncident(activeWithIncidents)).toBe(null);
-  });
-  it('should return null if there is no incident', () => {
-    expect(typeof utils.getActiveIncident(active)).toBe('object');
-  });
-});
-
-describe('utils.getInstanceState', () => {
-  it('should return the state for a completed instance', () => {
-    const state = utils.getInstanceState({
-      state: completed.state,
-      incidents: completed.incidents
+describe('utils', () => {
+  describe('getActiveIncident', () => {
+    it('should return null if there is no incident', () => {
+      expect(utils.getActiveIncident([])).toBe(null);
     });
 
-    expect(state).toEqual(completed.state);
+    it('should return an object if an instance has incidents', () => {
+      expect(utils.getActiveIncident(activeWithIncidents.incidents)).toBe(
+        activeWithIncidents.incidents[0]
+      );
+    });
   });
 
-  it('should return the state for a canceled instance', () => {
-    const state = utils.getInstanceState({
-      state: canceled.state,
-      incidents: canceled.incidents
+  describe('getInstanceState', () => {
+    it('should return the state for a completed instance', () => {
+      const state = utils.getInstanceState(completed);
+
+      expect(state).toEqual(COMPLETED);
     });
 
-    expect(state).toEqual(canceled.state);
-  });
+    it('should return the state for a canceled instance', () => {
+      const state = utils.getInstanceState(canceled);
 
-  it('should return the state for an active, incident free instance', () => {
-    const state = utils.getInstanceState({
-      state: active.state,
-      incidents: active.incidents
+      expect(state).toEqual(CANCELED);
     });
 
-    expect(state).toEqual(active.state);
-  });
+    it('should return the state for an active, incident free instance', () => {
+      const state = utils.getInstanceState(active);
 
-  it('should return difrent state for an active instance with incidents', () => {
-    const state = utils.getInstanceState({
-      state: activeWithIncidents.state,
-      incidents: activeWithIncidents.incidents
+      expect(state).toEqual(ACTIVE);
     });
 
-    expect(state).not.toEqual(activeWithIncidents.state);
-    expect(state).toEqual(utils.INSTANCE_STATE.INCIDENT);
-  });
-});
+    it('should return difrent state for an active instance with incidents', () => {
+      const state = utils.getInstanceState(activeWithIncidents);
 
-describe('utils.getIncidentMessage', () => {
-  it('should return undefined for an instance with no incidents', () => {
-    const message = utils.getIncidentMessage({incidents: active.incidents});
-
-    expect(message).toEqual(undefined);
+      expect(state).not.toEqual(activeWithIncidents.state);
+      expect(state).toEqual(INCIDENT);
+    });
   });
 
-  it('should return a string for an instance with incidents', () => {
-    const message = utils.getIncidentMessage({
-      incidents: activeWithIncidents.incidents
+  describe('getIncidentMessage', () => {
+    it('should return undefined for an instance with no incidents', () => {
+      const message = utils.getIncidentMessage({incidents: active.incidents});
+
+      expect(message).toEqual(undefined);
     });
 
-    expect(message).toBe(activeWithIncidents.incidents[0].errorMessage);
+    it('should return a string for an instance with incidents', () => {
+      const message = utils.getIncidentMessage({
+        incidents: activeWithIncidents.incidents
+      });
+
+      expect(message).toBe(activeWithIncidents.incidents[0].errorMessage);
+    });
   });
 });

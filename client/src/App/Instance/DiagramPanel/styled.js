@@ -8,6 +8,6 @@ export const DiagramPanel = styled.div`
   height: 100%;
 `;
 
-export const DiagramPanelHeader = styled.table`
+export const Table = styled.table`
   width: 100%;
 `;

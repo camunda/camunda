@@ -2,10 +2,12 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import BPMNViewer from 'bpmn-js/lib/NavigatedViewer';
 
+import {themed} from 'modules/theme';
+
 import * as Styled from './styled';
 import DiagramControls from './DiagramControls';
-import {Colors, themed, themeStyle} from 'modules/theme';
 import * as api from './api';
+import {getDiagramColors} from './service';
 
 class Diagram extends React.Component {
   static propTypes = {
@@ -32,24 +34,13 @@ class Diagram extends React.Component {
     }
 
     // colors config for bpmnRenderer
-    const bpmnRenderer = {
-      defaultFillColor: themeStyle({
-        dark: Colors.uiDark02,
-        light: Colors.uiLight04
-      })(this.props),
-      defaultStrokeColor: themeStyle({
-        dark: Colors.darkDiagram,
-        light: Colors.uiLight06
-      })(this.props)
-    };
-
+    const {theme} = this.props;
     this.Viewer = new BPMNViewer({
       container: this.containerNode,
-      bpmnRenderer
+      bpmnRenderer: getDiagramColors(theme)
     });
 
     this.Viewer.importXML(this.workflowXML, e => {
-      // TODO: Error should be handled correctly
       if (e) {
         return console.log('Error rendering diagram:', e);
       }

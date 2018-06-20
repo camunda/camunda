@@ -1,7 +1,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {mockResolvedAsyncFn} from 'modules/testUtils';
+import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 import {INSTANCE_STATE} from 'modules/utils';
 import Copyright from 'modules/components/Copyright';
 
@@ -50,68 +50,56 @@ const component = (
   />
 );
 describe('Instance', () => {
-  // data handling
-  it('should fetch instance information', async () => {
-    const node = shallow(component);
-
-    const spyFetch = jest.spyOn(node.instance(), 'fetchWorkflowInstance');
-    await node.instance().componentDidMount();
-
-    expect(spyFetch).toHaveBeenCalled();
-    // fetching is done with the right id
-    expect(spyFetch.mock.calls[0][0]).toEqual(INSTANCE.id);
+  beforeEach(() => {
+    api.workflowInstance.mockClear();
   });
 
-  it('should change state after data fetching', async () => {
-    const node = shallow(component);
-    // fetch data
-    await node.instance().componentDidMount();
-    node.update();
-
-    expect(node.state('instance')).toEqual(INSTANCE);
-    expect(node.state('loaded')).toBe(true);
+  describe('initial state', () => {
+    it('should render initially with no data', () => {
+      const node = shallow(component);
+      expect(node.state()).toEqual(initialState);
+      expect(node.text()).toContain('Loading');
+    });
   });
 
-  // initial state
-  it('should render initially with no data', () => {
-    const node = shallow(component);
-    expect(node.state()).toEqual(initialState);
+  describe('data fetching', () => {
+    it('should fetch instance information', async () => {
+      // given
+      shallow(component);
+
+      // then fetching is done with the right id
+      expect(api.workflowInstance).toHaveBeenCalledTimes(1);
+      expect(api.workflowInstance.mock.calls[0][0]).toEqual(INSTANCE.id);
+    });
+
+    it('should change state after data fetching', async () => {
+      // given
+      const node = shallow(component);
+
+      // when data fetched
+      await flushPromises();
+      node.update();
+
+      // then
+      expect(node.state('instance')).toEqual(INSTANCE);
+      expect(node.state('loaded')).toBe(true);
+    });
   });
 
-  it('should display a Loading message before fetching data', () => {
-    const node = shallow(component);
-    expect(node.text()).toContain('Loading');
-  });
+  describe('rendering', () => {
+    it('should display a Header, DiagramPanel and Copyright', async () => {
+      // given
+      const node = shallow(component);
+      await flushPromises();
+      node.update();
 
-  // rendering
-  it('should display a Header, DiagramPanel and Copyright', async () => {
-    const node = shallow(component);
-    // fetch data
-    await node.instance().componentDidMount();
-    node.update();
-
-    expect(node.find(Header)).toHaveLength(1);
-    expect(node.find(DiagramPanel)).toHaveLength(1);
-    expect(node.find(Copyright)).toHaveLength(1);
-  });
-
-  it('should render InstanceDetail in the Header as a detail', async () => {
-    const node = shallow(component);
-    // fetch data
-    await node.instance().componentDidMount();
-    node.update();
-
-    const Detail = node.find(Header).prop('detail');
-    expect(Detail.type).toBe(InstanceDetail);
-  });
-
-  it('should render InstanceDetail in the Header with the instance id', async () => {
-    const node = shallow(component);
-    // fetch data
-    await node.instance().componentDidMount();
-    node.update();
-
-    const Detail = node.find(Header).prop('detail');
-    expect(Detail.props.instance).toEqual(INSTANCE);
+      // then
+      expect(node.find(Header)).toHaveLength(1);
+      expect(node.find(DiagramPanel)).toHaveLength(1);
+      expect(node.find(Copyright)).toHaveLength(1);
+      const Detail = node.find(Header).prop('detail');
+      expect(Detail.type).toBe(InstanceDetail);
+      expect(Detail.props.instance).toEqual(INSTANCE);
+    });
   });
 });

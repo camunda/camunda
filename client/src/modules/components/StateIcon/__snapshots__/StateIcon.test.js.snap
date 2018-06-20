@@ -7,7 +7,7 @@ exports[`StateIcon should render Active Icon 1`] = `
 />
 `;
 
-exports[`StateIcon should render CANCELED Icon 1`] = `
+exports[`StateIcon should render Canceled Icon 1`] = `
 <Styled(Stop)
   someProp="some prop"
   theme="dark"

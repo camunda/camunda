@@ -28,26 +28,20 @@ describe('DiagramPanel', () => {
     // then
     expect(node.find(Panel)).toHaveLength(1);
 
+    // Panel.Header
     const PanelHeaderNode = node.find(Panel.Header);
     expect(PanelHeaderNode).toHaveLength(1);
-    const StyledPanelHeaderNode = PanelHeaderNode.find(
-      Styled.DiagramPanelHeader
-    );
-    expect(StyledPanelHeaderNode).toHaveLength(1);
-    const tbodyNode = StyledPanelHeaderNode.find('tbody');
-    expect(tbodyNode).toHaveLength(1);
-    const trNode = tbodyNode.find('tr');
-    expect(trNode).toHaveLength(1);
-    const tdNodes = trNode.find('td');
-    expect(tdNodes).toHaveLength(4);
-    const StateIconNode = tdNodes.at(0).find(StateIcon);
+    const StyledTableNode = PanelHeaderNode.find(Styled.Table);
+    expect(StyledTableNode).toHaveLength(1);
+    const StateIconNode = StyledTableNode.find(StateIcon);
     expect(StateIconNode).toHaveLength(1);
     expect(StateIconNode.prop('instance')).toBe(mockInstance);
-    expect(tdNodes.at(0).text()).toContain(mockInstance.workflowId);
+    expect(StyledTableNode.dive().text()).toContain(mockInstance.workflowId);
     expect(node.find(Panel.Body)).toHaveLength(1);
-    expect(tdNodes.at(2).text()).toContain(formattedStartDate);
-    expect(tdNodes.at(3).text()).toContain(formattedEndDate);
+    expect(StyledTableNode.dive().text()).toContain(formattedStartDate);
+    expect(StyledTableNode.dive().text()).toContain(formattedEndDate);
 
+    // Panel.Body
     const PanelBodyNode = node.find(Panel.Body);
     expect(PanelBodyNode).toHaveLength(1);
     const DiagramBarNode = PanelBodyNode.find(DiagramBar);

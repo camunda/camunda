@@ -11,10 +11,10 @@ export function formatDate(dateString) {
   return dateString ? format(dateString, 'D MMM YYYY | HH:mm:ss') : '--';
 }
 
-export const getActiveIncident = incidents => {
+export const getActiveIncident = (incidents = []) => {
   let activeIncident = null;
 
-  if (incidents && incidents.length) {
+  if (incidents.length > 0) {
     activeIncident = incidents.filter(
       ({state}) => state === INSTANCE_STATE.ACTIVE
     )[0];
@@ -27,8 +27,8 @@ export function getInstanceState({state, incidents}) {
   if (state === INSTANCE_STATE.COMPLETED || state === INSTANCE_STATE.CANCELED) {
     return state;
   }
-  const hasActiveIncident = !!getActiveIncident(incidents);
 
+  const hasActiveIncident = Boolean(getActiveIncident(incidents));
   return hasActiveIncident ? INSTANCE_STATE.INCIDENT : INSTANCE_STATE.ACTIVE;
 }
 

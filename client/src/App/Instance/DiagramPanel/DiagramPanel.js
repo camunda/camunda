@@ -13,7 +13,7 @@ export default function DiagramPanel({instance}) {
   return (
     <Panel>
       <Panel.Header>
-        <Styled.DiagramPanelHeader>
+        <Styled.Table>
           <tbody>
             <tr>
               <td>
@@ -25,7 +25,7 @@ export default function DiagramPanel({instance}) {
               <td>{formatDate(instance.endDate)}</td>
             </tr>
           </tbody>
-        </Styled.DiagramPanelHeader>
+        </Styled.Table>
       </Panel.Header>
       <Panel.Body>
         <DiagramBar instance={instance} />
@@ -43,5 +43,5 @@ DiagramPanel.propTypes = {
     endDate: PropTypes.string,
     state: PropTypes.string.isRequired,
     errorMessage: PropTypes.string
-  })
+  }).isRequired
 };

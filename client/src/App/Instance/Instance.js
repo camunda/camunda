@@ -25,14 +25,9 @@ export default class Instance extends Component {
     loaded: false
   };
 
-  fetchWorkflowInstance = async id => {
-    const data = await api.workflowInstance(id);
-    return data;
-  };
-
   async componentDidMount() {
     const id = this.props.match.params.id;
-    const instance = await this.fetchWorkflowInstance(id);
+    const instance = await api.workflowInstance(id);
 
     this.setState({
       loaded: true,
