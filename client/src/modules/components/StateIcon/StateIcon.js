@@ -10,7 +10,7 @@ const stateIconsMap = {
   INCIDENT: Styled.IncidentIcon,
   ACTIVE: Styled.ActiveIcon,
   COMPLETED: Styled.CompletedIcon,
-  CANCELLED: Styled.CancelledIcon
+  CANCELED: Styled.CANCELEDIcon
 };
 
 function StateIcon({instance, toggleTheme, ...props}) {

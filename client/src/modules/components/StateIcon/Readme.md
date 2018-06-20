@@ -13,7 +13,7 @@ Example:
   incidents: []
 }}/>
 <StateIcon instance={{
-  state: 'CANCELLED',
+  state: 'CANCELED',
   incidents: []
 }}/>
 ```

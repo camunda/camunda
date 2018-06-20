@@ -13,7 +13,7 @@ export const getActiveIncident = incidents => {
 };
 
 export function getInstanceState({state, incidents}) {
-  if (state === 'COMPLETED' || state === 'CANCELLED') {
+  if (state === 'COMPLETED' || state === 'CANCELED') {
     return state;
   }
   return getActiveIncident(incidents) ? 'INCIDENT' : 'ACTIVE';
