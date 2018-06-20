@@ -1,12 +1,14 @@
 import React from 'react';
 import {shallow} from 'enzyme';
-import * as api from './api';
-import Instance from './Instance';
+
 import {mockResolvedAsyncFn} from 'modules/testUtils';
+import Copyright from 'modules/components/Copyright';
+
+import Instance from './Instance';
 import Header from './../Header';
 import DiagramPanel from './DiagramPanel';
-import Copyright from 'modules/components/Copyright';
 import InstanceDetail from './InstanceDetail';
+import * as api from './api';
 
 const xmlMock = '<foo />';
 api.workflowXML = mockResolvedAsyncFn(xmlMock);
@@ -36,51 +38,78 @@ const INSTANCE = {
 // mock api
 api.workflowInstance = mockResolvedAsyncFn(INSTANCE);
 
+const initialState = {
+  instance: null,
+  loaded: false
+};
+
+const component = (
+  <Instance
+    match={{params: {id: INSTANCE.id}, isExact: true, path: '', url: ''}}
+  />
+);
 describe('Instance', () => {
-  let node;
-
-  beforeEach(() => {
-    node = shallow(
-      <Instance
-        match={{params: {id: INSTANCE.id}, isExact: true, path: '', url: ''}}
-      />
-    );
-  });
-
+  // data handling
   it('should fetch instance information', async () => {
+    const node = shallow(component);
+
     const spyFetch = jest.spyOn(node.instance(), 'fetchWorkflowInstance');
     await node.instance().componentDidMount();
+
     expect(spyFetch).toHaveBeenCalled();
+    // fetching is done with the right id
+    expect(spyFetch.mock.calls[0][0]).toEqual(INSTANCE.id);
   });
 
-  it('should display a Header', async () => {
+  it.skip('should change state after data fetching', async () => {
+    const node = shallow(component);
+    // fetch data
     await node.instance().componentDidMount();
     node.update();
+
+    expect(node.state('instance')).toEqual(INSTANCE);
+    expect(node.state('loaded')).toBe(true);
+  });
+
+  // initial state
+  it('should render initially with no data', () => {
+    const node = shallow(component);
+    expect(node.state()).toEqual(initialState);
+  });
+
+  it('should display a Loading message before fetching data', () => {
+    const node = shallow(component);
+    expect(node.text()).toContain('Loading');
+  });
+
+  // rendering
+  it('should display a Header, DiagramPanel and Copyright', async () => {
+    const node = shallow(component);
+    // fetch data
+    await node.instance().componentDidMount();
+    node.update();
+
     expect(node.find(Header)).toHaveLength(1);
-  });
-
-  it('should display a DiagramPanel', async () => {
-    await node.instance().componentDidMount();
-    node.update();
     expect(node.find(DiagramPanel)).toHaveLength(1);
-  });
-
-  it('should display a Copyright', async () => {
-    await node.instance().componentDidMount();
-    node.update();
     expect(node.find(Copyright)).toHaveLength(1);
   });
 
   it('should render InstanceDetail in the Header as a detail', async () => {
+    const node = shallow(component);
+    // fetch data
     await node.instance().componentDidMount();
     node.update();
+
     const Detail = node.find(Header).prop('detail');
     expect(Detail.type).toBe(InstanceDetail);
   });
 
   it('should InstanceDetail in the Header with the instance id', async () => {
+    const node = shallow(component);
+    // fetch data
     await node.instance().componentDidMount();
     node.update();
+
     const Detail = node.find(Header).prop('detail');
     expect(Detail.props.instanceId).toEqual(INSTANCE.id);
   });
