@@ -57,7 +57,6 @@ public abstract class ZeebeIntegrationTest extends OperateIntegrationTest {
       //
     }
     zeebeConnector.checkAndCreateTopicSubscriptions(newTopicName);
-    logger.info("All documents have been wiped out! Elasticsearch has successfully been cleaned!");
   }
 
   public void finished() {

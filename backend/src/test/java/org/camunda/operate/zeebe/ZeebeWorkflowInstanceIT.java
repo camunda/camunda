@@ -11,6 +11,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import io.zeebe.client.api.commands.Workflows;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
@@ -43,8 +44,13 @@ public class ZeebeWorkflowInstanceIT extends ZeebeIntegrationTest {
 
     //then
     try {
-      final OperateEntity operateEntity = entityStorage.getOperateEntititesQueue(topicName).poll(QUEUE_POLL_TIMEOUT, TimeUnit.MILLISECONDS);
-      assertThat(operateEntity).isInstanceOf(WorkflowInstanceEntity.class);
+
+      OperateEntity operateEntity = entityStorage.getOperateEntititesQueue(topicName).poll(QUEUE_POLL_TIMEOUT, TimeUnit.MILLISECONDS);
+      assertThat(operateEntity).isInstanceOfAny(WorkflowInstanceEntity.class, WorkflowEntity.class);
+      if (operateEntity instanceof WorkflowEntity) {
+        operateEntity = entityStorage.getOperateEntititesQueue(topicName).poll(QUEUE_POLL_TIMEOUT, TimeUnit.MILLISECONDS);
+        assertThat(operateEntity).isInstanceOfAny(WorkflowInstanceEntity.class);
+      }
       WorkflowInstanceEntity workflowInstanceEntity = (WorkflowInstanceEntity) operateEntity;
       assertThat(workflowInstanceEntity.getWorkflowId()).isEqualTo(workflowId);
       assertThat(workflowInstanceEntity.getId()).isEqualTo(workflowInstanceId);
@@ -66,17 +72,9 @@ public class ZeebeWorkflowInstanceIT extends ZeebeIntegrationTest {
     //when
     final String workflowId = zeebeUtil.deployWorkflowToTheTopic(topicName, "demoProcess_v_1.bpmn");
 
-    try {
-      Thread.sleep(3000L);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
-
-    final Workflows workflows = zeebeClient.topicClient(topicName).workflowClient().newWorkflowRequest().send().join();
-
     //then
     try {
-      final OperateEntity operateEntity = entityStorage.getOperateEntititesQueue(topicName).poll(5500L, TimeUnit.MILLISECONDS);     //workflows are loaded once in 5 sec
+      final OperateEntity operateEntity = entityStorage.getOperateEntititesQueue(topicName).poll(QUEUE_POLL_TIMEOUT, TimeUnit.MILLISECONDS);
       assertThat(operateEntity).isInstanceOf(WorkflowEntity.class);
       WorkflowEntity workflowEntity = (WorkflowEntity) operateEntity;
       assertThat(workflowEntity.getId()).isEqualTo(workflowId);

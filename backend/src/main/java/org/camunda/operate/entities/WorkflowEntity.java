@@ -13,6 +13,8 @@ public class WorkflowEntity extends OperateEntity {
 
   public String bpmnXml;
 
+  public String resourceName;
+
   public String getName() {
     return name;
   }
@@ -45,6 +47,14 @@ public class WorkflowEntity extends OperateEntity {
     this.bpmnXml = bpmnXml;
   }
 
+  public String getResourceName() {
+    return resourceName;
+  }
+
+  public void setResourceName(String resourceName) {
+    this.resourceName = resourceName;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o)
@@ -62,7 +72,9 @@ public class WorkflowEntity extends OperateEntity {
       return false;
     if (bpmnProcessId != null ? !bpmnProcessId.equals(that.bpmnProcessId) : that.bpmnProcessId != null)
       return false;
-    return bpmnXml != null ? bpmnXml.equals(that.bpmnXml) : that.bpmnXml == null;
+    if (bpmnXml != null ? !bpmnXml.equals(that.bpmnXml) : that.bpmnXml != null)
+      return false;
+    return resourceName != null ? resourceName.equals(that.resourceName) : that.resourceName == null;
   }
 
   @Override
@@ -72,6 +84,7 @@ public class WorkflowEntity extends OperateEntity {
     result = 31 * result + version;
     result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
     result = 31 * result + (bpmnXml != null ? bpmnXml.hashCode() : 0);
+    result = 31 * result + (resourceName != null ? resourceName.hashCode() : 0);
     return result;
   }
 }

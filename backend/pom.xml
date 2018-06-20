@@ -10,7 +10,7 @@
 
   <properties>
     <elasticsearch.version>6.2.4</elasticsearch.version>
-    <zeebe.version>0.10.1</zeebe.version>
+    <zeebe.version>0.11.0-SNAPSHOT</zeebe.version>
     <spring.boot.version>2.0.2.RELEASE</spring.boot.version>
     <java.version>1.8</java.version>
 
@@ -178,6 +178,9 @@
                     <argument>elasticsearch</argument>
                     <argument>zeebe</argument>
                   </arguments>
+                  <environmentVariables>
+                    <HOST>0.0.0.0</HOST>
+                  </environmentVariables>
                 </configuration>
               </execution>
               <execution>

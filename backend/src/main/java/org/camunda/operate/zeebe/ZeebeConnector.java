@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import org.camunda.operate.es.ElasticsearchConnector;
 import org.camunda.operate.es.writer.EntityStorage;
 import org.camunda.operate.property.OperateProperties;
 import org.slf4j.Logger;
@@ -19,6 +18,7 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.clients.WorkflowClient;
 import io.zeebe.client.api.subscription.TopicSubscription;
 import io.zeebe.client.api.subscription.WorkflowInstanceEventHandler;
 
@@ -33,6 +33,8 @@ public class ZeebeConnector {
 
   private Logger logger = LoggerFactory.getLogger(ZeebeConnector.class);
 
+  private static final String INTERNAL_SYSTEM_TOPIC = "internal-system";
+
   @Autowired
   private OperateProperties operateProperties;
 
@@ -41,6 +43,9 @@ public class ZeebeConnector {
 
   @Autowired
   private IncidentEventTransformer incidentEventTransformer;
+
+  @Autowired
+  private DeploymentEventTransformer deploymentEventTransformer;
 
   @Autowired
   private EntityStorage entityStorage;
@@ -69,12 +74,18 @@ public class ZeebeConnector {
       checkAndCreateTopicSubscriptions(topic);
     }
 
+    checkAndCreateTopicSubscriptions(INTERNAL_SYSTEM_TOPIC);
+
   }
 
   public void checkAndCreateTopicSubscriptions(String topic) {
     try {
       if (topicSubscriptions.get(topic) == null || !topicSubscriptions.get(topic).isOpen()) {
-        topicSubscriptions.put(topic, createTopicSubscription(topic));
+        if (topic.equals(INTERNAL_SYSTEM_TOPIC)) {
+          topicSubscriptions.put(topic, createWorkflowSubscription());
+        } else {
+          topicSubscriptions.put(topic, createTopicSubscription(topic));
+        }
       }
       logger.info("Subscriptions for topic [{}] was created", topic);
     } catch (Exception ex) {
@@ -95,13 +106,22 @@ public class ZeebeConnector {
 
   private TopicSubscription createTopicSubscription(String topicName) {
     entityStorage.addQueueForTopic(topicName);
-    return zeebeClient() //TODO ???
+    return zeebeClient()
       .topicClient(topicName)
       .newSubscription()
       .name(operateProperties.getZeebe().getWorker())
       .workflowInstanceEventHandler(workflowInstanceEventHandler)
       .incidentEventHandler(incidentEventTransformer)
       .startAtHeadOfTopic()   //TODO
+      .forcedStart()          //TODO
+      .open();
+  }
+
+  private TopicSubscription createWorkflowSubscription() {
+    return zeebeClient()
+      .newManagementSubscription()
+      .name(operateProperties.getZeebe().getWorker())
+      .deploymentEventHandler(deploymentEventTransformer)
       .forcedStart()          //TODO
       .open();
   }

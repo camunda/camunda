@@ -54,7 +54,7 @@ public class ElasticsearchConnector {
       .build();
   }
 
-  @Bean/*(destroyMethod = "close")*/
+  @Bean(destroyMethod = "close")
   public TransportClient esClient() {
     logger.debug("Creating Elasticsearch connection...");
     TransportClient transportClient = null;
@@ -70,7 +70,7 @@ public class ElasticsearchConnector {
       logger.error(String
           .format("Unable to connect to Elasticsearch [%s:%s]", operateProperties.getElasticsearch().getHost(), operateProperties.getElasticsearch().getPort()),
         ex);
-      //TODO
+      //TODO OPE-36
     }
     return transportClient;
   }

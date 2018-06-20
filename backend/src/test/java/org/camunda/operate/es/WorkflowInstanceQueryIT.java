@@ -16,6 +16,7 @@ import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.writer.ElasticsearchBulkProcessor;
+import org.camunda.operate.es.writer.PersistenceException;
 import org.camunda.operate.rest.dto.IncidentDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
@@ -272,7 +273,11 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
     workflowInstances.addAll(Arrays.asList(runningInstance, completedInstance, instanceWithIncident, instanceWithoutIncident));
 
     //persist instances
-    elasticsearchBulkProcessor.persistOperateEntities(workflowInstances);
+    try {
+      elasticsearchBulkProcessor.persistOperateEntities(workflowInstances);
+    } catch (PersistenceException e) {
+      throw new RuntimeException(e);
+    }
     super.refreshIndexesInElasticsearch();
   }
 

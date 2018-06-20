@@ -9,6 +9,6 @@ import org.elasticsearch.action.bulk.BulkRequestBuilder;
 @FunctionalInterface
 public interface ElasticsearchRequestCreator<T extends OperateEntity> {
 
-  BulkRequestBuilder addRequestToBulkQuery(BulkRequestBuilder bulkRequestBuilder, T entity);
+  BulkRequestBuilder addRequestToBulkQuery(BulkRequestBuilder bulkRequestBuilder, T entity) throws PersistenceException;
 
 }

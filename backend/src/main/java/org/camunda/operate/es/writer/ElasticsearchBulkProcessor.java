@@ -31,9 +31,8 @@ public class ElasticsearchBulkProcessor extends Thread {
   @Autowired
   private Map<Class<? extends OperateEntity>, ElasticsearchRequestCreator> esRequestCreatorsMap;
 
-  public void persistOperateEntities(List<? extends OperateEntity> entitiesToPersist) {
+  public void persistOperateEntities(List<? extends OperateEntity> entitiesToPersist) throws PersistenceException {
 
-    try {
       logger.debug("Writing [{}] entities to elasticsearch", entitiesToPersist.size());
       BulkRequestBuilder bulkRequest = esClient.prepareBulk();
       for (OperateEntity operateEntity : entitiesToPersist) {
@@ -45,23 +44,24 @@ public class ElasticsearchBulkProcessor extends Thread {
         }
       }
       processBulkRequest(bulkRequest);
-    } catch (Exception ex) {
-      logger.error("Error while persisting entities", ex);
-      //TODO
-    }
+
 
   }
 
-  protected void processBulkRequest(BulkRequestBuilder bulkRequest) throws InterruptedException, java.util.concurrent.ExecutionException {
+  protected void processBulkRequest(BulkRequestBuilder bulkRequest) throws PersistenceException {
     if (bulkRequest.request().requests().size() > 0) {
-      final BulkResponse bulkItemResponses = bulkRequest.execute().get();
-      final BulkItemResponse[] items = bulkItemResponses.getItems();
-      for (BulkItemResponse responseItem : items) {
-        if (responseItem.isFailed()) {
-          logger.error(String.format("%s failed for type [%s] and id [%s]: %s", responseItem.getOpType(), responseItem.getType(), responseItem.getId(),
-            responseItem.getFailureMessage()), responseItem.getFailure().getCause());
-          throw new RuntimeException("Operation failed: " + responseItem.getFailureMessage(), responseItem.getFailure().getCause());     //TODO
+      try {
+        final BulkResponse bulkItemResponses = bulkRequest.execute().get();
+        final BulkItemResponse[] items = bulkItemResponses.getItems();
+        for (BulkItemResponse responseItem : items) {
+          if (responseItem.isFailed()) {
+            logger.error(String.format("%s failed for type [%s] and id [%s]: %s", responseItem.getOpType(), responseItem.getType(), responseItem.getId(),
+              responseItem.getFailureMessage()), responseItem.getFailure().getCause());
+            throw new PersistenceException("Operation failed: " + responseItem.getFailureMessage(), responseItem.getFailure().getCause(), responseItem.getItemId());
+          }
         }
+      } catch (InterruptedException | java.util.concurrent.ExecutionException ex) {
+        throw new PersistenceException("Error when persisting the entities to Elasticsearch: " + ex.getMessage(), ex);
       }
     }
   }
@@ -83,7 +83,19 @@ public class ElasticsearchBulkProcessor extends Thread {
           entityStorage.getOperateEntititesQueue(topicName).drainTo(entitiesToPersist, batchSize);
           if (entitiesToPersist.size() > 0) {
             entitiesCount += entitiesToPersist.size();
-            persistOperateEntities(entitiesToPersist);
+            try {
+              persistOperateEntities(entitiesToPersist);
+            } catch (PersistenceException ex) {
+              logger.error("Error occurred while persisting the entities to Elasticsearch. Retrying...", ex);
+              //try once again and skip
+              try {
+                persistOperateEntities(entitiesToPersist);
+              } catch (PersistenceException ex2) {
+                final OperateEntity failingEntity = entitiesToPersist.get(ex2.getFailingRequestId());
+                //TODO what to do if the 2nd attempt failed again OPE-38
+                logger.error("Error occurred while persisting the entities to Elasticsearch. Skipping.", ex2);
+              }
+            }
           }
 
         }

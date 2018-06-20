@@ -13,8 +13,11 @@ import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.writer.ElasticsearchBulkProcessor;
+import org.camunda.operate.es.writer.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.DependsOn;
@@ -29,6 +32,8 @@ import org.springframework.stereotype.Component;
 @Profile("elasticsearch")
 @DependsOn("elasticsearchSchemaManager")
 public class EsDemoDataGenerator {
+
+  private Logger logger = LoggerFactory.getLogger(EsDemoDataGenerator.class);
 
   @Autowired
   private ElasticsearchBulkProcessor elasticsearchBulkProcessor;
@@ -72,7 +77,12 @@ public class EsDemoDataGenerator {
         workflowInstances.add(workflowInstance);
       }
 
-      elasticsearchBulkProcessor.persistOperateEntities(workflowInstances);
+      try {
+        elasticsearchBulkProcessor.persistOperateEntities(workflowInstances);
+      } catch (PersistenceException e) {
+        logger.error("Error when persisting demo data", e);
+      }
+
     }
 
   }

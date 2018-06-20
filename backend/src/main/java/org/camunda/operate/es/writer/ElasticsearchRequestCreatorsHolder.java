@@ -66,14 +66,9 @@ public class ElasticsearchRequestCreatorsHolder {
             .setDoc(jsonMap);
 
         return bulkRequestBuilder.add(updateRequest);
-      } catch (JsonProcessingException e) {
-        //TODO
-        logger.error("Error preparing the query to upsert workflow instance", e);
-        return bulkRequestBuilder;
       } catch (IOException e) {
-        //TODO
         logger.error("Error preparing the query to upsert workflow instance", e);
-        return bulkRequestBuilder;
+        throw new PersistenceException(String.format("Error preparing the query to upsert workflow instance [%s]", entity.getId()), e);
       }
     };
   }
@@ -117,14 +112,9 @@ public class ElasticsearchRequestCreatorsHolder {
           esClient
             .prepareUpdate(WorkflowInstanceType.TYPE, WorkflowInstanceType.TYPE, entity.getWorkflowInstanceId())
             .setScript(updateScript));
-      } catch (JsonProcessingException e) {
-        //TODO
-        logger.error("Error preparing the query to update incident", e);
-        return bulkRequestBuilder;
       } catch (IOException e) {
-        //TODO
         logger.error("Error preparing the query to update incident", e);
-        return bulkRequestBuilder;
+        throw new PersistenceException(String.format("Error preparing the query to update incident [%s]", entity.getId()), e);
       }
     };
   }
@@ -142,9 +132,8 @@ public class ElasticsearchRequestCreatorsHolder {
             .setSource(objectMapper.writeValueAsString(entity), XContentType.JSON)
         );
       } catch (JsonProcessingException e) {
-        //TODO
-        logger.error("Error preparing the query to upsert workflow instance", e);
-        return bulkRequestBuilder;
+        logger.error("Error preparing the query to insert workflow", e);
+        throw new PersistenceException(String.format("Error preparing the query to insert workflow [%s]", entity.getId()), e);
       }
     };
   }

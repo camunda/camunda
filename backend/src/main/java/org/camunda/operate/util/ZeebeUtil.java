@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.commands.DeployWorkflowCommandStep1;
 import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.api.events.TopicEvent;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
@@ -42,18 +43,22 @@ public class ZeebeUtil {
   /**
    * Deploys the process synchronously.
    * @param topic
-   * @param classpathResource
+   * @param classpathResources
    * @return workflow id
    */
-  public String deployWorkflowToTheTopic(String topic, String classpathResource) {
+  public String deployWorkflowToTheTopic(String topic, String... classpathResources) {
+    if (classpathResources.length == 0) {
+      return null;
+    }
+    DeployWorkflowCommandStep1 deployWorkflowCommandStep1 = client.topicClient(topic).workflowClient().newDeployCommand();
+    for (String classpathResource: classpathResources) {
+      deployWorkflowCommandStep1 = deployWorkflowCommandStep1.addResourceFromClasspath(classpathResource);
+    }
     final DeploymentEvent deploymentEvent =
-      client.topicClient(topic)
-        .workflowClient()
-        .newDeployCommand()
-        .addResourceFromClasspath(classpathResource)
+      ((DeployWorkflowCommandStep1.DeployWorkflowCommandBuilderStep2)deployWorkflowCommandStep1)
         .send()
         .join();
-    logger.debug("Workflow [{}] was deployed", classpathResource);
+    logger.debug("Deployment of resource [{}] was performed", classpathResources);
     return String.valueOf(deploymentEvent.getDeployedWorkflows().get(0).getWorkflowKey());
   }
 
