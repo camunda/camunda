@@ -4,24 +4,21 @@ export function formatDate(dateString) {
   return dateString ? format(dateString, 'D MMM YYYY | HH:mm:ss') : '--';
 }
 
+export const getActiveIncident = incidents => {
+  return (
+    incidents &&
+    incidents.length &&
+    incidents.filter(({state}) => state === 'ACTIVE')[0]
+  );
+};
+
 export function getInstanceState({state, incidents}) {
   if (state === 'COMPLETED' || state === 'CANCELLED') {
     return state;
   }
-
-  const activeIncident =
-    incidents &&
-    incidents.length &&
-    incidents.filter(({state}) => state === 'ACTIVE')[0];
-
-  return activeIncident ? 'INCIDENT' : 'ACTIVE';
+  return getActiveIncident(incidents) ? 'INCIDENT' : 'ACTIVE';
 }
 
-export function getInstanceErrorMessage({incidents}) {
-  const activeIncident =
-    incidents &&
-    incidents.length &&
-    incidents.filter(({state}) => state === 'ACTIVE')[0];
-
-  return (activeIncident || {}).errorMessage;
+export function getIncidentMessage({incidents}) {
+  return (getActiveIncident(incidents) || {}).errorMessage;
 }
