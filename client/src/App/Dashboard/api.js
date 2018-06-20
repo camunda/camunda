@@ -1,7 +1,7 @@
 import {post} from 'modules/request';
 
 const loadCount = async payload => {
-  const response = await post('api/workflow-instances/count', payload);
+  const response = await post('/api/workflow-instances/count', payload);
   const resJson = await response.json();
   return resJson.count;
 };
