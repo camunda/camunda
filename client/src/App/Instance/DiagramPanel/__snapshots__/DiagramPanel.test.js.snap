@@ -1,0 +1,82 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`DiagramPanel should render panel header and body 1`] = `
+<Panel
+  isRounded={false}
+>
+  <PanelHeader
+    isRounded={false}
+  >
+    <styled.table>
+      <tbody>
+        <tr>
+          <td>
+            <Themed(StateIcon)
+              stateName="ACTIVE"
+            />
+            bar
+          </td>
+          <td>
+            foo
+          </td>
+          <td>
+            20 Jun 2018 | 08:57:20
+          </td>
+          <td>
+            Invalid Date
+          </td>
+        </tr>
+      </tbody>
+    </styled.table>
+  </PanelHeader>
+  <PanelBody>
+    <Themed(Diagram)
+      workflowDefinitionId="bar"
+    />
+  </PanelBody>
+</Panel>
+`;
+
+exports[`DiagramPanel should show incident when there is one 1`] = `
+<Panel
+  isRounded={false}
+>
+  <PanelHeader
+    isRounded={false}
+  >
+    <styled.table>
+      <tbody>
+        <tr>
+          <td>
+            <Themed(StateIcon)
+              stateName="INCIDENT"
+            />
+            bar
+          </td>
+          <td>
+            foo
+          </td>
+          <td>
+            20 Jun 2018 | 08:57:20
+          </td>
+          <td>
+            Invalid Date
+          </td>
+        </tr>
+      </tbody>
+    </styled.table>
+  </PanelHeader>
+  <PanelBody>
+    <styled.div>
+      <strong>
+        Incident:
+      </strong>
+       
+      error
+    </styled.div>
+    <Themed(Diagram)
+      workflowDefinitionId="bar"
+    />
+  </PanelBody>
+</Panel>
+`;

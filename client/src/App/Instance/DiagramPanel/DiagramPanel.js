@@ -41,6 +41,7 @@ export default function DiagramPanel({instance}) {
 DiagramPanel.propTypes = {
   instance: PropTypes.shape({
     id: PropTypes.string.isRequired,
+    workflowDefinitionId: PropTypes.string.isRequired,
     startDate: PropTypes.string.isRequired,
     endDate: PropTypes.string,
     stateName: PropTypes.string.isRequired,
