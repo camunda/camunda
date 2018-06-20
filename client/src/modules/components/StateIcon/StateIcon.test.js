@@ -17,7 +17,7 @@ describe('StateIcon', () => {
   it('should render Incident Icon', () => {
     // given
     const someProp = 'some prop';
-    utils.getInstanceState = jest.fn(() => 'INCIDENT');
+    utils.getInstanceState = jest.fn(() => utils.INSTANCE_STATE.INCIDENT);
     const node = shallow(
       <StateIcon instance={mockInstance} theme={'dark'} someProp={someProp} />
     );
@@ -34,7 +34,7 @@ describe('StateIcon', () => {
   it('should render Active Icon', () => {
     // given
     const someProp = 'some prop';
-    utils.getInstanceState = jest.fn(() => 'ACTIVE');
+    utils.getInstanceState = jest.fn(() => utils.INSTANCE_STATE.ACTIVE);
     const node = shallow(
       <StateIcon instance={mockInstance} theme={'dark'} someProp={someProp} />
     );
@@ -51,7 +51,7 @@ describe('StateIcon', () => {
   it('should render Completed Icon', () => {
     // given
     const someProp = 'some prop';
-    utils.getInstanceState = jest.fn(() => 'COMPLETED');
+    utils.getInstanceState = jest.fn(() => utils.INSTANCE_STATE.COMPLETED);
     const node = shallow(
       <StateIcon instance={mockInstance} theme={'dark'} someProp={someProp} />
     );
@@ -68,7 +68,7 @@ describe('StateIcon', () => {
   it('should render CANCELED Icon', () => {
     // given
     const someProp = 'some prop';
-    utils.getInstanceState = jest.fn(() => 'CANCELED');
+    utils.getInstanceState = jest.fn(() => utils.INSTANCE_STATE.CANCELED);
     const node = shallow(
       <StateIcon instance={mockInstance} theme={'dark'} someProp={someProp} />
     );

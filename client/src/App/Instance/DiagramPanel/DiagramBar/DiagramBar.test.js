@@ -1,6 +1,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
+import {INSTANCE_STATE} from 'modules/utils';
 import DiagramBar from './DiagramBar';
 import * as Styled from './styled';
 
@@ -8,7 +9,7 @@ describe('DiagramBar', () => {
   let mockInstance = {
     id: 'foo',
     workflowId: 'bar',
-    stateName: 'ACTIVE'
+    stateName: INSTANCE_STATE.ACTIVE
   };
   it('should render null if there is no incident', () => {
     // given
@@ -22,8 +23,10 @@ describe('DiagramBar', () => {
     const mockErrorMessage = 'error';
     mockInstance = {
       ...mockInstance,
-      state: 'ACTIVE',
-      incidents: [{state: 'ACTIVE', errorMessage: mockErrorMessage}]
+      state: INSTANCE_STATE.ACTIVE,
+      incidents: [
+        {state: INSTANCE_STATE.ACTIVE, errorMessage: mockErrorMessage}
+      ]
     };
     const node = shallow(<DiagramBar instance={mockInstance} />);
 

@@ -1,11 +1,15 @@
 import React from 'react';
 
-import {getInstanceState, getIncidentMessage} from 'modules/utils';
+import {
+  getInstanceState,
+  getIncidentMessage,
+  INSTANCE_STATE
+} from 'modules/utils';
 
 import * as Styled from './styled';
 
 export default function DiagramBar({instance}) {
-  if (getInstanceState(instance) === 'INCIDENT') {
+  if (getInstanceState(instance) === INSTANCE_STATE.INCIDENT) {
     const errorMessage = getIncidentMessage(instance);
     return (
       <Styled.IncidentMessage>

@@ -2,6 +2,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import {mockResolvedAsyncFn} from 'modules/testUtils';
+import {INSTANCE_STATE} from 'modules/utils';
 import Copyright from 'modules/components/Copyright';
 
 import Instance from './Instance';
@@ -19,7 +20,7 @@ const INSTANCE = {
   workflowId: '1',
   startDate: '2018-06-18T08:44:52.240+0000',
   endDate: null,
-  state: 'ACTIVE',
+  state: INSTANCE_STATE.ACTIVE,
   businessKey: 'demoProcess',
   incidents: [
     {
@@ -27,7 +28,7 @@ const INSTANCE = {
       errorType: 'IO_MAPPING_ERROR',
       errorMessage:
         'Could not apply output mappings: Task was completed without payload',
-      state: 'ACTIVE',
+      state: INSTANCE_STATE.ACTIVE,
       activityId: 'taskA',
       activityInstanceId: '4294983744',
       taskId: null
