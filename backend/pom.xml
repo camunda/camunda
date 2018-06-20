@@ -381,11 +381,11 @@
               <goal>shade</goal>
             </goals>
             <configuration>
+              <generateUniqueDependencyReducedPom>true</generateUniqueDependencyReducedPom>
               <filters>
                 <filter>
-                  <artifact>*:*</artifact>
+                  <artifact>org.bouncycastle:*</artifact>
                   <excludes>
-                    <exclude>**/*INDEX.LIST*</exclude>
                     <exclude>META-INF/*.SF</exclude>
                     <exclude>META-INF/*.DSA</exclude>
                     <exclude>META-INF/*.RSA</exclude>

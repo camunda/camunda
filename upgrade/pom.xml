@@ -34,7 +34,7 @@
     <dependency>
       <groupId>org.camunda.optimize</groupId>
       <artifactId>optimize-backend</artifactId>
-      <version>${project.parent.version}</version>
+      <version>${project.version}</version>
       <exclusions>
         <exclusion>
           <artifactId>spring-beans</artifactId>
@@ -127,6 +127,17 @@
               <goal>shade</goal>
             </goals>
             <configuration>
+              <generateUniqueDependencyReducedPom>true</generateUniqueDependencyReducedPom>
+              <filters>
+                <filter>
+                  <artifact>org.bouncycastle:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                  </excludes>
+                </filter>
+              </filters>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>org.camunda.optimize.upgrade.main.UpgradeFrom21To22</mainClass>
