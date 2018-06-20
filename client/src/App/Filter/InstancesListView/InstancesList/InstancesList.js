@@ -149,7 +149,7 @@ export default class InstancesList extends React.Component {
     if (this.container) {
       const rows = ~~(this.container.clientHeight / 38) - 1;
       this.setState({rowsToDisplay: rows});
-      this.props.updateEntriesPerPage(rows);
+      this.props.onEntriesPerPageChange(rows);
     }
   }
 }

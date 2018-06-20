@@ -4,26 +4,25 @@ import Panel from 'modules/components/Panel';
 import InstancesList from './InstancesList';
 import InstancesListFooter from './InstancesListFooter';
 
+import PropTypes from 'prop-types';
+
 import {getData} from './api';
 
-/**
- * This component is responsible for the handling the current state of the process instance list view and synchronize this with the table and the Panel footer.
- * It is also responsible for loading the list of instances.
- * As props it gets the
- *  - number of total instances
- *  - number of instances in the current filter
- *  - number of selections
- *  - number of incidents
- *  - filter
- * It propagates changes to
- *  - Selections
- * up to the Filter component, which can then synchronize this with the Header and Selection sections as well as use the firstListItem .
- */
 export default class InstancesListView extends React.Component {
   state = {
     firstElement: 0,
     instances: null,
-    entriesPerPage: null
+    entriesPerPage: 0
+  };
+
+  static propTypes = {
+    selection: PropTypes.shape({
+      list: PropTypes.instanceOf(Set),
+      isBlacklist: PropTypes.bool
+    }).isRequired,
+    instancesInFilter: PropTypes.number.isRequired,
+    onSelectionUpdate: PropTypes.func.isRequired,
+    filter: PropTypes.object.isRequired
   };
 
   render() {
@@ -35,10 +34,10 @@ export default class InstancesListView extends React.Component {
             data={this.state.instances}
             selection={this.props.selection}
             total={this.props.instancesInFilter}
-            updateEntriesPerPage={entriesPerPage =>
+            onEntriesPerPageChange={entriesPerPage =>
               this.setState({entriesPerPage})
             }
-            updateSelection={this.props.updateSelection}
+            onSelectionUpdate={this.props.onSelectionUpdate}
           />
         </Panel.Body>
         <Panel.Footer>

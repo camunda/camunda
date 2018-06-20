@@ -1,0 +1,114 @@
+import React from 'react';
+import {shallow} from 'enzyme';
+
+import InstancesListView from './InstancesListView';
+import InstancesList from './InstancesList';
+import InstancesListFooter from './InstancesListFooter';
+
+import {getData} from './api';
+
+const selection = {
+  list: new Set(),
+  isBlacklist: false
+};
+
+const filter = {};
+const total = 27;
+
+jest.mock('./api');
+
+describe('InstancesListView', () => {
+  let node;
+  let onSelectionUpdate;
+
+  beforeEach(() => {
+    onSelectionUpdate = jest.fn();
+    getData.mockClear();
+    node = shallow(
+      <InstancesListView
+        selection={selection}
+        filter={filter}
+        instancesInFilter={total}
+        onSelectionUpdate={onSelectionUpdate}
+      />
+    );
+  });
+
+  it('should contain an InstancesList', () => {
+    expect(node.find(InstancesList)).toExist();
+  });
+
+  it('should contain a Footer', () => {
+    expect(node.find(InstancesListFooter)).toExist();
+  });
+
+  it('should load data if the filter changed', () => {
+    expect(getData).toHaveBeenCalled();
+  });
+
+  it('should reset the page if the filter changes', () => {
+    node.setState({firstElement: 10});
+    node.setProps({filter: {prop: 1}});
+
+    expect(node.state().firstElement).toBe(0);
+  });
+
+  it('should load data if the current page changes', () => {
+    getData.mockClear();
+    node.setState({firstElement: 10});
+
+    expect(getData).toHaveBeenCalled();
+    expect(getData.mock.calls[0][1]).toBe(10);
+  });
+
+  it('should pass properties to the Instances List', () => {
+    const instances = [{id: 1}, {id: 2}, {id: 3}];
+    node.setState({instances});
+
+    const list = node.find(InstancesList);
+
+    expect(list.prop('data')).toBe(instances);
+    expect(list.prop('selection')).toBe(selection);
+    expect(list.prop('total')).toBe(total);
+    expect(list.prop('onSelectionUpdate')).toBe(onSelectionUpdate);
+  });
+
+  it('should pass properties to the Footer', () => {
+    node.setState({entriesPerPage: 14, firstElement: 8});
+    const footer = node.find(InstancesListFooter);
+
+    expect(footer.prop('total')).toBe(total);
+    expect(footer.prop('perPage')).toBe(14);
+    expect(footer.prop('firstElement')).toBe(8);
+  });
+
+  it('should pass a method to the footer to change the firstElement', () => {
+    node.setState({firstElement: 8});
+    const changeFirstElement = node
+      .find(InstancesListFooter)
+      .prop('onFirstElementChange');
+
+    expect(changeFirstElement).toBeDefined();
+    changeFirstElement(87);
+
+    expect(node.state('firstElement')).toBe(87);
+  });
+
+  it('should pass a method to the instances list to update the entries per page', () => {
+    node.setState({entriesPerPage: 8});
+    const changeEntriesPerPage = node
+      .find(InstancesList)
+      .prop('onEntriesPerPageChange');
+
+    expect(changeEntriesPerPage).toBeDefined();
+    changeEntriesPerPage(87);
+
+    expect(node.state('entriesPerPage')).toBe(87);
+  });
+
+  it('should pass the onSelectionUpdate prop to the instances list ', () => {
+    const updateSelection = node.find(InstancesList).prop('onSelectionUpdate');
+
+    expect(updateSelection).toBe(onSelectionUpdate);
+  });
+});

@@ -1,22 +1,29 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 import * as Styled from './styled';
 import {LeftBar, Left, Right, RightBar} from 'modules/components/Icon';
 
+import {getRange} from './service';
+
 export default class InstancesListFooter extends React.Component {
+  static propTypes = {
+    onFirstElementChange: PropTypes.func.isRequired,
+    perPage: PropTypes.number.isRequired,
+    firstElement: PropTypes.number.isRequired,
+    total: PropTypes.number.isRequired
+  };
+
   handlePageChange = page => () => {
     this.props.onFirstElementChange((page - 1) * this.props.perPage);
   };
 
   render() {
-    if (typeof this.props.total !== 'number') {
-      return null;
-    }
     const currentPage =
       Math.round(this.props.firstElement / this.props.perPage) + 1;
     const maxPage = Math.ceil(this.props.total / this.props.perPage);
 
-    if (maxPage === 1) {
+    if (maxPage === 1 || this.props.total === 0) {
       return null;
     }
 
@@ -82,19 +89,4 @@ export default class InstancesListFooter extends React.Component {
       </Styled.Pagination>
     );
   }
-}
-
-function getRange(focus, max) {
-  let start = Math.max(focus - 2, 1);
-  let end = Math.min(start + 4, max);
-  if (max - focus < 2) {
-    start = Math.max(end - 4, 1);
-  }
-
-  const pages = [];
-  for (let i = start; i <= end; i++) {
-    pages.push(i);
-  }
-
-  return pages;
 }

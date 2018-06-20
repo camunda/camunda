@@ -15,6 +15,7 @@ import * as Styled from './styled.js';
 export default class Filter extends Component {
   state = {
     filter: {running: true},
+    filterCount: 0,
     selection: {
       list: new Set(),
       isBlacklist: false
@@ -76,7 +77,7 @@ export default class Filter extends Component {
             <Styled.Bottom>
               <InstancesListView
                 instancesInFilter={this.state.filterCount}
-                updateSelection={change => {
+                onSelectionUpdate={change => {
                   this.setState({
                     selection: update(this.state.selection, change)
                   });

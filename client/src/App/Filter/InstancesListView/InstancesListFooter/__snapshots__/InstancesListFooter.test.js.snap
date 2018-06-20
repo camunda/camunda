@@ -1,0 +1,332 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`InstancesListFooter should not show a pagination if there is only one page 1`] = `""`;
+
+exports[`InstancesListFooter should not show ellipsis when first page is just barely out of range 1`] = `
+<styled.div>
+  <Themed(styled.button)
+    disabled={false}
+    onClick={[Function]}
+    withIcon={true}
+  >
+    <LeftBar />
+  </Themed(styled.button)>
+  <Themed(styled.button)
+    disabled={false}
+    onClick={[Function]}
+    withIcon={true}
+  >
+    <Left />
+  </Themed(styled.button)>
+  <React.Fragment>
+    <Themed(styled.button)
+      onClick={[Function]}
+    >
+      1
+    </Themed(styled.button)>
+  </React.Fragment>
+  <Themed(styled.button)
+    active={false}
+    key="2"
+    onClick={[Function]}
+  >
+    2
+  </Themed(styled.button)>
+  <Themed(styled.button)
+    active={false}
+    key="3"
+    onClick={[Function]}
+  >
+    3
+  </Themed(styled.button)>
+  <Themed(styled.button)
+    active={true}
+    key="4"
+    onClick={[Function]}
+  >
+    4
+  </Themed(styled.button)>
+  <Themed(styled.button)
+    active={false}
+    key="5"
+    onClick={[Function]}
+  >
+    5
+  </Themed(styled.button)>
+  <Themed(styled.button)
+    active={false}
+    key="6"
+    onClick={[Function]}
+  >
+    6
+  </Themed(styled.button)>
+  <React.Fragment>
+    <styled.div>
+      …
+    </styled.div>
+    <Themed(styled.button)
+      onClick={[Function]}
+    >
+      10
+    </Themed(styled.button)>
+  </React.Fragment>
+  <Themed(styled.button)
+    disabled={false}
+    onClick={[Function]}
+    withIcon={true}
+  >
+    <Right />
+  </Themed(styled.button)>
+  <Themed(styled.button)
+    disabled={false}
+    onClick={[Function]}
+    withIcon={true}
+  >
+    <RightBar />
+  </Themed(styled.button)>
+</styled.div>
+`;
+
+exports[`InstancesListFooter should show ellipsis on both sides in the middle 1`] = `
+<styled.div>
+  <Themed(styled.button)
+    disabled={false}
+    onClick={[Function]}
+    withIcon={true}
+  >
+    <LeftBar />
+  </Themed(styled.button)>
+  <Themed(styled.button)
+    disabled={false}
+    onClick={[Function]}
+    withIcon={true}
+  >
+    <Left />
+  </Themed(styled.button)>
+  <React.Fragment>
+    <Themed(styled.button)
+      onClick={[Function]}
+    >
+      1
+    </Themed(styled.button)>
+    <styled.div>
+      …
+    </styled.div>
+  </React.Fragment>
+  <Themed(styled.button)
+    active={false}
+    key="9"
+    onClick={[Function]}
+  >
+    9
+  </Themed(styled.button)>
+  <Themed(styled.button)
+    active={false}
+    key="10"
+    onClick={[Function]}
+  >
+    10
+  </Themed(styled.button)>
+  <Themed(styled.button)
+    active={true}
+    key="11"
+    onClick={[Function]}
+  >
+    11
+  </Themed(styled.button)>
+  <Themed(styled.button)
+    active={false}
+    key="12"
+    onClick={[Function]}
+  >
+    12
+  </Themed(styled.button)>
+  <Themed(styled.button)
+    active={false}
+    key="13"
+    onClick={[Function]}
+  >
+    13
+  </Themed(styled.button)>
+  <React.Fragment>
+    <styled.div>
+      …
+    </styled.div>
+    <Themed(styled.button)
+      onClick={[Function]}
+    >
+      20
+    </Themed(styled.button)>
+  </React.Fragment>
+  <Themed(styled.button)
+    disabled={false}
+    onClick={[Function]}
+    withIcon={true}
+  >
+    <Right />
+  </Themed(styled.button)>
+  <Themed(styled.button)
+    disabled={false}
+    onClick={[Function]}
+    withIcon={true}
+  >
+    <RightBar />
+  </Themed(styled.button)>
+</styled.div>
+`;
+
+exports[`InstancesListFooter should show the first five pages when on first page 1`] = `
+<styled.div>
+  <Themed(styled.button)
+    disabled={true}
+    onClick={[Function]}
+    withIcon={true}
+  >
+    <LeftBar />
+  </Themed(styled.button)>
+  <Themed(styled.button)
+    disabled={true}
+    onClick={[Function]}
+    withIcon={true}
+  >
+    <Left />
+  </Themed(styled.button)>
+  <Themed(styled.button)
+    active={true}
+    key="1"
+    onClick={[Function]}
+  >
+    1
+  </Themed(styled.button)>
+  <Themed(styled.button)
+    active={false}
+    key="2"
+    onClick={[Function]}
+  >
+    2
+  </Themed(styled.button)>
+  <Themed(styled.button)
+    active={false}
+    key="3"
+    onClick={[Function]}
+  >
+    3
+  </Themed(styled.button)>
+  <Themed(styled.button)
+    active={false}
+    key="4"
+    onClick={[Function]}
+  >
+    4
+  </Themed(styled.button)>
+  <Themed(styled.button)
+    active={false}
+    key="5"
+    onClick={[Function]}
+  >
+    5
+  </Themed(styled.button)>
+  <React.Fragment>
+    <styled.div>
+      …
+    </styled.div>
+    <Themed(styled.button)
+      onClick={[Function]}
+    >
+      10
+    </Themed(styled.button)>
+  </React.Fragment>
+  <Themed(styled.button)
+    disabled={false}
+    onClick={[Function]}
+    withIcon={true}
+  >
+    <Right />
+  </Themed(styled.button)>
+  <Themed(styled.button)
+    disabled={false}
+    onClick={[Function]}
+    withIcon={true}
+  >
+    <RightBar />
+  </Themed(styled.button)>
+</styled.div>
+`;
+
+exports[`InstancesListFooter should show the last five pages when on last page 1`] = `
+<styled.div>
+  <Themed(styled.button)
+    disabled={false}
+    onClick={[Function]}
+    withIcon={true}
+  >
+    <LeftBar />
+  </Themed(styled.button)>
+  <Themed(styled.button)
+    disabled={false}
+    onClick={[Function]}
+    withIcon={true}
+  >
+    <Left />
+  </Themed(styled.button)>
+  <React.Fragment>
+    <Themed(styled.button)
+      onClick={[Function]}
+    >
+      1
+    </Themed(styled.button)>
+    <styled.div>
+      …
+    </styled.div>
+  </React.Fragment>
+  <Themed(styled.button)
+    active={false}
+    key="6"
+    onClick={[Function]}
+  >
+    6
+  </Themed(styled.button)>
+  <Themed(styled.button)
+    active={false}
+    key="7"
+    onClick={[Function]}
+  >
+    7
+  </Themed(styled.button)>
+  <Themed(styled.button)
+    active={false}
+    key="8"
+    onClick={[Function]}
+  >
+    8
+  </Themed(styled.button)>
+  <Themed(styled.button)
+    active={false}
+    key="9"
+    onClick={[Function]}
+  >
+    9
+  </Themed(styled.button)>
+  <Themed(styled.button)
+    active={true}
+    key="10"
+    onClick={[Function]}
+  >
+    10
+  </Themed(styled.button)>
+  <Themed(styled.button)
+    disabled={true}
+    onClick={[Function]}
+    withIcon={true}
+  >
+    <Right />
+  </Themed(styled.button)>
+  <Themed(styled.button)
+    disabled={true}
+    onClick={[Function]}
+    withIcon={true}
+  >
+    <RightBar />
+  </Themed(styled.button)>
+</styled.div>
+`;
