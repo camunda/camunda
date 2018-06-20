@@ -31,7 +31,7 @@ exports[`DiagramPanel should render panel header and body 1`] = `
   </PanelHeader>
   <PanelBody>
     <Themed(Diagram)
-      workflowDefinitionId="bar"
+      workflowId="bar"
     />
   </PanelBody>
 </Panel>
@@ -75,7 +75,7 @@ exports[`DiagramPanel should show incident when there is one 1`] = `
       error
     </styled.div>
     <Themed(Diagram)
-      workflowDefinitionId="bar"
+      workflowId="bar"
     />
   </PanelBody>
 </Panel>

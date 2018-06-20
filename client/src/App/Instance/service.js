@@ -2,14 +2,14 @@
  * extracts only necessary statistics from instance statistics response
  */
 export function extractInstanceStats({
-  workflowDefinitionId,
+  workflowId,
   startDate,
   endDate,
   state,
   incidents
 }) {
   let instanceStats = {
-    workflowDefinitionId,
+    workflowId,
     startDate,
     endDate,
     stateName: state

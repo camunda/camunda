@@ -9,12 +9,12 @@ import Copyright from 'modules/components/Copyright';
 import InstanceDetail from './InstanceDetail';
 
 const xmlMock = '<foo />';
-api.getWorkflowXML = mockResolvedAsyncFn(xmlMock);
+api.workflowXML = mockResolvedAsyncFn(xmlMock);
 jest.mock('./DiagramPanel');
 
 const INSTANCE = {
   id: '4294980768',
-  workflowDefinitionId: '1',
+  workflowId: '1',
   startDate: '2018-06-18T08:44:52.240+0000',
   endDate: null,
   state: 'ACTIVE',

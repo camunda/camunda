@@ -17,7 +17,7 @@ export default function DiagramPanel({instance}) {
             <tr>
               <td>
                 <StateIcon stateName={instance.stateName} />
-                {instance.workflowDefinitionId}
+                {instance.workflowId}
               </td>
               <td>{instance.id}</td>
               <td>{formatDate(instance.startDate)}</td>
@@ -32,7 +32,7 @@ export default function DiagramPanel({instance}) {
             <strong>Incident:</strong> {instance.errorMessage}
           </Styled.IncidentMessage>
         )}
-        <Diagram workflowDefinitionId={instance.workflowDefinitionId} />
+        <Diagram workflowId={instance.workflowId} />
       </Panel.Body>
     </Panel>
   );
@@ -41,7 +41,7 @@ export default function DiagramPanel({instance}) {
 DiagramPanel.propTypes = {
   instance: PropTypes.shape({
     id: PropTypes.string.isRequired,
-    workflowDefinitionId: PropTypes.string.isRequired,
+    workflowId: PropTypes.string.isRequired,
     startDate: PropTypes.string.isRequired,
     endDate: PropTypes.string,
     stateName: PropTypes.string.isRequired,

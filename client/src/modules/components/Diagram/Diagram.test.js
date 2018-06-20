@@ -13,13 +13,13 @@ const {WrappedComponent: Diagram} = ThemedDiagram;
 
 // mocking
 const xmlMock = '<foo />';
-api.getWorkflowXML = mockResolvedAsyncFn(xmlMock);
+api.workflowXML = mockResolvedAsyncFn(xmlMock);
 
 describe('Diagram', () => {
-  const workflowDefinitionId = 'some-id';
+  const workflowId = 'some-id';
 
   beforeEach(() => {
-    api.getWorkflowXML.mockClear();
+    api.workflowXML.mockClear();
   });
 
   it('should set initial containerNode and Viewer to null', () => {
@@ -34,9 +34,7 @@ describe('Diagram', () => {
 
   it('should render Diagram with controls', async () => {
     // given
-    const node = shallow(
-      <Diagram workflowDefinitionId={workflowDefinitionId} theme={'dark'} />
-    );
+    const node = shallow(<Diagram workflowId={workflowId} theme={'dark'} />);
     const nodeInstance = node.instance();
     await flushPromises();
 
@@ -61,9 +59,7 @@ describe('Diagram', () => {
 
   it('should reinitiate the Viewer when theme changes', async () => {
     // given
-    const node = shallow(
-      <Diagram workflowDefinitionId={workflowDefinitionId} theme={'dark'} />
-    );
+    const node = shallow(<Diagram workflowId={workflowId} theme={'dark'} />);
     const nodeInstance = node.instance();
     const initViewerSpy = jest.spyOn(nodeInstance, 'initViewer');
     await flushPromises();
@@ -79,15 +75,13 @@ describe('Diagram', () => {
   describe('componentDidMount', async () => {
     it('should get xml from api and initiate Viewer', async () => {
       // given
-      const node = shallow(
-        <Diagram workflowDefinitionId={workflowDefinitionId} theme={'dark'} />
-      );
+      const node = shallow(<Diagram workflowId={workflowId} theme={'dark'} />);
       const nodeInstance = node.instance();
       const initViewerSpy = jest.spyOn(nodeInstance, 'initViewer');
       await flushPromises();
 
       // then
-      expect(api.getWorkflowXML).toBeCalledWith(workflowDefinitionId);
+      expect(api.workflowXML).toBeCalledWith(workflowId);
       expect(nodeInstance.workflowXML).toBe(xmlMock);
       expect(initViewerSpy).toHaveBeenCalledTimes(1);
     });
@@ -96,9 +90,7 @@ describe('Diagram', () => {
   describe('initViewer', () => {
     it('should detach Viewer if it exists', async () => {
       // given
-      const node = shallow(
-        <Diagram workflowDefinitionId={workflowDefinitionId} theme={'dark'} />
-      );
+      const node = shallow(<Diagram workflowId={workflowId} theme={'dark'} />);
       const nodeInstance = node.instance();
       await flushPromises();
 
@@ -112,9 +104,7 @@ describe('Diagram', () => {
 
     it('should initiate dark BPMNViewer if theme is dark', async () => {
       // given
-      const node = shallow(
-        <Diagram workflowDefinitionId={workflowDefinitionId} theme={'dark'} />
-      );
+      const node = shallow(<Diagram workflowId={workflowId} theme={'dark'} />);
       const nodeInstance = node.instance();
       await flushPromises();
 
@@ -129,9 +119,7 @@ describe('Diagram', () => {
 
     it('should initiate light BPMNViewer if theme is light', async () => {
       // given
-      const node = shallow(
-        <Diagram workflowDefinitionId={workflowDefinitionId} theme={'light'} />
-      );
+      const node = shallow(<Diagram workflowId={workflowId} theme={'light'} />);
       await flushPromises();
       const nodeInstance = node.instance();
 
@@ -146,9 +134,7 @@ describe('Diagram', () => {
 
     it('should import the xml in the Viewer and reset zoom', async () => {
       // given
-      const node = shallow(
-        <Diagram workflowDefinitionId={workflowDefinitionId} theme={'light'} />
-      );
+      const node = shallow(<Diagram workflowId={workflowId} theme={'light'} />);
       const nodeInstance = node.instance();
       const handleZoomResetSpy = jest.spyOn(nodeInstance, 'handleZoomReset');
       await flushPromises();
@@ -164,9 +150,7 @@ describe('Diagram', () => {
   describe('containerRef', () => {
     it('should set containerNode to provided node', async () => {
       // given
-      const node = shallow(
-        <Diagram workflowDefinitionId={workflowDefinitionId} theme={'dark'} />
-      );
+      const node = shallow(<Diagram workflowId={workflowId} theme={'dark'} />);
       await flushPromises();
       const nodeInstance = node.instance();
       const someNode = 'some/node';
@@ -182,9 +166,7 @@ describe('Diagram', () => {
   describe('handleZoom', () => {
     it('should call stepZoom with provided step', async () => {
       // given
-      const node = shallow(
-        <Diagram workflowDefinitionId={workflowDefinitionId} theme={'dark'} />
-      );
+      const node = shallow(<Diagram workflowId={workflowId} theme={'dark'} />);
       const nodeInstance = node.instance();
       await flushPromises();
       const step = 1;
@@ -201,9 +183,7 @@ describe('Diagram', () => {
   describe('handleZoomIn', () => {
     it('should call handleZoom with 0.1 step', async () => {
       // given
-      const node = shallow(
-        <Diagram workflowDefinitionId={workflowDefinitionId} theme={'dark'} />
-      );
+      const node = shallow(<Diagram workflowId={workflowId} theme={'dark'} />);
       const nodeInstance = node.instance();
       await flushPromises();
       const handleZoomSpy = jest.spyOn(nodeInstance, 'handleZoom');
@@ -219,9 +199,7 @@ describe('Diagram', () => {
   describe('handleZoomOut', () => {
     it('should call handleZoom with -0.1 step', async () => {
       // given
-      const node = shallow(
-        <Diagram workflowDefinitionId={workflowDefinitionId} theme={'dark'} />
-      );
+      const node = shallow(<Diagram workflowId={workflowId} theme={'dark'} />);
       const nodeInstance = node.instance();
       await flushPromises();
       const handleZoomSpy = jest.spyOn(nodeInstance, 'handleZoom');
@@ -237,9 +215,7 @@ describe('Diagram', () => {
   describe('handleZoomReset', () => {
     it('should reset zoom in canvas', async () => {
       // given
-      const node = shallow(
-        <Diagram workflowDefinitionId={workflowDefinitionId} theme={'dark'} />
-      );
+      const node = shallow(<Diagram workflowId={workflowId} theme={'dark'} />);
       const nodeInstance = node.instance();
       await flushPromises();
       const zoom = nodeInstance.Viewer.canvas.zoom;

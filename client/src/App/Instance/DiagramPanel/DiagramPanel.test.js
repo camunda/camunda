@@ -12,7 +12,7 @@ import * as Styled from './styled';
 describe('DiagramPanel', () => {
   let mockInstance = {
     id: 'foo',
-    workflowDefinitionId: 'bar',
+    workflowId: 'bar',
     startDate: 'Wed Jun 20 2018 08:57:20',
     endDate: formatDate(null),
     stateName: 'ACTIVE'
@@ -42,7 +42,7 @@ describe('DiagramPanel', () => {
     const StateIconNode = tdNodes.at(0).find(StateIcon);
     expect(StateIconNode).toHaveLength(1);
     expect(StateIconNode.prop('stateName')).toBe(mockInstance.stateName);
-    expect(tdNodes.at(0).text()).toContain(mockInstance.workflowDefinitionId);
+    expect(tdNodes.at(0).text()).toContain(mockInstance.workflowId);
     expect(node.find(Panel.Body)).toHaveLength(1);
     expect(tdNodes.at(2).text()).toContain(formattedStartDate);
     expect(tdNodes.at(3).text()).toContain(formattedEndDate);
@@ -51,9 +51,7 @@ describe('DiagramPanel', () => {
     expect(PanelBodyNode).toHaveLength(1);
     const DiagramNode = PanelBodyNode.find(Diagram);
     expect(DiagramNode).toHaveLength(1);
-    expect(DiagramNode.prop('workflowDefinitionId')).toBe(
-      mockInstance.workflowDefinitionId
-    );
+    expect(DiagramNode.prop('workflowId')).toBe(mockInstance.workflowId);
     expect(node).toMatchSnapshot();
   });
 

@@ -10,7 +10,7 @@ import * as api from './api';
 class Diagram extends React.Component {
   static propTypes = {
     theme: PropTypes.string.isRequired,
-    workflowDefinitionId: PropTypes.string.isRequired
+    workflowId: PropTypes.string.isRequired
   };
 
   constructor(props) {
@@ -21,9 +21,7 @@ class Diagram extends React.Component {
   }
 
   async componentDidMount() {
-    this.workflowXML = await api.getWorkflowXML(
-      this.props.workflowDefinitionId
-    );
+    this.workflowXML = await api.workflowXML(this.props.workflowId);
     this.initViewer();
   }
 
