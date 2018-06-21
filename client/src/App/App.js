@@ -40,8 +40,8 @@ export default function App(props) {
         <Authentication>
           <Route path="/login" component={Login} />
           <Route exact path="/" component={Home} />
-          <Route exact path="/filter" component={FilterPage} />
-          <Route exact path="/instance/:id" component={Instance} />
+          <Route exact path="/instances" component={FilterPage} />
+          <Route exact path="/instances/:id" component={Instance} />
         </Authentication>
       </Router>
     </ThemeProvider>
