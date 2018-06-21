@@ -8,6 +8,4 @@ Zeebe is designed for performance, applying the following design principles:
 * Lock-free algorithms and actor concurrency (green threads model)
 * Broker is garbage-free in the hot/data path
 
-As a result, Zeebe is capable of processing events at a rate of 160K – 200K events/s on modern SSDs & Gbit Ethernet.
-
-Note however: there are some performance regressions in the current development phase which are planned to be improved in the near future.
+As a result, Zeebe is capable of very high throughput on a single node and scales horizontally (see this [benchmarking blog post](https://zeebe.io/blog/2018/06/benchmarking-zeebe-horizontal-scaling/) for more detail). 
