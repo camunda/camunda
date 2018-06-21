@@ -1,0 +1,100 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Header should contain links to dashboard and instances page 1`] = `
+<Themed(styled.header)>
+  <Themed(styled.div)
+    active={true}
+  >
+    <Link
+      replace={false}
+      to="/"
+    >
+      <Logo />
+      <span>
+        Dashboard
+      </span>
+    </Link>
+  </Themed(styled.div)>
+  <Themed(styled.span)
+    active={false}
+  >
+    <Link
+      replace={false}
+      to="/instances"
+    >
+      <span>
+        Instances
+      </span>
+      <Styled(Badge)
+        type="instances"
+      >
+        0
+      </Styled(Badge)>
+    </Link>
+  </Themed(styled.span)>
+  <Themed(styled.span)
+    active={false}
+  >
+    <Link
+      replace={false}
+      to="/instances"
+    >
+      <span>
+        Filters
+      </span>
+      <Styled(Badge)
+        type="filters"
+      >
+        0
+      </Styled(Badge)>
+    </Link>
+  </Themed(styled.span)>
+  <Themed(styled.span)
+    active={false}
+  >
+    <Link
+      replace={false}
+      to="/instances"
+    >
+      <span>
+        Selections
+      </span>
+      <Styled(Badge)
+        type="selections"
+      >
+        0
+      </Styled(Badge)>
+    </Link>
+  </Themed(styled.span)>
+  <Themed(styled.span)
+    active={false}
+  >
+    <Link
+      replace={false}
+      to="/instances"
+    >
+      <span>
+        Incidents
+      </span>
+      <Styled(Badge)
+        type="incidents"
+      >
+        0
+      </Styled(Badge)>
+    </Link>
+  </Themed(styled.span)>
+  <Themed(styled.span) />
+  <styled.span>
+    <Dropdown
+      label="undefined undefined"
+    >
+      <DropdownOption
+        data-test="logout-button"
+        onClick={[Function]}
+      >
+        Logout
+      </DropdownOption>
+    </Dropdown>
+  </styled.span>
+</Themed(styled.header)>
+`;

@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
+import BadgeComponent from 'modules/components/Badge';
 
 export const HEADER_HEIGHT = 56;
 const separator = themeStyle({
@@ -7,22 +8,39 @@ const separator = themeStyle({
   light: 'rgba(98, 98, 110, 0.25)'
 });
 
+export const Dashboard = themed(styled.div`
+  display: inline-block;
+  padding: 0 20px;
+  border-right: 1px solid ${separator};
+
+  svg {
+    width: 15px;
+    height: 15px;
+    margin-right: 20px;
+    vertical-align: text-bottom;
+    ${({active}) => (active ? '' : `opacity: 0.8`)};
+  }
+
+  span {
+    ${({active}) => (active ? '' : `opacity: 0.5;`)};
+  }
+`);
+
 export const Header = themed(styled.header`
   height: ${HEADER_HEIGHT}px;
   background-color: ${themeStyle({
     dark: Colors.uiDark01,
     light: Colors.uiLight01
   })};
-  padding: 9px 20px 0 20px;
+  padding: 9px 0 0 0;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 500;
   color: ${themeStyle({
     dark: '#ffffff',
     light: Colors.uiLight06
   })};
   line-height: 19px;
   & > span {
-    vertical-align: text-bottom;
     display: inline-block;
   }
 
@@ -32,24 +50,16 @@ export const Header = themed(styled.header`
   z-index: 2;
 `);
 
-export const DashboardLink = themed(styled.span`
-  padding: 0 20px;
-  border-right: 1px solid ${separator};
-  ${({active}) => (active ? '' : `opacity: 0.5; font-weight: 500`)};
-`);
-
 export const ListLink = themed(styled.span`
   margin-left: 20px;
-  & > :first-child {
-    ${({active}) => (active ? '' : `opacity: 0.5; font-weight: 500`)};
-  }
-  & > :last-child {
-    opacity: ${themeStyle({
-      dark: 0.8,
-      light: 0.7
-    })};
+  & span {
+    ${({active}) => (active ? '' : `opacity: 0.5;`)};
   }
 `);
+
+export const Badge = styled(BadgeComponent)`
+  opacity: 0.8;
+`;
 
 export const Detail = themed(styled.span`
   padding-left: 20px;
@@ -58,7 +68,7 @@ export const Detail = themed(styled.span`
 `);
 
 export const ProfileDropdown = styled.span`
-  margin-right: 8px;
+  margin-right: 20px;
   float: right;
   opacity: 0.9;
 `;

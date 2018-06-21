@@ -40,6 +40,10 @@ describe('Dropdown', () => {
     document.body.click();
     expect(node.state().open).toBe(false);
   });
+
+  it('should match snapshot', () => {
+    expect(node).toMatchSnapshot();
+  });
 });
 
 describe('Dropdown.Option', () => {

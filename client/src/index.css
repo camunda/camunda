@@ -53,3 +53,8 @@ svg {
 .bjs-powered-by {
   display: none;
 }
+
+a {
+  color: currentColor;
+  text-decoration: none;
+}

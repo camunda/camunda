@@ -1,0 +1,15 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Dropdown should match snapshot 1`] = `
+<styled.div
+  innerRef={[Function]}
+>
+  <styled.button
+    data-test-id="dropdown-label"
+    onClick={[Function]}
+  >
+    Foo
+    <Down />
+  </styled.button>
+</styled.div>
+`;

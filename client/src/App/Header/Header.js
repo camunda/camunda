@@ -1,11 +1,11 @@
 import React from 'react';
-import {Redirect} from 'react-router-dom';
+import {Redirect, Link} from 'react-router-dom';
 import PropTypes from 'prop-types';
 
 import * as Styled from './styled.js';
 
-import Badge from 'modules/components/Badge';
 import Dropdown from 'modules/components/Dropdown';
+import {Logo} from 'modules/components/Icon';
 
 import * as api from './api';
 
@@ -37,8 +37,10 @@ export default class Header extends React.Component {
     const type = label.toLowerCase();
     return (
       <Styled.ListLink active={this.props.active === 'instances'}>
-        <span>{label}</span>
-        <Badge type={type}>{this.props[type]}</Badge>
+        <Link to="/instances">
+          <span>{label}</span>
+          <Styled.Badge type={type}>{this.props[type] || 0}</Styled.Badge>
+        </Link>
       </Styled.ListLink>
     );
   };
@@ -49,19 +51,22 @@ export default class Header extends React.Component {
   };
 
   render() {
-    const {active, detail, ...props} = this.props;
+    const {active, detail} = this.props;
     const {firstname, lastname} = this.state.user || {};
     return this.state.forceRedirect ? (
       <Redirect to="/login" />
     ) : (
       <Styled.Header>
-        <Styled.DashboardLink active={active === 'dashboard'}>
-          Dashboard
-        </Styled.DashboardLink>
+        <Styled.Dashboard active={active === 'dashboard'}>
+          <Link to="/">
+            <Logo />
+            <span>Dashboard</span>
+          </Link>
+        </Styled.Dashboard>
         {this.createBadgeEntry('Instances')}
-        {props.filters > 0 && this.createBadgeEntry('Filters')}
-        {props.selections > 0 && this.createBadgeEntry('Selections')}
-        {props.incidents > 0 && this.createBadgeEntry('Incidents')}
+        {this.createBadgeEntry('Filters')}
+        {this.createBadgeEntry('Selections')}
+        {this.createBadgeEntry('Incidents')}
         <Styled.Detail>{detail}</Styled.Detail>
         <Styled.ProfileDropdown>
           <Dropdown label={`${firstname} ${lastname}`}>

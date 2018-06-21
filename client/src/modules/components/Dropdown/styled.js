@@ -10,6 +10,11 @@ export const Label = styled.button`
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
+
+  svg {
+    margin-left: 8px;
+    vertical-align: text-bottom;
+  }
 `;
 
 export const Dropdown = styled.div`

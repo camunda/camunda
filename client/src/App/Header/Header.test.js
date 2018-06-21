@@ -18,7 +18,7 @@ describe('Header', () => {
   it('should show the count of all instances', () => {
     const node = shallow(<Header active="dashboard" instances={123} />);
 
-    const badge = node.find('Badge[type="instances"]').render();
+    const badge = node.find('Styled(Badge)[type="instances"]').render();
 
     expect(badge.text()).toEqual('123');
   });
@@ -34,25 +34,35 @@ describe('Header', () => {
       />
     );
 
-    expect(node.find('Badge[type="filters"]')).toExist();
-    expect(node.find('Badge[type="selections"]')).toExist();
-    expect(node.find('Badge[type="incidents"]')).toExist();
+    expect(node.find('Styled(Badge)[type="filters"]')).toExist();
+    expect(node.find('Styled(Badge)[type="selections"]')).toExist();
+    expect(node.find('Styled(Badge)[type="incidents"]')).toExist();
   });
 
-  it('should not show the labels if they are not provided', () => {
+  it('should show the 0 if badge label is not provided', () => {
     const node = shallow(
       <Header active="dashboard" instances={123} incidents={1} />
     );
 
-    expect(node.find('Badge[type="filters"]')).not.toExist();
-    expect(node.find('Badge[type="selections"]')).not.toExist();
-    expect(node.find('Badge[type="incidents"]')).toExist();
+    expect(
+      node
+        .find('Styled(Badge)[type="filters"]')
+        .render()
+        .text()
+    ).toBe('0');
+    expect(
+      node
+        .find('Styled(Badge)[type="selections"]')
+        .render()
+        .text()
+    ).toBe('0');
+    expect(node.find('Styled(Badge)[type="incidents"]')).toExist();
   });
 
   it('it should show the instances field even if there are no instances', () => {
     const node = shallow(<Header active="dashboard" instances={0} />);
 
-    expect(node.find('Badge[type="instances"]')).toExist();
+    expect(node.find('Styled(Badge)[type="instances"]')).toExist();
   });
 
   it('it should request user information', async () => {
@@ -97,5 +107,11 @@ describe('Header', () => {
     const onClick = node.find(Dropdown.Option).prop('onClick');
 
     expect(handler).toEqual(onClick);
+  });
+
+  it('should contain links to dashboard and instances page', () => {
+    const node = shallow(<Header active="dashboard" />);
+
+    expect(node).toMatchSnapshot();
   });
 });

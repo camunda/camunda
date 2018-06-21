@@ -3,8 +3,8 @@ import PropTypes from 'prop-types';
 
 import * as Styled from './styled';
 
-export default function Badge({children, type}) {
-  return <Styled.Badge type={type}>{children}</Styled.Badge>;
+export default function Badge(props) {
+  return <Styled.Badge {...props} />;
 }
 
 Badge.propTypes = {

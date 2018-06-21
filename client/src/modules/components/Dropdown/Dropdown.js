@@ -3,6 +3,8 @@ import PropTypes from 'prop-types';
 
 import * as Styled from './styled';
 
+import {Down} from 'modules/components/Icon';
+
 export default class Dropdown extends React.Component {
   static propTypes = {
     /** The content that is visible on the dropdown trigger. Must be non-interactive phrasing content. */
@@ -31,6 +33,7 @@ export default class Dropdown extends React.Component {
       <Styled.Dropdown innerRef={this.storeContainer}>
         <Styled.Label data-test-id="dropdown-label" onClick={this.toggleOpen}>
           {this.props.label}
+          <Down />
         </Styled.Label>
         {this.state.open && (
           <Styled.DropdownMenu>{this.props.children}</Styled.DropdownMenu>

@@ -1,10 +1,14 @@
 import React from 'react';
-import {mount} from 'enzyme';
+import {shallow} from 'enzyme';
 
 import Badge from './Badge';
 
-it('should contain the child content', () => {
-  const node = mount(<Badge>content</Badge>);
+describe('Badge', () => {
+  it('should match snapshot', () => {
+    const node = shallow(
+      <Badge className="shouldBePassedThrough">child content</Badge>
+    );
 
-  expect(node).toIncludeText('content');
+    expect(node).toMatchSnapshot();
+  });
 });
