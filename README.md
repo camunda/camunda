@@ -15,7 +15,7 @@ If you need support to configure these tools please contact Andrea.
 To spawn Operate backend use this command:
 
 ```
-docker-compose up --force-recreate --build -d elasticsearch operate_backend zeebe
+docker-compose pull zeebe && docker-compose up --force-recreate --build -d elasticsearch operate_backend zeebe
 ```
 
 To stop:
