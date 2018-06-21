@@ -1,6 +1,6 @@
 import {getRange} from './service';
 
-describe('InstanceListFooter/service', () => {
+describe('ListFooter/service', () => {
   describe('getRange', () => {
     it('should behave correctly on the first pages', () => {
       expect(getRange(1, 10)).toEqual([1, 2, 3, 4, 5]);

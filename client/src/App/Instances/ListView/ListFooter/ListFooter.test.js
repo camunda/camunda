@@ -1,9 +1,9 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import Footer from './InstancesListFooter';
+import Footer from './ListFooter';
 
-describe('InstancesListFooter', () => {
+describe('ListFooter', () => {
   it('should not show a pagination if there is only one page', () => {
     const node = shallow(
       <Footer

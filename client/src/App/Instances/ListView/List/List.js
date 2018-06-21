@@ -8,7 +8,7 @@ import StateIcon from 'modules/components/StateIcon';
 import * as Styled from './styled';
 import {formatDate} from 'modules/utils';
 
-export default class InstancesList extends React.Component {
+export default class List extends React.Component {
   state = {
     rowsToDisplay: null
   };

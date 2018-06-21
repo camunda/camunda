@@ -1,14 +1,14 @@
 import React from 'react';
 
 import Panel from 'modules/components/Panel';
-import InstancesList from './InstancesList';
-import InstancesListFooter from './InstancesListFooter';
+import List from './List';
+import ListFooter from './ListFooter';
 
 import PropTypes from 'prop-types';
 
 import {getData} from './api';
 
-export default class InstancesListView extends React.Component {
+export default class ListView extends React.Component {
   state = {
     firstElement: 0,
     instances: [],
@@ -30,7 +30,7 @@ export default class InstancesListView extends React.Component {
       <Panel>
         <Panel.Header>Instances</Panel.Header>
         <Panel.Body>
-          <InstancesList
+          <List
             data={this.state.instances}
             selection={this.props.selection}
             total={this.props.instancesInFilter}
@@ -41,7 +41,7 @@ export default class InstancesListView extends React.Component {
           />
         </Panel.Body>
         <Panel.Footer>
-          <InstancesListFooter
+          <ListFooter
             total={this.props.instancesInFilter}
             perPage={this.state.entriesPerPage}
             firstElement={this.state.firstElement}

@@ -6,7 +6,7 @@ import {LeftBar, Left, Right, RightBar} from 'modules/components/Icon';
 
 import {getRange} from './service';
 
-export default class InstancesListFooter extends React.Component {
+export default class ListFooter extends React.Component {
   static propTypes = {
     onFirstElementChange: PropTypes.func.isRequired,
     perPage: PropTypes.number.isRequired,

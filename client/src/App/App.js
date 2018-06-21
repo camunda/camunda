@@ -7,7 +7,7 @@ import Authentication from './Authentication';
 import Login from './Login';
 import Header from './Header';
 import Dashboard from './Dashboard';
-import Filter from './Filter';
+import Instances from './Instances';
 import Instance from './Instance';
 
 // Development Utility Component to test the theming.
@@ -26,9 +26,9 @@ const Home = () => (
   </React.Fragment>
 );
 
-const FilterPage = () => (
+const InstancesPage = () => (
   <React.Fragment>
-    <Filter />
+    <Instances />
   </React.Fragment>
 );
 
@@ -40,7 +40,7 @@ export default function App(props) {
         <Authentication>
           <Route path="/login" component={Login} />
           <Route exact path="/" component={Home} />
-          <Route exact path="/instances" component={FilterPage} />
+          <Route exact path="/instances" component={InstancesPage} />
           <Route exact path="/instances/:id" component={Instance} />
         </Authentication>
       </Router>

@@ -4,7 +4,7 @@ import Checkbox from 'modules/components/Checkbox';
 
 import * as Styled from './styled.js';
 
-export default class InstancesFilter extends React.Component {
+export default class Filter extends React.Component {
   handleRunningChange = () => {
     const {withIncidents, withoutIncidents, running} = this.props.filter;
     if (running && !withIncidents && !withoutIncidents) {

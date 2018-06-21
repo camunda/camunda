@@ -1,9 +1,9 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import InstancesListView from './InstancesListView';
-import InstancesList from './InstancesList';
-import InstancesListFooter from './InstancesListFooter';
+import ListView from './ListView';
+import List from './List';
+import ListFooter from './ListFooter';
 
 import {getData} from './api';
 
@@ -18,7 +18,7 @@ const total = 27;
 jest.mock('./api');
 getData.mockReturnValue([{id: 1}]);
 
-describe('InstancesListView', () => {
+describe('ListView', () => {
   let node;
   let onSelectionUpdate;
 
@@ -26,7 +26,7 @@ describe('InstancesListView', () => {
     onSelectionUpdate = jest.fn();
     getData.mockClear();
     node = shallow(
-      <InstancesListView
+      <ListView
         selection={selection}
         filter={filter}
         instancesInFilter={total}
@@ -35,12 +35,12 @@ describe('InstancesListView', () => {
     );
   });
 
-  it('should contain an InstancesList', () => {
-    expect(node.find(InstancesList)).toExist();
+  it('should contain an List', () => {
+    expect(node.find(List)).toExist();
   });
 
   it('should contain a Footer', () => {
-    expect(node.find(InstancesListFooter)).toExist();
+    expect(node.find(ListFooter)).toExist();
   });
 
   it('should load data if the filter changed', () => {
@@ -66,7 +66,7 @@ describe('InstancesListView', () => {
     const instances = [{id: 1}, {id: 2}, {id: 3}];
     node.setState({instances});
 
-    const list = node.find(InstancesList);
+    const list = node.find(List);
 
     expect(list.prop('data')).toBe(instances);
     expect(list.prop('selection')).toBe(selection);
@@ -76,7 +76,7 @@ describe('InstancesListView', () => {
 
   it('should pass properties to the Footer', () => {
     node.setState({entriesPerPage: 14, firstElement: 8});
-    const footer = node.find(InstancesListFooter);
+    const footer = node.find(ListFooter);
 
     expect(footer.prop('total')).toBe(total);
     expect(footer.prop('perPage')).toBe(14);
@@ -86,7 +86,7 @@ describe('InstancesListView', () => {
   it('should pass a method to the footer to change the firstElement', () => {
     node.setState({firstElement: 8});
     const changeFirstElement = node
-      .find(InstancesListFooter)
+      .find(ListFooter)
       .prop('onFirstElementChange');
 
     expect(changeFirstElement).toBeDefined();
@@ -97,9 +97,7 @@ describe('InstancesListView', () => {
 
   it('should pass a method to the instances list to update the entries per page', () => {
     node.setState({entriesPerPage: 8});
-    const changeEntriesPerPage = node
-      .find(InstancesList)
-      .prop('onEntriesPerPageChange');
+    const changeEntriesPerPage = node.find(List).prop('onEntriesPerPageChange');
 
     expect(changeEntriesPerPage).toBeDefined();
     changeEntriesPerPage(87);
@@ -108,7 +106,7 @@ describe('InstancesListView', () => {
   });
 
   it('should pass the onSelectionUpdate prop to the instances list ', () => {
-    const updateSelection = node.find(InstancesList).prop('onSelectionUpdate');
+    const updateSelection = node.find(List).prop('onSelectionUpdate');
 
     expect(updateSelection).toBe(onSelectionUpdate);
   });

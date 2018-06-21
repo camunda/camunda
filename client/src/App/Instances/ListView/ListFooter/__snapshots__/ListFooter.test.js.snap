@@ -1,8 +1,8 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`InstancesListFooter should not show a pagination if there is only one page 1`] = `""`;
+exports[`ListFooter should not show a pagination if there is only one page 1`] = `""`;
 
-exports[`InstancesListFooter should not show ellipsis when first page is just barely out of range 1`] = `
+exports[`ListFooter should not show ellipsis when first page is just barely out of range 1`] = `
 <styled.div>
   <Themed(styled.button)
     disabled={false}
@@ -87,7 +87,7 @@ exports[`InstancesListFooter should not show ellipsis when first page is just ba
 </styled.div>
 `;
 
-exports[`InstancesListFooter should show ellipsis on both sides in the middle 1`] = `
+exports[`ListFooter should show ellipsis on both sides in the middle 1`] = `
 <styled.div>
   <Themed(styled.button)
     disabled={false}
@@ -175,7 +175,7 @@ exports[`InstancesListFooter should show ellipsis on both sides in the middle 1`
 </styled.div>
 `;
 
-exports[`InstancesListFooter should show the first five pages when on first page 1`] = `
+exports[`ListFooter should show the first five pages when on first page 1`] = `
 <styled.div>
   <Themed(styled.button)
     disabled={true}
@@ -253,7 +253,7 @@ exports[`InstancesListFooter should show the first five pages when on first page
 </styled.div>
 `;
 
-exports[`InstancesListFooter should show the last five pages when on last page 1`] = `
+exports[`ListFooter should show the last five pages when on last page 1`] = `
 <styled.div>
   <Themed(styled.button)
     disabled={false}

@@ -5,14 +5,14 @@ import Header from '../Header';
 
 import Panel from 'modules/components/Panel';
 
-import InstancesFilter from './InstancesFilter';
-import InstancesListView from './InstancesListView';
+import Filter from './Filter';
+import ListView from './ListView';
 
 import {getCount} from './api';
 
 import * as Styled from './styled.js';
 
-export default class Filter extends Component {
+export default class Instances extends Component {
   state = {
     filter: {running: true},
     filterCount: 0,
@@ -59,7 +59,7 @@ export default class Filter extends Component {
                 Filters
               </Panel.Header>
               <Panel.Body>
-                <InstancesFilter
+                <Filter
                   filter={this.state.filter}
                   onChange={this.handleFilterChange}
                 />
@@ -75,7 +75,7 @@ export default class Filter extends Component {
               </Panel>
             </Styled.Top>
             <Styled.Bottom>
-              <InstancesListView
+              <ListView
                 instancesInFilter={this.state.filterCount}
                 onSelectionUpdate={change => {
                   this.setState({
