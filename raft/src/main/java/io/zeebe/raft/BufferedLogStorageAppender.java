@@ -61,6 +61,7 @@ public class BufferedLogStorageAppender {
   // last event added to buffer
   private long lastBufferedPosition;
   private int lastBufferedTerm;
+  private boolean closed;
 
   public BufferedLogStorageAppender(final Raft raft) {
     this.raft = raft;
@@ -71,6 +72,7 @@ public class BufferedLogStorageAppender {
     lastWrittenTerm = previousEventTermNullValue();
 
     allocateMemory(INITIAL_CAPACITY);
+    closed = false;
   }
 
   public void reset() {
@@ -89,7 +91,12 @@ public class BufferedLogStorageAppender {
     discardBufferedEvents();
   }
 
+  public boolean isClosed() {
+    return closed;
+  }
+
   public void close() {
+    closed = true;
     reader.close();
     allocatedBuffer.close();
   }

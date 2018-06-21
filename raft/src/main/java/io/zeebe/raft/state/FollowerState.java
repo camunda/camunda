@@ -50,7 +50,7 @@ public class FollowerState extends AbstractRaftState {
 
     // when there are no more append requests immediately available,
     // flush now and send the ack immediately
-    if (!messageBuffer.hasAvailable()) {
+    if (!appender.isClosed() && !messageBuffer.hasAvailable()) {
       appender.flushAndAck();
     }
   }
@@ -63,7 +63,7 @@ public class FollowerState extends AbstractRaftState {
     final int previousEventTerm = appendRequest.getPreviousEventTerm();
     final LoggedEventImpl event = appendRequest.getEvent();
 
-    if (raft.isTermCurrent(appendRequest)) {
+    if (!appender.isClosed() && raft.isTermCurrent(appendRequest)) {
       final boolean lastEvent = appender.isLastEvent(previousEventPosition, previousEventTerm);
       if (lastEvent) {
         appender.appendEvent(appendRequest, event);
