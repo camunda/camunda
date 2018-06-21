@@ -7,11 +7,16 @@ export const Checkbox = themed(styled.div`
 `);
 
 export const Label = themed(styled.label`
+  /* Display & Box Model */
   display: inline-block;
   margin: 4px 0;
   margin-left: 11px;
-  opacity: 0.9;
+
+  /* Text */
   font-size: 13px;
+
+  /* Colors */
+  opacity: 0.9;
   color: ${themeStyle({
     dark: '#c5c5c7',
     light: Colors.uiLight06
@@ -75,14 +80,14 @@ export const CustomCheckbox = themed(styled.div`
     display: inline-block;
     width: 100%;
     height: 100%;
-    background: ${themeStyle({
-      dark: Colors.uiDark02,
-      light: Colors.uiLight01
-    })};
     border-radius: 3px;
     border: solid 1px ${themeStyle({
       dark: '#bebec0',
       light: Colors.uiLight03
+    })};
+    background: ${themeStyle({
+      dark: Colors.uiDark02,
+      light: Colors.uiLight01
     })};
   }
   /* checkmark/indeterminate styles*/
@@ -90,14 +95,14 @@ export const CustomCheckbox = themed(styled.div`
     content: '';    
     position: absolute;
     border-style: solid;
+    ${({isIndeterminate}) =>
+      isIndeterminate ? indeterminateStyles : checkMarkStyles};
     border-color: ${themeStyle({
       dark: '#ffffff',
       light: ({checkboxType}) =>
         checkboxType === 'selection' ? '#ffffff' : Colors.uiLight06
     })};
-    ${({isIndeterminate}) =>
-      isIndeterminate ? indeterminateStyles : checkMarkStyles};
-      };
+    };
   }
 `);
 
