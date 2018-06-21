@@ -1,27 +1,46 @@
-# Why Zeebe?
+# What is Zeebe?
 
-Zeebe is an orchestration engine for distributed microservices. It allows users to define orchestration flows visually using BPMN. Zeebe ensures that, once started, flows are always carried out fully, retrying steps in case of failures. Along the way, Zeebe maintains a complete audit log, so that the progress of flows can be monitored and tracked. Zeebe is a big data system and scales seamlessly with growing transaction volumes.
+Zeebe is a workflow engine for microservices orchestration. Zeebe ensures that, once started, flows are always carried out fully, retrying steps in case of failures. Along the way, Zeebe maintains a complete audit log so that the progress of flows can be monitored. Zeebe is fault tolerant and scales seamlessly to handle growing transaction volumes.
 
-## Publish-Subscribe
+Below, we'll provide a brief overview of Zeebe. For more detail, we recommend the ["What is Zeebe?" writeup](https://zeebe.io/what-is-zeebe) on the main Zeebe site.
 
-Zeebe applies publish-subscribe as an interaction model for orchestration. A service capable of performing a certain task or step in a workflow subscribes to this task and is notified via a message when work is available. Publish-subscribe gives a lot of control to the service: the service decides to which tasks it subscribe to, when to subscribe and can even control processing rates. These properties make the overall system highly resilient, scalable and _reactive_.
+## What problem does Zeebe solve, and how?
+A company’s end-to-end workflows almost always span more than one microservice. In an e-commerce company, for example, a “customer order” workflow might involve a payments microservice, an inventory microservice, a shipping microservice, and more:
 
-## Fault Tolerance
+![order-process](introduction/order-process.png)
 
-Zeebe replicates data across multiple machines to ensure availability and prevent data loss. If a machine fails or gets otherwise disconnected from the cluster, another machine, which has a copy of the same data, automatically takes over. This ensures that the system as a whole remains available without requiring manual action.
+These cross-microservice workflows are mission critical, yet the workflows themselves are rarely modeled and monitored. Often, the flow of events through different microservices is expressed only implicitly in code.
 
-## Devops, SRE and the Automation of Operations
+If that’s the case, how can we ensure visibility of workflows and provide status and error monitoring? How do we guarantee that flows always complete, even if single microservices fail?
 
-Zeebe is designed with modern operation practices in mind. Firstly, it does not require a database or any other external system to function. It is completely self-contained and self sufficient. Secondly, since all nodes in the cluster are equal, it is comparatively simple to scale. This makes it function well together with modern datacenter and cloud management systems such as [Docker](https://www.docker.com/), [Kubernetes](https://kubernetes.io/) or [DC/OS](https://dcos.io/). Moreover, the CLI (Command Line Interface) allows you to script and automate management and operations tasks.
+Zeebe gives you:
 
-## Simple & Lightweight
+1. **Visibility** into the state of a company’s end-to-end workflows, including the number of in-flight workflows, average workflow duration, current errors within a workflow, and more.
+2. **Workflow orchestration** based on the current state of a workflow; Zeebe publishes “commands” as events that can be consumed by one or more microservices, ensuring that workflows progress according to their definition.
+3. **Monitoring for timeouts** or other workflow errors with the ability to configure error-handling paths such as stateful retries or escalation to teams that can resolve an issue manually.
 
-Most existing workflow systems provide many more features than Zeebe. While having many features available to you is generally positive, they also come at a cost: higher complexity, making the system challenging to understand and use while degrading performance. Zeebe has a 100% focus on providing a small, robust and scalable solution for orchestration workflows. Rather than covering a broad spectrum of features, its goal is to excel within the scope that it covers. In addition, it composes well with other systems. For example, Zeebe provides a simple event stream API which makes it easy to stream all internal data into another system like elastic search for indexing and querying.
+Zeebe was designed to operate at very large scale, and to achieve this, it provides:
 
-## Zeebe may not be right for you
+* **Horizontal scalability** and no dependence on an external database; Zeebe writes data directly to the filesystem on the same servers where it’s deployed. Zeebe makes it simple to distribute processing across a cluster of machines to deliver high throughput.
+* **Fault tolerance** via an easy-to-configure replication mechanism, ensuring that Zeebe can recover from machine or software failure with no data loss and minimal downtime. This ensures that the system as a whole remains available without requiring manual action.
+* **A message-driven architecture** where all workflow-relevant events are written to an append-only log, providing an audit trail and a history of the state of a workflow.
+* **A publish-subscribe interaction model**, which enables microservices that connect to Zeebe to maintain a high degree of control and autonomy, including control over processing rates. These properties make Zeebe resilient, scalable, and reactive.
+* **Visual workflows modeled in ISO-standard BPMN 2.0** so that technical and non-technical stakeholders can collaborate on workflow design in a widely-used modeling language.
+* **A language-agnostic client model**, making it possible to build a Zeebe client in just about any programming language that an organization uses to build microservices.  
+* **Operational ease-of-use** as a self-contained and self-sufficient system. Zeebe does **not** require a cluster coordinator such as ZooKeeper. Because all nodes in a Zeebe cluster are equal, it's relatively easy to scale, and it plays nicely with modern resource managers and container orchestrators such as [Docker](https://www.docker.com/), [Kubernetes](https://kubernetes.io/), and [DC/OS](https://dcos.io/). Zeebe's CLI (Command Line Interface) allows you to script and automate management and operations tasks.
 
-First, Zeebe is currently in a very early stage, the initial features have not been fully developed yet and it is not ready for production. See the [Roadmap](https://github.com/zeebe-io/zeebe/blob/master/ROADMAP.md) for more details.
+You can learn more about these technical concepts [in the "Basics" section of the documentation](https://docs.zeebe.io/basics/README.html).
 
-Second, your applications may not need the kind of scalability and fault tolerance provided by Zeebe. Or, you may require a large set of features around BPM (Business Process Management) which Zeebe does not offer.
+## Zeebe is simple and lightweight
 
-In such scenarios, a traditional workflow system like [Camunda BPM](https://camunda.org) is a much better choice.
+Most existing workflow engines offer more features than Zeebe. While having access to lots of features is generally a good thing, it can come at a cost of increased complexity and degraded performance.
+
+Zeebe is 100% focused on providing a compact, robust, and scalable solution for orchestration of workflows. Rather than supporting a broad spectrum of features, its goal is to excel within this scope.
+
+In addition, Zeebe works well with other systems. For example, Zeebe provides a simple event stream API that makes it easy to stream all internal data into another system such as [Elastic Search](https://www.elastic.co/) for indexing and querying.
+
+## Deciding if Zeebe is right for you
+
+Note that Zeebe is currently in "developer preview", meaning that it's not yet ready for production and is under heavy development. See the [roadmap](https://github.com/zeebe-io/zeebe/blob/master/ROADMAP.md) for more details.
+
+Your applications might not need the scalability and performance features provided by Zeebe. Or, you might a mature set of features around BPM (Business Process Management), which Zeebe does not yet offer. In such scenarios, a workflow automation platform such as [Camunda BPM](https://camunda.org) could be a better fit.
