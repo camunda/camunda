@@ -83,6 +83,7 @@ public class ReportWriter {
       )
       .setDoc(objectMapper.writeValueAsString(updatedReport), XContentType.JSON)
       .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
+      .setRetryOnConflict(configurationService.getNumberOfRetriesOnConflict())
       .get();
 
     if (updateResponse.getShardInfo().getFailed() > 0) {

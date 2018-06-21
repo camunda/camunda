@@ -22,7 +22,6 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
 
 @Component
@@ -67,6 +66,7 @@ public class AlertWriter {
           )
           .setDoc(objectMapper.writeValueAsString(toUpdate), XContentType.JSON)
           .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
+          .setRetryOnConflict(configurationService.getNumberOfRetriesOnConflict())
           .get();
     } catch (JsonProcessingException e) {
       logError(toUpdate);
@@ -104,6 +104,7 @@ public class AlertWriter {
           alertId
         )
         .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
+        .setRetryOnConflict(configurationService.getNumberOfRetriesOnConflict())
         .setDoc(
           jsonBuilder()
             .startObject()

@@ -83,6 +83,7 @@ public class DashboardWriter {
       )
       .setDoc(objectMapper.writeValueAsString(dashboard), XContentType.JSON)
       .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
+      .setRetryOnConflict(configurationService.getNumberOfRetriesOnConflict())
       .get();
 
     if (updateResponse.getShardInfo().getFailed() > 0) {
