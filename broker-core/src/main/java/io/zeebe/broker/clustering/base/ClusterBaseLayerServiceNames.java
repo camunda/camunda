@@ -104,8 +104,7 @@ public class ClusterBaseLayerServiceNames {
     final PartitionInfo info = partition.getInfo();
     final String name =
         String.format(
-            "cluster.base.snapshotReplication.%s-%s.replicate",
-            info.getTopicName(), info.getPartitionId());
+            "cluster.base.snapshot.%s-%d.replicate", info.getTopicName(), info.getPartitionId());
 
     return ServiceName.newServiceName(name, SnapshotReplicationService.class);
   }
