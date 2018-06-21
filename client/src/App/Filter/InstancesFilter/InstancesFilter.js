@@ -87,8 +87,8 @@ export default class InstancesFilter extends React.Component {
         <div>
           <Checkbox
             label="Running Instances"
-            indeterminate={this.isIndeterminate()}
-            checked={running || false}
+            isIndeterminate={this.isIndeterminate()}
+            isChecked={running || false}
             onChange={this.handleRunningChange}
           />
         </div>
@@ -96,7 +96,7 @@ export default class InstancesFilter extends React.Component {
           <div>
             <Checkbox
               label="Active"
-              checked={
+              isChecked={
                 !!(withoutIncidents || (running && !this.isIndeterminate()))
               }
               onChange={this.handleActiveChange}
@@ -105,7 +105,7 @@ export default class InstancesFilter extends React.Component {
           <div>
             <Checkbox
               label="Incident"
-              checked={
+              isChecked={
                 !!(withIncidents || (running && !this.isIndeterminate()))
               }
               onChange={this.handleIncidentChange}
