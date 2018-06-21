@@ -105,7 +105,7 @@ public class SnapshotReplicationService extends Actor
             partition.getInfo().getTopicName(), partition.getInfo().getPartitionId());
 
     LOG.debug("Starting replication for partition {}", partition.getInfo());
-    startContext.async(startContext.getScheduler().submitActor(this));
+    startContext.async(startContext.getScheduler().submitActor(this), true);
   }
 
   @Override
