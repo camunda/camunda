@@ -19,10 +19,10 @@ import io.zeebe.broker.Broker;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.broker.transport.TransportServiceNames;
-import io.zeebe.client.api.events.*;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.impl.ServerSocketBinding;
+import io.zeebe.util.FileUtil;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.io.IOException;
@@ -32,6 +32,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.assertj.core.util.Files;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -42,11 +44,23 @@ public class BrokerShutdownTest {
       ServiceName.newServiceName("blockService", Void.class);
 
   @Rule public ExpectedException exception = ExpectedException.none();
+  private File brokerBase;
+  private Broker broker;
+
+  @Before
+  public void setup() {
+    brokerBase = Files.newTemporaryFolder();
+    broker = startBrokerWithBlockingService(brokerBase);
+  }
+
+  @After
+  public void tearDown() throws IOException {
+    FileUtil.deleteFolder(brokerBase.getAbsolutePath());
+  }
 
   @Test
   public void shouldReleaseSockets() {
     // given
-    final Broker broker = startBrokerWithBlockingService();
     broker.getBrokerContext().setCloseTimeout(1);
 
     // when
@@ -61,15 +75,13 @@ public class BrokerShutdownTest {
   }
 
   private void tryToBindSocketAddress(SocketAddress socketAddress) {
-    final InetSocketAddress replicationSocket = socketAddress.toInetSocketAddress();
-    final ServerSocketBinding binding = new ServerSocketBinding(replicationSocket);
+    final InetSocketAddress socket = socketAddress.toInetSocketAddress();
+    final ServerSocketBinding binding = new ServerSocketBinding(socket);
     binding.doBind();
     binding.close();
   }
 
-  private Broker startBrokerWithBlockingService() {
-    final File brokerBase = Files.newTemporaryFolder();
-
+  private Broker startBrokerWithBlockingService(final File brokerBase) {
     final Broker broker;
     try (InputStream configStream =
         EmbeddedBrokerRule.class.getResourceAsStream("/zeebe.default.cfg.toml")) {
