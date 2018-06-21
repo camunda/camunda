@@ -28,7 +28,7 @@ export const SelectionStatusIndicator = themed(styled.div`
 
 export const CheckAll = styled.div`
   display: inline-block;
-  margin-left: 24px;
+  margin-left: 25px;
   margin-right: 20px;
 `;
 
