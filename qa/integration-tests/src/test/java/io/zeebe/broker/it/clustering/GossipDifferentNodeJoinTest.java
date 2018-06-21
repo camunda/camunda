@@ -15,10 +15,14 @@
  */
 package io.zeebe.broker.it.clustering;
 
-import static io.zeebe.broker.it.clustering.ClusteringRule.*;
+import static io.zeebe.broker.it.clustering.ClusteringRule.BROKER_1_CLIENT_ADDRESS;
+import static io.zeebe.broker.it.clustering.ClusteringRule.BROKER_1_TOML;
+import static io.zeebe.broker.it.clustering.ClusteringRule.BROKER_2_CLIENT_ADDRESS;
+import static io.zeebe.broker.it.clustering.ClusteringRule.BROKER_2_TOML;
+import static io.zeebe.broker.it.clustering.ClusteringRule.BROKER_4_CLIENT_ADDRESS;
+import static io.zeebe.broker.it.clustering.ClusteringRule.BROKER_4_TOML;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.UnstableCI;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.api.commands.BrokerInfo;
 import io.zeebe.test.util.AutoCloseableRule;
@@ -26,11 +30,9 @@ import io.zeebe.transport.SocketAddress;
 import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
-@Category(UnstableCI.class)
 public class GossipDifferentNodeJoinTest {
   private static final int PARTITION_COUNT = 3;
 

@@ -17,7 +17,6 @@ package io.zeebe.broker.it.startup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.UnstableCI;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.clustering.ClusteringRule;
 import io.zeebe.client.api.commands.Partition;
@@ -27,11 +26,9 @@ import java.util.List;
 import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
-@Category(UnstableCI.class)
 public class BootstrapMoreThanOneDefaultTopicsTest {
   private static final String BOOTSTRAPPED_BROKER_CONFIG =
       "zeebe.cluster.moreDefaultTopics.cfg.toml";
