@@ -224,6 +224,7 @@ public class ServiceController extends Actor {
     }
 
     public void onStartFailed(Throwable t) {
+      LOG.error("Service failed to start while in AwaitStartState", t);
       startFuture.completeExceptionally(t);
       state = awaitStopState;
       fireEvent(ServiceEventType.SERVICE_STOPPED);
