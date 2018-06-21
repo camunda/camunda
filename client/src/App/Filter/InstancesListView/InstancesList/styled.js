@@ -28,6 +28,16 @@ export const SelectionStatusIndicator = themed(styled.div`
 
 export const CheckAll = styled.div`
   display: inline-block;
-  margin-left: 4px;
+  margin-left: 24px;
   margin-right: 20px;
+`;
+
+export const Selection = styled.div`
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  & *:not(:first-child) {
+    margin-left: 11px;
+  }
 `;

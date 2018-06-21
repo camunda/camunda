@@ -55,8 +55,10 @@ export default class InstancesList extends React.Component {
           <React.Fragment>
             <Styled.CheckAll>
               <Checkbox
-                checked={this.areAllInstancesSelected()}
-                onChange={this.handleToggleSelectAll}
+                isChecked={this.areAllInstancesSelected()}
+                onChange={({isChecked}) =>
+                  this.handleToggleSelectAll(isChecked)
+                }
               />
             </Styled.CheckAll>
             Workflow Definition
@@ -83,9 +85,9 @@ export default class InstancesList extends React.Component {
     );
   };
 
-  handleToggleSelectAll = ({target: {checked}}) => {
+  handleToggleSelectAll = isChecked => {
     this.props.onSelectionUpdate({
-      isBlacklist: {$set: checked},
+      isBlacklist: {$set: isChecked},
       list: {$set: new Set()}
     });
   };
@@ -122,12 +124,13 @@ export default class InstancesList extends React.Component {
     const {isBlacklist} = this.props.selection;
     const isSelected = this.isSelected(instance.id);
     return (
-      <React.Fragment>
+      <Styled.Selection>
         <Styled.SelectionStatusIndicator selected={isSelected} />
         <Checkbox
-          checked={isSelected}
-          onChange={evt => {
-            const newState = evt.target.checked;
+          type={'selection'}
+          isChecked={isSelected}
+          onChange={({isChecked}) => {
+            const newState = isChecked;
             if (isBlacklist) {
               if (newState) {
                 this.props.onSelectionUpdate({
@@ -147,9 +150,10 @@ export default class InstancesList extends React.Component {
             }
           }}
         />
+
         <StateIcon instance={instance} />
         {instance.workflowDefinitionId}
-      </React.Fragment>
+      </Styled.Selection>
     );
   };
 
