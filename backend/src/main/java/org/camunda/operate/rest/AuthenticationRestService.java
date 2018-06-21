@@ -34,7 +34,7 @@ public class AuthenticationRestService {
   public static final String AUTHENTICATION_URL = "/api/authentications";
 
   @Autowired
-  protected UserDetailsService userDetailsService;
+  private UserDetailsService userDetailsService;
 
   @GetMapping(path = "/user")
   public UserDto getCurrentAuthentication() {

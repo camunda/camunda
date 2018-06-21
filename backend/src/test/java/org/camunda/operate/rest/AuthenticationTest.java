@@ -1,6 +1,7 @@
 package org.camunda.operate.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.operate.rest.AuthenticationRestService.AUTHENTICATION_URL;
 import static org.camunda.operate.security.WebSecurityConfig.*;
 import static org.camunda.operate.security.WebSecurityConfig.LOGOUT_RESOURCE;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
@@ -10,6 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.camunda.operate.TestApplication;
+import org.camunda.operate.rest.dto.UserDto;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +19,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
@@ -34,6 +37,8 @@ import org.springframework.util.MultiValueMap;
 )
 @ActiveProfiles("auth")
 public class AuthenticationTest {
+
+  public static final String CURRENT_USER_URL = AUTHENTICATION_URL + "/user";
 
   public static final String USERNAME = "demo";
   public static final String PASSWORD = "demo";
@@ -80,7 +85,7 @@ public class AuthenticationTest {
 
     String session = loginResponse.getHeaders().get("Set-Cookie").get(0);
 
-    HttpEntity<Map<String, String>> logoutRequest = prepareLogoutRequest(session);
+    HttpEntity<Map<String, String>> logoutRequest = prepareRequestWithCookies(session);
 
     // when
     ResponseEntity<String> logoutResponse = logout(logoutRequest);
@@ -88,6 +93,23 @@ public class AuthenticationTest {
     assertThat(logoutResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     assertThat(logoutResponse.getHeaders()).containsKey("Set-Cookie");
     assertThat(logoutResponse.getHeaders().get("Set-Cookie").get(0)).contains(COOKIE_JSESSIONID + "=;");
+  }
+
+  @Test
+  public void shouldReturnCurrentUser() {
+    //given authenticated user
+    HttpEntity<MultiValueMap<String, String>> loginRequest = prepareLoginRequest(USERNAME, PASSWORD);
+    ResponseEntity<Void> loginResponse = login(loginRequest);
+    String session = loginResponse.getHeaders().get("Set-Cookie").get(0);
+
+    //when
+    final ResponseEntity<UserDto> responseEntity = testRestTemplate.exchange(CURRENT_USER_URL, HttpMethod.GET,
+      prepareRequestWithCookies(session), UserDto.class);
+
+    //then
+    assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(responseEntity.getBody().getFirstname()).isNotEmpty();
+    assertThat(responseEntity.getBody().getLastname()).isNotEmpty();
   }
 
   protected HttpEntity<MultiValueMap<String, String>> prepareLoginRequest(String username, String password) {
@@ -101,7 +123,7 @@ public class AuthenticationTest {
     return new HttpEntity<>(body, headers);
   }
 
-  protected HttpEntity<Map<String, String>> prepareLogoutRequest(String session) {
+  protected HttpEntity<Map<String, String>> prepareRequestWithCookies(String session) {
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(APPLICATION_JSON);
     headers.add("Cookie", session);

@@ -16,8 +16,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 public class UserDto {
 
-  protected String firstname;
-  protected String lastname;
+  private String firstname;
+  private String lastname;
 
   public String getFirstname() {
     return firstname;
@@ -25,6 +25,14 @@ public class UserDto {
 
   public String getLastname() {
     return lastname;
+  }
+
+  public void setFirstname(String firstname) {
+    this.firstname = firstname;
+  }
+
+  public void setLastname(String lastname) {
+    this.lastname = lastname;
   }
 
   public static UserDto fromUserDetails(UserDetails userDetails) {

@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringRunner;
 
 /**
+ * Tests the health check with disabled auhtentication.
  * @author Svetlana Dorokhova.
  */
 @RunWith(SpringRunner.class)
