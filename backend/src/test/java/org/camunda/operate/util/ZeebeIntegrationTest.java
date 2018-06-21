@@ -16,7 +16,7 @@ import io.zeebe.client.ZeebeClient;
  *
  * @author Svetlana Dorokhova.
  */
-@ActiveProfiles("zeebe")
+@ActiveProfiles({"zeebe", "elasticsearch"})   //TODO this profiles are not working any more (and probably not needed)
 public abstract class ZeebeIntegrationTest extends OperateIntegrationTest {
 
   private Logger logger = LoggerFactory.getLogger(ZeebeIntegrationTest.class);
