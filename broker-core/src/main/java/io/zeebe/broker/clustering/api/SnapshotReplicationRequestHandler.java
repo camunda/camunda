@@ -110,8 +110,6 @@ public class SnapshotReplicationRequestHandler {
   private BufferWriter handleListSnapshots(final SnapshotStorage storage) {
     final List<SnapshotMetadata> snapshots = storage.listSnapshots();
     for (final SnapshotMetadata snapshot : snapshots) {
-      // TODO: who should decide whether a snapshot is replicable or not? the handler? the storage?
-      // the snapshot?
       if (snapshot.isReplicable()) {
         listSnapshotsResponse.addSnapshot(
             snapshot.getName(), snapshot.getPosition(), snapshot.getChecksum(), snapshot.getSize());
