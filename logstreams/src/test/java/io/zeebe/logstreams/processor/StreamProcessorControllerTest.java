@@ -48,7 +48,7 @@ import org.junit.rules.TemporaryFolder;
 import org.mockito.InOrder;
 
 public class StreamProcessorControllerTest {
-  private static final String PROCESSOR_NAME = "test";
+  private static final String PROCESSOR_NAME = "testProcessor";
   private static final int PROCESSOR_ID = 1;
   private static final Duration SNAPSHOT_INTERVAL = Duration.ofMinutes(1);
 
@@ -91,6 +91,10 @@ public class StreamProcessorControllerTest {
     controller = streamProcessorService.getController();
   }
 
+  private void changeMockInActorContext(Runnable runnable) {
+    streamProcessor.getContext().getActorControl().call(runnable).join();
+  }
+
   @Test
   public void testStreamProcessorLifecycle() {
     // when
@@ -118,17 +122,19 @@ public class StreamProcessorControllerTest {
     final ActorFuture<Void> whenProcessingInvoked = new CompletableActorFuture<>();
     final ActorFuture<Void> whenProcessingDone = new CompletableActorFuture<>();
 
-    doAnswer(
-            invocation -> {
-              final EventLifecycleContext ctx = invocation.getArgument(0);
-              ctx.async(whenProcessingDone);
+    changeMockInActorContext(
+        () ->
+            doAnswer(
+                    invocation -> {
+                      final EventLifecycleContext ctx = invocation.getArgument(0);
+                      ctx.async(whenProcessingDone);
 
-              whenProcessingInvoked.complete(null);
+                      whenProcessingInvoked.complete(null);
 
-              return null;
-            })
-        .when(eventProcessor)
-        .processEvent(any());
+                      return null;
+                    })
+                .when(eventProcessor)
+                .processEvent(any()));
 
     // when
     writer.writeEvent(EVENT_1, true);
@@ -162,20 +168,22 @@ public class StreamProcessorControllerTest {
     final ActorFuture<Void> whenProcessingInvoked = new CompletableActorFuture<>();
     final ActorFuture<Void> whenProcessingDone = new CompletableActorFuture<>();
 
-    doAnswer(
-            invocation -> {
-              final EventLifecycleContext ctx = invocation.getArgument(0);
+    changeMockInActorContext(
+        () ->
+            doAnswer(
+                    invocation -> {
+                      final EventLifecycleContext ctx = invocation.getArgument(0);
 
-              if (!whenProcessingDone.isDone()) // only block on first invocation
-              {
-                ctx.async(whenProcessingDone);
-                whenProcessingInvoked.complete(null);
-              }
+                      if (!whenProcessingDone.isDone()) // only block on first invocation
+                      {
+                        ctx.async(whenProcessingDone);
+                        whenProcessingInvoked.complete(null);
+                      }
 
-              return null;
-            })
-        .when(eventProcessor)
-        .processEvent(any());
+                      return null;
+                    })
+                .when(eventProcessor)
+                .processEvent(any()));
 
     // given
     writer.writeEvent(EVENT_1, true);
@@ -201,15 +209,18 @@ public class StreamProcessorControllerTest {
       throws InterruptedException, ExecutionException, TimeoutException {
     final ActorFuture<Void> whenProcessingInvoked = new CompletableActorFuture<>();
 
-    doAnswer(
-            invocation -> {
-              final EventLifecycleContext ctx = invocation.getArgument(0);
-              ctx.async(CompletableActorFuture.completedExceptionally(new RuntimeException()));
-              whenProcessingInvoked.complete(null);
-              return null;
-            })
-        .when(eventProcessor)
-        .processEvent(any());
+    changeMockInActorContext(
+        () ->
+            doAnswer(
+                    invocation -> {
+                      final EventLifecycleContext ctx = invocation.getArgument(0);
+                      ctx.async(
+                          CompletableActorFuture.completedExceptionally(new RuntimeException()));
+                      whenProcessingInvoked.complete(null);
+                      return null;
+                    })
+                .when(eventProcessor)
+                .processEvent(any()));
 
     // when
     writer.writeEvent(EVENT_1, true);
@@ -238,7 +249,8 @@ public class StreamProcessorControllerTest {
   @Test
   public void shouldExecuteSideEffectsUntilDone() {
     // given
-    when(eventProcessor.executeSideEffects()).thenReturn(false, false, true);
+    changeMockInActorContext(
+        () -> when(eventProcessor.executeSideEffects()).thenReturn(false, false, true));
 
     // when
     writeEventAndWaitUntilProcessed(EVENT_1);
@@ -255,7 +267,7 @@ public class StreamProcessorControllerTest {
   @Test
   public void shouldWriteEventUntilDone() {
     // given
-    when(eventProcessor.writeEvent(any())).thenReturn(-1L, -1L, 1L);
+    changeMockInActorContext(() -> when(eventProcessor.writeEvent(any())).thenReturn(-1L, -1L, 1L));
 
     // when
     writeEventAndWaitUntilProcessed(EVENT_1);
@@ -273,7 +285,8 @@ public class StreamProcessorControllerTest {
   public void shouldSkipEventIfNoEventProcessorIsProvided() {
     // given
     // return null as event processor for first event
-    doReturn(null).doCallRealMethod().when(streamProcessor).onEvent(any());
+    changeMockInActorContext(
+        () -> doReturn(null).doCallRealMethod().when(streamProcessor).onEvent(any()));
 
     // when
     writer.writeEvent(EVENT_1, true);
@@ -293,7 +306,7 @@ public class StreamProcessorControllerTest {
   @Test
   public void shouldSkipEventIfEventFilterIsNotMet() {
     // given
-    when(eventFilter.applies(any())).thenReturn(false, true);
+    changeMockInActorContext(() -> when(eventFilter.applies(any())).thenReturn(false, true));
 
     // when
     writer.writeEvent(EVENT_1, true);
@@ -332,18 +345,20 @@ public class StreamProcessorControllerTest {
     // given
     final AtomicLong writtenEventPosition = new AtomicLong();
 
-    when(eventProcessor.writeEvent(any()))
-        .thenAnswer(
-            inv -> {
-              final LogStreamWriter writer = inv.getArgument(0);
+    changeMockInActorContext(
+        () ->
+            when(eventProcessor.writeEvent(any()))
+                .thenAnswer(
+                    inv -> {
+                      final LogStreamWriter writer = inv.getArgument(0);
 
-              final long position =
-                  writer.key(2L).metadata(wrapString("META")).value(EVENT_2).tryWrite();
+                      final long position =
+                          writer.key(2L).metadata(wrapString("META")).value(EVENT_2).tryWrite();
 
-              writtenEventPosition.set(position);
+                      writtenEventPosition.set(position);
 
-              return position;
-            });
+                      return position;
+                    }));
 
     // when
     final long firstEventPosition = writeEventAndWaitUntilProcessed(EVENT_1);
@@ -383,13 +398,16 @@ public class StreamProcessorControllerTest {
   public void shouldCloseOnExecuteSideEffects() {
     // given
     final AtomicInteger invocations = new AtomicInteger();
-    doAnswer(
-            inv -> {
-              invocations.incrementAndGet();
-              return false;
-            })
-        .when(eventProcessor)
-        .executeSideEffects();
+
+    changeMockInActorContext(
+        () ->
+            doAnswer(
+                    inv -> {
+                      invocations.incrementAndGet();
+                      return false;
+                    })
+                .when(eventProcessor)
+                .executeSideEffects());
 
     // when
     writer.writeEvent(EVENT_1, true);
@@ -408,13 +426,16 @@ public class StreamProcessorControllerTest {
   public void shouldCloseOnWriteEvent() {
     // given
     final AtomicInteger invocations = new AtomicInteger();
-    doAnswer(
-            inv -> {
-              invocations.incrementAndGet();
-              return -1L;
-            })
-        .when(eventProcessor)
-        .writeEvent(any());
+
+    changeMockInActorContext(
+        () ->
+            doAnswer(
+                    inv -> {
+                      invocations.incrementAndGet();
+                      return -1L;
+                    })
+                .when(eventProcessor)
+                .writeEvent(any()));
 
     // when
     writer.writeEvent(EVENT_1, true);
@@ -499,7 +520,9 @@ public class StreamProcessorControllerTest {
   @Test
   public void shouldFailOnProcessEvent() {
     // given
-    doThrow(new RuntimeException("expected")).when(eventProcessor).processEvent(any());
+
+    changeMockInActorContext(
+        () -> doThrow(new RuntimeException("expected")).when(eventProcessor).processEvent(any()));
 
     // when
     writer.writeEvents(2, EVENT_1, true);
@@ -515,7 +538,9 @@ public class StreamProcessorControllerTest {
   @Test
   public void shouldFailOnExecuteSideEffects() {
     // given
-    doThrow(new RuntimeException("expected")).when(eventProcessor).executeSideEffects();
+
+    changeMockInActorContext(
+        () -> doThrow(new RuntimeException("expected")).when(eventProcessor).executeSideEffects());
 
     // when
     writer.writeEvents(2, EVENT_1, true);
@@ -532,7 +557,9 @@ public class StreamProcessorControllerTest {
   @Test
   public void shouldFailOnWriteEvent() {
     // given
-    doThrow(new RuntimeException("expected")).when(eventProcessor).writeEvent(any());
+
+    changeMockInActorContext(
+        () -> doThrow(new RuntimeException("expected")).when(eventProcessor).writeEvent(any()));
 
     // when
     writer.writeEvents(2, EVENT_1, true);
@@ -550,7 +577,9 @@ public class StreamProcessorControllerTest {
   @Test
   public void shouldFailOnUpdateState() {
     // given
-    doThrow(new RuntimeException("expected")).when(eventProcessor).updateState();
+
+    changeMockInActorContext(
+        () -> doThrow(new RuntimeException("expected")).when(eventProcessor).updateState());
 
     // when
     writer.writeEvents(2, EVENT_1, true);
@@ -582,13 +611,16 @@ public class StreamProcessorControllerTest {
             .getController();
 
     // given
-    when(eventProcessor.writeEvent(any()))
-        .thenAnswer(
-            inv -> {
-              final LogStreamWriter writer = inv.getArgument(0);
 
-              return writer.key(2L).metadata(wrapString("META")).value(EVENT_2).tryWrite();
-            });
+    changeMockInActorContext(
+        () ->
+            when(eventProcessor.writeEvent(any()))
+                .thenAnswer(
+                    inv -> {
+                      final LogStreamWriter writer = inv.getArgument(0);
+
+                      return writer.key(2L).metadata(wrapString("META")).value(EVENT_2).tryWrite();
+                    }));
 
     // when
     writer.writeEvent(EVENT_1, true);
