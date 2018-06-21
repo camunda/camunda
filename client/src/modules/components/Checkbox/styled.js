@@ -21,7 +21,6 @@ export const Label = themed(styled.label`
 export const Input = themed(styled.input`
   /* hide default checkbox */
   position: absolute;
-  left: -9999px;
   opacity: 0;
 
   /* default: empty checkbox */
@@ -65,19 +64,21 @@ export const Input = themed(styled.input`
 export const CustomCheckbox = themed(styled.div`
   position: relative;
   display: inline-block;
-  background: ${themeStyle({
-    dark: Colors.uiDark02,
-    light: Colors.uiLight01
-  })};
+  width: 14px;
+  height: 14px;
   
   /* box styles */
   &:before {
     content: '';
-    position: relative;
+    position: absolute;
     top: 3px;
     display: inline-block;
-    width: 14px;
-    height: 14px;
+    width: 100%;
+    height: 100%;
+    background: ${themeStyle({
+      dark: Colors.uiDark02,
+      light: Colors.uiLight01
+    })};
     border-radius: 3px;
     border: solid 1px ${themeStyle({
       dark: '#bebec0',
