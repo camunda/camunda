@@ -358,7 +358,7 @@ public class LogStreamTest {
     final long writtenEventPosition = position;
     waitUntil(
         () ->
-            logStream.getLogStorageAppender().getCurrentAppenderPosition() >= writtenEventPosition);
+            logStream.getLogStorageAppender().getCurrentAppenderPosition() > writtenEventPosition);
 
     return position;
   }
