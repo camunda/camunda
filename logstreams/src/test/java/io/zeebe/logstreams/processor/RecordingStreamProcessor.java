@@ -96,4 +96,8 @@ public class RecordingStreamProcessor implements StreamProcessor {
   public EventProcessor getEventProcessorSpy() {
     return eventProcessor;
   }
+
+  public StreamProcessorContext getContext() {
+    return context;
+  }
 }
