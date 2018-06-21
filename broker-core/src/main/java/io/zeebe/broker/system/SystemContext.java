@@ -30,6 +30,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import org.slf4j.Logger;
@@ -37,7 +38,7 @@ import org.slf4j.Logger;
 public class SystemContext implements AutoCloseable {
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
   public static final String BROKER_ID_LOG_PROPERTY = "broker-id";
-  public static final int CLOSE_TIMEOUT = 10;
+  public static final Duration CLOSE_TIMEOUT = Duration.ofSeconds(10);
 
   protected ServiceContainer serviceContainer;
 
@@ -52,7 +53,7 @@ public class SystemContext implements AutoCloseable {
   protected ActorScheduler scheduler;
 
   private MetricsManager metricsManager;
-  private int closeTimeout;
+  private Duration closeTimeout;
 
   public SystemContext(String configFileLocation, String basePath, ActorClock clock) {
     if (!Paths.get(configFileLocation).isAbsolute()) {
@@ -177,7 +178,7 @@ public class SystemContext implements AutoCloseable {
     LOG.info("Closing...");
 
     try {
-      serviceContainer.close(getCloseTimeout(), TimeUnit.SECONDS);
+      serviceContainer.close(getCloseTimeout().toMillis(), TimeUnit.MILLISECONDS);
     } catch (TimeoutException e) {
       LOG.error("Failed to close broker within {} seconds.", CLOSE_TIMEOUT, e);
     } catch (ExecutionException | InterruptedException e) {
@@ -193,7 +194,7 @@ public class SystemContext implements AutoCloseable {
       }
 
       try {
-        scheduler.stop().get(getCloseTimeout(), TimeUnit.SECONDS);
+        scheduler.stop().get(getCloseTimeout().toMillis(), TimeUnit.MILLISECONDS);
       } catch (TimeoutException e) {
         LOG.error("Failed to close scheduler within {} seconds", CLOSE_TIMEOUT, e);
       } catch (ExecutionException | InterruptedException e) {
@@ -218,11 +219,11 @@ public class SystemContext implements AutoCloseable {
     return diagnosticContext;
   }
 
-  public int getCloseTimeout() {
+  public Duration getCloseTimeout() {
     return closeTimeout;
   }
 
-  public void setCloseTimeout(int closeTimeout) {
+  public void setCloseTimeout(Duration closeTimeout) {
     this.closeTimeout = closeTimeout;
     scheduler.setBlockingTasksShutdownTime(closeTimeout);
   }

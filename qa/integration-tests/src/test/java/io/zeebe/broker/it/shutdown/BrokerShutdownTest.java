@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
+import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -61,7 +62,7 @@ public class BrokerShutdownTest {
   @Test
   public void shouldReleaseSockets() {
     // given
-    broker.getBrokerContext().setCloseTimeout(1);
+    broker.getBrokerContext().setCloseTimeout(Duration.ofSeconds(1));
 
     // when
     broker.close();
