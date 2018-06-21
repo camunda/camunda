@@ -19,7 +19,6 @@ package io.zeebe.broker.clustering.base.partitions;
 
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.*;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.snapshotStorageServiceName;
-import static io.zeebe.raft.RaftServiceNames.followerServiceName;
 import static io.zeebe.raft.RaftServiceNames.leaderInitialEventCommittedServiceName;
 import static io.zeebe.raft.RaftServiceNames.raftServiceName;
 
@@ -190,7 +189,7 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
 
   @Override
   public void onStateChange(Raft raft, RaftState raftState) {
-    switch (raft.getState()) {
+    switch (raftState) {
       case LEADER:
         removeFollowerPartitionService(raft);
         installLeaderPartition(raft);
@@ -250,7 +249,6 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
       LOG.debug("Installing follower partition service for {}", partitionInfo);
       startContext
           .createService(partitionServiceName, partition)
-          .dependency(followerServiceName(raft.getName(), raft.getTerm()))
           .dependency(logStreamServiceName, partition.getLogStreamInjector())
           .dependency(snapshotStorageServiceName, partition.getSnapshotStorageInjector())
           .group(FOLLOWER_PARTITION_GROUP_NAME)
@@ -263,7 +261,7 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
         followerPartitionServiceName(raft.getName());
 
     if (startContext.hasService(partitionServiceName)) {
-      LOG.debug("Removing follower partition {}", partitionInfo);
+      LOG.debug("Removing follower partition service for partition {}", partitionInfo);
       startContext.removeService(partitionServiceName);
     }
   }
