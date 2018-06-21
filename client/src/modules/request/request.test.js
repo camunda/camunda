@@ -1,10 +1,6 @@
 import {mockResolvedAsyncFn, mockRejectedAsyncFn} from 'modules/testUtils';
 
-import {
-  request,
-  setResponseInterceptor,
-  resetResponseInterceptor
-} from './request';
+import {request, setResponseInterceptor} from './request';
 
 const successResponse = {
   status: 200,
@@ -95,7 +91,7 @@ describe('request', () => {
   });
 
   describe('response', () => {
-    it("should call responseInterceptor only when it's provided", async () => {
+    it("should call responseInterceptor when it's provided", async () => {
       // given
       const responseInterceptor = mockResolvedAsyncFn();
       setResponseInterceptor(responseInterceptor);
@@ -105,13 +101,15 @@ describe('request', () => {
 
       // then
       expect(responseInterceptor).toHaveBeenCalledWith(response);
+    });
 
+    it('should not call responseInterceptor if there is a skipResponseInterceptor flag', async () => {
       // given
-      responseInterceptor.mockClear();
-      resetResponseInterceptor();
+      const responseInterceptor = mockResolvedAsyncFn();
+      setResponseInterceptor(responseInterceptor);
 
       // when
-      await request({url});
+      await request({url, skipResponseInterceptor: true});
 
       // then
       expect(responseInterceptor).not.toHaveBeenCalled();

@@ -3,15 +3,9 @@ import PropTypes from 'prop-types';
 import {Redirect} from 'react-router-dom';
 
 import {login} from './api';
-import {resetResponseInterceptor} from 'modules/request';
 import * as Styled from './styled';
 
 class Login extends React.Component {
-  constructor(props) {
-    super(props);
-    resetResponseInterceptor();
-  }
-
   static propTypes = {
     location: PropTypes.object.isRequired
   };

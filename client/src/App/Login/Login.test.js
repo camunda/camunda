@@ -2,7 +2,6 @@ import React from 'react';
 import {shallow} from 'enzyme';
 import {Redirect} from 'react-router-dom';
 
-import {resetResponseInterceptor} from 'modules/request';
 import {
   flushPromises,
   mockResolvedAsyncFn,
@@ -20,11 +19,6 @@ describe('Login', () => {
 
   beforeEach(() => {
     node = shallow(<Login location={{}} />);
-  });
-
-  it('should reset the response interceptor', () => {
-    // then
-    expect(resetResponseInterceptor).toBeCalled();
   });
 
   it('should render login form by default', () => {

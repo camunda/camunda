@@ -1,6 +1,13 @@
 let responseInterceptor = null;
 
-export async function request({url, method, body, query, headers}) {
+export async function request({
+  url,
+  method,
+  body,
+  query,
+  headers,
+  skipResponseInterceptor
+}) {
   const resourceUrl = query ? `${url}?${stringifyQuery(query)}` : `${url}`;
 
   let response = await fetch(resourceUrl, {
@@ -14,7 +21,7 @@ export async function request({url, method, body, query, headers}) {
     mode: 'cors'
   });
 
-  if (typeof responseInterceptor === 'function') {
+  if (!skipResponseInterceptor && typeof responseInterceptor === 'function') {
     await responseInterceptor(response);
   }
 
@@ -39,8 +46,4 @@ export function stringifyQuery(query) {
 
 export function setResponseInterceptor(fct) {
   responseInterceptor = fct;
-}
-
-export function resetResponseInterceptor() {
-  responseInterceptor = null;
 }

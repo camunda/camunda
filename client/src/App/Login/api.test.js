@@ -10,7 +10,7 @@ describe('login api', () => {
   });
 
   describe('login', () => {
-    it('should call post with username and password', () => {
+    it('should call post with the right parameters', () => {
       // given
       const username = 'foo';
       const password = 'bar';
@@ -24,7 +24,8 @@ describe('login api', () => {
       expect(post.mock.calls[0][2]).toEqual({
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
-        }
+        },
+        skipResponseInterceptor: true
       });
     });
   });
