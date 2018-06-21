@@ -55,7 +55,7 @@ const themed = Component => {
   function Themed(props) {
     return (
       <ThemeConsumer>
-        {theme => <Component {...theme} {...props} />}
+        {({theme}) => <Component {...props} theme={theme} />}
       </ThemeConsumer>
     );
   }

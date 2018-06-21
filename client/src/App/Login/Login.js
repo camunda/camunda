@@ -44,27 +44,34 @@ class Login extends React.Component {
     // default render
     return (
       <Styled.Login onSubmit={this.handleLogin}>
-        <Styled.H1>Operate</Styled.H1>
-        {error && (
-          <Styled.FormError data-test-id="error-span">{error}</Styled.FormError>
-        )}
-        <Styled.LoginInput
-          value={username}
-          type="text"
-          onChange={this.handleInputChange}
-          placeholder="Username"
-          name="username"
-          required
-        />
-        <Styled.LoginInput
-          value={password}
-          type="password"
-          onChange={this.handleInputChange}
-          placeholder="Password"
-          name="password"
-          required
-        />
-        <Styled.LoginInput type="submit" placeholder="Password" />
+        <Styled.LoginHeader>
+          <Styled.Logo />
+          <Styled.LoginTitle>Operate</Styled.LoginTitle>
+        </Styled.LoginHeader>
+        <Styled.LoginForm>
+          {error && (
+            <Styled.FormError data-test-id="error-span">
+              {error}
+            </Styled.FormError>
+          )}
+          <Styled.UsernameInput
+            value={username}
+            type="text"
+            onChange={this.handleInputChange}
+            placeholder="Username"
+            name="username"
+            required
+          />
+          <Styled.PasswordInput
+            value={password}
+            type="password"
+            onChange={this.handleInputChange}
+            placeholder="Password"
+            name="password"
+            required
+          />
+          <Styled.SubmitButton type="submit">Login</Styled.SubmitButton>
+        </Styled.LoginForm>
       </Styled.Login>
     );
   }

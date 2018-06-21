@@ -42,7 +42,6 @@ describe('Login', () => {
     expect(node.state('forceRedirect')).toBe(false);
     expect(node.state('error')).toBeNull();
     expect(node.find(Styled.Login)).toHaveLength(1);
-    expect(node.find(Styled.LoginInput)).toHaveLength(3);
     expect(usernameInput).toHaveLength(1);
     expect(passwordInput).toHaveLength(1);
     expect(submitInput).toHaveLength(1);
