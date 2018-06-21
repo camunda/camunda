@@ -26,8 +26,11 @@ import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
+import java.io.Closeable;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import org.slf4j.Logger;
@@ -35,7 +38,7 @@ import org.slf4j.Logger;
 public class SystemContext implements AutoCloseable {
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
   public static final String BROKER_ID_LOG_PROPERTY = "broker-id";
-  public static final int CLOSE_TIMEOUT = 10;
+  public static final Duration CLOSE_TIMEOUT = Duration.ofSeconds(10);
 
   protected ServiceContainer serviceContainer;
 
@@ -44,11 +47,13 @@ public class SystemContext implements AutoCloseable {
   protected final BrokerCfg brokerCfg;
 
   protected final List<ActorFuture<?>> requiredStartActions = new ArrayList<>();
+  private final List<Closeable> closeablesToReleaseResources = new ArrayList<>();
 
   protected Map<String, String> diagnosticContext;
   protected ActorScheduler scheduler;
 
   private MetricsManager metricsManager;
+  private Duration closeTimeout;
 
   public SystemContext(String configFileLocation, String basePath, ActorClock clock) {
     if (!Paths.get(configFileLocation).isAbsolute()) {
@@ -90,6 +95,8 @@ public class SystemContext implements AutoCloseable {
     this.scheduler.start();
 
     initBrokerInfoMetric();
+
+    setCloseTimeout(CLOSE_TIMEOUT);
   }
 
   private MetricsManager initMetricsManager(String brokerId) {
@@ -171,14 +178,23 @@ public class SystemContext implements AutoCloseable {
     LOG.info("Closing...");
 
     try {
-      serviceContainer.close(CLOSE_TIMEOUT, TimeUnit.SECONDS);
+      serviceContainer.close(getCloseTimeout().toMillis(), TimeUnit.MILLISECONDS);
     } catch (TimeoutException e) {
       LOG.error("Failed to close broker within {} seconds.", CLOSE_TIMEOUT, e);
     } catch (ExecutionException | InterruptedException e) {
       LOG.error("Exception while closing broker", e);
     } finally {
+
+      for (Closeable delegate : closeablesToReleaseResources) {
+        try {
+          delegate.close();
+        } catch (IOException ioe) {
+          LOG.error("Exception while releasing resources", ioe);
+        }
+      }
+
       try {
-        scheduler.stop().get(CLOSE_TIMEOUT, TimeUnit.SECONDS);
+        scheduler.stop().get(getCloseTimeout().toMillis(), TimeUnit.MILLISECONDS);
       } catch (TimeoutException e) {
         LOG.error("Failed to close scheduler within {} seconds", CLOSE_TIMEOUT, e);
       } catch (ExecutionException | InterruptedException e) {
@@ -195,7 +211,20 @@ public class SystemContext implements AutoCloseable {
     requiredStartActions.add(future);
   }
 
+  public void addResourceReleasingDelegate(Closeable delegate) {
+    closeablesToReleaseResources.add(delegate);
+  }
+
   public Map<String, String> getDiagnosticContext() {
     return diagnosticContext;
+  }
+
+  public Duration getCloseTimeout() {
+    return closeTimeout;
+  }
+
+  public void setCloseTimeout(Duration closeTimeout) {
+    this.closeTimeout = closeTimeout;
+    scheduler.setBlockingTasksShutdownTime(closeTimeout);
   }
 }

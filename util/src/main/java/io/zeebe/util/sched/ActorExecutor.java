@@ -31,7 +31,7 @@ public class ActorExecutor {
   private final ActorThreadGroup ioBoundThreads;
   private final ThreadPoolExecutor blockingTasksRunner;
   private final MetricsManager metricsManager;
-  private final Duration blockingTasksShutdownTime;
+  private Duration blockingTasksShutdownTime;
 
   public ActorExecutor(ActorSchedulerBuilder builder) {
     this.ioBoundThreads = builder.getIoBoundActorThreads();
@@ -110,5 +110,13 @@ public class ActorExecutor {
 
   public ActorThreadGroup getIoBoundThreads() {
     return ioBoundThreads;
+  }
+
+  public Duration getBlockingTasksShutdownTime() {
+    return blockingTasksShutdownTime;
+  }
+
+  public void setBlockingTasksShutdownTime(Duration duration) {
+    blockingTasksShutdownTime = duration;
   }
 }
