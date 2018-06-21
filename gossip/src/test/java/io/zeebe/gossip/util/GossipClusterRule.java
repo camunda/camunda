@@ -30,7 +30,7 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 public class GossipClusterRule implements TestRule {
-  private static final int MAX_CONDITION_RETRIES = 100;
+  private static final int MAX_CONDITION_RETRIES = 1000;
 
   private final ActorSchedulerRule actorScheduler;
   private final ControlledActorClock clock;
@@ -77,13 +77,17 @@ public class GossipClusterRule implements TestRule {
   }
 
   public void waitUntil(BooleanSupplier condition) {
+    waitUntil(condition, MAX_CONDITION_RETRIES);
+  }
+
+  public void waitUntil(BooleanSupplier condition, int retries) {
     int i = 0;
 
-    while (!condition.getAsBoolean() && i < MAX_CONDITION_RETRIES) {
+    while (!condition.getAsBoolean() && i < retries) {
       clock.addTime(configuration.getProbeIntervalDuration());
 
       try {
-        Thread.sleep(10L);
+        Thread.sleep(1L);
       } catch (InterruptedException e) {
       }
 

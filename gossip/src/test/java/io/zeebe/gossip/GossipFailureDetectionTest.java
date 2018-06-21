@@ -17,24 +17,29 @@ package io.zeebe.gossip;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.UnstableTest;
 import io.zeebe.clustering.gossip.GossipEventType;
 import io.zeebe.clustering.gossip.MembershipEventType;
 import io.zeebe.gossip.protocol.MembershipEvent;
 import io.zeebe.gossip.util.GossipClusterRule;
 import io.zeebe.gossip.util.GossipRule;
-import org.junit.*;
-import org.junit.experimental.categories.Category;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.Timeout;
 
 public class GossipFailureDetectionTest {
+  private static final GossipConfiguration CONFIGURATION =
+      new GossipConfiguration().setSuspicionMultiplier(10);
+
   private GossipRule gossip1 = new GossipRule("localhost:8001");
   private GossipRule gossip2 = new GossipRule("localhost:8002");
   private GossipRule gossip3 = new GossipRule("localhost:8003");
 
-  @Rule public GossipClusterRule cluster = new GossipClusterRule(gossip1, gossip2, gossip3);
+  @Rule
+  public GossipClusterRule cluster =
+      new GossipClusterRule(CONFIGURATION, gossip1, gossip2, gossip3);
 
-  @Rule public Timeout timeout = Timeout.seconds(10);
+  @Rule public Timeout timeout = Timeout.seconds(20);
 
   @Before
   public void init() {
@@ -88,7 +93,6 @@ public class GossipFailureDetectionTest {
   }
 
   @Test
-  @Category(UnstableTest.class)
   public void shouldSpreadSuspectEvent() {
     // given
     cluster.interruptConnectionBetween(gossip3, gossip1);
@@ -97,28 +101,24 @@ public class GossipFailureDetectionTest {
     // when send SUSPECT event
     cluster.waitUntil(() -> gossip1.receivedMembershipEvent(MembershipEventType.SUSPECT, gossip3));
     cluster.waitUntil(() -> gossip2.receivedMembershipEvent(MembershipEventType.SUSPECT, gossip3));
-
-    assertThat(gossip1.hasMember(gossip3)).isTrue();
-    assertThat(gossip2.hasMember(gossip3)).isTrue();
   }
 
   @Test
-  @Category(UnstableTest.class)
   public void shouldSpreadConfirmEvent() {
     // given
     cluster.interruptConnectionBetween(gossip3, gossip1);
     cluster.interruptConnectionBetween(gossip3, gossip2);
 
-    // when send CONFIRM event after suspicion timeout
+    // when member is removed
+    cluster.waitUntil(() -> !gossip1.hasMember(gossip3));
+    cluster.waitUntil(() -> !gossip2.hasMember(gossip3));
+
+    // then confirm event was spread
     cluster.waitUntil(() -> gossip1.receivedMembershipEvent(MembershipEventType.CONFIRM, gossip3));
     cluster.waitUntil(() -> gossip2.receivedMembershipEvent(MembershipEventType.CONFIRM, gossip3));
-
-    assertThat(gossip1.hasMember(gossip3)).isFalse();
-    assertThat(gossip2.hasMember(gossip3)).isFalse();
   }
 
   @Test
-  @Category(UnstableTest.class)
   public void shouldCounterSuspectEventIfAlive() {
     // given
     cluster.interruptConnectionBetween(gossip3, gossip1);
