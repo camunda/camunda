@@ -36,8 +36,8 @@ export default class Dashboard extends Component {
         <Header
           active="dashboard"
           instances={instances}
-          filters={9263}
-          selections={24}
+          filters={0}
+          selections={0}
           incidents={incidents}
         />
         <MetricPanel>
