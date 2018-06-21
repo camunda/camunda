@@ -38,6 +38,7 @@ export default class ListView extends React.Component {
               this.setState({entriesPerPage})
             }
             onSelectionUpdate={this.props.onSelectionUpdate}
+            filter={this.props.filter}
           />
         </Panel.Body>
         <Panel.Footer>
@@ -46,6 +47,7 @@ export default class ListView extends React.Component {
             perPage={this.state.entriesPerPage}
             firstElement={this.state.firstElement}
             onFirstElementChange={firstElement => this.setState({firstElement})}
+            onAddToSelection={this.props.onAddToSelection}
           />
         </Panel.Footer>
       </Panel>

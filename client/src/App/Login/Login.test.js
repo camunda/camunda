@@ -18,7 +18,9 @@ describe('Login', () => {
   let node;
 
   beforeEach(() => {
-    node = shallow(<Login location={{}} />);
+    node = shallow(<Login location={{}} />)
+      .first()
+      .shallow();
   });
 
   it('should render login form by default', () => {

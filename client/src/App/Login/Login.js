@@ -5,6 +5,8 @@ import {Redirect} from 'react-router-dom';
 import {login} from './api';
 import * as Styled from './styled';
 
+import withSharedState from 'modules/components/withSharedState';
+
 class Login extends React.Component {
   static propTypes = {
     location: PropTypes.object.isRequired
@@ -22,6 +24,7 @@ class Login extends React.Component {
     const {username, password} = this.state;
     try {
       await login({username, password});
+      this.props.clearState();
       this.setState({forceRedirect: true});
     } catch (e) {
       this.setState({error: 'Username and Password do not match'});
@@ -73,4 +76,4 @@ class Login extends React.Component {
   }
 }
 
-export default Login;
+export default withSharedState(Login);

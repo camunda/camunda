@@ -18,8 +18,8 @@ export default class List extends React.Component {
     onSelectionUpdate: PropTypes.func.isRequired,
     onEntriesPerPageChange: PropTypes.func.isRequired,
     selection: PropTypes.shape({
-      list: PropTypes.instanceOf(Set),
-      isBlacklist: PropTypes.bool
+      exclusionList: PropTypes.instanceOf(Set),
+      query: PropTypes.object
     }).isRequired
   };
 
@@ -51,7 +51,7 @@ export default class List extends React.Component {
   getConfig = () => {
     return {
       headerLabels: {
-        workflowDefinitionId: (
+        workflowId: (
           <React.Fragment>
             <Styled.CheckAll>
               <Checkbox
@@ -69,46 +69,55 @@ export default class List extends React.Component {
         endDate: 'End Time',
         actions: 'Actions'
       },
-      order: ['workflowDefinitionId', 'id', 'startDate', 'endDate', 'actions'],
+      order: ['workflowId', 'id', 'startDate', 'endDate', 'actions'],
       selectionCheck: ({id}) => this.isSelected(id)
     };
   };
 
   areAllInstancesSelected = () => {
     const {
-      selection: {list, isBlacklist},
-      total
+      selection: {query, exclusionList},
+      total,
+      filter
     } = this.props;
 
-    return (
-      (isBlacklist && list.size === 0) || (!isBlacklist && list.size === total)
-    );
+    if (exclusionList.size > 0) return false;
+    if (query === filter) return true;
+    if (query.ids.size === total) return true;
+
+    return false;
   };
 
   handleToggleSelectAll = isChecked => {
-    this.props.onSelectionUpdate({
-      isBlacklist: {$set: isChecked},
-      list: {$set: new Set()}
-    });
+    if (isChecked) {
+      this.props.onSelectionUpdate({
+        query: {$set: this.props.filter},
+        exclusionList: {$set: new Set()}
+      });
+    } else {
+      this.props.onSelectionUpdate({
+        query: {$set: {ids: new Set()}},
+        exclusionList: {$set: new Set()}
+      });
+    }
   };
 
   formatData = instance => {
     return {
       ...instance,
-      workflowDefinitionId: this.addSelection(instance),
+      workflowId: this.addSelection(instance),
       startDate: formatDate(instance.startDate),
       endDate: formatDate(instance.endDate)
     };
   };
 
   isSelected = id => {
-    const {list, isBlacklist} = this.props.selection;
-    for (let instance of list) {
-      if (instance.id === id) {
-        return !isBlacklist;
-      }
-    }
-    return isBlacklist;
+    const {query, exclusionList} = this.props.selection;
+    if (exclusionList.has(id)) return false;
+    if (query === this.props.filter) return true;
+    if (query.ids.has(id)) return true;
+
+    return false;
   };
 
   findInSelectionList = id => {
@@ -121,30 +130,34 @@ export default class List extends React.Component {
   };
 
   addSelection = instance => {
-    const {isBlacklist} = this.props.selection;
+    const {query} = this.props.selection;
     const isSelected = this.isSelected(instance.id);
     return (
       <Styled.Selection>
-        <Styled.SelectionStatusIndicator selected={isSelected} />
+        <Styled.SelectionStatusIndicator selected={false} />
         <Checkbox
-          type={'selection'}
+          type="selection"
           isChecked={isSelected}
           onChange={({isChecked}) => {
             const newState = isChecked;
-            if (isBlacklist) {
+            if (query === this.props.filter) {
               if (newState) {
                 this.props.onSelectionUpdate({
-                  list: {$remove: [this.findInSelectionList(instance.id)]}
+                  exclusionList: {$remove: [instance.id]}
                 });
               } else {
-                this.props.onSelectionUpdate({list: {$add: [instance]}});
+                this.props.onSelectionUpdate({
+                  exclusionList: {$add: [instance.id]}
+                });
               }
             } else {
               if (newState) {
-                this.props.onSelectionUpdate({list: {$add: [instance]}});
+                this.props.onSelectionUpdate({
+                  query: {ids: {$add: [instance.id]}}
+                });
               } else {
                 this.props.onSelectionUpdate({
-                  list: {$remove: [this.findInSelectionList(instance.id)]}
+                  query: {ids: {$remove: [instance.id]}}
                 });
               }
             }
@@ -152,7 +165,7 @@ export default class List extends React.Component {
         />
 
         <StateIcon instance={instance} />
-        {instance.workflowDefinitionId}
+        {instance.workflowId}
       </Styled.Selection>
     );
   };

@@ -17,10 +17,15 @@ export const Left = styled.div`
   margin-right: 1px;
 `;
 
-export const Right = styled.div`
+export const Center = styled.div`
   width: 100%;
   display: flex;
   flex-direction: column;
+`;
+
+export const Right = styled.div`
+  width: 320px;
+  display: flex;
 `;
 
 export const Top = styled.div`

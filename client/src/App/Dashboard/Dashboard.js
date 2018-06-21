@@ -7,9 +7,11 @@ import MetricTile from './MetricTile';
 
 import {fetchInstancesCount} from './api';
 
+import withSharedState from 'modules/components/withSharedState';
+
 import * as Styled from './styled.js';
 
-export default class Dashboard extends Component {
+class Dashboard extends Component {
   state = {
     instances: 0,
     active: 0,
@@ -26,30 +28,39 @@ export default class Dashboard extends Component {
 
   componentDidMount = async () => {
     const counts = await this.fetchCounts();
+    this.props.storeState({
+      instances: counts.instances,
+      incidents: counts.incidents
+    });
     this.setState({...counts});
   };
 
   render() {
+    const {filterCount} = this.props.getState();
     const {instances, active, incidents} = this.state;
     return (
-      <Styled.Dashboard>
+      <React.Fragment>
         <Header
           active="dashboard"
           instances={instances}
-          filters={0}
+          filters={filterCount || 0}
           selections={0}
           incidents={incidents}
         />
-        <MetricPanel>
-          <MetricTile metric={instances} name="Instances running" />
-          <MetricTile metric={active} name="Active" metricColor="allIsWell" />
-          <MetricTile
-            metric={incidents}
-            name="Incidents"
-            metricColor="incidentsAndErrors"
-          />
-        </MetricPanel>
-      </Styled.Dashboard>
+        <Styled.Dashboard>
+          <MetricPanel>
+            <MetricTile metric={instances} name="Instances running" />
+            <MetricTile metric={active} name="Active" metricColor="allIsWell" />
+            <MetricTile
+              metric={incidents}
+              name="Incidents"
+              metricColor="incidentsAndErrors"
+            />
+          </MetricPanel>
+        </Styled.Dashboard>
+      </React.Fragment>
     );
   }
 }
+
+export default withSharedState(Dashboard);

@@ -5,6 +5,23 @@ export const Pagination = styled.div`
   text-align: center;
 `;
 
+export const SelectionButton = themed(styled.button`
+  outline: none;
+  font-family: IBMPlexSans;
+  font-size: 14px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: ${themeStyle({dark: '#ffffff', light: Colors.uiLight06})};
+  opacity: ${themeStyle({dark: '0.8', light: '0.9'})};
+  float: left;
+
+  & > svg {
+    vertical-align: text-bottom;
+    margin-right: 8px;
+  }
+`);
+
 export const Page = themed(styled.button`
   color: ${themeStyle({dark: '#ffffff', light: Colors.uiDark02})};
   outline: none;
