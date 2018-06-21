@@ -14,7 +14,9 @@ describe('dashboard api', () => {
     const response = await loadRunningInst();
 
     // then
-    expect(wrappers.post.mock.calls[0][0]).toBe('api/workflow-instances/count');
+    expect(wrappers.post.mock.calls[0][0]).toBe(
+      '/api/workflow-instances/count'
+    );
     expect(successResponse.json).toBeCalled();
     expect(response).toEqual('123');
   });
