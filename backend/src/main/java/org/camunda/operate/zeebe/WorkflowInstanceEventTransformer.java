@@ -20,7 +20,7 @@ import io.zeebe.client.api.subscription.WorkflowInstanceEventHandler;
  */
 @Component
 @Profile("zeebe")
-public class WorkflowInstanceEventTransformer implements WorkflowInstanceEventHandler {
+public class WorkflowInstanceEventTransformer extends AbstractEventTransformer implements WorkflowInstanceEventHandler {
 
   private Logger logger = LoggerFactory.getLogger(WorkflowInstanceEventTransformer.class);
 
@@ -55,6 +55,8 @@ public class WorkflowInstanceEventTransformer implements WorkflowInstanceEventHa
         entity.setState(WorkflowInstanceState.ACTIVE);
         entity.setStartDate(OffsetDateTime.ofInstant(event.getMetadata().getTimestamp(), ZoneOffset.UTC));
       }
+
+      updateMetdataFields(entity, event);
 
       //TODO will wait till capacity available, can throw InterruptedException
       entityStorage.getOperateEntititesQueue(event.getMetadata().getTopicName()).put(entity);

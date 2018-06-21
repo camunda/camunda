@@ -7,6 +7,7 @@ import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
+import org.camunda.operate.es.types.StrictTypeMappingCreator;
 import org.camunda.operate.es.types.WorkflowInstanceType;
 import org.camunda.operate.es.types.WorkflowType;
 import org.elasticsearch.action.update.UpdateRequestBuilder;
@@ -46,7 +47,7 @@ public class ElasticsearchRequestCreatorsHolder {
    * Insert or update workflow instance (UPSERT).
    * @return
    */
-  public ElasticsearchRequestCreator<WorkflowInstanceEntity> workflowInstanceEntityEsRequestCreator() {
+  public ElasticsearchRequestCreator<WorkflowInstanceEntity> workflowInstanceEsRequestCreator() {
     return (bulkRequestBuilder, entity) -> {
       try {
 
@@ -55,6 +56,8 @@ public class ElasticsearchRequestCreatorsHolder {
           updateFields.put(WorkflowInstanceType.END_DATE, entity.getEndDate());
         }
         updateFields.put(WorkflowInstanceType.STATE, entity.getState());
+        updateFields.put(StrictTypeMappingCreator.PARTITION_ID, entity.getPartitionId());
+        updateFields.put(StrictTypeMappingCreator.POSITION, entity.getPosition());
 
         //TODO some weird not efficient magic is needed here, in order to format date fields properly, may be this can be improved
         Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
@@ -80,16 +83,20 @@ public class ElasticsearchRequestCreatorsHolder {
    *
    * @return
    */
-  public ElasticsearchRequestCreator<IncidentEntity> incidentEntityEsRequestCreator() {
+  public ElasticsearchRequestCreator<IncidentEntity> incidentEsRequestCreator() {
     return (bulkRequestBuilder, entity) -> {
       try {
 
         Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(entity), HashMap.class);
         Map<String, Object> params = new HashMap<>();
         params.put("incident", jsonMap);
+        params.put("partitionId", entity.getPartitionId());
+        params.put("position", entity.getPosition());
 
         String script =
             "boolean f = false;" +
+            "ctx._source.partitionId = params.partitionId; " +
+            "ctx._source.position = params.position; " +
             "for (int j = 0; j < ctx._source.incidents.size(); j++) {" +
               "if (ctx._source.incidents[j].id == params.incident.id) {" +
                 "ctx._source.incidents[j].state = params.incident.state;" +
@@ -123,7 +130,7 @@ public class ElasticsearchRequestCreatorsHolder {
    *
    * @return
    */
-  public ElasticsearchRequestCreator<WorkflowEntity> workflowEntityEsRequestCreator() {
+  public ElasticsearchRequestCreator<WorkflowEntity> workflowEsRequestCreator() {
     return (bulkRequestBuilder, entity) -> {
       try {
         return bulkRequestBuilder.add(
@@ -141,9 +148,9 @@ public class ElasticsearchRequestCreatorsHolder {
   @Bean
   public Map<Class<? extends OperateEntity>, ElasticsearchRequestCreator> getEsRequestMapping() {
     Map<Class<? extends OperateEntity>, ElasticsearchRequestCreator> map = new HashMap<>();
-    map.put(WorkflowInstanceEntity.class, workflowInstanceEntityEsRequestCreator());
-    map.put(IncidentEntity.class, incidentEntityEsRequestCreator());
-    map.put(WorkflowEntity.class, workflowEntityEsRequestCreator());
+    map.put(WorkflowInstanceEntity.class, workflowInstanceEsRequestCreator());
+    map.put(IncidentEntity.class, incidentEsRequestCreator());
+    map.put(WorkflowEntity.class, workflowEsRequestCreator());
     return map;
   }
 

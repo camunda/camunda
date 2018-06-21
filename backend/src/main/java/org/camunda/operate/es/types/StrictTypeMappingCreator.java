@@ -12,6 +12,9 @@ public abstract class StrictTypeMappingCreator implements TypeMappingCreator {
 
   private Logger logger = LoggerFactory.getLogger(StrictTypeMappingCreator.class);
 
+  public static final String PARTITION_ID = "partitionId";
+  public static final String POSITION = "position";
+
   @Override
   public XContentBuilder getSource() throws IOException {
     //TODO copy-pasted from Optimize, we need to check if this settings suit our needs

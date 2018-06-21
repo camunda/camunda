@@ -39,6 +39,11 @@ public class WorkflowReader {
   @Qualifier("esObjectMapper")
   private ObjectMapper objectMapper;
 
+  /**
+   * Gets the workflow diagram XML as a string.
+   * @param workflowId
+   * @return
+   */
   public String getDiagram(String workflowId) {
     GetResponse response = esClient.prepareGet(TYPE, TYPE, workflowId).setFetchSource(BPMN_XML, null).get();
 
@@ -51,6 +56,11 @@ public class WorkflowReader {
     }
   }
 
+  /**
+   * Gets the workflow by id.
+   * @param workflowId
+   * @return
+   */
   public WorkflowEntity getWorkflow(String workflowId) {
     final GetResponse response = esClient.prepareGet(TYPE, TYPE, workflowId).get();
 
@@ -67,7 +77,8 @@ public class WorkflowReader {
     try {
       workflow = objectMapper.readValue(workflowString, WorkflowEntity.class);
     } catch (IOException e) {
-      logger.error("Error while reading workflow from elastic search!", e);
+      logger.error("Error while reading workflow from Elasticsearch!", e);
+      throw new RuntimeException("Error while reading workflow from Elasticsearch!", e);
     }
     return workflow;
   }

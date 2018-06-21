@@ -37,7 +37,7 @@ import io.zeebe.client.api.subscription.DeploymentEventHandler;
  */
 @Component
 @Profile("zeebe")
-public class DeploymentEventTransformer implements DeploymentEventHandler {
+public class DeploymentEventTransformer extends AbstractEventTransformer implements DeploymentEventHandler {
 
   private static final Charset CHARSET = StandardCharsets.UTF_8;
   private Logger logger = LoggerFactory.getLogger(WorkflowInstanceEventTransformer.class);
@@ -69,6 +69,7 @@ public class DeploymentEventTransformer implements DeploymentEventHandler {
       Map<String, DeploymentResource> resourcesMap = resourceToMap(event.getResources());
       for (Workflow workflow: event.getDeployedWorkflows()) {
         final WorkflowEntity workflowEntity = createEntity(workflow, resourcesMap.get(workflow.getResourceName()));
+        updateMetdataFields(workflowEntity, event);
         entityStorage.getOperateEntititesQueue(event.getDeploymentTopic()).put(workflowEntity);
       }
     }

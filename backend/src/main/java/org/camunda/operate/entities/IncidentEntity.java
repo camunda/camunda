@@ -79,6 +79,18 @@ public class IncidentEntity extends OperateEntity {
   }
 
   @Override
+  @JsonIgnore
+  public Integer getPartitionId() {
+    return super.getPartitionId();
+  }
+
+  @Override
+  @JsonIgnore
+  public long getPosition() {
+    return super.getPosition();
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o)
       return true;

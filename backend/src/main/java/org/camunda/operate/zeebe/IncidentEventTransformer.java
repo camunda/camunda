@@ -18,7 +18,7 @@ import io.zeebe.client.api.subscription.IncidentEventHandler;
  */
 @Component
 @Profile("zeebe")
-public class IncidentEventTransformer implements IncidentEventHandler {
+public class IncidentEventTransformer extends AbstractEventTransformer implements IncidentEventHandler {
 
   private Logger logger = LoggerFactory.getLogger(WorkflowInstanceEventTransformer.class);
 
@@ -61,6 +61,8 @@ public class IncidentEventTransformer implements IncidentEventHandler {
       else {
         incidentEntity.setState(org.camunda.operate.entities.IncidentState.ACTIVE);
       }
+
+      updateMetdataFields(incidentEntity, event);
 
       //TODO will wait till capacity available, can throw InterruptedException
       entityStorage.getOperateEntititesQueue(event.getMetadata().getTopicName()).put(incidentEntity);

@@ -56,6 +56,11 @@ public class WorkflowInstanceReader {
   @Qualifier("esObjectMapper")
   private ObjectMapper objectMapper;
 
+  /**
+   * Counts workflow instances filtered by different criteria.
+   * @param workflowInstanceQuery
+   * @return
+   */
   public long countWorkflowInstances(WorkflowInstanceQueryDto workflowInstanceQuery) {
     SearchResponse response = createSearchRequest(workflowInstanceQuery)
       .setFetchSource(false)
@@ -65,6 +70,13 @@ public class WorkflowInstanceReader {
     return response.getHits().getTotalHits();
   }
 
+  /**
+   * Queries workflow instances by different criteria (with pagination).
+   * @param workflowInstanceQuery
+   * @param firstResult
+   * @param maxResults
+   * @return
+   */
   public List<WorkflowInstanceEntity> queryWorkflowInstances(WorkflowInstanceQueryDto workflowInstanceQuery, Integer firstResult, Integer maxResults) {
     SearchRequestBuilder searchRequest = createSearchRequest(workflowInstanceQuery);
 
@@ -93,9 +105,7 @@ public class WorkflowInstanceReader {
       .setSize(maxResults)
       .get();
 
-    List<WorkflowInstanceEntity> result = new ArrayList<>();
-    mapSearchHits(response.getHits().getHits(), result);
-    return result;
+    return mapSearchHits(response.getHits().getHits());
   }
 
   protected List<WorkflowInstanceEntity> scroll(SearchRequestBuilder builder) {
@@ -112,7 +122,7 @@ public class WorkflowInstanceReader {
       SearchHits hits = response.getHits();
       String scrollId = response.getScrollId();
 
-      mapSearchHits(hits.getHits(), result);
+      result.addAll(mapSearchHits(hits.getHits()));
 
       response = esClient
           .prepareSearchScroll(scrollId)
@@ -124,13 +134,20 @@ public class WorkflowInstanceReader {
     return result;
   }
 
-  protected void mapSearchHits(SearchHit[] searchHits, List<WorkflowInstanceEntity> result) {
+  protected List<WorkflowInstanceEntity> mapSearchHits(SearchHit[] searchHits) {
+    List<WorkflowInstanceEntity> result = new ArrayList<>();
     for (SearchHit searchHit : searchHits) {
       String searchHitAsString = searchHit.getSourceAsString();
       result.add(fromSearchHit(searchHitAsString));
     }
+    return result;
   }
 
+  /**
+   * Searches for workflow instance by id.
+   * @param workflowInstanceId
+   * @return
+   */
   public WorkflowInstanceEntity getWorkflowInstanceById(String workflowInstanceId) {
     final GetResponse response = esClient.prepareGet(TYPE, TYPE, workflowInstanceId).get();
 
@@ -147,7 +164,8 @@ public class WorkflowInstanceReader {
     try {
       workflowInstance = objectMapper.readValue(workflowInstanceString, WorkflowInstanceEntity.class);
     } catch (IOException e) {
-      logger.error("Error while reading workflow instance from elastic search!", e);
+      logger.error("Error while reading workflow instance from Elasticsearch!", e);
+      throw new RuntimeException("Error while reading workflow instance from Elasticsearch!", e);
     }
     return workflowInstance;
   }

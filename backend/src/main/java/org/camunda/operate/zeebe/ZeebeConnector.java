@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.camunda.operate.es.reader.ZeebeMetadataReader;
 import org.camunda.operate.es.writer.EntityStorage;
 import org.camunda.operate.property.OperateProperties;
 import org.slf4j.Logger;
@@ -18,9 +19,11 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.clients.WorkflowClient;
+import io.zeebe.client.api.subscription.ManagementSubscriptionBuilderStep1;
 import io.zeebe.client.api.subscription.TopicSubscription;
+import io.zeebe.client.api.subscription.TopicSubscriptionBuilderStep1;
 import io.zeebe.client.api.subscription.WorkflowInstanceEventHandler;
+import io.zeebe.protocol.Protocol;
 
 /**
  * @author Svetlana Dorokhova.
@@ -32,8 +35,6 @@ import io.zeebe.client.api.subscription.WorkflowInstanceEventHandler;
 public class ZeebeConnector {
 
   private Logger logger = LoggerFactory.getLogger(ZeebeConnector.class);
-
-  private static final String INTERNAL_SYSTEM_TOPIC = "internal-system";
 
   @Autowired
   private OperateProperties operateProperties;
@@ -49,6 +50,9 @@ public class ZeebeConnector {
 
   @Autowired
   private EntityStorage entityStorage;
+
+  @Autowired
+  private ZeebeMetadataReader zeebeMetadataReader;
 
   private Map<String, TopicSubscription> topicSubscriptions = new HashMap<>();
 
@@ -74,18 +78,14 @@ public class ZeebeConnector {
       checkAndCreateTopicSubscriptions(topic);
     }
 
-    checkAndCreateTopicSubscriptions(INTERNAL_SYSTEM_TOPIC);
+    checkAndCreateTopicSubscriptions(Protocol.SYSTEM_TOPIC);
 
   }
 
   public void checkAndCreateTopicSubscriptions(String topic) {
     try {
       if (topicSubscriptions.get(topic) == null || !topicSubscriptions.get(topic).isOpen()) {
-        if (topic.equals(INTERNAL_SYSTEM_TOPIC)) {
-          topicSubscriptions.put(topic, createWorkflowSubscription());
-        } else {
-          topicSubscriptions.put(topic, createTopicSubscription(topic));
-        }
+        topicSubscriptions.put(topic, createTopicSubscription(topic, zeebeMetadataReader.getPositionPerPartitionMap()));
       }
       logger.info("Subscriptions for topic [{}] was created", topic);
     } catch (Exception ex) {
@@ -104,26 +104,43 @@ public class ZeebeConnector {
     topicSubscriptions.remove(topicName);
   }
 
-  private TopicSubscription createTopicSubscription(String topicName) {
-    entityStorage.addQueueForTopic(topicName);
-    return zeebeClient()
-      .topicClient(topicName)
-      .newSubscription()
-      .name(operateProperties.getZeebe().getWorker())
-      .workflowInstanceEventHandler(workflowInstanceEventHandler)
-      .incidentEventHandler(incidentEventTransformer)
-      .startAtHeadOfTopic()   //TODO
-      .forcedStart()          //TODO
-      .open();
+  private TopicSubscription createTopicSubscription(String topicName, Map<Integer, Long> positionPerPartitionMap) {
+
+    if (topicName.equals(Protocol.SYSTEM_TOPIC)) {
+      return createWorkflowSubscription(positionPerPartitionMap.get(Protocol.SYSTEM_PARTITION));
+    } else {
+
+      entityStorage.addQueueForTopic(topicName);
+      TopicSubscriptionBuilderStep1.TopicSubscriptionBuilderStep3 topicSubscriptionBuilder =  zeebeClient()
+        .topicClient(topicName)
+        .newSubscription()
+        .name(operateProperties.getZeebe().getWorker())
+        .workflowInstanceEventHandler(workflowInstanceEventHandler)
+        .incidentEventHandler(incidentEventTransformer)
+        .startAtHeadOfTopic()
+        .forcedStart();
+
+      for (Map.Entry<Integer, Long> positionPerPartition: positionPerPartitionMap.entrySet()) {
+        //we know the maximum position, that was process correctly, we subscribe from the next (+1)
+        topicSubscriptionBuilder = topicSubscriptionBuilder.startAtPosition(positionPerPartition.getKey(), positionPerPartition.getValue() + 1);
+      }
+
+      return topicSubscriptionBuilder.open();
+    }
   }
 
-  private TopicSubscription createWorkflowSubscription() {
-    return zeebeClient()
+  private TopicSubscription createWorkflowSubscription(Long position) {
+    ManagementSubscriptionBuilderStep1.ManagementSubscriptionBuilderStep3 managementSubscriptionBuilder =  zeebeClient()
       .newManagementSubscription()
       .name(operateProperties.getZeebe().getWorker())
       .deploymentEventHandler(deploymentEventTransformer)
-      .forcedStart()          //TODO
-      .open();
+      .startAtHeadOfTopic()
+      .forcedStart();
+    if (position != null) {
+      //we know the maximum position, that was process correctly, we subscribe from the next (+1)
+      managementSubscriptionBuilder = managementSubscriptionBuilder.startAtPosition(position + 1);
+    }
+    return managementSubscriptionBuilder.open();
   }
 
   public Map<String, TopicSubscription> getTopicSubscriptions() {

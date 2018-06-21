@@ -63,6 +63,12 @@ public class WorkflowInstanceType extends StrictTypeMappingCreator {
         .startObject("properties");
           addNestedIncidentsField(newBuilder)
         .endObject()
+      .endObject()
+      .startObject(PARTITION_ID)
+        .field("type", "integer")
+      .endObject()
+      .startObject(POSITION)
+        .field("type", "long")
       .endObject();
     return newBuilder;
   }

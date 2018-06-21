@@ -40,7 +40,7 @@ services:
     image: camunda/zeebe:SNAPSHOT
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
-      - ZEEBE_HOST=${HOST:-}
+      - ZEEBE_HOST=${ZEEBE_HOST:-}
     ports:
       - 51015:51015
       - 51016:51016

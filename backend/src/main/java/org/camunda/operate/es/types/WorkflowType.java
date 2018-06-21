@@ -44,6 +44,12 @@ public class WorkflowType extends StrictTypeMappingCreator {
       .startObject(BPMN_XML)
         .field("type", "text")
         .field("index", false)
+      .endObject()
+      .startObject(PARTITION_ID)
+        .field("type", "integer")
+      .endObject()
+      .startObject(POSITION)
+        .field("type", "long")
       .endObject();
   }
 

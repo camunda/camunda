@@ -179,7 +179,7 @@
                     <argument>zeebe</argument>
                   </arguments>
                   <environmentVariables>
-                    <HOST>0.0.0.0</HOST>
+                    <ZEEBE_HOST>0.0.0.0</ZEEBE_HOST>
                   </environmentVariables>
                 </configuration>
               </execution>
