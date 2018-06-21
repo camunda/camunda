@@ -161,8 +161,7 @@ void installDockerBinaries() {
     docker-compose version
     
     curl -sSL https://download.docker.com/linux/static/stable/x86_64/docker-18.03.1-ce.tgz | \
-      tar xvzf - && \
-      mv docker/* /usr/local/bin/
+      tar xvzf -  --strip-components=1 -C /usr/local/bin/
     docker info
     docker version
   """)
