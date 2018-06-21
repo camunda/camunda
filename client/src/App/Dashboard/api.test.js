@@ -1,4 +1,4 @@
-import {loadRunningInst} from './api';
+import {fetchInstancesCount} from './api';
 
 import {mockResolvedAsyncFn} from 'modules/testUtils';
 
@@ -11,7 +11,7 @@ describe('dashboard api', () => {
     wrappers.post = mockResolvedAsyncFn(successResponse);
 
     // when
-    const response = await loadRunningInst();
+    const response = await fetchInstancesCount();
 
     // then
     expect(wrappers.post.mock.calls[0][0]).toBe(

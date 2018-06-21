@@ -1,20 +1,21 @@
 import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
-export const Metric = styled.div`
+export const Metric = themed(styled.div`
   padding-top: 6px;
   padding-bottom: 16px;
   font-size: 56px;
   text-align: center;
-  color: ${({metricColor}) => Colors[metricColor]};
-`;
-
-export const ThemedMetric = themed(Metric.extend`
-  opacity: ${themeStyle({
-    dark: 0.9,
-    light: 1
-  })};
-  color: ${themeStyle({dark: '#ffffff', light: Colors.uiLight06})};
+  opacity: ${({metricColor}) =>
+    metricColor === 'themed' &&
+    themeStyle({
+      dark: 0.9,
+      light: 1
+    })};
+  color: ${({metricColor}) =>
+    metricColor === 'themed'
+      ? themeStyle({dark: '#ffffff', light: Colors.uiLight06})
+      : Colors[metricColor]};
 `);
 
 export const Name = themed(styled.div`

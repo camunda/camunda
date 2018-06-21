@@ -1,36 +1,47 @@
 import React, {Component} from 'react';
 
+import Header from '../Header';
+
 import MetricPanel from './MetricPanel';
 import MetricTile from './MetricTile';
 
-import * as api from './api';
+import {fetchInstancesCount} from './api';
 
 import * as Styled from './styled.js';
 
 export default class Dashboard extends Component {
   state = {
-    running: 0,
+    instances: 0,
     active: 0,
     incidents: 0
   };
 
+  fetchCounts = async () => {
+    return {
+      instances: await fetchInstancesCount(),
+      active: await fetchInstancesCount('active'),
+      incidents: await fetchInstancesCount('incidents')
+    };
+  };
+
   componentDidMount = async () => {
-    const running = await api.loadRunningInst();
-    const active = await api.loadInstWithIncidents();
-    const incidents = await api.loadInstWithoutIncidents();
-    this.setState({running, active, incidents});
+    const counts = await this.fetchCounts();
+    this.setState({...counts});
   };
 
   render() {
-    const {running, active, incidents} = this.state;
+    const {instances, active, incidents} = this.state;
     return (
       <Styled.Dashboard>
+        <Header
+          active="dashboard"
+          instances={instances}
+          filters={9263}
+          selections={24}
+          incidents={incidents}
+        />
         <MetricPanel>
-          <MetricTile
-            metric={running}
-            name="Instances running"
-            metricColor="themed"
-          />
+          <MetricTile metric={instances} name="Instances running" />
           <MetricTile metric={active} name="Active" metricColor="allIsWell" />
           <MetricTile
             metric={incidents}
