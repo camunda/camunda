@@ -1,7 +1,7 @@
 [Zeebe](README.md)
 
 * [Introduction](introduction/README.md)
-    * [Why Zeebe?](introduction/why-zeebe.md)
+    * [What is Zeebe?](introduction/what-is-zeebe.md)
     * [Install](introduction/install.md)
     * [First Contact](introduction/first-contact.md)
     * [Quickstart](introduction/quickstart.md)
