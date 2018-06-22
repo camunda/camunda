@@ -28,8 +28,4 @@ export const Header = themed(styled.div`
   border-radius: ${props => (props.isRounded ? '3px 3px 0 0' : 0)};
 `);
 
-export const Content = styled.div`
-  padding: 9px 0;
-`;
-
 export const Headline = themed(styled.span``);
