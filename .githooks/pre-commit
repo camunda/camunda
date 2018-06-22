@@ -7,7 +7,7 @@ set -e
 # 3. join the maven modules to build
 modules=$(git diff --staged --diff-filter=ACM --name-only \*.java | cut -d / -f 1 | sort -u | paste -d , -s)
 
-# If any maven module was changed check if the license headers, foramt and style is correct
+# If any maven module was changed check if the license headers, format and style is correct
 if [ -n "${modules}" ]; then
     echo "Checking license header, code format and style for maven modules '${modules}'"
     # some JVM options to reduce JVM startup time, should be fine as the maven process is only shortliving
