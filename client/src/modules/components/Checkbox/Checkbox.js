@@ -5,7 +5,7 @@ import * as Styled from './styled.js';
 
 export default class Checkbox extends React.Component {
   static propTypes = {
-    isChecked: PropTypes.bool.isRequired,
+    isChecked: PropTypes.bool,
     onChange: PropTypes.func.isRequired,
     isIndeterminate: PropTypes.bool,
     type: PropTypes.oneOf(['selection']),
@@ -17,11 +17,10 @@ export default class Checkbox extends React.Component {
   componentDidMount() {
     const {isIndeterminate, isChecked} = this.props;
 
-    this.setState({isChecked});
-
     if (isIndeterminate) {
       this.el.indeterminate = isIndeterminate;
     }
+    this.setState({isChecked});
   }
 
   componentDidUpdate(prevProps) {
@@ -29,7 +28,6 @@ export default class Checkbox extends React.Component {
 
     if (prevProps.isIndeterminate !== isIndeterminate) {
       this.el.indeterminate = isIndeterminate;
-      this.setState({isChecked});
     }
 
     if (prevProps.isChecked !== isChecked) {
@@ -39,7 +37,7 @@ export default class Checkbox extends React.Component {
 
   handleOnClick = () => {
     this.setState({isChecked: !this.state.isChecked}, () => {
-      this.props.onChange(this.state);
+      this.props.onChange({isChecked: this.el.checked});
     });
   };
 
@@ -53,7 +51,6 @@ export default class Checkbox extends React.Component {
           indeterminate={isIndeterminate}
           type="checkbox"
           checked={this.state.isChecked}
-          onChange={() => this.onClick}
           innerRef={el => (this.el = el)}
           checkboxType={type}
         />

@@ -2,9 +2,9 @@ import styled from 'styled-components';
 
 import {Colors, themed, themeStyle} from 'modules/theme';
 
-export const Checkbox = themed(styled.div`
+export const Checkbox = styled.div`
   position: relative;
-`);
+`;
 
 export const Label = themed(styled.label`
   /* Display & Box Model */
