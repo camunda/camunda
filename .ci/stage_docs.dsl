@@ -2,7 +2,7 @@
 
 def jobName = 'zeebe-docs-stage'
 def repository = 'zeebe'
-def gitBranch = 'master'
+def gitBranch = 'develop'
 
 freeStyleJob(jobName)
 {
@@ -19,10 +19,6 @@ freeStyleJob(jobName)
             extensions
             {
                 localBranch gitBranch
-                pathRestriction {
-                    includedRegions 'docs/.*'
-                    excludedRegions ''
-                }
             }
         }
     }

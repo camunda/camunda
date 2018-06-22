@@ -2,7 +2,6 @@
 
 def jobName = 'zeebe-docs'
 def repository = 'zeebe'
-def gitBranch = 'master'
 
 freeStyleJob(jobName)
 {
