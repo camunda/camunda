@@ -25,9 +25,7 @@ exports[`Login should display an error on unsuccessful login 1`] = `
     </Themed(styled.span)>
   </Themed(styled.div)>
   <styled.form>
-    <styled.span
-      data-test-id="error-span"
-    >
+    <styled.span>
       Username and Password do not match
     </styled.span>
     <Themed(Styled(TextInput))

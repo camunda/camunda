@@ -140,7 +140,7 @@ describe('Login', () => {
     node.update();
 
     // then
-    const errorSpan = node.find('[data-test-id="error-span"]').render();
+    const errorSpan = node.find(Styled.FormError).render();
     expect(node.state('error')).toEqual(error);
     expect(errorSpan.text()).toContain(error);
     expect(node).toMatchSnapshot();

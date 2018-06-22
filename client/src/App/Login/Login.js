@@ -49,11 +49,7 @@ class Login extends React.Component {
           <Styled.LoginTitle>Operate</Styled.LoginTitle>
         </Styled.LoginHeader>
         <Styled.LoginForm>
-          {error && (
-            <Styled.FormError data-test-id="error-span">
-              {error}
-            </Styled.FormError>
-          )}
+          {error && <Styled.FormError>{error}</Styled.FormError>}
           <Styled.UsernameInput
             value={username}
             type="text"
