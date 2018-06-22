@@ -3,6 +3,8 @@ import {shallow} from 'enzyme';
 
 import Checkbox from './Checkbox';
 
+import * as Styled from './styled';
+
 describe('<Checkbox />', () => {
   const mockOnChange = jest.fn();
 
@@ -24,9 +26,8 @@ describe('<Checkbox />', () => {
 
   it('should toggle "isChecked" state on click', () => {
     const node = shallow(<Checkbox onChange={mockOnChange} isChecked={true} />);
-
-    node.find('[data-test-id="checkbox"]').simulate('click');
-
+    expect(node.state().isChecked).toBe(true);
+    node.find(Styled.Checkbox).simulate('click');
     expect(node.state().isChecked).toBe(false);
   });
 
@@ -35,6 +36,6 @@ describe('<Checkbox />', () => {
       <Checkbox label={'foo'} onChange={mockOnChange} isChecked={true} />
     );
 
-    expect(node.find('[data-test-id="label"]')).toExist();
+    expect(node.find(Styled.Label)).toExist();
   });
 });
