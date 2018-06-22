@@ -16,6 +16,13 @@ metadata:
 spec:
   nodeSelector:
     cloud.google.com/gke-nodepool: ${NODE_POOL()}
+  securityContext:
+    fsGroup: 1000
+  volumes:
+    - name: es-storage
+      emptyDir: {}
+    - name: cambpm-storage
+      emptyDir: {}
   initContainers:
   - name: init-sysctl
     image: ${MAVEN_DOCKER_IMAGE()}
@@ -51,6 +58,11 @@ spec:
       requests:
         cpu: 2
         memory: 4Gi
+    volumeMounts:
+      - name: es-storage
+        mountPath: /es-storage
+      - name: cambpm-storage
+        mountPath: /cambpm-storage
   - name: cambpm
     image: ${CAMBPM_DOCKER_IMAGE(cambpmVersion)}
     env:
@@ -73,6 +85,9 @@ spec:
       requests:
         cpu: 6
         memory: 6Gi
+    volumeMounts:
+      - name: cambpm-storage
+        mountPath: /camunda/logs
   - name: elasticsearch
     image: ${ELASTICSEARCH_DOCKER_IMAGE(esVersion)}
     env:
@@ -86,6 +101,10 @@ spec:
       value: false
     - name: bootstrap.memory_lock
       value: true
+    - name: path.repo
+      value: /es_snapshots
+    - name: path.logs
+      value: /usr/share/elasticsearch/logs
     securityContext:
       capabilities:
         add:
@@ -104,6 +123,13 @@ spec:
       requests:
         cpu: 12
         memory: 12Gi
+    volumeMounts:
+      - name: es-storage
+        mountPath: /usr/share/elasticsearch/logs
+        subPath: logs
+      - name: es-storage
+        mountPath: /es_snapshots
+        subPath: snapshots
 """
 }
 
@@ -164,6 +190,11 @@ pipeline {
         always {
           container('maven') {
             sh 'curl localhost:9200/_cat/indices?v'
+            sh ('''#!/bin/bash -ex
+              cp -R /es-storage /cambpm-storage .
+              chown -R 10000:1000 ./{es-storage,cambpm-storage}
+            ''')
+            archiveArtifacts artifacts: 'es-storage/**/*,cambpm-storage/**/*', onlyIfSuccessful: false
           }
         }
       }
