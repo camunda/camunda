@@ -5,12 +5,21 @@ const chalk = require('chalk');
 const shell = require('shelljs');
 const utils = require('./utils');
 const engine = require('./engine');
-const {c7ports} = require('./config');
+const { spawn } = require('child_process');
 
 const isWindows = utils.isWindows;
 const runWithColor = utils.runWithColor;
 
 const mvnCwd = path.resolve(__dirname, '..', '..');
+
+process.on('SIGINT', () => {
+  // ensure that we stop the engine and elasticsearch when the script is terminated
+  spawn('node', ['./scripts/stop-backend.js'], {
+      detached: true
+  }).unref();
+  process.exit();
+});
+
 
 if (!process.env.FAST_BUILD) {
   const mavenCmd = 'mvn clean package -DskipTests -Dskip.docker -Pskip.fe.build';
@@ -33,7 +42,7 @@ if (!process.env.FAST_BUILD) {
 function startDocker() {
   console.log();
   console.log(chalk.green('###########################################################################'));
-  console.log(chalk.green('####  Camunda Optimize has been built!                                 ###'));
+  console.log(chalk.green('####  Camunda Optimize has been built!                                  ###'));
   console.log(chalk.green('###########################################################################'));
   console.log();
 
@@ -43,14 +52,14 @@ function startDocker() {
   console.log(chalk.blue('###########################################################################'));
   console.log();
 
-  const docker = runWithColor('docker-compose up -d', 'docker', chalk.blue);
+  const docker = runWithColor('docker-compose up --force-recreate -d', 'docker', chalk.blue);
   docker.on('close', deployEngineData);
 }
 
 function deployEngineData() {
   console.log();
   console.log(chalk.blue('###########################################################################'));
-  console.log(chalk.blue('####    Camunda Platform Engine and Elasticsearch have been started!   ###'));
+  console.log(chalk.blue('####    Camunda Platform Engine and Elasticsearch have been started!    ###'));
   console.log(chalk.blue('###########################################################################'));
   console.log();
 
@@ -68,7 +77,7 @@ function deployEngineData() {
 function startBackend() {
   console.log();
   console.log(chalk.magenta('###########################################################################'));
-  console.log(chalk.magenta('####  Engine data has been deployed!                                   ###'));
+  console.log(chalk.magenta('####  Engine data has been deployed!                                    ###'));
   console.log(chalk.magenta('###########################################################################'));
   console.log();
 

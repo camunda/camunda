@@ -6,7 +6,6 @@ const fs = require('fs');
 const CamundaClient = require('camunda-bpm-sdk-js').Client;
 const chalk = require('chalk');
 const utils = require('./utils');
-let {c7port} = require('./config');
 
 const maxConnections = 5;
 // it can be configured, but it would pain in ass, so it is better
@@ -17,7 +16,7 @@ const demoDataDir = path.resolve(__dirname, '..', 'demo-data');
 exports.deployEngineData = deployEngineData;
 
 function deployEngineData() {
-  const engineUrl = `http://localhost:${c7port}`;
+  const engineUrl = `http://localhost:8080`;
   const camAPI = new CamundaClient({
     mock: false,
     apiUri: engineUrl + '/engine-rest'
@@ -27,16 +26,13 @@ function deployEngineData() {
   const taskService = new camAPI.resource('task');
   const variableService = new camAPI.resource('variable');
 
-  return new Promise((resolve, reject) => {
-    resolve();
-  })
-    .then(startServer)
+  return waitForServer()
     .then(deployDefinitions)
     .then(startInstances)
     .then(completeTasks)
     .catch(console.error);
 
-  function startServer() {
+  function waitForServer() {
     console.log('Wait for engine rest endpoint to be up!')
     return utils.waitForServer(engineUrl);
 }
@@ -55,7 +51,7 @@ function deployEngineData() {
         return deploy(module)
           .then(matchResourcesWithIds(module))
           .then(module => {
-            console.log(chalk.green(`DEPLOYED(${c7port}): `), file);
+            console.log(chalk.green(`DEPLOYED(8080): `), file);
 
             return module;
           });
@@ -118,7 +114,7 @@ function deployEngineData() {
           id,
           variables
         }).then(instance => {
-          console.log(chalk.green(`INSTANCE STARTED (${c7port})`), instance.id);
+          console.log(chalk.green(`INSTANCE STARTED (8080)`), instance.id);
 
           return Object.assign({taskIterationLimit}, instanceDefinition, instance);
         });
@@ -178,7 +174,7 @@ function deployEngineData() {
         return completeInstanceTasks(instance, iteration + 1);
       }
 
-      console.log(chalk.green(`INSTANCE TASKS COMPLETED (${c7port})`), instance.id);
+      console.log(chalk.green(`INSTANCE TASKS COMPLETED (8080)`), instance.id);
     })
     .catch(error => {
       console.error(error);

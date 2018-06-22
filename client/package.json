@@ -35,6 +35,7 @@
     "eject": "react-scripts eject",
     "postinstall": "node scripts/wireModules",
     "start-backend": "node scripts/start-backend",
+    "stop-backend": "node scripts/stop-backend",
     "dependencies": "node scripts/dependencies.js"
   },
   "lint-staged": {
