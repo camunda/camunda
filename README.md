@@ -10,12 +10,12 @@ Camunda Optimize is an extension to Camunda BPM for enterprise customers, that p
 Apache Maven 3 and Java JDK 8 are prerequisites for building Camunda Optimize. Once you have setup Java and Maven, run
 
 ```
-mvn clean install -Pit
+mvn clean install
 ```
 
 And if you don't want to run the tests
 ```
-mvn clean install -DskipTests -Pit
+mvn clean install -DskipTests
 ```
 
 After the build is completed, you will find the distributions under
