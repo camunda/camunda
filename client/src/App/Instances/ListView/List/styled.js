@@ -40,4 +40,8 @@ export const Selection = styled.div`
   & *:not(:first-child) {
     margin-left: 11px;
   }
+
+  & * {
+    top: 0px;
+  }
 `;
