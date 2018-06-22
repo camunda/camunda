@@ -129,9 +129,119 @@ onAlertClick={handleAlertClick}
 onAlertHover={handleAlertHover}
 ```
 
+### Boolean variables naming
+
+For boolean variables please use the prefixes is* or has*, as an indicator for
+the value stored and a better understanding of the code:
+
+**bad**
+```js
+let withChildren = false;
+```
+
+**good**
+```js
+let hasChildren = false;
+```
+or
+
+**bad**
+```js
+let visible = false;
+...
+
+if (visible) {
+  <div> You can see me </div>
+}
+```
+
+**good**
+```js
+let isVisible = false;
+...
+
+if (isVisible) {
+  <div> You can see me </div>
+}
+```
+
+Don't use negation in the variable name. It's hard to read.
+
+**bad**
+```js
+let isNotAllowed = true;
+```
+
+**good**
+```js
+let isForbidden = true;
+```
+
+or
+
+**bad**
+```js
+if (!IsNotAllowed) { }
+```
+
+**good**
+```js
+if (isAllowed) { }
+```
+
+
 ### Forwarding Refs
 
 Most UI components are React wrappers around some DOM elements. Those components should use [ref forwarding](https://reactjs.org/docs/forwarding-refs.html) to give the application access to the underlying element, e.g. for focus management.
+
+## Testing
+
+### Data test attributes
+
+We use data-test attributes to select elements in our tests, as styled
+components generates inconsistent classes, and deep nested selectors (nav div >
+div:first-schild a) are not a solid solution.
+
+When adding a new data-test attribute please follow the following conventions:
+
+* start with a verb if the case (delete, confirm, add, etc...)
+* add details about the area the element relates to (comment, diagram, account)
+* end with the element type (button, title, tile, etc...)
+
+The goal is to have specific attributes for a more ease of identifying elements,
+and also to avoid name collision.
+
+**Good**
+
+```
+<DiagramTile data-test="add-diagram-tile" />
+```
+
+**Good**
+
+```
+<Button data-test="delete-account-button" />
+```
+
+**Good**
+
+```
+<Button data-test="delete-comment-button" />
+```
+
+**Good**
+
+For the button on the confirmation modal
+
+```
+<Button data-test="confirm-delete-comment-button" />
+```
+
+**Bad**
+
+```
+<Button data-test="delete-button" />
+```
 
 ## Automatic Formatting
 
