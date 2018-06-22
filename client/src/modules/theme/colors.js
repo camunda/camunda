@@ -32,7 +32,11 @@ const Colors = {
   lightInstanceEven: '#bfd6fe',
 
   // Diagram Colors
-  darkDiagram: '#dedede'
+  darkDiagram: '#dedede',
+
+  // Link Colors
+  darkLinkBlue: '#D9EAFF',
+  lightLinkBlue: '#346AC4'
 };
 
 export default Colors;
