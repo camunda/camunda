@@ -76,7 +76,7 @@ export const CustomCheckbox = themed(styled.div`
   &:before {
     content: '';
     position: absolute;
-    top: 3px;
+    top: 2px;
     display: inline-block;
     width: 100%;
     height: 100%;
@@ -108,7 +108,7 @@ export const CustomCheckbox = themed(styled.div`
 
 const indeterminateStyles = `
 left: 5px;
-top: 8px;
+top: 7px;
 width: 6px;
 height: 2px;
 border-width: 0 0 2px 0;
@@ -116,7 +116,7 @@ border-width: 0 0 2px 0;
 
 const checkMarkStyles = `
 left: 3px;
-top: 7px;
+top: 6px;
 height:4px;
 width: 9px;
 border-width: 0 0 2px 2px;
