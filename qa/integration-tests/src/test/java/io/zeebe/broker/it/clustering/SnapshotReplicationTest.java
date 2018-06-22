@@ -20,10 +20,6 @@ import static io.zeebe.broker.logstreams.LogStreamServiceNames.snapshotStorageSe
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logBlockIndexWriterService;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
-
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.clustering.base.snapshots.SnapshotReplicationService;
 import io.zeebe.broker.it.ClientRule;
@@ -37,6 +33,9 @@ import io.zeebe.servicecontainer.*;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.SocketAddress;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
