@@ -2,8 +2,8 @@
 
 ## Requirements
 
-Node 6+
-Docker 17.12.0+
+Node 6+  
+Docker 17.12.0+  
 Docker Compose 1.21.0+
 
 ## Installation
