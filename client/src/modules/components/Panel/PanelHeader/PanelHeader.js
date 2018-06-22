@@ -16,7 +16,7 @@ export default function PanelHeader(props) {
 }
 
 PanelHeader.propTypes = {
-  foldButtonType: PropTypes.oneOf(['left', 'right']),
+  foldButtonType: PropTypes.string,
   children: PropTypes.oneOfType([
     PropTypes.arrayOf(PropTypes.node),
     PropTypes.node
