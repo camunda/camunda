@@ -132,8 +132,8 @@ public class CustomEventTest {
     // when
     gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
 
-    cluster.waitUntil(() -> gossip2.receivedCustomEvent(TYPE_1, gossip1));
-    cluster.waitUntil(() -> gossip3.receivedCustomEvent(TYPE_1, gossip1));
+    cluster.waitUntil(() -> customEventListener2.getInvocations().count() == 1);
+    cluster.waitUntil(() -> customEventListener3.getInvocations().count() == 1);
 
     // then
     assertThat(customEventListener2.getInvocations().count()).isEqualTo(1);
@@ -257,9 +257,8 @@ public class CustomEventTest {
     // when
     gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
 
-    cluster.waitUntil(() -> gossip2.receivedCustomEvent(TYPE_1, gossip1));
-
     // then
+    cluster.waitUntil(() -> counter.get() == 3);
     assertThat(counter.get()).isEqualTo(3);
   }
 
@@ -279,9 +278,8 @@ public class CustomEventTest {
 
     gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
 
-    cluster.waitUntil(() -> gossip2.receivedCustomEvent(TYPE_1, gossip1));
-
     // then
+    cluster.waitUntil(() -> counter.get() == 2);
     assertThat(counter.get()).isEqualTo(2);
   }
 
