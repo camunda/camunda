@@ -2,7 +2,7 @@
 
 def jobName = 'zeebe-DISTRO-docker'
 def repository = 'zeebe'
-def gitBranch = 'master'
+def gitBranch = 'develop'
 
 def dockerHubUpload =
 '''\
@@ -14,7 +14,7 @@ unset DOCKER_HOST
 VERSION=${RELEASE_VERSION}
 
 if [ "${RELEASE_VERSION}" = "SNAPSHOT" ]; then
-    VERSION=$(curl -sL https://raw.githubusercontent.com/zeebe-io/zeebe/master/pom.xml | grep '<version>' | head -n 1 | cut -d '>' -f 2 | cut -d '<' -f 1  )
+    VERSION=$(curl -sL https://raw.githubusercontent.com/zeebe-io/zeebe/develop/pom.xml | grep '<version>' | head -n 1 | cut -d '>' -f 2 | cut -d '<' -f 1  )
 fi
 
 echo "Downloading Zeebe distribution ${VERSION}."
@@ -49,10 +49,6 @@ freeStyleJob(jobName)
             extensions
             {
                 localBranch gitBranch
-                pathRestriction {
-                    includedRegions ''
-                    excludedRegions 'docs/.*\n\\.ci/.*'
-                }
             }
         }
     }
@@ -60,7 +56,7 @@ freeStyleJob(jobName)
     label 'dind'
 
     triggers {
-        cron('@midnight')
+        githubPush()
     }
 
     parameters
