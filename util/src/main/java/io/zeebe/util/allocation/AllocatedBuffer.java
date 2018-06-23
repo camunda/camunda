@@ -16,14 +16,11 @@
 package io.zeebe.util.allocation;
 
 import io.zeebe.util.CloseableSilently;
-import io.zeebe.util.Loggers;
 import java.nio.ByteBuffer;
-import org.slf4j.Logger;
 
 public abstract class AllocatedBuffer implements CloseableSilently {
-  private static final Logger LOG = Loggers.ALLOCATION_LOGGER;
 
-  protected final ByteBuffer rawBuffer;
+  protected ByteBuffer rawBuffer;
   private volatile boolean closed;
 
   public AllocatedBuffer(ByteBuffer buffer) {
@@ -48,19 +45,9 @@ public abstract class AllocatedBuffer implements CloseableSilently {
     if (!closed) {
       closed = true;
       doClose();
+      rawBuffer = null;
     }
   }
 
-  public abstract void doClose();
-
-  @Override
-  protected void finalize() throws Throwable {
-    if (!isClosed()) {
-      LOG.warn(
-          "Allocated {} bytes{}, which are not released. Releasing bytes.",
-          getRawBuffer().capacity(),
-          rawBuffer.isDirect() ? " direct" : "");
-      close();
-    }
-  }
+  public void doClose() {}
 }
