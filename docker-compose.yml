@@ -2,7 +2,7 @@ version: '2.4'
 services:
 
   operate_backend:
-    build: ./backend
+    build: ./
     container_name: operate_backend
     environment:
       - SPRING_PROFILES_ACTIVE=dev

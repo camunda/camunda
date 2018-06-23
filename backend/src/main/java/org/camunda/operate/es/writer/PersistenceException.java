@@ -3,6 +3,8 @@ package org.camunda.operate.es.writer;
 
 public class PersistenceException extends Exception {
 
+  private static final long serialVersionUID = 1L;
+
   private Integer failingRequestId;
 
   public PersistenceException() {

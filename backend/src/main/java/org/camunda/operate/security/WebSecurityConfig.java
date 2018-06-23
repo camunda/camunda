@@ -69,7 +69,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
       .csrf().disable()
       .authorizeRequests()
         .antMatchers(AUTH_WHITELIST).permitAll()
-        .antMatchers("/**").authenticated()
+        .antMatchers("/api/**").authenticated()
       .and()
         .formLogin()
           .loginProcessingUrl(LOGIN_RESOURCE)

@@ -1,0 +1,15 @@
+camunda.bpm.operate:
+  elasticsearch:
+    clusterName: elasticsearch
+    host: localhost
+    port: 9300
+    dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
+  zeebe:
+    brokerContactPoint: localhost:51015
+    topics:
+      - default-topic
+    worker: operate
+logging:
+  level:
+    ROOT: INFO
+    org.camunda.operate: DEBUG
