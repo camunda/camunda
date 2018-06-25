@@ -1,5 +1,17 @@
 #!/bin/bash
 
+###############################################################################
+#                                                                             #
+#                     Optimize Demo Startup Script                            #
+#                                                                             #
+###############################################################################
+#
+# Note: This script is supposed to be used in a demo environment to
+# play around with Optimize. This script starts Elasticsearch, waits for it,
+# starts Optimize, waits for it and opens a browser tab with Optimize for you.
+# For further information please consult
+# the documentation: https://docs.camunda.org/optimize/latest/technical-guide/installation/
+
 function checkStartup {
 	RETRIES=6
     SLEEP_TIME=10
@@ -21,35 +33,24 @@ function checkStartup {
 	echo "$NAME has successfully been started.";
 }
 
+# make sure to kill background/ child processes as well
 trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
-PROGRAM="optimize"
+
 BASEDIR=$(dirname "$0")
 
-mkdir -p $BASEDIR/log
-mkdir -p $BASEDIR/run
+echo
+echo "Starting Elasticsearch...";
+echo
+exec /bin/bash "$BASEDIR/server/elasticsearch-${elasticsearch.version}/bin/elasticsearch" &
 
-LOG_FILE=$BASEDIR/log/$PROGRAM.log
-PID_FILE=$BASEDIR/run/$PROGRAM.pid
-
-if [[ $1 != "standalone" ]]; then
-    echo
-	echo "Starting Elasticsearch...";
-	echo
-	exec /bin/bash "$BASEDIR/server/elasticsearch-${elasticsearch.version}/bin/elasticsearch" &
-
-    URL="http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=10s"
-	checkStartup $URL "Elasticsearch"
-fi
+URL="http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=10s"
+checkStartup $URL "Elasticsearch"
 
 echo
 echo "Starting Camunda Optimize...";
 echo
-
-# Set up the optimize classpaths, i.e. add the environment folder, all jars in the
-# plugin directory and the optimize jar
-OPTIMIZE_CLASSPATH=$BASEDIR/environment:$BASEDIR/plugin/*:$BASEDIR/optimize-backend-${project.version}.jar
-
-nohup java -cp $OPTIMIZE_CLASSPATH -Dpidfile=$PID_FILE -Dfile.encoding=UTF-8 org.camunda.optimize.Main </dev/null > $LOG_FILE 2>&1 &
+SCRIPT_PATH="./optimize-startup.sh"
+nohup bash "$SCRIPT_PATH" >/dev/null 2>&1 &
 
 # Open Optimize in the browser
 BROWSERS="gnome-www-browser x-www-browser firefox chromium chromium-browser google-chrome"

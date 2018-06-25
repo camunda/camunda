@@ -50,7 +50,7 @@
       <outputDirectory></outputDirectory>
     </file>
     <file>
-      <source>src/start-optimize.bat</source>
+      <source>src/optimize-startup.bat</source>
       <filtered>true</filtered>
       <outputDirectory></outputDirectory>
     </file>
@@ -63,7 +63,7 @@
       <outputDirectory></outputDirectory>
     </file>
     <file>
-      <source>src/start-optimize.sh</source>
+      <source>src/optimize-startup.sh</source>
       <filtered>true</filtered>
       <outputDirectory></outputDirectory>
       <fileMode>0755</fileMode>
