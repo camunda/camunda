@@ -80,7 +80,7 @@ public class ZeebeWorkflowInstanceIT extends OperateIntegrationTest {
 
     //when
     jobWorker = zeebeUtil.completeTaskWithIncident(topicName, activityId, zeebeTestRule.getWorkerName());
-    elasticsearchTestRule.processAllEvents(3);
+    elasticsearchTestRule.processAllEvents(5);
 
     //then
     final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);

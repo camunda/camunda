@@ -4,7 +4,6 @@ import java.io.IOException;
 import org.camunda.operate.property.OperateProperties;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -25,6 +24,7 @@ public class WorkflowInstanceType extends StrictTypeMappingCreator {
   public static final String ERROR_MSG = "errorMessage";
   public static final String STATE = "state";
   public static final String BUSINESS_KEY = "businessKey";
+  public static final String ACTIVITIES = "activities";
 
   @Autowired
   private OperateProperties operateProperties;
@@ -63,6 +63,12 @@ public class WorkflowInstanceType extends StrictTypeMappingCreator {
           addNestedIncidentsField(newBuilder)
         .endObject()
       .endObject()
+      .startObject(ACTIVITIES)
+        .field("type", "nested")
+        .startObject("properties");
+          addNestedActivitiesField(newBuilder)
+        .endObject()
+      .endObject()
       .startObject(PARTITION_ID)
         .field("type", "integer")
       .endObject()
@@ -97,6 +103,28 @@ public class WorkflowInstanceType extends StrictTypeMappingCreator {
       .endObject()
       .startObject(WORKFLOW_INSTANCE_ID)
         .field("type", "keyword")
+      .endObject();
+    return builder;
+  }
+
+  private XContentBuilder addNestedActivitiesField(XContentBuilder builder) throws IOException {
+    builder
+      .startObject(ID)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(STATE)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(ACTIVITY_ID)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(START_DATE)
+        .field("type", "date")
+        .field("format", operateProperties.getElasticsearch().getDateFormat())
+      .endObject()
+      .startObject(END_DATE)
+        .field("type", "date")
+        .field("format", operateProperties.getElasticsearch().getDateFormat())
       .endObject();
     return builder;
   }

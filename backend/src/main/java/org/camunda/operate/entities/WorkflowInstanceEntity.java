@@ -18,6 +18,8 @@ public class WorkflowInstanceEntity extends OperateEntity {
 
   private List<IncidentEntity> incidents = new ArrayList<>();
 
+  private List<ActivityInstanceEntity> activities = new ArrayList<>();
+
   public String getWorkflowId() {
     return workflowId;
   }
@@ -66,6 +68,14 @@ public class WorkflowInstanceEntity extends OperateEntity {
     this.incidents = incidents;
   }
 
+  public List<ActivityInstanceEntity> getActivities() {
+    return activities;
+  }
+
+  public void setActivities(List<ActivityInstanceEntity> activityInstances) {
+    this.activities = activityInstances;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o)
@@ -87,7 +97,9 @@ public class WorkflowInstanceEntity extends OperateEntity {
       return false;
     if (businessKey != null ? !businessKey.equals(that.businessKey) : that.businessKey != null)
       return false;
-    return incidents != null ? incidents.equals(that.incidents) : that.incidents == null;
+    if (incidents != null ? !incidents.equals(that.incidents) : that.incidents != null)
+      return false;
+    return activities != null ? activities.equals(that.activities) : that.activities == null;
   }
 
   @Override
@@ -99,6 +111,7 @@ public class WorkflowInstanceEntity extends OperateEntity {
     result = 31 * result + (state != null ? state.hashCode() : 0);
     result = 31 * result + (businessKey != null ? businessKey.hashCode() : 0);
     result = 31 * result + (incidents != null ? incidents.hashCode() : 0);
+    result = 31 * result + (activities != null ? activities.hashCode() : 0);
     return result;
   }
 }

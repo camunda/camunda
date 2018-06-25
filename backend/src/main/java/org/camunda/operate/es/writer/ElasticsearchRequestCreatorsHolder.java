@@ -3,6 +3,7 @@ package org.camunda.operate.es.writer;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.WorkflowEntity;
@@ -21,7 +22,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -124,6 +124,59 @@ public class ElasticsearchRequestCreatorsHolder {
   }
 
   /**
+   * Inserting or updating an activity instance always mean UPDATE for workflow instance index.
+   * In case the workflow instance is not there yet, we don't want to insert it (this is an exceptional situation,
+   * as we process all events in one thread in ordered manner at the moment).
+   *
+   * @return
+   */
+  public ElasticsearchRequestCreator<ActivityInstanceEntity> activityInstanceEsRequestCreator() {
+    return (bulkRequestBuilder, entity) -> {
+      try {
+
+        Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(entity), HashMap.class);
+        Map<String, Object> params = new HashMap<>();
+        params.put("activity", jsonMap);
+        params.put("partitionId", entity.getPartitionId());
+        params.put("position", entity.getPosition());
+
+        String script =
+            "boolean f = false;" +
+            "ctx._source.partitionId = params.partitionId; " +
+            "ctx._source.position = params.position; " +
+            "for (int j = 0; j < ctx._source.activities.size(); j++) {" +
+              "if (ctx._source.activities[j].id == params.activity.id) {" +
+                "if (params.activity.endDate != null) {" +
+                "ctx._source.activities[j].endDate = params.activity.endDate;" +
+                "ctx._source.activities[j].state = params.activity.state;" +
+                "}" +
+                "f = true;" +
+                "break;" +
+              "}" +
+            "}" +
+            "if (!f) {" +
+              "ctx._source.activities.add(params.activity);"
+                +
+            "}";
+
+        Script updateScript = new Script(
+          ScriptType.INLINE,
+          Script.DEFAULT_SCRIPT_LANG,
+          script,
+          params
+        );
+        return bulkRequestBuilder.add(
+          esClient
+            .prepareUpdate(WorkflowInstanceType.TYPE, WorkflowInstanceType.TYPE, entity.getWorkflowInstanceId())
+            .setScript(updateScript));
+      } catch (IOException e) {
+        logger.error("Error preparing the query to update activity instance", e);
+        throw new PersistenceException(String.format("Error preparing the query to update activity instance [%s]", entity.getId()), e);
+      }
+    };
+  }
+
+  /**
    *
    * @return
    */
@@ -147,6 +200,7 @@ public class ElasticsearchRequestCreatorsHolder {
     Map<Class<? extends OperateEntity>, ElasticsearchRequestCreator> map = new HashMap<>();
     map.put(WorkflowInstanceEntity.class, workflowInstanceEsRequestCreator());
     map.put(IncidentEntity.class, incidentEsRequestCreator());
+    map.put(ActivityInstanceEntity.class, activityInstanceEsRequestCreator());
     map.put(WorkflowEntity.class, workflowEsRequestCreator());
     return map;
   }

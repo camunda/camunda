@@ -17,7 +17,6 @@ public class IncidentEntity extends OperateEntity {
 
   private String taskId;
 
-  @JsonIgnore
   private String workflowInstanceId;
 
   public String getErrorType() {
@@ -68,6 +67,7 @@ public class IncidentEntity extends OperateEntity {
     this.taskId = taskId;
   }
 
+  @JsonIgnore
   public String getWorkflowInstanceId() {
     return workflowInstanceId;
   }

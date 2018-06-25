@@ -37,4 +37,7 @@ public abstract class DateUtil {
     return OffsetDateTime.now(clock);
   }
 
+  public static OffsetDateTime toOffsetDateTime(Instant timestamp) {
+    return OffsetDateTime.ofInstant(timestamp, ZoneOffset.UTC);
+  }
 }
