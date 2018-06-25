@@ -57,7 +57,6 @@ public class ConfigurationService {
   private String licenseType;
   private String reportType;
   private String dashboardType;
-  private String finishedPiIdTrackingType;
   private String alertType;
   private String reportShareType;
   private String dashboardShareType;
@@ -914,10 +913,6 @@ public class ConfigurationService {
 
   public void setSamplerInterval(Long samplerInterval) {
     this.samplerInterval = samplerInterval;
-  }
-
-  public void setFinishedPiIdTrackingType(String finishedPiIdTrackingType) {
-    this.finishedPiIdTrackingType = finishedPiIdTrackingType;
   }
 
   public void setNumberOfRetriesOnConflict(Integer numberOfRetriesOnConflict) {

@@ -33,6 +33,7 @@ container:
     connections:
       max: 10
   checkMetadata: true
+
 #Configuration for engines used to import data. Please note that you have to have atleast one
 #engine configured at all times.
 engines:
@@ -83,6 +84,7 @@ engine-commons:
     validation:
       #The engine endpoint for the user validation.
       resource: '/identity/verify'
+
 import:
   data:
     activity-instance:
@@ -134,6 +136,7 @@ import:
     #Number of retries when there is a version conflict in Elasticsearch
     #during the import.
     numberOfRetries: 5
+
 es:
   analyzer:
     #Defines the name of the analyzer.
@@ -199,6 +202,7 @@ es:
   users:
     #The name of the user type.
     type: users
+
 plugin:
   variableImport:
     #Look in the given base package list for variable import adaption plugins.
@@ -208,6 +212,7 @@ plugin:
     #Look in the given base package list for engine rest filter plugins.
     #If empty, the REST calls are not influenced.
     basePackages: []
+
 serialization:
   #Define a custom date format that should be used
   #(should be the same as in the engine)
@@ -215,41 +220,31 @@ serialization:
   engineDateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
   # the date format that is used in Optimize internally
   optimizeDateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
-variable:
-  #States the maximum number of values that are shown for the user in the
-  #variable filter selection.                                            
-  maxValueListSize: 15
+
 alerting:
   quartz:
     jobStore: 'org.quartz.simpl.RAMJobStore'
-  email:
-    #A switch to control email sending process.
-    enabled: false
-    # Username of your smtp server
-    username: ''
-    # Corresponding password to the given user of your smtp server
-    password: ''
-    # Email address that can be used to send alerts
-    address: ''
-    # The smtp server name
-    hostname: ''
-    # The smtp server port. This one is also used as SSL port for the security connection.
-    port: 587
-    # States how the connection to the server should be secured.
-    # Possible values are 'NONE', 'STARTTLS' or 'SSL/TLS'
-    securityProtocol: 'NONE'
+
+email:
+  #A switch to control email sending process.
+  enabled: false
+  # Username of your smtp server
+  username: ''
+  # Corresponding password to the given user of your smtp server
+  password: ''
+  # Email address that can be used to send alerts
+  address: ''
+  # The smtp server name
+  hostname: ''
+  # The smtp server port. This one is also used as SSL port for the security connection.
+  port: 587
+  # States how the connection to the server should be secured.
+  # Possible values are 'NONE', 'STARTTLS' or 'SSL/TLS'
+  securityProtocol: 'NONE'
+
 export:
   csv:
     # Maximum number of records returned by CSV export
     limit: 1000
     # Position of first record which will be exported in CSV
     offset: 0
-camunda:
-  # The webapps configuration allows Optimize to directly link
-  # to the other Camunda Web Applications, e.g. to jump from
-  # Optimize directly to a dedicated process instance in Cockpit
-  webapps:
-    # Defines the endpoint where to find the camunda webapps
-    endpoint: 'http://localhost:8080/camunda/'
-    # Enables/disables linking to other Camunda Web Applications
-    enabled: true
