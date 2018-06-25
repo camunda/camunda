@@ -7,12 +7,6 @@ export const Header = themed(styled.div`
   flex-direction: row;
   padding: 3px;
   padding-left: 20px;
-  border-radius: 3px;
-  border-bottom: solid 1px
-    ${themeStyle({
-      dark: Colors.uiDark04,
-      light: Colors.uiLight05
-    })};
   background-color: ${themeStyle({
     dark: Colors.uiDark03,
     light: Colors.uiLight02

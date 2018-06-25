@@ -12,7 +12,9 @@ export const Pane = styled(Panel)`
 const hideStyle = css`
   overflow: hidden;
   ${({expandedId, containerId}) =>
-    expandedId && expandedId !== containerId ? 'height: 0; padding:0;' : ''};
+    expandedId && expandedId !== containerId
+      ? 'height: 0; padding:0; border:none;'
+      : ''};
 `;
 
 export const Body = styled(Panel.Body)`
