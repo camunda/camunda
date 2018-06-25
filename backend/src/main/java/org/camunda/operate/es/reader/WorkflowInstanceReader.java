@@ -37,11 +37,8 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-/**
- * @author Svetlana Dorokhova.
- */
+
 @Component
-@Profile("elasticsearch")
 public class WorkflowInstanceReader {
 
   private Logger logger = LoggerFactory.getLogger(WorkflowInstanceReader.class);

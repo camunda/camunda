@@ -19,12 +19,9 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.subscription.JobWorker;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 
-/**
- * @author Svetlana Dorokhova.
- */
+
 @Component
 @ConditionalOnProperty(name= OperateProperties.PREFIX + ".zeebe.demoData", havingValue="true")
-@Profile("zeebe")
 public class ZeebeDemoDataGenerator {
 
   private Logger logger = LoggerFactory.getLogger(ZeebeDemoDataGenerator.class);

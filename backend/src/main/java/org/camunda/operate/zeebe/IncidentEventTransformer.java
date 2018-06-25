@@ -13,11 +13,8 @@ import io.zeebe.client.api.events.IncidentEvent;
 import io.zeebe.client.api.events.IncidentState;
 import io.zeebe.client.api.subscription.IncidentEventHandler;
 
-/**
- * @author Svetlana Dorokhova.
- */
+
 @Component
-@Profile("zeebe")
 public class IncidentEventTransformer extends AbstractEventTransformer implements IncidentEventHandler {
 
   private Logger logger = LoggerFactory.getLogger(WorkflowInstanceEventTransformer.class);

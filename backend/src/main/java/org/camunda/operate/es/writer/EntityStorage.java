@@ -14,12 +14,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-/**
- * @author Svetlana Dorokhova.
- */
+
 @Component
 @Configuration
-@Profile({"zeebe", "elasticsearch"})
 public class EntityStorage {
 
   private Logger logger = LoggerFactory.getLogger(EntityStorage.class);

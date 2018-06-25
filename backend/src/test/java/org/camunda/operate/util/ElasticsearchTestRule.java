@@ -4,11 +4,13 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import org.camunda.operate.es.types.TypeMappingCreator;
+import org.camunda.operate.es.writer.ElasticsearchBulkProcessor;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.IndexNotFoundException;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
+import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +19,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.mock.http.MockHttpOutputMessage;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.context.WebApplicationContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,14 +28,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertNotNull;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
 
-/**
- *
- * @author Svetlana Dorokhova.
- */
-@ActiveProfiles("elasticsearch")
-public abstract class ElasticsearchIntegrationTest extends OperateIntegrationTest {
 
-  private Logger logger = LoggerFactory.getLogger(ElasticsearchIntegrationTest.class);
+public class ElasticsearchTestRule extends ExternalResource {
+
+  private Logger logger = LoggerFactory.getLogger(ElasticsearchTestRule.class);
 
   @Autowired
   protected TransportClient esClient;
@@ -46,9 +43,12 @@ public abstract class ElasticsearchIntegrationTest extends OperateIntegrationTes
   @Autowired
   private List<TypeMappingCreator> typeMappingCreators;
 
-  protected MockMvc mockMvc;
+  private MockMvc mockMvc;
 
   private HttpMessageConverter mappingJackson2HttpMessageConverter;
+
+  @Autowired
+  private ElasticsearchBulkProcessor elasticsearchBulkProcessor;
 
   @Autowired
   void setConverters(HttpMessageConverter<?>[] converters) {
@@ -61,19 +61,22 @@ public abstract class ElasticsearchIntegrationTest extends OperateIntegrationTes
     assertNotNull("the JSON message converter must not be null",
       this.mappingJackson2HttpMessageConverter);
   }
+
   @Autowired
   private WebApplicationContext webApplicationContext;
 
   private boolean haveToClean = true;
 
-  public void starting() {
+  @Override
+  public void before() {
     this.mockMvc = webAppContextSetup(webApplicationContext).build();
     logger.info("Cleaning elasticsearch...");
     cleanUpElasticSearch();
     logger.info("All documents have been wiped out! Elasticsearch has successfully been cleaned!");
   }
 
-  public void finished() {
+  @Override
+  public void after() {
     if (haveToClean) {
       logger.info("cleaning up elasticsearch on finish");
       cleanAndVerify();
@@ -82,7 +85,7 @@ public abstract class ElasticsearchIntegrationTest extends OperateIntegrationTes
   }
 
   public void cleanAndVerify() {
-    assureElasticsearchIsClean();
+//    assureElasticsearchIsClean();
     cleanUpElasticSearch();
   }
 
@@ -109,6 +112,30 @@ public abstract class ElasticsearchIntegrationTest extends OperateIntegrationTes
     }
   }
 
+  public void processAllEvents() {
+    processAllEvents(1);
+  }
+
+  public void processAllEvents(int expectedMinEventsCount) {
+    try {
+      int entitiesCount;
+      int totalCount = 0;
+      int emptyAttempts = 0;
+      do {
+        Thread.sleep(100L);
+        entitiesCount = elasticsearchBulkProcessor.processNextEntitiesBatch();
+        totalCount += entitiesCount;
+        if (entitiesCount > 0) {
+          emptyAttempts = 0;
+        } else {
+          emptyAttempts++;
+        }
+      } while(entitiesCount > 0 && totalCount < expectedMinEventsCount && emptyAttempts <= 3);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+  }
+
   private void assureElasticsearchIsClean() {
     try {
       SearchResponse response = esClient
@@ -126,11 +153,18 @@ public abstract class ElasticsearchIntegrationTest extends OperateIntegrationTes
     this.haveToClean = false;
   }
 
-  protected String json(Object o) throws IOException {
+  public String json(Object o) throws IOException {
     MockHttpOutputMessage mockHttpOutputMessage = new MockHttpOutputMessage();
     this.mappingJackson2HttpMessageConverter.write(
       o, MediaType.APPLICATION_JSON, mockHttpOutputMessage);
     return mockHttpOutputMessage.getBodyAsString();
   }
 
+  public MockMvc getMockMvc() {
+    return mockMvc;
+  }
+
+  public ObjectMapper getObjectMapper() {
+    return objectMapper;
+  }
 }

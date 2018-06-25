@@ -32,11 +32,8 @@ import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.api.events.DeploymentState;
 import io.zeebe.client.api.subscription.DeploymentEventHandler;
 
-/**
- * @author Svetlana Dorokhova.
- */
+
 @Component
-@Profile("zeebe")
 public class DeploymentEventTransformer extends AbstractEventTransformer implements DeploymentEventHandler {
 
   private static final Charset CHARSET = StandardCharsets.UTF_8;

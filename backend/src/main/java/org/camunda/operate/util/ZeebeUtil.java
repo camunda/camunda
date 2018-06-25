@@ -1,22 +1,19 @@
 package org.camunda.operate.util;
 
+import java.time.Duration;
 import org.camunda.operate.property.OperateProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.commands.DeployWorkflowCommandStep1;
 import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.api.events.TopicEvent;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.subscription.JobWorker;
 
-/**
- * @author Svetlana Dorokhova.
- */
 @Component
-@Profile("zeebe")
 public class ZeebeUtil {
 
   private Logger logger = LoggerFactory.getLogger(ZeebeUtil.class);
@@ -78,5 +75,17 @@ public class ZeebeUtil {
       .send().join();
     logger.debug("Workflow instance created for workflow [{}]", bpmnProcessId);
     return String.valueOf(workflowInstanceEvent.getKey());
+  }
+
+  public JobWorker completeTaskWithIncident(String topicName, String jobType, String workerName) {
+    return client.topicClient(topicName).jobClient().newWorker()
+      .jobType(jobType)
+      .handler((jobClient, job) -> {
+        //incidents for outputMapping for taskA
+        jobClient.newCompleteCommand(job).withoutPayload().send().join();
+      })
+      .name(workerName)
+      .timeout(Duration.ofSeconds(2))
+      .open();
   }
 }

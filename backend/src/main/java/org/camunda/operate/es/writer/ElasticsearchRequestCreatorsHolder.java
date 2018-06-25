@@ -26,12 +26,9 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-/**
- * @author Svetlana Dorokhova.
- */
+
 @Component
 @Configuration
-@Profile("elasticsearch")
 public class ElasticsearchRequestCreatorsHolder {
 
   private Logger logger = LoggerFactory.getLogger(ElasticsearchBulkProcessor.class);

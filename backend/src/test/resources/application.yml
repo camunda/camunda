@@ -1,4 +1,5 @@
 camunda.bpm.operate:
+  startLoadingDataOnStartup: false
   elasticsearch:
     clusterName: docker-cluster
     host: localhost

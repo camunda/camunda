@@ -24,12 +24,9 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-/**
- * @author Svetlana Dorokhova.
- */
+
 @Component
 @ConditionalOnProperty(name= OperateProperties.PREFIX + ".elasticsearch.demoData", havingValue="true")
-@Profile("elasticsearch")
 @DependsOn("elasticsearchSchemaManager")
 public class EsDemoDataGenerator {
 

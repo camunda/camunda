@@ -18,7 +18,6 @@ import org.springframework.stereotype.Component;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 @Component
-@Profile("elasticsearch")
 public class ElasticsearchSchemaManager {
 
   private Logger logger = LoggerFactory.getLogger(ElasticsearchSchemaManager.class);

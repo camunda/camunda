@@ -14,6 +14,8 @@ public class OperateProperties {
 
   public static final String PREFIX = "camunda.bpm.operate";
 
+  private boolean startLoadingDataOnStartup = true;
+
   /**
    *  Configuration parameters for elasticsearch client.
    */
@@ -22,6 +24,14 @@ public class OperateProperties {
 
   @NestedConfigurationProperty
   private ZeebeProperties zeebe = new ZeebeProperties();
+
+  public boolean isStartLoadingDataOnStartup() {
+    return startLoadingDataOnStartup;
+  }
+
+  public void setStartLoadingDataOnStartup(boolean startLoadingDataOnStartup) {
+    this.startLoadingDataOnStartup = startLoadingDataOnStartup;
+  }
 
   public ElasticsearchProperties getElasticsearch() {
     return elasticsearch;

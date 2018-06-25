@@ -1,7 +1,5 @@
 package org.camunda.operate.es;
 
-import static org.camunda.operate.rest.WorkflowInstanceRestService.*;
-
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
@@ -21,28 +19,30 @@ import org.camunda.operate.rest.dto.IncidentDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
 import org.camunda.operate.util.DateUtil;
-import org.camunda.operate.util.ElasticsearchIntegrationTest;
-import org.junit.After;
+import org.camunda.operate.util.ElasticsearchTestRule;
+import org.camunda.operate.util.OperateIntegrationTest;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * @author Svetlana Dorokhova.
+ * Tests Elasticsearch queries for workflow instances.
  */
-public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
+public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
   protected static final String QUERY_URL = WORKFLOW_INSTANCE_URL;
   protected static final String COUNT_URL = WORKFLOW_INSTANCE_URL + "/count";
@@ -53,19 +53,20 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
 
   private Random random = new Random();
 
+  @Rule
+  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
+
   @Autowired
   private ElasticsearchBulkProcessor elasticsearchBulkProcessor;
 
+  private MockMvc mockMvc;
+  private ObjectMapper objectMapper;
+
   @Before
   public void starting() {
-    super.starting();
+    this.mockMvc = elasticsearchTestRule.getMockMvc();
+    this.objectMapper = elasticsearchTestRule.getObjectMapper();
     createData();
-  }
-
-  @After
-  public void finished() {
-    super.cleanUpElasticSearch();
-    super.finished();
   }
 
   @Test
@@ -75,7 +76,7 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
     workflowInstanceQueryDto.setRunning(true);
 
     MockHttpServletRequestBuilder request = post(COUNT_URL)
-      .content(json(workflowInstanceQueryDto))
+      .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
       .contentType(contentType);
 
     mockMvc.perform(request)
@@ -91,7 +92,7 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
     workflowInstanceQueryDto.setRunning(true);
 
     MockHttpServletRequestBuilder request = post(query(0, 3))
-        .content(json(workflowInstanceQueryDto))
+        .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
         .contentType(contentType);
 
     MvcResult mvcResult = mockMvc.perform(request)
@@ -116,7 +117,7 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
     workflowInstanceQueryDto.setRunning(true);
 
     MockHttpServletRequestBuilder request = post(query(1, 3))
-        .content(json(workflowInstanceQueryDto))
+        .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
         .contentType(contentType);
 
     MvcResult mvcResult = mockMvc.perform(request)
@@ -140,7 +141,7 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
     workflowInstanceQueryDto.setCompleted(true);
 
     MockHttpServletRequestBuilder request = post(COUNT_URL)
-      .content(json(workflowInstanceQueryDto))
+      .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
       .contentType(contentType);
 
     mockMvc.perform(request)
@@ -155,7 +156,7 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
     workflowInstanceQueryDto.setCompleted(true);
 
     MockHttpServletRequestBuilder request = post(query(0, 3))
-      .content(json(workflowInstanceQueryDto))
+      .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
       .contentType(contentType);
 
     MvcResult mvcResult = mockMvc.perform(request)
@@ -176,7 +177,7 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
     workflowInstanceQueryDto.setWithIncidents(true);
 
     MockHttpServletRequestBuilder request = post(COUNT_URL)
-      .content(json(workflowInstanceQueryDto))
+      .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
       .contentType(contentType);
 
     mockMvc.perform(request)
@@ -191,7 +192,7 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
     workflowInstanceQueryDto.setWithIncidents(true);
 
     MockHttpServletRequestBuilder request = post(query(0, 3))
-      .content(json(workflowInstanceQueryDto))
+      .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
       .contentType(contentType);
 
     MvcResult mvcResult = mockMvc
@@ -221,7 +222,7 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
     workflowInstanceQueryDto.setWithoutIncidents(true);
 
     MockHttpServletRequestBuilder request = post(COUNT_URL)
-      .content(json(workflowInstanceQueryDto))
+      .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
       .contentType(contentType);
 
     mockMvc.perform(request)
@@ -236,7 +237,7 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
     workflowInstanceQueryDto.setWithoutIncidents(true);
 
     MockHttpServletRequestBuilder request = post(query(0, 3))
-      .content(json(workflowInstanceQueryDto))
+      .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
       .contentType(contentType);
 
     MvcResult mvcResult = mockMvc
@@ -278,7 +279,7 @@ public class WorkflowInstanceQueryIT extends ElasticsearchIntegrationTest {
     } catch (PersistenceException e) {
       throw new RuntimeException(e);
     }
-    super.refreshIndexesInElasticsearch();
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
   }
 
   private WorkflowInstanceEntity createWorkflowInstance(boolean completed) {

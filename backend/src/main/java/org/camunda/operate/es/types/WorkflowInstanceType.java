@@ -8,7 +8,6 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("elasticsearch")
 public class WorkflowInstanceType extends StrictTypeMappingCreator {
 
   public static final String TYPE = "workflow-instance";

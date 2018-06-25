@@ -26,7 +26,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(value = WORKFLOW_URL)
-@Profile("elasticsearch")
 public class WorkflowRestService {
 
   @Autowired

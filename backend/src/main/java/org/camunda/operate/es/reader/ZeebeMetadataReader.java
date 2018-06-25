@@ -17,11 +17,8 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-/**
- * @author Svetlana Dorokhova.
- */
+
 @Component
-@Profile("elasticsearch")
 public class ZeebeMetadataReader {
 
   private Logger logger = LoggerFactory.getLogger(ZeebeMetadataReader.class);

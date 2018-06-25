@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.camunda.operate.TestApplication;
 import org.camunda.operate.rest.dto.HealthStateDto;
+import org.camunda.operate.util.WebSecurityDisabledConfig;
+import org.camunda.operate.util.nobeans.TestApplicationWithNoBeans;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +21,7 @@ import org.springframework.test.context.junit4.SpringRunner;
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-  classes = {TestApplication.class},
+  classes = {TestApplicationWithNoBeans.class, HealthCheckRestService.class, WebSecurityDisabledConfig.class},
   webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
 public class HealthCheckRestServiceTest {

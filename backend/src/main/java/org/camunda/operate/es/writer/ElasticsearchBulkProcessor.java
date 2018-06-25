@@ -16,11 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-/**
- * @author Svetlana Dorokhova.
- */
+
 @Component
-@Profile("elasticsearch")
 public class ElasticsearchBulkProcessor extends Thread {
 
   private Logger logger = LoggerFactory.getLogger(ElasticsearchBulkProcessor.class);
@@ -76,29 +73,8 @@ public class ElasticsearchBulkProcessor extends Thread {
   public void run() {
     while (true) {
       try {
-        final int batchSize = operateProperties.getElasticsearch().getInsertBatchSize();
-        int entitiesCount = 0;
-        for (String topicName : operateProperties.getZeebe().getTopics()) {
-          List<OperateEntity> entitiesToPersist = new ArrayList<>();
-          entityStorage.getOperateEntititesQueue(topicName).drainTo(entitiesToPersist, batchSize);
-          if (entitiesToPersist.size() > 0) {
-            entitiesCount += entitiesToPersist.size();
-            try {
-              persistOperateEntities(entitiesToPersist);
-            } catch (PersistenceException ex) {
-              logger.error("Error occurred while persisting the entities to Elasticsearch. Retrying...", ex);
-              //try once again and skip
-              try {
-                persistOperateEntities(entitiesToPersist);
-              } catch (PersistenceException ex2) {
-                final OperateEntity failingEntity = entitiesToPersist.get(ex2.getFailingRequestId());
-                //TODO what to do if the 2nd attempt failed again OPE-38
-                logger.error("Error occurred while persisting the entities to Elasticsearch. Skipping.", ex2);
-              }
-            }
-          }
 
-        }
+        int entitiesCount = processNextEntitiesBatch();
 
         //TODO we can implement backoff strategy, if there is not enough data
         if (entitiesCount == 0) {
@@ -115,9 +91,41 @@ public class ElasticsearchBulkProcessor extends Thread {
     }
   }
 
+
   @PostConstruct
   public void init() {
-    start();
+    if (operateProperties.isStartLoadingDataOnStartup()) {
+      start();
+    }
+  }
+
+
+  public synchronized int processNextEntitiesBatch() {
+    final int batchSize = operateProperties.getElasticsearch().getInsertBatchSize();
+    int entitiesCount = 0;
+
+    for (String topicName : operateProperties.getZeebe().getTopics()) {
+      List<OperateEntity> entitiesToPersist = new ArrayList<>();
+      entityStorage.getOperateEntititesQueue(topicName).drainTo(entitiesToPersist, batchSize);
+      if (entitiesToPersist.size() > 0) {
+        entitiesCount += entitiesToPersist.size();
+        try {
+          persistOperateEntities(entitiesToPersist);
+        } catch (PersistenceException ex) {
+          logger.error("Error occurred while persisting the entities to Elasticsearch. Retrying...", ex);
+          //try once again and skip
+          try {
+            persistOperateEntities(entitiesToPersist);
+          } catch (PersistenceException ex2) {
+            final OperateEntity failingEntity = entitiesToPersist.get(ex2.getFailingRequestId());
+            //TODO what to do if the 2nd attempt failed again OPE-38
+            logger.error("Error occurred while persisting the entities to Elasticsearch. Skipping.", ex2);
+          }
+        }
+      }
+
+    }
+    return entitiesCount;
   }
 
 }

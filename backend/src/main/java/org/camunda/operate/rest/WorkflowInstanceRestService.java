@@ -19,12 +19,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * @author Svetlana Dorokhova.
- */
+
 @RestController
 @RequestMapping(value = WORKFLOW_INSTANCE_URL)
-@Profile("elasticsearch")
 public class WorkflowInstanceRestService {
 
   public static final String WORKFLOW_INSTANCE_URL = "/api/workflow-instances";

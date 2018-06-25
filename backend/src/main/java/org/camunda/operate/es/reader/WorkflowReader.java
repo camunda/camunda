@@ -27,13 +27,12 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Component
-@Profile("elasticsearch")
 public class WorkflowReader {
 
   private Logger logger = LoggerFactory.getLogger(WorkflowReader.class);
 
   @Autowired
-  protected TransportClient esClient;
+  private TransportClient esClient;
 
   @Autowired
   @Qualifier("esObjectMapper")

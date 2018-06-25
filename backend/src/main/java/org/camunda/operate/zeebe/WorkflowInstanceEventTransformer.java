@@ -15,11 +15,8 @@ import org.springframework.stereotype.Component;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.api.subscription.WorkflowInstanceEventHandler;
 
-/**
- * @author Svetlana Dorokhova.
- */
+
 @Component
-@Profile("zeebe")
 public class WorkflowInstanceEventTransformer extends AbstractEventTransformer implements WorkflowInstanceEventHandler {
 
   private Logger logger = LoggerFactory.getLogger(WorkflowInstanceEventTransformer.class);

@@ -15,15 +15,22 @@ import org.camunda.operate.es.reader.ZeebeMetadataReader;
 import org.camunda.operate.es.writer.ElasticsearchBulkProcessor;
 import org.camunda.operate.es.writer.PersistenceException;
 import org.camunda.operate.util.DateUtil;
-import org.camunda.operate.util.ElasticsearchIntegrationTest;
-import org.junit.After;
+import org.camunda.operate.util.ElasticsearchTestRule;
+import org.camunda.operate.util.OperateIntegrationTest;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import io.zeebe.protocol.Protocol;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ZeebeMetadataReaderTest extends ElasticsearchIntegrationTest {
+/**
+ * Tests elasticsearch queries for reading of metadata (maximal position per partition).
+ */
+public class ZeebeMetadataReaderIT extends OperateIntegrationTest {
+
+  @Rule
+  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
 
   private Map<Integer, Long> positionPerPartitionIdMap = new HashMap<>();
 
@@ -37,14 +44,7 @@ public class ZeebeMetadataReaderTest extends ElasticsearchIntegrationTest {
 
   @Before
   public void starting() {
-    super.starting();
     createData();
-  }
-
-  @After
-  public void finished() {
-    super.cleanUpElasticSearch();
-    super.finished();
   }
 
   @Test
@@ -86,7 +86,7 @@ public class ZeebeMetadataReaderTest extends ElasticsearchIntegrationTest {
     } catch (PersistenceException e) {
       throw new RuntimeException(e);
     }
-    super.refreshIndexesInElasticsearch();
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
   }
 
   private WorkflowInstanceEntity createWorkflowInstance(Integer partitionId, Integer maxPosition) {

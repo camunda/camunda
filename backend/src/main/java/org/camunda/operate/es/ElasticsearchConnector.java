@@ -1,5 +1,6 @@
 package org.camunda.operate.es;
 
+import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -35,12 +36,9 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
-/**
- * @author Svetlana Dorokhova.
- */
+
 @Component
 @Configuration
-@Profile("elasticsearch")
 public class ElasticsearchConnector {
 
   private Logger logger = LoggerFactory.getLogger(ElasticsearchConnector.class);
@@ -54,7 +52,7 @@ public class ElasticsearchConnector {
       .build();
   }
 
-  @Bean(destroyMethod = "close")
+  @Bean
   public TransportClient esClient() {
     logger.debug("Creating Elasticsearch connection...");
     TransportClient transportClient = null;
