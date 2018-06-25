@@ -31,7 +31,7 @@ exports[`Login should display an error on unsuccessful login 1`] = `
     <Themed(Styled(TextInput))
       name="username"
       onChange={[Function]}
-      placeholder="Username"
+      placeholder="User Name"
       required={true}
       type="text"
       value=""
@@ -67,7 +67,7 @@ exports[`Login should render login form by default 1`] = `
     <Themed(Styled(TextInput))
       name="username"
       onChange={[Function]}
-      placeholder="Username"
+      placeholder="User Name"
       required={true}
       type="text"
       value=""

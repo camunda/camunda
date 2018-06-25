@@ -16,33 +16,40 @@ jest.mock('modules/request');
 
 describe('Login', () => {
   let node;
+  let usernameInput;
+  let passwordInput;
 
   beforeEach(() => {
     node = shallow(<Login location={{}} />)
       .first()
       .shallow();
-  });
 
-  it('should render login form by default', () => {
-    // given
-    const usernameInput = node.findWhere(
+    usernameInput = node.findWhere(
       element =>
         element.prop('type') === 'text' && element.prop('name') === 'username'
     );
-    const passwordInput = node.findWhere(
+
+    passwordInput = node.findWhere(
       element =>
         element.prop('type') === 'password' &&
         element.prop('name') === 'password'
     );
+  });
+
+  it('should render initially with no state data', () => {
+    expect(node.state('username')).toEqual('');
+    expect(node.state('password')).toEqual('');
+    expect(node.state('forceRedirect')).toBe(false);
+    expect(node.state('error')).toBeNull();
+  });
+
+  it('should render login form by default', () => {
+    // given
     const submitInput = node.findWhere(
       element => element.prop('type') === 'submit'
     );
 
     // then
-    expect(node.state('username')).toEqual('');
-    expect(node.state('password')).toEqual('');
-    expect(node.state('forceRedirect')).toBe(false);
-    expect(node.state('error')).toBeNull();
     expect(node.find(Styled.Login)).toHaveLength(1);
     expect(usernameInput).toHaveLength(1);
     expect(passwordInput).toHaveLength(1);
@@ -51,17 +58,7 @@ describe('Login', () => {
   });
 
   it('should change state according to inputs change', () => {
-    // given
-    const usernameInput = node.findWhere(
-      element =>
-        element.prop('type') === 'text' && element.prop('name') === 'username'
-    );
-    const passwordInput = node.findWhere(
-      element =>
-        element.prop('type') === 'password' &&
-        element.prop('name') === 'password'
-    );
-
+    //given
     const username = 'foo';
     const password = 'bar';
 
