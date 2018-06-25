@@ -8,11 +8,11 @@ import * as Styled from './styled';
 
 class Pane extends React.Component {
   handleExpand = () => {
-    const {expand, containerId, expandedId} = this.props;
+    const {expand, resetExpanded, containerId, expandedId} = this.props;
 
-    // (1) if there is an expanded panel, reset expansion
+    // (1) if there is an expanded panel, reset the expandedId
     // (2) otherwise expand the target id
-    expand(expandedId === null ? containerId : null);
+    expandedId === null ? expand(containerId) : resetExpanded();
   };
 
   render() {
@@ -36,14 +36,6 @@ class Pane extends React.Component {
     );
   }
 }
-
-Pane.handleExpand = () => {
-  const {expand, containerId, expandedId} = this.props;
-
-  // (1) if there is an expanded panel, reset expansion
-  // (2) otherwise expand the target id
-  expand(expandedId === null ? containerId : null);
-};
 
 const WithExpandPane = withExpand(Pane);
 WithExpandPane.Header = Panel.Header;

@@ -5,13 +5,14 @@ import {EXPAND_CONTAINER} from 'modules/utils';
 
 import * as Styled from './styled';
 
-// true: expanded, false: not expanded
 const {TOP, BOTTOM, LEFT, RIGHT} = EXPAND_CONTAINER;
+
+// true: expanded, false: not expanded
 const iconsMap = {
   [TOP]: {true: Styled.Up, false: Styled.Down},
   [BOTTOM]: {true: Styled.Down, false: Styled.Up},
   [LEFT]: {true: Styled.Left},
-  [RIGHT]: {true: Styled.Left}
+  [RIGHT]: {true: Styled.Right}
 };
 
 class ExpandButton extends React.Component {

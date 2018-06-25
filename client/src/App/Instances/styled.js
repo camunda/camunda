@@ -1,6 +1,7 @@
 import styled from 'styled-components';
 
 import SplitPane from 'modules/components/SplitPane';
+import Panel from 'modules/components/Panel';
 
 import {HEADER_HEIGHT} from './../Header/styled';
 
@@ -29,11 +30,6 @@ export const Right = styled.div`
   display: flex;
 `;
 
-export const Top = styled.div`
-  flex-grow: 1;
-  display: flex;
-`;
-export const Bottom = styled.div`
-  flex-grow: 1;
-  display: flex;
+export const SelectionHeader = styled(Panel.Header)`
+  padding-left: 45px;
 `;

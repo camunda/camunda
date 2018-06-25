@@ -12,6 +12,16 @@ const bottomRightStyle = css`
   border-bottom: none;
 `;
 
+const topLeftStyle = css`
+  position: absolute;
+  left: 0;
+  top: 0;
+
+  border-top: none;
+  border-left: none;
+  border-bottom: none;
+`;
+
 const topRightStyle = css`
   position: absolute;
   right: 0;
@@ -27,10 +37,12 @@ const stylesMap = {
   [TOP]: bottomRightStyle,
   [BOTTOM]: topRightStyle,
   [LEFT]: topRightStyle,
-  [RIGHT]: topRightStyle
+  [RIGHT]: topLeftStyle
 };
 
 export const ExpandButton = themed(styled.a`
+  cursor: pointer;
+
   padding-left: 11.5px;
   padding-right: 15px;
   padding-top: 13px;
@@ -57,8 +69,26 @@ const iconStyle = css`
   })};
   color: ${themeStyle({
     dark: '#ffffff',
-    light: Colors.uiLight06
+    light: Colors.uiDark06
   })};
+
+  &:hover {
+    opacity: ${themeStyle({
+      dark: 0.7,
+      light: 1
+    })};
+  }
+
+  &:active {
+    opacity: ${themeStyle({
+      dark: 1,
+      light: 1
+    })};
+    color: ${themeStyle({
+      dark: 0.5,
+      light: Colors.uiDark04
+    })};
+  }
 `;
 
 export const Up = themed(styled(UpBar)`

@@ -163,7 +163,9 @@ class Instances extends Component {
           </Styled.Center>
           <Styled.Right>
             <Panel isRounded>
-              <Panel.Header isRounded>Selections</Panel.Header>
+              <Styled.SelectionHeader isRounded>
+                Selections
+              </Styled.SelectionHeader>
               <Panel.Body>
                 <SelectionDisplay selections={this.state.selections} />
               </Panel.Body>

@@ -2,25 +2,31 @@ import styled, {css} from 'styled-components';
 
 import Panel from 'modules/components/Panel';
 
-const expandStyle = ({expandedId, containerId}) =>
-  expandedId && expandedId !== containerId ? `` : 'flex-grow: 1; height: 100%';
+const isCollapsed = ({expandedId, containerId}) =>
+  expandedId && expandedId !== containerId;
+
+const nonCollapsedPaneStyle = css`
+  flex-grow: 1;
+  height: 100%;
+`;
 
 export const Pane = styled(Panel)`
-  ${expandStyle};
+  ${props => (isCollapsed(props) ? '' : nonCollapsedPaneStyle)};
 `;
 
-const hideStyle = css`
-  overflow: hidden;
-  ${({expandedId, containerId}) =>
-    expandedId && expandedId !== containerId
-      ? 'height: 0; padding:0; border:none;'
-      : ''};
-`;
+const withCollapsableStyle = target => {
+  const collapsedStyle = css`
+    height: 0;
+    padding: 0;
+    border: none;
+  `;
 
-export const Body = styled(Panel.Body)`
-  ${hideStyle};
-`;
+  return styled(target)`
+    overflow: hidden;
+    ${props => (isCollapsed(props) ? collapsedStyle : '')};
+  `;
+};
 
-export const Footer = styled(Panel.Footer)`
-  ${hideStyle};
-`;
+export const Body = withCollapsableStyle(Panel.Body);
+
+export const Footer = withCollapsableStyle(Panel.Footer);
