@@ -2,9 +2,9 @@ import styled, {css} from 'styled-components';
 
 import {EXPAND_CONTAINER} from 'modules/utils';
 import {themed, themeStyle, Colors} from 'modules/theme';
-import {UpBar, DownBar} from 'modules/components/Icon';
+import {UpBar, DownBar, LeftBar, RightBar} from 'modules/components/Icon';
 
-const topExpandStyle = css`
+const bottomRightStyle = css`
   position: absolute;
   right: 0;
   bottom: 0;
@@ -12,7 +12,7 @@ const topExpandStyle = css`
   border-bottom: none;
 `;
 
-const bottomExpandStyle = css`
+const topRightStyle = css`
   position: absolute;
   right: 0;
   top: 0;
@@ -22,10 +22,12 @@ const bottomExpandStyle = css`
   border-bottom: none;
 `;
 
-const {TOP, BOTTOM} = EXPAND_CONTAINER;
+const {TOP, BOTTOM, LEFT, RIGHT} = EXPAND_CONTAINER;
 const stylesMap = {
-  [TOP]: topExpandStyle,
-  [BOTTOM]: bottomExpandStyle
+  [TOP]: bottomRightStyle,
+  [BOTTOM]: topRightStyle,
+  [LEFT]: topRightStyle,
+  [RIGHT]: topRightStyle
 };
 
 export const ExpandButton = themed(styled.a`
@@ -64,5 +66,13 @@ export const Up = themed(styled(UpBar)`
 `);
 
 export const Down = themed(styled(DownBar)`
+  ${iconStyle};
+`);
+
+export const Left = themed(styled(LeftBar)`
+  ${iconStyle};
+`);
+
+export const Right = themed(styled(RightBar)`
   ${iconStyle};
 `);

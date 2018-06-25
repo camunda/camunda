@@ -6,6 +6,8 @@ import Header from '../Header';
 import Panel from 'modules/components/Panel';
 import withSharedState from 'modules/components/withSharedState';
 import SplitPane from 'modules/components/SplitPane';
+import ExpandButton from 'modules/components/ExpandButton';
+import {EXPAND_CONTAINER} from 'modules/utils';
 
 import PropTypes from 'prop-types';
 
@@ -114,9 +116,7 @@ export default withSharedState(
           <Styled.Filter>
             <Styled.Left>
               <Panel isRounded>
-                <Panel.Header isRounded foldButtonType="left">
-                  Filters
-                </Panel.Header>
+                <Panel.Header isRounded>Filters</Panel.Header>
                 <Panel.Body>
                   <Filter
                     filter={this.state.filter}
@@ -124,6 +124,10 @@ export default withSharedState(
                     onResetFilter={this.handleResetFilter}
                   />
                 </Panel.Body>
+                <ExpandButton
+                  containerId={EXPAND_CONTAINER.LEFT}
+                  isExpanded={true}
+                />
                 <Panel.Footer />
               </Panel>
             </Styled.Left>
@@ -146,12 +150,14 @@ export default withSharedState(
             </Styled.Center>
             <Styled.Right>
               <Panel isRounded>
-                <Panel.Header isRounded foldButtonType="right">
-                  Selections
-                </Panel.Header>
+                <Panel.Header isRounded>Selections</Panel.Header>
                 <Panel.Body>
                   <SelectionDisplay selections={this.state.selections} />
                 </Panel.Body>
+                <ExpandButton
+                  containerId={EXPAND_CONTAINER.RIGHT}
+                  isExpanded={true}
+                />
                 <Panel.Footer />
               </Panel>
             </Styled.Right>

@@ -9,7 +9,9 @@ import * as Styled from './styled';
 const {TOP, BOTTOM, LEFT, RIGHT} = EXPAND_CONTAINER;
 const iconsMap = {
   [TOP]: {true: Styled.Up, false: Styled.Down},
-  [BOTTOM]: {true: Styled.Down, false: Styled.Up}
+  [BOTTOM]: {true: Styled.Down, false: Styled.Up},
+  [LEFT]: {true: Styled.Left},
+  [RIGHT]: {true: Styled.Left}
 };
 
 class ExpandButton extends React.Component {

@@ -2,6 +2,7 @@ import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
 export const Panel = themed(styled.div`
+  position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;

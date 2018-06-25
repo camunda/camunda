@@ -6,7 +6,6 @@ const expandStyle = ({expandedId, containerId}) =>
   expandedId && expandedId !== containerId ? `` : 'flex-grow: 1; height: 100%';
 
 export const Pane = styled(Panel)`
-  position: relative;
   ${expandStyle};
 `;
 

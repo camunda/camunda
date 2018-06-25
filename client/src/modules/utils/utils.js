@@ -10,8 +10,8 @@ export const INSTANCE_STATE = {
 export const EXPAND_CONTAINER = {
   TOP: 'TOP',
   BOTTOM: 'BOTTOM',
-  UP: 'UP',
-  DOWN: 'DOWN'
+  LEFT: 'LEFT',
+  RIGHT: 'RIGHT'
 };
 
 export function formatDate(dateString) {
