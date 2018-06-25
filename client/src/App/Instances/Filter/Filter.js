@@ -25,7 +25,7 @@ export default class Filter extends React.Component {
 
   render() {
     const {incidents, active} = this.props.filter;
-    console.log(this.isIndeterminate());
+
     return (
       <Styled.Filters>
         <div>
