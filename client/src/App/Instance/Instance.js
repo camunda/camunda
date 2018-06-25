@@ -1,7 +1,7 @@
 import React, {Component, Fragment} from 'react';
 import PropTypes from 'prop-types';
 
-import Panel from 'modules/components/Panel';
+import SplitPane from 'modules/components/SplitPane';
 import Copyright from 'modules/components/Copyright';
 import InstanceDetail from './InstanceDetail';
 
@@ -10,6 +10,8 @@ import DiagramPanel from './DiagramPanel';
 
 import * as Styled from './styled';
 import * as api from './api';
+
+const {Pane} = SplitPane;
 
 export default class Instance extends Component {
   static propTypes = {
@@ -50,20 +52,16 @@ export default class Instance extends Component {
           detail={<InstanceDetail instance={this.state.instance} />}
         />
         <Styled.Instance>
-          <Styled.Top>
+          <SplitPane>
             <DiagramPanel instance={this.state.instance} />
-          </Styled.Top>
-          <Styled.Bottom>
-            <Panel>
-              <Panel.Header foldButtonType="right">
-                Instance history
-              </Panel.Header>
-              <Panel.Body />
-              <Styled.PanelFooter>
+            <Pane>
+              <Pane.Header>Instance history</Pane.Header>
+              <Pane.Body />
+              <Styled.PaneFooter>
                 <Copyright />
-              </Styled.PanelFooter>
-            </Panel>
-          </Styled.Bottom>
+              </Styled.PaneFooter>
+            </Pane>
+          </SplitPane>
         </Styled.Instance>
       </Fragment>
     );

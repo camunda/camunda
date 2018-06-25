@@ -5,6 +5,7 @@ import Header from '../Header';
 
 import Panel from 'modules/components/Panel';
 import withSharedState from 'modules/components/withSharedState';
+import SplitPane from 'modules/components/SplitPane';
 
 import Filter from './Filter';
 import ListView from './ListView';
@@ -13,6 +14,8 @@ import SelectionDisplay from './SelectionDisplay';
 import {getCount} from './api';
 import {parseFilterForRequest} from './service';
 import * as Styled from './styled.js';
+
+const {Pane} = SplitPane;
 
 export default withSharedState(
   class Instances extends Component {
@@ -115,25 +118,21 @@ export default withSharedState(
               </Panel>
             </Styled.Left>
             <Styled.Center>
-              <Styled.Top>
-                <Panel isRounded>
-                  <Panel.Header isRounded>Process Definition Name</Panel.Header>
-                  <Panel.Body>Process Definition Name content</Panel.Body>
-                </Panel>
-              </Styled.Top>
-              <Styled.Bottom>
-                <ListView
-                  instancesInFilter={this.state.filterCount}
-                  onSelectionUpdate={change => {
-                    this.setState({
-                      selection: update(this.state.selection, change)
-                    });
-                  }}
-                  selection={this.state.selection}
-                  filter={this.state.filter}
-                  onAddToSelection={this.handleAddToSelection}
-                />
-              </Styled.Bottom>
+              <Pane isRounded>
+                <Pane.Header isRounded>Process Definition Name</Pane.Header>
+                <Pane.Body>Process Definition Name content</Pane.Body>
+              </Pane>
+              <ListView
+                instancesInFilter={this.state.filterCount}
+                onSelectionUpdate={change => {
+                  this.setState({
+                    selection: update(this.state.selection, change)
+                  });
+                }}
+                selection={this.state.selection}
+                filter={this.state.filter}
+                onAddToSelection={this.handleAddToSelection}
+              />
             </Styled.Center>
             <Styled.Right>
               <Panel isRounded>

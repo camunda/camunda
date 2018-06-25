@@ -7,7 +7,7 @@ export const DiagramControls = styled.div`
   flex-direction: column;
   position: absolute;
   right: 20px;
-  bottom: 20px;
+  bottom: 60px;
   z-index: 2;
 `;
 

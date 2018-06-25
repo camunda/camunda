@@ -1,4 +1,7 @@
 import styled from 'styled-components';
+
+import SplitPane from 'modules/components/SplitPane';
+
 import {HEADER_HEIGHT} from './../Header/styled';
 
 export const Filter = styled.div`
@@ -17,10 +20,8 @@ export const Left = styled.div`
   margin-right: 1px;
 `;
 
-export const Center = styled.div`
+export const Center = styled(SplitPane)`
   width: 100%;
-  display: flex;
-  flex-direction: column;
 `;
 
 export const Right = styled.div`

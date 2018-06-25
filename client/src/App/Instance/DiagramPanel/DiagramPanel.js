@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import Panel from 'modules/components/Panel';
+import SplitPane from 'modules/components/SplitPane';
 import Diagram from 'modules/components/Diagram';
 import StateIcon from 'modules/components/StateIcon';
 import {formatDate} from 'modules/utils';
@@ -9,10 +9,12 @@ import {formatDate} from 'modules/utils';
 import DiagramBar from './DiagramBar';
 import * as Styled from './styled';
 
-export default function DiagramPanel({instance}) {
+const {Pane} = SplitPane;
+
+export default function DiagramPanel({instance, ...props}) {
   return (
-    <Panel>
-      <Panel.Header>
+    <Pane {...props}>
+      <Pane.Header>
         <Styled.Table>
           <tbody>
             <tr>
@@ -26,12 +28,12 @@ export default function DiagramPanel({instance}) {
             </tr>
           </tbody>
         </Styled.Table>
-      </Panel.Header>
-      <Panel.Body>
+      </Pane.Header>
+      <Pane.Body>
         <DiagramBar instance={instance} />
         <Diagram workflowId={instance.workflowId} />
-      </Panel.Body>
-    </Panel>
+      </Pane.Body>
+    </Pane>
   );
 }
 
@@ -43,5 +45,6 @@ DiagramPanel.propTypes = {
     endDate: PropTypes.string,
     state: PropTypes.string.isRequired,
     errorMessage: PropTypes.string
-  }).isRequired
+  }).isRequired,
+  containerId: PropTypes.string
 };

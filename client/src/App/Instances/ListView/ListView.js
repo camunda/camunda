@@ -1,13 +1,14 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import Panel from 'modules/components/Panel';
+import SplitPane from 'modules/components/SplitPane';
 import List from './List';
 import ListFooter from './ListFooter';
 
 import {parseFilterForRequest} from '../service';
 import {getData} from './api';
 
+const {Pane} = SplitPane;
 export default class ListView extends React.Component {
   state = {
     firstElement: 0,
@@ -27,9 +28,9 @@ export default class ListView extends React.Component {
 
   render() {
     return (
-      <Panel>
-        <Panel.Header>Instances</Panel.Header>
-        <Panel.Body>
+      <Pane {...this.props}>
+        <Pane.Header>Instances</Pane.Header>
+        <Pane.Body>
           <List
             data={this.state.instances}
             selection={this.props.selection}
@@ -40,8 +41,8 @@ export default class ListView extends React.Component {
             onSelectionUpdate={this.props.onSelectionUpdate}
             filter={this.props.filter}
           />
-        </Panel.Body>
-        <Panel.Footer>
+        </Pane.Body>
+        <Pane.Footer>
           <ListFooter
             total={this.props.instancesInFilter}
             perPage={this.state.entriesPerPage}
@@ -49,8 +50,8 @@ export default class ListView extends React.Component {
             onFirstElementChange={firstElement => this.setState({firstElement})}
             onAddToSelection={this.props.onAddToSelection}
           />
-        </Panel.Footer>
-      </Panel>
+        </Pane.Footer>
+      </Pane>
     );
   }
 

@@ -1,9 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`DiagramPanel should render panel header and body 1`] = `
-<Panel
-  isRounded={false}
->
+exports[`DiagramPanel should render pane header and body 1`] = `
+<WithExpand(Pane)>
   <PanelHeader
     isRounded={false}
   >
@@ -37,7 +35,7 @@ exports[`DiagramPanel should render panel header and body 1`] = `
       </tbody>
     </styled.table>
   </PanelHeader>
-  <PanelBody>
+  <Styled(PanelBody)>
     <DiagramBar
       instance={
         Object {
@@ -52,6 +50,6 @@ exports[`DiagramPanel should render panel header and body 1`] = `
     <Themed(Diagram)
       workflowId="bar"
     />
-  </PanelBody>
-</Panel>
+  </Styled(PanelBody)>
+</WithExpand(Pane)>
 `;
