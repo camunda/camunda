@@ -1,8 +1,6 @@
 package org.camunda.operate.rest.dto;
 
-/**
- * @author Svetlana Dorokhova.
- */
+
 public class HealthStateDto {
 
   private String state;

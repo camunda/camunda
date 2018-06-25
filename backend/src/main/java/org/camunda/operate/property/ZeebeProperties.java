@@ -3,9 +3,7 @@ package org.camunda.operate.property;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * @author Svetlana Dorokhova.
- */
+
 public class ZeebeProperties {
 
   private String brokerContactPoint = "localhost:51015";

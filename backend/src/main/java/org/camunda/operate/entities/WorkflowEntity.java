@@ -1,8 +1,6 @@
 package org.camunda.operate.entities;
 
-/**
- * @author Svetlana Dorokhova.
- */
+
 public class WorkflowEntity extends OperateEntity {
 
   public String name;

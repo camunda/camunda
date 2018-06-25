@@ -6,9 +6,7 @@ import java.util.List;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
 
-/**
- * @author Svetlana Dorokhova.
- */
+
 public class WorkflowInstanceDto {
 
   private String id;

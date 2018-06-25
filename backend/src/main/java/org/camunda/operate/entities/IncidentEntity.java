@@ -2,9 +2,7 @@ package org.camunda.operate.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-/**
- * @author Svetlana Dorokhova.
- */
+
 public class IncidentEntity extends OperateEntity {
 
   private String errorType;

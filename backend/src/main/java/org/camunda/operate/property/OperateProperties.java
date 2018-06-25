@@ -6,7 +6,6 @@ import org.springframework.stereotype.Component;
 
 /**
  * This class contains all project configuration parameters.
- * @author Svetlana Dorokhova.
  */
 @Component
 @ConfigurationProperties(OperateProperties.PREFIX)

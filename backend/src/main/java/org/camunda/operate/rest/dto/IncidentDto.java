@@ -5,9 +5,7 @@ import java.util.List;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
 
-/**
- * @author Svetlana Dorokhova.
- */
+
 public class IncidentDto {
 
   private String id;

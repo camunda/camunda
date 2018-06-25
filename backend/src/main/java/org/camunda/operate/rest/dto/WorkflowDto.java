@@ -2,9 +2,7 @@ package org.camunda.operate.rest.dto;
 
 import org.camunda.operate.entities.WorkflowEntity;
 
-/**
- * @author Svetlana Dorokhova.
- */
+
 public class WorkflowDto {
 
   private String id;

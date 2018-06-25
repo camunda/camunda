@@ -1,8 +1,6 @@
 package org.camunda.operate.property;
 
-/**
- * @author Svetlana Dorokhova.
- */
+
 public class ElasticsearchProperties {
 
   private String clusterName= "elasticsearch";

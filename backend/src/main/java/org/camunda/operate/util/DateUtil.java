@@ -7,9 +7,7 @@ import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.Random;
 
-/**
- * @author Svetlana Dorokhova.
- */
+
 public abstract class DateUtil {
 
   private static final Random RANDOM = new Random();

@@ -4,9 +4,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * @author Svetlana Dorokhova.
- */
+
 public class WorkflowInstanceEntity extends OperateEntity {
 
   private String workflowId;

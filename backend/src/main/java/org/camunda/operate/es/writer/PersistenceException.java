@@ -1,8 +1,6 @@
 package org.camunda.operate.es.writer;
 
-/**
- * @author Svetlana Dorokhova.
- */
+
 public class PersistenceException extends Exception {
 
   private Integer failingRequestId;
