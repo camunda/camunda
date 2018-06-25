@@ -15,6 +15,6 @@ es:
   port: 9302
   sampler:
     interval: 100
-alerting:
-  email:
-    enabled: true
+
+email:
+  enabled: true

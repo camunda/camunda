@@ -8,6 +8,8 @@
     </encoder>
   </appender>
 
+  <logger name="org.camunda.optimize" level="info" />
+
   <root level="info">
     <appender-ref ref="STDOUT" />
   </root>
