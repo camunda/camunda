@@ -36,7 +36,7 @@ public class AllocatedMappedFile extends AllocatedBuffer {
     try {
       raf.close();
     } catch (IOException e) {
-      LOG.warn("Failed to close mappe file.", e);
+      LOG.warn("Failed to close mapped file.", e);
     }
   }
 

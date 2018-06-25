@@ -28,8 +28,6 @@ public class AllocatedDirectBuffer extends AllocatedBuffer {
 
   @Override
   public void doClose() {
-    AllocationUtil.freeDirectBuffer(rawBuffer);
-
     onCloseCallback.accept(this);
   }
 }

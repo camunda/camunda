@@ -22,12 +22,4 @@ public class ExternallyAllocatedBuffer extends AllocatedBuffer {
   public ExternallyAllocatedBuffer(ByteBuffer buffer) {
     super(buffer);
   }
-
-  @Override
-  public void doClose() {
-    // nothing to do; buffer allocated externally
-  }
-
-  @Override
-  protected void finalize() throws Throwable {}
 }
