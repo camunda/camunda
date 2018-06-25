@@ -1,114 +1,54 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 import Checkbox from 'modules/components/Checkbox';
 
 import * as Styled from './styled.js';
 
 export default class Filter extends React.Component {
-  handleRunningChange = () => {
-    const {withIncidents, withoutIncidents, running} = this.props.filter;
-    if (running && !withIncidents && !withoutIncidents) {
-      this.props.onChange({
-        running: {$set: false}
-      });
-    } else {
-      this.props.onChange({
-        withIncidents: {$set: false},
-        withoutIncidents: {$set: false},
-        running: {$set: true}
-      });
-    }
-  };
-
-  handleActiveChange = () => {
-    const {withIncidents, withoutIncidents, running} = this.props.filter;
-    if (running) {
-      if (withIncidents) {
-        this.props.onChange({
-          withIncidents: {$set: false}
-        });
-      } else {
-        if (withoutIncidents) {
-          this.props.onChange({
-            withoutIncidents: {$set: false},
-            running: {$set: false}
-          });
-        } else {
-          this.props.onChange({
-            withIncidents: {$set: true}
-          });
-        }
-      }
-    } else {
-      this.props.onChange({
-        running: {$set: true},
-        withoutIncidents: {$set: true}
-      });
-    }
-  };
-
-  handleIncidentChange = () => {
-    const {withoutIncidents, withIncidents, running} = this.props.filter;
-    if (running) {
-      if (withoutIncidents) {
-        this.props.onChange({
-          withoutIncidents: {$set: false}
-        });
-      } else {
-        if (withIncidents) {
-          this.props.onChange({
-            withIncidents: {$set: false},
-            running: {$set: false}
-          });
-        } else {
-          this.props.onChange({
-            withoutIncidents: {$set: true}
-          });
-        }
-      }
-    } else {
-      this.props.onChange({
-        running: {$set: true},
-        withIncidents: {$set: true}
-      });
-    }
+  static proptyes = {
+    filter: PropTypes.object.isRequired,
+    onChange: PropTypes.func.isRequired,
+    onResetFilter: PropTypes.func.isRequired
   };
 
   isIndeterminate = () => {
-    const {withIncidents, withoutIncidents} = this.props.filter;
-    return !!(withIncidents || withoutIncidents);
+    const {incidents, active} = this.props.filter;
+
+    if (incidents && active) {
+      return false;
+    }
+
+    // return true if at least one value is true
+    return [incidents, active].some(Boolean);
   };
 
   render() {
-    const {withIncidents, withoutIncidents, running} = this.props.filter;
-
+    const {incidents, active} = this.props.filter;
+    console.log(this.isIndeterminate());
     return (
       <Styled.Filters>
         <div>
           <Checkbox
             label="Running Instances"
             isIndeterminate={this.isIndeterminate()}
-            isChecked={running || false}
-            onChange={this.handleRunningChange}
+            isChecked={active && incidents}
+            onChange={this.props.onResetFilter}
           />
         </div>
         <Styled.NestedFilters>
           <div>
             <Checkbox
               label="Active"
-              isChecked={
-                !!(withoutIncidents || (running && !this.isIndeterminate()))
-              }
-              onChange={this.handleActiveChange}
+              isChecked={active}
+              onChange={this.props.onChange('active')}
             />
           </div>
           <div>
             <Checkbox
               label="Incident"
-              isChecked={
-                !!(withIncidents || (running && !this.isIndeterminate()))
-              }
-              onChange={this.handleIncidentChange}
+              isChecked={incidents}
+              onChange={this.props.onChange('incidents')}
             />
           </div>
         </Styled.NestedFilters>

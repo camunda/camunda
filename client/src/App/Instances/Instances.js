@@ -11,7 +11,7 @@ import ListView from './ListView';
 import SelectionDisplay from './SelectionDisplay';
 
 import {getCount} from './api';
-
+import {parseFilterForRequest} from './service';
 import * as Styled from './styled.js';
 
 export default withSharedState(
@@ -22,7 +22,7 @@ export default withSharedState(
       const {filter, filterCount, selections} = props.getState();
 
       this.state = {
-        filter: filter || {running: true},
+        filter: filter || {active: true, incidents: true},
         filterCount: filterCount || 0,
         selection: this.createNewSelectionFragment(),
         selections: selections || [[]]
@@ -33,12 +33,27 @@ export default withSharedState(
       return {query: {ids: new Set()}, exclusionList: new Set()};
     };
 
-    handleFilterChange = async change => {
-      const filter = update(this.state.filter, change);
+    handleResetFilter = () => {
+      const filter = update(this.state.filter, {
+        active: {$set: !this.state.filter.active},
+        incidents: {$set: !this.state.filter.incidents}
+      });
+
+      this.setState({
+        filter
+      });
+    };
+
+    handleFilterChange = type => async () => {
+      const filter = update(this.state.filter, {
+        [`${type}`]: {$set: !this.state.filter[type]}
+      });
+
       this.setState({
         filter,
         selection: this.createNewSelectionFragment()
       });
+
       this.props.storeState({filter});
 
       // separate setState to not block UI while waiting for server response
@@ -93,6 +108,7 @@ export default withSharedState(
                   <Filter
                     filter={this.state.filter}
                     onChange={this.handleFilterChange}
+                    onResetFilter={this.handleResetFilter}
                   />
                 </Panel.Body>
                 <Panel.Footer />
@@ -137,7 +153,7 @@ export default withSharedState(
 
     async componentDidMount() {
       this.setState({
-        filterCount: await getCount(this.state.filter)
+        filterCount: await getCount(parseFilterForRequest(this.state.filter))
       });
     }
   }

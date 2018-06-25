@@ -1,11 +1,11 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 import Panel from 'modules/components/Panel';
 import List from './List';
 import ListFooter from './ListFooter';
 
-import PropTypes from 'prop-types';
-
+import {parseFilterForRequest} from '../service';
 import {getData} from './api';
 
 export default class ListView extends React.Component {
@@ -75,7 +75,11 @@ export default class ListView extends React.Component {
 
   loadData = async () => {
     this.setState({
-      instances: await getData(this.props.filter, this.state.firstElement, 50)
+      instances: await getData(
+        parseFilterForRequest(this.props.filter),
+        this.state.firstElement,
+        50
+      )
     });
   };
 }
