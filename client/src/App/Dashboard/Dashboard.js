@@ -55,7 +55,7 @@ class Dashboard extends Component {
         />
         <Styled.Dashboard>
           <MetricPanel>
-            <MetricTile metric={instances} name="Instances running" />
+            <MetricTile metric={instances} name="Running Instances" />
             <MetricTile metric={active} name="Active" metricColor="allIsWell" />
             <MetricTile
               metric={incidents}

@@ -64,7 +64,7 @@ export default class Filter extends React.Component {
           </div>
           <div>
             <Checkbox
-              label="Incident"
+              label="Incidents"
               isChecked={incidents}
               onChange={this.handleChange('incidents')}
             />
