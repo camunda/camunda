@@ -23,6 +23,16 @@ export default class Filter extends React.Component {
     return [incidents, active].some(Boolean);
   };
 
+  handleChange = type => async () => {
+    const change = {
+      [`${type}`]: {
+        $set: this.props.filter[type] ? !this.props.filter[type] : true
+      }
+    };
+
+    await this.props.onChange(change);
+  };
+
   render() {
     const {incidents, active} = this.props.filter;
 
@@ -41,14 +51,14 @@ export default class Filter extends React.Component {
             <Checkbox
               label="Active"
               isChecked={active}
-              onChange={this.props.onChange('active')}
+              onChange={this.handleChange('active')}
             />
           </div>
           <div>
             <Checkbox
               label="Incident"
               isChecked={incidents}
-              onChange={this.props.onChange('incidents')}
+              onChange={this.handleChange('incidents')}
             />
           </div>
         </Styled.NestedFilters>

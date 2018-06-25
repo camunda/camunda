@@ -30,9 +30,14 @@ export default withSharedState(
       super(props);
 
       const {filter, filterCount, selections} = props.getState();
+      const hasCachedFilterWithValues =
+        filter && Object.keys(filter).length > 0;
 
       this.state = {
-        filter: filter || {active: true, incidents: true},
+        filter: (hasCachedFilterWithValues && filter) || {
+          active: true,
+          incidents: true
+        },
         filterCount: filterCount || 0,
         selection: this.createNewSelectionFragment(),
         selections: selections || [[]]
@@ -54,10 +59,8 @@ export default withSharedState(
       });
     };
 
-    handleFilterChange = type => async () => {
-      const filter = update(this.state.filter, {
-        [`${type}`]: {$set: !this.state.filter[type]}
-      });
+    handleFilterChange = async change => {
+      const filter = update(this.state.filter, change);
 
       this.setState({
         filter,
