@@ -11,6 +11,7 @@ export const Toggle = themed(styled.button`
     dark: Colors.uiLight01,
     light: Colors.uiDark01
   })};
+  z-index: 99;
 `);
 
 // Utility component to test the theming during development;
