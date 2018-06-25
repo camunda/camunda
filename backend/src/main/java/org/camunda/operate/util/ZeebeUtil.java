@@ -1,17 +1,21 @@
 package org.camunda.operate.util;
 
 import java.time.Duration;
+import java.util.UUID;
 import org.camunda.operate.property.OperateProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.clients.TopicClient;
 import io.zeebe.client.api.commands.DeployWorkflowCommandStep1;
 import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.api.events.TopicEvent;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.events.WorkflowInstanceState;
 import io.zeebe.client.api.subscription.JobWorker;
+import io.zeebe.client.api.subscription.TopicSubscription;
 
 @Component
 public class ZeebeUtil {
@@ -75,6 +79,18 @@ public class ZeebeUtil {
       .send().join();
     logger.debug("Workflow instance created for workflow [{}]", bpmnProcessId);
     return String.valueOf(workflowInstanceEvent.getKey());
+  }
+
+  public TopicSubscription cancelWorkflowInstance(String topic, String workflowInstanceId) {
+    final TopicClient topicClient = client.topicClient(topic);
+    return topicClient.newSubscription().name(UUID.randomUUID().toString().substring(10)).workflowInstanceEventHandler(
+      event -> {
+        if (workflowInstanceId.equals(String.valueOf(event.getWorkflowInstanceKey())) &&
+          ! event.getState().equals(WorkflowInstanceState.CANCELED) && ! event.getState().equals(WorkflowInstanceState.COMPLETED)) {
+          topicClient.workflowClient().newCancelInstanceCommand(event).send();
+        }
+      }
+    ).startAtHeadOfTopic().forcedStart().open();
   }
 
   public JobWorker completeTaskWithIncident(String topicName, String jobType, String workerName) {

@@ -13,10 +13,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.clients.TopicClient;
+import io.zeebe.client.api.events.WorkflowInstanceState;
 import io.zeebe.client.api.subscription.JobWorker;
+import io.zeebe.client.api.subscription.TopicSubscription;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 
 
@@ -59,37 +61,55 @@ public class ZeebeDemoDataGenerator {
   }
 
   private void progressWorkflowInstances() {
-    List<JobWorker> subscriptions = new ArrayList<>();
-    subscriptions.add(progressDemoProcessTaskA());
-    subscriptions.add(progressSimpleTask("taskB"));
-    subscriptions.add(progressSimpleTask("taskC"));
-    subscriptions.add(progressSimpleTask("taskD"));
-    subscriptions.add(progressSimpleTask("taskE"));
-    subscriptions.add(progressSimpleTask("taskF"));
-    subscriptions.add(progressSimpleTask("taskG"));
-    subscriptions.add(progressSimpleTask("taskH"));
+    List<TopicSubscription> topicSubscriptions = new ArrayList<>();
+    topicSubscriptions.add(cancelSomeInstances());
 
-    subscriptions.add(progressOrderProcessCheckPayment());
+    List<JobWorker> jobWorkers = new ArrayList<>();
+    jobWorkers.add(progressDemoProcessTaskA());
+    jobWorkers.add(progressSimpleTask("taskB"));
+    jobWorkers.add(progressSimpleTask("taskC"));
+    jobWorkers.add(progressSimpleTask("taskD"));
+    jobWorkers.add(progressSimpleTask("taskE"));
+    jobWorkers.add(progressSimpleTask("taskF"));
+    jobWorkers.add(progressSimpleTask("taskG"));
+    jobWorkers.add(progressSimpleTask("taskH"));
 
-    subscriptions.add(progressSimpleTask("requestPayment"));
-    subscriptions.add(progressSimpleTask("shipArticles"));
+    jobWorkers.add(progressOrderProcessCheckPayment());
 
-    subscriptions.add(progressOrderProcessCheckItems());
+    jobWorkers.add(progressSimpleTask("requestPayment"));
+    jobWorkers.add(progressSimpleTask("shipArticles"));
 
-    subscriptions.add(progressSimpleTask("requestWarehouse"));
+    jobWorkers.add(progressOrderProcessCheckItems());
+
+    jobWorkers.add(progressSimpleTask("requestWarehouse"));
 
     //    final TopicSubscription updateRetriesIncidentSubscription = updateRetries();
 
     ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     scheduler.schedule(() -> {
-      for (JobWorker subscription: subscriptions) {
+      for (JobWorker subscription: jobWorkers) {
         subscription.close();
+      }
+      for (TopicSubscription topicSubscription: topicSubscriptions) {
+        topicSubscription.close();
       }
       //      updateRetriesIncidentSubscription.close();
       logger.info("Subscriptions for demo data generation were canceled");
     }, 2, TimeUnit.MINUTES);
   }
 
+  private TopicSubscription cancelSomeInstances() {
+    final String topic = operateProperties.getZeebe().getTopics().get(0);
+    final TopicClient topicClient = client.topicClient(topic);
+    return topicClient.newSubscription().name("cancelInstances").workflowInstanceEventHandler(
+      event -> {
+        if (! event.getState().equals(WorkflowInstanceState.CANCELED) && ! event.getState().equals(WorkflowInstanceState.COMPLETED) &&
+          random.nextInt(20) == 1) {
+          topicClient.workflowClient().newCancelInstanceCommand(event).send();
+        }
+      }
+    ).startAtHeadOfTopic().forcedStart().open();
+  }
 
   private JobWorker progressOrderProcessCheckPayment() {
     final String topic = operateProperties.getZeebe().getTopics().get(0);

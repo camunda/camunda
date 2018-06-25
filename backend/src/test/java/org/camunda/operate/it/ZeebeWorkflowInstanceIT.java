@@ -1,6 +1,9 @@
 package org.camunda.operate.it;
 
 import java.time.OffsetDateTime;
+import java.util.List;
+import org.camunda.operate.entities.ActivityInstanceEntity;
+import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
@@ -14,6 +17,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import io.zeebe.client.api.subscription.JobWorker;
+import io.zeebe.client.api.subscription.TopicSubscription;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ZeebeWorkflowInstanceIT extends OperateIntegrationTest {
@@ -91,6 +95,47 @@ public class ZeebeWorkflowInstanceIT extends OperateIntegrationTest {
     assertThat(incidentEntity.getActivityInstanceId()).isNotEmpty();
     assertThat(incidentEntity.getErrorMessage()).isNotEmpty();
     assertThat(incidentEntity.getErrorType()).isNotEmpty();
+  }
+
+  @Test
+  public void testWorkflowInstanceCanceled() {
+    // having
+    final OffsetDateTime testStartTime = OffsetDateTime.now();
+    String topicName = zeebeTestRule.getTopicName();
+    String activityId = "taskA";
+
+
+    String processId = "demoProcess";
+    zeebeUtil.deployWorkflowToTheTopic(topicName, "demoProcess_v_1.bpmn");
+    final String workflowInstanceId = zeebeUtil.startWorkflowInstance(topicName, processId, "{\"a\": \"b\"}");
+    jobWorker = zeebeUtil.completeTaskWithIncident(topicName, activityId, zeebeTestRule.getWorkerName());
+
+    TopicSubscription topicSubscription = null;
+    try {
+      //when
+      topicSubscription = zeebeUtil.cancelWorkflowInstance(topicName, workflowInstanceId);
+      elasticsearchTestRule.processAllEvents(6);
+
+      //then
+      final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
+      assertThat(workflowInstanceEntity.getId()).isEqualTo(workflowInstanceId);
+      assertThat(workflowInstanceEntity.getState()).isEqualTo(WorkflowInstanceState.CANCELED);
+      assertThat(workflowInstanceEntity.getEndDate()).isNotNull();
+      assertThat(workflowInstanceEntity.getEndDate()).isAfterOrEqualTo(testStartTime);
+      assertThat(workflowInstanceEntity.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
+
+      final List<ActivityInstanceEntity> activities = workflowInstanceEntity.getActivities();
+      assertThat(activities.size()).isGreaterThan(0);
+      final ActivityInstanceEntity lastActivity = activities.get(activities.size() - 1);
+      assertThat(lastActivity.getState().equals(ActivityState.TERMINATED));
+      assertThat(lastActivity.getEndDate()).isNotNull();
+      assertThat(lastActivity.getEndDate()).isAfterOrEqualTo(testStartTime);
+      assertThat(lastActivity.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
+    } finally {
+      if (topicSubscription != null) {
+        topicSubscription.close();
+      }
+    }
 
   }
 

@@ -100,7 +100,11 @@ public class WorkflowInstanceEventTransformer extends AbstractEventTransformer i
     entity.setBusinessKey(event.getBpmnProcessId());
     if (WORKFLOW_INSTANCE_END_STATES.contains(event.getState())) {
       entity.setEndDate(DateUtil.toOffsetDateTime(event.getMetadata().getTimestamp()));
-      entity.setState(WorkflowInstanceState.COMPLETED);
+      if (event.getState().equals(io.zeebe.client.api.events.WorkflowInstanceState.CANCELED)) {
+        entity.setState(WorkflowInstanceState.CANCELED);
+      } else {
+        entity.setState(WorkflowInstanceState.COMPLETED);
+      }
     } else {
       entity.setState(WorkflowInstanceState.ACTIVE);
       entity.setStartDate(DateUtil.toOffsetDateTime(event.getMetadata().getTimestamp()));
