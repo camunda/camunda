@@ -1,25 +1,10 @@
 export function parseFilterForRequest(filter) {
   const {active, incidents} = filter;
-  let payload = {running: true};
+  let payload = {running: active || incidents};
 
-  if (active && incidents) {
-    return payload;
-  }
-
-  if (!active && !incidents) {
-    payload.running = false;
-
-    return payload;
-  }
-
-  if (active || incidents) {
-    if (active) {
-      payload.withoutIncidents = true;
-    }
-
-    if (incidents) {
-      payload.withIncidents = true;
-    }
+  if (!active || !incidents) {
+    payload.withoutIncidents = active;
+    payload.withIncidents = incidents;
   }
 
   return payload;

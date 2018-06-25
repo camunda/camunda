@@ -8,8 +8,7 @@ import * as Styled from './styled.js';
 export default class Filter extends React.Component {
   static proptyes = {
     filter: PropTypes.object.isRequired,
-    onChange: PropTypes.func.isRequired,
-    onResetFilter: PropTypes.func.isRequired
+    onChange: PropTypes.func.isRequired
   };
 
   isIndeterminate = () => {
@@ -25,12 +24,21 @@ export default class Filter extends React.Component {
 
   handleChange = type => async () => {
     const change = {
-      [`${type}`]: {
+      [type]: {
         $set: this.props.filter[type] ? !this.props.filter[type] : true
       }
     };
 
-    await this.props.onChange(change);
+    this.props.onChange(change);
+  };
+
+  onResetFilter = () => {
+    const change = {
+      active: {$set: !this.props.filter.active},
+      incidents: {$set: !this.props.filter.incidents}
+    };
+
+    this.props.onChange(change);
   };
 
   render() {
@@ -43,7 +51,7 @@ export default class Filter extends React.Component {
             label="Running Instances"
             isIndeterminate={this.isIndeterminate()}
             isChecked={active && incidents}
-            onChange={this.props.onResetFilter}
+            onChange={this.onResetFilter}
           />
         </div>
         <Styled.NestedFilters>
