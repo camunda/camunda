@@ -21,9 +21,11 @@ getData.mockReturnValue([{id: 1}]);
 describe('ListView', () => {
   let node;
   let onSelectionUpdate;
+  let onAddToSelection;
 
   beforeEach(() => {
     onSelectionUpdate = jest.fn();
+    onAddToSelection = jest.fn();
     getData.mockClear();
     node = shallow(
       <ListView
@@ -31,6 +33,7 @@ describe('ListView', () => {
         filter={filter}
         instancesInFilter={total}
         onSelectionUpdate={onSelectionUpdate}
+        onAddToSelection={onAddToSelection}
       />
     );
   });
@@ -81,6 +84,7 @@ describe('ListView', () => {
     expect(footer.prop('total')).toBe(total);
     expect(footer.prop('perPage')).toBe(14);
     expect(footer.prop('firstElement')).toBe(8);
+    expect(footer.prop('onAddToSelection')).toBe(onAddToSelection);
   });
 
   it('should pass a method to the footer to change the firstElement', () => {

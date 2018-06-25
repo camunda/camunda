@@ -9,7 +9,8 @@ import withSharedState from 'modules/components/withSharedState';
 
 class Login extends React.Component {
   static propTypes = {
-    location: PropTypes.object.isRequired
+    location: PropTypes.object.isRequired,
+    clearState: PropTypes.func.isRequired
   };
 
   state = {

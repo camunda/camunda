@@ -17,7 +17,8 @@ export default class ListFooter extends React.Component {
     onFirstElementChange: PropTypes.func.isRequired,
     perPage: PropTypes.number.isRequired,
     firstElement: PropTypes.number.isRequired,
-    total: PropTypes.number.isRequired
+    total: PropTypes.number.isRequired,
+    onAddToSelection: PropTypes.func.isRequired
   };
 
   handlePageChange = page => () => {

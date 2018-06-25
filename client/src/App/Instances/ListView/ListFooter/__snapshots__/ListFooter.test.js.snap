@@ -4,7 +4,9 @@ exports[`ListFooter should not show a pagination if there is only one page 1`] =
 
 exports[`ListFooter should not show ellipsis when first page is just barely out of range 1`] = `
 <React.Fragment>
-  <Themed(styled.button)>
+  <Themed(styled.button)
+    onClick={[Function]}
+  >
     <SelectAll />
     Select all…
   </Themed(styled.button)>
@@ -95,7 +97,9 @@ exports[`ListFooter should not show ellipsis when first page is just barely out 
 
 exports[`ListFooter should show ellipsis on both sides in the middle 1`] = `
 <React.Fragment>
-  <Themed(styled.button)>
+  <Themed(styled.button)
+    onClick={[Function]}
+  >
     <SelectAll />
     Select all…
   </Themed(styled.button)>
@@ -189,7 +193,9 @@ exports[`ListFooter should show ellipsis on both sides in the middle 1`] = `
 
 exports[`ListFooter should show the first five pages when on first page 1`] = `
 <React.Fragment>
-  <Themed(styled.button)>
+  <Themed(styled.button)
+    onClick={[Function]}
+  >
     <SelectAll />
     Select all…
   </Themed(styled.button)>
@@ -273,7 +279,9 @@ exports[`ListFooter should show the first five pages when on first page 1`] = `
 
 exports[`ListFooter should show the last five pages when on last page 1`] = `
 <React.Fragment>
-  <Themed(styled.button)>
+  <Themed(styled.button)
+    onClick={[Function]}
+  >
     <SelectAll />
     Select all…
   </Themed(styled.button)>

@@ -8,6 +8,7 @@ import MetricTile from './MetricTile';
 import {fetchInstancesCount} from './api';
 
 import withSharedState from 'modules/components/withSharedState';
+import PropTypes from 'prop-types';
 
 import * as Styled from './styled.js';
 
@@ -16,6 +17,11 @@ class Dashboard extends Component {
     instances: 0,
     active: 0,
     incidents: 0
+  };
+
+  static propTypes = {
+    storeState: PropTypes.func.isRequired,
+    getState: PropTypes.func.isRequired
   };
 
   fetchCounts = async () => {

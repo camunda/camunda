@@ -20,7 +20,9 @@ export default class List extends React.Component {
     selection: PropTypes.shape({
       exclusionList: PropTypes.instanceOf(Set),
       query: PropTypes.object
-    }).isRequired
+    }).isRequired,
+    total: PropTypes.number,
+    filter: PropTypes.object
   };
 
   render() {

@@ -76,6 +76,19 @@ describe('Login', () => {
     expect(node.state('password')).toEqual(password);
   });
 
+  it('should reset the stored state on login', async () => {
+    // given
+    const spy = jest.fn();
+    node.setProps({clearState: spy});
+
+    // when
+    node.instance().handleLogin({preventDefault: () => {}});
+    await flushPromises();
+
+    // then
+    expect(spy).toHaveBeenCalled();
+  });
+
   describe('redirection', () => {
     let originalLogin = api.login;
     let username, password;

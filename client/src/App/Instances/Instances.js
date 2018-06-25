@@ -7,6 +7,8 @@ import Panel from 'modules/components/Panel';
 import withSharedState from 'modules/components/withSharedState';
 import SplitPane from 'modules/components/SplitPane';
 
+import PropTypes from 'prop-types';
+
 import Filter from './Filter';
 import ListView from './ListView';
 import SelectionDisplay from './SelectionDisplay';
@@ -19,6 +21,11 @@ const {Pane} = SplitPane;
 
 export default withSharedState(
   class Instances extends Component {
+    static propTypes = {
+      getState: PropTypes.func.isRequired,
+      storeState: PropTypes.func.isRequired
+    };
+
     constructor(props) {
       super(props);
 
