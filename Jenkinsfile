@@ -164,8 +164,6 @@ void installDockerBinaries() {
       tar xvzf -  --strip-components=1 -C /usr/local/bin/
     docker info
     docker version
-
-    docker-compose pull -q
   """)
 }
 
