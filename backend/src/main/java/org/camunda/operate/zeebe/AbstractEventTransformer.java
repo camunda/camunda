@@ -6,7 +6,7 @@ import io.zeebe.client.api.record.Record;
 
 public abstract class AbstractEventTransformer {
 
-  protected void updateMetdataFields(OperateEntity operateEntity, Record zeebeRecord) {
+  protected void updateMetadataFields(OperateEntity operateEntity, Record zeebeRecord) {
     operateEntity.setPartitionId(zeebeRecord.getMetadata().getPartitionId());
     operateEntity.setPosition(zeebeRecord.getMetadata().getPosition());
   }

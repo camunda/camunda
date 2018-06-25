@@ -7,7 +7,6 @@ import org.camunda.operate.es.writer.EntityStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import io.zeebe.client.api.events.IncidentEvent;
 import io.zeebe.client.api.events.IncidentState;
@@ -59,7 +58,7 @@ public class IncidentEventTransformer extends AbstractEventTransformer implement
         incidentEntity.setState(org.camunda.operate.entities.IncidentState.ACTIVE);
       }
 
-      updateMetdataFields(incidentEntity, event);
+      updateMetadataFields(incidentEntity, event);
 
       //TODO will wait till capacity available, can throw InterruptedException
       entityStorage.getOperateEntititesQueue(event.getMetadata().getTopicName()).put(incidentEntity);

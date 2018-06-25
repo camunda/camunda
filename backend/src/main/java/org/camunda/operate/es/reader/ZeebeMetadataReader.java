@@ -12,10 +12,7 @@ import org.elasticsearch.search.aggregations.metrics.max.Max;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 
 @Component
@@ -25,10 +22,6 @@ public class ZeebeMetadataReader {
 
   @Autowired
   protected TransportClient esClient;
-
-  @Autowired
-  @Qualifier("esObjectMapper")
-  private ObjectMapper objectMapper;
 
   /**
    * Gets the maximum position value for each partition id. Searches in all available indices.
@@ -52,7 +45,7 @@ public class ZeebeMetadataReader {
           .field("partitionId")
           .size(partitionsCount)
           .subAggregation(AggregationBuilders
-            .max("maxPosition")
+            .max(maxPositionAggName)
             .field("position")))
         .setFetchSource(false)
         .setSize(0)
@@ -89,7 +82,7 @@ public class ZeebeMetadataReader {
         .setSize(0)
         .get();
 
-    return ((Cardinality)response.getAggregations().get("partitionCount")).getValue();
+    return ((Cardinality)response.getAggregations().get(partitionCountAggName)).getValue();
   }
 
 }
