@@ -22,7 +22,7 @@ pipeline {
         stage('Install') {
             steps {
                 withMaven(jdk: jdkVersion, maven: mavenVersion, mavenSettingsConfig: mavenSettingsConfig) {
-                    sh 'mvn -B clean com.mycila:license-maven-plugin:check com.coveo:fmt-maven-plugin:check install -DskipTests'
+                    sh 'mvn -B -T 1C clean com.mycila:license-maven-plugin:check com.coveo:fmt-maven-plugin:check install -DskipTests'
                 }
             }
         }
@@ -68,7 +68,7 @@ pipeline {
             when { branch 'develop' }
             steps {
                 withMaven(jdk: jdkVersion, maven: mavenVersion, mavenSettingsConfig: mavenSettingsConfig) {
-                    sh 'mvn -B generate-sources source:jar javadoc:jar deploy -DskipTests'
+                    sh 'mvn -B -T 1C generate-sources source:jar javadoc:jar deploy -DskipTests'
                 }
             }
         }
