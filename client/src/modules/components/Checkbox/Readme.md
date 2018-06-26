@@ -1,7 +1,7 @@
 Checkbox States
 
 ```js
-<Checkbox isChecked={false} onChange={() => {const foo = 'foo'}} />
+<Checkbox isChecked={false} onChange={({isChecked}) => {console.log('is checked', isChecked)}} />
 <Checkbox isChecked={true} onChange={() => {const foo = 'foo'}} />
 <Checkbox
   isIndeterminate={true}
