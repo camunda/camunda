@@ -72,6 +72,12 @@ pipeline {
                 }
             }
         }
+
+        stage('Trigger Perfomance Tests') {
+            steps {
+                build job: 'zeebe-cluster-long-running-tests', wait: false
+            }
+        }
     }
 
     post {
