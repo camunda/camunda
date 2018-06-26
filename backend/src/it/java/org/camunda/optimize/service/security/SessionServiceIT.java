@@ -344,19 +344,19 @@ public class SessionServiceIT {
   }
 
   private void grantAllDefinitionAuthorizationsForKermitGroup() {
-    grantAllDefinitionAuthorizationsForGroup("kermit-group");
+    grantAllDefinitionAuthorizationsForGroup("kermitGroup");
   }
 
   private void grantSingleDefinitionAuthorizationForKermitGroup(String definitionKey) {
-    grantSingleDefinitionAuthorizationsForGroup("kermit-group", definitionKey);
+    grantSingleDefinitionAuthorizationsForGroup("kermitGroup", definitionKey);
   }
 
   private void revokeAllDefinitionAuthorizationsForKermitGroup() {
-    revokeAllDefinitionAuthorizationsForGroup("kermit-group");
+    revokeAllDefinitionAuthorizationsForGroup("kermitGroup");
   }
 
   private void revokeSingleDefinitionAuthorizationsForKermitGroup(String definitionKey) {
-    revokeSingleDefinitionAuthorizationsForGroup("kermit-group", definitionKey);
+    revokeSingleDefinitionAuthorizationsForGroup("kermitGroup", definitionKey);
   }
 
   private void grantAllDefinitionAuthorizationsForGroup(String groupId) {
@@ -496,8 +496,8 @@ public class SessionServiceIT {
   }
 
   private void createKermitGroupAndAddKermitToThatGroup() {
-    engineRule.createGroup("kermit-group", "Group", "foo");
-    engineRule.addUserToGroup("kermit", "kermit-group");
+    engineRule.createGroup("kermitGroup", "Group", "foo");
+    engineRule.addUserToGroup("kermit", "kermitGroup");
   }
 }
 
