@@ -277,7 +277,7 @@ public class ProcessDefinitionRestServiceIT {
   @Test
   public void testGetProcessDefinitionsGroupedByKey() {
     //given
-    createProcessDefinitionsForKey("procDefKey1", 3);
+    createProcessDefinitionsForKey("procDefKey1", 11);
     createProcessDefinitionsForKey("procDefKey2", 2);
 
     // when
@@ -297,10 +297,10 @@ public class ProcessDefinitionRestServiceIT {
     actual.sort(Comparator.comparing(ProcessDefinitionGroupOptimizeDto::getVersions, Comparator.comparing(v -> v.get(0).getKey())));
     ProcessDefinitionGroupOptimizeDto procDefs1 = actual.get(0);
     assertThat(procDefs1.getKey(), is("procDefKey1"));
-    assertThat(procDefs1.getVersions().size(), is(3));
-    assertThat(procDefs1.getVersions().get(0).getVersion(), is("2"));
-    assertThat(procDefs1.getVersions().get(1).getVersion(), is("1"));
-    assertThat(procDefs1.getVersions().get(2).getVersion(), is("0"));
+    assertThat(procDefs1.getVersions().size(), is(11));
+    assertThat(procDefs1.getVersions().get(0).getVersion(), is("10"));
+    assertThat(procDefs1.getVersions().get(1).getVersion(), is("9"));
+    assertThat(procDefs1.getVersions().get(2).getVersion(), is("8"));
     ProcessDefinitionGroupOptimizeDto procDefs2 = actual.get(1);
     assertThat(procDefs2.getKey(), is("procDefKey2"));
     assertThat(procDefs2.getVersions().size(), is(2));

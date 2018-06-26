@@ -23,7 +23,8 @@ public class ProcessDefinitionGroupOptimizeDto extends KeyProcessDefinitionOptim
   public void sort() {
     versions.sort(
       Comparator.comparing(
-        ProcessDefinitionOptimizeDto::getVersion)
+        ProcessDefinitionOptimizeDto::getVersion, Comparator.comparing(Long::valueOf)
+      )
         .reversed()
     );
   }
