@@ -18,9 +18,13 @@ export const LoginHeader = themed(styled.div`
 `);
 
 export const Logo = themed(styled(BaseLogo)`
+  position: relative;
+  top: 3px;
+
   margin-right: 8px;
   width: 32px;
   height: 32px;
+
   color: ${themeStyle({
     dark: 'rgba(255, 255, 255, 0.9)',
     light: 'rgba(98, 98, 110, 0.9)'

@@ -11,6 +11,7 @@ import {
 import Login from './Login';
 import * as Styled from './styled';
 import * as api from './api';
+import {REQUIRED_FIELD_ERROR, LOGIN_ERROR} from './service';
 
 jest.mock('modules/request');
 
@@ -80,6 +81,7 @@ describe('Login', () => {
     // given
     const spy = jest.fn();
     node.setProps({clearState: spy});
+    node.setState({username: 'foo', password: 'bar'});
 
     // when
     node.instance().handleLogin({preventDefault: () => {}});
@@ -91,13 +93,13 @@ describe('Login', () => {
 
   describe('redirection', () => {
     let originalLogin = api.login;
-    let username, password;
+    let username = 'foo',
+      password = 'bar';
     api.login = mockResolvedAsyncFn();
 
     beforeEach(() => {
       api.login.mockClear();
-      username = node.state('username');
-      password = node.state('password');
+      node.setState({username, password});
     });
 
     afterAll(() => {
@@ -138,13 +140,32 @@ describe('Login', () => {
     });
   });
 
+  it('should display an error if any field is empty', async () => {
+    // mock api.login
+    const originalLogin = api.login;
+    api.login = jest.fn();
+
+    // when
+    node.instance().handleLogin({preventDefault: () => {}});
+    await flushPromises();
+    node.update();
+
+    // then
+    expect(api.login).not.toHaveBeenCalled();
+    const errorSpan = node.find(Styled.FormError).render();
+    expect(node.state('error')).toEqual(REQUIRED_FIELD_ERROR);
+    expect(errorSpan.text()).toContain(REQUIRED_FIELD_ERROR);
+    expect(node).toMatchSnapshot();
+
+    // reset api.login
+    api.login = originalLogin.bind(api);
+  });
+
   it('should display an error on unsuccessful login', async () => {
     // mock api.login
     const originalLogin = api.login;
     api.login = mockRejectedAsyncFn();
-
-    // given
-    const error = 'Username and Password do not match';
+    node.setState({username: 'foo', password: 'bar'});
 
     // when
     node.instance().handleLogin({preventDefault: () => {}});
@@ -153,8 +174,8 @@ describe('Login', () => {
 
     // then
     const errorSpan = node.find(Styled.FormError).render();
-    expect(node.state('error')).toEqual(error);
-    expect(errorSpan.text()).toContain(error);
+    expect(node.state('error')).toEqual(LOGIN_ERROR);
+    expect(errorSpan.text()).toContain(LOGIN_ERROR);
     expect(node).toMatchSnapshot();
 
     // reset api.login

@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import {Redirect} from 'react-router-dom';
 
 import {login} from './api';
+import {REQUIRED_FIELD_ERROR, LOGIN_ERROR} from './service';
 import * as Styled from './styled';
 
 import withSharedState from 'modules/components/withSharedState';
@@ -23,12 +24,17 @@ class Login extends React.Component {
   handleLogin = async e => {
     e.preventDefault();
     const {username, password} = this.state;
+
+    if (username.length === 0 || password.length === 0) {
+      return this.setState({error: REQUIRED_FIELD_ERROR});
+    }
+
     try {
       await login({username, password});
       this.props.clearState();
       this.setState({forceRedirect: true});
     } catch (e) {
-      this.setState({error: 'Username and Password do not match'});
+      this.setState({error: LOGIN_ERROR});
     }
   };
 
@@ -56,21 +62,23 @@ class Login extends React.Component {
           {error && <Styled.FormError>{error}</Styled.FormError>}
           <Styled.UsernameInput
             value={username}
+            name="username"
             type="text"
             onChange={this.handleInputChange}
-            placeholder="User Name"
-            name="username"
-            required
+            placeholder="Username"
+            aria-label="User Name"
           />
           <Styled.PasswordInput
             value={password}
+            name="password"
             type="password"
             onChange={this.handleInputChange}
             placeholder="Password"
-            name="password"
-            required
+            aria-label="Password"
           />
-          <Styled.SubmitButton type="submit">Login</Styled.SubmitButton>
+          <Styled.SubmitButton type="submit" title="Log in">
+            Log in
+          </Styled.SubmitButton>
         </Styled.LoginForm>
       </Styled.Login>
     );

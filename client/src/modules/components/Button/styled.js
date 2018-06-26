@@ -72,6 +72,8 @@ export const Button = themed(styled.button`
     light: Colors.uiLight05
   })};
 
+  cursor: pointer;
+
   ${hoverStyle};
   ${activeStyle};
   ${disabledStyle};

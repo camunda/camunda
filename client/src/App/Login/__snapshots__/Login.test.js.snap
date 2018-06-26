@@ -14,6 +14,46 @@ exports[`Login redirection should redirect to referrer page on successful login 
 />
 `;
 
+exports[`Login should display an error if any field is empty 1`] = `
+<styled.div
+  onSubmit={[Function]}
+>
+  <Themed(styled.div)>
+    <Themed(Styled(Logo)) />
+    <Themed(styled.span)>
+      Operate
+    </Themed(styled.span)>
+  </Themed(styled.div)>
+  <styled.form>
+    <styled.span>
+      Username and Password are both required
+    </styled.span>
+    <Themed(Styled(TextInput))
+      aria-label="User Name"
+      name="username"
+      onChange={[Function]}
+      placeholder="Username"
+      type="text"
+      value=""
+    />
+    <Themed(Styled(TextInput))
+      aria-label="Password"
+      name="password"
+      onChange={[Function]}
+      placeholder="Password"
+      type="password"
+      value=""
+    />
+    <Themed(Styled(Button))
+      title="Log in"
+      type="submit"
+    >
+      Log in
+    </Themed(Styled(Button))>
+  </styled.form>
+</styled.div>
+`;
+
 exports[`Login should display an error on unsuccessful login 1`] = `
 <styled.div
   onSubmit={[Function]}
@@ -29,25 +69,26 @@ exports[`Login should display an error on unsuccessful login 1`] = `
       Username and Password do not match
     </styled.span>
     <Themed(Styled(TextInput))
+      aria-label="User Name"
       name="username"
       onChange={[Function]}
-      placeholder="User Name"
-      required={true}
+      placeholder="Username"
       type="text"
-      value=""
+      value="foo"
     />
     <Themed(Styled(TextInput))
+      aria-label="Password"
       name="password"
       onChange={[Function]}
       placeholder="Password"
-      required={true}
       type="password"
-      value=""
+      value="bar"
     />
     <Themed(Styled(Button))
+      title="Log in"
       type="submit"
     >
-      Login
+      Log in
     </Themed(Styled(Button))>
   </styled.form>
 </styled.div>
@@ -65,25 +106,26 @@ exports[`Login should render login form by default 1`] = `
   </Themed(styled.div)>
   <styled.form>
     <Themed(Styled(TextInput))
+      aria-label="User Name"
       name="username"
       onChange={[Function]}
-      placeholder="User Name"
-      required={true}
+      placeholder="Username"
       type="text"
       value=""
     />
     <Themed(Styled(TextInput))
+      aria-label="Password"
       name="password"
       onChange={[Function]}
       placeholder="Password"
-      required={true}
       type="password"
       value=""
     />
     <Themed(Styled(Button))
+      title="Log in"
       type="submit"
     >
-      Login
+      Log in
     </Themed(Styled(Button))>
   </styled.form>
 </styled.div>

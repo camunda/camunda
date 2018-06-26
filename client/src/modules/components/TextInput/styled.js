@@ -7,12 +7,12 @@ const placeholderStyle = css`
     color: ${themeStyle({
       light: Colors.uiLight06
     })};
+    font-style: italic;
   }
 `;
 export const Input = themed(styled.input`
   font-family: IBMPlexSans;
   font-size: 13px;
-  font-style: italic;
 
   height: 26px;
   padding-left: 8px;
