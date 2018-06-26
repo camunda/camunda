@@ -7,19 +7,13 @@ auth:
 container:
   # A host name or IP address, to identify a specific network interface on
   # which to listen.
-  # NOTE: changing this property also requires adjustments in the startup script
-  # start-optimize.sh on Linux or start-optimize.bat on Windows.
   host: localhost
   ports:
     #A port number that will be used by the embedded jetty server to process
     #HTTP connections.
-    # NOTE: changing this property also requires adjustments in the startup script
-    # start-optimize.sh on Linux or start-optimize.bat on Windows.
     http: 8090
     # A port number that will be used by the embedded jetty server to process
     # secure HTTPS connections.
-    # NOTE: changing this property also requires adjustments in the startup script
-    # start-optimize.sh on Linux or start-optimize.bat on Windows.
     https: 8091
   #HTTPS requires an SSL Certificate. When you generate an SSL Certificate,
   #you are creating a keystore file and a keystore password for use when the
@@ -34,11 +28,11 @@ container:
       max: 10
   checkMetadata: true
 
-#Configuration for engines used to import data. Please note that you have to have atleast one
-#engine configured at all times.
+# Configuration for engines used to import data. Please note that you have to have at
+# least one engine configured at all times.
 engines:
-  #an alias of the engine, which will be used for internal purposes like
-  #logging
+  # An alias of the engine, which will be used for internal purposes like
+  # logging and displaying which data belong to which engine.
   'camunda-bpm':
     #The name of the engine that will be used to import data.
     name: default
@@ -154,14 +148,8 @@ es:
       #The name of the duration target value type.
       targetValueType: duration-target-value
   # A hostname on which the Elasticsearch TCP listener is available.
-  # NOTE: changing these properties also might need adjustments in the startup script
-  # start-optimize.sh on Linux or start-optimize.bat on Windows if you don't have
-  # configured your own elasticsearch instance.
   host: localhost
   # A port number used by Elasticsearch to accept TCP connections.
-  # NOTE: changing these properties also might need adjustments in the startup script
-  # start-optimize.sh on Linux or start-optimize.bat on Windows if you don't have
-  # configured your own elasticsearch instance.
   port: 9300
   #An index name used to create all Camunda Optimize types, shards, etc.
   index: optimize
@@ -214,9 +202,9 @@ plugin:
     basePackages: []
 
 serialization:
-  #Define a custom date format that should be used
-  #(should be the same as in the engine)
-  #please not that engine prior to 7.8 use yyyy-MM-dd'T'HH:mm:ss as default date format
+  # Define a custom date format that should be used for
+  # fetching date data from the engine(should be the same as in the engine)
+  # Please note that engine prior to 7.8 use yyyy-MM-dd'T'HH:mm:ss as default date format
   engineDateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
   # the date format that is used in Optimize internally
   optimizeDateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
