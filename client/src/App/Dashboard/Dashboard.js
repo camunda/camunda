@@ -13,23 +13,15 @@ import PropTypes from 'prop-types';
 import * as Styled from './styled.js';
 
 class Dashboard extends Component {
-  state = {
-    instances: 0,
-    active: 0,
-    incidents: 0
-  };
-
   static propTypes = {
     storeState: PropTypes.func.isRequired,
     getState: PropTypes.func.isRequired
   };
 
-  fetchCounts = async () => {
-    return {
-      instances: await fetchInstancesCount(),
-      active: await fetchInstancesCount('active'),
-      incidents: await fetchInstancesCount('incidents')
-    };
+  state = {
+    instances: 0,
+    active: 0,
+    incidents: 0
   };
 
   componentDidMount = async () => {
@@ -39,6 +31,14 @@ class Dashboard extends Component {
       incidents: counts.incidents
     });
     this.setState({...counts});
+  };
+
+  fetchCounts = async () => {
+    return {
+      instances: await fetchInstancesCount(),
+      active: await fetchInstancesCount('active'),
+      incidents: await fetchInstancesCount('incidents')
+    };
   };
 
   render() {

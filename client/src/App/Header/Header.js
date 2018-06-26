@@ -24,13 +24,13 @@ export default class Header extends React.Component {
     user: {}
   };
 
-  fetchUser = async () => {
-    return await api.user();
-  };
-
   componentDidMount = async () => {
     const user = await this.fetchUser();
     this.setState({user});
+  };
+
+  fetchUser = async () => {
+    return await api.user();
   };
 
   createBadgeEntry = label => {

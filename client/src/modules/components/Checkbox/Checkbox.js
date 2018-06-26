@@ -12,8 +12,11 @@ export default class Checkbox extends React.Component {
     label: PropTypes.string
   };
 
-  state = {isChecked: false};
-  el = {};
+  constructor(props) {
+    super(props);
+    this.state = {isChecked: false};
+    this.el = {};
+  }
 
   componentDidMount() {
     const {isIndeterminate, isChecked} = this.props;

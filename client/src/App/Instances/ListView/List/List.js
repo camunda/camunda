@@ -9,30 +9,25 @@ import * as Styled from './styled';
 import {formatDate} from 'modules/utils';
 
 export default class List extends React.Component {
-  state = {
-    rowsToDisplay: null
-  };
-
   static propTypes = {
     data: PropTypes.arrayOf(PropTypes.object).isRequired,
     onSelectionUpdate: PropTypes.func.isRequired,
     onEntriesPerPageChange: PropTypes.func.isRequired,
     selection: PropTypes.shape({
       exclusionList: PropTypes.instanceOf(Set),
-      query: PropTypes.object
+      query: PropTypes.object,
+      list: PropTypes.arrayOf(PropTypes.object)
     }).isRequired,
     total: PropTypes.number,
     filter: PropTypes.object
   };
 
-  render() {
-    return (
-      <Styled.InstancesList>
-        <Styled.TableContainer innerRef={node => (this.container = node)}>
-          {this.renderTable()}
-        </Styled.TableContainer>
-      </Styled.InstancesList>
-    );
+  state = {
+    rowsToDisplay: null
+  };
+
+  componentDidMount() {
+    this.recalculateHeight();
   }
 
   renderTable() {
@@ -172,15 +167,21 @@ export default class List extends React.Component {
     );
   };
 
-  componentDidMount() {
-    this.recalculateHeight();
-  }
-
   recalculateHeight() {
     if (this.container) {
       const rows = ~~(this.container.clientHeight / 38) - 1;
       this.setState({rowsToDisplay: rows});
       this.props.onEntriesPerPageChange(rows);
     }
+  }
+
+  render() {
+    return (
+      <Styled.InstancesList>
+        <Styled.TableContainer innerRef={node => (this.container = node)}>
+          {this.renderTable()}
+        </Styled.TableContainer>
+      </Styled.InstancesList>
+    );
   }
 }

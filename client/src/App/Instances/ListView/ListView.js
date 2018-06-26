@@ -10,12 +10,6 @@ import {getData} from './api';
 
 const {Pane} = SplitPane;
 export default class ListView extends React.Component {
-  state = {
-    firstElement: 0,
-    instances: [],
-    entriesPerPage: 0
-  };
-
   static propTypes = {
     selection: PropTypes.shape({
       list: PropTypes.instanceOf(Set),
@@ -23,7 +17,42 @@ export default class ListView extends React.Component {
     }).isRequired,
     instancesInFilter: PropTypes.number.isRequired,
     onSelectionUpdate: PropTypes.func.isRequired,
-    filter: PropTypes.object.isRequired
+    filter: PropTypes.object.isRequired,
+    onAddToSelection: PropTypes.func
+  };
+
+  state = {
+    firstElement: 0,
+    instances: [],
+    entriesPerPage: 0
+  };
+
+  componentDidMount() {
+    this.loadData();
+  }
+  componentDidUpdate(prevProps, prevState) {
+    if (
+      prevProps.filter !== this.props.filter &&
+      this.state.firstElement !== 0
+    ) {
+      return this.setState({firstElement: 0});
+    }
+    if (
+      prevProps.filter !== this.props.filter ||
+      prevState.firstElement !== this.state.firstElement
+    ) {
+      this.loadData();
+    }
+  }
+
+  loadData = async () => {
+    this.setState({
+      instances: await getData(
+        parseFilterForRequest(this.props.filter),
+        this.state.firstElement,
+        50
+      )
+    });
   };
 
   render() {
@@ -54,33 +83,4 @@ export default class ListView extends React.Component {
       </Pane>
     );
   }
-
-  componentDidMount() {
-    this.loadData();
-  }
-
-  componentDidUpdate(prevProps, prevState) {
-    if (
-      prevProps.filter !== this.props.filter &&
-      this.state.firstElement !== 0
-    ) {
-      return this.setState({firstElement: 0});
-    }
-    if (
-      prevProps.filter !== this.props.filter ||
-      prevState.firstElement !== this.state.firstElement
-    ) {
-      this.loadData();
-    }
-  }
-
-  loadData = async () => {
-    this.setState({
-      instances: await getData(
-        parseFilterForRequest(this.props.filter),
-        this.state.firstElement,
-        50
-      )
-    });
-  };
 }

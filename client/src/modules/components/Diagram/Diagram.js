@@ -27,6 +27,10 @@ class Diagram extends React.Component {
     this.initViewer();
   }
 
+  componentDidUpdate() {
+    this.initViewer();
+  }
+
   initViewer = () => {
     // detach Viewer if it exists
     if (this.Viewer) {
@@ -80,10 +84,6 @@ class Diagram extends React.Component {
         />
       </Styled.Diagram>
     );
-  }
-
-  componentDidUpdate() {
-    this.initViewer();
   }
 }
 

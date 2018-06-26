@@ -1,4 +1,5 @@
 import React, {Children, cloneElement} from 'react';
+import PropTypes from 'prop-types';
 
 import {withExpand} from 'modules/components/SplitPane/ExpandContext';
 import ExpandButton from 'modules/components/ExpandButton';
@@ -7,6 +8,17 @@ import Panel from 'modules/components/Panel';
 import * as Styled from './styled';
 
 class Pane extends React.Component {
+  static propTypes = {
+    expand: PropTypes.func.isRequired,
+    resetExpanded: PropTypes.func.isRequired,
+    containerId: PropTypes.string.isRequired,
+    expandedId: PropTypes.string,
+    children: PropTypes.oneOfType([
+      PropTypes.arrayOf(PropTypes.node),
+      PropTypes.node
+    ])
+  };
+
   handleExpand = () => {
     const {expand, resetExpanded, containerId, expandedId} = this.props;
 

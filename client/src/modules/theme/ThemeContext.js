@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 import {Colors} from './index';
 
@@ -14,6 +15,13 @@ const ThemeConsumer = ThemeContext.Consumer;
 
 // Top level component to pass down theme in the App
 class ThemeProvider extends React.Component {
+  static propTypes = {
+    children: PropTypes.oneOfType([
+      PropTypes.arrayOf(PropTypes.node),
+      PropTypes.node
+    ])
+  };
+
   constructor(props) {
     super(props);
     this.setBodyBackground();
@@ -21,6 +29,10 @@ class ThemeProvider extends React.Component {
 
   // we start with the dark theme as default
   state = {theme: THEME_NAME.DARK};
+
+  componentDidUpdate() {
+    this.setBodyBackground();
+  }
 
   toggleTheme = () => {
     this.setState({
@@ -44,10 +56,6 @@ class ThemeProvider extends React.Component {
         {this.props.children}
       </ThemeContext.Provider>
     );
-  }
-
-  componentDidUpdate() {
-    this.setBodyBackground();
   }
 }
 

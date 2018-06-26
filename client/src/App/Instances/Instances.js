@@ -46,6 +46,16 @@ class Instances extends Component {
     };
   }
 
+  async componentDidMount() {
+    const filterCount = await this.fetchFilterCount(this.state.filter);
+
+    this.setState({
+      filterCount
+    });
+
+    this.setFilterInURL();
+  }
+
   createNewSelectionFragment = () => {
     return {query: {ids: new Set()}, exclusionList: new Set()};
   };
@@ -104,16 +114,6 @@ class Instances extends Component {
       search: `?filter=${JSON.stringify(this.state.filter)}`
     });
   };
-
-  async componentDidMount() {
-    const filterCount = await this.fetchFilterCount(this.state.filter);
-
-    this.setState({
-      filterCount
-    });
-
-    this.setFilterInURL();
-  }
 
   render() {
     const {instances, incidents} = this.props.getState();

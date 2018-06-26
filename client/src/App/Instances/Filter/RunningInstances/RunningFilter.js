@@ -6,7 +6,7 @@ import Checkbox from 'modules/components/Checkbox';
 import * as Styled from './styled.js';
 
 export default class RunningFilter extends React.Component {
-  static proptyes = {
+  static propTypes = {
     filter: PropTypes.object.isRequired,
     onChange: PropTypes.func.isRequired
   };

@@ -13,7 +13,7 @@ const stateIconsMap = {
   CANCELED: Styled.CanceledIcon
 };
 
-function StateIcon({instance, toggleTheme, ...props}) {
+function StateIcon({instance, ...props}) {
   const computedState = getInstanceState(instance);
   const TargetComponent = stateIconsMap[computedState];
   return <TargetComponent {...props} />;

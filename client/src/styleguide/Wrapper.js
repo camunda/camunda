@@ -1,7 +1,16 @@
 import React, {Component} from 'react';
+import PropTypes from 'prop-types';
+
 import {ThemeProvider, ThemeConsumer} from 'modules/theme';
 
 export default class Wrapper extends Component {
+  static propTypes = {
+    children: PropTypes.oneOfType([
+      PropTypes.arrayOf(PropTypes.node),
+      PropTypes.node
+    ])
+  };
+
   render() {
     return (
       <ThemeProvider>

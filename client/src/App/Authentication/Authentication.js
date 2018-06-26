@@ -5,20 +5,24 @@ import {Redirect, withRouter} from 'react-router-dom';
 import {setResponseInterceptor} from 'modules/request';
 
 class Authentication extends React.Component {
-  constructor(props) {
-    super(props);
-    setResponseInterceptor(this.interceptResponse);
-  }
-
   static propTypes = {
     location: PropTypes.shape({
       pathname: PropTypes.string.isRequired
-    }).isRequired
+    }).isRequired,
+    children: PropTypes.oneOfType([
+      PropTypes.arrayOf(PropTypes.node),
+      PropTypes.node
+    ])
   };
 
-  defaultState = {forceRedirect: false};
+  constructor(props) {
+    super(props);
 
-  state = {...this.defaultState};
+    setResponseInterceptor(this.interceptResponse);
+
+    this.defaultState = {forceRedirect: false};
+    this.state = {...this.defaultState};
+  }
 
   resetState = () => {
     this.setState(this.defaultState);

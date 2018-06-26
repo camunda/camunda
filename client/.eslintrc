@@ -1,7 +1,9 @@
 {
   "plugins": ["prettier"],
   "rules": {
-    "prettier/prettier": "warn"
+    "prettier/prettier": "warn",
+    "react/sort-comp": [2],
+    "react/prop-types": [2]
   },
   "extends": "react-app"
 }

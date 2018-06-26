@@ -10,9 +10,25 @@ export default class Dropdown extends React.Component {
     /** The content that is visible on the dropdown trigger. Must be non-interactive phrasing content. */
     label: PropTypes.node.isRequired,
     /** The options of this dropdown. Each child should be a `Dropdown.Option` instance */
-    children: PropTypes.node.isRequired
+    children: PropTypes.oneOfType([
+      PropTypes.arrayOf(PropTypes.node),
+      PropTypes.node
+    ])
   };
+
   state = {open: false};
+
+  componentDidMount() {
+    document.body.addEventListener('click', this.close, true);
+  }
+
+  componentWillUnmount() {
+    document.body.removeEventListener('click', this.close, true);
+  }
+
+  storeContainer = node => {
+    this.container = node;
+  };
 
   toggleOpen = () => {
     this.setState({open: !this.state.open});
@@ -23,10 +39,6 @@ export default class Dropdown extends React.Component {
       this.setState({open: false});
     }
   };
-
-  componentDidMount() {
-    document.body.addEventListener('click', this.close, true);
-  }
 
   render() {
     return (
@@ -41,16 +53,15 @@ export default class Dropdown extends React.Component {
       </Styled.Dropdown>
     );
   }
-
-  storeContainer = node => {
-    this.container = node;
-  };
-
-  componentWillUnmount() {
-    document.body.removeEventListener('click', this.close, true);
-  }
 }
 
 Dropdown.Option = function DropdownOption(props) {
   return <Styled.Option {...props}>{props.children}</Styled.Option>;
+};
+
+Dropdown.Option.propTypes = {
+  children: PropTypes.oneOfType([
+    PropTypes.arrayOf(PropTypes.node),
+    PropTypes.node
+  ])
 };

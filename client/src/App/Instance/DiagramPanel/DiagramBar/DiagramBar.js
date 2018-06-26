@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 import {
   getInstanceState,
@@ -20,3 +21,7 @@ export default function DiagramBar({instance}) {
 
   return null;
 }
+
+DiagramBar.propTypes = {
+  instance: PropTypes.object.isRequired
+};
