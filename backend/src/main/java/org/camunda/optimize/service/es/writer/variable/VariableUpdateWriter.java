@@ -55,6 +55,7 @@ public class VariableUpdateWriter extends VariableWriter {
     procInst.setProcessDefinitionId(firstVariable.getProcessDefinitionId());
     procInst.setProcessDefinitionKey(firstVariable.getProcessDefinitionKey());
     procInst.setProcessInstanceId(processInstanceId);
+    procInst.setEngine(firstVariable.getEngineAlias());
 
     for (Map.Entry<String, List<VariableDto>> entry: typeMappedVars.entrySet()) {
       for (VariableDto var : entry.getValue()) {

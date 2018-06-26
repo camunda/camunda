@@ -277,8 +277,8 @@ public class SessionServiceIT {
     grantAllDefinitionAuthorizationsForKermitGroup();
     engineRule.addUser("genzo", "genzo");
     engineRule.grantUserOptimizeAccess("genzo");
-    engineRule.createGroup("genzo-group", "Group", "foo");
-    engineRule.addUserToGroup("genzo", "genzo-group");
+    engineRule.createGroup("genzoGroup", "Group", "foo");
+    engineRule.addUserToGroup("genzo", "genzoGroup");
 
     deploySimpleProcessDefinition("aprocess");
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();

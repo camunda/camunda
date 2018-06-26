@@ -95,6 +95,8 @@ public class VariableUpdateInstanceImportService {
     variableDto.setProcessDefinitionId(pluginVariableDto.getProcessDefinitionId());
     variableDto.setProcessDefinitionKey(pluginVariableDto.getProcessDefinitionKey());
     variableDto.setVersion(pluginVariableDto.getVersion());
+    variableDto.setEngineAlias(pluginVariableDto.getEngineAlias());
+
     return variableDto;
   }
 
@@ -116,6 +118,7 @@ public class VariableUpdateInstanceImportService {
     optimizeDto.setProcessDefinitionKey(engineEntity.getProcessDefinitionKey());
     optimizeDto.setProcessInstanceId(engineEntity.getProcessInstanceId());
     optimizeDto.setVersion(engineEntity.getSequenceCounter());
+    optimizeDto.setEngineAlias(engineContext.getEngineAlias());
 
     return optimizeDto;
   }
@@ -148,6 +151,10 @@ public class VariableUpdateInstanceImportService {
       logger.warn("Refuse to add variable [{}] with version [{}] from variable import adapter plugin. Variable has no version or version is invalid.",
         variableDto.getName(),
         variableDto.getVersion());
+      return false;
+    } else if (isNullOrEmpty(variableDto.getEngineAlias())) {
+      logger.warn("Refuse to add variable [{}] from variable import adapter plugin. Variable has no engine alias.",
+        variableDto.getName());
       return false;
     }
     return true;

@@ -19,6 +19,7 @@ public class NewVariableAdder implements VariableImportAdapter {
     dto.setProcessDefinitionKey(list.get(0).getProcessDefinitionKey());
     dto.setProcessInstanceId(list.get(0).getProcessInstanceId());
     dto.setVersion(1L);
+    dto.setEngineAlias("1");
     list.add(dto);
     return list;
   }

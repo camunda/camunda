@@ -58,6 +58,16 @@ public class PluginVariableDto {
    */
   private Long version;
 
+  /**
+   *  The field states the engine the variable is coming from.
+   *  In Optimize you can configure multiple engines to import data from.
+   *  Each engine configuration should have an unique engine alias associated
+   *  with it.
+   *
+   * Note: This field is required in order to be imported to Optimize.
+   */
+  private String engineAlias;
+
   public String getId() {
     return id;
   }
@@ -120,5 +130,13 @@ public class PluginVariableDto {
 
   public void setVersion(Long version) {
     this.version = version;
+  }
+
+  public String getEngineAlias() {
+    return engineAlias;
+  }
+
+  public void setEngineAlias(String engineAlias) {
+    this.engineAlias = engineAlias;
   }
 }
