@@ -36,9 +36,6 @@ pipeline {
                         }
                     }
                     post {
-                        always {
-                            junit testResults: '**/target/*-reports/**/*.xml', allowEmptyResults: true
-                        }
                         failure {
                             archiveArtifacts artifacts: '**/target/*-reports/**/*-output.txt,**/**/*.dumpstream', allowEmptyArchive: true
                         }
