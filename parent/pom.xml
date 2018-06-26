@@ -213,7 +213,7 @@
             <dependency>
               <groupId>io.zeebe</groupId>
               <artifactId>zb-build-tools</artifactId>
-              <version>${version.build-tools}</version>
+              <version>${project.version}</version>
             </dependency>
           </dependencies>
           <configuration>

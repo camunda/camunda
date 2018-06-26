@@ -18,21 +18,6 @@
   </parent>
 
   <properties>
-    <!-- zeebe projects -->
-    <version.zeebe>${project.version}</version.zeebe>
-    <version.zb-bpmn-model>${project.version}</version.zb-bpmn-model>
-    <version.zb-dispatcher>${project.version}</version.zb-dispatcher>
-    <version.zb-logstreams>${project.version}</version.zb-logstreams>
-    <version.zb-msgpack>${project.version}</version.zb-msgpack>
-    <version.zb-protocol>${project.version}</version.zb-protocol>
-    <version.zb-raft>${project.version}</version.zb-raft>
-    <version.zb-gossip>${project.version}</version.zb-gossip>
-    <version.zb-service-container>${project.version}</version.zb-service-container>
-    <version.zb-transport>${project.version}</version.zb-transport>
-    <version.zb-util>${project.version}</version.zb-util>
-    <version.zeebe-test>${project.version}</version.zeebe-test>
-    <version.build-tools>${project.version}</version.build-tools>
-
     <!-- release parent settings -->
     <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/zeebe-io-snapshots/</nexus.snapshot.repository>
     <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/zeebe-io/</nexus.release.repository>
@@ -43,121 +28,121 @@
       <dependency>
         <groupId>io.zeebe</groupId>
         <artifactId>zeebe-broker-core</artifactId>
-        <version>${version.zeebe}</version>
+        <version>${project.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.zeebe</groupId>
         <artifactId>zeebe-client-java</artifactId>
-        <version>${version.zeebe}</version>
+        <version>${project.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.zeebe</groupId>
         <artifactId>zeebe-protocol-test-util</artifactId>
-        <version>${version.zeebe}</version>
+        <version>${project.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.zeebe</groupId>
         <artifactId>zb-bpmn-model</artifactId>
-        <version>${version.zb-bpmn-model}</version>
+        <version>${project.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.zeebe</groupId>
         <artifactId>zb-dispatcher</artifactId>
-        <version>${version.zb-dispatcher}</version>
+        <version>${project.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.zeebe</groupId>
         <artifactId>zb-logstreams</artifactId>
-        <version>${version.zb-logstreams}</version>
+        <version>${project.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.zeebe</groupId>
         <artifactId>zb-msgpack-core</artifactId>
-        <version>${version.zb-msgpack}</version>
+        <version>${project.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.zeebe</groupId>
         <artifactId>zb-msgpack-json-el</artifactId>
-        <version>${version.zb-msgpack}</version>
+        <version>${project.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.zeebe</groupId>
         <artifactId>zb-msgpack-json-path</artifactId>
-        <version>${version.zb-msgpack}</version>
+        <version>${project.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.zeebe</groupId>
         <artifactId>zb-msgpack-value</artifactId>
-        <version>${version.zb-msgpack}</version>
+        <version>${project.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.zeebe</groupId>
         <artifactId>zb-protocol</artifactId>
-        <version>${version.zb-protocol}</version>
+        <version>${project.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.zeebe</groupId>
         <artifactId>zb-raft</artifactId>
-        <version>${version.zb-raft}</version>
+        <version>${project.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.zeebe</groupId>
         <artifactId>zb-gossip</artifactId>
-        <version>${version.zb-gossip}</version>
+        <version>${project.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.zeebe</groupId>
         <artifactId>zb-service-container</artifactId>
-        <version>${version.zb-service-container}</version>
+        <version>${project.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.zeebe</groupId>
         <artifactId>zb-transport</artifactId>
-        <version>${version.zb-transport}</version>
+        <version>${project.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.zeebe</groupId>
         <artifactId>zb-map</artifactId>
-        <version>${version.zb-util}</version>
+        <version>${project.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.zeebe</groupId>
         <artifactId>zb-test-util</artifactId>
-        <version>${version.zb-util}</version>
+        <version>${project.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.zeebe</groupId>
         <artifactId>zb-util</artifactId>
-        <version>${version.zb-util}</version>
+        <version>${project.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.zeebe</groupId>
         <artifactId>zeebe-test</artifactId>
-        <version>${version.zeebe-test}</version>
+        <version>${project.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.zeebe</groupId>
         <artifactId>zb-build-tools</artifactId>
-        <version>${version.build-tools}</version>
+        <version>${project.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
