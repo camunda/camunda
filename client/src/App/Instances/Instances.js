@@ -11,7 +11,7 @@ import {EXPAND_CONTAINER} from 'modules/utils';
 
 import PropTypes from 'prop-types';
 
-import Filter from './Filter';
+import RunningFilter from './Filter/RunningInstances';
 import ListView from './ListView';
 import SelectionDisplay from './SelectionDisplay';
 
@@ -132,7 +132,7 @@ class Instances extends Component {
             <Panel isRounded>
               <Panel.Header isRounded>Filters</Panel.Header>
               <Panel.Body>
-                <Filter
+                <RunningFilter
                   filter={this.state.filter}
                   onChange={this.handleFilterChange}
                 />
