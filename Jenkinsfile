@@ -27,18 +27,39 @@ pipeline {
             }
         }
 
-        stage('Tests') {
-            steps {
-                withMaven(jdk: jdkVersion, maven: mavenVersion, mavenSettingsConfig: mavenSettingsConfig) {
-                    sh 'mvn -B verify -P skip-unstable-ci'
+        stage('Verify') {
+            parallel {
+                stage('Tests') {
+                    steps {
+                        withMaven(jdk: jdkVersion, maven: mavenVersion, mavenSettingsConfig: mavenSettingsConfig) {
+                            sh 'mvn -B verify -P skip-unstable-ci'
+                        }
+                    }
+                    post {
+                        always {
+                            junit testResults: '**/target/*-reports/**/*.xml', allowEmptyResults: true
+                        }
+                        failure {
+                            archiveArtifacts artifacts: '**/target/*-reports/**/*-output.txt,**/**/*.dumpstream', allowEmptyArchive: true
+                        }
+                    }
                 }
-            }
-            post {
-                always {
-                    junit testResults: '**/target/*-reports/**/*.xml', allowEmptyResults: true
-                }
-                failure {
-                    archiveArtifacts artifacts: '**/target/*-reports/**/*-output.txt,**/**/*.dumpstream', allowEmptyArchive: true
+
+                stage('JMH') {
+                    agent { node { label 'ubuntu-large' } }
+
+                    steps {
+                        withMaven(jdk: jdkVersion, maven: mavenVersion, mavenSettingsConfig: mavenSettingsConfig) {
+                            sh 'mvn -B integration-test -DskipTests -P jmh'
+                        }
+                    }
+
+                    post {
+                        success {
+                            sh joinJmhResults
+                            jmhReport 'target/jmh-result.json'
+                        }
+                    }
                 }
             }
         }
@@ -48,21 +69,6 @@ pipeline {
             steps {
                 withMaven(jdk: jdkVersion, maven: mavenVersion, mavenSettingsConfig: mavenSettingsConfig) {
                     sh 'mvn -B generate-sources source:jar javadoc:jar deploy -DskipTests'
-                }
-            }
-        }
-
-        stage('JMH') {
-            steps {
-                withMaven(jdk: jdkVersion, maven: mavenVersion, mavenSettingsConfig: mavenSettingsConfig) {
-                    sh 'mvn -B integration-test -DskipTests -P jmh'
-                }
-            }
-
-            post {
-                success {
-                    sh joinJmhResults
-                    jmhReport 'target/jmh-result.json'
                 }
             }
         }
