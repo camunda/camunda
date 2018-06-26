@@ -14,12 +14,7 @@ export default class RunningFilter extends React.Component {
   isIndeterminate = () => {
     const {incidents, active} = this.props.filter;
 
-    if (incidents && active) {
-      return false;
-    }
-
-    // return true if at least one value is true
-    return [incidents, active].some(Boolean);
+    return active === incidents ? false : true;
   };
 
   handleChange = type => async () => {
@@ -33,9 +28,12 @@ export default class RunningFilter extends React.Component {
   };
 
   onResetFilter = () => {
+    const {incidents, active} = this.props.filter;
+    const newValue = active === incidents ? !active : true;
+
     const change = {
-      active: {$set: !this.props.filter.active},
-      incidents: {$set: !this.props.filter.incidents}
+      active: {$set: newValue},
+      incidents: {$set: newValue}
     };
 
     this.props.onChange(change);
