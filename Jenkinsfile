@@ -70,7 +70,7 @@ pipeline {
             }
         }
 
-        stage('Trigger Perfomance Tests') {
+        stage('Trigger Performance Tests') {
             when { branch 'develop' }
             steps {
                 build job: 'zeebe-cluster-long-running-tests', wait: false
