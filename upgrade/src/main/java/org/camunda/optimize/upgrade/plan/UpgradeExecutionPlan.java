@@ -70,7 +70,7 @@ public class UpgradeExecutionPlan implements UpgradePlan {
     return RestClient.builder(
       new HttpHost(
         configurationService.getElasticSearchHost(),
-        9200,
+        configurationService.getElasticSearchHttpPort(),
         HTTP
       )
     ).build();

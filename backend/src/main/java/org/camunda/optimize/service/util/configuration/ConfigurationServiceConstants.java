@@ -31,7 +31,8 @@ public interface ConfigurationServiceConstants {
   String VARIABLE_IMPORT_PLUGIN_BASE_PACKAGES = "$.plugin.variableImport.basePackages";
   String ENGINE_REST_FILTER_PLUGIN_BASE_PACKAGES = "$.plugin.engineRestFilter.basePackages";
   String ELASTIC_SEARCH_HOST = "$.es.host";
-  String ELASTIC_SEARCH_PORT = "$.es.port";
+  String ELASTIC_SEARCH_TCP_PORT = "$.es.ports.tcp";
+  String ELASTIC_SEARCH_HTTP_PORT = "$.es.ports.http";
   String ELASTIC_SEARCH_CONNECTION_TIMEOUT = "$.es.connection.timeout";
   String ELASTIC_SEARCH_SCROLL_TIMEOUT = "$.es.scrollTimeout";
   String SAMPLER_INTERVAL = "$.es.sampler.interval";

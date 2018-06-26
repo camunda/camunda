@@ -54,8 +54,11 @@ engines:
 es:
   # A hostname on which the Elasticsearch TCP listener is available.
   host: localhost
-  # A port number used by Elasticsearch to accept TCP connections.
-  port: 9300
+  ports:
+    # A port number used by Elasticsearch to accept TCP connections.
+    tcp: 9300
+    # A port number used by Elasticsearch to accept HTTP connections.
+    http: 9200
   # An index name used to create all Camunda Optimize types, shards, etc.
   index: optimize
   settings:

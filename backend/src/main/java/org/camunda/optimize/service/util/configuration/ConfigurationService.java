@@ -45,7 +45,8 @@ public class ConfigurationService {
   private Map<String, EngineConfiguration> configuredEngines;
   private Integer tokenLifeTime;
   private String elasticSearchHost;
-  private Integer elasticSearchPort;
+  private Integer elasticSearchTcpPort;
+  private Integer elasticSearchHttpPort;
   private String optimizeIndex;
   private String userValidationEndpoint;
   private String processDefinitionEndpoint;
@@ -236,11 +237,18 @@ public class ConfigurationService {
     return elasticSearchHost;
   }
 
-  public Integer getElasticSearchPort() {
-    if (elasticSearchPort == null) {
-      elasticSearchPort = jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_PORT);
+  public Integer getElasticSearchTcpPort() {
+    if (elasticSearchTcpPort == null) {
+      elasticSearchTcpPort = jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_TCP_PORT);
     }
-    return elasticSearchPort;
+    return elasticSearchTcpPort;
+  }
+
+  public Integer getElasticSearchHttpPort() {
+    if (elasticSearchHttpPort == null) {
+      elasticSearchHttpPort = jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_HTTP_PORT);
+    }
+    return elasticSearchHttpPort;
   }
 
   protected String getOptimizeIndex() {
@@ -783,8 +791,12 @@ public class ConfigurationService {
     this.elasticSearchHost = elasticSearchHost;
   }
 
-  public void setElasticSearchPort(Integer elasticSearchPort) {
-    this.elasticSearchPort = elasticSearchPort;
+  public void setElasticSearchTcpPort(Integer elasticSearchTcpPort) {
+    this.elasticSearchTcpPort = elasticSearchTcpPort;
+  }
+
+  public void setElasticSearchHttpPort(Integer elasticSearchHttpPort) {
+    this.elasticSearchHttpPort = elasticSearchHttpPort;
   }
 
   public void setOptimizeIndex(String optimizeIndex) {

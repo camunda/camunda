@@ -38,7 +38,7 @@ public class TransportClientFactory implements FactoryBean<Client> {
               .build())
             .addTransportAddress(new TransportAddress(
               InetAddress.getByName(configurationService.getElasticSearchHost()),
-              configurationService.getElasticSearchPort()
+              configurationService.getElasticSearchTcpPort()
             ));
         instance = new SchemaInitializingClient(internalClient);
         elasticSearchSchemaInitializer.useClient(internalClient, configurationService);

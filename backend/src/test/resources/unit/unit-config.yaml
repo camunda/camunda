@@ -12,7 +12,9 @@ import:
 container:
   checkMetadata: false
 es:
-  port: 9302
+  ports:
+    tcp: 9302
+    http: 9200
   sampler:
     interval: 100
 
