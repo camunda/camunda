@@ -22,6 +22,8 @@ public class WorkflowInstanceDto {
 
   private List<IncidentDto> incidents = new ArrayList<>();
 
+  private List<ActivityInstanceDto> activities = new ArrayList<>();
+
   public String getId() {
     return id;
   }
@@ -78,6 +80,14 @@ public class WorkflowInstanceDto {
     this.incidents = incidents;
   }
 
+  public List<ActivityInstanceDto> getActivities() {
+    return activities;
+  }
+
+  public void setActivities(List<ActivityInstanceDto> activities) {
+    this.activities = activities;
+  }
+
   public static WorkflowInstanceDto createFrom(WorkflowInstanceEntity workflowInstanceEntity) {
     if (workflowInstanceEntity == null) {
       return null;
@@ -90,6 +100,7 @@ public class WorkflowInstanceDto {
     workflowInstance.setState(workflowInstanceEntity.getState());
     workflowInstance.setWorkflowId(workflowInstanceEntity.getWorkflowId());
     workflowInstance.setIncidents(IncidentDto.createFrom(workflowInstanceEntity.getIncidents()));
+    workflowInstance.setActivities(ActivityInstanceDto.createFrom(workflowInstanceEntity.getActivities()));
     return workflowInstance;
   }
 
@@ -126,7 +137,9 @@ public class WorkflowInstanceDto {
       return false;
     if (businessKey != null ? !businessKey.equals(that.businessKey) : that.businessKey != null)
       return false;
-    return incidents != null ? incidents.equals(that.incidents) : that.incidents == null;
+    if (incidents != null ? !incidents.equals(that.incidents) : that.incidents != null)
+      return false;
+    return activities != null ? activities.equals(that.activities) : that.activities == null;
   }
 
   @Override
@@ -138,6 +151,7 @@ public class WorkflowInstanceDto {
     result = 31 * result + (state != null ? state.hashCode() : 0);
     result = 31 * result + (businessKey != null ? businessKey.hashCode() : 0);
     result = 31 * result + (incidents != null ? incidents.hashCode() : 0);
+    result = 31 * result + (activities != null ? activities.hashCode() : 0);
     return result;
   }
 }

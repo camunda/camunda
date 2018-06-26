@@ -13,6 +13,7 @@ import org.camunda.operate.util.OperateIntegrationTest;
 import org.camunda.operate.util.ZeebeTestRule;
 import org.camunda.operate.util.ZeebeUtil;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,13 @@ public class ZeebeWorkflowInstanceIT extends OperateIntegrationTest {
 
   private JobWorker jobWorker;
 
+  private OffsetDateTime testStartTime;
+
+  @Before
+  public void init() {
+    testStartTime = OffsetDateTime.now();
+  }
+
   @After
   public void cleanup() {
     if (jobWorker != null && jobWorker.isOpen()) {
@@ -47,7 +55,6 @@ public class ZeebeWorkflowInstanceIT extends OperateIntegrationTest {
   @Test
   public void testWorkflowInstanceCreated() {
     // having
-    final OffsetDateTime testStartTime = OffsetDateTime.now();
     String topicName = zeebeTestRule.getTopicName();
 
 
@@ -68,6 +75,11 @@ public class ZeebeWorkflowInstanceIT extends OperateIntegrationTest {
     assertThat(workflowInstanceEntity.getEndDate()).isNull();
     assertThat(workflowInstanceEntity.getStartDate()).isAfterOrEqualTo(testStartTime);
     assertThat(workflowInstanceEntity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
+
+    //assert activity fields
+    assertThat(workflowInstanceEntity.getActivities().size()).isEqualTo(2);
+    assertStartActivityCompleted(workflowInstanceEntity.getActivities().get(0));
+    assertActivityIsActive(workflowInstanceEntity.getActivities().get(1), "taskA");
 
   }
 
@@ -95,6 +107,12 @@ public class ZeebeWorkflowInstanceIT extends OperateIntegrationTest {
     assertThat(incidentEntity.getActivityInstanceId()).isNotEmpty();
     assertThat(incidentEntity.getErrorMessage()).isNotEmpty();
     assertThat(incidentEntity.getErrorType()).isNotEmpty();
+
+    //assert activity fields
+    assertThat(workflowInstanceEntity.getActivities().size()).isEqualTo(2);
+    assertStartActivityCompleted(workflowInstanceEntity.getActivities().get(0));
+    assertActivityIsActive(workflowInstanceEntity.getActivities().get(1), "taskA");
+
   }
 
   @Test
@@ -137,6 +155,23 @@ public class ZeebeWorkflowInstanceIT extends OperateIntegrationTest {
       }
     }
 
+  }
+
+  private void assertStartActivityCompleted(ActivityInstanceEntity startActivity) {
+    assertThat(startActivity.getActivityId()).isEqualTo("start");
+    assertThat(startActivity.getState()).isEqualTo(ActivityState.COMPLETED);
+    assertThat(startActivity.getStartDate()).isAfterOrEqualTo(testStartTime);
+    assertThat(startActivity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
+    assertThat(startActivity.getEndDate()).isAfterOrEqualTo(startActivity.getStartDate());
+    assertThat(startActivity.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
+  }
+
+  private void assertActivityIsActive(ActivityInstanceEntity activity, String activityId) {
+    assertThat(activity.getActivityId()).isEqualTo(activityId);
+    assertThat(activity.getState()).isEqualTo(ActivityState.ACTIVE);
+    assertThat(activity.getStartDate()).isAfterOrEqualTo(testStartTime);
+    assertThat(activity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
+    assertThat(activity.getEndDate()).isNull();
   }
 
 }

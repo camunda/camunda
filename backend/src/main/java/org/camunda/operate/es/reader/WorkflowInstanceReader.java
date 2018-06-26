@@ -1,19 +1,8 @@
 package org.camunda.operate.es.reader;
 
-import static org.apache.lucene.search.join.ScoreMode.None;
-import static org.camunda.operate.entities.IncidentState.ACTIVE;
-import static org.camunda.operate.es.types.WorkflowInstanceType.END_DATE;
-import static org.camunda.operate.es.types.WorkflowInstanceType.INCIDENTS;
-import static org.camunda.operate.es.types.WorkflowInstanceType.STATE;
-import static org.camunda.operate.es.types.WorkflowInstanceType.TYPE;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.es.types.WorkflowInstanceType;
 import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
@@ -32,10 +21,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
+import static org.apache.lucene.search.join.ScoreMode.None;
+import static org.camunda.operate.entities.IncidentState.ACTIVE;
+import static org.camunda.operate.es.types.WorkflowInstanceType.END_DATE;
+import static org.camunda.operate.es.types.WorkflowInstanceType.INCIDENTS;
+import static org.camunda.operate.es.types.WorkflowInstanceType.STATE;
+import static org.camunda.operate.es.types.WorkflowInstanceType.TYPE;
+import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 
 @Component
@@ -75,7 +71,8 @@ public class WorkflowInstanceReader {
    * @return
    */
   public List<WorkflowInstanceEntity> queryWorkflowInstances(WorkflowInstanceQueryDto workflowInstanceQuery, Integer firstResult, Integer maxResults) {
-    SearchRequestBuilder searchRequest = createSearchRequest(workflowInstanceQuery);
+    SearchRequestBuilder searchRequest = createSearchRequest(workflowInstanceQuery)
+      .setFetchSource(null, "activities");
 
     if (firstResult != null && maxResults != null) {
       return paginate(searchRequest, firstResult, maxResults);
