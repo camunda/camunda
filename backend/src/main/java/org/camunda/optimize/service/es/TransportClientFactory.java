@@ -35,6 +35,7 @@ public class TransportClientFactory implements FactoryBean<Client> {
             Settings.builder()
               .put("client.transport.ping_timeout", configurationService.getElasticsearchConnectionTimeout(), TimeUnit.MILLISECONDS)
               .put("client.transport.nodes_sampler_interval", configurationService.getSamplerInterval(), TimeUnit.MILLISECONDS)
+              .put("cluster.name", configurationService.getElasticSearchClusterName())
               .build())
             .addTransportAddress(new TransportAddress(
               InetAddress.getByName(configurationService.getElasticSearchHost()),

@@ -54,6 +54,8 @@ engines:
 es:
   # A hostname on which the Elasticsearch TCP listener is available.
   host: localhost
+  # The name of the Elasticsearch cluster Optimize should connect with.
+  clusterName: elasticsearch
   ports:
     # A port number used by Elasticsearch to accept TCP connections.
     tcp: 9300

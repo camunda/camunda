@@ -45,6 +45,7 @@ public class ConfigurationService {
   private Map<String, EngineConfiguration> configuredEngines;
   private Integer tokenLifeTime;
   private String elasticSearchHost;
+  private String elasticSearchClusterName;
   private Integer elasticSearchTcpPort;
   private Integer elasticSearchHttpPort;
   private String optimizeIndex;
@@ -235,6 +236,13 @@ public class ConfigurationService {
       elasticSearchHost = jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_HOST);
     }
     return elasticSearchHost;
+  }
+
+  public String getElasticSearchClusterName() {
+    if (elasticSearchClusterName == null) {
+      elasticSearchClusterName = jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_CLUSTER_NAME);
+    }
+    return elasticSearchClusterName;
   }
 
   public Integer getElasticSearchTcpPort() {
@@ -789,6 +797,10 @@ public class ConfigurationService {
 
   public void setElasticSearchHost(String elasticSearchHost) {
     this.elasticSearchHost = elasticSearchHost;
+  }
+
+  public void setElasticSearchClusterName(String elasticSearchClusterName) {
+    this.elasticSearchClusterName = elasticSearchClusterName;
   }
 
   public void setElasticSearchTcpPort(Integer elasticSearchTcpPort) {
