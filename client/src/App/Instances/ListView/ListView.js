@@ -5,7 +5,7 @@ import SplitPane from 'modules/components/SplitPane';
 import List from './List';
 import ListFooter from './ListFooter';
 
-import {parseFilterForRequest} from '../service';
+import {parseFilterForRequest, isEmpty} from '../service';
 import {getData} from './api';
 
 const {Pane} = SplitPane;
@@ -60,25 +60,31 @@ export default class ListView extends React.Component {
       <Pane {...this.props}>
         <Pane.Header>Instances</Pane.Header>
         <Pane.Body>
-          <List
-            data={this.state.instances}
-            selection={this.props.selection}
-            total={this.props.instancesInFilter}
-            onEntriesPerPageChange={entriesPerPage =>
-              this.setState({entriesPerPage})
-            }
-            onSelectionUpdate={this.props.onSelectionUpdate}
-            filter={this.props.filter}
-          />
+          {!isEmpty(this.props.filter) && (
+            <List
+              data={this.state.instances}
+              selection={this.props.selection}
+              total={this.props.instancesInFilter}
+              onEntriesPerPageChange={entriesPerPage =>
+                this.setState({entriesPerPage})
+              }
+              onSelectionUpdate={this.props.onSelectionUpdate}
+              filter={this.props.filter}
+            />
+          )}
         </Pane.Body>
         <Pane.Footer>
-          <ListFooter
-            total={this.props.instancesInFilter}
-            perPage={this.state.entriesPerPage}
-            firstElement={this.state.firstElement}
-            onFirstElementChange={firstElement => this.setState({firstElement})}
-            onAddToSelection={this.props.onAddToSelection}
-          />
+          {!isEmpty(this.props.filter) && (
+            <ListFooter
+              total={this.props.instancesInFilter}
+              perPage={this.state.entriesPerPage}
+              firstElement={this.state.firstElement}
+              onFirstElementChange={firstElement =>
+                this.setState({firstElement})
+              }
+              onAddToSelection={this.props.onAddToSelection}
+            />
+          )}
         </Pane.Footer>
       </Pane>
     );

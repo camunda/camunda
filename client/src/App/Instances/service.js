@@ -32,9 +32,27 @@ export function parseQueryString(queryString) {
 
   queries.forEach((item, index) => {
     const temp = queries[index].split('=');
-    // check error for json parse
-    params[temp[0]] = JSON.parse(temp[1]);
+
+    if (isValidJSON(temp[1])) {
+      params[temp[0]] = JSON.parse(temp[1]);
+    }
   });
 
   return params;
+}
+
+function isValidJSON(text) {
+  try {
+    JSON.parse(text);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+export function isEmpty(obj) {
+  for (var key in obj) {
+    if (obj.hasOwnProperty(key)) return false;
+  }
+  return true;
 }

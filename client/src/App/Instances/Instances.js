@@ -1,4 +1,4 @@
-import React, {Component} from 'react';
+import React, {Component, Fragment} from 'react';
 import update from 'immutability-helper';
 import {withRouter} from 'react-router';
 import Header from '../Header';
@@ -20,7 +20,8 @@ import {
   parseFilterForRequest,
   parseQueryString,
   getFilterQueryString,
-  defaultFilterSelection
+  defaultFilterSelection,
+  isEmpty
 } from './service';
 import * as Styled from './styled.js';
 
@@ -40,7 +41,7 @@ class Instances extends Component {
     const {filterCount, selections} = props.getState();
 
     this.state = {
-      filter: this.getFilterFromUrl(),
+      filter: {},
       filterCount: filterCount || 0,
       selection: this.createNewSelectionFragment(),
       selections: selections || [[]]
@@ -48,6 +49,16 @@ class Instances extends Component {
   }
 
   async componentDidMount() {
+    let filter = this.getFilterFromUrl();
+
+    // query was not valid
+    if (!filter) {
+      // set default filter selection
+      filter = defaultFilterSelection;
+      this.setFilterInURL(defaultFilterSelection);
+    }
+
+    this.setState({filter});
     await this.setFilterCount();
   }
 
@@ -82,14 +93,14 @@ class Instances extends Component {
   };
 
   getFilterFromUrl = () => {
-    // improve
-    if (this.props.location.search === '') {
+    let query = this.props.location.search;
+
+    if (query === '') {
       this.setFilterInURL(defaultFilterSelection);
-      return parseQueryString(getFilterQueryString(defaultFilterSelection))
-        .filter;
-    } else {
-      return parseQueryString(this.props.location.search).filter;
+      query = getFilterQueryString(defaultFilterSelection);
     }
+
+    return parseQueryString(query).filter;
   };
 
   setFilterCount = async () => {
@@ -147,22 +158,26 @@ class Instances extends Component {
             <Panel isRounded>
               <Panel.Header isRounded>Filters</Panel.Header>
               <Panel.Body>
-                <Filter
-                  type="running"
-                  filter={{
-                    active,
-                    incidents
-                  }}
-                  onChange={this.handleFilterChange}
-                />
-                <Filter
-                  type="finished"
-                  filter={{
-                    canceled,
-                    completed
-                  }}
-                  onChange={this.handleFilterChange}
-                />
+                {!isEmpty(this.state.filter) && (
+                  <Fragment>
+                    <Filter
+                      type="running"
+                      filter={{
+                        active,
+                        incidents
+                      }}
+                      onChange={this.handleFilterChange}
+                    />
+                    <Filter
+                      type="finished"
+                      filter={{
+                        canceled,
+                        completed
+                      }}
+                      onChange={this.handleFilterChange}
+                    />
+                  </Fragment>
+                )}
               </Panel.Body>
               <ExpandButton
                 containerId={EXPAND_CONTAINER.LEFT}
