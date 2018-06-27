@@ -2,20 +2,20 @@
 
 exports[`DiagramControls should render diagram controls 1`] = `
 <styled.div>
-  <Styled(Themed(styled.button))
+  <Styled(Styled(Button))
     onClick={[Function]}
   >
     <DiagramReset />
-  </Styled(Themed(styled.button))>
-  <Themed(Styled(Themed(styled.button)))
+  </Styled(Styled(Button))>
+  <Styled(Styled(Button))
     onClick={[Function]}
   >
     <Plus />
-  </Themed(Styled(Themed(styled.button)))>
-  <Themed(Styled(Themed(styled.button)))
+  </Styled(Styled(Button))>
+  <Styled(Styled(Button))
     onClick={[Function]}
   >
     <Minus />
-  </Themed(Styled(Themed(styled.button)))>
+  </Styled(Styled(Button))>
 </styled.div>
 `;
