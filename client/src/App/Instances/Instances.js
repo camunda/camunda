@@ -58,7 +58,8 @@ class Instances extends Component {
       this.setFilterInURL(defaultFilterSelection);
     }
 
-    this.setState({filter});
+    await this.setState({filter});
+
     await this.setFilterCount();
   }
 
@@ -119,15 +120,15 @@ class Instances extends Component {
   handleFilterChange = async change => {
     const filter = update(this.state.filter, change);
 
-    this.setState({
+    await this.setState({
       filter: filter,
       selection: this.createNewSelectionFragment()
     });
 
+    this.setFilterInURL(this.state.filter);
+
     // update filterCount separatelly not block UI while fetching
     await this.setFilterCount();
-
-    this.setFilterInURL(this.state.filter);
 
     // write current filter selection to local storage
     this.props.storeState({filter});
