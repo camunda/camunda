@@ -62,7 +62,7 @@ export default function TypeaheadMultipleSelection(props) {
     </div>
   );
   const loadingIndicator = loading ? (
-    <div class="TypeaheadMultipleSelection__loading-indicator">Loading...</div>
+    <div className="TypeaheadMultipleSelection__loading-indicator">Loading...</div>
   ) : (
     ''
   );
