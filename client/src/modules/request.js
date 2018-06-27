@@ -57,7 +57,8 @@ export async function request({url, method, body, query, headers}) {
       ...createAuthorizationHeader(),
       ...headers
     },
-    mode: 'cors'
+    mode: 'cors',
+    credentials: 'same-origin'
   });
 
   handlers.forEach(async fct => {
