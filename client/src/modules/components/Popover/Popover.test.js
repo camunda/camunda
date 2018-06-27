@@ -58,5 +58,5 @@ it('should display tooltip on button', () => {
     </Popover>
   );
 
-  expect(node.find('button')).toMatchSelector('button[title="' + 'myTooltip' + '"]');
+  expect(node.find('button')).toMatchSelector('button[title="myTooltip"]');
 });
