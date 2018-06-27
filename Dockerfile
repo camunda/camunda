@@ -12,23 +12,26 @@ ARG PASSWORD
 
 # Download Optimize
 RUN apk add --no-cache tar wget
-COPY docker/ /
+COPY Dockerfile distro/target/*-${DISTRO}.tar.gz /tmp/
+COPY docker/download.sh /bin/
 RUN /bin/download.sh
 
 ############ Production image ###############
 FROM openjdk:8u151-jre-alpine3.7
 
-ENV OPTIMIZE_HOME=/optimize \
-    JAVA_OPTS="-Xms512m -Xmx512m -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap" \
-    TZ=Europe/Berlin
+ENV OPTIMIZE_HOME=/optimize
+ENV JAVA_OPTS="-Xms512m -Xmx512m -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap"
 ENV OPTIMIZE_CLASSPATH=${OPTIMIZE_HOME}/environment:${OPTIMIZE_HOME}/plugin/*:${OPTIMIZE_HOME}/*
+ENV WAIT_FOR=
+ENV WAIT_FOR_TIMEOUT=30
+ENV TZ=Europe/Berlin
 
 WORKDIR ${OPTIMIZE_HOME}
 
 EXPOSE 8090 8091
 
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD exec java ${JAVA_OPTS} -cp "${OPTIMIZE_CLASSPATH}" -Dfile.encoding=UTF-8 org.camunda.optimize.Main
+CMD ["./optimize.sh"]
 
 RUN apk add --no-cache bash curl tini tzdata && \
     addgroup -S optimize && \
@@ -36,5 +39,7 @@ RUN apk add --no-cache bash curl tini tzdata && \
     chown optimize:optimize /optimize
 
 COPY --chown=optimize:optimize --from=builder /build .
+COPY docker/bin/optimize.sh ./optimize.sh
+COPY docker/bin/wait-for-it.sh /usr/local/bin/wait-for-it.sh
 
 USER optimize
