@@ -14,7 +14,7 @@ jest.mock('./service', () => {
 
 let server;
 beforeEach(() => {
-  server = new Server('ws://localhost:8090/ws/status');
+  server = new Server('ws://localhost/ws/status');
 });
 afterEach(() => {
   server.stop();
