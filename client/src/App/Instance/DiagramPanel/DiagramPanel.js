@@ -46,5 +46,5 @@ DiagramPanel.propTypes = {
     state: PropTypes.string.isRequired,
     errorMessage: PropTypes.string
   }).isRequired,
-  containerId: PropTypes.string
+  paneId: PropTypes.string
 };

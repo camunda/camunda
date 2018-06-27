@@ -1,44 +1,7 @@
 import styled, {css} from 'styled-components';
 
-import {EXPAND_CONTAINER} from 'modules/utils';
 import {themed, themeStyle, Colors} from 'modules/theme';
 import {UpBar, DownBar, LeftBar, RightBar} from 'modules/components/Icon';
-
-const bottomRightStyle = css`
-  position: absolute;
-  right: 0;
-  bottom: 0;
-
-  border-bottom: none;
-`;
-
-const topLeftStyle = css`
-  position: absolute;
-  left: 0;
-  top: 0;
-
-  border-top: none;
-  border-left: none;
-  border-bottom: none;
-`;
-
-const topRightStyle = css`
-  position: absolute;
-  right: 0;
-  top: 0;
-
-  border-top: none;
-  border-right: none;
-  border-bottom: none;
-`;
-
-const {TOP, BOTTOM, LEFT, RIGHT} = EXPAND_CONTAINER;
-const stylesMap = {
-  [TOP]: bottomRightStyle,
-  [BOTTOM]: topRightStyle,
-  [LEFT]: topRightStyle,
-  [RIGHT]: topLeftStyle
-};
 
 export const ExpandButton = themed(styled.a`
   cursor: pointer;
@@ -55,8 +18,6 @@ export const ExpandButton = themed(styled.a`
       dark: Colors.uiDark04,
       light: Colors.uiLight05
     })};
-
-  ${({containerId}) => stylesMap[containerId]};
 `);
 
 const iconStyle = css`

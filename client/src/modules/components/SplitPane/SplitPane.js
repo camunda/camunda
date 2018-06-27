@@ -1,6 +1,6 @@
 import React, {Children, cloneElement} from 'react';
 
-import {EXPAND_CONTAINER} from 'modules/utils';
+import {PANE_ID} from './Pane/constants';
 
 import {ExpandProvider} from './ExpandContext';
 import Pane from './Pane';
@@ -26,11 +26,11 @@ function customArrayProp(props, propName, componentName) {
   return null;
 }
 
-const containerIds = [EXPAND_CONTAINER.TOP, EXPAND_CONTAINER.BOTTOM];
+const paneIds = [PANE_ID.TOP, PANE_ID.BOTTOM];
 
 export default function SplitPane(props) {
   const children = Children.map(props.children, (child, idx) =>
-    cloneElement(child, {containerId: containerIds[idx]})
+    cloneElement(child, {paneId: paneIds[idx]})
   );
 
   return (

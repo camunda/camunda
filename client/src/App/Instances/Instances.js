@@ -6,8 +6,7 @@ import Header from '../Header';
 import Panel from 'modules/components/Panel';
 import withSharedState from 'modules/components/withSharedState';
 import SplitPane from 'modules/components/SplitPane';
-import ExpandButton from 'modules/components/ExpandButton';
-import {EXPAND_CONTAINER} from 'modules/utils';
+import {ICON_DIRECTION} from 'modules/components/ExpandButton/constants';
 
 import PropTypes from 'prop-types';
 
@@ -180,8 +179,8 @@ class Instances extends Component {
                   </Fragment>
                 )}
               </Panel.Body>
-              <ExpandButton
-                containerId={EXPAND_CONTAINER.LEFT}
+              <Styled.LeftExpandButton
+                iconDirection={ICON_DIRECTION.LEFT}
                 isExpanded={true}
               />
               <Panel.Footer />
@@ -212,8 +211,8 @@ class Instances extends Component {
               <Panel.Body>
                 <SelectionDisplay selections={this.state.selections} />
               </Panel.Body>
-              <ExpandButton
-                containerId={EXPAND_CONTAINER.RIGHT}
+              <Styled.RightExpandButton
+                iconDirection={ICON_DIRECTION.RIGHT}
                 isExpanded={true}
               />
               <Panel.Footer />

@@ -2,6 +2,7 @@ import styled from 'styled-components';
 
 import SplitPane from 'modules/components/SplitPane';
 import Panel from 'modules/components/Panel';
+import ExpandButton from 'modules/components/ExpandButton';
 
 import {HEADER_HEIGHT} from './../Header/styled';
 
@@ -21,6 +22,15 @@ export const Left = styled.div`
   margin-right: 1px;
 `;
 
+export const LeftExpandButton = styled(ExpandButton)`
+  position: absolute;
+  right: 0;
+  top: 0;
+  border-top: none;
+  border-bottom: none;
+  border-right: none;
+`;
+
 export const Center = styled(SplitPane)`
   width: 100%;
 `;
@@ -28,6 +38,15 @@ export const Center = styled(SplitPane)`
 export const Right = styled.div`
   width: 320px;
   display: flex;
+`;
+
+export const RightExpandButton = styled(ExpandButton)`
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-top: none;
+  border-bottom: none;
+  border-left: none;
 `;
 
 export const SelectionHeader = styled(Panel.Header)`

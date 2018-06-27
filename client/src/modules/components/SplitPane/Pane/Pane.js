@@ -2,16 +2,28 @@ import React, {Children, cloneElement} from 'react';
 import PropTypes from 'prop-types';
 
 import {withExpand} from 'modules/components/SplitPane/ExpandContext';
-import ExpandButton from 'modules/components/ExpandButton';
 import Panel from 'modules/components/Panel';
+import {ICON_DIRECTION} from 'modules/components/ExpandButton/constants';
 
+import {PANE_ID} from './constants';
 import * as Styled from './styled';
 
+// iconDirections: {EXPANDED, NOT_EXPANDED}
+const paneExpandButton = {
+  [PANE_ID.TOP]: {
+    ExpandButton: Styled.TopExpandButton,
+    iconDirections: {true: ICON_DIRECTION.UP, false: ICON_DIRECTION.DOWN}
+  },
+  [PANE_ID.BOTTOM]: {
+    ExpandButton: Styled.BottomExpandButton,
+    iconDirections: {true: ICON_DIRECTION.DOWN, false: ICON_DIRECTION.UP}
+  }
+};
 class Pane extends React.Component {
   static propTypes = {
     expand: PropTypes.func.isRequired,
     resetExpanded: PropTypes.func.isRequired,
-    containerId: PropTypes.string.isRequired,
+    paneId: PropTypes.string.isRequired,
     expandedId: PropTypes.string,
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
@@ -20,29 +32,33 @@ class Pane extends React.Component {
   };
 
   handleExpand = () => {
-    const {expand, resetExpanded, containerId, expandedId} = this.props;
+    const {expand, resetExpanded, paneId, expandedId} = this.props;
 
     // (1) if there is an expanded panel, reset the expandedId
     // (2) otherwise expand the target id
-    expandedId === null ? expand(containerId) : resetExpanded();
+    expandedId === null ? expand(paneId) : resetExpanded();
   };
 
   render() {
-    const {containerId, expandedId} = this.props;
+    const {paneId, expandedId} = this.props;
 
     const children = Children.map(this.props.children, child =>
-      cloneElement(child, {containerId, expandedId})
+      cloneElement(child, {paneId, expandedId})
     );
 
-    const isExpanded = containerId === expandedId;
+    const isExpanded = expandedId === paneId;
+
+    const {
+      ExpandButton,
+      iconDirections: {[isExpanded]: iconDirection}
+    } = paneExpandButton[paneId];
 
     return (
       <Styled.Pane {...this.props}>
         {children}
         <ExpandButton
           onClick={this.handleExpand}
-          containerId={containerId}
-          isExpanded={isExpanded}
+          iconDirection={iconDirection}
         />
       </Styled.Pane>
     );

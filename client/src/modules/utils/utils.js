@@ -7,13 +7,6 @@ export const INSTANCE_STATE = {
   INCIDENT: 'INCIDENT'
 };
 
-export const EXPAND_CONTAINER = {
-  TOP: 'TOP',
-  BOTTOM: 'BOTTOM',
-  LEFT: 'LEFT',
-  RIGHT: 'RIGHT'
-};
-
 export function formatDate(dateString) {
   return dateString ? format(dateString, 'D MMM YYYY | HH:mm:ss') : '--';
 }

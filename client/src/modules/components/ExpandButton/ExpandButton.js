@@ -1,37 +1,27 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import {EXPAND_CONTAINER} from 'modules/utils';
-
+import {ICON_DIRECTION} from './constants';
 import * as Styled from './styled';
 
-const {TOP, BOTTOM, LEFT, RIGHT} = EXPAND_CONTAINER;
-
-// true: expanded, false: not expanded
 const iconsMap = {
-  [TOP]: {true: Styled.Up, false: Styled.Down},
-  [BOTTOM]: {true: Styled.Down, false: Styled.Up},
-  [LEFT]: {true: Styled.Left},
-  [RIGHT]: {true: Styled.Right}
+  [ICON_DIRECTION.UP]: Styled.Up,
+  [ICON_DIRECTION.DOWN]: Styled.Down,
+  [ICON_DIRECTION.LEFT]: Styled.Left,
+  [ICON_DIRECTION.RIGHT]: Styled.Right
 };
 
-class ExpandButton extends React.Component {
-  static propTypes = {
-    containerId: PropTypes.oneOf([TOP, BOTTOM, LEFT, RIGHT]).isRequired,
-    isExpanded: PropTypes.bool.isRequired,
-    onClick: PropTypes.func
-  };
+export default function ExpandButton({iconDirection, onClick, ...props}) {
+  const TargetIcon = iconsMap[iconDirection];
 
-  render() {
-    const {containerId, isExpanded} = this.props;
-    const TargetIcon = iconsMap[containerId][isExpanded];
-
-    return (
-      <Styled.ExpandButton {...this.props} onClick={this.props.onClick}>
-        <TargetIcon />
-      </Styled.ExpandButton>
-    );
-  }
+  return (
+    <Styled.ExpandButton {...props} onClick={onClick}>
+      <TargetIcon />
+    </Styled.ExpandButton>
+  );
 }
 
-export default ExpandButton;
+ExpandButton.propTypes = {
+  iconDirection: PropTypes.oneOf(Object.keys(ICON_DIRECTION)),
+  onClick: PropTypes.func
+};
