@@ -25,13 +25,15 @@
   "scripts": {
     "precommit": "lint-staged",
     "build-css": "node-sass-chokidar --include-path ./src/shared-styles src/ -o src/",
-    "watch-css": "npm run build-css && node-sass-chokidar --include-path ./src/shared-styles src/ -o src/ --watch --recursive",
+    "watch-css":
+      "npm run build-css && node-sass-chokidar --include-path ./src/shared-styles src/ -o src/ --watch --recursive",
     "start-js": "react-scripts start",
     "start": "npm-run-all -p watch-css start-js",
     "build-js": "react-scripts build",
     "build": "npm-run-all build-css build-js",
     "test": "react-scripts test --env=jsdom",
-    "test:ci": "CI=true react-scripts test --env=jsdom --maxWorkers=$LIMITS_CPU --ci --testResultsProcessor='jest-junit'",
+    "test:ci":
+      "CI=true react-scripts test --env=jsdom --maxWorkers=$LIMITS_CPU --ci --testResultsProcessor='jest-junit'",
     "eject": "react-scripts eject",
     "postinstall": "node scripts/wireModules",
     "start-backend": "node scripts/start-backend",
@@ -39,10 +41,7 @@
     "dependencies": "node scripts/dependencies.js"
   },
   "lint-staged": {
-    "src/**/*.{js,scss}": [
-      "prettier --write",
-      "git add"
-    ]
+    "src/**/*.{js,scss}": ["prettier --write", "git add"]
   },
   "jest-junit": {
     "suiteName": "client",
@@ -78,6 +77,10 @@
   "proxy": {
     "/api": {
       "target": "http://localhost:8090"
+    },
+    "/ws": {
+      "target": "ws://localhost:8090",
+      "ws": true
     }
   }
 }
