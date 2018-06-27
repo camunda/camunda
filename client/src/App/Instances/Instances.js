@@ -15,7 +15,7 @@ import Filter from './Filter/index';
 import ListView from './ListView';
 import SelectionDisplay from './SelectionDisplay';
 
-import {getCount} from './api';
+import {fetchWorkflowInstancesCount} from './api';
 import {
   parseFilterForRequest,
   parseQueryString,
@@ -104,7 +104,7 @@ class Instances extends Component {
   };
 
   setFilterCount = async () => {
-    const filterCount = await getCount(
+    const filterCount = await fetchWorkflowInstancesCount(
       parseFilterForRequest(this.state.filter)
     );
 

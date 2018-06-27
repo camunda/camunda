@@ -5,7 +5,7 @@ import ListView from './ListView';
 import List from './List';
 import ListFooter from './ListFooter';
 import {defaultFilterSelection} from './../service';
-import {getData} from './api';
+import {fetchWorkflowInstances} from '../api';
 
 const selection = {
   list: new Set(),
@@ -16,7 +16,7 @@ const filter = {defaultFilterSelection};
 const total = 27;
 
 jest.mock('./api');
-getData.mockReturnValue([{id: 1}]);
+fetchWorkflowInstances.mockReturnValue([{id: 1}]);
 
 describe('ListView', () => {
   let node;
@@ -26,7 +26,7 @@ describe('ListView', () => {
   beforeEach(() => {
     onSelectionUpdate = jest.fn();
     onAddToSelection = jest.fn();
-    getData.mockClear();
+    fetchWorkflowInstances.mockClear();
     node = shallow(
       <ListView
         selection={selection}
@@ -47,7 +47,7 @@ describe('ListView', () => {
   });
 
   it('should load data if the filter changed', () => {
-    expect(getData).toHaveBeenCalled();
+    expect(fetchWorkflowInstances).toHaveBeenCalled();
   });
 
   it('should reset the page if the filter changes', () => {
@@ -58,11 +58,11 @@ describe('ListView', () => {
   });
 
   it('should load data if the current page changes', () => {
-    getData.mockClear();
+    fetchWorkflowInstances.mockClear();
     node.setState({firstElement: 10});
 
-    expect(getData).toHaveBeenCalled();
-    expect(getData.mock.calls[0][1]).toBe(10);
+    expect(fetchWorkflowInstances).toHaveBeenCalled();
+    expect(fetchWorkflowInstances.mock.calls[0][1]).toBe(10);
   });
 
   it('should pass properties to the Instances List', () => {

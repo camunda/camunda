@@ -6,7 +6,7 @@ import List from './List';
 import ListFooter from './ListFooter';
 
 import {parseFilterForRequest, isEmpty} from '../service';
-import {getData} from './api';
+import {fetchWorkflowInstances} from '../api';
 
 const {Pane} = SplitPane;
 export default class ListView extends React.Component {
@@ -47,7 +47,7 @@ export default class ListView extends React.Component {
 
   loadData = async () => {
     this.setState({
-      instances: await getData(
+      instances: await fetchWorkflowInstances(
         parseFilterForRequest(this.props.filter),
         this.state.firstElement,
         50
