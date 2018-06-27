@@ -48,9 +48,12 @@ export default class Typeahead extends React.Component {
     }
   };
 
-  showOptions = () => {
-    if (!this.state.optionsVisible) {
+  showOptions = evt => {
+    if (evt && evt.type === 'click') {
       this.input.select();
+    }
+
+    if (!this.state.optionsVisible && this.state.values) {
       this.setState({
         optionsVisible: true
       });
@@ -86,6 +89,7 @@ export default class Typeahead extends React.Component {
       // Synchronously update the input text
       query
     });
+    this.showOptions();
     this.updateValues();
   };
 
@@ -107,10 +111,6 @@ export default class Typeahead extends React.Component {
     if (evt.key === 'Tab') {
       this.close();
       return;
-    }
-
-    if (this.state.values && !this.state.optionsVisible) {
-      this.showOptions();
     }
 
     const {values, selectedValueIdx, optionsVisible} = this.state;
