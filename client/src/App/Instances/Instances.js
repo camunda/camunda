@@ -16,7 +16,12 @@ import ListView from './ListView';
 import SelectionDisplay from './SelectionDisplay';
 
 import {getCount} from './api';
-import {parseFilterForRequest} from './service';
+import {
+  parseFilterForRequest,
+  parseQueryString,
+  getFilterQueryString,
+  defaultFilterSelection
+} from './service';
 import * as Styled from './styled.js';
 
 const {Pane} = SplitPane;
@@ -32,14 +37,10 @@ class Instances extends Component {
   constructor(props) {
     super(props);
 
-    const {filter, filterCount, selections} = props.getState();
-    const hasCachedFilterWithValues = filter && Object.keys(filter).length > 0;
+    const {filterCount, selections} = props.getState();
 
     this.state = {
-      filter: (hasCachedFilterWithValues && filter) || {
-        active: true,
-        incidents: true
-      },
+      filter: this.getFilterFromUrl(),
       filterCount: filterCount || 0,
       selection: this.createNewSelectionFragment(),
       selections: selections || [[]]
@@ -47,13 +48,7 @@ class Instances extends Component {
   }
 
   async componentDidMount() {
-    const filterCount = await this.fetchFilterCount(this.state.filter);
-
-    this.setState({
-      filterCount
-    });
-
-    this.setFilterInURL();
+    await this.setFilterCount();
   }
 
   createNewSelectionFragment = () => {
@@ -62,6 +57,7 @@ class Instances extends Component {
 
   handleAddToSelection = () => {
     const {selection} = this.state;
+
     this.setState(
       update(this.state, {
         selections: {
@@ -85,8 +81,28 @@ class Instances extends Component {
     );
   };
 
-  fetchFilterCount = async filter => {
-    return await getCount(parseFilterForRequest(filter));
+  getFilterFromUrl = () => {
+    // improve
+    if (this.props.location.search === '') {
+      this.setFilterInURL(defaultFilterSelection);
+      return parseQueryString(getFilterQueryString(defaultFilterSelection))
+        .filter;
+    } else {
+      return parseQueryString(this.props.location.search).filter;
+    }
+  };
+
+  setFilterCount = async () => {
+    const filterCount = await getCount(
+      parseFilterForRequest(this.state.filter)
+    );
+
+    this.setState({
+      filterCount
+    });
+
+    // save filterCount to localStorage
+    this.props.storeState({filterCount});
   };
 
   handleFilterChange = async change => {
@@ -97,21 +113,19 @@ class Instances extends Component {
       selection: this.createNewSelectionFragment()
     });
 
+    // update filterCount separatelly not block UI while fetching
+    await this.setFilterCount();
+
+    this.setFilterInURL(this.state.filter);
+
+    // write current filter selection to local storage
     this.props.storeState({filter});
-
-    // separate setState to not block UI while waiting for server response
-    const filterCount = await this.fetchFilterCount(filter);
-    this.setState({filterCount});
-
-    this.setFilterInURL();
-
-    this.props.storeState({filterCount});
   };
 
-  setFilterInURL = () => {
+  setFilterInURL = filter => {
     this.props.history.push({
       pathname: this.props.location.pathname,
-      search: `?filter=${JSON.stringify(this.state.filter)}`
+      search: getFilterQueryString(filter)
     });
   };
 
