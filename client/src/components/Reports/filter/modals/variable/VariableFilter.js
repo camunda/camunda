@@ -32,7 +32,7 @@ export default class VariableFilter extends React.Component {
       loading: false,
       valuePrefix: '',
       valuesLoaded: 0,
-      toShowUnselectedValues: valuesToLoad
+      numberOfUnselectedValuesToDisplay: valuesToLoad
     };
   }
 
@@ -54,14 +54,15 @@ export default class VariableFilter extends React.Component {
     }
   };
 
-  notSelectedAvailableValues = availableValues =>
-    availableValues.filter(value => !this.state.values.includes(value));
-  selectedAvailableValues = availableValues =>
-    availableValues.filter(value => this.state.values.includes(value));
-  availableSelectedValues = availableValues =>
-    this.state.values.filter(value => availableValues.includes(value));
+  selectedAvailableValues = availableValues => {
+    return availableValues.filter(value => this.state.values.includes(value));
+  };
 
-  loadAvailableValues = debounce(async ({name, type}, more) => {
+  availableSelectedValues = availableValues => {
+    return this.state.values.filter(value => availableValues.includes(value));
+  };
+
+  loadAvailableValues = debounce(async ({name, type}, moreValuesRequested) => {
     this.setState(
       {
         loading: true
@@ -77,10 +78,12 @@ export default class VariableFilter extends React.Component {
           this.state.valuePrefix
         );
 
-        let toShowUnselectedValues = this.state.toShowUnselectedValues + (more ? valuesToLoad : 0);
+        let numberOfUnselectedValuesToDisplay =
+          this.state.numberOfUnselectedValuesToDisplay + (moreValuesRequested ? valuesToLoad : 0);
 
-        const availableValues = this.selectedAvailableValues(values).concat(
-          this.notSelectedAvailableValues(values).splice(0, toShowUnselectedValues)
+        const availableValues = values.slice(
+          0,
+          numberOfUnselectedValuesToDisplay + this.selectedAvailableValues(values).length
         );
 
         const valuesAreComplete =
@@ -90,7 +93,7 @@ export default class VariableFilter extends React.Component {
         this.setState({
           availableValues,
           valuesLoaded: availableValues.length,
-          toShowUnselectedValues,
+          numberOfUnselectedValuesToDisplay,
           valuesAreComplete,
           loading: false
         });
@@ -104,22 +107,31 @@ export default class VariableFilter extends React.Component {
   };
 
   selectVariable = async variable => {
+    const variableIsOfTypeString = variable.type === 'String';
     let values = [''];
     if (variable.type === 'Boolean') {
       values = [true];
     }
-    if (variable.type === 'String') {
+    if (variableIsOfTypeString) {
       values = [];
     }
 
-    await this.loadAvailableValues(variable);
-
-    this.setState({
-      selectedVariable: variable,
-      operator: variable.type === 'Boolean' ? '=' : 'in',
-      values,
-      valuesAreComplete: false
-    });
+    this.setState(
+      {
+        availableValues: [],
+        selectedVariable: variable,
+        operator: variable.type === 'Boolean' ? '=' : 'in',
+        values,
+        valuePrefix: '',
+        valuesAreComplete: false,
+        loading: variableIsOfTypeString
+      },
+      async () => {
+        if (variableIsOfTypeString) {
+          await this.loadAvailableValues(variable);
+        }
+      }
+    );
   };
 
   render() {
@@ -353,7 +365,7 @@ export default class VariableFilter extends React.Component {
     this.setState({
       valuePrefix: evt.target.value,
       valuesLoaded: queryIncluded ? this.state.values.length : 0,
-      toShowUnselectedValues: valuesToLoad
+      numberOfUnselectedValuesToDisplay: valuesToLoad
     });
   };
 
@@ -367,6 +379,7 @@ export default class VariableFilter extends React.Component {
               selectedValues={values}
               setPrefix={this.setValuePrefix}
               toggleValue={this.toggleValue}
+              loading={this.state.loading ? 1 : 0}
             />
             {!this.state.valuesAreComplete && (
               <Button

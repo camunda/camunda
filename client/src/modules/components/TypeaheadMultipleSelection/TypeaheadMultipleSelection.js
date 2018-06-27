@@ -54,20 +54,28 @@ export default function TypeaheadMultipleSelection(props) {
     );
   };
 
-  const {availableValues, selectedValues} = props;
+  const {availableValues, selectedValues, loading} = props;
   const input = (
     <div className="TypeaheadMultipleSelection__labeled-input">
       <p>Values that start with:</p>
       <Input className="TypeaheadMultipleSelection__input" onChange={props.setPrefix} />
     </div>
   );
+  const loadingIndicator = loading ? (
+    <div class="TypeaheadMultipleSelection__loading-indicator">Loading...</div>
+  ) : (
+    ''
+  );
   if (availableValues.length === 0) {
     return (
       <div className="TypeaheadMultipleSelection">
         {input}
+        {loadingIndicator}
         <div className="TypeaheadMultipleSelection__valueList">
           {mapSelectedValues(selectedValues)}
-          <li className="TypeaheadMultipleSelection__no-items">No values match the query</li>
+          <li className="TypeaheadMultipleSelection__no-items">
+            {loading ? '' : 'No values match the query'}
+          </li>
         </div>
       </div>
     );
@@ -75,6 +83,7 @@ export default function TypeaheadMultipleSelection(props) {
   return (
     <div className="TypeaheadMultipleSelection">
       {input}
+      {loadingIndicator}
       <div className="TypeaheadMultipleSelection__valueList">
         {mapSelectedValues(selectedValues)}
         {mapAvaliableValues(availableValues, selectedValues)}
