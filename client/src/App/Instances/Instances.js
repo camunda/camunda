@@ -134,8 +134,7 @@ class Instances extends Component {
               <Panel.Header isRounded>Filters</Panel.Header>
               <Panel.Body>
                 <Filter
-                  parentType={'running'}
-                  childTypes={['active', 'incidents']}
+                  type="running"
                   filter={{
                     active,
                     incidents
@@ -143,8 +142,7 @@ class Instances extends Component {
                   onChange={this.handleFilterChange}
                 />
                 <Filter
-                  parentType={'finished'}
-                  childTypes={['completed', 'canceled']}
+                  type="finished"
                   filter={{
                     canceled,
                     completed

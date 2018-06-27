@@ -9,8 +9,7 @@ export default class Filter extends React.Component {
   static propTypes = {
     filter: PropTypes.object.isRequired,
     onChange: PropTypes.func.isRequired,
-    parentType: PropTypes.string.isRequired,
-    childTypes: PropTypes.arrayOf(Object).isRequired
+    type: PropTypes.string.isRequired
   };
 
   getCheckedChildrenCount = () => {
@@ -45,43 +44,45 @@ export default class Filter extends React.Component {
   };
 
   onResetFilter = () => {
-    const {childTypes} = this.props;
+    const {filter} = this.props;
     const change = {};
 
     if (this.getCheckedChildrenCount() === 2) {
-      childTypes.map(type =>
+      Object.keys(filter).map(type =>
         Object.assign(change, {
           [type]: {$set: !this.props.filter[type]}
         })
       );
     } else {
-      childTypes.map(type => Object.assign(change, {[type]: {$set: true}}));
+      Object.keys(filter).map(type =>
+        Object.assign(change, {[type]: {$set: true}})
+      );
     }
 
     this.props.onChange(change);
   };
 
   render() {
-    const {childTypes, parentType, filter} = this.props;
+    const {type, filter} = this.props;
 
     return (
       <Styled.Filters>
         <div>
           <Checkbox
-            label={this.getLabel(parentType)}
+            label={this.getLabel(type)}
             isIndeterminate={this.isIndeterminate()}
             isChecked={this.getCheckedChildrenCount() === 2}
             onChange={this.onResetFilter}
           />
         </div>
         <Styled.NestedFilters>
-          {childTypes.map((child, index) => {
+          {Object.keys(filter).map((key, index) => {
             return (
               <div key={index}>
                 <Checkbox
-                  label={this.getLabel(child)}
-                  isChecked={filter[child]}
-                  onChange={this.handleChange(child)}
+                  label={this.getLabel(key)}
+                  isChecked={filter[key]}
+                  onChange={this.handleChange(key)}
                 />
               </div>
             );
