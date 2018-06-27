@@ -32,9 +32,13 @@ public class ElasticsearchSchemaManager {
   public void initializeSchema() {
     if (!schemaAlreadyExists()) {
       logger.info("Elasticsearch schema is empty. Indices will be created.");
-      for (TypeMappingCreator mapping : typeMappingCreators) {
-        createIndex(mapping);
-      }
+      createIndices();
+    }
+  }
+
+  public void createIndices() {
+    for (TypeMappingCreator mapping : typeMappingCreators) {
+      createIndex(mapping);
     }
   }
 
@@ -69,7 +73,7 @@ public class ElasticsearchSchemaManager {
    * @return true is Elasticsearch schema already exists, false otherwise
    */
   private boolean schemaAlreadyExists() {
-    IndicesExistsResponse response = esClient.admin().indices().prepareExists("workflow").get();
+    IndicesExistsResponse response = esClient.admin().indices().prepareExists(typeMappingCreators.get(0).getType()).get();
     return response.isExists();
   }
 

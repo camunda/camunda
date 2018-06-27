@@ -9,8 +9,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class WorkflowInstanceType extends StrictTypeMappingCreator {
 
-  public static final String TYPE = "workflow-instance";
-
   public static final String ID = "id";
   public static final String WORKFLOW_ID = "workflowId";
   public static final String WORKFLOW_INSTANCE_ID = "workflowInstanceId";
@@ -31,7 +29,7 @@ public class WorkflowInstanceType extends StrictTypeMappingCreator {
 
   @Override
   public String getType() {
-    return TYPE;
+    return operateProperties.getElasticsearch().getWorkflowInstanceIndexName();
   }
 
   @Override

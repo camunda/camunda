@@ -3,13 +3,14 @@ package org.camunda.operate.util;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import org.camunda.operate.es.ElasticsearchSchemaManager;
 import org.camunda.operate.es.types.TypeMappingCreator;
 import org.camunda.operate.es.writer.ElasticsearchBulkProcessor;
-import org.elasticsearch.action.search.SearchResponse;
+import org.camunda.operate.property.ElasticsearchProperties;
+import org.camunda.operate.property.OperateProperties;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.IndexNotFoundException;
-import org.elasticsearch.index.reindex.BulkByScrollResponse;
-import org.elasticsearch.index.reindex.DeleteByQueryAction;
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,9 +23,6 @@ import org.springframework.mock.http.MockHttpOutputMessage;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.context.WebApplicationContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertNotNull;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
 
@@ -42,6 +40,12 @@ public class ElasticsearchTestRule extends ExternalResource {
 
   @Autowired
   private List<TypeMappingCreator> typeMappingCreators;
+
+  @Autowired
+  private OperateProperties operateProperties;
+
+  @Autowired
+  private ElasticsearchSchemaManager elasticsearchSchemaManager;
 
   private MockMvc mockMvc;
 
@@ -67,48 +71,64 @@ public class ElasticsearchTestRule extends ExternalResource {
 
   private boolean haveToClean = true;
 
+  private String workflowIndexName;
+  private String workflowInstanceIndexName;
+
   @Override
   public void before() {
     this.mockMvc = webAppContextSetup(webApplicationContext).build();
-    logger.info("Cleaning elasticsearch...");
-    cleanUpElasticSearch();
-    logger.info("All documents have been wiped out! Elasticsearch has successfully been cleaned!");
+
+    final String indexSuffix = TestUtil.createRandomString(10);
+    final String workflowIndexName = ElasticsearchProperties.WORKFLOW_INDEX_NAME_DEFAULT + indexSuffix;
+    final String workflowInstanceIndexName = ElasticsearchProperties.WORKFLOW_INSTANCE_INDEX_NAME_DEFAULT + indexSuffix;
+    operateProperties.getElasticsearch().setWorkflowIndexName(workflowIndexName);
+    operateProperties.getElasticsearch().setWorkflowInstanceIndexName(workflowInstanceIndexName);
+    elasticsearchSchemaManager.createIndices();
+
   }
 
   @Override
   public void after() {
-    if (haveToClean) {
-      logger.info("cleaning up elasticsearch on finish");
-      cleanAndVerify();
-      refreshIndexesInElasticsearch();
-    }
+    removeAllIndices();
+    operateProperties.getElasticsearch().setWorkflowIndexName(ElasticsearchProperties.WORKFLOW_INDEX_NAME_DEFAULT);
+    operateProperties.getElasticsearch().setWorkflowInstanceIndexName(ElasticsearchProperties.WORKFLOW_INSTANCE_INDEX_NAME_DEFAULT);
+//    if (haveToClean) {
+//      logger.info("cleaning up elasticsearch on finish");
+//      cleanAndVerify();
+//      refreshIndexesInElasticsearch();
+//    }
   }
 
-  public void cleanAndVerify() {
+  public void removeAllIndices() {
+    logger.info("Removing indices");
+    esClient.admin().indices().delete(new DeleteIndexRequest(workflowIndexName, workflowInstanceIndexName));
+  }
+
+//  public void cleanAndVerify() {
 //    assureElasticsearchIsClean();
-    cleanUpElasticSearch();
-  }
+//    cleanUpElasticSearch();
+//  }
 
 
-  public void cleanUpElasticSearch() {
-    for (TypeMappingCreator mapping : typeMappingCreators) {
-      BulkByScrollResponse response = DeleteByQueryAction.INSTANCE.newRequestBuilder(esClient)
-        .refresh(true)
-        .filter(matchAllQuery())
-        .source(mapping.getType())
-        .execute()
-        .actionGet();
-      logger.info("[{}] documents are removed from the index [{}]", response.getDeleted(), mapping.getType());
-    }
-  }
-
+//  public void cleanUpElasticSearch() {
+//    for (TypeMappingCreator mapping : typeMappingCreators) {
+//      BulkByScrollResponse response = DeleteByQueryAction.INSTANCE.newRequestBuilder(esClient)
+//        .refresh(true)
+//        .filter(matchAllQuery())
+//        .source(mapping.getType())
+//        .execute()
+//        .actionGet();
+//      logger.info("[{}] documents are removed from the index [{}]", response.getDeleted(), mapping.getType());
+//    }
+//  }
+//
   public void refreshIndexesInElasticsearch() {
     try {
       esClient.admin().indices()
         .prepareRefresh()
         .get();
     } catch (IndexNotFoundException e) {
-      //nothing to do
+//      nothing to do
     }
   }
 
@@ -136,18 +156,18 @@ public class ElasticsearchTestRule extends ExternalResource {
     }
   }
 
-  private void assureElasticsearchIsClean() {
-    try {
-      SearchResponse response = esClient
-        .prepareSearch()
-        .setQuery(matchAllQuery())
-        .get();
-      Long hits = response.getHits().getTotalHits();
-      assertThat("Elasticsearch was expected to be clean!", hits, is(0L));
-    } catch (IndexNotFoundException e) {
-      //nothing to do
-    }
-  }
+//  private void assureElasticsearchIsClean() {
+//    try {
+//      SearchResponse response = esClient
+//        .prepareSearch()
+//        .setQuery(matchAllQuery())
+//        .get();
+//      Long hits = response.getHits().getTotalHits();
+//      assertThat("Elasticsearch was expected to be clean!", hits, is(0L));
+//    } catch (IndexNotFoundException e) {
+////      nothing to do
+//    }
+//  }
 
   public void disableCleanup() {
     this.haveToClean = false;

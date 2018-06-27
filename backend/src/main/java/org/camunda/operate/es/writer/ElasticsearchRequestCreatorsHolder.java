@@ -40,6 +40,12 @@ public class ElasticsearchRequestCreatorsHolder {
   @Autowired
   private TransportClient esClient;
 
+  @Autowired
+  private WorkflowType workflowType;
+
+  @Autowired
+  private WorkflowInstanceType workflowInstanceType;
+
   /**
    * Insert or update workflow instance (UPSERT).
    * @return
@@ -61,7 +67,7 @@ public class ElasticsearchRequestCreatorsHolder {
 
         final UpdateRequestBuilder updateRequest =
           esClient
-            .prepareUpdate(WorkflowInstanceType.TYPE, WorkflowInstanceType.TYPE, entity.getId())
+            .prepareUpdate(workflowInstanceType.getType(), workflowInstanceType.getType(), entity.getId())
             .setUpsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
             .setDoc(jsonMap);
 
@@ -114,7 +120,7 @@ public class ElasticsearchRequestCreatorsHolder {
         );
         return bulkRequestBuilder.add(
           esClient
-            .prepareUpdate(WorkflowInstanceType.TYPE, WorkflowInstanceType.TYPE, entity.getWorkflowInstanceId())
+            .prepareUpdate(workflowInstanceType.getType(), workflowInstanceType.getType(), entity.getWorkflowInstanceId())
             .setScript(updateScript));
       } catch (IOException e) {
         logger.error("Error preparing the query to update incident", e);
@@ -167,7 +173,7 @@ public class ElasticsearchRequestCreatorsHolder {
         );
         return bulkRequestBuilder.add(
           esClient
-            .prepareUpdate(WorkflowInstanceType.TYPE, WorkflowInstanceType.TYPE, entity.getWorkflowInstanceId())
+            .prepareUpdate(workflowInstanceType.getType(), workflowInstanceType.getType(), entity.getWorkflowInstanceId())
             .setScript(updateScript));
       } catch (IOException e) {
         logger.error("Error preparing the query to update activity instance", e);
@@ -185,7 +191,7 @@ public class ElasticsearchRequestCreatorsHolder {
       try {
         return bulkRequestBuilder.add(
           esClient
-            .prepareIndex(WorkflowType.TYPE, WorkflowType.TYPE, entity.getId())
+            .prepareIndex(workflowType.getType(), workflowType.getType(), entity.getId())
             .setSource(objectMapper.writeValueAsString(entity), XContentType.JSON)
         );
       } catch (JsonProcessingException e) {

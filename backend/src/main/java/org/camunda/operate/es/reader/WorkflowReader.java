@@ -1,30 +1,19 @@
 package org.camunda.operate.es.reader;
 
-import static org.camunda.operate.es.types.WorkflowType.BPMN_XML;
-import static org.camunda.operate.es.types.WorkflowType.ID;
-import static org.camunda.operate.es.types.WorkflowType.TYPE;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-
 import java.io.IOException;
 import java.util.Map;
-
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.es.types.WorkflowType;
 import org.camunda.operate.rest.exception.NotFoundException;
 import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.search.SearchHit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
+import static org.camunda.operate.es.types.WorkflowType.BPMN_XML;
 
 @Component
 public class WorkflowReader {
@@ -38,13 +27,16 @@ public class WorkflowReader {
   @Qualifier("esObjectMapper")
   private ObjectMapper objectMapper;
 
+  @Autowired
+  private WorkflowType workflowType;
+
   /**
    * Gets the workflow diagram XML as a string.
    * @param workflowId
    * @return
    */
   public String getDiagram(String workflowId) {
-    GetResponse response = esClient.prepareGet(TYPE, TYPE, workflowId).setFetchSource(BPMN_XML, null).get();
+    GetResponse response = esClient.prepareGet(workflowType.getType(), workflowType.getType(), workflowId).setFetchSource(BPMN_XML, null).get();
 
     if (response.isExists()) {
       Map<String, Object> result = response.getSourceAsMap();
@@ -61,7 +53,7 @@ public class WorkflowReader {
    * @return
    */
   public WorkflowEntity getWorkflow(String workflowId) {
-    final GetResponse response = esClient.prepareGet(TYPE, TYPE, workflowId).get();
+    final GetResponse response = esClient.prepareGet(workflowType.getType(), workflowType.getType(), workflowId).get();
 
     if (response.isExists()) {
       return fromSearchHit(response.getSourceAsString());

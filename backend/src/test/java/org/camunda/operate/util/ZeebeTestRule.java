@@ -1,9 +1,7 @@
 package org.camunda.operate.util;
 
-import java.util.UUID;
 import org.camunda.operate.es.writer.EntityStorage;
 import org.camunda.operate.property.OperateProperties;
-import org.camunda.operate.zeebe.ZeebeConnector;
 import org.camunda.operate.zeebe.ZeebeSubscriptionManager;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -37,12 +35,12 @@ public class ZeebeTestRule extends TestWatcher {
   @Override
   protected void starting(Description description) {
     //create Zeebe topic for this test method
-    topicName = UUID.randomUUID().toString();
+    topicName = TestUtil.createRandomString(20);
     zeebeUtil.createTopic(topicName);
 
     //create subscription to the new topic
     operateProperties.getZeebe().getTopics().add(topicName);
-    workerName = UUID.randomUUID().toString().substring(10);
+    workerName = TestUtil.createRandomString(10);
     operateProperties.getZeebe().setWorker(workerName);
     try {
       //wait till topic is created

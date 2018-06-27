@@ -12,19 +12,12 @@
  */
 package org.camunda.operate.util;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.UUID;
 
-public abstract class CollectionUtil {
+public abstract class TestUtil {
 
-  public static <T> List<T> throwAwayNullElements(T... array) {
-    List<T> listOfNotNulls = new ArrayList<>();
-    for (T o: array) {
-      if (o != null) {
-        listOfNotNulls.add(o);
-      }
-    }
-    return listOfNotNulls;
+  public static String createRandomString(int length) {
+    return UUID.randomUUID().toString().substring(0, length);
   }
 
 }

@@ -30,7 +30,6 @@ import static org.camunda.operate.entities.IncidentState.ACTIVE;
 import static org.camunda.operate.es.types.WorkflowInstanceType.END_DATE;
 import static org.camunda.operate.es.types.WorkflowInstanceType.INCIDENTS;
 import static org.camunda.operate.es.types.WorkflowInstanceType.STATE;
-import static org.camunda.operate.es.types.WorkflowInstanceType.TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
@@ -51,6 +50,9 @@ public class WorkflowInstanceReader {
   @Autowired
   @Qualifier("esObjectMapper")
   private ObjectMapper objectMapper;
+
+  @Autowired
+  private WorkflowInstanceType workflowInstanceType;
 
   /**
    * Counts workflow instances filtered by different criteria.
@@ -94,14 +96,14 @@ public class WorkflowInstanceReader {
     logger.debug("Workflow instance search request: \n{}", constantScoreQuery.toString());
 
     return esClient
-        .prepareSearch(WorkflowInstanceType.TYPE)
+        .prepareSearch(workflowInstanceType.getType())
         .setQuery(constantScoreQuery);
   }
 
   private QueryBuilder createQuery(WorkflowInstanceQueryDto queryDto) {
     final QueryBuilder runningFinishedQuery = createRunningFinishedQuery(queryDto);
 
-    //further parameters will be appllied like this:
+    //further parameters will be applied like this:
     //QueryBuilder workflowNameQuery = createWorkflowNameQuery(name);
     //QueryBuilder workflowVersionQuery = createWorkflowVersionQuery(version);
     //...
@@ -160,7 +162,7 @@ public class WorkflowInstanceReader {
    * @return
    */
   public WorkflowInstanceEntity getWorkflowInstanceById(String workflowInstanceId) {
-    final GetResponse response = esClient.prepareGet(TYPE, TYPE, workflowInstanceId).get();
+    final GetResponse response = esClient.prepareGet(workflowInstanceType.getType(), workflowInstanceType.getType(), workflowInstanceId).get();
 
     if (response.isExists()) {
       return fromSearchHit(response.getSourceAsString());
@@ -247,27 +249,5 @@ public class WorkflowInstanceReader {
     return runningOrFinishedQ;
 
   }
-
-  //  private void applyQueryParameter(BoolQueryBuilder query, WorkflowInstanceQueryDto workflowInstanceQuery) {
-//    if (query != null && workflowInstanceQuery != null) {
-//
-//      if (workflowInstanceQuery.isCompleted()) {
-//        query.must(existsQuery(END_DATE));
-//      }
-//
-//      if (workflowInstanceQuery.isRunning()) {
-//        query.mustNot(existsQuery(END_DATE));
-//      }
-//
-//      if (workflowInstanceQuery.isIncidents()) {
-//        query.must(nestedQuery(INCIDENTS, termQuery(ACTIVE_INCIDENT_TERM, ACTIVE_INCIDENT), None));
-//      }
-//
-//      if (workflowInstanceQuery.isActive()) {
-//        query.mustNot(nestedQuery(INCIDENTS, termQuery(ACTIVE_INCIDENT_TERM, ACTIVE_INCIDENT), None));
-//      }
-//
-//    }
-//  }
 
 }

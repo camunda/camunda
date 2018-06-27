@@ -3,6 +3,10 @@ package org.camunda.operate.property;
 
 public class ElasticsearchProperties {
 
+  public static final String WORKFLOW_INSTANCE_INDEX_NAME_DEFAULT = "workflow-instance";
+
+  public static final String WORKFLOW_INDEX_NAME_DEFAULT = "workflow";
+
   private String clusterName= "elasticsearch";
 
   private String host = "localhost";
@@ -12,6 +16,10 @@ public class ElasticsearchProperties {
   private String dateFormat;
 
   private int insertBatchSize = 20;
+
+  private String workflowInstanceIndexName = WORKFLOW_INSTANCE_INDEX_NAME_DEFAULT;
+
+  private String workflowIndexName = WORKFLOW_INDEX_NAME_DEFAULT;
 
   public String getClusterName() {
     return clusterName;
@@ -51,5 +59,21 @@ public class ElasticsearchProperties {
 
   public void setInsertBatchSize(int insertBatchSize) {
     this.insertBatchSize = insertBatchSize;
+  }
+
+  public String getWorkflowInstanceIndexName() {
+    return workflowInstanceIndexName;
+  }
+
+  public void setWorkflowInstanceIndexName(String workflowInstanceIndexName) {
+    this.workflowInstanceIndexName = workflowInstanceIndexName;
+  }
+
+  public String getWorkflowIndexName() {
+    return workflowIndexName;
+  }
+
+  public void setWorkflowIndexName(String workflowIndexName) {
+    this.workflowIndexName = workflowIndexName;
   }
 }

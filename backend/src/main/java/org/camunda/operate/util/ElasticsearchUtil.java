@@ -18,7 +18,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
-public class ElasticsearchUtil {
+public abstract class ElasticsearchUtil {
 
   public static QueryBuilder joinWithOr(BoolQueryBuilder boolQueryBuilder, QueryBuilder... queries) {
     List<QueryBuilder> notNullQueries = CollectionUtil.throwAwayNullElements(queries);
