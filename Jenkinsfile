@@ -17,6 +17,18 @@ String getGitCommitHash() {
   return sh(script: 'git rev-parse --verify HEAD', returnStdout: true).trim()
 }
 
+String getBranchSlug() {
+  return env.BRANCH_NAME.toLowerCase().replaceAll(/[^a-z0-9-]/, '-').minus('-deploy')
+}
+
+String getAuthorEmail() {
+  return sh(script: "git show -s --pretty=format:%ae ${getGitCommitHash()}", returnStdout: true).trim()
+}
+
+String getImageTag() {
+  return env.BRANCH_NAME == 'master' ? getGitCommitHash() : "branch-${getBranchSlug()}"
+}
+
 void buildNotification(String buildStatus) {
   // build status of null means successful
   buildStatus = buildStatus ?: 'SUCCESS'
@@ -322,40 +334,63 @@ pipeline {
         }
       }
     }
-    stage('Deploy to Nexus') {
-      when {
-        branch 'master'
-      }
-      steps {
-        container('maven') {
-          runMaven('-Pproduction -Dskip.fe.build -DskipTests deploy')
+    stage('Deploy') {
+      parallel {
+        stage('Deploy to Nexus') {
+          when {
+            branch 'master'
+          }
+          steps {
+            container('maven') {
+              runMaven('-Pproduction -Dskip.fe.build -DskipTests deploy')
+            }
+          }
+        }
+        stage('Build Docker') {
+          when {
+            expression { BRANCH_NAME ==~ /(master|.*-deploy)/ }
+          }
+          environment {
+            VERSION = readMavenPom().getVersion().replace('-SNAPSHOT', '')
+            SNAPSHOT = readMavenPom().getVersion().contains('SNAPSHOT')
+            IMAGE_TAG = getImageTag()
+            REGISTRY = credentials('docker-registry-ci3')
+          }
+          steps {
+            container('docker') {
+              sh ("""
+                echo '${REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
+
+                docker build -t ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG} \
+                  --build-arg=SKIP_DOWNLOAD=true \
+                  --build-arg=VERSION=${VERSION} \
+                  --build-arg=SNAPSHOT=${SNAPSHOT} \
+                  --build-arg=USERNAME=${NEXUS_USR} \
+                  --build-arg=PASSWORD=${NEXUS_PSW} \
+                  .
+
+                docker push ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG}
+
+                if [ "${env.BRANCH_NAME}" = 'master' ]; then
+                  docker tag ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG} ${PROJECT_DOCKER_IMAGE()}:latest
+                  docker push ${PROJECT_DOCKER_IMAGE()}:latest
+                fi
+              """)
+            }
+          }
         }
       }
     }
-    stage('Build Docker') {
+    stage ('Deploy to K8s') {
       when {
-        branch 'master'
-      }
-      environment {
-        VERSION = readMavenPom().getVersion().replace('-SNAPSHOT', '')
-        SNAPSHOT = readMavenPom().getVersion().contains('SNAPSHOT')
-        COMMIT_ID = getGitCommitHash()
+        expression { BRANCH_NAME ==~ /(master|.*-deploy)/ }
       }
       steps {
-        container('docker') {
-          sh """
-            echo '${REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
-            
-            docker build -t ${PROJECT_DOCKER_IMAGE()}:${COMMIT_ID} \
-              --build-arg=VERSION=${VERSION} \
-              --build-arg=SNAPSHOT=${SNAPSHOT} \
-              --build-arg=USERNAME=${NEXUS_USR} \
-              --build-arg=PASSWORD=${NEXUS_PSW} \
-              .
-
-            docker push ${PROJECT_DOCKER_IMAGE()}:${COMMIT_ID}
-          """
-        }
+        build job: '/deploy-optimize-branch-to-k8s',
+          parameters: [
+              string(name: 'BRANCH', value: getBranchSlug()),
+              string(name: 'DOCKER_IMAGE', value: "${PROJECT_DOCKER_IMAGE()}")
+          ]
       }
     }
   }

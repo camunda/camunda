@@ -2,7 +2,7 @@
 
 // general properties for CI execution
 def static NODE_POOL() { return "slaves" }
-def static KUBECTL_DOCKER_IMAGE() { return "lachlanevenson/k8s-kubectl:latest" }
+def static KUBECTL_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/kubectl:latest" }
 
 static String kubectlAgent(env) {
   return """
@@ -18,17 +18,15 @@ spec:
   containers:
   - name: kubectl
     image: ${KUBECTL_DOCKER_IMAGE()}
+    imagePullPolicy: Always
     command: ["cat"]
     tty: true
-    env:
-      - name: TZ
-        value: Europe/Berlin
     resources:
       limits:
-        cpu: 1
+        cpu: 500m
         memory: 500Mi
       requests:
-        cpu: 1
+        cpu: 500m
         memory: 500Mi
 """
 }
@@ -70,23 +68,27 @@ pipeline {
     stage('Prepare') {
       steps {
         git url: 'git@github.com:camunda-ci/k8s-infrastructure',
-            branch: 'master',
+            branch: "${params.INFRASTRUCTURE_BRANCH}",
             credentialsId: 'camunda-jenkins-github-ssh',
             poll: false
       }
     }
     stage('Deploy to K8s') {
       steps {
-        sh ('''
-          ./cmd/k8s/deploy-template-to-branch.sh \
-              ${BRANCH} \
-              optimize_${BRANCH} \
-              gcr.io/ci-30-162810/camunda-optimize \
-              infrastructure/ci-30-162810/deployments/optimize_branch \
-        ''')
+        container('kubectl') {
+          sh("""
+            ./cmd/k8s/deploy-template-to-branch \
+            ${WORKSPACE}/infrastructure/ci-30-162810/deployments/optimize-branch \
+            ${params.BRANCH} \
+            optimize \
+            optimize \
+            ${params.DOCKER_IMAGE}
+          """)
+        }
       }
       post {
         always {
+          archiveArtifacts artifacts: 'rendered-templates/**/*'
           buildNotification(currentBuild.result)
         }
       }
