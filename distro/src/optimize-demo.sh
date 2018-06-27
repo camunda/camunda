@@ -37,6 +37,7 @@ function checkStartup {
 trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
 
 BASEDIR=$(dirname "$0")
+mkdir -p $BASEDIR/log
 
 echo
 echo "Starting Elasticsearch...";
@@ -50,7 +51,8 @@ echo
 echo "Starting Camunda Optimize...";
 echo
 SCRIPT_PATH="./optimize-startup.sh"
-nohup bash "$SCRIPT_PATH" >/dev/null 2>&1 &
+LOG_FILE=$BASEDIR/log/optimize.log
+nohup bash "$SCRIPT_PATH" </dev/null > $LOG_FILE 2>&1 &
 
 # Open Optimize in the browser
 BROWSERS="gnome-www-browser x-www-browser firefox chromium chromium-browser google-chrome"

@@ -9,22 +9,24 @@
 :: Note: This script is supposed to be used in production
 :: to start-up Optimize. For further information please consult
 :: the documentation: https://docs.camunda.org/optimize/latest/technical-guide/installation/
-
-echo Setting up environment variables...
+::
+:: Optionally, you can overwrite the default JVM options by setting the `OPTIMIZE_JAVA_OPTS`
+:: variable.
 
 set BASEDIR=%~dp0
 cd "%BASEDIR%"
 
-if not exist ".\log" mkdir log
-
-set LOG_FILE=%BASEDIR%log\optimize.log
-
+:: now set the path to java
 IF DEFINED JAVA_HOME (
   set JAVA="%JAVA_HOME%\bin\java.exe"
 ) ELSE (
   set JAVA=java
 )
 
+:: check if there are custom JVM options set.
+IF NOT DEFINED OPTIMIZE_JAVA_OPTS (
+  set OPTIMIZE_JAVA_OPTS=-Xms1024m -Xmx1024m -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m
+)
 
 :: Set up the optimize classpaths, i.e. add the environment folder, all jars in the
 :: plugin directory and the optimize jar
@@ -35,9 +37,5 @@ echo Starting Camunda Optimize ${project.version}
 echo.
 
 :: start optimize
-set OPTIMIZE_OUTPUT=echo Optimize has been started. Use CTRL + C to stop Optimize!
-set OPTIMIZE_CMD=%JAVA% -cp %OPTIMIZE_CLASSPATH% -Dfile.encoding=UTF-8 org.camunda.optimize.Main
-start "Camunda Optimize" cmd /c ^( %OPTIMIZE_OUTPUT% ^&^& %OPTIMIZE_CMD% ^> %LOG_FILE% ^2^>^&^1 ^)
-
-echo Camunda Optimize has been started.
-echo.
+set OPTIMIZE_CMD=%JAVA% %OPTIMIZE_JAVA_OPTS% -cp %OPTIMIZE_CLASSPATH% -Dfile.encoding=UTF-8 org.camunda.optimize.Main
+call %OPTIMIZE_CMD%

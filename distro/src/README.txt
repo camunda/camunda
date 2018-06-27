@@ -12,14 +12,24 @@ Contents:
         environment/
 
                     this is a local environment folder that contains configuration properties,
-                    which can be used to overwrite default values of Optimize configuration
-        server/elasticsearch/
+                    which can be used to overwrite default values of Optimize configuration. Also the logging
+                    level can be configured here.
 
-                    this folder contains preconfigured Elasticsearch server
+        server/elasticsearch/ (full distribution only)
 
-        start-optimize.sh (unix) or start-optimize.bat (windows)
+                    this folder contains preconfigured Elasticsearch server.
 
-                    a script to start elasticsearch and optimize in embedded Jetty container
+        plugin/
+
+                   directory where all Optimize plugins need to be put.
+
+        upgrade/
+
+                    execute the upgrade optimize jar files from here to upgrade Optimize.
+
+        optimize-startup.sh (unix) or optimize-startup.bat (windows)
+
+                    a script to start elasticsearch and optimize in embedded Jetty container.
 
 ==================
 

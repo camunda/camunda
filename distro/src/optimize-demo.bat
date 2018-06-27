@@ -17,6 +17,8 @@ echo Setting up environment variables...
 set BASEDIR=%~dp0
 cd "%BASEDIR%"
 
+if not exist ".\log" mkdir log
+
 set RETRIES=5
 set SLEEP_TIME=10
 
@@ -48,7 +50,9 @@ echo Elasticsearch has successfully been started.
 :: start optimize
 echo Starting Optimize ...
 echo.
-call "optimize-startup.bat" >nul
+set LOG_FILE=%BASEDIR%log\optimize.log
+set OPTIMIZE_OUTPUT=echo Optimize has been started. Use CTRL + C to stop Optimize!
+start "Camunda Optimize" cmd /c ^( %OPTIMIZE_OUTPUT% ^&^& "optimize-startup.bat" ^> %LOG_FILE% ^2^>^&^1 ^)
 
 
 :: command to query optimize
