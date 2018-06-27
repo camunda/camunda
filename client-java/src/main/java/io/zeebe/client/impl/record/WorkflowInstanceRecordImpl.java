@@ -38,6 +38,7 @@ public abstract class WorkflowInstanceRecordImpl extends RecordImpl
 
   public WorkflowInstanceRecordImpl(ZeebeObjectMapperImpl objectMapper, RecordType recordType) {
     super(objectMapper, recordType, ValueType.WORKFLOW_INSTANCE);
+    this.payload = new PayloadField(objectMapper);
   }
 
   public WorkflowInstanceRecordImpl(
@@ -50,9 +51,7 @@ public abstract class WorkflowInstanceRecordImpl extends RecordImpl
     this.workflowInstanceKey = base.getWorkflowInstanceKey();
     this.activityId = base.getActivityId();
 
-    if (base.payload != null) {
-      this.payload = new PayloadField(base.payload);
-    }
+    this.payload = new PayloadField(base.payload);
   }
 
   @Override
@@ -98,68 +97,42 @@ public abstract class WorkflowInstanceRecordImpl extends RecordImpl
 
   @JsonProperty("payload")
   public void setPayloadField(PayloadField payload) {
-    this.payload = payload;
+    if (payload != null) {
+      this.payload = payload;
+    }
   }
 
   @Override
   public String getPayload() {
-    if (payload == null) {
-      return null;
-    } else {
-      return payload.getAsJsonString();
-    }
+    return payload.getAsJsonString();
   }
 
   @JsonIgnore
   @Override
   public Map<String, Object> getPayloadAsMap() {
-    if (payload == null) {
-      return null;
-    } else {
-      return payload.getAsMap();
-    }
+    return payload.getAsMap();
   }
 
   @JsonIgnore
   @Override
   public <T> T getPayloadAsType(Class<T> payloadType) {
-    if (payload == null) {
-      return null;
-    } else {
-      return payload.getAsType(payloadType);
-    }
+    return payload.getAsType(payloadType);
   }
 
   public void setPayload(String jsonString) {
-    initializePayloadField();
     this.payload.setJson(jsonString);
   }
 
   public void setPayload(InputStream jsonStream) {
-    initializePayloadField();
     this.payload.setJson(jsonStream);
   }
 
   public void setPayload(Map<String, Object> payload) {
-    initializePayloadField();
     this.payload.setAsMap(payload);
   }
 
   public void setPayload(Object payload) {
-    initializePayloadField();
     this.payload.setAsObject(payload);
-  }
-
-  private void initializePayloadField() {
-    if (payload == null) {
-      payload = new PayloadField(objectMapper);
-    }
-  }
-
-  public void clearPayload() {
-    // set field to null so that it is not serialized to Msgpack
-    // - currently, the broker doesn't support null as payload
-    payload = null;
   }
 
   @Override

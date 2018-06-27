@@ -161,7 +161,7 @@ public class IncidentTest {
       if (failJob) {
         throw new RuntimeException("expected failure");
       } else {
-        client.newCompleteCommand(job).withoutPayload().send().join();
+        client.newCompleteCommand(job).payload((String) null).send().join();
       }
     }
   }

@@ -32,6 +32,7 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
 public class BrokerLeaderChangeTest {
+  public static final String NULL_PAYLOAD = null;
   public static final String JOB_TYPE = "testTask";
 
   public AutoCloseableRule closeables = new AutoCloseableRule();
@@ -84,7 +85,7 @@ public class BrokerLeaderChangeTest {
                           .handler(
                               (client, job) -> {
                                 if (job.getMetadata().getKey() == eventKey) {
-                                  client.newCompleteCommand(job).withoutPayload().send();
+                                  client.newCompleteCommand(job).payload(NULL_PAYLOAD).send();
                                 }
                               })
                           .open())

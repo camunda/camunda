@@ -25,6 +25,7 @@ import io.zeebe.client.api.record.RecordMetadata;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.util.ClientRule;
+import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
@@ -133,7 +134,8 @@ public class CreateJobTest {
             entry("retries", CreateJobCommandStep1.DEFAULT_RETRIES),
             entry("type", "fooType"),
             entry("headers", Collections.emptyMap()),
-            entry("customHeaders", Collections.emptyMap()));
+            entry("customHeaders", Collections.emptyMap()),
+            entry("payload", MsgPackHelper.EMTPY_OBJECT));
   }
 
   @Test

@@ -54,6 +54,8 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 public class BrokerRecoveryTest {
+  private static final String NULL_PAYLOAD = null;
+
   private static final WorkflowDefinition WORKFLOW =
       Bpmn.createExecutableWorkflow("process")
           .startEvent("start")
@@ -140,7 +142,7 @@ public class BrokerRecoveryTest {
         .getJobClient()
         .newWorker()
         .jobType("foo")
-        .handler((client, job) -> client.newCompleteCommand(job).withoutPayload().send())
+        .handler((client, job) -> client.newCompleteCommand(job).payload(NULL_PAYLOAD).send())
         .open();
 
     // then
@@ -205,7 +207,7 @@ public class BrokerRecoveryTest {
         .getJobClient()
         .newWorker()
         .jobType("foo")
-        .handler((client, job) -> client.newCompleteCommand(job).withoutPayload().send())
+        .handler((client, job) -> client.newCompleteCommand(job).payload(NULL_PAYLOAD).send())
         .open();
 
     waitUntil(() -> eventRecorder.getJobEvents(JobState.CREATED).size() > 1);
@@ -217,7 +219,7 @@ public class BrokerRecoveryTest {
         .getJobClient()
         .newWorker()
         .jobType("bar")
-        .handler((client, job) -> client.newCompleteCommand(job).withoutPayload().send())
+        .handler((client, job) -> client.newCompleteCommand(job).payload(NULL_PAYLOAD).send())
         .open();
 
     // then
@@ -288,7 +290,7 @@ public class BrokerRecoveryTest {
         .getJobClient()
         .newWorker()
         .jobType("foo")
-        .handler((client, job) -> client.newCompleteCommand(job).withoutPayload().send())
+        .handler((client, job) -> client.newCompleteCommand(job).payload(NULL_PAYLOAD).send())
         .open();
 
     // then

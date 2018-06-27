@@ -68,7 +68,7 @@ public class JobWorkerCreator {
               job.getHeaders(),
               job.getPayload()));
 
-      client.newCompleteCommand(job).withoutPayload().send().join();
+      client.newCompleteCommand(job).payload((String) null).send().join();
     }
   }
 

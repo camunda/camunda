@@ -92,7 +92,7 @@ public class YamlWorkflowTest {
         .getJobClient()
         .newWorker()
         .jobType("foo")
-        .handler((client, job) -> client.newCompleteCommand(job).withoutPayload().send())
+        .handler((client, job) -> client.newCompleteCommand(job).payload((String) null).send())
         .open();
 
     // then

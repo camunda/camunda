@@ -26,6 +26,7 @@ import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.util.ClientRule;
+import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
@@ -89,14 +90,15 @@ public class CreateWorkflowInstanceTest {
             entry("bpmnProcessId", "foo"),
             entry("version", CreateWorkflowInstanceCommandStep1.LATEST_VERSION),
             entry("workflowKey", -1),
-            entry("workflowInstanceKey", -1));
+            entry("workflowInstanceKey", -1),
+            entry("payload", MsgPackHelper.EMTPY_OBJECT));
 
     assertThat(workflowInstance.getState()).isEqualTo(WorkflowInstanceState.CREATED);
     assertThat(workflowInstance.getBpmnProcessId()).isEqualTo("foo");
     assertThat(workflowInstance.getVersion()).isEqualTo(1);
     assertThat(workflowInstance.getWorkflowInstanceKey()).isEqualTo(1);
-    assertThat(workflowInstance.getPayload()).isNull();
-    assertThat(workflowInstance.getPayloadAsMap()).isNull();
+    assertThat(workflowInstance.getPayload()).isEqualTo("{}");
+    assertThat(workflowInstance.getPayloadAsMap()).isEmpty();
     assertThat(workflowInstance.getMetadata().getSourceRecordPosition()).isEqualTo(1);
   }
 
@@ -175,7 +177,8 @@ public class CreateWorkflowInstanceTest {
             entry("bpmnProcessId", "foo"),
             entry("version", 2),
             entry("workflowKey", -1),
-            entry("workflowInstanceKey", -1));
+            entry("workflowInstanceKey", -1),
+            entry("payload", MsgPackHelper.EMTPY_OBJECT));
 
     assertThat(workflowInstance.getBpmnProcessId()).isEqualTo("foo");
     assertThat(workflowInstance.getVersion()).isEqualTo(2);
@@ -205,7 +208,10 @@ public class CreateWorkflowInstanceTest {
     final ExecuteCommandRequest commandRequest = brokerRule.getReceivedCommandRequests().get(0);
     assertThat(commandRequest.getCommand())
         .containsOnly(
-            entry("version", -1), entry("workflowKey", 2), entry("workflowInstanceKey", -1));
+            entry("version", -1),
+            entry("workflowKey", 2),
+            entry("workflowInstanceKey", -1),
+            entry("payload", MsgPackHelper.EMTPY_OBJECT));
 
     assertThat(workflowInstance.getWorkflowKey()).isEqualTo(2);
     assertThat(workflowInstance.getWorkflowInstanceKey()).isEqualTo(1);

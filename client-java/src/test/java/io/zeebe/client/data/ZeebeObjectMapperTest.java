@@ -77,7 +77,7 @@ public class ZeebeObjectMapperTest {
   public void shouldSerializeJobRecordWithoutPayload() {
     // given
     final JobEventImpl jobEvent = Events.exampleJob();
-    jobEvent.clearPayload();
+    jobEvent.setPayload((String) null);
 
     // when / then
     final String json = objectMapper.toJson(jobEvent);
@@ -106,7 +106,7 @@ public class ZeebeObjectMapperTest {
   public void shouldSerializeWorkflowInstanceRecordWithoutPayload() {
     // given
     final WorkflowInstanceEventImpl wfInstanceEvent = Events.exampleWorfklowInstance();
-    wfInstanceEvent.clearPayload();
+    wfInstanceEvent.setPayload((String) null);
 
     // when / then
     final String json = objectMapper.toJson(wfInstanceEvent);

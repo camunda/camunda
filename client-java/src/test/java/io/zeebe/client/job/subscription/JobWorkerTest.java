@@ -516,7 +516,7 @@ public class JobWorkerTest {
         .jobClient()
         .newWorker()
         .jobType("bar")
-        .handler((c, t) -> c.newCompleteCommand(t).withoutPayload().send().join())
+        .handler((c, t) -> c.newCompleteCommand(t).payload((String) null).send().join())
         .name("foo")
         .timeout(10000L)
         .open();
@@ -545,7 +545,7 @@ public class JobWorkerTest {
     assertThat(jobRequest.getCommand())
         .containsEntry("type", "bar")
         .containsEntry("worker", "foo")
-        .doesNotContainKey("payload");
+        .contains(entry("payload", io.zeebe.msgpack.spec.MsgPackHelper.EMTPY_OBJECT));
   }
 
   @Test

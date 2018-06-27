@@ -26,6 +26,7 @@ import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.impl.event.JobEventImpl;
 import io.zeebe.client.util.ClientRule;
 import io.zeebe.client.util.Events;
+import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
@@ -106,12 +107,12 @@ public class CompleteJobTest {
     final JobEventImpl baseEvent = Events.exampleJob();
 
     // when
-    clientRule.jobClient().newCompleteCommand(baseEvent).withoutPayload().send().join();
+    clientRule.jobClient().newCompleteCommand(baseEvent).payload((String) null).send().join();
 
     // then
     final ExecuteCommandRequest request = brokerRule.getReceivedCommandRequests().get(0);
 
-    assertThat(request.getCommand()).doesNotContainKey("payload");
+    assertThat(request.getCommand()).contains(entry("payload", MsgPackHelper.EMTPY_OBJECT));
   }
 
   @Test
