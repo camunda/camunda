@@ -41,6 +41,7 @@ public abstract class JobRecordImpl extends RecordImpl implements JobRecord {
 
   public JobRecordImpl(ZeebeObjectMapperImpl objectMapper, RecordType recordType) {
     super(objectMapper, recordType, ValueType.JOB);
+    this.payload = new PayloadField(objectMapper);
   }
 
   public JobRecordImpl(JobRecordImpl base, JobIntent intent) {
@@ -53,9 +54,7 @@ public abstract class JobRecordImpl extends RecordImpl implements JobRecord {
     this.retries = base.retries;
     this.type = base.type;
 
-    if (base.payload != null) {
-      this.payload = new PayloadField(base.payload);
-    }
+    this.payload = new PayloadField(base.payload);
   }
 
   @Override
@@ -112,62 +111,42 @@ public abstract class JobRecordImpl extends RecordImpl implements JobRecord {
 
   @JsonProperty("payload")
   public void setPayloadField(PayloadField payload) {
-    this.payload = payload;
+    if (payload != null) {
+      this.payload = payload;
+    }
   }
 
   @Override
   public String getPayload() {
-    if (payload == null) {
-      return null;
-    } else {
-      return payload.getAsJsonString();
-    }
+    return payload.getAsJsonString();
   }
 
   @JsonIgnore
   @Override
   public Map<String, Object> getPayloadAsMap() {
-    if (payload == null) {
-      return null;
-    } else {
-      return payload.getAsMap();
-    }
+    return payload.getAsMap();
   }
 
   @JsonIgnore
   @Override
   public <T> T getPayloadAsType(Class<T> payloadType) {
-    if (payload == null) {
-      return null;
-    } else {
-      return payload.getAsType(payloadType);
-    }
+    return payload.getAsType(payloadType);
   }
 
   public void setPayload(String jsonString) {
-    initializePayloadField();
     this.payload.setJson(jsonString);
   }
 
   public void setPayload(InputStream jsonStream) {
-    initializePayloadField();
     this.payload.setJson(jsonStream);
   }
 
   public void setPayload(Map<String, Object> payload) {
-    initializePayloadField();
     this.payload.setAsMap(payload);
   }
 
   public void setPayload(Object payload) {
-    initializePayloadField();
     this.payload.setAsObject(payload);
-  }
-
-  private void initializePayloadField() {
-    if (payload == null) {
-      payload = new PayloadField(objectMapper);
-    }
   }
 
   @Override

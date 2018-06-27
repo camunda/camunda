@@ -106,7 +106,7 @@ public class ZeebeObjectMapperTest {
   public void shouldSerializeWorkflowInstanceRecordWithoutPayload() {
     // given
     final WorkflowInstanceEventImpl wfInstanceEvent = Events.exampleWorfklowInstance();
-    wfInstanceEvent.clearPayload();
+    wfInstanceEvent.setPayload((String) null);
 
     // when / then
     final String json = objectMapper.toJson(wfInstanceEvent);
