@@ -15,7 +15,7 @@ const selection = {
 const filter = {defaultFilterSelection};
 const total = 27;
 
-jest.mock('./api');
+jest.mock('../api');
 fetchWorkflowInstances.mockReturnValue([{id: 1}]);
 
 describe('ListView', () => {
