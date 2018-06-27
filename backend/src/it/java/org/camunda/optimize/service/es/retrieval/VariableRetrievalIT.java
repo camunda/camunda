@@ -321,7 +321,7 @@ public class VariableRetrievalIT {
     List<VariableRetrievalDto> variableResponse = getVariablesWithPrefix(processDefinition, null);
 
     // then
-//    assertThat(variableResponse.size(), is(3));
+    assertThat(variableResponse.size(), is(3));
     assertThat(variableResponse.get(0).getName(), is("a"));
     assertThat(variableResponse.get(1).getName(), is("ab"));
     assertThat(variableResponse.get(2).getName(), is("c"));

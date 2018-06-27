@@ -8,7 +8,7 @@ import org.camunda.optimize.rest.queryparam.adjustment.decorator.OrderByQueryPar
 import org.camunda.optimize.rest.queryparam.adjustment.decorator.OriginalResultList;
 import org.camunda.optimize.rest.queryparam.adjustment.decorator.QueryParameterAdjustedResultList;
 import org.camunda.optimize.rest.queryparam.adjustment.decorator.RestrictResultListSizeDecorator;
-import org.camunda.optimize.rest.queryparam.adjustment.decorator.ReverseResultListDecorator;
+import org.camunda.optimize.rest.queryparam.adjustment.decorator.SortOrderListDecorator;
 
 import javax.ws.rs.core.MultivaluedMap;
 import java.util.Comparator;
@@ -69,7 +69,7 @@ public class QueryParamAdjustmentUtil {
     QueryParameterAdjustedResultList<T> adjustedResultList =
         new RestrictResultListSizeDecorator<>(
             new OffsetResultListDecorator<>(
-                new ReverseResultListDecorator<>(
+                new SortOrderListDecorator<>(
                     new OrderByQueryParamResultListDecorator<>(
                         new OriginalResultList<>(resultList, queryParameters),
                         orderField,
@@ -90,7 +90,7 @@ public class QueryParamAdjustmentUtil {
     QueryParameterAdjustedResultList<String> adjustedResultList =
         new RestrictResultListSizeDecorator<>(
             new OffsetResultListDecorator<>(
-                new ReverseResultListDecorator<>(
+                new SortOrderListDecorator<>(
                     new OriginalResultList<>(variableValues, queryParameters)
                 )
             )

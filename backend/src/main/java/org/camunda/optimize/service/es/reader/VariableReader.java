@@ -57,8 +57,7 @@ public class VariableReader {
 
   public List<VariableRetrievalDto> getVariables(String processDefinitionKey,
                                                  String processDefinitionVersion,
-                                                 String namePrefix,
-                                                 String sortOrder) {
+                                                 String namePrefix) {
     logger.debug("Fetching variables for process definition with key [{}] and version [{}]",
       processDefinitionKey,
       processDefinitionVersion);

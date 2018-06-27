@@ -4,11 +4,11 @@ import javax.ws.rs.core.MultivaluedMap;
 import java.util.Collections;
 import java.util.List;
 
-public class ReverseResultListDecorator<T> extends AdjustedResultListDecorator<T> {
+public class SortOrderListDecorator<T> extends AdjustedResultListDecorator<T> {
 
   private static final String DESC = "desc";
   private static final String SORT_ORDER = "sortOrder";
-  public ReverseResultListDecorator(QueryParameterAdjustedResultList<T> decoratedList) {
+  public SortOrderListDecorator(QueryParameterAdjustedResultList<T> decoratedList) {
     super(decoratedList);
   }
 

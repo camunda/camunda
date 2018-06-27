@@ -53,7 +53,7 @@ public class VariableRestService {
 
     ValidationHelper.ensureNotEmpty("process definition key", processDefinitionKey);
     ValidationHelper.ensureNotEmpty("process definition version", processDefinitionVersion);
-    List<VariableRetrievalDto> variables = variableReader.getVariables(processDefinitionKey, processDefinitionVersion, namePrefix, sortOrder);
+    List<VariableRetrievalDto> variables = variableReader.getVariables(processDefinitionKey, processDefinitionVersion, namePrefix);
     return adjustVariablesToQueryParameters(variables, queryParameters);
   }
 
