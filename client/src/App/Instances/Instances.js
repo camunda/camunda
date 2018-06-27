@@ -11,7 +11,7 @@ import {EXPAND_CONTAINER} from 'modules/utils';
 
 import PropTypes from 'prop-types';
 
-import RunningFilter from './Filter/RunningInstances';
+import Filter from './Filter/index';
 import ListView from './ListView';
 import SelectionDisplay from './SelectionDisplay';
 
@@ -116,7 +116,8 @@ class Instances extends Component {
   };
 
   render() {
-    const {instances, incidents} = this.props.getState();
+    const {instances, incidents: incidentsCount} = this.props.getState();
+    const {active, incidents, canceled, completed} = this.state.filter;
 
     return (
       <div>
@@ -125,15 +126,29 @@ class Instances extends Component {
           instances={instances}
           filters={this.state.filterCount}
           selections={0} // needs a backend call because selections are complex
-          incidents={incidents}
+          incidents={incidentsCount}
         />
         <Styled.Filter>
           <Styled.Left>
             <Panel isRounded>
               <Panel.Header isRounded>Filters</Panel.Header>
               <Panel.Body>
-                <RunningFilter
-                  filter={this.state.filter}
+                <Filter
+                  parentType={'running'}
+                  childTypes={['active', 'incidents']}
+                  filter={{
+                    active,
+                    incidents
+                  }}
+                  onChange={this.handleFilterChange}
+                />
+                <Filter
+                  parentType={'finished'}
+                  childTypes={['completed', 'canceled']}
+                  filter={{
+                    canceled,
+                    completed
+                  }}
                   onChange={this.handleFilterChange}
                 />
               </Panel.Body>

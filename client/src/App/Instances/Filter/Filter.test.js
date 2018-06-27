@@ -1,9 +1,9 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import CompletedFilter from './';
+import Filter from './';
 
-describe('CompletedFilter', () => {
+describe('Filter', () => {
   let node;
 
   beforeEach(() => {
