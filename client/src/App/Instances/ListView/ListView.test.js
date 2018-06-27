@@ -4,7 +4,7 @@ import {shallow} from 'enzyme';
 import ListView from './ListView';
 import List from './List';
 import ListFooter from './ListFooter';
-
+import {defaultFilterSelection} from './../service';
 import {getData} from './api';
 
 const selection = {
@@ -12,7 +12,7 @@ const selection = {
   isBlacklist: false
 };
 
-const filter = {};
+const filter = {defaultFilterSelection};
 const total = 27;
 
 jest.mock('./api');
