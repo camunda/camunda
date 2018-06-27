@@ -4,9 +4,12 @@ package org.camunda.operate.rest.dto;
 public class WorkflowInstanceQueryDto {
 
   private boolean running;
+  private boolean active;
+  private boolean incidents;
+
+  private boolean finished;
   private boolean completed;
-  private boolean withIncidents;
-  private boolean withoutIncidents;
+  private boolean cancelled;
 
   public WorkflowInstanceQueryDto() {
   }
@@ -27,20 +30,36 @@ public class WorkflowInstanceQueryDto {
     this.completed = completed;
   }
 
-  public boolean isWithIncidents() {
-    return withIncidents;
+  public boolean isIncidents() {
+    return incidents;
   }
 
-  public void setWithIncidents(boolean withIncidents) {
-    this.withIncidents = withIncidents;
+  public void setIncidents(boolean incidents) {
+    this.incidents = incidents;
   }
 
-  public boolean isWithoutIncidents() {
-    return withoutIncidents;
+  public boolean isActive() {
+    return active;
   }
 
-  public void setWithoutIncidents(boolean withoutIncidents) {
-    this.withoutIncidents = withoutIncidents;
+  public void setActive(boolean active) {
+    this.active = active;
+  }
+
+  public boolean isFinished() {
+    return finished;
+  }
+
+  public void setFinished(boolean finished) {
+    this.finished = finished;
+  }
+
+  public boolean isCancelled() {
+    return cancelled;
+  }
+
+  public void setCancelled(boolean cancelled) {
+    this.cancelled = cancelled;
   }
 
   @Override
@@ -54,19 +73,25 @@ public class WorkflowInstanceQueryDto {
 
     if (running != that.running)
       return false;
+    if (active != that.active)
+      return false;
+    if (incidents != that.incidents)
+      return false;
+    if (finished != that.finished)
+      return false;
     if (completed != that.completed)
       return false;
-    if (withIncidents != that.withIncidents)
-      return false;
-    return withoutIncidents == that.withoutIncidents;
+    return cancelled == that.cancelled;
   }
 
   @Override
   public int hashCode() {
     int result = (running ? 1 : 0);
+    result = 31 * result + (active ? 1 : 0);
+    result = 31 * result + (incidents ? 1 : 0);
+    result = 31 * result + (finished ? 1 : 0);
     result = 31 * result + (completed ? 1 : 0);
-    result = 31 * result + (withIncidents ? 1 : 0);
-    result = 31 * result + (withoutIncidents ? 1 : 0);
+    result = 31 * result + (cancelled ? 1 : 0);
     return result;
   }
 }

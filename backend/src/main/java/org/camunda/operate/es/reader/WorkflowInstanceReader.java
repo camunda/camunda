@@ -4,16 +4,18 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
+import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.types.WorkflowInstanceType;
 import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
 import org.camunda.operate.rest.exception.NotFoundException;
+import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -29,6 +31,7 @@ import static org.camunda.operate.es.types.WorkflowInstanceType.END_DATE;
 import static org.camunda.operate.es.types.WorkflowInstanceType.INCIDENTS;
 import static org.camunda.operate.es.types.WorkflowInstanceType.STATE;
 import static org.camunda.operate.es.types.WorkflowInstanceType.TYPE;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -83,14 +86,28 @@ public class WorkflowInstanceReader {
   }
 
   protected SearchRequestBuilder createSearchRequest(WorkflowInstanceQueryDto queryDto) {
-    BoolQueryBuilder query = QueryBuilders.boolQuery();
-    applyQueryParameter(query, queryDto);
+
+    final QueryBuilder query = createQuery(queryDto);
 
     ConstantScoreQueryBuilder constantScoreQuery = QueryBuilders.constantScoreQuery(query);
+
+    logger.debug("Workflow instance search request: \n{}", constantScoreQuery.toString());
 
     return esClient
         .prepareSearch(WorkflowInstanceType.TYPE)
         .setQuery(constantScoreQuery);
+  }
+
+  private QueryBuilder createQuery(WorkflowInstanceQueryDto queryDto) {
+    final QueryBuilder runningFinishedQuery = createRunningFinishedQuery(queryDto);
+
+    //further parameters will be appllied like this:
+    //QueryBuilder workflowNameQuery = createWorkflowNameQuery(name);
+    //QueryBuilder workflowVersionQuery = createWorkflowVersionQuery(version);
+    //...
+    //return joinWithAnd(runningFinishedQuery, workflowNameQuery, workflowVersionQuery, ...);
+
+    return runningFinishedQuery;
   }
 
   protected List<WorkflowInstanceEntity> paginate(SearchRequestBuilder builder, int firstResult, int maxResults) {
@@ -164,26 +181,93 @@ public class WorkflowInstanceReader {
     return workflowInstance;
   }
 
-  private void applyQueryParameter(BoolQueryBuilder query, WorkflowInstanceQueryDto workflowInstanceQuery) {
-    if (query != null && workflowInstanceQuery != null) {
+  private QueryBuilder createRunningFinishedQuery(WorkflowInstanceQueryDto query) {
 
-      if (workflowInstanceQuery.isCompleted()) {
-        query.must(existsQuery(END_DATE));
+    if (! query.isRunning() && ! query.isFinished()) {
+      //empty list should be returned
+      return ElasticsearchUtil.createMatchNoneQuery();
+    }
+
+    QueryBuilder runningQ = null;
+    if (query.isRunning()) {
+
+      if (!query.isActive() && ! query.isIncidents()) {
+        //do nothing, do not need to include any running instances
+      } else {
+
+        //running query
+        runningQ = boolQuery().mustNot(existsQuery(END_DATE));
+
+        if (!(query.isActive() && query.isIncidents())) {   //    if both are true - no additional filters are needed
+          QueryBuilder activeOrIncidentsQ = null;
+          if (query.isActive()) {
+            //active query
+            activeOrIncidentsQ = boolQuery().mustNot(nestedQuery(INCIDENTS, termQuery(ACTIVE_INCIDENT_TERM, ACTIVE_INCIDENT), None));
+          } else if (query.isIncidents()) {
+            //incidents query
+            activeOrIncidentsQ = nestedQuery(INCIDENTS, termQuery(ACTIVE_INCIDENT_TERM, ACTIVE_INCIDENT), None);
+          }
+          runningQ = ElasticsearchUtil.joinWithAnd(runningQ, activeOrIncidentsQ);
+        }
+
       }
+    }
 
-      if (workflowInstanceQuery.isRunning()) {
-        query.mustNot(existsQuery(END_DATE));
-      }
+    QueryBuilder finishedQ = null;
+    if (query.isFinished()) {
 
-      if (workflowInstanceQuery.isWithIncidents()) {
-        query.must(nestedQuery(INCIDENTS, termQuery(ACTIVE_INCIDENT_TERM, ACTIVE_INCIDENT), None));
-      }
+      if (!query.isCompleted() && !query.isCancelled()) {
+        // do nothing
+      } else {
+        //add finished query
+        finishedQ = existsQuery(END_DATE);
 
-      if (workflowInstanceQuery.isWithoutIncidents()) {
-        query.mustNot(nestedQuery(INCIDENTS, termQuery(ACTIVE_INCIDENT_TERM, ACTIVE_INCIDENT), None));
+        if (!(query.isCompleted() && query.isCancelled())) {      //if both true - no additional filters are needed
+          QueryBuilder cancelledOrCompletedQ = null;
+          if (query.isCompleted()) {
+            //completed query
+            cancelledOrCompletedQ = termQuery(STATE, WorkflowInstanceState.COMPLETED.toString());
+          } else if (query.isCancelled()) {
+            //add cancelled query
+            cancelledOrCompletedQ = termQuery(STATE, WorkflowInstanceState.CANCELED.toString());
+          }
+
+          finishedQ = ElasticsearchUtil.joinWithAnd(finishedQ, cancelledOrCompletedQ);
+
+        }
+
       }
 
     }
+
+    final QueryBuilder runningOrFinishedQ = ElasticsearchUtil.joinWithOr(runningQ, finishedQ);
+    if (runningOrFinishedQ == null) {
+      return ElasticsearchUtil.createMatchNoneQuery();
+    }
+    return runningOrFinishedQ;
+
   }
+
+  //  private void applyQueryParameter(BoolQueryBuilder query, WorkflowInstanceQueryDto workflowInstanceQuery) {
+//    if (query != null && workflowInstanceQuery != null) {
+//
+//      if (workflowInstanceQuery.isCompleted()) {
+//        query.must(existsQuery(END_DATE));
+//      }
+//
+//      if (workflowInstanceQuery.isRunning()) {
+//        query.mustNot(existsQuery(END_DATE));
+//      }
+//
+//      if (workflowInstanceQuery.isIncidents()) {
+//        query.must(nestedQuery(INCIDENTS, termQuery(ACTIVE_INCIDENT_TERM, ACTIVE_INCIDENT), None));
+//      }
+//
+//      if (workflowInstanceQuery.isActive()) {
+//        query.mustNot(nestedQuery(INCIDENTS, termQuery(ACTIVE_INCIDENT_TERM, ACTIVE_INCIDENT), None));
+//      }
+//
+//    }
+//  }
 
 }

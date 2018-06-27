@@ -187,7 +187,7 @@ public class ZeebeDemoDataGenerator {
         switch (scenarioCount) {
         case 0:
           //incidents for outputMapping for taskA
-          jobClient.newCompleteCommand(job).send().join();
+          jobClient.newCompleteCommand(job).payload((String)null).send().join();
           break;
         case 1:
           //successfully complete task

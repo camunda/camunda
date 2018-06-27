@@ -98,7 +98,7 @@ public class ZeebeUtil {
       .jobType(jobType)
       .handler((jobClient, job) -> {
         //incidents for outputMapping for taskA
-        jobClient.newCompleteCommand(job).send().join();
+        jobClient.newCompleteCommand(job).payload((String)null).send().join();
       })
       .name(workerName)
       .timeout(Duration.ofSeconds(2))

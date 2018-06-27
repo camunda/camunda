@@ -72,10 +72,12 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
   }
 
   @Test
-  public void testQueryRunningWorkflowInstancesCount() throws Exception {
+  public void testQueryAllRunningCount() throws Exception {
     //query running instances
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setRunning(true);
+    workflowInstanceQueryDto.setActive(true);
+    workflowInstanceQueryDto.setIncidents(true);
 
     MockHttpServletRequestBuilder request = post(COUNT_INSTANCES_URL)
       .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
@@ -88,10 +90,12 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
   }
 
   @Test
-  public void testQueryRunningWorkflowInstances() throws Exception {
+  public void testQueryAllRunning() throws Exception {
     //query running instances
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setRunning(true);
+    workflowInstanceQueryDto.setActive(true);
+    workflowInstanceQueryDto.setIncidents(true);
 
     MockHttpServletRequestBuilder request = post(query(0, 3))
         .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
@@ -118,6 +122,8 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     //query running instances
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setRunning(true);
+    workflowInstanceQueryDto.setActive(true);
+    workflowInstanceQueryDto.setIncidents(true);
 
     MockHttpServletRequestBuilder request = post(query(1, 3))
         .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
@@ -140,8 +146,96 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
   }
 
   @Test
-  public void testQueryCompletedWorkflowInstancesCount() throws Exception {
+  public void testQueryAllFinishedCount() throws Exception {
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
+    workflowInstanceQueryDto.setFinished(true);
+    workflowInstanceQueryDto.setCompleted(true);
+    workflowInstanceQueryDto.setCancelled(true);
+
+    MockHttpServletRequestBuilder request = post(COUNT_INSTANCES_URL)
+      .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
+      .contentType(contentType);
+
+    mockMvc.perform(request)
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(contentType))
+      .andExpect(content().json("{\"count\":2}"));
+  }
+
+  @Test
+  public void testQueryAllFinished() throws Exception {
+    WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
+    workflowInstanceQueryDto.setFinished(true);
+    workflowInstanceQueryDto.setCompleted(true);
+    workflowInstanceQueryDto.setCancelled(true);
+
+    MockHttpServletRequestBuilder request = post(query(0, 3))
+      .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
+      .contentType(contentType);
+
+    MvcResult mvcResult = mockMvc.perform(request)
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(contentType))
+      .andReturn();
+
+    List<WorkflowInstanceDto> workflowInstanceDtos = listFromResponse(mvcResult);
+
+    assertThat(workflowInstanceDtos.size()).isEqualTo(2);
+    for (WorkflowInstanceDto workflowInstanceDto : workflowInstanceDtos) {
+      assertThat(workflowInstanceDto.getEndDate()).isNotNull();
+      assertThat(workflowInstanceDto.getState()).isIn(WorkflowInstanceState.COMPLETED, WorkflowInstanceState.CANCELED);
+      assertThat(workflowInstanceDto.getActivities()).isEmpty();
+    }
+  }
+
+  @Test
+  public void testQueryFinishedAndRunningCount() throws Exception {
+    WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
+    workflowInstanceQueryDto.setRunning(true);
+    workflowInstanceQueryDto.setActive(true);
+    workflowInstanceQueryDto.setIncidents(true);
+    workflowInstanceQueryDto.setFinished(true);
+    workflowInstanceQueryDto.setCompleted(true);
+    workflowInstanceQueryDto.setCancelled(true);
+
+    MockHttpServletRequestBuilder request = post(COUNT_INSTANCES_URL)
+      .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
+      .contentType(contentType);
+
+    mockMvc.perform(request)
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(contentType))
+      .andExpect(content().json("{\"count\":5}"));
+  }
+
+  @Test
+  public void testQueryFinishedAndRunning() throws Exception {
+    WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
+    workflowInstanceQueryDto.setRunning(true);
+    workflowInstanceQueryDto.setActive(true);
+    workflowInstanceQueryDto.setIncidents(true);
+    workflowInstanceQueryDto.setFinished(true);
+    workflowInstanceQueryDto.setCompleted(true);
+    workflowInstanceQueryDto.setCancelled(true);
+
+    MockHttpServletRequestBuilder request = post(query(0, 5))
+      .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
+      .contentType(contentType);
+
+    MvcResult mvcResult = mockMvc.perform(request)
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(contentType))
+      .andReturn();
+
+    List<WorkflowInstanceDto> workflowInstanceDtos = listFromResponse(mvcResult);
+
+    assertThat(workflowInstanceDtos.size()).isEqualTo(5);
+  }
+
+  @Test
+  public void testQueryFinishedCompletedCount() throws Exception {
+    WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
+    workflowInstanceQueryDto.setFinished(true);
     workflowInstanceQueryDto.setCompleted(true);
 
     MockHttpServletRequestBuilder request = post(COUNT_INSTANCES_URL)
@@ -155,8 +249,9 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
   }
 
   @Test
-  public void testQueryCompletedWorkflowInstances() throws Exception {
+  public void testQueryFinishedCompleted() throws Exception {
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
+    workflowInstanceQueryDto.setFinished(true);
     workflowInstanceQueryDto.setCompleted(true);
 
     MockHttpServletRequestBuilder request = post(query(0, 3))
@@ -175,11 +270,11 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     assertThat(workflowInstanceDtos.get(0).getState()).isEqualTo(WorkflowInstanceState.COMPLETED);
     assertThat(workflowInstanceDtos.get(0).getActivities()).isEmpty();
   }
-
   @Test
-  public void testQueryWorkflowInstancesWithIncidentsCount() throws Exception {
+  public void testQueryFinishedCancelledCount() throws Exception {
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
-    workflowInstanceQueryDto.setWithIncidents(true);
+    workflowInstanceQueryDto.setFinished(true);
+    workflowInstanceQueryDto.setCancelled(true);
 
     MockHttpServletRequestBuilder request = post(COUNT_INSTANCES_URL)
       .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
@@ -192,9 +287,49 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
   }
 
   @Test
-  public void testQueryWorkflowInstancesWithIncidents() throws Exception {
+  public void testQueryFinishedCancelled() throws Exception {
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
-    workflowInstanceQueryDto.setWithIncidents(true);
+    workflowInstanceQueryDto.setFinished(true);
+    workflowInstanceQueryDto.setCancelled(true);
+
+    MockHttpServletRequestBuilder request = post(query(0, 3))
+      .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
+      .contentType(contentType);
+
+    MvcResult mvcResult = mockMvc.perform(request)
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(contentType))
+      .andReturn();
+
+    List<WorkflowInstanceDto> workflowInstanceDtos = listFromResponse(mvcResult);
+
+    assertThat(workflowInstanceDtos.size()).isEqualTo(1);
+    assertThat(workflowInstanceDtos.get(0).getEndDate()).isNotNull();
+    assertThat(workflowInstanceDtos.get(0).getState()).isEqualTo(WorkflowInstanceState.CANCELED);
+    assertThat(workflowInstanceDtos.get(0).getActivities()).isEmpty();
+  }
+
+  @Test
+  public void testQueryRunningWithIncidentsCount() throws Exception {
+    WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
+    workflowInstanceQueryDto.setRunning(true);
+    workflowInstanceQueryDto.setIncidents(true);
+
+    MockHttpServletRequestBuilder request = post(COUNT_INSTANCES_URL)
+      .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
+      .contentType(contentType);
+
+    mockMvc.perform(request)
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(contentType))
+      .andExpect(content().json("{\"count\":1}"));
+  }
+
+  @Test
+  public void testQueryRunningWithIncidents() throws Exception {
+    WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
+    workflowInstanceQueryDto.setRunning(true);
+    workflowInstanceQueryDto.setIncidents(true);
 
     MockHttpServletRequestBuilder request = post(query(0, 3))
       .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
@@ -224,9 +359,10 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
   }
 
   @Test
-  public void testQueryWorkflowInstancesWithoutIncidentsCount() throws Exception {
+  public void testQueryRunningWithoutIncidentsCount() throws Exception {
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
-    workflowInstanceQueryDto.setWithoutIncidents(true);
+    workflowInstanceQueryDto.setRunning(true);
+    workflowInstanceQueryDto.setActive(true);
 
     MockHttpServletRequestBuilder request = post(COUNT_INSTANCES_URL)
       .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
@@ -235,13 +371,14 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     mockMvc.perform(request)
       .andExpect(status().isOk())
       .andExpect(content().contentType(contentType))
-      .andExpect(content().json("{\"count\":3}"));
+      .andExpect(content().json("{\"count\":2}"));
   }
 
   @Test
-  public void testQueryWorkflowInstancesWithoutIncidents() throws Exception {
+  public void testQueryRunningWithoutIncidents() throws Exception {
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
-    workflowInstanceQueryDto.setWithoutIncidents(true);
+    workflowInstanceQueryDto.setRunning(true);
+    workflowInstanceQueryDto.setActive(true);
 
     MockHttpServletRequestBuilder request = post(query(0, 3))
       .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
@@ -255,7 +392,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     List<WorkflowInstanceDto> workflowInstanceDtos = listFromResponse(mvcResult);
 
-    assertThat(workflowInstanceDtos.size()).isEqualTo(3);
+    assertThat(workflowInstanceDtos.size()).isEqualTo(2);
 
     for (WorkflowInstanceDto workflowInstanceDto: workflowInstanceDtos) {
       assertThat(workflowInstanceDto.getActivities()).isEmpty();
@@ -298,26 +435,31 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
   private void createData() {
     //running instance with one activity and without incidents
-    final WorkflowInstanceEntity runningInstance = createWorkflowInstance(false);
+    final WorkflowInstanceEntity runningInstance = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
     runningInstance.getActivities().add(createActivityInstance(ActivityState.ACTIVE));
 
-    //completed instances with one activity and without incidents
-    final WorkflowInstanceEntity completedInstance = createWorkflowInstance(true);
+    //completed instance with one activity and without incidents
+    final WorkflowInstanceEntity completedInstance = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
     completedInstance.getActivities().add(createActivityInstance(ActivityState.COMPLETED));
 
+    //cancelled instance with two activities and without incidents
+    final WorkflowInstanceEntity cancelledInstance = createWorkflowInstance(WorkflowInstanceState.CANCELED);
+    cancelledInstance.getActivities().add(createActivityInstance(ActivityState.COMPLETED));
+    cancelledInstance.getActivities().add(createActivityInstance(ActivityState.TERMINATED));
+
     //instance with incidents (one resolved and one active) and one active activity
-    final WorkflowInstanceEntity instanceWithIncident = createWorkflowInstance(false);
+    final WorkflowInstanceEntity instanceWithIncident = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
     instanceWithIncident.getIncidents().add(createIncident(IncidentState.ACTIVE));
     instanceWithIncident.getIncidents().add(createIncident(IncidentState.RESOLVED));
     instanceWithIncident.getActivities().add(createActivityInstance(ActivityState.ACTIVE));
 
     //instance with one resolved incident and one completed activity
-    instanceWithoutIncident = createWorkflowInstance(false);
+    instanceWithoutIncident = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
     instanceWithoutIncident.getIncidents().add(createIncident(IncidentState.RESOLVED));
     instanceWithoutIncident.getActivities().add(createActivityInstance(ActivityState.COMPLETED));
 
     List<WorkflowInstanceEntity> workflowInstances = new ArrayList<>();
-    workflowInstances.addAll(Arrays.asList(runningInstance, completedInstance, instanceWithIncident, instanceWithoutIncident));
+    workflowInstances.addAll(Arrays.asList(runningInstance, completedInstance, instanceWithIncident, instanceWithoutIncident, cancelledInstance));
 
     //persist instances
     try {
@@ -328,16 +470,16 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     elasticsearchTestRule.refreshIndexesInElasticsearch();
   }
 
-  private WorkflowInstanceEntity createWorkflowInstance(boolean completed) {
+  private WorkflowInstanceEntity createWorkflowInstance(WorkflowInstanceState state) {
     WorkflowInstanceEntity workflowInstance = new WorkflowInstanceEntity();
     workflowInstance.setId(UUID.randomUUID().toString());
     workflowInstance.setBusinessKey("testProcess" + random.nextInt(10));
     workflowInstance.setStartDate(DateUtil.getRandomStartDate());
-    if (completed) {
+    if (state.equals(WorkflowInstanceState.COMPLETED) || state.equals(WorkflowInstanceState.CANCELED)) {
       final OffsetDateTime endDate = DateUtil.getRandomEndDate();
       workflowInstance.setEndDate(endDate);
     }
-    workflowInstance.setState(workflowInstance.getEndDate() == null ? WorkflowInstanceState.ACTIVE : WorkflowInstanceState.COMPLETED);
+    workflowInstance.setState(state);
     return workflowInstance;
   }
 
