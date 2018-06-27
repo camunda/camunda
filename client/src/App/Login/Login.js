@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import {Redirect} from 'react-router-dom';
 
 import {login} from './api';
-import {REQUIRED_FIELD_ERROR, LOGIN_ERROR} from './service';
+import {REQUIRED_FIELD_ERROR, LOGIN_ERROR} from './constants';
 import * as Styled from './styled';
 
 import withSharedState from 'modules/components/withSharedState';

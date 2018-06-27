@@ -11,7 +11,7 @@ import {
 import Login from './Login';
 import * as Styled from './styled';
 import * as api from './api';
-import {REQUIRED_FIELD_ERROR, LOGIN_ERROR} from './service';
+import {REQUIRED_FIELD_ERROR, LOGIN_ERROR} from './constants';
 
 jest.mock('modules/request');
 
