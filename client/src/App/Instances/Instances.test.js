@@ -23,6 +23,17 @@ const InstancesWithRunningFilter = (
   />
 );
 
+const InstancesWithInvalidRunningFilter = (
+  <Instances
+    location={{search: '?filter={"active": fallse, "incidents": tsrue}'}}
+    getState={() => {
+      return {filterCount: 0};
+    }}
+    storeState={() => {}}
+    history={{push: () => {}}}
+  />
+);
+
 const InstancesWithoutFilter = (
   <Instances
     location={{search: ''}}
@@ -76,6 +87,12 @@ describe('Instances', () => {
 
     it('should render the Filter with default filter selection when no ?filter=', () => {
       const node = shallow(InstancesWithoutFilter);
+
+      expect(node.state('filter')).toEqual(defaultFilterSelection);
+    });
+
+    it('should apply default filter selection for an invalid query', () => {
+      const node = shallow(InstancesWithInvalidRunningFilter);
 
       expect(node.state('filter')).toEqual(defaultFilterSelection);
     });
