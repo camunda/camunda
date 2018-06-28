@@ -8,7 +8,6 @@ import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.types.WorkflowInstanceType;
 import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
 import org.camunda.operate.rest.exception.NotFoundException;
-import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
@@ -30,6 +29,9 @@ import static org.camunda.operate.entities.IncidentState.ACTIVE;
 import static org.camunda.operate.es.types.WorkflowInstanceType.END_DATE;
 import static org.camunda.operate.es.types.WorkflowInstanceType.INCIDENTS;
 import static org.camunda.operate.es.types.WorkflowInstanceType.STATE;
+import static org.camunda.operate.util.ElasticsearchUtil.createMatchNoneQuery;
+import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static org.camunda.operate.util.ElasticsearchUtil.joinWithOr;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
@@ -77,7 +79,7 @@ public class WorkflowInstanceReader {
    */
   public List<WorkflowInstanceEntity> queryWorkflowInstances(WorkflowInstanceQueryDto workflowInstanceQuery, Integer firstResult, Integer maxResults) {
     SearchRequestBuilder searchRequest = createSearchRequest(workflowInstanceQuery)
-      .setFetchSource(null, "activities");
+      .setFetchSource(null, WorkflowInstanceType.ACTIVITIES);
 
     if (firstResult != null && maxResults != null) {
       return paginate(searchRequest, firstResult, maxResults);
@@ -187,13 +189,13 @@ public class WorkflowInstanceReader {
 
     if (! query.isRunning() && ! query.isFinished()) {
       //empty list should be returned
-      return ElasticsearchUtil.createMatchNoneQuery();
+      return createMatchNoneQuery();
     }
 
     QueryBuilder runningQ = null;
     if (query.isRunning()) {
 
-      if (!query.isActive() && ! query.isIncidents()) {
+      if (!query.isActive() && !query.isIncidents()) {
         //do nothing, do not need to include any running instances
       } else {
 
@@ -209,7 +211,7 @@ public class WorkflowInstanceReader {
             //incidents query
             activeOrIncidentsQ = nestedQuery(INCIDENTS, termQuery(ACTIVE_INCIDENT_TERM, ACTIVE_INCIDENT), None);
           }
-          runningQ = ElasticsearchUtil.joinWithAnd(runningQ, activeOrIncidentsQ);
+          runningQ = joinWithAnd(runningQ, activeOrIncidentsQ);
         }
 
       }
@@ -234,7 +236,7 @@ public class WorkflowInstanceReader {
             cancelledOrCompletedQ = termQuery(STATE, WorkflowInstanceState.CANCELED.toString());
           }
 
-          finishedQ = ElasticsearchUtil.joinWithAnd(finishedQ, cancelledOrCompletedQ);
+          finishedQ = joinWithAnd(finishedQ, cancelledOrCompletedQ);
 
         }
 
@@ -242,9 +244,9 @@ public class WorkflowInstanceReader {
 
     }
 
-    final QueryBuilder runningOrFinishedQ = ElasticsearchUtil.joinWithOr(runningQ, finishedQ);
+    final QueryBuilder runningOrFinishedQ = joinWithOr(runningQ, finishedQ);
     if (runningOrFinishedQ == null) {
-      return ElasticsearchUtil.createMatchNoneQuery();
+      return createMatchNoneQuery();
     }
     return runningOrFinishedQ;
 

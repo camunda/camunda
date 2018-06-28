@@ -79,14 +79,8 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setActive(true);
     workflowInstanceQueryDto.setIncidents(true);
 
-    MockHttpServletRequestBuilder request = post(COUNT_INSTANCES_URL)
-      .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
-      .contentType(contentType);
+    testCountQuery(workflowInstanceQueryDto, 3);
 
-    mockMvc.perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(contentType))
-      .andExpect(content().json("{\"count\":3}"));
   }
 
   @Test
@@ -97,7 +91,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setActive(true);
     workflowInstanceQueryDto.setIncidents(true);
 
-    MockHttpServletRequestBuilder request = post(query(0, 3))
+    MockHttpServletRequestBuilder request = post(query(0, Integer.MAX_VALUE))
         .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
         .contentType(contentType);
 
@@ -152,14 +146,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setCompleted(true);
     workflowInstanceQueryDto.setCancelled(true);
 
-    MockHttpServletRequestBuilder request = post(COUNT_INSTANCES_URL)
-      .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
-      .contentType(contentType);
-
-    mockMvc.perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(contentType))
-      .andExpect(content().json("{\"count\":2}"));
+    testCountQuery(workflowInstanceQueryDto, 2);
   }
 
   @Test
@@ -169,7 +156,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setCompleted(true);
     workflowInstanceQueryDto.setCancelled(true);
 
-    MockHttpServletRequestBuilder request = post(query(0, 3))
+    MockHttpServletRequestBuilder request = post(query(0, Integer.MAX_VALUE))
       .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
       .contentType(contentType);
 
@@ -198,14 +185,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setCompleted(true);
     workflowInstanceQueryDto.setCancelled(true);
 
-    MockHttpServletRequestBuilder request = post(COUNT_INSTANCES_URL)
-      .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
-      .contentType(contentType);
-
-    mockMvc.perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(contentType))
-      .andExpect(content().json("{\"count\":5}"));
+    testCountQuery(workflowInstanceQueryDto, 5);
   }
 
   @Test
@@ -218,7 +198,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setCompleted(true);
     workflowInstanceQueryDto.setCancelled(true);
 
-    MockHttpServletRequestBuilder request = post(query(0, 5))
+    MockHttpServletRequestBuilder request = post(query(0, Integer.MAX_VALUE))
       .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
       .contentType(contentType);
 
@@ -238,14 +218,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setFinished(true);
     workflowInstanceQueryDto.setCompleted(true);
 
-    MockHttpServletRequestBuilder request = post(COUNT_INSTANCES_URL)
-      .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
-      .contentType(contentType);
-
-    mockMvc.perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(contentType))
-      .andExpect(content().json("{\"count\":1}"));
+    testCountQuery(workflowInstanceQueryDto, 1);
   }
 
   @Test
@@ -254,7 +227,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setFinished(true);
     workflowInstanceQueryDto.setCompleted(true);
 
-    MockHttpServletRequestBuilder request = post(query(0, 3))
+    MockHttpServletRequestBuilder request = post(query(0, Integer.MAX_VALUE))
       .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
       .contentType(contentType);
 
@@ -276,14 +249,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setFinished(true);
     workflowInstanceQueryDto.setCancelled(true);
 
-    MockHttpServletRequestBuilder request = post(COUNT_INSTANCES_URL)
-      .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
-      .contentType(contentType);
-
-    mockMvc.perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(contentType))
-      .andExpect(content().json("{\"count\":1}"));
+    testCountQuery(workflowInstanceQueryDto, 1);
   }
 
   @Test
@@ -292,7 +258,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setFinished(true);
     workflowInstanceQueryDto.setCancelled(true);
 
-    MockHttpServletRequestBuilder request = post(query(0, 3))
+    MockHttpServletRequestBuilder request = post(query(0, Integer.MAX_VALUE))
       .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
       .contentType(contentType);
 
@@ -315,14 +281,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setRunning(true);
     workflowInstanceQueryDto.setIncidents(true);
 
-    MockHttpServletRequestBuilder request = post(COUNT_INSTANCES_URL)
-      .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
-      .contentType(contentType);
-
-    mockMvc.perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(contentType))
-      .andExpect(content().json("{\"count\":1}"));
+    testCountQuery(workflowInstanceQueryDto, 1);
   }
 
   @Test
@@ -331,7 +290,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setRunning(true);
     workflowInstanceQueryDto.setIncidents(true);
 
-    MockHttpServletRequestBuilder request = post(query(0, 3))
+    MockHttpServletRequestBuilder request = post(query(0, Integer.MAX_VALUE))
       .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
       .contentType(contentType);
 
@@ -364,14 +323,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setRunning(true);
     workflowInstanceQueryDto.setActive(true);
 
-    MockHttpServletRequestBuilder request = post(COUNT_INSTANCES_URL)
-      .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
-      .contentType(contentType);
-
-    mockMvc.perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(contentType))
-      .andExpect(content().json("{\"count\":2}"));
+    testCountQuery(workflowInstanceQueryDto, 2);
   }
 
   @Test
@@ -380,7 +332,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setRunning(true);
     workflowInstanceQueryDto.setActive(true);
 
-    MockHttpServletRequestBuilder request = post(query(0, 3))
+    MockHttpServletRequestBuilder request = post(query(0, Integer.MAX_VALUE))
       .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
       .contentType(contentType);
 
@@ -431,6 +383,17 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     assertThat(workflowInstanceDto.getIncidents().size()).isGreaterThan(0);
     assertThat(workflowInstanceDto.getIncidents().size()).isEqualTo(instanceWithoutIncident.getIncidents().size());
 
+  }
+
+  private void testCountQuery(WorkflowInstanceQueryDto workflowInstanceQueryDto, int count) throws Exception {
+    MockHttpServletRequestBuilder request = post(COUNT_INSTANCES_URL)
+      .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
+      .contentType(contentType);
+
+    mockMvc.perform(request)
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(contentType))
+      .andExpect(content().json(String.format("{\"count\":%d}",count)));
   }
 
   private void createData() {
