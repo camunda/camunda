@@ -202,7 +202,7 @@ export default class FilterList extends React.Component {
           );
         } else if (filter.type === 'runningInstancesOnly') {
           list.push(
-            <li key={i} className="FilterList__item">
+            <li key={i} className="FilterList__item not-editable">
               <ActionItem
                 onClick={evt => {
                   evt.stopPropagation();
@@ -215,7 +215,7 @@ export default class FilterList extends React.Component {
           );
         } else if (filter.type === 'completedInstancesOnly') {
           list.push(
-            <li key={i} className="FilterList__item">
+            <li key={i} className="FilterList__item not-editable">
               <ActionItem
                 onClick={evt => {
                   evt.stopPropagation();
