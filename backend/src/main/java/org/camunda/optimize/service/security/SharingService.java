@@ -106,7 +106,7 @@ public class SharingService  {
         .collect(Collectors.toList());
 
       for (ReportLocationDto reportLocationDto : dashboardDefinition.getReports()) {
-        if (!authorizedReportIds.contains(reportLocationDto.getId()) && isNotAnExternalResourceReport(reportLocationDto)) {
+        if (!authorizedReportIds.contains(reportLocationDto.getId()) && !isAnExternalResourceReport(reportLocationDto)) {
           String errorMessage = "User [" + userId + "] is not authorized to share dashboard [" +
           dashboardDefinition.getName() + "] because he is not authorized to see contained report [" +
           reportLocationDto.getId() + "]";
@@ -121,8 +121,8 @@ public class SharingService  {
     }
   }
 
-  public boolean isNotAnExternalResourceReport(ReportLocationDto reportLocationDto) {
-    return !reportLocationDto.getId().isEmpty();
+  private boolean isAnExternalResourceReport(ReportLocationDto reportLocationDto) {
+    return reportLocationDto.getId().isEmpty();
   }
 
   public void validateAndCheckAuthorization(ReportShareDto reportShare, String userId) {

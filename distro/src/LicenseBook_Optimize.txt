@@ -1,4 +1,4 @@
-Licensing Information for Camunda Optimize extension 2.0
+Licensing Information for Camunda Optimize extension 2.1.0
 
 
 
