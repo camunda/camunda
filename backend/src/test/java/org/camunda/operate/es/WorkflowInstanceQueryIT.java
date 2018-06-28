@@ -91,7 +91,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setActive(true);
     workflowInstanceQueryDto.setIncidents(true);
 
-    MockHttpServletRequestBuilder request = post(query(0, Integer.MAX_VALUE))
+    MockHttpServletRequestBuilder request = post(query(0, 100))
         .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
         .contentType(contentType);
 
@@ -156,7 +156,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setCompleted(true);
     workflowInstanceQueryDto.setCancelled(true);
 
-    MockHttpServletRequestBuilder request = post(query(0, Integer.MAX_VALUE))
+    MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
       .contentType(contentType);
 
@@ -198,7 +198,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setCompleted(true);
     workflowInstanceQueryDto.setCancelled(true);
 
-    MockHttpServletRequestBuilder request = post(query(0, Integer.MAX_VALUE))
+    MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
       .contentType(contentType);
 
@@ -227,7 +227,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setFinished(true);
     workflowInstanceQueryDto.setCompleted(true);
 
-    MockHttpServletRequestBuilder request = post(query(0, Integer.MAX_VALUE))
+    MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
       .contentType(contentType);
 
@@ -258,7 +258,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setFinished(true);
     workflowInstanceQueryDto.setCancelled(true);
 
-    MockHttpServletRequestBuilder request = post(query(0, Integer.MAX_VALUE))
+    MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
       .contentType(contentType);
 
@@ -290,7 +290,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setRunning(true);
     workflowInstanceQueryDto.setIncidents(true);
 
-    MockHttpServletRequestBuilder request = post(query(0, Integer.MAX_VALUE))
+    MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
       .contentType(contentType);
 
@@ -332,7 +332,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setRunning(true);
     workflowInstanceQueryDto.setActive(true);
 
-    MockHttpServletRequestBuilder request = post(query(0, Integer.MAX_VALUE))
+    MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
       .contentType(contentType);
 
