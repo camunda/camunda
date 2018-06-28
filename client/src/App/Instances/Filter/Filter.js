@@ -9,7 +9,7 @@ export default class Filter extends React.Component {
   static propTypes = {
     filter: PropTypes.object.isRequired,
     onChange: PropTypes.func.isRequired,
-    type: PropTypes.string.isRequired
+    type: PropTypes.oneOf(['running', 'finished']).isRequired
   };
 
   getCheckedChildrenCount = () => {
@@ -23,7 +23,7 @@ export default class Filter extends React.Component {
       incidents: 'Incidents',
       finished: 'Completed Instances',
       completed: 'Regularly Completed',
-      canceled: 'Cancelled'
+      canceled: 'Canceled'
     };
     return labels[type];
   };
@@ -44,19 +44,17 @@ export default class Filter extends React.Component {
   };
 
   onResetFilter = () => {
-    const {filter} = this.props;
+    const filterTypes = Object.keys(this.props.filter);
     const change = {};
 
     if (this.getCheckedChildrenCount() === 2) {
-      Object.keys(filter).map(type =>
+      filterTypes.map(type =>
         Object.assign(change, {
           [type]: {$set: !this.props.filter[type]}
         })
       );
     } else {
-      Object.keys(filter).map(type =>
-        Object.assign(change, {[type]: {$set: true}})
-      );
+      filterTypes.map(type => Object.assign(change, {[type]: {$set: true}}));
     }
 
     this.props.onChange(change);
