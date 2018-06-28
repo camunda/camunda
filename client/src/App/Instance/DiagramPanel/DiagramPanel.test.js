@@ -4,7 +4,8 @@ import {shallow} from 'enzyme';
 import Pane from 'modules/components/SplitPane/Pane';
 import Diagram from 'modules/components/Diagram';
 import StateIcon from 'modules/components/StateIcon';
-import {formatDate, INSTANCE_STATE} from 'modules/utils';
+import {formatDate} from 'modules/utils/date';
+import {STATE} from 'modules/constants/instance';
 
 import DiagramPanel from './DiagramPanel';
 import * as Styled from './styled';
@@ -16,7 +17,7 @@ describe('DiagramPanel', () => {
     workflowId: 'bar',
     startDate: 'Wed Jun 20 2018 08:57:20',
     endDate: formatDate(null),
-    state: INSTANCE_STATE.ACTIVE
+    state: STATE.ACTIVE
   };
 
   it('should render pane header and body', () => {

@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import {themed} from 'modules/theme';
-import {getInstanceState} from 'modules/utils';
+import {getInstanceState} from 'modules/utils/instance';
 
 import * as Styled from './styled';
 

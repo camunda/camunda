@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import SplitPane from 'modules/components/SplitPane';
 import Diagram from 'modules/components/Diagram';
 import StateIcon from 'modules/components/StateIcon';
-import {formatDate} from 'modules/utils';
+import {formatDate} from 'modules/utils/date';
 
 import DiagramBar from './DiagramBar';
 import * as Styled from './styled';

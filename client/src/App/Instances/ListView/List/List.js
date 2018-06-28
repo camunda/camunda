@@ -6,7 +6,7 @@ import Checkbox from 'modules/components/Checkbox';
 import StateIcon from 'modules/components/StateIcon';
 
 import * as Styled from './styled';
-import {formatDate} from 'modules/utils';
+import {formatDate} from 'modules/utils/date';
 
 export default class List extends React.Component {
   static propTypes = {
