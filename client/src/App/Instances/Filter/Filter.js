@@ -11,6 +11,10 @@ export default class Filter extends React.Component {
     onChange: PropTypes.func.isRequired,
     type: PropTypes.oneOf(['running', 'finished']).isRequired
   };
+  constructor(props) {
+    super(props);
+    this.filterTypes = Object.keys(props.filter);
+  }
 
   getCheckedChildrenCount = () => {
     return Object.values(this.props.filter).filter(value => value).length;
@@ -44,17 +48,17 @@ export default class Filter extends React.Component {
   };
 
   onResetFilter = () => {
-    const filterTypes = Object.keys(this.props.filter);
     const change = {};
-
     if (this.getCheckedChildrenCount() === 2) {
-      filterTypes.map(type =>
+      this.filterTypes.map(type =>
         Object.assign(change, {
           [type]: {$set: !this.props.filter[type]}
         })
       );
     } else {
-      filterTypes.map(type => Object.assign(change, {[type]: {$set: true}}));
+      this.filterTypes.map(type =>
+        Object.assign(change, {[type]: {$set: true}})
+      );
     }
 
     this.props.onChange(change);
@@ -74,7 +78,7 @@ export default class Filter extends React.Component {
           />
         </div>
         <Styled.NestedFilters>
-          {Object.keys(filter).map((key, index) => {
+          {this.filterTypes.map((key, index) => {
             return (
               <div key={index}>
                 <Checkbox
