@@ -86,8 +86,6 @@ import:
       #fetching.
       maxPageSize: 10000
     process-definition:
-      #Overwrites the minimum page size for process definitions fetching.
-      maxPageSize: 1000
       #The name of the process definition type.
       elasticsearchType: process-definition
     process-definition-xml:
