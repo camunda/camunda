@@ -1,0 +1,16 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`SplitPane should render children wrapped in ExpandProvider 1`] = `
+<ExpandProvider>
+  <styled.div>
+    <FirstChild
+      key=".0"
+      paneId="TOP"
+    />
+    <SecondChild
+      key=".1"
+      paneId="BOTTOM"
+    />
+  </styled.div>
+</ExpandProvider>
+`;

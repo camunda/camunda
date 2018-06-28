@@ -35,7 +35,7 @@ exports[`DiagramPanel should render pane header and body 1`] = `
       </tbody>
     </styled.table>
   </PanelHeader>
-  <Styled(PanelBody)>
+  <WithExpand(Styled(PanelBody))>
     <DiagramBar
       instance={
         Object {
@@ -50,6 +50,6 @@ exports[`DiagramPanel should render pane header and body 1`] = `
     <Themed(Diagram)
       workflowId="bar"
     />
-  </Styled(PanelBody)>
+  </WithExpand(Styled(PanelBody))>
 </WithExpand(Pane)>
 `;

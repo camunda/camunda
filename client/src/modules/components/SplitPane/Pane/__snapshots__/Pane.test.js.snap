@@ -1,0 +1,75 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Pane should render BottomExpandButton with DOWN icon if pane is BOTTOM and it's expanded 1`] = `
+<Styled(Panel)
+  expand={[Function]}
+  expandedId="BOTTOM"
+  paneId="BOTTOM"
+  resetExpanded={[Function]}
+>
+  <FooNode />
+  <Styled(ExpandButton)
+    iconDirection="DOWN"
+    onClick={[Function]}
+  />
+</Styled(Panel)>
+`;
+
+exports[`Pane should render BottomExpandButton with UP icon if pane is BOTTOM and it's not expanded 1`] = `
+<Styled(Panel)
+  expand={[Function]}
+  expandedId="TOP"
+  paneId="BOTTOM"
+  resetExpanded={[Function]}
+>
+  <FooNode />
+  <Styled(ExpandButton)
+    iconDirection="UP"
+    onClick={[Function]}
+  />
+</Styled(Panel)>
+`;
+
+exports[`Pane should render TopExpandButton with DOWN icon if pane is TOP and it's not expanded 1`] = `
+<Styled(Panel)
+  expand={[Function]}
+  expandedId={null}
+  paneId="TOP"
+  resetExpanded={[Function]}
+>
+  <FooNode />
+  <Styled(ExpandButton)
+    iconDirection="DOWN"
+    onClick={[Function]}
+  />
+</Styled(Panel)>
+`;
+
+exports[`Pane should render TopExpandButton with UP icon if pane is TOP and it's expanded 1`] = `
+<Styled(Panel)
+  expand={[Function]}
+  expandedId="TOP"
+  paneId="TOP"
+  resetExpanded={[Function]}
+>
+  <FooNode />
+  <Styled(ExpandButton)
+    iconDirection="UP"
+    onClick={[Function]}
+  />
+</Styled(Panel)>
+`;
+
+exports[`Pane should render children 1`] = `
+<Styled(Panel)
+  expand={[Function]}
+  paneId="TOP"
+  resetExpanded={[Function]}
+>
+  <FooNode />
+  <Styled(ExpandButton)
+    iconDirection="DOWN"
+    onClick={[Function]}
+  />
+</Styled(Panel)>
+`;
