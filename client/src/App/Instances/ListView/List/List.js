@@ -1,7 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import Table from 'modules/components/Table';
 import Checkbox from 'modules/components/Checkbox';
 import StateIcon from 'modules/components/StateIcon';
 import {withExpand} from 'modules/components/SplitPane/ExpandContext';
@@ -49,7 +48,7 @@ class List extends React.Component {
     }
 
     return (
-      <Table
+      <Styled.Table
         data={this.props.data
           .slice(0, this.state.rowsToDisplay)
           .map(this.formatData)}

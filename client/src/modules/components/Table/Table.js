@@ -57,7 +57,7 @@ export default class Table extends React.Component {
 
   render() {
     return (
-      <Styled.Table>
+      <Styled.Table {...this.props}>
         {this.renderHeader()}
 
         <tbody>{this.renderBody()}</tbody>
