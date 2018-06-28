@@ -48,8 +48,7 @@ export default class Checkbox extends React.Component {
   };
 
   render() {
-    const {label, isIndeterminate, type} = this.props;
-
+    const {label, onChange, isIndeterminate, type, ...other} = this.props;
     return (
       <Styled.Checkbox onClick={this.handleOnClick}>
         <Styled.Input
@@ -60,6 +59,8 @@ export default class Checkbox extends React.Component {
           innerRef={this.inputRef}
           checkboxType={type}
           onChange={event => event}
+          aria-label={label}
+          {...other}
         />
         <Styled.CustomCheckbox {...{isIndeterminate}} checkboxType={type} />
         {label && <Styled.Label>{label}</Styled.Label>}

@@ -33,3 +33,18 @@ Checkbox of type 'selection'
   type="selection"
 />
 ```
+
+Checkbox with additional standard attributes.
+
+Beside the specified attributes the checkbox also supports all standard attributes.
+
+```js
+<Checkbox
+  isChecked={true}
+  onChange={() => {
+    const foo = 'foo';
+  }}
+  name={'foobar'}
+  autofocus={true}
+/>
+```
