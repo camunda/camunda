@@ -4,10 +4,14 @@ exports[`Pane should render BottomExpandButton with DOWN icon if pane is BOTTOM 
 <Styled(Panel)
   expand={[Function]}
   expandedId="BOTTOM"
+  isCollapsed={false}
   paneId="BOTTOM"
   resetExpanded={[Function]}
 >
-  <FooNode />
+  <Foo
+    isCollapsed={false}
+    key=".0"
+  />
   <Styled(ExpandButton)
     iconDirection="DOWN"
     onClick={[Function]}
@@ -19,10 +23,14 @@ exports[`Pane should render BottomExpandButton with UP icon if pane is BOTTOM an
 <Styled(Panel)
   expand={[Function]}
   expandedId="TOP"
+  isCollapsed={true}
   paneId="BOTTOM"
   resetExpanded={[Function]}
 >
-  <FooNode />
+  <Foo
+    isCollapsed={true}
+    key=".0"
+  />
   <Styled(ExpandButton)
     iconDirection="UP"
     onClick={[Function]}
@@ -34,10 +42,14 @@ exports[`Pane should render TopExpandButton with DOWN icon if pane is TOP and it
 <Styled(Panel)
   expand={[Function]}
   expandedId={null}
+  isCollapsed={false}
   paneId="TOP"
   resetExpanded={[Function]}
 >
-  <FooNode />
+  <Foo
+    isCollapsed={false}
+    key=".0"
+  />
   <Styled(ExpandButton)
     iconDirection="DOWN"
     onClick={[Function]}
@@ -49,10 +61,14 @@ exports[`Pane should render TopExpandButton with UP icon if pane is TOP and it's
 <Styled(Panel)
   expand={[Function]}
   expandedId="TOP"
+  isCollapsed={false}
   paneId="TOP"
   resetExpanded={[Function]}
 >
-  <FooNode />
+  <Foo
+    isCollapsed={false}
+    key=".0"
+  />
   <Styled(ExpandButton)
     iconDirection="UP"
     onClick={[Function]}
@@ -60,13 +76,37 @@ exports[`Pane should render TopExpandButton with UP icon if pane is TOP and it's
 </Styled(Panel)>
 `;
 
-exports[`Pane should render children 1`] = `
+exports[`Pane should render children with isCollapsed false if the pane is not collapsed 1`] = `
 <Styled(Panel)
   expand={[Function]}
+  expandedId={null}
+  isCollapsed={false}
   paneId="TOP"
   resetExpanded={[Function]}
 >
-  <FooNode />
+  <Foo
+    isCollapsed={false}
+    key=".0"
+  />
+  <Styled(ExpandButton)
+    iconDirection="DOWN"
+    onClick={[Function]}
+  />
+</Styled(Panel)>
+`;
+
+exports[`Pane should render children with isCollapsed true if the pane is collapsed 1`] = `
+<Styled(Panel)
+  expand={[Function]}
+  expandedId="BOTTOM"
+  isCollapsed={true}
+  paneId="TOP"
+  resetExpanded={[Function]}
+>
+  <Foo
+    isCollapsed={true}
+    key=".0"
+  />
   <Styled(ExpandButton)
     iconDirection="DOWN"
     onClick={[Function]}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {Children, cloneElement} from 'react';
 import PropTypes from 'prop-types';
 
 import {withExpand} from 'modules/components/SplitPane/ExpandContext';
@@ -41,7 +41,7 @@ class Pane extends React.Component {
   };
 
   render() {
-    const {children, paneId, expandedId} = this.props;
+    const {paneId, expandedId} = this.props;
 
     const isExpanded = expandedId === paneId;
 
@@ -50,8 +50,14 @@ class Pane extends React.Component {
       iconDirections: {[isExpanded]: iconDirection}
     } = paneExpandButton[paneId];
 
+    const isCollapsed = Boolean(expandedId && expandedId !== paneId);
+
+    const children = Children.map(this.props.children, child =>
+      cloneElement(child, {isCollapsed})
+    );
+
     return (
-      <Styled.Pane {...this.props}>
+      <Styled.Pane {...this.props} isCollapsed={isCollapsed}>
         {children}
         <ExpandButton
           onClick={this.handleExpand}

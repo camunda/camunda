@@ -10,22 +10,39 @@ import * as Styled from './styled';
 const {WrappedComponent: Pane} = WithExpandPane;
 
 describe('Pane', () => {
-  const FooNode = () => <div>Foo</div>;
+  const Foo = () => <div>Foo</div>;
   const mockProps = {
     expand: jest.fn(),
     resetExpanded: jest.fn()
   };
 
-  it('should render children', () => {
+  it('should render children with isCollapsed false if the pane is not collapsed', () => {
     // given
     const node = shallow(
-      <Pane {...mockProps} paneId={PANE_ID.TOP}>
-        <FooNode />
+      <Pane {...mockProps} paneId={PANE_ID.TOP} expandedId={null}>
+        <Foo />
       </Pane>
     );
 
     // then
-    expect(node.find(FooNode)).toHaveLength(1);
+    const FooNode = node.find(Foo);
+    expect(FooNode).toHaveLength(1);
+    expect(FooNode.prop('isCollapsed')).toBe(false);
+    expect(node).toMatchSnapshot();
+  });
+
+  it('should render children with isCollapsed true if the pane is collapsed', () => {
+    // given
+    const node = shallow(
+      <Pane {...mockProps} paneId={PANE_ID.TOP} expandedId={PANE_ID.BOTTOM}>
+        <Foo />
+      </Pane>
+    );
+
+    // then
+    const FooNode = node.find(Foo);
+    expect(FooNode).toHaveLength(1);
+    expect(FooNode.prop('isCollapsed')).toBe(true);
     expect(node).toMatchSnapshot();
   });
 
@@ -33,7 +50,7 @@ describe('Pane', () => {
     // given
     const node = shallow(
       <Pane {...mockProps} paneId={PANE_ID.TOP} expandedId={PANE_ID.TOP}>
-        <FooNode />
+        <Foo />
       </Pane>
     );
 
@@ -48,7 +65,7 @@ describe('Pane', () => {
     // given
     const node = shallow(
       <Pane {...mockProps} paneId={PANE_ID.TOP} expandedId={null}>
-        <FooNode />
+        <Foo />
       </Pane>
     );
 
@@ -63,7 +80,7 @@ describe('Pane', () => {
     // given
     const node = shallow(
       <Pane {...mockProps} paneId={PANE_ID.BOTTOM} expandedId={PANE_ID.BOTTOM}>
-        <FooNode />
+        <Foo />
       </Pane>
     );
 
@@ -80,7 +97,7 @@ describe('Pane', () => {
     // given
     const node = shallow(
       <Pane {...mockProps} paneId={PANE_ID.BOTTOM} expandedId={PANE_ID.TOP}>
-        <FooNode />
+        <Foo />
       </Pane>
     );
 
