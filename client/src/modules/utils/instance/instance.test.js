@@ -77,4 +77,24 @@ describe('instance utils', () => {
       expect(message).toBe(activeWithIncidents.incidents[0].errorMessage);
     });
   });
+
+  describe('getWorkflowName', () => {
+    it('should return workflowName when it exists', () => {
+      // given
+      const instance = {workflowId: 'foo', workflowName: 'bar'};
+      const instanceName = instanceUtils.getWorkflowName(instance);
+
+      // then
+      expect(instanceName).toBe(instance.workflowName);
+    });
+
+    it('should fallback to workflowId', () => {
+      // given
+      const instance = {workflowId: 'foo'};
+      const instanceName = instanceUtils.getWorkflowName(instance);
+
+      // then
+      expect(instanceName).toBe(instance.workflowId);
+    });
+  });
 });

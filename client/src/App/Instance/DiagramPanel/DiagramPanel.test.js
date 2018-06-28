@@ -5,6 +5,7 @@ import Pane from 'modules/components/SplitPane/Pane';
 import Diagram from 'modules/components/Diagram';
 import StateIcon from 'modules/components/StateIcon';
 import {formatDate} from 'modules/utils/date';
+import {getWorkflowName} from 'modules/utils/instance';
 import {STATE} from 'modules/constants/instance';
 
 import DiagramPanel from './DiagramPanel';
@@ -37,8 +38,11 @@ describe('DiagramPanel', () => {
     const StateIconNode = StyledTableNode.find(StateIcon);
     expect(StateIconNode).toHaveLength(1);
     expect(StateIconNode.prop('instance')).toBe(mockInstance);
-    expect(StyledTableNode.dive().text()).toContain(mockInstance.workflowId);
+    expect(StyledTableNode.dive().text()).toContain(
+      getWorkflowName(mockInstance)
+    );
     expect(node.find(Pane.Body)).toHaveLength(1);
+    expect(StyledTableNode.dive().text()).toContain(mockInstance.id);
     expect(StyledTableNode.dive().text()).toContain(formattedStartDate);
     expect(StyledTableNode.dive().text()).toContain(formattedEndDate);
 

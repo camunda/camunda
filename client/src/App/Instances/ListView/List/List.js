@@ -7,6 +7,7 @@ import StateIcon from 'modules/components/StateIcon';
 
 import * as Styled from './styled';
 import {formatDate} from 'modules/utils/date';
+import {getWorkflowName} from 'modules/utils/instance';
 
 export default class List extends React.Component {
   static propTypes = {
@@ -61,7 +62,7 @@ export default class List extends React.Component {
             Workflow Definition
           </React.Fragment>
         ),
-        id: 'Instance ID',
+        id: 'Instance Id',
         startDate: 'Start Time',
         endDate: 'End Time',
         actions: 'Actions'
@@ -166,7 +167,7 @@ export default class List extends React.Component {
         />
 
         <StateIcon instance={instance} />
-        {instance.workflowId}
+        {getWorkflowName(instance)}
       </Styled.Selection>
     );
   };

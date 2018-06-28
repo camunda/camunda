@@ -22,3 +22,7 @@ export function getInstanceState({state, incidents}) {
 export function getIncidentMessage({incidents}) {
   return (getActiveIncident(incidents) || {}).errorMessage;
 }
+
+export function getWorkflowName({workflowId, workflowName}) {
+  return workflowName || workflowId;
+}

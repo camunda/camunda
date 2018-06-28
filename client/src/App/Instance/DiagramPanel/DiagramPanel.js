@@ -5,6 +5,7 @@ import SplitPane from 'modules/components/SplitPane';
 import Diagram from 'modules/components/Diagram';
 import StateIcon from 'modules/components/StateIcon';
 import {formatDate} from 'modules/utils/date';
+import {getWorkflowName} from 'modules/utils/instance';
 
 import DiagramBar from './DiagramBar';
 import * as Styled from './styled';
@@ -20,7 +21,7 @@ export default function DiagramPanel({instance, ...props}) {
             <tr>
               <td>
                 <StateIcon instance={instance} />
-                {instance.workflowId}
+                {getWorkflowName(instance)}
               </td>
               <td>{instance.id}</td>
               <td>{formatDate(instance.startDate)}</td>
