@@ -24,11 +24,17 @@ describe('<Checkbox />', () => {
     expect(node.state().isChecked).toBe(false);
   });
 
-  it('should toggle "isChecked" state on click', () => {
-    const node = shallow(<Checkbox onChange={mockOnChange} isChecked={true} />);
-    expect(node.state().isChecked).toBe(true);
+  it('should toggle "isChecked" prop on click', () => {
+    let checkState = true;
+    const mockOnChange = jest
+      .fn()
+      .mockImplementation(isChecked => (checkState = !isChecked));
+    const node = shallow(
+      <Checkbox onChange={mockOnChange} isChecked={checkState} />
+    );
+    expect(checkState).toBe(true);
     node.find(Styled.Checkbox).simulate('click');
-    expect(node.state().isChecked).toBe(false);
+    expect(checkState).toBe(false);
   });
 
   it('should display a label if passed as props', () => {

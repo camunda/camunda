@@ -80,13 +80,13 @@ export default class List extends React.Component {
 
     if (exclusionList.size > 0) return false;
     if (query === filter) return true;
-    if (query.ids.size === total) return true;
+    if (query.ids && query.ids.size === total) return true;
 
     return false;
   };
 
   handleToggleSelectAll = isChecked => {
-    if (isChecked) {
+    if (!isChecked) {
       this.props.onSelectionUpdate({
         query: {$set: this.props.filter},
         exclusionList: {$set: new Set()}
@@ -126,8 +126,33 @@ export default class List extends React.Component {
     }
   };
 
-  addSelection = instance => {
+  onSelectionChange = (isChecked, instance) => {
     const {query} = this.props.selection;
+    const newState = !isChecked;
+    if (query === this.props.filter) {
+      if (newState) {
+        this.props.onSelectionUpdate({
+          exclusionList: {$remove: [instance.id]}
+        });
+      } else {
+        this.props.onSelectionUpdate({
+          exclusionList: {$add: [instance.id]}
+        });
+      }
+    } else {
+      if (newState) {
+        this.props.onSelectionUpdate({
+          query: {ids: {$add: [instance.id]}}
+        });
+      } else {
+        this.props.onSelectionUpdate({
+          query: {ids: {$remove: [instance.id]}}
+        });
+      }
+    }
+  };
+
+  addSelection = instance => {
     const isSelected = this.isSelected(instance.id);
     return (
       <Styled.Selection>
@@ -136,28 +161,7 @@ export default class List extends React.Component {
           type="selection"
           isChecked={isSelected}
           onChange={({isChecked}) => {
-            const newState = isChecked;
-            if (query === this.props.filter) {
-              if (newState) {
-                this.props.onSelectionUpdate({
-                  exclusionList: {$remove: [instance.id]}
-                });
-              } else {
-                this.props.onSelectionUpdate({
-                  exclusionList: {$add: [instance.id]}
-                });
-              }
-            } else {
-              if (newState) {
-                this.props.onSelectionUpdate({
-                  query: {ids: {$add: [instance.id]}}
-                });
-              } else {
-                this.props.onSelectionUpdate({
-                  query: {ids: {$remove: [instance.id]}}
-                });
-              }
-            }
+            this.onSelectionChange(isChecked, instance);
           }}
         />
 

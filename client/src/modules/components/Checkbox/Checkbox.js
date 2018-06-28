@@ -15,7 +15,6 @@ export default class Checkbox extends React.Component {
 
   constructor(props) {
     super(props);
-    this.state = {isChecked: false};
     this.el = {};
   }
 
@@ -41,9 +40,7 @@ export default class Checkbox extends React.Component {
   }
 
   handleOnClick = () => {
-    this.setState({isChecked: !this.state.isChecked}, () => {
-      this.props.onChange({isChecked: this.el.checked});
-    });
+    this.props.onChange({isChecked: this.el.checked});
   };
 
   inputRef = node => {
@@ -59,9 +56,10 @@ export default class Checkbox extends React.Component {
           data-test="checkbox-input"
           indeterminate={isIndeterminate}
           type="checkbox"
-          checked={this.state.isChecked}
+          checked={this.props.isChecked}
           innerRef={this.inputRef}
           checkboxType={type}
+          onChange={event => event}
         />
         <Styled.CustomCheckbox {...{isIndeterminate}} checkboxType={type} />
         {label && <Styled.Label>{label}</Styled.Label>}
