@@ -1,20 +1,28 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
+import {FILTER_SELECTION} from 'modules/constants/filter';
+import {getFilterQueryString} from 'modules/utils/filter';
+
 import * as Styled from './styled';
 
-export default function MetricTile({name, metric, metricColor}) {
+export default function MetricTile({name, type, metric, metricColor}) {
+  const query = getFilterQueryString(FILTER_SELECTION[type]);
   return (
-    <div>
-      <Styled.Metric metricColor={metricColor || 'themed'}>
+    <Styled.MetricTile>
+      <Styled.Metric
+        to={`/instances${query}`}
+        metricColor={metricColor || 'themed'}
+      >
         {metric}
       </Styled.Metric>
       <Styled.Name>{name}</Styled.Name>
-    </div>
+    </Styled.MetricTile>
   );
 }
 
 MetricTile.propTypes = {
+  type: PropTypes.string.isRequired,
   name: PropTypes.string.isRequired,
   metric: PropTypes.number.isRequired,
   metricColor: PropTypes.oneOf(['allIsWell', 'incidentsAndErrors'])
