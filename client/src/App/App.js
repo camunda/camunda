@@ -12,12 +12,6 @@ import Instance from './Instance';
 // Development Utility Component to test the theming.
 import ThemeToggle from 'modules/theme/ThemeToggle';
 
-const InstancesPage = () => (
-  <React.Fragment>
-    <Instances />
-  </React.Fragment>
-);
-
 export default function App(props) {
   return (
     <ThemeProvider>
@@ -26,7 +20,7 @@ export default function App(props) {
         <Authentication>
           <Route path="/login" component={Login} />
           <Route exact path="/" component={Dashboard} />
-          <Route exact path="/instances" component={InstancesPage} />
+          <Route exact path="/instances" component={Instances} />
           <Route exact path="/instances/:id" component={Instance} />
         </Authentication>
       </Router>

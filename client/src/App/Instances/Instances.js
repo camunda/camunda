@@ -1,6 +1,5 @@
 import React, {Component, Fragment} from 'react';
 import update from 'immutability-helper';
-import {withRouter} from 'react-router';
 import Header from '../Header';
 
 import Panel from 'modules/components/Panel';
@@ -34,9 +33,15 @@ class Instances extends Component {
     history: PropTypes.object.isRequired
   };
 
+  static defaultProps = {
+    getState: () => {
+      return {filterCount: 0, selections: [[]]};
+    },
+    storeState: () => {}
+  };
+
   constructor(props) {
     super(props);
-
     const {filterCount, selections} = props.getState();
 
     this.state = {
@@ -143,7 +148,6 @@ class Instances extends Component {
   render() {
     const {instances, incidents: incidentsCount} = this.props.getState();
     const {active, incidents, canceled, completed} = this.state.filter;
-
     return (
       <div>
         <Header
@@ -224,4 +228,7 @@ class Instances extends Component {
   }
 }
 
-export default withRouter(withSharedState(Instances));
+const WrappedInstances = withSharedState(Instances);
+WrappedInstances.WrappedComponent = Instances;
+
+export default WrappedInstances;
