@@ -4,12 +4,14 @@ import PropTypes from 'prop-types';
 import Table from 'modules/components/Table';
 import Checkbox from 'modules/components/Checkbox';
 import StateIcon from 'modules/components/StateIcon';
+import {withExpand} from 'modules/components/SplitPane/ExpandContext';
+import {PANE_ID} from 'modules/components/SplitPane/Pane/constants';
 
 import * as Styled from './styled';
 import {formatDate} from 'modules/utils/date';
 import {getWorkflowName} from 'modules/utils/instance';
 
-export default class List extends React.Component {
+class List extends React.Component {
   static propTypes = {
     data: PropTypes.arrayOf(PropTypes.object).isRequired,
     onSelectionUpdate: PropTypes.func.isRequired,
@@ -20,7 +22,8 @@ export default class List extends React.Component {
       list: PropTypes.arrayOf(PropTypes.object)
     }).isRequired,
     total: PropTypes.number,
-    filter: PropTypes.object
+    filter: PropTypes.object,
+    expandedId: PropTypes.string
   };
 
   state = {
@@ -29,6 +32,15 @@ export default class List extends React.Component {
 
   componentDidMount() {
     this.recalculateHeight();
+  }
+
+  componentDidUpdate({expandedId: prevExpandedId}) {
+    const {expandedId} = this.props;
+
+    // only call recalculateHeight if the expandedId changes and the pane is not collapsed
+    if (prevExpandedId !== expandedId && expandedId !== PANE_ID.TOP) {
+      this.recalculateHeight();
+    }
   }
 
   renderTable() {
@@ -190,3 +202,5 @@ export default class List extends React.Component {
     );
   }
 }
+
+export default withExpand(List);
