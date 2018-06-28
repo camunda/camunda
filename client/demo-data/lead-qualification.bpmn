@@ -4,47 +4,47 @@
     <bpmn:endEvent id="EndEvent_0kyp36g" name="No Discovery Call right now">
       <bpmn:incoming>SequenceFlow_062cw84</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="SequenceFlow_12" name="" sourceRef="UserTask_1d75hsy" targetRef="ExclusiveGateway_0w6auz7" />
+    <bpmn:sequenceFlow id="SequenceFlow_12" name="" sourceRef="ReviewSuggestion" targetRef="outcome_2" />
     <bpmn:endEvent id="msLeadIsSQL" name="Lead is SQL">
       <bpmn:incoming>SequenceFlow_9</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:exclusiveGateway id="ExclusiveGateway_0w6auz7" name="Outcome?">
+    <bpmn:exclusiveGateway id="outcome_2" name="Outcome?">
       <bpmn:incoming>SequenceFlow_12</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1iq5ejs</bpmn:outgoing>
       <bpmn:outgoing>SequenceFlow_0r2jr8w</bpmn:outgoing>
       <bpmn:outgoing>SequenceFlow_1inbnwp</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:sequenceFlow id="SequenceFlow_1iq5ejs" name="Opportunity" sourceRef="ExclusiveGateway_0w6auz7" targetRef="UserTask_1btv59s">
+    <bpmn:sequenceFlow id="SequenceFlow_1iq5ejs" name="Opportunity" sourceRef="outcome_2" targetRef="CreateOpp">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[ #{reviewDcOutcome=='opp'} ]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="SequenceFlow_0r2jr8w" name="SQL" sourceRef="ExclusiveGateway_0w6auz7" targetRef="ServiceTask_2">
+    <bpmn:sequenceFlow id="SequenceFlow_0r2jr8w" name="SQL" sourceRef="outcome_2" targetRef="CreateSQL">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[ #{reviewDcOutcome=='sql'} ]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="SequenceFlow_1inbnwp" name="Backburner" sourceRef="ExclusiveGateway_0w6auz7" targetRef="EndEvent_1v0sbfg">
+    <bpmn:sequenceFlow id="SequenceFlow_1inbnwp" name="Backburner" sourceRef="outcome_2" targetRef="EndEvent_1v0sbfg">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[ #{reviewDcOutcome=='backburner'} ]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="SequenceFlow_9" name="" sourceRef="ServiceTask_2" targetRef="msLeadIsSQL" />
+    <bpmn:sequenceFlow id="SequenceFlow_9" name="" sourceRef="CreateSQL" targetRef="msLeadIsSQL" />
     <bpmn:endEvent id="EndEvent_1v0sbfg" name="Lead is not an Opp or SQL">
       <bpmn:incoming>SequenceFlow_1inbnwp</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:exclusiveGateway id="ExclusiveGateway_1sx3pco" name="DC scheduled?">
+    <bpmn:exclusiveGateway id="dc_scheduled" name="DC scheduled?">
       <bpmn:incoming>SequenceFlow_04yu0r6</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_045sen6</bpmn:outgoing>
       <bpmn:outgoing>SequenceFlow_14qtvg2</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:sequenceFlow id="SequenceFlow_045sen6" name="Yes" sourceRef="ExclusiveGateway_1sx3pco" targetRef="UserTask_0abh7j4">
+    <bpmn:sequenceFlow id="SequenceFlow_045sen6" name="Yes" sourceRef="dc_scheduled" targetRef="ConductDiscoveryCall">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[ #{responseResult=='positive'} ]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="SequenceFlow_14qtvg2" name="No" sourceRef="ExclusiveGateway_1sx3pco" targetRef="ExclusiveGateway_0s293bq">
+    <bpmn:sequenceFlow id="SequenceFlow_14qtvg2" name="No" sourceRef="dc_scheduled" targetRef="ExclusiveGateway_0s293bq">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[ #{responseResult!='positive'} ]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:startEvent id="msLeadReceived" name="Lead received" camunda:asyncAfter="true" camunda:formKey="embedded:app:forms/start-form.html">
+    <bpmn:startEvent id="StartEvent" name="Lead received" camunda:asyncAfter="true" camunda:formKey="embedded:app:forms/start-form.html">
       <bpmn:outgoing>SequenceFlow_11yaqs7</bpmn:outgoing>
       <bpmn:messageEventDefinition messageRef="Message_1" />
     </bpmn:startEvent>
-    <bpmn:sequenceFlow id="SequenceFlow_11yaqs7" sourceRef="msLeadReceived" targetRef="ServiceTask_4" />
-    <bpmn:sequenceFlow id="SequenceFlow_13" name="" sourceRef="ServiceTask_4" targetRef="ExclusiveGateway_125mgn8" />
-    <bpmn:sequenceFlow id="SequenceFlow_11" name="" sourceRef="UserTask_1btv59s" targetRef="msLeadIsOpp" />
+    <bpmn:sequenceFlow id="SequenceFlow_11yaqs7" sourceRef="StartEvent" targetRef="GetMasterData" />
+    <bpmn:sequenceFlow id="SequenceFlow_13" name="" sourceRef="GetMasterData" targetRef="already_qualified" />
+    <bpmn:sequenceFlow id="SequenceFlow_11" name="" sourceRef="CreateOpp" targetRef="msLeadIsOpp" />
     <bpmn:endEvent id="msLeadIsOpp" name="Lead is Opp">
       <bpmn:incoming>SequenceFlow_11</bpmn:incoming>
     </bpmn:endEvent>
@@ -56,19 +56,19 @@
     <bpmn:sequenceFlow id="SequenceFlow_062cw84" name="No" sourceRef="ExclusiveGateway_0s293bq" targetRef="EndEvent_0kyp36g">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[ #{responseResult!='putIntoPipedrive'} ]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="SequenceFlow_1yg9rl8" name="Yes" sourceRef="ExclusiveGateway_0s293bq" targetRef="ServiceTask_08dofa0">
+    <bpmn:sequenceFlow id="SequenceFlow_1yg9rl8" name="Yes" sourceRef="ExclusiveGateway_0s293bq" targetRef="CreateUnqualifiedLead">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[ #{responseResult=='putIntoPipedrive'} ]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:endEvent id="EndEvent_1on498r" name="To be qualified">
       <bpmn:incoming>SequenceFlow_19he8lm</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="SequenceFlow_19he8lm" sourceRef="ServiceTask_08dofa0" targetRef="EndEvent_1on498r" />
-    <bpmn:exclusiveGateway id="ExclusiveGateway_125mgn8" name="already qualified?">
+    <bpmn:sequenceFlow id="SequenceFlow_19he8lm" sourceRef="CreateUnqualifiedLead" targetRef="EndEvent_1on498r" />
+    <bpmn:exclusiveGateway id="already_qualified" name="already qualified?">
       <bpmn:incoming>SequenceFlow_13</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0ogdg4u</bpmn:outgoing>
       <bpmn:outgoing>SequenceFlow_17zh5x8</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:sequenceFlow id="SequenceFlow_0ogdg4u" name="Yes" sourceRef="ExclusiveGateway_125mgn8" targetRef="ExclusiveGateway_0m8pwzv">
+    <bpmn:sequenceFlow id="SequenceFlow_0ogdg4u" name="Yes" sourceRef="already_qualified" targetRef="ExclusiveGateway_0m8pwzv">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[ #{qualified=='true'} ]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:exclusiveGateway id="ExclusiveGateway_0m8pwzv">
@@ -76,7 +76,7 @@
       <bpmn:incoming>SequenceFlow_10</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0ys036x</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:sequenceFlow id="SequenceFlow_0ys036x" sourceRef="ExclusiveGateway_0m8pwzv" targetRef="UserTask_1d75hsy" />
+    <bpmn:sequenceFlow id="SequenceFlow_0ys036x" sourceRef="ExclusiveGateway_0m8pwzv" targetRef="ReviewSuggestion" />
     <bpmn:intermediateThrowEvent id="msBantQualified" name="BANT qualified">
       <bpmn:incoming>SequenceFlow_5</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_10</bpmn:outgoing>
@@ -85,60 +85,60 @@
     <bpmn:endEvent id="EndEvent_1" name="Lead is not an Opp or SQL">
       <bpmn:incoming>SequenceFlow_3</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:exclusiveGateway id="ExclusiveGateway_1" name="Outcome?">
+    <bpmn:exclusiveGateway id="outcome" name="Outcome?">
       <bpmn:incoming>SequenceFlow_2</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_5</bpmn:outgoing>
       <bpmn:outgoing>SequenceFlow_3</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:sequenceFlow id="SequenceFlow_5" name="Opp or SQL" sourceRef="ExclusiveGateway_1" targetRef="msBantQualified">
+    <bpmn:sequenceFlow id="SequenceFlow_5" name="Opp or SQL" sourceRef="outcome" targetRef="msBantQualified">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[ #{dcOutcome != 'backburner'} ]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="SequenceFlow_3" name="Backurner" sourceRef="ExclusiveGateway_1" targetRef="EndEvent_1">
+    <bpmn:sequenceFlow id="SequenceFlow_3" name="Backurner" sourceRef="outcome" targetRef="EndEvent_1">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[ #{dcOutcome == 'backburner'} ]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="SequenceFlow_2" name="" sourceRef="UserTask_0abh7j4" targetRef="ExclusiveGateway_1" />
-    <bpmn:sequenceFlow id="SequenceFlow_04yu0r6" sourceRef="CallActivity_1utbinl" targetRef="ExclusiveGateway_1sx3pco" />
-    <bpmn:exclusiveGateway id="ExclusiveGateway_0rta6cr" name="Call them right away?">
+    <bpmn:sequenceFlow id="SequenceFlow_2" name="" sourceRef="ConductDiscoveryCall" targetRef="outcome" />
+    <bpmn:sequenceFlow id="SequenceFlow_04yu0r6" sourceRef="ScheduleDiscoveryCall" targetRef="dc_scheduled" />
+    <bpmn:exclusiveGateway id="call_right_away" name="Call them right away?">
       <bpmn:incoming>SequenceFlow_7</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_19e8gnn</bpmn:outgoing>
       <bpmn:outgoing>SequenceFlow_06sm5rx</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:sequenceFlow id="SequenceFlow_19e8gnn" name="No" sourceRef="ExclusiveGateway_0rta6cr" targetRef="CallActivity_1utbinl">
+    <bpmn:sequenceFlow id="SequenceFlow_19e8gnn" name="No" sourceRef="call_right_away" targetRef="ScheduleDiscoveryCall">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[ #{basicQualificationResult!='callThem'} ]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="SequenceFlow_06sm5rx" name="Yes" sourceRef="ExclusiveGateway_0rta6cr" targetRef="UserTask_0abh7j4">
+    <bpmn:sequenceFlow id="SequenceFlow_06sm5rx" name="Yes" sourceRef="call_right_away" targetRef="ConductDiscoveryCall">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[ #{basicQualificationResult=='callThem'} ]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:endEvent id="EndEvent_1x1ldtc" name="Lead is not interesting">
       <bpmn:incoming>SequenceFlow_0y8pw4d</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:endEvent id="EndEvent_0xsm899" name="Evaluation Process triggered">
+    <bpmn:endEvent id="EvalProcTriggered" name="Evaluation Process triggered">
       <bpmn:incoming>SequenceFlow_1p7cjmi</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="SequenceFlow_1p7cjmi" sourceRef="ServiceTask_0j2w5af" targetRef="EndEvent_0xsm899" />
+    <bpmn:sequenceFlow id="SequenceFlow_1p7cjmi" sourceRef="TriggerEvalProc" targetRef="EvalProcTriggered" />
     <bpmn:endEvent id="EndEvent_2" name="Lead is an old Backburner">
       <bpmn:incoming>SequenceFlow_0mp6dzn</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:exclusiveGateway id="ExclusiveGateway_1bsu0aq" name="is or belongs to existing Opp or SQL?">
+    <bpmn:exclusiveGateway id="opp_sql_ex_gateway" name="is or belongs to existing Opp or SQL?">
       <bpmn:incoming>SequenceFlow_0lyunum</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0mp6dzn</bpmn:outgoing>
       <bpmn:outgoing>SequenceFlow_0srxa3r</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:sequenceFlow id="SequenceFlow_0mp6dzn" name="No" sourceRef="ExclusiveGateway_1bsu0aq" targetRef="EndEvent_2">
+    <bpmn:sequenceFlow id="SequenceFlow_0mp6dzn" name="No" sourceRef="opp_sql_ex_gateway" targetRef="EndEvent_2">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[ #{crmLeadAppearance!='oppOrSQL'} ]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:endEvent id="EndEvent_0wsfol8" name="Lead not new but SQL or Opp">
       <bpmn:incoming>SequenceFlow_0hgftey</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="SequenceFlow_0srxa3r" name="Yes" sourceRef="ExclusiveGateway_1bsu0aq" targetRef="SendTask_01ry1oz">
+    <bpmn:sequenceFlow id="SequenceFlow_0srxa3r" name="Yes" sourceRef="opp_sql_ex_gateway" targetRef="NotifyAccountManager">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[ #{crmLeadAppearance=='oppOrSQL'} ]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="SequenceFlow_0hgftey" sourceRef="SendTask_01ry1oz" targetRef="EndEvent_0wsfol8" />
+    <bpmn:sequenceFlow id="SequenceFlow_0hgftey" sourceRef="NotifyAccountManager" targetRef="EndEvent_0wsfol8" />
     <bpmn:intermediateThrowEvent id="msFitScoreQualified" name="Fit Score qualified">
       <bpmn:incoming>SequenceFlow_1vqc309</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_7</bpmn:outgoing>
     </bpmn:intermediateThrowEvent>
-    <bpmn:sequenceFlow id="SequenceFlow_7" name="" sourceRef="msFitScoreQualified" targetRef="ExclusiveGateway_0rta6cr" />
+    <bpmn:sequenceFlow id="SequenceFlow_7" name="" sourceRef="msFitScoreQualified" targetRef="call_right_away" />
     <bpmn:exclusiveGateway id="ExclusiveGateway_12waj5r" name="Work on them?">
       <bpmn:incoming>SequenceFlow_0riqdfd</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0y8pw4d</bpmn:outgoing>
@@ -150,115 +150,113 @@
     <bpmn:sequenceFlow id="SequenceFlow_1vqc309" name="yes" sourceRef="ExclusiveGateway_12waj5r" targetRef="msFitScoreQualified">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[ #{basicQualificationResult != 'donothing' } ]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="SequenceFlow_0riqdfd" sourceRef="UserTask_1g1zsp8" targetRef="ExclusiveGateway_12waj5r" />
+    <bpmn:sequenceFlow id="SequenceFlow_0riqdfd" sourceRef="DoBasicLeadQual" targetRef="ExclusiveGateway_12waj5r" />
     <bpmn:intermediateThrowEvent id="msLeadIsNew" name="Lead is new">
-      <bpmn:incoming>SequenceFlow_1f01na6</bpmn:incoming>
+      <bpmn:incoming>SequenceFlow_0r4htqv</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_8</bpmn:outgoing>
     </bpmn:intermediateThrowEvent>
-    <bpmn:sequenceFlow id="SequenceFlow_8" name="" sourceRef="msLeadIsNew" targetRef="UserTask_1g1zsp8" />
-    <bpmn:exclusiveGateway id="ExclusiveGateway_1jpz3p1" name="New Lead?">
+    <bpmn:sequenceFlow id="SequenceFlow_8" name="" sourceRef="msLeadIsNew" targetRef="DoBasicLeadQual" />
+    <bpmn:exclusiveGateway id="new_lead" name="New Lead?">
       <bpmn:incoming>SequenceFlow_0vzavy9</bpmn:incoming>
-      <bpmn:outgoing>SequenceFlow_1f01na6</bpmn:outgoing>
       <bpmn:outgoing>SequenceFlow_0lyunum</bpmn:outgoing>
+      <bpmn:outgoing>SequenceFlow_0r4htqv</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:sequenceFlow id="SequenceFlow_1f01na6" name="Yes" sourceRef="ExclusiveGateway_1jpz3p1" targetRef="msLeadIsNew">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[ #{crmLeadAppearance=='new'} ]]></bpmn:conditionExpression>
-    </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="SequenceFlow_0lyunum" name="No" sourceRef="ExclusiveGateway_1jpz3p1" targetRef="ExclusiveGateway_1bsu0aq">
+    <bpmn:sequenceFlow id="SequenceFlow_0lyunum" name="No" sourceRef="new_lead" targetRef="opp_sql_ex_gateway">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[ #{crmLeadAppearance!='new'} ]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:serviceTask id="UserTask_0w1r7lc" name="Research Lead" camunda:expression="${true}">
+    <bpmn:serviceTask id="ResearchLead" name="Research Lead" camunda:expression="${true}">
       <bpmn:incoming>SequenceFlow_1iyg1j0</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0vzavy9</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:sequenceFlow id="SequenceFlow_0vzavy9" sourceRef="UserTask_0w1r7lc" targetRef="ExclusiveGateway_1jpz3p1" />
+    <bpmn:sequenceFlow id="SequenceFlow_0vzavy9" sourceRef="ResearchLead" targetRef="new_lead" />
     <bpmn:inclusiveGateway id="InclusiveGateway_1qmuhxg" name="">
       <bpmn:incoming>SequenceFlow_1gwt3cq</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1bwi1bd</bpmn:outgoing>
       <bpmn:outgoing>SequenceFlow_1iyg1j0</bpmn:outgoing>
     </bpmn:inclusiveGateway>
-    <bpmn:sequenceFlow id="SequenceFlow_1bwi1bd" name="Trial On Premise requested" sourceRef="InclusiveGateway_1qmuhxg" targetRef="ServiceTask_0j2w5af">
+    <bpmn:sequenceFlow id="SequenceFlow_1bwi1bd" name="Trial On Premise requested" sourceRef="InclusiveGateway_1qmuhxg" targetRef="TriggerEvalProc">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[ #{landingPage=='Download'} ]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="SequenceFlow_1iyg1j0" name="always" sourceRef="InclusiveGateway_1qmuhxg" targetRef="UserTask_0w1r7lc">
+    <bpmn:sequenceFlow id="SequenceFlow_1iyg1j0" name="always" sourceRef="InclusiveGateway_1qmuhxg" targetRef="ResearchLead">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{true}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="SequenceFlow_1" name="" sourceRef="ScriptTask_1" targetRef="ExclusiveGateway_04zuj46" />
+    <bpmn:sequenceFlow id="SequenceFlow_1" name="" sourceRef="AssignLeadMan" targetRef="ExclusiveGateway_04zuj46" />
     <bpmn:exclusiveGateway id="ExclusiveGateway_04zuj46">
       <bpmn:incoming>SequenceFlow_1</bpmn:incoming>
       <bpmn:incoming>SequenceFlow_185ax5l</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1gwt3cq</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:sequenceFlow id="SequenceFlow_1gwt3cq" sourceRef="ExclusiveGateway_04zuj46" targetRef="InclusiveGateway_1qmuhxg" />
-    <bpmn:serviceTask id="ServiceTask_4" name="Get Master Data" camunda:expression="${true}">
+    <bpmn:serviceTask id="GetMasterData" name="Get Master Data" camunda:expression="${true}">
       <bpmn:incoming>SequenceFlow_11yaqs7</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_13</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:exclusiveGateway id="ExclusiveGateway_0mapcsy" name="Lead assigned?">
+    <bpmn:exclusiveGateway id="lead_assigned" name="Lead assigned?">
       <bpmn:incoming>SequenceFlow_1psal5a</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_185ax5l</bpmn:outgoing>
       <bpmn:outgoing>SequenceFlow_0wvao6m</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:sequenceFlow id="SequenceFlow_185ax5l" name="Yes" sourceRef="ExclusiveGateway_0mapcsy" targetRef="ExclusiveGateway_04zuj46">
+    <bpmn:sequenceFlow id="SequenceFlow_185ax5l" name="Yes" sourceRef="lead_assigned" targetRef="ExclusiveGateway_04zuj46">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{sdrAvailable}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="SequenceFlow_0wvao6m" name="No" sourceRef="ExclusiveGateway_0mapcsy" targetRef="ScriptTask_1">
+    <bpmn:sequenceFlow id="SequenceFlow_0wvao6m" name="No" sourceRef="lead_assigned" targetRef="AssignLeadMan">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{!sdrAvailable}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="SequenceFlow_17zh5x8" name="No" sourceRef="ExclusiveGateway_125mgn8" targetRef="CallActivity_0cw79oq">
+    <bpmn:sequenceFlow id="SequenceFlow_17zh5x8" name="No" sourceRef="already_qualified" targetRef="AssignLeadAuto">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[ #{qualified=='false'} ]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:serviceTask id="CallActivity_0cw79oq" name="Assign Lead automatically" camunda:expression="${true}">
+    <bpmn:serviceTask id="AssignLeadAuto" name="Assign Lead automatically" camunda:expression="${true}">
       <bpmn:incoming>SequenceFlow_17zh5x8</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1psal5a</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:sequenceFlow id="SequenceFlow_1psal5a" sourceRef="CallActivity_0cw79oq" targetRef="ExclusiveGateway_0mapcsy" />
-    <bpmn:serviceTask id="ScriptTask_1" name="Assign Lead manually" camunda:expression="${true}">
+    <bpmn:sequenceFlow id="SequenceFlow_1psal5a" sourceRef="AssignLeadAuto" targetRef="lead_assigned" />
+    <bpmn:serviceTask id="AssignLeadMan" name="Assign Lead manually" camunda:expression="${true}">
       <bpmn:incoming>SequenceFlow_0wvao6m</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:serviceTask id="ServiceTask_0j2w5af" name="Trigger Evaluation Process" camunda:expression="${true}">
+    <bpmn:serviceTask id="TriggerEvalProc" name="Trigger Evaluation Process" camunda:expression="${true}">
       <bpmn:incoming>SequenceFlow_1bwi1bd</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1p7cjmi</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:serviceTask id="SendTask_01ry1oz" name="Notify Account Manager" camunda:expression="${true}">
+    <bpmn:serviceTask id="NotifyAccountManager" name="Notify Account Manager" camunda:expression="${true}">
       <bpmn:incoming>SequenceFlow_0srxa3r</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0hgftey</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:serviceTask id="UserTask_1g1zsp8" name="Do Basic Lead Qualification" camunda:expression="${true}">
+    <bpmn:serviceTask id="DoBasicLeadQual" name="Do Basic Lead Qualification" camunda:expression="${true}">
       <bpmn:incoming>SequenceFlow_8</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0riqdfd</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:serviceTask id="CallActivity_1utbinl" name="Schedule Discovery Call" camunda:expression="${true}">
+    <bpmn:serviceTask id="ScheduleDiscoveryCall" name="Schedule Discovery Call" camunda:expression="${true}">
       <bpmn:incoming>SequenceFlow_19e8gnn</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_04yu0r6</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:serviceTask id="UserTask_0abh7j4" name="Conduct Discovery Call" camunda:expression="${true}">
+    <bpmn:serviceTask id="ConductDiscoveryCall" name="Conduct Discovery Call" camunda:expression="${true}">
       <bpmn:incoming>SequenceFlow_045sen6</bpmn:incoming>
       <bpmn:incoming>SequenceFlow_06sm5rx</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_2</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:serviceTask id="ServiceTask_08dofa0" name="Create unqualified Lead in Pipedrive" camunda:expression="${true}">
+    <bpmn:serviceTask id="CreateUnqualifiedLead" name="Create unqualified Lead in Pipedrive" camunda:expression="${true}">
       <bpmn:incoming>SequenceFlow_1yg9rl8</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_19he8lm</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:serviceTask id="UserTask_1d75hsy" name="Review Suggestion" camunda:expression="${true}">
+    <bpmn:serviceTask id="ReviewSuggestion" name="Review Suggestion" camunda:expression="${true}">
       <bpmn:incoming>SequenceFlow_0ys036x</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_12</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:serviceTask id="UserTask_1btv59s" name="Create Opp in Pipedrive" camunda:expression="${true}">
+    <bpmn:serviceTask id="CreateOpp" name="Create Opp in Pipedrive" camunda:expression="${true}">
       <bpmn:incoming>SequenceFlow_1iq5ejs</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_11</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:serviceTask id="ServiceTask_2" name="Create SQL in Pipedrive" camunda:expression="${true}">
+    <bpmn:serviceTask id="CreateSQL" name="Create SQL in Pipedrive" camunda:expression="${true}">
       <bpmn:incoming>SequenceFlow_0r2jr8w</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_9</bpmn:outgoing>
     </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="SequenceFlow_0r4htqv" name="" sourceRef="new_lead" targetRef="msLeadIsNew" />
   </bpmn:process>
   <bpmn:message id="Message_1" name="leadReceivedMsg" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="leadQualification">
-      <bpmndi:BPMNShape id="StartEvent_1yahyaw_di" bpmnElement="msLeadReceived">
+      <bpmndi:BPMNShape id="StartEvent_1yahyaw_di" bpmnElement="StartEvent">
         <dc:Bounds x="8" y="153" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="-9" y="197" width="70" height="13" />
@@ -271,7 +269,7 @@
           <dc:Bounds x="18" y="156" width="90" height="0" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="ExclusiveGateway_0w6auz7_di" bpmnElement="ExclusiveGateway_0w6auz7" isMarkerVisible="true">
+      <bpmndi:BPMNShape id="ExclusiveGateway_0w6auz7_di" bpmnElement="outcome_2" isMarkerVisible="true">
         <dc:Bounds x="2764" y="146" width="50" height="50" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="2763" y="118" width="51" height="13" />
@@ -318,10 +316,10 @@
           <dc:Bounds x="3034" y="470" width="70" height="25" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ExclusiveGateway_1sx3pco_di" bpmnElement="ExclusiveGateway_1sx3pco" isMarkerVisible="true">
+      <bpmndi:BPMNShape id="ExclusiveGateway_1sx3pco_di" bpmnElement="dc_scheduled" isMarkerVisible="true">
         <dc:Bounds x="1890" y="148" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1877" y="124" width="75" height="12" />
+          <dc:Bounds x="1877" y="124" width="76" height="13" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_045sen6_di" bpmnElement="SequenceFlow_045sen6">
@@ -407,7 +405,7 @@
           <dc:Bounds x="2159" y="321" width="90" height="0" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="ExclusiveGateway_125mgn8_di" bpmnElement="ExclusiveGateway_125mgn8" isMarkerVisible="true">
+      <bpmndi:BPMNShape id="ExclusiveGateway_125mgn8_di" bpmnElement="already_qualified" isMarkerVisible="true">
         <dc:Bounds x="212" y="146" width="50" height="50" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="193" y="196" width="87" height="13" />
@@ -454,7 +452,7 @@
           <dc:Bounds x="2372" y="359" width="70" height="25" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="_BPMNShape_ExclusiveGateway_2" bpmnElement="ExclusiveGateway_1" isMarkerVisible="true">
+      <bpmndi:BPMNShape id="_BPMNShape_ExclusiveGateway_2" bpmnElement="outcome" isMarkerVisible="true">
         <dc:Bounds x="2279" y="146" width="50" height="50" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="2279" y="120" width="51" height="13" />
@@ -489,7 +487,7 @@
           <dc:Bounds x="1816.5" y="158" width="90" height="0" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="ExclusiveGateway_0rta6cr_di" bpmnElement="ExclusiveGateway_0rta6cr" isMarkerVisible="true">
+      <bpmndi:BPMNShape id="ExclusiveGateway_0rta6cr_di" bpmnElement="call_right_away" isMarkerVisible="true">
         <dc:Bounds x="1605" y="148" width="50" height="50" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="1597" y="199" width="71" height="25" />
@@ -517,7 +515,7 @@
           <dc:Bounds x="1524" y="357" width="54" height="25" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="EndEvent_0xsm899_di" bpmnElement="EndEvent_0xsm899">
+      <bpmndi:BPMNShape id="EndEvent_0xsm899_di" bpmnElement="EvalProcTriggered">
         <dc:Bounds x="993" y="544" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="967" y="580" width="87" height="25" />
@@ -536,7 +534,7 @@
           <dc:Bounds x="1162" y="476" width="69" height="25" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ExclusiveGateway_1bsu0aq_di" bpmnElement="ExclusiveGateway_1bsu0aq" isMarkerVisible="true">
+      <bpmndi:BPMNShape id="ExclusiveGateway_1bsu0aq_di" bpmnElement="opp_sql_ex_gateway" isMarkerVisible="true">
         <dc:Bounds x="1040" y="309" width="50" height="50" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="1032" y="248" width="75" height="38" />
@@ -626,21 +624,12 @@
           <dc:Bounds x="1166" y="155.5" width="90" height="0" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="ExclusiveGateway_1jpz3p1_di" bpmnElement="ExclusiveGateway_1jpz3p1" isMarkerVisible="true">
+      <bpmndi:BPMNShape id="ExclusiveGateway_1jpz3p1_di" bpmnElement="new_lead" isMarkerVisible="true">
         <dc:Bounds x="986" y="148" width="50" height="50" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="984" y="126" width="56" height="13" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="SequenceFlow_1f01na6_di" bpmnElement="SequenceFlow_1f01na6">
-        <di:waypoint xsi:type="dc:Point" x="1036" y="173" />
-        <di:waypoint xsi:type="dc:Point" x="1060" y="173" />
-        <di:waypoint xsi:type="dc:Point" x="1060" y="171" />
-        <di:waypoint xsi:type="dc:Point" x="1137" y="171" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1048" y="151" width="18" height="13" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SequenceFlow_0lyunum_di" bpmnElement="SequenceFlow_0lyunum">
         <di:waypoint xsi:type="dc:Point" x="1011" y="198" />
         <di:waypoint xsi:type="dc:Point" x="1011" y="334" />
@@ -649,7 +638,7 @@
           <dc:Bounds x="1113" y="208" width="15" height="13" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="ServiceTask_0oys91l_di" bpmnElement="UserTask_0w1r7lc">
+      <bpmndi:BPMNShape id="ServiceTask_0oys91l_di" bpmnElement="ResearchLead">
         <dc:Bounds x="834" y="133" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_0vzavy9_di" bpmnElement="SequenceFlow_0vzavy9">
@@ -701,10 +690,10 @@
           <dc:Bounds x="840" y="162" width="90" height="0" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="ServiceTask_18dhmwa_di" bpmnElement="ServiceTask_4">
+      <bpmndi:BPMNShape id="ServiceTask_18dhmwa_di" bpmnElement="GetMasterData">
         <dc:Bounds x="82" y="131" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ExclusiveGateway_0mapcsy_di" bpmnElement="ExclusiveGateway_0mapcsy" isMarkerVisible="true">
+      <bpmndi:BPMNShape id="ExclusiveGateway_0mapcsy_di" bpmnElement="lead_assigned" isMarkerVisible="true">
         <dc:Bounds x="447" y="146" width="50" height="50" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="433" y="109" width="78" height="13" />
@@ -732,7 +721,7 @@
           <dc:Bounds x="268" y="152" width="15" height="13" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="ServiceTask_1xqzx4a_di" bpmnElement="CallActivity_0cw79oq">
+      <bpmndi:BPMNShape id="ServiceTask_1xqzx4a_di" bpmnElement="AssignLeadAuto">
         <dc:Bounds x="313" y="131" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_1psal5a_di" bpmnElement="SequenceFlow_1psal5a">
@@ -742,36 +731,43 @@
           <dc:Bounds x="385" y="156" width="90" height="0" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="ServiceTask_1ekgx5z_di" bpmnElement="ScriptTask_1">
+      <bpmndi:BPMNShape id="ServiceTask_1ekgx5z_di" bpmnElement="AssignLeadMan">
         <dc:Bounds x="506" y="273" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ServiceTask_0m0cdwy_di" bpmnElement="ServiceTask_0j2w5af">
+      <bpmndi:BPMNShape id="ServiceTask_0m0cdwy_di" bpmnElement="TriggerEvalProc">
         <dc:Bounds x="853" y="522" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ServiceTask_0gd9k51_di" bpmnElement="SendTask_01ry1oz">
+      <bpmndi:BPMNShape id="ServiceTask_0gd9k51_di" bpmnElement="NotifyAccountManager">
         <dc:Bounds x="1145" y="294" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ServiceTask_05fn7ak_di" bpmnElement="UserTask_1g1zsp8">
+      <bpmndi:BPMNShape id="ServiceTask_05fn7ak_di" bpmnElement="DoBasicLeadQual">
         <dc:Bounds x="1249" y="131" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ServiceTask_03qu37t_di" bpmnElement="CallActivity_1utbinl">
+      <bpmndi:BPMNShape id="ServiceTask_03qu37t_di" bpmnElement="ScheduleDiscoveryCall">
         <dc:Bounds x="1733" y="133" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ServiceTask_04gbcyb_di" bpmnElement="UserTask_0abh7j4">
+      <bpmndi:BPMNShape id="ServiceTask_04gbcyb_di" bpmnElement="ConductDiscoveryCall">
         <dc:Bounds x="2027" y="133" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ServiceTask_178a7th_di" bpmnElement="ServiceTask_08dofa0">
+      <bpmndi:BPMNShape id="ServiceTask_178a7th_di" bpmnElement="CreateUnqualifiedLead">
         <dc:Bounds x="2079" y="296" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ServiceTask_1nd0tl5_di" bpmnElement="UserTask_1d75hsy">
+      <bpmndi:BPMNShape id="ServiceTask_1nd0tl5_di" bpmnElement="ReviewSuggestion">
         <dc:Bounds x="2587" y="131" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ServiceTask_0539qdm_di" bpmnElement="UserTask_1btv59s">
+      <bpmndi:BPMNShape id="ServiceTask_0539qdm_di" bpmnElement="CreateOpp">
         <dc:Bounds x="2902" y="131" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ServiceTask_1utn9qq_di" bpmnElement="ServiceTask_2">
+      <bpmndi:BPMNShape id="ServiceTask_1utn9qq_di" bpmnElement="CreateSQL">
         <dc:Bounds x="2902" y="297" width="100" height="80" />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0r4htqv_di" bpmnElement="SequenceFlow_0r4htqv">
+        <di:waypoint xsi:type="dc:Point" x="1036" y="173" />
+        <di:waypoint xsi:type="dc:Point" x="1137" y="171" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1086.5" y="150" width="0" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>

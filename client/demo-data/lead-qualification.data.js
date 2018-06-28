@@ -1,4 +1,4 @@
-const {getResource, generateInstances, getEngineValue, getRandomValue, range} = require('./helpers');
+const {getResource, generateInstances, getEngineValue, getRandomValue, range, formatDate, generateStringValue} = require('./helpers');
 
 const resource = 'lead-qualification.bpmn';
 
@@ -6,78 +6,74 @@ exports.resources = [
   getResource(resource)
 ];
 
-const generateStringValue = () => {
-  let str = '';
-  const cons = ['B','C','D','F','G','H','J','K','L','M','N','P','Q','R','S','T','V','W','X','Z'];
-  const voc = ['A', 'E', 'I', 'O', 'U', 'Y'];
-  str+= Math.random() < 0.1 ? voc[Math.floor(Math.random() * 6)] : '';
-  for (i = 0; i < 2 + Math.floor(Math.random() * 5); i++) {
-    str+= cons[Math.floor(Math.random() * 20)] + voc[Math.floor(Math.random() * 6)]
-    str+= Math.random() < 0.15 ? voc[Math.floor(Math.random() * 6)] : '';
-    str+= Math.random() < 0.4 ? cons[Math.floor(Math.random() * 20)] : '';
-  }
-  return str;
-}
 
 exports.instances = generateInstances(resource, 1000, (index) => {
   return {
     variables: {
-      Integer: {
+      IntegerVar: {
         value: index + 1,
         type: 'Integer'
       },
-      Double: {
+      DoubleVar: {
         value: 100 * Math.random(),
         type: 'Double'
       },
-      String: getEngineValue(generateStringValue()),
-      UserTask_0w1r7lc: {
+      StringVar: getEngineValue(generateStringValue()),
+      ResearchLead: {
         value: Math.floor(10000 * Math.random()),
         type: 'Long'
       },
-      ServiceTask_4: {
+      GetMasterData: {
         value: Math.floor(20000 * Math.random()),
         type: 'Long'
       },
-      CallActivity_0cw79oq: {
+      AssignLeadAuto: {
         value: Math.floor(30000 * Math.random()),
         type: 'Long'
       },
-      ServiceTask_0j2w5af: {
+      AssignLeadMan: {
+        value: Math.floor(30000 * Math.random()),
+        type: 'Long'
+      },
+      TriggerEvalProc: {
         value: Math.floor(40000 * Math.random()),
         type: 'Long'
       },
-      UserTask_1g1zsp8: {
+      DoBasicLeadQual: {
         value: Math.floor(50000 * Math.random()),
         type: 'Long'
       },
-      SendTask_01ry1oz: {
+      NotifyAccountManager: {
         value: Math.floor(60000 * Math.random()),
         type: 'Long'
       },
-      CallActivity_1utbinl: {
+      ScheduleDiscoveryCall: {
         value: Math.floor(70000 * Math.random()),
         type: 'Long'
       },
-      UserTask_0abh7j4: {
+      ConductDiscoveryCall: {
         value: Math.floor(80000 * Math.random()),
         type: 'Long'
       },
-      ServiceTask_08dofa0: {
+      CreateUnqualifiedLead: {
         value: Math.floor(90000 * Math.random()),
         type: 'Long'
       },
-      UserTask_1d75hsy: {
+      ReviewSuggestion: {
         value: Math.floor(100000 * Math.random()),
         type: 'Long'
       },
-      UserTask_1btv59s: {
+      CreateOpp: {
         value: Math.floor(110000 * Math.random()),
         type: 'Long'
       },
-      ServiceTask_2: {
+      CreateSQL: {
         value: Math.floor(120000 * Math.random()),
         type: 'Long'
+      },
+      DateVar: {
+        type: 'Date',
+        value: formatDate(new Date(new Date().getTime() - (Math.floor(Math.random() * new Date().getTime()))))
       },
       qualified: getEngineValue(Math.random() < 0.1),
       sdrAvailable: getEngineValue(Math.round(Math.random() * 2) % 2 === 0),
