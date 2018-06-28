@@ -1,7 +1,32 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`Table should accept arbitrary markup for header and body cells 1`] = `
-<Themed(styled.table)>
+<Themed(styled.table)
+  config={
+    Object {
+      "headerLabels": Object {
+        "prop": <button
+          data-test-id="header-button"
+          onClick={[Function]}
+    >
+          Header
+    </button>,
+      },
+    }
+  }
+  data={
+    Array [
+      Object {
+        "prop": <button
+          data-test-id="body-button"
+          onClick={[Function]}
+    >
+          Body
+    </button>,
+      },
+    ]
+  }
+>
   <Themed(styled.thead)>
     <Themed(styled.tr)>
       <Themed(styled.th)
@@ -37,7 +62,31 @@ exports[`Table should accept arbitrary markup for header and body cells 1`] = `
 `;
 
 exports[`Table should display a header if provided 1`] = `
-<Themed(styled.table)>
+<Themed(styled.table)
+  config={
+    Object {
+      "headerLabels": Object {
+        "prop1": "Property 1",
+        "prop2": "Property 2",
+        "prop3": "Property 3",
+      },
+    }
+  }
+  data={
+    Array [
+      Object {
+        "prop1": 1,
+        "prop2": 2,
+        "prop3": 3,
+      },
+      Object {
+        "prop1": 4,
+        "prop2": 5,
+        "prop3": 6,
+      },
+    ]
+  }
+>
   <Themed(styled.thead)>
     <Themed(styled.tr)>
       <Themed(styled.th)
@@ -103,7 +152,23 @@ exports[`Table should display a header if provided 1`] = `
 `;
 
 exports[`Table should display the data passed as props 1`] = `
-<Themed(styled.table)>
+<Themed(styled.table)
+  config={Object {}}
+  data={
+    Array [
+      Object {
+        "prop1": 1,
+        "prop2": 2,
+        "prop3": 3,
+      },
+      Object {
+        "prop1": 4,
+        "prop2": 5,
+        "prop3": 6,
+      },
+    ]
+  }
+>
   <tbody>
     <Themed(styled.tr)
       key="0"
@@ -150,13 +215,36 @@ exports[`Table should display the data passed as props 1`] = `
 `;
 
 exports[`Table should not crash if data array is empty 1`] = `
-<Themed(styled.table)>
+<Themed(styled.table)
+  config={Object {}}
+  data={Array []}
+>
   <tbody />
 </Themed(styled.table)>
 `;
 
 exports[`Table should pass the selected attribute to a body row 1`] = `
-<Themed(styled.table)>
+<Themed(styled.table)
+  config={
+    Object {
+      "selectionCheck": [Function],
+    }
+  }
+  data={
+    Array [
+      Object {
+        "prop1": 1,
+        "prop2": 2,
+        "prop3": 3,
+      },
+      Object {
+        "prop1": 4,
+        "prop2": 5,
+        "prop3": 6,
+      },
+    ]
+  }
+>
   <tbody>
     <Themed(styled.tr)
       key="0"
@@ -203,7 +291,36 @@ exports[`Table should pass the selected attribute to a body row 1`] = `
 `;
 
 exports[`Table should sort the header and body according to an optional order config 1`] = `
-<Themed(styled.table)>
+<Themed(styled.table)
+  config={
+    Object {
+      "headerLabels": Object {
+        "prop1": "Property 1",
+        "prop2": "Property 2",
+        "prop3": "Property 3",
+      },
+      "order": Array [
+        "prop2",
+        "prop3",
+        "prop1",
+      ],
+    }
+  }
+  data={
+    Array [
+      Object {
+        "prop1": 1,
+        "prop2": 2,
+        "prop3": 3,
+      },
+      Object {
+        "prop1": 4,
+        "prop2": 5,
+        "prop3": 6,
+      },
+    ]
+  }
+>
   <Themed(styled.thead)>
     <Themed(styled.tr)>
       <Themed(styled.th)
