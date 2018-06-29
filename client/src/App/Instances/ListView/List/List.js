@@ -42,21 +42,6 @@ class List extends React.Component {
     }
   }
 
-  renderTable() {
-    if (!this.state.rowsToDisplay || !this.props.data) {
-      return null;
-    }
-
-    return (
-      <Table
-        data={this.props.data
-          .slice(0, this.state.rowsToDisplay)
-          .map(this.formatData)}
-        config={this.getConfig()}
-      />
-    );
-  }
-
   getConfig = () => {
     return {
       headerLabels: {
@@ -98,17 +83,12 @@ class List extends React.Component {
   };
 
   handleToggleSelectAll = isChecked => {
-    if (!isChecked) {
-      this.props.onSelectionUpdate({
-        query: {$set: this.props.filter},
-        exclusionList: {$set: new Set()}
-      });
-    } else {
-      this.props.onSelectionUpdate({
-        query: {$set: {ids: new Set()}},
-        exclusionList: {$set: new Set()}
-      });
-    }
+    const selected = isChecked ? {ids: new Set()} : this.props.filter;
+
+    this.props.onSelectionUpdate({
+      query: {$set: selected},
+      exclusionList: {$set: new Set()}
+    });
   };
 
   getInstanceAnchor = id => {
@@ -148,29 +128,17 @@ class List extends React.Component {
   };
 
   onSelectionChange = (isChecked, instance) => {
-    const {query} = this.props.selection;
-    const newState = !isChecked;
-    if (query === this.props.filter) {
-      if (newState) {
-        this.props.onSelectionUpdate({
-          exclusionList: {$remove: [instance.id]}
-        });
-      } else {
-        this.props.onSelectionUpdate({
-          exclusionList: {$add: [instance.id]}
-        });
-      }
-    } else {
-      if (newState) {
-        this.props.onSelectionUpdate({
-          query: {ids: {$add: [instance.id]}}
-        });
-      } else {
-        this.props.onSelectionUpdate({
-          query: {ids: {$remove: [instance.id]}}
-        });
-      }
-    }
+    const {selection, filter} = this.props;
+
+    const updateOptions = [
+      {exclusionList: {[isChecked ? '$add' : '$remove']: [instance.id]}},
+      {query: {ids: {[isChecked ? '$remove' : '$add']: [instance.id]}}}
+    ];
+
+    const selectionUpdate =
+      selection.query === filter ? updateOptions[0] : updateOptions[1];
+
+    this.props.onSelectionUpdate(selectionUpdate);
   };
 
   addSelection = instance => {
@@ -204,7 +172,14 @@ class List extends React.Component {
     return (
       <Styled.InstancesList>
         <Styled.TableContainer innerRef={node => (this.container = node)}>
-          {this.renderTable()}
+          {!this.state.rowsToDisplay || !this.props.data ? null : (
+            <Table
+              data={this.props.data
+                .slice(0, this.state.rowsToDisplay)
+                .map(this.formatData)}
+              config={this.getConfig()}
+            />
+          )}
         </Styled.TableContainer>
       </Styled.InstancesList>
     );
