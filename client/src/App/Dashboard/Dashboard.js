@@ -1,4 +1,4 @@
-import React, {Component} from 'react';
+import React, {Component, Fragment} from 'react';
 
 import Header from '../Header';
 
@@ -53,7 +53,7 @@ class Dashboard extends Component {
     const {filterCount} = this.props.getStateLocally();
     const {instances, active, incidents} = this.state;
     return (
-      <React.Fragment>
+      <Fragment>
         <Header
           active="dashboard"
           instances={instances}
@@ -82,7 +82,7 @@ class Dashboard extends Component {
             />
           </MetricPanel>
         </Styled.Dashboard>
-      </React.Fragment>
+      </Fragment>
     );
   }
 }
