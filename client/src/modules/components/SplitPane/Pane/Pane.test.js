@@ -3,23 +3,20 @@ import {shallow} from 'enzyme';
 
 import {ICON_DIRECTION} from 'modules/components/ExpandButton/constants';
 
-import WithExpandPane from './Pane';
-import {PANE_ID} from './constants';
+import Pane from './Pane';
+import {PANE_ID, PANE_STATE} from './constants';
 import * as Styled from './styled';
-
-const {WrappedComponent: Pane} = WithExpandPane;
 
 describe('Pane', () => {
   const Foo = () => <div>Foo</div>;
   const mockProps = {
-    expand: jest.fn(),
-    resetExpanded: jest.fn()
+    expand: jest.fn()
   };
 
-  it('should render children with isCollapsed false if the pane is not collapsed', () => {
+  it('should render children with paneState', () => {
     // given
     const node = shallow(
-      <Pane {...mockProps} paneId={PANE_ID.TOP} expandedId={null}>
+      <Pane {...mockProps} paneId={PANE_ID.TOP} paneState={PANE_STATE.EXPANDED}>
         <Foo />
       </Pane>
     );
@@ -27,29 +24,14 @@ describe('Pane', () => {
     // then
     const FooNode = node.find(Foo);
     expect(FooNode).toHaveLength(1);
-    expect(FooNode.prop('isCollapsed')).toBe(false);
-    expect(node).toMatchSnapshot();
-  });
-
-  it('should render children with isCollapsed true if the pane is collapsed', () => {
-    // given
-    const node = shallow(
-      <Pane {...mockProps} paneId={PANE_ID.TOP} expandedId={PANE_ID.BOTTOM}>
-        <Foo />
-      </Pane>
-    );
-
-    // then
-    const FooNode = node.find(Foo);
-    expect(FooNode).toHaveLength(1);
-    expect(FooNode.prop('isCollapsed')).toBe(true);
+    expect(FooNode.prop('paneState')).toBe(PANE_STATE.EXPANDED);
     expect(node).toMatchSnapshot();
   });
 
   it("should render TopExpandButton with UP icon if pane is TOP and it's expanded", () => {
     // given
     const node = shallow(
-      <Pane {...mockProps} paneId={PANE_ID.TOP} expandedId={PANE_ID.TOP}>
+      <Pane {...mockProps} paneId={PANE_ID.TOP} paneState={PANE_STATE.EXPANDED}>
         <Foo />
       </Pane>
     );
@@ -64,7 +46,7 @@ describe('Pane', () => {
   it("should render TopExpandButton with DOWN icon if pane is TOP and it's not expanded", () => {
     // given
     const node = shallow(
-      <Pane {...mockProps} paneId={PANE_ID.TOP} expandedId={null}>
+      <Pane {...mockProps} paneId={PANE_ID.TOP} paneState={PANE_STATE.DEFAULT}>
         <Foo />
       </Pane>
     );
@@ -79,7 +61,11 @@ describe('Pane', () => {
   it("should render BottomExpandButton with DOWN icon if pane is BOTTOM and it's expanded", () => {
     // given
     const node = shallow(
-      <Pane {...mockProps} paneId={PANE_ID.BOTTOM} expandedId={PANE_ID.BOTTOM}>
+      <Pane
+        {...mockProps}
+        paneId={PANE_ID.BOTTOM}
+        paneState={PANE_STATE.EXPANDED}
+      >
         <Foo />
       </Pane>
     );
@@ -96,7 +82,11 @@ describe('Pane', () => {
   it("should render BottomExpandButton with UP icon if pane is BOTTOM and it's not expanded", () => {
     // given
     const node = shallow(
-      <Pane {...mockProps} paneId={PANE_ID.BOTTOM} expandedId={PANE_ID.TOP}>
+      <Pane
+        {...mockProps}
+        paneId={PANE_ID.BOTTOM}
+        paneState={PANE_STATE.COLLAPSED}
+      >
         <Foo />
       </Pane>
     );
@@ -122,26 +112,15 @@ describe('Pane', () => {
       mockProps.resetExpanded.mockClear();
     });
 
-    it('should call expand with paneId when expandedId is null', () => {
+    it('should call expand with paneId', () => {
       // given
-      const node = shallow(<Pane {...mockProps} expandedId={null} />);
+      const node = shallow(<Pane {...mockProps} />);
 
       // when
       expect(node.instance().handleExpand());
 
       // then
       expect(mockProps.expand).toHaveBeenCalledWith(mockProps.paneId);
-    });
-
-    it('should call resetExpanded when expandedId is not null', () => {
-      // given
-      const node = shallow(<Pane {...mockProps} expandedId={PANE_ID.TOP} />);
-
-      // when
-      expect(node.instance().handleExpand());
-
-      // then
-      expect(mockProps.resetExpanded).toHaveBeenCalled();
     });
   });
 });

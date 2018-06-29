@@ -27,8 +27,11 @@ class Diagram extends React.Component {
     this.initViewer();
   }
 
-  componentDidUpdate() {
-    this.initViewer();
+  componentDidUpdate({theme: prevTheme, workflowId: prevWorkflowId}) {
+    const {theme, workflowId} = this.props;
+    if (theme !== prevTheme || workflowId !== prevWorkflowId) {
+      this.initViewer();
+    }
   }
 
   initViewer = () => {

@@ -1,16 +1,52 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`SplitPane should render children wrapped in ExpandProvider 1`] = `
-<ExpandProvider>
-  <styled.div>
-    <FirstChild
-      key=".0"
-      paneId="TOP"
-    />
-    <SecondChild
-      key=".1"
-      paneId="BOTTOM"
-    />
-  </styled.div>
-</ExpandProvider>
+exports[`SplitPane paneState should render children with proper paneState when BOTTOM pane is extended 1`] = `
+<styled.div>
+  <FirstChild
+    expand={[Function]}
+    key=".0"
+    paneId="TOP"
+    paneState="COLLAPSED"
+  />
+  <SecondChild
+    expand={[Function]}
+    key=".1"
+    paneId="BOTTOM"
+    paneState="EXPANDED"
+  />
+</styled.div>
+`;
+
+exports[`SplitPane paneState should render children with proper paneState when TOP pane is extended 1`] = `
+<styled.div>
+  <FirstChild
+    expand={[Function]}
+    key=".0"
+    paneId="TOP"
+    paneState="EXPANDED"
+  />
+  <SecondChild
+    expand={[Function]}
+    key=".1"
+    paneId="BOTTOM"
+    paneState="COLLAPSED"
+  />
+</styled.div>
+`;
+
+exports[`SplitPane paneState should render children with proper paneState when no pane is extended 1`] = `
+<styled.div>
+  <FirstChild
+    expand={[Function]}
+    key=".0"
+    paneId="TOP"
+    paneState="DEFAULT"
+  />
+  <SecondChild
+    expand={[Function]}
+    key=".1"
+    paneId="BOTTOM"
+    paneState="DEFAULT"
+  />
+</styled.div>
 `;

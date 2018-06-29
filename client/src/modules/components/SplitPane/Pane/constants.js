@@ -4,3 +4,9 @@ export const PANE_ID = {
   LEFT: 'LEFT',
   RIGHT: 'RIGHT'
 };
+
+export const PANE_STATE = {
+  DEFAULT: 'DEFAULT',
+  EXPANDED: 'EXPANDED',
+  COLLAPSED: 'COLLAPSED'
+};

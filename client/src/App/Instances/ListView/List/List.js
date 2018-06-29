@@ -3,8 +3,7 @@ import PropTypes from 'prop-types';
 
 import Checkbox from 'modules/components/Checkbox';
 import StateIcon from 'modules/components/StateIcon';
-import {withExpand} from 'modules/components/SplitPane/ExpandContext';
-import {PANE_ID} from 'modules/components/SplitPane/Pane/constants';
+import {PANE_STATE} from 'modules/components/SplitPane/Pane/constants';
 
 import * as Styled from './styled';
 import {formatDate} from 'modules/utils/date';
@@ -22,7 +21,7 @@ class List extends React.Component {
     }).isRequired,
     total: PropTypes.number,
     filter: PropTypes.object,
-    expandedId: PropTypes.string
+    paneState: PropTypes.oneOf(Object.values(PANE_STATE))
   };
 
   state = {
@@ -33,11 +32,11 @@ class List extends React.Component {
     this.recalculateHeight();
   }
 
-  componentDidUpdate({expandedId: prevExpandedId}) {
-    const {expandedId} = this.props;
+  componentDidUpdate({paneState: prevPaneState}) {
+    const {paneState} = this.props;
 
     // only call recalculateHeight if the expandedId changes and the pane is not collapsed
-    if (prevExpandedId !== expandedId && expandedId !== PANE_ID.TOP) {
+    if (prevPaneState !== paneState && paneState !== PANE_STATE.COLLAPSED) {
       this.recalculateHeight();
     }
   }
@@ -202,4 +201,4 @@ class List extends React.Component {
   }
 }
 
-export default withExpand(List);
+export default List;

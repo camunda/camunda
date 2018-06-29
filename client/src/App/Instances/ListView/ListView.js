@@ -2,9 +2,10 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import SplitPane from 'modules/components/SplitPane';
+import {PANE_STATE} from 'modules/components/SplitPane/Pane/constants';
+
 import List from './List';
 import ListFooter from './ListFooter';
-
 import {parseFilterForRequest, isEmpty} from '../service';
 import {fetchWorkflowInstances} from '../api';
 
@@ -18,7 +19,8 @@ export default class ListView extends React.Component {
     instancesInFilter: PropTypes.number.isRequired,
     onSelectionUpdate: PropTypes.func.isRequired,
     filter: PropTypes.object.isRequired,
-    onAddToSelection: PropTypes.func
+    onAddToSelection: PropTypes.func,
+    paneState: PropTypes.oneOf(Object.values(PANE_STATE))
   };
 
   state = {
@@ -70,6 +72,7 @@ export default class ListView extends React.Component {
               }
               onSelectionUpdate={this.props.onSelectionUpdate}
               filter={this.props.filter}
+              paneState={this.props.paneState}
             />
           )}
         </Pane.Body>
