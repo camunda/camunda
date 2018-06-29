@@ -133,7 +133,7 @@ class List extends React.Component {
     const {query, exclusionList} = this.props.selection;
     if (exclusionList.has(id)) return false;
     if (query === this.props.filter) return true;
-    if (query.ids.has(id)) return true;
+    if (query.ids && query.ids.has(id)) return true;
 
     return false;
   };
