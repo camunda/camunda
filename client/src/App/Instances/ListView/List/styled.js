@@ -1,7 +1,6 @@
 import styled from 'styled-components';
 
 import {Colors, themed, themeStyle} from 'modules/theme';
-import BaseTable from 'modules/components/Table';
 
 export const InstancesList = styled.div`
   flex-grow: 1;
@@ -14,10 +13,6 @@ export const TableContainer = styled.div`
   width: 100%;
   left: 0;
   top: 0;
-`;
-
-export const Table = styled(BaseTable)`
-  height: 100%;
 `;
 
 export const SelectionStatusIndicator = themed(styled.div`

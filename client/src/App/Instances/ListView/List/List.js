@@ -4,10 +4,11 @@ import PropTypes from 'prop-types';
 import Checkbox from 'modules/components/Checkbox';
 import StateIcon from 'modules/components/StateIcon';
 import {PANE_STATE} from 'modules/components/SplitPane/Pane/constants';
-
-import * as Styled from './styled';
 import {formatDate} from 'modules/utils/date';
 import {getWorkflowName} from 'modules/utils/instance';
+import Table from 'modules/components/Table';
+
+import * as Styled from './styled';
 
 class List extends React.Component {
   static propTypes = {
@@ -47,7 +48,7 @@ class List extends React.Component {
     }
 
     return (
-      <Styled.Table
+      <Table
         data={this.props.data
           .slice(0, this.state.rowsToDisplay)
           .map(this.formatData)}
