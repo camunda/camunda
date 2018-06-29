@@ -3,12 +3,17 @@ export function getFilterQueryString(selection) {
 }
 
 export function parseFilterForRequest(filter) {
-  const {active, incidents} = filter;
-  let payload = {running: active || incidents};
+  const {active, incidents, completed, canceled: cancelled} = filter;
+  let payload = {
+    running: active || incidents,
+    finished: completed || cancelled
+  };
 
   return {
     ...payload,
     active,
-    incidents
+    incidents,
+    completed,
+    cancelled
   };
 }
