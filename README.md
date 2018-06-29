@@ -6,28 +6,34 @@
 
 ## Running locally
 
-To run the application locally you can use `docker` and `docker-compose`.
-Make sure to have a recent version of these tools installed locally: you
-should be able to run these two commands on your shell without `sudo`.
+To run the application locally you can use `docker`, `docker-compose` and
+`make`. Make sure to have a recent version of these tools installed
+locally: you should be able to run these commands on your shell without
+`sudo`.
 
-If you need support to configure these tools please contact Andrea.
+Windows users need to install `make` manually on their shell. You can find
+instructions on how to do it
+[here](https://gist.github.com/evanwill/0207876c3243bbb6863e65ec5dc3f058#make).
 
-To spawn Operate backend use this command:
+If you need support to configure these tools please contact Andrea or
+Christian.
+
+To spawn the full local environment, run this command in the root folder:
 
 ```
-docker-compose pull zeebe && docker-compose up --force-recreate --build -d elasticsearch operate_backend zeebe
+make env-up
 ```
 
 To stop:
 
 ```
-docker-compose down
+make env-down
 ```
 
-To spawn the full local environment, run this command in the root folder:
+To see the status of the environment, you can run:
 
 ```
-docker-compose up -d
+make env-status
 ```
 
 This command should pull/build the necessary containers to run the

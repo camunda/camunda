@@ -19,7 +19,7 @@ COPY --from=fe-build /build/client client/
 COPY backend/pom.xml backend/
 COPY distro/pom.xml distro/
 COPY pom.xml .
-RUN mvn dependency:go-offline --fail-never
+RUN mvn dependency:go-offline -P -docker,skipFrontendBuild,develop --fail-never
 COPY . /usr/src/app/
 RUN mvn clean install -P -docker,skipFrontendBuild,develop -DskipTests=true
 
