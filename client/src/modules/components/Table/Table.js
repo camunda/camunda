@@ -43,7 +43,6 @@ export default class Table extends React.Component {
     }
 
     const order = this.getOrder();
-
     const selectionCheck = this.props.config.selectionCheck || (() => false);
 
     return data.map((row, idx) => (

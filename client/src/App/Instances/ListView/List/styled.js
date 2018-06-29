@@ -1,4 +1,5 @@
 import styled from 'styled-components';
+import {Link} from 'react-router-dom';
 
 import {Colors, themed, themeStyle} from 'modules/theme';
 
@@ -46,3 +47,11 @@ export const Selection = styled.div`
     top: 0px;
   }
 `;
+
+export const InstanceAnchor = themed(styled(Link)`
+  text-decoration: underline;
+  color: ${themeStyle({
+    dark: Colors.darkLinkBlue,
+    light: Colors.lightLinkBlue
+  })};
+`);

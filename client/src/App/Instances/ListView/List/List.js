@@ -111,9 +111,18 @@ class List extends React.Component {
     }
   };
 
+  getInstanceAnchor = id => {
+    return (
+      <Styled.InstanceAnchor to={`/instances/${id}`}>
+        {id}
+      </Styled.InstanceAnchor>
+    );
+  };
+
   formatData = instance => {
     return {
       ...instance,
+      id: this.getInstanceAnchor(instance.id),
       workflowId: this.addSelection(instance),
       startDate: formatDate(instance.startDate),
       endDate: formatDate(instance.endDate)
