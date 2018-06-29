@@ -6,7 +6,9 @@ import * as Styled from './styled.js';
 export default class Table extends React.Component {
   static propTypes = {
     data: PropTypes.array.isRequired,
-    config: PropTypes.object
+    config: PropTypes.object,
+    sorting: PropTypes.object,
+    handleSorting: PropTypes.func
   };
 
   static defaultProps = {
@@ -18,14 +20,24 @@ export default class Table extends React.Component {
   }
 
   renderHeader() {
-    const {config} = this.props;
-    if (config.headerLabels) {
+    const {
+      config: {headerLabels, sortable = {}, sorting},
+      handleSorting
+    } = this.props;
+
+    if (headerLabels) {
       return (
         <Styled.TableHead>
           <Styled.HeaderRow>
             {this.getOrder().map(key => (
               <Styled.HeaderCell key={key}>
-                {config.headerLabels[key]}
+                {headerLabels[key]}
+                {sortable[key] && (
+                  <Styled.SortIcon
+                    order={sorting[key]}
+                    onClick={() => handleSorting(key)}
+                  />
+                )}
               </Styled.HeaderCell>
             ))}
           </Styled.HeaderRow>

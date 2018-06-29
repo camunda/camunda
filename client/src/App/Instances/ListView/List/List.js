@@ -26,7 +26,8 @@ class List extends React.Component {
   };
 
   state = {
-    rowsToDisplay: null
+    rowsToDisplay: null,
+    sorting: {id: 'desc'}
   };
 
   componentDidMount() {
@@ -64,8 +65,23 @@ class List extends React.Component {
         actions: 'Actions'
       },
       order: ['workflowId', 'id', 'startDate', 'endDate', 'actions'],
-      selectionCheck: ({id}) => this.isSelected(id)
+      selectionCheck: ({id}) => this.isSelected(id),
+      sortable: {id: true, startDate: true, endDate: true, actions: false},
+      sorting: this.state.sorting
     };
+  };
+
+  handleSorting = key => {
+    const {sorting} = this.state;
+    const sortedKey = Object.keys(sorting)[0];
+    let newSorting;
+    if (!sorting[key]) {
+      newSorting = {[key]: 'desc'};
+    } else {
+      const order = sorting[sortedKey] === 'desc' ? 'asc' : 'desc';
+      newSorting = {[sortedKey]: order};
+    }
+    return this.setState({sorting: newSorting});
   };
 
   areAllInstancesSelected = () => {
@@ -178,6 +194,7 @@ class List extends React.Component {
                 .slice(0, this.state.rowsToDisplay)
                 .map(this.formatData)}
               config={this.getConfig()}
+              handleSorting={this.handleSorting}
             />
           )}
         </Styled.TableContainer>

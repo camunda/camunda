@@ -1,6 +1,8 @@
 import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
+import DefaultSortIcon from './SortIcon';
+
 export const Table = themed(styled.table`
   width: 100%;
   font-size: 14px;
@@ -36,6 +38,12 @@ export const HeaderCell = themed(styled.th`
     margin-top: 3px;
   }
 `);
+
+export const SortIcon = styled(DefaultSortIcon)`
+  position: relative;
+  top: 2px;
+  margin-left: 4px;
+`;
 
 export const BodyCell = styled.td`
   padding: 0 0 0 5px;
