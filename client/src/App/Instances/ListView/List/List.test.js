@@ -70,7 +70,7 @@ describe('List', () => {
     expect(recalculateHeightSpy).toBeCalled();
   });
 
-  it.only('renders a table row with a link to the instance page', () => {
+  it('renders a table row with a link to the instance page', () => {
     const node = shallow(<List {...mockProps} />);
     const formatData = node.instance().formatData;
     const rowData = formatData(instance);
