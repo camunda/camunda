@@ -1,0 +1,32 @@
+#####################################
+### FRONTEND BUILD
+#####################################
+FROM node:8.11.2-alpine AS fe-build
+WORKDIR /build
+# Download dependencies
+COPY ./client/package.json ./client/yarn.lock /build/client/
+RUN cd client && yarn
+# Build frontend
+COPY ./client /build/client
+RUN cd client && yarn build
+
+#####################################
+### BACKEND BUILD
+#####################################
+FROM maven:3.5.3-jdk-8-alpine AS be-build
+WORKDIR /usr/src/app/
+COPY --from=fe-build /build/client client/
+COPY backend/pom.xml backend/
+COPY distro/pom.xml distro/
+COPY pom.xml .
+RUN mvn dependency:go-offline --fail-never
+COPY . /usr/src/app/
+RUN mvn clean install -P -docker,skipFrontendBuild -DskipTests=true
+
+#####################################
+### DISTRO BUILD
+#####################################
+FROM openjdk:8u151-jre-alpine3.7
+COPY --from=be-build /usr/src/app/backend/target/*.jar /usr/app/camunda-operate.jar
+EXPOSE 8080
+ENTRYPOINT ["java","-jar","/usr/app/camunda-operate.jar"]

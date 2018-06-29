@@ -18,6 +18,7 @@ import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Tests elasticsearch queries for reading of metadata (maximal position per partition).
  */
+@Ignore
 public class ZeebeMetadataReaderIT extends OperateIntegrationTest {
 
   @Rule

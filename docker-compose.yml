@@ -2,21 +2,15 @@ version: '2.4'
 services:
 
   operate_backend:
-    build: ./
+    build:
+      context: .
+      dockerfile: Dockerfile.build
     container_name: operate_backend
     environment:
       - SPRING_PROFILES_ACTIVE=dev
     image: camunda/operate-backend:latest
     ports:
       - 8080:8080
-    restart: always
-
-  operate_frontend:
-    build: ./client
-    container_name: operate_frontend
-    image: camunda/operate-frontend:latest
-    ports:
-      - 80:80
     restart: always
 
   elasticsearch:
