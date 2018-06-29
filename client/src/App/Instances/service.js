@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 function isValidJSON(text) {
   try {
     JSON.parse(text);
@@ -5,6 +6,32 @@ function isValidJSON(text) {
   } catch (e) {
     return false;
   }
+=======
+export const defaultFilterSelection = {
+  active: true,
+  incidents: true
+};
+
+export const incidentsFilterSelection = {
+  ...defaultFilterSelection,
+  active: false
+};
+
+export function parseFilterForRequest(filter) {
+  const {active, incidents, completed, canceled: cancelled} = filter;
+  let payload = {
+    running: active || incidents,
+    finished: completed || cancelled
+  };
+
+  return {
+    ...payload,
+    active,
+    incidents,
+    completed,
+    cancelled
+  };
+>>>>>>> feat(Filter): add completed instances api calls
 }
 
 export function isEmpty(obj) {
