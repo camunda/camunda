@@ -11,7 +11,7 @@ import withSharedState from 'modules/components/withSharedState';
 class Login extends React.Component {
   static propTypes = {
     location: PropTypes.object.isRequired,
-    clearState: PropTypes.func.isRequired
+    clearStateLocally: PropTypes.func.isRequired
   };
 
   state = {
@@ -31,7 +31,7 @@ class Login extends React.Component {
 
     try {
       await login({username, password});
-      this.props.clearState();
+      this.props.clearStateLocally();
       this.setState({forceRedirect: true});
     } catch (e) {
       this.setState({error: LOGIN_ERROR});

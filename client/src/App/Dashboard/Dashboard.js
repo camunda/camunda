@@ -16,8 +16,8 @@ import * as Styled from './styled.js';
 
 class Dashboard extends Component {
   static propTypes = {
-    storeState: PropTypes.func.isRequired,
-    getState: PropTypes.func.isRequired
+    storeStateLocally: PropTypes.func.isRequired,
+    getStateLocally: PropTypes.func.isRequired
   };
 
   state = {
@@ -28,7 +28,7 @@ class Dashboard extends Component {
 
   componentDidMount = async () => {
     const counts = await this.fetchCounts();
-    this.props.storeState({
+    this.props.storeStateLocally({
       instances: counts.instances,
       incidents: counts.incidents
     });
@@ -50,7 +50,7 @@ class Dashboard extends Component {
   };
 
   render() {
-    const {filterCount} = this.props.getState();
+    const {filterCount} = this.props.getStateLocally();
     const {instances, active, incidents} = this.state;
     return (
       <React.Fragment>

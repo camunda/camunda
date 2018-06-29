@@ -2,7 +2,7 @@ import React from 'react';
 
 export default function withSharedState(Component) {
   class WithSharedState extends React.Component {
-    storeState = state => {
+    storeStateLocally = state => {
       const current = JSON.parse(localStorage.getItem('sharedState') || '{}');
 
       localStorage.setItem(
@@ -11,20 +11,20 @@ export default function withSharedState(Component) {
       );
     };
 
-    clearState = () => {
+    clearStateLocally = () => {
       localStorage.removeItem('sharedState');
     };
 
-    getState = () => {
+    getStateLocally = () => {
       return JSON.parse(localStorage.getItem('sharedState') || '{}');
     };
 
     render() {
       return (
         <Component
-          storeState={this.storeState}
-          getState={this.getState}
-          clearState={this.clearState}
+          storeStateLocally={this.storeStateLocally}
+          getStateLocally={this.getStateLocally}
+          clearStateLocally={this.clearStateLocally}
           {...this.props}
         />
       );

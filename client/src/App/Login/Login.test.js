@@ -80,7 +80,7 @@ describe('Login', () => {
   it('should reset the stored state on login', async () => {
     // given
     const spy = jest.fn();
-    node.setProps({clearState: spy});
+    node.setProps({clearStateLocally: spy});
     node.setState({username: 'foo', password: 'bar'});
 
     // when

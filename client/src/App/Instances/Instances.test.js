@@ -15,10 +15,10 @@ const Instances = WrappedInstances.WrappedComponent;
 const InstancesWithRunningFilter = (
   <Instances
     location={{search: '?filter={"active": false, "incidents": true}'}}
-    getState={() => {
+    getStateLocally={() => {
       return {filterCount: 0};
     }}
-    storeState={() => {}}
+    storeStateLocally={() => {}}
     history={{push: () => {}}}
   />
 );
@@ -26,10 +26,10 @@ const InstancesWithRunningFilter = (
 const InstancesWithInvalidRunningFilter = (
   <Instances
     location={{search: '?filter={"active": fallse, "incidents": tsrue}'}}
-    getState={() => {
+    getStateLocally={() => {
       return {filterCount: 0};
     }}
-    storeState={() => {}}
+    storeStateLocally={() => {}}
     history={{push: () => {}}}
   />
 );
@@ -37,10 +37,10 @@ const InstancesWithInvalidRunningFilter = (
 const InstancesWithoutFilter = (
   <Instances
     location={{search: ''}}
-    getState={() => {
+    getStateLocally={() => {
       return {filterCount: 0};
     }}
-    storeState={() => {}}
+    storeStateLocally={() => {}}
     history={{push: () => {}}}
   />
 );
@@ -65,7 +65,7 @@ describe('Instances', () => {
     it('should initially render without filters selected', () => {
       const count = getRandomInt(20);
       const node = new Instances({
-        getState: () => {
+        getStateLocally: () => {
           return {filterCount: count, selections: [[]]};
         }
       });

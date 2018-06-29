@@ -40,7 +40,7 @@ describe('Dashboard', () => {
 
   it('should store the instances and incidents counts', async () => {
     const spy = jest.fn();
-    node.setProps({storeState: spy});
+    node.setProps({storeStateLocally: spy});
     await node.instance().componentDidMount();
 
     expect(spy).toHaveBeenCalledWith({instances: 123, incidents: 123});

@@ -26,22 +26,22 @@ const {Pane} = SplitPane;
 
 class Instances extends Component {
   static propTypes = {
-    getState: PropTypes.func.isRequired,
-    storeState: PropTypes.func.isRequired,
+    getStateLocally: PropTypes.func.isRequired,
+    storeStateLocally: PropTypes.func.isRequired,
     location: PropTypes.object.isRequired,
     history: PropTypes.object.isRequired
   };
 
   static defaultProps = {
-    getState: () => {
+    getStateLocally: () => {
       return {filterCount: 0, selections: [[]]};
     },
-    storeState: () => {}
+    storeStateLocally: () => {}
   };
 
   constructor(props) {
     super(props);
-    const {filterCount, selections} = props.getState();
+    const {filterCount, selections} = props.getStateLocally();
 
     this.state = {
       filter: {},
@@ -91,7 +91,7 @@ class Instances extends Component {
         selection: {$set: this.createNewSelectionFragment()}
       }),
       () => {
-        this.props.storeState({selections: this.state.selections});
+        this.props.storeStateLocally({selections: this.state.selections});
       }
     );
   };
@@ -117,7 +117,7 @@ class Instances extends Component {
     });
 
     // save filterCount to localStorage
-    this.props.storeState({filterCount});
+    this.props.storeStateLocally({filterCount});
   };
 
   handleFilterChange = async change => {
@@ -134,7 +134,7 @@ class Instances extends Component {
     await this.setFilterCount();
 
     // write current filter selection to local storage
-    this.props.storeState({filter});
+    this.props.storeStateLocally({filter});
   };
 
   setFilterInURL = filter => {
@@ -145,7 +145,7 @@ class Instances extends Component {
   };
 
   render() {
-    const {instances, incidents: incidentsCount} = this.props.getState();
+    const {instances, incidents: incidentsCount} = this.props.getStateLocally();
     const {active, incidents, canceled, completed} = this.state.filter;
     return (
       <div>

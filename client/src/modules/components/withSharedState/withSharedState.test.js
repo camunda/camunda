@@ -17,16 +17,16 @@ describe('withSharedState', () => {
 
     expect(component).toExist();
     expect(component.prop('customProp')).toBe('1234');
-    expect(component.prop('storeState')).toBeDefined();
-    expect(component.prop('clearState')).toBeDefined();
-    expect(component.prop('getState')).toBeDefined();
+    expect(component.prop('storeStateLocally')).toBeDefined();
+    expect(component.prop('clearStateLocally')).toBeDefined();
+    expect(component.prop('getStateLocally')).toBeDefined();
   });
 
   it('should store state in localstorage', () => {
     localStorage.setItem.mockClear();
     const data = {a: 1, b: 2};
 
-    node.instance().storeState(data);
+    node.instance().storeStateLocally(data);
 
     expect(localStorage.setItem).toHaveBeenCalledWith(
       'sharedState',
@@ -37,13 +37,13 @@ describe('withSharedState', () => {
   it('should retrieve localstorage state', () => {
     localStorage.getItem.mockImplementationOnce(() => '{"a": 1, "b": 2}');
 
-    expect(node.instance().getState()).toEqual({a: 1, b: 2});
+    expect(node.instance().getStateLocally()).toEqual({a: 1, b: 2});
   });
 
   it('should clear localstorage state', () => {
     localStorage.removeItem.mockClear();
 
-    node.instance().clearState();
+    node.instance().clearStateLocally();
 
     expect(localStorage.removeItem).toHaveBeenCalledWith('sharedState');
   });
