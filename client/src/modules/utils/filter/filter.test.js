@@ -2,34 +2,69 @@ import {parseFilterForRequest, getFilterQueryString} from './filter';
 
 import {DEFAULT_FILTER} from '../../constants/filter';
 
-describe.only('parseFilterForRequest', () => {
-  it('should parse both active and incidents filter selection', () => {
-    const filter = {active: true, incidents: true};
-
-    expect(parseFilterForRequest(filter).running).toBe(true);
-    expect(parseFilterForRequest(filter).incidents).toBe(true);
-    expect(parseFilterForRequest(filter).active).toBe(true);
-  });
-  it('should parse only active filter selection', () => {
-    const filter = {active: true, incidents: false};
-
-    expect(parseFilterForRequest(filter).running).toBe(true);
-    expect(parseFilterForRequest(filter).incidents).toBe(false);
-    expect(parseFilterForRequest(filter).active).toBe(true);
-  });
-  it('should parse only incidents filter selection', () => {
-    const filter = {active: false, incidents: true};
-
-    expect(parseFilterForRequest(filter).running).toBe(true);
-    expect(parseFilterForRequest(filter).incidents).toBe(true);
-    expect(parseFilterForRequest(filter).active).toBe(false);
-  });
+describe('parseFilterForRequest', () => {
   it('should parse empty filter selection', () => {
-    const filter = {active: false, incidents: false};
+    const filter = {
+      active: false,
+      incidents: false,
+      canceled: false,
+      completed: false
+    };
 
     expect(parseFilterForRequest(filter).running).toBe(false);
     expect(parseFilterForRequest(filter).incidents).toBe(false);
     expect(parseFilterForRequest(filter).active).toBe(false);
+
+    expect(parseFilterForRequest(filter).finished).toBe(false);
+    expect(parseFilterForRequest(filter).cancelled).toBe(false);
+    expect(parseFilterForRequest(filter).completed).toBe(false);
+  });
+
+  describe('Running Instances Filter', () => {
+    it('should parse both active and incidents filter selection', () => {
+      const filter = {active: true, incidents: true};
+
+      expect(parseFilterForRequest(filter).running).toBe(true);
+      expect(parseFilterForRequest(filter).incidents).toBe(true);
+      expect(parseFilterForRequest(filter).active).toBe(true);
+    });
+    it('should parse only active filter selection', () => {
+      const filter = {active: true, incidents: false};
+
+      expect(parseFilterForRequest(filter).running).toBe(true);
+      expect(parseFilterForRequest(filter).incidents).toBe(false);
+      expect(parseFilterForRequest(filter).active).toBe(true);
+    });
+    it('should parse only incidents filter selection', () => {
+      const filter = {active: false, incidents: true};
+
+      expect(parseFilterForRequest(filter).running).toBe(true);
+      expect(parseFilterForRequest(filter).incidents).toBe(true);
+      expect(parseFilterForRequest(filter).active).toBe(false);
+    });
+  });
+
+  describe('Completed Instances Filter', () => {
+    it('should parse both regularly completed and canceled filter selection', () => {
+      const filter = {canceled: true, completed: true};
+      expect(parseFilterForRequest(filter).finished).toBe(true);
+      expect(parseFilterForRequest(filter).cancelled).toBe(true);
+      expect(parseFilterForRequest(filter).completed).toBe(true);
+    });
+
+    it('should parse only regularly completed filter selection', () => {
+      const filter = {canceled: false, completed: true};
+      expect(parseFilterForRequest(filter).finished).toBe(true);
+      expect(parseFilterForRequest(filter).cancelled).toBe(false);
+      expect(parseFilterForRequest(filter).completed).toBe(true);
+    });
+
+    it('should parse only canceled filter selection', () => {
+      const filter = {canceled: true, completed: false};
+      expect(parseFilterForRequest(filter).finished).toBe(true);
+      expect(parseFilterForRequest(filter).cancelled).toBe(true);
+      expect(parseFilterForRequest(filter).completed).toBe(false);
+    });
   });
 });
 
