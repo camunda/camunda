@@ -2,6 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import Checkbox from 'modules/components/Checkbox';
+import {LABELS} from './constants';
 
 import * as Styled from './styled.js';
 
@@ -22,12 +23,12 @@ export default class Filter extends React.Component {
 
   getLabel = type => {
     const labels = {
-      running: 'Running Instances',
-      active: 'Active',
-      incidents: 'Incidents',
-      finished: 'Completed Instances',
-      completed: 'Regularly Completed',
-      canceled: 'Canceled'
+      running: LABELS.RUNNING,
+      active: LABELS.ACTIVE,
+      incidents: LABELS.INCIDENTS,
+      finished: LABELS.FINISHED,
+      completed: LABELS.COMPLETED,
+      canceled: LABELS.CANCELED
     };
     return labels[type];
   };
