@@ -6,7 +6,8 @@ import {PANE_STATE} from 'modules/components/SplitPane/Pane/constants';
 
 import List from './List';
 import ListFooter from './ListFooter';
-import {parseFilterForRequest, isEmpty} from '../service';
+import {isEmpty} from '../service';
+import {parseFilterForRequest} from 'modules/utils/filter';
 import {fetchWorkflowInstances} from '../api';
 
 const {Pane} = SplitPane;

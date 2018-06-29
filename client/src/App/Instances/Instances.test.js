@@ -4,7 +4,7 @@ import {shallow} from 'enzyme';
 import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 
 import WrappedInstances from './Instances';
-import {defaultFilterSelection} from './service';
+import {DEFAULT_FILTER} from 'modules/constants/filter';
 import * as api from './api';
 import Filter from './Filter';
 import ListView from './ListView';
@@ -88,13 +88,13 @@ describe('Instances', () => {
     it('should render the Filter with default filter selection when no ?filter=', () => {
       const node = shallow(InstancesWithoutFilter);
 
-      expect(node.state('filter')).toEqual(defaultFilterSelection);
+      expect(node.state('filter')).toEqual(DEFAULT_FILTER);
     });
 
     it('should apply default filter selection for an invalid query', () => {
       const node = shallow(InstancesWithInvalidRunningFilter);
 
-      expect(node.state('filter')).toEqual(defaultFilterSelection);
+      expect(node.state('filter')).toEqual(DEFAULT_FILTER);
     });
   });
 

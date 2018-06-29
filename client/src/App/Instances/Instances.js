@@ -16,11 +16,10 @@ import SelectionDisplay from './SelectionDisplay';
 import {fetchWorkflowInstancesCount} from './api';
 import {
   parseFilterForRequest,
-  parseQueryString,
-  getFilterQueryString,
-  defaultFilterSelection,
-  isEmpty
-} from './service';
+  getFilterQueryString
+} from 'modules/utils/filter';
+import {parseQueryString, isEmpty} from './service';
+import {DEFAULT_FILTER} from 'modules/constants/filter';
 import * as Styled from './styled.js';
 
 const {Pane} = SplitPane;
@@ -58,8 +57,8 @@ class Instances extends Component {
     // query was not valid
     if (!filter) {
       // set default filter selection
-      filter = defaultFilterSelection;
-      this.setFilterInURL(defaultFilterSelection);
+      filter = DEFAULT_FILTER;
+      this.setFilterInURL(DEFAULT_FILTER);
     }
 
     await this.setState({filter});
@@ -101,8 +100,8 @@ class Instances extends Component {
     let query = this.props.location.search;
 
     if (query === '') {
-      this.setFilterInURL(defaultFilterSelection);
-      query = getFilterQueryString(defaultFilterSelection);
+      this.setFilterInURL(DEFAULT_FILTER);
+      query = getFilterQueryString(DEFAULT_FILTER);
     }
 
     return parseQueryString(query).filter;

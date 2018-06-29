@@ -1,8 +1,7 @@
-import {fetchInstancesCount} from './api';
-
 import {mockResolvedAsyncFn} from 'modules/testUtils';
-
 import * as wrappers from 'modules/request/wrappers';
+
+import {fetchWorkflowInstancesCount} from './api';
 
 describe('dashboard api', () => {
   it('should call post with the right url', async () => {
@@ -11,7 +10,7 @@ describe('dashboard api', () => {
     wrappers.post = mockResolvedAsyncFn(successResponse);
 
     // when
-    const response = await fetchInstancesCount();
+    const response = await fetchWorkflowInstancesCount();
 
     // then
     expect(wrappers.post.mock.calls[0][0]).toBe(

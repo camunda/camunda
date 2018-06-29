@@ -6,7 +6,7 @@ import Dashboard from './Dashboard';
 
 import * as api from './api';
 
-api.fetchInstancesCount = mockResolvedAsyncFn(123);
+api.fetchWorkflowInstancesCount = mockResolvedAsyncFn(123);
 
 describe('Dashboard', () => {
   let node;

@@ -5,7 +5,9 @@ import Header from '../Header';
 import MetricPanel from './MetricPanel';
 import MetricTile from './MetricTile';
 
-import {fetchInstancesCount} from './api';
+import {fetchWorkflowInstancesCount} from './api';
+import {parseFilterForRequest} from 'modules/utils/filter';
+import {FILTER_SELECTION} from 'modules/constants/filter';
 
 import withSharedState from 'modules/components/withSharedState';
 import PropTypes from 'prop-types';
@@ -35,9 +37,15 @@ class Dashboard extends Component {
 
   fetchCounts = async () => {
     return {
-      instances: await fetchInstancesCount(),
-      active: await fetchInstancesCount('active'),
-      incidents: await fetchInstancesCount('incidents')
+      instances: await fetchWorkflowInstancesCount(
+        parseFilterForRequest(FILTER_SELECTION.running)
+      ),
+      active: await fetchWorkflowInstancesCount(
+        parseFilterForRequest(FILTER_SELECTION.active)
+      ),
+      incidents: await fetchWorkflowInstancesCount(
+        parseFilterForRequest(FILTER_SELECTION.incidents)
+      )
     };
   };
 

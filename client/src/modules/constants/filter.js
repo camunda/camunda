@@ -12,3 +12,6 @@ export const FILTER_SELECTION = {
     incidents: false
   }
 };
+
+export const DEFAULT_FILTER = FILTER_SELECTION.running;
+export const INCIDENTS_FILTER = FILTER_SELECTION.incidents;

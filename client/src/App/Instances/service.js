@@ -1,26 +1,17 @@
-export const defaultFilterSelection = {
-  active: true,
-  incidents: true
-};
-
-export const incidentsFilterSelection = {
-  ...defaultFilterSelection,
-  active: false
-};
-
-export function parseFilterForRequest(filter) {
-  const {active, incidents} = filter;
-  let payload = {running: active || incidents};
-
-  return {
-    ...payload,
-    active,
-    incidents
-  };
+function isValidJSON(text) {
+  try {
+    JSON.parse(text);
+    return true;
+  } catch (e) {
+    return false;
+  }
 }
 
-export function getFilterQueryString(selection) {
-  return `?filter=${JSON.stringify(selection)}`;
+export function isEmpty(obj) {
+  for (var key in obj) {
+    if (obj.hasOwnProperty(key)) return false;
+  }
+  return true;
 }
 
 export function parseQueryString(queryString) {
@@ -40,20 +31,4 @@ export function parseQueryString(queryString) {
   });
 
   return params;
-}
-
-function isValidJSON(text) {
-  try {
-    JSON.parse(text);
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
-
-export function isEmpty(obj) {
-  for (var key in obj) {
-    if (obj.hasOwnProperty(key)) return false;
-  }
-  return true;
 }
