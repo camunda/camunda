@@ -9,8 +9,10 @@ export default class Checkbox extends React.Component {
     /** Receives object with single isChecked property */
     onChange: PropTypes.func.isRequired,
     isIndeterminate: PropTypes.bool,
+    label: PropTypes.string,
+    name: PropTypes.string,
     type: PropTypes.oneOf(['selection']),
-    label: PropTypes.string
+    value: PropTypes.string
   };
 
   constructor(props) {
