@@ -9,7 +9,7 @@ import Header from '../Header';
 import DiagramPanel from './DiagramPanel';
 
 import * as Styled from './styled';
-import * as api from './api';
+import * as api from 'modules/api/instances';
 
 const {Pane} = SplitPane;
 
@@ -29,7 +29,7 @@ export default class Instance extends Component {
 
   async componentDidMount() {
     const id = this.props.match.params.id;
-    const instance = await api.workflowInstance(id);
+    const instance = await api.fetchWorkflowInstance(id);
 
     this.setState({
       loaded: true,

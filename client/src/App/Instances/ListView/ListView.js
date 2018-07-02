@@ -8,7 +8,7 @@ import List from './List';
 import ListFooter from './ListFooter';
 import {isEmpty} from '../service';
 import {parseFilterForRequest} from 'modules/utils/filter';
-import {fetchWorkflowInstances} from '../api';
+import {fetchWorkflowInstances} from 'modules/api/instances';
 
 const {Pane} = SplitPane;
 export default class ListView extends React.Component {

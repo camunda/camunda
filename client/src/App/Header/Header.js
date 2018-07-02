@@ -7,7 +7,7 @@ import * as Styled from './styled.js';
 import Dropdown from 'modules/components/Dropdown';
 import {Logo} from 'modules/components/Icon';
 
-import * as api from './api';
+import * as api from 'modules/api/header';
 
 export default class Header extends React.Component {
   static propTypes = {
@@ -30,7 +30,7 @@ export default class Header extends React.Component {
   };
 
   fetchUser = async () => {
-    return await api.user();
+    return await api.fetchUser();
   };
 
   createBadgeEntry = label => {

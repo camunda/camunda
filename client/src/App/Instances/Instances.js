@@ -13,7 +13,7 @@ import Filter from './Filter/index';
 import ListView from './ListView';
 import SelectionDisplay from './SelectionDisplay';
 
-import {fetchWorkflowInstancesCount} from './api';
+import {fetchWorkflowInstancesCount} from 'modules/api/instances';
 import {
   parseFilterForRequest,
   getFilterQueryString

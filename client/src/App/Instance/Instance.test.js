@@ -9,11 +9,12 @@ import Instance from './Instance';
 import Header from './../Header';
 import DiagramPanel from './DiagramPanel';
 import InstanceDetail from './InstanceDetail';
-import * as api from './api';
+import * as api from 'modules/api/instances';
 
 const xmlMock = '<foo />';
 api.workflowXML = mockResolvedAsyncFn(xmlMock);
 jest.mock('./DiagramPanel');
+jest.mock('modules/api/instances');
 
 const INSTANCE = {
   id: '4294980768',
@@ -37,7 +38,7 @@ const INSTANCE = {
 };
 
 // mock api
-api.workflowInstance = mockResolvedAsyncFn(INSTANCE);
+api.fetchWorkflowInstance = mockResolvedAsyncFn(INSTANCE);
 
 const initialState = {
   instance: null,
@@ -51,7 +52,7 @@ const component = (
 );
 describe('Instance', () => {
   beforeEach(() => {
-    api.workflowInstance.mockClear();
+    api.fetchWorkflowInstance.mockClear();
   });
 
   describe('initial state', () => {
@@ -68,8 +69,8 @@ describe('Instance', () => {
       shallow(component);
 
       // then fetching is done with the right id
-      expect(api.workflowInstance).toHaveBeenCalledTimes(1);
-      expect(api.workflowInstance.mock.calls[0][0]).toEqual(INSTANCE.id);
+      expect(api.fetchWorkflowInstance).toHaveBeenCalledTimes(1);
+      expect(api.fetchWorkflowInstance.mock.calls[0][0]).toEqual(INSTANCE.id);
     });
 
     it('should change state after data fetching', async () => {

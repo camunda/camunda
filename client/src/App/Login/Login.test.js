@@ -10,10 +10,11 @@ import {
 
 import Login from './Login';
 import * as Styled from './styled';
-import * as api from './api';
+import * as api from 'modules/api/login';
 import {REQUIRED_FIELD_ERROR, LOGIN_ERROR} from './constants';
 
 jest.mock('modules/request');
+jest.mock('modules/api/login');
 
 describe('Login', () => {
   let node;

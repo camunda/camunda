@@ -5,7 +5,7 @@ import Header from '../Header';
 import MetricPanel from './MetricPanel';
 import MetricTile from './MetricTile';
 
-import {fetchWorkflowInstancesCount} from './api';
+import {fetchWorkflowInstancesCount} from 'modules/api/instances';
 import {parseFilterForRequest} from 'modules/utils/filter';
 import {FILTER_SELECTION} from 'modules/constants/filter';
 

@@ -1,4 +1,4 @@
-import {logout, user} from './api';
+import {logout, fetchUser} from './header';
 
 import {mockResolvedAsyncFn} from 'modules/testUtils';
 
@@ -20,7 +20,7 @@ describe('header api', () => {
     });
   });
 
-  describe('user', () => {
+  describe('fetchUser', () => {
     it('should call get with the right url', async () => {
       // given
       const successMessage = 'success';
@@ -30,7 +30,7 @@ describe('header api', () => {
       wrappers.get = mockResolvedAsyncFn(successResponse);
 
       // when
-      const response = await user();
+      const response = await fetchUser();
 
       // then
       expect(wrappers.get.mock.calls[0][0]).toBe('/api/authentications/user');

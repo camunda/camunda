@@ -1,6 +1,6 @@
 import {post} from 'modules/request';
 
-import {login} from './api';
+import {login} from './login';
 
 jest.mock('modules/request');
 

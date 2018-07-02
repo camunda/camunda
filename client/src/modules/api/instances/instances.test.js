@@ -1,7 +1,7 @@
 import {mockResolvedAsyncFn} from 'modules/testUtils';
 import * as wrappers from 'modules/request/wrappers';
 
-import {fetchWorkflowInstancesCount} from './api';
+import {fetchWorkflowInstancesCount} from './instances';
 
 describe('dashboard api', () => {
   it('should call post with the right url', async () => {

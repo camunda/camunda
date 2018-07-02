@@ -4,8 +4,9 @@ import {mockResolvedAsyncFn} from 'modules/testUtils';
 
 import Dashboard from './Dashboard';
 
-import * as api from './api';
+import * as api from 'modules/api/instances';
 
+jest.mock('modules/api/instances');
 api.fetchWorkflowInstancesCount = mockResolvedAsyncFn(123);
 
 describe('Dashboard', () => {

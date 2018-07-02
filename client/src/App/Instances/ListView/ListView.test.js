@@ -5,7 +5,7 @@ import ListView from './ListView';
 import List from './List';
 import ListFooter from './ListFooter';
 import {defaultFilterSelection} from './../service';
-import {fetchWorkflowInstances} from '../api';
+import {fetchWorkflowInstances} from 'modules/api/instances';
 
 const selection = {
   list: new Set(),
@@ -15,7 +15,7 @@ const selection = {
 const filter = {defaultFilterSelection};
 const total = 27;
 
-jest.mock('../api');
+jest.mock('modules/api/instances');
 fetchWorkflowInstances.mockReturnValue([{id: 1}]);
 
 describe('ListView', () => {

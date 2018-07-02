@@ -2,7 +2,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 import Header from './Header';
 import Dropdown from 'modules/components/Dropdown';
-import * as api from './api';
+import * as api from 'modules/api/header';
 import {flushPromises, mockResolvedAsyncFn} from 'modules/testUtils';
 
 const USER = {
@@ -12,7 +12,8 @@ const USER = {
   }
 };
 
-api.user = mockResolvedAsyncFn(USER);
+jest.mock('modules/api/header');
+api.fetchUser = mockResolvedAsyncFn(USER);
 
 describe('Header', () => {
   it('should show the count of all instances', () => {

@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Redirect} from 'react-router-dom';
 
-import {login} from './api';
+import {login} from 'modules/api/login';
 import {REQUIRED_FIELD_ERROR, LOGIN_ERROR} from './constants';
 import * as Styled from './styled';
 
