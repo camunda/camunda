@@ -15,6 +15,8 @@
  */
 package io.zeebe.util.sched;
 
+import io.zeebe.util.BoundedArrayQueue;
+
 /**
  * Pool used for recycling {@link ActorJob} objects.
  *
@@ -41,58 +43,38 @@ public class ActorJobPool {
    * and it's next
    * If the pool has reached it's capacity, the object is discarded and can be reclaimed by GC
    */
-
-  /** Capacity of the pool. Controls how many objects can be pooled */
-  private final int capacity;
-
-  /** Current size of the pool; the number of tasks currently pooled */
-  private int size;
-
-  /** pointer to the first object in the pool */
-  private ActorJob first;
+  private final BoundedArrayQueue<ActorJob> jobs;
 
   public ActorJobPool() {
     this(2048);
   }
 
   public ActorJobPool(int capacity) {
-    this.capacity = capacity;
-
+    jobs = new BoundedArrayQueue<>(capacity);
     // TODO: think about pre-filling the pool to some fraction of the capacity
   }
 
   /** Returns a job (either recycled or new) */
   public ActorJob nextJob() {
-    ActorJob j = first;
+    ActorJob job = jobs.poll();
 
-    if (j != null) {
-      first = j.next;
-      j.next = null;
-
-      --size;
-    } else {
-      j = new ActorJob();
+    if (job == null) {
+      job = new ActorJob();
     }
 
-    return j;
+    return job;
   }
 
   public void reclaim(ActorJob j) {
-    if (size <= capacity) {
-      j.reset();
-      final ActorJob prev = first;
-      j.next = prev;
-      first = j;
-
-      ++size;
-    }
+    j.reset();
+    jobs.offer(j);
   }
 
   public int getCapacity() {
-    return capacity;
+    return jobs.getCapacity();
   }
 
   public int getSize() {
-    return size;
+    return jobs.size();
   }
 }

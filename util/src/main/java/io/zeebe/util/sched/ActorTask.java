@@ -21,7 +21,9 @@ import io.zeebe.util.Loggers;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.metrics.TaskMetrics;
+import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
@@ -92,6 +94,8 @@ public class ActorTask {
    */
   private volatile Queue<ActorJob> submittedJobs = new ClosedQueue();
 
+  private Deque<ActorJob> fastLaneJobs = new ClosedQueue();
+
   private ActorLifecyclePhase lifecyclePhase = ActorLifecyclePhase.CLOSED;
 
   volatile TaskSchedulingState schedulingState = null;
@@ -142,6 +146,7 @@ public class ActorTask {
 
     this.isJumbo = false;
     this.submittedJobs = new ManyToOneConcurrentLinkedQueue<>();
+    this.fastLaneJobs = new ArrayDeque<>();
     this.lifecyclePhase = ActorLifecyclePhase.STARTING;
 
     this.isCollectTaskMetrics = taskMetrics != null;
@@ -176,7 +181,7 @@ public class ActorTask {
       switch (currentJob.schedulingState) {
         case TERMINATED:
           final ActorJob terminatedJob = currentJob;
-          currentJob = terminatedJob.getNext();
+          currentJob = fastLaneJobs.poll();
 
           if (terminatedJob.isTriggeredBySubscription()) {
             final ActorSubscription subscription = terminatedJob.getSubscription();
@@ -354,16 +359,10 @@ public class ActorTask {
 
   private void discardNextJobs() {
     // discard next jobs
-    ActorJob current = currentJob;
     ActorJob next;
-    while ((next = current.next) != null) {
+    while ((next = fastLaneJobs.poll()) != null) {
       next.failFuture("Actor is closed");
-
-      current.next = null;
-      current = next;
     }
-
-    currentJob.next = null;
   }
 
   boolean casStateCount(long expectedCount) {
@@ -445,7 +444,7 @@ public class ActorTask {
         if (currentJob == null) {
           currentJob = job;
         } else {
-          currentJob.append(job);
+          fastLaneJobs.offer(job);
         }
 
         hasJobs = true;
@@ -488,7 +487,7 @@ public class ActorTask {
         if (currentJob == null) {
           currentJob = job;
         } else {
-          currentJob.append(job);
+          fastLaneJobs.offer(job);
         }
 
         hasJobs = true;
@@ -634,5 +633,9 @@ public class ActorTask {
 
   public void resubmit() {
     actorThreadGroup.submit(this);
+  }
+
+  public void insertJob(ActorJob job) {
+    fastLaneJobs.addFirst(job);
   }
 }
