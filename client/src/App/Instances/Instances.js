@@ -19,7 +19,7 @@ import {
   getFilterQueryString
 } from 'modules/utils/filter';
 import {parseQueryString, isEmpty} from './service';
-import {DEFAULT_FILTER} from 'modules/constants/filter';
+import {DEFAULT_FILTER, FILTER_TYPES} from 'modules/constants/filter';
 import * as Styled from './styled.js';
 
 const {Pane} = SplitPane;
@@ -157,7 +157,7 @@ class Instances extends Component {
                 {!isEmpty(this.state.filter) && (
                   <Fragment>
                     <Filter
-                      type="running"
+                      type={FILTER_TYPES.RUNNING}
                       filter={{
                         active,
                         incidents
@@ -165,7 +165,7 @@ class Instances extends Component {
                       onChange={this.handleFilterChange}
                     />
                     <Filter
-                      type="finished"
+                      type={FILTER_TYPES.FINISHED}
                       filter={{
                         canceled,
                         completed

@@ -1,3 +1,8 @@
+export const FILTER_TYPES = {
+  RUNNING: 'running',
+  FINISHED: 'finished'
+};
+
 export const FILTER_SELECTION = {
   running: {
     active: true,
