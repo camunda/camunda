@@ -32,7 +32,7 @@ export default class ListView extends React.Component {
   };
 
   componentDidMount() {
-    this.loadData();
+    !isEmpty(this.props.filter) && this.loadData();
   }
 
   componentDidUpdate(prevProps, prevState) {
