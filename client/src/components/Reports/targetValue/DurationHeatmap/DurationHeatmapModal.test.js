@@ -1,7 +1,7 @@
 import React from 'react';
 import {mount} from 'enzyme';
 
-import TargetValueModal from './DurationTargetValueModal';
+import TargetValueModal from './DurationHeatmapModal';
 
 jest.mock('bpmn-js/lib/NavigatedViewer', () => {
   return class Viewer {
@@ -129,7 +129,7 @@ it('should set isInvalid property for input if value is invalid', async () => {
 
   expect(
     node
-      .find('.DurationTargetValueModal__selection--input')
+      .find('.DurationHeatmapModal__selection--input')
       .first()
       .props()
   ).toHaveProperty('isInvalid', true);

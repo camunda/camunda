@@ -5,7 +5,10 @@ import Number from './Number';
 
 jest.mock('services', () => {
   return {
-    formatters: {convertDurationToSingleNumber: () => 12}
+    formatters: {
+      convertDurationToSingleNumber: () => 12
+    },
+    isDurationValue: data => typeof data !== 'number'
   };
 });
 

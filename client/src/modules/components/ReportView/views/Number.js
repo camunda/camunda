@@ -2,12 +2,12 @@ import React from 'react';
 import ReportBlankSlate from '../ReportBlankSlate';
 
 import ProgressBar from './ProgressBar';
-import {formatters} from 'services';
+import {formatters, isDurationValue} from 'services';
 
 import './Number.css';
 
 export default function Number({data, formatter, errorMessage, targetValue}) {
-  if (typeof data !== 'number') {
+  if (isDurationValue(data)) {
     return <ReportBlankSlate message={errorMessage} />;
   }
 

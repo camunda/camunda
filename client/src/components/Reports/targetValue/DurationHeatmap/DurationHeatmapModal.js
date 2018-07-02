@@ -17,9 +17,9 @@ import {
 } from 'components';
 import {formatters, numberParser} from 'services';
 
-import './DurationTargetValueModal.css';
+import './DurationHeatmapModal.css';
 
-export default class DurationTargetValueModal extends React.Component {
+export default class DurationHeatmapModal extends React.Component {
   constructor(props) {
     super(props);
 
@@ -132,7 +132,7 @@ export default class DurationTargetValueModal extends React.Component {
         this.state.nodeNames[id],
         formatters.duration(this.props.reportResult.result[id] || 0),
         <React.Fragment>
-          <div className="DurationTargetValueModal__selection">
+          <div className="DurationHeatmapModal__selection">
             <Input
               value={settings.value}
               ref={this.storeInputReferenceFor(id)}
@@ -143,7 +143,7 @@ export default class DurationTargetValueModal extends React.Component {
               onBlur={() => {
                 this.updateFocus(null);
               }}
-              className="DurationTargetValueModal__selection--input"
+              className="DurationHeatmapModal__selection--input"
               isInvalid={!this.isValidInput(settings.value)}
             />
             <Select
@@ -152,7 +152,7 @@ export default class DurationTargetValueModal extends React.Component {
                 this.setTarget('unit', id)(evt);
                 this.updateFocus(id);
               }}
-              className="DurationTargetValueModal__selection--select"
+              className="DurationHeatmapModal__selection--select"
             >
               <Select.Option value="millis">Milliseconds</Select.Option>
               <Select.Option value="seconds">Seconds</Select.Option>
@@ -229,11 +229,11 @@ export default class DurationTargetValueModal extends React.Component {
         size="max"
         open={this.props.open}
         onClose={this.props.onClose}
-        className="DurationTargetValueModal__Modal"
+        className="DurationHeatmapModal__Modal"
       >
         <Modal.Header>Target Value Comparison</Modal.Header>
-        <Modal.Content className="DurationTargetValueModal__modal-content-container">
-          <div className="DurationTargetValueModal__DiagramContainer">
+        <Modal.Content className="DurationHeatmapModal__modal-content-container">
+          <div className="DurationHeatmapModal__DiagramContainer">
             <BPMNDiagram xml={this.props.configuration.xml}>
               <TargetValueDiagramBehavior onClick={this.updateFocus} focus={this.state.focus} />
               <TargetValueBadge values={this.state.values} />
@@ -243,13 +243,11 @@ export default class DurationTargetValueModal extends React.Component {
             head={['Activity', 'Actual Value', 'Target Value']}
             body={this.constructTableBody()}
             foot={[]}
-            className="DurationTargetValueModal__Table"
+            className="DurationHeatmapModal__Table"
             disablePagination
           />
           {!this.validChanges() && (
-            <ErrorMessage className="DurationTargetValueModal__warning">
-              {errorMessage}
-            </ErrorMessage>
+            <ErrorMessage className="DurationHeatmapModal__warning">{errorMessage}</ErrorMessage>
           )}
         </Modal.Content>
         <Modal.Actions>

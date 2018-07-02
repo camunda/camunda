@@ -1,15 +1,20 @@
 import React from 'react';
 
-import DurationTargetValueModal from './DurationTargetValueModal';
-import NumberTargetValueModal from './NumberTargetValueModal';
+import {DurationHeatmapModal} from './DurationHeatmap';
+import {ProgressBarModal} from './ProgressBar';
 
 import {isSingleNumber, isDurationHeatmap} from './service';
 
 export default function TargetValueModal(props) {
   if (isSingleNumber(props.reportResult.data)) {
-    return <NumberTargetValueModal {...props} />;
+    return (
+      <ProgressBarModal
+        {...props}
+        type={props.reportResult.data.view.property === 'frequency' ? 'number' : 'duration'}
+      />
+    );
   } else if (isDurationHeatmap(props.reportResult.data)) {
-    return <DurationTargetValueModal {...props} />;
+    return <DurationHeatmapModal {...props} />;
   }
 
   return null;
