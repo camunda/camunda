@@ -27,22 +27,30 @@ export default class ListView extends React.Component {
   state = {
     firstElement: 0,
     instances: [],
-    entriesPerPage: 0
+    entriesPerPage: 0,
+    sortBy: {id: 'desc'}
   };
 
   componentDidMount() {
     this.loadData();
   }
+
   componentDidUpdate(prevProps, prevState) {
+    // set firstElement to 0 when filter changes
     if (
       prevProps.filter !== this.props.filter &&
       this.state.firstElement !== 0
     ) {
       return this.setState({firstElement: 0});
     }
+
+    // load data when either filter or firstElement changes
+    const key = Object.keys(prevState.sortBy)[0];
+    const hasSortByChanged = prevState.sortBy[key] !== this.state.sortBy[key];
     if (
       prevProps.filter !== this.props.filter ||
-      prevState.firstElement !== this.state.firstElement
+      prevState.firstElement !== this.state.firstElement ||
+      hasSortByChanged
     ) {
       this.loadData();
     }
@@ -51,11 +59,27 @@ export default class ListView extends React.Component {
   loadData = async () => {
     this.setState({
       instances: await fetchWorkflowInstances(
-        parseFilterForRequest(this.props.filter),
+        {
+          ...parseFilterForRequest(this.props.filter),
+          sortBy: this.state.sortBy
+        },
         this.state.firstElement,
         50
       )
     });
+  };
+
+  handleSorting = key => {
+    const {sortBy} = this.state;
+    const sortedKey = Object.keys(sortBy)[0];
+    let newsortBy;
+    if (!sortBy[key]) {
+      newsortBy = {[key]: 'desc'};
+    } else {
+      const order = sortBy[sortedKey] === 'desc' ? 'asc' : 'desc';
+      newsortBy = {[sortedKey]: order};
+    }
+    return this.setState({sortBy: newsortBy});
   };
 
   render() {
@@ -74,6 +98,8 @@ export default class ListView extends React.Component {
               onSelectionUpdate={this.props.onSelectionUpdate}
               filter={this.props.filter}
               paneState={this.props.paneState}
+              sortBy={this.state.sortBy}
+              handleSorting={this.handleSorting}
             />
           )}
         </Pane.Body>

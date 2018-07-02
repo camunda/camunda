@@ -26,6 +26,8 @@ exports[`Table should accept arbitrary markup for header and body cells 1`] = `
       },
     ]
   }
+  handleSorting={[Function]}
+  sortBy={Object {}}
 >
   <Themed(styled.thead)>
     <Themed(styled.tr)>
@@ -86,6 +88,8 @@ exports[`Table should display a header if provided 1`] = `
       },
     ]
   }
+  handleSorting={[Function]}
+  sortBy={Object {}}
 >
   <Themed(styled.thead)>
     <Themed(styled.tr)>
@@ -168,6 +172,8 @@ exports[`Table should display the data passed as props 1`] = `
       },
     ]
   }
+  handleSorting={[Function]}
+  sortBy={Object {}}
 >
   <tbody>
     <Themed(styled.tr)
@@ -218,6 +224,8 @@ exports[`Table should not crash if data array is empty 1`] = `
 <Themed(styled.table)
   config={Object {}}
   data={Array []}
+  handleSorting={[Function]}
+  sortBy={Object {}}
 >
   <tbody />
 </Themed(styled.table)>
@@ -244,6 +252,8 @@ exports[`Table should pass the selected attribute to a body row 1`] = `
       },
     ]
   }
+  handleSorting={[Function]}
+  sortBy={Object {}}
 >
   <tbody>
     <Themed(styled.tr)
@@ -320,6 +330,8 @@ exports[`Table should sort the header and body according to an optional order co
       },
     ]
   }
+  handleSorting={[Function]}
+  sortBy={Object {}}
 >
   <Themed(styled.thead)>
     <Themed(styled.tr)>

@@ -7,12 +7,14 @@ export default class Table extends React.Component {
   static propTypes = {
     data: PropTypes.array.isRequired,
     config: PropTypes.object,
-    sorting: PropTypes.object,
+    sortBy: PropTypes.object,
     handleSorting: PropTypes.func
   };
 
   static defaultProps = {
-    config: {}
+    config: {},
+    sortBy: {},
+    handleSorting: () => {}
   };
 
   getOrder() {
@@ -21,7 +23,7 @@ export default class Table extends React.Component {
 
   renderHeader() {
     const {
-      config: {headerLabels, sortable = {}, sorting},
+      config: {headerLabels, isSortable = {}, sortBy},
       handleSorting
     } = this.props;
 
@@ -32,9 +34,9 @@ export default class Table extends React.Component {
             {this.getOrder().map(key => (
               <Styled.HeaderCell key={key}>
                 {headerLabels[key]}
-                {sortable[key] && (
+                {isSortable[key] && (
                   <Styled.SortIcon
-                    order={sorting[key]}
+                    order={sortBy[key]}
                     onClick={() => handleSorting(key)}
                   />
                 )}

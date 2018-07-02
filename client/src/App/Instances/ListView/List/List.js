@@ -22,12 +22,13 @@ class List extends React.Component {
     }).isRequired,
     total: PropTypes.number,
     filter: PropTypes.object,
+    sortBy: PropTypes.object,
+    handleSorting: PropTypes.func,
     paneState: PropTypes.oneOf(Object.values(PANE_STATE))
   };
 
   state = {
-    rowsToDisplay: null,
-    sorting: {id: 'desc'}
+    rowsToDisplay: null
   };
 
   componentDidMount() {
@@ -66,22 +67,9 @@ class List extends React.Component {
       },
       order: ['workflowId', 'id', 'startDate', 'endDate', 'actions'],
       selectionCheck: ({id}) => this.isSelected(id),
-      sortable: {id: true, startDate: true, endDate: true, actions: false},
-      sorting: this.state.sorting
+      isSortable: {id: true, startDate: true, endDate: true, actions: false},
+      sortBy: this.props.sortBy
     };
-  };
-
-  handleSorting = key => {
-    const {sorting} = this.state;
-    const sortedKey = Object.keys(sorting)[0];
-    let newSorting;
-    if (!sorting[key]) {
-      newSorting = {[key]: 'desc'};
-    } else {
-      const order = sorting[sortedKey] === 'desc' ? 'asc' : 'desc';
-      newSorting = {[sortedKey]: order};
-    }
-    return this.setState({sorting: newSorting});
   };
 
   areAllInstancesSelected = () => {
