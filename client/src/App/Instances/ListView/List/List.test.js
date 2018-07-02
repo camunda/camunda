@@ -72,8 +72,8 @@ describe('List', () => {
 
   it('renders a table row with a link to the instance page', () => {
     const node = shallow(<List {...mockProps} />);
-    const formatData = node.instance().formatData;
-    const rowData = formatData(instance);
+    const formatTableRow = node.instance().formatTableRow;
+    const rowData = formatTableRow(instance);
 
     expect(rowData.id.props.to).toBe(`/instances/${instance.id}`);
     expect(rowData.id.props.children).toBe(instance.id);

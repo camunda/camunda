@@ -57,16 +57,16 @@ export default class ListView extends React.Component {
   }
 
   loadData = async () => {
-    this.setState({
-      instances: await fetchWorkflowInstances(
-        {
-          ...parseFilterForRequest(this.props.filter),
-          sortBy: this.state.sortBy
-        },
-        this.state.firstElement,
-        50
-      )
-    });
+    const instances = await fetchWorkflowInstances(
+      {
+        ...parseFilterForRequest(this.props.filter),
+        sortBy: this.state.sortBy
+      },
+      this.state.firstElement,
+      50
+    );
+
+    this.setState({instances});
   };
 
   handleSorting = key => {

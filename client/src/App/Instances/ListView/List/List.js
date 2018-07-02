@@ -46,26 +46,6 @@ export default class List extends React.Component {
 
   getTableConfig = () => {
     return {
-      headerLabels: {
-        workflowId: (
-          <Fragment>
-            <Styled.CheckAll>
-              <Checkbox
-                isChecked={this.areAllInstancesSelected()}
-                onChange={({isChecked}) =>
-                  this.handleToggleSelectAll(isChecked)
-                }
-              />
-            </Styled.CheckAll>
-            Workflow Definition
-          </Fragment>
-        ),
-        id: 'Instance Id',
-        startDate: 'Start Time',
-        endDate: 'End Time',
-        actions: 'Actions'
-      },
-      order: ['workflowId', 'id', 'startDate', 'endDate', 'actions'],
       selectionCheck: ({id}) => this.isSelected(id),
       isSortable: {id: true, startDate: true, endDate: true, actions: false},
       sortBy: this.props.sortBy
@@ -103,7 +83,7 @@ export default class List extends React.Component {
     );
   };
 
-  formatData = instance => {
+  formatTableRow = instance => {
     return {
       ...instance,
       id: this.getInstanceAnchor(instance.id),
@@ -172,17 +152,42 @@ export default class List extends React.Component {
     }
   }
 
+  getTableHeaders = () => {
+    return {
+      workflowId: (
+        <Fragment>
+          <Styled.CheckAll>
+            <Checkbox
+              isChecked={this.areAllInstancesSelected()}
+              onChange={({isChecked}) => this.handleToggleSelectAll(isChecked)}
+            />
+          </Styled.CheckAll>
+          Workflow Definition
+        </Fragment>
+      ),
+      id: 'Instance Id',
+      startDate: 'Start Time',
+      endDate: 'End Time',
+      actions: 'Actions'
+    };
+  };
+
+  getTableData = () => {
+    return this.props.data
+      .slice(0, this.state.rowsToDisplay)
+      .map(this.formatTableRow);
+  };
+
   render() {
     return (
       <Styled.InstancesList>
         <Styled.TableContainer innerRef={node => (this.container = node)}>
           {!this.state.rowsToDisplay || !this.props.data ? null : (
             <Table
-              data={this.props.data
-                .slice(0, this.state.rowsToDisplay)
-                .map(this.formatData)}
+              headers={this.getTableHeaders()}
+              data={this.getTableData()}
               config={this.getTableConfig()}
-              handleSorting={this.handleSorting}
+              handleSorting={this.props.handleSorting}
             />
           )}
         </Styled.TableContainer>
