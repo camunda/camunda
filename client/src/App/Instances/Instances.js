@@ -32,13 +32,6 @@ class Instances extends Component {
     history: PropTypes.object.isRequired
   };
 
-  static defaultProps = {
-    getStateLocally: () => {
-      return {filterCount: 0, selections: [[]]};
-    },
-    storeStateLocally: () => {}
-  };
-
   constructor(props) {
     super(props);
     const {filterCount, selections} = props.getStateLocally();

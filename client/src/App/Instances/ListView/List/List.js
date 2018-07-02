@@ -10,7 +10,7 @@ import Table from 'modules/components/Table';
 
 import * as Styled from './styled';
 
-class List extends React.Component {
+export default class List extends React.Component {
   static propTypes = {
     data: PropTypes.arrayOf(PropTypes.object).isRequired,
     onSelectionUpdate: PropTypes.func.isRequired,
@@ -190,5 +190,3 @@ class List extends React.Component {
     );
   }
 }
-
-export default List;
