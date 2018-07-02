@@ -50,18 +50,19 @@ export default class Filter extends React.Component {
 
   onResetFilter = () => {
     const change = {};
-    if (this.getCheckedChildrenCount() === 2) {
-      this.filterTypes.map(type =>
-        Object.assign(change, {
-          [type]: {$set: !this.props.filter[type]}
-        })
-      );
-    } else {
-      this.filterTypes.map(type =>
-        Object.assign(change, {[type]: {$set: true}})
-      );
-    }
 
+    this.filterTypes.map(type =>
+      Object.assign(
+        change,
+        this.getCheckedChildrenCount() === 2
+          ? {
+              [type]: {$set: !this.props.filter[type]}
+            }
+          : {
+              [type]: {$set: true}
+            }
+      )
+    );
     this.props.onChange(change);
   };
 
