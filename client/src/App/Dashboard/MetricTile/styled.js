@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import {Link} from 'react-router-dom';
+import React from 'react';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
 export const MetricTile = styled.div`
@@ -8,7 +9,9 @@ export const MetricTile = styled.div`
   align-items: center;
 `;
 
-export const Metric = themed(styled(Link)`
+export const Metric = themed(styled(({metricColor, children, ...rest}) => (
+  <Link {...rest}>{children}</Link>
+))`
   display: inline-block;
   padding-top: 6px;
   padding-bottom: 16px;
