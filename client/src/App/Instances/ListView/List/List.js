@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {Fragment} from 'react';
 import PropTypes from 'prop-types';
 
 import Checkbox from 'modules/components/Checkbox';
@@ -43,11 +43,11 @@ class List extends React.Component {
     }
   }
 
-  getConfig = () => {
+  getTableConfig = () => {
     return {
       headerLabels: {
         workflowId: (
-          <React.Fragment>
+          <Fragment>
             <Styled.CheckAll>
               <Checkbox
                 isChecked={this.areAllInstancesSelected()}
@@ -57,7 +57,7 @@ class List extends React.Component {
               />
             </Styled.CheckAll>
             Workflow Definition
-          </React.Fragment>
+          </Fragment>
         ),
         id: 'Instance Id',
         startDate: 'Start Time',
@@ -119,7 +119,7 @@ class List extends React.Component {
     return {
       ...instance,
       id: this.getInstanceAnchor(instance.id),
-      workflowId: this.addSelection(instance),
+      workflowId: this.getSelection(instance),
       startDate: formatDate(instance.startDate),
       endDate: formatDate(instance.endDate)
     };
@@ -157,7 +157,7 @@ class List extends React.Component {
     this.props.onSelectionUpdate(selectionUpdate);
   };
 
-  addSelection = instance => {
+  getSelection = instance => {
     const isSelected = this.isSelected(instance.id);
     return (
       <Styled.Selection>
@@ -193,7 +193,7 @@ class List extends React.Component {
               data={this.props.data
                 .slice(0, this.state.rowsToDisplay)
                 .map(this.formatData)}
-              config={this.getConfig()}
+              config={this.getTableConfig()}
               handleSorting={this.handleSorting}
             />
           )}
