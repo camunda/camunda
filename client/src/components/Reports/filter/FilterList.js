@@ -68,6 +68,7 @@ export default class FilterList extends React.Component {
                 evt.stopPropagation();
                 this.props.deleteFilter(filter, nextFilter);
               }}
+              className="FilterList__action-item"
             >
               <span className="FilterList__parameter-name">Start Date </span> is between{' '}
               <span className="FilterList__value">
@@ -97,6 +98,7 @@ export default class FilterList extends React.Component {
                   evt.stopPropagation();
                   this.props.deleteFilter(filter);
                 }}
+                className="FilterList__action-item"
               >
                 <span className="FilterList__parameter-name">{name}</span>
                 {(operator === 'in' || operator === '=') && this.createOperator('is')}
@@ -135,6 +137,7 @@ export default class FilterList extends React.Component {
                   evt.stopPropagation();
                   this.props.deleteFilter(filter);
                 }}
+                className="FilterList__action-item"
               >
                 <span className="FilterList__parameter-name">Executed Flow Node</span> is{' '}
                 {values.map((value, idx) => {
@@ -164,6 +167,7 @@ export default class FilterList extends React.Component {
                   evt.stopPropagation();
                   this.props.deleteFilter(filter);
                 }}
+                className="FilterList__action-item"
               >
                 <span className="FilterList__parameter-name">Start Date </span>
                 less than{' '}
@@ -189,6 +193,7 @@ export default class FilterList extends React.Component {
                   evt.stopPropagation();
                   this.props.deleteFilter(filter);
                 }}
+                className="FilterList__action-item"
               >
                 <span className="FilterList__parameter-name">Duration</span>
                 {operator === '<' && this.createOperator('is less than')}
@@ -208,6 +213,7 @@ export default class FilterList extends React.Component {
                   evt.stopPropagation();
                   this.props.deleteFilter(filter);
                 }}
+                className="FilterList__action-item"
               >
                 <span className="FilterList__parameter-name">Running Process Instances Only</span>
               </ActionItem>
@@ -221,6 +227,7 @@ export default class FilterList extends React.Component {
                   evt.stopPropagation();
                   this.props.deleteFilter(filter);
                 }}
+                className="FilterList__action-item"
               >
                 <span className="FilterList__parameter-name">Completed Process Instances Only</span>
               </ActionItem>

@@ -1,5 +1,5 @@
 import React from 'react';
-
+import classnames from 'classnames';
 import {Button} from 'components';
 
 import './ActionItem.css';
@@ -10,7 +10,7 @@ export default function ActionItem(props) {
       <Button disabled={props.disabled} onClick={props.onClick} className="ActionItem__button">
         ×
       </Button>
-      <span className="ActionItem__content">{props.children}</span>
+      <span className={classnames('ActionItem__content', props.className)}>{props.children}</span>
     </React.Fragment>
   );
 }

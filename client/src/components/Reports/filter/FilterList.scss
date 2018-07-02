@@ -1,12 +1,13 @@
 .FilterList {
-  display: inline;
-  margin: 0;
+  display: flex;
   padding: 0;
+  flex-wrap: wrap;
+  align-items: baseline;
 }
 
 .FilterList__item {
   list-style-type: none;
-  display: inline-block;
+  display: flex;
   margin-bottom: 20px;
   border: 1px solid #ccc;
   background-color: white;
@@ -31,6 +32,16 @@
   list-style-type: none;
   display: inline-block;
   margin: 0 0.5em;
+}
+
+.FilterList__action-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.FilterList__action-item * {
+  margin: 0 1px;
 }
 
 .FilterList__parameter-name {
