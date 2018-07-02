@@ -1,0 +1,31 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`SortIcon should render a Down icon if order is desc 1`] = `
+<styled.a
+  order="desc"
+>
+  <Themed(Styled(Down))
+    order="desc"
+  />
+</styled.a>
+`;
+
+exports[`SortIcon should render a Down icon if order is null 1`] = `
+<styled.a
+  order={null}
+>
+  <Themed(Styled(Down))
+    order={null}
+  />
+</styled.a>
+`;
+
+exports[`SortIcon should render an Up icon if order is asc 1`] = `
+<styled.a
+  order="asc"
+>
+  <Themed(Styled(Up))
+    order="asc"
+  />
+</styled.a>
+`;

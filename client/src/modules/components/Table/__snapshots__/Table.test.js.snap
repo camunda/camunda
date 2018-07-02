@@ -1,237 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Table should accept arbitrary markup for header and body cells 1`] = `
-<Themed(styled.table)
-  config={
-    Object {
-      "headerLabels": Object {
-        "prop": <button
-          data-test-id="header-button"
-          onClick={[Function]}
-    >
-          Header
-    </button>,
-      },
-    }
-  }
-  data={
-    Array [
-      Object {
-        "prop": <button
-          data-test-id="body-button"
-          onClick={[Function]}
-    >
-          Body
-    </button>,
-      },
-    ]
-  }
-  handleSorting={[Function]}
-  sortBy={Object {}}
->
-  <Themed(styled.thead)>
-    <Themed(styled.tr)>
-      <Themed(styled.th)
-        key="prop"
-      >
-        <button
-          data-test-id="header-button"
-          onClick={[Function]}
-        >
-          Header
-        </button>
-      </Themed(styled.th)>
-    </Themed(styled.tr)>
-  </Themed(styled.thead)>
-  <tbody>
-    <Themed(styled.tr)
-      key="0"
-      selected={false}
-    >
-      <styled.td
-        key="prop"
-      >
-        <button
-          data-test-id="body-button"
-          onClick={[Function]}
-        >
-          Body
-        </button>
-      </styled.td>
-    </Themed(styled.tr)>
-  </tbody>
-</Themed(styled.table)>
-`;
-
-exports[`Table should display a header if provided 1`] = `
-<Themed(styled.table)
-  config={
-    Object {
-      "headerLabels": Object {
-        "prop1": "Property 1",
-        "prop2": "Property 2",
-        "prop3": "Property 3",
-      },
-    }
-  }
-  data={
-    Array [
-      Object {
-        "prop1": 1,
-        "prop2": 2,
-        "prop3": 3,
-      },
-      Object {
-        "prop1": 4,
-        "prop2": 5,
-        "prop3": 6,
-      },
-    ]
-  }
-  handleSorting={[Function]}
-  sortBy={Object {}}
->
-  <Themed(styled.thead)>
-    <Themed(styled.tr)>
-      <Themed(styled.th)
-        key="prop1"
-      >
-        Property 1
-      </Themed(styled.th)>
-      <Themed(styled.th)
-        key="prop2"
-      >
-        Property 2
-      </Themed(styled.th)>
-      <Themed(styled.th)
-        key="prop3"
-      >
-        Property 3
-      </Themed(styled.th)>
-    </Themed(styled.tr)>
-  </Themed(styled.thead)>
-  <tbody>
-    <Themed(styled.tr)
-      key="0"
-      selected={false}
-    >
-      <styled.td
-        key="prop1"
-      >
-        1
-      </styled.td>
-      <styled.td
-        key="prop2"
-      >
-        2
-      </styled.td>
-      <styled.td
-        key="prop3"
-      >
-        3
-      </styled.td>
-    </Themed(styled.tr)>
-    <Themed(styled.tr)
-      key="1"
-      selected={false}
-    >
-      <styled.td
-        key="prop1"
-      >
-        4
-      </styled.td>
-      <styled.td
-        key="prop2"
-      >
-        5
-      </styled.td>
-      <styled.td
-        key="prop3"
-      >
-        6
-      </styled.td>
-    </Themed(styled.tr)>
-  </tbody>
-</Themed(styled.table)>
-`;
-
-exports[`Table should display the data passed as props 1`] = `
-<Themed(styled.table)
-  config={Object {}}
-  data={
-    Array [
-      Object {
-        "prop1": 1,
-        "prop2": 2,
-        "prop3": 3,
-      },
-      Object {
-        "prop1": 4,
-        "prop2": 5,
-        "prop3": 6,
-      },
-    ]
-  }
-  handleSorting={[Function]}
-  sortBy={Object {}}
->
-  <tbody>
-    <Themed(styled.tr)
-      key="0"
-      selected={false}
-    >
-      <styled.td
-        key="prop1"
-      >
-        1
-      </styled.td>
-      <styled.td
-        key="prop2"
-      >
-        2
-      </styled.td>
-      <styled.td
-        key="prop3"
-      >
-        3
-      </styled.td>
-    </Themed(styled.tr)>
-    <Themed(styled.tr)
-      key="1"
-      selected={false}
-    >
-      <styled.td
-        key="prop1"
-      >
-        4
-      </styled.td>
-      <styled.td
-        key="prop2"
-      >
-        5
-      </styled.td>
-      <styled.td
-        key="prop3"
-      >
-        6
-      </styled.td>
-    </Themed(styled.tr)>
-  </tbody>
-</Themed(styled.table)>
-`;
-
-exports[`Table should not crash if data array is empty 1`] = `
-<Themed(styled.table)
-  config={Object {}}
-  data={Array []}
-  handleSorting={[Function]}
-  sortBy={Object {}}
->
-  <tbody />
-</Themed(styled.table)>
-`;
-
-exports[`Table should pass the selected attribute to a body row 1`] = `
+exports[`Table renderBody should render a table row for each data element and cell for each row value 1`] = `
 <Themed(styled.table)
   config={
     Object {
@@ -241,156 +10,82 @@ exports[`Table should pass the selected attribute to a body row 1`] = `
   data={
     Array [
       Object {
-        "prop1": 1,
-        "prop2": 2,
-        "prop3": 3,
+        "id": 1,
+        "name": "foo",
       },
       Object {
-        "prop1": 4,
-        "prop2": 5,
-        "prop3": 6,
+        "id": 2,
+        "name": "bar",
+      },
+      Object {
+        "id": 3,
+        "name": "baz",
       },
     ]
   }
   handleSorting={[Function]}
-  sortBy={Object {}}
->
-  <tbody>
-    <Themed(styled.tr)
-      key="0"
-      selected={true}
-    >
-      <styled.td
-        key="prop1"
-      >
-        1
-      </styled.td>
-      <styled.td
-        key="prop2"
-      >
-        2
-      </styled.td>
-      <styled.td
-        key="prop3"
-      >
-        3
-      </styled.td>
-    </Themed(styled.tr)>
-    <Themed(styled.tr)
-      key="1"
-      selected={true}
-    >
-      <styled.td
-        key="prop1"
-      >
-        4
-      </styled.td>
-      <styled.td
-        key="prop2"
-      >
-        5
-      </styled.td>
-      <styled.td
-        key="prop3"
-      >
-        6
-      </styled.td>
-    </Themed(styled.tr)>
-  </tbody>
-</Themed(styled.table)>
-`;
-
-exports[`Table should sort the header and body according to an optional order config 1`] = `
-<Themed(styled.table)
-  config={
+  headers={
     Object {
-      "headerLabels": Object {
-        "prop1": "Property 1",
-        "prop2": "Property 2",
-        "prop3": "Property 3",
-      },
-      "order": Array [
-        "prop2",
-        "prop3",
-        "prop1",
-      ],
+      "id": "id",
+      "name": "name",
     }
   }
-  data={
-    Array [
-      Object {
-        "prop1": 1,
-        "prop2": 2,
-        "prop3": 3,
-      },
-      Object {
-        "prop1": 4,
-        "prop2": 5,
-        "prop3": 6,
-      },
-    ]
-  }
-  handleSorting={[Function]}
-  sortBy={Object {}}
 >
   <Themed(styled.thead)>
     <Themed(styled.tr)>
       <Themed(styled.th)
-        key="prop2"
+        key="name"
       >
-        Property 2
+        name
       </Themed(styled.th)>
       <Themed(styled.th)
-        key="prop3"
+        key="id"
       >
-        Property 3
-      </Themed(styled.th)>
-      <Themed(styled.th)
-        key="prop1"
-      >
-        Property 1
+        id
       </Themed(styled.th)>
     </Themed(styled.tr)>
   </Themed(styled.thead)>
   <tbody>
     <Themed(styled.tr)
       key="0"
-      selected={false}
     >
       <styled.td
-        key="prop2"
+        key="name"
       >
-        2
+        foo
       </styled.td>
       <styled.td
-        key="prop3"
-      >
-        3
-      </styled.td>
-      <styled.td
-        key="prop1"
+        key="id"
       >
         1
       </styled.td>
     </Themed(styled.tr)>
     <Themed(styled.tr)
       key="1"
-      selected={false}
     >
       <styled.td
-        key="prop2"
+        key="name"
       >
-        5
+        bar
       </styled.td>
       <styled.td
-        key="prop3"
+        key="id"
       >
-        6
+        2
+      </styled.td>
+    </Themed(styled.tr)>
+    <Themed(styled.tr)
+      key="2"
+    >
+      <styled.td
+        key="name"
+      >
+        baz
       </styled.td>
       <styled.td
-        key="prop1"
+        key="id"
       >
-        4
+        3
       </styled.td>
     </Themed(styled.tr)>
   </tbody>
