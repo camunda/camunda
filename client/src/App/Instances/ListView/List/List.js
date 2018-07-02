@@ -49,7 +49,7 @@ export default class List extends React.Component {
       selectionCheck: ({id}) => this.isSelected(id),
       isSortable: {
         workflowId: false,
-        id: true,
+        instanceId: true,
         startDate: true,
         endDate: true,
         actions: false
@@ -92,7 +92,7 @@ export default class List extends React.Component {
   formatTableRow = instance => {
     return {
       ...instance,
-      id: this.getInstanceAnchor(instance.id),
+      instanceId: this.getInstanceAnchor(instance.id),
       workflowId: this.getSelection(instance),
       startDate: formatDate(instance.startDate),
       endDate: formatDate(instance.endDate)
@@ -171,7 +171,7 @@ export default class List extends React.Component {
           Workflow Definition
         </Fragment>
       ),
-      id: 'Instance Id',
+      instanceId: 'Instance Id',
       startDate: 'Start Time',
       endDate: 'End Time',
       actions: 'Actions'
