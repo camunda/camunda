@@ -178,10 +178,14 @@ export default class List extends React.Component {
       .map(this.formatTableRow);
   };
 
+  containerRef = node => {
+    this.container = node;
+  };
+
   render() {
     return (
       <Styled.InstancesList>
-        <Styled.TableContainer innerRef={node => (this.container = node)}>
+        <Styled.TableContainer innerRef={this.containerRef}>
           {!this.state.rowsToDisplay || !this.props.data ? null : (
             <Table
               headers={this.getTableHeaders()}
