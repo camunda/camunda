@@ -168,8 +168,8 @@ class Instances extends Component {
                     <Filter
                       type={FILTER_TYPES.FINISHED}
                       filter={{
-                        canceled,
-                        completed
+                        completed,
+                        canceled
                       }}
                       onChange={this.handleFilterChange}
                     />

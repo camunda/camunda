@@ -2,35 +2,28 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import Checkbox from 'modules/components/Checkbox';
-import {LABELS} from './constants';
+import {LABELS} from 'modules/constants/filter';
 
 import * as Styled from './styled.js';
 
 export default class Filter extends React.Component {
   static propTypes = {
-    filter: PropTypes.object.isRequired,
+    filter: PropTypes.shape({
+      active: PropTypes.bool,
+      incidents: PropTypes.bool,
+      canceled: PropTypes.bool,
+      completed: PropTypes.bool
+    }).isRequired,
     onChange: PropTypes.func.isRequired,
     type: PropTypes.oneOf(['running', 'finished']).isRequired
   };
   constructor(props) {
     super(props);
-    this.filterTypes = Object.keys(props.filter);
+    this.childFilterTypes = Object.keys(props.filter);
   }
 
   getCheckedChildrenCount = () => {
     return Object.values(this.props.filter).filter(value => value).length;
-  };
-
-  getLabel = type => {
-    const labels = {
-      running: LABELS.RUNNING,
-      active: LABELS.ACTIVE,
-      incidents: LABELS.INCIDENTS,
-      finished: LABELS.FINISHED,
-      completed: LABELS.COMPLETED,
-      canceled: LABELS.CANCELED
-    };
-    return labels[type];
   };
 
   isIndeterminate = () => {
@@ -50,13 +43,13 @@ export default class Filter extends React.Component {
 
   onResetFilter = () => {
     const change = {};
+    const bothChecked = this.getCheckedChildrenCount() === 2;
 
-    this.filterTypes.map(type =>
+    this.childFilterTypes.map(type =>
       Object.assign(change, {
-        [type]:
-          this.getCheckedChildrenCount() === 2
-            ? {$set: !this.props.filter[type]}
-            : {$set: true}
+        [type]: {
+          $set: bothChecked ? !this.props.filter[type] : true
+        }
       })
     );
     this.props.onChange(change);
@@ -64,27 +57,25 @@ export default class Filter extends React.Component {
 
   render() {
     const {type, filter} = this.props;
-
     return (
       <Styled.Filters>
         <div>
           <Checkbox
-            label={this.getLabel(type)}
+            label={LABELS[type]}
             isIndeterminate={this.isIndeterminate()}
             isChecked={this.getCheckedChildrenCount() === 2}
             onChange={this.onResetFilter}
           />
         </div>
         <Styled.NestedFilters>
-          {this.filterTypes.map((key, index) => {
+          {this.childFilterTypes.map(type => {
             return (
-              <div key={index}>
-                <Checkbox
-                  label={this.getLabel(key)}
-                  isChecked={filter[key]}
-                  onChange={this.handleChange(key)}
-                />
-              </div>
+              <Checkbox
+                key={type}
+                label={LABELS[type]}
+                isChecked={filter[type] || false}
+                onChange={this.handleChange(type)}
+              />
             );
           })}
         </Styled.NestedFilters>

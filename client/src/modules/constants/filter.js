@@ -3,6 +3,15 @@ export const FILTER_TYPES = {
   FINISHED: 'finished'
 };
 
+export const LABELS = {
+  running: 'Running Instances',
+  active: 'Active',
+  incidents: 'Incidents',
+  finished: 'Finished Instances',
+  completed: 'Completed',
+  canceled: 'Canceled'
+};
+
 export const FILTER_SELECTION = {
   running: {
     active: true,
