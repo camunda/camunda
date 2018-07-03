@@ -389,7 +389,6 @@ pipeline {
         build job: '/deploy-optimize-branch-to-k8s',
           parameters: [
               string(name: 'BRANCH', value: getBranchSlug()),
-              string(name: 'DOCKER_IMAGE', value: "${PROJECT_DOCKER_IMAGE()}")
           ]
       }
     }
