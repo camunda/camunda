@@ -3,9 +3,13 @@ def gitRepository = 'camunda-operate'
 def gitBranch = 'master'
 
 def dslScriptsToExecute = '''\
+.ci/jobs/*.dsl
+.ci/views/*.dsl
 '''
 
 def dslScriptPathToMonitor = '''\
+.ci/jobs/.*\\.dsl
+.ci/pipelines/.*
 .ci/views/.*\\.dsl
 '''
 
@@ -58,7 +62,9 @@ def seedJob = job('seed-job-operate') {
       unstableOnDeprecation(true)
       sandbox(true)
     }
-    systemGroovyCommand(setBrokenViewAsDefault)
+    systemGroovyCommand(setBrokenViewAsDefault){
+      sandbox(true)
+    }
   }
 
   wrappers {

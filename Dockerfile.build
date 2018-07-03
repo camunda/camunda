@@ -13,7 +13,8 @@ RUN cd client && yarn build
 #####################################
 ### BACKEND BUILD
 #####################################
-FROM maven:3.5.3-jdk-8-alpine AS be-build
+# For consistency with .ci/pipeline/release.groovy, we are not using alpine
+FROM maven:3.5.3-jdk-8 AS be-build
 WORKDIR /usr/src/app/
 COPY --from=fe-build /build/client client/
 COPY backend/pom.xml backend/

@@ -4,7 +4,8 @@
 
 // general properties for CI execution
 def static NODE_POOL() { return "slaves" }
-def static MAVEN_DOCKER_IMAGE() { return "maven:3.5.3-jdk-8-alpine" }
+// For consistency with .ci/pipeline/release.groovy, we are not using alpine
+def static MAVEN_DOCKER_IMAGE() { return "maven:3.5.3-jdk-8" }
 def static NODEJS_DOCKER_IMAGE() { return "node:8.11.2-alpine" }
 def static ELASTICSEARCH_DOCKER_IMAGE() { return "docker.elastic.co/elasticsearch/elasticsearch-oss:6.2.4" }
 def static ZEEBE_DOCKER_IMAGE() { return "camunda/zeebe:0.11.0" }
