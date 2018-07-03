@@ -21,7 +21,7 @@ COPY distro/pom.xml distro/
 COPY pom.xml .
 RUN mvn dependency:go-offline --fail-never
 COPY . /usr/src/app/
-RUN mvn clean install -P -docker,skipFrontendBuild -DskipTests=true
+RUN mvn clean install -P -docker,skipFrontendBuild,develop -DskipTests=true
 
 #####################################
 ### DISTRO BUILD
