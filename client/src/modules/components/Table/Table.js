@@ -48,9 +48,9 @@ export default class Table extends React.Component {
     return (
       <tbody>
         {this.props.data.map((row, idx) => (
-          <Styled.BodyRow key={idx} selected={selectionCheck(row)}>
+          <Styled.BodyRow key={idx} selected={selectionCheck(row.data)}>
             {Object.keys(this.props.headers).map(key => (
-              <Styled.BodyCell key={key}>{row[key]}</Styled.BodyCell>
+              <Styled.BodyCell key={key}>{row.view[key]}</Styled.BodyCell>
             ))}
           </Styled.BodyRow>
         ))}

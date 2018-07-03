@@ -123,8 +123,8 @@ describe('List', () => {
       const formatTableRow = node.instance().formatTableRow;
       const rowData = formatTableRow(instance);
 
-      expect(rowData.instanceId.props.to).toBe(`/instances/${instance.id}`);
-      expect(rowData.instanceId.props.children).toBe(instance.id);
+      expect(rowData.view.id.props.to).toBe(`/instances/${instance.id}`);
+      expect(rowData.view.id.props.children).toBe(instance.id);
     });
   });
 
@@ -138,7 +138,7 @@ describe('List', () => {
       expect(typeof tableConfig.selectionCheck).toBe('function');
       expect(tableConfig.isSortable).toEqual({
         workflowId: false,
-        instanceId: true,
+        id: true,
         startDate: true,
         endDate: true,
         actions: false

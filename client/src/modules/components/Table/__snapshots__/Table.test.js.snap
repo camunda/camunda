@@ -10,16 +10,34 @@ exports[`Table renderBody should render a table row for each data element and ce
   data={
     Array [
       Object {
-        "id": 1,
-        "name": "foo",
+        "data": Object {
+          "id": 1,
+          "name": "foo",
+        },
+        "view": Object {
+          "id": 1,
+          "name": "foo",
+        },
       },
       Object {
-        "id": 2,
-        "name": "bar",
+        "data": Object {
+          "id": 2,
+          "name": "bar",
+        },
+        "view": Object {
+          "id": 2,
+          "name": "bar",
+        },
       },
       Object {
-        "id": 3,
-        "name": "baz",
+        "data": Object {
+          "id": 3,
+          "name": "baz",
+        },
+        "view": Object {
+          "id": 3,
+          "name": "baz",
+        },
       },
     ]
   }

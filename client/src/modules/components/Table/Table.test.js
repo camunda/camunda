@@ -56,13 +56,18 @@ describe('Table', () => {
       {name: 'bar', id: 2},
       {name: 'baz', id: 3}
     ];
+    const formattedData = data.map(el => ({data: {...el}, view: {...el}}));
     const headers = {name: 'name', id: 'id'};
 
     it('should render a table row for each data element and cell for each row value', () => {
       // given
       const selectionCheck = jest.fn();
       const node = shallow(
-        <Table headers={headers} data={data} config={{selectionCheck}} />
+        <Table
+          headers={headers}
+          data={formattedData}
+          config={{selectionCheck}}
+        />
       );
 
       // then
@@ -71,7 +76,7 @@ describe('Table', () => {
       expect(RowNodes).toHaveLength(3);
       expect(selectionCheck).toHaveBeenCalledTimes(3);
       selectionCheck.mock.calls.forEach(([callParameter], index) => {
-        expect(callParameter).toBe(data[index]);
+        expect(callParameter).toEqual(data[index]);
       });
       const CellNodes = node.find(Styled.BodyCell);
       expect(CellNodes).toHaveLength(6);

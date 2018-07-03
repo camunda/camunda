@@ -5,7 +5,7 @@ Object {
   "isSortable": Object {
     "actions": false,
     "endDate": true,
-    "instanceId": true,
+    "id": true,
     "startDate": true,
     "workflowId": false,
   },
