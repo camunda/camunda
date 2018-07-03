@@ -27,3 +27,4 @@ export {ErrorMessage} from './ErrorMessage';
 export {Typeahead} from './Typeahead';
 export {LabeledInput} from './LabeledInput';
 export {TypeaheadMultipleSelection} from './TypeaheadMultipleSelection';
+export {DatePicker} from './DatePicker';

@@ -5,9 +5,6 @@ import {mount} from 'enzyme';
 
 console.error = jest.fn();
 
-jest.mock('./DateFields', () => props => `DateFields: props: ${Object.keys(props)}`);
-jest.mock('./DateButton', () => props => `DateButton: props: ${Object.keys(props)}`);
-
 jest.mock('components', () => {
   const Modal = props => <div id="modal">{props.children}</div>;
   Modal.Header = props => <div id="modal_header">{props.children}</div>;
@@ -23,6 +20,7 @@ jest.mock('components', () => {
     Button: props => <button {...props}>{props.children}</button>,
     ButtonGroup: props => <div {...props}>{props.children}</div>,
     Input: props => <input {...props} />,
+    DatePicker: props => <div>DatePicker</div>,
     Select
   };
 });
@@ -33,22 +31,16 @@ it('should contain a modal', () => {
   expect(node.find('#modal')).toBePresent();
 });
 
-it('should contain date fields', () => {
+it('should contain a Date Picker', () => {
   const node = mount(<DateFilter />);
 
-  expect(node).toIncludeText('DateFields');
+  expect(node).toIncludeText('DatePicker');
 });
 
-it('should pass the onDateChangeFunction to the DateFields', () => {
+it('should pass the onDateChangeFunction to the DatePicker', () => {
   const node = mount(<DateFilter />);
 
-  expect(node).toIncludeText('onDateChange');
-});
-
-it('should contain date buttons', () => {
-  const node = mount(<DateFilter />);
-
-  expect(node).toIncludeText('DateButton');
+  expect(node.find('DatePicker')).toHaveProp('onDateChange');
 });
 
 it('should contain a button to abort the filter creation', () => {

@@ -3,24 +3,12 @@
   text-align: center;
 }
 
-.DateFilter__buttons {
-  margin-bottom: 12px;
-}
-
 .DateFilter__input-label {
   font-size: 0.875em;
   color: #626264;
   display: block;
   text-align: center;
   margin-bottom: 12px;
-}
-
-.DateFilter__buttonRow {
-  margin-bottom: 24px;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
 }
 
 .DateFilter__mode-buttons {

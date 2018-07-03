@@ -74,7 +74,7 @@ class DateInput extends React.PureComponent {
     if (!date.isSame(this.props.date) && isValid) {
       this.props.onDateChange(date);
     }
-    this.props.enableAddButton(isValid);
+    this.props.setValidState(isValid);
   };
 }
 

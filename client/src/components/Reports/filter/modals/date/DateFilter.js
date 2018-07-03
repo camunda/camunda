@@ -1,12 +1,9 @@
 import React from 'react';
 import moment from 'moment';
 
-import {Modal, Button, ButtonGroup, Input, Select, ErrorMessage} from 'components';
+import {Modal, Button, ButtonGroup, Input, Select, ErrorMessage, DatePicker} from 'components';
 
 import './DateFilter.css';
-
-import DateFields from './DateFields';
-import DateButton from './DateButton';
 
 export default class DateFilter extends React.Component {
   constructor(props) {
@@ -110,42 +107,13 @@ export default class DateFilter extends React.Component {
           </ButtonGroup>
           {this.state.mode === 'static' && (
             <React.Fragment>
-              <div className="DateFilter__inputs">
-                <label className="DateFilter__input-label">
-                  Select start and end dates to filter by:
-                </label>
-                <DateFields
-                  format="YYYY-MM-DD"
-                  onDateChange={this.onDateChange}
-                  startDate={this.state.startDate}
-                  endDate={this.state.endDate}
-                  enableAddButton={this.enableAddButton}
-                />
-              </div>
-              <div className="DateFilter__buttons">
-                <ButtonGroup className="DateFilter__buttonRow">
-                  {this.getDateButtons([
-                    DateButton.TODAY,
-                    DateButton.YESTERDAY,
-                    DateButton.PAST7,
-                    DateButton.PAST30
-                  ])}
-                </ButtonGroup>
-                <ButtonGroup className="DateFilter__buttonRow">
-                  {this.getDateButtons([
-                    DateButton.THIS_WEEK,
-                    DateButton.THIS_MONTH,
-                    DateButton.THIS_YEAR
-                  ])}
-                </ButtonGroup>
-                <ButtonGroup className="DateFilter__buttonRow">
-                  {this.getDateButtons([
-                    DateButton.LAST_WEEK,
-                    DateButton.LAST_MONTH,
-                    DateButton.LAST_YEAR
-                  ])}
-                </ButtonGroup>
-              </div>
+              <label className="DateFilter__input-label">
+                Select start and end dates to filter by:
+              </label>
+              <DatePicker
+                onDateChange={this.onDateChange}
+                initialDates={{startDate: this.state.startDate, endDate: this.state.endDate}}
+              />
             </React.Fragment>
           )}
           {this.state.mode === 'dynamic' && (
@@ -190,16 +158,6 @@ export default class DateFilter extends React.Component {
     );
   }
 
-  getDateButtons(labels) {
-    return labels.map(label => (
-      <DateButton dateLabel={label} key={label} setDates={this.setDates} />
-    ));
-  }
-
-  setDates = dates => {
-    this.setState(dates);
-  };
-
   setDynamicUnit = ({target: {value}}) => this.setState({dynamicUnit: value});
   setDynamicValue = ({target: {value}}) => {
     this.setState({
@@ -208,25 +166,7 @@ export default class DateFilter extends React.Component {
     });
   };
 
-  enableAddButton = isValid => {
-    this.setState({
-      validDate: isValid
-    });
-  };
-
-  onDateChange = (name, date) => {
-    if (
-      (name === 'startDate' && date.isAfter(this.state.endDate)) ||
-      (name === 'endDate' && date.isBefore(this.state.startDate))
-    ) {
-      return this.setState({
-        startDate: date,
-        endDate: date.clone()
-      });
-    }
-
-    this.setState({
-      [name]: date
-    });
+  onDateChange = ({startDate, endDate, valid}) => {
+    this.setState({startDate, endDate, validDate: valid});
   };
 }
