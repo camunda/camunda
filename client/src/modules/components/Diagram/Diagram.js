@@ -6,7 +6,7 @@ import {themed} from 'modules/theme';
 
 import * as Styled from './styled';
 import DiagramControls from './DiagramControls';
-import * as api from './api';
+import * as api from 'modules/api/diagram';
 import {getDiagramColors} from './service';
 
 class Diagram extends React.Component {

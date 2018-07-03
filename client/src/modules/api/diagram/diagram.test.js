@@ -2,7 +2,7 @@ import * as wrappers from 'modules/request/wrappers';
 
 import {mockResolvedAsyncFn} from 'modules/testUtils';
 
-import {workflowXML} from './api';
+import {workflowXML} from './diagram';
 
 describe('diagram api', () => {
   describe('workflowXML', () => {

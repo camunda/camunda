@@ -5,7 +5,7 @@ import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 import {Colors} from 'modules/theme';
 
 import ThemedDiagram from './Diagram';
-import * as api from './api';
+import * as api from 'modules/api/diagram';
 import * as Styled from './styled';
 import DiagramControls from './DiagramControls';
 
@@ -13,6 +13,7 @@ const {WrappedComponent: Diagram} = ThemedDiagram;
 
 // mocking
 const xmlMock = '<foo />';
+jest.mock('modules/api/diagram');
 api.workflowXML = mockResolvedAsyncFn(xmlMock);
 
 describe('Diagram', () => {
