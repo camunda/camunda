@@ -116,6 +116,7 @@ export default class ControlPanel extends React.Component {
             <Filter
               data={this.props.filter}
               onChange={this.props.onChange}
+              xml={this.props.xml}
               {...this.getDefinitionConfig()}
             />
           </li>

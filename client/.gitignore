@@ -5,6 +5,7 @@
 
 # testing
 /coverage
+jest-test-results.xml
 
 # production
 /build

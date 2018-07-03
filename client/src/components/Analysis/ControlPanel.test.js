@@ -122,3 +122,10 @@ it('should disable gateway and EndEvent elements if no ProcDef selected', async 
     'ControlPanel__config--hover'
   );
 });
+
+it('should show the diagram in branch analysis Flow Node Filter', async () => {
+  const node = await mount(<ControlPanel {...data} />);
+  const filter = node.find('Filter');
+  console.log(filter.debug());
+  expect(filter.find('[xml="aFooXml"]')).toBePresent();
+});
