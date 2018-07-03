@@ -9,7 +9,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zb-parent</artifactId>
-    <version>0.11.0-SNAPSHOT</version>
+    <version>0.12.0-SNAPSHOT</version>
     <relativePath>parent/</relativePath>
   </parent>
 
@@ -59,5 +59,12 @@
       </plugin>
     </plugins>
   </build>
+
+  <scm>
+    <url>https://github.com/zeebe-io/zeebe</url>
+    <connection>scm:git:git@github.com:zeebe-io/zeebe.git</connection>
+    <developerConnection>scm:git:git@github.com:zeebe-io/zeebe.git</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
 
 </project>
