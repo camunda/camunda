@@ -80,9 +80,7 @@ pipeline {
             ./cmd/k8s/deploy-template-to-branch \
             ${WORKSPACE}/infrastructure/ci-30-162810/deployments/optimize-branch \
             ${params.BRANCH} \
-            optimize \
-            optimize \
-            ${params.DOCKER_IMAGE}
+            optimize
           """)
         }
       }
