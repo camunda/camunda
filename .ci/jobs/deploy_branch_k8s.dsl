@@ -13,7 +13,6 @@ pipelineJob('deploy-optimize-branch-to-k8s') {
   parameters {
     stringParam('INFRASTRUCTURE_BRANCH', 'SRE-155', 'Branch to use for checkout of deployment script.')
     stringParam('BRANCH', 'master', 'Branch to use for deployment.')
-    stringParam('DOCKER_IMAGE', 'gcr.io/ci-30-162810/camunda-optimize', 'Docker image name without version.')
     booleanParam('DRY_RUN', false, 'Enable dry-run mode.')
   }
 
