@@ -47,7 +47,13 @@ export default class List extends React.Component {
   getTableConfig = () => {
     return {
       selectionCheck: ({id}) => this.isSelected(id),
-      isSortable: {id: true, startDate: true, endDate: true, actions: false},
+      isSortable: {
+        workflowId: false,
+        id: true,
+        startDate: true,
+        endDate: true,
+        actions: false
+      },
       sortBy: this.props.sortBy
     };
   };

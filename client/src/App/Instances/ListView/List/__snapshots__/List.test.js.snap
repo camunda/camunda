@@ -1,0 +1,17 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`List getTableConfig should return table configuration 1`] = `
+Object {
+  "isSortable": Object {
+    "actions": false,
+    "endDate": true,
+    "id": true,
+    "startDate": true,
+    "workflowId": false,
+  },
+  "selectionCheck": [Function],
+  "sortBy": Object {
+    "foo": "asc",
+  },
+}
+`;
