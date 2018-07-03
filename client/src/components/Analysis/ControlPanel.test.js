@@ -123,9 +123,8 @@ it('should disable gateway and EndEvent elements if no ProcDef selected', async 
   );
 });
 
-it('should show the diagram in branch analysis Flow Node Filter', async () => {
+it('should pass the xml to the Filter component', async () => {
   const node = await mount(<ControlPanel {...data} />);
   const filter = node.find('Filter');
-  console.log(filter.debug());
   expect(filter.find('[xml="aFooXml"]')).toBePresent();
 });
