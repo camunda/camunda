@@ -1,11 +1,14 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
+import * as api from 'modules/api/instances';
+import {mockResolvedAsyncFn} from 'modules/testUtils';
+import {parseFilterForRequest} from 'modules/utils/filter';
+
 import ListView from './ListView';
 import List from './List';
 import ListFooter from './ListFooter';
 import {defaultFilterSelection} from './../service';
-import {fetchWorkflowInstances} from 'modules/api/instances';
 
 const selection = {
   list: new Set(),
@@ -16,7 +19,8 @@ const filter = {defaultFilterSelection};
 const total = 27;
 
 jest.mock('modules/api/instances');
-fetchWorkflowInstances.mockReturnValue([{id: 1}]);
+const successResponse = [{id: 1}];
+api.fetchWorkflowInstances = mockResolvedAsyncFn(successResponse);
 
 describe('ListView', () => {
   let node;
@@ -26,7 +30,6 @@ describe('ListView', () => {
   beforeEach(() => {
     onSelectionUpdate = jest.fn();
     onAddToSelection = jest.fn();
-    fetchWorkflowInstances.mockClear();
     node = shallow(
       <ListView
         selection={selection}
@@ -36,6 +39,7 @@ describe('ListView', () => {
         onAddToSelection={onAddToSelection}
       />
     );
+    api.fetchWorkflowInstances.mockClear();
   });
 
   it('should contain an List', () => {
@@ -46,8 +50,64 @@ describe('ListView', () => {
     expect(node.find(ListFooter)).toExist();
   });
 
-  it('should load data if the filter changed', () => {
-    expect(fetchWorkflowInstances).toHaveBeenCalled();
+  describe('load data', () => {
+    it('should be called when component mounts and filter is not empty', () => {
+      // given filter is not empty
+      // then
+      node.instance().componentDidMount();
+      expect(api.fetchWorkflowInstances).toHaveBeenCalled();
+    });
+
+    it('should not be called when component mounts and filter is empty', () => {
+      // given
+      shallow(
+        <ListView
+          selection={selection}
+          filter={{}}
+          instancesInFilter={total}
+          onSelectionUpdate={onSelectionUpdate}
+          onAddToSelection={onAddToSelection}
+        />
+      );
+
+      // then
+      expect(api.fetchWorkflowInstances).not.toHaveBeenCalled();
+    });
+
+    it('should load data if the filter changed', () => {
+      // when
+      node.setProps({filter: {foo: 'bar'}});
+
+      // then
+      expect(api.fetchWorkflowInstances).toHaveBeenCalled();
+    });
+
+    it('should load data if the current page changes', () => {
+      node.setState({firstElement: 10});
+
+      expect(api.fetchWorkflowInstances).toHaveBeenCalled();
+      expect(api.fetchWorkflowInstances.mock.calls[0][1]).toBe(10);
+    });
+
+    it('should call api.fetchWorkflowInstances with right data', () => {
+      // given
+      const expectedFilter = {
+        ...parseFilterForRequest(node.prop('filter')),
+        sortBy: node.state('sortBy')
+      };
+
+      // when
+      node.instance().loadData();
+      node.update();
+
+      // then
+      expect(api.fetchWorkflowInstances).toBeCalledWith(
+        expectedFilter,
+        node.state('firstElement'),
+        50
+      );
+      expect(node.state('instances')).toEqual(successResponse);
+    });
   });
 
   it('should reset the page if the filter changes', () => {
@@ -55,14 +115,6 @@ describe('ListView', () => {
     node.setProps({filter: {prop: 1}});
 
     expect(node.state().firstElement).toBe(0);
-  });
-
-  it('should load data if the current page changes', () => {
-    fetchWorkflowInstances.mockClear();
-    node.setState({firstElement: 10});
-
-    expect(fetchWorkflowInstances).toHaveBeenCalled();
-    expect(fetchWorkflowInstances.mock.calls[0][1]).toBe(10);
   });
 
   it('should pass properties to the Instances List', () => {
