@@ -53,6 +53,7 @@ describe('Filter', () => {
         onChange={mockOnChange}
       />
     );
+
     //then
     expect(node.find({label: 'Active'}).props().isChecked).toBe(active);
     expect(node.find({label: 'Incidents'}).props().isChecked).toBe(incidents);
@@ -69,7 +70,7 @@ describe('Filter', () => {
       );
     });
 
-    it('should render as "indetermniate"', () => {
+    it('should render as "indeterminate"', () => {
       // given
       node.setProps({filter: {active: false, incidents: true}});
       node.update();
