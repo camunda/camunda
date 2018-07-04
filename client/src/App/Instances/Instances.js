@@ -18,7 +18,7 @@ import {
   parseFilterForRequest,
   getFilterQueryString
 } from 'modules/utils/filter';
-import {parseQueryString, isEmpty} from './service';
+import {parseQueryString, isEmpty, createNewSelectionFragment} from './service';
 import {DEFAULT_FILTER, FILTER_TYPES} from 'modules/constants/filter';
 import * as Styled from './styled.js';
 
@@ -37,29 +37,20 @@ class Instances extends Component {
     this.state = {
       filter: {},
       filterCount: filterCount || 0,
-      selection: this.createNewSelectionFragment(),
+      selection: createNewSelectionFragment(),
       selections: selections || [[]]
     };
   }
 
   async componentDidMount() {
-    let filter = this.getFilterFromUrl();
-
-    // query was not valid
-    if (!filter) {
-      // set default filter selection
-      filter = DEFAULT_FILTER;
-      this.setFilterInURL(DEFAULT_FILTER);
-    }
-
-    await this.setState({filter});
-
-    await this.setFilterCount();
+    this.setFilterFromUrl();
   }
 
-  createNewSelectionFragment = () => {
-    return {query: {ids: new Set()}, exclusionList: new Set()};
-  };
+  componentDidUpdate(prevProps, prevState) {
+    if (prevProps.location.search !== this.props.location.search) {
+      this.setFilterFromUrl();
+    }
+  }
 
   handleAddToSelection = () => {
     const {selection} = this.state;
@@ -79,7 +70,7 @@ class Instances extends Component {
             ]
           }
         },
-        selection: {$set: this.createNewSelectionFragment()}
+        selection: {$set: createNewSelectionFragment()}
       }),
       () => {
         this.props.storeStateLocally({selections: this.state.selections});
@@ -88,17 +79,34 @@ class Instances extends Component {
   };
 
   getFilterFromUrl = () => {
-    let query = this.props.location.search;
+    const query = this.props.location.search;
+    let hasQuery = Boolean(query);
+    let filter = null;
 
-    if (query === '') {
-      this.setFilterInURL(DEFAULT_FILTER);
-      query = getFilterQueryString(DEFAULT_FILTER);
+    if (hasQuery) {
+      filter = parseQueryString(query).filter;
     }
 
-    return parseQueryString(query).filter;
+    return filter;
   };
 
-  setFilterCount = async () => {
+  setFilterFromUrl = () => {
+    let filter = this.getFilterFromUrl();
+
+    // filter from URL was missing or invalid
+    if (!filter) {
+      // set default filter selection
+      filter = DEFAULT_FILTER;
+      this.setFilterInURL(filter);
+    }
+
+    // filter is valid
+    this.setState({filter}, () => {
+      this.handleFilterCount();
+    });
+  };
+
+  handleFilterCount = async () => {
     const filterCount = await fetchWorkflowInstancesCount(
       parseFilterForRequest(this.state.filter)
     );
@@ -111,24 +119,12 @@ class Instances extends Component {
     this.props.storeStateLocally({filterCount});
   };
 
-  handleFilterChange = async change => {
-    const filter = update(this.state.filter, change);
+  handleFilterChange = async newFilter => {
+    const filter = {...this.state.filter, ...newFilter};
+    this.setFilterInURL(filter);
 
-    await this.setState(
-      {
-        filter: filter,
-        selection: this.createNewSelectionFragment()
-      },
-      () => {
-        this.setFilterInURL(this.state.filter);
-
-        // update filterCount separatelly not block UI while fetching
-        this.setFilterCount();
-
-        // write current filter selection to local storage
-        this.props.storeStateLocally({filter});
-      }
-    );
+    // write current filter selection to local storage
+    this.props.storeStateLocally({filter: filter});
   };
 
   setFilterInURL = filter => {

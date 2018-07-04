@@ -32,3 +32,7 @@ export function parseQueryString(queryString) {
 
   return params;
 }
+
+export function createNewSelectionFragment() {
+  return {query: {ids: new Set()}, exclusionList: new Set()};
+}

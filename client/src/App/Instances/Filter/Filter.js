@@ -32,13 +32,11 @@ export default class Filter extends React.Component {
 
   handleChange = type => async () => {
     const {filter} = this.props;
-    const change = {
-      [type]: {
-        $set: filter[type] ? !filter[type] : true
-      }
+    const newFilter = {
+      [type]: filter[type] ? !filter[type] : true
     };
 
-    this.props.onChange(change);
+    this.props.onChange(newFilter);
   };
 
   onResetFilter = () => {
@@ -47,11 +45,10 @@ export default class Filter extends React.Component {
 
     this.childFilterTypes.map(type =>
       Object.assign(change, {
-        [type]: {
-          $set: bothChecked ? !this.props.filter[type] : true
-        }
+        [type]: bothChecked ? !this.props.filter[type] : true
       })
     );
+
     this.props.onChange(change);
   };
 
