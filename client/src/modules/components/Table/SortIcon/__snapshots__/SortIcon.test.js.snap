@@ -10,13 +10,9 @@ exports[`SortIcon should render a Down icon if order is desc 1`] = `
 </styled.a>
 `;
 
-exports[`SortIcon should render a Down icon if order is null 1`] = `
-<styled.a
-  order={null}
->
-  <Themed(Styled(Down))
-    order={null}
-  />
+exports[`SortIcon should render a Down icon if order is undefined 1`] = `
+<styled.a>
+  <Themed(Styled(Down)) />
 </styled.a>
 `;
 

@@ -28,14 +28,14 @@ describe('SortIcon', () => {
     expect(node).toMatchSnapshot();
   });
 
-  it('should render a Down icon if order is null', () => {
+  it('should render a Down icon if order is undefined', () => {
     // given
-    const node = shallow(<SortIcon order={null} />);
+    const node = shallow(<SortIcon order={undefined} />);
 
     // then
     const UpNode = node.find(Styled.Down);
     expect(UpNode).toHaveLength(1);
-    expect(UpNode.prop('order')).toBe(null);
+    expect(UpNode.prop('order')).toBe(undefined);
     expect(node).toMatchSnapshot();
   });
 });
