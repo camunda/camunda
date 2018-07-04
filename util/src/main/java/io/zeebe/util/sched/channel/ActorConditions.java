@@ -20,6 +20,12 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class ActorConditions {
 
+  /**
+   * For reference see {@link java.nio.Bits#JNI_COPY_TO_ARRAY_THRESHOLD} and {@link
+   * java.nio.DirectByteBuffer#get(byte[], int, int)}
+   */
+  private static final int JNI_COPY_TO_ARRAY_THRESHOLD = 6;
+
   private static final ActorCondition[] EMPTY_ARRAY = new ActorCondition[0];
 
   private final AtomicReference<ActorCondition[]> arrayRef = new AtomicReference<>(EMPTY_ARRAY);
@@ -37,7 +43,7 @@ public class ActorConditions {
       final int oldLength = oldArray.length;
       newArray = new ActorCondition[oldLength + 1];
 
-      System.arraycopy(oldArray, 0, newArray, 0, oldLength);
+      copyArray(oldArray, 0, newArray, 0, oldLength);
 
       newArray[oldLength] = item;
     } while (!arrayRef.compareAndSet(oldArray, newArray));
@@ -62,8 +68,8 @@ public class ActorConditions {
       final int newLength = oldArray.length - 1;
       newArray = new ActorCondition[newLength];
 
-      System.arraycopy(oldArray, 0, newArray, 0, index);
-      System.arraycopy(oldArray, index + 1, newArray, index, newLength - index);
+      copyArray(oldArray, 0, newArray, 0, index);
+      copyArray(oldArray, index + 1, newArray, index, newLength - index);
     } while (!arrayRef.compareAndSet(oldArray, newArray));
   }
 
@@ -84,5 +90,19 @@ public class ActorConditions {
     }
 
     return -1;
+  }
+
+  private static void copyArray(
+      ActorCondition[] src, int srcPos, ActorCondition[] dest, int destPos, int length) {
+    if (length < JNI_COPY_TO_ARRAY_THRESHOLD) {
+      int srcIndex = srcPos;
+      int destIndex = destPos;
+      final int endIndex = destPos + length;
+      for (; destIndex < endIndex; srcIndex++, destIndex++) {
+        dest[destIndex] = src[srcIndex];
+      }
+    } else {
+      System.arraycopy(src, srcPos, dest, destPos, length);
+    }
   }
 }
