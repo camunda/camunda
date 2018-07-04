@@ -5,7 +5,6 @@ import PropTypes from 'prop-types';
 import * as Styled from './styled.js';
 
 import Dropdown from 'modules/components/Dropdown';
-import {Logo} from 'modules/components/Icon';
 
 import * as api from 'modules/api/header';
 
@@ -64,7 +63,7 @@ export default class Header extends React.Component {
           <li>
             <Styled.Dashboard active={active === 'dashboard'}>
               <Link to="/">
-                <Logo />
+                <Styled.LogoIcon />
                 <span>Dashboard</span>
               </Link>
             </Styled.Dashboard>

@@ -1,6 +1,7 @@
 import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 import BadgeComponent from 'modules/components/Badge';
+import {Logo} from 'modules/components/Icon';
 
 export const HEADER_HEIGHT = 56;
 const separator = themeStyle({
@@ -8,16 +9,21 @@ const separator = themeStyle({
   light: 'rgba(98, 98, 110, 0.25)'
 });
 
+export const LogoIcon = styled(Logo)`
+  position: relative;
+  top: 2px;
+
+  width: 15px;
+  height: 15px;
+  margin-right: 20px;
+`;
+
 export const Dashboard = themed(styled.div`
   display: inline-block;
   padding: 0 20px;
   border-right: 1px solid ${separator};
 
-  svg {
-    width: 15px;
-    height: 15px;
-    margin-right: 20px;
-    vertical-align: text-bottom;
+  ${LogoIcon} {
     ${({active}) => (active ? '' : `opacity: 0.8`)};
   }
 
