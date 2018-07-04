@@ -5,10 +5,15 @@ import Filter from './';
 
 describe('Filter', () => {
   let node;
+  let active, incidents;
+
   const mockOnChange = jest.fn();
-  let active = false;
-  let incidents = false;
-  beforeEach(() => {
+
+  it('should render three checkboxes', () => {
+    //given
+    active = false;
+    incidents = false;
+
     node = shallow(
       <Filter
         type={'running'}
@@ -16,41 +21,30 @@ describe('Filter', () => {
         onChange={mockOnChange}
       />
     );
-  });
-
-  it('should render three checkboxes', () => {
+    //then
     expect(node.children().find('Checkbox').length).toBe(3);
   });
 
-  it('should render the Checkboxes "checked" according to the filter props', () => {
+  it('should render empty checkbox when no "isChecked" prop is passed', () => {
     //given
-    const activityFilter = false;
-    const incidentsFilter = false;
-    expect(node.instance().props.filter.active).toBe(activityFilter);
-    expect(node.instance().props.filter.incidents).toBe(incidentsFilter);
+    incidents = false;
+    active = undefined;
+    node = shallow(
+      <Filter
+        type={'running'}
+        filter={{active, incidents}}
+        onChange={mockOnChange}
+      />
+    );
+
     //then
-    expect(
-      node
-        .childAt(1)
-        .childAt(1)
-        .find('Checkbox')
-        .props().isChecked
-    ).toBe(incidentsFilter);
-
-    expect(
-      node
-        .childAt(1)
-        .childAt(0)
-        .find('Checkbox')
-        .props().isChecked
-    ).toBe(activityFilter);
+    expect(node.find({label: 'Active'}).props().isChecked).toBe(false);
   });
 
-  it('parent checkbox should be indetermniate', () => {
-    let node;
-    const mockOnChange = jest.fn();
-    let active = false;
-    let incidents = true;
+  it('should render the checkboxes as "checked" according to the filter props', () => {
+    //given
+    active = true;
+    incidents = false;
 
     node = shallow(
       <Filter
@@ -59,22 +53,53 @@ describe('Filter', () => {
         onChange={mockOnChange}
       />
     );
-    expect(node.childAt(0).find('Checkbox')).toMatchSnapshot();
+    //then
+    expect(node.find({label: 'Active'}).props().isChecked).toBe(active);
+    expect(node.find({label: 'Incidents'}).props().isChecked).toBe(incidents);
   });
 
-  it('parent checkbox should be unchecked', () => {
-    let node;
-    const mockOnChange = jest.fn();
-    let active = false;
-    let incidents = false;
+  describe('Parent Checkbox', () => {
+    beforeEach(() => {
+      node = shallow(
+        <Filter
+          type={'running'}
+          filter={{active, incidents}}
+          onChange={mockOnChange}
+        />
+      );
+    });
 
-    node = shallow(
-      <Filter
-        type={'running'}
-        filter={{active, incidents}}
-        onChange={mockOnChange}
-      />
-    );
-    expect(node.childAt(0).find('Checkbox')).toMatchSnapshot();
+    it('should render as "indetermniate"', () => {
+      // given
+      node.setProps({filter: {active: false, incidents: true}});
+      node.update();
+
+      // then
+      expect(
+        node.find({label: 'Running Instances'}).props().isIndeterminate
+      ).toBe(true);
+    });
+
+    it('should render as "unchecked"', () => {
+      // given
+      node.setProps({filter: {active: false, incidents: false}});
+      node.update();
+
+      // then
+      expect(node.find({label: 'Running Instances'}).props().isChecked).toBe(
+        false
+      );
+    });
+
+    it('should render as "checked"', () => {
+      // given
+      node.setProps({filter: {active: true, incidents: true}});
+      node.update();
+
+      // then
+      expect(node.find({label: 'Running Instances'}).props().isChecked).toBe(
+        true
+      );
+    });
   });
 });
