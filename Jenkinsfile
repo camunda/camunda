@@ -229,6 +229,19 @@ pipeline {
         }
       }
     }
+    stage('Deploy Snapshot') {
+      when {
+          branch 'master'
+      }
+      steps {
+        container('maven') {
+          sh '''
+            mvn deploy -P -docker,skipFrontendBuild -DskipTests=true -B -T$LIMITS_CPU --fail-at-end \
+                -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+          '''
+        }
+      }
+    }
   }
 
   post {
