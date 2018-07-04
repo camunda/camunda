@@ -2,7 +2,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 import Header from './Header';
 import Dropdown from 'modules/components/Dropdown';
-import * as api from 'modules/api/header';
+import * as api from 'modules/api/header/header';
 import {flushPromises, mockResolvedAsyncFn} from 'modules/testUtils';
 
 const USER = {
@@ -12,7 +12,6 @@ const USER = {
   }
 };
 
-jest.mock('modules/api/header');
 api.fetchUser = mockResolvedAsyncFn(USER);
 
 describe('Header', () => {

@@ -9,12 +9,11 @@ import Instance from './Instance';
 import Header from './../Header';
 import DiagramPanel from './DiagramPanel';
 import InstanceDetail from './InstanceDetail';
-import * as api from 'modules/api/instances';
+import * as api from 'modules/api/instances/instances';
 
 const xmlMock = '<foo />';
 api.workflowXML = mockResolvedAsyncFn(xmlMock);
 jest.mock('./DiagramPanel');
-jest.mock('modules/api/instances');
 
 const INSTANCE = {
   id: '4294980768',

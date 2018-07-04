@@ -1,7 +1,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import * as api from 'modules/api/instances';
+import * as api from 'modules/api/instances/instances';
 import {mockResolvedAsyncFn} from 'modules/testUtils';
 import {parseFilterForRequest} from 'modules/utils/filter';
 import {
@@ -22,7 +22,6 @@ const selection = {
 const filter = {defaultFilterSelection};
 const total = 27;
 
-jest.mock('modules/api/instances');
 const successResponse = [{id: 1}];
 api.fetchWorkflowInstances = mockResolvedAsyncFn(successResponse);
 

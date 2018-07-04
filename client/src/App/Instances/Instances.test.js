@@ -5,7 +5,7 @@ import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 
 import WrappedInstances from './Instances';
 import {DEFAULT_FILTER} from 'modules/constants/filter';
-import * as api from 'modules/api/instances';
+import * as api from 'modules/api/instances/instances';
 import Filter from './Filter';
 import ListView from './ListView';
 import Header from '../Header';
@@ -52,7 +52,6 @@ function getRandomInt(max) {
 const Count = getRandomInt(20);
 
 // mock api
-jest.mock('modules/api/instances');
 api.fetchWorkflowInstancesCount = mockResolvedAsyncFn(Count);
 api.fetchWorkflowInstances = mockResolvedAsyncFn([]);
 
