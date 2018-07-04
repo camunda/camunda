@@ -1,6 +1,5 @@
 package org.camunda.operate.rest.dto;
 
-
 public class WorkflowInstanceQueryDto {
 
   private boolean running;

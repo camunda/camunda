@@ -37,7 +37,6 @@ import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-
 @Component
 public class WorkflowInstanceReader {
 
@@ -187,68 +186,67 @@ public class WorkflowInstanceReader {
 
   private QueryBuilder createRunningFinishedQuery(WorkflowInstanceQueryDto query) {
 
-    if (! query.isRunning() && ! query.isFinished()) {
+    boolean active = query.isActive();
+    boolean incidents = query.isIncidents();
+    boolean running = query.isRunning();
+
+    boolean completed = query.isCompleted();
+    boolean cancelled = query.isCancelled();
+    boolean finished = query.isFinished();
+
+    if (!running && !finished) {
       //empty list should be returned
       return createMatchNoneQuery();
     }
 
-    QueryBuilder runningQ = null;
-    if (query.isRunning()) {
+    QueryBuilder runningQuery = null;
 
-      if (!query.isActive() && !query.isIncidents()) {
-        //do nothing, do not need to include any running instances
-      } else {
+    if (running && (active || incidents)) {
+      //running query
+      runningQuery = boolQuery().mustNot(existsQuery(END_DATE));
 
-        //running query
-        runningQ = boolQuery().mustNot(existsQuery(END_DATE));
+      QueryBuilder activeOrIncidentsQuery = null;
 
-        if (!(query.isActive() && query.isIncidents())) {   //    if both are true - no additional filters are needed
-          QueryBuilder activeOrIncidentsQ = null;
-          if (query.isActive()) {
-            //active query
-            activeOrIncidentsQ = boolQuery().mustNot(nestedQuery(INCIDENTS, termQuery(ACTIVE_INCIDENT_TERM, ACTIVE_INCIDENT), None));
-          } else if (query.isIncidents()) {
-            //incidents query
-            activeOrIncidentsQ = nestedQuery(INCIDENTS, termQuery(ACTIVE_INCIDENT_TERM, ACTIVE_INCIDENT), None);
-          }
-          runningQ = joinWithAnd(runningQ, activeOrIncidentsQ);
-        }
-
+      if (active && !incidents) {
+        //active query
+        activeOrIncidentsQuery = boolQuery().mustNot(nestedQuery(INCIDENTS, termQuery(ACTIVE_INCIDENT_TERM, ACTIVE_INCIDENT), None));
       }
-    }
-
-    QueryBuilder finishedQ = null;
-    if (query.isFinished()) {
-
-      if (!query.isCompleted() && !query.isCancelled()) {
-        // do nothing
-      } else {
-        //add finished query
-        finishedQ = existsQuery(END_DATE);
-
-        if (!(query.isCompleted() && query.isCancelled())) {      //if both true - no additional filters are needed
-          QueryBuilder cancelledOrCompletedQ = null;
-          if (query.isCompleted()) {
-            //completed query
-            cancelledOrCompletedQ = termQuery(STATE, WorkflowInstanceState.COMPLETED.toString());
-          } else if (query.isCancelled()) {
-            //add cancelled query
-            cancelledOrCompletedQ = termQuery(STATE, WorkflowInstanceState.CANCELED.toString());
-          }
-
-          finishedQ = joinWithAnd(finishedQ, cancelledOrCompletedQ);
-
-        }
-
+      else if (!active && incidents) {
+        //incidents query
+        activeOrIncidentsQuery = nestedQuery(INCIDENTS, termQuery(ACTIVE_INCIDENT_TERM, ACTIVE_INCIDENT), None);
       }
 
+      runningQuery = joinWithAnd(runningQuery, activeOrIncidentsQuery);
     }
 
-    final QueryBuilder runningOrFinishedQ = joinWithOr(runningQ, finishedQ);
-    if (runningOrFinishedQ == null) {
+    QueryBuilder finishedQuery = null;
+
+    if (finished && (completed || cancelled)) {
+
+      //add finished query
+      finishedQuery = existsQuery(END_DATE);
+
+      QueryBuilder cancelledOrCompletedQ = null;
+
+      if (completed && !cancelled) {
+        //completed query
+        cancelledOrCompletedQ = termQuery(STATE, WorkflowInstanceState.COMPLETED.toString());
+      }
+      else if (!completed && cancelled) {
+        //add cancelled query
+        cancelledOrCompletedQ = termQuery(STATE, WorkflowInstanceState.CANCELED.toString());
+      }
+
+      finishedQuery = joinWithAnd(finishedQuery, cancelledOrCompletedQ);
+    }
+
+    final QueryBuilder workflowInstanceQuery = joinWithOr(runningQuery, finishedQuery);
+
+    if (workflowInstanceQuery == null) {
       return createMatchNoneQuery();
     }
-    return runningOrFinishedQ;
+
+    return workflowInstanceQuery;
 
   }
 
