@@ -6,8 +6,8 @@ export const DiagramControls = styled.div`
   display: flex;
   flex-direction: column;
   position: absolute;
-  right: 20px;
-  bottom: 60px;
+  right: 5px;
+  bottom: 47px;
   z-index: 2;
   width: 28px;
 `;
@@ -26,6 +26,7 @@ export const ZoomReset = styled(Box)`
 export const ZoomIn = styled(Box)`
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
+  border-bottom: none;
 `;
 
 export const ZoomOut = styled(Box)`
