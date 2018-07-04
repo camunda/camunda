@@ -16,53 +16,93 @@
 package io.zeebe.util.sched.channel;
 
 import io.zeebe.util.sched.ActorCondition;
-import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class ActorConditions {
-  private ActorCondition[] consumers = new ActorCondition[0];
+
+  /**
+   * For reference see {@link java.nio.Bits#JNI_COPY_TO_ARRAY_THRESHOLD} and {@link
+   * java.nio.DirectByteBuffer#get(byte[], int, int)}
+   */
+  private static final int JNI_COPY_TO_ARRAY_THRESHOLD = 6;
+
+  private static final ActorCondition[] EMPTY_ARRAY = new ActorCondition[0];
+
+  private final AtomicReference<ActorCondition[]> arrayRef = new AtomicReference<>(EMPTY_ARRAY);
+
+  public void registerConsumer(final ActorCondition item) {
+    if (null == item) {
+      throw new NullPointerException("null items are not supported in this collection");
+    }
+
+    ActorCondition[] oldArray;
+    ActorCondition[] newArray;
+
+    do {
+      oldArray = arrayRef.get();
+      final int oldLength = oldArray.length;
+      newArray = new ActorCondition[oldLength + 1];
+
+      copyArray(oldArray, 0, newArray, 0, oldLength);
+
+      newArray[oldLength] = item;
+    } while (!arrayRef.compareAndSet(oldArray, newArray));
+  }
+
+  public void removeConsumer(final ActorCondition item) {
+    if (null == item) {
+      throw new NullPointerException("null items are not supported in this collection");
+    }
+
+    ActorCondition[] oldArray;
+    ActorCondition[] newArray;
+
+    do {
+      oldArray = arrayRef.get();
+
+      final int index = find(oldArray, item);
+      if (-1 == index) {
+        return;
+      }
+
+      final int newLength = oldArray.length - 1;
+      newArray = new ActorCondition[newLength];
+
+      copyArray(oldArray, 0, newArray, 0, index);
+      copyArray(oldArray, index + 1, newArray, index, newLength - index);
+    } while (!arrayRef.compareAndSet(oldArray, newArray));
+  }
 
   public void signalConsumers() {
-    final ActorCondition[] consumer =
-        consumers; // please do not remove me, array ref may be replaced concurrently
+    // please do not remove me, array ref may be replaced concurrently
+    final ActorCondition[] consumer = arrayRef.get();
 
     for (int i = 0; i < consumer.length; i++) {
       consumer[i].signal();
     }
   }
 
-  public synchronized void registerConsumer(ActorCondition listener) {
-    consumers = appendToArray(consumers, listener);
-  }
-
-  public synchronized void removeConsumer(ActorCondition listener) {
-    consumers = removeFromArray(consumers, listener);
-  }
-
-  private static ActorCondition[] appendToArray(ActorCondition[] array, ActorCondition listener) {
-    array = Arrays.copyOf(array, array.length + 1);
-    array[array.length - 1] = listener;
-    return array;
-  }
-
-  private static ActorCondition[] removeFromArray(ActorCondition[] array, ActorCondition listener) {
-    final int length = array.length;
-
-    int index = -1;
+  private static int find(final ActorCondition[] array, final ActorCondition condition) {
     for (int i = 0; i < array.length; i++) {
-      if (array[i] == listener) {
-        index = i;
+      if (condition.equals(array[i])) {
+        return i;
       }
     }
 
-    if (index != -1) {
-      final ActorCondition[] result = new ActorCondition[length - 1];
-      System.arraycopy(array, 0, result, 0, index);
-      if (index < length - 1) {
-        System.arraycopy(array, index + 1, result, index, length - index - 1);
+    return -1;
+  }
+
+  private static void copyArray(
+      ActorCondition[] src, int srcPos, ActorCondition[] dest, int destPos, int length) {
+    if (length < JNI_COPY_TO_ARRAY_THRESHOLD) {
+      int srcIndex = srcPos;
+      int destIndex = destPos;
+      final int endIndex = destPos + length;
+      for (; destIndex < endIndex; srcIndex++, destIndex++) {
+        dest[destIndex] = src[srcIndex];
       }
-      return result;
     } else {
-      return array;
+      System.arraycopy(src, srcPos, dest, destPos, length);
     }
   }
 }
