@@ -2,21 +2,25 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import {ICON_DIRECTION} from 'modules/components/ExpandButton/constants';
+import {PANE_ID, EXPAND_STATE} from 'modules/constants/splitPane';
 
 import Pane from './Pane';
-import {PANE_ID, PANE_STATE} from './constants';
 import * as Styled from './styled';
 
 describe('Pane', () => {
   const Foo = () => <div>Foo</div>;
   const mockProps = {
-    expand: jest.fn()
+    handleExpand: jest.fn()
   };
 
   it('should render children with paneState', () => {
     // given
     const node = shallow(
-      <Pane {...mockProps} paneId={PANE_ID.TOP} paneState={PANE_STATE.EXPANDED}>
+      <Pane
+        {...mockProps}
+        paneId={PANE_ID.TOP}
+        paneState={EXPAND_STATE.EXPANDED}
+      >
         <Foo />
       </Pane>
     );
@@ -24,14 +28,18 @@ describe('Pane', () => {
     // then
     const FooNode = node.find(Foo);
     expect(FooNode).toHaveLength(1);
-    expect(FooNode.prop('paneState')).toBe(PANE_STATE.EXPANDED);
+    expect(FooNode.prop('paneState')).toBe(EXPAND_STATE.EXPANDED);
     expect(node).toMatchSnapshot();
   });
 
   it("should render TopExpandButton with UP icon if pane is TOP and it's expanded", () => {
     // given
     const node = shallow(
-      <Pane {...mockProps} paneId={PANE_ID.TOP} paneState={PANE_STATE.EXPANDED}>
+      <Pane
+        {...mockProps}
+        paneId={PANE_ID.TOP}
+        paneState={EXPAND_STATE.EXPANDED}
+      >
         <Foo />
       </Pane>
     );
@@ -46,7 +54,11 @@ describe('Pane', () => {
   it("should render TopExpandButton with DOWN icon if pane is TOP and it's not expanded", () => {
     // given
     const node = shallow(
-      <Pane {...mockProps} paneId={PANE_ID.TOP} paneState={PANE_STATE.DEFAULT}>
+      <Pane
+        {...mockProps}
+        paneId={PANE_ID.TOP}
+        paneState={EXPAND_STATE.DEFAULT}
+      >
         <Foo />
       </Pane>
     );
@@ -64,7 +76,7 @@ describe('Pane', () => {
       <Pane
         {...mockProps}
         paneId={PANE_ID.BOTTOM}
-        paneState={PANE_STATE.EXPANDED}
+        paneState={EXPAND_STATE.EXPANDED}
       >
         <Foo />
       </Pane>
@@ -85,7 +97,7 @@ describe('Pane', () => {
       <Pane
         {...mockProps}
         paneId={PANE_ID.BOTTOM}
-        paneState={PANE_STATE.COLLAPSED}
+        paneState={EXPAND_STATE.COLLAPSED}
       >
         <Foo />
       </Pane>
@@ -102,17 +114,17 @@ describe('Pane', () => {
 
   describe('handleExpand', () => {
     const mockProps = {
-      expand: jest.fn(),
+      handleExpand: jest.fn(),
       resetExpanded: jest.fn(),
       paneId: PANE_ID.BOTTOM
     };
 
     beforeEach(() => {
-      mockProps.expand.mockClear();
+      mockProps.handleExpand.mockClear();
       mockProps.resetExpanded.mockClear();
     });
 
-    it('should call expand with paneId', () => {
+    it('should call handleExpand with paneId', () => {
       // given
       const node = shallow(<Pane {...mockProps} />);
 
@@ -120,7 +132,7 @@ describe('Pane', () => {
       expect(node.instance().handleExpand());
 
       // then
-      expect(mockProps.expand).toHaveBeenCalledWith(mockProps.paneId);
+      expect(mockProps.handleExpand).toHaveBeenCalledWith(mockProps.paneId);
     });
   });
 });

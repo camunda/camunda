@@ -22,8 +22,6 @@ import {parseQueryString, isEmpty} from './service';
 import {DEFAULT_FILTER, FILTER_TYPES} from 'modules/constants/filter';
 import * as Styled from './styled.js';
 
-const {Pane} = SplitPane;
-
 class Instances extends Component {
   static propTypes = {
     getStateLocally: PropTypes.func.isRequired,
@@ -116,18 +114,21 @@ class Instances extends Component {
   handleFilterChange = async change => {
     const filter = update(this.state.filter, change);
 
-    await this.setState({
-      filter: filter,
-      selection: this.createNewSelectionFragment()
-    });
+    await this.setState(
+      {
+        filter: filter,
+        selection: this.createNewSelectionFragment()
+      },
+      () => {
+        this.setFilterInURL(this.state.filter);
 
-    this.setFilterInURL(this.state.filter);
+        // update filterCount separatelly not block UI while fetching
+        this.setFilterCount();
 
-    // update filterCount separatelly not block UI while fetching
-    await this.setFilterCount();
-
-    // write current filter selection to local storage
-    this.props.storeStateLocally({filter});
+        // write current filter selection to local storage
+        this.props.storeStateLocally({filter});
+      }
+    );
   };
 
   setFilterInURL = filter => {
@@ -183,10 +184,14 @@ class Instances extends Component {
             </Panel>
           </Styled.Left>
           <Styled.Center>
-            <Pane isRounded>
-              <Pane.Header isRounded>Process Definition Name</Pane.Header>
-              <Pane.Body>Process Definition Name content</Pane.Body>
-            </Pane>
+            <SplitPane.Pane isRounded>
+              <SplitPane.Pane.Header isRounded>
+                Process Definition Name
+              </SplitPane.Pane.Header>
+              <SplitPane.Pane.Body>
+                Process Definition Name content
+              </SplitPane.Pane.Body>
+            </SplitPane.Pane>
             <ListView
               instancesInFilter={this.state.filterCount}
               onSelectionUpdate={change => {

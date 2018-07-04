@@ -1,7 +1,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {PANE_STATE} from 'modules/components/SplitPane/Pane/constants';
+import {EXPAND_STATE} from 'modules/constants/splitPane';
 import Table from 'modules/components/Table';
 import {ORDER} from 'modules/components/Table/SortIcon/constants';
 
@@ -30,7 +30,7 @@ describe('List', () => {
       query: {},
       list: [{}]
     },
-    paneState: PANE_STATE.DEFAULT,
+    paneState: EXPAND_STATE.DEFAULT,
     sortBy: {foo: ORDER.ASC}
   };
 
@@ -87,17 +87,17 @@ describe('List', () => {
       recalculateHeightSpy.mockClear();
 
       // when component updates but paneState does not change
-      node.setProps({paneState: PANE_STATE.DEFAULT});
+      node.setProps({paneState: EXPAND_STATE.DEFAULT});
       // then recalculateHeight should not be called
       expect(recalculateHeightSpy).not.toBeCalled();
 
       // when component updates but paneState is COLLAPSED
-      node.setProps({paneState: PANE_STATE.COLLAPSED});
+      node.setProps({paneState: EXPAND_STATE.COLLAPSED});
       // then recalculateHeight should not be called
       expect(recalculateHeightSpy).not.toBeCalled();
 
       // when component updates and paneState changed and is not COLLAPSED
-      node.setProps({paneState: PANE_STATE.EXPANDED});
+      node.setProps({paneState: EXPAND_STATE.EXPANDED});
       // then recalculateHeight should not be called
       expect(recalculateHeightSpy).toBeCalled();
     });

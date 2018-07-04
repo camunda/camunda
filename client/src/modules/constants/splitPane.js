@@ -5,7 +5,7 @@ export const PANE_ID = {
   RIGHT: 'RIGHT'
 };
 
-export const PANE_STATE = {
+export const EXPAND_STATE = {
   DEFAULT: 'DEFAULT',
   EXPANDED: 'EXPANDED',
   COLLAPSED: 'COLLAPSED'

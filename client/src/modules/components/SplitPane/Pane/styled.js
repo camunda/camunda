@@ -2,10 +2,9 @@ import styled, {css} from 'styled-components';
 
 import Panel from 'modules/components/Panel';
 import ExpandButton from 'modules/components/ExpandButton';
+import {EXPAND_STATE} from 'modules/constants/splitPane';
 
-import {PANE_STATE} from './constants';
-
-const isCollapsed = paneState => paneState === PANE_STATE.COLLAPSED;
+const isCollapsed = paneState => paneState === EXPAND_STATE.COLLAPSED;
 
 const nonCollapsedPaneStyle = css`
   flex-grow: 1;

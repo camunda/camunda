@@ -2,7 +2,7 @@
 
 exports[`Pane should render BottomExpandButton with DOWN icon if pane is BOTTOM and it's expanded 1`] = `
 <Styled(Panel)
-  expand={[Function]}
+  handleExpand={[Function]}
   paneId="BOTTOM"
   paneState="EXPANDED"
 >
@@ -19,7 +19,7 @@ exports[`Pane should render BottomExpandButton with DOWN icon if pane is BOTTOM 
 
 exports[`Pane should render BottomExpandButton with UP icon if pane is BOTTOM and it's not expanded 1`] = `
 <Styled(Panel)
-  expand={[Function]}
+  handleExpand={[Function]}
   paneId="BOTTOM"
   paneState="COLLAPSED"
 >
@@ -36,7 +36,7 @@ exports[`Pane should render BottomExpandButton with UP icon if pane is BOTTOM an
 
 exports[`Pane should render TopExpandButton with DOWN icon if pane is TOP and it's not expanded 1`] = `
 <Styled(Panel)
-  expand={[Function]}
+  handleExpand={[Function]}
   paneId="TOP"
   paneState="DEFAULT"
 >
@@ -53,7 +53,7 @@ exports[`Pane should render TopExpandButton with DOWN icon if pane is TOP and it
 
 exports[`Pane should render TopExpandButton with UP icon if pane is TOP and it's expanded 1`] = `
 <Styled(Panel)
-  expand={[Function]}
+  handleExpand={[Function]}
   paneId="TOP"
   paneState="EXPANDED"
 >
@@ -70,7 +70,7 @@ exports[`Pane should render TopExpandButton with UP icon if pane is TOP and it's
 
 exports[`Pane should render children with paneState 1`] = `
 <Styled(Panel)
-  expand={[Function]}
+  handleExpand={[Function]}
   paneId="TOP"
   paneState="EXPANDED"
 >

@@ -3,13 +3,13 @@
 exports[`SplitPane paneState should render children with proper paneState when BOTTOM pane is extended 1`] = `
 <styled.div>
   <FirstChild
-    expand={[Function]}
+    handleExpand={[Function]}
     key=".0"
     paneId="TOP"
     paneState="COLLAPSED"
   />
   <SecondChild
-    expand={[Function]}
+    handleExpand={[Function]}
     key=".1"
     paneId="BOTTOM"
     paneState="EXPANDED"
@@ -20,13 +20,13 @@ exports[`SplitPane paneState should render children with proper paneState when B
 exports[`SplitPane paneState should render children with proper paneState when TOP pane is extended 1`] = `
 <styled.div>
   <FirstChild
-    expand={[Function]}
+    handleExpand={[Function]}
     key=".0"
     paneId="TOP"
     paneState="EXPANDED"
   />
   <SecondChild
-    expand={[Function]}
+    handleExpand={[Function]}
     key=".1"
     paneId="BOTTOM"
     paneState="COLLAPSED"
@@ -37,13 +37,13 @@ exports[`SplitPane paneState should render children with proper paneState when T
 exports[`SplitPane paneState should render children with proper paneState when no pane is extended 1`] = `
 <styled.div>
   <FirstChild
-    expand={[Function]}
+    handleExpand={[Function]}
     key=".0"
     paneId="TOP"
     paneState="DEFAULT"
   />
   <SecondChild
-    expand={[Function]}
+    handleExpand={[Function]}
     key=".1"
     paneId="BOTTOM"
     paneState="DEFAULT"

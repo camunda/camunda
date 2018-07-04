@@ -11,8 +11,6 @@ import DiagramPanel from './DiagramPanel';
 import * as Styled from './styled';
 import * as api from 'modules/api/instances';
 
-const {Pane} = SplitPane;
-
 export default class Instance extends Component {
   static propTypes = {
     match: PropTypes.shape({
@@ -54,13 +52,13 @@ export default class Instance extends Component {
         <Styled.Instance>
           <SplitPane>
             <DiagramPanel instance={this.state.instance} />
-            <Pane>
-              <Pane.Header>Instance history</Pane.Header>
-              <Pane.Body />
+            <SplitPane.Pane>
+              <SplitPane.Pane.Header>Instance history</SplitPane.Pane.Header>
+              <SplitPane.Pane.Body />
               <Styled.PaneFooter>
                 <Copyright />
               </Styled.PaneFooter>
-            </Pane>
+            </SplitPane.Pane>
           </SplitPane>
         </Styled.Instance>
       </Fragment>

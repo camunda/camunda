@@ -3,27 +3,33 @@ import PropTypes from 'prop-types';
 
 import Panel from 'modules/components/Panel';
 import {ICON_DIRECTION} from 'modules/components/ExpandButton/constants';
+import {PANE_ID, EXPAND_STATE} from 'modules/constants/splitPane';
 
-import {PANE_ID, PANE_STATE} from './constants';
 import * as Styled from './styled';
 
 const paneExpandButton = {
   [PANE_ID.TOP]: {
     ExpandButton: Styled.TopExpandButton,
-    // iconDirections: {EXPANDED, NOT_EXPANDED}
-    iconDirections: {true: ICON_DIRECTION.UP, false: ICON_DIRECTION.DOWN}
+    iconDirections: {
+      EXPANDED: ICON_DIRECTION.UP,
+      COLLAPSED: ICON_DIRECTION.DOWN,
+      DEFAULT: ICON_DIRECTION.DOWN
+    }
   },
   [PANE_ID.BOTTOM]: {
     ExpandButton: Styled.BottomExpandButton,
-    // iconDirections: {EXPANDED, NOT_EXPANDED}
-    iconDirections: {true: ICON_DIRECTION.DOWN, false: ICON_DIRECTION.UP}
+    iconDirections: {
+      EXPANDED: ICON_DIRECTION.DOWN,
+      COLLAPSED: ICON_DIRECTION.UP,
+      DEFAULT: ICON_DIRECTION.UP
+    }
   }
 };
 export default class Pane extends React.Component {
   static propTypes = {
-    expand: PropTypes.func,
+    handleExpand: PropTypes.func,
     paneId: PropTypes.oneOf(Object.values(PANE_ID)),
-    paneState: PropTypes.oneOf(Object.values(PANE_STATE)),
+    paneState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
       PropTypes.node
@@ -31,7 +37,7 @@ export default class Pane extends React.Component {
   };
 
   handleExpand = () => {
-    this.props.expand(this.props.paneId);
+    this.props.handleExpand(this.props.paneId);
   };
 
   render() {
@@ -41,11 +47,9 @@ export default class Pane extends React.Component {
       cloneElement(child, {paneState})
     );
 
-    const isExpanded = paneState === PANE_STATE.EXPANDED;
-
     const {
       ExpandButton,
-      iconDirections: {[isExpanded]: iconDirection}
+      iconDirections: {[paneState]: iconDirection}
     } = paneExpandButton[paneId];
 
     return (

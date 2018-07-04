@@ -1,15 +1,16 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
+import {PANE_ID, EXPAND_STATE} from 'modules/constants/splitPane';
+
 import SplitPane from './SplitPane';
-import {PANE_ID, PANE_STATE} from './Pane/constants';
 
 describe('SplitPane', () => {
   it('should have by default expandedPaneId null', () => {
     expect(new SplitPane().state.expandedPaneId).toBe(null);
   });
 
-  it('should render children with expand() and paneId props', () => {
+  it('should render children with handleExpand() and paneId props', () => {
     // given
     const FirstChild = () => <div>First Child</div>;
     const SecondChild = () => <div>Second Child</div>;
@@ -25,10 +26,14 @@ describe('SplitPane', () => {
     const SecondChildNode = node.find(SecondChild);
     expect(FirstChildNode).toHaveLength(1);
     expect(FirstChildNode.prop('paneId')).toBe(PANE_ID.TOP);
-    expect(FirstChildNode.prop('expand')).toBe(node.instance().expand);
+    expect(FirstChildNode.prop('handleExpand')).toBe(
+      node.instance().handleExpand
+    );
     expect(SecondChildNode).toHaveLength(1);
     expect(SecondChildNode.prop('paneId')).toBe(PANE_ID.BOTTOM);
-    expect(SecondChildNode.prop('expand')).toBe(node.instance().expand);
+    expect(SecondChildNode.prop('handleExpand')).toBe(
+      node.instance().handleExpand
+    );
   });
 
   describe('paneState', () => {
@@ -49,9 +54,9 @@ describe('SplitPane', () => {
       const FirstChildNode = node.find(FirstChild);
       const SecondChildNode = node.find(SecondChild);
       expect(FirstChildNode).toHaveLength(1);
-      expect(FirstChildNode.prop('paneState')).toBe(PANE_STATE.EXPANDED);
+      expect(FirstChildNode.prop('paneState')).toBe(EXPAND_STATE.EXPANDED);
       expect(SecondChildNode).toHaveLength(1);
-      expect(SecondChildNode.prop('paneState')).toBe(PANE_STATE.COLLAPSED);
+      expect(SecondChildNode.prop('paneState')).toBe(EXPAND_STATE.COLLAPSED);
       expect(node).toMatchSnapshot();
     });
 
@@ -72,9 +77,9 @@ describe('SplitPane', () => {
       const FirstChildNode = node.find(FirstChild);
       const SecondChildNode = node.find(SecondChild);
       expect(FirstChildNode).toHaveLength(1);
-      expect(FirstChildNode.prop('paneState')).toBe(PANE_STATE.COLLAPSED);
+      expect(FirstChildNode.prop('paneState')).toBe(EXPAND_STATE.COLLAPSED);
       expect(SecondChildNode).toHaveLength(1);
-      expect(SecondChildNode.prop('paneState')).toBe(PANE_STATE.EXPANDED);
+      expect(SecondChildNode.prop('paneState')).toBe(EXPAND_STATE.EXPANDED);
       expect(node).toMatchSnapshot();
     });
 
@@ -95,9 +100,9 @@ describe('SplitPane', () => {
       const FirstChildNode = node.find(FirstChild);
       const SecondChildNode = node.find(SecondChild);
       expect(FirstChildNode).toHaveLength(1);
-      expect(FirstChildNode.prop('paneState')).toBe(PANE_STATE.DEFAULT);
+      expect(FirstChildNode.prop('paneState')).toBe(EXPAND_STATE.DEFAULT);
       expect(SecondChildNode).toHaveLength(1);
-      expect(SecondChildNode.prop('paneState')).toBe(PANE_STATE.DEFAULT);
+      expect(SecondChildNode.prop('paneState')).toBe(EXPAND_STATE.DEFAULT);
       expect(node).toMatchSnapshot();
     });
   });

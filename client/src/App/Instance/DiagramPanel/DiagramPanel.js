@@ -10,12 +10,10 @@ import {getWorkflowName} from 'modules/utils/instance';
 import DiagramBar from './DiagramBar';
 import * as Styled from './styled';
 
-const {Pane} = SplitPane;
-
 export default function DiagramPanel({instance, ...props}) {
   return (
-    <Pane {...props}>
-      <Pane.Header>
+    <SplitPane.Pane {...props}>
+      <SplitPane.Pane.Header>
         <Styled.Table>
           <tbody>
             <tr>
@@ -29,12 +27,12 @@ export default function DiagramPanel({instance, ...props}) {
             </tr>
           </tbody>
         </Styled.Table>
-      </Pane.Header>
-      <Pane.Body>
+      </SplitPane.Pane.Header>
+      <SplitPane.Pane.Body>
         <DiagramBar instance={instance} />
         <Diagram workflowId={instance.workflowId} />
-      </Pane.Body>
-    </Pane>
+      </SplitPane.Pane.Body>
+    </SplitPane.Pane>
   );
 }
 

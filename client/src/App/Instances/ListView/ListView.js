@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import SplitPane from 'modules/components/SplitPane';
-import {PANE_STATE} from 'modules/components/SplitPane/Pane/constants';
+import {EXPAND_STATE} from 'modules/constants/splitPane';
 
 import List from './List';
 import ListFooter from './ListFooter';
@@ -14,8 +14,6 @@ import {
   DEFAULT_SORT_BY
 } from 'modules/components/Table/SortIcon/constants';
 
-const {Pane} = SplitPane;
-
 export default class ListView extends React.Component {
   static propTypes = {
     selection: PropTypes.shape({
@@ -26,7 +24,7 @@ export default class ListView extends React.Component {
     onSelectionUpdate: PropTypes.func.isRequired,
     filter: PropTypes.object.isRequired,
     onAddToSelection: PropTypes.func,
-    paneState: PropTypes.oneOf(Object.values(PANE_STATE))
+    paneState: PropTypes.oneOf(Object.values(EXPAND_STATE))
   };
 
   state = {
@@ -88,9 +86,9 @@ export default class ListView extends React.Component {
 
   render() {
     return (
-      <Pane {...this.props}>
-        <Pane.Header>Instances</Pane.Header>
-        <Pane.Body>
+      <SplitPane.Pane {...this.props}>
+        <SplitPane.Pane.Header>Instances</SplitPane.Pane.Header>
+        <SplitPane.Pane.Body>
           {!isEmpty(this.props.filter) && (
             <List
               data={this.state.instances}
@@ -106,8 +104,8 @@ export default class ListView extends React.Component {
               handleSorting={this.handleSorting}
             />
           )}
-        </Pane.Body>
-        <Pane.Footer>
+        </SplitPane.Pane.Body>
+        <SplitPane.Pane.Footer>
           {!isEmpty(this.props.filter) && (
             <ListFooter
               total={this.props.instancesInFilter}
@@ -119,8 +117,8 @@ export default class ListView extends React.Component {
               onAddToSelection={this.props.onAddToSelection}
             />
           )}
-        </Pane.Footer>
-      </Pane>
+        </SplitPane.Pane.Footer>
+      </SplitPane.Pane>
     );
   }
 }

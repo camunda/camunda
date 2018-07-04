@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 
 import Checkbox from 'modules/components/Checkbox';
 import StateIcon from 'modules/components/StateIcon';
-import {PANE_STATE} from 'modules/components/SplitPane/Pane/constants';
+import {EXPAND_STATE} from 'modules/constants/splitPane';
 import {formatDate} from 'modules/utils/date';
 import {getWorkflowName} from 'modules/utils/instance';
 import Table from 'modules/components/Table';
@@ -24,7 +24,7 @@ export default class List extends React.Component {
     filter: PropTypes.object,
     sortBy: PropTypes.object,
     handleSorting: PropTypes.func,
-    paneState: PropTypes.oneOf(Object.values(PANE_STATE))
+    paneState: PropTypes.oneOf(Object.values(EXPAND_STATE))
   };
 
   state = {
@@ -39,7 +39,7 @@ export default class List extends React.Component {
     const {paneState} = this.props;
 
     // only call recalculateHeight if the expandedId changes and the pane is not collapsed
-    if (prevPaneState !== paneState && paneState !== PANE_STATE.COLLAPSED) {
+    if (prevPaneState !== paneState && paneState !== EXPAND_STATE.COLLAPSED) {
       this.recalculateHeight();
     }
   }

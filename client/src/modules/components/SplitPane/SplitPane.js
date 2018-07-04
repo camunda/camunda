@@ -1,7 +1,8 @@
 import React, {Children, cloneElement} from 'react';
 
+import {PANE_ID, EXPAND_STATE} from 'modules/constants/splitPane';
+
 import Pane from './Pane';
-import {PANE_ID, PANE_STATE} from './Pane/constants';
 import {twoNodesPropType} from './service';
 import * as Styled from './styled';
 
@@ -20,25 +21,29 @@ export default class SplitPane extends React.Component {
     const {expandedPaneId} = this.state;
 
     if (expandedPaneId === null) {
-      return PANE_STATE.DEFAULT;
+      return EXPAND_STATE.DEFAULT;
     }
 
     if (expandedPaneId === paneId) {
-      return PANE_STATE.EXPANDED;
+      return EXPAND_STATE.EXPANDED;
     }
 
-    return PANE_STATE.COLLAPSED;
+    return EXPAND_STATE.COLLAPSED;
   };
 
   getChildren = () => {
     return Children.map(this.props.children, (child, idx) => {
       const paneId = paneIds[idx];
       let paneState = this.getPaneExpandedState(paneId);
-      return cloneElement(child, {paneId, paneState, expand: this.expand});
+      return cloneElement(child, {
+        paneId,
+        paneState,
+        handleExpand: this.handleExpand
+      });
     });
   };
 
-  expand = paneId => {
+  handleExpand = paneId => {
     const expandedPaneId = this.state.expandedPaneId === null ? paneId : null;
 
     this.setState({expandedPaneId});
