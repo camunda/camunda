@@ -4,9 +4,10 @@ import {Colors} from 'modules/theme';
 export const Badge = styled.div`
   display: inline-block;
   height: 17px;
-  line-height: 17px;
-  border-radius: 8.5px;
-  font-weight: 600;
+  padding-left: 9px;
+  padding-right: 9px;
+  margin-left: 6px;
+
   background-color: ${({type}) => {
     switch (type) {
       case 'filters':
@@ -19,8 +20,6 @@ export const Badge = styled.div`
         return '#a4a2a2';
     }
   }};
-  padding-left: 9px;
-  padding-right: 9px;
   color: ${({type}) => {
     switch (type) {
       case 'filters':
@@ -29,7 +28,10 @@ export const Badge = styled.div`
         return '#ffffff';
     }
   }};
+
   font-size: 12px;
-  vertical-align: middle;
-  margin-left: 6px;
+  font-weight: 600;
+  line-height: 17px;
+
+  border-radius: 8.5px;
 `;
