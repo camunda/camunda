@@ -35,11 +35,14 @@ export default class Header extends React.Component {
 
   createBadgeEntry = label => {
     const type = label.toLowerCase();
+    const count = this.props[type] || 0;
+    const title = `${count} ${label}`;
+
     return (
       <Styled.ListLink active={this.props.active === 'instances'}>
-        <Link to="/instances">
+        <Link to="/instances" title={title}>
           <span>{label}</span>
-          <Styled.Badge type={type}>{this.props[type] || 0}</Styled.Badge>
+          <Styled.Badge type={type}>{count}</Styled.Badge>
         </Link>
       </Styled.ListLink>
     );
@@ -57,16 +60,21 @@ export default class Header extends React.Component {
       <Redirect to="/login" />
     ) : (
       <Styled.Header>
-        <Styled.Dashboard active={active === 'dashboard'}>
-          <Link to="/">
-            <Logo />
-            <span>Dashboard</span>
-          </Link>
-        </Styled.Dashboard>
-        {this.createBadgeEntry('Instances')}
-        {this.createBadgeEntry('Filters')}
-        {this.createBadgeEntry('Selections')}
-        {this.createBadgeEntry('Incidents')}
+        <Styled.Menu role="navigation">
+          <li>
+            <Styled.Dashboard active={active === 'dashboard'}>
+              <Link to="/">
+                <Logo />
+                <span>Dashboard</span>
+              </Link>
+            </Styled.Dashboard>
+          </li>
+          <li>{this.createBadgeEntry('Instances')}</li>
+          <li>{this.createBadgeEntry('Filters')}</li>
+          <li>{this.createBadgeEntry('Selections')}</li>
+          <li>{this.createBadgeEntry('Incidents')}</li>
+        </Styled.Menu>
+
         <Styled.Detail>{detail}</Styled.Detail>
         <Styled.ProfileDropdown>
           <Dropdown label={`${firstname} ${lastname}`}>
