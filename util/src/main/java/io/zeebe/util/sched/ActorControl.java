@@ -449,12 +449,11 @@ public class ActorControl {
     final ActorThread currentActorThread = ActorThread.current();
 
     if (currentActorThread != null && currentActorThread.getCurrentTask() == this.task) {
-      final ActorJob currentJob = currentActorThread.getCurrentJob();
       final ActorJob newJob = currentActorThread.newJob();
       newJob.setRunnable(runnable);
       newJob.setAutoCompleting(autocompleting);
       newJob.onJobAddedToTask(task);
-      currentJob.appendChild(newJob);
+      task.insertJob(newJob);
     } else {
       final ActorJob job = new ActorJob();
       job.setRunnable(runnable);

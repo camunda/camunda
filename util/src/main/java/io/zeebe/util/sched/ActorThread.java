@@ -33,6 +33,7 @@ package io.zeebe.util.sched;
 import static io.zeebe.util.sched.metrics.SchedulerMetrics.SHOULD_ENABLE_JUMBO_TASK_DETECTION;
 import static io.zeebe.util.sched.metrics.SchedulerMetrics.TASK_MAX_EXECUTION_TIME_NANOS;
 
+import io.zeebe.util.BoundedArrayQueue;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.clock.DefaultActorClock;
 import io.zeebe.util.sched.metrics.ActorThreadMetrics;
@@ -41,7 +42,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import org.agrona.UnsafeAccess;
-import org.agrona.concurrent.*;
+import org.agrona.concurrent.BackoffIdleStrategy;
+import org.agrona.concurrent.ManyToManyConcurrentArrayQueue;
 import org.slf4j.MDC;
 import sun.misc.Unsafe;
 
@@ -76,8 +78,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
 
   protected final ActorTimerQueue timerJobQueue;
 
-  private final ActorJobPool jobPool = new ActorJobPool();
-
+  private final BoundedArrayQueue<ActorJob> jobs = new BoundedArrayQueue<>(2048);
   private final ActorThreadGroup actorThreadGroup;
 
   protected ActorTaskRunnerIdleStrategy idleStrategy = new ActorTaskRunnerIdleStrategy();
@@ -256,11 +257,18 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   }
 
   public ActorJob newJob() {
-    return jobPool.nextJob();
+    ActorJob job = jobs.poll();
+
+    if (job == null) {
+      job = new ActorJob();
+    }
+
+    return job;
   }
 
   void recycleJob(ActorJob j) {
-    jobPool.reclaim(j);
+    j.reset();
+    jobs.offer(j);
   }
 
   public int getRunnerId() {

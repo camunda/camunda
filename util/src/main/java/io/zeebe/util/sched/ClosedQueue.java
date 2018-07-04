@@ -16,10 +16,11 @@
 package io.zeebe.util.sched;
 
 import java.util.Collection;
+import java.util.Deque;
 import java.util.Iterator;
 import java.util.Queue;
 
-public class ClosedQueue implements Queue<ActorJob> {
+public class ClosedQueue implements Queue<ActorJob>, Deque<ActorJob> {
 
   @Override
   public int size() {
@@ -110,6 +111,91 @@ public class ClosedQueue implements Queue<ActorJob> {
 
   @Override
   public ActorJob peek() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void addFirst(ActorJob actorJob) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void addLast(ActorJob actorJob) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public boolean offerFirst(ActorJob actorJob) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public boolean offerLast(ActorJob actorJob) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public ActorJob removeFirst() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public ActorJob removeLast() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public ActorJob pollFirst() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public ActorJob pollLast() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public ActorJob getFirst() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public ActorJob getLast() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public ActorJob peekFirst() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public ActorJob peekLast() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public boolean removeFirstOccurrence(Object o) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public boolean removeLastOccurrence(Object o) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void push(ActorJob actorJob) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public ActorJob pop() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public Iterator<ActorJob> descendingIterator() {
     throw new UnsupportedOperationException();
   }
 }
