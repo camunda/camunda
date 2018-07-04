@@ -5,7 +5,6 @@ export const login = async ({username, password}) => {
   await post('/api/login', body, {
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded'
-    },
-    skipResponseInterceptor: true
+    }
   });
 };

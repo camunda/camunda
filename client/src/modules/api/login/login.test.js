@@ -24,8 +24,7 @@ describe('login api', () => {
       expect(post.mock.calls[0][2]).toEqual({
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        skipResponseInterceptor: true
+        }
       });
     });
   });

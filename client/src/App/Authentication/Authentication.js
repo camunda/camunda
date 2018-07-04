@@ -24,6 +24,10 @@ class Authentication extends React.Component {
     this.state = {...this.defaultState};
   }
 
+  componentWillUnmount() {
+    setResponseInterceptor(null);
+  }
+
   resetState = () => {
     this.setState(this.defaultState);
   };

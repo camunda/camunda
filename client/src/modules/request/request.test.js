@@ -103,18 +103,6 @@ describe('request', () => {
       expect(responseInterceptor).toHaveBeenCalledWith(response);
     });
 
-    it('should not call responseInterceptor if there is a skipResponseInterceptor flag', async () => {
-      // given
-      const responseInterceptor = mockResolvedAsyncFn();
-      setResponseInterceptor(responseInterceptor);
-
-      // when
-      await request({url, skipResponseInterceptor: true});
-
-      // then
-      expect(responseInterceptor).not.toHaveBeenCalled();
-    });
-
     it("should throw response if it's unsuccessful", async () => {
       // mock global.fetch
       const originalFetch = global.fetch;

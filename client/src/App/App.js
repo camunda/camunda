@@ -1,5 +1,5 @@
 import React from 'react';
-import {BrowserRouter as Router, Route} from 'react-router-dom';
+import {BrowserRouter as Router, Route, Switch} from 'react-router-dom';
 
 import {ThemeProvider} from 'modules/theme';
 
@@ -17,12 +17,14 @@ export default function App(props) {
     <ThemeProvider>
       <ThemeToggle />
       <Router>
-        <Authentication>
+        <Switch>
           <Route path="/login" component={Login} />
-          <Route exact path="/" component={Dashboard} />
-          <Route exact path="/instances" component={Instances} />
-          <Route exact path="/instances/:id" component={Instance} />
-        </Authentication>
+          <Authentication>
+            <Route exact path="/" component={Dashboard} />
+            <Route exact path="/instances" component={Instances} />
+            <Route exact path="/instances/:id" component={Instance} />
+          </Authentication>
+        </Switch>
       </Router>
     </ThemeProvider>
   );
