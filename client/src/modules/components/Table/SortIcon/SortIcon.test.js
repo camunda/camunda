@@ -2,6 +2,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import SortIcon from './SortIcon';
+import {ORDER} from './constants';
 import * as Styled from './styled';
 
 describe('SortIcon', () => {
@@ -12,7 +13,7 @@ describe('SortIcon', () => {
     // then
     const UpNode = node.find(Styled.Up);
     expect(UpNode).toHaveLength(1);
-    expect(UpNode.prop('order')).toBe('asc');
+    expect(UpNode.prop('order')).toBe(ORDER.ASC);
     expect(node).toMatchSnapshot();
   });
 
@@ -23,7 +24,7 @@ describe('SortIcon', () => {
     // then
     const UpNode = node.find(Styled.Down);
     expect(UpNode).toHaveLength(1);
-    expect(UpNode.prop('order')).toBe('desc');
+    expect(UpNode.prop('order')).toBe(ORDER.DESC);
     expect(node).toMatchSnapshot();
   });
 

@@ -2,6 +2,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import Table from './Table';
+import {ORDER} from './SortIcon/constants';
 import * as Styled from './styled';
 
 describe('Table', () => {
@@ -36,7 +37,7 @@ describe('Table', () => {
       // given
       const config = {
         isSortable: {foo: false, bar: true},
-        sortBy: {bar: 'asc'}
+        sortBy: {bar: ORDER.ASC}
       };
       const node = shallow(
         <Table data={[]} headers={mockHeaders} config={config} />
@@ -45,7 +46,7 @@ describe('Table', () => {
       // then
       const SortIconNode = node.find(Styled.SortIcon);
       expect(SortIconNode).toHaveLength(1);
-      expect(SortIconNode.prop('order')).toBe('asc');
+      expect(SortIconNode.prop('order')).toBe(ORDER.ASC);
       expect(SortIconNode.prop('onClick')).toBeInstanceOf(Function);
     });
   });

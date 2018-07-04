@@ -9,8 +9,13 @@ import ListFooter from './ListFooter';
 import {isEmpty} from '../service';
 import {parseFilterForRequest} from 'modules/utils/filter';
 import {fetchWorkflowInstances} from 'modules/api/instances';
+import {
+  ORDER,
+  DEFAULT_SORT_BY
+} from 'modules/components/Table/SortIcon/constants';
 
 const {Pane} = SplitPane;
+
 export default class ListView extends React.Component {
   static propTypes = {
     selection: PropTypes.shape({
@@ -28,7 +33,7 @@ export default class ListView extends React.Component {
     firstElement: 0,
     instances: [],
     entriesPerPage: 0,
-    sortBy: {id: 'desc'}
+    sortBy: DEFAULT_SORT_BY
   };
 
   componentDidMount() {
@@ -44,14 +49,14 @@ export default class ListView extends React.Component {
       return this.setState({firstElement: 0});
     }
 
-    // load data when either filter or firstElement changes
-    const key = Object.keys(prevState.sortBy)[0];
-    const hasSortByChanged = prevState.sortBy[key] !== this.state.sortBy[key];
-    if (
-      prevProps.filter !== this.props.filter ||
-      prevState.firstElement !== this.state.firstElement ||
-      hasSortByChanged
-    ) {
+    const prevSortKey = Object.keys(prevState.sortBy)[0];
+    const hasFilterChanged = prevProps.filter !== this.props.filter;
+    const hasFirstElementChanged =
+      prevState.firstElement !== this.state.firstElement;
+    const hasSortByChanged =
+      prevState.sortBy[prevSortKey] !== this.state.sortBy[prevSortKey];
+
+    if (hasFilterChanged || hasFirstElementChanged || hasSortByChanged) {
       this.loadData();
     }
   }
@@ -69,17 +74,16 @@ export default class ListView extends React.Component {
     this.setState({instances});
   };
 
+  // (1) should make state sort order asc if key is currently sorted by in desc order
   handleSorting = key => {
-    const {sortBy} = this.state;
-    const sortedKey = Object.keys(sortBy)[0];
-    let newsortBy;
-    if (!sortBy[key]) {
-      newsortBy = {[key]: 'desc'};
-    } else {
-      const order = sortBy[sortedKey] === 'desc' ? 'asc' : 'desc';
-      newsortBy = {[sortedKey]: order};
+    const isCurrentSortBy = !!this.state.sortBy[key];
+    let newSortBy = {[key]: ORDER.DESC};
+
+    if (isCurrentSortBy && this.state.sortBy[key] === ORDER.DESC) {
+      newSortBy[key] = ORDER.ASC;
     }
-    return this.setState({sortBy: newsortBy});
+
+    return this.setState({sortBy: newSortBy});
   };
 
   render() {

@@ -3,6 +3,7 @@ import {shallow} from 'enzyme';
 
 import {PANE_STATE} from 'modules/components/SplitPane/Pane/constants';
 import Table from 'modules/components/Table';
+import {ORDER} from 'modules/components/Table/SortIcon/constants';
 
 import List from './List';
 import * as Styled from './styled';
@@ -30,7 +31,7 @@ describe('List', () => {
       list: [{}]
     },
     paneState: PANE_STATE.DEFAULT,
-    sortBy: {foo: 'asc'}
+    sortBy: {foo: ORDER.ASC}
   };
 
   it('should have by default rowsToDisplay null', () => {
