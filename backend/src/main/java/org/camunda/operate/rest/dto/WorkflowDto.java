@@ -6,12 +6,9 @@ import org.camunda.operate.entities.WorkflowEntity;
 public class WorkflowDto {
 
   private String id;
-
-  public String name;
-
-  public int version;
-
-  public String bpmnProcessId;
+  private String name;
+  private int version;
+  private String bpmnProcessId;
 
   public String getId() {
     return id;

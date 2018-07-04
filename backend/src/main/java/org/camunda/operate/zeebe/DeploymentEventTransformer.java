@@ -1,18 +1,21 @@
 package org.camunda.operate.zeebe;
 
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.es.writer.EntityStorage;
 import org.camunda.operate.property.OperateProperties;
@@ -24,6 +27,7 @@ import org.springframework.stereotype.Component;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
+
 import io.zeebe.client.api.commands.DeploymentResource;
 import io.zeebe.client.api.commands.ResourceType;
 import io.zeebe.client.api.commands.Workflow;
@@ -58,53 +62,72 @@ public class DeploymentEventTransformer extends AbstractEventTransformer impleme
 
       //check that deployment is from one of the configured topics
       final List<String> topics = operateProperties.getZeebe().getTopics();
-      if (!topics.contains(event.getDeploymentTopic())) {
-        logger.debug("Deployment event won't be processed, as we're not listening for the topic [{}]", event.getDeploymentTopic());
-        return;
+
+      String deploymentTopic = event.getDeploymentTopic();
+
+      if (topics.contains(deploymentTopic)) {
+        Map<String, DeploymentResource> resources = resourceToMap(event.getResources());
+
+        for (Workflow workflow: event.getDeployedWorkflows()) {
+          String resourceName = workflow.getResourceName();
+          DeploymentResource resource = resources.get(resourceName);
+
+          final WorkflowEntity workflowEntity = createEntity(workflow, resource);
+          updateMetadataFields(workflowEntity, event);
+
+          entityStorage.getOperateEntititesQueue(deploymentTopic).put(workflowEntity);
+        }
+
       }
-      Map<String, DeploymentResource> resourcesMap = resourceToMap(event.getResources());
-      for (Workflow workflow: event.getDeployedWorkflows()) {
-        final WorkflowEntity workflowEntity = createEntity(workflow, resourcesMap.get(workflow.getResourceName()));
-        updateMetadataFields(workflowEntity, event);
-        entityStorage.getOperateEntititesQueue(event.getDeploymentTopic()).put(workflowEntity);
+      else {
+        logger.debug("Deployment event won't be processed, as we're not listening for the topic [{}]", deploymentTopic);
       }
+
     }
 
   }
 
   public WorkflowEntity createEntity(Workflow workflow, DeploymentResource resource) throws InterruptedException {
     WorkflowEntity workflowEntity = new WorkflowEntity();
+
     workflowEntity.setId(String.valueOf(workflow.getWorkflowKey()));
     workflowEntity.setBpmnProcessId(workflow.getBpmnProcessId());
     workflowEntity.setVersion(workflow.getVersion());
-    if (resource.getResourceType() != null && resource.getResourceType().equals(ResourceType.BPMN_XML)) {
-      workflowEntity.setBpmnXml(new String(resource.getResource(), CHARSET));
-      workflowEntity.setResourceName(resource.getResourceName());
-      workflowEntity.setName(extractWorkflowName(new ByteArrayInputStream(resource.getResource())));
+
+    ResourceType resourceType = resource.getResourceType();
+    if (resourceType != null && resourceType.equals(ResourceType.BPMN_XML)) {
+      byte[] byteArray = resource.getResource();
+
+      String bpmn = new String(byteArray, CHARSET);
+      workflowEntity.setBpmnXml(bpmn);
+
+      String resourceName = resource.getResourceName();
+      workflowEntity.setResourceName(resourceName);
+
+      InputStream is = new ByteArrayInputStream(byteArray);
+      String workflowName = extractWorkflowName(is);
+      workflowEntity.setName(workflowName);
     }
+
     return workflowEntity;
   }
 
   private Map<String,DeploymentResource> resourceToMap(List<DeploymentResource> resources) {
-
-    Map<String, DeploymentResource> map = new HashMap<>();
-    for (DeploymentResource deploymentResource: resources) {
-      if (!map.containsKey(deploymentResource.getResourceName()) ) {    //we ignore the 2nd, 3rd etc resource of the same name, as this is probably the behaviour of Zeebe broker
-        map.put(deploymentResource.getResourceName(), deploymentResource);
-      }
-    }
-    return map;
+    return resources.stream()
+        .collect(Collectors.toMap(DeploymentResource::getResourceName, Function.identity()));
   }
 
   private String extractWorkflowName(InputStream xmlInputStream) {
     SAXParser saxParser = getSAXParser();
-    DeploymentEventTransformer.ExtractNameSaxHandler handler = new DeploymentEventTransformer.ExtractNameSaxHandler();
+    ExtractNameSaxHandler handler = new ExtractNameSaxHandler();
+
     try {
       saxParser.parse(xmlInputStream, handler);
       return handler.getWorkflowName();
     } catch (SAXException | IOException e) {
       // just return null
     }
+
     return null;
   }
 

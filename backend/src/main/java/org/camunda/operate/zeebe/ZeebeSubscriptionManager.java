@@ -141,7 +141,7 @@ public class ZeebeSubscriptionManager {
       .startAtHeadOfTopic()
       .forcedStart();
     if (position != null) {
-      //we know the maximum position, that was process correctly, we subscribe from the next (+1)
+      //we know the maximum position, that was processed correctly, we subscribe from the next (+1)
       managementSubscriptionBuilder = managementSubscriptionBuilder.startAtPosition(position + 1);
     }
     return managementSubscriptionBuilder.open();

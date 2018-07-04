@@ -3,15 +3,11 @@ package org.camunda.operate.entities;
 
 public class WorkflowEntity extends OperateEntity {
 
-  public String name;
-
-  public int version;
-
-  public String bpmnProcessId;
-
-  public String bpmnXml;
-
-  public String resourceName;
+  private String name;
+  private int version;
+  private String bpmnProcessId;
+  private String bpmnXml;
+  private String resourceName;
 
   public String getName() {
     return name;
