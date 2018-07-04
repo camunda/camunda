@@ -23,22 +23,36 @@ import static org.mockito.Mockito.*;
 
 import io.zeebe.clustering.gossip.GossipEventType;
 import io.zeebe.clustering.gossip.MembershipEventType;
-import io.zeebe.dispatcher.*;
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.Dispatchers;
+import io.zeebe.dispatcher.FragmentHandler;
+import io.zeebe.dispatcher.Subscription;
 import io.zeebe.gossip.*;
 import io.zeebe.gossip.membership.Member;
-import io.zeebe.gossip.protocol.*;
+import io.zeebe.gossip.protocol.CustomEvent;
+import io.zeebe.gossip.protocol.GossipEvent;
+import io.zeebe.gossip.protocol.MembershipEvent;
 import io.zeebe.transport.*;
 import io.zeebe.transport.impl.RequestResponseHeaderDescriptor;
 import io.zeebe.transport.impl.TransportHeaderDescriptor;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.sched.*;
+import io.zeebe.util.buffer.BufferWriter;
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
 import org.junit.rules.ExternalResource;
 import org.mockito.ArgumentMatcher;
 
@@ -181,15 +195,29 @@ public class GossipRule extends ExternalResource {
               final ArgumentMatcher<RemoteAddress> remoteAddressMatcher =
                   r -> other.socketAddress.equals(r.getAddress());
 
-              doReturn(
-                      CompletableActorFuture.completedExceptionally(
-                          new RuntimeException("connection is interrupted")))
+              doAnswer(
+                      (invocationOnMock -> {
+                        // we need to consume the events
+                        final BufferWriter writer = (BufferWriter) invocationOnMock.getArgument(1);
+                        final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
+                        writer.write(buffer, 0);
+
+                        return CompletableActorFuture.completedExceptionally(
+                            new RuntimeException("connection is interrupted"));
+                      }))
                   .when(spyClientOutput)
                   .sendRequest(argThat(remoteAddressMatcher), any());
 
-              doReturn(
-                      CompletableActorFuture.completedExceptionally(
-                          new TimeoutException("timeout")))
+              doAnswer(
+                      (invocationOnMock -> {
+                        // we need to consume the events
+                        final BufferWriter writer = (BufferWriter) invocationOnMock.getArgument(1);
+                        final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
+                        writer.write(buffer, 0);
+
+                        return CompletableActorFuture.completedExceptionally(
+                            new TimeoutException("timeout"));
+                      }))
                   .when(spyClientOutput)
                   .sendRequest(argThat(remoteAddressMatcher), any(), any());
             })

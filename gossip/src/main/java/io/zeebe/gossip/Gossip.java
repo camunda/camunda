@@ -19,11 +19,21 @@ import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.zeebe.clustering.gossip.GossipEventType;
 import io.zeebe.clustering.gossip.MembershipEventType;
-import io.zeebe.gossip.dissemination.*;
+import io.zeebe.gossip.dissemination.CustomEventListenerConsumer;
+import io.zeebe.gossip.dissemination.CustomEventSyncResponseSupplier;
+import io.zeebe.gossip.dissemination.DisseminationComponent;
+import io.zeebe.gossip.dissemination.SyncRequestEventHandler;
 import io.zeebe.gossip.failuredetection.*;
-import io.zeebe.gossip.membership.*;
-import io.zeebe.gossip.protocol.*;
-import io.zeebe.transport.*;
+import io.zeebe.gossip.membership.GossipTerm;
+import io.zeebe.gossip.membership.Member;
+import io.zeebe.gossip.membership.MembershipList;
+import io.zeebe.gossip.protocol.GossipEventFactory;
+import io.zeebe.gossip.protocol.GossipEventSender;
+import io.zeebe.gossip.protocol.GossipRequestHandler;
+import io.zeebe.transport.BufferingServerTransport;
+import io.zeebe.transport.ClientTransport;
+import io.zeebe.transport.ServerInputSubscription;
+import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -46,6 +56,7 @@ public class Gossip extends Actor implements GossipController, GossipEventPublis
   private final DisseminationComponent disseminationComponent;
 
   private final JoinController joinController;
+  private final SyncController syncController;
   private final PingController pingController;
   private final SyncRequestEventHandler syncRequestHandler;
 
@@ -90,6 +101,7 @@ public class Gossip extends Actor implements GossipController, GossipEventPublis
 
     joinController = new JoinController(context, actor);
     pingController = new PingController(context, actor);
+    syncController = new SyncController(context, actor);
     syncRequestHandler =
         new SyncRequestEventHandler(context, customEventSyncRequestSupplier, actor);
 
@@ -136,6 +148,7 @@ public class Gossip extends Actor implements GossipController, GossipEventPublis
             // ping is stopped when the last member is removed
           }
         });
+    syncController.setupSyncRepetition();
   }
 
   public ActorFuture<Void> close() {
