@@ -103,7 +103,7 @@ multibranchPipelineJob('camunda-operate') {
 
   orphanedItemStrategy {
     discardOldItems {
-      daysToKeep(0)
+      daysToKeep(1)
     }
   }
 }
