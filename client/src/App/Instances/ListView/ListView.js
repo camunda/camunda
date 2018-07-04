@@ -24,7 +24,7 @@ export default class ListView extends React.Component {
     onSelectionUpdate: PropTypes.func.isRequired,
     filter: PropTypes.object.isRequired,
     onAddToSelection: PropTypes.func,
-    paneState: PropTypes.oneOf(Object.values(EXPAND_STATE))
+    expandState: PropTypes.oneOf(Object.values(EXPAND_STATE))
   };
 
   state = {
@@ -99,7 +99,7 @@ export default class ListView extends React.Component {
               }
               onSelectionUpdate={this.props.onSelectionUpdate}
               filter={this.props.filter}
-              paneState={this.props.paneState}
+              expandState={this.props.expandState}
               sortBy={this.state.sortBy}
               handleSorting={this.handleSorting}
             />

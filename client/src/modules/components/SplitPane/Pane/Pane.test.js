@@ -13,13 +13,13 @@ describe('Pane', () => {
     handleExpand: jest.fn()
   };
 
-  it('should render children with paneState', () => {
+  it('should render children with expandState', () => {
     // given
     const node = shallow(
       <Pane
         {...mockProps}
         paneId={PANE_ID.TOP}
-        paneState={EXPAND_STATE.EXPANDED}
+        expandState={EXPAND_STATE.EXPANDED}
       >
         <Foo />
       </Pane>
@@ -28,7 +28,7 @@ describe('Pane', () => {
     // then
     const FooNode = node.find(Foo);
     expect(FooNode).toHaveLength(1);
-    expect(FooNode.prop('paneState')).toBe(EXPAND_STATE.EXPANDED);
+    expect(FooNode.prop('expandState')).toBe(EXPAND_STATE.EXPANDED);
     expect(node).toMatchSnapshot();
   });
 
@@ -38,7 +38,7 @@ describe('Pane', () => {
       <Pane
         {...mockProps}
         paneId={PANE_ID.TOP}
-        paneState={EXPAND_STATE.EXPANDED}
+        expandState={EXPAND_STATE.EXPANDED}
       >
         <Foo />
       </Pane>
@@ -57,7 +57,7 @@ describe('Pane', () => {
       <Pane
         {...mockProps}
         paneId={PANE_ID.TOP}
-        paneState={EXPAND_STATE.DEFAULT}
+        expandState={EXPAND_STATE.DEFAULT}
       >
         <Foo />
       </Pane>
@@ -76,7 +76,7 @@ describe('Pane', () => {
       <Pane
         {...mockProps}
         paneId={PANE_ID.BOTTOM}
-        paneState={EXPAND_STATE.EXPANDED}
+        expandState={EXPAND_STATE.EXPANDED}
       >
         <Foo />
       </Pane>
@@ -97,7 +97,7 @@ describe('Pane', () => {
       <Pane
         {...mockProps}
         paneId={PANE_ID.BOTTOM}
-        paneState={EXPAND_STATE.COLLAPSED}
+        expandState={EXPAND_STATE.COLLAPSED}
       >
         <Foo />
       </Pane>

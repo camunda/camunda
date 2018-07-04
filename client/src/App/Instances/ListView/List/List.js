@@ -24,7 +24,7 @@ export default class List extends React.Component {
     filter: PropTypes.object,
     sortBy: PropTypes.object,
     handleSorting: PropTypes.func,
-    paneState: PropTypes.oneOf(Object.values(EXPAND_STATE))
+    expandState: PropTypes.oneOf(Object.values(EXPAND_STATE))
   };
 
   state = {
@@ -35,11 +35,14 @@ export default class List extends React.Component {
     this.recalculateHeight();
   }
 
-  componentDidUpdate({paneState: prevPaneState}) {
-    const {paneState} = this.props;
+  componentDidUpdate({expandState: prevExpandState}) {
+    const {expandState} = this.props;
 
     // only call recalculateHeight if the expandedId changes and the pane is not collapsed
-    if (prevPaneState !== paneState && paneState !== EXPAND_STATE.COLLAPSED) {
+    if (
+      prevExpandState !== expandState &&
+      expandState !== EXPAND_STATE.COLLAPSED
+    ) {
       this.recalculateHeight();
     }
   }

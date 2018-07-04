@@ -29,7 +29,7 @@ export default class Pane extends React.Component {
   static propTypes = {
     handleExpand: PropTypes.func,
     paneId: PropTypes.oneOf(Object.values(PANE_ID)),
-    paneState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
+    expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
       PropTypes.node
@@ -41,19 +41,19 @@ export default class Pane extends React.Component {
   };
 
   render() {
-    const {paneState, paneId} = this.props;
+    const {expandState, paneId} = this.props;
 
     const children = Children.map(this.props.children, child =>
-      cloneElement(child, {paneState})
+      cloneElement(child, {expandState})
     );
 
     const {
       ExpandButton,
-      iconDirections: {[paneState]: iconDirection}
+      iconDirections: {[expandState]: iconDirection}
     } = paneExpandButton[paneId];
 
     return (
-      <Styled.Pane {...this.props} paneState={paneState}>
+      <Styled.Pane {...this.props} expandState={expandState}>
         {children}
         <ExpandButton
           onClick={this.handleExpand}

@@ -4,7 +4,7 @@ import Panel from 'modules/components/Panel';
 import ExpandButton from 'modules/components/ExpandButton';
 import {EXPAND_STATE} from 'modules/constants/splitPane';
 
-const isCollapsed = paneState => paneState === EXPAND_STATE.COLLAPSED;
+const isCollapsed = expandState => expandState === EXPAND_STATE.COLLAPSED;
 
 const nonCollapsedPaneStyle = css`
   flex-grow: 1;
@@ -12,7 +12,7 @@ const nonCollapsedPaneStyle = css`
 `;
 
 export const Pane = styled(Panel)`
-  ${({paneState}) => (isCollapsed(paneState) ? '' : nonCollapsedPaneStyle)};
+  ${({expandState}) => (isCollapsed(expandState) ? '' : nonCollapsedPaneStyle)};
 `;
 
 const collapsedStyle = css`
@@ -23,11 +23,11 @@ const collapsedStyle = css`
 `;
 
 export const Body = styled(Panel.Body)`
-  ${({paneState}) => (isCollapsed(paneState) ? collapsedStyle : '')};
+  ${({expandState}) => (isCollapsed(expandState) ? collapsedStyle : '')};
 `;
 
 export const Footer = styled(Panel.Footer)`
-  ${({paneState}) => (isCollapsed(paneState) ? collapsedStyle : '')};
+  ${({expandState}) => (isCollapsed(expandState) ? collapsedStyle : '')};
 `;
 
 const buttonInBodyBorder = css`
@@ -45,8 +45,8 @@ export const TopExpandButton = styled(ExpandButton)`
   position: absolute;
   right: 0;
   bottom: 0;
-  ${({paneState}) =>
-    isCollapsed(paneState) ? buttonInHeaderBorder : buttonInBodyBorder};
+  ${({expandState}) =>
+    isCollapsed(expandState) ? buttonInHeaderBorder : buttonInBodyBorder};
 `;
 
 export const BottomExpandButton = styled(ExpandButton)`

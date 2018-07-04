@@ -30,7 +30,7 @@ describe('List', () => {
       query: {},
       list: [{}]
     },
-    paneState: EXPAND_STATE.DEFAULT,
+    expandState: EXPAND_STATE.DEFAULT,
     sortBy: {foo: ORDER.ASC}
   };
 
@@ -86,18 +86,18 @@ describe('List', () => {
       const node = shallow(<List {...mockProps} />);
       recalculateHeightSpy.mockClear();
 
-      // when component updates but paneState does not change
-      node.setProps({paneState: EXPAND_STATE.DEFAULT});
+      // when component updates but expandState does not change
+      node.setProps({expandState: EXPAND_STATE.DEFAULT});
       // then recalculateHeight should not be called
       expect(recalculateHeightSpy).not.toBeCalled();
 
-      // when component updates but paneState is COLLAPSED
-      node.setProps({paneState: EXPAND_STATE.COLLAPSED});
+      // when component updates but expandState is COLLAPSED
+      node.setProps({expandState: EXPAND_STATE.COLLAPSED});
       // then recalculateHeight should not be called
       expect(recalculateHeightSpy).not.toBeCalled();
 
-      // when component updates and paneState changed and is not COLLAPSED
-      node.setProps({paneState: EXPAND_STATE.EXPANDED});
+      // when component updates and expandState changed and is not COLLAPSED
+      node.setProps({expandState: EXPAND_STATE.EXPANDED});
       // then recalculateHeight should not be called
       expect(recalculateHeightSpy).toBeCalled();
     });

@@ -36,8 +36,8 @@ describe('SplitPane', () => {
     );
   });
 
-  describe('paneState', () => {
-    it('should render children with proper paneState when TOP pane is extended', () => {
+  describe('expandState', () => {
+    it('should render children with proper expandState when TOP pane is extended', () => {
       // given
       const FirstChild = () => <div>First Child</div>;
       const SecondChild = () => <div>Second Child</div>;
@@ -54,13 +54,13 @@ describe('SplitPane', () => {
       const FirstChildNode = node.find(FirstChild);
       const SecondChildNode = node.find(SecondChild);
       expect(FirstChildNode).toHaveLength(1);
-      expect(FirstChildNode.prop('paneState')).toBe(EXPAND_STATE.EXPANDED);
+      expect(FirstChildNode.prop('expandState')).toBe(EXPAND_STATE.EXPANDED);
       expect(SecondChildNode).toHaveLength(1);
-      expect(SecondChildNode.prop('paneState')).toBe(EXPAND_STATE.COLLAPSED);
+      expect(SecondChildNode.prop('expandState')).toBe(EXPAND_STATE.COLLAPSED);
       expect(node).toMatchSnapshot();
     });
 
-    it('should render children with proper paneState when BOTTOM pane is extended', () => {
+    it('should render children with proper expandState when BOTTOM pane is extended', () => {
       // given
       const FirstChild = () => <div>First Child</div>;
       const SecondChild = () => <div>Second Child</div>;
@@ -77,13 +77,13 @@ describe('SplitPane', () => {
       const FirstChildNode = node.find(FirstChild);
       const SecondChildNode = node.find(SecondChild);
       expect(FirstChildNode).toHaveLength(1);
-      expect(FirstChildNode.prop('paneState')).toBe(EXPAND_STATE.COLLAPSED);
+      expect(FirstChildNode.prop('expandState')).toBe(EXPAND_STATE.COLLAPSED);
       expect(SecondChildNode).toHaveLength(1);
-      expect(SecondChildNode.prop('paneState')).toBe(EXPAND_STATE.EXPANDED);
+      expect(SecondChildNode.prop('expandState')).toBe(EXPAND_STATE.EXPANDED);
       expect(node).toMatchSnapshot();
     });
 
-    it('should render children with proper paneState when no pane is extended', () => {
+    it('should render children with proper expandState when no pane is extended', () => {
       // given
       const FirstChild = () => <div>First Child</div>;
       const SecondChild = () => <div>Second Child</div>;
@@ -100,9 +100,9 @@ describe('SplitPane', () => {
       const FirstChildNode = node.find(FirstChild);
       const SecondChildNode = node.find(SecondChild);
       expect(FirstChildNode).toHaveLength(1);
-      expect(FirstChildNode.prop('paneState')).toBe(EXPAND_STATE.DEFAULT);
+      expect(FirstChildNode.prop('expandState')).toBe(EXPAND_STATE.DEFAULT);
       expect(SecondChildNode).toHaveLength(1);
-      expect(SecondChildNode.prop('paneState')).toBe(EXPAND_STATE.DEFAULT);
+      expect(SecondChildNode.prop('expandState')).toBe(EXPAND_STATE.DEFAULT);
       expect(node).toMatchSnapshot();
     });
   });

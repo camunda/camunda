@@ -34,10 +34,10 @@ export default class SplitPane extends React.Component {
   getChildren = () => {
     return Children.map(this.props.children, (child, idx) => {
       const paneId = paneIds[idx];
-      let paneState = this.getPaneExpandedState(paneId);
+      let expandState = this.getPaneExpandedState(paneId);
       return cloneElement(child, {
         paneId,
-        paneState,
+        expandState,
         handleExpand: this.handleExpand
       });
     });

@@ -2,13 +2,13 @@
 
 exports[`Pane should render BottomExpandButton with DOWN icon if pane is BOTTOM and it's expanded 1`] = `
 <Styled(Panel)
+  expandState="EXPANDED"
   handleExpand={[Function]}
   paneId="BOTTOM"
-  paneState="EXPANDED"
 >
   <Foo
+    expandState="EXPANDED"
     key=".0"
-    paneState="EXPANDED"
   />
   <Styled(ExpandButton)
     iconDirection="DOWN"
@@ -19,13 +19,13 @@ exports[`Pane should render BottomExpandButton with DOWN icon if pane is BOTTOM 
 
 exports[`Pane should render BottomExpandButton with UP icon if pane is BOTTOM and it's not expanded 1`] = `
 <Styled(Panel)
+  expandState="COLLAPSED"
   handleExpand={[Function]}
   paneId="BOTTOM"
-  paneState="COLLAPSED"
 >
   <Foo
+    expandState="COLLAPSED"
     key=".0"
-    paneState="COLLAPSED"
   />
   <Styled(ExpandButton)
     iconDirection="UP"
@@ -36,13 +36,13 @@ exports[`Pane should render BottomExpandButton with UP icon if pane is BOTTOM an
 
 exports[`Pane should render TopExpandButton with DOWN icon if pane is TOP and it's not expanded 1`] = `
 <Styled(Panel)
+  expandState="DEFAULT"
   handleExpand={[Function]}
   paneId="TOP"
-  paneState="DEFAULT"
 >
   <Foo
+    expandState="DEFAULT"
     key=".0"
-    paneState="DEFAULT"
   />
   <Styled(ExpandButton)
     iconDirection="DOWN"
@@ -53,13 +53,13 @@ exports[`Pane should render TopExpandButton with DOWN icon if pane is TOP and it
 
 exports[`Pane should render TopExpandButton with UP icon if pane is TOP and it's expanded 1`] = `
 <Styled(Panel)
+  expandState="EXPANDED"
   handleExpand={[Function]}
   paneId="TOP"
-  paneState="EXPANDED"
 >
   <Foo
+    expandState="EXPANDED"
     key=".0"
-    paneState="EXPANDED"
   />
   <Styled(ExpandButton)
     iconDirection="UP"
@@ -68,15 +68,15 @@ exports[`Pane should render TopExpandButton with UP icon if pane is TOP and it's
 </Styled(Panel)>
 `;
 
-exports[`Pane should render children with paneState 1`] = `
+exports[`Pane should render children with expandState 1`] = `
 <Styled(Panel)
+  expandState="EXPANDED"
   handleExpand={[Function]}
   paneId="TOP"
-  paneState="EXPANDED"
 >
   <Foo
+    expandState="EXPANDED"
     key=".0"
-    paneState="EXPANDED"
   />
   <Styled(ExpandButton)
     iconDirection="UP"

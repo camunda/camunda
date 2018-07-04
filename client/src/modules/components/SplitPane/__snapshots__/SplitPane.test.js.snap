@@ -1,52 +1,52 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`SplitPane paneState should render children with proper paneState when BOTTOM pane is extended 1`] = `
+exports[`SplitPane expandState should render children with proper expandState when BOTTOM pane is extended 1`] = `
 <styled.div>
   <FirstChild
+    expandState="COLLAPSED"
     handleExpand={[Function]}
     key=".0"
     paneId="TOP"
-    paneState="COLLAPSED"
   />
   <SecondChild
+    expandState="EXPANDED"
     handleExpand={[Function]}
     key=".1"
     paneId="BOTTOM"
-    paneState="EXPANDED"
   />
 </styled.div>
 `;
 
-exports[`SplitPane paneState should render children with proper paneState when TOP pane is extended 1`] = `
+exports[`SplitPane expandState should render children with proper expandState when TOP pane is extended 1`] = `
 <styled.div>
   <FirstChild
+    expandState="EXPANDED"
     handleExpand={[Function]}
     key=".0"
     paneId="TOP"
-    paneState="EXPANDED"
   />
   <SecondChild
+    expandState="COLLAPSED"
     handleExpand={[Function]}
     key=".1"
     paneId="BOTTOM"
-    paneState="COLLAPSED"
   />
 </styled.div>
 `;
 
-exports[`SplitPane paneState should render children with proper paneState when no pane is extended 1`] = `
+exports[`SplitPane expandState should render children with proper expandState when no pane is extended 1`] = `
 <styled.div>
   <FirstChild
+    expandState="DEFAULT"
     handleExpand={[Function]}
     key=".0"
     paneId="TOP"
-    paneState="DEFAULT"
   />
   <SecondChild
+    expandState="DEFAULT"
     handleExpand={[Function]}
     key=".1"
     paneId="BOTTOM"
-    paneState="DEFAULT"
   />
 </styled.div>
 `;
