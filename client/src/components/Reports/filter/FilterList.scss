@@ -3,6 +3,7 @@
   padding: 0;
 }
 
+.FilterList__item--not-editable,
 .FilterList__item {
   list-style-type: none;
   display: inline-flex;
@@ -13,10 +14,6 @@
   background: #fbfbfb;
   cursor: pointer;
 
-  &.not-editable {
-    cursor: default;
-  }
-
   &:first-child {
     margin-left: 0;
   }
@@ -24,6 +21,10 @@
   &:last-child {
     margin-right: 20px;
   }
+}
+
+.FilterList__item--not-editable {
+  cursor: default;
 }
 
 .FilterList__itemConnector {
