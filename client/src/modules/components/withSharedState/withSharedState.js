@@ -35,5 +35,7 @@ export default function withSharedState(Component) {
     Component.name ||
     'Component'}SharedState`;
 
+  WithSharedState.WrappedComponent = Component;
+
   return WithSharedState;
 }

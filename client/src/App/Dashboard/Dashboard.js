@@ -7,7 +7,7 @@ import MetricTile from './MetricTile';
 
 import {fetchWorkflowInstancesCount} from 'modules/api/instances';
 import {parseFilterForRequest} from 'modules/utils/filter';
-import {FILTER_SELECTION} from 'modules/constants/filter';
+import {FILTER_SELECTION, LABELS} from 'modules/constants/filter';
 
 import withSharedState from 'modules/components/withSharedState';
 import PropTypes from 'prop-types';
@@ -21,7 +21,7 @@ class Dashboard extends Component {
   };
 
   state = {
-    instances: 0,
+    running: 0,
     active: 0,
     incidents: 0
   };
@@ -29,7 +29,7 @@ class Dashboard extends Component {
   componentDidMount = async () => {
     const counts = await this.fetchCounts();
     this.props.storeStateLocally({
-      instances: counts.instances,
+      running: counts.running,
       incidents: counts.incidents
     });
     this.setState({...counts});
@@ -37,7 +37,7 @@ class Dashboard extends Component {
 
   fetchCounts = async () => {
     return {
-      instances: await fetchWorkflowInstancesCount(
+      running: await fetchWorkflowInstancesCount(
         parseFilterForRequest(FILTER_SELECTION.running)
       ),
       active: await fetchWorkflowInstancesCount(
@@ -51,35 +51,27 @@ class Dashboard extends Component {
 
   render() {
     const {filterCount} = this.props.getStateLocally();
-    const {instances, active, incidents} = this.state;
+    const {running, incidents} = this.state;
+    const tiles = ['running', 'active', 'incidents'];
     return (
       <Fragment>
         <Header
           active="dashboard"
-          instances={instances}
+          instances={running}
           filters={filterCount || 0}
           selections={0}
           incidents={incidents}
         />
         <Styled.Dashboard>
           <MetricPanel>
-            <MetricTile
-              metric={instances}
-              name="Running Instances"
-              type="running"
-            />
-            <MetricTile
-              metric={active}
-              name="Active"
-              metricColor="allIsWell"
-              type="active"
-            />
-            <MetricTile
-              metric={incidents}
-              name="Incidents"
-              metricColor="incidentsAndErrors"
-              type="incidents"
-            />
+            {tiles.map(tile => (
+              <MetricTile
+                key={tile}
+                value={this.state[tile]}
+                label={LABELS[tile]}
+                type={tile}
+              />
+            ))}
           </MetricPanel>
         </Styled.Dashboard>
       </Fragment>

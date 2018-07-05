@@ -12,9 +12,14 @@ describe('Dashboard', () => {
   let node;
 
   beforeEach(() => {
-    node = shallow(<Dashboard />)
-      .first()
-      .shallow();
+    node = shallow(
+      <Dashboard.WrappedComponent
+        storeStateLocally={() => {}}
+        getStateLocally={() => {
+          return {filterCount: 0};
+        }}
+      />
+    );
   });
 
   it('should render MetricPanel component', () => {
@@ -38,11 +43,11 @@ describe('Dashboard', () => {
     expect(spyFetch).toHaveBeenCalled();
   });
 
-  it('should store the instances and incidents counts', async () => {
+  it('should save to localStorage the running instances and incidents counts', async () => {
     const spy = jest.fn();
     node.setProps({storeStateLocally: spy});
     await node.instance().componentDidMount();
 
-    expect(spy).toHaveBeenCalledWith({instances: 123, incidents: 123});
+    expect(spy).toHaveBeenCalledWith({running: 123, incidents: 123});
   });
 });

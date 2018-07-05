@@ -3,13 +3,18 @@ import {Link} from 'react-router-dom';
 import {Colors, themed, themeStyle} from 'modules/theme';
 import withStrippedProps from 'modules/utils/withStrippedProps';
 
+const METRIC_COLOR = {
+  active: 'allIsWell',
+  incidents: 'incidentsAndErrors'
+};
+
 export const MetricTile = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
 `;
 
-export const Metric = themed(styled(withStrippedProps(['metricColor'])(Link))`
+export const Metric = themed(styled(withStrippedProps(['type'])(Link))`
   display: inline-block;
   padding-top: 6px;
   padding-bottom: 16px;
@@ -20,10 +25,10 @@ export const Metric = themed(styled(withStrippedProps(['metricColor'])(Link))`
       dark: 0.9,
       light: 1
     })};
-  color: ${({metricColor}) =>
-    metricColor === 'themed'
+  color: ${({type}) =>
+    type === 'running'
       ? themeStyle({dark: '#ffffff', light: Colors.uiLight06})
-      : Colors[metricColor]};
+      : Colors[METRIC_COLOR[type]]};
 
   &:hover {
     text-decoration: underline;
