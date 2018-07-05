@@ -49,6 +49,81 @@ public class GossipJoinTest {
   }
 
   @Test
+  public void shouldSendSyncRequestAfterReconnect() {
+    // given
+    gossip2.join(gossip1).join();
+    gossip3.join(gossip1).join();
+    cluster.interruptConnectionBetween(gossip1, gossip2);
+    gossip1.clearReceivedEvents();
+    gossip2.clearReceivedEvents();
+    gossip3.clearReceivedEvents();
+
+    // when
+    cluster.waitUntil(
+        () ->
+            gossip3.receivedEvent(GossipEventType.SYNC_REQUEST, gossip1)
+                && gossip3.receivedEvent(GossipEventType.SYNC_REQUEST, gossip1));
+    gossip3.clearReceivedEvents();
+    cluster.waitUntil(
+        () ->
+            gossip3.receivedEvent(GossipEventType.SYNC_REQUEST, gossip1)
+                && gossip3.receivedEvent(GossipEventType.SYNC_REQUEST, gossip1));
+
+    // then
+    assertThat(gossip1.receivedEvent(GossipEventType.SYNC_REQUEST, gossip2)).isFalse();
+    assertThat(gossip2.receivedEvent(GossipEventType.SYNC_REQUEST, gossip1)).isFalse();
+
+    // when
+    cluster.reconnect(gossip1, gossip2);
+
+    // then
+    cluster.waitUntil(
+        () ->
+            (gossip1.receivedEvent(GossipEventType.SYNC_REQUEST, gossip2)
+                    && gossip2.receivedEvent(GossipEventType.SYNC_RESPONSE, gossip1))
+                && (gossip2.receivedEvent(GossipEventType.SYNC_REQUEST, gossip1)
+                    && gossip1.receivedEvent(GossipEventType.SYNC_RESPONSE, gossip2)));
+  }
+
+  @Test
+  public void shouldRepeatSyncRequestAfterAnInterval() {
+    // given
+    gossip2.join(gossip1).join();
+
+    // when
+    gossip1.clearReceivedEvents();
+    gossip2.clearReceivedEvents();
+    assertThat(gossip1.receivedEvent(GossipEventType.SYNC_REQUEST, gossip2)).isFalse();
+    assertThat(gossip2.receivedEvent(GossipEventType.SYNC_RESPONSE, gossip1)).isFalse();
+
+    // then
+    cluster.waitUntil(
+        () ->
+            gossip1.receivedEvent(GossipEventType.SYNC_REQUEST, gossip2)
+                && gossip2.receivedEvent(GossipEventType.SYNC_RESPONSE, gossip1));
+  }
+
+  @Test
+  public void shouldSendSyncRequestOnAllNodes() {
+    // given
+    gossip2.join(gossip1).join();
+
+    // when
+    gossip1.clearReceivedEvents();
+    gossip2.clearReceivedEvents();
+    assertThat(gossip1.receivedEvent(GossipEventType.SYNC_REQUEST, gossip2)).isFalse();
+    assertThat(gossip2.receivedEvent(GossipEventType.SYNC_RESPONSE, gossip1)).isFalse();
+
+    // then
+    cluster.waitUntil(
+        () ->
+            (gossip1.receivedEvent(GossipEventType.SYNC_REQUEST, gossip2)
+                    && gossip2.receivedEvent(GossipEventType.SYNC_RESPONSE, gossip1))
+                && (gossip2.receivedEvent(GossipEventType.SYNC_REQUEST, gossip1)
+                    && gossip1.receivedEvent(GossipEventType.SYNC_RESPONSE, gossip2)));
+  }
+
+  @Test
   public void shouldSpreadJoinEvent() {
     // when
     gossip2.join(gossip1).join();

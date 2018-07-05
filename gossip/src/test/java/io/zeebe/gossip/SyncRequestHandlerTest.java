@@ -23,8 +23,11 @@ import io.zeebe.gossip.protocol.CustomEvent;
 import io.zeebe.gossip.util.GossipClusterRule;
 import io.zeebe.gossip.util.GossipRule;
 import io.zeebe.test.util.BufferAssert;
+import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.DirectBuffer;
 import org.junit.Rule;
@@ -50,28 +53,8 @@ public class SyncRequestHandlerTest {
   @Test
   public void shouldInvokeSyncRequestHandler() {
     // given
-    final AtomicInteger invocationsHandler1 = new AtomicInteger(0);
-    final AtomicInteger invocationsHandler2 = new AtomicInteger(0);
-
-    gossip1
-        .getController()
-        .registerSyncRequestHandler(
-            TYPE_1,
-            request -> {
-              invocationsHandler1.incrementAndGet();
-
-              return CompletableActorFuture.completed(null);
-            });
-
-    gossip1
-        .getController()
-        .registerSyncRequestHandler(
-            TYPE_2,
-            request -> {
-              invocationsHandler2.incrementAndGet();
-
-              return CompletableActorFuture.completed(null);
-            });
+    final AtomicInteger invocationsHandler1 = addCounterSyncHandler(gossip1, TYPE_1);
+    final AtomicInteger invocationsHandler2 = addCounterSyncHandler(gossip1, TYPE_2);
 
     // when
     gossip2.join(gossip1).join();
@@ -80,6 +63,47 @@ public class SyncRequestHandlerTest {
     // then
     assertThat(invocationsHandler1.get()).isEqualTo(2);
     assertThat(invocationsHandler2.get()).isEqualTo(2);
+  }
+
+  @Test
+  public void shouldInvokeSyncRequestHandlerRepeatedly() {
+    // given
+    final AtomicInteger counter = addCounterSyncHandler(gossip1, TYPE_1);
+
+    // when
+    gossip2.join(gossip1).join();
+
+    // then
+    cluster.waitUntil(() -> counter.get() == 10);
+  }
+
+  @Test
+  public void shouldInvokeSyncRequestHandlerRepeatedlyOnAllNodes() {
+    // given
+    final AtomicInteger counter1 = addCounterSyncHandler(gossip1, TYPE_1);
+    final AtomicInteger counter2 = addCounterSyncHandler(gossip2, TYPE_1);
+    final AtomicInteger counter3 = addCounterSyncHandler(gossip3, TYPE_1);
+
+    // when
+    gossip2.join(gossip1).join();
+    gossip3.join(gossip1).join();
+
+    // then
+    cluster.waitUntil(() -> counter1.get() >= 10 && counter2.get() >= 10 && counter3.get() >= 10);
+  }
+
+  private AtomicInteger addCounterSyncHandler(GossipRule gossip, DirectBuffer type) {
+    final AtomicInteger invocationCounter = new AtomicInteger(0);
+    gossip
+        .getController()
+        .registerSyncRequestHandler(
+            type,
+            request -> {
+              invocationCounter.incrementAndGet();
+
+              return CompletableActorFuture.completed(null);
+            });
+    return invocationCounter;
   }
 
   @Test
@@ -110,6 +134,53 @@ public class SyncRequestHandlerTest {
     BufferAssert.assertThatBuffer(customEvent.getPayload())
         .hasCapacity(PAYLOAD_1.capacity())
         .hasBytes(PAYLOAD_1);
+  }
+
+  @Test
+  public void shouldGetCustomEventViaSyncIfCustomEventWasLostDueToConnectionFailure() {
+    // given
+    final List<DirectBuffer> customEvents = new ArrayList<>();
+    gossip2.join(gossip1).join();
+
+    gossip2.clearReceivedEvents();
+    cluster.interruptConnectionBetween(gossip1, gossip2);
+
+    gossip2
+        .getController()
+        .addCustomEventListener(
+            TYPE_1,
+            ((sender, payload) -> {
+              customEvents.add(BufferUtil.cloneBuffer(payload));
+            }));
+
+    gossip1
+        .getController()
+        .registerSyncRequestHandler(
+            TYPE_1,
+            request -> {
+              request.addPayload(gossip1.getAddress(), PAYLOAD_2);
+
+              return CompletableActorFuture.completed(null);
+            });
+    gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
+
+    final AtomicInteger counter = new AtomicInteger(0);
+    cluster.waitUntil(() -> counter.getAndIncrement() == 100);
+
+    // when
+    assertThat(customEvents).hasSize(0);
+    assertThat(gossip2.getReceivedCustomEvents(TYPE_1, gossip1)).hasSize(0);
+    cluster.reconnect(gossip1, gossip2);
+
+    cluster.waitUntil(
+        () ->
+            gossip1.receivedEvent(GossipEventType.SYNC_REQUEST, gossip2)
+                && gossip2.receivedEvent(GossipEventType.SYNC_RESPONSE, gossip1));
+
+    cluster.waitUntil(() -> customEvents.size() == 1);
+
+    // then
+    assertThat(customEvents).hasSize(1).containsExactly(PAYLOAD_2);
   }
 
   @Test
