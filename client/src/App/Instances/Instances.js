@@ -78,20 +78,8 @@ class Instances extends Component {
     );
   };
 
-  getFilterFromUrl = () => {
-    const query = this.props.location.search;
-    let hasQuery = Boolean(query);
-    let filter = null;
-
-    if (hasQuery) {
-      filter = parseQueryString(query).filter;
-    }
-
-    return filter;
-  };
-
   setFilterFromUrl = () => {
-    let filter = this.getFilterFromUrl();
+    let {filter} = parseQueryString(this.props.location.search);
 
     // filter from URL was missing or invalid
     if (!filter) {

@@ -14,7 +14,7 @@ export function isEmpty(obj) {
   return true;
 }
 
-export function parseQueryString(queryString) {
+export function parseQueryString(queryString = '') {
   var params = {};
 
   const queries = queryString
@@ -23,10 +23,10 @@ export function parseQueryString(queryString) {
     .split('&');
 
   queries.forEach((item, index) => {
-    const temp = queries[index].split('=');
+    const [paramKey, paramValue] = queries[index].split('=');
 
-    if (isValidJSON(temp[1])) {
-      params[temp[0]] = JSON.parse(temp[1]);
+    if (isValidJSON(paramValue)) {
+      params[paramKey] = JSON.parse(paramValue);
     }
   });
 
