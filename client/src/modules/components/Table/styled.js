@@ -53,11 +53,13 @@ export const BodyCell = styled.td`
 export const BodyRow = themed(styled.tr`
   height: 37px;
   line-height: 37px;
-  border: 1px solid
-    ${themeStyle({
-      dark: Colors.uiDark04,
-      light: Colors.uiLight05
-    })};
+
+  border-width: 1px 1px 1px 0;
+  border-style: solid;
+  border-color: ${themeStyle({
+    dark: Colors.uiDark04,
+    light: Colors.uiLight05
+  })};
 
   &:nth-child(odd) {
     background-color: ${({theme, selected}) => {
@@ -99,9 +101,11 @@ export const BodyRow = themed(styled.tr`
 export const HeaderRow = themed(styled.tr`
   height: 37px;
   line-height: 37px;
-  border: 1px solid
-    ${themeStyle({
-      dark: Colors.uiDark04,
-      light: Colors.uiLight05
-    })};
+
+  border-width: 0 1px 1px 0;
+  border-style: solid;
+  border-color: ${themeStyle({
+    dark: Colors.uiDark04,
+    light: Colors.uiLight05
+  })};
 `);

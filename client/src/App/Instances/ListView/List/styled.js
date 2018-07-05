@@ -19,29 +19,27 @@ export const TableContainer = styled.div`
 export const SelectionStatusIndicator = themed(styled.div`
   display: inline-block;
   height: 37px;
-  width: 8px;
+  width: 9px;
   ${({selected}) =>
     selected &&
     `background-color: ${Colors.selections};`} vertical-align: bottom;
   margin-left: -5px;
+  margin-right: 11px;
+
   border-right: 1px solid
     ${themeStyle({dark: Colors.uiDark04, light: Colors.uiLight05})};
 `);
 
 export const CheckAll = styled.div`
   display: inline-block;
-  margin-left: 25px;
-  margin-right: 20px;
+  margin-left: 16px;
+  margin-right: 28px;
 `;
 
 export const Selection = styled.div`
   position: relative;
   display: flex;
   align-items: center;
-
-  & *:not(:first-child) {
-    margin-left: 11px;
-  }
 
   & * {
     top: 0px;
@@ -55,3 +53,7 @@ export const InstanceAnchor = themed(styled(Link)`
     light: Colors.lightLinkBlue
   })};
 `);
+
+export const WorkflowName = styled.span`
+  margin-left: 7px;
+`;

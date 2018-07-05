@@ -152,7 +152,7 @@ export default class List extends React.Component {
         />
 
         <StateIcon instance={instance} />
-        {getWorkflowName(instance)}
+        <Styled.WorkflowName>{getWorkflowName(instance)}</Styled.WorkflowName>
       </Styled.Selection>
     );
   };
