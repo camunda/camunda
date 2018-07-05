@@ -3,7 +3,6 @@ import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 import {Logo as BaseLogo} from 'modules/components/Icon';
 import TextInput from 'modules/components/TextInput';
-import Button from 'modules/components/Button';
 
 export const Login = styled.div`
   display: flex;
@@ -71,19 +70,4 @@ export const UsernameInput = themed(LoginInput.extend`
 
 export const PasswordInput = themed(LoginInput.extend`
   margin-bottom: 32px;
-`);
-
-export const SubmitButton = themed(styled(Button)`
-  height: 48px;
-  padding-left: 32px;
-  padding-right: 32.2px;
-  padding-top: 12px;
-  padding-bottom: 13px;
-
-  background-color: ${themeStyle({
-    light: Colors.uiLight03
-  })};
-
-  font-size: 18px;
-  font-weight: 600;
 `);

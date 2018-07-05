@@ -3,10 +3,11 @@ import PropTypes from 'prop-types';
 import {Redirect} from 'react-router-dom';
 
 import {login} from 'modules/api/login';
+import withSharedState from 'modules/components/withSharedState';
+import Button from 'modules/components/Button';
+
 import {REQUIRED_FIELD_ERROR, LOGIN_ERROR} from './constants';
 import * as Styled from './styled';
-
-import withSharedState from 'modules/components/withSharedState';
 
 class Login extends React.Component {
   static propTypes = {
@@ -76,9 +77,9 @@ class Login extends React.Component {
             placeholder="Password"
             aria-label="Password"
           />
-          <Styled.SubmitButton type="submit" title="Log in">
+          <Button type="submit" size="large" title="Log in">
             Log in
-          </Styled.SubmitButton>
+          </Button>
         </Styled.LoginForm>
       </Styled.Login>
     );

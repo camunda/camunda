@@ -41,13 +41,34 @@ const disabledStyle = css`
       dark: Colors.uiLight02,
       light: Colors.uiDark04
     })};
+    opacity: 0.5;
   }
 `;
 
+const sizeStyle = ({size}) => {
+  const mediumSizeStyle = css`
+    padding: 8px;
+    padding-top: 9px;
+    height: 35px;
+
+    font-size: 14px;
+  `;
+
+  const largeSizeStyle = css`
+    padding-top: 12px;
+    padding-bottom: 13px;
+    padding-left: 33px;
+    padding-right: 32.1px;
+    height: 48px;
+    width: 340px;
+
+    font-size: 18px;
+  `;
+
+  return size === 'medium' ? mediumSizeStyle : largeSizeStyle;
+};
+
 export const Button = themed(styled.button`
-  height: 35px;
-  padding: 8px;
-  padding-top: 9px;
   border: solid 1px
     ${themeStyle({
       dark: Colors.uiDark06,
@@ -61,7 +82,7 @@ export const Button = themed(styled.button`
     })};
 
   font-family: IBMPlexSans;
-  font-size: 14px;
+  font-weight: 600;
 
   color: ${themeStyle({
     dark: Colors.uiLight02,
@@ -77,4 +98,5 @@ export const Button = themed(styled.button`
   ${hoverStyle};
   ${activeStyle};
   ${disabledStyle};
+  ${sizeStyle};
 `);

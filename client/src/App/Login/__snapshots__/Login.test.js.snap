@@ -44,12 +44,13 @@ exports[`Login should display an error if any field is empty 1`] = `
       type="password"
       value=""
     />
-    <Themed(Styled(Button))
+    <Button
+      size="large"
       title="Log in"
       type="submit"
     >
       Log in
-    </Themed(Styled(Button))>
+    </Button>
   </styled.form>
 </styled.div>
 `;
@@ -84,12 +85,13 @@ exports[`Login should display an error on unsuccessful login 1`] = `
       type="password"
       value="bar"
     />
-    <Themed(Styled(Button))
+    <Button
+      size="large"
       title="Log in"
       type="submit"
     >
       Log in
-    </Themed(Styled(Button))>
+    </Button>
   </styled.form>
 </styled.div>
 `;
@@ -121,12 +123,13 @@ exports[`Login should render login form by default 1`] = `
       type="password"
       value=""
     />
-    <Themed(Styled(Button))
+    <Button
+      size="large"
       title="Log in"
       type="submit"
     >
       Log in
-    </Themed(Styled(Button))>
+    </Button>
   </styled.form>
 </styled.div>
 `;
