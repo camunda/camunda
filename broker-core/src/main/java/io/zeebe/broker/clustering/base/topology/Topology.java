@@ -22,7 +22,10 @@ import io.zeebe.broker.clustering.base.topology.TopologyDto.BrokerDto;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.buffer.BufferUtil;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
@@ -108,13 +111,13 @@ public class Topology implements ReadableTopology {
     return new ArrayList<>(partitions.values());
   }
 
-  public void addMember(NodeInfo member) {
-    // replace member if present
+  public boolean addMember(NodeInfo member) {
+
     if (!members.contains(member)) {
       LOG.debug("Adding {} to list of known members", member);
-
-      members.add(member);
+      return members.add(member);
     }
+    return false;
   }
 
   public void removeMember(NodeInfo member) {

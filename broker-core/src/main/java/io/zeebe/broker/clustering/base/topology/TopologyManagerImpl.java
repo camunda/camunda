@@ -170,8 +170,10 @@ public class TopologyManagerImpl extends Actor implements TopologyManager, RaftS
             readSocketAddress(offset, payloadCopy, replicationApi);
 
             final NodeInfo newMember = new NodeInfo(clientApi, managementApi, replicationApi);
-            topology.addMember(newMember);
-            notifyMemberAdded(newMember);
+            final boolean memberAdded = topology.addMember(newMember);
+            if (memberAdded) {
+              notifyMemberAdded(newMember);
+            }
           });
     }
   }
