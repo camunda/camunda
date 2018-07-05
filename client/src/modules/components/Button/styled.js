@@ -50,6 +50,7 @@ const sizeStyle = ({size}) => {
     padding: 8px;
     padding-top: 9px;
     height: 35px;
+    width: 117px;
 
     font-size: 14px;
   `;

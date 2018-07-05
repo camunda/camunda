@@ -1,25 +1,29 @@
 import React, {Component, Fragment} from 'react';
+import PropTypes from 'prop-types';
 import update from 'immutability-helper';
-import Header from '../Header';
 
 import Panel from 'modules/components/Panel';
 import withSharedState from 'modules/components/withSharedState';
 import SplitPane from 'modules/components/SplitPane';
 import {ICON_DIRECTION} from 'modules/components/ExpandButton/constants';
-
-import PropTypes from 'prop-types';
-
-import Filter from './Filter/index';
-import ListView from './ListView';
-import SelectionDisplay from './SelectionDisplay';
-
+import Button from 'modules/components/Button';
 import {fetchWorkflowInstancesCount} from 'modules/api/instances';
 import {
   parseFilterForRequest,
   getFilterQueryString
 } from 'modules/utils/filter';
-import {parseQueryString, isEmpty, createNewSelectionFragment} from './service';
 import {DEFAULT_FILTER, FILTER_TYPES} from 'modules/constants/filter';
+
+import Header from '../Header';
+import Filter from './Filter/index';
+import ListView from './ListView';
+import SelectionDisplay from './SelectionDisplay';
+import {
+  parseQueryString,
+  isEmpty,
+  isEqual,
+  createNewSelectionFragment
+} from './service';
 import * as Styled from './styled.js';
 
 class Instances extends Component {
@@ -122,6 +126,10 @@ class Instances extends Component {
     });
   };
 
+  resetFilter = () => {
+    this.handleFilterChange(DEFAULT_FILTER);
+  };
+
   render() {
     const {instances, incidents: incidentsCount} = this.props.getStateLocally();
     const {active, incidents, canceled, completed} = this.state.filter;
@@ -164,6 +172,15 @@ class Instances extends Component {
                 iconDirection={ICON_DIRECTION.LEFT}
                 isExpanded={true}
               />
+              <Styled.FiltersFooter>
+                <Button
+                  title="clear filters"
+                  disabled={isEqual(this.state.filter, DEFAULT_FILTER)}
+                  onClick={this.resetFilter}
+                >
+                  Clear Filters
+                </Button>
+              </Styled.FiltersFooter>
               <Panel.Footer />
             </Panel>
           </Styled.Left>

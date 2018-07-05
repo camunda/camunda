@@ -14,6 +14,12 @@ export function isEmpty(obj) {
   return true;
 }
 
+export function isEqual(objA, objB) {
+  return (
+    typeof objA === typeof objB && JSON.stringify(objA) === JSON.stringify(objB)
+  );
+}
+
 export function parseQueryString(queryString = '') {
   var params = {};
 

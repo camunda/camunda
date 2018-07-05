@@ -52,3 +52,9 @@ export const RightExpandButton = styled(ExpandButton)`
 export const SelectionHeader = styled(Panel.Header)`
   padding-left: 45px;
 `;
+
+export const FiltersFooter = styled(Panel.Footer)`
+  display: flex;
+  justify-content: center;
+  height: 56px;
+`;
