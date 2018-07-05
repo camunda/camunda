@@ -94,7 +94,7 @@ pipeline {
     stage('Prepare') {
       steps {
         git url: 'git@github.com:camunda/camunda-operate',
-            branch: 'mvnRelease',
+            branch: 'master',
             credentialsId: 'camunda-jenkins-github-ssh',
             poll: false
 
