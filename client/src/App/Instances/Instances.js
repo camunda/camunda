@@ -127,7 +127,8 @@ class Instances extends Component {
   };
 
   resetFilter = () => {
-    this.handleFilterChange(DEFAULT_FILTER);
+    this.setFilterInURL(DEFAULT_FILTER);
+    this.props.storeStateLocally({filter: DEFAULT_FILTER});
   };
 
   render() {
