@@ -1,13 +1,11 @@
 .FilterList {
-  display: flex;
+  display: inline;
   padding: 0;
-  flex-wrap: wrap;
-  align-items: baseline;
 }
 
 .FilterList__item {
   list-style-type: none;
-  display: flex;
+  display: inline-flex;
   margin-bottom: 20px;
   border: 1px solid #ccc;
   background-color: white;
