@@ -17,7 +17,7 @@ describe('withStrippedProps', () => {
     const node = shallow(<StrippedComponent {...testProps} />);
 
     // then
-    expect(node.props('test')).not.toBe(undefined);
-    expect(node.props('onClick')).not.toBe(undefined);
+    expect(node.props().test).toBe(undefined);
+    expect(node.props().onClick).toBe(undefined);
   });
 });
