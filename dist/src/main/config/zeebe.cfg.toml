@@ -203,6 +203,7 @@ replicationFactor = 1
 # probeIndirectTimeout = "1s"
 # suspicionMultiplier = 5
 # syncTimeout = "3s"
+# syncInterval = "15s"
 # joinTimeout = "1s"
 # joinInterval = "5s"
 # leaveTimeout = "1s"
