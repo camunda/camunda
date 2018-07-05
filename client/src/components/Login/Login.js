@@ -22,8 +22,7 @@ export default class Login extends React.Component {
 
   handleInputChange = ({target: {name, value}}) => {
     this.setState({
-      [name]: value,
-      error: false
+      [name]: value
     });
   };
 
@@ -35,9 +34,11 @@ export default class Login extends React.Component {
     const token = await login(username, password);
 
     if (token) {
-      this.setState({redirect: true});
+      this.setState({error: false, redirect: true});
     } else {
       this.setState({error: true});
+      this.passwordField.focus();
+      this.passwordField.select();
     }
   };
 
@@ -97,12 +98,5 @@ export default class Login extends React.Component {
         </Button>
       </form>
     );
-  }
-
-  componentDidUpdate() {
-    if (this.state.error) {
-      this.passwordField.focus();
-      this.passwordField.select();
-    }
   }
 }
