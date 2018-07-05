@@ -18,6 +18,10 @@ class Authentication extends React.Component {
   constructor(props) {
     super(props);
 
+    /* The response interceptor is in constructor so that it is set before any
+     child of Authentication mounts, and thus before any request is made.
+    */
+
     setResponseInterceptor(this.interceptResponse);
 
     this.defaultState = {forceRedirect: false};
