@@ -10,13 +10,17 @@ export const Label = themed(styled.label`
   /* Display & Box Model */
   display: inline-block;
   margin: 4px 0;
-  margin-left: 11px;
 
   /* Text */
   font-size: 13px;
+  line-height: 1.08;
 
   /* Colors */
-  opacity: 0.9;
+  opacity: ${themeStyle({
+    dark: ({checked}) => (checked ? 0.9 : 0.7),
+    light: ({checked}) => (checked ? 1 : 0.7)
+  })};
+
   color: ${themeStyle({
     dark: '#c5c5c7',
     light: Colors.uiLight06
@@ -69,14 +73,14 @@ export const Input = themed(styled.input`
 export const CustomCheckbox = themed(styled.div`
   position: relative;
   display: inline-block;
-  width: 14px;
-  height: 14px;
+  margin-right: 11px;
+  width: 12px;
+  height: 12px;
   
   /* box styles */
   &:before {
     content: '';
     position: absolute;
-    top: 2px;
     display: inline-block;
     width: 100%;
     height: 100%;
@@ -107,18 +111,18 @@ export const CustomCheckbox = themed(styled.div`
 `);
 
 const indeterminateStyles = `
-left: 5px;
-top: 7px;
+left: 4px;
+top: 4px;
 width: 6px;
 height: 2px;
 border-width: 0 0 2px 0;
 `;
 
 const checkMarkStyles = `
-left: 3px;
-top: 6px;
-height:4px;
-width: 9px;
+left: 2px;
+top: 4px;
+height:3px;
+width: 8px;
 border-width: 0 0 2px 2px;
 transform: rotate(-50deg);
 `;
