@@ -5,6 +5,8 @@ public class ElasticsearchProperties {
 
   public static final String WORKFLOW_INSTANCE_INDEX_NAME_DEFAULT = "workflow-instance";
 
+  public static final String EVENT_INDEX_NAME_DEFAULT = "event";
+
   public static final String WORKFLOW_INDEX_NAME_DEFAULT = "workflow";
 
   private String clusterName= "elasticsearch";
@@ -16,6 +18,8 @@ public class ElasticsearchProperties {
   private String dateFormat;
 
   private int insertBatchSize = 20;
+
+  private String eventIndexName = EVENT_INDEX_NAME_DEFAULT;
 
   private String workflowInstanceIndexName = WORKFLOW_INSTANCE_INDEX_NAME_DEFAULT;
 
@@ -75,5 +79,13 @@ public class ElasticsearchProperties {
 
   public void setWorkflowIndexName(String workflowIndexName) {
     this.workflowIndexName = workflowIndexName;
+  }
+
+  public String getEventIndexName() {
+    return eventIndexName;
+  }
+
+  public void setEventIndexName(String eventIndexName) {
+    this.eventIndexName = eventIndexName;
   }
 }

@@ -50,6 +50,7 @@ public class ZeebeMetadataReaderIT extends OperateIntegrationTest {
   }
 
   @Test
+  @Ignore //TODO logic will be changed
   public void testSelectMetadata() {
     final Map<Integer, Long> map = zeebeMetadataReader.getPositionPerPartitionMap();
     final Set<Map.Entry<Integer, Long>> entries = positionPerPartitionIdMap.entrySet();

@@ -19,6 +19,7 @@ import javax.xml.parsers.SAXParserFactory;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.es.writer.EntityStorage;
 import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.util.ZeebeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +41,7 @@ import io.zeebe.client.api.subscription.DeploymentEventHandler;
 public class DeploymentEventTransformer extends AbstractEventTransformer implements DeploymentEventHandler {
 
   private static final Charset CHARSET = StandardCharsets.UTF_8;
-  private Logger logger = LoggerFactory.getLogger(WorkflowInstanceEventTransformer.class);
+  private Logger logger = LoggerFactory.getLogger(DeploymentEventTransformer.class);
 
   private final static Set<DeploymentState> STATES = new HashSet<>();
 
@@ -56,6 +57,9 @@ public class DeploymentEventTransformer extends AbstractEventTransformer impleme
 
   @Override
   public void onDeploymentEvent(DeploymentEvent event) throws Exception {
+
+    ZeebeUtil.ALL_EVENTS_LOGGER.debug(event.toJson());
+
     if (STATES.contains(event.getState())) {
 
       logger.debug(event.toJson());

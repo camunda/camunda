@@ -4,10 +4,12 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import org.camunda.operate.entities.ActivityInstanceEntity;
+import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
+import org.camunda.operate.es.types.EventType;
 import org.camunda.operate.es.types.StrictTypeMappingCreator;
 import org.camunda.operate.es.types.WorkflowInstanceType;
 import org.camunda.operate.es.types.WorkflowType;
@@ -42,6 +44,9 @@ public class ElasticsearchRequestCreatorsHolder {
 
   @Autowired
   private WorkflowType workflowType;
+
+  @Autowired
+  private EventType eventType;
 
   @Autowired
   private WorkflowInstanceType workflowInstanceType;
@@ -201,6 +206,21 @@ public class ElasticsearchRequestCreatorsHolder {
     };
   }
 
+  public ElasticsearchRequestCreator<EventEntity> eventEsRequestCreator() {
+    return (bulkRequestBuilder, entity) -> {
+      try {
+        return bulkRequestBuilder.add(
+          esClient
+            .prepareIndex(eventType.getType(), eventType.getType(), entity.getId())
+            .setSource(objectMapper.writeValueAsString(entity), XContentType.JSON)
+        );
+      } catch (JsonProcessingException e) {
+        logger.error("Error preparing the query to insert event", e);
+        throw new PersistenceException(String.format("Error preparing the query to insert event [%s]", entity.getId()), e);
+      }
+    };
+  }
+
   @Bean
   public Map<Class<? extends OperateEntity>, ElasticsearchRequestCreator> getEsRequestMapping() {
     Map<Class<? extends OperateEntity>, ElasticsearchRequestCreator> map = new HashMap<>();
@@ -208,6 +228,7 @@ public class ElasticsearchRequestCreatorsHolder {
     map.put(IncidentEntity.class, incidentEsRequestCreator());
     map.put(ActivityInstanceEntity.class, activityInstanceEsRequestCreator());
     map.put(WorkflowEntity.class, workflowEsRequestCreator());
+    map.put(EventEntity.class, eventEsRequestCreator());
     return map;
   }
 

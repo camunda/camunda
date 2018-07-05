@@ -15,7 +15,7 @@ public class IncidentEntity extends OperateEntity {
 
   private String activityInstanceId;
 
-  private String taskId;
+  private String jobId;
 
   private String workflowInstanceId;
 
@@ -59,12 +59,12 @@ public class IncidentEntity extends OperateEntity {
     this.activityInstanceId = activityInstanceId;
   }
 
-  public String getTaskId() {
-    return taskId;
+  public String getJobId() {
+    return jobId;
   }
 
-  public void setTaskId(String taskId) {
-    this.taskId = taskId;
+  public void setJobId(String jobId) {
+    this.jobId = jobId;
   }
 
   @JsonIgnore
@@ -109,7 +109,7 @@ public class IncidentEntity extends OperateEntity {
       return false;
     if (activityInstanceId != null ? !activityInstanceId.equals(that.activityInstanceId) : that.activityInstanceId != null)
       return false;
-    if (taskId != null ? !taskId.equals(that.taskId) : that.taskId != null)
+    if (jobId != null ? !jobId.equals(that.jobId) : that.jobId != null)
       return false;
     return workflowInstanceId != null ? workflowInstanceId.equals(that.workflowInstanceId) : that.workflowInstanceId == null;
   }
@@ -122,7 +122,7 @@ public class IncidentEntity extends OperateEntity {
     result = 31 * result + (state != null ? state.hashCode() : 0);
     result = 31 * result + (activityId != null ? activityId.hashCode() : 0);
     result = 31 * result + (activityInstanceId != null ? activityInstanceId.hashCode() : 0);
-    result = 31 * result + (taskId != null ? taskId.hashCode() : 0);
+    result = 31 * result + (jobId != null ? jobId.hashCode() : 0);
     result = 31 * result + (workflowInstanceId != null ? workflowInstanceId.hashCode() : 0);
     return result;
   }

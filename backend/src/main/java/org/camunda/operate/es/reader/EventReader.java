@@ -1,0 +1,113 @@
+/* Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.camunda.operate.es.reader;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import org.camunda.operate.entities.EventEntity;
+import org.camunda.operate.es.types.EventType;
+import org.camunda.operate.es.types.WorkflowInstanceType;
+import org.camunda.operate.rest.dto.EventQueryDto;
+import org.camunda.operate.util.ElasticsearchUtil;
+import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.TermQueryBuilder;
+import org.elasticsearch.search.SearchHit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+
+@Component
+public class EventReader {
+
+  private Logger logger = LoggerFactory.getLogger(EventReader.class);
+
+  @Autowired
+  private TransportClient esClient;
+
+  @Autowired
+  private EventType eventType;
+
+  @Autowired
+  @Qualifier("esObjectMapper")
+  private ObjectMapper objectMapper;
+
+  public List<EventEntity> queryEvents(EventQueryDto eventQuery, Integer firstResult, Integer maxResults) {
+    SearchRequestBuilder searchRequest = createSearchRequest(eventQuery)
+      .setFetchSource(null, WorkflowInstanceType.ACTIVITIES);
+
+    return paginate(searchRequest, firstResult, maxResults);
+  }
+
+  protected List<EventEntity> paginate(SearchRequestBuilder builder, int firstResult, int maxResults) {
+    SearchResponse response = builder
+      .setFrom(firstResult)
+      .setSize(maxResults)
+      .get();
+
+    return mapSearchHits(response.getHits().getHits());
+  }
+
+  protected List<EventEntity> mapSearchHits(SearchHit[] searchHits) {
+    List<EventEntity> result = new ArrayList<>();
+    for (SearchHit searchHit : searchHits) {
+      String searchHitAsString = searchHit.getSourceAsString();
+      result.add(fromSearchHit(searchHitAsString));
+    }
+    return result;
+  }
+
+  private EventEntity fromSearchHit(String eventEntityString) {
+    EventEntity eventEntity = null;
+    try {
+      eventEntity = objectMapper.readValue(eventEntityString, EventEntity.class);
+    } catch (IOException e) {
+      logger.error("Error while reading event from Elasticsearch!", e);
+      throw new RuntimeException("Error while reading event from Elasticsearch!", e);
+    }
+    return eventEntity;
+  }
+
+  private SearchRequestBuilder createSearchRequest(EventQueryDto eventQuery) {
+    TermQueryBuilder workflowInstanceQ = null;
+    if (eventQuery.getWorkflowInstanceId() != null) {
+      workflowInstanceQ = termQuery(EventType.WORKFLOW_INSTANCE_ID, eventQuery.getWorkflowInstanceId());
+    }
+    TermQueryBuilder activityInstanceQ = null;
+    if (eventQuery.getActivityInstanceId() != null) {
+      activityInstanceQ = termQuery(EventType.ACTIVITY_INSTANCE_ID, eventQuery.getActivityInstanceId());
+    }
+    QueryBuilder query = ElasticsearchUtil.joinWithAnd(workflowInstanceQ, activityInstanceQ);
+    if (query == null) {
+      query = matchAllQuery();
+    }
+
+    ConstantScoreQueryBuilder constantScoreQuery = QueryBuilders.constantScoreQuery(query);
+    logger.debug("Events search request: \n{}", constantScoreQuery.toString());
+
+    return esClient
+      .prepareSearch(eventType.getType())
+      .setQuery(constantScoreQuery);
+  }
+
+}

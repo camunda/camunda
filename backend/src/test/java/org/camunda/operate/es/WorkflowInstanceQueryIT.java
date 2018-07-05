@@ -21,6 +21,7 @@ import org.camunda.operate.rest.dto.WorkflowInstanceDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
 import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ElasticsearchTestRule;
+import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
 import org.junit.Before;
 import org.junit.Rule;
@@ -56,6 +57,9 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
   @Rule
   public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
 
+  @Rule
+  public MockMvcTestRule mockMvcTestRule = new MockMvcTestRule();
+
   @Autowired
   private ElasticsearchBulkProcessor elasticsearchBulkProcessor;
 
@@ -66,8 +70,8 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
   @Before
   public void starting() {
-    this.mockMvc = elasticsearchTestRule.getMockMvc();
-    this.objectMapper = elasticsearchTestRule.getObjectMapper();
+    this.mockMvc = mockMvcTestRule.getMockMvc();
+    this.objectMapper = mockMvcTestRule.getObjectMapper();
     createData();
   }
 
@@ -92,7 +96,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setIncidents(true);
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
-        .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
+        .content(mockMvcTestRule.json(workflowInstanceQueryDto))
         .contentType(contentType);
 
     MvcResult mvcResult = mockMvc.perform(request)
@@ -100,7 +104,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
         .andExpect(content().contentType(contentType))
         .andReturn();
 
-     List<WorkflowInstanceDto> workflowInstanceDtos = listFromResponse(mvcResult);
+     List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
 
      assertThat(workflowInstanceDtos.size()).isEqualTo(3);
 
@@ -120,7 +124,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setIncidents(true);
 
     MockHttpServletRequestBuilder request = post(query(1, 3))
-        .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
+        .content(mockMvcTestRule.json(workflowInstanceQueryDto))
         .contentType(contentType);
 
     MvcResult mvcResult = mockMvc.perform(request)
@@ -128,7 +132,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
         .andExpect(content().contentType(contentType))
         .andReturn();
 
-     List<WorkflowInstanceDto> workflowInstanceDtos = listFromResponse(mvcResult);
+     List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
 
      assertThat(workflowInstanceDtos.size()).isEqualTo(2);
 
@@ -157,7 +161,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setCancelled(true);
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
-      .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
+      .content(mockMvcTestRule.json(workflowInstanceQueryDto))
       .contentType(contentType);
 
     MvcResult mvcResult = mockMvc.perform(request)
@@ -165,7 +169,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
       .andExpect(content().contentType(contentType))
       .andReturn();
 
-    List<WorkflowInstanceDto> workflowInstanceDtos = listFromResponse(mvcResult);
+    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
 
     assertThat(workflowInstanceDtos.size()).isEqualTo(2);
     for (WorkflowInstanceDto workflowInstanceDto : workflowInstanceDtos) {
@@ -199,7 +203,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setCancelled(true);
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
-      .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
+      .content(mockMvcTestRule.json(workflowInstanceQueryDto))
       .contentType(contentType);
 
     MvcResult mvcResult = mockMvc.perform(request)
@@ -207,7 +211,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
       .andExpect(content().contentType(contentType))
       .andReturn();
 
-    List<WorkflowInstanceDto> workflowInstanceDtos = listFromResponse(mvcResult);
+    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
 
     assertThat(workflowInstanceDtos.size()).isEqualTo(5);
   }
@@ -228,7 +232,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setCompleted(true);
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
-      .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
+      .content(mockMvcTestRule.json(workflowInstanceQueryDto))
       .contentType(contentType);
 
     MvcResult mvcResult = mockMvc.perform(request)
@@ -236,7 +240,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
       .andExpect(content().contentType(contentType))
       .andReturn();
 
-    List<WorkflowInstanceDto> workflowInstanceDtos = listFromResponse(mvcResult);
+    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
 
     assertThat(workflowInstanceDtos.size()).isEqualTo(1);
     assertThat(workflowInstanceDtos.get(0).getEndDate()).isNotNull();
@@ -259,7 +263,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setCancelled(true);
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
-      .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
+      .content(mockMvcTestRule.json(workflowInstanceQueryDto))
       .contentType(contentType);
 
     MvcResult mvcResult = mockMvc.perform(request)
@@ -267,7 +271,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
       .andExpect(content().contentType(contentType))
       .andReturn();
 
-    List<WorkflowInstanceDto> workflowInstanceDtos = listFromResponse(mvcResult);
+    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
 
     assertThat(workflowInstanceDtos.size()).isEqualTo(1);
     assertThat(workflowInstanceDtos.get(0).getEndDate()).isNotNull();
@@ -291,7 +295,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setIncidents(true);
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
-      .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
+      .content(mockMvcTestRule.json(workflowInstanceQueryDto))
       .contentType(contentType);
 
     MvcResult mvcResult = mockMvc
@@ -301,7 +305,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
         .contentType(contentType))
       .andReturn();
 
-    List<WorkflowInstanceDto> workflowInstanceDtos = listFromResponse(mvcResult);
+    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
 
     assertThat(workflowInstanceDtos.size()).isEqualTo(1);
     assertThat(workflowInstanceDtos.get(0).getActivities()).isEmpty();
@@ -333,7 +337,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setActive(true);
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
-      .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
+      .content(mockMvcTestRule.json(workflowInstanceQueryDto))
       .contentType(contentType);
 
     MvcResult mvcResult = mockMvc
@@ -342,7 +346,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
       .andExpect(content().contentType(contentType))
       .andReturn();
 
-    List<WorkflowInstanceDto> workflowInstanceDtos = listFromResponse(mvcResult);
+    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
 
     assertThat(workflowInstanceDtos.size()).isEqualTo(2);
 
@@ -368,7 +372,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
       .andExpect(content().contentType(contentType))
       .andReturn();
 
-    final WorkflowInstanceDto workflowInstanceDto = fromResponse(mvcResult, new TypeReference<WorkflowInstanceDto>() {});
+    final WorkflowInstanceDto workflowInstanceDto = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<WorkflowInstanceDto>() {});
 
     assertThat(workflowInstanceDto.getId()).isEqualTo(instanceWithoutIncident.getId());
     assertThat(workflowInstanceDto.getWorkflowId()).isEqualTo(instanceWithoutIncident.getWorkflowId());
@@ -387,7 +391,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
   private void testCountQuery(WorkflowInstanceQueryDto workflowInstanceQueryDto, int count) throws Exception {
     MockHttpServletRequestBuilder request = post(COUNT_INSTANCES_URL)
-      .content(elasticsearchTestRule.json(workflowInstanceQueryDto))
+      .content(mockMvcTestRule.json(workflowInstanceQueryDto))
       .contentType(contentType);
 
     mockMvc.perform(request)
@@ -467,15 +471,6 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
       activityInstanceEntity.setEndDate(DateUtil.getRandomEndDate());
     }
     return activityInstanceEntity;
-  }
-
-  protected List<WorkflowInstanceDto> listFromResponse(MvcResult result) throws IOException {
-    return fromResponse(result, new TypeReference<List<WorkflowInstanceDto>>() {
-    });
-  }
-
-  protected <T> T fromResponse(MvcResult result, TypeReference<T> valueTypeRef) throws IOException {
-    return objectMapper.readValue(result.getResponse().getContentAsString(), valueTypeRef);
   }
 
   protected String query(int firstResult, int maxResults) {

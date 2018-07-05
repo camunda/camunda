@@ -1,26 +1,37 @@
 package org.camunda.operate.util;
 
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.zeebe.JobEventTransformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.api.clients.TopicClient;
 import io.zeebe.client.api.commands.DeployWorkflowCommandStep1;
 import io.zeebe.client.api.events.DeploymentEvent;
+import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.events.TopicEvent;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.api.events.WorkflowInstanceState;
+import io.zeebe.client.api.subscription.JobHandler;
 import io.zeebe.client.api.subscription.JobWorker;
 import io.zeebe.client.api.subscription.TopicSubscription;
+import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
+import io.zeebe.client.impl.event.JobEventImpl;
+import io.zeebe.client.impl.event.WorkflowInstanceEventImpl;
 
 @Component
 public class ZeebeUtil {
 
   private Logger logger = LoggerFactory.getLogger(ZeebeUtil.class);
+
+  public final static Logger ALL_EVENTS_LOGGER = LoggerFactory.getLogger("org.camunda.operate.ALL_EVENTS");
 
   @Autowired
   private ZeebeClient client;
@@ -93,15 +104,70 @@ public class ZeebeUtil {
     ).startAtHeadOfTopic().forcedStart().open();
   }
 
-  public JobWorker completeTaskWithIncident(String topicName, String jobType, String workerName) {
+  public JobWorker completeTask(String topicName, String jobType, String workerName, String payload) {
     return client.topicClient(topicName).jobClient().newWorker()
       .jobType(jobType)
       .handler((jobClient, job) -> {
         //incidents for outputMapping for taskA
-        jobClient.newCompleteCommand(job).payload((String)null).send().join();
+        jobClient.newCompleteCommand(job).payload(payload).send().join();
       })
       .name(workerName)
       .timeout(Duration.ofSeconds(2))
       .open();
   }
+
+  public JobWorker failTask(String topicName, String jobType, String workerName, int numberOfFailures) {
+    return client.topicClient(topicName).jobClient().newWorker()
+      .jobType(jobType)
+      .handler( new FailJobHandler(numberOfFailures))
+      .name(workerName)
+      .timeout(Duration.ofSeconds(2))
+      .open();
+  }
+
+  private static class FailJobHandler implements JobHandler {
+
+    private int numberOfFailures;
+
+    private int failuresCount = 0;
+
+    public FailJobHandler(int numberOfFailures) {
+      this.numberOfFailures = numberOfFailures;
+    }
+
+    @Override
+    public void handle(JobClient client, JobEvent job) {
+      if (failuresCount < numberOfFailures) {
+        client.newFailCommand(job).retries(job.getRetries() - 1).send().join();
+        failuresCount++;
+      }
+    }
+  }
+
+  public TopicSubscription resolveIncident(String topicName, String subscriptionName, Long workflowId) {
+
+    return client.topicClient(topicName).newSubscription().name(subscriptionName).incidentEventHandler(incidentEvent -> {
+      JobEventImpl jobEvent = new JobEventImpl(new ZeebeObjectMapperImpl());
+      jobEvent.setKey(incidentEvent.getJobKey());
+      jobEvent.setTopicName(topicName);
+      jobEvent.setPartitionId(incidentEvent.getMetadata().getPartitionId());
+      jobEvent.setType(incidentEvent.getActivityId());
+      Map<String, Object> headers = new HashMap<>();
+      headers.put(JobEventTransformer.WORKFLOW_INSTANCE_KEY_HEADER, incidentEvent.getWorkflowInstanceKey());
+      if (workflowId != null) {
+        headers.put(JobEventTransformer.WORKFLOW_KEY_HEADER, workflowId);
+      }
+      headers.put(JobEventTransformer.BPMN_PROCESS_ID_HEADER, incidentEvent.getBpmnProcessId());
+      headers.put(JobEventTransformer.ACTIVITY_INSTANCE_KEY_HEADER, incidentEvent.getActivityInstanceKey());
+      jobEvent.setHeaders(headers);
+      client.topicClient(topicName).jobClient().newUpdateRetriesCommand(jobEvent).retries(3).send().join();
+    }).startAtHeadOfTopic().open();
+  }
+
+  public void updatePayload(String topicName, String workflowInstanceId, String newPayload) {
+    WorkflowInstanceEventImpl workflowInstanceEvent = new WorkflowInstanceEventImpl(new ZeebeObjectMapperImpl());
+    workflowInstanceEvent.setKey(Long.valueOf(workflowInstanceId));
+    client.topicClient(topicName).workflowClient().newUpdatePayloadCommand(workflowInstanceEvent).payload(newPayload).send();
+  }
+
 }

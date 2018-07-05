@@ -11,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 
@@ -36,7 +35,7 @@ public class EntityStorage {
     if (operateEntityMap.get(topicName) != null) {
       logger.warn("Internal entity queue for topic [{}] already exist", topicName);
     } else {
-      operateEntityMap.put(topicName, new LinkedBlockingQueue<>(100));    //TODO size must correspond to TopicSubscriptionBufferSize
+      operateEntityMap.put(topicName, new LinkedBlockingQueue<>(300));    //TODO size must correspond to TopicSubscriptionBufferSize
     }
   }
 

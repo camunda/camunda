@@ -53,6 +53,9 @@ public class ZeebeSubscriptionManager {
   private DeploymentEventTransformer deploymentEventTransformer;
 
   @Autowired
+  private JobEventTransformer jobEventTransformer;
+
+  @Autowired
   private EntityStorage entityStorage;
 
   @Autowired
@@ -120,6 +123,7 @@ public class ZeebeSubscriptionManager {
         .name(operateProperties.getZeebe().getWorker())
         .workflowInstanceEventHandler(workflowInstanceEventHandler)
         .incidentEventHandler(incidentEventTransformer)
+        .jobEventHandler(jobEventTransformer)
         .startAtHeadOfTopic()
         .forcedStart();
 

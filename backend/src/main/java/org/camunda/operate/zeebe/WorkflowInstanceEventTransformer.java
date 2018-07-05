@@ -4,10 +4,12 @@ import java.util.HashSet;
 import java.util.Set;
 import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.ActivityState;
+import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.writer.EntityStorage;
 import org.camunda.operate.util.DateUtil;
+import org.camunda.operate.util.ZeebeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +44,7 @@ public class WorkflowInstanceEventTransformer extends AbstractEventTransformer i
     WORKFLOW_INSTANCE_STATES.addAll(WORKFLOW_INSTANCE_END_STATES);
 
     ACTIVITY_INSTANCE_STATES.add(io.zeebe.client.api.events.WorkflowInstanceState.ACTIVITY_READY);
+    ACTIVITY_INSTANCE_STATES.add(io.zeebe.client.api.events.WorkflowInstanceState.ACTIVITY_ACTIVATED);
     ACTIVITY_INSTANCE_STATES.addAll(ACTIVITY_INSTANCE_END_STATES);
     ACTIVITY_INSTANCE_STATES.addAll(ACTIVITY_INSTANCE_START_END_STATES);
   }
@@ -51,6 +54,11 @@ public class WorkflowInstanceEventTransformer extends AbstractEventTransformer i
 
   @Override
   public void onWorkflowInstanceEvent(WorkflowInstanceEvent event) throws Exception {
+
+    ZeebeUtil.ALL_EVENTS_LOGGER.debug(event.toJson());
+
+    convertEvent(event);
+
     if (WORKFLOW_INSTANCE_STATES.contains(event.getState())) {
 
       convertWorkflowInstanceEvent(event);
@@ -59,6 +67,26 @@ public class WorkflowInstanceEventTransformer extends AbstractEventTransformer i
 
       convertActivityInstanceEvent(event);
 
+    }
+
+  }
+
+  private void convertEvent(WorkflowInstanceEvent event) throws InterruptedException {
+    //we will store sequence flows separately, no need to store them in events
+    if (!event.getState().equals(io.zeebe.client.api.events.WorkflowInstanceState.SEQUENCE_FLOW_TAKEN)) {
+      EventEntity eventEntity = new EventEntity();
+      loadEventGeneralData(event, eventEntity);
+      eventEntity.setPayload(event.getPayload());
+      eventEntity.setWorkflowId(String.valueOf(event.getWorkflowKey()));
+      eventEntity.setWorkflowInstanceId(String.valueOf(event.getWorkflowInstanceKey()));
+      eventEntity.setBpmnProcessId(event.getBpmnProcessId());
+      if (event.getActivityId() != null) {
+        eventEntity.setActivityId(event.getActivityId());
+      }
+      if (ACTIVITY_INSTANCE_STATES.contains(event.getState())) {
+        eventEntity.setActivityInstanceId(String.valueOf(event.getKey()));
+      }
+      entityStorage.getOperateEntititesQueue(event.getMetadata().getTopicName()).put(eventEntity);
     }
   }
 

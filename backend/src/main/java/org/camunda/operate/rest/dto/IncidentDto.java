@@ -20,7 +20,7 @@ public class IncidentDto {
 
   private String activityInstanceId;
 
-  private String taskId;
+  private String jobId;
 
   public String getId() {
     return id;
@@ -70,12 +70,12 @@ public class IncidentDto {
     this.activityInstanceId = activityInstanceId;
   }
 
-  public String getTaskId() {
-    return taskId;
+  public String getJobId() {
+    return jobId;
   }
 
-  public void setTaskId(String taskId) {
-    this.taskId = taskId;
+  public void setJobId(String jobId) {
+    this.jobId = jobId;
   }
 
   public static IncidentDto createFrom(IncidentEntity incidentEntity) {
@@ -89,7 +89,7 @@ public class IncidentDto {
     incident.setErrorMessage(incidentEntity.getErrorMessage());
     incident.setErrorType(incidentEntity.getErrorType());
     incident.setState(incidentEntity.getState());
-    incident.setTaskId(incidentEntity.getTaskId());
+    incident.setJobId(incidentEntity.getJobId());
     return incident;
   }
 
@@ -126,7 +126,7 @@ public class IncidentDto {
       return false;
     if (activityInstanceId != null ? !activityInstanceId.equals(that.activityInstanceId) : that.activityInstanceId != null)
       return false;
-    return taskId != null ? taskId.equals(that.taskId) : that.taskId == null;
+    return jobId != null ? jobId.equals(that.jobId) : that.jobId == null;
   }
 
   @Override
@@ -137,7 +137,7 @@ public class IncidentDto {
     result = 31 * result + (state != null ? state.hashCode() : 0);
     result = 31 * result + (activityId != null ? activityId.hashCode() : 0);
     result = 31 * result + (activityInstanceId != null ? activityInstanceId.hashCode() : 0);
-    result = 31 * result + (taskId != null ? taskId.hashCode() : 0);
+    result = 31 * result + (jobId != null ? jobId.hashCode() : 0);
     return result;
   }
 }

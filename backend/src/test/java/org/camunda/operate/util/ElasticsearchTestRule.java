@@ -35,10 +35,6 @@ public class ElasticsearchTestRule extends ExternalResource {
   protected TransportClient esClient;
 
   @Autowired
-  @Qualifier("esObjectMapper")
-  protected ObjectMapper objectMapper;
-
-  @Autowired
   private List<TypeMappingCreator> typeMappingCreators;
 
   @Autowired
@@ -47,42 +43,24 @@ public class ElasticsearchTestRule extends ExternalResource {
   @Autowired
   private ElasticsearchSchemaManager elasticsearchSchemaManager;
 
-  private MockMvc mockMvc;
-
-  private HttpMessageConverter mappingJackson2HttpMessageConverter;
-
   @Autowired
   private ElasticsearchBulkProcessor elasticsearchBulkProcessor;
-
-  @Autowired
-  void setConverters(HttpMessageConverter<?>[] converters) {
-
-    this.mappingJackson2HttpMessageConverter = Arrays.asList(converters).stream()
-      .filter(hmc -> hmc instanceof MappingJackson2HttpMessageConverter)
-      .findAny()
-      .orElse(null);
-
-    assertNotNull("the JSON message converter must not be null",
-      this.mappingJackson2HttpMessageConverter);
-  }
-
-  @Autowired
-  private WebApplicationContext webApplicationContext;
 
   private boolean haveToClean = true;
 
   private String workflowIndexName;
   private String workflowInstanceIndexName;
+  private String eventIndexName;
 
   @Override
   public void before() {
-    this.mockMvc = webAppContextSetup(webApplicationContext).build();
-
     final String indexSuffix = TestUtil.createRandomString(10);
-    final String workflowIndexName = ElasticsearchProperties.WORKFLOW_INDEX_NAME_DEFAULT + indexSuffix;
-    final String workflowInstanceIndexName = ElasticsearchProperties.WORKFLOW_INSTANCE_INDEX_NAME_DEFAULT + indexSuffix;
+    workflowIndexName = ElasticsearchProperties.WORKFLOW_INDEX_NAME_DEFAULT + indexSuffix;
+    workflowInstanceIndexName = ElasticsearchProperties.WORKFLOW_INSTANCE_INDEX_NAME_DEFAULT + indexSuffix;
+    eventIndexName = ElasticsearchProperties.EVENT_INDEX_NAME_DEFAULT + indexSuffix;
     operateProperties.getElasticsearch().setWorkflowIndexName(workflowIndexName);
     operateProperties.getElasticsearch().setWorkflowInstanceIndexName(workflowInstanceIndexName);
+    operateProperties.getElasticsearch().setEventIndexName(eventIndexName);
     elasticsearchSchemaManager.createIndices();
 
   }
@@ -92,6 +70,7 @@ public class ElasticsearchTestRule extends ExternalResource {
     removeAllIndices();
     operateProperties.getElasticsearch().setWorkflowIndexName(ElasticsearchProperties.WORKFLOW_INDEX_NAME_DEFAULT);
     operateProperties.getElasticsearch().setWorkflowInstanceIndexName(ElasticsearchProperties.WORKFLOW_INSTANCE_INDEX_NAME_DEFAULT);
+    operateProperties.getElasticsearch().setEventIndexName(ElasticsearchProperties.EVENT_INDEX_NAME_DEFAULT);
 //    if (haveToClean) {
 //      logger.info("cleaning up elasticsearch on finish");
 //      cleanAndVerify();
@@ -101,7 +80,7 @@ public class ElasticsearchTestRule extends ExternalResource {
 
   public void removeAllIndices() {
     logger.info("Removing indices");
-    esClient.admin().indices().delete(new DeleteIndexRequest(workflowIndexName, workflowInstanceIndexName));
+    esClient.admin().indices().delete(new DeleteIndexRequest(workflowIndexName, workflowInstanceIndexName, eventIndexName));
   }
 
 //  public void cleanAndVerify() {
@@ -150,7 +129,7 @@ public class ElasticsearchTestRule extends ExternalResource {
         } else {
           emptyAttempts++;
         }
-      } while(entitiesCount > 0 && totalCount < expectedMinEventsCount && emptyAttempts <= 3);
+      } while(totalCount < expectedMinEventsCount && emptyAttempts < 3);
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
@@ -173,18 +152,4 @@ public class ElasticsearchTestRule extends ExternalResource {
     this.haveToClean = false;
   }
 
-  public String json(Object o) throws IOException {
-    MockHttpOutputMessage mockHttpOutputMessage = new MockHttpOutputMessage();
-    this.mappingJackson2HttpMessageConverter.write(
-      o, MediaType.APPLICATION_JSON, mockHttpOutputMessage);
-    return mockHttpOutputMessage.getBodyAsString();
-  }
-
-  public MockMvc getMockMvc() {
-    return mockMvc;
-  }
-
-  public ObjectMapper getObjectMapper() {
-    return objectMapper;
-  }
 }
