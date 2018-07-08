@@ -35,7 +35,7 @@ public class FollowerState extends AbstractRaftState {
   @Override
   protected void onEnterState() {
     super.onEnterState();
-    raftActor.setSchedulingHints(SchedulingHints.ioBound((short) 0));
+    raftActor.setSchedulingHints(SchedulingHints.ioBound());
   }
 
   @Override

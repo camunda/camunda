@@ -97,7 +97,6 @@ public class ActorScheduler {
       task.setPriority(SchedulingHints.getPriority(schedulingHints));
       startingFuture = actorTaskExecutor.submitCpuBound(task, collectTaskMetrics);
     } else {
-      task.setDeviceId(SchedulingHints.getIoDevice(schedulingHints));
       startingFuture = actorTaskExecutor.submitIoBoundTask(task, collectTaskMetrics);
     }
     return startingFuture;
@@ -311,13 +310,13 @@ public class ActorScheduler {
 
     private void initIoBoundActorThreadGroup() {
       if (ioBoundActorGroup == null) {
-        ioBoundActorGroup = new IoBoundThreadGroup(this);
+        ioBoundActorGroup = new IoThreadGroup(this);
       }
     }
 
     private void initCpuBoundActorThreadGroup() {
       if (cpuBoundActorGroup == null) {
-        cpuBoundActorGroup = new CpuBoundThreadGroup(this);
+        cpuBoundActorGroup = new CpuThreadGroup(this);
       }
     }
 

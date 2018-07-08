@@ -405,7 +405,7 @@ public class StreamProcessorController extends Actor {
   private void createSnapshot() {
     if (actor.getLifecyclePhase() == ActorLifecyclePhase.STARTED) {
       // run as io-bound actor while writing snapshot
-      actor.setSchedulingHints(SchedulingHints.ioBound((short) 0));
+      actor.setSchedulingHints(SchedulingHints.ioBound());
       actor.submit(this::doCreateSnapshot);
     } else {
       doCreateSnapshot();
