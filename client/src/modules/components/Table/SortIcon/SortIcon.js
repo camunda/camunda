@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import {ORDER} from './constants';
+import {ORDER} from 'modules/constants/sort';
 import * as Styled from './styled';
 
 export default function SortIcon(props) {

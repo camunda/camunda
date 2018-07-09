@@ -1,7 +1,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {ICON_DIRECTION} from 'modules/components/ExpandButton/constants';
+import {ICON_DIRECTION} from 'modules/constants/expandIcon';
 import {PANE_ID, EXPAND_STATE} from 'modules/constants/splitPane';
 
 import Pane from './Pane';

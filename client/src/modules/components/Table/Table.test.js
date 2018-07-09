@@ -2,7 +2,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import Table from './Table';
-import {ORDER} from './SortIcon/constants';
+import {ORDER} from 'modules/constants/sort';
 import * as Styled from './styled';
 
 describe('Table', () => {

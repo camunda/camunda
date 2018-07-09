@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import {ICON_DIRECTION} from './constants';
+import {ICON_DIRECTION} from 'modules/constants/expandIcon';
 import * as Styled from './styled';
 
 const iconsMap = {

@@ -2,7 +2,7 @@ import React, {Children, cloneElement} from 'react';
 import PropTypes from 'prop-types';
 
 import Panel from 'modules/components/Panel';
-import {ICON_DIRECTION} from 'modules/components/ExpandButton/constants';
+import {ICON_DIRECTION} from 'modules/constants/expandIcon';
 import {PANE_ID, EXPAND_STATE} from 'modules/constants/splitPane';
 
 import * as Styled from './styled';

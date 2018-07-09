@@ -9,10 +9,7 @@ import ListFooter from './ListFooter';
 import {isEmpty} from '../service';
 import {parseFilterForRequest} from 'modules/utils/filter';
 import {fetchWorkflowInstances} from 'modules/api/instances';
-import {
-  ORDER,
-  DEFAULT_SORT_BY
-} from 'modules/components/Table/SortIcon/constants';
+import {ORDER, DEFAULT_SORT_BY} from 'modules/constants/sort';
 
 export default class ListView extends React.Component {
   static propTypes = {

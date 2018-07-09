@@ -1,31 +1,22 @@
 Table Example
 
 ```js
+const headers = {foo: 'foo', bar: 'bar'};
+
 const data = [
   {
-    processDefinition: 'Process Definition Name',
-    id: '123456',
-    custom: <button>Yay</button>
+    foo: 'foo1',
+    bar: 'bar1'
   },
-  {
-    processDefinition: 'Process Definition Name',
-    id: '123456',
-    custom: <button>Yay</button>
-  },
-  {
-    processDefinition: 'Process Definition Name',
-    id: '123456',
-    custom: <button>Yay</button>
+    {
+      foo: 'foo2',
+    bar: 'bar2'
   }
-];
+].map(row => ({ data: {...row}, view: {...row}}));
 
 const config = {
-  headerLabels: {
-    processDefinition: 'Process Definition',
-    id: 'Process ID',
-    custom: <span style={{color: 'red'}}>Custom Markup!!</span>
-  },
-  order: ['id', 'processDefinition', 'custom']
+  isSortable: {foo: false, bar: false}
 };
-<Table data={data} config={config} />;
+
+<Table headers={headers} data={data} config={config} />;
 ```

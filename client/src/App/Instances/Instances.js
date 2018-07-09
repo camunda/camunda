@@ -5,7 +5,7 @@ import update from 'immutability-helper';
 import Panel from 'modules/components/Panel';
 import withSharedState from 'modules/components/withSharedState';
 import SplitPane from 'modules/components/SplitPane';
-import {ICON_DIRECTION} from 'modules/components/ExpandButton/constants';
+import {ICON_DIRECTION} from 'modules/constants/expandIcon';
 import Button from 'modules/components/Button';
 import {fetchWorkflowInstancesCount} from 'modules/api/instances';
 import {

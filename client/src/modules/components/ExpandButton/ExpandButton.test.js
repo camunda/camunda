@@ -2,7 +2,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import ExpandButton from './ExpandButton';
-import {ICON_DIRECTION} from './constants';
+import {ICON_DIRECTION} from 'modules/constants/expandIcon';
 import * as Styled from './styled';
 
 describe('ExpandButton', () => {
