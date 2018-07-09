@@ -24,6 +24,8 @@ To spawn the full local environment, run this command in the root folder:
 make env-up
 ```
 
+The app will be running at `localhost:8080`.
+
 To stop:
 
 ```
