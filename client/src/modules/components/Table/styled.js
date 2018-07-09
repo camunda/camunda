@@ -54,7 +54,7 @@ export const BodyRow = themed(styled.tr`
   height: 37px;
   line-height: 37px;
 
-  border-width: 1px 1px 1px 0;
+  border-width: 1px 0;
   border-style: solid;
   border-color: ${themeStyle({
     dark: Colors.uiDark04,
@@ -102,7 +102,7 @@ export const HeaderRow = themed(styled.tr`
   height: 37px;
   line-height: 37px;
 
-  border-width: 0 1px 1px 0;
+  border-width: 1px 0;
   border-style: solid;
   border-color: ${themeStyle({
     dark: Colors.uiDark04,

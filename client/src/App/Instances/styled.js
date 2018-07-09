@@ -38,6 +38,7 @@ export const Center = styled(SplitPane)`
 export const Right = styled.div`
   width: 320px;
   display: flex;
+  margin-left: 1px;
 `;
 
 export const RightExpandButton = styled(ExpandButton)`
