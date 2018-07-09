@@ -22,7 +22,7 @@ export const Label = themed(styled.label`
   })};
 
   color: ${themeStyle({
-    dark: '#c5c5c7',
+    dark: '#ececec',
     light: Colors.uiLight06
   })};
 `);
