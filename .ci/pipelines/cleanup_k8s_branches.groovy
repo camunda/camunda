@@ -4,7 +4,7 @@
 def static NODE_POOL() { return "slaves" }
 def static DOCKER_IMAGE() { return "google/cloud-sdk:alpine" }
 
-static String kubectlAgent(env) {
+static String agent(env) {
   return """
 apiVersion: v1
 kind: Pod
@@ -54,7 +54,7 @@ pipeline {
       cloud 'optimize-ci'
       label "optimize-ci-build_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
       defaultContainer 'jnlp'
-      yaml kubectlAgent(env)
+      yaml agent(env)
     }
   }
 
@@ -87,6 +87,7 @@ pipeline {
                 gcloud info
 
                 # setup ssh for github clone
+                mkdir -p ~/.ssh
                 ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
             """)
         }
