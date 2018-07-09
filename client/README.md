@@ -39,6 +39,14 @@ You can then destroy the environment using:
 docker-compose down
 ```
 
+### Run the styleguide
+
+```sh
+yarn styleguide
+```
+
+The styleguide will be available at `localhost:6060`.
+
 ## Writing Components
 
 Related files should be close to each other. React components usually consist of a directory with the following files:
