@@ -18,6 +18,7 @@
 package io.zeebe.broker.system;
 
 import io.zeebe.broker.system.management.LeaderManagementRequestHandler;
+import io.zeebe.broker.system.management.topics.FetchCreatedTopicsRequestHandlerService;
 import io.zeebe.broker.system.metrics.MetricsFileWriter;
 import io.zeebe.broker.system.workflow.repository.service.DeploymentManager;
 import io.zeebe.broker.system.workflow.repository.service.WorkflowRepositoryService;
@@ -29,6 +30,12 @@ public class SystemServiceNames {
 
   public static final ServiceName<DeploymentManager> DEPLOYMENT_MANAGER_SERVICE =
       ServiceName.newServiceName("broker.system.deployment.manager", DeploymentManager.class);
+
+  public static final ServiceName<FetchCreatedTopicsRequestHandlerService>
+      FETCH_CREATED_TOPIC_HANDLER =
+          ServiceName.newServiceName(
+              "broker.system.management.topics.handler",
+              FetchCreatedTopicsRequestHandlerService.class);
 
   public static final ServiceName<LeaderManagementRequestHandler>
       LEADER_MANAGEMENT_REQUEST_HANDLER =

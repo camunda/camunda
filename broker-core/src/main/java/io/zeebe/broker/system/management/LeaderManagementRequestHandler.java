@@ -17,12 +17,10 @@
  */
 package io.zeebe.broker.system.management;
 
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.agrona.DirectBuffer;
-
+import io.zeebe.broker.system.management.topics.FetchCreatedTopicsRequestHandler;
 import io.zeebe.broker.system.workflow.repository.api.management.FetchWorkflowRequestHandler;
 import io.zeebe.broker.system.workflow.repository.api.management.NotLeaderResponse;
+import io.zeebe.clustering.management.FetchCreatedTopicsRequestDecoder;
 import io.zeebe.clustering.management.FetchWorkflowRequestDecoder;
 import io.zeebe.clustering.management.MessageHeaderDecoder;
 import io.zeebe.servicecontainer.Injector;
@@ -38,6 +36,8 @@ import io.zeebe.transport.ServerRequestHandler;
 import io.zeebe.transport.ServerResponse;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
+import java.util.concurrent.atomic.AtomicReference;
+import org.agrona.DirectBuffer;
 
 public class LeaderManagementRequestHandler extends Actor
     implements Service<LeaderManagementRequestHandler>, ServerRequestHandler, ServerMessageHandler {
@@ -47,6 +47,9 @@ public class LeaderManagementRequestHandler extends Actor
       new Injector<>();
 
   private final AtomicReference<FetchWorkflowRequestHandler> fetchWorkflowHandlerRef =
+      new AtomicReference<>();
+
+  private final AtomicReference<FetchCreatedTopicsRequestHandler> fetchCreatedTopicsHandlerRef =
       new AtomicReference<>();
 
   private final ServerResponse response = new ServerResponse();
@@ -118,6 +121,10 @@ public class LeaderManagementRequestHandler extends Actor
           {
             return onFetchWorkflow(buffer, offset, length, output, remoteAddress, requestId);
           }
+        case FetchCreatedTopicsRequestDecoder.TEMPLATE_ID:
+          {
+            return onFetchCreatedTopics(buffer, offset, length, output, remoteAddress, requestId);
+          }
         default:
           {
             // ignore
@@ -154,6 +161,30 @@ public class LeaderManagementRequestHandler extends Actor
     }
   }
 
+  private boolean onFetchCreatedTopics(
+      DirectBuffer buffer,
+      int offset,
+      int length,
+      ServerOutput output,
+      RemoteAddress remoteAddress,
+      long requestId) {
+    final FetchCreatedTopicsRequestHandler handler = fetchCreatedTopicsHandlerRef.get();
+
+    if (handler != null) {
+      handler.onFetchCreatedTopics(buffer, offset, length, output, remoteAddress, requestId, actor);
+
+      return true;
+    } else {
+      response
+          .reset()
+          .requestId(requestId)
+          .remoteStreamId(remoteAddress.getStreamId())
+          .writer(notLeaderResponse);
+
+      return output.sendResponse(response);
+    }
+  }
+
   @Override
   public LeaderManagementRequestHandler get() {
     return this;
@@ -166,5 +197,10 @@ public class LeaderManagementRequestHandler extends Actor
   public void setFetchWorkflowRequestHandler(
       FetchWorkflowRequestHandler fetchWorkflowRequestHandler) {
     fetchWorkflowHandlerRef.set(fetchWorkflowRequestHandler);
+  }
+
+  public void setFetchCreatedTopicsRequestHandler(
+      FetchCreatedTopicsRequestHandler fetchCreatedTopicsRequestHandler) {
+    fetchCreatedTopicsHandlerRef.set(fetchCreatedTopicsRequestHandler);
   }
 }

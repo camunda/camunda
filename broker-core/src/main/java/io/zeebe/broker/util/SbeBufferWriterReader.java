@@ -71,4 +71,15 @@ public abstract class SbeBufferWriterReader<
 
     getBodyEncoder().wrap(buffer, offset + headerEncoder.encodedLength());
   }
+
+  public boolean tryWrap(DirectBuffer buffer) {
+    return tryWrap(buffer, 0, buffer.capacity());
+  }
+
+  public boolean tryWrap(DirectBuffer buffer, int offset, int length) {
+    headerDecoder.wrap(buffer, offset);
+
+    return headerDecoder.schemaId() == getBodyDecoder().sbeSchemaId()
+        && headerDecoder.templateId() == getBodyDecoder().sbeTemplateId();
+  }
 }

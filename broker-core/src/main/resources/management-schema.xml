@@ -102,6 +102,18 @@
         <data name="data" id="0" type="blob" />
     </sbe:message>
 
+		<sbe:message name="FetchCreatedTopicsRequest" id="11">
+    </sbe:message>
+
+    <sbe:message name="FetchCreatedTopicsResponse" id="12">
+        <group name="topics" id="0" dimensionType="groupSizeEncoding">
+	        <group name="partitions" id="1" dimensionType="groupSizeEncoding">
+	             <field name="partitionId" id="2" type="uint16" />
+	        </group>
+          <data name="topicName" id="3" type="varDataEncoding" />            
+        </group>
+    </sbe:message>
+
     <sbe:message name="ErrorResponse" id="10">
         <field name="code" id="1" type="errorResponseCode" />
         <data name="data" id="2" type="varDataEncoding" />
