@@ -54,7 +54,7 @@ export default class Popover extends React.Component {
     const style = {};
     if (this.buttonRef && this.popoverDialogRef) {
       const overlayWidth = this.popoverDialogRef.clientWidth;
-      const buttonPosition = this.buttonRef.getBoundingClientRect().x;
+      const buttonPosition = this.buttonRef.getBoundingClientRect().left;
 
       const bodyWidth = document.body.clientWidth;
 
