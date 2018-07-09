@@ -18,7 +18,7 @@ export const TableContainer = styled.div`
 
 export const SelectionStatusIndicator = themed(styled.div`
   display: inline-block;
-  height: 37px;
+  height: 36px;
   width: 9px;
   ${({selected}) =>
     selected &&

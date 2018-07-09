@@ -51,7 +51,7 @@ export const BodyCell = styled.td`
 `;
 
 export const BodyRow = themed(styled.tr`
-  height: 37px;
+  height: 36px;
   line-height: 37px;
 
   border-width: 1px 0;
@@ -99,7 +99,7 @@ export const BodyRow = themed(styled.tr`
 `);
 
 export const HeaderRow = themed(styled.tr`
-  height: 37px;
+  height: 36px;
   line-height: 37px;
 
   border-width: 1px 0;
