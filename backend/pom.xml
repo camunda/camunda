@@ -102,7 +102,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <forkCount>${env.LIMITS_CPU}</forkCount>
+          <forkCount>1</forkCount>
           <reuseForks>true</reuseForks>
           <redirectTestOutputToFile>true</redirectTestOutputToFile>
         </configuration>
@@ -112,7 +112,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
-          <forkCount>${env.LIMITS_CPU}</forkCount>
+          <forkCount>1</forkCount>
           <reuseForks>true</reuseForks>
           <redirectTestOutputToFile>true</redirectTestOutputToFile>
         </configuration>
