@@ -75,9 +75,9 @@ describe('getFilterQueryString', () => {
     expect(getFilterQueryString(DEFAULT_FILTER)).toBe(queryString);
   });
 
-  it('should support objects with various values', () => {
-    const input = {a: true, b: true, c: 'X'};
-    const output = '?filter={"a":true,"b":true,"c":"X"}';
+  it('should remove keys with false values', () => {
+    const input = {a: true, b: true, c: false};
+    const output = '?filter={"a":true,"b":true}';
 
     expect(getFilterQueryString(input)).toBe(output);
   });

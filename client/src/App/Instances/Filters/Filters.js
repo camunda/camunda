@@ -5,7 +5,7 @@ import Panel from 'modules/components/Panel';
 import Button from 'modules/components/Button';
 import {DEFAULT_FILTER, FILTER_TYPES} from 'modules/constants/filter';
 import {ICON_DIRECTION} from 'modules/constants/expandIcon';
-import {isEmpty, isEqual} from 'modules/utils';
+import {isEqual} from 'modules/utils';
 
 import Filter from './Filter';
 import * as Styled from './styled';
@@ -24,26 +24,22 @@ export default class Filters extends React.Component {
         <Panel isRounded>
           <Panel.Header isRounded>Filters</Panel.Header>
           <Panel.Body>
-            {!isEmpty(this.props.filter) && (
-              <React.Fragment>
-                <Filter
-                  type={FILTER_TYPES.RUNNING}
-                  filter={{
-                    active,
-                    incidents
-                  }}
-                  onChange={this.props.handleFilterChange}
-                />
-                <Filter
-                  type={FILTER_TYPES.FINISHED}
-                  filter={{
-                    completed,
-                    canceled
-                  }}
-                  onChange={this.props.handleFilterChange}
-                />
-              </React.Fragment>
-            )}
+            <Filter
+              type={FILTER_TYPES.RUNNING}
+              filter={{
+                active,
+                incidents
+              }}
+              onChange={this.props.handleFilterChange}
+            />
+            <Filter
+              type={FILTER_TYPES.FINISHED}
+              filter={{
+                completed,
+                canceled
+              }}
+              onChange={this.props.handleFilterChange}
+            />
           </Panel.Body>
           <Styled.ExpandButton
             iconDirection={ICON_DIRECTION.LEFT}

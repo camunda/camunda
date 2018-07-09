@@ -1,5 +1,12 @@
 export function getFilterQueryString(selection) {
-  return `?filter=${JSON.stringify(selection)}`;
+  const filtered = Object.keys(selection)
+    .filter(key => selection[key] === true)
+    .reduce((obj, key) => {
+      obj[key] = selection[key];
+      return obj;
+    }, {});
+
+  return `?filter=${JSON.stringify(filtered)}`;
 }
 
 export function parseFilterForRequest(filter) {
