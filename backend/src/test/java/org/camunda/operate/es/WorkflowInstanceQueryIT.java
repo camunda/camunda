@@ -1,6 +1,5 @@
 package org.camunda.operate.es;
 
-import java.io.IOException;
 import java.nio.charset.Charset;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -35,7 +34,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -148,7 +148,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setFinished(true);
     workflowInstanceQueryDto.setCompleted(true);
-    workflowInstanceQueryDto.setCancelled(true);
+    workflowInstanceQueryDto.setCanceled(true);
 
     testCountQuery(workflowInstanceQueryDto, 2);
   }
@@ -158,7 +158,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setFinished(true);
     workflowInstanceQueryDto.setCompleted(true);
-    workflowInstanceQueryDto.setCancelled(true);
+    workflowInstanceQueryDto.setCanceled(true);
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(mockMvcTestRule.json(workflowInstanceQueryDto))
@@ -187,7 +187,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setIncidents(true);
     workflowInstanceQueryDto.setFinished(true);
     workflowInstanceQueryDto.setCompleted(true);
-    workflowInstanceQueryDto.setCancelled(true);
+    workflowInstanceQueryDto.setCanceled(true);
 
     testCountQuery(workflowInstanceQueryDto, 5);
   }
@@ -200,7 +200,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setIncidents(true);
     workflowInstanceQueryDto.setFinished(true);
     workflowInstanceQueryDto.setCompleted(true);
-    workflowInstanceQueryDto.setCancelled(true);
+    workflowInstanceQueryDto.setCanceled(true);
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(mockMvcTestRule.json(workflowInstanceQueryDto))
@@ -248,19 +248,19 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     assertThat(workflowInstanceDtos.get(0).getActivities()).isEmpty();
   }
   @Test
-  public void testQueryFinishedCancelledCount() throws Exception {
+  public void testQueryFinishedCanceledCount() throws Exception {
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setFinished(true);
-    workflowInstanceQueryDto.setCancelled(true);
+    workflowInstanceQueryDto.setCanceled(true);
 
     testCountQuery(workflowInstanceQueryDto, 1);
   }
 
   @Test
-  public void testQueryFinishedCancelled() throws Exception {
+  public void testQueryFinishedCanceled() throws Exception {
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setFinished(true);
-    workflowInstanceQueryDto.setCancelled(true);
+    workflowInstanceQueryDto.setCanceled(true);
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(mockMvcTestRule.json(workflowInstanceQueryDto))
@@ -409,10 +409,10 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     final WorkflowInstanceEntity completedInstance = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
     completedInstance.getActivities().add(createActivityInstance(ActivityState.COMPLETED));
 
-    //cancelled instance with two activities and without incidents
-    final WorkflowInstanceEntity cancelledInstance = createWorkflowInstance(WorkflowInstanceState.CANCELED);
-    cancelledInstance.getActivities().add(createActivityInstance(ActivityState.COMPLETED));
-    cancelledInstance.getActivities().add(createActivityInstance(ActivityState.TERMINATED));
+    //canceled instance with two activities and without incidents
+    final WorkflowInstanceEntity canceledInstance = createWorkflowInstance(WorkflowInstanceState.CANCELED);
+    canceledInstance.getActivities().add(createActivityInstance(ActivityState.COMPLETED));
+    canceledInstance.getActivities().add(createActivityInstance(ActivityState.TERMINATED));
 
     //instance with incidents (one resolved and one active) and one active activity
     final WorkflowInstanceEntity instanceWithIncident = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
@@ -426,7 +426,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     instanceWithoutIncident.getActivities().add(createActivityInstance(ActivityState.COMPLETED));
 
     List<WorkflowInstanceEntity> workflowInstances = new ArrayList<>();
-    workflowInstances.addAll(Arrays.asList(runningInstance, completedInstance, instanceWithIncident, instanceWithoutIncident, cancelledInstance));
+    workflowInstances.addAll(Arrays.asList(runningInstance, completedInstance, instanceWithIncident, instanceWithoutIncident, canceledInstance));
 
     //persist instances
     try {

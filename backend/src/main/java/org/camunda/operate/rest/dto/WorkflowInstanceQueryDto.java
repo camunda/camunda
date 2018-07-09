@@ -8,7 +8,7 @@ public class WorkflowInstanceQueryDto {
 
   private boolean finished;
   private boolean completed;
-  private boolean cancelled;
+  private boolean canceled;
 
   public WorkflowInstanceQueryDto() {
   }
@@ -53,12 +53,12 @@ public class WorkflowInstanceQueryDto {
     this.finished = finished;
   }
 
-  public boolean isCancelled() {
-    return cancelled;
+  public boolean isCanceled() {
+    return canceled;
   }
 
-  public void setCancelled(boolean cancelled) {
-    this.cancelled = cancelled;
+  public void setCanceled(boolean canceled) {
+    this.canceled = canceled;
   }
 
   @Override
@@ -80,7 +80,7 @@ public class WorkflowInstanceQueryDto {
       return false;
     if (completed != that.completed)
       return false;
-    return cancelled == that.cancelled;
+    return canceled == that.canceled;
   }
 
   @Override
@@ -90,7 +90,7 @@ public class WorkflowInstanceQueryDto {
     result = 31 * result + (incidents ? 1 : 0);
     result = 31 * result + (finished ? 1 : 0);
     result = 31 * result + (completed ? 1 : 0);
-    result = 31 * result + (cancelled ? 1 : 0);
+    result = 31 * result + (canceled ? 1 : 0);
     return result;
   }
 }

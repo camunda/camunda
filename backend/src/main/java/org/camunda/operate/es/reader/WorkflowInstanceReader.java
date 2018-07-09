@@ -191,7 +191,7 @@ public class WorkflowInstanceReader {
     boolean running = query.isRunning();
 
     boolean completed = query.isCompleted();
-    boolean cancelled = query.isCancelled();
+    boolean canceled = query.isCanceled();
     boolean finished = query.isFinished();
 
     if (!running && !finished) {
@@ -221,23 +221,23 @@ public class WorkflowInstanceReader {
 
     QueryBuilder finishedQuery = null;
 
-    if (finished && (completed || cancelled)) {
+    if (finished && (completed || canceled)) {
 
       //add finished query
       finishedQuery = existsQuery(END_DATE);
 
-      QueryBuilder cancelledOrCompletedQ = null;
+      QueryBuilder canceledOrCompletedQ = null;
 
-      if (completed && !cancelled) {
+      if (completed && !canceled) {
         //completed query
-        cancelledOrCompletedQ = termQuery(STATE, WorkflowInstanceState.COMPLETED.toString());
+        canceledOrCompletedQ = termQuery(STATE, WorkflowInstanceState.COMPLETED.toString());
       }
-      else if (!completed && cancelled) {
-        //add cancelled query
-        cancelledOrCompletedQ = termQuery(STATE, WorkflowInstanceState.CANCELED.toString());
+      else if (!completed && canceled) {
+        //add canceled query
+        canceledOrCompletedQ = termQuery(STATE, WorkflowInstanceState.CANCELED.toString());
       }
 
-      finishedQuery = joinWithAnd(finishedQuery, cancelledOrCompletedQ);
+      finishedQuery = joinWithAnd(finishedQuery, canceledOrCompletedQ);
     }
 
     final QueryBuilder workflowInstanceQuery = joinWithOr(runningQuery, finishedQuery);
