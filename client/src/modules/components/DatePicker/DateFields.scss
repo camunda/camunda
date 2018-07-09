@@ -6,7 +6,7 @@
 .DateFields__inputContainer {
   display: flex;
   justify-content: center;
-  align-items: flex-start;
+  align-items: stretch;
 }
 
 .DateFields__range {
@@ -64,7 +64,6 @@
   justify-content: center;
   flex-direction: column;
   width: 40px;
-  height: 36px;
   background-color: #fafafa;
   border-top: 1px solid lightgray;
   border-left: none;
