@@ -1,7 +1,8 @@
-import React, {Component} from 'react';
+import React, {Component, Fragment} from 'react';
 import PropTypes from 'prop-types';
 import update from 'immutability-helper';
 
+import Content from 'modules/components/Content';
 import Panel from 'modules/components/Panel';
 import withSharedState from 'modules/components/withSharedState';
 import SplitPane from 'modules/components/SplitPane';
@@ -128,7 +129,7 @@ class Instances extends Component {
   render() {
     const {running, incidents: incidentsCount} = this.props.getStateLocally();
     return (
-      <div>
+      <Fragment>
         <Header
           active="instances"
           instances={running}
@@ -136,50 +137,52 @@ class Instances extends Component {
           selections={0} // needs a backend call because selections are complex
           incidents={incidentsCount}
         />
-        <Styled.Instances>
-          <Filters
-            filter={this.state.filter}
-            handleFilterChange={this.handleFilterChange}
-            resetFilter={this.resetFilter}
-          />
-          <Styled.Center>
-            <SplitPane.Pane isRounded>
-              <SplitPane.Pane.Header isRounded>
-                Process Definition Name
-              </SplitPane.Pane.Header>
-              <SplitPane.Pane.Body>
-                Process Definition Name content
-              </SplitPane.Pane.Body>
-            </SplitPane.Pane>
-            <ListView
-              instancesInFilter={this.state.filterCount}
-              onSelectionUpdate={change => {
-                this.setState({
-                  selection: update(this.state.selection, change)
-                });
-              }}
-              selection={this.state.selection}
+        <Content>
+          <Styled.Instances>
+            <Filters
               filter={this.state.filter}
-              onAddToSelection={this.handleAddToSelection}
+              handleFilterChange={this.handleFilterChange}
+              resetFilter={this.resetFilter}
             />
-          </Styled.Center>
-          <Styled.Right>
-            <Panel isRounded>
-              <Styled.SelectionHeader isRounded>
-                Selections
-              </Styled.SelectionHeader>
-              <Panel.Body>
-                <SelectionDisplay selections={this.state.selections} />
-              </Panel.Body>
-              <Styled.RightExpandButton
-                iconDirection={ICON_DIRECTION.RIGHT}
-                isExpanded={true}
+            <Styled.Center>
+              <SplitPane.Pane isRounded>
+                <SplitPane.Pane.Header isRounded>
+                  Process Definition Name
+                </SplitPane.Pane.Header>
+                <SplitPane.Pane.Body>
+                  Process Definition Name content
+                </SplitPane.Pane.Body>
+              </SplitPane.Pane>
+              <ListView
+                instancesInFilter={this.state.filterCount}
+                onSelectionUpdate={change => {
+                  this.setState({
+                    selection: update(this.state.selection, change)
+                  });
+                }}
+                selection={this.state.selection}
+                filter={this.state.filter}
+                onAddToSelection={this.handleAddToSelection}
               />
-              <Panel.Footer />
-            </Panel>
-          </Styled.Right>
-        </Styled.Instances>
-      </div>
+            </Styled.Center>
+            <Styled.Right>
+              <Panel isRounded>
+                <Styled.SelectionHeader isRounded>
+                  Selections
+                </Styled.SelectionHeader>
+                <Panel.Body>
+                  <SelectionDisplay selections={this.state.selections} />
+                </Panel.Body>
+                <Styled.RightExpandButton
+                  iconDirection={ICON_DIRECTION.RIGHT}
+                  isExpanded={true}
+                />
+                <Panel.Footer />
+              </Panel>
+            </Styled.Right>
+          </Styled.Instances>
+        </Content>
+      </Fragment>
     );
   }
 }

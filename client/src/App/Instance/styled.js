@@ -8,10 +8,6 @@ export const Instance = styled.div`
   flex-direction: column;
   height: calc(100vh - ${HEADER_HEIGHT}px);
   position: relative;
-
-  /* prevents header dropdown to not go under the content */
-  /* display: flex has z-index as well */
-  z-index: 0;
 `;
 
 export const Top = styled.div`

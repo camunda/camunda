@@ -9,6 +9,7 @@ import {fetchWorkflowInstancesCount} from 'modules/api/instances';
 import {parseFilterForRequest} from 'modules/utils/filter';
 import {FILTER_SELECTION, LABELS} from 'modules/constants/filter';
 
+import Content from 'modules/components/Content';
 import withSharedState from 'modules/components/withSharedState';
 import PropTypes from 'prop-types';
 
@@ -62,18 +63,20 @@ class Dashboard extends Component {
           selections={0}
           incidents={incidents}
         />
-        <Styled.Dashboard>
-          <MetricPanel>
-            {tiles.map(tile => (
-              <MetricTile
-                key={tile}
-                value={this.state[tile]}
-                label={LABELS[tile]}
-                type={tile}
-              />
-            ))}
-          </MetricPanel>
-        </Styled.Dashboard>
+        <Content>
+          <Styled.Dashboard>
+            <MetricPanel>
+              {tiles.map(tile => (
+                <MetricTile
+                  key={tile}
+                  value={this.state[tile]}
+                  label={LABELS[tile]}
+                  type={tile}
+                />
+              ))}
+            </MetricPanel>
+          </Styled.Dashboard>
+        </Content>
       </Fragment>
     );
   }

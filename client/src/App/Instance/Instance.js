@@ -1,6 +1,7 @@
 import React, {Component, Fragment} from 'react';
 import PropTypes from 'prop-types';
 
+import Content from 'modules/components/Content';
 import SplitPane from 'modules/components/SplitPane';
 import Copyright from 'modules/components/Copyright';
 import InstanceDetail from './InstanceDetail';
@@ -49,18 +50,20 @@ export default class Instance extends Component {
           incidents={328}
           detail={<InstanceDetail instance={this.state.instance} />}
         />
-        <Styled.Instance>
-          <SplitPane>
-            <DiagramPanel instance={this.state.instance} />
-            <SplitPane.Pane>
-              <SplitPane.Pane.Header>Instance history</SplitPane.Pane.Header>
-              <SplitPane.Pane.Body />
-              <Styled.PaneFooter>
-                <Copyright />
-              </Styled.PaneFooter>
-            </SplitPane.Pane>
-          </SplitPane>
-        </Styled.Instance>
+        <Content>
+          <Styled.Instance>
+            <SplitPane>
+              <DiagramPanel instance={this.state.instance} />
+              <SplitPane.Pane>
+                <SplitPane.Pane.Header>Instance history</SplitPane.Pane.Header>
+                <SplitPane.Pane.Body />
+                <Styled.PaneFooter>
+                  <Copyright />
+                </Styled.PaneFooter>
+              </SplitPane.Pane>
+            </SplitPane>
+          </Styled.Instance>
+        </Content>
       </Fragment>
     );
   }

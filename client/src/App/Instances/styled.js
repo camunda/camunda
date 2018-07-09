@@ -10,10 +10,6 @@ export const Instances = styled.div`
   display: flex;
   flex-direction: row;
   height: calc(100vh - ${HEADER_HEIGHT}px);
-
-  /* prevents header dropdown to not go under the content */
-  /* display: flex has z-index as well */
-  z-index: 0;
 `;
 
 export const Center = styled(SplitPane)`
