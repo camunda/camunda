@@ -1,7 +1,7 @@
 import * as instanceUtils from './instance';
-import {STATE} from 'modules/constants/instance';
+import {INSTANCE_STATE} from 'modules/constants';
 
-const {ACTIVE, INCIDENT, COMPLETED, CANCELED} = STATE;
+const {ACTIVE, INCIDENT, COMPLETED, CANCELED} = INSTANCE_STATE;
 
 const active = {state: ACTIVE, incidents: []};
 const activeWithIncidents = {

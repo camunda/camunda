@@ -1,22 +1,24 @@
-import {STATE} from 'modules/constants/instance';
+import {INSTANCE_STATE} from 'modules/constants';
 
 export const getActiveIncident = (incidents = []) => {
   let activeIncident = null;
 
   if (incidents.length > 0) {
-    activeIncident = incidents.filter(({state}) => state === STATE.ACTIVE)[0];
+    activeIncident = incidents.filter(
+      ({state}) => state === INSTANCE_STATE.ACTIVE
+    )[0];
   }
 
   return activeIncident;
 };
 
 export function getInstanceState({state, incidents}) {
-  if (state === STATE.COMPLETED || state === STATE.CANCELED) {
+  if (state === INSTANCE_STATE.COMPLETED || state === INSTANCE_STATE.CANCELED) {
     return state;
   }
 
   const hasActiveIncident = Boolean(getActiveIncident(incidents));
-  return hasActiveIncident ? STATE.INCIDENT : STATE.ACTIVE;
+  return hasActiveIncident ? INSTANCE_STATE.INCIDENT : INSTANCE_STATE.ACTIVE;
 }
 
 export function getIncidentMessage({incidents}) {

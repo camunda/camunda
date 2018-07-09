@@ -2,8 +2,7 @@ import React, {Children, cloneElement} from 'react';
 import PropTypes from 'prop-types';
 
 import Panel from 'modules/components/Panel';
-import {ICON_DIRECTION} from 'modules/constants/expandIcon';
-import {PANE_ID, EXPAND_STATE} from 'modules/constants/splitPane';
+import {PANE_ID, EXPAND_STATE, DIRECTION} from 'modules/constants';
 
 import * as Styled from './styled';
 
@@ -11,17 +10,17 @@ const paneExpandButton = {
   [PANE_ID.TOP]: {
     ExpandButton: Styled.TopExpandButton,
     iconDirections: {
-      EXPANDED: ICON_DIRECTION.UP,
-      COLLAPSED: ICON_DIRECTION.DOWN,
-      DEFAULT: ICON_DIRECTION.DOWN
+      EXPANDED: DIRECTION.UP,
+      COLLAPSED: DIRECTION.DOWN,
+      DEFAULT: DIRECTION.DOWN
     }
   },
   [PANE_ID.BOTTOM]: {
     ExpandButton: Styled.BottomExpandButton,
     iconDirections: {
-      EXPANDED: ICON_DIRECTION.DOWN,
-      COLLAPSED: ICON_DIRECTION.UP,
-      DEFAULT: ICON_DIRECTION.UP
+      EXPANDED: DIRECTION.DOWN,
+      COLLAPSED: DIRECTION.UP,
+      DEFAULT: DIRECTION.UP
     }
   }
 };

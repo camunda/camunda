@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import {FILTER_SELECTION} from 'modules/constants/filter';
+import {FILTER_SELECTION} from 'modules/constants';
 import {getFilterQueryString} from 'modules/utils/filter';
 
 import * as Styled from './styled';

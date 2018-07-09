@@ -6,13 +6,12 @@ import Content from 'modules/components/Content';
 import Panel from 'modules/components/Panel';
 import withSharedState from 'modules/components/withSharedState';
 import SplitPane from 'modules/components/SplitPane';
-import {ICON_DIRECTION} from 'modules/constants/expandIcon';
+import {DIRECTION, DEFAULT_FILTER} from 'modules/constants';
 import {fetchWorkflowInstancesCount} from 'modules/api/instances';
 import {
   parseFilterForRequest,
   getFilterQueryString
 } from 'modules/utils/filter';
-import {DEFAULT_FILTER} from 'modules/constants/filter';
 
 import Header from '../Header';
 import ListView from './ListView';
@@ -123,6 +122,8 @@ class Instances extends Component {
 
   resetFilter = () => {
     this.setFilterInURL(DEFAULT_FILTER);
+
+    // reset filter in local storage
     this.props.storeStateLocally({filter: DEFAULT_FILTER});
   };
 
@@ -174,7 +175,7 @@ class Instances extends Component {
                   <SelectionDisplay selections={this.state.selections} />
                 </Panel.Body>
                 <Styled.RightExpandButton
-                  iconDirection={ICON_DIRECTION.RIGHT}
+                  iconDirection={DIRECTION.RIGHT}
                   isExpanded={true}
                 />
                 <Panel.Footer />

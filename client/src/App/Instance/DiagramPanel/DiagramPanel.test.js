@@ -6,7 +6,7 @@ import Diagram from 'modules/components/Diagram';
 import StateIcon from 'modules/components/StateIcon';
 import {formatDate} from 'modules/utils/date';
 import {getWorkflowName} from 'modules/utils/instance';
-import {STATE} from 'modules/constants/instance';
+import {INSTANCE_STATE} from 'modules/constants';
 
 import DiagramPanel from './DiagramPanel';
 import * as Styled from './styled';
@@ -18,7 +18,7 @@ describe('DiagramPanel', () => {
     workflowId: 'bar',
     startDate: 'Wed Jun 20 2018 08:57:20',
     endDate: formatDate(null),
-    state: STATE.ACTIVE
+    state: INSTANCE_STATE.ACTIVE
   };
 
   it('should render pane header and body', () => {

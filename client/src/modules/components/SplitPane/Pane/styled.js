@@ -2,7 +2,7 @@ import styled, {css} from 'styled-components';
 
 import Panel from 'modules/components/Panel';
 import ExpandButton from 'modules/components/ExpandButton';
-import {EXPAND_STATE} from 'modules/constants/splitPane';
+import {EXPAND_STATE} from 'modules/constants';
 
 const isCollapsed = expandState => expandState === EXPAND_STATE.COLLAPSED;
 

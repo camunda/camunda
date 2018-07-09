@@ -4,7 +4,7 @@ import {shallow} from 'enzyme';
 import * as api from 'modules/api/instances/instances';
 import {mockResolvedAsyncFn} from 'modules/testUtils';
 import {parseFilterForRequest} from 'modules/utils/filter';
-import {ORDER, DEFAULT_SORT_BY} from 'modules/constants/sort';
+import {ORDER, DEFAULT_SORT_BY} from 'modules/constants';
 
 import ListView from './ListView';
 import List from './List';

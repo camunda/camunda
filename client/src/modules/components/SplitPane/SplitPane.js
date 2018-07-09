@@ -1,6 +1,6 @@
 import React, {Children, cloneElement} from 'react';
 
-import {PANE_ID, EXPAND_STATE} from 'modules/constants/splitPane';
+import {PANE_ID, EXPAND_STATE} from 'modules/constants';
 
 import Pane from './Pane';
 import {twoNodesPropType} from './service';

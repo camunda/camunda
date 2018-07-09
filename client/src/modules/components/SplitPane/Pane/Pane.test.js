@@ -1,8 +1,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {ICON_DIRECTION} from 'modules/constants/expandIcon';
-import {PANE_ID, EXPAND_STATE} from 'modules/constants/splitPane';
+import {PANE_ID, EXPAND_STATE, DIRECTION} from 'modules/constants';
 
 import Pane from './Pane';
 import * as Styled from './styled';
@@ -47,7 +46,7 @@ describe('Pane', () => {
     // then
     const TopExpandButtonNode = node.find(Styled.TopExpandButton);
     expect(TopExpandButtonNode).toHaveLength(1);
-    expect(TopExpandButtonNode.prop('iconDirection')).toBe(ICON_DIRECTION.UP);
+    expect(TopExpandButtonNode.prop('iconDirection')).toBe(DIRECTION.UP);
     expect(node).toMatchSnapshot();
   });
 
@@ -66,7 +65,7 @@ describe('Pane', () => {
     // then
     const TopExpandButtonNode = node.find(Styled.TopExpandButton);
     expect(TopExpandButtonNode).toHaveLength(1);
-    expect(TopExpandButtonNode.prop('iconDirection')).toBe(ICON_DIRECTION.DOWN);
+    expect(TopExpandButtonNode.prop('iconDirection')).toBe(DIRECTION.DOWN);
     expect(node).toMatchSnapshot();
   });
 
@@ -85,9 +84,7 @@ describe('Pane', () => {
     // then
     const BottomExpandButtonNode = node.find(Styled.BottomExpandButton);
     expect(BottomExpandButtonNode).toHaveLength(1);
-    expect(BottomExpandButtonNode.prop('iconDirection')).toBe(
-      ICON_DIRECTION.DOWN
-    );
+    expect(BottomExpandButtonNode.prop('iconDirection')).toBe(DIRECTION.DOWN);
     expect(node).toMatchSnapshot();
   });
 
@@ -106,9 +103,7 @@ describe('Pane', () => {
     // then
     const BottomExpandButtonNode = node.find(Styled.BottomExpandButton);
     expect(BottomExpandButtonNode).toHaveLength(1);
-    expect(BottomExpandButtonNode.prop('iconDirection')).toBe(
-      ICON_DIRECTION.UP
-    );
+    expect(BottomExpandButtonNode.prop('iconDirection')).toBe(DIRECTION.UP);
     expect(node).toMatchSnapshot();
   });
 

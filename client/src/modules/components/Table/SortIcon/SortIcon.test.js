@@ -2,7 +2,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import SortIcon from './SortIcon';
-import {ORDER} from 'modules/constants/sort';
+import {ORDER} from 'modules/constants';
 import * as Styled from './styled';
 
 describe('SortIcon', () => {

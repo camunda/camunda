@@ -3,8 +3,7 @@ import PropTypes from 'prop-types';
 
 import Panel from 'modules/components/Panel';
 import Button from 'modules/components/Button';
-import {DEFAULT_FILTER, FILTER_TYPES} from 'modules/constants/filter';
-import {ICON_DIRECTION} from 'modules/constants/expandIcon';
+import {DEFAULT_FILTER, FILTER_TYPES, DIRECTION} from 'modules/constants';
 import {isEqual} from 'modules/utils';
 
 import Filter from './Filter';
@@ -42,7 +41,7 @@ export default class Filters extends React.Component {
             />
           </Panel.Body>
           <Styled.ExpandButton
-            iconDirection={ICON_DIRECTION.LEFT}
+            iconDirection={DIRECTION.LEFT}
             isExpanded={true}
           />
           <Styled.ResetButtonContainer>

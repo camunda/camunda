@@ -2,14 +2,13 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import SplitPane from 'modules/components/SplitPane';
-import {EXPAND_STATE} from 'modules/constants/splitPane';
+import {EXPAND_STATE, ORDER, DEFAULT_SORT_BY} from 'modules/constants';
 import {isEmpty} from 'modules/utils';
 
 import List from './List';
 import ListFooter from './ListFooter';
 import {parseFilterForRequest} from 'modules/utils/filter';
 import {fetchWorkflowInstances} from 'modules/api/instances';
-import {ORDER, DEFAULT_SORT_BY} from 'modules/constants/sort';
 
 export default class ListView extends React.Component {
   static propTypes = {

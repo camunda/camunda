@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 
 import Checkbox from 'modules/components/Checkbox';
 import StateIcon from 'modules/components/StateIcon';
-import {EXPAND_STATE} from 'modules/constants/splitPane';
+import {EXPAND_STATE} from 'modules/constants';
 import {formatDate} from 'modules/utils/date';
 import {getWorkflowName} from 'modules/utils/instance';
 import Table from 'modules/components/Table';

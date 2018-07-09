@@ -7,7 +7,7 @@ import MetricTile from './MetricTile';
 
 import {fetchWorkflowInstancesCount} from 'modules/api/instances';
 import {parseFilterForRequest} from 'modules/utils/filter';
-import {FILTER_SELECTION, LABELS} from 'modules/constants/filter';
+import {FILTER_SELECTION, INSTANCES_LABELS} from 'modules/constants';
 
 import Content from 'modules/components/Content';
 import withSharedState from 'modules/components/withSharedState';
@@ -70,7 +70,7 @@ class Dashboard extends Component {
                 <MetricTile
                   key={tile}
                   value={this.state[tile]}
-                  label={LABELS[tile]}
+                  label={INSTANCES_LABELS[tile]}
                   type={tile}
                 />
               ))}

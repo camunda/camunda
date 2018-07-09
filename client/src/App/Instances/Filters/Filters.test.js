@@ -1,8 +1,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {DEFAULT_FILTER, FILTER_TYPES} from 'modules/constants/filter';
-import {ICON_DIRECTION} from 'modules/constants/expandIcon';
+import {DEFAULT_FILTER, FILTER_TYPES, DIRECTION} from 'modules/constants';
 import Button from 'modules/components/Button';
 
 import Filters from './Filters';
@@ -45,7 +44,7 @@ describe('Filters', () => {
 
     // then
     expect(ExpandButtonNode).toHaveLength(1);
-    expect(ExpandButtonNode.prop('iconDirection')).toBe(ICON_DIRECTION.LEFT);
+    expect(ExpandButtonNode.prop('iconDirection')).toBe(DIRECTION.LEFT);
     expect(ExpandButtonNode.prop('isExpanded')).toBe(true);
   });
 

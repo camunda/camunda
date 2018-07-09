@@ -1,7 +1,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {PANE_ID, EXPAND_STATE} from 'modules/constants/splitPane';
+import {PANE_ID, EXPAND_STATE} from 'modules/constants';
 
 import SplitPane from './SplitPane';
 

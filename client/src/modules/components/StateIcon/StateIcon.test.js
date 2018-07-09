@@ -2,7 +2,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import * as instanceUtils from 'modules/utils/instance/instance';
-import {STATE} from 'modules/constants/instance';
+import {INSTANCE_STATE} from 'modules/constants';
 
 import ThemedStateIcon from './StateIcon';
 import * as Styled from './styled';
@@ -18,7 +18,7 @@ describe('StateIcon', () => {
   it('should render Incident Icon', () => {
     // given
     const someProp = 'some prop';
-    instanceUtils.getInstanceState = jest.fn(() => STATE.INCIDENT);
+    instanceUtils.getInstanceState = jest.fn(() => INSTANCE_STATE.INCIDENT);
     const node = shallow(
       <StateIcon instance={mockInstance} theme={'dark'} someProp={someProp} />
     );
@@ -35,7 +35,7 @@ describe('StateIcon', () => {
   it('should render Active Icon', () => {
     // given
     const someProp = 'some prop';
-    instanceUtils.getInstanceState = jest.fn(() => STATE.ACTIVE);
+    instanceUtils.getInstanceState = jest.fn(() => INSTANCE_STATE.ACTIVE);
     const node = shallow(
       <StateIcon instance={mockInstance} theme={'dark'} someProp={someProp} />
     );
@@ -52,7 +52,7 @@ describe('StateIcon', () => {
   it('should render Completed Icon', () => {
     // given
     const someProp = 'some prop';
-    instanceUtils.getInstanceState = jest.fn(() => STATE.COMPLETED);
+    instanceUtils.getInstanceState = jest.fn(() => INSTANCE_STATE.COMPLETED);
     const node = shallow(
       <StateIcon instance={mockInstance} theme={'dark'} someProp={someProp} />
     );
@@ -69,7 +69,7 @@ describe('StateIcon', () => {
   it('should render Canceled Icon', () => {
     // given
     const someProp = 'some prop';
-    instanceUtils.getInstanceState = jest.fn(() => STATE.CANCELED);
+    instanceUtils.getInstanceState = jest.fn(() => INSTANCE_STATE.CANCELED);
     const node = shallow(
       <StateIcon instance={mockInstance} theme={'dark'} someProp={someProp} />
     );

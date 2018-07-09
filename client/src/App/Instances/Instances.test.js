@@ -4,7 +4,7 @@ import {shallow} from 'enzyme';
 import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 
 import WrappedInstances from './Instances';
-import {DEFAULT_FILTER} from 'modules/constants/filter';
+import {DEFAULT_FILTER} from 'modules/constants';
 import * as api from 'modules/api/instances/instances';
 import Filters from './Filters';
 import ListView from './ListView';

@@ -3,12 +3,12 @@ import PropTypes from 'prop-types';
 
 import {getInstanceState, getIncidentMessage} from 'modules/utils/instance';
 
-import {STATE} from 'modules/constants/instance';
+import {INSTANCE_STATE} from 'modules/constants';
 
 import * as Styled from './styled';
 
 export default function DiagramBar({instance}) {
-  if (getInstanceState(instance) === STATE.INCIDENT) {
+  if (getInstanceState(instance) === INSTANCE_STATE.INCIDENT) {
     const errorMessage = getIncidentMessage(instance);
     return (
       <Styled.IncidentMessage>

@@ -1,6 +1,6 @@
 import {parseFilterForRequest, getFilterQueryString} from './filter';
 
-import {DEFAULT_FILTER} from '../../constants/filter';
+import {DEFAULT_FILTER} from 'modules/constants';
 
 describe('parseFilterForRequest', () => {
   it('should parse empty filter selection', () => {

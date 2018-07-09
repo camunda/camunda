@@ -1,9 +1,8 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {EXPAND_STATE} from 'modules/constants/splitPane';
+import {EXPAND_STATE, ORDER} from 'modules/constants';
 import Table from 'modules/components/Table';
-import {ORDER} from 'modules/constants/sort';
 
 import List from './List';
 import * as Styled from './styled';

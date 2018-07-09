@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import Checkbox from 'modules/components/Checkbox';
-import {LABELS} from 'modules/constants/filter';
+import {INSTANCES_LABELS} from 'modules/constants';
 
 import * as Styled from './styled.js';
 
@@ -58,7 +58,7 @@ export default class Filter extends React.Component {
       <Styled.Filters>
         <div>
           <Checkbox
-            label={LABELS[type]}
+            label={INSTANCES_LABELS[type]}
             isIndeterminate={this.isIndeterminate()}
             isChecked={this.getCheckedChildrenCount() === 2}
             onChange={this.onResetFilter}
@@ -69,7 +69,7 @@ export default class Filter extends React.Component {
             return (
               <Checkbox
                 key={type}
-                label={LABELS[type]}
+                label={INSTANCES_LABELS[type]}
                 isChecked={filter[type] || false}
                 onChange={this.handleChange(type)}
               />
