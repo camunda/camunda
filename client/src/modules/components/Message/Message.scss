@@ -13,6 +13,12 @@
   background-color: #e6f6ff; /* Sass: lighten(#00a8ff, 45) */
 }
 
+.Message--yellow,
+.Message--warning {
+  border: 1px solid #ffd338;
+  background-color: #fff0bf;
+}
+
 .Message--red,
 .Message--danger,
 .Message--error {

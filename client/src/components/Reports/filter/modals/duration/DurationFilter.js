@@ -1,6 +1,6 @@
 import React from 'react';
 
-import {Modal, Button, Input, Select, ErrorMessage} from 'components';
+import {Modal, Button, Input, Select, ErrorMessage, Message} from 'components';
 import {numberParser} from 'services';
 
 import './DurationFilter.css';
@@ -33,6 +33,9 @@ export default class DurationFilter extends React.Component {
       <Modal open={true} onClose={this.props.close} className="DurationFilter__modal">
         <Modal.Header>Add Duration Filter</Modal.Header>
         <Modal.Content>
+          <Message type="warning">
+            Reports with an active Duration Filter will only show finished instances.
+          </Message>
           <div className="DurationFilter__inputs">
             <label className="DurationFilter__input-label">
               Only include process instances that ran for{' '}
