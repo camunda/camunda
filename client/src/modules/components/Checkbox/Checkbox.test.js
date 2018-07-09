@@ -44,4 +44,15 @@ describe('<Checkbox />', () => {
 
     expect(node.find(Styled.Label)).toExist();
   });
+
+  it('should pass the value of the Checkbox to the onChange method', () => {
+    let checkState = true;
+    const node = shallow(
+      <Checkbox onChange={mockOnChange} isChecked={checkState} />
+    );
+    node.instance().inputRef({checked: true});
+    node.instance().handleOnClick();
+
+    expect(mockOnChange).toBeCalledWith({isChecked: true});
+  });
 });

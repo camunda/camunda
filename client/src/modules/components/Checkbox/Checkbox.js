@@ -6,7 +6,7 @@ import * as Styled from './styled.js';
 export default class Checkbox extends React.Component {
   static propTypes = {
     isChecked: PropTypes.bool,
-    /** Receives object with single isChecked property */
+    /** Receives object with single property - isChecked: `boolean` */
     onChange: PropTypes.func.isRequired,
     isIndeterminate: PropTypes.bool,
     label: PropTypes.string,
