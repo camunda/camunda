@@ -1,4 +1,4 @@
-import {get, post, del} from 'request';
+import {get, post, del, put} from 'request';
 
 export async function load(api, numResults, sortBy) {
   const url = `/api/${api}`;
@@ -33,6 +33,14 @@ export async function create(api) {
   const json = await response.json();
 
   return json.id;
+}
+
+export async function duplicate(api, copyReportData) {
+  const createResponse = await post(`/api/${api}`);
+
+  const json = await createResponse.json();
+
+  return await put(`/api/report/${json.id}`, copyReportData);
 }
 
 export async function remove(id, api) {

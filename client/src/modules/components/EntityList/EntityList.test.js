@@ -3,7 +3,7 @@ import {mount, shallow} from 'enzyme';
 
 import EntityList from './EntityList';
 
-import {create, load} from './service';
+import {create, load, duplicate} from './service';
 
 const sampleEntity = {
   id: '1',
@@ -12,11 +12,19 @@ const sampleEntity = {
   lastModified: '2017-11-11T11:11:11.1111+0200'
 };
 
+const duplicateEntity = {
+  id: '2',
+  name: 'copy of "Test Entity"',
+  lastModifier: 'Admin',
+  lastModified: '2017-11-11T11:12:11.1111+0200'
+};
+
 jest.mock('./service', () => {
   return {
     load: jest.fn(),
     remove: jest.fn(),
-    create: jest.fn()
+    create: jest.fn(),
+    duplicate: jest.fn()
   };
 });
 jest.mock('react-router-dom', () => {
@@ -281,4 +289,44 @@ it('should show a share icon only if entity is shared', () => {
   });
 
   expect(node).not.toIncludeText('share');
+});
+
+it('should display a duplicate icon button if specified', () => {
+  const node = mount(
+    shallow(<EntityList api="endpoint" label="Report" operations={['duplicate']} />).get(0)
+  );
+  node.setState({
+    loaded: true,
+    data: [sampleEntity]
+  });
+  expect(node.find('.EntityList__duplicateIcon')).toBePresent();
+});
+
+it('should invoke duplicate on click', async () => {
+  const node = mount(
+    shallow(<EntityList api="endpoint" label="Report" operations={['duplicate']} />).get(0)
+  );
+  node.setState({
+    loaded: true,
+    data: [sampleEntity]
+  });
+  load.mockReturnValue([sampleEntity, duplicateEntity]);
+  await node.instance().duplicateEntity('1')();
+  await node.update();
+  expect(duplicate).toHaveBeenCalled();
+});
+
+it('should increase the reports list by 1 when invoking the duplicate onClick', async () => {
+  const node = mount(
+    shallow(<EntityList api="endpoint" label="Report" operations={['duplicate']} />).get(0)
+  );
+  node.setState({
+    loaded: true,
+    data: [sampleEntity]
+  });
+  load.mockReturnValue([sampleEntity, duplicateEntity]);
+  await node.instance().duplicateEntity('1')();
+  await node.update();
+  expect(node.find('ul').children().length).toBe(2);
+  expect(node.find('ul')).toIncludeText('copy of "Test Entity"');
 });

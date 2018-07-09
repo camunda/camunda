@@ -7,7 +7,7 @@ export default function Reports() {
       api="report"
       label="Report"
       sortBy={'lastModified'}
-      operations={['create', 'edit', 'delete']}
+      operations={['create', 'edit', 'delete', 'duplicate']}
     />
   );
 }

@@ -7,7 +7,7 @@ import {Redirect, Link} from 'react-router-dom';
 
 import {Button, Modal, Message, Icon} from 'components';
 
-import {load, create, remove} from './service';
+import {load, create, remove, duplicate} from './service';
 
 import './EntityList.css';
 
@@ -25,6 +25,10 @@ class EntityList extends React.Component {
   }
 
   componentDidMount = async () => {
+    await this.loadReportsData();
+  };
+
+  loadReportsData = async () => {
     this.props.mightFail(
       load(this.props.api, this.props.displayOnly, this.props.sortBy),
       response => {
@@ -56,6 +60,14 @@ class EntityList extends React.Component {
       deleteModalVisible: true,
       deleteModalEntity: {id, name}
     });
+  };
+
+  duplicateEntity = id => async evt => {
+    const {data, name} = this.state.data.find(entity => entity.id === id);
+    const copyReport = {data, name: `copy of "${name}"`};
+    await duplicate(this.props.api, copyReport);
+    // fetch the data again after duplication to update the state
+    await this.loadReportsData();
   };
 
   closeDeleteModal = () => {
@@ -95,6 +107,20 @@ class EntityList extends React.Component {
           parentClassName: 'EntityList__data--tool'
         });
       }
+
+      if (this.props.operations.includes('duplicate')) {
+        entry.push({
+          content: (
+            <Icon
+              type="copy-document"
+              onClick={this.duplicateEntity(id)}
+              className="EntityList__duplicateIcon"
+            />
+          ),
+          parentClassName: 'EntityList__data--tool'
+        });
+      }
+
       if (this.props.operations.includes('edit')) {
         entry.push({
           content: <Icon type="edit" className="EntityList__editLink" />,
