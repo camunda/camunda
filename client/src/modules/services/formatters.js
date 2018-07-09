@@ -30,8 +30,8 @@ export function duration(timeObject) {
       ? timeObject.value * timeUnits[timeObject.unit].value
       : timeObject;
 
-  if (time === 0) {
-    return '0ms';
+  if (time >= 0 && time < 1) {
+    return `${time}ms`;
   }
 
   const timeSegments = [];
@@ -41,8 +41,12 @@ export function duration(timeObject) {
     .sort((a, b) => b.value - a.value)
     .forEach(currentUnit => {
       if (remainingTime >= currentUnit.value) {
-        const numberOfUnits = Math.floor(remainingTime / currentUnit.value);
-
+        let numberOfUnits = Math.floor(remainingTime / currentUnit.value);
+        // allow numbers with ms abreviation to have floating numbers (avoid flooring)
+        // e.g 1.2ms => 1.2 ms. On the other hand, 1.2 seconds => 1 seconds 200ms
+        if (currentUnit.abbreviation === 'ms') {
+          numberOfUnits = remainingTime / currentUnit.value;
+        }
         timeSegments.push(numberOfUnits + currentUnit.abbreviation);
 
         remainingTime -= numberOfUnits * currentUnit.value;

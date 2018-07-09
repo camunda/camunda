@@ -47,6 +47,15 @@ describe('durationFormatter', () => {
     expect(durationFormatter(1)).toBe('1ms');
   });
 
+  it('should handle millisecond durations that are below 1', () => {
+    expect(durationFormatter({value: 0.2, unit: 'millis'})).toBe('0.2ms');
+  });
+
+  it('should not floor millisecond durations only', () => {
+    expect(durationFormatter({value: 1.3, unit: 'millis'})).toBe('1.3ms');
+    expect(durationFormatter({value: 1.2, unit: 'seconds'})).toBe(`1s${nbsp}200ms`);
+  });
+
   it('should handle a time object', () => {
     expect(durationFormatter({value: 14, unit: 'seconds'})).toBe('14s');
   });
