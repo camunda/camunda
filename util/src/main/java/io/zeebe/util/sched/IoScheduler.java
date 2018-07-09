@@ -16,76 +16,22 @@
 package io.zeebe.util.sched;
 
 import io.zeebe.util.sched.clock.ActorClock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.IntFunction;
 
 /**
- * Scheduler for tasks which are I/O bound (predominantly blocking on I/O).
- *
- * <p>The scheduler maintains a max concurrency by I/O device, allowing to limit how many tasks
- * submitting I/O operations to the same device can run in parallel.
- *
- * <p>This scheduler is threadsafe and there should be one instance per {@link ActorThreadGroup}.
+ * TaskScheduler implementation of IoActors. Currently, this implementation does nothing special. In
+ * the future, more sophisticated logic can be implemented such as limiting concurrency by Io Device
+ * or similar schemes.
  */
 public class IoScheduler implements TaskScheduler {
-  private final ReentrantLock lock = new ReentrantLock();
 
-  private final IntFunction<ActorTask> getTaskFn;
+  private MultiLevelWorkstealingGroup tasks;
 
-  private final int numOfDevices;
-  private final int[] deviceMaxConcurrency;
-  private final int[] pendingOperatsByDevice;
-
-  private int currentDevice = 0;
-
-  /**
-   * @param getTaskFn the function which allows to retrieve the next task by I/O device.
-   * @param deviceMaxConcurrency for each device, the max level of concurrency to allow for.
-   */
-  public IoScheduler(IntFunction<ActorTask> getTaskFn, int[] deviceMaxConcurrency) {
-    this.getTaskFn = getTaskFn;
-    this.numOfDevices = deviceMaxConcurrency.length;
-    this.deviceMaxConcurrency = deviceMaxConcurrency;
-    this.pendingOperatsByDevice = new int[numOfDevices];
+  public IoScheduler(MultiLevelWorkstealingGroup tasks) {
+    this.tasks = tasks;
   }
 
   @Override
   public ActorTask getNextTask(ActorClock now) {
-    lock.lock();
-    try {
-      return doGetNextTask();
-    } finally {
-      lock.unlock();
-    }
-  }
-
-  private ActorTask doGetNextTask() {
-    ActorTask nextTask = null;
-
-    for (int i = currentDevice; i < currentDevice + numOfDevices; i++) {
-      final int device = i % numOfDevices;
-
-      if (pendingOperatsByDevice[device] < deviceMaxConcurrency[device]) {
-        nextTask = getTaskFn.apply(device);
-
-        if (nextTask != null) {
-          currentDevice = device;
-          ++pendingOperatsByDevice[device];
-          break;
-        }
-      }
-    }
-
-    return nextTask;
-  }
-
-  @Override
-  public void onTaskReleased(ActorTask task) {
-    lock.lock();
-    try {
-      --pendingOperatsByDevice[task.getDeviceId()];
-    } finally {
-      lock.unlock();
-    }
+    return tasks.getNextTask(0);
   }
 }

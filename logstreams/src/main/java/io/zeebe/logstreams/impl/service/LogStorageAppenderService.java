@@ -51,7 +51,7 @@ public class LogStorageAppenderService implements Service<LogStorageAppender> {
             onLogStorageAppendedConditions);
 
     startContext.async(
-        startContext.getScheduler().submitActor(service, true, SchedulingHints.ioBound((short) 0)));
+        startContext.getScheduler().submitActor(service, true, SchedulingHints.ioBound()));
   }
 
   @Override

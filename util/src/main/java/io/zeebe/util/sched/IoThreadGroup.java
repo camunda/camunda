@@ -17,29 +17,24 @@ package io.zeebe.util.sched;
 
 import io.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
 
-/** Thread group for tasks that are blocking-I/O bound. */
-public class IoBoundThreadGroup extends ActorThreadGroup {
-  private IoScheduler ioScheduler;
+public class IoThreadGroup extends ActorThreadGroup {
 
-  public IoBoundThreadGroup(ActorSchedulerBuilder builder) {
+  public IoThreadGroup(ActorSchedulerBuilder builder) {
     super(
-        String.format("%s-%s", builder.getSchedulerName(), "zb-io-actors"),
+        String.format("%s-%s", builder.getSchedulerName(), "zb-fs-workers"),
         builder.getIoBoundActorThreadCount(),
-        builder.getIoDeviceConcurrency().length,
+        1,
         builder);
   }
 
   @Override
   protected TaskScheduler createTaskScheduler(
       MultiLevelWorkstealingGroup tasks, ActorSchedulerBuilder builder) {
-    if (ioScheduler == null) {
-      ioScheduler = new IoScheduler(tasks::getNextTask, builder.getIoDeviceConcurrency());
-    }
-    return ioScheduler;
+    return new IoScheduler(tasks);
   }
 
   @Override
   protected int getLevel(ActorTask actorTask) {
-    return actorTask.getDeviceId();
+    return 0;
   }
 }

@@ -43,7 +43,7 @@ public class MetricsFileWriterService implements Service<MetricsFileWriter> {
     metricsFileWriter =
         new MetricsFileWriter(
             configuration.getReportingIntervalDuration(), metricsFileName, metricsManager);
-    startContext.async(scheduler.submitActor(metricsFileWriter, SchedulingHints.isIoBound(0)));
+    startContext.async(scheduler.submitActor(metricsFileWriter, true, SchedulingHints.ioBound()));
   }
 
   @Override

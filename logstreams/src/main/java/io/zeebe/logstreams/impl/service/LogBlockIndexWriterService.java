@@ -48,8 +48,7 @@ public class LogBlockIndexWriterService implements Service<LogBlockIndexWriter> 
             logBlockIndex,
             scheduler.getMetricsManager());
 
-    startContext.async(
-        scheduler.submitActor(logBlockIndexWriter, true, SchedulingHints.ioBound((short) 0)));
+    startContext.async(scheduler.submitActor(logBlockIndexWriter, true, SchedulingHints.ioBound()));
   }
 
   @Override

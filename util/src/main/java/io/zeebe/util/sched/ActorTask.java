@@ -119,9 +119,6 @@ public class ActorTask {
    */
   private int priority = ActorPriority.REGULAR.getPriorityClass();
 
-  /** the id of the io device used. Only set if this task is scheduled as a blocking io task */
-  private int deviceId;
-
   public ActorTask(Actor actor) {
     this.actor = actor;
   }
@@ -566,14 +563,6 @@ public class ActorTask {
     this.priority = priority;
   }
 
-  public int getDeviceId() {
-    return deviceId;
-  }
-
-  public void setDeviceId(int deviceId) {
-    this.deviceId = deviceId;
-  }
-
   public ActorExecutor getActorExecutor() {
     return actorExecutor;
   }
@@ -626,7 +615,6 @@ public class ActorTask {
       priority = SchedulingHints.getPriority(hints);
       actorThreadGroup = actorExecutor.getCpuBoundThreads();
     } else {
-      deviceId = SchedulingHints.getIoDevice(hints);
       actorThreadGroup = actorExecutor.getIoBoundThreads();
     }
   }
