@@ -46,7 +46,7 @@ describe('Pane', () => {
     // then
     const TopExpandButtonNode = node.find(Styled.TopExpandButton);
     expect(TopExpandButtonNode).toHaveLength(1);
-    expect(TopExpandButtonNode.prop('iconDirection')).toBe(DIRECTION.UP);
+    expect(TopExpandButtonNode.prop('direction')).toBe(DIRECTION.UP);
     expect(node).toMatchSnapshot();
   });
 
@@ -65,7 +65,7 @@ describe('Pane', () => {
     // then
     const TopExpandButtonNode = node.find(Styled.TopExpandButton);
     expect(TopExpandButtonNode).toHaveLength(1);
-    expect(TopExpandButtonNode.prop('iconDirection')).toBe(DIRECTION.DOWN);
+    expect(TopExpandButtonNode.prop('direction')).toBe(DIRECTION.DOWN);
     expect(node).toMatchSnapshot();
   });
 
@@ -84,7 +84,7 @@ describe('Pane', () => {
     // then
     const BottomExpandButtonNode = node.find(Styled.BottomExpandButton);
     expect(BottomExpandButtonNode).toHaveLength(1);
-    expect(BottomExpandButtonNode.prop('iconDirection')).toBe(DIRECTION.DOWN);
+    expect(BottomExpandButtonNode.prop('direction')).toBe(DIRECTION.DOWN);
     expect(node).toMatchSnapshot();
   });
 
@@ -103,7 +103,7 @@ describe('Pane', () => {
     // then
     const BottomExpandButtonNode = node.find(Styled.BottomExpandButton);
     expect(BottomExpandButtonNode).toHaveLength(1);
-    expect(BottomExpandButtonNode.prop('iconDirection')).toBe(DIRECTION.UP);
+    expect(BottomExpandButtonNode.prop('direction')).toBe(DIRECTION.UP);
     expect(node).toMatchSnapshot();
   });
 

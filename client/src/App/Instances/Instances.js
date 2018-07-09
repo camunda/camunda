@@ -175,7 +175,7 @@ class Instances extends Component {
                   <SelectionDisplay selections={this.state.selections} />
                 </Panel.Body>
                 <Styled.RightExpandButton
-                  iconDirection={DIRECTION.RIGHT}
+                  direction={DIRECTION.RIGHT}
                   isExpanded={true}
                 />
                 <Panel.Footer />

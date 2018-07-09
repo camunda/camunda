@@ -11,7 +11,7 @@ exports[`Pane should render BottomExpandButton with DOWN icon if pane is BOTTOM 
     key=".0"
   />
   <Styled(ExpandButton)
-    iconDirection="DOWN"
+    direction="DOWN"
     onClick={[Function]}
   />
 </Styled(Panel)>
@@ -28,7 +28,7 @@ exports[`Pane should render BottomExpandButton with UP icon if pane is BOTTOM an
     key=".0"
   />
   <Styled(ExpandButton)
-    iconDirection="UP"
+    direction="UP"
     onClick={[Function]}
   />
 </Styled(Panel)>
@@ -45,7 +45,7 @@ exports[`Pane should render TopExpandButton with DOWN icon if pane is TOP and it
     key=".0"
   />
   <Styled(ExpandButton)
-    iconDirection="DOWN"
+    direction="DOWN"
     onClick={[Function]}
   />
 </Styled(Panel)>
@@ -62,7 +62,7 @@ exports[`Pane should render TopExpandButton with UP icon if pane is TOP and it's
     key=".0"
   />
   <Styled(ExpandButton)
-    iconDirection="UP"
+    direction="UP"
     onClick={[Function]}
   />
 </Styled(Panel)>
@@ -79,7 +79,7 @@ exports[`Pane should render children with expandState 1`] = `
     key=".0"
   />
   <Styled(ExpandButton)
-    iconDirection="UP"
+    direction="UP"
     onClick={[Function]}
   />
 </Styled(Panel)>

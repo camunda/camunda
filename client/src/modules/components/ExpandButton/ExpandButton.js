@@ -11,8 +11,8 @@ const iconsMap = {
   [DIRECTION.RIGHT]: Styled.Right
 };
 
-export default function ExpandButton({iconDirection, onClick, ...props}) {
-  const TargetIcon = iconsMap[iconDirection];
+export default function ExpandButton({direction, onClick, ...props}) {
+  const TargetIcon = iconsMap[direction];
 
   return (
     <Styled.ExpandButton {...props} onClick={onClick}>
@@ -22,6 +22,6 @@ export default function ExpandButton({iconDirection, onClick, ...props}) {
 }
 
 ExpandButton.propTypes = {
-  iconDirection: PropTypes.oneOf(Object.keys(DIRECTION)),
+  direction: PropTypes.oneOf(Object.keys(DIRECTION)),
   onClick: PropTypes.func
 };

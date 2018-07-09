@@ -40,10 +40,7 @@ export default class Filters extends React.Component {
               onChange={this.props.handleFilterChange}
             />
           </Panel.Body>
-          <Styled.ExpandButton
-            iconDirection={DIRECTION.LEFT}
-            isExpanded={true}
-          />
+          <Styled.ExpandButton direction={DIRECTION.LEFT} isExpanded={true} />
           <Styled.ResetButtonContainer>
             <Button
               title="reset filters"

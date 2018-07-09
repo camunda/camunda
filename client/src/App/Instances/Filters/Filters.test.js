@@ -44,7 +44,7 @@ describe('Filters', () => {
 
     // then
     expect(ExpandButtonNode).toHaveLength(1);
-    expect(ExpandButtonNode.prop('iconDirection')).toBe(DIRECTION.LEFT);
+    expect(ExpandButtonNode.prop('direction')).toBe(DIRECTION.LEFT);
     expect(ExpandButtonNode.prop('isExpanded')).toBe(true);
   });
 

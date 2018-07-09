@@ -10,7 +10,7 @@ describe('ExpandButton', () => {
     // given
     const onClick = jest.fn();
     const node = shallow(
-      <ExpandButton onClick={onClick} iconDirection={DIRECTION.UP} />
+      <ExpandButton onClick={onClick} direction={DIRECTION.UP} />
     );
 
     // then
@@ -21,7 +21,7 @@ describe('ExpandButton', () => {
 
   it('should render Up icon if icon direction is UP', () => {
     // given
-    const node = shallow(<ExpandButton iconDirection={DIRECTION.UP} />);
+    const node = shallow(<ExpandButton direction={DIRECTION.UP} />);
 
     // then
     expect(node.find(Styled.Up)).toHaveLength(1);
@@ -30,7 +30,7 @@ describe('ExpandButton', () => {
 
   it('should render Down icon if icon direction is DOWN', () => {
     // given
-    const node = shallow(<ExpandButton iconDirection={DIRECTION.DOWN} />);
+    const node = shallow(<ExpandButton direction={DIRECTION.DOWN} />);
 
     // then
     expect(node.find(Styled.Down)).toHaveLength(1);
@@ -39,7 +39,7 @@ describe('ExpandButton', () => {
 
   it('should render Left icon if icon direction is LEFT', () => {
     // given
-    const node = shallow(<ExpandButton iconDirection={DIRECTION.LEFT} />);
+    const node = shallow(<ExpandButton direction={DIRECTION.LEFT} />);
 
     // then
     expect(node.find(Styled.Left)).toHaveLength(1);
@@ -48,7 +48,7 @@ describe('ExpandButton', () => {
 
   it('should render Right icon if icon direction is RIGHT', () => {
     // given
-    const node = shallow(<ExpandButton iconDirection={DIRECTION.RIGHT} />);
+    const node = shallow(<ExpandButton direction={DIRECTION.RIGHT} />);
 
     // then
     expect(node.find(Styled.Right)).toHaveLength(1);

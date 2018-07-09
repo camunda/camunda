@@ -9,7 +9,7 @@ import * as Styled from './styled';
 const paneExpandButton = {
   [PANE_ID.TOP]: {
     ExpandButton: Styled.TopExpandButton,
-    iconDirections: {
+    directions: {
       EXPANDED: DIRECTION.UP,
       COLLAPSED: DIRECTION.DOWN,
       DEFAULT: DIRECTION.DOWN
@@ -17,7 +17,7 @@ const paneExpandButton = {
   },
   [PANE_ID.BOTTOM]: {
     ExpandButton: Styled.BottomExpandButton,
-    iconDirections: {
+    directions: {
       EXPANDED: DIRECTION.DOWN,
       COLLAPSED: DIRECTION.UP,
       DEFAULT: DIRECTION.UP
@@ -48,16 +48,13 @@ export default class Pane extends React.Component {
 
     const {
       ExpandButton,
-      iconDirections: {[expandState]: iconDirection}
+      directions: {[expandState]: direction}
     } = paneExpandButton[paneId];
 
     return (
       <Styled.Pane {...this.props} expandState={expandState}>
         {children}
-        <ExpandButton
-          onClick={this.handleExpand}
-          iconDirection={iconDirection}
-        />
+        <ExpandButton onClick={this.handleExpand} direction={direction} />
       </Styled.Pane>
     );
   }
