@@ -6,7 +6,7 @@ import ExpandButton from 'modules/components/ExpandButton';
 
 import {HEADER_HEIGHT} from './../Header/styled';
 
-export const Filter = styled.div`
+export const Instances = styled.div`
   display: flex;
   flex-direction: row;
   height: calc(100vh - ${HEADER_HEIGHT}px);
@@ -14,21 +14,6 @@ export const Filter = styled.div`
   /* prevents header dropdown to not go under the content */
   /* display: flex has z-index as well */
   z-index: 0;
-`;
-
-export const Left = styled.div`
-  display: flex;
-  width: 320px;
-  margin-right: 1px;
-`;
-
-export const LeftExpandButton = styled(ExpandButton)`
-  position: absolute;
-  right: 0;
-  top: 0;
-  border-top: none;
-  border-bottom: none;
-  border-right: none;
 `;
 
 export const Center = styled(SplitPane)`
@@ -52,10 +37,4 @@ export const RightExpandButton = styled(ExpandButton)`
 
 export const SelectionHeader = styled(Panel.Header)`
   padding-left: 45px;
-`;
-
-export const FiltersFooter = styled(Panel.Footer)`
-  display: flex;
-  justify-content: center;
-  height: 56px;
 `;

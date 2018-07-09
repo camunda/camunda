@@ -3,10 +3,10 @@ import PropTypes from 'prop-types';
 
 import SplitPane from 'modules/components/SplitPane';
 import {EXPAND_STATE} from 'modules/constants/splitPane';
+import {isEmpty} from 'modules/utils';
 
 import List from './List';
 import ListFooter from './ListFooter';
-import {isEmpty} from '../service';
 import {parseFilterForRequest} from 'modules/utils/filter';
 import {fetchWorkflowInstances} from 'modules/api/instances';
 import {ORDER, DEFAULT_SORT_BY} from 'modules/constants/sort';

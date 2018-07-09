@@ -6,7 +6,7 @@ import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 import WrappedInstances from './Instances';
 import {DEFAULT_FILTER} from 'modules/constants/filter';
 import * as api from 'modules/api/instances/instances';
-import Filter from './Filter';
+import Filters from './Filters';
 import ListView from './ListView';
 import Header from '../Header';
 
@@ -102,24 +102,16 @@ describe('Instances', () => {
     it('should render the Filter and ListView when filter is in url ', () => {
       // given
       const node = shallow(InstancesWithRunningFilter);
-      const FilterNodes = node.find(Filter);
-      const RunningFilter = FilterNodes.get(0);
-      const ListViewNode = node.find(ListView);
+      const FiltersNode = node.find(Filters);
 
       // then
-      expect(FilterNodes).not.toHaveLength(0);
-      expect(ListViewNode).toHaveLength(1);
-
-      //check props
-      expect(RunningFilter.props.filter.active).toBe(false);
-      expect(RunningFilter.props.filter.incidents).toBe(true);
-      expect(RunningFilter.props.type).toBe('running');
-      expect(RunningFilter.props.onChange).toEqual(
+      expect(node.find(ListView)).toHaveLength(1);
+      expect(FiltersNode).toHaveLength(1);
+      expect(FiltersNode.prop('filter')).toEqual(node.state('filter'));
+      expect(FiltersNode.prop('handleFilterChange')).toBe(
         node.instance().handleFilterChange
       );
-
-      expect(ListViewNode.prop('filter').active).toBe(false);
-      expect(ListViewNode.prop('filter').incidents).toBe(true);
+      expect(FiltersNode.prop('resetFilter')).toBe(node.instance().resetFilter);
     });
 
     it('should pass to the Header the filterCount', async () => {
@@ -129,6 +121,33 @@ describe('Instances', () => {
       node.update();
 
       expect(node.find(Header).props().filters).toBe(Count);
+    });
+  });
+
+  describe('resetFilter', () => {
+    it('should reset filter to the default value', () => {
+      // given
+      const storeStateLocallyMock = jest.fn();
+      const node = shallow(
+        <Instances
+          storeStateLocally={storeStateLocallyMock}
+          location={{search: '?filter={"active": false, "incidents": true}'}}
+          getStateLocally={() => {
+            return {filterCount: 0};
+          }}
+          history={{push: () => {}}}
+        />
+      );
+      const setFilterInURLlSpy = jest.spyOn(node.instance(), 'setFilterInURL');
+
+      // when
+      node.instance().resetFilter();
+
+      // then
+      expect(setFilterInURLlSpy).toHaveBeenCalledWith(DEFAULT_FILTER);
+      expect(storeStateLocallyMock).toHaveBeenCalledWith({
+        filter: DEFAULT_FILTER
+      });
     });
   });
 });
