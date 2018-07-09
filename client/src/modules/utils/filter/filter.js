@@ -16,14 +16,6 @@ export function parseFilterForRequest(filter) {
     finished: completed || canceled
   };
 
-  console.log({
-    ...payload,
-    active,
-    incidents,
-    completed,
-    canceled
-  });
-
   return {
     ...payload,
     active,
