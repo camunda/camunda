@@ -20,9 +20,9 @@ package io.zeebe.broker.system.workflow.repository.service;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.broker.system.SystemServiceNames;
+import io.zeebe.broker.system.management.LeaderManagementRequestHandler;
 import io.zeebe.broker.system.workflow.repository.api.client.GetWorkflowControlMessageHandler;
 import io.zeebe.broker.system.workflow.repository.api.client.ListWorkflowsControlMessageHandler;
-import io.zeebe.broker.system.workflow.repository.api.management.DeploymentManagerRequestHandler;
 import io.zeebe.broker.system.workflow.repository.api.management.FetchWorkflowRequestHandler;
 import io.zeebe.broker.system.workflow.repository.processor.*;
 import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex;
@@ -44,7 +44,7 @@ public class DeploymentManager implements Service<DeploymentManager> {
   private final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector =
       new Injector<>();
   private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
-  private final Injector<DeploymentManagerRequestHandler> requestHandlerServiceInjector =
+  private final Injector<LeaderManagementRequestHandler> requestHandlerServiceInjector =
       new Injector<>();
   private final Injector<ControlMessageHandlerManager> controlMessageHandlerManagerServiceInjector =
       new Injector<>();
@@ -52,7 +52,7 @@ public class DeploymentManager implements Service<DeploymentManager> {
   private ServerTransport clientApiTransport;
   private StreamProcessorServiceFactory streamProcessorServiceFactory;
 
-  private DeploymentManagerRequestHandler requestHandlerService;
+  private LeaderManagementRequestHandler requestHandlerService;
 
   private ServiceStartContext startContext;
 
@@ -176,7 +176,7 @@ public class DeploymentManager implements Service<DeploymentManager> {
     return clientApiTransportInjector;
   }
 
-  public Injector<DeploymentManagerRequestHandler> getRequestHandlerServiceInjector() {
+  public Injector<LeaderManagementRequestHandler> getRequestHandlerServiceInjector() {
     return requestHandlerServiceInjector;
   }
 
