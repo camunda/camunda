@@ -163,11 +163,11 @@ public class WorkflowInstanceIT extends OperateIntegrationTest {
     String topicName = zeebeTestRule.getTopicName();
 
     String processId = "demoProcess";
-    zeebeUtil.deployWorkflowToTheTopic(topicName, "demoProcess_v_1.bpmn");
+    final String workflowId = zeebeUtil.deployWorkflowToTheTopic(topicName, "demoProcess_v_1.bpmn");
     final String workflowInstanceId = zeebeUtil.startWorkflowInstance(topicName, processId, "{\"a\": \"b\"}");
 
     //when
-    topicSubscriptions.add(zeebeUtil.cancelWorkflowInstance(topicName, workflowInstanceId));
+    topicSubscriptions.add(zeebeUtil.cancelWorkflowInstance(topicName, workflowInstanceId, workflowId));
     elasticsearchTestRule.processAllEvents(12);
 
     //then

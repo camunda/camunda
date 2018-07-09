@@ -157,7 +157,7 @@ public class EventIT extends OperateIntegrationTest {
     final String workflowInstanceId = zeebeUtil.startWorkflowInstance(topicName, processId, "{\"a\": \"b\"}");
     jobWorker = zeebeUtil.completeTask(topicName, activityId, zeebeTestRule.getWorkerName(), "{\"a\": \"b\"}");
 
-    topicSubscriptions.add(zeebeUtil.cancelWorkflowInstance(topicName, workflowInstanceId));
+    topicSubscriptions.add(zeebeUtil.cancelWorkflowInstance(topicName, workflowInstanceId, workflowId));
     elasticsearchTestRule.processAllEvents(20);
 
     elasticsearchTestRule.refreshIndexesInElasticsearch();
@@ -168,7 +168,8 @@ public class EventIT extends OperateIntegrationTest {
     final List<EventEntity> eventEntities = eventReader.queryEvents(eventQueryDto, 0, 1000);
 
     //then
-//TODO    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ACTIVITY_TERMINATED, 1, processId, workflowId, workflowInstanceId, null, activityId);
+    //ACTIVITY_TERMINATED has workflowKey = -1 for some reason -> not asserting
+    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ACTIVITY_TERMINATED, 1, processId, null, workflowInstanceId, null, activityId);
     assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.CANCELED, 1, processId, workflowId, workflowInstanceId, null);
 
   }

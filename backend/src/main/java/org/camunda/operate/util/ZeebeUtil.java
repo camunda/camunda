@@ -92,12 +92,13 @@ public class ZeebeUtil {
     return String.valueOf(workflowInstanceEvent.getKey());
   }
 
-  public TopicSubscription cancelWorkflowInstance(String topic, String workflowInstanceId) {
+  public TopicSubscription cancelWorkflowInstance(String topic, String workflowInstanceId, String workflowKey) {
     final TopicClient topicClient = client.topicClient(topic);
     return topicClient.newSubscription().name(UUID.randomUUID().toString().substring(10)).workflowInstanceEventHandler(
       event -> {
         if (workflowInstanceId.equals(String.valueOf(event.getWorkflowInstanceKey())) &&
           ! event.getState().equals(WorkflowInstanceState.CANCELED) && ! event.getState().equals(WorkflowInstanceState.COMPLETED)) {
+          ((WorkflowInstanceEventImpl)event).setWorkflowKey(Long.valueOf(workflowKey));
           topicClient.workflowClient().newCancelInstanceCommand(event).send();
         }
       }
