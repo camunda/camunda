@@ -16,7 +16,7 @@ describe('parseFilterForRequest', () => {
     expect(parseFilterForRequest(filter).active).toBe(false);
 
     expect(parseFilterForRequest(filter).finished).toBe(false);
-    expect(parseFilterForRequest(filter).cancelled).toBe(false);
+    expect(parseFilterForRequest(filter).canceled).toBe(false);
     expect(parseFilterForRequest(filter).completed).toBe(false);
   });
 
@@ -48,21 +48,21 @@ describe('parseFilterForRequest', () => {
     it('should parse both regularly completed and canceled filter selection', () => {
       const filter = {canceled: true, completed: true};
       expect(parseFilterForRequest(filter).finished).toBe(true);
-      expect(parseFilterForRequest(filter).cancelled).toBe(true);
+      expect(parseFilterForRequest(filter).canceled).toBe(true);
       expect(parseFilterForRequest(filter).completed).toBe(true);
     });
 
     it('should parse only regularly completed filter selection', () => {
       const filter = {canceled: false, completed: true};
       expect(parseFilterForRequest(filter).finished).toBe(true);
-      expect(parseFilterForRequest(filter).cancelled).toBe(false);
+      expect(parseFilterForRequest(filter).canceled).toBe(false);
       expect(parseFilterForRequest(filter).completed).toBe(true);
     });
 
     it('should parse only canceled filter selection', () => {
       const filter = {canceled: true, completed: false};
       expect(parseFilterForRequest(filter).finished).toBe(true);
-      expect(parseFilterForRequest(filter).cancelled).toBe(true);
+      expect(parseFilterForRequest(filter).canceled).toBe(true);
       expect(parseFilterForRequest(filter).completed).toBe(false);
     });
   });

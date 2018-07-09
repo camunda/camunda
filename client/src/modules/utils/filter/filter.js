@@ -10,17 +10,25 @@ export function getFilterQueryString(selection) {
 }
 
 export function parseFilterForRequest(filter) {
-  const {active, incidents, completed, canceled: cancelled} = filter;
+  const {active, incidents, completed, canceled} = filter;
   let payload = {
     running: active || incidents,
-    finished: completed || cancelled
+    finished: completed || canceled
   };
+
+  console.log({
+    ...payload,
+    active,
+    incidents,
+    completed,
+    canceled
+  });
 
   return {
     ...payload,
     active,
     incidents,
     completed,
-    cancelled
+    canceled
   };
 }
