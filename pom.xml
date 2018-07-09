@@ -22,7 +22,7 @@
     <version.elasticsearch>6.2.4</version.elasticsearch>
     <version.spring.boot>2.0.3.RELEASE</version.spring.boot>
 
-    <version.swagger>2.8.0</version.swagger>
+    <version.swagger>2.9.2</version.swagger>
     <version.javax.json>1.1.2</version.javax.json>
 
     <version.node>v8.11.3</version.node>
