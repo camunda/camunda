@@ -30,7 +30,8 @@ $icons: (
   'save',
   'overflow-menu-vertical',
   'overflow-menu-horizontal',
-  'open-in-cockpit'
+  'open-in-cockpit',
+  'copy-document'
 );
 
 @each $icon in $icons {
