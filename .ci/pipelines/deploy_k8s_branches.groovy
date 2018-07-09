@@ -2,7 +2,7 @@
 
 // general properties for CI execution
 def static NODE_POOL() { return "slaves" }
-def static KUBECTL_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/kubectl:latest" }
+def static GCLOUD_DOCKER_IMAGE() { return "google/cloud-sdk:alpine" }
 
 static String kubectlAgent(env) {
   return """
@@ -16,8 +16,8 @@ spec:
     cloud.google.com/gke-nodepool: ${NODE_POOL()}
   serviceAccountName: ci-optimize-camunda-cloud
   containers:
-  - name: kubectl
-    image: ${KUBECTL_DOCKER_IMAGE()}
+  - name: gcloud
+    image: ${GCLOUD_DOCKER_IMAGE()}
     imagePullPolicy: Always
     command: ["cat"]
     tty: true
@@ -71,11 +71,17 @@ pipeline {
             branch: "${params.INFRASTRUCTURE_BRANCH}",
             credentialsId: 'camunda-jenkins-github-ssh',
             poll: false
+
+        container('gcloud') {
+          sh("""
+            gcloud components install kubectl --quiet
+          """)
+        }
       }
     }
     stage('Deploy to K8s') {
       steps {
-        container('kubectl') {
+        container('gcloud') {
           sh("""
             ./cmd/k8s/deploy-template-to-branch \
             ${WORKSPACE}/infrastructure/ci-30-162810/deployments/optimize-branch \
@@ -87,7 +93,6 @@ pipeline {
       post {
         always {
           archiveArtifacts artifacts: 'rendered-templates/**/*'
-          buildNotification(currentBuild.result)
         }
       }
     }

@@ -5,7 +5,7 @@ pipelineJob('deploy-optimize-branch-to-k8s') {
 
   definition {
     cps {
-      script(readFileFromWorkspace('.ci/pipelines/deploy_branch_k8s.groovy'))
+      script(readFileFromWorkspace('.ci/pipelines/deploy_k8s_branches.groovy'))
       sandbox()
     }
   }
