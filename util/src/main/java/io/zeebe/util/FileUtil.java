@@ -131,7 +131,7 @@ public class FileUtil {
   public static void replace(Path src, Path dest) throws IOException {
     try {
       Files.move(src, dest, ATOMIC_MOVE);
-    } catch (final FileAlreadyExistsException e) {
+    } catch (final Exception e) {
       // failed with atomic move, lets try again with normal replace move
       Files.move(src, dest, REPLACE_EXISTING);
     }

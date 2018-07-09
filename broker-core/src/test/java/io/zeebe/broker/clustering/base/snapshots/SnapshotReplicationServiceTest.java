@@ -27,6 +27,7 @@ import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
 import io.zeebe.broker.util.BufferingClientOutput;
+import io.zeebe.broker.util.BufferingClientOutput.Request;
 import io.zeebe.broker.util.ControlledTopologyManager;
 import io.zeebe.clustering.management.ErrorResponseCode;
 import io.zeebe.clustering.management.FetchSnapshotChunkRequestEncoder;
@@ -186,6 +187,34 @@ public class SnapshotReplicationServiceTest {
     assertThat(output.getSentRequests().size()).isEqualTo(2);
     assertThat(output.getLastRequest().getTemplateId())
         .isEqualTo(ListSnapshotsRequestEncoder.TEMPLATE_ID);
+  }
+
+  @Test
+  public void shouldRefreshLeaderAddressOnListSnapshotsError() throws Exception {
+    // given
+    final ErrorResponse response =
+        new ErrorResponse().setCode(ErrorResponseCode.PARTITION_NOT_FOUND).setData("fail");
+
+    // when
+    installService();
+
+    // then
+    assertThat(output.getSentRequests().size()).isEqualTo(1);
+    assertThat(output.getLastRequest().getTemplateId())
+        .isEqualTo(ListSnapshotsRequestEncoder.TEMPLATE_ID);
+
+    // when
+    final NodeInfo newLeader = createNodeInfo("0.0.0.0", 12345);
+    topologyManager.setPartitionLeader(partition, newLeader);
+    output.getLastRequest().respondWith(response);
+    actorSchedulerRule.workUntilDone();
+    actorSchedulerRule.waitForTimer(SnapshotReplicationService.ERROR_RETRY_INTERVAL);
+
+    // then
+    assertThat(output.getSentRequests().size()).isEqualTo(2);
+    final Request lastRequest = output.getLastRequest();
+    assertThat(lastRequest.getTemplateId()).isEqualTo(ListSnapshotsRequestEncoder.TEMPLATE_ID);
+    verify(transport).registerRemoteAddress(newLeader.getManagementApiAddress());
   }
 
   @Test

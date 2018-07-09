@@ -190,7 +190,7 @@ public class SnapshotReplicationService extends Actor
   private void handleListSnapshotsResponse(final DirectBuffer buffer) {
     if (isErrorResponse(buffer)) {
       logErrorResponse("Error listing snapshots", buffer);
-      actor.runDelayed(ERROR_RETRY_INTERVAL, this::pollSnapshots);
+      actor.runDelayed(ERROR_RETRY_INTERVAL, this::pollLeaderForSnapshots);
       return;
     }
 
