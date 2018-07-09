@@ -111,7 +111,7 @@ public class WorkflowInstanceIT extends OperateIntegrationTest {
     jobWorker = null;
 
     //when update retries
-    topicSubscriptions.add(zeebeUtil.resolveIncident(topicName, "testIncidentDeleted", Long.valueOf(workflowId)));
+    topicSubscriptions.add(zeebeUtil.resolveIncident(topicName, "testIncidentDeleted", workflowId, "{\"a\": \"b\"}"));
     elasticsearchTestRule.processAllEvents(30);
 
     //then
@@ -161,13 +161,10 @@ public class WorkflowInstanceIT extends OperateIntegrationTest {
     // having
     final OffsetDateTime testStartTime = OffsetDateTime.now();
     String topicName = zeebeTestRule.getTopicName();
-    String activityId = "taskA";
-
 
     String processId = "demoProcess";
     zeebeUtil.deployWorkflowToTheTopic(topicName, "demoProcess_v_1.bpmn");
     final String workflowInstanceId = zeebeUtil.startWorkflowInstance(topicName, processId, "{\"a\": \"b\"}");
-    jobWorker = zeebeUtil.completeTask(topicName, activityId, zeebeTestRule.getWorkerName(), null);    //empty payload provokes incident
 
     //when
     topicSubscriptions.add(zeebeUtil.cancelWorkflowInstance(topicName, workflowInstanceId));

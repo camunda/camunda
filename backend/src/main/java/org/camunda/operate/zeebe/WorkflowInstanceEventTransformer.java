@@ -45,6 +45,7 @@ public class WorkflowInstanceEventTransformer extends AbstractEventTransformer i
 
     ACTIVITY_INSTANCE_STATES.add(io.zeebe.client.api.events.WorkflowInstanceState.ACTIVITY_READY);
     ACTIVITY_INSTANCE_STATES.add(io.zeebe.client.api.events.WorkflowInstanceState.ACTIVITY_ACTIVATED);
+    ACTIVITY_INSTANCE_STATES.add(io.zeebe.client.api.events.WorkflowInstanceState.ACTIVITY_COMPLETING);
     ACTIVITY_INSTANCE_STATES.addAll(ACTIVITY_INSTANCE_END_STATES);
     ACTIVITY_INSTANCE_STATES.addAll(ACTIVITY_INSTANCE_START_END_STATES);
   }

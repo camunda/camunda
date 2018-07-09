@@ -144,7 +144,7 @@ public class ZeebeUtil {
     }
   }
 
-  public TopicSubscription resolveIncident(String topicName, String subscriptionName, Long workflowId) {
+  public TopicSubscription resolveIncident(String topicName, String subscriptionName, String workflowId, String payload) {
 
     return client.topicClient(topicName).newSubscription().name(subscriptionName).incidentEventHandler(incidentEvent -> {
       JobEventImpl jobEvent = new JobEventImpl(new ZeebeObjectMapperImpl());
@@ -152,22 +152,27 @@ public class ZeebeUtil {
       jobEvent.setTopicName(topicName);
       jobEvent.setPartitionId(incidentEvent.getMetadata().getPartitionId());
       jobEvent.setType(incidentEvent.getActivityId());
+      jobEvent.setPayload(payload);
       Map<String, Object> headers = new HashMap<>();
       headers.put(JobEventTransformer.WORKFLOW_INSTANCE_KEY_HEADER, incidentEvent.getWorkflowInstanceKey());
       if (workflowId != null) {
-        headers.put(JobEventTransformer.WORKFLOW_KEY_HEADER, workflowId);
+        headers.put(JobEventTransformer.WORKFLOW_KEY_HEADER, Long.valueOf(workflowId));
       }
       headers.put(JobEventTransformer.BPMN_PROCESS_ID_HEADER, incidentEvent.getBpmnProcessId());
       headers.put(JobEventTransformer.ACTIVITY_INSTANCE_KEY_HEADER, incidentEvent.getActivityInstanceKey());
+      headers.put(JobEventTransformer.ACTIVITY_ID_HEADER, incidentEvent.getActivityId());
       jobEvent.setHeaders(headers);
       client.topicClient(topicName).jobClient().newUpdateRetriesCommand(jobEvent).retries(3).send().join();
     }).startAtHeadOfTopic().open();
   }
 
-  public void updatePayload(String topicName, String workflowInstanceId, String newPayload) {
+  public void updatePayload(String topicName, String workflowInstanceId, String newPayload, String bpmnProcessId, String workflowId) {
     WorkflowInstanceEventImpl workflowInstanceEvent = new WorkflowInstanceEventImpl(new ZeebeObjectMapperImpl());
     workflowInstanceEvent.setKey(Long.valueOf(workflowInstanceId));
-    client.topicClient(topicName).workflowClient().newUpdatePayloadCommand(workflowInstanceEvent).payload(newPayload).send();
+    workflowInstanceEvent.setBpmnProcessId(bpmnProcessId);
+    workflowInstanceEvent.setWorkflowKey(Long.valueOf(workflowId));
+    workflowInstanceEvent.setWorkflowInstanceKey(Long.valueOf(workflowInstanceId));
+    client.topicClient(topicName).workflowClient().newUpdatePayloadCommand(workflowInstanceEvent).payload(newPayload).send().join();
   }
 
 }
