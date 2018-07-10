@@ -4,6 +4,7 @@ import java.nio.charset.Charset;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
@@ -16,6 +17,7 @@ import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.writer.ElasticsearchBulkProcessor;
 import org.camunda.operate.es.writer.PersistenceException;
 import org.camunda.operate.rest.dto.IncidentDto;
+import org.camunda.operate.rest.dto.SortingDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
 import org.camunda.operate.util.DateUtil;
@@ -143,6 +145,179 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
      }
   }
 
+
+  @Test
+  public void testSortingByStartDateAsc() throws Exception {
+    //query running instances
+    WorkflowInstanceQueryDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
+    final SortingDto sorting = new SortingDto();
+    sorting.setSortBy("startDate");
+    sorting.setSortOrder("asc");
+    workflowInstanceQueryDto.setSorting(sorting);
+
+    MockHttpServletRequestBuilder request = post(query(0, 100))
+      .content(mockMvcTestRule.json(workflowInstanceQueryDto))
+      .contentType(contentType);
+
+    MvcResult mvcResult = mockMvc.perform(request)
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(contentType))
+      .andReturn();
+
+    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
+
+    assertThat(workflowInstanceDtos.size()).isEqualTo(5);
+
+    assertThat(workflowInstanceDtos).isSortedAccordingTo(Comparator.comparing(WorkflowInstanceDto::getStartDate));
+  }
+
+  @Test
+  public void testSortingByStartDateDesc() throws Exception {
+    //query running instances
+    WorkflowInstanceQueryDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
+    final SortingDto sorting = new SortingDto();
+    sorting.setSortBy("startDate");
+    sorting.setSortOrder("desc");
+    workflowInstanceQueryDto.setSorting(sorting);
+
+    MockHttpServletRequestBuilder request = post(query(0, 100))
+      .content(mockMvcTestRule.json(workflowInstanceQueryDto))
+      .contentType(contentType);
+
+    MvcResult mvcResult = mockMvc.perform(request)
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(contentType))
+      .andReturn();
+
+    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
+
+    assertThat(workflowInstanceDtos.size()).isEqualTo(5);
+
+    assertThat(workflowInstanceDtos).isSortedAccordingTo((o1, o2) -> o2.getStartDate().compareTo(o1.getStartDate()));
+  }
+
+  @Test
+  public void testSortingByIdAsc() throws Exception {
+    //query running instances
+    WorkflowInstanceQueryDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
+    final SortingDto sorting = new SortingDto();
+    sorting.setSortBy("id");
+    sorting.setSortOrder("asc");
+    workflowInstanceQueryDto.setSorting(sorting);
+
+    MockHttpServletRequestBuilder request = post(query(0, 100))
+      .content(mockMvcTestRule.json(workflowInstanceQueryDto))
+      .contentType(contentType);
+
+    MvcResult mvcResult = mockMvc.perform(request)
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(contentType))
+      .andReturn();
+
+    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
+
+    assertThat(workflowInstanceDtos.size()).isEqualTo(5);
+
+    assertThat(workflowInstanceDtos).isSortedAccordingTo(Comparator.comparing(WorkflowInstanceDto::getId));
+  }
+
+  @Test
+  public void testSortingByIdDesc() throws Exception {
+    //query running instances
+    WorkflowInstanceQueryDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
+    final SortingDto sorting = new SortingDto();
+    sorting.setSortBy("id");
+    sorting.setSortOrder("desc");
+    workflowInstanceQueryDto.setSorting(sorting);
+
+    MockHttpServletRequestBuilder request = post(query(0, 100))
+      .content(mockMvcTestRule.json(workflowInstanceQueryDto))
+      .contentType(contentType);
+
+    MvcResult mvcResult = mockMvc.perform(request)
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(contentType))
+      .andReturn();
+
+    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
+
+    assertThat(workflowInstanceDtos.size()).isEqualTo(5);
+
+    assertThat(workflowInstanceDtos).isSortedAccordingTo((o1, o2) -> o2.getId().compareTo(o1.getId()));
+  }
+
+  @Test
+  public void testSortingByEndDateAsc() throws Exception {
+    //query running instances
+    WorkflowInstanceQueryDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
+    final SortingDto sorting = new SortingDto();
+    sorting.setSortBy("endDate");
+    sorting.setSortOrder("asc");
+    workflowInstanceQueryDto.setSorting(sorting);
+
+    MockHttpServletRequestBuilder request = post(query(0, 100))
+      .content(mockMvcTestRule.json(workflowInstanceQueryDto))
+      .contentType(contentType);
+
+    MvcResult mvcResult = mockMvc.perform(request)
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(contentType))
+      .andReturn();
+
+    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
+
+    assertThat(workflowInstanceDtos.size()).isEqualTo(5);
+
+    assertThat(workflowInstanceDtos).isSortedAccordingTo((o1, o2) -> {
+      //nulls are always at the end
+      if (o1.getEndDate() == null && o2.getEndDate() == null) {
+        return 0;
+      } else if (o1.getEndDate() == null) {
+        return 1;
+      } else if (o2.getEndDate() == null) {
+        return -1;
+      } else {
+        return o1.getEndDate().compareTo(o2.getEndDate());
+      }
+    });
+  }
+
+  @Test
+  public void testSortingByEndDateDesc() throws Exception {
+    //query running instances
+    WorkflowInstanceQueryDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
+    final SortingDto sorting = new SortingDto();
+    sorting.setSortBy("endDate");
+    sorting.setSortOrder("desc");
+    workflowInstanceQueryDto.setSorting(sorting);
+
+    MockHttpServletRequestBuilder request = post(query(0, 100))
+      .content(mockMvcTestRule.json(workflowInstanceQueryDto))
+      .contentType(contentType);
+
+    MvcResult mvcResult = mockMvc.perform(request)
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(contentType))
+      .andReturn();
+
+    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
+
+    assertThat(workflowInstanceDtos.size()).isEqualTo(5);
+
+    assertThat(workflowInstanceDtos).isSortedAccordingTo((o1, o2) -> {
+      //nulls are always at the end
+      if (o1.getEndDate() == null && o2.getEndDate() == null) {
+        return 0;
+      } else if (o1.getEndDate() == null) {
+        return 1;
+      } else if (o2.getEndDate() == null) {
+        return -1;
+      } else {
+        return o2.getEndDate().compareTo(o1.getEndDate());
+      }
+    });
+  }
+
   @Test
   public void testQueryAllFinishedCount() throws Exception {
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
@@ -151,6 +326,17 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstanceQueryDto.setCanceled(true);
 
     testCountQuery(workflowInstanceQueryDto, 2);
+  }
+
+  private WorkflowInstanceQueryDto createGetAllWorkflowInstancesQuery() {
+    WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
+    workflowInstanceQueryDto.setRunning(true);
+    workflowInstanceQueryDto.setActive(true);
+    workflowInstanceQueryDto.setIncidents(true);
+    workflowInstanceQueryDto.setFinished(true);
+    workflowInstanceQueryDto.setCompleted(true);
+    workflowInstanceQueryDto.setCanceled(true);
+    return workflowInstanceQueryDto;
   }
 
   @Test
@@ -181,26 +367,14 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
   @Test
   public void testQueryFinishedAndRunningCount() throws Exception {
-    WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
-    workflowInstanceQueryDto.setRunning(true);
-    workflowInstanceQueryDto.setActive(true);
-    workflowInstanceQueryDto.setIncidents(true);
-    workflowInstanceQueryDto.setFinished(true);
-    workflowInstanceQueryDto.setCompleted(true);
-    workflowInstanceQueryDto.setCanceled(true);
+    WorkflowInstanceQueryDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
 
     testCountQuery(workflowInstanceQueryDto, 5);
   }
 
   @Test
   public void testQueryFinishedAndRunning() throws Exception {
-    WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
-    workflowInstanceQueryDto.setRunning(true);
-    workflowInstanceQueryDto.setActive(true);
-    workflowInstanceQueryDto.setIncidents(true);
-    workflowInstanceQueryDto.setFinished(true);
-    workflowInstanceQueryDto.setCompleted(true);
-    workflowInstanceQueryDto.setCanceled(true);
+    WorkflowInstanceQueryDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(mockMvcTestRule.json(workflowInstanceQueryDto))

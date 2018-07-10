@@ -19,6 +19,7 @@ import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.es.types.EventType;
 import org.camunda.operate.es.types.WorkflowInstanceType;
 import org.camunda.operate.rest.dto.EventQueryDto;
+import org.camunda.operate.rest.dto.SortingDto;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
@@ -28,6 +29,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,7 +58,18 @@ public class EventReader {
     SearchRequestBuilder searchRequest = createSearchRequest(eventQuery)
       .setFetchSource(null, WorkflowInstanceType.ACTIVITIES);
 
+    applySorting(searchRequest, null);
+
     return paginate(searchRequest, firstResult, maxResults);
+  }
+
+  private void applySorting(SearchRequestBuilder searchRequestBuilder, SortingDto sorting) {
+    if (sorting == null) {
+      //apply default sorting
+      searchRequestBuilder.addSort(EventType.ID, SortOrder.ASC);
+    } else {
+      searchRequestBuilder.addSort(sorting.getSortBy(), SortOrder.fromString(sorting.getSortOrder()));
+    }
   }
 
   protected List<EventEntity> paginate(SearchRequestBuilder builder, int firstResult, int maxResults) {

@@ -120,7 +120,7 @@ public class EventIT extends OperateIntegrationTest {
     assertEvent(eventEntities, EventSourceType.JOB, EventType.FAILED, 3, processId, workflowId, workflowInstanceId, initialPayload, "taskA");
     //INCIDENT events do not have workflowId for some reason
     assertEvent(eventEntities, EventSourceType.INCIDENT, EventType.CREATED, 1, processId, null, workflowInstanceId, null, "taskA");
-    //JOB RETRIES_UNDATED comes 2 times for some reason
+    //JOB RETRIES_UPDATED comes 2 times for some reason
     assertEvent(eventEntities, EventSourceType.JOB, EventType.RETRIES_UPDATED, 2, processId, workflowId, workflowInstanceId, initialPayload, "taskA");
     //INCIDENT events do not have workflowId for some reason
     assertEvent(eventEntities, EventSourceType.INCIDENT, EventType.DELETED, 1, processId, null, workflowInstanceId, null, "taskA");

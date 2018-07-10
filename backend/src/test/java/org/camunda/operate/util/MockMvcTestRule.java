@@ -13,6 +13,7 @@
 package org.camunda.operate.util;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.rules.ExternalResource;
@@ -44,6 +45,10 @@ public class MockMvcTestRule extends ExternalResource {
   private MockMvc mockMvc;
 
   private HttpMessageConverter mappingJackson2HttpMessageConverter;
+
+  private MediaType contentType = new MediaType(MediaType.APPLICATION_JSON.getType(),
+    MediaType.APPLICATION_JSON.getSubtype(),
+    Charset.forName("utf8"));
 
   @Autowired
   void setConverters(HttpMessageConverter<?>[] converters) {
@@ -107,4 +112,7 @@ public class MockMvcTestRule extends ExternalResource {
     }
   }
 
+  public MediaType getContentType() {
+    return contentType;
+  }
 }

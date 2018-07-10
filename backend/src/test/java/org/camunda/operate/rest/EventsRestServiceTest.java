@@ -12,7 +12,6 @@
  */
 package org.camunda.operate.rest;
 
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import org.camunda.operate.JacksonConfig;
@@ -23,21 +22,14 @@ import org.camunda.operate.es.reader.EventReader;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.EventDto;
 import org.camunda.operate.rest.dto.EventQueryDto;
-import org.camunda.operate.util.DependencyInjectionTestExecutionListener;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.MockUtil;
-import org.camunda.operate.util.WebSecurityDisabledConfig;
+import org.camunda.operate.util.OperateIntegrationTest;
 import org.camunda.operate.util.nobeans.TestApplicationWithNoBeans;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
-import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.TestExecutionListeners;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,14 +40,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@RunWith(SpringRunner.class)
 @SpringBootTest(
-  classes = {TestApplicationWithNoBeans.class, EventRestService.class, WebSecurityDisabledConfig.class, JacksonConfig.class, OperateProperties.class}
+  classes = {TestApplicationWithNoBeans.class, EventRestService.class, JacksonConfig.class, OperateProperties.class}
 )
-@WebAppConfiguration
-@TestExecutionListeners(listeners = DependencyInjectionTestExecutionListener.class, mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-public class EventsRestServiceTest {
+public class EventsRestServiceTest extends OperateIntegrationTest {
 
   @Rule
   public MockMvcTestRule mockMvcTestRule = new MockMvcTestRule();
@@ -63,12 +51,8 @@ public class EventsRestServiceTest {
   @MockBean
   private EventReader eventReader;
 
-  private MediaType contentType = new MediaType(MediaType.APPLICATION_JSON.getType(),
-    MediaType.APPLICATION_JSON.getSubtype(),
-    Charset.forName("utf8"));
-
   @Test
-  public void testEventSelect() throws Exception {
+  public void testGetEvents() throws Exception {
     //given
     final String testWorkflowId = "testWorkflowId";
     final String testWorkflowInstanceId = "testWorkflowInstanceId";
@@ -84,11 +68,11 @@ public class EventsRestServiceTest {
     //when
     MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(mockMvcTestRule.json(eventQuery))
-      .contentType(contentType);
+      .contentType(mockMvcTestRule.getContentType());
 
     MvcResult mvcResult = mockMvcTestRule.getMockMvc().perform(request)
       .andExpect(status().isOk())
-      .andExpect(content().contentType(contentType))
+      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
 
     //then

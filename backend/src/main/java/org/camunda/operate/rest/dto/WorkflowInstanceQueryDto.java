@@ -1,6 +1,22 @@
 package org.camunda.operate.rest.dto;
 
+import java.util.ArrayList;
+import java.util.List;
+import org.camunda.operate.rest.exception.InvalidRequestException;
+
 public class WorkflowInstanceQueryDto {
+
+  public static final String SORT_BY_ID = "id";
+  public static final String SORT_BY_START_DATE = "startDate";
+  public static final String SORT_BY_END_DATE = "endDate";
+
+  public static final List<String> VALID_SORT_BY_VALUES;
+  static {
+    VALID_SORT_BY_VALUES = new ArrayList<>();
+    VALID_SORT_BY_VALUES.add(SORT_BY_ID);
+    VALID_SORT_BY_VALUES.add(SORT_BY_START_DATE);
+    VALID_SORT_BY_VALUES.add(SORT_BY_END_DATE);
+  }
 
   private boolean running;
   private boolean active;
@@ -9,6 +25,8 @@ public class WorkflowInstanceQueryDto {
   private boolean finished;
   private boolean completed;
   private boolean canceled;
+
+  private SortingDto sorting;
 
   public WorkflowInstanceQueryDto() {
   }
@@ -61,6 +79,17 @@ public class WorkflowInstanceQueryDto {
     this.canceled = canceled;
   }
 
+  public SortingDto getSorting() {
+    return sorting;
+  }
+
+  public void setSorting(SortingDto sorting) {
+    if (sorting != null && !VALID_SORT_BY_VALUES.contains(sorting.getSortBy())) {
+      throw new InvalidRequestException("SortBy parameter has invalid value: " + sorting.getSortBy());
+    }
+    this.sorting = sorting;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o)
@@ -80,7 +109,9 @@ public class WorkflowInstanceQueryDto {
       return false;
     if (completed != that.completed)
       return false;
-    return canceled == that.canceled;
+    if (canceled != that.canceled)
+      return false;
+    return sorting != null ? sorting.equals(that.sorting) : that.sorting == null;
   }
 
   @Override
@@ -91,6 +122,7 @@ public class WorkflowInstanceQueryDto {
     result = 31 * result + (finished ? 1 : 0);
     result = 31 * result + (completed ? 1 : 0);
     result = 31 * result + (canceled ? 1 : 0);
+    result = 31 * result + (sorting != null ? sorting.hashCode() : 0);
     return result;
   }
 }

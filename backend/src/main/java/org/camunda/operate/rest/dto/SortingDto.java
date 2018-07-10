@@ -1,0 +1,73 @@
+/* Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.camunda.operate.rest.dto;
+
+import java.util.ArrayList;
+import java.util.List;
+import org.camunda.operate.rest.exception.InvalidRequestException;
+
+public class SortingDto {
+
+  public static final String SORT_ORDER_ASC_VALUE = "asc";
+  public static final String SORT_ORDER_DESC_VALUE = "desc";
+
+  public static final List<String> VALID_SORT_ORDER_VALUES;
+  static {
+    VALID_SORT_ORDER_VALUES = new ArrayList<>();
+    VALID_SORT_ORDER_VALUES.add(SORT_ORDER_ASC_VALUE);
+    VALID_SORT_ORDER_VALUES.add(SORT_ORDER_DESC_VALUE);
+  }
+
+  private String sortBy = SORT_ORDER_ASC_VALUE;
+  private String sortOrder;
+
+  public String getSortBy() {
+    return sortBy;
+  }
+
+  public void setSortBy(String sortBy) {
+    this.sortBy = sortBy;
+  }
+
+  public String getSortOrder() {
+    return sortOrder;
+  }
+
+  public void setSortOrder(String sortOrder) {
+    if (!VALID_SORT_ORDER_VALUES.contains(sortOrder)) {
+      throw new InvalidRequestException("SortOrder parameter has invalid value: " + sortOrder);
+    }
+    this.sortOrder = sortOrder;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o)
+      return true;
+    if (o == null || getClass() != o.getClass())
+      return false;
+
+    SortingDto that = (SortingDto) o;
+
+    if (sortBy != null ? !sortBy.equals(that.sortBy) : that.sortBy != null)
+      return false;
+    return sortOrder != null ? sortOrder.equals(that.sortOrder) : that.sortOrder == null;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = sortBy != null ? sortBy.hashCode() : 0;
+    result = 31 * result + (sortOrder != null ? sortOrder.hashCode() : 0);
+    return result;
+  }
+}
