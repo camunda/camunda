@@ -30,6 +30,8 @@ const activeStyle = css`
 
 const disabledStyle = css`
   &:disabled {
+    cursor: not-allowed;
+
     background-color: ${themeStyle({
       dark: '#34353a',
       light: '#f1f2f5'
