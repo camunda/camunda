@@ -38,6 +38,7 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @Component
 public class WorkflowInstanceReader {
@@ -115,13 +116,21 @@ public class WorkflowInstanceReader {
   private QueryBuilder createQuery(WorkflowInstanceQueryDto queryDto) {
     final QueryBuilder runningFinishedQuery = createRunningFinishedQuery(queryDto);
 
+    QueryBuilder workflowInstanceIdsQuery = null;
+    if (queryDto.getWorkflowInstanceIds() != null && !queryDto.getWorkflowInstanceIds().isEmpty()) {
+      workflowInstanceIdsQuery = createWorkflowInstanceIdsQuery(queryDto.getWorkflowInstanceIds());
+    }
+
     //further parameters will be applied like this:
-    //QueryBuilder workflowNameQuery = createWorkflowNameQuery(name);
     //QueryBuilder workflowVersionQuery = createWorkflowVersionQuery(version);
     //...
-    //return joinWithAnd(runningFinishedQuery, workflowNameQuery, workflowVersionQuery, ...);
+    QueryBuilder query = joinWithAnd(runningFinishedQuery, workflowInstanceIdsQuery);
 
-    return runningFinishedQuery;
+    return query;
+  }
+
+  private QueryBuilder createWorkflowInstanceIdsQuery(List<String> workflowInstanceIds) {
+    return termsQuery(WorkflowInstanceType.ID, workflowInstanceIds);
   }
 
   protected List<WorkflowInstanceEntity> paginate(SearchRequestBuilder builder, int firstResult, int maxResults) {

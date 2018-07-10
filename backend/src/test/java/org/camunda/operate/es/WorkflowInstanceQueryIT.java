@@ -14,6 +14,7 @@ import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
+import org.camunda.operate.es.types.WorkflowInstanceType;
 import org.camunda.operate.es.writer.ElasticsearchBulkProcessor;
 import org.camunda.operate.es.writer.PersistenceException;
 import org.camunda.operate.rest.dto.IncidentDto;
@@ -115,6 +116,41 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
        assertThat(workflowInstanceDto.getState()).isEqualTo(WorkflowInstanceState.ACTIVE);
        assertThat(workflowInstanceDto.getActivities()).isEmpty();
      }
+  }
+
+  @Test
+  public void testQueryByWorkflowInstanceIds() throws Exception {
+    //given
+    final WorkflowInstanceEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
+    final WorkflowInstanceEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.CANCELED);
+    final WorkflowInstanceEntity workflowInstance3 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
+    try {
+      elasticsearchBulkProcessor.persistOperateEntities(Arrays.asList(workflowInstance1, workflowInstance2, workflowInstance3));
+    } catch (PersistenceException e) {
+      throw new RuntimeException(e);
+    }
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
+
+
+    WorkflowInstanceQueryDto query = createGetAllWorkflowInstancesQuery();
+    query.setWorkflowInstanceIds(Arrays.asList(workflowInstance1.getId(), workflowInstance2.getId()));
+
+    //when
+    MockHttpServletRequestBuilder request = post(query(0, 100))
+        .content(mockMvcTestRule.json(query))
+        .contentType(contentType);
+
+    MvcResult mvcResult = mockMvc.perform(request)
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(contentType))
+        .andReturn();
+
+    //then
+    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
+
+    assertThat(workflowInstanceDtos.size()).isEqualTo(2);
+
+    assertThat(workflowInstanceDtos).extracting(WorkflowInstanceType.ID).containsExactlyInAnyOrder(workflowInstance1.getId(), workflowInstance2.getId());
   }
 
   @Test
