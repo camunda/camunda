@@ -64,7 +64,7 @@ class EntityList extends React.Component {
 
   duplicateEntity = id => async evt => {
     const {data, name} = this.state.data.find(entity => entity.id === id);
-    const copyReport = {data, name: `copy of "${name}"`};
+    const copyReport = {data, name: `Copy of "${name}"`};
     await duplicate(this.props.api, copyReport);
     // fetch the data again after duplication to update the state
     await this.loadReportsData();
