@@ -2,8 +2,11 @@ import React from 'react';
 
 import {Popover, Switch} from 'components';
 import {isRawDataReport} from './service';
+import {formatters} from 'services';
 
 import './ColumnSelection.css';
+
+const {convertCamelToSpaces} = formatters;
 
 export default {
   Content: function ColumnSelection({report, data, change}) {
@@ -28,7 +31,7 @@ export default {
           }}
         />
         <b>{label}</b>
-        {column}
+        {prefix === 'var__' ? column : convertCamelToSpaces(column)}
       </div>
     );
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import {convertCamelToSpaces} from './formatters';
 
 export default function processRawData(
   data,
@@ -42,7 +43,7 @@ export default function processRawData(
     return row;
   });
 
-  const head = processInstanceProps;
+  const head = processInstanceProps.map(convertCamelToSpaces);
 
   if (variableNames.length > 0) {
     head.push({label: 'Variables', columns: variableNames});

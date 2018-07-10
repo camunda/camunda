@@ -2,7 +2,8 @@ import {
   frequency as frequencyFormatter,
   duration as durationFormatter,
   convertDurationToObject,
-  convertDurationToSingleNumber
+  convertDurationToSingleNumber,
+  convertCamelToSpaces
 } from './formatters';
 const separator = '\u202F';
 const nbsp = '\u00A0';
@@ -91,4 +92,9 @@ describe('convertDurationToSingleNumber', () => {
     expect(convertDurationToSingleNumber({value: '2', unit: 'minutes'})).toBe(2 * 60 * 1000);
     expect(convertDurationToSingleNumber({value: '1.5', unit: 'seconds'})).toBe(1500);
   });
+});
+
+describe('convertCamelToSpaces', () => {
+  expect(convertCamelToSpaces('processDefinitionKey')).toBe('Process Definition Key');
+  expect(convertCamelToSpaces('engineName')).toBe('Engine Name');
 });
