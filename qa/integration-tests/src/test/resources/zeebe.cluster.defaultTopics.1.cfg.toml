@@ -17,5 +17,8 @@ port = 51016
 [network.replication]
 port = 51017
 
+[network.subscription]
+port = 51018
+
 [cluster]
 initialContactPoints = []
