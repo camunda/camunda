@@ -76,7 +76,6 @@ public class SnapshotReplicationRequestHandler {
   Supplier<BufferWriter> handleListSnapshotsAsync(
       final DirectBuffer buffer, final int offset, final int length) {
     listSnapshotsRequest.wrap(buffer, offset, length);
-    listSnapshotsResponse.reset();
 
     final int partitionId = listSnapshotsRequest.getPartitionId();
     final Partition partition = trackedPartitions.get(partitionId);
@@ -109,6 +108,8 @@ public class SnapshotReplicationRequestHandler {
 
   private BufferWriter handleListSnapshots(final SnapshotStorage storage) {
     final List<SnapshotMetadata> snapshots = storage.listSnapshots();
+
+    listSnapshotsResponse.reset();
     for (final SnapshotMetadata snapshot : snapshots) {
       if (snapshot.isReplicable()) {
         listSnapshotsResponse.addSnapshot(
