@@ -33,11 +33,13 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public final class GossipCustomEventEncoding {
+
   public static int writeSockedAddresses(
       NodeInfo memberInfo, MutableDirectBuffer directBuffer, int offset) {
     offset = writeSocketAddress(memberInfo.getManagementApiAddress(), directBuffer, offset);
     offset = writeSocketAddress(memberInfo.getClientApiAddress(), directBuffer, offset);
     offset = writeSocketAddress(memberInfo.getReplicationApiAddress(), directBuffer, offset);
+    offset = writeSocketAddress(memberInfo.getSubscriptionApiAddress(), directBuffer, offset);
 
     return offset;
   }
