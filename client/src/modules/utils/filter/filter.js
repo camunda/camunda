@@ -1,10 +1,7 @@
 export function getFilterQueryString(selection) {
-  const filtered = Object.keys(selection)
-    .filter(key => selection[key] === true)
-    .reduce((obj, key) => {
-      obj[key] = selection[key];
-      return obj;
-    }, {});
+  const filtered = Object.entries(selection).reduce((obj, [key, value]) => {
+    return !!value ? {...obj, [key]: value} : obj;
+  }, {});
 
   return `?filter=${JSON.stringify(filtered)}`;
 }
