@@ -4,7 +4,7 @@ import {shallow} from 'enzyme';
 import * as api from 'modules/api/instances/instances';
 import {mockResolvedAsyncFn} from 'modules/testUtils';
 import {parseFilterForRequest} from 'modules/utils/filter';
-import {ORDER, DEFAULT_SORT_BY} from 'modules/constants';
+import {SORT_ORDER, DEFAULT_SORTING} from 'modules/constants';
 
 import ListView from './ListView';
 import List from './List';
@@ -50,7 +50,7 @@ describe('ListView', () => {
     expect(listView.state.firstElement).toBe(0);
     expect(listView.state.instances).toEqual([]);
     expect(listView.state.entriesPerPage).toBe(0);
-    expect(listView.state.sortBy).toBe(DEFAULT_SORT_BY);
+    expect(listView.state.sorting).toBe(DEFAULT_SORTING);
   });
 
   it('should contain an List', () => {
@@ -161,7 +161,7 @@ describe('ListView', () => {
       // given
       const expectedFilter = {
         ...parseFilterForRequest(node.prop('filter')),
-        sortBy: node.state('sortBy')
+        sorting: node.state('sorting')
       };
 
       // when
@@ -182,7 +182,7 @@ describe('ListView', () => {
     it('should make state sort order asc if key is currently sorted by in desc order', () => {
       // given
       const KEY = 'foo';
-      node.setState({sortBy: {[KEY]: ORDER.DESC}});
+      node.setState({sorting: {sortBy: KEY, sortOrder: SORT_ORDER.DESC}});
       node.update();
 
       // when
@@ -190,13 +190,14 @@ describe('ListView', () => {
       node.update();
 
       // then
-      expect(node.state('sortBy')).toEqual({[KEY]: ORDER.ASC});
+      expect(node.state('sorting').sortBy).toBe(KEY);
+      expect(node.state('sorting').sortOrder).toBe(SORT_ORDER.ASC);
     });
 
     it('should make state sort order desc if key is currently sorted by in asc order', () => {
       // given
       const KEY = 'foo';
-      node.setState({sortBy: {[KEY]: ORDER.ASC}});
+      node.setState({sorting: {sortBy: KEY, sortOrder: SORT_ORDER.ASC}});
       node.update();
 
       // when
@@ -204,13 +205,14 @@ describe('ListView', () => {
       node.update();
 
       // then
-      expect(node.state('sortBy')).toEqual({[KEY]: ORDER.DESC});
+      expect(node.state('sorting').sortBy).toBe(KEY);
+      expect(node.state('sorting').sortOrder).toBe(SORT_ORDER.DESC);
     });
 
     it('should make state sort order desc if key is not currently sorted by', () => {
       // given
       const KEY = 'foo';
-      node.setState({sortBy: {bar: ORDER.ASC}});
+      node.setState({sorting: {sortBy: 'bar', sortOrder: SORT_ORDER.DESC}});
       node.update();
 
       // when
@@ -218,7 +220,8 @@ describe('ListView', () => {
       node.update();
 
       // then
-      expect(node.state('sortBy')).toEqual({[KEY]: ORDER.DESC});
+      expect(node.state('sorting').sortBy).toBe(KEY);
+      expect(node.state('sorting').sortOrder).toBe(SORT_ORDER.DESC);
     });
   });
 });

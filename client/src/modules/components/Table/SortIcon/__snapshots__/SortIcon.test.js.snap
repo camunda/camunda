@@ -2,26 +2,30 @@
 
 exports[`SortIcon should render a Down icon if order is desc 1`] = `
 <styled.a
-  order="desc"
+  sortOrder="desc"
 >
-  <Themed(Styled(Down))
-    order="desc"
+  <Themed(Styled(withStrippedProps(Down)))
+    sortOrder="desc"
   />
 </styled.a>
 `;
 
-exports[`SortIcon should render a Down icon if order is undefined 1`] = `
-<styled.a>
-  <Themed(Styled(Down)) />
+exports[`SortIcon should render a Down icon if order is null 1`] = `
+<styled.a
+  sortOrder={null}
+>
+  <Themed(Styled(withStrippedProps(Down)))
+    sortOrder={null}
+  />
 </styled.a>
 `;
 
 exports[`SortIcon should render an Up icon if order is asc 1`] = `
 <styled.a
-  order="asc"
+  sortOrder="asc"
 >
-  <Themed(Styled(Up))
-    order="asc"
+  <Themed(Styled(withStrippedProps(Up)))
+    sortOrder="asc"
   />
 </styled.a>
 `;

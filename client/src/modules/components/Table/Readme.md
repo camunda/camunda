@@ -14,9 +14,6 @@ const data = [
   }
 ].map(row => ({ data: {...row}, view: {...row}}));
 
-const config = {
-  isSortable: {foo: false, bar: false}
-};
 
-<Table headers={headers} data={data} config={config} />;
+<Table headers={headers} data={data}  />;
 ```

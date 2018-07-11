@@ -1,7 +1,7 @@
 SortIcon:
 
 ```js
-<SortIcon order={null}/>
-<SortIcon order='asc'/>
-<SortIcon order='desc'/>
+<SortIcon sortOrder={null}/>
+<SortIcon sortOrder='asc'/>
+<SortIcon sortOrder='desc'/>
 ```

@@ -10,8 +10,9 @@ Object {
     "workflowId": false,
   },
   "selectionCheck": [Function],
-  "sortBy": Object {
-    "foo": "asc",
+  "sorting": Object {
+    "sortBy": "foo",
+    "sortOrder": "asc",
   },
 }
 `;

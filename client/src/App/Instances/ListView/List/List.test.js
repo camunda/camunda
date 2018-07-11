@@ -1,7 +1,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {EXPAND_STATE, ORDER} from 'modules/constants';
+import {EXPAND_STATE, SORT_ORDER} from 'modules/constants';
 import Table from 'modules/components/Table';
 
 import List from './List';
@@ -30,7 +30,7 @@ describe('List', () => {
       list: [{}]
     },
     expandState: EXPAND_STATE.DEFAULT,
-    sortBy: {foo: ORDER.ASC}
+    sorting: {sortBy: 'foo', sortOrder: SORT_ORDER.ASC}
   };
 
   it('should have by default rowsToDisplay null', () => {
@@ -143,7 +143,7 @@ describe('List', () => {
         endDate: true,
         actions: false
       });
-      expect(tableConfig.sortBy).toEqual(mockProps.sortBy);
+      expect(tableConfig.sorting).toEqual(mockProps.sorting);
       expect(tableConfig).toMatchSnapshot();
     });
 

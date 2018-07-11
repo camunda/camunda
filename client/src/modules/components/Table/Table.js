@@ -12,14 +12,17 @@ export default class Table extends React.Component {
   };
 
   static defaultProps = {
-    config: {},
+    config: {isSortable: {}, sorting: {sortBy: null, sortOrder: null}},
     handleSorting: () => {}
   };
 
   renderHeader() {
     const {
       headers,
-      config: {isSortable = {}, sortBy},
+      config: {
+        isSortable,
+        sorting: {sortBy, sortOrder}
+      },
       handleSorting
     } = this.props;
 
@@ -31,7 +34,7 @@ export default class Table extends React.Component {
               {headerLabel}
               {isSortable[key] && (
                 <Styled.SortIcon
-                  order={sortBy[key]}
+                  sortOrder={sortBy === key ? sortOrder : null}
                   onClick={() => handleSorting(key)}
                 />
               )}

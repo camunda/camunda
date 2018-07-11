@@ -2,11 +2,12 @@ import styled, {css} from 'styled-components';
 
 import {Up as DefaultUp, Down as DefaultDown} from 'modules/components/Icon';
 import {themed, Colors, themeStyle} from 'modules/theme';
+import withStrippedProps from 'modules/utils/withStrippedProps';
 
 export const SortIcon = styled.a``;
 
 const inactiveStyle = css`
-  ${({order}) => (!order ? 'opacity: 0.4' : '')};
+  ${({sortOrder}) => (!sortOrder ? 'opacity: 0.4' : '')};
 `;
 
 const sortIconStyle = css`
@@ -23,10 +24,12 @@ const sortIconStyle = css`
   cursor: pointer;
 `;
 
-export const Up = themed(styled(DefaultUp)`
+export const Up = themed(styled(withStrippedProps(['sortOrder'])(DefaultUp))`
   ${sortIconStyle};
 `);
 
-export const Down = themed(styled(DefaultDown)`
+export const Down = themed(styled(
+  withStrippedProps(['sortOrder'])(DefaultDown)
+)`
   ${sortIconStyle};
 `);

@@ -2,10 +2,16 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import Table from './Table';
-import {ORDER} from 'modules/constants';
+import {SORT_ORDER} from 'modules/constants';
 import * as Styled from './styled';
 
 describe('Table', () => {
+  const config = {
+    isSortable: {foo: false, bar: true},
+    sorting: {sortBy: 'bar', sortOrder: SORT_ORDER.ASC},
+    selectionCheck: jest.fn()
+  };
+
   describe('renderHeader', () => {
     const mockHeaders = {foo: 'foo', bar: 'bar'};
 
@@ -35,10 +41,6 @@ describe('Table', () => {
 
     it('should render a sort icon for sortable headers', () => {
       // given
-      const config = {
-        isSortable: {foo: false, bar: true},
-        sortBy: {bar: ORDER.ASC}
-      };
       const node = shallow(
         <Table data={[]} headers={mockHeaders} config={config} />
       );
@@ -46,7 +48,7 @@ describe('Table', () => {
       // then
       const SortIconNode = node.find(Styled.SortIcon);
       expect(SortIconNode).toHaveLength(1);
-      expect(SortIconNode.prop('order')).toBe(ORDER.ASC);
+      expect(SortIconNode.prop('sortOrder')).toBe(SORT_ORDER.ASC);
       expect(SortIconNode.prop('onClick')).toBeInstanceOf(Function);
     });
   });
@@ -62,21 +64,16 @@ describe('Table', () => {
 
     it('should render a table row for each data element and cell for each row value', () => {
       // given
-      const selectionCheck = jest.fn();
       const node = shallow(
-        <Table
-          headers={headers}
-          data={formattedData}
-          config={{selectionCheck}}
-        />
+        <Table headers={headers} data={formattedData} config={config} />
       );
 
       // then
       expect(node.find('tbody')).toHaveLength(1);
       const RowNodes = node.find(Styled.BodyRow);
       expect(RowNodes).toHaveLength(3);
-      expect(selectionCheck).toHaveBeenCalledTimes(3);
-      selectionCheck.mock.calls.forEach(([callParameter], index) => {
+      expect(config.selectionCheck).toHaveBeenCalledTimes(3);
+      config.selectionCheck.mock.calls.forEach(([callParameter], index) => {
         expect(callParameter).toEqual(data[index]);
       });
       const CellNodes = node.find(Styled.BodyCell);

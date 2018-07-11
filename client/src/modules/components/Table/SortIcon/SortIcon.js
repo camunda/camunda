@@ -1,19 +1,20 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import {ORDER} from 'modules/constants';
+import {SORT_ORDER} from 'modules/constants';
 import * as Styled from './styled';
 
 export default function SortIcon(props) {
-  const TargetIcon = props.order === ORDER.ASC ? Styled.Up : Styled.Down;
+  const TargetIcon =
+    props.sortOrder === SORT_ORDER.ASC ? Styled.Up : Styled.Down;
   return (
     <Styled.SortIcon {...props}>
-      <TargetIcon order={props.order} />
+      <TargetIcon sortOrder={props.sortOrder} />
     </Styled.SortIcon>
   );
 }
 
 SortIcon.propTypes = {
-  order: PropTypes.oneOf(Object.values(ORDER)),
+  sortOrder: PropTypes.oneOf(Object.values(SORT_ORDER)),
   onClick: PropTypes.func
 };

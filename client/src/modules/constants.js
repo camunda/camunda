@@ -45,12 +45,12 @@ export const INSTANCE_STATE = {
   INCIDENT: 'INCIDENT'
 };
 
-export const ORDER = {
+export const SORT_ORDER = {
   ASC: 'asc',
   DESC: 'desc'
 };
 
-export const DEFAULT_SORT_BY = {id: ORDER.DESC};
+export const DEFAULT_SORTING = {sortBy: 'id', sortOrder: SORT_ORDER.DESC};
 
 export const PANE_ID = {
   TOP: 'TOP',

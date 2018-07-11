@@ -4,7 +4,15 @@ exports[`Table renderBody should render a table row for each data element and ce
 <Themed(styled.table)
   config={
     Object {
+      "isSortable": Object {
+        "bar": true,
+        "foo": false,
+      },
       "selectionCheck": [Function],
+      "sorting": Object {
+        "sortBy": "bar",
+        "sortOrder": "asc",
+      },
     }
   }
   data={

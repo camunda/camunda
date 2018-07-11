@@ -22,7 +22,7 @@ export default class List extends React.Component {
     }).isRequired,
     total: PropTypes.number,
     filter: PropTypes.object,
-    sortBy: PropTypes.object,
+    sorting: PropTypes.object,
     handleSorting: PropTypes.func,
     expandState: PropTypes.oneOf(Object.values(EXPAND_STATE))
   };
@@ -57,7 +57,7 @@ export default class List extends React.Component {
         endDate: true,
         actions: false
       },
-      sortBy: this.props.sortBy
+      sorting: this.props.sorting
     };
   };
 

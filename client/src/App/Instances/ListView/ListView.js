@@ -2,8 +2,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import SplitPane from 'modules/components/SplitPane';
-import {EXPAND_STATE, ORDER, DEFAULT_SORT_BY} from 'modules/constants';
-import {isEmpty} from 'modules/utils';
+import {EXPAND_STATE, SORT_ORDER, DEFAULT_SORTING} from 'modules/constants';
+import {isEmpty, isEqual} from 'modules/utils';
 
 import List from './List';
 import ListFooter from './ListFooter';
@@ -27,7 +27,7 @@ export default class ListView extends React.Component {
     firstElement: 0,
     instances: [],
     entriesPerPage: 0,
-    sortBy: DEFAULT_SORT_BY
+    sorting: DEFAULT_SORTING
   };
 
   componentDidMount() {
@@ -43,14 +43,12 @@ export default class ListView extends React.Component {
       return this.setState({firstElement: 0});
     }
 
-    const prevSortKey = Object.keys(prevState.sortBy)[0];
     const hasFilterChanged = prevProps.filter !== this.props.filter;
     const hasFirstElementChanged =
       prevState.firstElement !== this.state.firstElement;
-    const hasSortByChanged =
-      prevState.sortBy[prevSortKey] !== this.state.sortBy[prevSortKey];
+    const hasSortingChanged = !isEqual(prevState.sorting, this.state.sorting);
 
-    if (hasFilterChanged || hasFirstElementChanged || hasSortByChanged) {
+    if (hasFilterChanged || hasFirstElementChanged || hasSortingChanged) {
       this.loadData();
     }
   }
@@ -59,7 +57,7 @@ export default class ListView extends React.Component {
     const instances = await fetchWorkflowInstances(
       {
         ...parseFilterForRequest(this.props.filter),
-        sortBy: this.state.sortBy
+        sorting: this.state.sorting
       },
       this.state.firstElement,
       50
@@ -70,14 +68,17 @@ export default class ListView extends React.Component {
 
   // (1) should make state sort order asc if key is currently sorted by in desc order
   handleSorting = key => {
-    const isCurrentSortBy = !!this.state.sortBy[key];
-    let newSortBy = {[key]: ORDER.DESC};
+    const {
+      sorting: {sortBy: currentSortBy, sortOrder: currentSortOrder}
+    } = this.state;
 
-    if (isCurrentSortBy && this.state.sortBy[key] === ORDER.DESC) {
-      newSortBy[key] = ORDER.ASC;
+    let newSorting = {sortBy: key, sortOrder: SORT_ORDER.DESC};
+
+    if (currentSortBy === key && currentSortOrder === SORT_ORDER.DESC) {
+      newSorting.sortOrder = SORT_ORDER.ASC;
     }
 
-    return this.setState({sortBy: newSortBy});
+    return this.setState({sorting: newSorting});
   };
 
   render() {
@@ -96,7 +97,7 @@ export default class ListView extends React.Component {
               onSelectionUpdate={this.props.onSelectionUpdate}
               filter={this.props.filter}
               expandState={this.props.expandState}
-              sortBy={this.state.sortBy}
+              sorting={this.state.sorting}
               handleSorting={this.handleSorting}
             />
           )}
