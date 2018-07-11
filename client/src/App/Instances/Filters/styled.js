@@ -4,12 +4,6 @@ import Panel from 'modules/components/Panel';
 
 import BasicExpandButton from 'modules/components/ExpandButton';
 
-export const Filters = styled.div`
-  display: flex;
-  width: 320px;
-  margin-right: 1px;
-`;
-
 export const ExpandButton = styled(BasicExpandButton)`
   position: absolute;
   right: 0;

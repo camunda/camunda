@@ -16,6 +16,7 @@ import {
 import Header from '../Header';
 import ListView from './ListView';
 import SelectionDisplay from './SelectionDisplay';
+import SelectionList from './SelectionList';
 import {parseQueryString, createNewSelectionFragment} from './service';
 import Filters from './Filters';
 import * as Styled from './styled.js';
@@ -140,11 +141,14 @@ class Instances extends Component {
         />
         <Content>
           <Styled.Instances>
-            <Filters
-              filter={this.state.filter}
-              handleFilterChange={this.handleFilterChange}
-              resetFilter={this.resetFilter}
-            />
+            <Styled.Filters>
+              <Filters
+                filter={this.state.filter}
+                handleFilterChange={this.handleFilterChange}
+                resetFilter={this.resetFilter}
+              />
+            </Styled.Filters>
+
             <Styled.Center>
               <SplitPane.Pane isRounded>
                 <SplitPane.Pane.Header isRounded>
@@ -166,13 +170,14 @@ class Instances extends Component {
                 onAddToSelection={this.handleAddToSelection}
               />
             </Styled.Center>
-            <Styled.Right>
+            <Styled.Selections>
               <Panel isRounded>
                 <Styled.SelectionHeader isRounded>
                   Selections
                 </Styled.SelectionHeader>
                 <Panel.Body>
-                  <SelectionDisplay selections={this.state.selections} />
+                  {/* <SelectionDisplay selections={this.state.selections} /> */}
+                  <SelectionList selections={this.state.selections} />
                 </Panel.Body>
                 <Styled.RightExpandButton
                   direction={DIRECTION.RIGHT}
@@ -180,7 +185,7 @@ class Instances extends Component {
                 />
                 <Panel.Footer />
               </Panel>
-            </Styled.Right>
+            </Styled.Selections>
           </Styled.Instances>
         </Content>
       </Fragment>

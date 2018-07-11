@@ -12,12 +12,18 @@ export const Instances = styled.div`
   height: calc(100vh - ${HEADER_HEIGHT}px);
 `;
 
+export const Filters = styled.div`
+  display: flex;
+  width: 320px;
+  margin-right: 1px;
+`;
+
 export const Center = styled(SplitPane)`
   width: 100%;
 `;
 
-export const Right = styled.div`
-  width: 320px;
+export const Selections = styled.div`
+  width: 479px;
   display: flex;
   margin-left: 1px;
 `;

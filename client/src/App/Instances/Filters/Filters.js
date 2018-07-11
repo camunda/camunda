@@ -19,40 +19,38 @@ export default class Filters extends React.Component {
   render() {
     const {active, incidents, canceled, completed} = this.props.filter;
     return (
-      <Styled.Filters>
-        <Panel isRounded>
-          <Panel.Header isRounded>Filters</Panel.Header>
-          <Panel.Body>
-            <Filter
-              type={FILTER_TYPES.RUNNING}
-              filter={{
-                active,
-                incidents
-              }}
-              onChange={this.props.handleFilterChange}
-            />
-            <Filter
-              type={FILTER_TYPES.FINISHED}
-              filter={{
-                completed,
-                canceled
-              }}
-              onChange={this.props.handleFilterChange}
-            />
-          </Panel.Body>
-          <Styled.ExpandButton direction={DIRECTION.LEFT} isExpanded={true} />
-          <Styled.ResetButtonContainer>
-            <Button
-              title="reset filters"
-              disabled={isEqual(this.props.filter, DEFAULT_FILTER)}
-              onClick={this.props.resetFilter}
-            >
-              Reset Filters
-            </Button>
-          </Styled.ResetButtonContainer>
-          <Panel.Footer />
-        </Panel>
-      </Styled.Filters>
+      <Panel isRounded>
+        <Panel.Header isRounded>Filters</Panel.Header>
+        <Panel.Body>
+          <Filter
+            type={FILTER_TYPES.RUNNING}
+            filter={{
+              active,
+              incidents
+            }}
+            onChange={this.props.handleFilterChange}
+          />
+          <Filter
+            type={FILTER_TYPES.FINISHED}
+            filter={{
+              completed,
+              canceled
+            }}
+            onChange={this.props.handleFilterChange}
+          />
+        </Panel.Body>
+        <Styled.ExpandButton direction={DIRECTION.LEFT} isExpanded={true} />
+        <Styled.ResetButtonContainer>
+          <Button
+            title="reset filters"
+            disabled={isEqual(this.props.filter, DEFAULT_FILTER)}
+            onClick={this.props.resetFilter}
+          >
+            Reset Filters
+          </Button>
+        </Styled.ResetButtonContainer>
+        <Panel.Footer />
+      </Panel>
     );
   }
 }
