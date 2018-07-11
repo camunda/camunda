@@ -7,42 +7,29 @@ import {Down} from 'modules/components/Icon';
 import * as Styled from './styled.js';
 
 export default class Selection extends React.Component {
-  constructor(props) {
-    super(props);
-
-    this.noOfShownInstances = 10;
-    this.state = {instances: {}};
-  }
-
-  componentDidUpdate = async previousState => {
-    if (previousState.instances !== this.props.instances) {
-      this.setState({instances: this.props.instances});
-    }
-  };
-
   render() {
     return (
       <Styled.Selection>
         <Styled.Header>
           <Down />
-          <span>Selection {this.props.index} </span>
+          <span>Selection {this.props.index + 1} </span>
           <span>count: {this.props.count}</span>
+          <span onClick={this.props.onRetry}>retry</span>
+          <span onClick={this.props.onDelete}>delete</span>
         </Styled.Header>
         <Styled.Body>
-          {Object.keys(this.state.instances).length > 0 &&
-            this.state.instances.map((instance, index) => {
-              console.log(getWorkflowName(instance));
-              return (
-                <div key={index}>
-                  <StateIcon instance={instance} />
-                  <span>{getWorkflowName(instance)}</span>
-                  {instance.id}
-                </div>
-              );
-            })}
+          {this.props.instances.map((instance, index) => {
+            return (
+              <div key={index}>
+                <StateIcon instance={instance} />
+                <span>{getWorkflowName(instance)}</span>
+                {instance.id}
+              </div>
+            );
+          })}
         </Styled.Body>
         <Styled.Footer>
-          {this.props.count - this.noOfShownInstances}
+          {this.props.count - 10}
           <span>{' more Instances'}</span>
         </Styled.Footer>
       </Styled.Selection>
