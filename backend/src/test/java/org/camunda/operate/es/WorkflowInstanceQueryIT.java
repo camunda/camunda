@@ -77,11 +77,12 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
   public void starting() {
     this.mockMvc = mockMvcTestRule.getMockMvc();
     this.objectMapper = mockMvcTestRule.getObjectMapper();
-    createData();
   }
 
   @Test
   public void testQueryAllRunningCount() throws Exception {
+    createData();
+
     //query running instances
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setRunning(true);
@@ -94,6 +95,8 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
   @Test
   public void testQueryAllRunning() throws Exception {
+    createData();
+
     //query running instances
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setRunning(true);
@@ -122,6 +125,8 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
   @Test
   public void testQueryByErrorMessage() throws Exception {
+    createData();
+
     //given
     WorkflowInstanceQueryDto query = createGetAllWorkflowInstancesQuery();
     query.setErrorMessage(errorMessage);
@@ -148,18 +153,61 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
   }
 
   @Test
+  public void testQueryByActivityId() throws Exception {
+    final String activityId = "taskA";
+
+    //given we have 2 workflow instances: one with active activity with given id, another with completed activity with given id
+    final WorkflowInstanceEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
+
+    final ActivityInstanceEntity activeWithIdActivityInstance = createActivityInstance(ActivityState.ACTIVE);
+    activeWithIdActivityInstance.setActivityId(activityId);
+    workflowInstance1.getActivities().add(activeWithIdActivityInstance);
+
+    final ActivityInstanceEntity completedWithoutIdActivityInstance = createActivityInstance(ActivityState.COMPLETED);
+    completedWithoutIdActivityInstance.setActivityId("otherActivityId");
+    workflowInstance1.getActivities().add(completedWithoutIdActivityInstance);
+
+    final WorkflowInstanceEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
+
+    final ActivityInstanceEntity activeWithoutIdActivityInstance = createActivityInstance(ActivityState.ACTIVE);
+    activeWithoutIdActivityInstance.setActivityId("otherActivityId");
+    workflowInstance2.getActivities().add(activeWithoutIdActivityInstance);
+
+    final ActivityInstanceEntity completedWithIdActivityInstance = createActivityInstance(ActivityState.COMPLETED);
+    completedWithIdActivityInstance.setActivityId(activityId);
+    workflowInstance2.getActivities().add(completedWithIdActivityInstance);
+
+    persist(workflowInstance1, workflowInstance2);
+
+    //when
+    WorkflowInstanceQueryDto query = createGetAllWorkflowInstancesQuery();
+    query.setActivityId(activityId);
+
+    MockHttpServletRequestBuilder request = post(query(0, 100))
+        .content(mockMvcTestRule.json(query))
+        .contentType(contentType);
+    MvcResult mvcResult = mockMvc.perform(request)
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(contentType))
+        .andReturn();
+
+    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
+
+    //then
+    assertThat(workflowInstanceDtos.size()).isEqualTo(1);
+
+    assertThat(workflowInstanceDtos.get(0).getId())
+      .isEqualTo(workflowInstance1.getId());
+
+  }
+
+  @Test
   public void testQueryByWorkflowInstanceIds() throws Exception {
     //given
     final WorkflowInstanceEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
     final WorkflowInstanceEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.CANCELED);
     final WorkflowInstanceEntity workflowInstance3 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
-    try {
-      elasticsearchBulkProcessor.persistOperateEntities(Arrays.asList(workflowInstance1, workflowInstance2, workflowInstance3));
-    } catch (PersistenceException e) {
-      throw new RuntimeException(e);
-    }
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
-
+    persist(workflowInstance1, workflowInstance2, workflowInstance3);
 
     WorkflowInstanceQueryDto query = createGetAllWorkflowInstancesQuery();
     query.setIds(Arrays.asList(workflowInstance1.getId(), workflowInstance2.getId()));
@@ -182,8 +230,19 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     assertThat(workflowInstanceDtos).extracting(WorkflowInstanceType.ID).containsExactlyInAnyOrder(workflowInstance1.getId(), workflowInstance2.getId());
   }
 
+  private void persist(WorkflowInstanceEntity... entitiesToPersist) {
+    try {
+      elasticsearchBulkProcessor.persistOperateEntities(Arrays.asList(entitiesToPersist));
+    } catch (PersistenceException e) {
+      throw new RuntimeException(e);
+    }
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
+  }
+
   @Test
   public void testPagination() throws Exception {
+    createData();
+
     //query running instances
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setRunning(true);
@@ -213,6 +272,8 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
   @Test
   public void testSortingByStartDateAsc() throws Exception {
+    createData();
+
     //query running instances
     WorkflowInstanceQueryDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
     final SortingDto sorting = new SortingDto();
@@ -238,6 +299,8 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
   @Test
   public void testSortingByStartDateDesc() throws Exception {
+    createData();
+
     //query running instances
     WorkflowInstanceQueryDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
     final SortingDto sorting = new SortingDto();
@@ -263,6 +326,8 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
   @Test
   public void testSortingByIdAsc() throws Exception {
+    createData();
+
     //query running instances
     WorkflowInstanceQueryDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
     final SortingDto sorting = new SortingDto();
@@ -288,6 +353,8 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
   @Test
   public void testSortingByIdDesc() throws Exception {
+    createData();
+
     //query running instances
     WorkflowInstanceQueryDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
     final SortingDto sorting = new SortingDto();
@@ -313,6 +380,8 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
   @Test
   public void testSortingByEndDateAsc() throws Exception {
+    createData();
+
     //query running instances
     WorkflowInstanceQueryDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
     final SortingDto sorting = new SortingDto();
@@ -349,6 +418,8 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
   @Test
   public void testSortingByEndDateDesc() throws Exception {
+    createData();
+
     //query running instances
     WorkflowInstanceQueryDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
     final SortingDto sorting = new SortingDto();
@@ -385,6 +456,8 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
   @Test
   public void testQueryAllFinishedCount() throws Exception {
+    createData();
+
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setFinished(true);
     workflowInstanceQueryDto.setCompleted(true);
@@ -406,6 +479,8 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
   @Test
   public void testQueryAllFinished() throws Exception {
+    createData();
+
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setFinished(true);
     workflowInstanceQueryDto.setCompleted(true);
@@ -432,6 +507,8 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
   @Test
   public void testQueryFinishedAndRunningCount() throws Exception {
+    createData();
+
     WorkflowInstanceQueryDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
 
     testCountQuery(workflowInstanceQueryDto, 5);
@@ -439,6 +516,8 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
   @Test
   public void testQueryFinishedAndRunning() throws Exception {
+    createData();
+
     WorkflowInstanceQueryDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
@@ -457,6 +536,8 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
   @Test
   public void testQueryFinishedCompletedCount() throws Exception {
+    createData();
+
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setFinished(true);
     workflowInstanceQueryDto.setCompleted(true);
@@ -466,6 +547,8 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
   @Test
   public void testQueryFinishedCompleted() throws Exception {
+    createData();
+
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setFinished(true);
     workflowInstanceQueryDto.setCompleted(true);
@@ -488,6 +571,8 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
   }
   @Test
   public void testQueryFinishedCanceledCount() throws Exception {
+    createData();
+
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setFinished(true);
     workflowInstanceQueryDto.setCanceled(true);
@@ -497,6 +582,8 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
   @Test
   public void testQueryFinishedCanceled() throws Exception {
+    createData();
+
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setFinished(true);
     workflowInstanceQueryDto.setCanceled(true);
@@ -520,6 +607,8 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
   @Test
   public void testQueryRunningWithIncidentsCount() throws Exception {
+    createData();
+
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setRunning(true);
     workflowInstanceQueryDto.setIncidents(true);
@@ -529,6 +618,8 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
   @Test
   public void testQueryRunningWithIncidents() throws Exception {
+    createData();
+
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setRunning(true);
     workflowInstanceQueryDto.setIncidents(true);
@@ -562,6 +653,8 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
   @Test
   public void testQueryRunningWithoutIncidentsCount() throws Exception {
+    createData();
+
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setRunning(true);
     workflowInstanceQueryDto.setActive(true);
@@ -571,6 +664,8 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
   @Test
   public void testQueryRunningWithoutIncidents() throws Exception {
+    createData();
+
     WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
     workflowInstanceQueryDto.setRunning(true);
     workflowInstanceQueryDto.setActive(true);
@@ -603,6 +698,8 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
   @Test
   public void testGetWorkflowInstanceById() throws Exception {
+    createData();
+
     MockHttpServletRequestBuilder request = get(String.format(GET_INSTANCE_URL, instanceWithoutIncident.getId()));
 
     MvcResult mvcResult = mockMvc
@@ -664,16 +761,8 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     instanceWithoutIncident.getIncidents().add(createIncident(IncidentState.RESOLVED));
     instanceWithoutIncident.getActivities().add(createActivityInstance(ActivityState.COMPLETED));
 
-    List<WorkflowInstanceEntity> workflowInstances = new ArrayList<>();
-    workflowInstances.addAll(Arrays.asList(runningInstance, completedInstance, instanceWithIncident, instanceWithoutIncident, canceledInstance));
-
     //persist instances
-    try {
-      elasticsearchBulkProcessor.persistOperateEntities(workflowInstances);
-    } catch (PersistenceException e) {
-      throw new RuntimeException(e);
-    }
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    persist(runningInstance, completedInstance, instanceWithIncident, instanceWithoutIncident, canceledInstance);
   }
 
   private WorkflowInstanceEntity createWorkflowInstance(WorkflowInstanceState state) {

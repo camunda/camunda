@@ -3,6 +3,7 @@ package org.camunda.operate.es.reader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.types.WorkflowInstanceType;
@@ -28,6 +29,8 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.apache.lucene.search.join.ScoreMode.None;
 import static org.camunda.operate.entities.IncidentState.ACTIVE;
+import static org.camunda.operate.es.types.WorkflowInstanceType.ACTIVITIES;
+import static org.camunda.operate.es.types.WorkflowInstanceType.ACTIVITY_ID;
 import static org.camunda.operate.es.types.WorkflowInstanceType.END_DATE;
 import static org.camunda.operate.es.types.WorkflowInstanceType.ERROR_MSG;
 import static org.camunda.operate.es.types.WorkflowInstanceType.INCIDENTS;
@@ -49,6 +52,9 @@ public class WorkflowInstanceReader {
   private static final String ACTIVE_INCIDENT = ACTIVE.toString();
   private static final String INCIDENT_STATE_TERM = String.format("%s.%s", INCIDENTS, STATE);
   private static final String INCIDENT_ERRORMSG_TERM = String.format("%s.%s", INCIDENTS, ERROR_MSG);
+  private static final String ACTIVE_ACTIVITY = ActivityState.ACTIVE.toString();
+  private static final String ACTIVITY_STATE_TERM = String.format("%s.%s", ACTIVITIES, STATE);
+  private static final String ACTIVITY_ACTIVITYID_TERM = String.format("%s.%s", ACTIVITIES, ACTIVITY_ID);
 
   @Autowired
   private TransportClient esClient;
@@ -128,9 +134,20 @@ public class WorkflowInstanceReader {
       errorMessageQuery = createErrorMessageQuery(queryDto.getErrorMessage());
     }
 
-    QueryBuilder query = joinWithAnd(runningFinishedQuery, idsQuery, errorMessageQuery);
+    QueryBuilder activityIdQuery = null;
+    if (queryDto.getActivityId() != null) {
+      activityIdQuery = createActivityIdQuery(queryDto.getActivityId());
+    }
+    
+    QueryBuilder query = joinWithAnd(runningFinishedQuery, idsQuery, errorMessageQuery, activityIdQuery);
 
     return query;
+  }
+
+  private QueryBuilder createActivityIdQuery(String activityId) {
+    final QueryBuilder activeActivitiesQuery = termQuery(ACTIVITY_STATE_TERM, ACTIVE_ACTIVITY);
+    final QueryBuilder activityIdQuery = termQuery(ACTIVITY_ACTIVITYID_TERM, activityId);
+    return nestedQuery(ACTIVITIES, joinWithAnd(activeActivitiesQuery, activityIdQuery), None);
   }
 
   private QueryBuilder createErrorMessageQuery(String errorMessage) {

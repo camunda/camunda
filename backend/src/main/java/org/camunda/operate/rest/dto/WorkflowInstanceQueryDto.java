@@ -30,6 +30,8 @@ public class WorkflowInstanceQueryDto {
 
   private String errorMessage;
 
+  private String activityId;
+
   private SortingDto sorting;
 
   public WorkflowInstanceQueryDto() {
@@ -99,6 +101,14 @@ public class WorkflowInstanceQueryDto {
     this.errorMessage = errorMessage;
   }
 
+  public String getActivityId() {
+    return activityId;
+  }
+
+  public void setActivityId(String activityId) {
+    this.activityId = activityId;
+  }
+
   public SortingDto getSorting() {
     return sorting;
   }
@@ -133,6 +143,10 @@ public class WorkflowInstanceQueryDto {
       return false;
     if (ids != null ? !ids.equals(that.ids) : that.ids != null)
       return false;
+    if (errorMessage != null ? !errorMessage.equals(that.errorMessage) : that.errorMessage != null)
+      return false;
+    if (activityId != null ? !activityId.equals(that.activityId) : that.activityId != null)
+      return false;
     return sorting != null ? sorting.equals(that.sorting) : that.sorting == null;
   }
 
@@ -145,6 +159,8 @@ public class WorkflowInstanceQueryDto {
     result = 31 * result + (completed ? 1 : 0);
     result = 31 * result + (canceled ? 1 : 0);
     result = 31 * result + (ids != null ? ids.hashCode() : 0);
+    result = 31 * result + (errorMessage != null ? errorMessage.hashCode() : 0);
+    result = 31 * result + (activityId != null ? activityId.hashCode() : 0);
     result = 31 * result + (sorting != null ? sorting.hashCode() : 0);
     return result;
   }
