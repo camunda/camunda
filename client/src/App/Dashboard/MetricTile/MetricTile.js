@@ -10,11 +10,9 @@ export default function MetricTile({label, type, value}) {
   const query = getFilterQueryString(FILTER_SELECTION[type]);
 
   return (
-    <Styled.MetricTile>
-      <Styled.Metric to={`/instances${query}`} type={type}>
-        {value}
-      </Styled.Metric>
-      <Styled.Name>{label}</Styled.Name>
+    <Styled.MetricTile to={`/instances${query}`} type={type}>
+      <Styled.Metric>{value}</Styled.Metric>
+      <Styled.Label>{label}</Styled.Label>
     </Styled.MetricTile>
   );
 }

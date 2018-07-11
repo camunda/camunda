@@ -11,6 +11,36 @@ describe('<MetricTile>', () => {
       <MetricTile type="active" value={123} label="Active" />
     );
     expect(node.find(Styled.Metric).contains(123)).toEqual(true);
-    expect(node.find(Styled.Name).contains('Active')).toEqual(true);
+    expect(node.find(Styled.Label).contains('Active')).toEqual(true);
+  });
+
+  it('should contain a link to instances view', () => {
+    const node = shallow(
+      <MetricTile type="active" value={123} label="Active" />
+    );
+    expect(node.props().to).toContain('instances');
+  });
+
+  it('should return a link with the active filters in place', () => {
+    const node = shallow(
+      <MetricTile type="active" value={123} label="Active" />
+    );
+    expect(node.props().to).toEqual('/instances?filter={"active":true}');
+  });
+
+  it('should return a link with the running filters in place', () => {
+    const node = shallow(
+      <MetricTile type="running" value={123} label="Running" />
+    );
+    expect(node.props().to).toEqual(
+      '/instances?filter={"active":true,"incidents":true}'
+    );
+  });
+
+  it('should return a link with the incidents filters in place', () => {
+    const node = shallow(
+      <MetricTile type="incidents" value={123} label="Incidents" />
+    );
+    expect(node.props().to).toEqual('/instances?filter={"incidents":true}');
   });
 });
