@@ -71,8 +71,6 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
   private MockMvc mockMvc;
   private ObjectMapper objectMapper;
 
-  private String errorMessage = "No more retries left.";
-
   @Before
   public void starting() {
     this.mockMvc = mockMvcTestRule.getMockMvc();
@@ -125,7 +123,30 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
   @Test
   public void testQueryByErrorMessage() throws Exception {
-    createData();
+    final String errorMessage = "No more retries left.";
+
+    //given we have 2 workflow instances: one with active activity with given id, another with completed activity with given id
+    final WorkflowInstanceEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
+
+    final IncidentEntity activeIncidentWithMsg = createIncident(IncidentState.ACTIVE);
+    activeIncidentWithMsg.setErrorMessage(errorMessage);
+    workflowInstance1.getIncidents().add(activeIncidentWithMsg);
+
+    final IncidentEntity resolvedIncidentWithoutMsg = createIncident(IncidentState.RESOLVED);
+    resolvedIncidentWithoutMsg.setErrorMessage("other error message");
+    workflowInstance1.getIncidents().add(resolvedIncidentWithoutMsg);
+
+    final WorkflowInstanceEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
+
+    final IncidentEntity activeIncidentWithoutMsg = createIncident(IncidentState.ACTIVE);
+    activeIncidentWithoutMsg.setErrorMessage("other error message");
+    workflowInstance2.getIncidents().add(activeIncidentWithoutMsg);
+
+    final IncidentEntity resolvedIncidentWithMsg = createIncident(IncidentState.RESOLVED);
+    resolvedIncidentWithMsg.setErrorMessage(errorMessage);
+    workflowInstance2.getIncidents().add(resolvedIncidentWithMsg);
+
+    persist(workflowInstance1, workflowInstance2);
 
     //given
     WorkflowInstanceQueryDto query = createGetAllWorkflowInstancesQuery();
@@ -784,7 +805,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     incidentEntity.setActivityId("start");
     incidentEntity.setActivityInstanceId(UUID.randomUUID().toString());
     incidentEntity.setErrorType("TASK_NO_RETRIES");
-    incidentEntity.setErrorMessage(errorMessage);
+    incidentEntity.setErrorMessage("No more retries left.");
     incidentEntity.setState(state);
     return incidentEntity;
   }

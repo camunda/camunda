@@ -151,9 +151,9 @@ public class WorkflowInstanceReader {
   }
 
   private QueryBuilder createErrorMessageQuery(String errorMessage) {
-    final QueryBuilder activeIncidentsQuery = nestedQuery(INCIDENTS, termQuery(INCIDENT_STATE_TERM, ACTIVE_INCIDENT), None);
-    final QueryBuilder errorMessageQuery = nestedQuery(INCIDENTS, termQuery(INCIDENT_ERRORMSG_TERM, errorMessage), None);
-    return joinWithAnd(activeIncidentsQuery, errorMessageQuery);
+    final QueryBuilder activeIncidentsQuery = termQuery(INCIDENT_STATE_TERM, ACTIVE_INCIDENT);
+    final QueryBuilder errorMessageQuery = termQuery(INCIDENT_ERRORMSG_TERM, errorMessage);
+    return nestedQuery(INCIDENTS, joinWithAnd(activeIncidentsQuery, errorMessageQuery), None);
   }
 
   private QueryBuilder createIdsQuery(List<String> ids) {
