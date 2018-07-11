@@ -1,43 +1,62 @@
 import React from 'react';
 
 import * as Styled from './styled.js';
-import {parseFilterForRequest} from 'modules/utils/filter';
 
-import {
-  fetchWorkflowInstances,
-  fetchWorkflowInstancesCount
-} from 'modules/api/instances';
+import {fetchWorkflowInstanceBySelection} from 'modules/api/instances';
 
 import Selection from '../Selection';
 
 export default class SelectionList extends React.Component {
-  state = {instances: {}};
+  state = {selections: [], selectionsInstances: [], newSelectionIndex: 0};
 
   componentDidMount = async () => {
-    const instances = await fetchWorkflowInstances(
-      parseFilterForRequest({active: false, incidents: true}),
-      1,
-      10
-    );
-    this.setState({instances});
+    this.props.selections.map(async selection => {
+      const selectionData = await await fetchWorkflowInstanceBySelection(
+        selection
+      );
+      this.setState(prevState => ({
+        selectionsInstances: [
+          ...prevState.selectionsInstances,
+          {...selectionData, id: this.state.newSelectionIndex}
+        ],
+        newSelectionIndex: this.state.newSelectionIndex + 1
+      }));
+    });
+  };
 
-    const count = await fetchWorkflowInstancesCount(
-      parseFilterForRequest({active: false, incidents: true})
-    );
-    this.setState({count});
+  retySelection = async selectionObject => {
+    //TODO: handle request
+    // try {
+    //   await batchRety(selectionObject);
+    // } catch (e) {
+    //   console.log(e);
+    // }
+    console.log('selection instances are retried');
+  };
+
+  deleteSelection = selectionID => {
+    const selectionIndex = this.state.selectionsInstances
+      .map(instance => instance.id)
+      .indexOf(selectionID);
+
+    this.state.selectionsInstances.splice(selectionIndex, 1);
+
+    this.setState({
+      selectionsInstances: this.state.selectionsInstances
+    });
   };
 
   render() {
-    const selections = this.props.selections;
     return (
       <Styled.SelectionList>
-        {selections.map((selection, index) => (
+        {this.state.selectionsInstances.map((selection, index) => (
           <Selection
-            key={index}
-            index={index}
-            selection={selection}
-            instances={this.state.instances}
-            count={this.state.count}
+            key={selection.id}
+            index={selection.id}
+            instances={selection.workfowInstances}
+            count={selection.totalCount}
+            onRetry={() => this.retySelection(selection)}
+            onDelete={() => this.deleteSelection(selection.id)}
           />
         ))}
       </Styled.SelectionList>
