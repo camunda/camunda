@@ -26,7 +26,7 @@ public class WorkflowInstanceQueryDto {
   private boolean completed;
   private boolean canceled;
 
-  private List<String> workflowInstanceIds;
+  private List<String> ids;
 
   private String errorMessage;
 
@@ -83,12 +83,12 @@ public class WorkflowInstanceQueryDto {
     this.canceled = canceled;
   }
 
-  public List<String> getWorkflowInstanceIds() {
-    return workflowInstanceIds;
+  public List<String> getIds() {
+    return ids;
   }
 
-  public void setWorkflowInstanceIds(List<String> workflowInstanceIds) {
-    this.workflowInstanceIds = workflowInstanceIds;
+  public void setIds(List<String> ids) {
+    this.ids = ids;
   }
 
   public String getErrorMessage() {
@@ -131,7 +131,7 @@ public class WorkflowInstanceQueryDto {
       return false;
     if (canceled != that.canceled)
       return false;
-    if (workflowInstanceIds != null ? !workflowInstanceIds.equals(that.workflowInstanceIds) : that.workflowInstanceIds != null)
+    if (ids != null ? !ids.equals(that.ids) : that.ids != null)
       return false;
     return sorting != null ? sorting.equals(that.sorting) : that.sorting == null;
   }
@@ -144,7 +144,7 @@ public class WorkflowInstanceQueryDto {
     result = 31 * result + (finished ? 1 : 0);
     result = 31 * result + (completed ? 1 : 0);
     result = 31 * result + (canceled ? 1 : 0);
-    result = 31 * result + (workflowInstanceIds != null ? workflowInstanceIds.hashCode() : 0);
+    result = 31 * result + (ids != null ? ids.hashCode() : 0);
     result = 31 * result + (sorting != null ? sorting.hashCode() : 0);
     return result;
   }

@@ -162,7 +162,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
 
     WorkflowInstanceQueryDto query = createGetAllWorkflowInstancesQuery();
-    query.setWorkflowInstanceIds(Arrays.asList(workflowInstance1.getId(), workflowInstance2.getId()));
+    query.setIds(Arrays.asList(workflowInstance1.getId(), workflowInstance2.getId()));
 
     //when
     MockHttpServletRequestBuilder request = post(query(0, 100))

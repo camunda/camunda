@@ -118,9 +118,9 @@ public class WorkflowInstanceReader {
   private QueryBuilder createQuery(WorkflowInstanceQueryDto queryDto) {
     final QueryBuilder runningFinishedQuery = createRunningFinishedQuery(queryDto);
 
-    QueryBuilder workflowInstanceIdsQuery = null;
-    if (queryDto.getWorkflowInstanceIds() != null && !queryDto.getWorkflowInstanceIds().isEmpty()) {
-      workflowInstanceIdsQuery = createWorkflowInstanceIdsQuery(queryDto.getWorkflowInstanceIds());
+    QueryBuilder idsQuery = null;
+    if (queryDto.getIds() != null && !queryDto.getIds().isEmpty()) {
+      idsQuery = createIdsQuery(queryDto.getIds());
     }
 
     QueryBuilder errorMessageQuery = null;
@@ -128,7 +128,7 @@ public class WorkflowInstanceReader {
       errorMessageQuery = createErrorMessageQuery(queryDto.getErrorMessage());
     }
 
-    QueryBuilder query = joinWithAnd(runningFinishedQuery, workflowInstanceIdsQuery, errorMessageQuery);
+    QueryBuilder query = joinWithAnd(runningFinishedQuery, idsQuery, errorMessageQuery);
 
     return query;
   }
@@ -139,8 +139,8 @@ public class WorkflowInstanceReader {
     return joinWithAnd(activeIncidentsQuery, errorMessageQuery);
   }
 
-  private QueryBuilder createWorkflowInstanceIdsQuery(List<String> workflowInstanceIds) {
-    return termsQuery(WorkflowInstanceType.ID, workflowInstanceIds);
+  private QueryBuilder createIdsQuery(List<String> ids) {
+    return termsQuery(WorkflowInstanceType.ID, ids);
   }
 
   protected List<WorkflowInstanceEntity> paginate(SearchRequestBuilder builder, int firstResult, int maxResults) {
