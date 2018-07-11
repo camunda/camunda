@@ -29,6 +29,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.apache.lucene.search.join.ScoreMode.None;
 import static org.camunda.operate.entities.IncidentState.ACTIVE;
 import static org.camunda.operate.es.types.WorkflowInstanceType.END_DATE;
+import static org.camunda.operate.es.types.WorkflowInstanceType.ERROR_MSG;
 import static org.camunda.operate.es.types.WorkflowInstanceType.INCIDENTS;
 import static org.camunda.operate.es.types.WorkflowInstanceType.STATE;
 import static org.camunda.operate.util.ElasticsearchUtil.createMatchNoneQuery;
@@ -46,7 +47,8 @@ public class WorkflowInstanceReader {
   private Logger logger = LoggerFactory.getLogger(WorkflowInstanceReader.class);
 
   private static final String ACTIVE_INCIDENT = ACTIVE.toString();
-  private static final String ACTIVE_INCIDENT_TERM = String.format("%s.%s", INCIDENTS, STATE);
+  private static final String INCIDENT_STATE_TERM = String.format("%s.%s", INCIDENTS, STATE);
+  private static final String INCIDENT_ERRORMSG_TERM = String.format("%s.%s", INCIDENTS, ERROR_MSG);
 
   @Autowired
   private TransportClient esClient;
@@ -121,12 +123,20 @@ public class WorkflowInstanceReader {
       workflowInstanceIdsQuery = createWorkflowInstanceIdsQuery(queryDto.getWorkflowInstanceIds());
     }
 
-    //further parameters will be applied like this:
-    //QueryBuilder workflowVersionQuery = createWorkflowVersionQuery(version);
-    //...
-    QueryBuilder query = joinWithAnd(runningFinishedQuery, workflowInstanceIdsQuery);
+    QueryBuilder errorMessageQuery = null;
+    if (queryDto.getErrorMessage() != null) {
+      errorMessageQuery = createErrorMessageQuery(queryDto.getErrorMessage());
+    }
+
+    QueryBuilder query = joinWithAnd(runningFinishedQuery, workflowInstanceIdsQuery, errorMessageQuery);
 
     return query;
+  }
+
+  private QueryBuilder createErrorMessageQuery(String errorMessage) {
+    final QueryBuilder activeIncidentsQuery = nestedQuery(INCIDENTS, termQuery(INCIDENT_STATE_TERM, ACTIVE_INCIDENT), None);
+    final QueryBuilder errorMessageQuery = nestedQuery(INCIDENTS, termQuery(INCIDENT_ERRORMSG_TERM, errorMessage), None);
+    return joinWithAnd(activeIncidentsQuery, errorMessageQuery);
   }
 
   private QueryBuilder createWorkflowInstanceIdsQuery(List<String> workflowInstanceIds) {
@@ -229,11 +239,11 @@ public class WorkflowInstanceReader {
 
       if (active && !incidents) {
         //active query
-        activeOrIncidentsQuery = boolQuery().mustNot(nestedQuery(INCIDENTS, termQuery(ACTIVE_INCIDENT_TERM, ACTIVE_INCIDENT), None));
+        activeOrIncidentsQuery = boolQuery().mustNot(nestedQuery(INCIDENTS, termQuery(INCIDENT_STATE_TERM, ACTIVE_INCIDENT), None));
       }
       else if (!active && incidents) {
         //incidents query
-        activeOrIncidentsQuery = nestedQuery(INCIDENTS, termQuery(ACTIVE_INCIDENT_TERM, ACTIVE_INCIDENT), None);
+        activeOrIncidentsQuery = nestedQuery(INCIDENTS, termQuery(INCIDENT_STATE_TERM, ACTIVE_INCIDENT), None);
       }
 
       runningQuery = joinWithAnd(runningQuery, activeOrIncidentsQuery);

@@ -28,6 +28,8 @@ public class WorkflowInstanceQueryDto {
 
   private List<String> workflowInstanceIds;
 
+  private String errorMessage;
+
   private SortingDto sorting;
 
   public WorkflowInstanceQueryDto() {
@@ -87,6 +89,14 @@ public class WorkflowInstanceQueryDto {
 
   public void setWorkflowInstanceIds(List<String> workflowInstanceIds) {
     this.workflowInstanceIds = workflowInstanceIds;
+  }
+
+  public String getErrorMessage() {
+    return errorMessage;
+  }
+
+  public void setErrorMessage(String errorMessage) {
+    this.errorMessage = errorMessage;
   }
 
   public SortingDto getSorting() {

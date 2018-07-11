@@ -71,6 +71,8 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
   private MockMvc mockMvc;
   private ObjectMapper objectMapper;
 
+  private String errorMessage = "No more retries left.";
+
   @Before
   public void starting() {
     this.mockMvc = mockMvcTestRule.getMockMvc();
@@ -116,6 +118,33 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
        assertThat(workflowInstanceDto.getState()).isEqualTo(WorkflowInstanceState.ACTIVE);
        assertThat(workflowInstanceDto.getActivities()).isEmpty();
      }
+  }
+
+  @Test
+  public void testQueryByErrorMessage() throws Exception {
+    //given
+    WorkflowInstanceQueryDto query = createGetAllWorkflowInstancesQuery();
+    query.setErrorMessage(errorMessage);
+
+    MockHttpServletRequestBuilder request = post(query(0, 100))
+        .content(mockMvcTestRule.json(query))
+        .contentType(contentType);
+    //when
+    MvcResult mvcResult = mockMvc.perform(request)
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(contentType))
+        .andReturn();
+
+    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
+
+    //then
+    assertThat(workflowInstanceDtos.size()).isEqualTo(1);
+
+    assertThat(workflowInstanceDtos.get(0).getIncidents())
+      .filteredOn(incident -> incident.getState().equals(IncidentState.ACTIVE))
+      .extracting(WorkflowInstanceType.ERROR_MSG)
+      .containsExactly(errorMessage);
+
   }
 
   @Test
@@ -666,7 +695,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     incidentEntity.setActivityId("start");
     incidentEntity.setActivityInstanceId(UUID.randomUUID().toString());
     incidentEntity.setErrorType("TASK_NO_RETRIES");
-    incidentEntity.setErrorMessage("No more retries left.");
+    incidentEntity.setErrorMessage(errorMessage);
     incidentEntity.setState(state);
     return incidentEntity;
   }
