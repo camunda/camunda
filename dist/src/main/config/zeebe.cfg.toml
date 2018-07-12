@@ -77,6 +77,16 @@ replicationFactor = 1
 # per binding basis for client, management and replication
 # host = "0.0.0.0"
 
+# If a port offset is set it will be added to all ports specified in the config
+# or the default values. This is a shortcut to not always specifying every port.
+#
+# The offset will be added to the second last position of the port, as Zeebe
+# requires multiple ports. As example a portOffset of 5 will increment all ports
+# by 50, i.e. 51015 will become 51065 and so on.
+#
+# This setting can also be overridden using the environment variable ZEEBE_PORT_OFFSET.
+# portOffset = 0
+
 # Controls the default size of the buffers that are used for buffering outgoing
 # messages. Can be overwritten on a per binding basis for client, management and
 # replication

@@ -18,18 +18,27 @@
 package io.zeebe.broker.system.configuration;
 
 public class NetworkCfg implements ConfigurationEntry {
+
+  public static final String ENV_PORT_OFFSET = "ZEEBE_PORT_OFFSET";
+
   private String host = "0.0.0.0";
   private String defaultSendBufferSize = "16M";
+  private int portOffset = 0;
 
   private SocketBindingClientApiCfg client = new SocketBindingClientApiCfg();
   private SocketBindingManagementCfg management = new SocketBindingManagementCfg();
   private SocketBindingReplicationCfg replication = new SocketBindingReplicationCfg();
 
   @Override
-  public void init(BrokerCfg brokerCfg, String brokerBase) {
+  public void init(BrokerCfg brokerCfg, String brokerBase, Environment environment) {
+    applyEnvironment(environment);
     client.applyDefaults(this);
     management.applyDefaults(this);
     replication.applyDefaults(this);
+  }
+
+  private void applyEnvironment(Environment environment) {
+    environment.getInt(ENV_PORT_OFFSET).ifPresent(v -> portOffset = v);
   }
 
   public String getHost() {
@@ -46,6 +55,14 @@ public class NetworkCfg implements ConfigurationEntry {
 
   public void setDefaultSendBufferSize(String defaultSendBufferSize) {
     this.defaultSendBufferSize = defaultSendBufferSize;
+  }
+
+  public int getPortOffset() {
+    return portOffset;
+  }
+
+  public void setPortOffset(int portOffset) {
+    this.portOffset = portOffset;
   }
 
   public SocketBindingClientApiCfg getClient() {
