@@ -19,7 +19,10 @@ package io.zeebe.broker.system;
 
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.system.configuration.*;
+import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.broker.system.configuration.SocketBindingCfg;
+import io.zeebe.broker.system.configuration.ThreadsCfg;
+import io.zeebe.broker.system.configuration.TomlConfigurationReader;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
 import io.zeebe.util.metrics.MetricsManager;
@@ -31,8 +34,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
 import java.time.Duration;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 
 public class SystemContext implements AutoCloseable {
@@ -61,13 +70,13 @@ public class SystemContext implements AutoCloseable {
           Paths.get(basePath, configFileLocation).normalize().toAbsolutePath().toString();
     }
 
-    brokerCfg = new TomlConfigurationReader().read(configFileLocation);
+    brokerCfg = TomlConfigurationReader.read(configFileLocation);
 
     initSystemContext(clock, basePath);
   }
 
   public SystemContext(InputStream configStream, String basePath, ActorClock clock) {
-    brokerCfg = new TomlConfigurationReader().read(configStream);
+    brokerCfg = TomlConfigurationReader.read(configStream);
 
     initSystemContext(clock, basePath);
   }
