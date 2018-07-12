@@ -7,7 +7,6 @@ import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRespon
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -57,7 +56,7 @@ public class ElasticSearchSchemaManager {
     Settings indexSettings = null;
     for (TypeMappingCreator mapping : mappings) {
       try {
-        indexSettings = buildSettings();
+        indexSettings = IndexSettingsBuilder.build(configurationService);
       } catch (IOException e) {
         logger.error("Could not create settings!", e);
       }
@@ -110,27 +109,6 @@ public class ElasticSearchSchemaManager {
         .setType(type)
         .setSource(content)
         .get();
-  }
-
-  private Settings buildSettings() throws IOException {
-    return Settings.builder()
-      .loadFromSource(jsonBuilder()
-      .startObject()
-        .field("refresh_interval", configurationService.getEsRefreshInterval())
-        .field("number_of_replicas", configurationService.getEsNumberOfReplicas())
-        .field("number_of_shards", configurationService.getEsNumberOfShards())
-        .startObject("analysis")
-          .startObject("analyzer")
-            .startObject(configurationService.getAnalyzerName())
-              .field("type", "custom")
-              .field("tokenizer", configurationService.getTokenizer())
-              .field("filter", new String[]{configurationService.getTokenFilter()})
-            .endObject()
-        . endObject()
-        .endObject()
-      .endObject()
-      .string(), XContentType.JSON)
-    .build();
   }
 
   public Client getEsclient() {

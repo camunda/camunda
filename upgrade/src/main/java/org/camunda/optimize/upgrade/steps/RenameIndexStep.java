@@ -5,14 +5,17 @@ import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
 
 public class RenameIndexStep extends ReindexStep {
 
-  private final String originalIndexName;
-  private final String resultIndexName;
-  private final String mapping;
+  private final String initialTypeName;
+  private final String resultTypeName;
 
-  public RenameIndexStep(String originalIndexName, String resultIndexName, String mapping) {
-    this.originalIndexName = originalIndexName;
-    this.resultIndexName = resultIndexName;
-    this.mapping = mapping;
+  public RenameIndexStep(String initialTypeName, String resultTypeName) {
+    this.initialTypeName = initialTypeName;
+    this.resultTypeName = resultTypeName;
+  }
+
+  @Override
+  protected String adjustIndexMappings(String oldMapping) {
+    return oldMapping;
   }
 
   @Override
@@ -20,22 +23,9 @@ public class RenameIndexStep extends ReindexStep {
     transformCompleteMapping(ESIndexAdjuster);
   }
 
-  public String getOriginalIndexName() {
-    return originalIndexName;
-  }
-
-  public String getResultIndexName() {
-    return resultIndexName;
-  }
-
   @Override
-  public String getInitialIndexName() {
-    return getOriginalIndexName();
-  }
-
-  @Override
-  public String getMappingAndSettings() {
-    return mapping;
+  public String getInitialTypeName() {
+    return initialTypeName;
   }
 
   @Override
@@ -44,7 +34,7 @@ public class RenameIndexStep extends ReindexStep {
   }
 
   @Override
-  public String getFinalIndexName() {
-    return getResultIndexName();
+  public String getFinalTypeName() {
+    return resultTypeName;
   }
 }

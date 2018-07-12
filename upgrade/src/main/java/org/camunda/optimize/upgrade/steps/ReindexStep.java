@@ -4,31 +4,34 @@ import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
 
 public abstract class ReindexStep implements UpgradeStep {
 
-  protected void transformCompleteMapping(ESIndexAdjuster ESIndexAdjuster) {
-    String tempIndexName = ESIndexAdjuster.getTempIndexName(getInitialIndexName());
+  protected void transformCompleteMapping(ESIndexAdjuster esIndexAdjuster) {
+    String tempTypeName = esIndexAdjuster.getTempTypeName(getInitialTypeName());
 
-    String enhancedMapping = ESIndexAdjuster.preProcess(getMappingAndSettings());
-    ESIndexAdjuster.createIndex(tempIndexName, enhancedMapping);
-    ESIndexAdjuster.reindex(getInitialIndexName(), tempIndexName, getMappingScript());
-    ESIndexAdjuster.deleteIndex(getInitialIndexName());
-    ESIndexAdjuster.createIndex(getFinalIndexName(), enhancedMapping);
-    ESIndexAdjuster.reindex(tempIndexName, getFinalIndexName());
-    ESIndexAdjuster.deleteIndex(tempIndexName);
+    String indexMappings = esIndexAdjuster.getIndexMappings(getInitialTypeName());
+    indexMappings = adjustIndexMappings(indexMappings);
+
+    esIndexAdjuster.createIndex(tempTypeName, indexMappings);
+    esIndexAdjuster.reindex(getInitialTypeName(), tempTypeName, getMappingScript());
+    esIndexAdjuster.deleteIndex(getInitialTypeName());
+    esIndexAdjuster.createIndex(getFinalTypeName(), indexMappings);
+    esIndexAdjuster.reindex(tempTypeName, getFinalTypeName());
+    esIndexAdjuster.deleteIndex(tempTypeName);
   }
 
   /**
-   * Return the index name before the upgrade has been executed.
+   * Return the type name before the upgrade has been executed.
    */
-  protected abstract String getInitialIndexName();
+  protected abstract String getInitialTypeName();
 
   /**
-   * Return the elasticsearch mapping structure and index settings
-   * after the index has been upgraded.
+   * Uses the the old mapping to perform the adjustments
+   * that are defined in the step and returns the new mapping.
    *
-   * Info: mapping in elasticsearch would be the equivalent of
-   * a schema in a classical SQL database.
+   * Context: each step that needs to reindex the data has
+   * to perform some adjustments on the mapping/schema of
+   * a specific index. 
    */
-  protected abstract String getMappingAndSettings();
+  protected abstract String adjustIndexMappings(String oldMapping);
 
   /**
    * Returns a painless script (Elasticsearch script language) to map
@@ -37,7 +40,7 @@ public abstract class ReindexStep implements UpgradeStep {
   protected abstract String getMappingScript();
 
   /**
-   * Return the index name after the upgrade has been executed.
+   * Return the type name after the upgrade has been executed.
    */
-  protected abstract String getFinalIndexName();
+  protected abstract String getFinalTypeName();
 }

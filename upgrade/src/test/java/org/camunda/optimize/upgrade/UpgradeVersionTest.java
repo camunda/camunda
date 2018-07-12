@@ -20,8 +20,10 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Map;
 
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -30,13 +32,15 @@ import static org.junit.Assert.fail;
 public class UpgradeVersionTest extends AbstractUpgradeTest {
 
   private static final String SEARCH = "/_search";
+  private static final String MAPPING = "/_mapping";
 
   public static final String GET = "GET";
 
-  private static final String TEST_INDEX = "test-index";
-  private static final String RENAMED_INDEX = "renamed-index";
-
   private static final String TEST_TYPE = "users";
+  private static final String TEST_INDEX = "optimize-users";
+  private static final String RENAMED_TYPE = "renamed-users";
+  private static final String RENAMED_INDEX = "optimize-renamed-users";
+
 
   private static final String FROM_VERSION = "2.0.0";
   private static final String TO_VERSION = "2.1.0";
@@ -61,7 +65,7 @@ public class UpgradeVersionTest extends AbstractUpgradeTest {
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(buildCreateIndexStep(TEST_INDEX))
+        .addUpgradeStep(buildCreateIndexStep(TEST_TYPE))
         .build();
 
     // when
@@ -79,7 +83,7 @@ public class UpgradeVersionTest extends AbstractUpgradeTest {
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(buildCreateIndexStep(TEST_INDEX))
+        .addUpgradeStep(buildCreateIndexStep(TEST_TYPE))
         .addUpgradeStep(buildInsertDataStep())
         .build();
 
@@ -102,7 +106,7 @@ public class UpgradeVersionTest extends AbstractUpgradeTest {
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(buildCreateIndexStep(TEST_INDEX))
+        .addUpgradeStep(buildCreateIndexStep(TEST_TYPE))
         .addUpgradeStep(buildInsertDataStep())
         .addUpgradeStep(buildUpdateDataStep())
         .build();
@@ -126,9 +130,31 @@ public class UpgradeVersionTest extends AbstractUpgradeTest {
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(buildCreateIndexStep(TEST_INDEX))
+        .addUpgradeStep(buildCreateIndexStep(TEST_TYPE))
         .addUpgradeStep(buildInsertDataStep())
         .addUpgradeStep(buildChangeFieldTypeStep())
+        .build();
+
+    // when
+    upgradePlan.execute();
+
+    // then
+    Response response = restClient.performRequest(GET, TEST_INDEX + MAPPING);
+    String bodyAsJson = EntityUtils.toString(response.getEntity());
+    String passwordType = JsonPath.read(bodyAsJson, "$.optimize-users.mappings.users.properties.password.type");
+    assertThat(passwordType, is("text"));
+  }
+
+  @Test
+  public void executeChangeFieldTypeToNestedStep() throws Exception {
+    //given
+    UpgradePlan upgradePlan =
+      UpgradePlanBuilder.createUpgradePlan()
+        .fromVersion(FROM_VERSION)
+        .toVersion(TO_VERSION)
+        .addUpgradeStep(buildCreateIndexStep(TEST_TYPE))
+        .addUpgradeStep(buildInsertDataStep())
+        .addUpgradeStep(buildChangeFieldTypeToNestedStep())
         .build();
 
     // when
@@ -139,7 +165,7 @@ public class UpgradeVersionTest extends AbstractUpgradeTest {
     String bodyAsJson = EntityUtils.toString(response.getEntity());
     String username = JsonPath.read(bodyAsJson, "$.hits.hits[0]._source.username");
     assertThat(username, is("admin"));
-    String password = JsonPath.read(bodyAsJson, "$.hits.hits[0]._source.new_password.pw");
+    String password = JsonPath.read(bodyAsJson, "$.hits.hits[0]._source.password.pw");
     assertThat(password, is("admin"));
   }
 
@@ -150,7 +176,7 @@ public class UpgradeVersionTest extends AbstractUpgradeTest {
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(buildCreateIndexStep(TEST_INDEX))
+        .addUpgradeStep(buildCreateIndexStep(TEST_TYPE))
         .addUpgradeStep(buildInsertDataStep())
         .addUpgradeStep(buildRenameFieldStep())
         .build();
@@ -174,9 +200,9 @@ public class UpgradeVersionTest extends AbstractUpgradeTest {
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(buildCreateIndexStep(TEST_INDEX))
+        .addUpgradeStep(buildCreateIndexStep(TEST_TYPE))
         .addUpgradeStep(buildInsertDataStep())
-        .addUpgradeStep(buildChangeFieldTypeStep())
+        .addUpgradeStep(buildChangeFieldTypeToNestedStep())
         .addUpgradeStep(buildNestedRenameFieldStep())
         .build();
 
@@ -188,7 +214,7 @@ public class UpgradeVersionTest extends AbstractUpgradeTest {
     String bodyAsJson = EntityUtils.toString(response.getEntity());
     String username = JsonPath.read(bodyAsJson, "$.hits.hits[0]._source.username");
     assertThat(username, is("admin"));
-    String password = JsonPath.read(bodyAsJson, "$.hits.hits[0]._source.new_password.renamed_pw");
+    String password = JsonPath.read(bodyAsJson, "$.hits.hits[0]._source.password.renamed_pw");
     assertThat(password, is("admin"));
   }
 
@@ -199,7 +225,7 @@ public class UpgradeVersionTest extends AbstractUpgradeTest {
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(buildCreateIndexStep(TEST_INDEX))
+        .addUpgradeStep(buildCreateIndexStep(TEST_TYPE))
         .addUpgradeStep(buildInsertDataStep())
         .addUpgradeStep(buildAddFieldStep())
         .build();
@@ -225,7 +251,7 @@ public class UpgradeVersionTest extends AbstractUpgradeTest {
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(buildCreateIndexStep(TEST_INDEX))
+        .addUpgradeStep(buildCreateIndexStep(TEST_TYPE))
         .addUpgradeStep(buildInsertDataStep())
         .addUpgradeStep(buildDeleteFieldStep())
         .build();
@@ -248,7 +274,7 @@ public class UpgradeVersionTest extends AbstractUpgradeTest {
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(buildCreateIndexStep(TEST_INDEX))
+        .addUpgradeStep(buildCreateIndexStep(TEST_TYPE))
         .addUpgradeStep(buildRenameIndexStep())
         .build();
 
@@ -267,8 +293,8 @@ public class UpgradeVersionTest extends AbstractUpgradeTest {
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(buildCreateIndexStep(TEST_INDEX))
-        .addUpgradeStep(buildDeleteIndexStep(TEST_INDEX))
+        .addUpgradeStep(buildCreateIndexStep(TEST_TYPE))
+        .addUpgradeStep(buildDeleteIndexStep(TEST_TYPE))
         .build();
 
     // when
@@ -293,15 +319,15 @@ public class UpgradeVersionTest extends AbstractUpgradeTest {
       UpgradePlanBuilder.createUpgradePlan()
       .fromVersion(FROM_VERSION)
       .toVersion(TO_VERSION)
-      .addUpgradeStep(buildCreateIndexStep(TEST_INDEX))
+      .addUpgradeStep(buildCreateIndexStep(TEST_TYPE))
       .addUpgradeStep(buildInsertDataStep())
       .addUpgradeStep(buildUpdateDataStep())
         .addUpgradeStep(buildAddFieldStep())
-        .addUpgradeStep(buildDeleteFieldStep())
-        .addUpgradeStep(buildChangeFieldTypeStep())
+        .addUpgradeStep(buildChangeFieldTypeToNestedStep())
         .addUpgradeStep(buildNestedRenameFieldStep())
-      .addUpgradeStep(buildRenameIndexStep())
-      .addUpgradeStep(buildDeleteIndexStep(RENAMED_INDEX))
+        .addUpgradeStep(buildDeleteFieldStep())
+        .addUpgradeStep(buildRenameIndexStep())
+      .addUpgradeStep(buildDeleteIndexStep(RENAMED_TYPE))
       .build();
 
     upgradePlan.execute();
@@ -318,7 +344,7 @@ public class UpgradeVersionTest extends AbstractUpgradeTest {
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(buildCreateIndexStep(TEST_INDEX))
+        .addUpgradeStep(buildCreateIndexStep(TEST_TYPE))
         .build();
 
     // when
@@ -339,8 +365,8 @@ public class UpgradeVersionTest extends AbstractUpgradeTest {
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(buildCreateIndexStep(TEST_INDEX))
-        .addUpgradeStep(buildCreateIndexStep("nochange-index"))
+        .addUpgradeStep(buildCreateIndexStep(TEST_TYPE))
+        .addUpgradeStep(buildCreateIndexStep("nochange-type"))
         .addUpgradeStep(buildRenameFieldStep())
         .build();
 
@@ -348,9 +374,9 @@ public class UpgradeVersionTest extends AbstractUpgradeTest {
     upgradePlan.execute();
 
     // then
-    Response response = restClient.performRequest(GET, "nochange-index" + MAPPING);
+    Response response = restClient.performRequest(GET, "optimize-nochange-type" + MAPPING);
     String bodyAsJson = EntityUtils.toString(response.getEntity());
-    Object passwordField = JsonPath.read(bodyAsJson, "$.nochange-index.mappings.users.properties.password");
+    Object passwordField = JsonPath.read(bodyAsJson, "$.optimize-nochange-type.mappings.users.properties.password");
     assertThat(passwordField, notNullValue());
   }
 
@@ -363,10 +389,9 @@ public class UpgradeVersionTest extends AbstractUpgradeTest {
 
   public InsertDataStep buildInsertDataStep() {
     return new InsertDataStep(
-    TEST_INDEX,
-    TEST_TYPE,
-    SchemaUpgradeUtil.readClasspathFileAsString("steps/insert_data/test_data.json")
-  );
+      TEST_TYPE,
+      SchemaUpgradeUtil.readClasspathFileAsString("steps/insert_data/test_data.json")
+    );
   }
 
   public CreateIndexStep buildCreateIndexStep(String indexName) {
@@ -378,58 +403,91 @@ public class UpgradeVersionTest extends AbstractUpgradeTest {
 
   private UpdateDataStep buildUpdateDataStep() {
     return new UpdateDataStep(
-      TEST_INDEX,
-      SchemaUpgradeUtil.readClasspathFileAsString("steps/update_data/query.json"),
-      SchemaUpgradeUtil.readClasspathFileAsString("steps/update_data/updateScript.painless")
+      TEST_TYPE,
+      termQuery("username", "admin"),
+      "ctx._source.password = ctx._source.password + \"1\""
     );
   }
 
   private ChangeFieldTypeStep buildChangeFieldTypeStep() {
     return new ChangeFieldTypeStep(
-      TEST_INDEX,
-      TEST_INDEX,
-      SchemaUpgradeUtil.readClasspathFileAsString("steps/change_field_type/new_index_mapping.json"),
-      SchemaUpgradeUtil.readClasspathFileAsString("steps/change_field_type/mapping_script.painless")
+      TEST_TYPE,
+      "$.mappings.users.properties.password.type",
+      "text",
+      null
     );
+  }
+
+  private ChangeFieldTypeStep buildChangeFieldTypeToNestedStep() {
+    return new ChangeFieldTypeStep(
+      TEST_TYPE,
+      "$.mappings.users.properties.password",
+      new NestedPasswordType(),
+      "def tmp = ctx._source.remove(\"password\");" +
+        "ctx._source.password = new HashMap();\n" +
+        "ctx._source.password.pw = tmp;"
+    );
+  }
+
+  public class NestedPasswordType {
+    public String type = "nested";
+    public Properties properties = new Properties();
+
+    public class Properties {
+      public PW pw = new PW();
+
+      public class PW {
+        public String type = "keyword";
+      }
+    }
   }
 
   private RenameFieldStep buildRenameFieldStep() {
     return new RenameFieldStep(
-      TEST_INDEX,
-      SchemaUpgradeUtil.readClasspathFileAsString("steps/rename_field/new_index_mapping.json"),
-      SchemaUpgradeUtil.readClasspathFileAsString("steps/rename_field/mapping_script.painless")
+      TEST_TYPE,
+      "$.mappings.users.properties",
+      "password",
+      "renamed_password_field",
+      "ctx._source.renamed_password_field = ctx._source.remove(\"password\");"
     );
   }
 
   private RenameFieldStep buildNestedRenameFieldStep() {
     return new RenameFieldStep(
-      TEST_INDEX,
-      SchemaUpgradeUtil.readClasspathFileAsString("steps/rename_nested_field/new_index_mapping.json"),
-      SchemaUpgradeUtil.readClasspathFileAsString("steps/rename_nested_field/mapping_script.painless")
+      TEST_TYPE,
+      "$.mappings.users.properties.password.properties",
+      "pw",
+      "renamed_pw",
+      "def tempPassword = ctx._source.password.remove(\"pw\");\n" +
+        "ctx._source.password = new HashMap();\n" +
+        "ctx._source.password.renamed_pw = tempPassword;"
     );
   }
 
   private AddFieldStep buildAddFieldStep() {
+
     return new AddFieldStep(
-      TEST_INDEX,
-      SchemaUpgradeUtil.readClasspathFileAsString("steps/add_field/new_index_mapping.json"),
-      SchemaUpgradeUtil.readClasspathFileAsString("steps/add_field/mapping_script.painless")
+      TEST_TYPE,
+      "$.mappings.users.properties",
+      "added_field",
+      Collections.singletonMap("type", "keyword"),
+      "ctx._source.added_field = \"\""
     );
   }
 
   private DeleteFieldStep buildDeleteFieldStep() {
     return new DeleteFieldStep(
-      TEST_INDEX,
-      SchemaUpgradeUtil.readClasspathFileAsString("steps/delete_field/new_index_mapping.json"),
-      SchemaUpgradeUtil.readClasspathFileAsString("steps/delete_field/mapping_script.painless")
+      TEST_TYPE,
+      "$.mappings.users.properties.password",
+      "ctx._source.remove(\"password\");\n" +
+        "ctx._source.remove(\"added_field\");"
     );
   }
 
   private RenameIndexStep buildRenameIndexStep() {
     return new RenameIndexStep(
-      TEST_INDEX,
-      RENAMED_INDEX,
-      SchemaUpgradeUtil.readClasspathFileAsString("steps/rename_index/new_index_mapping.json")
+      TEST_TYPE,
+      RENAMED_TYPE
     );
   }
 

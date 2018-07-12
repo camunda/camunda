@@ -3,10 +3,10 @@ package org.camunda.optimize.upgrade.plan;
 import org.apache.http.HttpHost;
 import org.camunda.optimize.service.es.schema.type.MetadataType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.main.UpgradeFrom21To22;
-import org.camunda.optimize.upgrade.steps.UpgradeStep;
-import org.camunda.optimize.upgrade.service.ValidationService;
 import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
+import org.camunda.optimize.upgrade.main.UpgradeFrom21To22;
+import org.camunda.optimize.upgrade.service.ValidationService;
+import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +18,8 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 
 public class UpgradeExecutionPlan implements UpgradePlan {
@@ -79,7 +81,7 @@ public class UpgradeExecutionPlan implements UpgradePlan {
   @Override
   public void execute() {
     validationService.validateVersions(client, fromVersion, toVersion);
-    ESIndexAdjuster ESIndexAdjuster = new ESIndexAdjuster(client, configurationService.getOptimizeDateFormat());
+    ESIndexAdjuster ESIndexAdjuster = new ESIndexAdjuster(client, configurationService);
     for (UpgradeStep step : upgradeSteps) {
       logger.info("Performing {}.", step.getClass().getSimpleName());
       step.execute(ESIndexAdjuster);
@@ -90,17 +92,9 @@ public class UpgradeExecutionPlan implements UpgradePlan {
 
   public void updateOptimizeVersion(ESIndexAdjuster ESIndexAdjuster) {
     ESIndexAdjuster.updateData(
-      configurationService.getOptimizeIndex(configurationService.getMetaDataType()),
-      String.format("ctx._source.schemaVersion = \"%s\"", toVersion),
-      String.format("{\n" +
-        "  \"query\": {\n" +
-        "    \"term\": {\n" +
-        "      \"%s\": \"%s\"\n" +
-        "    }\n" +
-        "  }\n" +
-        "}",
-        MetadataType.SCHEMA_VERSION,
-        fromVersion)
+      configurationService.getMetaDataType(),
+      termQuery(MetadataType.SCHEMA_VERSION, fromVersion),
+      String.format("ctx._source.schemaVersion = \"%s\"", toVersion)
     );
   }
 

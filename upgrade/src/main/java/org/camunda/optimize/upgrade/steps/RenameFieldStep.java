@@ -1,17 +1,30 @@
 package org.camunda.optimize.upgrade.steps;
 
 
+import com.jayway.jsonpath.DocumentContext;
+import com.jayway.jsonpath.JsonPath;
 import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
 
 public class RenameFieldStep extends ReindexStep {
-  private final String indexName;
-  private final String indexStructure;
+  private final String typeName;
+  private final String jsonPath;
   private final String mappingScript;
+  private final String oldFieldName;
+  private final String newFieldName;
 
-  public RenameFieldStep(String indexName, String indexStructure, String mappingScript) {
-    this.indexName = indexName;
-    this.indexStructure = indexStructure;
+  public RenameFieldStep(String typeName, String jsonPath, String oldFieldName, String newFieldName, String mappingScript) {
+    this.typeName = typeName;
+    this.jsonPath = jsonPath;
+    this.oldFieldName = oldFieldName;
+    this.newFieldName = newFieldName;
     this.mappingScript = mappingScript;
+  }
+
+  @Override
+  protected String adjustIndexMappings(String oldMapping) {
+    DocumentContext parse = JsonPath.parse(oldMapping);
+    parse.renameKey(jsonPath, oldFieldName, newFieldName);
+    return parse.jsonString();
   }
 
   @Override
@@ -19,22 +32,13 @@ public class RenameFieldStep extends ReindexStep {
     transformCompleteMapping(ESIndexAdjuster);
   }
 
-  public String getIndexName() {
-    return indexName;
-  }
-
-  public String getIndexStructure() {
-    return indexStructure;
+  public String getTypeName() {
+    return typeName;
   }
 
   @Override
-  public String getInitialIndexName() {
-    return getIndexName();
-  }
-
-  @Override
-  public String getMappingAndSettings() {
-    return getIndexStructure();
+  public String getInitialTypeName() {
+    return getTypeName();
   }
 
   public String getMappingScript() {
@@ -42,7 +46,7 @@ public class RenameFieldStep extends ReindexStep {
   }
 
   @Override
-  public String getFinalIndexName() {
-    return getIndexName();
+  public String getFinalTypeName() {
+    return getTypeName();
   }
 }

@@ -1,7 +1,0 @@
-{
-  "query": {
-    "term": {
-      "username": "admin"
-    }
-  }
-}

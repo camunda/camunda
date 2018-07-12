@@ -1,16 +1,29 @@
 package org.camunda.optimize.upgrade.steps;
 
+import com.jayway.jsonpath.DocumentContext;
+import com.jayway.jsonpath.JsonPath;
 import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
 
 public class AddFieldStep extends ReindexStep {
-  private final String indexName;
-  private final String mapping;
+  private final String typeName;
+  private final String path;
+  private final String key;
+  private final Object value;
   private final String mappingScript;
 
-  public AddFieldStep(String indexName, String mapping, String mappingScript) {
-    this.indexName = indexName;
-    this.mapping = mapping;
+  public AddFieldStep(String typeName, String path, String key, Object value , String mappingScript) {
+    this.typeName = typeName;
+    this.path = path;
+    this.key = key;
+    this.value = value;
     this.mappingScript = mappingScript;
+  }
+
+  @Override
+  protected String adjustIndexMappings(String oldMapping) {
+    DocumentContext parse = JsonPath.parse(oldMapping);
+    parse.put(path, key, value);
+    return parse.jsonString();
   }
 
   @Override
@@ -18,22 +31,13 @@ public class AddFieldStep extends ReindexStep {
     transformCompleteMapping(ESIndexAdjuster);
   }
 
-  public String getIndexName() {
-    return indexName;
-  }
-
-  public String getMapping() {
-    return mapping;
+  public String getTypeName() {
+    return typeName;
   }
 
   @Override
-  public String getInitialIndexName() {
-    return getIndexName();
-  }
-
-  @Override
-  public String getMappingAndSettings() {
-    return getMapping();
+  public String getInitialTypeName() {
+    return getTypeName();
   }
 
   @Override
@@ -42,7 +46,7 @@ public class AddFieldStep extends ReindexStep {
   }
 
   @Override
-  public String getFinalIndexName() {
-    return getIndexName();
+  public String getFinalTypeName() {
+    return getTypeName();
   }
 }

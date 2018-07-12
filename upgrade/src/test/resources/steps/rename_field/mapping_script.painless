@@ -1,1 +1,0 @@
-ctx._source.renamed_password_field = ctx._source.remove("password");

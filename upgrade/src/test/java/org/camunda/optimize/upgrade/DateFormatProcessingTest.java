@@ -19,7 +19,8 @@ import static org.hamcrest.core.Is.is;
 
 public class DateFormatProcessingTest extends AbstractUpgradeTest {
 
-  private static final String TEST_INDEX = "test-index";
+  private static final String TEST_TYPE = "test-type";
+  private static final String TEST_INDEX = "optimize-test-type";
 
   @Before
   public void setUp() {
@@ -50,7 +51,7 @@ public class DateFormatProcessingTest extends AbstractUpgradeTest {
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion("2.0.0")
         .toVersion("2.1.0")
-        .addUpgradeStep(buildIndexWithDateFieldStep(TEST_INDEX))
+        .addUpgradeStep(buildIndexWithDateFieldStep(TEST_TYPE))
         .build();
 
     // when
@@ -59,7 +60,7 @@ public class DateFormatProcessingTest extends AbstractUpgradeTest {
     // then
     Response response = restClient.performRequest("GET", TEST_INDEX + MAPPING);
     String bodyAsJson = EntityUtils.toString(response.getEntity());
-    String dateFormat = JsonPath.read(bodyAsJson, "$.test-index.mappings.users.properties.date_field.format");
+    String dateFormat = JsonPath.read(bodyAsJson, "$.optimize-test-type.mappings.users.properties.date_field.format");
     assertThat(dateFormat, is("yyyy-MM-dd'T'HH:mm:ss.SSSZ"));
   }
 

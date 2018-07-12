@@ -1,2 +1,0 @@
-ctx._source.remove("password");
-ctx._source.remove("added_field");
