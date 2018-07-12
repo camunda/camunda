@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.TimeZone;
 import java.util.UUID;
 
+import static junit.framework.TestCase.assertTrue;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_FLOW_NODE_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.HEAT_VISUALIZATION;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -224,10 +225,23 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     assertThat(allAlerts.get(0).isTriggered(), is(false));
 
     trigger = embeddedOptimizeRule.getAlertService().getScheduler().getTrigger(getTriggerKey(alertId));
-    assertThat(
-      getNextFireTime(trigger).truncatedTo(ChronoUnit.SECONDS),
-      is(OffsetDateTime.now().plus(30,ChronoUnit.SECONDS).truncatedTo(ChronoUnit.SECONDS))
-    );
+    assertThatTriggerIsInRange(trigger, 30);
+  }
+
+  private void assertThatTriggerIsInRange(Trigger trigger, int secondsUntilItShouldFireNext) {
+    // we cannot check for exact time since
+    // time is running while we check for the supposed next trigger time
+    // and then the check might be by one second off. Thus we check if the
+    // the next trigger is within +/- 1 second bound.
+    OffsetDateTime nextTimeToFire = getNextFireTime(trigger).truncatedTo(ChronoUnit.SECONDS);
+    OffsetDateTime lowerBound = OffsetDateTime.now()
+      .plus(secondsUntilItShouldFireNext - 1,ChronoUnit.SECONDS)
+      .truncatedTo(ChronoUnit.SECONDS);
+    OffsetDateTime upperBound = OffsetDateTime.now()
+      .plus(secondsUntilItShouldFireNext + 1,ChronoUnit.SECONDS)
+      .truncatedTo(ChronoUnit.SECONDS);
+    assertTrue(lowerBound.isBefore(nextTimeToFire));
+    assertTrue(upperBound.isAfter(nextTimeToFire));
   }
 
   private TriggerKey getTriggerKey(String alertId) {
