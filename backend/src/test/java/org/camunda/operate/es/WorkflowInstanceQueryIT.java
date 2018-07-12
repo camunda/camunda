@@ -2,7 +2,7 @@ package org.camunda.operate.es;
 
 import java.nio.charset.Charset;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -34,7 +34,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -47,9 +46,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
-  protected static final String QUERY_INSTANCES_URL = WORKFLOW_INSTANCE_URL;
-  protected static final String GET_INSTANCE_URL = WORKFLOW_INSTANCE_URL + "/%s";
-  protected static final String COUNT_INSTANCES_URL = WORKFLOW_INSTANCE_URL + "/count";
+  private static final String QUERY_INSTANCES_URL = WORKFLOW_INSTANCE_URL;
+  private static final String GET_INSTANCE_URL = WORKFLOW_INSTANCE_URL + "/%s";
+  private static final String COUNT_INSTANCES_URL = WORKFLOW_INSTANCE_URL + "/count";
 
   private MediaType contentType = new MediaType(MediaType.APPLICATION_JSON.getType(),
     MediaType.APPLICATION_JSON.getSubtype(),
@@ -69,12 +68,10 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
   private WorkflowInstanceEntity instanceWithoutIncident;
 
   private MockMvc mockMvc;
-  private ObjectMapper objectMapper;
 
   @Before
   public void starting() {
     this.mockMvc = mockMvcTestRule.getMockMvc();
-    this.objectMapper = mockMvcTestRule.getObjectMapper();
   }
 
   @Test
@@ -119,6 +116,83 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
        assertThat(workflowInstanceDto.getState()).isEqualTo(WorkflowInstanceState.ACTIVE);
        assertThat(workflowInstanceDto.getActivities()).isEmpty();
      }
+  }
+
+  @Test
+  public void testQueryByStartAndEndDate() throws Exception {
+    //given
+    final OffsetDateTime date1 = OffsetDateTime.of(2018, 1, 1, 15, 30, 30, 156, OffsetDateTime.now().getOffset());      //January 1, 2018
+    final OffsetDateTime date2 = OffsetDateTime.of(2018, 2, 1, 12, 00, 30, 457, OffsetDateTime.now().getOffset());      //February 1, 2018
+    final OffsetDateTime date3 = OffsetDateTime.of(2018, 3, 1, 17, 15, 14, 235, OffsetDateTime.now().getOffset());      //March 1, 2018
+    final OffsetDateTime date4 = OffsetDateTime.of(2018, 4, 1, 2, 12, 0, 0, OffsetDateTime.now().getOffset());          //April 1, 2018
+    final OffsetDateTime date5 = OffsetDateTime.of(2018, 5, 1, 23, 30, 15, 666, OffsetDateTime.now().getOffset());      //May 1, 2018
+    final WorkflowInstanceEntity workflowInstance1 = createWorkflowInstance(date1, date5);
+    final WorkflowInstanceEntity workflowInstance2 = createWorkflowInstance(date2, date4);
+    final WorkflowInstanceEntity workflowInstance3 = createWorkflowInstance(date3, null);
+    persist(workflowInstance1, workflowInstance2, workflowInstance3);
+
+    //when
+    WorkflowInstanceQueryDto query = createGetAllWorkflowInstancesQuery();
+    query.setStartDateAfter(date1.minus(1, ChronoUnit.DAYS));
+    query.setStartDateBefore(date3);
+    //then
+    requestAndAssertIds(query, "TEST CASE #1", workflowInstance1.getId(), workflowInstance2.getId());
+
+    //test inclusion for startDateAfter and exclusion for startDateBefore
+    //when
+    query = createGetAllWorkflowInstancesQuery();
+    query.setStartDateAfter(date1);
+    query.setStartDateBefore(date3);
+    //then
+    requestAndAssertIds(query, "TEST CASE #2", workflowInstance1.getId(), workflowInstance2.getId());
+
+    //when
+    query = createGetAllWorkflowInstancesQuery();
+    query.setStartDateAfter(date1.plus(1, ChronoUnit.MILLIS));
+    query.setStartDateBefore(date3.plus(1, ChronoUnit.MILLIS));
+    //then
+    requestAndAssertIds(query, "TEST CASE #3", workflowInstance2.getId(), workflowInstance3.getId());
+
+    //test combination of start date and end date
+    //when
+    query = createGetAllWorkflowInstancesQuery();
+    query.setStartDateAfter(date2.minus(1, ChronoUnit.DAYS));
+    query.setStartDateBefore(date3.plus(1, ChronoUnit.DAYS));
+    query.setEndDateAfter(date4.minus(1, ChronoUnit.DAYS));
+    query.setEndDateBefore(date4.plus(1, ChronoUnit.DAYS));
+    //then
+    requestAndAssertIds(query, "TEST CASE #4", workflowInstance2.getId());
+
+    //test inclusion for endDateAfter and exclusion for endDateBefore
+    //when
+    query = createGetAllWorkflowInstancesQuery();
+    query.setEndDateAfter(date4);
+    query.setEndDateBefore(date5);
+    //then
+    requestAndAssertIds(query, "TEST CASE #5", workflowInstance2.getId());
+
+    //when
+    query = createGetAllWorkflowInstancesQuery();
+    query.setEndDateAfter(date4);
+    query.setEndDateBefore(date5.plus(1, ChronoUnit.MILLIS));
+    //then
+    requestAndAssertIds(query, "TEST CASE #6", workflowInstance1.getId(), workflowInstance2.getId());
+
+  }
+
+  private void requestAndAssertIds(WorkflowInstanceQueryDto query, String testCaseName, String... ids) throws Exception {
+    MockHttpServletRequestBuilder request = post(query(0, 100))
+      .content(mockMvcTestRule.json(query))
+      .contentType(contentType);
+    //then
+    MvcResult mvcResult = mockMvc.perform(request)
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(contentType))
+      .andReturn();
+
+    List<WorkflowInstanceDto> workflowInstances = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
+
+    assertThat(workflowInstances).as(testCaseName).extracting(WorkflowInstanceType.ID).containsExactlyInAnyOrder(ids);
   }
 
   @Test
@@ -799,6 +873,19 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     return workflowInstance;
   }
 
+  private WorkflowInstanceEntity createWorkflowInstance(OffsetDateTime startDate, OffsetDateTime endDate) {
+    WorkflowInstanceEntity workflowInstance = new WorkflowInstanceEntity();
+    workflowInstance.setId(UUID.randomUUID().toString());
+    workflowInstance.setBusinessKey("testProcess" + random.nextInt(10));
+    workflowInstance.setStartDate(startDate);
+    workflowInstance.setState(WorkflowInstanceState.ACTIVE);
+    if (endDate != null) {
+      workflowInstance.setEndDate(endDate);
+      workflowInstance.setState(WorkflowInstanceState.COMPLETED);
+    }
+    return workflowInstance;
+  }
+
   private IncidentEntity createIncident(IncidentState state) {
     IncidentEntity incidentEntity = new IncidentEntity();
     incidentEntity.setId(UUID.randomUUID().toString());
@@ -822,7 +909,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     return activityInstanceEntity;
   }
 
-  protected String query(int firstResult, int maxResults) {
+  private String query(int firstResult, int maxResults) {
     return String.format("%s?firstResult=%d&maxResults=%d", QUERY_INSTANCES_URL, firstResult, maxResults);
   }
 }

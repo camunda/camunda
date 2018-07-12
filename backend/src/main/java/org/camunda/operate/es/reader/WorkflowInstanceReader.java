@@ -1,12 +1,14 @@
 package org.camunda.operate.es.reader;
 
 import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.types.WorkflowInstanceType;
+import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.SortingDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
 import org.camunda.operate.rest.exception.NotFoundException;
@@ -18,6 +20,7 @@ import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.sort.SortOrder;
@@ -41,6 +44,7 @@ import static org.camunda.operate.util.ElasticsearchUtil.joinWithOr;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
+import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
@@ -65,6 +69,12 @@ public class WorkflowInstanceReader {
 
   @Autowired
   private WorkflowInstanceType workflowInstanceType;
+
+  @Autowired
+  private OperateProperties operateProperties;
+
+  @Autowired
+  private DateTimeFormatter dateTimeFormatter;
 
   /**
    * Counts workflow instances filtered by different criteria.
@@ -138,10 +148,45 @@ public class WorkflowInstanceReader {
     if (queryDto.getActivityId() != null) {
       activityIdQuery = createActivityIdQuery(queryDto.getActivityId());
     }
-    
-    QueryBuilder query = joinWithAnd(runningFinishedQuery, idsQuery, errorMessageQuery, activityIdQuery);
+
+    QueryBuilder createDateQuery = null;
+    if (queryDto.getStartDateAfter() != null || queryDto.getStartDateBefore() != null) {
+      createDateQuery = createStartDateQuery(queryDto);
+    }
+
+    QueryBuilder endDateQuery = null;
+    if (queryDto.getEndDateAfter() != null || queryDto.getEndDateBefore() != null) {
+      endDateQuery = createEndDateQuery(queryDto);
+    }
+
+    QueryBuilder query = joinWithAnd(runningFinishedQuery, idsQuery, errorMessageQuery, activityIdQuery, createDateQuery, endDateQuery);
 
     return query;
+  }
+
+  private QueryBuilder createEndDateQuery(WorkflowInstanceQueryDto query) {
+    final RangeQueryBuilder rangeQueryBuilder = rangeQuery(WorkflowInstanceType.END_DATE);
+    if (query.getEndDateAfter() != null) {
+      rangeQueryBuilder.gte(dateTimeFormatter.format(query.getEndDateAfter()));
+    }
+    if (query.getEndDateBefore() != null) {
+      rangeQueryBuilder.lt(dateTimeFormatter.format(query.getEndDateBefore()));
+    }
+    rangeQueryBuilder.format(operateProperties.getElasticsearch().getDateFormat());
+    return rangeQueryBuilder;
+  }
+
+  private QueryBuilder createStartDateQuery(WorkflowInstanceQueryDto query) {
+    final RangeQueryBuilder rangeQueryBuilder = rangeQuery(WorkflowInstanceType.START_DATE);
+    if (query.getStartDateAfter() != null) {
+      rangeQueryBuilder.gte(dateTimeFormatter.format(query.getStartDateAfter()));
+    }
+    if (query.getStartDateBefore() != null) {
+      rangeQueryBuilder.lt(dateTimeFormatter.format(query.getStartDateBefore()));
+    }
+    rangeQueryBuilder.format(operateProperties.getElasticsearch().getDateFormat());
+
+    return rangeQueryBuilder;
   }
 
   private QueryBuilder createActivityIdQuery(String activityId) {

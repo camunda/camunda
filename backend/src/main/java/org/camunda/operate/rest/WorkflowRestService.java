@@ -22,7 +22,15 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.SwaggerDefinition;
+import io.swagger.annotations.Tag;
 
+@Api(tags = {"Workflows"})
+@SwaggerDefinition(tags = {
+  @Tag(name = "Workflows", description = "Workflows")
+})
 @RestController
 @RequestMapping(value = WORKFLOW_URL)
 public class WorkflowRestService {
@@ -32,11 +40,13 @@ public class WorkflowRestService {
 
   public static final String WORKFLOW_URL = "/api/workflows";
 
+  @ApiOperation("Get workflow BPMN XML")
   @GetMapping(path = "/{id}/xml")
   public String getWorkflowDiagram(@PathVariable("id") String workflowId) {
     return workflowReader.getDiagram(workflowId);
   }
 
+  @ApiOperation("Get workflow by id")
   @GetMapping(path = "/{id}")
   public WorkflowDto getWorkflow(@PathVariable("id") String workflowId) {
     final WorkflowEntity workflowEntity = workflowReader.getWorkflow(workflowId);

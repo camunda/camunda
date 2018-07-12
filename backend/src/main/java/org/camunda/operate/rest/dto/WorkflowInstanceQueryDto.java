@@ -1,9 +1,13 @@
 package org.camunda.operate.rest.dto;
 
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import org.camunda.operate.rest.exception.InvalidRequestException;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 
+@ApiModel("Workflow instance query")
 public class WorkflowInstanceQueryDto {
 
   public static final String SORT_BY_ID = "id";
@@ -26,11 +30,24 @@ public class WorkflowInstanceQueryDto {
   private boolean completed;
   private boolean canceled;
 
+  @ApiModelProperty(value = "Array of workflow instance ids", allowEmptyValue = true)
   private List<String> ids;
 
   private String errorMessage;
 
   private String activityId;
+
+  @ApiModelProperty(value = "Start date after (inclusive)", allowEmptyValue = true)
+  private OffsetDateTime startDateAfter;
+
+  @ApiModelProperty(value = "Start date before (exclusive)", allowEmptyValue = true)
+  private OffsetDateTime startDateBefore;
+
+  @ApiModelProperty(value = "End date after (inclusive)", allowEmptyValue = true)
+  private OffsetDateTime endDateAfter;
+
+  @ApiModelProperty(value = "End date before (exclusive)", allowEmptyValue = true)
+  private OffsetDateTime endDateBefore;
 
   private SortingDto sorting;
 
@@ -109,6 +126,38 @@ public class WorkflowInstanceQueryDto {
     this.activityId = activityId;
   }
 
+  public OffsetDateTime getStartDateAfter() {
+    return startDateAfter;
+  }
+
+  public void setStartDateAfter(OffsetDateTime startDateAfter) {
+    this.startDateAfter = startDateAfter;
+  }
+
+  public OffsetDateTime getStartDateBefore() {
+    return startDateBefore;
+  }
+
+  public void setStartDateBefore(OffsetDateTime startDateBefore) {
+    this.startDateBefore = startDateBefore;
+  }
+
+  public OffsetDateTime getEndDateAfter() {
+    return endDateAfter;
+  }
+
+  public void setEndDateAfter(OffsetDateTime endDateAfter) {
+    this.endDateAfter = endDateAfter;
+  }
+
+  public OffsetDateTime getEndDateBefore() {
+    return endDateBefore;
+  }
+
+  public void setEndDateBefore(OffsetDateTime endDateBefore) {
+    this.endDateBefore = endDateBefore;
+  }
+
   public SortingDto getSorting() {
     return sorting;
   }
@@ -147,6 +196,14 @@ public class WorkflowInstanceQueryDto {
       return false;
     if (activityId != null ? !activityId.equals(that.activityId) : that.activityId != null)
       return false;
+    if (startDateAfter != null ? !startDateAfter.equals(that.startDateAfter) : that.startDateAfter != null)
+      return false;
+    if (startDateBefore != null ? !startDateBefore.equals(that.startDateBefore) : that.startDateBefore != null)
+      return false;
+    if (endDateAfter != null ? !endDateAfter.equals(that.endDateAfter) : that.endDateAfter != null)
+      return false;
+    if (endDateBefore != null ? !endDateBefore.equals(that.endDateBefore) : that.endDateBefore != null)
+      return false;
     return sorting != null ? sorting.equals(that.sorting) : that.sorting == null;
   }
 
@@ -161,6 +218,10 @@ public class WorkflowInstanceQueryDto {
     result = 31 * result + (ids != null ? ids.hashCode() : 0);
     result = 31 * result + (errorMessage != null ? errorMessage.hashCode() : 0);
     result = 31 * result + (activityId != null ? activityId.hashCode() : 0);
+    result = 31 * result + (startDateAfter != null ? startDateAfter.hashCode() : 0);
+    result = 31 * result + (startDateBefore != null ? startDateBefore.hashCode() : 0);
+    result = 31 * result + (endDateAfter != null ? endDateAfter.hashCode() : 0);
+    result = 31 * result + (endDateBefore != null ? endDateBefore.hashCode() : 0);
     result = 31 * result + (sorting != null ? sorting.hashCode() : 0);
     return result;
   }

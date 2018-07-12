@@ -15,7 +15,10 @@ package org.camunda.operate.rest.dto;
 import java.util.ArrayList;
 import java.util.List;
 import org.camunda.operate.rest.exception.InvalidRequestException;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 
+@ApiModel("Sorting")
 public class SortingDto {
 
   public static final String SORT_ORDER_ASC_VALUE = "asc";
@@ -31,6 +34,7 @@ public class SortingDto {
   private String sortBy = SORT_ORDER_ASC_VALUE;
   private String sortOrder;
 
+  @ApiModelProperty(value = "Data field to sort by", required = true)
   public String getSortBy() {
     return sortBy;
   }
@@ -39,6 +43,7 @@ public class SortingDto {
     this.sortBy = sortBy;
   }
 
+  @ApiModelProperty(value = "Sort order, default: asc", allowableValues = "asc,desc", required = false)
   public String getSortOrder() {
     return sortOrder;
   }

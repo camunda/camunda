@@ -17,7 +17,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.SwaggerDefinition;
+import io.swagger.annotations.Tag;
 
+@Api(tags = {"Workflow instances"})
+@SwaggerDefinition(tags = {
+  @Tag(name = "Workflow instances", description = "Workflow instances")
+})
 @RestController
 @RequestMapping(value = WORKFLOW_INSTANCE_URL)
 public class WorkflowInstanceRestService {
@@ -27,12 +35,14 @@ public class WorkflowInstanceRestService {
   @Autowired
   private WorkflowInstanceReader workflowInstanceReader;
 
+  @ApiOperation("Count filtered workflow instances")
   @PostMapping("/count")
   public CountResultDto queryWorkflowInstancesCount(@RequestBody WorkflowInstanceQueryDto workflowInstanceQuery) {
     final long count = workflowInstanceReader.countWorkflowInstances(workflowInstanceQuery);
     return new CountResultDto(count);
   }
 
+  @ApiOperation("Query workflow instances by different parameters")
   @PostMapping
   public List<WorkflowInstanceDto> queryWorkflowInstances(
       @RequestBody WorkflowInstanceQueryDto workflowInstanceQuery,
@@ -42,6 +52,7 @@ public class WorkflowInstanceRestService {
     return WorkflowInstanceDto.createFrom(workflowInstanceEntities);
   }
 
+  @ApiOperation("Get workflow instance by id")
   @GetMapping("/{id}")
   public WorkflowInstanceDto queryWorkflowInstanceById(@PathVariable String id) {
     final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(id);
