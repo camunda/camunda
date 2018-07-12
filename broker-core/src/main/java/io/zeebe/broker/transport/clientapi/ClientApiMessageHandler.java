@@ -22,6 +22,7 @@ import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.broker.event.processor.TopicSubscriberEvent;
 import io.zeebe.broker.event.processor.TopicSubscriptionEvent;
 import io.zeebe.broker.job.data.JobRecord;
+import io.zeebe.broker.subscription.message.data.MessageRecord;
 import io.zeebe.broker.system.workflow.repository.data.DeploymentRecord;
 import io.zeebe.broker.transport.controlmessage.ControlMessageRequestHeaderDescriptor;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
@@ -31,7 +32,12 @@ import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.*;
+import io.zeebe.protocol.clientapi.ControlMessageRequestDecoder;
+import io.zeebe.protocol.clientapi.ErrorCode;
+import io.zeebe.protocol.clientapi.ExecuteCommandRequestDecoder;
+import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerMessageHandler;
@@ -78,6 +84,7 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
     recordsByType.put(ValueType.SUBSCRIBER, new TopicSubscriberEvent());
     recordsByType.put(ValueType.SUBSCRIPTION, new TopicSubscriptionEvent());
     recordsByType.put(ValueType.TOPIC, new TopicRecord());
+    recordsByType.put(ValueType.MESSAGE, new MessageRecord());
   }
 
   private boolean handleExecuteCommandRequest(
