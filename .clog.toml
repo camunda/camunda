@@ -1,0 +1,4 @@
+[clog]
+repository = "https://github.com/zeebe-io/zeebe"
+changelog = "CHANGELOG.md"
+from-latest-tag = true
