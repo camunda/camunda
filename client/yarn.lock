@@ -587,9 +587,9 @@
   dependencies:
     any-observable "^0.3.0"
 
-"@svgr/core@^2.1.0":
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/@svgr/core/-/core-2.1.0.tgz#bd6d0971a3bc02f5190108d910751004f4d87ce5"
+"@svgr/core@^2.1.1":
+  version "2.1.1"
+  resolved "https://registry.yarnpkg.com/@svgr/core/-/core-2.1.1.tgz#e241576eeb42142a971c07dd83c10a0e60928cdc"
   dependencies:
     cosmiconfig "^5.0.5"
     h2x-core "^1.0.0"
@@ -598,16 +598,16 @@
     prettier "^1.13.7"
     svgo "^1.0.5"
 
-"@svgr/webpack@^2.1.0":
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/@svgr/webpack/-/webpack-2.1.0.tgz#5ab9ebd374dacbee782a161ef7557ea7e9272e37"
+"@svgr/webpack@^2.1.1":
+  version "2.1.1"
+  resolved "https://registry.yarnpkg.com/@svgr/webpack/-/webpack-2.1.1.tgz#ab70286a0ad0ae79a446c580152eb184b68f1aa5"
   dependencies:
     "@babel/core" "^7.0.0-beta.52"
     "@babel/plugin-proposal-object-rest-spread" "^7.0.0-beta.52"
     "@babel/plugin-transform-react-constant-elements" "^7.0.0-beta.52"
     "@babel/preset-env" "^7.0.0-beta.52"
     "@babel/preset-react" "^7.0.0-beta.52"
-    "@svgr/core" "^2.1.0"
+    "@svgr/core" "^2.1.1"
     loader-utils "^1.1.0"
 
 "@types/node@*":
