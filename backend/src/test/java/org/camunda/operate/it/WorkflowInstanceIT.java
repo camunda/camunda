@@ -76,7 +76,7 @@ public class WorkflowInstanceIT extends OperateIntegrationTest {
     final String workflowInstanceId = zeebeUtil.startWorkflowInstance(topicName, processId, "{\"a\": \"b\"}");
 
     //when
-    elasticsearchTestRule.processAllEvents(4);
+    elasticsearchTestRule.processAllEvents(10);
 
     //then
     final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
@@ -106,13 +106,13 @@ public class WorkflowInstanceIT extends OperateIntegrationTest {
 
     //create an incident
     jobWorker = zeebeUtil.failTask(topicName, activityId, zeebeTestRule.getWorkerName(), 3);
-    elasticsearchTestRule.processAllEvents(30);
+    elasticsearchTestRule.processAllEvents(18);
     jobWorker.close();
     jobWorker = null;
 
     //when update retries
     topicSubscriptions.add(zeebeUtil.resolveIncident(topicName, "testIncidentDeleted", workflowId, "{\"a\": \"b\"}"));
-    elasticsearchTestRule.processAllEvents(30);
+    elasticsearchTestRule.processAllEvents(4);
 
     //then
     final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
@@ -135,7 +135,7 @@ public class WorkflowInstanceIT extends OperateIntegrationTest {
 
     //when
     jobWorker = zeebeUtil.completeTask(topicName, activityId, zeebeTestRule.getWorkerName(), null);      //empty payload provokes incident
-    elasticsearchTestRule.processAllEvents(20);
+    elasticsearchTestRule.processAllEvents(16);
 
     //then
     final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
@@ -168,7 +168,7 @@ public class WorkflowInstanceIT extends OperateIntegrationTest {
 
     //when
     topicSubscriptions.add(zeebeUtil.cancelWorkflowInstance(topicName, workflowInstanceId, workflowId));
-    elasticsearchTestRule.processAllEvents(12);
+    elasticsearchTestRule.processAllEvents(15);
 
     //then
     final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
