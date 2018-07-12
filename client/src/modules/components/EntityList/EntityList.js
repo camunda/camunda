@@ -100,6 +100,7 @@ class EntityList extends React.Component {
           content: (
             <Icon
               type="delete"
+              title="Delete a report"
               onClick={this.showDeleteModal({id, name})}
               className="EntityList__deleteIcon"
             />
@@ -113,6 +114,7 @@ class EntityList extends React.Component {
           content: (
             <Icon
               type="copy-document"
+              title="Duplicate a report"
               onClick={this.duplicateEntity(id)}
               className="EntityList__duplicateIcon"
             />
@@ -123,7 +125,7 @@ class EntityList extends React.Component {
 
       if (this.props.operations.includes('edit')) {
         entry.push({
-          content: <Icon type="edit" className="EntityList__editLink" />,
+          content: <Icon type="edit" title="Edit a report" className="EntityList__editLink" />,
           link: `/${this.props.api}/${id}/edit`,
           parentClassName: 'EntityList__data--tool'
         });
