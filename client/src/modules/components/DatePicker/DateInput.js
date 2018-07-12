@@ -6,27 +6,6 @@ import {Input, ErrorMessage} from 'components';
 import './DateInput.css';
 
 class DateInput extends React.PureComponent {
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      stringDate: this.props.date.format(this.props.format),
-      error: false
-    };
-  }
-
-  componentDidUpdate({date, format}) {
-    const oldStringDate = date.format(format);
-    const newStringDate = this.props.date.format(this.props.format);
-
-    if (oldStringDate !== newStringDate) {
-      this.setState({
-        stringDate: newStringDate,
-        error: false
-      });
-    }
-  }
-
   render() {
     return (
       <div className="DateInput__input-group">
@@ -34,14 +13,14 @@ class DateInput extends React.PureComponent {
           type="text"
           ref={this.props.reference}
           className={classnames(this.props.className, 'DateInput')}
-          value={this.state.stringDate}
+          value={this.props.date}
           onFocus={this.props.onFocus}
           onClick={this.onClick}
           onKeyDown={this.onKeyDown}
           onChange={this.onInputChange}
-          isInvalid={this.state.error}
+          isInvalid={this.props.error}
         />
-        {this.state.error && (
+        {this.props.error && (
           <ErrorMessage className="DateInput__warning">Please enter a valid date</ErrorMessage>
         )}
       </div>
@@ -64,17 +43,9 @@ class DateInput extends React.PureComponent {
   onInputChange = event => {
     const value = event.target.value;
     const date = moment(value, this.props.format);
-    const isValid = date.isValid() && date.format(this.props.format) === value;
-
-    this.setState({
-      stringDate: value,
-      error: !isValid
-    });
-
-    if (!date.isSame(this.props.date) && isValid) {
-      this.props.onDateChange(date);
+    if (!date.isSame(moment(this.props.date, this.props.format))) {
+      this.props.onDateChange(value);
     }
-    this.props.setValidState(isValid);
   };
 }
 

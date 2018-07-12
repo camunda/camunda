@@ -20,8 +20,8 @@ export default class DateButton extends React.Component {
     const range = getDateRange(this.props.dateLabel);
 
     this.props.setDates({
-      startDate: moment(range.start),
-      endDate: moment(range.end)
+      startDate: moment(range.start).format(this.props.format),
+      endDate: moment(range.end).format(this.props.format)
     });
   };
 }

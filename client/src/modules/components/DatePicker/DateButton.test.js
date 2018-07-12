@@ -25,7 +25,9 @@ it('should set label on element', () => {
 
 it('should set dates on click', () => {
   const spy = jest.fn();
-  const node = mount(<DateButton dateLabel={DateButton.TODAY} setDates={spy} />);
+  const node = mount(
+    <DateButton format="YYYY-MM-DD" dateLabel={DateButton.TODAY} setDates={spy} />
+  );
 
   const today = moment();
 
@@ -33,6 +35,6 @@ it('should set dates on click', () => {
 
   const {startDate, endDate} = spy.mock.calls[0][0];
 
-  expect(startDate.format('YYYY-MM-DD')).toEqual(today.format('YYYY-MM-DD'));
-  expect(endDate.format('YYYY-MM-DD')).toEqual(today.format('YYYY-MM-DD'));
+  expect(startDate).toEqual(today.format('YYYY-MM-DD'));
+  expect(endDate).toEqual(today.format('YYYY-MM-DD'));
 });

@@ -2,6 +2,7 @@ import React from 'react';
 
 import DatePicker from './DatePicker';
 import {mount} from 'enzyme';
+import moment from 'moment';
 
 console.error = jest.fn();
 
@@ -14,8 +15,11 @@ jest.mock('components', () => {
   };
 });
 
+const startDate = moment([2017, 8, 29]);
+const endDate = moment([2020, 6, 5]);
+
 it('should contain date fields', () => {
-  const node = mount(<DatePicker />);
+  const node = mount(<DatePicker initialDates={{startDate, endDate}} />);
 
   expect(node).toIncludeText('DateFields');
 });

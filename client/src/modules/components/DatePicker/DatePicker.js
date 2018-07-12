@@ -8,6 +8,8 @@ import './DatePicker.css';
 import DateFields from './DateFields';
 import DateButton from './DateButton';
 
+const DATE_FORMAT = 'YYYY-MM-DD';
+
 export default class DatePicker extends React.Component {
   constructor(props) {
     super(props);
@@ -15,8 +17,8 @@ export default class DatePicker extends React.Component {
     const initialDates = this.props.initialDates || {};
 
     this.state = {
-      startDate: initialDates.startDate || moment(),
-      endDate: initialDates.endDate || moment(),
+      startDate: initialDates.startDate.format(DATE_FORMAT) || moment().format(DATE_FORMAT),
+      endDate: initialDates.endDate.format(DATE_FORMAT) || moment().format(DATE_FORMAT),
       valid: true
     };
   }
@@ -26,7 +28,7 @@ export default class DatePicker extends React.Component {
       <React.Fragment>
         <div className="DatePicker__inputs">
           <DateFields
-            format="YYYY-MM-DD"
+            format={DATE_FORMAT}
             onDateChange={this.onDateChange}
             startDate={this.state.startDate}
             endDate={this.state.endDate}
@@ -64,11 +66,16 @@ export default class DatePicker extends React.Component {
   componentDidUpdate(prevProps, prevState) {
     if (
       this.props.onDateChange &&
+      this.state.valid &&
       (this.state.startDate !== prevState.startDate ||
         this.state.endDate !== prevState.endDate ||
         this.state.valid !== prevState.valid)
     ) {
-      this.props.onDateChange(this.state);
+      this.props.onDateChange({
+        startDate: moment(this.state.startDate),
+        endDate: moment(this.state.endDate),
+        valid: true
+      });
     }
   }
 
@@ -76,24 +83,26 @@ export default class DatePicker extends React.Component {
 
   getDateButtons(labels) {
     return labels.map(label => (
-      <DateButton dateLabel={label} key={label} setDates={this.setDates} />
+      <DateButton format={DATE_FORMAT} dateLabel={label} key={label} setDates={this.setDates} />
     ));
   }
 
-  setDates = dates => {
-    this.setState({...dates, valid: true});
-  };
+  setDates = dates => this.setState({...dates});
 
   onDateChange = (name, date) => {
+    const dateObj = moment(date, DATE_FORMAT);
     if (
-      (name === 'startDate' && date.isAfter(this.state.endDate)) ||
-      (name === 'endDate' && date.isBefore(this.state.startDate))
+      (name === 'startDate' && dateObj.isAfter(moment(this.state.endDate, DATE_FORMAT))) ||
+      (name === 'endDate' && dateObj.isBefore(moment(this.state.startDate, DATE_FORMAT)))
     ) {
       return this.setState({
         startDate: date,
-        endDate: date.clone()
+        endDate: date
       });
     }
+
+    const isValid = dateObj.isValid() && dateObj.format(DATE_FORMAT) === date;
+    this.setState({valid: isValid});
 
     this.setState({
       [name]: date
