@@ -2,15 +2,19 @@ package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -36,13 +40,33 @@ public class ProcessDefinitionWriter {
     BulkRequestBuilder bulkRequest = esclient.prepareBulk();
     for (ProcessDefinitionOptimizeDto procDef : procDefs) {
       String id = procDef.getId();
+
+      Map<String, Object> params = new HashMap<>();
+      params.put(ProcessDefinitionType.PROCESS_DEFINITION_KEY, procDef.getKey());
+      params.put(ProcessDefinitionType.PROCESS_DEFINITION_VERSION, procDef.getVersion());
+      params.put(ProcessDefinitionType.PROCESS_DEFINITION_NAME, procDef.getName());
+      params.put(ProcessDefinitionType.ENGINE, procDef.getEngine());
+
+      Script updateScript = new Script(
+        ScriptType.INLINE,
+        Script.DEFAULT_SCRIPT_LANG,
+        "ctx._source.key = params.key; " +
+          "ctx._source.name = params.name; " +
+          "ctx._source.engine = params.engine; " +
+          "ctx._source.version = params.version; ",
+        params
+      );
+
       bulkRequest.add(esclient
-        .prepareIndex(
+        .prepareUpdate(
           configurationService.getOptimizeIndex(configurationService.getProcessDefinitionType()),
           configurationService.getProcessDefinitionType(),
           id
         )
-        .setSource(objectMapper.convertValue(procDef, Map.class)));
+        .setScript(updateScript)
+        .setUpsert(objectMapper.convertValue(procDef, Map.class))
+        .setRetryOnConflict(configurationService.getNumberOfRetriesOnConflict())
+      );
     }
 
     if (bulkRequest.numberOfActions() > 0) {
