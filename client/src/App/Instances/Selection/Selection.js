@@ -1,37 +1,52 @@
-import React from 'react';
+import React, {Fragment} from 'react';
 
 import StateIcon from 'modules/components/StateIcon';
 import {getWorkflowName} from 'modules/utils/instance';
-import {Down} from 'modules/components/Icon';
+import {Down, Right, Batch} from 'modules/components/Icon';
 
 import * as Styled from './styled.js';
 
 export default class Selection extends React.Component {
+  AddBody = ({instances, count}) => (
+    <Fragment>
+      <Styled.Body>
+        {instances.map((instance, index) => {
+          return (
+            <div key={index}>
+              <StateIcon instance={instance} />
+              <span>{getWorkflowName(instance)}</span>
+              {instance.id}
+            </div>
+          );
+        })}
+      </Styled.Body>
+      <Styled.Footer>
+        {count - instances.length}
+        <span>{' more Instances'}</span>
+      </Styled.Footer>
+    </Fragment>
+  );
+
   render() {
+    const {isOpen, onRetry, onDelete, onClick, id} = this.props;
     return (
       <Styled.Selection>
-        <Styled.Header>
-          <Down />
-          <span>Selection {this.props.index + 1} </span>
-          <span>count: {this.props.count}</span>
-          <span onClick={this.props.onRetry}>retry</span>
-          <span onClick={this.props.onDelete}>delete</span>
+        <Styled.Header {...{onClick, isOpen}}>
+          {isOpen ? <Down /> : <Right />}
+          <Styled.Headline>Selection {id + 1} </Styled.Headline>
+          {/*TODO: ICON <span>{count}</span> */}
+          {isOpen && (
+            <Styled.Actions>
+              <Styled.DropdownTrigger onClick={onRetry}>
+                <Batch />
+                <Down />
+              </Styled.DropdownTrigger>
+
+              <Styled.DeleteIcon onClick={onDelete} />
+            </Styled.Actions>
+          )}
         </Styled.Header>
-        <Styled.Body>
-          {this.props.instances.map((instance, index) => {
-            return (
-              <div key={index}>
-                <StateIcon instance={instance} />
-                <span>{getWorkflowName(instance)}</span>
-                {instance.id}
-              </div>
-            );
-          })}
-        </Styled.Body>
-        <Styled.Footer>
-          {this.props.count - 10}
-          <span>{' more Instances'}</span>
-        </Styled.Footer>
+        {isOpen && this.AddBody(this.props)}
       </Styled.Selection>
     );
   }
