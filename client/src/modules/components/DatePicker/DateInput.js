@@ -1,5 +1,4 @@
 import React from 'react';
-import moment from 'moment';
 import classnames from 'classnames';
 import {Input, ErrorMessage} from 'components';
 
@@ -42,10 +41,7 @@ class DateInput extends React.PureComponent {
 
   onInputChange = event => {
     const value = event.target.value;
-    const date = moment(value, this.props.format);
-    if (!date.isSame(moment(this.props.date, this.props.format))) {
-      this.props.onDateChange(value);
-    }
+    this.props.onDateChange(value);
   };
 }
 

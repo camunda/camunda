@@ -8,6 +8,8 @@ import './DatePicker.css';
 import DateFields from './DateFields';
 import DateButton from './DateButton';
 
+import {isDateValid} from './service';
+
 const DATE_FORMAT = 'YYYY-MM-DD';
 
 export default class DatePicker extends React.Component {
@@ -64,16 +66,17 @@ export default class DatePicker extends React.Component {
   }
 
   componentDidUpdate(prevProps, prevState) {
+    const isAllValid = isDateValid(this.state.startDate) && isDateValid(this.state.endDate);
     if (
       this.props.onDateChange &&
-      this.state.valid &&
+      isAllValid &&
       (this.state.startDate !== prevState.startDate ||
         this.state.endDate !== prevState.endDate ||
         this.state.valid !== prevState.valid)
     ) {
       this.props.onDateChange({
-        startDate: moment(this.state.startDate),
-        endDate: moment(this.state.endDate),
+        startDate: moment(this.state.startDate, DATE_FORMAT),
+        endDate: moment(this.state.endDate, DATE_FORMAT),
         valid: true
       });
     }
@@ -91,21 +94,32 @@ export default class DatePicker extends React.Component {
 
   onDateChange = (name, date) => {
     const dateObj = moment(date, DATE_FORMAT);
-    if (
-      (name === 'startDate' && dateObj.isAfter(moment(this.state.endDate, DATE_FORMAT))) ||
-      (name === 'endDate' && dateObj.isBefore(moment(this.state.startDate, DATE_FORMAT)))
-    ) {
-      return this.setState({
-        startDate: date,
-        endDate: date
-      });
-    }
 
-    const isValid = dateObj.isValid() && dateObj.format(DATE_FORMAT) === date;
-    this.setState({valid: isValid});
+    this.setState(
+      {
+        [name]: date
+      },
+      () => {
+        const isAllValid = isDateValid(this.state.startDate) && isDateValid(this.state.endDate);
+        this.setState({valid: isAllValid});
 
-    this.setState({
-      [name]: date
-    });
+        this.props.onDateChange({
+          startDate: moment(this.state.startDate, DATE_FORMAT),
+          endDate: moment(this.state.endDate, DATE_FORMAT),
+          valid: isAllValid
+        });
+
+        if (
+          isAllValid &&
+          ((name === 'startDate' && dateObj.isAfter(moment(this.state.endDate, DATE_FORMAT))) ||
+            (name === 'endDate' && dateObj.isBefore(moment(this.state.startDate, DATE_FORMAT))))
+        ) {
+          return this.setState({
+            startDate: date,
+            endDate: date
+          });
+        }
+      }
+    );
   };
 }

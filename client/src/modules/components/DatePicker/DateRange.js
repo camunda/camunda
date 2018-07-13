@@ -2,6 +2,7 @@ import React from 'react';
 import {Calendar} from 'react-date-range';
 
 import {adjustRange} from './service';
+import moment from 'moment';
 
 import './DateRange.css';
 
@@ -84,8 +85,8 @@ export default class DateRange extends React.Component {
 
   static getDerivedStateFromProps({startDate, endDate}) {
     return {
-      startLink: startDate.clone(),
-      endLink: endDate.clone()
+      startLink: startDate.isValid() ? startDate.clone() : moment(),
+      endLink: endDate.isValid() ? endDate.clone() : moment()
     };
   }
 

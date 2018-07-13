@@ -3,6 +3,7 @@ import classnames from 'classnames';
 import DateRange from './DateRange';
 import DateInput from './DateInput';
 import moment from 'moment';
+import {isDateValid} from './service';
 
 import './DateFields.css';
 
@@ -42,10 +43,14 @@ export default class DateFields extends React.PureComponent {
   };
 
   render() {
-    const startDate = moment(this.props.startDate, this.props.format);
-    const endDate = moment(this.props.endDate, this.props.format);
-    const startDateValid = this.isValid('startDate', startDate);
-    const endDateValid = this.isValid('endDate', endDate);
+    const {startDate, endDate, format} = this.props;
+
+    const startDateObj = moment(startDate, format);
+    const endDateObj = moment(endDate, format);
+
+    const startDateValid = isDateValid(startDate);
+    const endDateValid = isDateValid(endDate);
+
     return (
       <div className="DateFields" onKeyDown={this.handleKeyPress}>
         <div className="DateFields__inputContainer">
@@ -53,14 +58,14 @@ export default class DateFields extends React.PureComponent {
             className={classnames('DateInput__start', {
               'DateInput__start--highlight': this.isFieldSelected('startDate')
             })}
-            format={this.props.format}
+            format={format}
             onDateChange={this.setDate('startDate')}
             onFocus={() => {
               this.setState({currentlySelectedField: 'startDate'});
             }}
             onSubmit={this.submitStart}
             onClick={this.toggleDateRangeForStart}
-            date={this.props.startDate}
+            date={startDate}
             error={!startDateValid}
           />
           <span className="DateFields__divider">to</span>
@@ -69,35 +74,33 @@ export default class DateFields extends React.PureComponent {
               'DateInput__start--highlight': this.isFieldSelected('endDate')
             })}
             ref={this.saveEndDateField}
-            format={this.props.format}
+            format={format}
             onDateChange={this.setDate('endDate')}
             onFocus={() => {
               this.setState({currentlySelectedField: 'endDate'});
             }}
             onSubmit={this.submitEnd}
             onClick={this.toggleDateRangeForEnd}
-            date={this.props.endDate}
+            date={endDate}
             error={!endDateValid}
           />
         </div>
-        {this.state.popupOpen &&
-          startDateValid &&
-          endDateValid && (
-            <div
-              onClick={this.stopClosingPopup}
-              className={classnames('DateFields__range', {
-                'DateFields__range--left': this.isFieldSelected('startDate'),
-                'DateFields__range--right': this.isFieldSelected('endDate')
-              })}
-            >
-              <DateRange
-                format={this.props.format}
-                onDateChange={this.onDateRangeChange}
-                startDate={startDate}
-                endDate={endDate}
-              />
-            </div>
-          )}
+        {this.state.popupOpen && (
+          <div
+            onClick={this.stopClosingPopup}
+            className={classnames('DateFields__range', {
+              'DateFields__range--left': this.isFieldSelected('startDate'),
+              'DateFields__range--right': this.isFieldSelected('endDate')
+            })}
+          >
+            <DateRange
+              format={format}
+              onDateChange={this.onDateRangeChange}
+              startDate={startDateObj}
+              endDate={endDateObj}
+            />
+          </div>
+        )}
       </div>
     );
   }
@@ -152,8 +155,6 @@ export default class DateFields extends React.PureComponent {
   }
 
   setDate = name => date => this.props.onDateChange(name, date);
-
-  isValid = (name, date) => date.isValid() && date.format(this.props.format) === this.props[name];
 
   toggleDateRangeForStart = event => this.toggleDateRangePopup(event, 'startDate');
   toggleDateRangeForEnd = event => this.toggleDateRangePopup(event, 'endDate');
