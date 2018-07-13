@@ -3,14 +3,15 @@ import PropTypes from 'prop-types';
 
 import Content from 'modules/components/Content';
 import SplitPane from 'modules/components/SplitPane';
-import Copyright from 'modules/components/Copyright';
-import InstanceDetail from './InstanceDetail';
+import * as api from 'modules/api/instances';
+import {ACTIVITY_STATE} from 'modules/constants';
+import {getActiveIncident} from 'modules/utils/instance';
 
+import InstanceDetail from './InstanceDetail';
 import Header from '../Header';
 import DiagramPanel from './DiagramPanel';
-
+import InstanceHistory from './InstanceHistory';
 import * as Styled from './styled';
-import * as api from 'modules/api/instances';
 
 export default class Instance extends Component {
   static propTypes = {
@@ -23,6 +24,7 @@ export default class Instance extends Component {
 
   state = {
     instance: null,
+    instanceLog: null,
     loaded: false
   };
 
@@ -35,6 +37,26 @@ export default class Instance extends Component {
       instance
     });
   }
+
+  onActivitiesInfoReady = activitiesInfoMap => {
+    const {instance} = this.state;
+    const activeIncident = getActiveIncident(instance.incidents) || {};
+    const activitiesWithInfo = instance.activities.map(activity => {
+      let {state} = {...activity};
+      if (
+        state === ACTIVITY_STATE.ACTIVE &&
+        activeIncident.activityInstanceId === activity.id
+      ) {
+        state = ACTIVITY_STATE.INCIDENT;
+      }
+      return {
+        ...activity,
+        ...activitiesInfoMap[activity.activityId],
+        state
+      };
+    });
+    this.setState({instanceLog: {...instance, activities: activitiesWithInfo}});
+  };
 
   render() {
     if (!this.state.loaded) {
@@ -53,14 +75,11 @@ export default class Instance extends Component {
         <Content>
           <Styled.Instance>
             <SplitPane>
-              <DiagramPanel instance={this.state.instance} />
-              <SplitPane.Pane>
-                <SplitPane.Pane.Header>Instance history</SplitPane.Pane.Header>
-                <SplitPane.Pane.Body />
-                <Styled.PaneFooter>
-                  <Copyright />
-                </Styled.PaneFooter>
-              </SplitPane.Pane>
+              <DiagramPanel
+                instance={this.state.instance}
+                onActivitiesInfoReady={this.onActivitiesInfoReady}
+              />
+              <InstanceHistory instanceLog={this.state.instanceLog} />
             </SplitPane>
           </Styled.Instance>
         </Content>

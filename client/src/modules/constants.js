@@ -64,3 +64,18 @@ export const EXPAND_STATE = {
   EXPANDED: 'EXPANDED',
   COLLAPSED: 'COLLAPSED'
 };
+
+export const UNNAMED_ACTIVITY = 'Unnamed Activity';
+
+export const ACTIVITY_TYPE = {
+  TASK: 'TASK',
+  EVENT: 'EVENT',
+  GATEWAY: 'GATEWAY'
+};
+
+export const ACTIVITY_STATE = {
+  ACTIVE: 'ACTIVE',
+  COMPLETED: 'COMPLETED',
+  TERMINATED: 'TERMINATED',
+  INCIDENT: 'INCIDENT'
+};

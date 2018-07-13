@@ -15,7 +15,7 @@ const {WrappedComponent: Diagram} = ThemedDiagram;
 const xmlMock = '<foo />';
 api.workflowXML = mockResolvedAsyncFn(xmlMock);
 
-describe('Diagram', () => {
+describe.skip('Diagram', () => {
   const workflowId = 'some-id';
 
   beforeEach(() => {

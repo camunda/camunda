@@ -3,16 +3,18 @@ import PropTypes from 'prop-types';
 import BPMNViewer from 'bpmn-js/lib/NavigatedViewer';
 
 import {themed} from 'modules/theme';
+import {UNNAMED_ACTIVITY} from 'modules/constants';
 
 import * as Styled from './styled';
 import DiagramControls from './DiagramControls';
 import * as api from 'modules/api/diagram';
-import {getDiagramColors} from './service';
+import {getDiagramColors, getElementType} from './service';
 
 class Diagram extends React.Component {
   static propTypes = {
     theme: PropTypes.string.isRequired,
-    workflowId: PropTypes.string.isRequired
+    workflowId: PropTypes.string.isRequired,
+    onActivitiesInfoReady: PropTypes.func
   };
 
   constructor(props) {
@@ -51,6 +53,22 @@ class Diagram extends React.Component {
       if (e) {
         return console.log('Error rendering diagram:', e);
       }
+
+      const elementRegistry = this.Viewer.get('elementRegistry');
+      const activitiesInfoMap = {};
+
+      elementRegistry.forEach(element => {
+        const type = getElementType(element);
+        if (!!type) {
+          activitiesInfoMap[element.id] = {
+            name: element.businessObject.name || UNNAMED_ACTIVITY,
+            type
+          };
+        }
+      });
+
+      this.props.onActivitiesInfoReady(activitiesInfoMap);
+
       this.handleZoomReset();
     });
   };

@@ -23,6 +23,9 @@ export const FlownodeActivityIncident = generateMockIcon(
   'FlownodeActivityIncident'
 );
 export const FlownodeActivity = generateMockIcon('FlownodeActivity');
+export const FlownodeActivityCompleted = generateMockIcon(
+  'FlownodeActivityCompleted'
+);
 export const FlownodeEventCompleted = generateMockIcon(
   'FlownodeEventCompleted'
 );

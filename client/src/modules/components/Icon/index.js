@@ -22,6 +22,9 @@ export {
   default as FlownodeActivity
 } from '-!@svgr/webpack?svgo=false!./flownode-activity.svg';
 export {
+  default as FlownodeActivityCompleted
+} from '-!@svgr/webpack?svgo=false!./flownode-activity-completed.svg';
+export {
   default as FlownodeEventCompleted
 } from '-!@svgr/webpack?svgo=false!./flownode-event-completed.svg';
 export {
