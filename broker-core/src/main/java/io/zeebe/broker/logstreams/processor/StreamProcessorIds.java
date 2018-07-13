@@ -36,6 +36,8 @@ public class StreamProcessorIds {
 
   public static final int INCIDENT_PROCESSOR_ID = 80;
 
+  public static final int MESSAGE_PROCESSOR_ID = 90;
+
   public static final int SYSTEM_CREATE_TOPIC_PROCESSOR_ID = 1000;
   public static final int SYSTEM_COLLECT_PARTITION_PROCESSOR_ID = 1001;
   public static final int SYSTEM_ID_PROCESSOR_ID = 1002;

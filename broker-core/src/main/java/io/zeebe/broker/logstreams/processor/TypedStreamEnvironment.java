@@ -21,6 +21,7 @@ import io.zeebe.broker.clustering.orchestration.id.IdRecord;
 import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.job.data.JobRecord;
+import io.zeebe.broker.subscription.message.data.MessageRecord;
 import io.zeebe.broker.system.workflow.repository.data.DeploymentRecord;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.logstreams.log.LogStream;
@@ -42,6 +43,7 @@ public class TypedStreamEnvironment {
     EVENT_REGISTRY.put(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceRecord.class);
     EVENT_REGISTRY.put(ValueType.INCIDENT, IncidentRecord.class);
     EVENT_REGISTRY.put(ValueType.ID, IdRecord.class);
+    EVENT_REGISTRY.put(ValueType.MESSAGE, MessageRecord.class);
   }
 
   private TypedStreamReader reader;
