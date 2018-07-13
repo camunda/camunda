@@ -1,6 +1,5 @@
 package org.camunda.operate.es;
 
-import java.nio.charset.Charset;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -29,7 +28,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -49,10 +47,6 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
   private static final String QUERY_INSTANCES_URL = WORKFLOW_INSTANCE_URL;
   private static final String GET_INSTANCE_URL = WORKFLOW_INSTANCE_URL + "/%s";
   private static final String COUNT_INSTANCES_URL = WORKFLOW_INSTANCE_URL + "/count";
-
-  private MediaType contentType = new MediaType(MediaType.APPLICATION_JSON.getType(),
-    MediaType.APPLICATION_JSON.getSubtype(),
-    Charset.forName("utf8"));
 
   private Random random = new Random();
 
@@ -100,11 +94,11 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
         .content(mockMvcTestRule.json(workflowInstanceQueryDto))
-        .contentType(contentType);
+        .contentType(mockMvcTestRule.getContentType());
 
     MvcResult mvcResult = mockMvc.perform(request)
         .andExpect(status().isOk())
-        .andExpect(content().contentType(contentType))
+        .andExpect(content().contentType(mockMvcTestRule.getContentType()))
         .andReturn();
 
      List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
@@ -183,11 +177,11 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
   private void requestAndAssertIds(WorkflowInstanceQueryDto query, String testCaseName, String... ids) throws Exception {
     MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(mockMvcTestRule.json(query))
-      .contentType(contentType);
+      .contentType(mockMvcTestRule.getContentType());
     //then
     MvcResult mvcResult = mockMvc.perform(request)
       .andExpect(status().isOk())
-      .andExpect(content().contentType(contentType))
+      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
 
     List<WorkflowInstanceDto> workflowInstances = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
@@ -228,11 +222,11 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
         .content(mockMvcTestRule.json(query))
-        .contentType(contentType);
+        .contentType(mockMvcTestRule.getContentType());
     //when
     MvcResult mvcResult = mockMvc.perform(request)
         .andExpect(status().isOk())
-        .andExpect(content().contentType(contentType))
+        .andExpect(content().contentType(mockMvcTestRule.getContentType()))
         .andReturn();
 
     List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
@@ -280,10 +274,10 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
         .content(mockMvcTestRule.json(query))
-        .contentType(contentType);
+        .contentType(mockMvcTestRule.getContentType());
     MvcResult mvcResult = mockMvc.perform(request)
         .andExpect(status().isOk())
-        .andExpect(content().contentType(contentType))
+        .andExpect(content().contentType(mockMvcTestRule.getContentType()))
         .andReturn();
 
     List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
@@ -310,19 +304,58 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     //when
     MockHttpServletRequestBuilder request = post(query(0, 100))
         .content(mockMvcTestRule.json(query))
-        .contentType(contentType);
+        .contentType(mockMvcTestRule.getContentType());
 
     MvcResult mvcResult = mockMvc.perform(request)
         .andExpect(status().isOk())
-        .andExpect(content().contentType(contentType))
+        .andExpect(content().contentType(mockMvcTestRule.getContentType()))
         .andReturn();
 
     //then
     List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
 
-    assertThat(workflowInstanceDtos.size()).isEqualTo(2);
+    assertThat(workflowInstanceDtos).hasSize(2);
 
     assertThat(workflowInstanceDtos).extracting(WorkflowInstanceType.ID).containsExactlyInAnyOrder(workflowInstance1.getId(), workflowInstance2.getId());
+  }
+
+  @Test
+  public void testQueryByWorkflowIds() throws Exception {
+    //given
+    String wfId1 = "1";
+    String wfId2 = "2";
+    String wfId3 = "3";
+    final WorkflowInstanceEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
+    workflowInstance1.setWorkflowId(wfId1);
+    final WorkflowInstanceEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.CANCELED);
+    workflowInstance2.setWorkflowId(wfId2);
+    final WorkflowInstanceEntity workflowInstance3 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
+    final WorkflowInstanceEntity workflowInstance4 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
+    workflowInstance3.setWorkflowId(wfId3);
+    workflowInstance4.setWorkflowId(wfId3);
+
+    persist(workflowInstance1, workflowInstance2, workflowInstance3, workflowInstance4);
+
+    WorkflowInstanceQueryDto query = createGetAllWorkflowInstancesQuery();
+    query.setWorkflowIds(Arrays.asList(wfId1, wfId3));
+
+    //when
+    MockHttpServletRequestBuilder request = post(query(0, 100))
+      .content(mockMvcTestRule.json(query))
+      .contentType(mockMvcTestRule.getContentType());
+
+    MvcResult mvcResult = mockMvc.perform(request)
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
+      .andReturn();
+
+    //then
+    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
+
+    assertThat(workflowInstanceDtos).hasSize(3);
+
+    assertThat(workflowInstanceDtos).extracting(WorkflowInstanceType.ID)
+      .containsExactlyInAnyOrder(workflowInstance1.getId(), workflowInstance3.getId(), workflowInstance4.getId());
   }
 
   private void persist(WorkflowInstanceEntity... entitiesToPersist) {
@@ -346,11 +379,11 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     MockHttpServletRequestBuilder request = post(query(1, 3))
         .content(mockMvcTestRule.json(workflowInstanceQueryDto))
-        .contentType(contentType);
+        .contentType(mockMvcTestRule.getContentType());
 
     MvcResult mvcResult = mockMvc.perform(request)
         .andExpect(status().isOk())
-        .andExpect(content().contentType(contentType))
+        .andExpect(content().contentType(mockMvcTestRule.getContentType()))
         .andReturn();
 
      List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
@@ -378,11 +411,11 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(mockMvcTestRule.json(workflowInstanceQueryDto))
-      .contentType(contentType);
+      .contentType(mockMvcTestRule.getContentType());
 
     MvcResult mvcResult = mockMvc.perform(request)
       .andExpect(status().isOk())
-      .andExpect(content().contentType(contentType))
+      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
 
     List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
@@ -405,11 +438,11 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(mockMvcTestRule.json(workflowInstanceQueryDto))
-      .contentType(contentType);
+      .contentType(mockMvcTestRule.getContentType());
 
     MvcResult mvcResult = mockMvc.perform(request)
       .andExpect(status().isOk())
-      .andExpect(content().contentType(contentType))
+      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
 
     List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
@@ -432,11 +465,11 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(mockMvcTestRule.json(workflowInstanceQueryDto))
-      .contentType(contentType);
+      .contentType(mockMvcTestRule.getContentType());
 
     MvcResult mvcResult = mockMvc.perform(request)
       .andExpect(status().isOk())
-      .andExpect(content().contentType(contentType))
+      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
 
     List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
@@ -459,11 +492,11 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(mockMvcTestRule.json(workflowInstanceQueryDto))
-      .contentType(contentType);
+      .contentType(mockMvcTestRule.getContentType());
 
     MvcResult mvcResult = mockMvc.perform(request)
       .andExpect(status().isOk())
-      .andExpect(content().contentType(contentType))
+      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
 
     List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
@@ -486,11 +519,11 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(mockMvcTestRule.json(workflowInstanceQueryDto))
-      .contentType(contentType);
+      .contentType(mockMvcTestRule.getContentType());
 
     MvcResult mvcResult = mockMvc.perform(request)
       .andExpect(status().isOk())
-      .andExpect(content().contentType(contentType))
+      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
 
     List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
@@ -524,11 +557,11 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(mockMvcTestRule.json(workflowInstanceQueryDto))
-      .contentType(contentType);
+      .contentType(mockMvcTestRule.getContentType());
 
     MvcResult mvcResult = mockMvc.perform(request)
       .andExpect(status().isOk())
-      .andExpect(content().contentType(contentType))
+      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
 
     List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
@@ -583,11 +616,11 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(mockMvcTestRule.json(workflowInstanceQueryDto))
-      .contentType(contentType);
+      .contentType(mockMvcTestRule.getContentType());
 
     MvcResult mvcResult = mockMvc.perform(request)
       .andExpect(status().isOk())
-      .andExpect(content().contentType(contentType))
+      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
 
     List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
@@ -617,11 +650,11 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(mockMvcTestRule.json(workflowInstanceQueryDto))
-      .contentType(contentType);
+      .contentType(mockMvcTestRule.getContentType());
 
     MvcResult mvcResult = mockMvc.perform(request)
       .andExpect(status().isOk())
-      .andExpect(content().contentType(contentType))
+      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
 
     List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
@@ -650,11 +683,11 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(mockMvcTestRule.json(workflowInstanceQueryDto))
-      .contentType(contentType);
+      .contentType(mockMvcTestRule.getContentType());
 
     MvcResult mvcResult = mockMvc.perform(request)
       .andExpect(status().isOk())
-      .andExpect(content().contentType(contentType))
+      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
 
     List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
@@ -685,11 +718,11 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(mockMvcTestRule.json(workflowInstanceQueryDto))
-      .contentType(contentType);
+      .contentType(mockMvcTestRule.getContentType());
 
     MvcResult mvcResult = mockMvc.perform(request)
       .andExpect(status().isOk())
-      .andExpect(content().contentType(contentType))
+      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
 
     List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
@@ -721,13 +754,13 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(mockMvcTestRule.json(workflowInstanceQueryDto))
-      .contentType(contentType);
+      .contentType(mockMvcTestRule.getContentType());
 
     MvcResult mvcResult = mockMvc
       .perform(request)
       .andExpect(status().isOk())
       .andExpect(content()
-        .contentType(contentType))
+        .contentType(mockMvcTestRule.getContentType()))
       .andReturn();
 
     List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
@@ -767,12 +800,12 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(mockMvcTestRule.json(workflowInstanceQueryDto))
-      .contentType(contentType);
+      .contentType(mockMvcTestRule.getContentType());
 
     MvcResult mvcResult = mockMvc
       .perform(request)
       .andExpect(status().isOk())
-      .andExpect(content().contentType(contentType))
+      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
 
     List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
@@ -800,7 +833,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     MvcResult mvcResult = mockMvc
       .perform(request)
       .andExpect(status().isOk())
-      .andExpect(content().contentType(contentType))
+      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
 
     final WorkflowInstanceDto workflowInstanceDto = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<WorkflowInstanceDto>() {});
@@ -823,11 +856,11 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
   private void testCountQuery(WorkflowInstanceQueryDto workflowInstanceQueryDto, int count) throws Exception {
     MockHttpServletRequestBuilder request = post(COUNT_INSTANCES_URL)
       .content(mockMvcTestRule.json(workflowInstanceQueryDto))
-      .contentType(contentType);
+      .contentType(mockMvcTestRule.getContentType());
 
     mockMvc.perform(request)
       .andExpect(status().isOk())
-      .andExpect(content().contentType(contentType))
+      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andExpect(content().json(String.format("{\"count\":%d}",count)));
   }
 

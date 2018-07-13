@@ -12,11 +12,12 @@
  */
 package org.camunda.operate.rest;
 
-import static org.camunda.operate.rest.WorkflowRestService.WORKFLOW_URL;
-
+import java.util.List;
+import java.util.Map;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.es.reader.WorkflowReader;
 import org.camunda.operate.rest.dto.WorkflowDto;
+import org.camunda.operate.rest.dto.WorkflowGroupDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,6 +27,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.SwaggerDefinition;
 import io.swagger.annotations.Tag;
+import static org.camunda.operate.rest.WorkflowRestService.WORKFLOW_URL;
 
 @Api(tags = {"Workflows"})
 @SwaggerDefinition(tags = {
@@ -51,6 +53,13 @@ public class WorkflowRestService {
   public WorkflowDto getWorkflow(@PathVariable("id") String workflowId) {
     final WorkflowEntity workflowEntity = workflowReader.getWorkflow(workflowId);
     return WorkflowDto.createFrom(workflowEntity);
+  }
+
+  @ApiOperation("List workflows grouped by bpmnProcessId")
+  @GetMapping(path = "/grouped")
+  public List<WorkflowGroupDto> getWorkflowsGrouped() {
+    final Map<String, List<WorkflowEntity>> workflowsGrouped = workflowReader.getWorkflowsGrouped();
+    return WorkflowGroupDto.createFrom(workflowsGrouped);
   }
 
 }

@@ -25,6 +25,7 @@ import io.zeebe.client.api.subscription.TopicSubscription;
 import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.client.impl.event.JobEventImpl;
 import io.zeebe.client.impl.event.WorkflowInstanceEventImpl;
+import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 
 @Component
 public class ZeebeUtil {
@@ -71,6 +72,23 @@ public class ZeebeUtil {
         .send()
         .join();
     logger.debug("Deployment of resource [{}] was performed", classpathResources);
+    return String.valueOf(deploymentEvent.getDeployedWorkflows().get(0).getWorkflowKey());
+  }
+
+  /**
+   * Deploys the process synchronously.
+   * @param topic
+   * @param workflowModel
+   * @return workflow id
+   */
+  public String deployWorkflowToTheTopic(String topic, WorkflowDefinition workflowModel, String resourceName) {
+    DeployWorkflowCommandStep1 deployWorkflowCommandStep1 = client.topicClient(topic).workflowClient().newDeployCommand()
+      .addWorkflowModel(workflowModel, resourceName);
+    final DeploymentEvent deploymentEvent =
+      ((DeployWorkflowCommandStep1.DeployWorkflowCommandBuilderStep2)deployWorkflowCommandStep1)
+        .send()
+        .join();
+    logger.debug("Deployment of resource [{}] was performed", resourceName);
     return String.valueOf(deploymentEvent.getDeployedWorkflows().get(0).getWorkflowKey());
   }
 

@@ -1,7 +1,8 @@
 package org.camunda.operate.rest.dto;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.camunda.operate.entities.WorkflowEntity;
-
 
 public class WorkflowDto {
 
@@ -54,4 +55,42 @@ public class WorkflowDto {
     return workflow;
   }
 
+  public static List<WorkflowDto> createFrom(List<WorkflowEntity> workflowEntities) {
+    List<WorkflowDto> result = new ArrayList<>();
+    if (workflowEntities != null) {
+      for (WorkflowEntity workflowEntity: workflowEntities) {
+        if (workflowEntity != null) {
+          result.add(createFrom(workflowEntity));
+        }
+      }
+    }
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o)
+      return true;
+    if (o == null || getClass() != o.getClass())
+      return false;
+
+    WorkflowDto that = (WorkflowDto) o;
+
+    if (version != that.version)
+      return false;
+    if (id != null ? !id.equals(that.id) : that.id != null)
+      return false;
+    if (name != null ? !name.equals(that.name) : that.name != null)
+      return false;
+    return bpmnProcessId != null ? bpmnProcessId.equals(that.bpmnProcessId) : that.bpmnProcessId == null;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = id != null ? id.hashCode() : 0;
+    result = 31 * result + (name != null ? name.hashCode() : 0);
+    result = 31 * result + version;
+    result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
+    return result;
+  }
 }

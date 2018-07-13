@@ -81,4 +81,16 @@ public class WorkflowEntity extends OperateEntity {
     result = 31 * result + (resourceName != null ? resourceName.hashCode() : 0);
     return result;
   }
+
+  @Override
+  public String toString() {
+    return "WorkflowEntity{"
+      + "name='" + name + '\''
+      + ", version=" + version
+      + ", bpmnProcessId='" + bpmnProcessId + '\''
+      + ", bpmnXml='" + bpmnXml + '\''
+      + ", resourceName='" + resourceName + '\''
+      + "} "
+      + super.toString();
+  }
 }

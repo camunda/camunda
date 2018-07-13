@@ -218,6 +218,8 @@ public class ZeebeDemoDataGenerator {
 
     zeebeUtil.deployWorkflowToTheTopic(topic, "orderProcess_v_1.bpmn");
 
+    zeebeUtil.deployWorkflowToTheTopic(topic, "loanProcess_v_1.bpmn");
+
   }
 
   private void startWorkflowInstances(int version) {
@@ -226,6 +228,9 @@ public class ZeebeDemoDataGenerator {
     for (int i = 0; i < instancesCount; i++) {
       zeebeUtil.startWorkflowInstance(topic, "demoProcess", "{\"a\": \"b\"}");
 
+      if (version < 2) {
+        zeebeUtil.startWorkflowInstance(topic, "loanProcess", "{\"amount\": \"30000\"}");
+      }
       if (version < 3) {
         zeebeUtil.startWorkflowInstance(topic, "orderProcess", "{\"a\": \"b\"}");
       }

@@ -159,9 +159,18 @@ public class WorkflowInstanceReader {
       endDateQuery = createEndDateQuery(queryDto);
     }
 
-    QueryBuilder query = joinWithAnd(runningFinishedQuery, idsQuery, errorMessageQuery, activityIdQuery, createDateQuery, endDateQuery);
+    QueryBuilder workflowIdQuery = null;
+    if (queryDto.getWorkflowIds() != null && !queryDto.getWorkflowIds().isEmpty()) {
+      workflowIdQuery = createWorkflowIdsQuery(queryDto.getWorkflowIds());
+    }
+
+    QueryBuilder query = joinWithAnd(runningFinishedQuery, idsQuery, errorMessageQuery, activityIdQuery, createDateQuery, endDateQuery, workflowIdQuery);
 
     return query;
+  }
+
+  private QueryBuilder createWorkflowIdsQuery(List<String> workflowId) {
+    return termsQuery(WorkflowInstanceType.WORKFLOW_ID, workflowId);
   }
 
   private QueryBuilder createEndDateQuery(WorkflowInstanceQueryDto query) {

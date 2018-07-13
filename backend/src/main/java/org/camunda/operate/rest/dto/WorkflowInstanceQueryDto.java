@@ -49,6 +49,8 @@ public class WorkflowInstanceQueryDto {
   @ApiModelProperty(value = "End date before (exclusive)", allowEmptyValue = true)
   private OffsetDateTime endDateBefore;
 
+  private List<String> workflowIds;
+
   private SortingDto sorting;
 
   public WorkflowInstanceQueryDto() {
@@ -158,6 +160,14 @@ public class WorkflowInstanceQueryDto {
     this.endDateBefore = endDateBefore;
   }
 
+  public List<String> getWorkflowIds() {
+    return workflowIds;
+  }
+
+  public void setWorkflowIds(List<String> workflowIds) {
+    this.workflowIds = workflowIds;
+  }
+
   public SortingDto getSorting() {
     return sorting;
   }
@@ -204,6 +214,8 @@ public class WorkflowInstanceQueryDto {
       return false;
     if (endDateBefore != null ? !endDateBefore.equals(that.endDateBefore) : that.endDateBefore != null)
       return false;
+    if (workflowIds != null ? !workflowIds.equals(that.workflowIds) : that.workflowIds != null)
+      return false;
     return sorting != null ? sorting.equals(that.sorting) : that.sorting == null;
   }
 
@@ -222,6 +234,7 @@ public class WorkflowInstanceQueryDto {
     result = 31 * result + (startDateBefore != null ? startDateBefore.hashCode() : 0);
     result = 31 * result + (endDateAfter != null ? endDateAfter.hashCode() : 0);
     result = 31 * result + (endDateBefore != null ? endDateBefore.hashCode() : 0);
+    result = 31 * result + (workflowIds != null ? workflowIds.hashCode() : 0);
     result = 31 * result + (sorting != null ? sorting.hashCode() : 0);
     return result;
   }

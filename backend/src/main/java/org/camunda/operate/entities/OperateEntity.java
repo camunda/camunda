@@ -56,4 +56,13 @@ public abstract class OperateEntity {
     result = 31 * result + (int) (position ^ (position >>> 32));
     return result;
   }
+
+  @Override
+  public String toString() {
+    return "OperateEntity{"
+      + "id='" + id + '\''
+      + ", partitionId=" + partitionId
+      + ", position=" + position
+      + '}';
+  }
 }
