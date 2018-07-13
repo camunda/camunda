@@ -41,6 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class WorkflowIT extends OperateIntegrationTest {
 
   private static final String QUERY_WORKFLOWS_GROUPED_URL = "/api/workflows/grouped";
+  private static final String QUERY_WORKFLOW_XML_URL = "/api/workflows/%s/xml";
   @Rule
   public ZeebeTestRule zeebeTestRule = new ZeebeTestRule();
 
@@ -85,6 +86,29 @@ public class WorkflowIT extends OperateIntegrationTest {
     assertThat(workflowEntity.getVersion()).isEqualTo(1);
     assertThat(workflowEntity.getBpmnXml()).isNotEmpty();
     assertThat(workflowEntity.getName()).isEqualTo("Demo process");
+
+  }
+
+  @Test
+  public void testWorkflowGetDiagram() throws Exception {
+    //given
+    String topicName = zeebeTestRule.getTopicName();
+    final String workflowId = zeebeUtil.deployWorkflowToTheTopic(topicName, "demoProcess_v_1.bpmn");
+
+    //when
+    elasticsearchTestRule.processAllEvents(1);
+
+    MockHttpServletRequestBuilder request = get(String.format(QUERY_WORKFLOW_XML_URL, workflowId));
+
+    MvcResult mvcResult = mockMvc.perform(request)
+      .andExpect(status().isOk())
+      .andReturn();
+
+    final String xml = mvcResult.getResponse().getContentAsString();
+
+    //then
+    assertThat(xml).isNotEmpty();
+    assertThat(xml).contains("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
 
   }
 
