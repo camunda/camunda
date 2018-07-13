@@ -20,6 +20,8 @@ package io.zeebe.broker.system.workflow.repository.processor;
 import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
+import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
+import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex;
 import io.zeebe.util.buffer.BufferUtil;
 
@@ -31,7 +33,10 @@ public class DeploymentTopicCreatingEventProcessor implements TypedRecordProcess
   }
 
   @Override
-  public void updateState(TypedRecord<TopicRecord> event) {
-    index.addTopic(BufferUtil.bufferAsString(event.getValue().getName()));
+  public void processRecord(
+      TypedRecord<TopicRecord> record,
+      TypedResponseWriter responseWriter,
+      TypedStreamWriter streamWriter) {
+    index.addTopic(BufferUtil.bufferAsString(record.getValue().getName()));
   }
 }

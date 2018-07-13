@@ -49,7 +49,11 @@ public class DeploymentCreateEventProcessor implements TypedRecordProcessor<Depl
   }
 
   @Override
-  public void processRecord(TypedRecord<DeploymentRecord> event) {
+  public void processRecord(
+      TypedRecord<DeploymentRecord> event,
+      TypedResponseWriter responseWriter,
+      TypedStreamWriter streamWriter) {
+
     final DeploymentRecord deploymentEvent = event.getValue();
     final String topicName = bufferAsString(deploymentEvent.getTopicName());
 
@@ -60,12 +64,9 @@ public class DeploymentCreateEventProcessor implements TypedRecordProcessor<Depl
       rejectionType = RejectionType.BAD_VALUE;
       rejectionReason = "Topic does not exist";
     }
-  }
 
-  @Override
-  public long writeRecord(TypedRecord<DeploymentRecord> event, TypedStreamWriter writer) {
     if (accepted) {
-      return writer.writeFollowUpEvent(
+      streamWriter.writeFollowUpEvent(
           event.getKey(),
           DeploymentIntent.CREATED,
           event.getValue(),
@@ -73,7 +74,7 @@ public class DeploymentCreateEventProcessor implements TypedRecordProcessor<Depl
               m.requestId(event.getMetadata().getRequestId())
                   .requestStreamId(event.getMetadata().getRequestStreamId()));
     } else {
-      return writer.writeRejection(
+      streamWriter.writeRejection(
           event,
           rejectionType,
           rejectionReason,

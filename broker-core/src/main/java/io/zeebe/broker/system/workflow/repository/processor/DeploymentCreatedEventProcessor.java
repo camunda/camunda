@@ -33,15 +33,18 @@ public class DeploymentCreatedEventProcessor implements TypedRecordProcessor<Dep
   }
 
   @Override
-  public boolean executeSideEffects(
-      TypedRecord<DeploymentRecord> event, TypedResponseWriter responseWriter) {
-    return responseWriter.writeRecordUnchanged(event);
+  public void processRecord(
+      TypedRecord<DeploymentRecord> event,
+      TypedResponseWriter responseWriter,
+      TypedStreamWriter streamWriter) {
+
+    responseWriter.writeRecord(event.getMetadata().getIntent(), event);
+
+    addWorkflowsToIndex(event);
   }
 
-  @Override
-  public void updateState(TypedRecord<DeploymentRecord> event) {
+  private void addWorkflowsToIndex(TypedRecord<DeploymentRecord> event) {
     final DeploymentRecord deploymentEvent = event.getValue();
-
     final ValueArray<DeployedWorkflow> deployedWorkflows = deploymentEvent.deployedWorkflows();
 
     final String topicName = BufferUtil.bufferAsString(deploymentEvent.getTopicName());

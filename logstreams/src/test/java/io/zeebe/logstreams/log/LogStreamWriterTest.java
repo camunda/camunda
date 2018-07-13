@@ -52,7 +52,7 @@ public class LogStreamWriterTest {
           .around(writerRule)
           .around(readerRule);
 
-  private LogStreamWriter writer;
+  private LogStreamRecordWriter writer;
 
   @Before
   public void setUp() {

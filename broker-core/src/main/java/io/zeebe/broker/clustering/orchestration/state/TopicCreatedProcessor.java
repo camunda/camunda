@@ -19,10 +19,12 @@ package io.zeebe.broker.clustering.orchestration.state;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
+import io.zeebe.broker.logstreams.processor.SideEffectProducer;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.TopicIntent;
 import io.zeebe.util.buffer.BufferUtil;
@@ -40,8 +42,6 @@ public class TopicCreatedProcessor implements TypedRecordProcessor<TopicRecord> 
   private final Consumer<DirectBuffer> notifyListeners;
   private final BiConsumer<Long, TopicRecord> updateTopicState;
 
-  private boolean isCreated;
-
   public TopicCreatedProcessor(
       final Predicate<DirectBuffer> topicAlreadyCreated,
       final Consumer<DirectBuffer> notifyListeners,
@@ -52,42 +52,29 @@ public class TopicCreatedProcessor implements TypedRecordProcessor<TopicRecord> 
   }
 
   @Override
-  public void processRecord(final TypedRecord<TopicRecord> event) {
+  public void processRecord(
+      TypedRecord<TopicRecord> event,
+      TypedResponseWriter responseWriter,
+      TypedStreamWriter streamWriter,
+      Consumer<SideEffectProducer> sideEffect,
+      EventLifecycleContext ctx) {
     final TopicRecord topicEvent = event.getValue();
-
     final DirectBuffer topicName = topicEvent.getName();
 
-    isCreated = !topicAlreadyCreated.test(topicName);
-
-    if (!isCreated) {
+    if (topicAlreadyCreated.test(topicName)) {
       LOG.warn(
           "Rejecting topic create complete as topic {} was already created",
           BufferUtil.bufferAsString(topicName));
-    }
-  }
 
-  @Override
-  public boolean executeSideEffects(
-      final TypedRecord<TopicRecord> event, final TypedResponseWriter responseWriter) {
-    if (isCreated) {
-      notifyListeners.accept(event.getValue().getName());
-    }
-
-    return true;
-  }
-
-  @Override
-  public long writeRecord(final TypedRecord<TopicRecord> event, final TypedStreamWriter writer) {
-    if (isCreated) {
-      return writer.writeFollowUpEvent(event.getKey(), TopicIntent.CREATED, event.getValue());
+      streamWriter.writeRejection(event, RejectionType.NOT_APPLICABLE, REJECTION_REASON);
     } else {
-      return writer.writeRejection(event, RejectionType.NOT_APPLICABLE, REJECTION_REASON);
-    }
-  }
+      sideEffect.accept(
+          () -> {
+            notifyListeners.accept(topicName);
+            return true;
+          });
 
-  @Override
-  public void updateState(final TypedRecord<TopicRecord> event) {
-    if (isCreated) {
+      streamWriter.writeFollowUpEvent(event.getKey(), TopicIntent.CREATED, event.getValue());
       updateTopicState.accept(event.getKey(), event.getValue());
     }
   }

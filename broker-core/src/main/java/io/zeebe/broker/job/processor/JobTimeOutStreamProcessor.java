@@ -24,6 +24,7 @@ import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
+import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamReader;
@@ -86,8 +87,9 @@ public class JobTimeOutStreamProcessor implements StreamProcessorLifecycleAware 
         //   that we can stop consuming/yield on backpressure
 
         final TypedRecord<JobRecord> event = reader.readValue(eventPosition, JobRecord.class);
-        final long position =
-            writer.writeFollowUpCommand(event.getKey(), JobIntent.TIME_OUT, event.getValue());
+        writer.writeFollowUpCommand(event.getKey(), JobIntent.TIME_OUT, event.getValue());
+
+        final long position = writer.flush();
         final boolean success = position >= 0;
 
         if (!success) {
@@ -105,7 +107,11 @@ public class JobTimeOutStreamProcessor implements StreamProcessorLifecycleAware 
     final TypedRecordProcessor<JobRecord> registerJob =
         new TypedRecordProcessor<JobRecord>() {
           @Override
-          public void updateState(TypedRecord<JobRecord> event) {
+          public void processRecord(
+              TypedRecord<JobRecord> event,
+              TypedResponseWriter responseWriter,
+              TypedStreamWriter streamWriter) {
+
             final long deadline = event.getValue().getDeadline();
 
             mapAccessBuffer.putLong(0, event.getPosition());
@@ -117,8 +123,12 @@ public class JobTimeOutStreamProcessor implements StreamProcessorLifecycleAware 
 
     final TypedRecordProcessor<JobRecord> unregisterJob =
         new TypedRecordProcessor<JobRecord>() {
+
           @Override
-          public void updateState(TypedRecord<JobRecord> event) {
+          public void processRecord(
+              TypedRecord<JobRecord> event,
+              TypedResponseWriter responseWriter,
+              TypedStreamWriter streamWriter) {
             expirationMap.remove(event.getKey());
           }
         };

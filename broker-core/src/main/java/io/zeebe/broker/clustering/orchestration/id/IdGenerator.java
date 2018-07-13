@@ -21,14 +21,17 @@ import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.SYSTEM_ID_
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.Partition;
+import io.zeebe.broker.logstreams.processor.SideEffectProducer;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
+import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
+import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.msgpack.value.IntegerValue;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.RecordType;
@@ -44,6 +47,7 @@ import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.ArrayDeque;
 import java.util.Queue;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 
 public class IdGenerator implements TypedRecordProcessor<IdRecord>, Service<IdGenerator> {
@@ -71,23 +75,29 @@ public class IdGenerator implements TypedRecordProcessor<IdRecord>, Service<IdGe
   }
 
   @Override
-  public boolean executeSideEffects(
-      final TypedRecord<IdRecord> event, final TypedResponseWriter responseWriter) {
-    // complete pending futures
-    final IdRecord value = event.getValue();
-    final ActorFuture<Integer> pendingIdFuture = pendingFutures.poll();
-    if (pendingIdFuture != null) {
-      LOG.debug("Id generated {}", value);
-      pendingIdFuture.complete(value.getId());
-    } else {
-      LOG.warn("No pending id request found, ignoring id event {}", value);
-    }
-    return true;
-  }
+  public void processRecord(
+      TypedRecord<IdRecord> record,
+      TypedResponseWriter responseWriter,
+      TypedStreamWriter streamWriter,
+      Consumer<SideEffectProducer> sideEffect,
+      EventLifecycleContext ctx) {
 
-  @Override
-  public void updateState(final TypedRecord<IdRecord> event) {
-    committedId.setValue(event.getValue().getId());
+    final IdRecord value = record.getValue();
+
+    sideEffect.accept(
+        () -> {
+          // complete pending future
+          final ActorFuture<Integer> pendingIdFuture = pendingFutures.poll();
+          if (pendingIdFuture != null) {
+            LOG.debug("Id generated {}", value);
+            pendingIdFuture.complete(value.getId());
+          } else {
+            LOG.warn("No pending id request found, ignoring id event {}", value);
+          }
+          return true;
+        });
+
+    committedId.setValue(value.getId());
   }
 
   @Override

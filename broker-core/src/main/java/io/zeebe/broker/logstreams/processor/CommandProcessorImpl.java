@@ -29,7 +29,6 @@ public class CommandProcessorImpl<T extends UnpackedObject>
   private final CommandProcessor<T> wrappedProcessor;
 
   private boolean isAccepted;
-  private boolean respond;
 
   private Intent newState;
 
@@ -41,39 +40,22 @@ public class CommandProcessorImpl<T extends UnpackedObject>
   }
 
   @Override
-  public void processRecord(TypedRecord<T> record) {
+  public void processRecord(
+      TypedRecord<T> record, TypedResponseWriter responseWriter, TypedStreamWriter streamWriter) {
     wrappedProcessor.onCommand(record, this);
-    respond = record.getMetadata().hasRequestMetadata();
-  }
 
-  @Override
-  public boolean executeSideEffects(TypedRecord<T> record, TypedResponseWriter responseWriter) {
-    if (respond) {
-      if (isAccepted) {
-        return responseWriter.writeRecord(newState, record);
-      } else {
-        return responseWriter.writeRejection(record, rejectionType, rejectionReason);
+    final boolean respond = record.getMetadata().hasRequestMetadata();
+
+    if (isAccepted) {
+      streamWriter.writeFollowUpEvent(record.getKey(), newState, record.getValue());
+      if (respond) {
+        responseWriter.writeRecord(newState, record);
       }
     } else {
-      return true;
-    }
-  }
-
-  @Override
-  public long writeRecord(TypedRecord<T> record, TypedStreamWriter writer) {
-    if (isAccepted) {
-      return writer.writeFollowUpEvent(record.getKey(), newState, record.getValue());
-    } else {
-      return writer.writeRejection(record, rejectionType, rejectionReason);
-    }
-  }
-
-  @Override
-  public void updateState(TypedRecord<T> record) {
-    if (isAccepted) {
-      wrappedProcessor.updateStateOnAccept(record);
-    } else {
-      wrappedProcessor.updateStateOnReject(record);
+      streamWriter.writeRejection(record, rejectionType, rejectionReason);
+      if (respond) {
+        responseWriter.writeRejection(record, rejectionType, rejectionReason);
+      }
     }
   }
 

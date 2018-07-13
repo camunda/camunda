@@ -39,7 +39,7 @@ public class StreamProcessorBuilder {
   protected SnapshotStorage snapshotStorage;
 
   protected LogStreamReader logStreamReader;
-  protected LogStreamWriter logStreamWriter;
+  protected LogStreamRecordWriter logStreamWriter;
 
   protected EventFilter eventFilter;
 

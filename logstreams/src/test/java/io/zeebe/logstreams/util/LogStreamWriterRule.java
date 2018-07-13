@@ -25,7 +25,7 @@ public class LogStreamWriterRule extends ExternalResource {
   private LogStreamRule logStreamRule;
 
   private LogStream logStream;
-  private LogStreamWriter logStreamWriter;
+  private LogStreamRecordWriter logStreamWriter;
 
   public LogStreamWriterRule(final LogStreamRule logStreamRule) {
     this.logStreamRule = logStreamRule;
@@ -76,7 +76,7 @@ public class LogStreamWriterRule extends ExternalResource {
     return writeEvent(w -> w.positionAsKey().value(event), commit);
   }
 
-  public long writeEvent(final Consumer<LogStreamWriter> writer, final boolean commit) {
+  public long writeEvent(final Consumer<LogStreamRecordWriter> writer, final boolean commit) {
     final long position = writeEventInternal(writer);
 
     waitForPositionToBeAppended(position);
@@ -88,7 +88,7 @@ public class LogStreamWriterRule extends ExternalResource {
     return position;
   }
 
-  private long writeEventInternal(final Consumer<LogStreamWriter> writer) {
+  private long writeEventInternal(final Consumer<LogStreamRecordWriter> writer) {
     long position;
     do {
       position = tryWrite(writer);
@@ -105,7 +105,7 @@ public class LogStreamWriterRule extends ExternalResource {
     return tryWrite(w -> w.key(key).value(value));
   }
 
-  public long tryWrite(final Consumer<LogStreamWriter> writer) {
+  public long tryWrite(final Consumer<LogStreamRecordWriter> writer) {
     writer.accept(logStreamWriter);
 
     return logStreamWriter.tryWrite();

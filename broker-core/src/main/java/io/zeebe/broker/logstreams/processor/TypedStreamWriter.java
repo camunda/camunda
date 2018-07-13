@@ -25,35 +25,37 @@ import java.util.function.Consumer;
 
 public interface TypedStreamWriter {
   /** @return position of new event, negative value on failure */
-  long writeRejection(
+  void writeRejection(
       TypedRecord<? extends UnpackedObject> command, RejectionType type, String reason);
 
   /** @return position of new event, negative value on failure */
-  long writeRejection(
+  void writeRejection(
       TypedRecord<? extends UnpackedObject> command,
       RejectionType type,
       String reason,
       Consumer<RecordMetadata> metadata);
 
   /** @return position of new event, negative value on failure */
-  long writeNewCommand(Intent intent, UnpackedObject value);
+  void writeNewCommand(Intent intent, UnpackedObject value);
 
   /** @return position of new event, negative value on failure */
-  long writeFollowUpCommand(long key, Intent intent, UnpackedObject value);
+  void writeFollowUpCommand(long key, Intent intent, UnpackedObject value);
 
   /** @return position of new event, negative value on failure */
-  long writeFollowUpCommand(
+  void writeFollowUpCommand(
       long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata);
 
   /** @return position of new event, negative value on failure */
-  long writeNewEvent(Intent intent, UnpackedObject value);
+  void writeNewEvent(Intent intent, UnpackedObject value);
 
   /** @return position of new event, negative value on failure */
-  long writeFollowUpEvent(long key, Intent intent, UnpackedObject value);
+  void writeFollowUpEvent(long key, Intent intent, UnpackedObject value);
 
   /** @return position of new event, negative value on failure */
-  long writeFollowUpEvent(
+  void writeFollowUpEvent(
       long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata);
 
   TypedBatchWriter newBatch();
+
+  long flush();
 }

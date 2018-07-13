@@ -27,8 +27,13 @@ import java.nio.charset.StandardCharsets;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class TypedResponseWriterImpl implements TypedResponseWriter {
+public class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectProducer {
+
   protected CommandResponseWriter writer;
+  private long requestId;
+  private int requestStreamId;
+
+  private boolean isResponseStaged;
   protected int partitionId;
 
   private final UnsafeBuffer stringWrapper = new UnsafeBuffer(0, 0);
@@ -39,11 +44,11 @@ public class TypedResponseWriterImpl implements TypedResponseWriter {
   }
 
   @Override
-  public boolean writeRejection(
+  public void writeRejection(
       TypedRecord<?> record, RejectionType rejectionType, String rejectionReason) {
     final byte[] bytes = rejectionReason.getBytes(StandardCharsets.UTF_8);
     stringWrapper.wrap(bytes);
-    return write(
+    stage(
         RecordType.COMMAND_REJECTION,
         record.getMetadata().getIntent(),
         rejectionType,
@@ -52,37 +57,17 @@ public class TypedResponseWriterImpl implements TypedResponseWriter {
   }
 
   @Override
-  public boolean writeRejection(TypedRecord<?> record, RejectionType type, DirectBuffer reason) {
-    return write(
-        RecordType.COMMAND_REJECTION, record.getMetadata().getIntent(), type, reason, record);
+  public void writeRejection(TypedRecord<?> record, RejectionType type, DirectBuffer reason) {
+    stage(RecordType.COMMAND_REJECTION, record.getMetadata().getIntent(), type, reason, record);
   }
 
   @Override
-  public boolean writeRecord(Intent intent, TypedRecord<?> record) {
+  public void writeRecord(Intent intent, TypedRecord<?> record) {
     stringWrapper.wrap(0, 0);
-    return write(RecordType.EVENT, intent, RejectionType.NULL_VAL, stringWrapper, record);
+    stage(RecordType.EVENT, intent, RejectionType.NULL_VAL, stringWrapper, record);
   }
 
-  @Override
-  public boolean writeRecordUnchanged(TypedRecord<?> record) {
-    final RecordMetadata metadata = record.getMetadata();
-
-    return writer
-        .partitionId(partitionId)
-        .position(record.getPosition())
-        .sourcePosition(record.getSourcePosition())
-        .key(record.getKey())
-        .timestamp(record.getTimestamp())
-        .intent(metadata.getIntent())
-        .recordType(metadata.getRecordType())
-        .valueType(metadata.getValueType())
-        .rejectionType(metadata.getRejectionType())
-        .rejectionReason(metadata.getRejectionReason())
-        .valueWriter(record.getValue())
-        .tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId());
-  }
-
-  private boolean write(
+  private void stage(
       RecordType type,
       Intent intent,
       RejectionType rejectionType,
@@ -90,11 +75,16 @@ public class TypedResponseWriterImpl implements TypedResponseWriter {
       TypedRecord<?> record) {
     final RecordMetadata metadata = record.getMetadata();
 
-    return writer
+    final boolean respondsOnCommand = metadata.getRecordType() == RecordType.COMMAND;
+
+    writer
         .partitionId(partitionId)
-        .position(0) // TODO: this depends on the value of written event =>
+        .position(
+            respondsOnCommand
+                ? 0
+                : record.getPosition()) // TODO: this depends on the value of written event =>
         // https://github.com/zeebe-io/zeebe/issues/374
-        .sourcePosition(record.getPosition())
+        .sourcePosition(respondsOnCommand ? record.getPosition() : record.getSourcePosition())
         .key(record.getKey())
         .timestamp(record.getTimestamp())
         .intent(intent)
@@ -102,7 +92,22 @@ public class TypedResponseWriterImpl implements TypedResponseWriter {
         .valueType(metadata.getValueType())
         .rejectionType(rejectionType)
         .rejectionReason(rejectionReason)
-        .valueWriter(record.getValue())
-        .tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId());
+        .valueWriter(record.getValue());
+
+    this.requestId = metadata.getRequestId();
+    this.requestStreamId = metadata.getRequestStreamId();
+    isResponseStaged = true;
+  }
+
+  public void reset() {
+    isResponseStaged = false;
+  }
+
+  public boolean flush() {
+    if (isResponseStaged) {
+      return writer.tryWriteResponse(requestStreamId, requestId);
+    } else {
+      return true;
+    }
   }
 }

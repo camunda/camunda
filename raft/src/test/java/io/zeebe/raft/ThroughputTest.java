@@ -37,7 +37,7 @@ public class ThroughputTest {
     final BenchmarkContext ctx = new BenchmarkContext();
     ctx.setUp();
 
-    final LogStreamWriter writer = ctx.writer;
+    final LogStreamRecordWriter writer = ctx.writer;
     final LogStream logStream = ctx.leader.getLogStream();
     final LongRingBuffer uncommitedPositions = new LongRingBuffer(10 * 1024);
 
@@ -71,7 +71,7 @@ public class ThroughputTest {
     final ThroughPutTestRaft raft3 =
         new ThroughPutTestRaft(new SocketAddress("localhost", 51017), raft1);
 
-    final LogStreamWriter writer = new LogStreamWriterImpl();
+    final LogStreamRecordWriter writer = new LogStreamWriterImpl();
 
     Raft leader;
 

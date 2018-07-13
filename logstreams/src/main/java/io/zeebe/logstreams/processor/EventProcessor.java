@@ -15,7 +15,7 @@
  */
 package io.zeebe.logstreams.processor;
 
-import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
 
 /** Process an event from a log stream. An implementation may be specified for one type of event. */
 public interface EventProcessor {
@@ -47,7 +47,7 @@ public interface EventProcessor {
    *     <li>zero, if no event was written, or
    *     <li>a negate value, if the write operation fails.
    */
-  default long writeEvent(LogStreamWriter writer) {
+  default long writeEvent(LogStreamRecordWriter writer) {
     return 0;
   }
 

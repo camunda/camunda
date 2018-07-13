@@ -28,7 +28,7 @@ import io.zeebe.broker.transport.controlmessage.ControlMessageRequestHeaderDescr
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
@@ -63,7 +63,7 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
 
   protected final Int2ObjectHashMap<Partition> leaderPartitions = new Int2ObjectHashMap<>();
   protected final RecordMetadata eventMetadata = new RecordMetadata();
-  protected final LogStreamWriter logStreamWriter = new LogStreamWriterImpl();
+  protected final LogStreamRecordWriter logStreamWriter = new LogStreamWriterImpl();
 
   protected final ErrorResponseWriter errorResponseWriter = new ErrorResponseWriter();
   protected final Dispatcher controlMessageDispatcher;

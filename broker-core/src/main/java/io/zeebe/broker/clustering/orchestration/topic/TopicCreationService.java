@@ -312,7 +312,9 @@ public class TopicCreationService extends Actor
   }
 
   private void writeEvent(final long key, final TopicIntent intent, final TopicRecord topicEvent) {
-    if (streamWriter.writeFollowUpEvent(key, intent, topicEvent) >= 0) {
+    streamWriter.writeFollowUpEvent(key, intent, topicEvent);
+
+    if (streamWriter.flush() >= 0) {
       actor.done();
     } else {
       actor.yield();

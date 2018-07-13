@@ -31,7 +31,7 @@ public class StreamProcessorContext {
   protected LogStream logStream;
 
   protected LogStreamReader logStreamReader;
-  protected LogStreamWriter logStreamWriter;
+  protected LogStreamRecordWriter logStreamWriter;
 
   protected Duration snapshotPeriod;
   protected SnapshotStorage snapshotStorage;
@@ -92,11 +92,11 @@ public class StreamProcessorContext {
     return logStreamReader;
   }
 
-  public LogStreamWriter getLogStreamWriter() {
+  public LogStreamRecordWriter getLogStreamWriter() {
     return logStreamWriter;
   }
 
-  public void setLogStreamWriter(LogStreamWriter logStreamWriter) {
+  public void setLogStreamWriter(LogStreamRecordWriter logStreamWriter) {
     this.logStreamWriter = logStreamWriter;
   }
 
