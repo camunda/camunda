@@ -9,67 +9,97 @@ it('should not render anything if the modal is not opened', () => {
   expect(node.html()).toBe(null);
 });
 
-// --- INCOMPATIBLE TESTS --- //
+it('should render basic children', () => {
+  const node = mount(<Modal open={true}>ModalContent</Modal>);
 
-// testing this component is currently not possible until a bug in the
-// testing framework enzyme regarding Portals is fixed:
-//
-// https://github.com/airbnb/enzyme/issues/1150
+  expect(node).toIncludeText('ModalContent');
+});
 
-// it('should render basic children', () => {
-//   const node = mount(<Modal open={true}>
-//     ModalContent
-//   </Modal>);
+it('should call the onClose function on backdrop click', () => {
+  const spy = jest.fn();
+  const node = mount(
+    <Modal open={true} onClose={spy}>
+      ModalContent
+    </Modal>
+  );
 
-//   expect(node).toIncludeText('ModalContent');
-// });
+  node.simulate('click');
 
-// it('should call the onClose function on backdrop click', () => {
-//   const spy = jest.fn();
-//   const node = mount(<Modal open={true} onClose={spy}>
-//     ModalContent
-//   </Modal>);
+  expect(spy).toHaveBeenCalled();
+});
 
-//   node.simulate('click');
+it('should not call the onClose function when modal content is clicked', () => {
+  const spy = jest.fn();
+  const node = mount(
+    <Modal open={true} onClose={spy}>
+      <button>Some button in the modal</button>
+    </Modal>
+  );
 
-//   expect(spy).toHaveBeenCalled();
-// });
+  node.find('button').simulate('click');
 
-// it('should not call the onClose function when modal content is clicked', () => {
-//   const spy = jest.fn();
-//   const node = mount(<Modal open={true} onClose={spy}>
-//     <button>Some button in the modal</button>
-//   </Modal>);
+  expect(spy).not.toHaveBeenCalled();
+});
 
-//   node.find('button').simulate('click');
+describe('Header', () => {
+  it('should render children', () => {
+    const node = mount(
+      <Modal open={true}>
+        <Modal.Header>
+          <div className="test">test</div>
+        </Modal.Header>
+      </Modal>
+    );
+    expect(node.find('.test').length).toBe(1);
+  });
 
-//   expect(spy).not.toHaveBeenCalled();
-// });
+  it('should contain a close button', () => {
+    const node = mount(
+      <Modal open={true}>
+        <Modal.Header>
+          <div className="test">test</div>
+        </Modal.Header>
+      </Modal>
+    );
+    expect(node.find('button').length).toBe(1);
+  });
 
-// it('should position the modal in the center of the screen', () => {
-//   const node = mount(<Modal open={true}>
-//     <div style={{height: '200px'}}/>
-//   </Modal>);
+  it('should call the onClose function on close button click', () => {
+    const spy = jest.fn();
+    const node = mount(
+      <Modal open={true} onClose={spy}>
+        <Modal.Header>
+          <div className="test">test</div>
+        </Modal.Header>
+      </Modal>
+    );
+    node.find('button').simulate('click');
+    expect(spy).toHaveBeenCalled();
+  });
+});
 
-//   expect(node.find('.Modal__container')).toHaveStyle('margin-top', '-100px');
-// });
+describe('Content', () => {
+  it('should render children', () => {
+    const node = mount(
+      <Modal open={true}>
+        <Modal.Content>
+          <div className="test">test</div>
+        </Modal.Content>
+      </Modal>
+    );
+    expect(node.find('.test').length).toBe(1);
+  });
+});
 
-// it('should remove the modal from the dom after it is unmounted');
-
-// describe('Header', () => {
-
-//   it('should render children');
-
-//   it('should contain a close button');
-
-//   it('should call the onClose function on close button click');
-
-// });
-
-// describe('Content', () => {
-//   it('should render children');
-// });
-
-// describe('Actions', () => {
-//   it('should render childen');
-// });
+describe('Actions', () => {
+  it('should render children', () => {
+    const node = mount(
+      <Modal open={true}>
+        <Modal.Actions>
+          <div className="test">test</div>
+        </Modal.Actions>
+      </Modal>
+    );
+    expect(node.find('.test').length).toBe(1);
+  });
+});
