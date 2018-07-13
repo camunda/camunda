@@ -2,6 +2,8 @@ import React from 'react';
 
 import VariableFilter from './VariableFilter';
 
+import {DateInput} from './date';
+
 import {mount} from 'enzyme';
 
 jest.mock('components', () => {
@@ -47,6 +49,15 @@ jest.mock('./number', () => {
 });
 jest.mock('./string', () => {
   return {StringInput: () => 'StringInput'};
+});
+jest.mock('./date', () => {
+  const DateInput = () => 'DateInput';
+
+  DateInput.defaultFilter = {startDate: 'start', endDate: 'end'};
+  DateInput.parseFilter = jest.fn();
+  DateInput.addFilter = jest.fn();
+
+  return {DateInput};
 });
 
 it('should contain a modal', () => {
@@ -109,4 +120,45 @@ it('should create a new filter', () => {
       values: ['value1', 'value2']
     }
   });
+});
+
+it('should use custom filter parsing logic from input components', () => {
+  DateInput.parseFilter.mockClear();
+
+  const existingFilter = [
+    {
+      data: {
+        type: 'Date',
+        name: 'aDateVar'
+      }
+    }
+  ];
+  mount(<VariableFilter filterData={existingFilter} />);
+
+  expect(DateInput.parseFilter).toHaveBeenCalledWith(existingFilter);
+});
+
+it('should use custom filter adding logic from input components', () => {
+  const spy = jest.fn();
+  const node = mount(
+    <VariableFilter
+      processDefinitionKey="procDefKey"
+      processDefinitionVersion="1"
+      addFilter={spy}
+    />
+  );
+
+  const selectedVariable = {name: 'foo', type: 'Date'};
+  const filter = {startDate: 'start', endDate: 'end'};
+  node.setState({
+    selectedVariable,
+    valid: true,
+    filter
+  });
+
+  DateInput.addFilter.mockClear();
+
+  node.find('button[type="primary"]').simulate('click');
+
+  expect(DateInput.addFilter).toHaveBeenCalledWith(spy, selectedVariable, filter);
 });

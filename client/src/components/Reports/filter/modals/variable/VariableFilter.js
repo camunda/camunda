@@ -4,6 +4,7 @@ import {Modal, Button, ControlGroup, Typeahead} from 'components';
 import {BooleanInput} from './boolean';
 import {NumberInput} from './number';
 import {StringInput} from './string';
+import {DateInput} from './date';
 
 import {loadVariables} from './service';
 
@@ -19,9 +20,15 @@ export default class VariableFilter extends React.Component {
   componentDidMount = async () => {
     if (this.props.filterData) {
       const filterData = this.props.filterData[0].data;
+
+      const InputComponent = this.getInputComponentForVariable(filterData);
+      const filter = InputComponent.parseFilter
+        ? InputComponent.parseFilter(this.props.filterData)
+        : {operator: filterData.operator, values: filterData.values};
+
       this.setState({
         selectedVariable: {name: filterData.name, type: filterData.type},
-        filter: {operator: filterData.operator, values: filterData.values},
+        filter,
         valid: true
       });
     }
@@ -44,6 +51,8 @@ export default class VariableFilter extends React.Component {
         return StringInput;
       case 'Boolean':
         return BooleanInput;
+      case 'Date':
+        return DateInput;
       default:
         return NumberInput;
     }
@@ -106,14 +115,17 @@ export default class VariableFilter extends React.Component {
     evt.preventDefault();
 
     const variable = this.state.selectedVariable;
+    const InputComponent = this.getInputComponentForVariable(variable);
 
-    this.props.addFilter({
-      type: 'variable',
-      data: {
-        name: variable.name,
-        type: variable.type,
-        ...this.state.filter
-      }
-    });
+    InputComponent.addFilter
+      ? InputComponent.addFilter(this.props.addFilter, variable, this.state.filter)
+      : this.props.addFilter({
+          type: 'variable',
+          data: {
+            name: variable.name,
+            type: variable.type,
+            ...this.state.filter
+          }
+        });
   };
 }

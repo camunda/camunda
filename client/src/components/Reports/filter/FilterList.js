@@ -85,43 +85,73 @@ export default class FilterList extends React.Component {
         i++;
       } else {
         if (filter.type === 'variable') {
-          const {name, operator, values} = filter.data;
+          const {name, type, operator, values} = filter.data;
 
-          list.push(
-            <li
-              key={i}
-              onClick={this.props.openEditFilterModal(filter)}
-              className="FilterList__item"
-            >
-              <ActionItem
-                onClick={evt => {
-                  evt.stopPropagation();
-                  this.props.deleteFilter(filter);
-                }}
-                className="FilterList__action-item"
+          if (type === 'Date') {
+            const nextFilter = this.props.data[i + 1];
+            list.push(
+              <li
+                key={i}
+                onClick={this.props.openEditFilterModal(filter, nextFilter)}
+                className="FilterList__item"
               >
-                <span className="FilterList__parameter-name">{name}</span>
-                {(operator === 'in' || operator === '=') && this.createOperator('is')}
-                {operator === 'not in' &&
-                  (values.length === 1
-                    ? this.createOperator('is not')
-                    : this.createOperator('is neither'))}
-                {operator === '<' && this.createOperator('is less than')}
-                {operator === '>' && this.createOperator('is greater than')}
-                {values.map((value, idx) => {
-                  return (
-                    <span key={idx}>
-                      <span className="FilterList__value">{value.toString()}</span>
-                      {idx < values.length - 1 &&
-                        (operator === 'not in'
-                          ? this.createOperator('nor')
-                          : this.createOperator('or'))}
-                    </span>
-                  );
-                })}
-              </ActionItem>
-            </li>
-          );
+                <ActionItem
+                  onClick={evt => {
+                    evt.stopPropagation();
+                    this.props.deleteFilter(filter, nextFilter);
+                  }}
+                  className="FilterList__action-item"
+                >
+                  <span className="FilterList__parameter-name">{name}</span> is between{' '}
+                  <span className="FilterList__value">
+                    {moment(filter.data.values[0]).format('YYYY-MM-DD')}
+                  </span>
+                  {this.createOperator('and')}
+                  <span className="FilterList__value">
+                    {moment(nextFilter.data.values[0]).format('YYYY-MM-DD')}
+                  </span>
+                </ActionItem>
+              </li>
+            );
+
+            i++;
+          } else {
+            list.push(
+              <li
+                key={i}
+                onClick={this.props.openEditFilterModal(filter)}
+                className="FilterList__item"
+              >
+                <ActionItem
+                  onClick={evt => {
+                    evt.stopPropagation();
+                    this.props.deleteFilter(filter);
+                  }}
+                  className="FilterList__action-item"
+                >
+                  <span className="FilterList__parameter-name">{name}</span>
+                  {(operator === 'in' || operator === '=') && this.createOperator('is')}
+                  {operator === 'not in' &&
+                    (values.length === 1
+                      ? this.createOperator('is not')
+                      : this.createOperator('is neither'))}
+                  {operator === '<' && this.createOperator('is less than')}
+                  {operator === '>' && this.createOperator('is greater than')}
+                  {values.map((value, idx) => {
+                    return (
+                      <span key={idx}>
+                        <span className="FilterList__value">{value.toString()}</span>
+                        {idx < values.length - 1 &&
+                          (operator === 'not in'
+                            ? this.createOperator('nor')
+                            : this.createOperator('or'))}
+                      </span>
+                    );
+                  })}
+                </ActionItem>
+              </li>
+            );
+          }
         } else if (filter.type === 'executedFlowNodes') {
           const {values} = filter.data;
           const flowNodes = this.state.flowNodeNames;

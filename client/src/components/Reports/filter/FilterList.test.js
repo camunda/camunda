@@ -86,6 +86,40 @@ it('should remove both date filter parts for a date filter entry', () => {
   expect(spy.mock.calls[0][1]).toBe(data[1]);
 });
 
+it('should remove date variable filter parts for a date variable filter entry', () => {
+  const startDate = '2017-11-16T00:00:00';
+  const endDate = '2017-11-26T23:59:59';
+  const data = [
+    {
+      type: 'variable',
+      data: {
+        name: 'aDateVar',
+        type: 'Date',
+        operator: '>=',
+        values: [startDate]
+      }
+    },
+    {
+      type: 'variable',
+      data: {
+        name: 'aDateVar',
+        type: 'Date',
+        operator: '<=',
+        values: [endDate]
+      }
+    }
+  ];
+  const spy = jest.fn();
+
+  const node = mount(<FilterList data={data} deleteFilter={spy} openEditFilterModal={jest.fn()} />);
+
+  node.find('button').simulate('click');
+
+  expect(spy.mock.calls[0].length).toBe(2);
+  expect(spy.mock.calls[0][0]).toBe(data[0]);
+  expect(spy.mock.calls[0][1]).toBe(data[1]);
+});
+
 it('should display a simple variable filter', () => {
   const data = [
     {
@@ -101,6 +135,34 @@ it('should display a simple variable filter', () => {
   const node = mount(<FilterList data={data} openEditFilterModal={jest.fn()} />);
 
   expect(node).toIncludeText('varName is varValue');
+});
+
+it('should combine two date variable filters to a range', () => {
+  const startDate = '2017-11-16T00:00:00';
+  const endDate = '2017-11-26T23:59:59';
+  const data = [
+    {
+      type: 'variable',
+      data: {
+        name: 'aDateVar',
+        type: 'Date',
+        operator: '>=',
+        values: [startDate]
+      }
+    },
+    {
+      type: 'variable',
+      data: {
+        name: 'aDateVar',
+        type: 'Date',
+        operator: '<=',
+        values: [endDate]
+      }
+    }
+  ];
+  const node = mount(<FilterList data={data} openEditFilterModal={jest.fn()} />);
+
+  expect(node).toIncludeText('aDateVar is between 2017-11-16 and 2017-11-26');
 });
 
 it('should combine multiple variable values with or', () => {

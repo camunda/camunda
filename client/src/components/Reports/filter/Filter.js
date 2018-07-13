@@ -49,7 +49,11 @@ export default class Filter extends React.Component {
   editFilter = (...newFilters) => {
     const filters = [...this.props.data];
 
-    const numberToRemove = this.state.editFilter[0].type === 'date' ? 2 : 1;
+    const {type, data} = this.state.editFilter[0];
+    let numberToRemove = 1;
+    if (type === 'date' || (type === 'variable' && data.type === 'Date')) {
+      numberToRemove = 2;
+    }
 
     const index = filters.indexOf(filters.find(v => this.state.editFilter[0].data === v.data));
 
