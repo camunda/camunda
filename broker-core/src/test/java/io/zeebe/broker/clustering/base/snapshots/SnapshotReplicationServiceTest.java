@@ -20,9 +20,16 @@ package io.zeebe.broker.clustering.base.snapshots;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.snapshotReplicationServiceName;
 import static io.zeebe.util.StringUtil.getBytes;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
-import io.zeebe.broker.clustering.api.*;
+import io.zeebe.broker.clustering.api.ErrorResponse;
+import io.zeebe.broker.clustering.api.FetchSnapshotChunkRequest;
+import io.zeebe.broker.clustering.api.FetchSnapshotChunkResponse;
+import io.zeebe.broker.clustering.api.ListSnapshotsRequest;
+import io.zeebe.broker.clustering.api.ListSnapshotsResponse;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
@@ -429,7 +436,8 @@ public class SnapshotReplicationServiceTest {
     return new NodeInfo(
         new SocketAddress(host, port),
         new SocketAddress(host, port + 1),
-        new SocketAddress(host, port + 2));
+        new SocketAddress(host, port + 2),
+        new SocketAddress(host, port + 3));
   }
 
   private FsSnapshotStorage createSnapshotStorage() {

@@ -17,7 +17,10 @@
  */
 package io.zeebe.broker.clustering.base.topology;
 
-import static io.zeebe.broker.clustering.base.gossip.GossipCustomEventEncoding.*;
+import static io.zeebe.broker.clustering.base.gossip.GossipCustomEventEncoding.readPartitions;
+import static io.zeebe.broker.clustering.base.gossip.GossipCustomEventEncoding.readSocketAddress;
+import static io.zeebe.broker.clustering.base.gossip.GossipCustomEventEncoding.writePartitions;
+import static io.zeebe.broker.clustering.base.gossip.GossipCustomEventEncoding.writeSockedAddresses;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.gossip.Gossip;
@@ -169,7 +172,11 @@ public class TopologyManagerImpl extends Actor implements TopologyManager, RaftS
             final SocketAddress replicationApi = new SocketAddress();
             readSocketAddress(offset, payloadCopy, replicationApi);
 
-            final NodeInfo newMember = new NodeInfo(clientApi, managementApi, replicationApi);
+            final SocketAddress subscriptionApi = new SocketAddress();
+            readSocketAddress(offset, payloadCopy, subscriptionApi);
+
+            final NodeInfo newMember =
+                new NodeInfo(clientApi, managementApi, replicationApi, subscriptionApi);
             final boolean memberAdded = topology.addMember(newMember);
             if (memberAdded) {
               notifyMemberAdded(newMember);

@@ -9,6 +9,9 @@ port = 41016
 [network.replication]
 port = 41017
 
+[network.subscription]
+port = 41018
+
 [data]
 snapshotPeriod = "15m"
 snapshotReplicationPeriod = "5ms"

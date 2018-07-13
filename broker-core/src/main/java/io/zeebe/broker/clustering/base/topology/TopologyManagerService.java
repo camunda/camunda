@@ -22,7 +22,11 @@ import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LOCAL
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.gossip.Gossip;
 import io.zeebe.raft.Raft;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceGroupReference;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.SocketAddress;
 
 public class TopologyManagerService implements Service<TopologyManager> {
@@ -42,8 +46,9 @@ public class TopologyManagerService implements Service<TopologyManager> {
     final SocketAddress managementApi = cfg.getManagement().toSocketAddress();
     final SocketAddress clientApi = cfg.getClient().toSocketAddress();
     final SocketAddress replicationApi = cfg.getReplication().toSocketAddress();
+    final SocketAddress subscriptionApi = cfg.getSubscription().toSocketAddress();
 
-    localMember = new NodeInfo(clientApi, managementApi, replicationApi);
+    localMember = new NodeInfo(clientApi, managementApi, replicationApi, subscriptionApi);
   }
 
   @Override

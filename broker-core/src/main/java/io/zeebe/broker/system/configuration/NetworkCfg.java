@@ -24,12 +24,14 @@ public class NetworkCfg implements ConfigurationEntry {
   private SocketBindingClientApiCfg client = new SocketBindingClientApiCfg();
   private SocketBindingManagementCfg management = new SocketBindingManagementCfg();
   private SocketBindingReplicationCfg replication = new SocketBindingReplicationCfg();
+  private SocketBindingSubscriptionCfg subscription = new SocketBindingSubscriptionCfg();
 
   @Override
   public void init(BrokerCfg brokerCfg, String brokerBase) {
     client.applyDefaults(this);
     management.applyDefaults(this);
     replication.applyDefaults(this);
+    getSubscription().applyDefaults(this);
   }
 
   public String getHost() {
@@ -70,5 +72,13 @@ public class NetworkCfg implements ConfigurationEntry {
 
   public void setReplication(SocketBindingReplicationCfg replicationApi) {
     this.replication = replicationApi;
+  }
+
+  public SocketBindingSubscriptionCfg getSubscription() {
+    return subscription;
+  }
+
+  public void setSubscription(SocketBindingSubscriptionCfg subscription) {
+    this.subscription = subscription;
   }
 }
