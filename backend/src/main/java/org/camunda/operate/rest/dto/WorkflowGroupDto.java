@@ -17,7 +17,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import org.camunda.operate.entities.WorkflowEntity;
+import io.swagger.annotations.ApiModel;
 
+@ApiModel(value="Workflow group object", description = "Group of workflows with the same bpmnProcessId with all versions included")
 public class WorkflowGroupDto {
 
   private String bpmnProcessId;

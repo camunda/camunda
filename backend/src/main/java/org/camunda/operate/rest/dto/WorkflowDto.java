@@ -3,9 +3,13 @@ package org.camunda.operate.rest.dto;
 import java.util.ArrayList;
 import java.util.List;
 import org.camunda.operate.entities.WorkflowEntity;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 
+@ApiModel("Workflow object")
 public class WorkflowDto {
 
+  @ApiModelProperty(value = "Unique id of the workflow, must be used when filtering instances by workflow ids.")
   private String id;
   private String name;
   private int version;
