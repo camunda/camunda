@@ -20,7 +20,8 @@ export default class ListView extends React.Component {
     onSelectionUpdate: PropTypes.func.isRequired,
     filter: PropTypes.object.isRequired,
     onAddToSelection: PropTypes.func,
-    expandState: PropTypes.oneOf(Object.values(EXPAND_STATE))
+    expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
+    errorMessage: PropTypes.string
   };
 
   state = {
@@ -43,12 +44,19 @@ export default class ListView extends React.Component {
       return this.setState({firstElement: 0});
     }
 
+    const hasNewErrorMessage =
+      prevProps.errorMessage !== this.props.errorMessage;
     const hasFilterChanged = prevProps.filter !== this.props.filter;
     const hasFirstElementChanged =
       prevState.firstElement !== this.state.firstElement;
     const hasSortingChanged = !isEqual(prevState.sorting, this.state.sorting);
 
-    if (hasFilterChanged || hasFirstElementChanged || hasSortingChanged) {
+    if (
+      hasFilterChanged ||
+      hasFirstElementChanged ||
+      hasSortingChanged ||
+      hasNewErrorMessage
+    ) {
       this.loadData();
     }
   }
@@ -57,7 +65,8 @@ export default class ListView extends React.Component {
     const instances = await fetchWorkflowInstances(
       {
         ...parseFilterForRequest(this.props.filter),
-        sorting: this.state.sorting
+        sorting: this.state.sorting,
+        errorMessage: this.props.errorMessage
       },
       this.state.firstElement,
       50

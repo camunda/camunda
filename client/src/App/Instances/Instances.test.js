@@ -108,7 +108,7 @@ describe('Instances', () => {
       expect(node.find(ListView)).toHaveLength(1);
       expect(FiltersNode).toHaveLength(1);
       expect(FiltersNode.prop('filter')).toEqual(node.state('filter'));
-      expect(FiltersNode.prop('handleFilterChange')).toBe(
+      expect(FiltersNode.prop('onFilterChange')).toBe(
         node.instance().handleFilterChange
       );
       expect(FiltersNode.prop('resetFilter')).toBe(node.instance().resetFilter);

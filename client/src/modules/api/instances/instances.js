@@ -7,8 +7,13 @@ export async function fetchWorkflowInstance(id) {
   return await response.json();
 }
 
-export async function fetchWorkflowInstances(filter, firstResult, maxResults) {
-  const url = `${URL}?firstResult=${firstResult}&maxResults=${maxResults}`;
+export async function fetchWorkflowInstances(
+  filter,
+  firstResult,
+  maxResults,
+  errorMessage
+) {
+  const url = `${URL}?firstResult=${firstResult}&maxResults=${maxResults}&errorMessage=${errorMessage}`;
   const response = await post(url, filter);
 
   return await response.json();

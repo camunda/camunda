@@ -36,7 +36,8 @@ class Instances extends Component {
       filter: {},
       filterCount: filterCount || 0,
       selection: createNewSelectionFragment(),
-      selections: selections || [[]]
+      selections: selections || [[]],
+      errorMessage: null
     };
   }
 
@@ -113,6 +114,18 @@ class Instances extends Component {
     this.props.storeStateLocally({filter: filter});
   };
 
+  handleErrorMessageChange = value => {
+    this.setState({
+      errorMessage: value
+    });
+  };
+
+  handleExtraFilter = (name, value) => {
+    this.setState({
+      [name]: value
+    });
+  };
+
   setFilterInURL = filter => {
     this.props.history.push({
       pathname: this.props.location.pathname,
@@ -143,8 +156,9 @@ class Instances extends Component {
             <Styled.Filters>
               <Filters
                 filter={this.state.filter}
-                handleFilterChange={this.handleFilterChange}
+                onFilterChange={this.handleFilterChange}
                 resetFilter={this.resetFilter}
+                onExtraFilterChange={this.handleExtraFilter}
               />
             </Styled.Filters>
 
@@ -159,6 +173,9 @@ class Instances extends Component {
               </SplitPane.Pane>
               <ListView
                 instancesInFilter={this.state.filterCount}
+                filters={{
+                  errorMessage: this.state.errorMessage
+                }}
                 onSelectionUpdate={change => {
                   this.setState({
                     selection: update(this.state.selection, change)
@@ -167,6 +184,7 @@ class Instances extends Component {
                 selection={this.state.selection}
                 filter={this.state.filter}
                 onAddToSelection={this.handleAddToSelection}
+                errorMessage={this.state.errorMessage}
               />
             </Styled.Center>
             <Styled.Selections>

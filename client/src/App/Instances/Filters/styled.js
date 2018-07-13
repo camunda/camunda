@@ -18,3 +18,7 @@ export const ResetButtonContainer = styled(Panel.Footer)`
   justify-content: center;
   height: 56px;
 `;
+
+export const Filters = styled.div`
+  padding: 20px 20px 0 20px;
+`;

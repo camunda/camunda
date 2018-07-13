@@ -11,8 +11,9 @@ import * as Styled from './styled';
 describe('Filters', () => {
   const mockProps = {
     filter: {active: true, incidents: false, canceled: true, completed: false},
-    handleFilterChange: jest.fn(),
-    resetFilter: jest.fn()
+    onFilterChange: jest.fn(),
+    resetFilter: jest.fn(),
+    onExtraFilterChange: jest.fn()
   };
 
   it('should render the filters', () => {
@@ -27,14 +28,10 @@ describe('Filters', () => {
     expect(FilterNodes).toHaveLength(2);
     expect(FilterNodes.at(0).prop('type')).toBe(FILTER_TYPES.RUNNING);
     expect(FilterNodes.at(0).prop('filter')).toEqual({active, incidents});
-    expect(FilterNodes.at(0).prop('onChange')).toBe(
-      mockProps.handleFilterChange
-    );
+    expect(FilterNodes.at(0).prop('onChange')).toBe(mockProps.onFilterChange);
     expect(FilterNodes.at(1).prop('type')).toBe(FILTER_TYPES.FINISHED);
     expect(FilterNodes.at(1).prop('filter')).toEqual({completed, canceled});
-    expect(FilterNodes.at(1).prop('onChange')).toBe(
-      mockProps.handleFilterChange
-    );
+    expect(FilterNodes.at(1).prop('onChange')).toBe(mockProps.onFilterChange);
   });
 
   it('should render the expand button with left direction', () => {
@@ -67,5 +64,14 @@ describe('Filters', () => {
     // then
     expect(ResetButtonNode).toHaveLength(1);
     expect(ResetButtonNode.prop('disabled')).toBe(true);
+  });
+
+  it('should render an errorMessage field', () => {
+    // given
+    const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+    const errorMessageNode = node.find({name: 'errorMessage'});
+
+    // then
+    expect(errorMessageNode.length).toEqual(1);
   });
 });
