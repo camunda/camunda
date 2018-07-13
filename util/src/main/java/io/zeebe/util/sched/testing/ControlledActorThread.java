@@ -16,7 +16,10 @@
 package io.zeebe.util.sched.testing;
 
 import io.zeebe.util.LangUtil;
-import io.zeebe.util.sched.*;
+import io.zeebe.util.sched.ActorThread;
+import io.zeebe.util.sched.ActorThreadGroup;
+import io.zeebe.util.sched.ActorTimerQueue;
+import io.zeebe.util.sched.TaskScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.metrics.ActorThreadMetrics;
 import java.util.concurrent.BrokenBarrierException;
@@ -53,8 +56,10 @@ public class ControlledActorThread extends ActorThread {
   public void workUntilDone() {
     try {
       barrier.await(); // work at least 1 full cycle until the runner becomes idle after having been
-      // idle
-      barrier.await();
+      while (barrier.getNumberWaiting() < 1) {
+        // spin until thread is idle again
+        Thread.yield();
+      }
     } catch (InterruptedException | BrokenBarrierException e) {
       LangUtil.rethrowUnchecked(e);
     }
