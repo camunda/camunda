@@ -8,7 +8,7 @@ export default function SortIcon(props) {
   const TargetIcon =
     props.sortOrder === SORT_ORDER.ASC ? Styled.Up : Styled.Down;
   return (
-    <Styled.SortIcon {...props}>
+    <Styled.SortIcon {...props} href="#">
       <TargetIcon sortOrder={props.sortOrder} />
     </Styled.SortIcon>
   );

@@ -1,0 +1,15 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`HeaderSortIcon should render SortIcon with sortOrder 1`] = `
+<Styled(SortIcon)
+  onClick={[Function]}
+  sortOrder="asc"
+/>
+`;
+
+exports[`HeaderSortIcon should render SortIcon with sortOrder null 1`] = `
+<Styled(SortIcon)
+  onClick={[Function]}
+  sortOrder={null}
+/>
+`;

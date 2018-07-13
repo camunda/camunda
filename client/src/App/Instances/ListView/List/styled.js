@@ -3,7 +3,7 @@ import {Link} from 'react-router-dom';
 
 import {Colors, themed, themeStyle} from 'modules/theme';
 
-export const InstancesList = styled.div`
+export const List = styled.div`
   flex-grow: 1;
   position: relative;
 `;

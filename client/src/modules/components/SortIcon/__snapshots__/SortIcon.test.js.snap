@@ -2,6 +2,7 @@
 
 exports[`SortIcon should render a Down icon if order is desc 1`] = `
 <styled.a
+  href="#"
   sortOrder="desc"
 >
   <Themed(Styled(withStrippedProps(Down)))
@@ -12,6 +13,7 @@ exports[`SortIcon should render a Down icon if order is desc 1`] = `
 
 exports[`SortIcon should render a Down icon if order is null 1`] = `
 <styled.a
+  href="#"
   sortOrder={null}
 >
   <Themed(Styled(withStrippedProps(Down)))
@@ -22,6 +24,7 @@ exports[`SortIcon should render a Down icon if order is null 1`] = `
 
 exports[`SortIcon should render an Up icon if order is asc 1`] = `
 <styled.a
+  href="#"
   sortOrder="asc"
 >
   <Themed(Styled(withStrippedProps(Up)))

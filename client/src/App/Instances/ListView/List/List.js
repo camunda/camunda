@@ -1,15 +1,17 @@
-import React, {Fragment} from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 
 import Checkbox from 'modules/components/Checkbox';
-import StateIcon from 'modules/components/StateIcon';
-import {EXPAND_STATE} from 'modules/constants';
-import {formatDate} from 'modules/utils/date';
-import {getWorkflowName} from 'modules/utils/instance';
 import Table from 'modules/components/Table';
+import StateIcon from 'modules/components/StateIcon';
+import {getWorkflowName} from 'modules/utils/instance';
+import {formatDate} from 'modules/utils/date';
+import {EXPAND_STATE} from 'modules/constants';
 
+import HeaderSortIcon from './HeaderSortIcon';
 import * as Styled from './styled';
 
+const {THead, TBody, TH, TR, TD} = Table;
 export default class List extends React.Component {
   static propTypes = {
     data: PropTypes.arrayOf(PropTypes.object).isRequired,
@@ -28,7 +30,7 @@ export default class List extends React.Component {
   };
 
   state = {
-    rowsToDisplay: null
+    rowsToDisplay: 9
   };
 
   componentDidMount() {
@@ -46,20 +48,6 @@ export default class List extends React.Component {
       this.recalculateHeight();
     }
   }
-
-  getTableConfig = () => {
-    return {
-      selectionCheck: ({id}) => this.isSelected(id),
-      isSortable: {
-        workflowId: false,
-        id: true,
-        startDate: true,
-        endDate: true,
-        actions: false
-      },
-      sorting: this.props.sorting
-    };
-  };
 
   areAllInstancesSelected = () => {
     const {
@@ -84,28 +72,6 @@ export default class List extends React.Component {
     });
   };
 
-  getInstanceAnchor = id => {
-    return (
-      <Styled.InstanceAnchor to={`/instances/${id}`}>
-        {id}
-      </Styled.InstanceAnchor>
-    );
-  };
-
-  formatTableRow = instance => {
-    return {
-      data: {
-        ...instance
-      },
-      view: {
-        id: this.getInstanceAnchor(instance.id),
-        workflowId: this.getSelection(instance),
-        startDate: formatDate(instance.startDate),
-        endDate: formatDate(instance.endDate)
-      }
-    };
-  };
-
   isSelected = id => {
     const {query, exclusionList} = this.props.selection;
     if (exclusionList.has(id)) return false;
@@ -113,29 +79,6 @@ export default class List extends React.Component {
     if (query.ids && query.ids.has(id)) return true;
 
     return false;
-  };
-
-  findInSelectionList = id => {
-    const {list} = this.props.selection;
-    for (let instance of list) {
-      if (instance.id === id) {
-        return instance;
-      }
-    }
-  };
-
-  onSelectionChange = (isChecked, instance) => {
-    const {selection, filter} = this.props;
-
-    const updateOptions = [
-      {exclusionList: {[isChecked ? '$add' : '$remove']: [instance.id]}},
-      {query: {ids: {[isChecked ? '$remove' : '$add']: [instance.id]}}}
-    ];
-
-    const selectionUpdate =
-      selection.query === filter ? updateOptions[0] : updateOptions[1];
-
-    this.props.onSelectionUpdate(selectionUpdate);
   };
 
   getSelection = instance => {
@@ -157,6 +100,20 @@ export default class List extends React.Component {
     );
   };
 
+  onSelectionChange = (isChecked, instance) => {
+    const {selection, filter} = this.props;
+
+    const updateOptions = [
+      {exclusionList: {[isChecked ? '$add' : '$remove']: [instance.id]}},
+      {query: {ids: {[isChecked ? '$remove' : '$add']: [instance.id]}}}
+    ];
+
+    const selectionUpdate =
+      selection.query === filter ? updateOptions[0] : updateOptions[1];
+
+    this.props.onSelectionUpdate(selectionUpdate);
+  };
+
   recalculateHeight() {
     if (this.container) {
       const rows = ~~(this.container.clientHeight / 38) - 1;
@@ -165,50 +122,105 @@ export default class List extends React.Component {
     }
   }
 
-  getTableHeaders = () => {
-    return {
-      workflowId: (
-        <Fragment>
-          <Styled.CheckAll>
-            <Checkbox
-              isChecked={this.areAllInstancesSelected()}
-              onChange={({isChecked}) => this.handleToggleSelectAll(isChecked)}
-            />
-          </Styled.CheckAll>
-          Workflow Definition
-        </Fragment>
-      ),
-      id: 'Instance Id',
-      startDate: 'Start Time',
-      endDate: 'End Time',
-      actions: 'Actions'
-    };
-  };
-
-  getTableData = () => {
-    return this.props.data
-      .slice(0, this.state.rowsToDisplay)
-      .map(this.formatTableRow);
-  };
-
   containerRef = node => {
     this.container = node;
   };
 
-  render() {
+  renderTableHead() {
     return (
-      <Styled.InstancesList>
-        <Styled.TableContainer innerRef={this.containerRef}>
-          {!this.state.rowsToDisplay || !this.props.data ? null : (
-            <Table
-              headers={this.getTableHeaders()}
-              data={this.getTableData()}
-              config={this.getTableConfig()}
+      <THead>
+        <TR>
+          <TH>
+            <React.Fragment>
+              <Styled.CheckAll>
+                <Checkbox
+                  isChecked={this.areAllInstancesSelected()}
+                  onChange={({isChecked}) =>
+                    this.handleToggleSelectAll(isChecked)
+                  }
+                />
+              </Styled.CheckAll>
+              Workflow Definition
+            </React.Fragment>
+          </TH>
+          <TH>
+            Instance Id
+            <HeaderSortIcon
+              sortKey="id"
+              sorting={this.props.sorting}
               handleSorting={this.props.handleSorting}
             />
-          )}
+          </TH>
+          <TH>
+            Start Time
+            <HeaderSortIcon
+              sortKey="startDate"
+              sorting={this.props.sorting}
+              handleSorting={this.props.handleSorting}
+            />
+          </TH>
+          <TH>
+            End Time
+            <HeaderSortIcon
+              sortKey="endDate"
+              sorting={this.props.sorting}
+              handleSorting={this.props.handleSorting}
+            />
+          </TH>
+          <TH>Actions</TH>
+        </TR>
+      </THead>
+    );
+  }
+
+  renderTableBody() {
+    return (
+      <TBody>
+        {this.props.data
+          .slice(0, this.state.rowsToDisplay)
+          .map((instance, idx) => (
+            <TR key={idx} selected={this.isSelected(instance.id)}>
+              <TD>
+                <Styled.Selection>
+                  <Styled.SelectionStatusIndicator selected={false} />
+                  <Checkbox
+                    type="selection"
+                    isChecked={this.isSelected(instance.id)}
+                    onChange={({isChecked}) => {
+                      this.onSelectionChange(isChecked, instance);
+                    }}
+                  />
+
+                  <StateIcon instance={instance} />
+                  <Styled.WorkflowName>
+                    {getWorkflowName(instance)}
+                  </Styled.WorkflowName>
+                </Styled.Selection>
+              </TD>
+              <TD>
+                <Styled.InstanceAnchor to={`/instances/${instance.id}`}>
+                  {instance.id}
+                </Styled.InstanceAnchor>
+              </TD>
+              <TD>{formatDate(instance.startDate)}</TD>
+              <TD>{formatDate(instance.endDate)}</TD>
+              <TD />
+            </TR>
+          ))}
+      </TBody>
+    );
+  }
+
+  render() {
+    return (
+      <Styled.List>
+        <Styled.TableContainer innerRef={this.containerRef}>
+          <Table>
+            {this.renderTableHead()}
+            {this.renderTableBody()}
+          </Table>
         </Styled.TableContainer>
-      </Styled.InstancesList>
+      </Styled.List>
     );
   }
 }

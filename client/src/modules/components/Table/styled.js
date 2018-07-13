@@ -1,8 +1,6 @@
 import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
-import DefaultSortIcon from './SortIcon';
-
 export const Table = themed(styled.table`
   width: 100%;
   font-size: 14px;
@@ -14,7 +12,7 @@ export const Table = themed(styled.table`
   })};
 `);
 
-export const TableHead = themed(styled.thead`
+export const THead = themed(styled.thead`
   text-align: left;
   background-color: ${themeStyle({
     dark: Colors.uiDark03,
@@ -22,35 +20,24 @@ export const TableHead = themed(styled.thead`
   })};
 `);
 
-export const HeaderCell = themed(styled.th`
+export const TH = themed(styled.th`
   font-weight: 600;
   padding: 0 0 0 5px;
 
   &:not(:last-child):after {
     content: ' ';
     float: right;
-    border-right: 1px solid
-      ${themeStyle({
-        dark: 'rgba(255, 255, 255, 0.15)',
-        light: 'rgba(28, 31, 35, 0.15)'
-      })};
     height: 31px;
     margin-top: 3px;
   }
 `);
 
-export const SortIcon = styled(DefaultSortIcon)`
-  position: relative;
-  top: 2px;
-  margin-left: 4px;
-`;
-
-export const BodyCell = styled.td`
+export const TD = styled.td`
   padding: 0 0 0 5px;
   white-space: nowrap;
 `;
 
-export const BodyRow = themed(styled.tr`
+export const TR = themed(styled.tr`
   height: 36px;
   line-height: 37px;
 

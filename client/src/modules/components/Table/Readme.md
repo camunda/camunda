@@ -1,19 +1,24 @@
-Table Example
+Example
 
 ```js
-const headers = {foo: 'foo', bar: 'bar'};
+const {THead, TBody, TH, TR, TD} = Table;
 
-const data = [
-  {
-    foo: 'foo1',
-    bar: 'bar1'
-  },
-    {
-      foo: 'foo2',
-    bar: 'bar2'
-  }
-].map(row => ({ data: {...row}, view: {...row}}));
-
-
-<Table headers={headers} data={data}  />;
+<Table>
+  <THead>
+    <TR>
+      <TH>header 1</TH>
+      <TH>header 2</TH>
+    </TR>
+  </THead>
+  <TBody>
+    <TR>
+      <TD>cell 1 a</TD>
+      <TD>cell 2 a</TD>
+    </TR>
+    <TR>
+      <TD>cell 1 b</TD>
+      <TD>cell 2 b</TD>
+    </TR>
+  </TBody>
+</Table>
 ```

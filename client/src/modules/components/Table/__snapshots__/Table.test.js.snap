@@ -1,119 +1,34 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Table renderBody should render a table row for each data element and cell for each row value 1`] = `
-<Themed(styled.table)
-  config={
-    Object {
-      "isSortable": Object {
-        "bar": true,
-        "foo": false,
-      },
-      "selectionCheck": [Function],
-      "sorting": Object {
-        "sortBy": "bar",
-        "sortOrder": "asc",
-      },
-    }
-  }
-  data={
-    Array [
-      Object {
-        "data": Object {
-          "id": 1,
-          "name": "foo",
-        },
-        "view": Object {
-          "id": 1,
-          "name": "foo",
-        },
-      },
-      Object {
-        "data": Object {
-          "id": 2,
-          "name": "bar",
-        },
-        "view": Object {
-          "id": 2,
-          "name": "bar",
-        },
-      },
-      Object {
-        "data": Object {
-          "id": 3,
-          "name": "baz",
-        },
-        "view": Object {
-          "id": 3,
-          "name": "baz",
-        },
-      },
-    ]
-  }
-  handleSorting={[Function]}
-  headers={
-    Object {
-      "id": "id",
-      "name": "name",
-    }
-  }
->
-  <Themed(styled.thead)>
-    <Themed(styled.tr)>
-      <Themed(styled.th)
-        key="name"
-      >
-        name
-      </Themed(styled.th)>
-      <Themed(styled.th)
-        key="id"
-      >
-        id
-      </Themed(styled.th)>
-    </Themed(styled.tr)>
-  </Themed(styled.thead)>
-  <tbody>
-    <Themed(styled.tr)
-      key="0"
-    >
-      <styled.td
-        key="name"
-      >
-        foo
-      </styled.td>
-      <styled.td
-        key="id"
-      >
-        1
-      </styled.td>
-    </Themed(styled.tr)>
-    <Themed(styled.tr)
-      key="1"
-    >
-      <styled.td
-        key="name"
-      >
-        bar
-      </styled.td>
-      <styled.td
-        key="id"
-      >
-        2
-      </styled.td>
-    </Themed(styled.tr)>
-    <Themed(styled.tr)
-      key="2"
-    >
-      <styled.td
-        key="name"
-      >
-        baz
-      </styled.td>
-      <styled.td
-        key="id"
-      >
-        3
-      </styled.td>
-    </Themed(styled.tr)>
-  </tbody>
+exports[`Table should render table 1`] = `
+<Themed(styled.table)>
+  <THead>
+    <TR>
+      <TH>
+        header 1
+      </TH>
+      <TH>
+        header 2
+      </TH>
+    </TR>
+  </THead>
+  <TBody>
+    <TR>
+      <TD>
+        cell 1 a
+      </TD>
+      <TD>
+        cell 2 a
+      </TD>
+    </TR>
+    <TR>
+      <TD>
+        cell 1 b
+      </TD>
+      <TD>
+        cell 2 b
+      </TD>
+    </TR>
+  </TBody>
 </Themed(styled.table)>
 `;
