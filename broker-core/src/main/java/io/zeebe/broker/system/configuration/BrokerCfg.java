@@ -35,11 +35,15 @@ public class BrokerCfg {
   private List<TopicCfg> topics = new ArrayList<>();
 
   public void init(String brokerBase) {
-    network.init(this, brokerBase);
-    cluster.init(this, brokerBase);
-    threads.init(this, brokerBase);
-    metrics.init(this, brokerBase);
-    data.init(this, brokerBase);
+    init(brokerBase, new Environment());
+  }
+
+  public void init(String brokerBase, Environment environment) {
+    network.init(this, brokerBase, environment);
+    cluster.init(this, brokerBase, environment);
+    threads.init(this, brokerBase, environment);
+    metrics.init(this, brokerBase, environment);
+    data.init(this, brokerBase, environment);
   }
 
   public int getBootstrap() {

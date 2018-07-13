@@ -1,0 +1,11 @@
+[network]
+portOffset = 3
+
+[network.client]
+port = 1
+
+[network.management]
+port = 2
+
+[network.replication]
+port = 3

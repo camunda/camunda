@@ -36,6 +36,8 @@ public abstract class SocketBindingCfg {
     if (sendBufferSize == null) {
       sendBufferSize = networkCfg.getDefaultSendBufferSize();
     }
+
+    port += networkCfg.getPortOffset() * 10;
   }
 
   public String getHost() {

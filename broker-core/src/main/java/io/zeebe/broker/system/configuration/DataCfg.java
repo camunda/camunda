@@ -27,7 +27,7 @@ public class DataCfg implements ConfigurationEntry {
   private String snapshotReplicationPeriod = "5m";
 
   @Override
-  public void init(BrokerCfg globalConfig, String brokerBase) {
+  public void init(BrokerCfg globalConfig, String brokerBase, Environment environment) {
     for (int i = 0; i < directories.length; i++) {
       directories[i] = ConfigurationUtil.toAbsolutePath(directories[i], brokerBase);
     }

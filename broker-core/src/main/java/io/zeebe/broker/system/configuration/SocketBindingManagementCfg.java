@@ -18,10 +18,12 @@
 package io.zeebe.broker.system.configuration;
 
 public class SocketBindingManagementCfg extends SocketBindingCfg {
+
+  public static final int DEFAULT_PORT = 51016;
   private String receiveBufferSize = "8M";
 
   public SocketBindingManagementCfg() {
-    port = 51016;
+    port = DEFAULT_PORT;
   }
 
   @Override

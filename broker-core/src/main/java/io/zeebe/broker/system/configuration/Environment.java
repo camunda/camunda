@@ -17,8 +17,35 @@
  */
 package io.zeebe.broker.system.configuration;
 
-public interface ConfigurationEntry {
-  default void init(BrokerCfg globalConfig, String brokerBase, Environment environment) {
-    // noop;
+import io.zeebe.broker.Loggers;
+import java.util.Map;
+import java.util.Optional;
+import org.slf4j.Logger;
+
+public class Environment {
+
+  private static final Logger LOG = Loggers.SYSTEM_LOGGER;
+
+  private final Map<String, String> environment;
+
+  public Environment() {
+    this(System.getenv());
+  }
+
+  public Environment(Map<String, String> environment) {
+    this.environment = environment;
+  }
+
+  public Optional<String> get(String name) {
+    return Optional.ofNullable(environment.get(name));
+  }
+
+  public Optional<Integer> getInt(String name) {
+    try {
+      return get(name).map(Integer::valueOf);
+    } catch (Exception e) {
+      LOG.warn("Failed to parse environment variable {}", name, e);
+      return Optional.empty();
+    }
   }
 }
