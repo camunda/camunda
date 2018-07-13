@@ -23,6 +23,7 @@
       <groupId>org.camunda.operate</groupId>
       <artifactId>camunda-operate</artifactId>
       <version>${project.version}</version>
+      <classifier>exec</classifier>
     </dependency>
   </dependencies>
 
