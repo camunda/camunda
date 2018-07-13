@@ -18,12 +18,20 @@
 package io.zeebe.broker.system;
 
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_SYSTEM_GROUP_NAME;
+import static io.zeebe.broker.clustering.orchestration.ClusterOrchestrationLayerServiceNames.KNOWN_TOPICS_SERVICE_NAME;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY;
-import static io.zeebe.broker.system.SystemServiceNames.*;
-import static io.zeebe.broker.transport.TransportServiceNames.*;
+import static io.zeebe.broker.system.SystemServiceNames.DEPLOYMENT_MANAGER_SERVICE;
+import static io.zeebe.broker.system.SystemServiceNames.FETCH_CREATED_TOPIC_HANDLER;
+import static io.zeebe.broker.system.SystemServiceNames.LEADER_MANAGEMENT_REQUEST_HANDLER;
+import static io.zeebe.broker.system.SystemServiceNames.METRICS_FILE_WRITER;
+import static io.zeebe.broker.transport.TransportServiceNames.CLIENT_API_SERVER_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_SERVER_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.bufferingServerTransport;
+import static io.zeebe.broker.transport.TransportServiceNames.serverTransport;
 
+import io.zeebe.broker.system.management.LeaderManagementRequestHandler;
+import io.zeebe.broker.system.management.topics.FetchCreatedTopicsRequestHandlerService;
 import io.zeebe.broker.system.metrics.MetricsFileWriterService;
-import io.zeebe.broker.system.workflow.repository.api.management.DeploymentManagerRequestHandler;
 import io.zeebe.broker.system.workflow.repository.service.DeploymentManager;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.servicecontainer.ServiceContainer;
@@ -37,10 +45,10 @@ public class SystemComponent implements Component {
         new MetricsFileWriterService(context.getBrokerConfiguration().getMetrics());
     serviceContainer.createService(METRICS_FILE_WRITER, metricsFileWriterService).install();
 
-    final DeploymentManagerRequestHandler requestHandlerService =
-        new DeploymentManagerRequestHandler();
+    final LeaderManagementRequestHandler requestHandlerService =
+        new LeaderManagementRequestHandler();
     serviceContainer
-        .createService(DEPLOYMENT_MANAGER_REQUEST_HANDLER, requestHandlerService)
+        .createService(LEADER_MANAGEMENT_REQUEST_HANDLER, requestHandlerService)
         .dependency(
             bufferingServerTransport(MANAGEMENT_API_SERVER_NAME),
             requestHandlerService.getManagementApiServerTransportInjector())
@@ -50,7 +58,7 @@ public class SystemComponent implements Component {
     serviceContainer
         .createService(DEPLOYMENT_MANAGER_SERVICE, deploymentManagerService)
         .dependency(
-            DEPLOYMENT_MANAGER_REQUEST_HANDLER,
+            LEADER_MANAGEMENT_REQUEST_HANDLER,
             deploymentManagerService.getRequestHandlerServiceInjector())
         .dependency(
             STREAM_PROCESSOR_SERVICE_FACTORY,
@@ -64,6 +72,20 @@ public class SystemComponent implements Component {
         .groupReference(
             LEADER_PARTITION_SYSTEM_GROUP_NAME,
             deploymentManagerService.getPartitionsGroupReference())
+        .install();
+
+    final FetchCreatedTopicsRequestHandlerService fetchCreatedTopicsRequestHandler =
+        new FetchCreatedTopicsRequestHandlerService();
+    serviceContainer
+        .createService(FETCH_CREATED_TOPIC_HANDLER, fetchCreatedTopicsRequestHandler)
+        .dependency(
+            KNOWN_TOPICS_SERVICE_NAME, fetchCreatedTopicsRequestHandler.getKnownTopicsInjector())
+        .dependency(
+            LEADER_MANAGEMENT_REQUEST_HANDLER,
+            fetchCreatedTopicsRequestHandler.getRequestHandlerServiceInjector())
+        .groupReference(
+            LEADER_PARTITION_SYSTEM_GROUP_NAME,
+            fetchCreatedTopicsRequestHandler.getPartitionsGroupReference())
         .install();
   }
 }
