@@ -15,7 +15,6 @@ import {
 
 import Header from '../Header';
 import ListView from './ListView';
-import SelectionDisplay from './SelectionDisplay';
 import SelectionList from './SelectionList';
 import {parseQueryString, createNewSelectionFragment} from './service';
 import Filters from './Filters';

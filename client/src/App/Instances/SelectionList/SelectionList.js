@@ -7,7 +7,7 @@ import {fetchWorkflowInstanceBySelection} from 'modules/api/instances';
 import Selection from '../Selection';
 
 export default class SelectionList extends React.Component {
-  state = {selections: [], selectionsInstances: [], newSelectionIndex: 0};
+  state = {selectionsInstances: [], newSelectionIndex: 0, openSelection: null};
 
   componentDidMount = async () => {
     this.props.selections.map(async selection => {
@@ -46,19 +46,31 @@ export default class SelectionList extends React.Component {
     });
   };
 
+  toggleSelection = selectionID => {
+    this.setState({
+      openSelection:
+        selectionID !== this.state.openSelection ? selectionID : null
+    });
+  };
+
   render() {
     return (
       <Styled.SelectionList>
-        {this.state.selectionsInstances.map((selection, index) => (
-          <Selection
-            key={selection.id}
-            index={selection.id}
-            instances={selection.workfowInstances}
-            count={selection.totalCount}
-            onRetry={() => this.retySelection(selection)}
-            onDelete={() => this.deleteSelection(selection.id)}
-          />
-        ))}
+        {this.state.selectionsInstances.map((selection, index) => {
+          const {id, workfowInstances, totalCount} = selection;
+          return (
+            <Selection
+              isOpen={this.state.openSelection === id}
+              key={id}
+              id={id}
+              instances={workfowInstances}
+              count={totalCount}
+              onClick={() => this.toggleSelection(id)}
+              onRetry={() => this.retySelection(selection)}
+              onDelete={() => this.deleteSelection(id)}
+            />
+          );
+        })}
       </Styled.SelectionList>
     );
   }
