@@ -81,7 +81,9 @@ public class ValidationService {
     }
 
     if (config == null || !config.exists() || !config.canRead()) {
-      throw new RuntimeException("Upgrade has to be executed from \"upgrade\" folder in $OPTIMIZE_HOME");
+      throw new UpgradeRuntimeException(
+        "The upgrade has to be executed from \"upgrade\" folder in the Optimize root directory!"
+      );
     }
   }
 }

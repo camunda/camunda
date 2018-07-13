@@ -4,7 +4,7 @@ import org.apache.http.HttpHost;
 import org.camunda.optimize.service.es.schema.type.MetadataType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
-import org.camunda.optimize.upgrade.main.UpgradeFrom21To22;
+import org.camunda.optimize.upgrade.main.UpgradeMain;
 import org.camunda.optimize.upgrade.service.ValidationService;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.elasticsearch.client.RestClient;
@@ -46,7 +46,7 @@ public class UpgradeExecutionPlan implements UpgradePlan {
 
   private void addEnvironmentFolderToClasspath() throws Exception {
     String location = ".." + File.separator + "environment";
-    String executionFolderPath = UpgradeFrom21To22.class
+    String executionFolderPath = UpgradeMain.class
       .getProtectionDomain()
       .getCodeSource()
       .getLocation()

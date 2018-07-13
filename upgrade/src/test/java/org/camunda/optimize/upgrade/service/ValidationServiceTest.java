@@ -146,7 +146,7 @@ public class ValidationServiceTest extends AbstractUpgradeTest {
 
     //throws
     thrown.expect(RuntimeException.class);
-    thrown.expectMessage("Upgrade has to be executed from \"upgrade\" folder in $OPTIMIZE_HOME");
+    thrown.expectMessage("The upgrade has to be executed from \"upgrade\" folder in the Optimize root directory!");
 
     //when
     underTest.validateExecutionPath();
