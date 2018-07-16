@@ -27,7 +27,7 @@ jest.mock('components', () => {
 
   return {
     Modal,
-    Message: props => <div>{props.children}</div>,
+    Message: props => <div {...props}>{props.children}</div>,
     Button: props => <button {...props}>{props.children}</button>,
     Input: props => {
       const allowedProps = {...props};
@@ -73,4 +73,9 @@ it('should have a create filter button', () => {
   addButton.simulate('click');
 
   expect(spy).toHaveBeenCalled();
+});
+
+it('should show a hint that only completed instances will be shown', () => {
+  const node = mount(<DurationFilter />);
+  expect(node.find('Message')).toBePresent();
 });
