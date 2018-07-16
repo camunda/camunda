@@ -28,7 +28,8 @@ export default class DurationHeatmapModal extends React.Component {
     this.state = {
       focus: null,
       values: {},
-      nodeNames: {}
+      nodeNames: {},
+      loading: false
     };
   }
 
@@ -205,17 +206,19 @@ export default class DurationHeatmapModal extends React.Component {
 
     if (this.props.open !== prevProps.open) {
       if (this.props.open) {
+        this.setState({loading: true});
         const {values, nodeNames} = await this.constructValues();
-
         this.setState({
           focus: null,
           values,
-          nodeNames
+          nodeNames,
+          loading: false
         });
       } else {
         this.setState({
           values: {},
-          nodeNames: {}
+          nodeNames: {},
+          loading: false
         });
       }
     }
@@ -231,7 +234,7 @@ export default class DurationHeatmapModal extends React.Component {
         onClose={this.props.onClose}
         className="DurationHeatmapModal__Modal"
       >
-        <Modal.Header>Target Value Comparison</Modal.Header>
+        <Modal.Header>Target Value Comparison </Modal.Header>
         <Modal.Content className="DurationHeatmapModal__modal-content-container">
           <div className="DurationHeatmapModal__DiagramContainer">
             <BPMNDiagram xml={this.props.configuration.xml}>
@@ -239,16 +242,21 @@ export default class DurationHeatmapModal extends React.Component {
               <TargetValueBadge values={this.state.values} />
             </BPMNDiagram>
           </div>
-          <Table
-            head={['Activity', 'Actual Value', 'Target Value']}
-            body={this.constructTableBody()}
-            foot={[]}
-            className="DurationHeatmapModal__Table"
-            disablePagination
-          />
-          {!this.validChanges() && (
-            <ErrorMessage className="DurationHeatmapModal__warning">{errorMessage}</ErrorMessage>
+          {this.state.loading ? (
+            <p class="DurationHeatmapModal__loading">loading...</p>
+          ) : (
+            <Table
+              head={['Activity', 'Actual Value', 'Target Value']}
+              body={this.constructTableBody()}
+              foot={[]}
+              className="DurationHeatmapModal__Table"
+              disablePagination
+            />
           )}
+          {!this.validChanges() &&
+            !this.state.loading && (
+              <ErrorMessage className="DurationHeatmapModal__warning">{errorMessage}</ErrorMessage>
+            )}
         </Modal.Content>
         <Modal.Actions>
           <Button onClick={this.props.onClose}>Cancel</Button>
