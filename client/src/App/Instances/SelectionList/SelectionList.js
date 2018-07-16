@@ -11,9 +11,7 @@ export default class SelectionList extends React.Component {
 
   componentDidMount = async () => {
     this.props.selections.map(async selection => {
-      const selectionData = await await fetchWorkflowInstanceBySelection(
-        selection
-      );
+      const selectionData = await fetchWorkflowInstanceBySelection(selection);
       this.setState(prevState => ({
         selectionsInstances: [
           ...prevState.selectionsInstances,
