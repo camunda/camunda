@@ -79,7 +79,7 @@ public class UpgradeMain {
       if (answer.equals("no")) {
         System.out.println("The Optimize upgrade was aborted.");
         System.exit(1);
-      } else {
+      } else if (!answer.equals("yes")) {
         String text = "Your answer was '" + answer + "'. The only accepted answers are 'yes' or 'no'. \n" +
           "\n" +
           "Your answer (type your answer and hit enter): ";
