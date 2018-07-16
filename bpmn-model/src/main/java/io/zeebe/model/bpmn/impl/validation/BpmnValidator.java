@@ -18,8 +18,11 @@ package io.zeebe.model.bpmn.impl.validation;
 import io.zeebe.model.bpmn.impl.error.ErrorCollector;
 import io.zeebe.model.bpmn.impl.error.InvalidModelException;
 import io.zeebe.model.bpmn.impl.instance.DefinitionsImpl;
+import io.zeebe.model.bpmn.impl.instance.MessageImpl;
 import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class BpmnValidator {
@@ -40,11 +43,20 @@ public class BpmnValidator {
           definition, "BPMN model must contain at least one executable process.");
     }
 
+    final Map<String, MessageImpl> messages = getMessagesById(definition);
+
     for (ProcessImpl executableProcess : executableProcesses) {
-      processValidator.validate(validationResult, executableProcess);
+      processValidator.validate(validationResult, executableProcess, messages);
     }
 
     reportExsitingErrorsOrWarnings(validationResult);
+  }
+
+  private Map<String, MessageImpl> getMessagesById(DefinitionsImpl definition) {
+    return definition
+        .getMessages()
+        .stream()
+        .collect(Collectors.toMap(MessageImpl::getId, Function.identity()));
   }
 
   public void reportExsitingErrorsOrWarnings(ErrorCollector validationResult) {

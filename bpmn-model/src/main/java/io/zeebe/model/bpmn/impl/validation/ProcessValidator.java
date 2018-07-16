@@ -17,15 +17,27 @@ package io.zeebe.model.bpmn.impl.validation;
 
 import io.zeebe.model.bpmn.impl.ZeebeConstraints;
 import io.zeebe.model.bpmn.impl.error.ErrorCollector;
-import io.zeebe.model.bpmn.impl.instance.*;
+import io.zeebe.model.bpmn.impl.instance.EndEventImpl;
+import io.zeebe.model.bpmn.impl.instance.ExclusiveGatewayImpl;
+import io.zeebe.model.bpmn.impl.instance.FlowElementImpl;
+import io.zeebe.model.bpmn.impl.instance.FlowNodeImpl;
+import io.zeebe.model.bpmn.impl.instance.IntermediateCatchEventImpl;
+import io.zeebe.model.bpmn.impl.instance.MessageImpl;
 import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
+import io.zeebe.model.bpmn.impl.instance.ReceiveTaskImpl;
+import io.zeebe.model.bpmn.impl.instance.SequenceFlowImpl;
+import io.zeebe.model.bpmn.impl.instance.ServiceTaskImpl;
+import io.zeebe.model.bpmn.impl.instance.StartEventImpl;
 import io.zeebe.model.bpmn.impl.validation.nodes.EndEventValidator;
 import io.zeebe.model.bpmn.impl.validation.nodes.ExclusiveGatewayValidator;
+import io.zeebe.model.bpmn.impl.validation.nodes.IntermediateCatchEventValidator;
+import io.zeebe.model.bpmn.impl.validation.nodes.ReceiveTaskValidator;
 import io.zeebe.model.bpmn.impl.validation.nodes.task.ServiceTaskValidator;
 import io.zeebe.model.bpmn.instance.ExclusiveGateway;
 import io.zeebe.util.collection.Tuple;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
@@ -34,8 +46,12 @@ public class ProcessValidator {
   private final EndEventValidator endEventValidator = new EndEventValidator();
   private final ExclusiveGatewayValidator exclusiveGatewayValidator =
       new ExclusiveGatewayValidator();
+  private final IntermediateCatchEventValidator intermediateCatchEventValidator =
+      new IntermediateCatchEventValidator();
+  private final ReceiveTaskValidator receiveTaskValidator = new ReceiveTaskValidator();
 
-  public void validate(ErrorCollector validationResult, ProcessImpl process) {
+  public void validate(
+      ErrorCollector validationResult, ProcessImpl process, Map<String, MessageImpl> messages) {
     final DirectBuffer bpmnProcessId = process.getBpmnProcessId();
     if (bpmnProcessId == null || bpmnProcessId.capacity() == 0) {
       validationResult.addError(process, "BPMN process id is required.");
@@ -50,21 +66,26 @@ public class ProcessValidator {
       validationResult.addError(process, "The process must contain at least one none start event.");
     }
 
-    validateFlowNodes(validationResult, process);
+    validateFlowNodes(validationResult, process, messages);
   }
 
-  private void validateFlowNodes(ErrorCollector validationResult, ProcessImpl process) {
+  private void validateFlowNodes(
+      ErrorCollector validationResult, ProcessImpl process, Map<String, MessageImpl> messages) {
     final List<FlowNodeImpl> flowNodes = new ArrayList<>();
     flowNodes.addAll(process.getStartEvents());
     flowNodes.addAll(process.getEndEvents());
     flowNodes.addAll(process.getExclusiveGateways());
     flowNodes.addAll(process.getServiceTasks());
+    flowNodes.addAll(process.getIntermediateCatchEvents());
+    flowNodes.addAll(process.getReceiveTasks());
 
     validateStartEvent(validationResult, process, flowNodes);
     validateSequenceFlows(validationResult, process, flowNodes);
     validateExclusiveGateways(validationResult, process, flowNodes);
     validateServiceTasks(validationResult, process, flowNodes);
     validateEndEvents(validationResult, process, flowNodes);
+    validateIntermediateCatchEvents(validationResult, process, flowNodes, messages);
+    validateReceiveTasks(validationResult, process, flowNodes, messages);
   }
 
   private void validateStartEvent(
@@ -117,7 +138,7 @@ public class ProcessValidator {
         flowNode
             .getIncoming()
             .stream()
-            .map(flow -> new Tuple<>(((SequenceFlowImpl) flow).getSourceRef(), flow))
+            .map(flow -> new Tuple<>(flow.getSourceRef(), flow))
             .collect(Collectors.toList());
 
     validateNodeExistence(validationResult, existingNodes, sourceNodes, "source");
@@ -126,7 +147,7 @@ public class ProcessValidator {
         flowNode
             .getOutgoing()
             .stream()
-            .map(flow -> new Tuple<>(((SequenceFlowImpl) flow).getTargetRef(), flow))
+            .map(flow -> new Tuple<>(flow.getTargetRef(), flow))
             .collect(Collectors.toList());
     validateNodeExistence(validationResult, existingNodes, targetNodes, "target");
   }
@@ -179,6 +200,32 @@ public class ProcessValidator {
       validateGeneralFlowElement(validationResult, task);
       validateGeneralFlowNode(validationResult, existingNodes, task);
       taskValidator.validate(validationResult, task);
+    }
+  }
+
+  private void validateIntermediateCatchEvents(
+      ErrorCollector validationResult,
+      ProcessImpl process,
+      List<FlowNodeImpl> existingNodes,
+      Map<String, MessageImpl> messages) {
+    final List<IntermediateCatchEventImpl> catchEvents = process.getIntermediateCatchEvents();
+    for (IntermediateCatchEventImpl catchEvent : catchEvents) {
+      validateGeneralFlowElement(validationResult, catchEvent);
+      validateGeneralFlowNode(validationResult, existingNodes, catchEvent);
+      intermediateCatchEventValidator.validate(validationResult, catchEvent, messages);
+    }
+  }
+
+  private void validateReceiveTasks(
+      ErrorCollector validationResult,
+      ProcessImpl process,
+      List<FlowNodeImpl> existingNodes,
+      Map<String, MessageImpl> messages) {
+    final List<ReceiveTaskImpl> receiveTasks = process.getReceiveTasks();
+    for (ReceiveTaskImpl receiveTask : receiveTasks) {
+      validateGeneralFlowElement(validationResult, receiveTask);
+      validateGeneralFlowNode(validationResult, existingNodes, receiveTask);
+      receiveTaskValidator.validate(validationResult, receiveTask, messages);
     }
   }
 }

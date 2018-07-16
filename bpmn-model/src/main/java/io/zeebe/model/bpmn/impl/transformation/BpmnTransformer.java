@@ -18,10 +18,15 @@ package io.zeebe.model.bpmn.impl.transformation;
 import io.zeebe.model.bpmn.impl.error.ErrorCollector;
 import io.zeebe.model.bpmn.impl.error.InvalidModelException;
 import io.zeebe.model.bpmn.impl.instance.DefinitionsImpl;
+import io.zeebe.model.bpmn.impl.instance.MessageImpl;
 import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
 import io.zeebe.model.bpmn.instance.Workflow;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public class BpmnTransformer {
@@ -31,10 +36,11 @@ public class BpmnTransformer {
     final ErrorCollector errorCollector = new ErrorCollector();
     final Map<DirectBuffer, Workflow> workflowsById = new HashMap<>();
     final List<ProcessImpl> processes = definitions.getProcesses();
+    final Map<String, MessageImpl> messagesById = getMessagesById(definitions);
 
     for (int p = 0; p < processes.size(); p++) {
       final ProcessImpl process = processes.get(p);
-      processTransformer.transform(errorCollector, process);
+      processTransformer.transform(errorCollector, process, messagesById);
       workflowsById.put(process.getBpmnProcessId(), process);
     }
 
@@ -43,6 +49,13 @@ public class BpmnTransformer {
     reportExistingErrorsOrWarnings(errorCollector);
 
     return definitions;
+  }
+
+  private Map<String, MessageImpl> getMessagesById(DefinitionsImpl definition) {
+    return definition
+        .getMessages()
+        .stream()
+        .collect(Collectors.toMap(MessageImpl::getId, Function.identity()));
   }
 
   public void reportExistingErrorsOrWarnings(ErrorCollector errorCollector) {

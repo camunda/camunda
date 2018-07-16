@@ -275,6 +275,8 @@ public final class BpmnConstants {
   public static final String ZEEBE_ELEMENT_TASK_HEADERS = "taskHeaders";
   public static final String ZEEBE_ELEMENT_TASK_HEADER = "header";
 
+  public static final String ZEEBE_ELEMENT_SUBSCRIPTION = "subscription";
+
   // attributes //////////////////////////////////////
 
   /** XSI attributes * */
@@ -404,4 +406,6 @@ public final class BpmnConstants {
   public static final String ZEEBE_ATTRIBUTES_TASK_RETRIES = "retries";
   public static final String ZEEBE_ATTRIBUTE_TASK_HEADER_KEY = "key";
   public static final String ZEEBE_ATTRIBUTE_TASK_HEADER_VALUE = "value";
+
+  public static final String ZEEBE_ATTRIBUTE_CORRELATION_KEY = "correlationKey";
 }

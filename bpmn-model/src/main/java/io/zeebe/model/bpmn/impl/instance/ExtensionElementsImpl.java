@@ -16,13 +16,17 @@
 package io.zeebe.model.bpmn.impl.instance;
 
 import io.zeebe.model.bpmn.BpmnConstants;
-import io.zeebe.model.bpmn.impl.metadata.*;
+import io.zeebe.model.bpmn.impl.metadata.InputOutputMappingImpl;
+import io.zeebe.model.bpmn.impl.metadata.SubscriptionImpl;
+import io.zeebe.model.bpmn.impl.metadata.TaskDefinitionImpl;
+import io.zeebe.model.bpmn.impl.metadata.TaskHeadersImpl;
 import javax.xml.bind.annotation.XmlElement;
 
 public class ExtensionElementsImpl {
   private TaskDefinitionImpl taskDefinition;
   private TaskHeadersImpl taskHeaders;
   private InputOutputMappingImpl inputOutputMapping;
+  private SubscriptionImpl subscription;
 
   @XmlElement(
       name = BpmnConstants.ZEEBE_ELEMENT_TASK_DEFINITION,
@@ -51,5 +55,14 @@ public class ExtensionElementsImpl {
 
   public InputOutputMappingImpl getInputOutputMapping() {
     return inputOutputMapping;
+  }
+
+  public SubscriptionImpl getSubscription() {
+    return subscription;
+  }
+
+  @XmlElement(name = BpmnConstants.ZEEBE_ELEMENT_SUBSCRIPTION, namespace = BpmnConstants.ZEEBE_NS)
+  public void setSubscription(SubscriptionImpl subscription) {
+    this.subscription = subscription;
   }
 }

@@ -16,9 +16,16 @@
 package io.zeebe.model.bpmn.impl.instance;
 
 import io.zeebe.model.bpmn.BpmnConstants;
-import io.zeebe.model.bpmn.instance.*;
-import java.util.*;
-import javax.xml.bind.annotation.*;
+import io.zeebe.model.bpmn.instance.FlowElement;
+import io.zeebe.model.bpmn.instance.StartEvent;
+import io.zeebe.model.bpmn.instance.Workflow;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlTransient;
 import org.agrona.DirectBuffer;
 
 public class ProcessImpl extends FlowElementImpl implements Workflow {
@@ -29,6 +36,8 @@ public class ProcessImpl extends FlowElementImpl implements Workflow {
   private List<EndEventImpl> endEvents = new ArrayList<>();
   private List<ServiceTaskImpl> serviceTasks = new ArrayList<>();
   private List<ExclusiveGatewayImpl> exclusiveGateways = new ArrayList<>();
+  private List<IntermediateCatchEventImpl> intermediateCatchEvents = new ArrayList<>();
+  private List<ReceiveTaskImpl> receiveTasks = new ArrayList<>();
 
   private StartEvent initialStartEvent;
   private final List<FlowElement> flowElements = new ArrayList<>();
@@ -89,6 +98,26 @@ public class ProcessImpl extends FlowElementImpl implements Workflow {
 
   public List<ExclusiveGatewayImpl> getExclusiveGateways() {
     return exclusiveGateways;
+  }
+
+  @XmlElement(
+      name = BpmnConstants.BPMN_ELEMENT_INTERMEDIATE_CATCH_EVENT,
+      namespace = BpmnConstants.BPMN20_NS)
+  public void setIntermediateCatchEvents(List<IntermediateCatchEventImpl> intermediateCatchEvents) {
+    this.intermediateCatchEvents = intermediateCatchEvents;
+  }
+
+  public List<IntermediateCatchEventImpl> getIntermediateCatchEvents() {
+    return intermediateCatchEvents;
+  }
+
+  @XmlElement(name = BpmnConstants.BPMN_ELEMENT_RECEIVE_TASK, namespace = BpmnConstants.BPMN20_NS)
+  public void setReceiveTasks(List<ReceiveTaskImpl> receiveTasks) {
+    this.receiveTasks = receiveTasks;
+  }
+
+  public List<ReceiveTaskImpl> getReceiveTasks() {
+    return receiveTasks;
   }
 
   @Override

@@ -20,7 +20,20 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.model.bpmn.impl.error.InvalidModelException;
-import io.zeebe.model.bpmn.instance.*;
+import io.zeebe.model.bpmn.instance.ExclusiveGateway;
+import io.zeebe.model.bpmn.instance.FlowNode;
+import io.zeebe.model.bpmn.instance.InputOutputMapping;
+import io.zeebe.model.bpmn.instance.IntermediateMessageCatchEvent;
+import io.zeebe.model.bpmn.instance.MessageSubscription;
+import io.zeebe.model.bpmn.instance.OutputBehavior;
+import io.zeebe.model.bpmn.instance.ReceiveTask;
+import io.zeebe.model.bpmn.instance.SequenceFlow;
+import io.zeebe.model.bpmn.instance.ServiceTask;
+import io.zeebe.model.bpmn.instance.StartEvent;
+import io.zeebe.model.bpmn.instance.TaskDefinition;
+import io.zeebe.model.bpmn.instance.TaskHeaders;
+import io.zeebe.model.bpmn.instance.Workflow;
+import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
@@ -38,6 +51,9 @@ public class BpmnTransformTest {
   private static final String BPMN_NONE_PROCESS_FILE = "/none_output_process.bpmn";
   private static final String BPMN_MERGE_PROCESS_FILE = "/merge_output_process.bpmn";
   private static final String BPMN_XOR_GATEWAY_FILE = "/process-xor-gateway.bpmn";
+  private static final String BPMN_INTERMEDIATE_MESSAGE_EVENT_FILE =
+      "/workflow-intermediate-message-catch-event.bpmn";
+  private static final String BPMN_RECEIVE_TASK_FILE = "/workflow-receive-task.bpmn";
 
   @Rule public ExpectedException expectedException = ExpectedException.none();
 
@@ -322,5 +338,38 @@ public class BpmnTransformTest {
         .sequenceFlow("s2", s -> s.defaultFlow())
         .endEvent()
         .done();
+  }
+
+  @Test
+  public void shouldTransformIntermediateMessageCatchEvent() {
+    final InputStream stream = getClass().getResourceAsStream(BPMN_INTERMEDIATE_MESSAGE_EVENT_FILE);
+    final WorkflowDefinition workflowDefinition = Bpmn.readFromXmlStream(stream);
+
+    final Workflow workflow = workflowDefinition.getWorkflow(wrapString("workflow"));
+
+    final IntermediateMessageCatchEvent catchEvent =
+        workflow.findFlowElementById(wrapString("catch-event"));
+    assertThat(catchEvent).isNotNull();
+
+    final MessageSubscription subscription = catchEvent.getMessageSubscription();
+    assertThat(subscription).isNotNull();
+    assertThat(subscription.getMessageName()).isEqualTo("order canceled");
+    assertThat(subscription.getCorrelationKey().getExpression()).isEqualTo(wrapString("$.orderId"));
+  }
+
+  @Test
+  public void shouldTransformReceiveTask() {
+    final InputStream stream = getClass().getResourceAsStream(BPMN_RECEIVE_TASK_FILE);
+    final WorkflowDefinition workflowDefinition = Bpmn.readFromXmlStream(stream);
+
+    final Workflow workflow = workflowDefinition.getWorkflow(wrapString("workflow"));
+
+    final ReceiveTask receiveTask = workflow.findFlowElementById(wrapString("receive-task"));
+    assertThat(receiveTask).isNotNull();
+
+    final MessageSubscription subscription = receiveTask.getMessageSubscription();
+    assertThat(subscription).isNotNull();
+    assertThat(subscription.getMessageName()).isEqualTo("order canceled");
+    assertThat(subscription.getCorrelationKey().getExpression()).isEqualTo(wrapString("$.orderId"));
   }
 }
