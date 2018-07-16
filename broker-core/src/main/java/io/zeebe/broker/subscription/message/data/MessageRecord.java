@@ -26,10 +26,15 @@ public class MessageRecord extends UnpackedObject {
 
   private final StringProperty nameProp = new StringProperty("name");
   private final StringProperty correlationKeyProp = new StringProperty("correlationKey");
+
   private final DocumentProperty payloadProp = new DocumentProperty("payload");
+  private final StringProperty messageIdProp = new StringProperty("messageId", "");
 
   public MessageRecord() {
-    this.declareProperty(nameProp).declareProperty(correlationKeyProp).declareProperty(payloadProp);
+    this.declareProperty(nameProp)
+        .declareProperty(correlationKeyProp)
+        .declareProperty(payloadProp)
+        .declareProperty(messageIdProp);
   }
 
   public DirectBuffer getName() {
@@ -42,5 +47,13 @@ public class MessageRecord extends UnpackedObject {
 
   public DirectBuffer getPayload() {
     return payloadProp.getValue();
+  }
+
+  public boolean hasMessageId() {
+    return messageIdProp.getValue().capacity() > 0;
+  }
+
+  public DirectBuffer getMessageId() {
+    return messageIdProp.getValue();
   }
 }

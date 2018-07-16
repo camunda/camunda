@@ -32,6 +32,18 @@ public class MessageDataStore extends JsonSnapshotSupport<MessageData> {
     getData().messages.add(message);
   }
 
+  public boolean hasMessage(MessageEntry message) {
+    return getData()
+        .messages
+        .stream()
+        .anyMatch(
+            m ->
+                m.getId() != null
+                    && m.getId().equals(message.getId())
+                    && m.getName().equals(message.getName())
+                    && m.getCorrelationKey().equals(message.getCorrelationKey()));
+  }
+
   public static class MessageData {
 
     private List<MessageEntry> messages = new ArrayList<>();
@@ -41,11 +53,13 @@ public class MessageDataStore extends JsonSnapshotSupport<MessageData> {
     private final String name;
     private final String correlationKey;
     private final byte[] payload;
+    private final String id;
 
-    public MessageEntry(String name, String correlationKey, byte[] payload) {
+    public MessageEntry(String name, String correlationKey, byte[] payload, String id) {
       this.name = name;
       this.correlationKey = correlationKey;
       this.payload = payload;
+      this.id = id;
     }
 
     public String getName() {
@@ -58,6 +72,10 @@ public class MessageDataStore extends JsonSnapshotSupport<MessageData> {
 
     public byte[] getPayload() {
       return payload;
+    }
+
+    public String getId() {
+      return id;
     }
   }
 }
