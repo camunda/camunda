@@ -70,7 +70,8 @@ export default class FilterList extends React.Component {
               }}
               className="FilterList__action-item"
             >
-              <span className="FilterList__parameter-name">Start Date </span> is between{' '}
+              <span className="FilterList__parameter-name">Start Date</span>
+              {this.createOperator('is between')}
               <span className="FilterList__value">
                 {moment(filter.data.value).format('YYYY-MM-DD')}
               </span>{' '}
@@ -102,7 +103,8 @@ export default class FilterList extends React.Component {
                   }}
                   className="FilterList__action-item"
                 >
-                  <span className="FilterList__parameter-name">{name}</span> is between{' '}
+                  <span className="FilterList__parameter-name">{name}</span>
+                  {this.createOperator('is between')}
                   <span className="FilterList__value">
                     {moment(filter.data.values[0]).format('YYYY-MM-DD')}
                   </span>
