@@ -12,7 +12,7 @@ public class ReportConstants {
   public static final String VIEW_FREQUENCY_PROPERTY = "frequency";
   public static final String VIEW_DURATION_PROPERTY = "duration";
 
-  public static final String GROUP_BY_FLOW_NODE_TYPE = "flowNode";
+  public static final String GROUP_BY_FLOW_NODES_TYPE = "flowNodes";
   public static final String GROUP_BY_NONE_TYPE = "none";
   public static final String GROUP_BY_START_DATE_TYPE = "startDate";
 

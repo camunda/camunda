@@ -1,9 +1,10 @@
 package org.camunda.optimize.service.es.report;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.dto.optimize.query.report.GroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.group.GroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ViewDto;
+import org.camunda.optimize.dto.optimize.query.report.group.StartDateGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.service.es.filter.QueryFilterEnhancer;
 import org.camunda.optimize.service.es.report.command.Command;
@@ -24,7 +25,7 @@ import org.elasticsearch.client.Client;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_FLOW_NODE_TYPE;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_FLOW_NODES_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_NONE_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_START_DATE_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_AVERAGE_OPERATION;
@@ -108,7 +109,7 @@ public class ReportEvaluator {
     String type = reportData.getGroupBy().getType();
     ValidationHelper.ensureNotEmpty("group by type", type);
     switch (type) {
-      case GROUP_BY_FLOW_NODE_TYPE:
+      case GROUP_BY_FLOW_NODES_TYPE:
         evaluationCommand = new AverageFlowNodeDurationByFlowNodeCommand();
         break;
     }
@@ -138,7 +139,9 @@ public class ReportEvaluator {
         evaluationCommand = new AverageTotalProcessInstanceDurationCommand();
         break;
       case GROUP_BY_START_DATE_TYPE:
-        ValidationHelper.ensureNotEmpty("group by unit", groupBy.getUnit());
+        ValidationHelper.ensureIsInstanceOf("group by value", groupBy.getValue(), StartDateGroupByDto.class);
+        StartDateGroupByDto groupByStartDate = (StartDateGroupByDto) groupBy;
+        ValidationHelper.ensureNotEmpty("group by start date unit", groupByStartDate.getValue().getUnit());
         evaluationCommand = new AverageProcessInstanceDurationGroupedByStartDateCommand();
         break;
     }
@@ -183,7 +186,9 @@ public class ReportEvaluator {
         evaluationCommand = new CountTotalProcessInstanceFrequencyCommand();
         break;
       case GROUP_BY_START_DATE_TYPE:
-        ValidationHelper.ensureNotEmpty("group by unit", groupBy.getUnit());
+        ValidationHelper.ensureIsInstanceOf("group by value", groupBy.getValue(), StartDateGroupByDto.class);
+        StartDateGroupByDto groupByStartDate = (StartDateGroupByDto) groupBy;
+        ValidationHelper.ensureNotEmpty("group by start date unit", groupByStartDate.getValue().getUnit());
         evaluationCommand = new CountProcessInstanceFrequencyByStartDateCommand();
         break;
     }
@@ -208,7 +213,7 @@ public class ReportEvaluator {
     String type = reportData.getGroupBy().getType();
     ValidationHelper.ensureNotEmpty("group by type", type);
     switch (type) {
-      case GROUP_BY_FLOW_NODE_TYPE:
+      case GROUP_BY_FLOW_NODES_TYPE:
         evaluationCommand = new CountFlowNodeFrequencyByFlowNodeCommand();
         break;
     }

@@ -1,13 +1,12 @@
 package org.camunda.optimize.service.export;
 
 import com.opencsv.CSVWriter;
-import org.camunda.optimize.dto.optimize.query.report.GroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.group.GroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.ViewDto;
 import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportResultDto;
-import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
@@ -44,8 +43,7 @@ public class ExportService {
     List<String[]> csvStrings = CSVUtils.map(result, limit, offset);
 
     String[] header = new String [2];
-    String unit = groupBy.getUnit() != null ? "_" + groupBy.getUnit() : "";
-    header[0] = groupBy.getType() + unit;
+    header[0] = groupBy.toString();
     header[1] = view.getOperation() + "_" + view.getEntity() + "_" + view.getProperty();
     csvStrings.add(0, header);
     byte[] bytes = getCSVBytes(csvStrings);

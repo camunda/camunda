@@ -355,7 +355,7 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
     Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess() {

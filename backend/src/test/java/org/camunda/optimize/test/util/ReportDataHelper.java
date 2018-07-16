@@ -1,13 +1,14 @@
 package org.camunda.optimize.test.util;
 
-import org.camunda.optimize.dto.optimize.query.report.GroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.group.FlowNodesGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.group.GroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ViewDto;
+import org.camunda.optimize.dto.optimize.query.report.group.NoneGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.group.StartDateGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.group.value.StartDateGroupByValueDto;
 
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.DATE_UNIT_DAY;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_FLOW_NODE_TYPE;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_NONE_TYPE;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_START_DATE_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.HEAT_VISUALIZATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.SINGLE_NUMBER_VISUALIZATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.TABLE_VISUALIZATION;
@@ -97,9 +98,10 @@ public class ReportDataHelper {
   }
 
   private static GroupByDto createGroupByStartDateDto(String dateInterval) {
-    GroupByDto groupByDto = new GroupByDto();
-    groupByDto.setType(GROUP_BY_START_DATE_TYPE);
-    groupByDto.setUnit(dateInterval);
+    StartDateGroupByDto groupByDto = new StartDateGroupByDto();
+    StartDateGroupByValueDto valueDto = new StartDateGroupByValueDto();
+    valueDto.setUnit(dateInterval);
+    groupByDto.setValue(valueDto);
     return groupByDto;
   }
 
@@ -187,8 +189,7 @@ public class ReportDataHelper {
   }
 
   private static GroupByDto createGroupByFlowNode() {
-    GroupByDto groupByDto = new GroupByDto();
-    groupByDto.setType(GROUP_BY_FLOW_NODE_TYPE);
+    GroupByDto groupByDto = new FlowNodesGroupByDto();
     return groupByDto;
   }
 
@@ -212,8 +213,7 @@ public class ReportDataHelper {
   }
 
   private static GroupByDto createGroupByNone() {
-    GroupByDto groupByDto = new GroupByDto();
-    groupByDto.setType(GROUP_BY_NONE_TYPE);
+    GroupByDto groupByDto = new NoneGroupByDto();
     return groupByDto;
   }
 

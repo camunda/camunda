@@ -505,7 +505,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   private ProcessDefinitionEngineDto deploySimpleGatewayProcessDefinition() throws Exception {

@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.util.ExecutedFlowNodeFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.report.group.StartDateGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.command.util.ReportConstants;
@@ -56,7 +57,6 @@ import static org.camunda.optimize.service.es.report.command.util.ReportConstant
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_PROCESS_INSTANCE_ENTITY;
 import static org.camunda.optimize.test.util.ReportDataHelper.createAvgPIDurationGroupByStartDateReport;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
 
@@ -104,7 +104,8 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
     assertThat(resultReportDataDto.getView().getEntity(), is(VIEW_PROCESS_INSTANCE_ENTITY));
     assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_DURATION_PROPERTY));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(GROUP_BY_START_DATE_TYPE));
-    assertThat(resultReportDataDto.getGroupBy().getUnit(), is(DATE_UNIT_DAY));
+    StartDateGroupByDto startDateGroupByDto = (StartDateGroupByDto) resultReportDataDto.getGroupBy();
+    assertThat(startDateGroupByDto.getValue().getUnit(), is(DATE_UNIT_DAY));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(1));
     Map<String, Long> resultMap = result.getResult();
@@ -140,7 +141,8 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
     assertThat(resultReportDataDto.getView().getEntity(), is(VIEW_PROCESS_INSTANCE_ENTITY));
     assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_DURATION_PROPERTY));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(GROUP_BY_START_DATE_TYPE));
-    assertThat(resultReportDataDto.getGroupBy().getUnit(), is(DATE_UNIT_DAY));
+    StartDateGroupByDto startDateGroupByDto = (StartDateGroupByDto) resultReportDataDto.getGroupBy();
+    assertThat(startDateGroupByDto.getValue().getUnit(), is(DATE_UNIT_DAY));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(1));
     Map<String, Long> resultMap = result.getResult();
@@ -602,6 +604,21 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
     Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
+    assertThat(response.getStatus(), is(400));
+  }
+
+  @Test
+  public void optimizeExceptionOnGroupByValueIsNull() {
+    // given
+    ReportDataDto dataDto =
+      createAvgPIDurationGroupByStartDateReport(PROCESS_DEFINITION_KEY, "1", DATE_UNIT_DAY);
+    StartDateGroupByDto groupByDto = (StartDateGroupByDto) dataDto.getGroupBy();
+    groupByDto.getValue().setUnit(null);
+
+    //when
+    Response response = evaluateReportAndReturnResponse(dataDto);
+
+    // then
     assertThat(response.getStatus(), is(500));
   }
 
@@ -610,7 +627,8 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
     // given
     ReportDataDto dataDto =
       createAvgPIDurationGroupByStartDateReport(PROCESS_DEFINITION_KEY, "1", DATE_UNIT_DAY);
-    dataDto.getGroupBy().setUnit(null);
+    StartDateGroupByDto groupByStartDate = (StartDateGroupByDto) dataDto.getGroupBy();
+    groupByStartDate.setValue(null);
 
     //when
     Response response = evaluateReportAndReturnResponse(dataDto);

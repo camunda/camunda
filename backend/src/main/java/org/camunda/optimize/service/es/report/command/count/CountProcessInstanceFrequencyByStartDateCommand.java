@@ -1,5 +1,7 @@
 package org.camunda.optimize.service.es.report.command.count;
 
+import org.camunda.optimize.dto.optimize.query.report.group.StartDateGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.group.value.StartDateGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
 import org.camunda.optimize.service.es.report.command.ReportCommand;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
@@ -37,13 +39,15 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ReportComma
     );
     queryFilterEnhancer.addFilterToQuery(query, reportData.getFilter());
 
+    StartDateGroupByValueDto groupByStartDate = ((StartDateGroupByDto) reportData.getGroupBy()).getValue();
+
     SearchResponse response = esclient
       .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
       .setTypes(configurationService.getProcessInstanceType())
       .setQuery(query)
       .setFetchSource(false)
       .setSize(0)
-      .addAggregation(createAggregation(reportData.getGroupBy().getUnit()))
+      .addAggregation(createAggregation(groupByStartDate.getUnit()))
       .get();
 
     MapReportResultDto mapResult = new MapReportResultDto();

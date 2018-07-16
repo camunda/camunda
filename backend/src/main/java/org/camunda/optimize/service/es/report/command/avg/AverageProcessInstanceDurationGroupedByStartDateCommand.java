@@ -1,5 +1,7 @@
 package org.camunda.optimize.service.es.report.command.avg;
 
+import org.camunda.optimize.dto.optimize.query.report.group.StartDateGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.group.value.StartDateGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
 import org.camunda.optimize.service.es.report.command.ReportCommand;
 import org.camunda.optimize.service.es.report.command.util.ReportUtil;
@@ -39,13 +41,15 @@ public class AverageProcessInstanceDurationGroupedByStartDateCommand extends Rep
 
     queryFilterEnhancer.addFilterToQuery(query, reportData.getFilter());
 
+    StartDateGroupByValueDto groupByStartDate = ((StartDateGroupByDto) reportData.getGroupBy()).getValue();
+
     SearchResponse response = esclient
       .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
       .setTypes(configurationService.getProcessInstanceType())
       .setQuery(query)
       .setFetchSource(false)
       .setSize(0)
-      .addAggregation(createAggregation(reportData.getGroupBy().getUnit()))
+      .addAggregation(createAggregation(groupByStartDate.getUnit()))
       .get();
 
     MapReportResultDto mapResult = new MapReportResultDto();

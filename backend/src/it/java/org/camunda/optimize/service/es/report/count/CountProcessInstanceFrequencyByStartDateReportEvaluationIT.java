@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.util.ExecutedFlowNodeFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.report.group.StartDateGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.command.util.ReportConstants;
@@ -96,7 +97,8 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     assertThat(resultReportDataDto.getView().getEntity(), is(VIEW_PROCESS_INSTANCE_ENTITY));
     assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_FREQUENCY_PROPERTY));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(GROUP_BY_START_DATE_TYPE));
-    assertThat(resultReportDataDto.getGroupBy().getUnit(), is(DATE_UNIT_DAY));
+    StartDateGroupByDto startDateGroupByDto = (StartDateGroupByDto) resultReportDataDto.getGroupBy();
+    assertThat(startDateGroupByDto.getValue().getUnit(), is(DATE_UNIT_DAY));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(1));
     Map<String, Long> resultMap = result.getResult();
@@ -178,7 +180,8 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     assertThat(resultReportDataDto.getView().getEntity(), is(VIEW_PROCESS_INSTANCE_ENTITY));
     assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_FREQUENCY_PROPERTY));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(GROUP_BY_START_DATE_TYPE));
-    assertThat(resultReportDataDto.getGroupBy().getUnit(), is(DATE_UNIT_DAY));
+    StartDateGroupByDto startDateGroupByDto = (StartDateGroupByDto) resultReportDataDto.getGroupBy();
+    assertThat(startDateGroupByDto.getValue().getUnit(), is(DATE_UNIT_DAY));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(1));
     Map<String, Long> resultMap = result.getResult();
@@ -529,7 +532,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
   }
 
   @Test
-  public void variableFilterInReport() throws Exception {
+  public void variableFilterInReport() {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", true);
@@ -601,14 +604,15 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   @Test
   public void optimizeExceptionOnGroupByUnitIsNull() {
     // given
     ReportDataDto dataDto = createPICountFrequencyGroupByStartDate("123", "1", DATE_UNIT_DAY);
-    dataDto.getGroupBy().setUnit(null);
+    StartDateGroupByDto groupByDto = (StartDateGroupByDto) dataDto.getGroupBy();
+    groupByDto.getValue().setUnit(null);
 
     //when
     Response response = evaluateReportAndReturnResponse(dataDto);

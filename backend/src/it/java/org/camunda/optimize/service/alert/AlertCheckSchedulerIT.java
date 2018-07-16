@@ -7,6 +7,7 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.group.FlowNodesGroupByDto;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,7 +32,6 @@ import java.util.TimeZone;
 import java.util.UUID;
 
 import static junit.framework.TestCase.assertTrue;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_FLOW_NODE_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.HEAT_VISUALIZATION;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
@@ -74,7 +74,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
     // when
     ReportDefinitionDto report = getReportDefinitionDto(processDefinition);
-    report.getData().getGroupBy().setType(GROUP_BY_FLOW_NODE_TYPE);
+    report.getData().setGroupBy(new FlowNodesGroupByDto());
     report.getData().setVisualization(HEAT_VISUALIZATION);
     updateReport(simpleAlert.getReportId(), report);
 

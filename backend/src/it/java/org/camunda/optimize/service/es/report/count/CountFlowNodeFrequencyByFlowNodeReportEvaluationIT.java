@@ -58,7 +58,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
   @Test
-  public void allVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() throws Exception {
+  public void allVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() {
     //given
     deployAndStartSimpleServiceTaskProcess();
     ProcessInstanceEngineDto latestProcess = deployProcessWithTwoTasks(TEST_ACTIVITY);
@@ -81,7 +81,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
   }
 
   @Test
-  public void allVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() throws Exception {
+  public void allVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() {
     //given
     deployProcessWithTwoTasks(TEST_ACTIVITY);
     ProcessInstanceEngineDto latestProcess = deployAndStartSimpleServiceTaskProcess();
@@ -104,7 +104,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
   }
 
   @Test
-  public void reportAcrossAllVersions() throws Exception {
+  public void reportAcrossAllVersions() {
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     deployAndStartSimpleServiceTaskProcess();
@@ -132,7 +132,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
   }
 
   @Test
-  public void otherProcessDefinitionsDoNoAffectResult() throws Exception {
+  public void otherProcessDefinitionsDoNoAffectResult() {
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     deployAndStartSimpleServiceTaskProcess();
@@ -160,7 +160,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
   }
 
   @Test
-  public void reportEvaluationForOneProcess() throws Exception {
+  public void reportEvaluationForOneProcess() {
 
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -189,7 +189,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
   }
 
   @Test
-  public void evaluateReportForMultipleEvents() throws Exception {
+  public void evaluateReportForMultipleEvents() {
     // given
     ProcessInstanceEngineDto engineDto = deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY);
     engineRule.startProcessInstance(engineDto.getDefinitionId());
@@ -211,7 +211,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
   }
 
   @Test
-  public void evaluateReportForMultipleEventsWithMultipleProcesses() throws Exception {
+  public void evaluateReportForMultipleEventsWithMultipleProcesses() {
     // given
     ProcessInstanceEngineDto instanceDto = deployAndStartSimpleServiceTaskProcess();
     engineRule.startProcessInstance(instanceDto.getDefinitionId());
@@ -247,7 +247,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
   }
 
   @Test
-  public void evaluateReportForMoreThenTenEvents() throws Exception {
+  public void evaluateReportForMoreThenTenEvents() {
     // given
     AbstractServiceTaskBuilder serviceTaskBuilder = Bpmn.createExecutableProcess("aProcess")
       .startEvent()
@@ -332,7 +332,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
   }
 
   @Test
-  public void dateFilterInReport() throws Exception {
+  public void dateFilterInReport() {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleServiceTaskProcess();
     OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
@@ -377,7 +377,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
   }
 
   @Test
-  public void variableFilterInReport() throws Exception {
+  public void variableFilterInReport() {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", true);
@@ -479,7 +479,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess() {

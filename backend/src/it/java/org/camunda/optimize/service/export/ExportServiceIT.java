@@ -85,7 +85,7 @@ public class ExportServiceIT {
           FAKE,
           FAKE
         ),
-        "/csv/count_flownode_frequency_group_by_flownode.csv",
+        "/csv/count_flownode_frequency_group_by_flownodes.csv",
         "Count Flow Nodes Grouped By Flow Node"
       },
       {
@@ -102,7 +102,7 @@ public class ExportServiceIT {
           FAKE,
           FAKE
         ),
-        "/csv/avg_flownode_duration_group_by_flownode.csv",
+        "/csv/avg_flownode_duration_group_by_flownodes.csv",
         "Avg Flow Node Duration Grouped By Flow Node"
       }
     });

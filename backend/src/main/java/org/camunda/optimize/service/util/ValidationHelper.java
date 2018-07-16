@@ -106,6 +106,13 @@ public class ValidationHelper {
     }
   }
 
+  public static void ensureIsInstanceOf(String fieldName, Object object, Class clazz) {
+    ensureNotNull(fieldName, object);
+    if (clazz.isInstance(object)) {
+      throw new OptimizeValidationException(fieldName + " should be an instance of " + clazz.getSimpleName());
+    }
+  }
+
   public static void ensureGreaterThanZero(long value) {
     if (value <= 0) {
       throw new OptimizeValidationException("Value should be greater than zero, but was " + value + "!");
