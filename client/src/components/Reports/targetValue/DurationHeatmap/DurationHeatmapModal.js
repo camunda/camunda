@@ -243,7 +243,7 @@ export default class DurationHeatmapModal extends React.Component {
             </BPMNDiagram>
           </div>
           {this.state.loading ? (
-            <p class="DurationHeatmapModal__loading">loading...</p>
+            <p className="DurationHeatmapModal__loading">loading...</p>
           ) : (
             <Table
               head={['Activity', 'Actual Value', 'Target Value']}
