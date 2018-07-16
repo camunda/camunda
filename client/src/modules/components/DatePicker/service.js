@@ -1,5 +1,5 @@
 import moment from 'moment';
-const DATE_FORMAT = 'YYYY-MM-DD';
+export const DATE_FORMAT = 'YYYY-MM-DD';
 
 export function adjustRange({startLink, endLink}) {
   if (startLink.startOf('month').isSame(endLink.startOf('month'))) {

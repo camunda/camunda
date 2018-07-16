@@ -8,19 +8,18 @@ import './DatePicker.css';
 import DateFields from './DateFields';
 import DateButton from './DateButton';
 
-import {isDateValid} from './service';
-
-const DATE_FORMAT = 'YYYY-MM-DD';
+import {isDateValid, DATE_FORMAT} from './service';
 
 export default class DatePicker extends React.Component {
   constructor(props) {
     super(props);
 
     const initialDates = this.props.initialDates || {};
-
+    const startDate = initialDates.startDate || moment();
+    const endDate = initialDates.endDate || moment();
     this.state = {
-      startDate: initialDates.startDate.format(DATE_FORMAT) || moment().format(DATE_FORMAT),
-      endDate: initialDates.endDate.format(DATE_FORMAT) || moment().format(DATE_FORMAT),
+      startDate: startDate.format(DATE_FORMAT),
+      endDate: endDate.format(DATE_FORMAT),
       valid: true
     };
   }
@@ -74,6 +73,7 @@ export default class DatePicker extends React.Component {
         this.state.endDate !== prevState.endDate ||
         this.state.valid !== prevState.valid)
     ) {
+      // will reach here if one of the buttons get clicked
       this.props.onDateChange({
         startDate: moment(this.state.startDate, DATE_FORMAT),
         endDate: moment(this.state.endDate, DATE_FORMAT),

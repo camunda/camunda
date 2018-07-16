@@ -70,7 +70,7 @@ export default class DateFilter extends React.Component {
     };
 
     if (mode === 'static') {
-      newState.startDate = moment().subtract(this.state.dynamicValue - 1, this.state.dynamicUnit);
+      newState.startDate = moment().subtract(this.state.dynamicValue, this.state.dynamicUnit);
       newState.endDate = moment();
     } else if (mode === 'dynamic') {
       const {startDate, endDate} = this.state;

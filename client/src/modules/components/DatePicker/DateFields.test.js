@@ -115,20 +115,3 @@ it('should selected endDate after second selection', () => {
 
   expect(spy).toBeCalledWith('endDate', '2020-06-05');
 });
-
-it('should check if a start date or end date is valid', () => {
-  const spy = jest.fn();
-  const node = mount(
-    <DateFields
-      format={format}
-      startDate={startDate}
-      endDate={endDate}
-      onDateChange={spy}
-      enableAddButton={jest.fn()}
-    />
-  );
-  const isValid = node.instance().isValid('startDate', moment('2017-08-29', format));
-  const isNotValid = node.instance().isValid('endDate', moment('2017-06-05', format));
-  expect(isValid).toBe(true);
-  expect(isNotValid).toBe(false);
-});

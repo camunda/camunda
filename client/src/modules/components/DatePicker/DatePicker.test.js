@@ -24,6 +24,21 @@ it('should contain date fields', () => {
   expect(node).toIncludeText('DateFields');
 });
 
+it('should invok onDateChange prop function when a date change happens', () => {
+  const spy = jest.fn();
+  const node = mount(<DatePicker onDateChange={spy} initialDates={{startDate, endDate}} />);
+  node.instance().onDateChange('startDate', '2018-09-01');
+  expect(spy).toBeCalled();
+});
+
+it('should set valid state to false when startDate or endDate is invalid', () => {
+  const spy = jest.fn();
+  const node = mount(<DatePicker onDateChange={spy} initialDates={{startDate, endDate}} />);
+  expect(node.state().valid).toBe(true);
+  node.instance().onDateChange('startDate', 'invalid date');
+  expect(node.state().valid).toBe(false);
+});
+
 // looks like enzyme does not find certain elements when they are rendered in a Fragment
 // try again when this is closed: https://github.com/airbnb/enzyme/issues/1213
 // it('should contain date buttons', () => {
