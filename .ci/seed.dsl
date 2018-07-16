@@ -114,6 +114,6 @@ multibranchPipelineJob('camunda-operate') {
   }
 
   triggers {
-    periodic(86400) // Re-index once a day, if not triggered before
+    periodic(1440) // Minutes - Re-index once a day, if not triggered before
   }
 }
