@@ -62,7 +62,7 @@ export default class SelectionList extends React.Component {
             <Selection
               isOpen={this.state.openSelection === id}
               key={id}
-              id={id}
+              selectionId={id}
               instances={workfowInstances}
               count={totalCount}
               onClick={() => this.toggleSelection(id)}

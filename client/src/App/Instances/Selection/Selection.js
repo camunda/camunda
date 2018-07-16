@@ -1,5 +1,5 @@
 import React, {Fragment} from 'react';
-
+import PropTypes from 'prop-types';
 import StateIcon from 'modules/components/StateIcon';
 import {getWorkflowName} from 'modules/utils/instance';
 import {Down, Right, Batch} from 'modules/components/Icon';
@@ -7,46 +7,78 @@ import {Down, Right, Batch} from 'modules/components/Icon';
 import * as Styled from './styled.js';
 
 export default class Selection extends React.Component {
-  AddBody = ({instances, count}) => (
-    <Fragment>
-      <Styled.Body>
-        {instances.map((instance, index) => {
-          return (
-            <div key={index}>
-              <StateIcon instance={instance} />
-              <span>{getWorkflowName(instance)}</span>
-              {instance.id}
-            </div>
-          );
-        })}
-      </Styled.Body>
-      <Styled.Footer>
-        {count - instances.length}
-        <span>{' more Instances'}</span>
-      </Styled.Footer>
-    </Fragment>
+  static propTypes = {
+    isOpen: PropTypes.bool.isRequired,
+    selectionId: PropTypes.number.isRequired,
+    instances: PropTypes.arrayOf(
+      PropTypes.shape({
+        id: PropTypes.string.isRequired,
+        state: PropTypes.string.isRequired,
+        workflowId: PropTypes.string.isRequired
+      }).isRequired
+    ).isRequired,
+    count: PropTypes.number.isRequired,
+    onClick: PropTypes.func.isRequired,
+    onRetry: PropTypes.func.isRequired,
+    onDelete: PropTypes.func.isRequired
+  };
+
+  getArrowIcon = isOpen => (isOpen ? <Down /> : <Right />);
+
+  getBody = instances => {
+    return instances.map((instance, index) => (
+      // <Styled.Instance key={instance.id}> TODO: replace index key with id when realdata is available.
+      <Styled.Instance key={index}>
+        <StateIcon {...{instance}} />
+        <Styled.WorkflowName>{getWorkflowName(instance)}</Styled.WorkflowName>
+        <Styled.InstanceId>{instance.id}</Styled.InstanceId>
+      </Styled.Instance>
+    ));
+  };
+
+  getFooter = (count, numberOfDisplayedInstances) => (
+    <Styled.Footer>
+      <Styled.MoreInstances>
+        {count - numberOfDisplayedInstances + ' more Instances'}
+      </Styled.MoreInstances>
+    </Styled.Footer>
+  );
+
+  getActions = (onRetry, onDelete) => (
+    <Styled.Actions>
+      <Styled.DropdownTrigger onClick={onRetry}>
+        <Batch />
+        <Down />
+      </Styled.DropdownTrigger>
+      <Styled.DeleteIcon onClick={onDelete} />
+    </Styled.Actions>
   );
 
   render() {
-    const {isOpen, onRetry, onDelete, onClick, id} = this.props;
+    const {
+      isOpen,
+      selectionId,
+      onRetry,
+      onDelete,
+      onClick,
+      instances,
+      count
+    } = this.props;
+    const {getArrowIcon, getBody, getActions, getFooter} = this;
     return (
       <Styled.Selection>
         <Styled.Header {...{onClick, isOpen}}>
-          {isOpen ? <Down /> : <Right />}
-          <Styled.Headline>Selection {id + 1} </Styled.Headline>
+          {getArrowIcon(isOpen)}
+          <Styled.Headline>Selection {selectionId + 1}</Styled.Headline>
           {/*TODO: ICON <span>{count}</span> */}
-          {isOpen && (
-            <Styled.Actions>
-              <Styled.DropdownTrigger onClick={onRetry}>
-                <Batch />
-                <Down />
-              </Styled.DropdownTrigger>
-
-              <Styled.DeleteIcon onClick={onDelete} />
-            </Styled.Actions>
-          )}
+          {isOpen && getActions(onRetry, onDelete)}
         </Styled.Header>
-        {isOpen && this.AddBody(this.props)}
+        {isOpen && (
+          <Fragment>
+            {getBody(instances, count)}
+            {getFooter(count, instances.length)}
+          </Fragment>
+        )}
       </Styled.Selection>
     );
   }
