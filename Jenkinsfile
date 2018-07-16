@@ -62,6 +62,7 @@ pipeline {
     stage('Build Backend') {
       steps {
         container('maven') {
+          // MaxRAMFraction = LIMITS_CPU because there are only maven build threads
           sh '''
             JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU))" \
             mvn clean install -P -docker,skipFrontendBuild -DskipTests=true -B -T$LIMITS_CPU --fail-at-end \
@@ -75,6 +76,7 @@ pipeline {
         stage('Backend') {
           steps {
             container('maven') {
+              // MaxRAMFraction = LIMITS_CPU+1 because there are LIMITS_CPU surefire threads + one maven thread
               sh '''
                 cd ./backend
                 JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU+1))" \
@@ -111,11 +113,15 @@ pipeline {
           branch 'master'
       }
       steps {
-        container('maven') {
-          sh '''
-            mvn deploy -s settings.xml -P -docker,skipFrontendBuild -DskipTests=true -B -T$LIMITS_CPU --fail-at-end \
-                -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
-          '''
+        lock('operate-snapshot-upload') {
+          echo "Locking stage - Uploading artifacts to nexus"
+          container('maven') {
+            sh '''
+              JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU))" \
+              mvn deploy -s settings.xml -P -docker,skipFrontendBuild -DskipTests=true -B -T$LIMITS_CPU --fail-at-end \
+                  -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+            '''
+          }
         }
       }
     }
