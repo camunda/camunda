@@ -71,12 +71,20 @@ public class UpgradeMain {
     message = sub.replace(message);
     System.out.print(message);
 
-    Scanner console = new Scanner(System.in);
-    String answer = console.next().trim().toLowerCase();
-    System.out.println("\n\n");
-    if (!answer.equals("yes")) {
-      System.out.println("The Optimize upgrade was aborted.");
-      System.exit(1);
+    String answer = "";
+    while(!answer.equals("yes")) {
+      Scanner console = new Scanner(System.in);
+      answer = console.next().trim().toLowerCase();
+      System.out.println();
+      if (answer.equals("no")) {
+        System.out.println("The Optimize upgrade was aborted.");
+        System.exit(1);
+      } else {
+        String text = "Your answer was '" + answer + "'. The only accepted answers are 'yes' or 'no'. \n" +
+          "\n" +
+          "Your answer (type your answer and hit enter): ";
+        System.out.print(text);
+      }
     }
   }
 }
