@@ -27,11 +27,17 @@ import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.message.data.MessageRecord;
 import io.zeebe.broker.subscription.message.state.MessageDataStore;
 import io.zeebe.broker.subscription.message.state.MessageDataStore.MessageEntry;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.MessageIntent;
 
 public class PublishMessageProcessor implements TypedRecordProcessor<MessageRecord> {
 
   private final MessageDataStore dataStore;
+
+  private MessageEntry entry;
+
+  private boolean isDuplicate;
+  private String rejectionReason;
 
   public PublishMessageProcessor(MessageDataStore dataStore) {
     this.dataStore = dataStore;
@@ -39,28 +45,50 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
 
   @Override
   public void processRecord(TypedRecord<MessageRecord> record) {
-    // a message is always accepted
+    isDuplicate = false;
+
+    final MessageRecord message = record.getValue();
+    entry =
+        new MessageEntry(
+            bufferAsString(message.getName()),
+            bufferAsString(message.getCorrelationKey()),
+            bufferAsArray(message.getPayload()),
+            message.hasMessageId() ? bufferAsString(message.getMessageId()) : null);
+
+    if (message.hasMessageId() && dataStore.hasMessage(entry)) {
+      isDuplicate = true;
+
+      rejectionReason =
+          String.format(
+              "message with id '%s' is already published", bufferAsString(message.getMessageId()));
+    }
   }
 
   @Override
   public boolean executeSideEffects(
       TypedRecord<MessageRecord> record, TypedResponseWriter responseWriter) {
+
+    if (isDuplicate) {
+      return responseWriter.writeRejection(record, RejectionType.BAD_VALUE, rejectionReason);
+    }
+
     return responseWriter.writeRecord(MessageIntent.PUBLISHED, record);
   }
 
   @Override
   public long writeRecord(TypedRecord<MessageRecord> record, TypedStreamWriter writer) {
+
+    if (isDuplicate) {
+      return writer.writeRejection(record, RejectionType.BAD_VALUE, rejectionReason);
+    }
+
     return writer.writeFollowUpEvent(record.getKey(), MessageIntent.PUBLISHED, record.getValue());
   }
 
   @Override
   public void updateState(TypedRecord<MessageRecord> record) {
-    final MessageRecord message = record.getValue();
-
-    dataStore.addMessage(
-        new MessageEntry(
-            bufferAsString(message.getName()),
-            bufferAsString(message.getCorrelationKey()),
-            bufferAsArray(message.getPayload())));
+    if (!isDuplicate) {
+      dataStore.addMessage(entry);
+    }
   }
 }
