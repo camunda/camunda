@@ -383,7 +383,7 @@ pipeline {
     }
     stage ('Deploy to K8s') {
       when {
-        expression { BRANCH_NAME ==~ /(master|.*-deploy)/ }
+        expression { BRANCH_NAME ==~ /(.*-deploy)/ }
       }
       steps {
         build job: '/deploy-optimize-branch-to-k8s',
