@@ -1,24 +1,24 @@
-.DurationTargetValueModal__Table {
+.DurationHeatmapModal__Table {
   max-height: 30%;
 }
 
-.DurationTargetValueModal__modal-content-container {
+.DurationHeatmapModal__modal-content-container {
   display: flex;
   flex-direction: column;
   height: 100%;
   min-height: 0;
 }
 
-.DurationTargetValueModal__warning {
+.DurationHeatmapModal__warning {
   text-align: right;
 }
 
-.DurationTargetValueModal__DiagramContainer {
+.DurationHeatmapModal__DiagramContainer {
   height: 70%;
   display: flex;
 }
 
-.DurationTargetValueModal__selection {
+.DurationHeatmapModal__selection {
   display: flex;
 
   min-width: 0;
@@ -28,11 +28,11 @@
   flex-direction: row;
 }
 
-.DurationTargetValueModal__selection--select {
+.DurationHeatmapModal__selection--select {
   min-width: 0;
 }
 
-.DurationTargetValueModal__selection--input {
+.DurationHeatmapModal__selection--input {
   min-width: 0;
   flex-grow: 1;
 }
