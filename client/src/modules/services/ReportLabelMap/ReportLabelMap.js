@@ -8,12 +8,12 @@ const options = {
   ],
   groupBy: [
     {key: 'none_null', label: 'None'},
-    {key: 'flowNode_null', label: 'Flow Nodes'},
-    {key: 'startDate_year', label: 'Start Date of Process Instance - Year'},
-    {key: 'startDate_month', label: 'Start Date of Process Instance - Month'},
-    {key: 'startDate_week', label: 'Start Date of Process Instance - Week'},
-    {key: 'startDate_day', label: 'Start Date of Process Instance - Day'},
-    {key: 'startDate_hour', label: 'Start Date of Process Instance - Hour'}
+    {key: 'flowNodes_null', label: 'Flow Nodes'},
+    {key: 'startDate_{"unit":"year"}', label: 'Start Date of Process Instance - Year'},
+    {key: 'startDate_{"unit":"month"}', label: 'Start Date of Process Instance - Month'},
+    {key: 'startDate_{"unit":"week"}', label: 'Start Date of Process Instance - Week'},
+    {key: 'startDate_{"unit":"day"}', label: 'Start Date of Process Instance - Day'},
+    {key: 'startDate_{"unit":"hour"}', label: 'Start Date of Process Instance - Hour'}
   ],
   visualization: [
     {key: 'number', label: 'Number'},
@@ -31,25 +31,25 @@ const allowedOptionsMatrix = {
   },
   count_processInstance_frequency: {
     none_null: ['number'],
-    startDate_year: ['table', 'pie', 'line', 'bar'],
-    startDate_month: ['table', 'pie', 'line', 'bar'],
-    startDate_week: ['table', 'pie', 'line', 'bar'],
-    startDate_day: ['table', 'pie', 'line', 'bar'],
-    startDate_hour: ['table', 'pie', 'line', 'bar']
+    'startDate_{"unit":"year"}': ['table', 'pie', 'line', 'bar'],
+    'startDate_{"unit":"month"}': ['table', 'pie', 'line', 'bar'],
+    'startDate_{"unit":"week"}': ['table', 'pie', 'line', 'bar'],
+    'startDate_{"unit":"day"}': ['table', 'pie', 'line', 'bar'],
+    'startDate_{"unit":"hour"}': ['table', 'pie', 'line', 'bar']
   },
   count_flowNode_frequency: {
-    flowNode_null: ['heat', 'pie', 'line', 'bar', 'table']
+    flowNodes_null: ['heat', 'pie', 'line', 'bar', 'table']
   },
   avg_processInstance_duration: {
     none_null: ['number'],
-    startDate_year: ['table', 'pie', 'line', 'bar'],
-    startDate_month: ['table', 'pie', 'line', 'bar'],
-    startDate_week: ['table', 'pie', 'line', 'bar'],
-    startDate_day: ['table', 'pie', 'line', 'bar'],
-    startDate_hour: ['table', 'pie', 'line', 'bar']
+    'startDate_{"unit":"year"}': ['table', 'pie', 'line', 'bar'],
+    'startDate_{"unit":"month"}': ['table', 'pie', 'line', 'bar'],
+    'startDate_{"unit":"week"}': ['table', 'pie', 'line', 'bar'],
+    'startDate_{"unit":"day"}': ['table', 'pie', 'line', 'bar'],
+    'startDate_{"unit":"hour"}': ['table', 'pie', 'line', 'bar']
   },
   avg_flowNode_duration: {
-    flowNode_null: ['heat', 'pie', 'line', 'bar', 'table']
+    flowNodes_null: ['heat', 'pie', 'line', 'bar', 'table']
   }
 };
 
@@ -148,8 +148,8 @@ const reportLabelMap = {
     } else if (type === this.groupBy) {
       const groupByType = object.type;
       if (groupByType === '') return '';
-      const unit = object.unit;
-      return `${groupByType}_${unit}`;
+      const value = object.value;
+      return `${groupByType}_${JSON.stringify(value)}`;
     }
   },
 
@@ -164,11 +164,11 @@ const reportLabelMap = {
 
       return {operation: data[0], entity: data[1], property: data[2]};
     } else if (type === this.groupBy) {
-      if (key === '') return {type: '', unit: null};
+      if (key === '') return {type: '', value: null};
 
       const type = data[0];
-      const unit = data[1] === 'null' ? null : data[1];
-      return {type, unit};
+      const value = data[1] === 'null' ? null : JSON.parse(data[1]);
+      return {type, value};
     } else {
       return key;
     }
