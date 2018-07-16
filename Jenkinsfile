@@ -114,7 +114,6 @@ pipeline {
       }
       steps {
         lock('operate-snapshot-upload') {
-          echo "Locking stage - Uploading artifacts to nexus"
           container('maven') {
             sh '''
               JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU))" \
