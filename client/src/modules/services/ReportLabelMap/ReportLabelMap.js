@@ -27,34 +27,29 @@ const options = {
 
 const allowedOptionsMatrix = {
   rawData_ignored_ignored: {
-    none_null: ['table']
+    none: ['table']
   },
   count_processInstance_frequency: {
-    none_null: ['number'],
-    'startDate_{"unit":"year"}': ['table', 'pie', 'line', 'bar'],
-    'startDate_{"unit":"month"}': ['table', 'pie', 'line', 'bar'],
-    'startDate_{"unit":"week"}': ['table', 'pie', 'line', 'bar'],
-    'startDate_{"unit":"day"}': ['table', 'pie', 'line', 'bar'],
-    'startDate_{"unit":"hour"}': ['table', 'pie', 'line', 'bar']
+    none: ['number'],
+    startDate: ['table', 'pie', 'line', 'bar'],
+    variable: ['table', 'pie', 'line', 'bar']
   },
   count_flowNode_frequency: {
-    flowNodes_null: ['heat', 'pie', 'line', 'bar', 'table']
+    flowNodes: ['heat', 'pie', 'line', 'bar', 'table']
   },
   avg_processInstance_duration: {
-    none_null: ['number'],
-    'startDate_{"unit":"year"}': ['table', 'pie', 'line', 'bar'],
-    'startDate_{"unit":"month"}': ['table', 'pie', 'line', 'bar'],
-    'startDate_{"unit":"week"}': ['table', 'pie', 'line', 'bar'],
-    'startDate_{"unit":"day"}': ['table', 'pie', 'line', 'bar'],
-    'startDate_{"unit":"hour"}': ['table', 'pie', 'line', 'bar']
+    none: ['number'],
+    startDate: ['table', 'pie', 'line', 'bar'],
+    variable: ['table', 'pie', 'line', 'bar']
   },
   avg_flowNode_duration: {
-    flowNodes_null: ['heat', 'pie', 'line', 'bar', 'table']
+    flowNodes: ['heat', 'pie', 'line', 'bar', 'table']
   }
 };
 
 const reportLabelMap = {
   getTheRightCombination: function(view, groupBy, visualization) {
+    const groupByType = getGroupByType(groupBy);
     if (!allowedOptionsMatrix[view]) {
       return {
         view: this.keyToObject('', 'view'),
@@ -63,7 +58,7 @@ const reportLabelMap = {
       };
     }
 
-    if (!allowedOptionsMatrix[view][groupBy]) {
+    if (!allowedOptionsMatrix[view][groupByType]) {
       const theOnlyGroupBy = this.keyToObject(
         this.getTheOnlyOption('groupBy', view, groupBy),
         'groupBy'
@@ -80,7 +75,7 @@ const reportLabelMap = {
       };
     }
 
-    if (!allowedOptionsMatrix[view][groupBy].includes(visualization)) {
+    if (!allowedOptionsMatrix[view][groupByType].includes(visualization)) {
       return {
         view: this.keyToObject(view, 'view'),
         groupBy: this.keyToObject(groupBy, 'groupBy'),
@@ -102,17 +97,18 @@ const reportLabelMap = {
 
     if (type === 'groupBy') {
       if (Object.keys(allowedOptionsMatrix[view]).length === 1) {
-        return Object.keys(allowedOptionsMatrix[view])[0];
+        return Object.keys(allowedOptionsMatrix[view])[0] + '_null';
       } else return '';
     }
 
     if (type === 'visualization') {
       const newGroupBy = this.getTheOnlyOption('groupBy', view, groupBy) || groupBy;
+      const groupByType = getGroupByType(newGroupBy);
       if (
-        allowedOptionsMatrix[view][newGroupBy] &&
-        allowedOptionsMatrix[view][newGroupBy].length === 1
+        allowedOptionsMatrix[view][groupByType] &&
+        allowedOptionsMatrix[view][groupByType].length === 1
       ) {
-        return allowedOptionsMatrix[view][newGroupBy][0];
+        return allowedOptionsMatrix[view][groupByType][0];
       } else return '';
     }
   },
@@ -124,7 +120,7 @@ const reportLabelMap = {
       return Object.keys(allowedOptionsMatrix[view]);
     }
     if (type === 'visualization') {
-      return allowedOptionsMatrix[view][groupBy];
+      return [...allowedOptionsMatrix[view][getGroupByType(groupBy)]];
     }
   },
 
@@ -132,6 +128,10 @@ const reportLabelMap = {
   groupBy: 'groupBy',
 
   objectToLabel: function(object, type) {
+    if (type === 'groupBy' && object.type === 'variable') {
+      return object.value.name;
+    }
+
     const key = this.objectToKey(object, type);
     const foundObj = options[type].find(elem => elem.key === key);
     return foundObj ? foundObj.label : foundObj;
@@ -154,7 +154,7 @@ const reportLabelMap = {
   },
 
   getOptions: function(type) {
-    return options[type];
+    return [...options[type]];
   },
 
   keyToObject: function(key, type) {
@@ -174,5 +174,9 @@ const reportLabelMap = {
     }
   }
 };
+
+function getGroupByType(groupBy) {
+  return groupBy.split('_')[0];
+}
 
 export default reportLabelMap;

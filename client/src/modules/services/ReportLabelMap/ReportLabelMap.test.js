@@ -110,7 +110,7 @@ it('should return the right new combination given the old one', () => {
 
 it('should return all possible options for given view and groupBy options', () => {
   expect(reportLabelMap.getEnabledOptions('groupBy', 'avg_flowNode_duration', '')).toEqual([
-    'flowNodes_null'
+    'flowNodes'
   ]);
 
   expect(
@@ -118,11 +118,8 @@ it('should return all possible options for given view and groupBy options', () =
   ).toEqual(['heat', 'pie', 'line', 'bar', 'table']);
 
   expect(reportLabelMap.getEnabledOptions('groupBy', 'avg_processInstance_duration', '')).toEqual([
-    'none_null',
-    'startDate_{"unit":"year"}',
-    'startDate_{"unit":"month"}',
-    'startDate_{"unit":"week"}',
-    'startDate_{"unit":"day"}',
-    'startDate_{"unit":"hour"}'
+    'none',
+    'startDate',
+    'variable'
   ]);
 });

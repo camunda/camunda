@@ -19,6 +19,18 @@ export async function loadProcessDefinitionXml(processDefinitionKey, processDefi
   return await response.text();
 }
 
+export async function loadVariables(processDefinitionKey, processDefinitionVersion) {
+  const response = await get('/api/variables', {
+    processDefinitionKey,
+    processDefinitionVersion,
+    namePrefix: '',
+    sortOrder: 'asc',
+    orderBy: 'name'
+  });
+
+  return await response.json();
+}
+
 export async function getReportData(query) {
   let response;
 

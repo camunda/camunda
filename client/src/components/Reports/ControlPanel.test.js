@@ -4,6 +4,8 @@ import {mount} from 'enzyme';
 import ControlPanel from './ControlPanel';
 import {extractProcessDefinitionName} from 'services';
 
+import {loadVariables} from './service';
+
 jest.mock('./filter', () => {
   return {
     Filter: () => 'Filter'
@@ -29,7 +31,7 @@ jest.mock('services', () => {
   return {
     reportLabelMap: {
       objectToLabel: () => 'foo',
-      objectToKey: obj => obj.operation || obj.type || obj,
+      objectToKey: () => '' + Math.random(),
       keyToLabel: () => 'foo',
       getOptions: type => [
         {key: type + 'foo', label: type + 'foo'},
@@ -47,6 +49,12 @@ jest.mock('services', () => {
 
 jest.mock('./targetValue', () => {
   return {TargetValueComparison: () => <div>TargetValueComparison</div>};
+});
+
+jest.mock('./service', () => {
+  return {
+    loadVariables: jest.fn().mockReturnValue([])
+  };
 });
 
 const data = {
@@ -127,4 +135,21 @@ it('should change process definition name if process definition is updated', asy
   node.setProps({processDefinitionKey: 'bar'});
 
   expect(node.find('.ControlPanel__popover')).toIncludeText('aName');
+});
+
+it('should load the variables of the process', () => {
+  const node = mount(<ControlPanel {...data} />);
+
+  node.setProps({processDefinitionKey: 'bar', processDefinitionVersion: 'ALL'});
+
+  expect(loadVariables).toHaveBeenCalledWith('bar', 'ALL');
+});
+
+it('should include variables in the groupby options', () => {
+  const node = mount(<ControlPanel {...data} />);
+
+  node.setState({variables: [{name: 'Var1'}, {name: 'Var2'}]});
+
+  expect(node).toIncludeText('Var1');
+  expect(node).toIncludeText('Var2');
 });

@@ -6,6 +6,8 @@ import {reportLabelMap, extractProcessDefinitionName} from 'services';
 
 import {TargetValueComparison} from './targetValue';
 
+import {loadVariables} from './service';
+
 import './ControlPanel.css';
 
 export default class ControlPanel extends React.Component {
@@ -13,12 +15,14 @@ export default class ControlPanel extends React.Component {
     super(props);
 
     this.state = {
-      processDefinitionName: this.props.processDefinitionKey
+      processDefinitionName: this.props.processDefinitionKey,
+      variables: []
     };
   }
 
   componentDidMount() {
     this.loadProcessDefinitionName();
+    this.loadVariables();
   }
 
   loadProcessDefinitionName = async () => {
@@ -27,6 +31,15 @@ export default class ControlPanel extends React.Component {
       const processDefinitionName = await extractProcessDefinitionName(xml);
       this.setState({
         processDefinitionName
+      });
+    }
+  };
+
+  loadVariables = async () => {
+    const {processDefinitionKey, processDefinitionVersion} = this.props;
+    if (processDefinitionKey && processDefinitionVersion) {
+      this.setState({
+        variables: await loadVariables(processDefinitionKey, processDefinitionVersion)
       });
     }
   };
@@ -86,6 +99,13 @@ export default class ControlPanel extends React.Component {
   componentDidUpdate(prevProps) {
     if (this.props.processDefinitionKey !== prevProps.processDefinitionKey) {
       this.loadProcessDefinitionName();
+    }
+
+    if (
+      this.props.processDefinitionKey !== prevProps.processDefinitionKey ||
+      this.props.processDefinitionVersion !== prevProps.processDefinitionVersion
+    ) {
+      this.loadVariables();
     }
   }
 
@@ -213,9 +233,21 @@ export default class ControlPanel extends React.Component {
     const {groupBy, view} = this.getCurrentProps();
     const enabled = reportLabelMap.getEnabledOptions(type, view, groupBy);
 
+    if (type === 'groupBy') {
+      options.push(
+        ...this.state.variables.map(variable => {
+          return {
+            key: reportLabelMap.objectToKey({type: 'variable', value: variable}, type),
+            label: `Variable - ${variable.name}`
+          };
+        })
+      );
+    }
+
     return options.map(({key, label}) => {
+      const keyType = key.split('_')[0];
       return (
-        <Select.Option disabled={enabled && !enabled.includes(key)} key={key} value={key}>
+        <Select.Option disabled={enabled && !enabled.includes(keyType)} key={key} value={key}>
           {label}
         </Select.Option>
       );
