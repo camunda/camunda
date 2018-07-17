@@ -1,13 +1,13 @@
-import React from 'react';
+import React, {Fragment} from 'react';
 import PropTypes from 'prop-types';
 
 import * as Styled from './styled';
 
 export default function Button(props) {
   return (
-    <React.Fragment>
+    <Fragment>
       <Styled.Button {...props} />
-    </React.Fragment>
+    </Fragment>
   );
 }
 
