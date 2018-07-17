@@ -6,7 +6,6 @@ export const Pagination = styled.div`
 `;
 
 export const SelectionButton = themed(styled.button`
-  outline: none;
   font-family: IBMPlexSans;
   font-size: 14px;
   cursor: pointer;
@@ -24,7 +23,6 @@ export const SelectionButton = themed(styled.button`
 
 export const Page = themed(styled.button`
   color: ${themeStyle({dark: '#ffffff', light: Colors.uiDark02})};
-  outline: none;
   font-family: IBMPlexSans;
   font-size: 13px;
   cursor: pointer;
