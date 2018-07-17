@@ -49,8 +49,6 @@ const disabledStyle = css`
 
 const sizeStyle = ({size}) => {
   const mediumSizeStyle = css`
-    padding: 8px;
-    padding-top: 9px;
     height: 35px;
     width: 117px;
 
@@ -58,10 +56,6 @@ const sizeStyle = ({size}) => {
   `;
 
   const largeSizeStyle = css`
-    padding-top: 12px;
-    padding-bottom: 13px;
-    padding-left: 33px;
-    padding-right: 32.1px;
     height: 48px;
     width: 340px;
 
