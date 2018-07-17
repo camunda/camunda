@@ -71,26 +71,6 @@ export default class TargetValueComparison extends React.Component {
     this.closeModal();
   };
 
-  isDurationHeatmap = () => {
-    const {
-      processDefinitionKey,
-      processDefinitionVersion,
-      view,
-      groupBy,
-      visualization
-    } = this.props.reportResult.data;
-
-    return (
-      processDefinitionKey &&
-      processDefinitionVersion &&
-      view.entity === 'flowNode' &&
-      view.operation === 'avg' &&
-      view.property === 'duration' &&
-      groupBy.type === 'flowNode' &&
-      visualization === 'heat'
-    );
-  };
-
   isSingleNumber = () => {
     const {
       processDefinitionKey,

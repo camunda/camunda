@@ -11,7 +11,7 @@ export function isDurationHeatmap({
     view.entity === 'flowNode' &&
     view.operation === 'avg' &&
     view.property === 'duration' &&
-    groupBy.type === 'flowNode' &&
+    groupBy.type === 'flowNodes' &&
     visualization === 'heat'
   );
 }

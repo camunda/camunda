@@ -29,7 +29,7 @@ function createFlowNodeFrequencyReport(processDefinitionKey, processDefinitionVe
       property: 'frequency'
     },
     groupBy: {
-      type: 'flowNode',
+      type: 'flowNodes',
       unit: null
     },
     visualization: 'heat'

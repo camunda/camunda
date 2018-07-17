@@ -53,7 +53,7 @@ const validProps = {
         property: 'duration'
       },
       groupBy: {
-        type: 'flowNode'
+        type: 'flowNodes'
       },
       visualization: 'heat'
     },
