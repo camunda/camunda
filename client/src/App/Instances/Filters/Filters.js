@@ -14,14 +14,14 @@ export default class Filters extends React.Component {
   static propTypes = {
     filter: PropTypes.object.isRequired,
     onFilterChange: PropTypes.func,
-    onExtraFilterChange: PropTypes.func,
+    onBulkFilterChange: PropTypes.func,
     resetFilter: PropTypes.func
   };
 
-  onErrorMessageChange = event => {
+  handleErrorMessageChange = event => {
     const value = event.target.value;
 
-    this.props.onExtraFilterChange(
+    this.props.onBulkFilterChange(
       'errorMessage',
       value.length === 0 ? null : value
     );
@@ -34,11 +34,13 @@ export default class Filters extends React.Component {
         <Panel.Header isRounded>Filters</Panel.Header>
         <Panel.Body>
           <Styled.Filters>
-            <TextInput
-              name="errorMessage"
-              placeholder="Error Message"
-              onBlur={this.onErrorMessageChange}
-            />
+            <Styled.BulkFilters>
+              <TextInput
+                name="errorMessage"
+                placeholder="Error Message"
+                onBlur={this.handleErrorMessageChange}
+              />
+            </Styled.BulkFilters>
             <Filter
               type={FILTER_TYPES.RUNNING}
               filter={{

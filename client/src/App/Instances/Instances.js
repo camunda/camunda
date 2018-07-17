@@ -120,7 +120,7 @@ class Instances extends Component {
     });
   };
 
-  handleExtraFilter = (name, value) => {
+  handleBulkFilterChange = (name, value) => {
     this.setState({
       [name]: value
     });
@@ -158,7 +158,7 @@ class Instances extends Component {
                 filter={this.state.filter}
                 onFilterChange={this.handleFilterChange}
                 resetFilter={this.resetFilter}
-                onExtraFilterChange={this.handleExtraFilter}
+                onBulkFilterChange={this.handleBulkFilterChange}
               />
             </Styled.Filters>
 
