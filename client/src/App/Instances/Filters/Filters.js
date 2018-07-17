@@ -16,6 +16,11 @@ const PLACEHOLDER = {
   instanceIds: 'Instance Id(s) separated by space or comma'
 };
 
+const fieldParser = {
+  errorMessage: value => (value.length === 0 ? null : value),
+  ids: value => value.split(/[ ,]+/).filter(Boolean)
+};
+
 export default class Filters extends React.Component {
   static propTypes = {
     filter: PropTypes.object.isRequired,
@@ -24,20 +29,11 @@ export default class Filters extends React.Component {
     resetFilter: PropTypes.func
   };
 
-  handleErrorMessageChange = event => {
-    const value = event.target.value;
+  handleFieldChange = event => {
+    const {value, name} = event.target;
 
     this.props.onFilterChange({
-      errorMessage: value.length === 0 ? null : value
-    });
-  };
-
-  handleInstanceIdsChange = event => {
-    const value = event.target.value;
-    const list = value.split(/[ ,]+/).filter(Boolean);
-
-    this.props.onFilterChange({
-      ids: list
+      [name]: fieldParser[name](value)
     });
   };
 
@@ -53,16 +49,16 @@ export default class Filters extends React.Component {
               <TextInput
                 name="errorMessage"
                 placeholder={PLACEHOLDER.errorMessage}
-                onBlur={this.handleErrorMessageChange}
+                onBlur={this.handleFieldChange}
                 aria-label={PLACEHOLDER.errorMessage}
                 aria-required="false"
               />
             </Styled.Field>
             <Styled.Field>
               <Textarea
-                name="instanceIds"
+                name="ids"
                 placeholder={PLACEHOLDER.instanceIds}
-                onBlur={this.handleInstanceIdsChange}
+                onBlur={this.handleFieldChange}
                 aria-label={PLACEHOLDER.instanceIds}
                 aria-required="false"
               />

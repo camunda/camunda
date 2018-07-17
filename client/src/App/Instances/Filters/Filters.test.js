@@ -80,7 +80,7 @@ describe('Filters', () => {
       // then
       expect(errorMessageNode.length).toEqual(1);
       expect(errorMessageNode.props().onBlur).toEqual(
-        node.instance().handleErrorMessageChange
+        node.instance().handleFieldChange
       );
     });
 
@@ -90,7 +90,9 @@ describe('Filters', () => {
       const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
 
       //when
-      node.instance().handleErrorMessageChange({target: {value: errorMessage}});
+      node.instance().handleFieldChange({
+        target: {value: errorMessage, name: 'errorMessage'}
+      });
 
       // then
       expect(spy).toHaveBeenCalledWith({errorMessage});
@@ -103,9 +105,9 @@ describe('Filters', () => {
       const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
 
       //when
-      node
-        .instance()
-        .handleErrorMessageChange({target: {value: emptyErrorMessage}});
+      node.instance().handleFieldChange({
+        target: {value: emptyErrorMessage, name: 'errorMessage'}
+      });
 
       // then
       expect(spy).toHaveBeenCalledWith({errorMessage: null});
@@ -116,12 +118,12 @@ describe('Filters', () => {
     it('should render an instanceIds field', () => {
       // given
       const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
-      const instanceIdsNode = node.find({name: 'instanceIds'});
+      const instanceIdsNode = node.find({name: 'ids'});
 
       // then
       expect(instanceIdsNode.length).toEqual(1);
       expect(instanceIdsNode.props().onBlur).toEqual(
-        node.instance().handleInstanceIdsChange
+        node.instance().handleFieldChange
       );
     });
 
@@ -131,7 +133,9 @@ describe('Filters', () => {
       const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
 
       //when
-      node.instance().handleInstanceIdsChange({target: {value: instanceIds}});
+      node
+        .instance()
+        .handleFieldChange({target: {value: instanceIds, name: 'ids'}});
 
       // then
       expect(spy).toHaveBeenCalledWith({
@@ -148,7 +152,7 @@ describe('Filters', () => {
       //when
       node
         .instance()
-        .handleInstanceIdsChange({target: {value: emptyInstanceIds}});
+        .handleFieldChange({target: {value: emptyInstanceIds, name: 'ids'}});
 
       // then
       expect(spy).toHaveBeenCalledWith({
