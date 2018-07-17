@@ -43,6 +43,5 @@ export default function FlowNodeIcon({state, type, ...props}) {
 
 FlowNodeIcon.propTypes = {
   state: PropTypes.oneOf(Object.values(ACTIVITY_STATE)),
-  type: PropTypes.oneOf(Object.values(ACTIVITY_TYPE)),
-  theme: PropTypes.string.isRequired
+  type: PropTypes.oneOf(Object.values(ACTIVITY_TYPE))
 };
