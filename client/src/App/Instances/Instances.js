@@ -114,12 +114,6 @@ class Instances extends Component {
     this.props.storeStateLocally({filter: filter});
   };
 
-  handleErrorMessageChange = value => {
-    this.setState({
-      errorMessage: value
-    });
-  };
-
   handleBulkFilterChange = (name, value) => {
     this.setState({
       [name]: value

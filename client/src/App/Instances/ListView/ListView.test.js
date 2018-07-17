@@ -53,7 +53,7 @@ describe('ListView', () => {
     expect(listView.state.sorting).toBe(DEFAULT_SORTING);
   });
 
-  it('should contain an List', () => {
+  it('should contain a List', () => {
     expect(node.find(List)).toExist();
   });
 
@@ -150,30 +150,27 @@ describe('ListView', () => {
       expect(api.fetchWorkflowInstances).toHaveBeenCalled();
     });
 
-    it('should load data if the current page changes', () => {
+    it('should load data if the current page changes', async () => {
+      //when
       node.setState({firstElement: 10});
 
+      // then
       expect(api.fetchWorkflowInstances).toHaveBeenCalled();
-      expect(api.fetchWorkflowInstances.mock.calls[0][1]).toBe(10);
+      expect(api.fetchWorkflowInstances.mock.calls[0][0].firstResult).toBe(10);
     });
 
     it('should call api.fetchWorkflowInstances with right data', () => {
-      // given
-      const expectedFilter = {
-        ...parseFilterForRequest(node.prop('filter')),
-        sorting: node.state('sorting')
-      };
-
       // when
       node.instance().loadData();
       node.update();
 
       // then
-      expect(api.fetchWorkflowInstances).toBeCalledWith(
-        expectedFilter,
-        node.state('firstElement'),
-        50
-      );
+      expect(api.fetchWorkflowInstances).toBeCalledWith({
+        filter: parseFilterForRequest(node.prop('filter')),
+        sorting: node.state('sorting'),
+        firstResult: node.state('firstElement'),
+        maxResults: 50
+      });
       expect(node.state('instances')).toEqual(successResponse);
     });
   });

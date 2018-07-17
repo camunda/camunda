@@ -15,9 +15,6 @@ export function parseFilterForRequest(filter) {
 
   return {
     ...payload,
-    active,
-    incidents,
-    completed,
-    canceled
+    ...filter
   };
 }

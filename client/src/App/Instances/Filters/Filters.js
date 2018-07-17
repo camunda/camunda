@@ -21,14 +21,14 @@ export default class Filters extends React.Component {
   handleErrorMessageChange = event => {
     const value = event.target.value;
 
-    this.props.onBulkFilterChange(
-      'errorMessage',
-      value.length === 0 ? null : value
-    );
+    this.props.onFilterChange({
+      errorMessage: value.length === 0 ? null : value
+    });
   };
 
   render() {
     const {active, incidents, canceled, completed} = this.props.filter;
+
     return (
       <Panel isRounded>
         <Panel.Header isRounded>Filters</Panel.Header>
@@ -39,6 +39,8 @@ export default class Filters extends React.Component {
                 name="errorMessage"
                 placeholder="Error Message"
                 onBlur={this.handleErrorMessageChange}
+                aria-label="Error Message"
+                aria-required="false"
               />
             </Styled.BulkFilters>
             <Filter
@@ -62,7 +64,7 @@ export default class Filters extends React.Component {
         <Styled.ExpandButton direction={DIRECTION.LEFT} isExpanded={true} />
         <Styled.ResetButtonContainer>
           <Button
-            title="reset filters"
+            title="Reset filters"
             disabled={isEqual(this.props.filter, DEFAULT_FILTER)}
             onClick={this.props.resetFilter}
           >
