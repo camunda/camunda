@@ -17,6 +17,10 @@ describe('Filters', () => {
     onExtraFilterChange: jest.fn()
   };
 
+  beforeEach(() => {
+    spy.mockClear();
+  });
+
   it('should render the filters', () => {
     // given
     const {
@@ -80,7 +84,7 @@ describe('Filters', () => {
       );
     });
 
-    it('should call onFilterChange with the right error message', async () => {
+    it('should call onFilterChange with the right error message', () => {
       const errorMessage = 'lorem ipsum';
       // given
       const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
@@ -90,6 +94,66 @@ describe('Filters', () => {
 
       // then
       expect(spy).toHaveBeenCalledWith({errorMessage});
+    });
+
+    it('should call onFilterChange with empty error message', () => {
+      // given
+      // user blurs without writing
+      const emptyErrorMessage = '';
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+
+      //when
+      node
+        .instance()
+        .handleErrorMessageChange({target: {value: emptyErrorMessage}});
+
+      // then
+      expect(spy).toHaveBeenCalledWith({errorMessage: null});
+    });
+  });
+
+  describe('instanceIds filter', () => {
+    it('should render an instanceIds field', () => {
+      // given
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const instanceIdsNode = node.find({name: 'instanceIds'});
+
+      // then
+      expect(instanceIdsNode.length).toEqual(1);
+      expect(instanceIdsNode.props().onBlur).toEqual(
+        node.instance().handleInstanceIdsChange
+      );
+    });
+
+    it('should call onFilterChange with the right instance ids', () => {
+      const instanceIds = '4294968008,4294972032  4294974064, 4294976280, ,';
+      // given
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+
+      //when
+      node.instance().handleInstanceIdsChange({target: {value: instanceIds}});
+
+      // then
+      expect(spy).toHaveBeenCalledWith({
+        ids: ['4294968008', '4294972032', '4294974064', '4294976280']
+      });
+    });
+
+    it('should call onFilterChange with an empty array', () => {
+      // given
+      // user blurs without writing
+      const emptyInstanceIds = '';
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+
+      //when
+      node
+        .instance()
+        .handleInstanceIdsChange({target: {value: emptyInstanceIds}});
+
+      // then
+      expect(spy).toHaveBeenCalledWith({
+        ids: []
+      });
     });
   });
 });
