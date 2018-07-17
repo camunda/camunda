@@ -24,7 +24,7 @@ import org.agrona.DirectBuffer;
  *
  * <p>Note that the log entry data is buffered until {@link #tryWrite()} is called.
  */
-public interface LogStreamBatchWriter {
+public interface LogStreamBatchWriter extends LogStreamWriter {
   /** Builder to add a log entry to the batch. */
   interface LogEntryBuilder {
     /** Use the log entry position as key. */
@@ -66,14 +66,6 @@ public interface LogStreamBatchWriter {
 
   /** Returns the builder to add a new log entry to the batch. */
   LogEntryBuilder event();
-
-  /**
-   * Attempts to write the batch to the underlying buffer.
-   *
-   * @return the position of the last written log entry, or a negative value if fails to claim the
-   *     batch
-   */
-  long tryWrite();
 
   /** Discard all non-written batch data. */
   void reset();

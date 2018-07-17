@@ -18,7 +18,7 @@
 package io.zeebe.broker.logstreams.processor;
 
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.logstreams.processor.EventProcessor;
@@ -36,7 +36,7 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 
-@SuppressWarnings({"rawtypes", "unchecked"})
+@SuppressWarnings({"unchecked"})
 public class TypedStreamProcessor implements StreamProcessor {
 
   protected final SnapshotSupport snapshotSupport;
@@ -107,7 +107,7 @@ public class TypedStreamProcessor implements StreamProcessor {
     metadata.reset();
     event.readMetadata(metadata);
 
-    final TypedRecordProcessor currentProcessor =
+    final TypedRecordProcessor<?> currentProcessor =
         recordProcessors.get(
             metadata.getRecordType(), metadata.getValueType(), metadata.getIntent().value());
 
@@ -140,8 +140,9 @@ public class TypedStreamProcessor implements StreamProcessor {
     protected final TypedStreamWriterImpl writer;
     protected final TypedResponseWriterImpl responseWriter;
 
-    protected TypedRecordProcessor eventProcessor;
+    protected TypedRecordProcessor<?> eventProcessor;
     protected TypedEventImpl event;
+    private SideEffectProducer sideEffectProducer;
 
     public DelegatingEventProcessor(
         int streamProcessorId,
@@ -154,30 +155,36 @@ public class TypedStreamProcessor implements StreamProcessor {
       this.responseWriter = new TypedResponseWriterImpl(output, logStream.getPartitionId());
     }
 
-    public void wrap(TypedRecordProcessor eventProcessor, TypedEventImpl event) {
+    public void wrap(TypedRecordProcessor<?> eventProcessor, TypedEventImpl event) {
       this.eventProcessor = eventProcessor;
       this.event = event;
     }
 
     @Override
     public void processEvent(EventLifecycleContext ctx) {
-      eventProcessor.processRecord(event, ctx);
+      writer.reset();
+      responseWriter.reset();
+
+      this.writer.configureSourceContext(streamProcessorId, event.getPosition());
+
+      // default side effect is responses; can be changed by processor
+      sideEffectProducer = responseWriter;
+
+      eventProcessor.processRecord(event, responseWriter, writer, this::setSideEffectProducer, ctx);
+    }
+
+    public void setSideEffectProducer(SideEffectProducer sideEffectProducer) {
+      this.sideEffectProducer = sideEffectProducer;
     }
 
     @Override
     public boolean executeSideEffects() {
-      return eventProcessor.executeSideEffects(event, responseWriter);
+      return sideEffectProducer.flush();
     }
 
     @Override
-    public long writeEvent(LogStreamWriter writer) {
-      this.writer.configureSourceContext(streamProcessorId, event.getPosition());
-      return eventProcessor.writeRecord(event, this.writer);
-    }
-
-    @Override
-    public void updateState() {
-      eventProcessor.updateState(event);
+    public long writeEvent(LogStreamRecordWriter writer) {
+      return this.writer.flush();
     }
   }
 

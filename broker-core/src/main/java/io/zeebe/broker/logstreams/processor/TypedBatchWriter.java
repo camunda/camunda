@@ -33,7 +33,4 @@ public interface TypedBatchWriter {
 
   TypedBatchWriter addFollowUpEvent(
       long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata);
-
-  /** @return position of new event, negative value on failure */
-  long write();
 }

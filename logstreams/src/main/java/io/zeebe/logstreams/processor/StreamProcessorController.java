@@ -18,7 +18,7 @@ package io.zeebe.logstreams.processor;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.ReadableSnapshot;
 import io.zeebe.logstreams.spi.SnapshotStorage;
@@ -49,7 +49,7 @@ public class StreamProcessorController extends Actor {
   private final StreamProcessorContext streamProcessorContext;
 
   private final LogStreamReader logStreamReader;
-  private final LogStreamWriter logStreamWriter;
+  private final LogStreamRecordWriter logStreamWriter;
 
   private final SnapshotStorage snapshotStorage;
   private final Duration snapshotPeriod;

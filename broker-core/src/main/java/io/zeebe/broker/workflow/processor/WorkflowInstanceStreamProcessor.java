@@ -230,17 +230,18 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
   private final class CreateWorkflowInstanceEventProcessor
       implements TypedRecordProcessor<WorkflowInstanceRecord> {
-    private boolean accepted;
     private final WorkflowInstanceRecord startEventRecord = new WorkflowInstanceRecord();
 
-    private RejectionType rejectionType;
-    private String rejectionReason;
     private long requestId;
     private int requestStreamId;
 
     @Override
     public void processRecord(
-        TypedRecord<WorkflowInstanceRecord> command, EventLifecycleContext ctx) {
+        TypedRecord<WorkflowInstanceRecord> command,
+        TypedResponseWriter responseWriter,
+        TypedStreamWriter streamWriter,
+        Consumer<SideEffectProducer> sideEffect,
+        EventLifecycleContext ctx) {
       final WorkflowInstanceRecord workflowInstanceCommand = command.getValue();
 
       this.requestId = command.getMetadata().getRequestId();
@@ -248,19 +249,23 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
       workflowInstanceCommand.setWorkflowInstanceKey(command.getKey());
 
-      accepted = true;
-      resolveWorkflowDefinition(workflowInstanceCommand, ctx);
+      createWorkflowInstance(command, streamWriter, responseWriter, ctx);
     }
 
     private void addRequestMetadata(RecordMetadata metadata) {
       metadata.requestId(requestId).requestStreamId(requestStreamId);
     }
 
-    private void resolveWorkflowDefinition(
-        WorkflowInstanceRecord command, EventLifecycleContext ctx) {
-      final long workflowKey = command.getWorkflowKey();
-      final DirectBuffer bpmnProcessId = command.getBpmnProcessId();
-      final int version = command.getVersion();
+    private void createWorkflowInstance(
+        TypedRecord<WorkflowInstanceRecord> command,
+        TypedStreamWriter streamWriter,
+        TypedResponseWriter responseWriter,
+        EventLifecycleContext ctx) {
+      final WorkflowInstanceRecord value = command.getValue();
+
+      final long workflowKey = value.getWorkflowKey();
+      final DirectBuffer bpmnProcessId = value.getBpmnProcessId();
+      final int version = value.getVersion();
 
       ActorFuture<ClientResponse> fetchWorkflowFuture = null;
 
@@ -271,8 +276,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
               workflowCache.getWorkflowByProcessIdAndVersion(bpmnProcessId, version);
 
           if (workflowDefinition != null) {
-            command.setWorkflowKey(workflowDefinition.getKey());
-            accepted = true;
+            value.setWorkflowKey(workflowDefinition.getKey());
+            acceptCommand(command, streamWriter, responseWriter);
           } else {
             fetchWorkflowFuture =
                 workflowCache.fetchWorkflowByBpmnProcessIdAndVersion(bpmnProcessId, version);
@@ -285,10 +290,10 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
               workflowCache.getLatestWorkflowVersionByProcessId(bpmnProcessId);
 
           if (workflowDefinition != null && version != -2) {
-            command
+            value
                 .setWorkflowKey(workflowDefinition.getKey())
                 .setVersion(workflowDefinition.getVersion());
-            accepted = true;
+            acceptCommand(command, streamWriter, responseWriter);
           } else {
             fetchWorkflowFuture = workflowCache.fetchLatestWorkflowByBpmnProcessId(bpmnProcessId);
           }
@@ -300,10 +305,10 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         final DeployedWorkflow workflowDefinition = workflowCache.getWorkflowByKey(workflowKey);
 
         if (workflowDefinition != null) {
-          command
+          value
               .setVersion(workflowDefinition.getVersion())
               .setBpmnProcessId(workflowDefinition.getWorkflow().getBpmnProcessId());
-          accepted = true;
+          acceptCommand(command, streamWriter, responseWriter);
         } else {
           fetchWorkflowFuture = workflowCache.fetchWorkflowByKey(workflowKey);
         }
@@ -317,23 +322,29 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
             fetchWorkflowFuture,
             (response, err) -> {
               if (err != null) {
-                accepted = false;
-                rejectionType = RejectionType.PROCESSING_ERROR;
-                rejectionReason = "Could not fetch workflow: " + err.getMessage();
+                rejectCommand(
+                    command,
+                    streamWriter,
+                    responseWriter,
+                    RejectionType.PROCESSING_ERROR,
+                    "Could not fetch workflow: " + err.getMessage());
               } else {
                 final DeployedWorkflow workflowDefinition =
                     workflowCache.addWorkflow(response.getResponseBuffer());
 
                 if (workflowDefinition != null) {
-                  command
+                  value
                       .setBpmnProcessId(workflowDefinition.getWorkflow().getBpmnProcessId())
                       .setWorkflowKey(workflowDefinition.getKey())
                       .setVersion(workflowDefinition.getVersion());
-                  accepted = true;
+                  acceptCommand(command, streamWriter, responseWriter);
                 } else {
-                  accepted = false;
-                  rejectionType = RejectionType.BAD_VALUE;
-                  rejectionReason = "Workflow is not deployed";
+                  rejectCommand(
+                      command,
+                      streamWriter,
+                      responseWriter,
+                      RejectionType.BAD_VALUE,
+                      "Workflow is not deployed");
                 }
               }
 
@@ -342,22 +353,26 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
       }
     }
 
-    @Override
-    public long writeRecord(TypedRecord<WorkflowInstanceRecord> command, TypedStreamWriter writer) {
+    private void acceptCommand(
+        TypedRecord<WorkflowInstanceRecord> command,
+        TypedStreamWriter writer,
+        TypedResponseWriter responseWriter) {
+      final TypedBatchWriter batchWriter = writer.newBatch();
+      batchWriter.addFollowUpEvent(
+          command.getKey(),
+          WorkflowInstanceIntent.CREATED,
+          command.getValue(),
+          this::addRequestMetadata);
+      addStartEventOccured(batchWriter, command.getValue());
+    }
 
-      if (accepted) {
-        final TypedBatchWriter batchWriter = writer.newBatch();
-        batchWriter.addFollowUpEvent(
-            command.getKey(),
-            WorkflowInstanceIntent.CREATED,
-            command.getValue(),
-            this::addRequestMetadata);
-        addStartEventOccured(batchWriter, command.getValue());
-        return batchWriter.write();
-      } else {
-        return writer.writeRejection(
-            command, rejectionType, rejectionReason, this::addRequestMetadata);
-      }
+    private void rejectCommand(
+        TypedRecord<WorkflowInstanceRecord> command,
+        TypedStreamWriter writer,
+        TypedResponseWriter responseWriter,
+        RejectionType rejectionType,
+        String rejectionReason) {
+      writer.writeRejection(command, rejectionType, rejectionReason, this::addRequestMetadata);
     }
 
     private void addStartEventOccured(
@@ -380,15 +395,15 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
   private final class WorkflowInstanceCreatedEventProcessor
       implements TypedRecordProcessor<WorkflowInstanceRecord> {
-    @Override
-    public boolean executeSideEffects(
-        TypedRecord<WorkflowInstanceRecord> record, TypedResponseWriter responseWriter) {
-      workflowInstanceEventCreate.incrementOrdered();
-      return responseWriter.writeRecordUnchanged(record);
-    }
 
     @Override
-    public void updateState(TypedRecord<WorkflowInstanceRecord> record) {
+    public void processRecord(
+        TypedRecord<WorkflowInstanceRecord> record,
+        TypedResponseWriter responseWriter,
+        TypedStreamWriter streamWriter) {
+      workflowInstanceEventCreate.incrementOrdered();
+      responseWriter.writeRecord(record.getMetadata().getIntent(), record);
+
       workflowInstanceIndex
           .newWorkflowInstance(record.getKey())
           .setPosition(record.getPosition())
@@ -401,67 +416,61 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
   private final class WorkflowInstanceRejectedEventProcessor
       implements TypedRecordProcessor<WorkflowInstanceRecord> {
+
     @Override
-    public boolean executeSideEffects(
-        TypedRecord<WorkflowInstanceRecord> record, TypedResponseWriter responseWriter) {
-      return responseWriter.writeRecordUnchanged(record);
+    public void processRecord(
+        TypedRecord<WorkflowInstanceRecord> record,
+        TypedResponseWriter responseWriter,
+        TypedStreamWriter streamWriter) {
+      responseWriter.writeRejection(
+          record,
+          record.getMetadata().getRejectionType(),
+          record.getMetadata().getRejectionReason());
     }
   }
 
   private final class TakeSequenceFlowAspectHandler extends FlowElementEventProcessor<FlowNode> {
+
     @Override
     void processFlowElementEvent(
-        TypedRecord<WorkflowInstanceRecord> event, FlowNode currentFlowNode) {
+        TypedRecord<WorkflowInstanceRecord> event,
+        TypedStreamWriter streamWriter,
+        FlowNode currentFlowNode) {
+
       // the activity has exactly one outgoing sequence flow
       final SequenceFlow sequenceFlow = currentFlowNode.getOutgoingSequenceFlows().get(0);
 
-      event.getValue().setActivityId(sequenceFlow.getIdAsBuffer());
-    }
+      final WorkflowInstanceRecord value = event.getValue();
+      value.setActivityId(sequenceFlow.getIdAsBuffer());
 
-    @Override
-    public long writeRecord(TypedRecord<WorkflowInstanceRecord> record, TypedStreamWriter writer) {
-      return writer.writeNewEvent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, record.getValue());
+      streamWriter.writeNewEvent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, value);
     }
   }
 
   private final class ExclusiveSplitAspectHandler
       extends FlowElementEventProcessor<ExclusiveGateway> {
-    private boolean createsIncident;
-    private boolean isResolvingIncident;
-    private final IncidentRecord incidentCommand = new IncidentRecord();
 
     @Override
     void processFlowElementEvent(
-        TypedRecord<WorkflowInstanceRecord> event, ExclusiveGateway exclusiveGateway) {
-      try {
-        isResolvingIncident = event.getMetadata().hasIncidentKey();
+        TypedRecord<WorkflowInstanceRecord> event,
+        TypedStreamWriter streamWriter,
+        ExclusiveGateway exclusiveGateway) {
 
+      try {
         final WorkflowInstanceRecord value = event.getValue();
         final SequenceFlow sequenceFlow =
             getSequenceFlowWithFulfilledCondition(exclusiveGateway, value.getPayload());
 
         if (sequenceFlow != null) {
           value.setActivityId(sequenceFlow.getIdAsBuffer());
-
-          createsIncident = false;
+          streamWriter.writeNewEvent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, value);
         } else {
-          incidentCommand.reset();
-          incidentCommand
-              .initFromWorkflowInstanceFailure(event)
-              .setErrorType(ErrorType.CONDITION_ERROR)
-              .setErrorMessage("All conditions evaluated to false and no default flow is set.");
-
-          createsIncident = true;
+          final String errorMessage =
+              "All conditions evaluated to false and no default flow is set.";
+          raiseIncident(event, ErrorType.CONDITION_ERROR, errorMessage, streamWriter);
         }
       } catch (JsonConditionException e) {
-        incidentCommand.reset();
-
-        incidentCommand
-            .initFromWorkflowInstanceFailure(event)
-            .setErrorType(ErrorType.CONDITION_ERROR)
-            .setErrorMessage(e.getMessage());
-
-        createsIncident = true;
+        raiseIncident(event, ErrorType.CONDITION_ERROR, e.getMessage(), streamWriter);
       }
     }
 
@@ -482,59 +491,28 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
       }
       return exclusiveGateway.getDefaultFlow();
     }
-
-    @Override
-    public long writeRecord(TypedRecord<WorkflowInstanceRecord> record, TypedStreamWriter writer) {
-      if (!createsIncident) {
-        return writer.writeNewEvent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, record.getValue());
-      } else {
-        if (!isResolvingIncident) {
-          return writer.writeNewCommand(IncidentIntent.CREATE, incidentCommand);
-        } else {
-          return writer.writeFollowUpEvent(
-              record.getMetadata().getIncidentKey(),
-              IncidentIntent.RESOLVE_FAILED,
-              incidentCommand);
-        }
-      }
-    }
   }
 
   private final class ConsumeTokenAspectHandler extends FlowElementEventProcessor<FlowElement> {
-    private boolean isCompleted;
-    private int activeTokenCount;
 
     @Override
     void processFlowElementEvent(
-        TypedRecord<WorkflowInstanceRecord> event, FlowElement currentFlowNode) {
+        TypedRecord<WorkflowInstanceRecord> event,
+        TypedStreamWriter streamWriter,
+        FlowElement currentFlowNode) {
       final WorkflowInstanceRecord workflowInstanceEvent = event.getValue();
 
       final WorkflowInstance workflowInstance =
           workflowInstanceIndex.get(workflowInstanceEvent.getWorkflowInstanceKey());
 
-      activeTokenCount = workflowInstance != null ? workflowInstance.getTokenCount() : 0;
-      isCompleted = activeTokenCount == 1;
-      if (isCompleted) {
+      final int activeTokenCount = workflowInstance != null ? workflowInstance.getTokenCount() : 0;
+      if (activeTokenCount == 1) {
+        final long workflowInstanceKey = workflowInstanceEvent.getWorkflowInstanceKey();
+
         workflowInstanceEvent.setActivityId("");
-      }
-    }
+        streamWriter.writeFollowUpEvent(
+            workflowInstanceKey, WorkflowInstanceIntent.COMPLETED, workflowInstanceEvent);
 
-    @Override
-    public long writeRecord(TypedRecord<WorkflowInstanceRecord> record, TypedStreamWriter writer) {
-      if (isCompleted) {
-        return writer.writeFollowUpEvent(
-            record.getValue().getWorkflowInstanceKey(),
-            WorkflowInstanceIntent.COMPLETED,
-            record.getValue());
-      } else {
-        return 0L;
-      }
-    }
-
-    @Override
-    public void updateState(TypedRecord<WorkflowInstanceRecord> record) {
-      if (isCompleted) {
-        final long workflowInstanceKey = record.getValue().getWorkflowInstanceKey();
         workflowInstanceIndex.remove(workflowInstanceKey);
         payloadCache.remove(workflowInstanceKey);
       }
@@ -547,7 +525,9 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
     @Override
     void processFlowElementEvent(
-        TypedRecord<WorkflowInstanceRecord> event, SequenceFlow sequenceFlow) {
+        TypedRecord<WorkflowInstanceRecord> event,
+        TypedStreamWriter streamWriter,
+        SequenceFlow sequenceFlow) {
       final FlowNode targetNode = sequenceFlow.getTargetNode();
 
       final WorkflowInstanceRecord value = event.getValue();
@@ -563,31 +543,27 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         throw new RuntimeException(
             String.format("Flow node of type '%s' is not supported.", targetNode));
       }
-    }
 
-    @Override
-    public long writeRecord(TypedRecord<WorkflowInstanceRecord> record, TypedStreamWriter writer) {
-      return writer.writeNewEvent(nextState, record.getValue());
+      streamWriter.writeNewEvent(nextState, event.getValue());
     }
   }
 
   private final class ActivityReadyEventProcessor extends FlowElementEventProcessor<ServiceTask> {
-    private final IncidentRecord incidentCommand = new IncidentRecord();
 
-    private boolean createsIncident;
-    private boolean isResolvingIncident;
     private UnsafeBuffer wfInstancePayload = new UnsafeBuffer(0, 0);
 
     @Override
     void processFlowElementEvent(
-        TypedRecord<WorkflowInstanceRecord> event, ServiceTask serviceTask) {
-      createsIncident = false;
-      isResolvingIncident = event.getMetadata().hasIncidentKey();
+        TypedRecord<WorkflowInstanceRecord> event,
+        TypedStreamWriter streamWriter,
+        ServiceTask serviceTask) {
 
       final WorkflowInstanceRecord activityEvent = event.getValue();
       wfInstancePayload.wrap(activityEvent.getPayload());
 
       final Mapping[] inputMappings = serviceTask.getInputOutputMapping().getInputMappings();
+
+      MappingException mappingException = null;
 
       // only if we have no default mapping we have to use the mapping processor
       if (inputMappings.length > 0) {
@@ -597,56 +573,31 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
           final MutableDirectBuffer mappedPayload = payloadMappingProcessor.getResultBuffer();
           activityEvent.setPayload(mappedPayload, 0, resultLen);
         } catch (MappingException e) {
-          incidentCommand.reset();
-
-          incidentCommand
-              .initFromWorkflowInstanceFailure(event)
-              .setErrorType(ErrorType.IO_MAPPING_ERROR)
-              .setErrorMessage(e.getMessage());
-
-          createsIncident = true;
+          mappingException = e;
         }
       }
-    }
 
-    @Override
-    public long writeRecord(TypedRecord<WorkflowInstanceRecord> record, TypedStreamWriter writer) {
-      if (!createsIncident) {
-        return writer.writeFollowUpEvent(
-            record.getKey(), WorkflowInstanceIntent.ACTIVITY_ACTIVATED, record.getValue());
+      if (mappingException == null) {
+        streamWriter.writeFollowUpEvent(
+            event.getKey(), WorkflowInstanceIntent.ACTIVITY_ACTIVATED, activityEvent);
+
+        payloadCache.addPayload(
+            activityEvent.getWorkflowInstanceKey(), event.getPosition(), wfInstancePayload);
       } else {
-        if (!isResolvingIncident) {
-          return writer.writeNewCommand(IncidentIntent.CREATE, incidentCommand);
-        } else {
-          return writer.writeFollowUpEvent(
-              record.getMetadata().getIncidentKey(),
-              IncidentIntent.RESOLVE_FAILED,
-              incidentCommand);
-        }
+        raiseIncident(
+            event, ErrorType.IO_MAPPING_ERROR, mappingException.getMessage(), streamWriter);
       }
-    }
-
-    @Override
-    public void updateState(TypedRecord<WorkflowInstanceRecord> record) {
-      final WorkflowInstanceRecord workflowInstanceEvent = record.getValue();
 
       workflowInstanceIndex
-          .get(workflowInstanceEvent.getWorkflowInstanceKey())
-          .setActivityInstanceKey(record.getKey())
+          .get(activityEvent.getWorkflowInstanceKey())
+          .setActivityInstanceKey(event.getKey())
           .write();
 
       activityInstanceMap
-          .newActivityInstance(record.getKey())
-          .setActivityId(workflowInstanceEvent.getActivityId())
+          .newActivityInstance(event.getKey())
+          .setActivityId(activityEvent.getActivityId())
           .setJobKey(-1L)
           .write();
-
-      if (!createsIncident) {
-        payloadCache.addPayload(
-            workflowInstanceEvent.getWorkflowInstanceKey(),
-            record.getPosition(),
-            wfInstancePayload);
-      }
     }
   }
 
@@ -656,7 +607,9 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
     @Override
     void processFlowElementEvent(
-        TypedRecord<WorkflowInstanceRecord> event, ServiceTask serviceTask) {
+        TypedRecord<WorkflowInstanceRecord> event,
+        TypedStreamWriter streamWriter,
+        ServiceTask serviceTask) {
       final TaskDefinition taskDefinition = serviceTask.getTaskDefinition();
 
       final WorkflowInstanceRecord value = event.getValue();
@@ -680,20 +633,18 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
       if (!customHeaders.isEmpty()) {
         jobCommand.setCustomHeaders(customHeaders.asMsgpackEncoded());
       }
-    }
 
-    @Override
-    public long writeRecord(TypedRecord<WorkflowInstanceRecord> record, TypedStreamWriter writer) {
-      return writer.writeNewCommand(JobIntent.CREATE, jobCommand);
+      streamWriter.writeNewCommand(JobIntent.CREATE, jobCommand);
     }
   }
 
   private final class JobCreatedProcessor implements TypedRecordProcessor<JobRecord> {
-    private boolean isActive;
 
     @Override
-    public void processRecord(TypedRecord<JobRecord> record) {
-      isActive = false;
+    public void processRecord(
+        TypedRecord<JobRecord> record,
+        TypedResponseWriter responseWriter,
+        TypedStreamWriter streamWriter) {
 
       final JobHeaders jobHeaders = record.getValue().headers();
       final long activityInstanceKey = jobHeaders.getActivityInstanceKey();
@@ -701,21 +652,16 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         final WorkflowInstance workflowInstance =
             workflowInstanceIndex.get(jobHeaders.getWorkflowInstanceKey());
 
-        isActive =
+        final boolean isActive =
             workflowInstance != null
                 && activityInstanceKey == workflowInstance.getActivityInstanceKey();
-      }
-    }
 
-    @Override
-    public void updateState(TypedRecord<JobRecord> record) {
-      if (isActive) {
-        final long activityInstanceKey = record.getValue().headers().getActivityInstanceKey();
-
-        activityInstanceMap
-            .wrapActivityInstanceKey(activityInstanceKey)
-            .setJobKey(record.getKey())
-            .write();
+        if (isActive) {
+          activityInstanceMap
+              .wrapActivityInstanceKey(activityInstanceKey)
+              .setJobKey(record.getKey())
+              .write();
+        }
       }
     }
   }
@@ -723,16 +669,15 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
   private final class JobCompletedEventProcessor implements TypedRecordProcessor<JobRecord> {
     private final WorkflowInstanceRecord workflowInstanceEvent = new WorkflowInstanceRecord();
 
-    private boolean activityCompleted;
-    private long activityInstanceKey;
-
     @Override
-    public void processRecord(TypedRecord<JobRecord> record) {
-      activityCompleted = false;
+    public void processRecord(
+        TypedRecord<JobRecord> record,
+        TypedResponseWriter responseWriter,
+        TypedStreamWriter streamWriter) {
 
       final JobRecord jobEvent = record.getValue();
       final JobHeaders jobHeaders = jobEvent.headers();
-      activityInstanceKey = jobHeaders.getActivityInstanceKey();
+      final long activityInstanceKey = jobHeaders.getActivityInstanceKey();
 
       if (jobHeaders.getWorkflowInstanceKey() > 0
           && isJobOpen(record.getKey(), activityInstanceKey)) {
@@ -744,7 +689,10 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
             .setActivityId(jobHeaders.getActivityId())
             .setPayload(jobEvent.getPayload());
 
-        activityCompleted = true;
+        streamWriter.writeFollowUpEvent(
+            activityInstanceKey, WorkflowInstanceIntent.ACTIVITY_COMPLETING, workflowInstanceEvent);
+
+        activityInstanceMap.wrapActivityInstanceKey(activityInstanceKey).setJobKey(-1L).write();
       }
     }
 
@@ -752,51 +700,35 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
       // job key = -1 when activity is left
       return activityInstanceMap.wrapActivityInstanceKey(activityInstanceKey).getJobKey() == jobKey;
     }
-
-    @Override
-    public long writeRecord(TypedRecord<JobRecord> record, TypedStreamWriter writer) {
-      return activityCompleted
-          ? writer.writeFollowUpEvent(
-              activityInstanceKey,
-              WorkflowInstanceIntent.ACTIVITY_COMPLETING,
-              workflowInstanceEvent)
-          : 0L;
-    }
-
-    @Override
-    public void updateState(TypedRecord<JobRecord> record) {
-      if (activityCompleted) {
-        activityInstanceMap.wrapActivityInstanceKey(activityInstanceKey).setJobKey(-1L).write();
-      }
-    }
   }
 
   private final class ActivityCompletingEventProcessor
       extends FlowElementEventProcessor<ServiceTask> {
-    private final IncidentRecord incidentCommand = new IncidentRecord();
-    private boolean hasIncident;
-    private boolean isResolvingIncident;
 
     @Override
     void processFlowElementEvent(
-        TypedRecord<WorkflowInstanceRecord> event, ServiceTask serviceTask) {
-      hasIncident = false;
-      isResolvingIncident = event.getMetadata().hasIncidentKey();
+        TypedRecord<WorkflowInstanceRecord> event,
+        TypedStreamWriter streamWriter,
+        ServiceTask serviceTask) {
 
       final WorkflowInstanceRecord activityEvent = event.getValue();
       final DirectBuffer workflowInstancePayload =
           payloadCache.getPayload(activityEvent.getWorkflowInstanceKey());
 
       final InputOutputMapping inputOutputMapping = serviceTask.getInputOutputMapping();
-      tryToExecuteOutputBehavior(event, activityEvent, workflowInstancePayload, inputOutputMapping);
+      tryToExecuteOutputBehavior(
+          streamWriter, event, activityEvent, workflowInstancePayload, inputOutputMapping);
     }
 
     private void tryToExecuteOutputBehavior(
+        TypedStreamWriter streamWriter,
         TypedRecord<WorkflowInstanceRecord> event,
         WorkflowInstanceRecord activityEvent,
         DirectBuffer workflowInstancePayload,
         InputOutputMapping inputOutputMapping) {
       final OutputBehavior outputBehavior = inputOutputMapping.getOutputBehavior();
+
+      MappingException mappingException = null;
 
       if (outputBehavior == OutputBehavior.NONE) {
         activityEvent.setPayload(workflowInstancePayload);
@@ -813,47 +745,25 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
               payloadMappingProcessor.merge(jobPayload, workflowInstancePayload, outputMappings);
           final MutableDirectBuffer mergedPayload = payloadMappingProcessor.getResultBuffer();
           activityEvent.setPayload(mergedPayload, 0, resultLen);
+
         } catch (MappingException e) {
-          createIncident(event, e.getMessage());
-          hasIncident = true;
+          mappingException = e;
         }
       }
-    }
 
-    private void createIncident(TypedRecord<WorkflowInstanceRecord> event, String s) {
-      incidentCommand.reset();
-      incidentCommand
-          .initFromWorkflowInstanceFailure(event)
-          .setErrorType(ErrorType.IO_MAPPING_ERROR)
-          .setErrorMessage(s);
-    }
+      if (mappingException == null) {
+        streamWriter.writeFollowUpEvent(
+            event.getKey(), WorkflowInstanceIntent.ACTIVITY_COMPLETED, activityEvent);
 
-    @Override
-    public long writeRecord(TypedRecord<WorkflowInstanceRecord> record, TypedStreamWriter writer) {
-      if (!hasIncident) {
-        return writer.writeFollowUpEvent(
-            record.getKey(), WorkflowInstanceIntent.ACTIVITY_COMPLETED, record.getValue());
-      } else {
-        if (!isResolvingIncident) {
-          return writer.writeNewCommand(IncidentIntent.CREATE, incidentCommand);
-        } else {
-          return writer.writeFollowUpEvent(
-              record.getMetadata().getIncidentKey(),
-              IncidentIntent.RESOLVE_FAILED,
-              incidentCommand);
-        }
-      }
-    }
-
-    @Override
-    public void updateState(TypedRecord<WorkflowInstanceRecord> record) {
-      if (!hasIncident) {
         workflowInstanceIndex
-            .get(record.getValue().getWorkflowInstanceKey())
+            .get(event.getValue().getWorkflowInstanceKey())
             .setActivityInstanceKey(-1L)
             .write();
 
-        activityInstanceMap.remove(record.getKey());
+        activityInstanceMap.remove(event.getKey());
+      } else {
+        raiseIncident(
+            event, ErrorType.IO_MAPPING_ERROR, mappingException.getMessage(), streamWriter);
       }
     }
   }
@@ -863,15 +773,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
     private final WorkflowInstanceRecord activityInstanceEvent = new WorkflowInstanceRecord();
     private final JobRecord jobRecord = new JobRecord();
 
-    private boolean isCanceled;
-    private RejectionType rejectionType;
-    private String rejectionReason;
-
-    private long activityInstanceKey;
-    private long jobKey;
-
     private TypedStreamReader reader;
-    private TypedRecord<WorkflowInstanceRecord> workflowInstanceEvent;
 
     @Override
     public void onOpen(TypedStreamProcessor streamProcessor) {
@@ -884,90 +786,82 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
     }
 
     @Override
-    public void processRecord(TypedRecord<WorkflowInstanceRecord> command) {
+    public void processRecord(
+        TypedRecord<WorkflowInstanceRecord> command,
+        TypedResponseWriter responseWriter,
+        TypedStreamWriter streamWriter) {
+
       final WorkflowInstance workflowInstance = workflowInstanceIndex.get(command.getKey());
 
-      isCanceled = workflowInstance != null && workflowInstance.getTokenCount() > 0;
+      final boolean isCanceled = workflowInstance != null && workflowInstance.getTokenCount() > 0;
 
       if (isCanceled) {
-        workflowInstanceEvent =
-            reader.readValue(workflowInstance.getPosition(), WorkflowInstanceRecord.class);
-
-        workflowInstanceEvent.getValue().setPayload(EMPTY_PAYLOAD);
-
-        activityInstanceKey = workflowInstance.getActivityInstanceKey();
-        jobKey = activityInstanceMap.wrapActivityInstanceKey(activityInstanceKey).getJobKey();
+        cancelWorkflowInstance(command, workflowInstance, streamWriter, responseWriter);
       } else {
-        rejectionType = RejectionType.NOT_APPLICABLE;
-        rejectionReason = "Workflow instance is not running";
+        final RejectionType rejectionType = RejectionType.NOT_APPLICABLE;
+        final String rejectionReason = "Workflow instance is not running";
+        streamWriter.writeRejection(command, rejectionType, rejectionReason);
+        responseWriter.writeRejection(command, rejectionType, rejectionReason);
       }
     }
 
-    @Override
-    public long writeRecord(TypedRecord<WorkflowInstanceRecord> command, TypedStreamWriter writer) {
-      if (isCanceled) {
-        activityInstanceMap.wrapActivityInstanceKey(activityInstanceKey);
-        final WorkflowInstanceRecord value = workflowInstanceEvent.getValue();
+    private void cancelWorkflowInstance(
+        TypedRecord<WorkflowInstanceRecord> command,
+        WorkflowInstance workflowInstance,
+        TypedStreamWriter writer,
+        TypedResponseWriter responseWriter) {
+      final TypedRecord<WorkflowInstanceRecord> workflowInstanceEvent =
+          reader.readValue(workflowInstance.getPosition(), WorkflowInstanceRecord.class);
 
-        final TypedBatchWriter batchWriter = writer.newBatch();
+      workflowInstanceEvent.getValue().setPayload(EMPTY_PAYLOAD);
 
-        if (jobKey > 0) {
-          jobRecord.reset();
-          jobRecord
-              .setType(EMPTY_JOB_TYPE)
-              .headers()
-              .setBpmnProcessId(value.getBpmnProcessId())
-              .setWorkflowDefinitionVersion(value.getVersion())
-              .setWorkflowInstanceKey(command.getKey())
-              .setActivityId(activityInstanceMap.getActivityId())
-              .setActivityInstanceKey(activityInstanceKey);
+      final long activityInstanceKey = workflowInstance.getActivityInstanceKey();
+      final long jobKey =
+          activityInstanceMap.wrapActivityInstanceKey(activityInstanceKey).getJobKey();
 
-          batchWriter.addFollowUpCommand(jobKey, JobIntent.CANCEL, jobRecord);
-        }
+      activityInstanceMap.wrapActivityInstanceKey(activityInstanceKey);
+      final WorkflowInstanceRecord value = workflowInstanceEvent.getValue();
 
-        if (activityInstanceKey > 0) {
-          activityInstanceEvent.reset();
-          activityInstanceEvent
-              .setBpmnProcessId(value.getBpmnProcessId())
-              .setVersion(value.getVersion())
-              .setWorkflowInstanceKey(command.getKey())
-              .setActivityId(activityInstanceMap.getActivityId());
+      final TypedBatchWriter batchWriter = writer.newBatch();
 
-          batchWriter.addFollowUpEvent(
-              activityInstanceKey,
-              WorkflowInstanceIntent.ACTIVITY_TERMINATED,
-              activityInstanceEvent);
-        }
+      if (jobKey > 0) {
+        jobRecord.reset();
+        jobRecord
+            .setType(EMPTY_JOB_TYPE)
+            .headers()
+            .setBpmnProcessId(value.getBpmnProcessId())
+            .setWorkflowDefinitionVersion(value.getVersion())
+            .setWorkflowInstanceKey(command.getKey())
+            .setActivityId(activityInstanceMap.getActivityId())
+            .setActivityInstanceKey(activityInstanceKey);
 
-        batchWriter.addFollowUpEvent(command.getKey(), WorkflowInstanceIntent.CANCELED, value);
-
-        return batchWriter.write();
-      } else {
-        return writer.writeRejection(command, rejectionType, rejectionReason);
+        batchWriter.addFollowUpCommand(jobKey, JobIntent.CANCEL, jobRecord);
       }
-    }
 
-    @Override
-    public boolean executeSideEffects(
-        TypedRecord<WorkflowInstanceRecord> record, TypedResponseWriter responseWriter) {
-      if (isCanceled) {
-        return responseWriter.writeRecord(WorkflowInstanceIntent.CANCELED, record);
-      } else {
-        return responseWriter.writeRejection(record, rejectionType, rejectionReason);
-      }
-    }
+      if (activityInstanceKey > 0) {
+        activityInstanceEvent.reset();
+        activityInstanceEvent
+            .setBpmnProcessId(value.getBpmnProcessId())
+            .setVersion(value.getVersion())
+            .setWorkflowInstanceKey(command.getKey())
+            .setActivityId(activityInstanceMap.getActivityId());
 
-    @Override
-    public void updateState(TypedRecord<WorkflowInstanceRecord> record) {
-      if (isCanceled) {
-        workflowInstanceIndex.remove(record.getKey());
-        payloadCache.remove(record.getKey());
+        batchWriter.addFollowUpEvent(
+            activityInstanceKey, WorkflowInstanceIntent.ACTIVITY_TERMINATED, activityInstanceEvent);
+
         activityInstanceMap.remove(activityInstanceKey);
       }
+
+      batchWriter.addFollowUpEvent(command.getKey(), WorkflowInstanceIntent.CANCELED, value);
+      responseWriter.writeRecord(WorkflowInstanceIntent.CANCELED, command);
+
+      workflowInstanceIndex.remove(command.getKey());
+      payloadCache.remove(command.getKey());
     }
   }
 
   private final class UpdatePayloadProcessor implements CommandProcessor<WorkflowInstanceRecord> {
+
     @Override
     public CommandResult onCommand(
         TypedRecord<WorkflowInstanceRecord> command, CommandControl commandControl) {
@@ -978,20 +872,15 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
       final boolean isActive = workflowInstance != null && workflowInstance.getTokenCount() > 0;
 
       if (isActive) {
+        payloadCache.addPayload(
+            workflowInstanceEvent.getWorkflowInstanceKey(),
+            command.getPosition(),
+            workflowInstanceEvent.getPayload());
         return commandControl.accept(WorkflowInstanceIntent.PAYLOAD_UPDATED);
       } else {
         return commandControl.reject(
             RejectionType.NOT_APPLICABLE, "Workflow instance is not running");
       }
-    }
-
-    @Override
-    public void updateStateOnAccept(TypedRecord<WorkflowInstanceRecord> command) {
-      final WorkflowInstanceRecord workflowInstanceEvent = command.getValue();
-      payloadCache.addPayload(
-          workflowInstanceEvent.getWorkflowInstanceKey(),
-          command.getPosition(),
-          workflowInstanceEvent.getPayload());
     }
   }
 
@@ -1027,12 +916,21 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
   private abstract class FlowElementEventProcessor<T extends FlowElement>
       implements TypedRecordProcessor<WorkflowInstanceRecord> {
+    private final IncidentRecord incidentCommand = new IncidentRecord();
+
     private TypedRecord<WorkflowInstanceRecord> event;
+    private TypedStreamWriter writer;
 
     @Override
     public void processRecord(
-        TypedRecord<WorkflowInstanceRecord> record, EventLifecycleContext ctx) {
+        TypedRecord<WorkflowInstanceRecord> record,
+        TypedResponseWriter responseWriter,
+        TypedStreamWriter streamWriter,
+        Consumer<SideEffectProducer> sideEffect,
+        EventLifecycleContext ctx) {
+
       event = record;
+      this.writer = streamWriter;
       final long workflowKey = event.getValue().getWorkflowKey();
       final DeployedWorkflow deployedWorkflow = workflowCache.getWorkflowByKey(workflowKey);
 
@@ -1050,11 +948,34 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
       final Workflow workflow = deployedWorkflow.getWorkflow();
       final FlowElement flowElement = workflow.findFlowElementById(currentActivityId);
 
-      processFlowElementEvent(event, (T) flowElement);
+      processFlowElementEvent(event, writer, (T) flowElement);
     }
 
     abstract void processFlowElementEvent(
-        TypedRecord<WorkflowInstanceRecord> event, T currentFlowNode);
+        TypedRecord<WorkflowInstanceRecord> event,
+        TypedStreamWriter streamWriter,
+        T currentFlowNode);
+
+    protected void raiseIncident(
+        TypedRecord<WorkflowInstanceRecord> record,
+        ErrorType errorType,
+        String errorMessage,
+        TypedStreamWriter writer) {
+
+      incidentCommand.reset();
+
+      incidentCommand
+          .initFromWorkflowInstanceFailure(record)
+          .setErrorType(errorType)
+          .setErrorMessage(errorMessage);
+
+      if (!record.getMetadata().hasIncidentKey()) {
+        writer.writeNewCommand(IncidentIntent.CREATE, incidentCommand);
+      } else {
+        writer.writeFollowUpEvent(
+            record.getMetadata().getIncidentKey(), IncidentIntent.RESOLVE_FAILED, incidentCommand);
+      }
+    }
   }
 
   @SuppressWarnings("rawtypes")
@@ -1074,28 +995,15 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
     @Override
     @SuppressWarnings("unchecked")
     void processFlowElementEvent(
-        TypedRecord<WorkflowInstanceRecord> event, FlowElement currentFlowNode) {
+        TypedRecord<WorkflowInstanceRecord> event,
+        TypedStreamWriter streamWriter,
+        FlowElement currentFlowNode) {
+
       final BpmnAspect bpmnAspect = currentFlowNode.getBpmnAspect();
 
       delegate = aspectHandlers.get(bpmnAspect);
 
-      delegate.processFlowElementEvent(event, currentFlowNode);
-    }
-
-    @Override
-    public boolean executeSideEffects(
-        TypedRecord<WorkflowInstanceRecord> record, TypedResponseWriter responseWriter) {
-      return delegate.executeSideEffects(record, responseWriter);
-    }
-
-    @Override
-    public long writeRecord(TypedRecord<WorkflowInstanceRecord> record, TypedStreamWriter writer) {
-      return delegate.writeRecord(record, writer);
-    }
-
-    @Override
-    public void updateState(TypedRecord<WorkflowInstanceRecord> record) {
-      delegate.updateState(record);
+      delegate.processFlowElementEvent(event, streamWriter, currentFlowNode);
     }
   }
 }

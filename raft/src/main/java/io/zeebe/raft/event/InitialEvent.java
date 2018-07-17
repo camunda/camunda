@@ -15,7 +15,7 @@
  */
 package io.zeebe.raft.event;
 
-import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -27,7 +27,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 public class InitialEvent {
   private static final DirectBuffer EMPTY_OBJECT = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
 
-  public final LogStreamWriter logStreamWriter = new LogStreamWriterImpl();
+  public final LogStreamRecordWriter logStreamWriter = new LogStreamWriterImpl();
   public final RecordMetadata metadata = new RecordMetadata();
 
   public InitialEvent reset() {

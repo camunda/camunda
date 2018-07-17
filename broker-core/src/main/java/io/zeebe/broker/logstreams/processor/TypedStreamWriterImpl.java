@@ -21,6 +21,7 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
 import io.zeebe.logstreams.log.LogStreamBatchWriterImpl;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.UnpackedObject;
@@ -41,11 +42,13 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
   protected final Map<Class<? extends UnpackedObject>, ValueType> typeRegistry;
   protected final LogStream stream;
 
-  protected LogStreamWriter writer;
+  protected LogStreamRecordWriter writer;
   protected LogStreamBatchWriter batchWriter;
 
   protected int producerId;
   protected long sourceRecordPosition = -1;
+
+  private LogStreamWriter stagedWriter;
 
   public TypedStreamWriterImpl(
       LogStream stream, Map<ValueType, Class<? extends UnpackedObject>> eventRegistry) {
@@ -71,16 +74,16 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
     metadata.intent(intent);
   }
 
-  private long writeRecord(
+  private void writeRecord(
       long key,
       RecordType type,
       Intent intent,
       UnpackedObject value,
       Consumer<RecordMetadata> additionalMetadata) {
-    return writeRecord(key, type, intent, RejectionType.NULL_VAL, "", value, additionalMetadata);
+    writeRecord(key, type, intent, RejectionType.NULL_VAL, "", value, additionalMetadata);
   }
 
-  private long writeRecord(
+  private void writeRecord(
       long key,
       RecordType type,
       Intent intent,
@@ -88,6 +91,9 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
       String rejectionReason,
       UnpackedObject value,
       Consumer<RecordMetadata> additionalMetadata) {
+
+    stagedWriter = writer;
+
     writer.reset();
     writer.producerId(producerId);
 
@@ -106,45 +112,45 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
       writer.positionAsKey();
     }
 
-    return writer.metadataWriter(metadata).valueWriter(value).tryWrite();
+    writer.metadataWriter(metadata).valueWriter(value);
   }
 
   @Override
-  public long writeNewCommand(Intent intent, UnpackedObject value) {
-    return writeRecord(-1, RecordType.COMMAND, intent, value, noop);
+  public void writeNewCommand(Intent intent, UnpackedObject value) {
+    writeRecord(-1, RecordType.COMMAND, intent, value, noop);
   }
 
   @Override
-  public long writeFollowUpCommand(long key, Intent intent, UnpackedObject value) {
-    return writeRecord(key, RecordType.COMMAND, intent, value, noop);
+  public void writeFollowUpCommand(long key, Intent intent, UnpackedObject value) {
+    writeRecord(key, RecordType.COMMAND, intent, value, noop);
   }
 
   @Override
-  public long writeFollowUpCommand(
+  public void writeFollowUpCommand(
       long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata) {
-    return writeRecord(key, RecordType.COMMAND, intent, value, metadata);
+    writeRecord(key, RecordType.COMMAND, intent, value, metadata);
   }
 
   @Override
-  public long writeNewEvent(Intent intent, UnpackedObject value) {
-    return writeRecord(-1, RecordType.EVENT, intent, value, noop);
+  public void writeNewEvent(Intent intent, UnpackedObject value) {
+    writeRecord(-1, RecordType.EVENT, intent, value, noop);
   }
 
   @Override
-  public long writeFollowUpEvent(long key, Intent intent, UnpackedObject value) {
-    return writeRecord(key, RecordType.EVENT, intent, value, noop);
+  public void writeFollowUpEvent(long key, Intent intent, UnpackedObject value) {
+    writeRecord(key, RecordType.EVENT, intent, value, noop);
   }
 
   @Override
-  public long writeFollowUpEvent(
+  public void writeFollowUpEvent(
       long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata) {
-    return writeRecord(key, RecordType.EVENT, intent, value, metadata);
+    writeRecord(key, RecordType.EVENT, intent, value, metadata);
   }
 
   @Override
-  public long writeRejection(
+  public void writeRejection(
       TypedRecord<? extends UnpackedObject> command, RejectionType rejectionType, String reason) {
-    return writeRecord(
+    writeRecord(
         command.getKey(),
         RecordType.COMMAND_REJECTION,
         command.getMetadata().getIntent(),
@@ -155,12 +161,12 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
   }
 
   @Override
-  public long writeRejection(
+  public void writeRejection(
       TypedRecord<? extends UnpackedObject> command,
       RejectionType rejectionType,
       String reason,
       Consumer<RecordMetadata> metadata) {
-    return writeRecord(
+    writeRecord(
         command.getKey(),
         RecordType.COMMAND_REJECTION,
         command.getMetadata().getIntent(),
@@ -219,12 +225,8 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
   }
 
   @Override
-  public long write() {
-    return batchWriter.tryWrite();
-  }
-
-  @Override
   public TypedBatchWriter newBatch() {
+
     batchWriter.reset();
     batchWriter.producerId(producerId);
 
@@ -232,6 +234,20 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
       batchWriter.sourceRecordPosition(sourceRecordPosition);
     }
 
+    stagedWriter = batchWriter;
+
     return this;
+  }
+
+  public void reset() {
+    stagedWriter = null;
+  }
+
+  public long flush() {
+    if (stagedWriter != null) {
+      return stagedWriter.tryWrite();
+    } else {
+      return 0L;
+    }
   }
 }

@@ -23,7 +23,7 @@ import static org.mockito.Mockito.*;
 
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
-import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.logstreams.util.LogStreamWriterRule;
@@ -490,7 +490,7 @@ public class StreamProcessorReprocessingTest {
     return writeEventWith(w -> {});
   }
 
-  private long writeEventWith(final Consumer<LogStreamWriter> wr) {
+  private long writeEventWith(final Consumer<LogStreamRecordWriter> wr) {
     return writer.writeEvent(
         w -> {
           w.positionAsKey().value(EVENT);

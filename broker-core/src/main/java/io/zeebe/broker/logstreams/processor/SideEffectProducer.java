@@ -17,27 +17,12 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import io.zeebe.protocol.clientapi.RejectionType;
-import io.zeebe.protocol.intent.Intent;
-import org.agrona.DirectBuffer;
-
-public interface TypedResponseWriter {
-
-  /** @return true if successful */
-  void writeRejection(TypedRecord<?> record, RejectionType type, String reason);
-
-  /** @return true if successful */
-  void writeRejection(TypedRecord<?> record, RejectionType type, DirectBuffer reason);
+@FunctionalInterface
+public interface SideEffectProducer {
 
   /**
-   * Writes the given record as response.
-   *
-   * @return true if successful
-   */
-  void writeRecord(Intent intent, TypedRecord<?> record);
-
-  /**
-   * Submits the response to transport.
+   * Applies the side effect. Called by the stream processor in the appropriate stage in the record
+   * processing lifecycle.
    *
    * @return false in case of backpressure, else true
    */

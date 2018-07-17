@@ -21,10 +21,13 @@ import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
+import io.zeebe.broker.logstreams.processor.SideEffectProducer;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
+import io.zeebe.broker.logstreams.processor.TypedResponseWriterImpl;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.TopicIntent;
 import java.util.function.BiConsumer;
@@ -40,10 +43,6 @@ public class TopicCreateProcessor implements TypedRecordProcessor<TopicRecord> {
   private final Consumer<DirectBuffer> notifyListeners;
   private final BiConsumer<Long, TopicRecord> addTopic;
 
-  private boolean isCreating;
-  private String rejectionReason;
-  private RejectionType rejectionType;
-
   public TopicCreateProcessor(
       final Predicate<DirectBuffer> topicExists,
       final Consumer<DirectBuffer> notifyListeners,
@@ -54,65 +53,69 @@ public class TopicCreateProcessor implements TypedRecordProcessor<TopicRecord> {
   }
 
   @Override
-  public void processRecord(final TypedRecord<TopicRecord> command) {
-    isCreating = false;
+  public void processRecord(
+      TypedRecord<TopicRecord> command,
+      TypedResponseWriter responseWriter,
+      TypedStreamWriter streamWriter,
+      Consumer<SideEffectProducer> sideEffect,
+      EventLifecycleContext ctx) {
 
     final TopicRecord topicEvent = command.getValue();
     final DirectBuffer topicName = topicEvent.getName();
 
+    RejectionType rejectionType = null;
+    String rejectionReason = null;
+
     if (topicExists.test(topicName)) {
       rejectionReason = "Topic exists already";
       rejectionType = RejectionType.NOT_APPLICABLE;
-      LOG.warn(
-          "Rejecting topic {} creation as a topic with the same name already exists",
-          bufferAsString(topicName));
     } else if (topicEvent.getPartitions() < 1) {
       rejectionReason = "Topic must have at least one partition";
       rejectionType = RejectionType.BAD_VALUE;
-      LOG.warn(
-          "Rejecting topic {} creation as a topic has to have at least one partition",
-          bufferAsString(topicName));
     } else if (topicEvent.getReplicationFactor() < 1) {
       rejectionReason = "Topic must have at least one replica";
       rejectionType = RejectionType.BAD_VALUE;
-      LOG.warn(
-          "Rejecting topic {} creation as a topic has to have at least one replica",
-          bufferAsString(topicName));
-    } else {
+    }
+
+    if (rejectionType == null) {
       LOG.info("Creating topic {}", topicEvent);
-      isCreating = true;
-    }
-  }
-
-  @Override
-  public boolean executeSideEffects(
-      final TypedRecord<TopicRecord> command, final TypedResponseWriter responseWriter) {
-    if (isCreating) {
-      final boolean written = responseWriter.writeRecord(TopicIntent.CREATING, command);
-
-      if (written) {
-        notifyListeners.accept(command.getValue().getName());
-      }
-
-      return written;
+      acceptCommand(command, responseWriter, streamWriter, sideEffect);
     } else {
-      return responseWriter.writeRejection(command, rejectionType, rejectionReason);
+      LOG.warn("Rejecting topic {} creation: {}", bufferAsString(topicName), rejectionReason);
+      rejectCommand(command, responseWriter, streamWriter, rejectionType, rejectionReason);
     }
   }
 
-  @Override
-  public long writeRecord(final TypedRecord<TopicRecord> command, final TypedStreamWriter writer) {
-    if (isCreating) {
-      return writer.writeFollowUpEvent(command.getKey(), TopicIntent.CREATING, command.getValue());
-    } else {
-      return writer.writeRejection(command, rejectionType, rejectionReason);
-    }
+  private void acceptCommand(
+      TypedRecord<TopicRecord> command,
+      TypedResponseWriter responseWriter,
+      TypedStreamWriter streamWriter,
+      Consumer<SideEffectProducer> sideEffect) {
+    responseWriter.writeRecord(TopicIntent.CREATING, command);
+
+    sideEffect.accept(
+        () -> {
+          final boolean written = ((TypedResponseWriterImpl) responseWriter).flush();
+
+          if (written) {
+            notifyListeners.accept(command.getValue().getName());
+          }
+
+          return written;
+        });
+
+    streamWriter.writeFollowUpEvent(command.getKey(), TopicIntent.CREATING, command.getValue());
+
+    addTopic.accept(command.getKey(), command.getValue());
   }
 
-  @Override
-  public void updateState(final TypedRecord<TopicRecord> command) {
-    if (isCreating) {
-      addTopic.accept(command.getKey(), command.getValue());
-    }
+  private void rejectCommand(
+      TypedRecord<TopicRecord> command,
+      TypedResponseWriter responseWriter,
+      TypedStreamWriter streamWriter,
+      RejectionType rejectionType,
+      String rejectionReason) {
+    responseWriter.writeRejection(command, rejectionType, rejectionReason);
+    streamWriter.writeRejection(command, rejectionType, rejectionReason);
   }
 }

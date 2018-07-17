@@ -153,37 +153,15 @@ public class TypedEventStreamProcessorBuilder {
     }
 
     @Override
-    public void processRecord(TypedRecord<T> record) {
+    public void processRecord(
+        TypedRecord<T> record,
+        TypedResponseWriter responseWriter,
+        TypedStreamWriter streamWriter,
+        Consumer<SideEffectProducer> sideEffect,
+        EventLifecycleContext ctx) {
       selectedProcessor = dispatcher.apply(record);
       if (selectedProcessor != null) {
-        selectedProcessor.processRecord(record);
-      }
-    }
-
-    @Override
-    public void processRecord(TypedRecord<T> record, EventLifecycleContext ctx) {
-      selectedProcessor = dispatcher.apply(record);
-      if (selectedProcessor != null) {
-        selectedProcessor.processRecord(record, ctx);
-      }
-    }
-
-    @Override
-    public boolean executeSideEffects(TypedRecord<T> record, TypedResponseWriter responseWriter) {
-      return selectedProcessor != null
-          ? selectedProcessor.executeSideEffects(record, responseWriter)
-          : true;
-    }
-
-    @Override
-    public long writeRecord(TypedRecord<T> record, TypedStreamWriter writer) {
-      return selectedProcessor != null ? selectedProcessor.writeRecord(record, writer) : 0L;
-    }
-
-    @Override
-    public void updateState(TypedRecord<T> record) {
-      if (selectedProcessor != null) {
-        selectedProcessor.updateState(record);
+        selectedProcessor.processRecord(record, responseWriter, streamWriter, sideEffect, ctx);
       }
     }
   }
@@ -197,7 +175,8 @@ public class TypedEventStreamProcessorBuilder {
     }
 
     @Override
-    public void processRecord(TypedRecord<T> record) {
+    public void processRecord(
+        TypedRecord<T> record, TypedResponseWriter responseWriter, TypedStreamWriter streamWriter) {
       consumer.accept(record.getValue());
     }
   }

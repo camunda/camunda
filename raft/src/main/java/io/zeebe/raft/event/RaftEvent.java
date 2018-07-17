@@ -15,7 +15,7 @@
  */
 package io.zeebe.raft.event;
 
-import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.protocol.clientapi.RecordType;
@@ -27,7 +27,7 @@ import io.zeebe.raft.RaftMember;
 import java.util.List;
 
 public class RaftEvent {
-  public final LogStreamWriter logStreamWriter = new LogStreamWriterImpl();
+  public final LogStreamRecordWriter logStreamWriter = new LogStreamWriterImpl();
   public final RecordMetadata metadata = new RecordMetadata();
   public final RaftConfigurationEvent configuration = new RaftConfigurationEvent();
 

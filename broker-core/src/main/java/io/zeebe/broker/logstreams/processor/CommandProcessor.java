@@ -29,10 +29,6 @@ public interface CommandProcessor<T extends UnpackedObject> {
 
   CommandResult onCommand(TypedRecord<T> command, CommandControl commandControl);
 
-  default void updateStateOnAccept(TypedRecord<T> command) {};
-
-  default void updateStateOnReject(TypedRecord<T> command) {};
-
   interface CommandControl {
     CommandResult accept(Intent newState);
 

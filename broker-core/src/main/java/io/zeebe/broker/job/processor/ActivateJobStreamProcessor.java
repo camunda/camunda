@@ -171,50 +171,38 @@ public class ActivateJobStreamProcessor
   }
 
   @Override
-  public void processRecord(TypedRecord<JobRecord> event) {
+  public void processRecord(
+      TypedRecord<JobRecord> event,
+      TypedResponseWriter responseWriter,
+      TypedStreamWriter streamWriter) {
     selectedSubscriber = null;
 
     final JobRecord jobEvent = event.getValue();
     final boolean handlesJobType = BufferUtil.equals(jobEvent.getType(), subscribedJobType);
 
     if (handlesJobType && jobEvent.getRetries() > 0) {
+
       selectedSubscriber = getNextAvailableSubscription();
+
       if (selectedSubscriber != null) {
         final long deadline = ActorClock.currentTimeMillis() + selectedSubscriber.getTimeout();
 
         jobEvent.setDeadline(deadline).setWorker(selectedSubscriber.getWorker());
+
+        streamWriter.writeFollowUpCommand(
+            event.getKey(), JobIntent.ACTIVATE, event.getValue(), this::assignToSelectedSubscriber);
+
+        subscriptions.addCredits(selectedSubscriber.getSubscriberKey(), -1);
+
+        if (subscriptions.getTotalCredits() <= 0) {
+          context.suspendController();
+        }
       }
     }
-  }
-
-  @Override
-  public long writeRecord(TypedRecord<JobRecord> event, TypedStreamWriter writer) {
-    long position = 0;
-
-    if (selectedSubscriber != null) {
-      position =
-          writer.writeFollowUpCommand(
-              event.getKey(),
-              JobIntent.ACTIVATE,
-              event.getValue(),
-              this::assignToSelectedSubscriber);
-    }
-    return position;
   }
 
   private void assignToSelectedSubscriber(RecordMetadata metadata) {
     metadata.subscriberKey(selectedSubscriber.getSubscriberKey());
     metadata.requestStreamId(selectedSubscriber.getStreamId());
-  }
-
-  @Override
-  public void updateState(TypedRecord<JobRecord> event) {
-    if (selectedSubscriber != null) {
-      subscriptions.addCredits(selectedSubscriber.getSubscriberKey(), -1);
-
-      if (subscriptions.getTotalCredits() <= 0) {
-        context.suspendController();
-      }
-    }
   }
 }

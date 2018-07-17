@@ -24,7 +24,7 @@ import static org.mockito.Mockito.*;
 
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
-import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.ReadableSnapshot;
 import io.zeebe.logstreams.util.LogStreamReaderRule;
@@ -350,7 +350,7 @@ public class StreamProcessorControllerTest {
             when(eventProcessor.writeEvent(any()))
                 .thenAnswer(
                     inv -> {
-                      final LogStreamWriter writer = inv.getArgument(0);
+                      final LogStreamRecordWriter writer = inv.getArgument(0);
 
                       final long position =
                           writer.key(2L).metadata(wrapString("META")).value(EVENT_2).tryWrite();
@@ -617,7 +617,7 @@ public class StreamProcessorControllerTest {
             when(eventProcessor.writeEvent(any()))
                 .thenAnswer(
                     inv -> {
-                      final LogStreamWriter writer = inv.getArgument(0);
+                      final LogStreamRecordWriter writer = inv.getArgument(0);
 
                       return writer.key(2L).metadata(wrapString("META")).value(EVENT_2).tryWrite();
                     }));

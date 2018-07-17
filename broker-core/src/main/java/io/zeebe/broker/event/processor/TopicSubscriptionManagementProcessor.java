@@ -266,7 +266,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor {
 
   protected class AckProcessor implements EventProcessor {
     @Override
-    public long writeEvent(LogStreamWriter writer) {
+    public long writeEvent(LogStreamRecordWriter writer) {
       metadata
           .recordType(RecordType.EVENT)
           .valueType(ValueType.SUBSCRIPTION)
@@ -341,7 +341,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor {
     }
 
     @Override
-    public long writeEvent(LogStreamWriter writer) {
+    public long writeEvent(LogStreamRecordWriter writer) {
       final DirectBuffer openedSubscriptionName = subscriberEvent.getName();
 
       subscriptionEvent.reset();

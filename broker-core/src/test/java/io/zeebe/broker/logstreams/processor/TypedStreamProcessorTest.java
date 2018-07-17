@@ -127,8 +127,12 @@ public class TypedStreamProcessorTest {
   protected static class BatchProcessor implements TypedRecordProcessor<TopicRecord> {
 
     @Override
-    public long writeRecord(TypedRecord<TopicRecord> event, TypedStreamWriter writer) {
-      return writer.newBatch().addNewEvent(TopicIntent.CREATED, event.getValue()).write();
+    public void processRecord(
+        TypedRecord<TopicRecord> record,
+        TypedResponseWriter responseWriter,
+        TypedStreamWriter streamWriter) {
+      streamWriter.newBatch().addNewEvent(TopicIntent.CREATED, record.getValue());
+      streamWriter.flush();
     }
   }
 }

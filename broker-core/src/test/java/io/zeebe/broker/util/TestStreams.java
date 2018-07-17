@@ -32,7 +32,7 @@ import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.processor.*;
@@ -371,7 +371,7 @@ public class TestStreams {
         }
 
         @Override
-        public long writeEvent(LogStreamWriter writer) {
+        public long writeEvent(LogStreamRecordWriter writer) {
           return actualProcessor != null ? actualProcessor.writeEvent(writer) : 0;
         }
 
@@ -446,7 +446,7 @@ public class TestStreams {
     }
 
     public long write() {
-      final LogStreamWriter writer = new LogStreamWriterImpl(logStream);
+      final LogStreamRecordWriter writer = new LogStreamWriterImpl(logStream);
 
       if (key >= 0) {
         writer.key(key);

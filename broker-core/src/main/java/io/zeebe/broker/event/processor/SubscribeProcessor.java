@@ -18,7 +18,7 @@
 package io.zeebe.broker.event.processor;
 
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
-import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.logstreams.processor.EventProcessor;
@@ -81,7 +81,7 @@ public class SubscribeProcessor implements EventProcessor {
   }
 
   @Override
-  public long writeEvent(LogStreamWriter writer) {
+  public long writeEvent(LogStreamRecordWriter writer) {
     return state.writeEvent(writer);
   }
 
@@ -103,7 +103,7 @@ public class SubscribeProcessor implements EventProcessor {
     }
 
     @Override
-    public long writeEvent(LogStreamWriter writer) {
+    public long writeEvent(LogStreamRecordWriter writer) {
       // in the future, we can write a SUBSCRIBE_FAILED event here,
       // but at the moment that would make no difference for the user
       return 0L;
@@ -181,7 +181,7 @@ public class SubscribeProcessor implements EventProcessor {
     }
 
     @Override
-    public long writeEvent(LogStreamWriter writer) {
+    public long writeEvent(LogStreamRecordWriter writer) {
       metadata.protocolVersion(Protocol.PROTOCOL_VERSION).intent(SubscriberIntent.SUBSCRIBED);
 
       subscriberEvent.setStartPosition(processor.getStartPosition());

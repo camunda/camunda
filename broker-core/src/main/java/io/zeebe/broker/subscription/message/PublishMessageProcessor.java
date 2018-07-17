@@ -34,21 +34,18 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
 
   private final MessageDataStore dataStore;
 
-  private MessageEntry entry;
-
-  private boolean isDuplicate;
-  private String rejectionReason;
-
   public PublishMessageProcessor(MessageDataStore dataStore) {
     this.dataStore = dataStore;
   }
 
   @Override
-  public void processRecord(TypedRecord<MessageRecord> record) {
-    isDuplicate = false;
+  public void processRecord(
+      TypedRecord<MessageRecord> record,
+      TypedResponseWriter responseWriter,
+      TypedStreamWriter streamWriter) {
 
     final MessageRecord message = record.getValue();
-    entry =
+    final MessageEntry entry =
         new MessageEntry(
             bufferAsString(message.getName()),
             bufferAsString(message.getCorrelationKey()),
@@ -56,38 +53,14 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
             message.hasMessageId() ? bufferAsString(message.getMessageId()) : null);
 
     if (message.hasMessageId() && dataStore.hasMessage(entry)) {
-      isDuplicate = true;
-
-      rejectionReason =
+      final String rejectionReason =
           String.format(
               "message with id '%s' is already published", bufferAsString(message.getMessageId()));
-    }
-  }
-
-  @Override
-  public boolean executeSideEffects(
-      TypedRecord<MessageRecord> record, TypedResponseWriter responseWriter) {
-
-    if (isDuplicate) {
-      return responseWriter.writeRejection(record, RejectionType.BAD_VALUE, rejectionReason);
-    }
-
-    return responseWriter.writeRecord(MessageIntent.PUBLISHED, record);
-  }
-
-  @Override
-  public long writeRecord(TypedRecord<MessageRecord> record, TypedStreamWriter writer) {
-
-    if (isDuplicate) {
-      return writer.writeRejection(record, RejectionType.BAD_VALUE, rejectionReason);
-    }
-
-    return writer.writeFollowUpEvent(record.getKey(), MessageIntent.PUBLISHED, record.getValue());
-  }
-
-  @Override
-  public void updateState(TypedRecord<MessageRecord> record) {
-    if (!isDuplicate) {
+      streamWriter.writeRejection(record, RejectionType.BAD_VALUE, rejectionReason);
+      responseWriter.writeRejection(record, RejectionType.BAD_VALUE, rejectionReason);
+    } else {
+      streamWriter.writeFollowUpEvent(record.getKey(), MessageIntent.PUBLISHED, record.getValue());
+      responseWriter.writeRecord(MessageIntent.PUBLISHED, record);
       dataStore.addMessage(entry);
     }
   }
