@@ -6,7 +6,10 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ViewDto;
 import org.camunda.optimize.dto.optimize.query.report.group.NoneGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.group.StartDateGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.group.VariableGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.group.value.GroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.group.value.StartDateGroupByValueDto;
+import org.camunda.optimize.dto.optimize.query.report.group.value.VariableGroupByValueDto;
 
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.DATE_UNIT_DAY;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.HEAT_VISUALIZATION;
@@ -145,6 +148,48 @@ public class ReportDataHelper {
     return reportData;
   }
 
+  public static ReportDataDto createCountProcessInstanceFrequencyGroupByVariable(
+      String processDefinitionKey,
+      String processDefinitionVersion,
+      String variableName,
+      String variableType
+  ) {
+
+    ViewDto view = createCountPiFrequencyView();
+    GroupByDto groupByDto = createGroupByVariable(variableName, variableType);
+
+    ReportDataDto reportData = createReportDataViewRaw(
+        processDefinitionKey,
+        processDefinitionVersion,
+        HEAT_VISUALIZATION,
+        view,
+        groupByDto
+    );
+
+    return reportData;
+  }
+
+  public static ReportDataDto createAvgProcessInstanceDurationGroupByVariable(
+      String processDefinitionKey,
+      String processDefinitionVersion,
+      String variableName,
+      String variableType
+  ) {
+
+    ViewDto view = createAvgPIDurationView();
+    GroupByDto groupByDto = createGroupByVariable(variableName, variableType);
+
+    ReportDataDto reportData = createReportDataViewRaw(
+        processDefinitionKey,
+        processDefinitionVersion,
+        HEAT_VISUALIZATION,
+        view,
+        groupByDto
+    );
+
+    return reportData;
+  }
+
   public static ReportDataDto createCountFlowNodeFrequencyGroupByFlowNoneNumber(
     String processDefinitionKey,
     String processDefinitionVersion
@@ -190,6 +235,15 @@ public class ReportDataHelper {
 
   private static GroupByDto createGroupByFlowNode() {
     GroupByDto groupByDto = new FlowNodesGroupByDto();
+    return groupByDto;
+  }
+
+  private static GroupByDto createGroupByVariable(String variableName, String variableType) {
+    VariableGroupByValueDto groupByValueDto = new VariableGroupByValueDto();
+    groupByValueDto.setName(variableName);
+    groupByValueDto.setType(variableType);
+    VariableGroupByDto groupByDto = new VariableGroupByDto();
+    groupByDto.setValue(groupByValueDto);
     return groupByDto;
   }
 

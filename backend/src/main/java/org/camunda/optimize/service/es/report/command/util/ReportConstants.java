@@ -15,6 +15,7 @@ public class ReportConstants {
   public static final String GROUP_BY_FLOW_NODES_TYPE = "flowNodes";
   public static final String GROUP_BY_NONE_TYPE = "none";
   public static final String GROUP_BY_START_DATE_TYPE = "startDate";
+  public static final String GROUP_BY_VARIABLE_TYPE = "variable";
 
   public static final String DATE_UNIT_YEAR = "year";
   public static final String DATE_UNIT_MONTH = "month";

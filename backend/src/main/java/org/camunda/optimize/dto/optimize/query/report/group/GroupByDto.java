@@ -8,6 +8,7 @@ import org.camunda.optimize.dto.optimize.query.report.group.value.GroupByValueDt
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_FLOW_NODES_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_NONE_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_START_DATE_TYPE;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_VARIABLE_TYPE;
 
 
 /**
@@ -18,7 +19,8 @@ import static org.camunda.optimize.service.es.report.command.util.ReportConstant
 @JsonSubTypes({
     @JsonSubTypes.Type(value = StartDateGroupByDto.class, name = GROUP_BY_START_DATE_TYPE),
     @JsonSubTypes.Type(value = FlowNodesGroupByDto.class, name = GROUP_BY_FLOW_NODES_TYPE),
-    @JsonSubTypes.Type(value = NoneGroupByDto.class, name = GROUP_BY_NONE_TYPE)
+    @JsonSubTypes.Type(value = NoneGroupByDto.class, name = GROUP_BY_NONE_TYPE),
+    @JsonSubTypes.Type(value = VariableGroupByDto.class, name = GROUP_BY_VARIABLE_TYPE)
 }
 )
 public abstract class GroupByDto<VALUE extends GroupByValueDto>{

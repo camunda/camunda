@@ -23,7 +23,10 @@ import java.util.Map;
 import java.util.stream.IntStream;
 
 import static junit.framework.TestCase.assertTrue;
-import static org.camunda.optimize.rest.VariableRestService.*;
+import static org.camunda.optimize.rest.VariableRestService.NAME;
+import static org.camunda.optimize.rest.VariableRestService.PROCESS_DEFINITION_KEY;
+import static org.camunda.optimize.rest.VariableRestService.PROCESS_DEFINITION_VERSION;
+import static org.camunda.optimize.rest.VariableRestService.TYPE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -70,12 +73,8 @@ public class VariableValueRetrievalIT {
     Map<String, Object> variables = new HashMap<>();
     IntStream.range(0, 15).forEach(
       i -> {
-         variables.put("var", "value" + i);
-        try {
-          engineRule.startProcessInstance(processDefinition.getId(), variables);
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
+        variables.put("var", "value" + i);
+        engineRule.startProcessInstance(processDefinition.getId(), variables);
       }
     );
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();

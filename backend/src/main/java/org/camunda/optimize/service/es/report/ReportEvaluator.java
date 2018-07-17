@@ -5,6 +5,7 @@ import org.camunda.optimize.dto.optimize.query.report.group.GroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ViewDto;
 import org.camunda.optimize.dto.optimize.query.report.group.StartDateGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.service.es.filter.QueryFilterEnhancer;
 import org.camunda.optimize.service.es.report.command.Command;
@@ -12,10 +13,12 @@ import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.NotSupportedCommand;
 import org.camunda.optimize.service.es.report.command.RawDataCommand;
 import org.camunda.optimize.service.es.report.command.avg.AverageFlowNodeDurationByFlowNodeCommand;
+import org.camunda.optimize.service.es.report.command.avg.AverageProcessInstanceDurationByVariableCommand;
 import org.camunda.optimize.service.es.report.command.avg.AverageProcessInstanceDurationGroupedByStartDateCommand;
 import org.camunda.optimize.service.es.report.command.avg.AverageTotalProcessInstanceDurationCommand;
 import org.camunda.optimize.service.es.report.command.count.CountFlowNodeFrequencyByFlowNodeCommand;
 import org.camunda.optimize.service.es.report.command.count.CountProcessInstanceFrequencyByStartDateCommand;
+import org.camunda.optimize.service.es.report.command.count.CountProcessInstanceFrequencyByVariableCommand;
 import org.camunda.optimize.service.es.report.command.count.CountTotalProcessInstanceFrequencyCommand;
 import org.camunda.optimize.service.es.report.command.util.ReportUtil;
 import org.camunda.optimize.service.exceptions.OptimizeException;
@@ -28,6 +31,7 @@ import org.springframework.stereotype.Component;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_FLOW_NODES_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_NONE_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_START_DATE_TYPE;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_VARIABLE_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_AVERAGE_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_COUNT_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_DURATION_PROPERTY;
@@ -144,6 +148,13 @@ public class ReportEvaluator {
         ValidationHelper.ensureNotEmpty("group by start date unit", groupByStartDate.getValue().getUnit());
         evaluationCommand = new AverageProcessInstanceDurationGroupedByStartDateCommand();
         break;
+      case GROUP_BY_VARIABLE_TYPE:
+        ValidationHelper.ensureIsInstanceOf("group by value", groupBy.getValue(), VariableGroupByDto.class);
+        VariableGroupByDto groupByVariable = (VariableGroupByDto) groupBy;
+        ValidationHelper.ensureNotEmpty("group by variable name", groupByVariable.getValue().getName());
+        ValidationHelper.ensureNotEmpty("group by variable type", groupByVariable.getValue().getType());
+        evaluationCommand = new AverageProcessInstanceDurationByVariableCommand();
+        break;
     }
     return evaluationCommand;
   }
@@ -190,6 +201,13 @@ public class ReportEvaluator {
         StartDateGroupByDto groupByStartDate = (StartDateGroupByDto) groupBy;
         ValidationHelper.ensureNotEmpty("group by start date unit", groupByStartDate.getValue().getUnit());
         evaluationCommand = new CountProcessInstanceFrequencyByStartDateCommand();
+        break;
+      case GROUP_BY_VARIABLE_TYPE:
+        ValidationHelper.ensureIsInstanceOf("group by value", groupBy.getValue(), VariableGroupByDto.class);
+        VariableGroupByDto groupByVariable = (VariableGroupByDto) groupBy;
+        ValidationHelper.ensureNotEmpty("group by variable name", groupByVariable.getValue().getName());
+        ValidationHelper.ensureNotEmpty("group by variable type", groupByVariable.getValue().getType());
+        evaluationCommand = new CountProcessInstanceFrequencyByVariableCommand();
         break;
     }
     return evaluationCommand;
