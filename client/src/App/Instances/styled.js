@@ -16,6 +16,7 @@ export const Filters = styled.div`
   display: flex;
   width: 320px;
   margin-right: 1px;
+  flex-shrink: 0;
 `;
 
 export const Center = styled(SplitPane)`

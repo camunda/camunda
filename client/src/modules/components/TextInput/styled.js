@@ -10,11 +10,13 @@ const placeholderStyle = css`
     font-style: italic;
   }
 `;
+
 export const Input = themed(styled.input`
   font-family: IBMPlexSans;
   font-size: 13px;
 
   height: 26px;
+  width: 100%;
   padding-left: 8px;
   padding-right: 11px;
   padding-top: 4px;

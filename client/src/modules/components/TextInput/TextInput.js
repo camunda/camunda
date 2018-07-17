@@ -9,6 +9,7 @@ export default function TextInput(props) {
 
 TextInput.propTypes = {
   'aria-label': PropTypes.string,
+  'aria-required': PropTypes.string,
   name: PropTypes.string,
   onBlur: PropTypes.func,
   onChange: PropTypes.func,
