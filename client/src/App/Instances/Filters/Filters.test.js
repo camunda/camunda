@@ -9,9 +9,10 @@ import Filter from './Filter';
 import * as Styled from './styled';
 
 describe('Filters', () => {
+  const spy = jest.fn();
   const mockProps = {
     filter: {active: true, incidents: false, canceled: true, completed: false},
-    onFilterChange: jest.fn(),
+    onFilterChange: spy,
     resetFilter: jest.fn(),
     onExtraFilterChange: jest.fn()
   };
@@ -66,12 +67,29 @@ describe('Filters', () => {
     expect(ResetButtonNode.prop('disabled')).toBe(true);
   });
 
-  it('should render an errorMessage field', () => {
-    // given
-    const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
-    const errorMessageNode = node.find({name: 'errorMessage'});
+  describe('errorMessage filter', () => {
+    it('should render an errorMessage field', () => {
+      // given
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const errorMessageNode = node.find({name: 'errorMessage'});
 
-    // then
-    expect(errorMessageNode.length).toEqual(1);
+      // then
+      expect(errorMessageNode.length).toEqual(1);
+      expect(errorMessageNode.props().onBlur).toEqual(
+        node.instance().handleErrorMessageChange
+      );
+    });
+
+    it('should call onFilterChange with the right error message', async () => {
+      const errorMessage = 'lorem ipsum';
+      // given
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+
+      //when
+      node.instance().handleErrorMessageChange({target: {value: errorMessage}});
+
+      // then
+      expect(spy).toHaveBeenCalledWith({errorMessage});
+    });
   });
 });
