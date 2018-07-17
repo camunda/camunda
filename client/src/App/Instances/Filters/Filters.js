@@ -4,11 +4,17 @@ import PropTypes from 'prop-types';
 import Panel from 'modules/components/Panel';
 import Button from 'modules/components/Button';
 import TextInput from 'modules/components/TextInput';
+import Textarea from 'modules/components/Textarea';
 import {DEFAULT_FILTER, FILTER_TYPES, DIRECTION} from 'modules/constants';
 import {isEqual} from 'modules/utils';
 
 import Filter from './Filter';
 import * as Styled from './styled';
+
+const PLACEHOLDER = {
+  errorMessage: 'Error Message',
+  instanceIds: 'Instance Id(s) separated by space or comma'
+};
 
 export default class Filters extends React.Component {
   static propTypes = {
@@ -26,6 +32,15 @@ export default class Filters extends React.Component {
     });
   };
 
+  handleInstanceIdsChange = event => {
+    const value = event.target.value;
+    const list = value.split(/[ ,]+/).filter(Boolean);
+
+    this.props.onFilterChange({
+      ids: list
+    });
+  };
+
   render() {
     const {active, incidents, canceled, completed} = this.props.filter;
 
@@ -34,15 +49,24 @@ export default class Filters extends React.Component {
         <Panel.Header isRounded>Filters</Panel.Header>
         <Panel.Body>
           <Styled.Filters>
-            <Styled.BulkFilters>
+            <Styled.Field>
               <TextInput
                 name="errorMessage"
-                placeholder="Error Message"
+                placeholder={PLACEHOLDER.errorMessage}
                 onBlur={this.handleErrorMessageChange}
-                aria-label="Error Message"
+                aria-label={PLACEHOLDER.errorMessage}
                 aria-required="false"
               />
-            </Styled.BulkFilters>
+            </Styled.Field>
+            <Styled.Field>
+              <Textarea
+                name="instanceIds"
+                placeholder={PLACEHOLDER.instanceIds}
+                onBlur={this.handleInstanceIdsChange}
+                aria-label={PLACEHOLDER.instanceIds}
+                aria-required="false"
+              />
+            </Styled.Field>
             <Filter
               type={FILTER_TYPES.RUNNING}
               filter={{

@@ -12,13 +12,12 @@ const placeholderStyle = css`
 `;
 
 export const Textarea = themed(styled.textarea`
-  font-family: IBMPlexSans;
-  font-size: 13px;
+  display: block;
 
-  padding-left: 8px;
-  padding-right: 11px;
-  padding-top: 4px;
-  padding-bottom: 5px;
+  width: 100%;
+  height: 52px;
+  padding: 4px 13px 6px 8px;
+
   border: solid 1px
     ${themeStyle({
       dark: Colors.uiDark05,
@@ -34,6 +33,11 @@ export const Textarea = themed(styled.textarea`
     dark: '#ffffff',
     light: Colors.uiDark03
   })};
+
+  font-family: IBMPlexSans;
+  font-size: 13px;
+
+  resize: none;
 
   ${placeholderStyle};
 `);

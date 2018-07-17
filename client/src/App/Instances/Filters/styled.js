@@ -19,10 +19,14 @@ export const ResetButtonContainer = styled(Panel.Footer)`
   height: 56px;
 `;
 
-export const BulkFilters = styled.div`
-  margin-bottom: 10px;
-`;
-
 export const Filters = styled.div`
   padding: 20px 20px 0 20px;
+`;
+
+export const Field = styled.div`
+  padding: 10px 0;
+
+  &:first-child {
+    padding-top: 0;
+  }
 `;
