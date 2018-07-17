@@ -20,7 +20,10 @@ package io.zeebe.broker.subscription;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY;
 import static io.zeebe.broker.subscription.SubscriptionServiceNames.MESSAGE_SERVICE_NAME;
+import static io.zeebe.broker.subscription.SubscriptionServiceNames.SUBSCRIPTION_API_REQUEST_HANDLER_SERVICE_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.CLIENT_API_SERVER_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.SUBSCRIPTION_API_SERVER_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.bufferingServerTransport;
 import static io.zeebe.broker.transport.TransportServiceNames.serverTransport;
 
 import io.zeebe.broker.subscription.message.MessageService;
@@ -33,6 +36,14 @@ public class SubscriptionComponent implements Component {
   @Override
   public void init(SystemContext context) {
     final ServiceContainer serviceContainer = context.getServiceContainer();
+
+    final SubscriptionApiRequestHandlerService service = new SubscriptionApiRequestHandlerService();
+    serviceContainer
+        .createService(SUBSCRIPTION_API_REQUEST_HANDLER_SERVICE_NAME, service)
+        .dependency(
+            bufferingServerTransport(SUBSCRIPTION_API_SERVER_NAME),
+            service.getServerTransportInjector())
+        .install();
 
     final MessageService messageService = new MessageService();
     serviceContainer

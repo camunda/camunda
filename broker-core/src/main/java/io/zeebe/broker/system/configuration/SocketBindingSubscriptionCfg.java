@@ -15,18 +15,27 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.subscription;
+package io.zeebe.broker.system.configuration;
 
-import io.zeebe.broker.subscription.message.MessageService;
-import io.zeebe.servicecontainer.ServiceName;
+public class SocketBindingSubscriptionCfg extends SocketBindingCfg {
+  private String receiveBufferSize = "8M";
 
-public class SubscriptionServiceNames {
+  public static final int DEFAULT_PORT = 51018;
 
-  public static final ServiceName<MessageService> MESSAGE_SERVICE_NAME =
-      ServiceName.newServiceName("broker.subscription.message", MessageService.class);
+  public SocketBindingSubscriptionCfg() {
+    port = DEFAULT_PORT;
+  }
 
-  public static final ServiceName<SubscriptionApiRequestHandler>
-      SUBSCRIPTION_API_REQUEST_HANDLER_SERVICE_NAME =
-          ServiceName.newServiceName(
-              "broker.subscription.requestHandler", SubscriptionApiRequestHandler.class);
+  @Override
+  public void applyDefaults(NetworkCfg networkCfg) {
+    super.applyDefaults(networkCfg);
+  }
+
+  public String getReceiveBufferSize() {
+    return receiveBufferSize;
+  }
+
+  public void setReceiveBufferSize(String receiveBufferSize) {
+    this.receiveBufferSize = receiveBufferSize;
+  }
 }

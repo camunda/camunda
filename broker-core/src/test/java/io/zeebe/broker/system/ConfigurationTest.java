@@ -26,6 +26,7 @@ import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.broker.system.configuration.SocketBindingClientApiCfg;
 import io.zeebe.broker.system.configuration.SocketBindingManagementCfg;
 import io.zeebe.broker.system.configuration.SocketBindingReplicationCfg;
+import io.zeebe.broker.system.configuration.SocketBindingSubscriptionCfg;
 import io.zeebe.broker.system.configuration.TomlConfigurationReader;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -39,28 +40,33 @@ public class ConfigurationTest {
   public static final int CLIENT_PORT = SocketBindingClientApiCfg.DEFAULT_PORT;
   public static final int MANAGEMENT_PORT = SocketBindingManagementCfg.DEFAULT_PORT;
   public static final int REPLICATION_PORT = SocketBindingReplicationCfg.DEFAULT_PORT;
+  public static final int SUBSCRIPTION_PORT = SocketBindingSubscriptionCfg.DEFAULT_PORT;
 
   @Test
   public void shouldUseDefaultPorts() {
-    assertPorts("default", CLIENT_PORT, MANAGEMENT_PORT, REPLICATION_PORT);
+    assertPorts("default", CLIENT_PORT, MANAGEMENT_PORT, REPLICATION_PORT, SUBSCRIPTION_PORT);
   }
 
   @Test
   public void shouldUseSpecifiedPorts() {
-    assertPorts("specific-ports", 1, 2, 3);
+    assertPorts("specific-ports", 1, 2, 3, 4);
   }
 
   @Test
   public void shouldUsePortOffset() {
     final int offset = 50;
     assertPorts(
-        "port-offset", CLIENT_PORT + offset, MANAGEMENT_PORT + offset, REPLICATION_PORT + offset);
+        "port-offset",
+        CLIENT_PORT + offset,
+        MANAGEMENT_PORT + offset,
+        REPLICATION_PORT + offset,
+        SUBSCRIPTION_PORT + offset);
   }
 
   @Test
   public void shouldUsePortOffsetWithSpecifiedPorts() {
     final int offset = 30;
-    assertPorts("specific-ports-offset", 1 + offset, 2 + offset, 3 + offset);
+    assertPorts("specific-ports-offset", 1 + offset, 2 + offset, 3 + offset, 4 + offset);
   }
 
   @Test
@@ -68,20 +74,24 @@ public class ConfigurationTest {
     environment.put(ENV_PORT_OFFSET, "5");
     final int offset = 50;
     assertPorts(
-        "default", CLIENT_PORT + offset, MANAGEMENT_PORT + offset, REPLICATION_PORT + offset);
+        "default",
+        CLIENT_PORT + offset,
+        MANAGEMENT_PORT + offset,
+        REPLICATION_PORT + offset,
+        SUBSCRIPTION_PORT + offset);
   }
 
   @Test
   public void shouldUsePortOffsetFromEnvironmentWithSpecifiedPorts() {
     environment.put(ENV_PORT_OFFSET, "3");
     final int offset = 30;
-    assertPorts("specific-ports", 1 + offset, 2 + offset, 3 + offset);
+    assertPorts("specific-ports", 1 + offset, 2 + offset, 3 + offset, 4 + offset);
   }
 
   @Test
   public void shouldIgnoreInvalidPortOffsetFromEnvironment() {
     environment.put(ENV_PORT_OFFSET, "a");
-    assertPorts("default", CLIENT_PORT, MANAGEMENT_PORT, REPLICATION_PORT);
+    assertPorts("default", CLIENT_PORT, MANAGEMENT_PORT, REPLICATION_PORT, SUBSCRIPTION_PORT);
   }
 
   @Test
@@ -89,7 +99,11 @@ public class ConfigurationTest {
     environment.put(ENV_PORT_OFFSET, "7");
     final int offset = 70;
     assertPorts(
-        "port-offset", CLIENT_PORT + offset, MANAGEMENT_PORT + offset, REPLICATION_PORT + offset);
+        "port-offset",
+        CLIENT_PORT + offset,
+        MANAGEMENT_PORT + offset,
+        REPLICATION_PORT + offset,
+        SUBSCRIPTION_PORT + offset);
   }
 
   private BrokerCfg readConfig(String name) {
@@ -102,10 +116,12 @@ public class ConfigurationTest {
     return config;
   }
 
-  private void assertPorts(String configFileName, int client, int management, int replication) {
+  private void assertPorts(
+      String configFileName, int client, int management, int replication, int subscription) {
     final NetworkCfg network = readConfig(configFileName).getNetwork();
     assertThat(network.getClient().getPort()).isEqualTo(client);
     assertThat(network.getManagement().getPort()).isEqualTo(management);
     assertThat(network.getReplication().getPort()).isEqualTo(replication);
+    assertThat(network.getSubscription().getPort()).isEqualTo(subscription);
   }
 }

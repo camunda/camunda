@@ -6,3 +6,6 @@ port = 2
 
 [network.replication]
 port = 3
+
+[network.subscription]
+port = 4

@@ -19,22 +19,38 @@ package io.zeebe.broker.transport;
 
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_SYSTEM_GROUP_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.*;
+import static io.zeebe.broker.transport.TransportServiceNames.CLIENT_API_MESSAGE_HANDLER;
+import static io.zeebe.broker.transport.TransportServiceNames.CLIENT_API_SERVER_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_CLIENT_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_SERVER_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_CLIENT_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_MESSAGE_HANDLER;
+import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_SERVER_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.SUBSCRIPTION_API_CLIENT_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.SUBSCRIPTION_API_SERVER_NAME;
 
 import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
 import io.zeebe.broker.clustering.base.raft.RaftApiMessageHandlerService;
 import io.zeebe.broker.event.TopicSubscriptionServiceNames;
 import io.zeebe.broker.job.JobQueueServiceNames;
 import io.zeebe.broker.services.DispatcherService;
-import io.zeebe.broker.system.*;
+import io.zeebe.broker.system.Component;
+import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.zeebe.broker.transport.clientapi.ClientApiMessageHandlerService;
 import io.zeebe.broker.transport.controlmessage.ControlMessageHandlerManagerService;
-import io.zeebe.dispatcher.*;
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.DispatcherBuilder;
+import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.transport.*;
+import io.zeebe.transport.BufferingServerTransport;
+import io.zeebe.transport.ClientTransport;
+import io.zeebe.transport.ServerMessageHandler;
+import io.zeebe.transport.ServerRequestHandler;
+import io.zeebe.transport.ServerTransport;
+import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.net.InetSocketAddress;
@@ -52,6 +68,7 @@ public class TransportComponent implements Component {
     final ServiceContainer serviceContainer = context.getServiceContainer();
     final NetworkCfg networkCfg = context.getBrokerConfiguration().getNetwork();
     final SocketAddress managementEndpoint = networkCfg.getManagement().toSocketAddress();
+    final SocketAddress subscriptionEndpoint = networkCfg.getSubscription().toSocketAddress();
 
     final ActorFuture<ClientTransport> managementClientFuture =
         createClientTransport(
@@ -70,6 +87,15 @@ public class TransportComponent implements Component {
             null);
 
     context.addRequiredStartAction(replicationClientFuture);
+
+    final ActorFuture<ClientTransport> subscriptionClientFuture =
+        createClientTransport(
+            serviceContainer,
+            SUBSCRIPTION_API_CLIENT_NAME,
+            new ByteValue(networkCfg.getDefaultSendBufferSize()),
+            Collections.singletonList(subscriptionEndpoint));
+
+    context.addRequiredStartAction(subscriptionClientFuture);
   }
 
   private void createSocketBindings(final SystemContext context) {
@@ -96,6 +122,16 @@ public class TransportComponent implements Component {
             new ByteValue(networkCfg.getManagement().getReceiveBufferSize()));
 
     context.addRequiredStartAction(managementApiFuture);
+
+    final ActorFuture<BufferingServerTransport> subscriptionApiFuture =
+        bindBufferingProtocolEndpoint(
+            context,
+            serviceContainer,
+            SUBSCRIPTION_API_SERVER_NAME,
+            networkCfg.getSubscription(),
+            new ByteValue(networkCfg.getSubscription().getReceiveBufferSize()));
+
+    context.addRequiredStartAction(subscriptionApiFuture);
 
     final ActorFuture<ServerTransport> clientApiFuture =
         bindNonBufferingProtocolEndpoint(
