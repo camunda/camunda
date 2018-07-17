@@ -18,7 +18,7 @@ describe('<MetricTile>', () => {
     const node = shallow(
       <MetricTile type="active" value={123} label="Active" />
     );
-    expect(node.props().to).toContain('instances');
+    expect(node.props().to).toContain('/instances');
   });
 
   it('should return a link with the active filters in place', () => {
