@@ -1,0 +1,61 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`InstanceLog should render selected header and entries if there is instanceLog 1`] = `
+<Themed(styled.div)
+  instanceLog={
+    Object {
+      "activities": Array [
+        Object {
+          "id": "1",
+          "name": "someName1",
+          "state": "someState1",
+          "type": "someType1",
+        },
+        Object {
+          "id": "2",
+          "name": "someName2",
+          "state": "someState2",
+          "type": "someType2",
+        },
+      ],
+      "workflowId": "foo",
+    }
+  }
+>
+  <React.Fragment>
+    <Styled(Themed(styled.div))
+      isSelected={true}
+      onClick={[Function]}
+    >
+      <Themed(Styled(withStrippedProps(Document)))
+        isSelected={true}
+      />
+      foo
+    </Styled(Themed(styled.div))>
+    <Themed(styled.div)
+      isSelected={false}
+      key="1"
+      onClick={[Function]}
+    >
+      <Themed(Styled(withStrippedProps(FlowNodeIcon)))
+        isSelected={false}
+        state="someState1"
+        type="someType1"
+      />
+      someName1
+    </Themed(styled.div)>
+    <Themed(styled.div)
+      isSelected={false}
+      key="2"
+      onClick={[Function]}
+    >
+      <Themed(Styled(withStrippedProps(FlowNodeIcon)))
+        isSelected={false}
+        state="someState2"
+        type="someType2"
+      />
+      someName2
+    </Themed(styled.div)>
+  </React.Fragment>
+</Themed(styled.div)>
+`;

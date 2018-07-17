@@ -3,19 +3,24 @@ import {shallow} from 'enzyme';
 
 import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 import {Colors} from 'modules/theme';
+import * as api from 'modules/api/diagram/diagram';
 
 import ThemedDiagram from './Diagram';
-import * as api from 'modules/api/diagram/diagram';
-import * as Styled from './styled';
 import DiagramControls from './DiagramControls';
+import * as service from './service';
+import * as Styled from './styled';
 
 const {WrappedComponent: Diagram} = ThemedDiagram;
 
-// mocking
+// mocking api
 const xmlMock = '<foo />';
 api.workflowXML = mockResolvedAsyncFn(xmlMock);
 
-describe.skip('Diagram', () => {
+// mocking service
+const activitiesInfoMapMock = {};
+service.getActivitiesInfoMap = jest.fn(() => activitiesInfoMapMock);
+
+describe('Diagram', () => {
   const workflowId = 'some-id';
 
   beforeEach(() => {
@@ -134,7 +139,14 @@ describe.skip('Diagram', () => {
 
     it('should import the xml in the Viewer and reset zoom', async () => {
       // given
-      const node = shallow(<Diagram workflowId={workflowId} theme={'light'} />);
+      const onActivitiesInfoReadyMock = jest.fn();
+      const node = shallow(
+        <Diagram
+          workflowId={workflowId}
+          theme={'light'}
+          onActivitiesInfoReady={onActivitiesInfoReadyMock}
+        />
+      );
       const nodeInstance = node.instance();
       const handleZoomResetSpy = jest.spyOn(nodeInstance, 'handleZoomReset');
       await flushPromises();
@@ -143,6 +155,10 @@ describe.skip('Diagram', () => {
       const args = nodeInstance.Viewer.importXML.mock.calls[0];
       expect(args[0]).toBe(nodeInstance.workflowXML);
       expect(typeof args[1]).toBe('function');
+      expect(service.getActivitiesInfoMap).toBeCalledWith(
+        nodeInstance.Viewer.elementRegistry
+      );
+      expect(onActivitiesInfoReadyMock).toBeCalledWith(activitiesInfoMapMock);
       expect(handleZoomResetSpy).toHaveBeenCalledTimes(1);
     });
   });

@@ -2,6 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import {getWorkflowName} from 'modules/utils/instance';
+import {HEADER} from 'modules/constants';
 
 import * as Styled from './styled';
 
@@ -11,12 +12,27 @@ export default class InstanceLog extends React.Component {
   };
 
   state = {
-    selected: 'HEADER'
+    selected: HEADER
   };
 
   setSelected = selected => {
     this.setState({selected});
   };
+
+  renderLogEntry = ({state, type, name, id}) => (
+    <Styled.LogEntry
+      key={id}
+      isSelected={this.state.selected === id}
+      onClick={() => this.setSelected(id)}
+    >
+      <Styled.FlowNodeIcon
+        state={state}
+        type={type}
+        isSelected={this.state.selected === id}
+      />
+      {name}
+    </Styled.LogEntry>
+  );
 
   render() {
     const {instanceLog} = this.props;
@@ -26,28 +42,15 @@ export default class InstanceLog extends React.Component {
         {!instanceLog ? null : (
           <React.Fragment>
             <Styled.Header
-              isSelected={this.state.selected === 'HEADER'}
-              onClick={() => this.setSelected('HEADER')}
+              isSelected={this.state.selected === HEADER}
+              onClick={() => this.setSelected(HEADER)}
             >
               <Styled.DocumentIcon
-                isSelected={this.state.selected === 'HEADER'}
+                isSelected={this.state.selected === HEADER}
               />
               {getWorkflowName(instanceLog)}
             </Styled.Header>
-            {instanceLog.activities.map(({state, type, name, id}) => (
-              <Styled.LogEntry
-                key={id}
-                isSelected={this.state.selected === id}
-                onClick={() => this.setSelected(id)}
-              >
-                <Styled.FlowNodeIcon
-                  state={state}
-                  type={type}
-                  isSelected={this.state.selected === id}
-                />
-                {name}
-              </Styled.LogEntry>
-            ))}
+            {instanceLog.activities.map(this.renderLogEntry)}
           </React.Fragment>
         )}
       </Styled.InstanceLog>

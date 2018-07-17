@@ -2,14 +2,14 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
-import {INSTANCE_STATE} from 'modules/constants';
-import Copyright from 'modules/components/Copyright';
+import {INSTANCE_STATE, ACTIVITY_STATE} from 'modules/constants';
+import * as api from 'modules/api/instances/instances';
 
 import Instance from './Instance';
 import Header from './../Header';
 import DiagramPanel from './DiagramPanel';
 import InstanceDetail from './InstanceDetail';
-import * as api from 'modules/api/instances/instances';
+import InstanceHistory from './InstanceHistory';
 
 const xmlMock = '<foo />';
 api.workflowXML = mockResolvedAsyncFn(xmlMock);
@@ -33,6 +33,22 @@ const INSTANCE = {
       activityInstanceId: '4294983744',
       taskId: null
     }
+  ],
+  activities: [
+    {
+      activityId: 'foo',
+      endDate: '2018-07-16T09:30:56.276Z',
+      id: 'fooId',
+      startDate: '2018-07-16T09:30:56.276Z',
+      state: ACTIVITY_STATE.COMPLETED
+    },
+    {
+      activityId: 'taskA',
+      endDate: null,
+      id: '4294983744',
+      startDate: '2018-07-16T09:30:56.276Z',
+      state: ACTIVITY_STATE.ACTIVE
+    }
   ]
 };
 
@@ -41,6 +57,7 @@ api.fetchWorkflowInstance = mockResolvedAsyncFn(INSTANCE);
 
 const initialState = {
   instance: null,
+  instanceLog: null,
   loaded: false
 };
 
@@ -49,7 +66,7 @@ const component = (
     match={{params: {id: INSTANCE.id}, isExact: true, path: '', url: ''}}
   />
 );
-describe.skip('Instance', () => {
+describe('Instance', () => {
   beforeEach(() => {
     api.fetchWorkflowInstance.mockClear();
   });
@@ -86,20 +103,64 @@ describe.skip('Instance', () => {
     });
   });
 
+  describe('onActivitiesInfoReady', () => {
+    it('should set state.instanceLog from given activitiesInfoMap', async () => {
+      // given
+      const node = shallow(component);
+      const mockActivitiesInfoMap = {
+        foo: {name: 'foo', amount: 20}
+      };
+      const expectedInstanceLog = {
+        ...INSTANCE,
+        activities: [
+          {...INSTANCE.activities[0], ...mockActivitiesInfoMap.foo},
+          {
+            ...INSTANCE.activities[1],
+            state: ACTIVITY_STATE.INCIDENT
+          }
+        ]
+      };
+
+      // when
+      await flushPromises();
+      node.instance().onActivitiesInfoReady(mockActivitiesInfoMap);
+      node.update();
+
+      // then
+      expect(node.state('instanceLog')).toEqual(expectedInstanceLog);
+    });
+  });
+
   describe('rendering', () => {
     it('should display a Header, DiagramPanel and Copyright', async () => {
       // given
       const node = shallow(component);
+      const INSTANCE_LOG = {foo: 'bar'};
+      node.setState({instanceLog: INSTANCE_LOG});
       await flushPromises();
       node.update();
 
       // then
-      expect(node.find(Header)).toHaveLength(1);
-      expect(node.find(DiagramPanel)).toHaveLength(1);
-      expect(node.find(Copyright)).toHaveLength(1);
-      const Detail = node.find(Header).prop('detail');
-      expect(Detail.type).toBe(InstanceDetail);
-      expect(Detail.props.instance).toEqual(INSTANCE);
+      // HeaderNode
+      const HeaderNode = node.find(Header);
+      expect(HeaderNode).toHaveLength(1);
+      // Detail in Header
+      const DetailNode = HeaderNode.prop('detail');
+      expect(DetailNode.type).toBe(InstanceDetail);
+      expect(DetailNode.props.instance).toEqual(INSTANCE);
+      //DiagramPanel
+      const DiagramPanelNode = node.find(DiagramPanel);
+      expect(DiagramPanelNode).toHaveLength(1);
+      expect(DiagramPanelNode.prop('instance')).toEqual(INSTANCE);
+      expect(DiagramPanelNode.prop('onActivitiesInfoReady')).toBe(
+        node.instance().onActivitiesInfoReady
+      );
+      // InstanceHistory
+      const InstanceHistoryNode = node.find(InstanceHistory);
+      expect(InstanceHistoryNode).toHaveLength(1);
+      expect(InstanceHistoryNode.prop('instanceLog')).toEqual(INSTANCE_LOG);
+      // snapshot
+      expect(node).toMatchSnapshot();
     });
   });
 });

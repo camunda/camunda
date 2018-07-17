@@ -1,5 +1,5 @@
 import {Colors, themeStyle} from 'modules/theme';
-import {ACTIVITY_TYPE} from 'modules/constants';
+import {ACTIVITY_TYPE, UNNAMED_ACTIVITY} from 'modules/constants';
 
 export function getDiagramColors(theme) {
   return {
@@ -29,4 +29,24 @@ export function getElementType({businessObject, type}) {
   if (businessObject.$instanceOf('bpmn:Gateway')) {
     return ACTIVITY_TYPE.GATEWAY;
   }
+}
+
+/**
+ * @returns { activityId : { name , type }}
+ * @param {*} elementRegistry (bpmn elementRegistry)
+ */
+export function getActivitiesInfoMap(elementRegistry) {
+  const activitiesInfoMap = {};
+
+  elementRegistry.forEach(element => {
+    const type = getElementType(element);
+    if (!!type) {
+      activitiesInfoMap[element.id] = {
+        name: element.businessObject.name || UNNAMED_ACTIVITY,
+        type
+      };
+    }
+  });
+
+  return activitiesInfoMap;
 }

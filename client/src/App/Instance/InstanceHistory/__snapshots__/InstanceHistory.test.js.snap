@@ -1,0 +1,35 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`InstanceHistory should render a pane with InstanceLog section and Copyright 1`] = `
+<Pane
+  instanceLog={
+    Object {
+      "foo": "bar",
+    }
+  }
+>
+  <PanelHeader
+    isRounded={false}
+  >
+    Instance History
+  </PanelHeader>
+  <Styled(Styled(PanelBody))>
+    <InstanceLog
+      instanceLog={
+        Object {
+          "foo": "bar",
+        }
+      }
+    />
+    <Themed(styled.div)>
+      B
+    </Themed(styled.div)>
+    <Themed(styled.div)>
+      C
+    </Themed(styled.div)>
+  </Styled(Styled(PanelBody))>
+  <Styled(Styled(PanelFooter))>
+    <Copyright />
+  </Styled(Styled(PanelFooter))>
+</Pane>
+`;

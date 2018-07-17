@@ -15,7 +15,7 @@ export default class InstanceHistory extends React.Component {
   render() {
     return (
       <SplitPane.Pane {...this.props}>
-        <SplitPane.Pane.Header>Instance history</SplitPane.Pane.Header>
+        <SplitPane.Pane.Header>Instance History</SplitPane.Pane.Header>
         <Styled.PaneBody>
           <InstanceLog instanceLog={this.props.instanceLog} />
           <Styled.Section>B</Styled.Section>

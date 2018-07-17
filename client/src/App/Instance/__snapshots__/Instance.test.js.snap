@@ -1,0 +1,106 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Instance rendering should display a Header, DiagramPanel and Copyright 1`] = `
+<React.Fragment>
+  <Header
+    detail={
+      <InstanceDetail
+        instance={
+          Object {
+            "activities": Array [
+              Object {
+                "activityId": "foo",
+                "endDate": "2018-07-16T09:30:56.276Z",
+                "id": "fooId",
+                "startDate": "2018-07-16T09:30:56.276Z",
+                "state": "COMPLETED",
+              },
+              Object {
+                "activityId": "taskA",
+                "endDate": null,
+                "id": "4294983744",
+                "startDate": "2018-07-16T09:30:56.276Z",
+                "state": "ACTIVE",
+              },
+            ],
+            "businessKey": "demoProcess",
+            "endDate": null,
+            "id": "4294980768",
+            "incidents": Array [
+              Object {
+                "activityId": "taskA",
+                "activityInstanceId": "4294983744",
+                "errorMessage": "Could not apply output mappings: Task was completed without payload",
+                "errorType": "IO_MAPPING_ERROR",
+                "id": "4295763008",
+                "state": "ACTIVE",
+                "taskId": null,
+              },
+            ],
+            "startDate": "2018-06-18T08:44:52.240+0000",
+            "state": "ACTIVE",
+            "workflowId": "1",
+          }
+        }
+      />
+    }
+    filters={9263}
+    incidents={328}
+    instances={14576}
+    selections={24}
+  />
+  <Content>
+    <styled.div>
+      <SplitPane>
+        <DiagramPanel
+          instance={
+            Object {
+              "activities": Array [
+                Object {
+                  "activityId": "foo",
+                  "endDate": "2018-07-16T09:30:56.276Z",
+                  "id": "fooId",
+                  "startDate": "2018-07-16T09:30:56.276Z",
+                  "state": "COMPLETED",
+                },
+                Object {
+                  "activityId": "taskA",
+                  "endDate": null,
+                  "id": "4294983744",
+                  "startDate": "2018-07-16T09:30:56.276Z",
+                  "state": "ACTIVE",
+                },
+              ],
+              "businessKey": "demoProcess",
+              "endDate": null,
+              "id": "4294980768",
+              "incidents": Array [
+                Object {
+                  "activityId": "taskA",
+                  "activityInstanceId": "4294983744",
+                  "errorMessage": "Could not apply output mappings: Task was completed without payload",
+                  "errorType": "IO_MAPPING_ERROR",
+                  "id": "4295763008",
+                  "state": "ACTIVE",
+                  "taskId": null,
+                },
+              ],
+              "startDate": "2018-06-18T08:44:52.240+0000",
+              "state": "ACTIVE",
+              "workflowId": "1",
+            }
+          }
+          onActivitiesInfoReady={[Function]}
+        />
+        <InstanceHistory
+          instanceLog={
+            Object {
+              "foo": "bar",
+            }
+          }
+        />
+      </SplitPane>
+    </styled.div>
+  </Content>
+</React.Fragment>
+`;

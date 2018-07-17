@@ -1,10 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import * as Styled from './styled';
-
 import {ACTIVITY_STATE, ACTIVITY_TYPE} from 'modules/constants';
-import {themed} from 'modules/theme';
 
 import {
   FlownodeActivity,
@@ -16,8 +13,7 @@ import {
   FlownodeGateway,
   StateIconGatewayIncident,
   FlownodeGatewayCompleted,
-  InstanceHistoryIconCancelDark,
-  InstanceHistoryIconCancelLight
+  Stop
 } from 'modules/components/Icon';
 
 const iconsMap = {
@@ -31,29 +27,19 @@ const iconsMap = {
     [ACTIVITY_STATE.ACTIVE]: FlownodeEvent,
     [ACTIVITY_STATE.INCIDENT]: StateIconIncident
   },
-  [ACTIVITY_TYPE.GATEWAT]: {
-    [ACTIVITY_STATE.COMPLETED]: FlownodeGateway,
-    [ACTIVITY_STATE.ACTIVE]: StateIconGatewayIncident,
-    [ACTIVITY_STATE.INCIDENT]: FlownodeGatewayCompleted
+  [ACTIVITY_TYPE.GATEWAY]: {
+    [ACTIVITY_STATE.COMPLETED]: FlownodeGatewayCompleted,
+    [ACTIVITY_STATE.ACTIVE]: FlownodeGateway,
+    [ACTIVITY_STATE.INCIDENT]: StateIconGatewayIncident
   }
 };
 
-function FlowNodeIcon({state, type, ...props}) {
-  if (state === ACTIVITY_STATE.TERMINATED) {
-    const TargetIcon =
-      props.theme === 'dark'
-        ? InstanceHistoryIconCancelDark
-        : InstanceHistoryIconCancelLight;
-
-    return <TargetIcon width="20px" height="20px" {...props} />;
-  }
-
-  const TargetIcon = iconsMap[type][state];
+export default function FlowNodeIcon({state, type, ...props}) {
+  const TargetIcon =
+    state === ACTIVITY_STATE.TERMINATED ? Stop : iconsMap[type][state];
 
   return <TargetIcon width="16px" height="16px" {...props} />;
 }
-
-export default themed(FlowNodeIcon);
 
 FlowNodeIcon.propTypes = {
   state: PropTypes.oneOf(Object.values(ACTIVITY_STATE)),

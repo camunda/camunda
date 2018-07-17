@@ -3,12 +3,11 @@ import PropTypes from 'prop-types';
 import BPMNViewer from 'bpmn-js/lib/NavigatedViewer';
 
 import {themed} from 'modules/theme';
-import {UNNAMED_ACTIVITY} from 'modules/constants';
 
 import * as Styled from './styled';
 import DiagramControls from './DiagramControls';
 import * as api from 'modules/api/diagram';
-import {getDiagramColors, getElementType} from './service';
+import {getDiagramColors, getActivitiesInfoMap} from './service';
 
 class Diagram extends React.Component {
   static propTypes = {
@@ -54,20 +53,13 @@ class Diagram extends React.Component {
         return console.log('Error rendering diagram:', e);
       }
 
-      const elementRegistry = this.Viewer.get('elementRegistry');
-      const activitiesInfoMap = {};
-
-      elementRegistry.forEach(element => {
-        const type = getElementType(element);
-        if (!!type) {
-          activitiesInfoMap[element.id] = {
-            name: element.businessObject.name || UNNAMED_ACTIVITY,
-            type
-          };
-        }
-      });
-
-      this.props.onActivitiesInfoReady(activitiesInfoMap);
+      // in case onActivitiesInfoReady is provided, calculate info map and
+      // pass it to the function
+      const {onActivitiesInfoReady} = this.props;
+      if (typeof onActivitiesInfoReady === 'function') {
+        const elementRegistry = this.Viewer.get('elementRegistry');
+        onActivitiesInfoReady(getActivitiesInfoMap(elementRegistry));
+      }
 
       this.handleZoomReset();
     });

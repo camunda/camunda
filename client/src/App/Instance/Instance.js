@@ -4,14 +4,16 @@ import PropTypes from 'prop-types';
 import Content from 'modules/components/Content';
 import SplitPane from 'modules/components/SplitPane';
 import * as api from 'modules/api/instances';
-import {ACTIVITY_STATE} from 'modules/constants';
 import {getActiveIncident} from 'modules/utils/instance';
+import {ACTIVITY_STATE} from 'modules/constants';
 
 import InstanceDetail from './InstanceDetail';
 import Header from '../Header';
 import DiagramPanel from './DiagramPanel';
 import InstanceHistory from './InstanceHistory';
 import * as Styled from './styled';
+
+const {ACTIVE, INCIDENT} = ACTIVITY_STATE;
 
 export default class Instance extends Component {
   static propTypes = {
@@ -38,23 +40,27 @@ export default class Instance extends Component {
     });
   }
 
+  // TODO:
+  // make activitiesWithInfo in service
   onActivitiesInfoReady = activitiesInfoMap => {
     const {instance} = this.state;
-    const activeIncident = getActiveIncident(instance.incidents) || {};
+    const {activityInstanceId} = getActiveIncident(instance.incidents) || {};
+
     const activitiesWithInfo = instance.activities.map(activity => {
+      // change activity state to incident in case the activity is active
+      // and it has an active incident
       let {state} = {...activity};
-      if (
-        state === ACTIVITY_STATE.ACTIVE &&
-        activeIncident.activityInstanceId === activity.id
-      ) {
-        state = ACTIVITY_STATE.INCIDENT;
+      if (state === ACTIVE && activityInstanceId === activity.id) {
+        state = INCIDENT;
       }
+
       return {
         ...activity,
         ...activitiesInfoMap[activity.activityId],
         state
       };
     });
+
     this.setState({instanceLog: {...instance, activities: activitiesWithInfo}});
   };
 

@@ -4,6 +4,7 @@ class Viewer {
     this.zoomScroll = {stepZoom: jest.fn()};
     this.container = container;
     this.bpmnRenderer = bpmnRenderer;
+    this.elementRegistry = 'foo';
   }
 
   importXML = jest.fn((_, callback) => {
