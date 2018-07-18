@@ -2,19 +2,28 @@ import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
 export const Label = styled.button`
-  background: none;
+  display: flex;
+  align-items: center;
+
   border: none;
-  color: currentColor;
   outline: none;
+
+  color: currentColor;
+  background: none;
+
   font-family: IBMPlexSans;
   font-size: 15px;
   font-weight: 600;
+
   cursor: pointer;
 
   svg {
-    margin-left: 8px;
     vertical-align: text-bottom;
   }
+`;
+
+export const LabelWrapper = styled.div`
+  margin-right: 8px;
 `;
 
 export const Dropdown = styled.div`
@@ -23,64 +32,100 @@ export const Dropdown = styled.div`
 `;
 
 export const DropdownMenu = themed(styled.div`
-  background-color: ${themeStyle({
-    dark: Colors.uiDark04,
-    light: Colors.uiLight02
-  })};
-  border: 1px solid
-    ${themeStyle({dark: Colors.uiDark06, light: Colors.uiLight05})};
-  border-radius: 3px;
+  /* Positioning */
+  position: absolute;
+  right: -1px;
+  top: 20px;
+
+  /* Display & Box Model */
+  min-width: 186px;
+  margin-top: 5px;
   box-shadow: 0 2px 2px 0
     ${themeStyle({
       dark: 'rgba(0, 0, 0, 0.5)',
       light: 'rgba(231, 233, 238, 0.5)'
     })};
-  min-width: 186px;
-  position: absolute;
-  right: 0;
-  margin-top: 5px;
+  border: 1px solid
+    ${themeStyle({dark: Colors.uiDark06, light: Colors.uiLight05})};
+  border-radius: 3px;
 
+  /* Color */
+  background-color: ${themeStyle({
+    dark: Colors.uiDark04,
+    light: Colors.uiLight02
+  })};
+  color: ${themeStyle({
+    dark: '#ffffff',
+    light: Colors.uiLight06
+  })};
+
+  /* Other */
   &:after,
   &:before {
+    position: absolute;
     bottom: 100%;
     right: 15px;
     border: solid transparent;
     content: ' ';
-    position: absolute;
     pointer-events: none;
   }
 
   &:after {
+    border-width: 7px;
+    margin-right: -7px;
     border-bottom-color: ${themeStyle({
       dark: Colors.uiDark04,
       light: Colors.uiLight02
     })};
-    border-width: 7px;
-    margin-right: -7px;
   }
   &:before {
+    border-width: 8px;
+    margin-right: -8px;
     border-bottom-color: ${themeStyle({
       dark: Colors.uiDark06,
       light: Colors.uiLight05
     })};
-    border-width: 8px;
-    margin-right: -8px;
+  }
+
+  &:hover {
+    background: ${themeStyle({
+      dark: Colors.uiDark06,
+      light: Colors.uiLight05
+    })};
+  }
+
+  &:active {
+    background: ${themeStyle({
+      dark: Colors.darkActive,
+      light: Colors.lightActive
+    })};
   }
 `);
 
 export const Option = themed(styled.button`
+  /* Positioning */
   height: 36px;
-  background: none;
-  border: none;
-  color: currentColor;
-  outline: none;
-  cursor: pointer;
+
+  /* Display & Box Model */
+  display:flex;
+  align-items: center;
   width: 100%;
+  padding: 0 10px;
+  border: none;
+  outline: none;
+
+  /* Color */
+  color: currentColor;
+  background: none;
+
+  /* Text */
   text-align: left;
   font-size: 15px;
   font-weight: 600;
   line-height: 36px;
-  padding: 0 10px;
+
+  /* Other */
+  cursor: pointer;
 
   &:not(:last-child) {
     border-bottom: 1px solid ${themeStyle({

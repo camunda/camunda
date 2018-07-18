@@ -31,6 +31,10 @@ const Colors = {
   lightInstanceOdd: '#bdd4fd',
   lightInstanceEven: '#bfd6fe',
 
+  // Menu Colors
+  darkActive: '#393a42',
+  lightActive: '#bcc6d2',
+
   // Diagram Colors
   darkDiagram: '#dedede',
 

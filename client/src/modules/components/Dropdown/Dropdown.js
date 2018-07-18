@@ -7,7 +7,7 @@ import {Down} from 'modules/components/Icon';
 
 export default class Dropdown extends React.Component {
   static propTypes = {
-    /** The content that is visible on the dropdown trigger. Must be non-interactive phrasing content. */
+    /** The content that is visible on the dropdown trigger. Must be non-interactive phrasing content. Supported labels types: string, component.*/
     label: PropTypes.node.isRequired,
     /** The options of this dropdown. Each child should be a `Dropdown.Option` instance */
     children: PropTypes.oneOfType([
@@ -40,11 +40,18 @@ export default class Dropdown extends React.Component {
     }
   };
 
+  getLabelType = label =>
+    typeof label === 'object' ? (
+      label
+    ) : (
+      <Styled.LabelWrapper>{label}</Styled.LabelWrapper>
+    );
+
   render() {
     return (
       <Styled.Dropdown innerRef={this.storeContainer}>
         <Styled.Label data-test-id="dropdown-label" onClick={this.toggleOpen}>
-          {this.props.label}
+          {this.getLabelType(this.props.label)}
           <Down />
         </Styled.Label>
         {this.state.open && (
