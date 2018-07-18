@@ -62,7 +62,7 @@ const iconPositionStyle = css`
   top: 2px;
 `;
 
-export const LogEntry = themed(styled.div`
+export const LogEntry = themed(styled.a`
   padding: 7px;
   padding-left: 44px;
 
