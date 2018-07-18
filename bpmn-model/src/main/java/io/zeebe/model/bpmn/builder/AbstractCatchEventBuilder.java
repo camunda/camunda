@@ -17,15 +17,18 @@
 package io.zeebe.model.bpmn.builder;
 
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.model.bpmn.builder.zeebe.MessageBuilder;
 import io.zeebe.model.bpmn.instance.CatchEvent;
 import io.zeebe.model.bpmn.instance.CompensateEventDefinition;
 import io.zeebe.model.bpmn.instance.ConditionalEventDefinition;
+import io.zeebe.model.bpmn.instance.Message;
 import io.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.zeebe.model.bpmn.instance.SignalEventDefinition;
 import io.zeebe.model.bpmn.instance.TimeCycle;
 import io.zeebe.model.bpmn.instance.TimeDate;
 import io.zeebe.model.bpmn.instance.TimeDuration;
 import io.zeebe.model.bpmn.instance.TimerEventDefinition;
+import java.util.function.Consumer;
 
 /** @author Sebastian Menski */
 public abstract class AbstractCatchEventBuilder<
@@ -57,6 +60,21 @@ public abstract class AbstractCatchEventBuilder<
   public B message(String messageName) {
     final MessageEventDefinition messageEventDefinition = createMessageEventDefinition(messageName);
     element.getEventDefinitions().add(messageEventDefinition);
+
+    return myself;
+  }
+
+  public B message(Consumer<MessageBuilder> messageBuilderConsumer) {
+    final MessageEventDefinition messageEventDefinition =
+        createInstance(MessageEventDefinition.class);
+    element.getEventDefinitions().add(messageEventDefinition);
+
+    final Message message = createMessage();
+    final MessageBuilder builder = new MessageBuilder(modelInstance, message);
+
+    messageBuilderConsumer.accept(builder);
+
+    messageEventDefinition.setMessage(message);
 
     return myself;
   }

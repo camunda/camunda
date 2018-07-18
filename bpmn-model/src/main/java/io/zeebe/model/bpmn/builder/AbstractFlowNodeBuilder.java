@@ -46,6 +46,7 @@ import io.zeebe.model.bpmn.instance.SubProcess;
 import io.zeebe.model.bpmn.instance.Transaction;
 import io.zeebe.model.bpmn.instance.UserTask;
 import io.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
+import java.util.function.Consumer;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
 /** @author Sebastian Menski */
@@ -171,6 +172,12 @@ public abstract class AbstractFlowNodeBuilder<
     return createTargetBuilder(ServiceTask.class, id);
   }
 
+  public ServiceTaskBuilder serviceTask(String id, Consumer<ServiceTaskBuilder> consumer) {
+    final ServiceTaskBuilder builder = createTargetBuilder(ServiceTask.class, id);
+    consumer.accept(builder);
+    return builder;
+  }
+
   public SendTaskBuilder sendTask() {
     return createTargetBuilder(SendTask.class);
   }
@@ -261,6 +268,14 @@ public abstract class AbstractFlowNodeBuilder<
 
   public IntermediateCatchEventBuilder intermediateCatchEvent(String id) {
     return createTarget(IntermediateCatchEvent.class, id).builder();
+  }
+
+  public IntermediateCatchEventBuilder intermediateCatchEvent(
+      String id, Consumer<IntermediateCatchEventBuilder> builderConsumer) {
+    final IntermediateCatchEventBuilder builder =
+        createTarget(IntermediateCatchEvent.class, id).builder();
+    builderConsumer.accept(builder);
+    return builder;
   }
 
   public IntermediateThrowEventBuilder intermediateThrowEvent() {

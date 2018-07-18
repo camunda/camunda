@@ -47,6 +47,9 @@ public final class BpmnModelConstants {
 
   public static final String XPATH_NS = "http://www.w3.org/1999/XPath";
 
+  /** Zeebe namespace */
+  public static final String ZEEBE_NS = "http://camunda.org/schema/zeebe/1.0";
+
   // elements ////////////////////////////////////////
 
   public static final String BPMN_ELEMENT_BASE_ELEMENT = "baseElement";

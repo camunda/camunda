@@ -17,9 +17,11 @@
 package io.zeebe.model.bpmn.builder;
 
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.model.bpmn.builder.zeebe.MessageBuilder;
 import io.zeebe.model.bpmn.instance.Message;
 import io.zeebe.model.bpmn.instance.Operation;
 import io.zeebe.model.bpmn.instance.ReceiveTask;
+import java.util.function.Consumer;
 
 /** @author Sebastian Menski */
 public abstract class AbstractReceiveTaskBuilder<B extends AbstractReceiveTaskBuilder<B>>
@@ -72,6 +74,17 @@ public abstract class AbstractReceiveTaskBuilder<B extends AbstractReceiveTaskBu
   public B message(String messageName) {
     final Message message = findMessageForName(messageName);
     return message(message);
+  }
+
+  public B message(Consumer<MessageBuilder> messageBuilderConsumer) {
+    final Message message = createMessage();
+    final MessageBuilder builder = new MessageBuilder(modelInstance, message);
+
+    messageBuilderConsumer.accept(builder);
+
+    element.setMessage(message);
+
+    return myself;
   }
 
   /**

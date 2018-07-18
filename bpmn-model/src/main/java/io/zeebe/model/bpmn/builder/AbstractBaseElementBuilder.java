@@ -150,10 +150,15 @@ public abstract class AbstractBaseElementBuilder<
     }
 
     // create new message for non existing message name
-    final Definitions definitions = modelInstance.getDefinitions();
-    final Message message = createChild(definitions, Message.class);
+    final Message message = createMessage();
     message.setName(messageName);
 
+    return message;
+  }
+
+  protected Message createMessage() {
+    final Definitions definitions = modelInstance.getDefinitions();
+    final Message message = createChild(definitions, Message.class);
     return message;
   }
 
