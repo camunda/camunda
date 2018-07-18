@@ -29,6 +29,7 @@ import io.zeebe.client.api.commands.BrokerInfo;
 import io.zeebe.client.api.commands.PartitionInfo;
 import io.zeebe.client.api.commands.Topology;
 import io.zeebe.client.api.events.DeploymentEvent;
+import io.zeebe.client.api.events.IncidentEvent;
 import io.zeebe.client.api.events.IncidentState;
 import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.events.JobState;
@@ -52,13 +53,50 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Duration;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
-public class BrokerRecoveryTest {
+@RunWith(Parameterized.class)
+public class BrokerReprocessingTest {
   private static final String NULL_PAYLOAD = null;
+
+  @Parameters(name = "{index}: {1}")
+  public static Object[][] reprocessingTriggers() {
+    return new Object[][] {
+      new Object[] {
+        new Consumer<BrokerReprocessingTest>() {
+          @Override
+          public void accept(BrokerReprocessingTest t) {
+            t.restartBroker();
+          }
+        },
+        "restart"
+      },
+      new Object[] {
+        new Consumer<BrokerReprocessingTest>() {
+          @Override
+          public void accept(BrokerReprocessingTest t) {
+            t.deleteSnapshotsAndRestart();
+          }
+        },
+        "restart-without-snapshot"
+      }
+    };
+  }
+
+  @Parameter(0)
+  public Consumer<BrokerReprocessingTest> reprocessingTrigger;
+
+  @Parameter(1)
+  public String name;
 
   private static final WorkflowDefinition WORKFLOW =
       Bpmn.createExecutableWorkflow("process")
@@ -105,7 +143,7 @@ public class BrokerRecoveryTest {
         .join();
 
     // when
-    deleteSnapshotsAndRestart();
+    reprocessingTrigger.accept(this);
 
     clientRule
         .getWorkflowClient()
@@ -140,7 +178,7 @@ public class BrokerRecoveryTest {
     waitUntil(() -> eventRecorder.hasJobEvent(JobState.CREATED));
 
     // when
-    deleteSnapshotsAndRestart();
+    reprocessingTrigger.accept(this);
 
     clientRule
         .getJobClient()
@@ -178,7 +216,7 @@ public class BrokerRecoveryTest {
     waitUntil(() -> !recordingJobHandler.getHandledJobs().isEmpty());
 
     // when
-    deleteSnapshotsAndRestart();
+    reprocessingTrigger.accept(this);
 
     final JobEvent jobEvent = recordingJobHandler.getHandledJobs().get(0);
 
@@ -217,7 +255,7 @@ public class BrokerRecoveryTest {
     waitUntil(() -> eventRecorder.getJobEvents(JobState.CREATED).size() > 1);
 
     // when
-    deleteSnapshotsAndRestart();
+    reprocessingTrigger.accept(this);
 
     clientRule
         .getJobClient()
@@ -242,7 +280,7 @@ public class BrokerRecoveryTest {
         .join();
 
     // when
-    deleteSnapshotsAndRestart();
+    reprocessingTrigger.accept(this);
 
     final DeploymentEvent deploymentResult =
         clientRule
@@ -286,7 +324,7 @@ public class BrokerRecoveryTest {
     waitUntil(() -> eventRecorder.hasJobEvent(JobState.CREATED));
 
     // when
-    deleteSnapshotsAndRestart();
+    reprocessingTrigger.accept(this);
 
     clientRule
         .getJobClient()
@@ -310,7 +348,7 @@ public class BrokerRecoveryTest {
     waitUntil(() -> !recordingJobHandler.getHandledJobs().isEmpty());
 
     // when
-    deleteSnapshotsAndRestart();
+    reprocessingTrigger.accept(this);
 
     final JobEvent jobEvent = recordingJobHandler.getHandledJobs().get(0);
     clientRule.getJobClient().newCompleteCommand(jobEvent).send().join();
@@ -330,7 +368,7 @@ public class BrokerRecoveryTest {
     waitUntil(() -> !jobHandler.getHandledJobs().isEmpty());
 
     // when
-    deleteSnapshotsAndRestart();
+    reprocessingTrigger.accept(this);
 
     jobHandler.clear();
 
@@ -356,7 +394,7 @@ public class BrokerRecoveryTest {
     subscription.close();
 
     // when
-    deleteSnapshotsAndRestart();
+    reprocessingTrigger.accept(this);
 
     doRepeatedly(
             () -> {
@@ -403,7 +441,7 @@ public class BrokerRecoveryTest {
         eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_READY);
 
     // when
-    deleteSnapshotsAndRestart();
+    reprocessingTrigger.accept(this);
 
     clientRule
         .getWorkflowClient()
@@ -450,7 +488,7 @@ public class BrokerRecoveryTest {
     waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.RESOLVE_FAILED));
 
     // when
-    deleteSnapshotsAndRestart();
+    reprocessingTrigger.accept(this);
 
     clientRule
         .getWorkflowClient()
@@ -479,7 +517,7 @@ public class BrokerRecoveryTest {
     raft.setTerm(testTerm);
 
     // when
-    deleteSnapshotsAndRestart();
+    reprocessingTrigger.accept(this);
 
     final Raft raftAfterRestart = brokerRule.getService(serviceName);
     waitUntil(() -> raftAfterRestart.getState() == RaftState.LEADER);
@@ -495,7 +533,7 @@ public class BrokerRecoveryTest {
   public void shouldCreateTopicAfterRestart() {
     // given
     final ZeebeClient client = clientRule.getClient();
-    deleteSnapshotsAndRestart();
+    reprocessingTrigger.accept(this);
 
     // when
     client.newCreateTopicCommand().name("foo").partitions(2).replicationFactor(1).send().join();
@@ -517,7 +555,7 @@ public class BrokerRecoveryTest {
 
     clientRule.waitUntilTopicsExists("foo");
 
-    deleteSnapshotsAndRestart();
+    reprocessingTrigger.accept(this);
 
     // then
     exception.expect(ClientCommandRejectedException.class);
@@ -535,7 +573,7 @@ public class BrokerRecoveryTest {
 
     clientRule.waitUntilTopicsExists("foo");
 
-    deleteSnapshotsAndRestart();
+    reprocessingTrigger.accept(this);
 
     // when
     client.newCreateTopicCommand().name("bar").partitions(2).replicationFactor(1).send().join();
@@ -553,6 +591,150 @@ public class BrokerRecoveryTest {
     assertThat(partitions)
         .hasSize(6); // default partition + system partition + 4 partitions we create here
     assertThat(partitions).extracting("partitionId").doesNotHaveDuplicates();
+  }
+
+  @Test
+  public void shouldAssignUniqueWorkflowInstanceKeyAfterRestart() {
+    // given
+    clientRule
+        .getWorkflowClient()
+        .newDeployCommand()
+        .addWorkflowModel(WORKFLOW, "workflow.bpmn")
+        .send()
+        .join();
+
+    final long workflowInstance1Key = startWorkflowInstance("process").getKey();
+
+    // when
+    reprocessingTrigger.accept(this);
+
+    final long workflowInstance2Key = startWorkflowInstance("process").getKey();
+
+    // then
+    assertThat(workflowInstance2Key).isGreaterThan(workflowInstance1Key);
+  }
+
+  @Test
+  public void shouldAssignUniqueJobKeyAfterRestart() {
+    // given
+    clientRule
+        .getWorkflowClient()
+        .newDeployCommand()
+        .addWorkflowModel(WORKFLOW, "workflow.bpmn")
+        .send()
+        .join();
+
+    final Supplier<JobEvent> jobCreator =
+        () -> clientRule.getJobClient().newCreateCommand().jobType("foo").send().join();
+
+    final long job1Key = jobCreator.get().getKey();
+
+    // when
+    reprocessingTrigger.accept(this);
+
+    final long job2Key = jobCreator.get().getKey();
+
+    // then
+    assertThat(job2Key).isGreaterThan(job1Key);
+  }
+
+  @Test
+  public void shouldAssignUniqueIncidentKeyAfterRestart() {
+    // given
+    clientRule
+        .getWorkflowClient()
+        .newDeployCommand()
+        .addWorkflowModel(WORKFLOW_INCIDENT, "incident.bpmn")
+        .send()
+        .join();
+
+    startWorkflowInstance("process");
+
+    waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.CREATED));
+
+    // when
+    reprocessingTrigger.accept(this);
+
+    startWorkflowInstance("process");
+
+    // then
+    final List<IncidentEvent> incidents =
+        doRepeatedly(() -> eventRecorder.getIncidentEvents(IncidentState.CREATED))
+            .until(l -> l.size() == 2);
+
+    final long incident1Key = incidents.get(0).getKey();
+    final long incident2Key = incidents.get(1).getKey();
+
+    assertThat(incident2Key).isGreaterThan(incident1Key);
+  }
+
+  @Test
+  public void shouldAssignUniqueDeploymentKeyAfterRestart() {
+    // given
+    final long deployment1Key =
+        clientRule
+            .getWorkflowClient()
+            .newDeployCommand()
+            .addWorkflowModel(WORKFLOW_INCIDENT, "incident.bpmn")
+            .send()
+            .join()
+            .getKey();
+
+    // when
+    reprocessingTrigger.accept(this);
+
+    final long deployment2Key =
+        clientRule
+            .getWorkflowClient()
+            .newDeployCommand()
+            .addWorkflowModel(WORKFLOW_INCIDENT, "incident.bpmn")
+            .send()
+            .join()
+            .getKey();
+
+    // then
+    assertThat(deployment2Key).isGreaterThan(deployment1Key);
+  }
+
+  @Test
+  public void shouldAssignUniqueTopicKeyAfterRestart() {
+    // given
+    final ZeebeClient client = clientRule.getClient();
+    final long topic1Key =
+        client
+            .newCreateTopicCommand()
+            .name("foo")
+            .partitions(1)
+            .replicationFactor(1)
+            .send()
+            .join()
+            .getKey();
+
+    // when
+    reprocessingTrigger.accept(this);
+
+    final long topic2Key =
+        client
+            .newCreateTopicCommand()
+            .name("bar")
+            .partitions(1)
+            .replicationFactor(1)
+            .send()
+            .join()
+            .getKey();
+
+    // then
+    assertThat(topic2Key).isGreaterThan(topic1Key);
+  }
+
+  private WorkflowInstanceEvent startWorkflowInstance(String bpmnProcessId) {
+    return clientRule
+        .getWorkflowClient()
+        .newCreateInstanceCommand()
+        .bpmnProcessId(bpmnProcessId)
+        .latestVersion()
+        .send()
+        .join();
   }
 
   protected void deleteSnapshotsAndRestart() {
@@ -595,5 +777,19 @@ public class BrokerRecoveryTest {
             })
         .until(t -> t == Boolean.TRUE, e -> e == null);
     // this can fail immediately after restart due to https://github.com/zeebe-io/zeebe/issues/590
+  }
+
+  protected void restartBroker() {
+    restartBroker(() -> {});
+  }
+
+  protected void restartBroker(Runnable onStop) {
+    eventRecorder.stopRecordingEvents();
+    brokerRule.stopBroker();
+
+    onStop.run();
+
+    brokerRule.startBroker();
+    eventRecorder.startRecordingEvents();
   }
 }

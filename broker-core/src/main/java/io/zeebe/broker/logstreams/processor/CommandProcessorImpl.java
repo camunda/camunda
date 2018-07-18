@@ -18,17 +18,19 @@
 package io.zeebe.broker.logstreams.processor;
 
 import io.zeebe.broker.logstreams.processor.CommandProcessor.CommandControl;
-import io.zeebe.broker.logstreams.processor.CommandProcessor.CommandResult;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.Intent;
 
 public class CommandProcessorImpl<T extends UnpackedObject>
-    implements TypedRecordProcessor<T>, CommandControl, CommandResult {
+    implements TypedRecordProcessor<T>, CommandControl {
 
   private final CommandProcessor<T> wrappedProcessor;
 
+  private KeyGenerator keyGenerator;
+
   private boolean isAccepted;
+  private long entityKey;
 
   private Intent newState;
 
@@ -40,37 +42,48 @@ public class CommandProcessorImpl<T extends UnpackedObject>
   }
 
   @Override
+  public void onOpen(TypedStreamProcessor streamProcessor) {
+    this.keyGenerator = streamProcessor.getKeyGenerator();
+  }
+
+  @Override
   public void processRecord(
       TypedRecord<T> record, TypedResponseWriter responseWriter, TypedStreamWriter streamWriter) {
+
+    entityKey = record.getKey();
+
     wrappedProcessor.onCommand(record, this);
 
     final boolean respond = record.getMetadata().hasRequestMetadata();
 
     if (isAccepted) {
-      streamWriter.writeFollowUpEvent(record.getKey(), newState, record.getValue());
+      streamWriter.writeFollowUpEvent(entityKey, newState, record.getValue());
       if (respond) {
-        responseWriter.writeRecord(newState, record);
+        responseWriter.writeEventOnCommand(entityKey, newState, record);
       }
     } else {
       streamWriter.writeRejection(record, rejectionType, rejectionReason);
       if (respond) {
-        responseWriter.writeRejection(record, rejectionType, rejectionReason);
+        responseWriter.writeRejectionOnCommand(record, rejectionType, rejectionReason);
       }
     }
   }
 
   @Override
-  public CommandResult accept(Intent newState) {
+  public long accept(Intent newState) {
+    if (entityKey < 0) {
+      entityKey = keyGenerator.nextKey();
+    }
+
     isAccepted = true;
     this.newState = newState;
-    return this;
+    return entityKey;
   }
 
   @Override
-  public CommandResult reject(RejectionType type, String reason) {
+  public void reject(RejectionType type, String reason) {
     isAccepted = false;
     this.rejectionType = type;
     this.rejectionReason = reason;
-    return this;
   }
 }

@@ -237,7 +237,7 @@ public class IncidentTest {
 
     // then incident is created
     final SubscribedRecord incidentEvent =
-        testClient.receiveFirstIncidentCommand(IncidentIntent.CREATE);
+        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     assertThat(incidentEvent.key()).isGreaterThan(0);
     assertThat(incidentEvent.value())
@@ -310,7 +310,7 @@ public class IncidentTest {
 
     // then incident is created
     final SubscribedRecord incidentEvent =
-        testClient.receiveFirstIncidentCommand(IncidentIntent.CREATE);
+        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     assertThat(incidentEvent.key()).isGreaterThan(0);
     assertThat(incidentEvent.value())
@@ -387,7 +387,7 @@ public class IncidentTest {
 
     // then incident is created
     final SubscribedRecord incidentEvent =
-        testClient.receiveFirstIncidentCommand(IncidentIntent.CREATE);
+        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     assertThat(incidentEvent.key()).isGreaterThan(0);
     assertThat(incidentEvent.value())
@@ -457,7 +457,7 @@ public class IncidentTest {
 
     // then incident is created
     final SubscribedRecord incidentEvent =
-        testClient.receiveFirstIncidentCommand(IncidentIntent.CREATE);
+        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     assertThat(incidentEvent.key()).isGreaterThan(0);
     assertThat(incidentEvent.value())
@@ -527,11 +527,15 @@ public class IncidentTest {
     // then incident is created
     final SubscribedRecord failingEvent =
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.GATEWAY_ACTIVATED);
-    final SubscribedRecord incidentEvent =
+
+    final SubscribedRecord incidentCommand =
         testClient.receiveFirstIncidentCommand(IncidentIntent.CREATE);
+    final SubscribedRecord incidentEvent =
+        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
+
+    assertThat(incidentCommand.sourceRecordPosition()).isEqualTo(failingEvent.position());
 
     assertThat(incidentEvent.key()).isGreaterThan(0);
-    assertThat(incidentEvent.sourceRecordPosition()).isEqualTo(failingEvent.position());
     assertThat(incidentEvent.value())
         .containsEntry("errorType", ErrorType.CONDITION_ERROR.name())
         .containsEntry(
@@ -557,7 +561,7 @@ public class IncidentTest {
 
     // then incident is created
     final SubscribedRecord incidentEvent =
-        testClient.receiveFirstIncidentCommand(IncidentIntent.CREATE);
+        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     assertThat(incidentEvent.key()).isGreaterThan(0);
     assertThat(incidentEvent.value())
@@ -962,11 +966,15 @@ public class IncidentTest {
     final SubscribedRecord activityEvent =
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED);
     final SubscribedRecord failedEvent = testClient.receiveFirstJobEvent(JobIntent.FAILED);
-    final SubscribedRecord incidentEvent =
+
+    final SubscribedRecord incidentCommand =
         testClient.receiveFirstIncidentCommand(IncidentIntent.CREATE);
+    final SubscribedRecord incidentEvent =
+        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
+
+    assertThat(incidentCommand.sourceRecordPosition()).isEqualTo(failedEvent.position());
 
     assertThat(incidentEvent.key()).isGreaterThan(0);
-    assertThat(incidentEvent.sourceRecordPosition()).isEqualTo(failedEvent.position());
     assertThat(incidentEvent.value())
         .containsEntry("errorType", ErrorType.JOB_NO_RETRIES.name())
         .containsEntry("errorMessage", "No more retries left.")

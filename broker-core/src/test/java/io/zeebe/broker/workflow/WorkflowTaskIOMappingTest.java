@@ -74,7 +74,7 @@ public class WorkflowTaskIOMappingTest {
     final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
     // then
-    final SubscribedRecord event = testClient.receiveFirstJobCommand(JobIntent.CREATE);
+    final SubscribedRecord event = testClient.receiveFirstJobEvent(JobIntent.CREATED);
 
     assertThat(event.key()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
     final byte[] result = (byte[]) event.value().get(PROP_JOB_PAYLOAD);
@@ -139,7 +139,7 @@ public class WorkflowTaskIOMappingTest {
     // when
     testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
     final SubscribedRecord incidentEvent =
-        testClient.receiveFirstIncidentCommand(IncidentIntent.CREATE);
+        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     // then incident is created
     assertThat(incidentEvent.key()).isGreaterThan(0);
@@ -166,7 +166,7 @@ public class WorkflowTaskIOMappingTest {
     // when
     testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
     final SubscribedRecord incidentEvent =
-        testClient.receiveFirstIncidentCommand(IncidentIntent.CREATE);
+        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     // then incident is created
     assertThat(incidentEvent.key()).isGreaterThan(0);
@@ -391,7 +391,7 @@ public class WorkflowTaskIOMappingTest {
 
     // then incident is created
     final SubscribedRecord incidentEvent =
-        testClient.receiveFirstIncidentCommand(IncidentIntent.CREATE);
+        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     assertThat(incidentEvent.key()).isGreaterThan(0);
     assertThat(incidentEvent.value())
@@ -621,7 +621,7 @@ public class WorkflowTaskIOMappingTest {
     testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED);
 
     final SubscribedRecord incidentEvent =
-        testClient.receiveFirstIncidentCommand(IncidentIntent.CREATE);
+        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     // then incident is created
     assertThat(incidentEvent.key()).isGreaterThan(0);

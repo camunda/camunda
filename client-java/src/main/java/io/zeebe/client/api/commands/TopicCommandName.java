@@ -16,5 +16,6 @@
 package io.zeebe.client.api.commands;
 
 public enum TopicCommandName {
-  CREATE
+  CREATE,
+  CREATE_COMPLETE,
 }

@@ -22,6 +22,8 @@ public interface LogStreamRecordWriter extends LogStreamWriter {
 
   void wrap(LogStream log);
 
+  LogStreamRecordWriter keyNull();
+
   LogStreamRecordWriter positionAsKey();
 
   LogStreamRecordWriter key(long key);

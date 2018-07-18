@@ -24,6 +24,7 @@ import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
+import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -112,7 +113,9 @@ public class SystemTopicSubscriptionTest {
     assertThat(deploymentEvents)
         .extracting(SubscribedRecord::subscriptionType)
         .containsOnly(SubscriptionType.TOPIC_SUBSCRIPTION);
-    assertThat(deploymentEvents).extracting(SubscribedRecord::key).containsOnly(deploymentKey);
+    assertThat(deploymentEvents)
+        .extracting(SubscribedRecord::key)
+        .containsOnly(ExecuteCommandResponseDecoder.keyNullValue(), deploymentKey);
     assertThat(deploymentEvents)
         .extracting(SubscribedRecord::partitionId)
         .containsOnly(Protocol.SYSTEM_PARTITION);

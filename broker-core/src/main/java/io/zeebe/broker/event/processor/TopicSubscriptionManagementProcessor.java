@@ -25,6 +25,8 @@ import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.processor.*;
+import io.zeebe.logstreams.snapshot.ComposedSnapshot;
+import io.zeebe.logstreams.snapshot.UnpackedObjectSnapshotSupport;
 import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.map.Bytes2LongZbMap;
@@ -76,6 +78,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor {
   protected final TopicSubscriptionEvent subscriptionEvent = new TopicSubscriptionEvent();
   protected final TopicSubscriberEvent subscriberEvent = new TopicSubscriberEvent();
   protected LoggedEvent currentEvent;
+  private final KeyGenerator keyGenerator = new KeyGenerator(1, 1);
 
   public TopicSubscriptionManagementProcessor(
       Partition partition,
@@ -93,7 +96,9 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor {
     this.errorWriter = errorWriter;
     this.eventWriterFactory = eventWriterFactory;
     this.ackMap = new Bytes2LongZbMap(MAXIMUM_SUBSCRIPTION_NAME_LENGTH);
-    this.snapshotResource = new ZbMapSnapshotSupport<>(ackMap);
+    this.snapshotResource =
+        new ComposedSnapshot(
+            new ZbMapSnapshotSupport<>(ackMap), new UnpackedObjectSnapshotSupport(keyGenerator));
     this.serviceContext = serviceContainer;
     this.streamProcessorServiceFactory = streamProcessorServiceFactory;
   }
@@ -154,6 +159,10 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor {
     } else {
       return null;
     }
+  }
+
+  public long nextSubscriberKey() {
+    return keyGenerator.nextKey();
   }
 
   protected EventProcessor onSubscriptionEvent(LoggedEvent event) {

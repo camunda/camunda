@@ -27,6 +27,7 @@ import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.JobIntent;
@@ -260,14 +261,14 @@ public class WorkflowInstanceFunctionalTest {
             .done());
 
     // when
-    final long workflowInstanceKey = testClient.createWorkflowInstance("process");
+    testClient.createWorkflowInstance("process");
 
     // then
     final SubscribedRecord activityActivated =
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED);
     final SubscribedRecord createJobCmd = testClient.receiveFirstJobCommand(JobIntent.CREATE);
 
-    assertThat(createJobCmd.key()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
+    assertThat(createJobCmd.key()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
     assertThat(createJobCmd.sourceRecordPosition()).isEqualTo(activityActivated.position());
     assertThat(createJobCmd.value())
         .containsEntry(PROP_JOB_TYPE, "bar")

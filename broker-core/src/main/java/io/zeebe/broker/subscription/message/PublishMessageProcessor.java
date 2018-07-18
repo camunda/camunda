@@ -57,10 +57,10 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
           String.format(
               "message with id '%s' is already published", bufferAsString(message.getMessageId()));
       streamWriter.writeRejection(record, RejectionType.BAD_VALUE, rejectionReason);
-      responseWriter.writeRejection(record, RejectionType.BAD_VALUE, rejectionReason);
+      responseWriter.writeRejectionOnCommand(record, RejectionType.BAD_VALUE, rejectionReason);
     } else {
-      streamWriter.writeFollowUpEvent(record.getKey(), MessageIntent.PUBLISHED, record.getValue());
-      responseWriter.writeRecord(MessageIntent.PUBLISHED, record);
+      final long key = streamWriter.writeNewEvent(MessageIntent.PUBLISHED, record.getValue());
+      responseWriter.writeEventOnCommand(key, MessageIntent.PUBLISHED, record);
       dataStore.addMessage(entry);
     }
   }

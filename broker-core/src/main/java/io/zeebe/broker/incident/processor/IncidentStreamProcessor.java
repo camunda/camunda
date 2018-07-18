@@ -23,6 +23,7 @@ import io.zeebe.broker.incident.index.IncidentMap;
 import io.zeebe.broker.job.data.JobHeaders;
 import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.logstreams.processor.CommandProcessor;
+import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.processor.TypedEventStreamProcessorBuilder;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
@@ -54,8 +55,11 @@ public class IncidentStreamProcessor {
   private final Long2LongZbMap resolvingEvents = new Long2LongZbMap();
 
   public TypedStreamProcessor createStreamProcessor(TypedStreamEnvironment env) {
+    final KeyGenerator keyGenerator = KeyGenerator.createIncidentKeyGenerator();
+
     TypedEventStreamProcessorBuilder builder =
         env.newStreamProcessor()
+            .keyGenerator(KeyGenerator.createIncidentKeyGenerator())
             .withStateResource(activityInstanceMap)
             .withStateResource(failedJobMap)
             .withStateResource(incidentMap.getMap())
@@ -126,30 +130,31 @@ public class IncidentStreamProcessor {
   private final class CreateIncidentProcessor implements CommandProcessor<IncidentRecord> {
 
     @Override
-    public CommandResult onCommand(
-        TypedRecord<IncidentRecord> command, CommandControl commandControl) {
+    public void onCommand(TypedRecord<IncidentRecord> command, CommandControl commandControl) {
       final IncidentRecord incidentEvent = command.getValue();
 
       final boolean isJobIncident = incidentEvent.getJobKey() > 0;
 
-      if (isJobIncident) {
-        if (failedJobMap.get(incidentEvent.getJobKey(), -1L) != NON_PERSISTENT_INCIDENT) {
-          return commandControl.reject(RejectionType.NOT_APPLICABLE, "Job is not failed");
-        }
+      if (isJobIncident
+          && failedJobMap.get(incidentEvent.getJobKey(), -1L) != NON_PERSISTENT_INCIDENT) {
+        commandControl.reject(RejectionType.NOT_APPLICABLE, "Job is not failed");
+        return;
+      }
 
-        failedJobMap.put(incidentEvent.getJobKey(), command.getKey());
+      final long incidentKey = commandControl.accept(IncidentIntent.CREATED);
+
+      if (isJobIncident) {
+        failedJobMap.put(incidentEvent.getJobKey(), incidentKey);
       } else {
-        activityInstanceMap.put(incidentEvent.getActivityInstanceKey(), command.getKey());
+        activityInstanceMap.put(incidentEvent.getActivityInstanceKey(), incidentKey);
       }
 
       incidentMap
-          .newIncident(command.getKey())
+          .newIncident(incidentKey)
           .setState(STATE_CREATED)
           .setIncidentEventPosition(command.getPosition())
           .setFailureEventPosition(incidentEvent.getFailureEventPosition())
           .write();
-
-      return commandControl.accept(IncidentIntent.CREATED);
     }
   }
 
@@ -262,7 +267,7 @@ public class IncidentStreamProcessor {
             reader.readValue(incidentEventPosition, IncidentRecord.class);
 
         streamWriter.writeFollowUpEvent(
-            priorIncidentEvent.getKey(), IncidentIntent.DELETED, priorIncidentEvent.getValue());
+            command.getKey(), IncidentIntent.DELETED, priorIncidentEvent.getValue());
 
         incidentMap.remove(command.getKey());
       } else {
@@ -313,7 +318,7 @@ public class IncidentStreamProcessor {
               reader.readValue(incidentPosition, IncidentRecord.class);
 
           streamWriter.writeFollowUpEvent(
-              incidentEvent.getKey(), IncidentIntent.RESOLVED, incidentEvent.getValue());
+              incidentKey, IncidentIntent.RESOLVED, incidentEvent.getValue());
 
           incidentMap.remove(incidentEvent.getKey());
           activityInstanceMap.remove(incidentEvent.getValue().getActivityInstanceKey(), -1L);
@@ -418,7 +423,7 @@ public class IncidentStreamProcessor {
               reader.readValue(incidentMap.getIncidentEventPosition(), IncidentRecord.class);
 
           streamWriter.writeFollowUpCommand(
-              persistedIncident.getKey(), IncidentIntent.DELETE, persistedIncident.getValue());
+              incidentKey, IncidentIntent.DELETE, persistedIncident.getValue());
           failedJobMap.remove(event.getKey(), -1L);
         } else {
           throw new IllegalStateException("inconsistent incident map");

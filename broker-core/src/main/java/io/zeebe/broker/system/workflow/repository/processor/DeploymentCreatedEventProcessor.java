@@ -38,7 +38,7 @@ public class DeploymentCreatedEventProcessor implements TypedRecordProcessor<Dep
       TypedResponseWriter responseWriter,
       TypedStreamWriter streamWriter) {
 
-    responseWriter.writeRecord(event.getMetadata().getIntent(), event);
+    responseWriter.writeEvent(event);
 
     addWorkflowsToIndex(event);
   }

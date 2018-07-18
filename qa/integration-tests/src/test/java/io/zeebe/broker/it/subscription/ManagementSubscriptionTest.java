@@ -27,6 +27,7 @@ import io.zeebe.client.api.record.*;
 import io.zeebe.client.api.subscription.TopicSubscription;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -140,7 +141,7 @@ public class ManagementSubscriptionTest {
     assertThat(commands).hasSize(1);
 
     final DeploymentCommand command = commands.get(0);
-    assertThat(command.getKey()).isEqualTo(deploymentEvent.getKey());
+    assertThat(command.getKey()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
     assertThat(command.getName()).isEqualTo(DeploymentCommandName.CREATE);
     assertThat(command.getDeploymentTopic()).isEqualTo(clientRule.getDefaultTopic());
 
@@ -173,20 +174,20 @@ public class ManagementSubscriptionTest {
             .send()
             .join();
 
-    waitUntil(() -> events.size() >= 3);
+    waitUntil(() -> events.size() >= 2);
 
     // then
-    assertThat(events).hasSize(3);
+    assertThat(events).hasSize(2);
 
     assertThat(events)
         .extracting(TopicEvent::getState)
-        .containsExactly(TopicState.CREATING, TopicState.CREATE_COMPLETE, TopicState.CREATED);
+        .containsExactly(TopicState.CREATING, TopicState.CREATED);
     assertThat(events).extracting(TopicEvent::getName).containsOnly("my-topic");
     assertThat(events).extracting(TopicEvent::getKey).containsOnly(topicEvent.getKey());
     assertThat(events).extracting(TopicEvent::getPartitions).containsOnly(1);
     assertThat(events).extracting(TopicEvent::getReplicationFactor).containsOnly(1);
 
-    assertThat(events.get(2).getPartitionIds()).containsExactly(2);
+    assertThat(events.get(1).getPartitionIds()).containsExactly(2);
   }
 
   @Test
@@ -210,17 +211,20 @@ public class ManagementSubscriptionTest {
             .send()
             .join();
 
-    waitUntil(() -> commands.size() >= 1);
+    waitUntil(() -> commands.size() >= 2);
 
     // then
-    assertThat(commands).hasSize(1);
+    assertThat(commands).hasSize(2);
 
-    final TopicCommand command = commands.get(0);
-    assertThat(command.getCommandName()).isEqualTo(TopicCommandName.CREATE);
-    assertThat(command.getName()).isEqualTo("my-topic");
-    assertThat(command.getKey()).isEqualTo(topicEvent.getKey());
-    assertThat(command.getPartitions()).isEqualTo(1);
-    assertThat(command.getReplicationFactor()).isEqualTo(1);
+    assertThat(commands)
+        .extracting(TopicCommand::getCommandName)
+        .containsExactly(TopicCommandName.CREATE, TopicCommandName.CREATE_COMPLETE);
+    assertThat(commands).extracting(TopicCommand::getName).containsOnly("my-topic");
+    assertThat(commands)
+        .extracting(TopicCommand::getKey)
+        .containsExactly(ExecuteCommandResponseDecoder.keyNullValue(), topicEvent.getKey());
+    assertThat(commands).extracting(TopicCommand::getPartitions).containsOnly(1);
+    assertThat(commands).extracting(TopicCommand::getReplicationFactor).containsOnly(1);
   }
 
   @Test

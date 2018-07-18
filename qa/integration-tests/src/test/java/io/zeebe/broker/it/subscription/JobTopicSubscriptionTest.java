@@ -26,6 +26,7 @@ import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.record.JobRecord;
 import io.zeebe.client.api.subscription.JobCommandHandler;
 import io.zeebe.client.api.subscription.JobEventHandler;
+import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import io.zeebe.test.util.TestUtil;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -118,7 +119,7 @@ public class JobTopicSubscriptionTest {
     TestUtil.waitUntil(() -> handler.numJobRecords() == 2);
 
     final long jobKey = job.getKey();
-    handler.assertJobRecord(0, jobKey, "CREATE");
+    handler.assertJobRecord(0, ExecuteCommandResponseDecoder.keyNullValue(), "CREATE");
     handler.assertJobRecord(1, jobKey, "CREATED");
   }
 

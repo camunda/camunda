@@ -150,6 +150,10 @@ public class TopicEventRecorder extends ExternalResource {
     return jobCommands.stream().filter(matcher).collect(Collectors.toList());
   }
 
+  public List<IncidentEvent> getIncidentEvents(IncidentState state) {
+    return incidentEvents.stream().filter(state(state)).collect(Collectors.toList());
+  }
+
   public boolean hasIncidentEvent(IncidentState state) {
     return incidentEvents.stream().anyMatch(state(state));
   }

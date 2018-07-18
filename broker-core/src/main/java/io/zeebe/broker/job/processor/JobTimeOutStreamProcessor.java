@@ -22,6 +22,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 import io.zeebe.broker.job.JobQueueManagerService;
 import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
+import io.zeebe.broker.logstreams.processor.TypedCommandWriter;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
@@ -47,7 +48,7 @@ public class JobTimeOutStreamProcessor implements StreamProcessorLifecycleAware 
   private UnsafeBuffer mapAccessBuffer = new UnsafeBuffer(new byte[MAP_VALUE_MAX_LENGTH]);
 
   private ScheduledTimer timer;
-  private TypedStreamWriter writer;
+  private TypedCommandWriter writer;
   private TypedStreamReader reader;
 
   @Override
@@ -56,7 +57,7 @@ public class JobTimeOutStreamProcessor implements StreamProcessorLifecycleAware 
         streamProcessor
             .getActor()
             .runAtFixedRate(JobQueueManagerService.TIME_OUT_INTERVAL, this::timeOutJobs);
-    this.writer = streamProcessor.getEnvironment().buildStreamWriter();
+    this.writer = streamProcessor.getEnvironment().buildCommandWriter();
     this.reader = streamProcessor.getEnvironment().buildStreamReader();
   }
 

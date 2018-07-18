@@ -91,7 +91,9 @@ public class TopicCreateProcessor implements TypedRecordProcessor<TopicRecord> {
       TypedResponseWriter responseWriter,
       TypedStreamWriter streamWriter,
       Consumer<SideEffectProducer> sideEffect) {
-    responseWriter.writeRecord(TopicIntent.CREATING, command);
+
+    final long key = streamWriter.writeNewEvent(TopicIntent.CREATING, command.getValue());
+    responseWriter.writeEventOnCommand(key, TopicIntent.CREATING, command);
 
     sideEffect.accept(
         () -> {
@@ -104,9 +106,7 @@ public class TopicCreateProcessor implements TypedRecordProcessor<TopicRecord> {
           return written;
         });
 
-    streamWriter.writeFollowUpEvent(command.getKey(), TopicIntent.CREATING, command.getValue());
-
-    addTopic.accept(command.getKey(), command.getValue());
+    addTopic.accept(key, command.getValue());
   }
 
   private void rejectCommand(
@@ -115,7 +115,7 @@ public class TopicCreateProcessor implements TypedRecordProcessor<TopicRecord> {
       TypedStreamWriter streamWriter,
       RejectionType rejectionType,
       String rejectionReason) {
-    responseWriter.writeRejection(command, rejectionType, rejectionReason);
+    responseWriter.writeRejectionOnCommand(command, rejectionType, rejectionReason);
     streamWriter.writeRejection(command, rejectionType, rejectionReason);
   }
 }

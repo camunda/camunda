@@ -59,7 +59,7 @@ class BootstrapSystemTopicReplication extends Actor implements Service<Void> {
     final Partition partition = partitionInjector.getValue();
     final PartitionInfo partitionInfo = partition.getInfo();
 
-    metadata.recordType(RecordType.EVENT);
+    metadata.recordType(RecordType.COMMAND);
     metadata.valueType(ValueType.TOPIC);
     metadata.intent(TopicIntent.CREATE_COMPLETE);
 
@@ -80,7 +80,7 @@ class BootstrapSystemTopicReplication extends Actor implements Service<Void> {
 
   private void writeEvent() {
     final long position =
-        writer.positionAsKey().metadataWriter(metadata).valueWriter(topicEvent).tryWrite();
+        writer.keyNull().metadataWriter(metadata).valueWriter(topicEvent).tryWrite();
 
     if (position < 0) {
       actor.yield();

@@ -87,6 +87,7 @@ public class DeploymentManager implements Service<DeploymentManager> {
     final TypedStreamProcessor streamProcessor =
         streamEnvironment
             .newStreamProcessor()
+            .keyGenerator(KeyGenerator.createDeploymentKeyGenerator())
             .onCommand(
                 ValueType.DEPLOYMENT,
                 DeploymentIntent.CREATE,

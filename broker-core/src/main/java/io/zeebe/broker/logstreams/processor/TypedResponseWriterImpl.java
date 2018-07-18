@@ -44,48 +44,99 @@ public class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectP
   }
 
   @Override
-  public void writeRejection(
-      TypedRecord<?> record, RejectionType rejectionType, String rejectionReason) {
-    final byte[] bytes = rejectionReason.getBytes(StandardCharsets.UTF_8);
-    stringWrapper.wrap(bytes);
+  public void writeRejection(TypedRecord<?> rejection) {
+
+    final RecordMetadata metadata = rejection.getMetadata();
+
     stage(
         RecordType.COMMAND_REJECTION,
-        record.getMetadata().getIntent(),
-        rejectionType,
+        metadata.getIntent(),
+        rejection.getKey(),
+        rejection.getMetadata().getRejectionType(),
+        rejection.getMetadata().getRejectionReason(),
+        rejection.getPosition(),
+        rejection.getSourcePosition(),
+        rejection);
+  }
+
+  @Override
+  public void writeRejectionOnCommand(TypedRecord<?> command, RejectionType type, String reason) {
+    final byte[] bytes = reason.getBytes(StandardCharsets.UTF_8);
+    stringWrapper.wrap(bytes);
+
+    stage(
+        RecordType.COMMAND_REJECTION,
+        command.getMetadata().getIntent(),
+        command.getKey(),
+        type,
         stringWrapper,
-        record);
+        0,
+        command.getPosition(),
+        command);
   }
 
   @Override
-  public void writeRejection(TypedRecord<?> record, RejectionType type, DirectBuffer reason) {
-    stage(RecordType.COMMAND_REJECTION, record.getMetadata().getIntent(), type, reason, record);
+  public void writeRejectionOnCommand(
+      TypedRecord<?> command, RejectionType type, DirectBuffer reason) {
+
+    stage(
+        RecordType.COMMAND_REJECTION,
+        command.getMetadata().getIntent(),
+        command.getKey(),
+        type,
+        reason,
+        0,
+        command.getPosition(),
+        command);
   }
 
   @Override
-  public void writeRecord(Intent intent, TypedRecord<?> record) {
+  public void writeEvent(TypedRecord<?> event) {
     stringWrapper.wrap(0, 0);
-    stage(RecordType.EVENT, intent, RejectionType.NULL_VAL, stringWrapper, record);
+
+    stage(
+        RecordType.EVENT,
+        event.getMetadata().getIntent(),
+        event.getKey(),
+        RejectionType.NULL_VAL,
+        stringWrapper,
+        event.getPosition(),
+        event.getSourcePosition(),
+        event);
+  }
+
+  @Override
+  public void writeEventOnCommand(long eventKey, Intent eventState, TypedRecord<?> command) {
+    stringWrapper.wrap(0, 0);
+
+    stage(
+        RecordType.EVENT,
+        eventState,
+        eventKey,
+        RejectionType.NULL_VAL,
+        stringWrapper,
+        0, // TODO: this depends on the value of written event =>
+        // https://github.com/zeebe-io/zeebe/issues/374
+        command.getPosition(),
+        command);
   }
 
   private void stage(
       RecordType type,
       Intent intent,
+      long key,
       RejectionType rejectionType,
       DirectBuffer rejectionReason,
+      long position,
+      long sourcePosition,
       TypedRecord<?> record) {
     final RecordMetadata metadata = record.getMetadata();
 
-    final boolean respondsOnCommand = metadata.getRecordType() == RecordType.COMMAND;
-
     writer
         .partitionId(partitionId)
-        .position(
-            respondsOnCommand
-                ? 0
-                : record.getPosition()) // TODO: this depends on the value of written event =>
-        // https://github.com/zeebe-io/zeebe/issues/374
-        .sourcePosition(respondsOnCommand ? record.getPosition() : record.getSourcePosition())
-        .key(record.getKey())
+        .position(position)
+        .sourcePosition(sourcePosition)
+        .key(key)
         .timestamp(record.getTimestamp())
         .intent(intent)
         .recordType(type)

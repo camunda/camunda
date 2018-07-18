@@ -155,11 +155,7 @@ public class IdGenerator implements TypedRecordProcessor<IdRecord>, Service<IdGe
           idEvent.setId(nextIdToWrite);
 
           final long position =
-              logStreamWriter
-                  .valueWriter(idEvent)
-                  .metadataWriter(metadata)
-                  .positionAsKey()
-                  .tryWrite();
+              logStreamWriter.valueWriter(idEvent).metadataWriter(metadata).keyNull().tryWrite();
 
           if (position < 0) {
             nextId.completeExceptionally(new RuntimeException("Unable to write id event."));

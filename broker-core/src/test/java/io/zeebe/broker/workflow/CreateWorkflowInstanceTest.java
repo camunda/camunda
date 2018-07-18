@@ -33,6 +33,7 @@ import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.workflow.map.WorkflowCache;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -85,7 +86,7 @@ public class CreateWorkflowInstanceTest {
     final SubscribedRecord createWorkflowCommand =
         testClient.receiveFirstWorkflowInstanceCommand(CREATE);
 
-    assertThat(resp.key()).isEqualTo(createWorkflowCommand.position());
+    assertThat(resp.key()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
     assertThat(resp.position()).isGreaterThan(createWorkflowCommand.position());
     assertThat(resp.sourceRecordPosition()).isEqualTo(createWorkflowCommand.position());
     assertThat(resp.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
@@ -115,7 +116,7 @@ public class CreateWorkflowInstanceTest {
     final SubscribedRecord createWorkflowCommand =
         testClient.receiveFirstWorkflowInstanceCommand(CREATE);
 
-    assertThat(resp.key()).isEqualTo(createWorkflowCommand.position());
+    assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
     assertThat(resp.position()).isGreaterThan(createWorkflowCommand.position());
     assertThat(resp.sourceRecordPosition()).isEqualTo(createWorkflowCommand.position());
     assertThat(resp.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
@@ -295,7 +296,7 @@ public class CreateWorkflowInstanceTest {
     final SubscribedRecord createWorkflowCommand =
         testClient.receiveFirstWorkflowInstanceCommand(CREATE);
 
-    assertThat(resp.key()).isEqualTo(createWorkflowCommand.position());
+    assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
     assertThat(resp.position()).isGreaterThan(createWorkflowCommand.position());
     assertThat(resp.sourceRecordPosition()).isEqualTo(createWorkflowCommand.position());
     assertThat(resp.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());

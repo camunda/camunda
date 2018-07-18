@@ -30,7 +30,6 @@ public class DeploymentRejectedEventProcessor implements TypedRecordProcessor<De
       TypedRecord<DeploymentRecord> record,
       TypedResponseWriter responseWriter,
       TypedStreamWriter streamWriter) {
-    responseWriter.writeRejection(
-        record, record.getMetadata().getRejectionType(), record.getMetadata().getRejectionReason());
+    responseWriter.writeRejection(record);
   }
 }

@@ -93,6 +93,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
     return environment
         .newStreamProcessor()
+        .keyGenerator(KeyGenerator.createWorkflowInstanceKeyGenerator())
         .onCommand(
             ValueType.WORKFLOW_INSTANCE,
             WorkflowInstanceIntent.CREATE,
@@ -235,6 +236,9 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
     private long requestId;
     private int requestStreamId;
 
+    private long workflowInstanceKey;
+    private long startEventKey;
+
     @Override
     public void processRecord(
         TypedRecord<WorkflowInstanceRecord> command,
@@ -247,7 +251,14 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
       this.requestId = command.getMetadata().getRequestId();
       this.requestStreamId = command.getMetadata().getRequestStreamId();
 
-      workflowInstanceCommand.setWorkflowInstanceKey(command.getKey());
+      // keys must be generated here (regardless if workflow can be fetched or not)
+      // to avoid inconsistencies on reprocessing (if keys are generated must no depend
+      // on the success of the workflow fetch request)
+      final KeyGenerator keyGenerator = streamWriter.getKeyGenerator();
+      this.workflowInstanceKey = keyGenerator.nextKey();
+      this.startEventKey = keyGenerator.nextKey();
+
+      workflowInstanceCommand.setWorkflowInstanceKey(workflowInstanceKey);
 
       createWorkflowInstance(command, streamWriter, responseWriter, ctx);
     }
@@ -359,7 +370,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         TypedResponseWriter responseWriter) {
       final TypedBatchWriter batchWriter = writer.newBatch();
       batchWriter.addFollowUpEvent(
-          command.getKey(),
+          workflowInstanceKey,
           WorkflowInstanceIntent.CREATED,
           command.getValue(),
           this::addRequestMetadata);
@@ -389,7 +400,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
           .setVersion(createCommand.getVersion())
           .setWorkflowInstanceKey(createCommand.getWorkflowInstanceKey())
           .setWorkflowKey(createCommand.getWorkflowKey());
-      batchWriter.addNewEvent(WorkflowInstanceIntent.START_EVENT_OCCURRED, startEventRecord);
+      batchWriter.addFollowUpEvent(
+          startEventKey, WorkflowInstanceIntent.START_EVENT_OCCURRED, startEventRecord);
     }
   }
 
@@ -402,7 +414,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         TypedResponseWriter responseWriter,
         TypedStreamWriter streamWriter) {
       workflowInstanceEventCreate.incrementOrdered();
-      responseWriter.writeRecord(record.getMetadata().getIntent(), record);
+      responseWriter.writeEvent(record);
 
       workflowInstanceIndex
           .newWorkflowInstance(record.getKey())
@@ -422,10 +434,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         TypedRecord<WorkflowInstanceRecord> record,
         TypedResponseWriter responseWriter,
         TypedStreamWriter streamWriter) {
-      responseWriter.writeRejection(
-          record,
-          record.getMetadata().getRejectionType(),
-          record.getMetadata().getRejectionReason());
+      responseWriter.writeRejection(record);
     }
   }
 
@@ -521,7 +530,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
   private final class SequenceFlowTakenEventProcessor
       extends FlowElementEventProcessor<SequenceFlow> {
-    private Intent nextState;
 
     @Override
     void processFlowElementEvent(
@@ -532,6 +540,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
       final WorkflowInstanceRecord value = event.getValue();
       value.setActivityId(targetNode.getIdAsBuffer());
+
+      final Intent nextState;
 
       if (targetNode instanceof EndEvent) {
         nextState = WorkflowInstanceIntent.END_EVENT_OCCURRED;
@@ -801,7 +811,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         final RejectionType rejectionType = RejectionType.NOT_APPLICABLE;
         final String rejectionReason = "Workflow instance is not running";
         streamWriter.writeRejection(command, rejectionType, rejectionReason);
-        responseWriter.writeRejection(command, rejectionType, rejectionReason);
+        responseWriter.writeRejectionOnCommand(command, rejectionType, rejectionReason);
       }
     }
 
@@ -853,7 +863,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
       }
 
       batchWriter.addFollowUpEvent(command.getKey(), WorkflowInstanceIntent.CANCELED, value);
-      responseWriter.writeRecord(WorkflowInstanceIntent.CANCELED, command);
+      responseWriter.writeEventOnCommand(
+          command.getKey(), WorkflowInstanceIntent.CANCELED, command);
 
       workflowInstanceIndex.remove(command.getKey());
       payloadCache.remove(command.getKey());
@@ -863,7 +874,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
   private final class UpdatePayloadProcessor implements CommandProcessor<WorkflowInstanceRecord> {
 
     @Override
-    public CommandResult onCommand(
+    public void onCommand(
         TypedRecord<WorkflowInstanceRecord> command, CommandControl commandControl) {
       final WorkflowInstanceRecord workflowInstanceEvent = command.getValue();
 
@@ -876,10 +887,9 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
             workflowInstanceEvent.getWorkflowInstanceKey(),
             command.getPosition(),
             workflowInstanceEvent.getPayload());
-        return commandControl.accept(WorkflowInstanceIntent.PAYLOAD_UPDATED);
+        commandControl.accept(WorkflowInstanceIntent.PAYLOAD_UPDATED);
       } else {
-        return commandControl.reject(
-            RejectionType.NOT_APPLICABLE, "Workflow instance is not running");
+        commandControl.reject(RejectionType.NOT_APPLICABLE, "Workflow instance is not running");
       }
     }
   }
@@ -980,9 +990,10 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
   @SuppressWarnings("rawtypes")
   private final class BpmnAspectEventProcessor extends FlowElementEventProcessor<FlowElement> {
-    private FlowElementEventProcessor delegate;
 
-    protected final Map<BpmnAspect, FlowElementEventProcessor> aspectHandlers;
+    private final Map<BpmnAspect, FlowElementEventProcessor> aspectHandlers;
+
+    private FlowElementEventProcessor delegate;
 
     private BpmnAspectEventProcessor() {
       aspectHandlers = new EnumMap<>(BpmnAspect.class);

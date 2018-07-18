@@ -32,6 +32,7 @@ import io.zeebe.client.api.record.ValueType;
 import io.zeebe.client.api.subscription.RecordHandler;
 import io.zeebe.client.api.subscription.TopicSubscription;
 import io.zeebe.client.impl.job.CreateJobCommandImpl;
+import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -99,7 +100,7 @@ public class TopicSubscriptionTest {
     assertThat(recordingHandler.numJobRecords()).isEqualTo(2);
 
     final long taskKey = job.getKey();
-    recordingHandler.assertJobRecord(0, taskKey, "CREATE");
+    recordingHandler.assertJobRecord(0, ExecuteCommandResponseDecoder.keyNullValue(), "CREATE");
     recordingHandler.assertJobRecord(1, taskKey, "CREATED");
   }
 
@@ -122,7 +123,7 @@ public class TopicSubscriptionTest {
     assertThat(recordingHandler.numJobRecords()).isEqualTo(2);
 
     final long jobKey = job.getKey();
-    recordingHandler.assertJobRecord(0, jobKey, "CREATE");
+    recordingHandler.assertJobRecord(0, ExecuteCommandResponseDecoder.keyNullValue(), "CREATE");
     recordingHandler.assertJobRecord(1, jobKey, "CREATED");
   }
 
@@ -148,7 +149,7 @@ public class TopicSubscriptionTest {
 
     // task 1 has not been received
     final long job2Key = job2.getKey();
-    recordingHandler.assertJobRecord(0, job2Key, "CREATE");
+    recordingHandler.assertJobRecord(0, ExecuteCommandResponseDecoder.keyNullValue(), "CREATE");
     recordingHandler.assertJobRecord(1, job2Key, "CREATED");
   }
 
@@ -277,9 +278,9 @@ public class TopicSubscriptionTest {
 
     // then
     final long jobKey = job.getKey();
-    recordingHandler.assertJobRecord(0, jobKey, "CREATE");
+    recordingHandler.assertJobRecord(0, ExecuteCommandResponseDecoder.keyNullValue(), "CREATE");
     recordingHandler.assertJobRecord(1, jobKey, "CREATED");
-    secondEventHandler.assertJobRecord(0, jobKey, "CREATE");
+    secondEventHandler.assertJobRecord(0, ExecuteCommandResponseDecoder.keyNullValue(), "CREATE");
     secondEventHandler.assertJobRecord(1, jobKey, "CREATED");
   }
 
