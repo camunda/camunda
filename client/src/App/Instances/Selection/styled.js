@@ -3,24 +3,16 @@ import {themed, themeStyle, Colors} from 'modules/theme';
 
 import {RemoveItem} from 'modules/components/Icon';
 
+const themedWith = (dark, light) => {
+  return themeStyle({
+    dark,
+    light
+  });
+};
+
 export const Selection = themed(styled.div`
-  width: 443px;
+  width: 442px;
 `);
-
-const themedText = themeStyle({
-  dark: '#ffffff',
-  light: Colors.uiLight06
-});
-
-const themedBorder = themeStyle({
-  dark: Colors.uiDark05,
-  light: Colors.uiLight05
-});
-
-const themedBackground = themeStyle({
-  dark: Colors.uiDark03,
-  light: Colors.uiLight02
-});
 
 export const Header = themed(styled.div`
   /* Positioning */
@@ -30,11 +22,13 @@ export const Header = themed(styled.div`
   align-items: center;
   height: 32px;
   padding-left: 9px;
-  padding-right: 22px;
+  padding-right: 21px;
 
   /* Color */
-  color: ${({isOpen}) => (isOpen ? '#ffffff' : themedText)};
-  background: ${({isOpen}) => (isOpen ? Colors.selections : themedBackground)};
+  color: ${({isOpen}) =>
+    isOpen ? '#ffffff' : themedWith('#ffffff', Colors.uiLight06)};
+  background: ${({isOpen}) =>
+    isOpen ? Colors.selections : themedWith(Colors.uiDark03, Colors.uiLight02)};
 
   /* Text */
   font-size: 15px;
@@ -43,12 +37,13 @@ export const Header = themed(styled.div`
   /* Other */
   border-style: solid;
   border-width: 1px 0 1px 1px;
-  border-color: ${({isOpen}) => (isOpen ? '#659fff' : themedBorder)};
+  border-color: ${({isOpen}) =>
+    isOpen ? '#659fff' : themedWith(Colors.uiDark05, Colors.uiLight05)};
   border-radius: 3px 0 0 ${({isOpen}) => (isOpen ? 0 : '3px')};
 `);
 
 export const Headline = styled.div`
-  padding: 0 7px 0 9px;
+  padding: 0 7px 0 8px;
 `;
 
 export const Actions = styled.div`
@@ -75,7 +70,7 @@ export const Instance = themed(styled.div`
   align-items: center;
   height: 31px;
   padding-left: 10px;
-  color: ${themeStyle({dark: '#ffffff', light: Colors.uiDark04})};
+  color: ${themedWith('#ffffff', Colors.uiDark04)};
   font-size: 13px;
 
   & * {
@@ -83,27 +78,17 @@ export const Instance = themed(styled.div`
   }
 
   &:nth-child(even) {
-    background: ${themeStyle({
-      dark: Colors.darkInstanceEven,
-      light: Colors.lightInstanceEven
-    })};
-    border-bottom: 1px solid
-      ${themeStyle({
-        dark: Colors.uiDark02,
-        light: Colors.uiLight05
-      })};
+    background: ${themedWith(
+      Colors.darkInstanceEven,
+      Colors.lightInstanceEven
+    )};
+
+    border-bottom: 1px solid ${themedWith(Colors.uiDark02, Colors.uiLight05)};
   }
 
   &:nth-child(odd) {
-    background: ${themeStyle({
-      dark: Colors.darkInstanceOdd,
-      light: Colors.lightInstanceOdd
-    })};
-    border-bottom: 1px solid
-      ${themeStyle({
-        dark: Colors.uiDark02,
-        light: Colors.uiLight05
-      })};
+    background: ${themedWith(Colors.darkInstanceOdd, Colors.lightInstanceOdd)};
+    border-bottom: 1px solid ${themedWith(Colors.uiDark02, Colors.uiLight05)};
   }
 `);
 
@@ -122,11 +107,13 @@ export const Footer = styled.div`
   justify-content: flex-end;
   align-items: center;
   height: 32px;
-  padding: 8px 22px 7px 0;
+  padding: 8px 21px 7px 0;
   color: #ffffff;
   background: ${Colors.selections};
   border-radius: 0 0 0 3px;
-  border: solid 1px #659fff;
+  border-width: 1px 0 1px 1px;
+  border-style: solid;
+  border-color: #659fff;
 `;
 
 export const MoreInstances = styled.div`
