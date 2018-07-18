@@ -1,8 +1,10 @@
 import React, {Fragment} from 'react';
 import PropTypes from 'prop-types';
 import StateIcon from 'modules/components/StateIcon';
+import Dropdown from 'modules/components/Dropdown';
+
 import {getWorkflowName} from 'modules/utils/instance';
-import {Down, Right, Batch} from 'modules/components/Icon';
+import {Down, Right, Batch, Retry} from 'modules/components/Icon';
 
 import * as Styled from './styled.js';
 
@@ -46,9 +48,13 @@ export default class Selection extends React.Component {
 
   getActions = (onRetry, onDelete) => (
     <Styled.Actions>
-      <Styled.DropdownTrigger onClick={onRetry}>
-        <Batch />
-        <Down />
+      <Styled.DropdownTrigger onClick={evt => evt && evt.stopPropagation()}>
+        <Dropdown label={<Batch />}>
+          <Dropdown.Option data-test="logout-button" onClick={onRetry}>
+            <Retry />
+            <Styled.OptionLabel>Retry</Styled.OptionLabel>
+          </Dropdown.Option>
+        </Dropdown>
       </Styled.DropdownTrigger>
       <Styled.DeleteIcon onClick={onDelete} />
     </Styled.Actions>

@@ -65,6 +65,10 @@ export const DeleteIcon = styled(RemoveItem)`
   opacity: 0.45;
 `;
 
+export const OptionLabel = styled.label`
+  margin-left: 8px;
+`;
+
 export const Instance = themed(styled.div`
   display: flex;
   align-items: center;

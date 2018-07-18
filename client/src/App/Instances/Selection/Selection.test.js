@@ -1,6 +1,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
+import Dropdown from 'modules/components/Dropdown';
 import Selection from './Selection';
 import * as Styled from './styled';
 
@@ -98,8 +99,9 @@ describe('Selection', () => {
     expect(mockOnDelete).toHaveBeenCalled();
   });
 
-  it('should call the passed retry method', () => {
+  it.only('should call the passed retry method', () => {
     node.find(Styled.DropdownTrigger).simulate('click');
+    node.find(Dropdown.Option).simulate('click');
     expect(mockOnRetry).toHaveBeenCalled();
   });
 
