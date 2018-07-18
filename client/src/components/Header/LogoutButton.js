@@ -15,7 +15,11 @@ export default function LogoutButton() {
   );
 }
 
-function logout() {
-  get('/api/authentication/logout');
-  destroy();
+async function logout() {
+  try {
+    await get('/api/authentication/logout');
+    destroy();
+  } catch (error) {
+    alert('Failed to logout due to internal server error');
+  }
 }

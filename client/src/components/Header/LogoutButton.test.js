@@ -31,7 +31,8 @@ it('should clear the token and logout from server on click', () => {
   const node = mount(<LogoutButton />);
 
   node.find('a').simulate('click');
-
-  expect(destroy).toHaveBeenCalled();
-  expect(get).toHaveBeenCalledWith(expect.stringContaining('logout'));
+  setImmediate(() => {
+    expect(destroy).toHaveBeenCalled();
+    expect(get).toHaveBeenCalledWith(expect.stringContaining('logout'));
+  });
 });
