@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.subscription;
 
+import io.zeebe.broker.subscription.command.SubscriptionApiCommandMessageHandler;
 import io.zeebe.broker.subscription.message.MessageService;
 import io.zeebe.servicecontainer.ServiceName;
 
@@ -25,8 +26,8 @@ public class SubscriptionServiceNames {
   public static final ServiceName<MessageService> MESSAGE_SERVICE_NAME =
       ServiceName.newServiceName("broker.subscription.message", MessageService.class);
 
-  public static final ServiceName<SubscriptionApiRequestHandler>
-      SUBSCRIPTION_API_REQUEST_HANDLER_SERVICE_NAME =
+  public static final ServiceName<SubscriptionApiCommandMessageHandler>
+      SUBSCRIPTION_API_MESSAGE_HANDLER_SERVICE_NAME =
           ServiceName.newServiceName(
-              "broker.subscription.requestHandler", SubscriptionApiRequestHandler.class);
+              "broker.subscriptionApi.messageHandler", SubscriptionApiCommandMessageHandler.class);
 }

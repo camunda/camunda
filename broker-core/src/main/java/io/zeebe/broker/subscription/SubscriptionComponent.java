@@ -20,12 +20,13 @@ package io.zeebe.broker.subscription;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY;
 import static io.zeebe.broker.subscription.SubscriptionServiceNames.MESSAGE_SERVICE_NAME;
-import static io.zeebe.broker.subscription.SubscriptionServiceNames.SUBSCRIPTION_API_REQUEST_HANDLER_SERVICE_NAME;
+import static io.zeebe.broker.subscription.SubscriptionServiceNames.SUBSCRIPTION_API_MESSAGE_HANDLER_SERVICE_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.CLIENT_API_SERVER_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.SUBSCRIPTION_API_SERVER_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.bufferingServerTransport;
 import static io.zeebe.broker.transport.TransportServiceNames.serverTransport;
 
+import io.zeebe.broker.subscription.command.SubscriptionApiCommandMessageHandlerService;
 import io.zeebe.broker.subscription.message.MessageService;
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
@@ -37,12 +38,15 @@ public class SubscriptionComponent implements Component {
   public void init(SystemContext context) {
     final ServiceContainer serviceContainer = context.getServiceContainer();
 
-    final SubscriptionApiRequestHandlerService service = new SubscriptionApiRequestHandlerService();
+    final SubscriptionApiCommandMessageHandlerService messageHandlerService =
+        new SubscriptionApiCommandMessageHandlerService();
     serviceContainer
-        .createService(SUBSCRIPTION_API_REQUEST_HANDLER_SERVICE_NAME, service)
+        .createService(SUBSCRIPTION_API_MESSAGE_HANDLER_SERVICE_NAME, messageHandlerService)
         .dependency(
             bufferingServerTransport(SUBSCRIPTION_API_SERVER_NAME),
-            service.getServerTransportInjector())
+            messageHandlerService.getServerTransportInjector())
+        .groupReference(
+            LEADER_PARTITION_GROUP_NAME, messageHandlerService.getLeaderParitionsGroupReference())
         .install();
 
     final MessageService messageService = new MessageService();

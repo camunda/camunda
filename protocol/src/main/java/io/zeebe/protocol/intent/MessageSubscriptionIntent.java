@@ -13,14 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.model.bpmn.instance;
+package io.zeebe.protocol.intent;
 
-import io.zeebe.msgpack.jsonpath.JsonPathQuery;
-import org.agrona.DirectBuffer;
+public enum MessageSubscriptionIntent implements Intent {
+  OPEN((short) 0),
+  OPENED((short) 1);
 
-public interface MessageSubscription {
+  private short value;
 
-  DirectBuffer getMessageName();
+  MessageSubscriptionIntent(short value) {
+    this.value = value;
+  }
 
-  JsonPathQuery getCorrelationKey();
+  @Override
+  public short value() {
+    return value;
+  }
+
+  public static Intent from(short value) {
+    switch (value) {
+      case 0:
+        return OPEN;
+      case 1:
+        return OPENED;
+      default:
+        return Intent.UNKNOWN;
+    }
+  }
 }

@@ -353,7 +353,7 @@ public class BpmnTransformTest {
 
     final MessageSubscription subscription = catchEvent.getMessageSubscription();
     assertThat(subscription).isNotNull();
-    assertThat(subscription.getMessageName()).isEqualTo("order canceled");
+    assertThat(subscription.getMessageName()).isEqualTo(wrapString("order canceled"));
     assertThat(subscription.getCorrelationKey().getExpression()).isEqualTo(wrapString("$.orderId"));
   }
 
@@ -369,7 +369,7 @@ public class BpmnTransformTest {
 
     final MessageSubscription subscription = receiveTask.getMessageSubscription();
     assertThat(subscription).isNotNull();
-    assertThat(subscription.getMessageName()).isEqualTo("order canceled");
+    assertThat(subscription.getMessageName()).isEqualTo(wrapString("order canceled"));
     assertThat(subscription.getCorrelationKey().getExpression()).isEqualTo(wrapString("$.orderId"));
   }
 }

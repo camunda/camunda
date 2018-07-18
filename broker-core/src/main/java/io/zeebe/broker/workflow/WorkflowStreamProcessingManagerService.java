@@ -43,6 +43,7 @@ public class WorkflowStreamProcessingManagerService
 
   private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
   private final Injector<ClientTransport> managementApiClientInjector = new Injector<>();
+  private final Injector<ClientTransport> subscriptionApiClientInjector = new Injector<>();
   private final Injector<TopologyManager> topologyManagerInjector = new Injector<>();
 
   private final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector =
@@ -70,7 +71,10 @@ public class WorkflowStreamProcessingManagerService
 
     final WorkflowInstanceStreamProcessor streamProcessor =
         new WorkflowInstanceStreamProcessor(
-            managementApiClientInjector.getValue(), topologyManager, PAYLOAD_CACHE_SIZE);
+            managementApiClientInjector.getValue(),
+            getSubscriptionApiClientInjector().getValue(),
+            topologyManager,
+            PAYLOAD_CACHE_SIZE);
     final TypedStreamEnvironment env =
         new TypedStreamEnvironment(partition.getLogStream(), transport.getOutput());
 
@@ -126,5 +130,9 @@ public class WorkflowStreamProcessingManagerService
 
   public Injector<ClientTransport> getManagementApiClientInjector() {
     return managementApiClientInjector;
+  }
+
+  public Injector<ClientTransport> getSubscriptionApiClientInjector() {
+    return subscriptionApiClientInjector;
   }
 }

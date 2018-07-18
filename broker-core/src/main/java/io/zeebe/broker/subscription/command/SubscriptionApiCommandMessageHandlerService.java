@@ -15,23 +15,36 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.subscription;
+package io.zeebe.broker.subscription.command;
 
+import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceGroupReference;
+import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.BufferingServerTransport;
 import io.zeebe.transport.ServerInputSubscription;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
+import org.agrona.collections.Int2ObjectHashMap;
 
-public class SubscriptionApiRequestHandlerService extends Actor
-    implements Service<SubscriptionApiRequestHandler> {
+public class SubscriptionApiCommandMessageHandlerService extends Actor
+    implements Service<SubscriptionApiCommandMessageHandler> {
 
   private final Injector<BufferingServerTransport> serverTransportInjector = new Injector<>();
 
+  private final ServiceGroupReference<Partition> leaderPartitionsGroupReference =
+      ServiceGroupReference.<Partition>create()
+          .onAdd(this::addPartition)
+          .onRemove(this::removePartition)
+          .build();
+
+  private final Int2ObjectHashMap<Partition> leaderPartitions = new Int2ObjectHashMap<>();
+
   private BufferingServerTransport serverTransport;
-  private SubscriptionApiRequestHandler requestHandler;
+  private SubscriptionApiCommandMessageHandler messageHandler;
 
   @Override
   public String getName() {
@@ -42,15 +55,21 @@ public class SubscriptionApiRequestHandlerService extends Actor
   public void start(ServiceStartContext context) {
     serverTransport = serverTransportInjector.getValue();
 
-    requestHandler = new SubscriptionApiRequestHandler();
+    messageHandler = new SubscriptionApiCommandMessageHandler(leaderPartitions);
 
     context.async(context.getScheduler().submitActor(this, true));
   }
 
   @Override
+  public void stop(ServiceStopContext stopContext) {
+    stopContext.async(actor.close());
+  }
+
+  @Override
   protected void onActorStarting() {
+
     final ActorFuture<ServerInputSubscription> openFuture =
-        serverTransport.openSubscription("subscriptionRequestHandler", requestHandler, null);
+        serverTransport.openSubscription("subscriptionRequestHandler", messageHandler, null);
 
     actor.runOnCompletion(
         openFuture,
@@ -69,12 +88,24 @@ public class SubscriptionApiRequestHandlerService extends Actor
         });
   }
 
+  private void addPartition(final ServiceName<Partition> sericeName, final Partition partition) {
+    actor.submit(() -> leaderPartitions.put(partition.getInfo().getPartitionId(), partition));
+  }
+
+  private void removePartition(final ServiceName<Partition> sericeName, final Partition partition) {
+    actor.submit(() -> leaderPartitions.remove(partition.getInfo().getPartitionId()));
+  }
+
   @Override
-  public SubscriptionApiRequestHandler get() {
-    return requestHandler;
+  public SubscriptionApiCommandMessageHandler get() {
+    return messageHandler;
   }
 
   public Injector<BufferingServerTransport> getServerTransportInjector() {
     return serverTransportInjector;
+  }
+
+  public ServiceGroupReference<Partition> getLeaderParitionsGroupReference() {
+    return leaderPartitionsGroupReference;
   }
 }

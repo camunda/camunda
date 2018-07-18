@@ -24,21 +24,52 @@ import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.job.data.JobHeaders;
 import io.zeebe.broker.job.data.JobRecord;
-import io.zeebe.broker.logstreams.processor.*;
+import io.zeebe.broker.logstreams.processor.CommandProcessor;
+import io.zeebe.broker.logstreams.processor.KeyGenerator;
+import io.zeebe.broker.logstreams.processor.SideEffectProducer;
+import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
+import io.zeebe.broker.logstreams.processor.TypedBatchWriter;
+import io.zeebe.broker.logstreams.processor.TypedRecord;
+import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
+import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
+import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
+import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
+import io.zeebe.broker.logstreams.processor.TypedStreamReader;
+import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
-import io.zeebe.broker.workflow.map.*;
+import io.zeebe.broker.workflow.map.ActivityInstanceMap;
+import io.zeebe.broker.workflow.map.DeployedWorkflow;
+import io.zeebe.broker.workflow.map.PayloadCache;
+import io.zeebe.broker.workflow.map.WorkflowCache;
+import io.zeebe.broker.workflow.map.WorkflowInstanceIndex;
 import io.zeebe.broker.workflow.map.WorkflowInstanceIndex.WorkflowInstance;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.model.bpmn.BpmnAspect;
-import io.zeebe.model.bpmn.instance.*;
+import io.zeebe.model.bpmn.instance.EndEvent;
+import io.zeebe.model.bpmn.instance.ExclusiveGateway;
+import io.zeebe.model.bpmn.instance.FlowElement;
+import io.zeebe.model.bpmn.instance.FlowNode;
+import io.zeebe.model.bpmn.instance.InputOutputMapping;
+import io.zeebe.model.bpmn.instance.IntermediateMessageCatchEvent;
+import io.zeebe.model.bpmn.instance.MessageSubscription;
+import io.zeebe.model.bpmn.instance.OutputBehavior;
+import io.zeebe.model.bpmn.instance.SequenceFlow;
+import io.zeebe.model.bpmn.instance.ServiceTask;
+import io.zeebe.model.bpmn.instance.StartEvent;
+import io.zeebe.model.bpmn.instance.TaskDefinition;
+import io.zeebe.model.bpmn.instance.Workflow;
 import io.zeebe.msgpack.el.CompiledJsonCondition;
 import io.zeebe.msgpack.el.JsonConditionException;
 import io.zeebe.msgpack.el.JsonConditionInterpreter;
 import io.zeebe.msgpack.mapping.Mapping;
 import io.zeebe.msgpack.mapping.MappingException;
 import io.zeebe.msgpack.mapping.MappingProcessor;
+import io.zeebe.msgpack.query.MsgPackQueryProcessor;
+import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResult;
+import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResults;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
@@ -75,15 +106,22 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
   private final MappingProcessor payloadMappingProcessor = new MappingProcessor(4096);
   private final JsonConditionInterpreter conditionInterpreter = new JsonConditionInterpreter();
 
-  private ClientTransport managementApiClient;
-  private TopologyManager topologyManager;
+  private SubscriptionCommandSender subscriptionCommandSender;
+
+  private final ClientTransport managementApiClient;
+  private final ClientTransport subscriptionApiClient;
+  private final TopologyManager topologyManager;
   private WorkflowCache workflowCache;
 
   private ActorControl actor;
 
   public WorkflowInstanceStreamProcessor(
-      ClientTransport managementApiClient, TopologyManager topologyManager, int payloadCacheSize) {
+      ClientTransport managementApiClient,
+      ClientTransport subscriptionApiClient,
+      TopologyManager topologyManager,
+      int payloadCacheSize) {
     this.managementApiClient = managementApiClient;
+    this.subscriptionApiClient = subscriptionApiClient;
     this.payloadCache = new PayloadCache(payloadCacheSize);
     this.topologyManager = topologyManager;
   }
@@ -130,6 +168,11 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
             WorkflowInstanceIntent.ACTIVITY_COMPLETING,
             w -> isActive(w.getWorkflowInstanceKey()),
             new ActivityCompletingEventProcessor())
+        .onEvent(
+            ValueType.WORKFLOW_INSTANCE,
+            WorkflowInstanceIntent.CATCH_EVENT_ENTERING,
+            w -> isActive(w.getWorkflowInstanceKey()),
+            new CatchEventEnteringProcessor())
         .onCommand(
             ValueType.WORKFLOW_INSTANCE,
             WorkflowInstanceIntent.UPDATE_PAYLOAD,
@@ -187,6 +230,15 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
     final String topicName =
         logStream.getTopicName().getStringWithoutLengthUtf8(0, logStream.getTopicName().capacity());
     final String partitionId = Integer.toString(logStream.getPartitionId());
+
+    this.subscriptionCommandSender =
+        new SubscriptionCommandSender(
+            actor,
+            managementApiClient,
+            subscriptionApiClient,
+            topicName,
+            logStream.getPartitionId());
+    topologyManager.addTopologyPartitionListener(subscriptionCommandSender);
 
     workflowInstanceEventCreate =
         metricsManager
@@ -549,6 +601,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         nextState = WorkflowInstanceIntent.ACTIVITY_READY;
       } else if (targetNode instanceof ExclusiveGateway) {
         nextState = WorkflowInstanceIntent.GATEWAY_ACTIVATED;
+      } else if (targetNode instanceof IntermediateMessageCatchEvent) {
+        nextState = WorkflowInstanceIntent.CATCH_EVENT_ENTERING;
       } else {
         throw new RuntimeException(
             String.format("Flow node of type '%s' is not supported.", targetNode));
@@ -645,6 +699,87 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
       }
 
       streamWriter.writeNewCommand(JobIntent.CREATE, jobCommand);
+    }
+  }
+
+  public final class CatchEventEnteringProcessor
+      extends FlowElementEventProcessor<IntermediateMessageCatchEvent> {
+
+    private final MsgPackQueryProcessor queryProcessor = new MsgPackQueryProcessor();
+
+    private WorkflowInstanceRecord workflowInstance;
+    private long activityInstanceKey;
+    private MessageSubscription subscription;
+    private DirectBuffer extractedCorrelationKey;
+
+    @Override
+    void processFlowElementEvent(
+        TypedRecord<WorkflowInstanceRecord> event,
+        TypedStreamWriter streamWriter,
+        IntermediateMessageCatchEvent catchEvent) {
+
+      this.workflowInstance = event.getValue();
+      this.activityInstanceKey = event.getKey();
+      this.subscription = catchEvent.getMessageSubscription();
+
+      if (subscriptionCommandSender.hasPartitionIds()) {
+        onPartitionIdsAvailable(streamWriter);
+
+      } else {
+        // this async fetching will be removed when the partitions are known on startup
+        final ActorFuture<Void> onCompleted = new CompletableActorFuture<>();
+        ctx.async(onCompleted);
+
+        actor.runOnCompletion(
+            subscriptionCommandSender.fetchCreatedTopics(),
+            (v, failure) -> {
+              if (failure == null) {
+                onPartitionIdsAvailable(streamWriter);
+
+                onCompleted.complete(null);
+              } else {
+                onCompleted.completeExceptionally(failure);
+              }
+            });
+      }
+    }
+
+    private void onPartitionIdsAvailable(TypedStreamWriter streamWriter) {
+      extractedCorrelationKey = extractCorrelationKey();
+      sideEffect.accept(this::openMessageSubscription);
+
+      streamWriter.writeFollowUpEvent(
+          activityInstanceKey, WorkflowInstanceIntent.CATCH_EVENT_ENTERED, workflowInstance);
+    }
+
+    private boolean openMessageSubscription() {
+      return subscriptionCommandSender.openMessageSubscription(
+          workflowInstance.getWorkflowInstanceKey(),
+          activityInstanceKey,
+          subscription.getMessageName(),
+          extractedCorrelationKey);
+    }
+
+    private DirectBuffer extractCorrelationKey() {
+      final QueryResults results =
+          queryProcessor.process(subscription.getCorrelationKey(), workflowInstance.getPayload());
+      if (results.size() == 1) {
+        final QueryResult result = results.getSingleResult();
+
+        if (result.isString()) {
+          return result.getString();
+
+        } else if (result.isLong()) {
+          return result.getLongAsBuffer();
+
+        } else {
+          // the exception will be replaces by an incident - #1018
+          throw new RuntimeException("Failed to extract correlation-key: wrong type");
+        }
+      } else {
+        // the exception will be replaces by an incident - #1018
+        throw new RuntimeException("Failed to extract correlation-key: no result");
+      }
     }
   }
 
@@ -930,6 +1065,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
     private TypedRecord<WorkflowInstanceRecord> event;
     private TypedStreamWriter writer;
+    protected Consumer<SideEffectProducer> sideEffect;
+    protected EventLifecycleContext ctx;
 
     @Override
     public void processRecord(
@@ -941,6 +1078,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
       event = record;
       this.writer = streamWriter;
+      this.sideEffect = sideEffect;
+      this.ctx = ctx;
       final long workflowKey = event.getValue().getWorkflowKey();
       final DeployedWorkflow deployedWorkflow = workflowCache.getWorkflowByKey(workflowKey);
 
