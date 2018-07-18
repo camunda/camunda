@@ -35,7 +35,7 @@ export const DropdownMenu = themed(styled.div`
   /* Positioning */
   position: absolute;
   right: -1px;
-  top: 20px;
+  top: 17px;
 
   /* Display & Box Model */
   min-width: 186px;

@@ -8,7 +8,9 @@ exports[`Dropdown should match snapshot 1`] = `
     data-test-id="dropdown-label"
     onClick={[Function]}
   >
-    Foo
+    <styled.div>
+      Foo
+    </styled.div>
     <Down />
   </styled.button>
 </styled.div>
