@@ -6,9 +6,9 @@ import {extractProcessDefinitionName} from 'services';
 
 import {Filter} from '../Reports';
 
-import './ControlPanel.css';
+import './AnalysisControlPanel.css';
 
-export default class ControlPanel extends React.Component {
+export default class AnalysisControlPanel extends React.Component {
   constructor(props) {
     super(props);
 
@@ -69,13 +69,16 @@ export default class ControlPanel extends React.Component {
     const disableFlowNodeSelection = !this.isProcDefSelected();
 
     return (
-      <div className="ControlPanel">
-        <ul className="ControlPanel__list">
-          <li className="ControlPanel__item ControlPanel__item--select">
-            <label htmlFor="ControlPanel__process-definition" className="ControlPanel__label">
+      <div className="AnalysisControlPanel">
+        <ul className="AnalysisControlPanel__list">
+          <li className="AnalysisControlPanel__item AnalysisControlPanel__item--select">
+            <label
+              htmlFor="AnalysisControlPanel__process-definition"
+              className="AnalysisControlPanel__label"
+            >
               Process definition
             </label>
-            <Popover className="ControlPanel__popover" title={this.createTitle()}>
+            <Popover className="AnalysisControlPanel__popover" title={this.createTitle()}>
               <ProcessDefinitionSelection
                 {...this.getDefinitionConfig()}
                 xml={this.props.xml}
@@ -87,17 +90,20 @@ export default class ControlPanel extends React.Component {
             {type: 'endEvent', label: 'End Event', bpmnKey: 'bpmn:EndEvent'},
             {type: 'gateway', label: 'Gateway', bpmnKey: 'bpmn:Gateway'}
           ].map(({type, label, bpmnKey}) => (
-            <li key={type} className="ControlPanel__item">
-              <label htmlFor={'ControlPanel__' + type} className="ControlPanel__label">
+            <li key={type} className="AnalysisControlPanel__item">
+              <label
+                htmlFor={'AnalysisControlPanel__' + type}
+                className="AnalysisControlPanel__label"
+              >
                 {label}
               </label>
               <div
-                className={classnames('ControlPanel__config', {
-                  'ControlPanel__config--hover':
+                className={classnames('AnalysisControlPanel__config', {
+                  'AnalysisControlPanel__config--hover':
                     !disableFlowNodeSelection &&
                     (hoveredControl === type || (hoveredNode && hoveredNode.$instanceOf(bpmnKey)))
                 })}
-                name={'ControlPanel__' + type}
+                name={'AnalysisControlPanel__' + type}
                 onMouseOver={this.hover(type)}
                 onMouseOut={this.hover(null)}
               >
@@ -112,7 +118,7 @@ export default class ControlPanel extends React.Component {
               </div>
             </li>
           ))}
-          <li className="ControlPanel__item ControlPanel__item--filter">
+          <li className="AnalysisControlPanel__item AnalysisControlPanel__item--filter">
             <Filter
               data={this.props.filter}
               onChange={this.props.onChange}

@@ -3,7 +3,7 @@ import {mount} from 'enzyme';
 
 import {extractProcessDefinitionName} from 'services';
 
-import ControlPanel from './ControlPanel';
+import AnalysisControlPanel from './AnalysisControlPanel';
 
 jest.mock('../Reports', () => {
   return {
@@ -51,14 +51,14 @@ extractProcessDefinitionName.mockReturnValue('foo');
 const spy = jest.fn();
 
 it('should contain a gateway and end Event field', () => {
-  const node = mount(<ControlPanel {...data} onChange={spy} />);
+  const node = mount(<AnalysisControlPanel {...data} onChange={spy} />);
 
-  expect(node.find('[name="ControlPanel__gateway"]')).toBePresent();
-  expect(node.find('[name="ControlPanel__endEvent"]')).toBePresent();
+  expect(node.find('[name="AnalysisControlPanel__gateway"]')).toBePresent();
+  expect(node.find('[name="AnalysisControlPanel__endEvent"]')).toBePresent();
 });
 
 it('should show a please select message if an entity is not selected', () => {
-  const node = mount(<ControlPanel {...data} onChange={spy} />);
+  const node = mount(<AnalysisControlPanel {...data} onChange={spy} />);
 
   expect(node).toIncludeText('Please Select End Event');
   expect(node).toIncludeText('Please Select Gateway');
@@ -66,7 +66,7 @@ it('should show a please select message if an entity is not selected', () => {
 
 it('should show the element name if an element is selected', () => {
   const node = mount(
-    <ControlPanel
+    <AnalysisControlPanel
       {...data}
       onChange={spy}
       gateway={{
@@ -82,7 +82,7 @@ it('should show the element name if an element is selected', () => {
 
 it('should show the element id if an element has no name', () => {
   const node = mount(
-    <ControlPanel
+    <AnalysisControlPanel
       {...data}
       onChange={spy}
       gateway={{
@@ -98,33 +98,33 @@ it('should show the element id if an element has no name', () => {
 it('should show initially show process definition name if xml is available', async () => {
   extractProcessDefinitionName.mockReturnValue('aName');
 
-  const node = await mount(<ControlPanel {...data} />);
+  const node = await mount(<AnalysisControlPanel {...data} />);
 
-  expect(node.find('.ControlPanel__popover')).toIncludeText('aName');
+  expect(node.find('.AnalysisControlPanel__popover')).toIncludeText('aName');
 });
 
 it('should change process definition name if process definition xml is updated', async () => {
-  const node = await mount(<ControlPanel {...data} />);
+  const node = await mount(<AnalysisControlPanel {...data} />);
 
   extractProcessDefinitionName.mockReturnValue('aName');
   await node.setProps({xml: 'barXml'});
 
-  expect(node.find('.ControlPanel__popover')).toIncludeText('aName');
+  expect(node.find('.AnalysisControlPanel__popover')).toIncludeText('aName');
 });
 
 it('should disable gateway and EndEvent elements if no ProcDef selected', async () => {
-  const node = await mount(<ControlPanel hoveredControl="gateway" {...emptyData} />);
+  const node = await mount(<AnalysisControlPanel hoveredControl="gateway" {...emptyData} />);
 
   expect(node.find('#actionItem').first()).toBeDisabled();
   expect(node.find('#actionItem').at(1)).toBeDisabled();
 
-  expect(node.find('.ControlPanel__config').at(1)).not.toHaveClassName(
-    'ControlPanel__config--hover'
+  expect(node.find('.AnalysisControlPanel__config').at(1)).not.toHaveClassName(
+    'AnalysisControlPanel__config--hover'
   );
 });
 
 it('should pass the xml to the Filter component', async () => {
-  const node = await mount(<ControlPanel {...data} />);
+  const node = await mount(<AnalysisControlPanel {...data} />);
   const filter = node.find('Filter');
   expect(filter.find('[xml="aFooXml"]')).toBePresent();
 });

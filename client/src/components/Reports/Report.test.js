@@ -50,7 +50,7 @@ jest.mock('moment', () => () => {
   };
 });
 
-jest.mock('./ControlPanel', () => {
+jest.mock('./ReportControlPanel', () => {
   return () => <div>ControlPanel</div>;
 });
 

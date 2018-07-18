@@ -28,7 +28,7 @@ import {
 } from './service';
 
 import {loadProcessDefinitions} from 'services';
-import ControlPanel from './ControlPanel';
+import ReportControlPanel from './ReportControlPanel';
 
 import ColumnSelection from './ColumnSelection';
 import ColumnRearrangement from './ColumnRearrangement';
@@ -299,7 +299,7 @@ export default withErrorHandling(
             </div>
           </div>
 
-          <ControlPanel {...data} reportResult={reportResult} onChange={this.updateReport} />
+          <ReportControlPanel {...data} reportResult={reportResult} onChange={this.updateReport} />
           <div className="Report__view">
             <ReportView
               report={reportResult}

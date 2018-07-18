@@ -8,9 +8,9 @@ import {TargetValueComparison} from './targetValue';
 
 import {loadVariables} from './service';
 
-import './ControlPanel.css';
+import './ReportControlPanel.css';
 
-export default class ControlPanel extends React.Component {
+export default class ReportControlPanel extends React.Component {
   constructor(props) {
     super(props);
 
@@ -146,13 +146,16 @@ export default class ControlPanel extends React.Component {
 
   render() {
     return (
-      <div className="ControlPanel">
-        <ul className="ControlPanel__list">
-          <li className="ControlPanel__item ControlPanel__item--select">
-            <label htmlFor="ControlPanel__process-definition" className="ControlPanel__label">
+      <div className="ReportControlPanel">
+        <ul className="ReportControlPanel__list">
+          <li className="ReportControlPanel__item ReportControlPanel__item--select">
+            <label
+              htmlFor="ReportControlPanel__process-definition"
+              className="ReportControlPanel__label"
+            >
               Process definition
             </label>
-            <Popover className="ControlPanel__popover" title={this.createTitle()}>
+            <Popover className="ReportControlPanel__popover" title={this.createTitle()}>
               <ProcessDefinitionSelection
                 {...this.definitionConfig()}
                 xml={this.props.configuration.xml}
@@ -162,13 +165,13 @@ export default class ControlPanel extends React.Component {
               />
             </Popover>
           </li>
-          <li className="ControlPanel__item ControlPanel__item--select">
-            <label htmlFor="ControlPanel__view" className="ControlPanel__label">
+          <li className="ReportControlPanel__item ReportControlPanel__item--select">
+            <label htmlFor="ReportControlPanel__view" className="ReportControlPanel__label">
               View
             </label>
             <Select
-              className="ControlPanel__select"
-              name="ControlPanel__view"
+              className="ReportControlPanel__select"
+              name="ReportControlPanel__view"
               value={reportLabelMap.objectToKey(this.props.view, reportLabelMap.view)}
               onChange={this.changeView}
             >
@@ -176,14 +179,14 @@ export default class ControlPanel extends React.Component {
               {this.renderOptions('view')}
             </Select>
           </li>
-          <li className="ControlPanel__item ControlPanel__item--select">
-            <label htmlFor="ControlPanel__group-by" className="ControlPanel__label">
+          <li className="ReportControlPanel__item ReportControlPanel__item--select">
+            <label htmlFor="ReportControlPanel__group-by" className="ReportControlPanel__label">
               Group by
             </label>
             <Select
               disabled={!this.isViewSelected()}
-              className="ControlPanel__select"
-              name="ControlPanel__group-by"
+              className="ReportControlPanel__select"
+              name="ReportControlPanel__group-by"
               value={reportLabelMap.objectToKey(this.props.groupBy, reportLabelMap.groupBy)}
               onChange={this.changeGroup}
             >
@@ -191,14 +194,14 @@ export default class ControlPanel extends React.Component {
               {this.isViewSelected() && this.renderOptions('groupBy')}
             </Select>
           </li>
-          <li className="ControlPanel__item ControlPanel__item--select">
-            <label htmlFor="ControlPanel__visualize-as" className="ControlPanel__label">
+          <li className="ReportControlPanel__item ReportControlPanel__item--select">
+            <label htmlFor="ReportControlPanel__visualize-as" className="ReportControlPanel__label">
               Visualize as
             </label>
             <Select
               disabled={!this.isGroupBySelected() || !this.isViewSelected()}
-              className="ControlPanel__select"
-              name="ControlPanel__visualize-as"
+              className="ReportControlPanel__select"
+              name="ReportControlPanel__visualize-as"
               value={this.props.visualization}
               onChange={this.changeVisualization}
             >
@@ -208,7 +211,7 @@ export default class ControlPanel extends React.Component {
                 this.renderOptions('visualization')}
             </Select>
           </li>
-          <li className="ControlPanel__item ControlPanel__item--filter">
+          <li className="ReportControlPanel__item ReportControlPanel__item--filter">
             <Filter
               data={this.props.filter}
               onChange={this.props.onChange}
@@ -216,7 +219,7 @@ export default class ControlPanel extends React.Component {
               xml={this.props.configuration.xml}
             />
           </li>
-          <li className="ControlPanel__item">
+          <li className="ReportControlPanel__item">
             <TargetValueComparison
               reportResult={this.props.reportResult}
               configuration={this.props.configuration}

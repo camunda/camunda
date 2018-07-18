@@ -1,6 +1,6 @@
 import React from 'react';
 
-import ControlPanel from './ControlPanel';
+import AnalysisControlPanel from './AnalysisControlPanel';
 import {BPMNDiagram} from 'components';
 
 import {loadProcessDefinitionXml, loadFrequencyData} from './service';
@@ -51,7 +51,7 @@ export default class Analysis extends React.Component {
 
     return (
       <div className="Analysis">
-        <ControlPanel
+        <AnalysisControlPanel
           {...config}
           hoveredControl={hoveredControl}
           hoveredNode={hoveredNode}

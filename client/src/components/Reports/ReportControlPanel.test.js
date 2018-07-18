@@ -1,7 +1,7 @@
 import React from 'react';
 import {mount} from 'enzyme';
 
-import ControlPanel from './ControlPanel';
+import ReportControlPanel from './ReportControlPanel';
 import {extractProcessDefinitionName} from 'services';
 
 import {loadVariables} from './service';
@@ -71,7 +71,7 @@ extractProcessDefinitionName.mockReturnValue('foo');
 const spy = jest.fn();
 
 it('should call the provided onChange property function when a setting changes', () => {
-  const node = mount(<ControlPanel {...data} onChange={spy} />);
+  const node = mount(<ReportControlPanel {...data} onChange={spy} />);
 
   node.instance().changeVisualization({target: {value: 'someTestVis'}});
 
@@ -80,7 +80,7 @@ it('should call the provided onChange property function when a setting changes',
 });
 
 it('should toggle target value view mode off when a setting changes', () => {
-  const node = mount(<ControlPanel {...data} onChange={spy} />);
+  const node = mount(<ReportControlPanel {...data} onChange={spy} />);
 
   node.instance().changeVisualization({target: {value: 'someTestVis'}});
 
@@ -88,21 +88,21 @@ it('should toggle target value view mode off when a setting changes', () => {
 });
 
 it('should disable the groupBy and visualization Selects if view is not selected', () => {
-  const node = mount(<ControlPanel {...data} view="" />);
+  const node = mount(<ReportControlPanel {...data} view="" />);
 
-  expect(node.find('.ControlPanel__select').at(2)).toBeDisabled();
-  expect(node.find('.ControlPanel__select').at(3)).toBeDisabled();
+  expect(node.find('.ReportControlPanel__select').at(2)).toBeDisabled();
+  expect(node.find('.ReportControlPanel__select').at(3)).toBeDisabled();
 });
 
 it('should not disable the groupBy and visualization Selects if view is selected', () => {
-  const node = mount(<ControlPanel {...data} />);
+  const node = mount(<ReportControlPanel {...data} />);
 
-  expect(node.find('.ControlPanel__select').at(2)).not.toBeDisabled();
-  expect(node.find('.ControlPanel__select').at(3)).not.toBeDisabled();
+  expect(node.find('.ReportControlPanel__select').at(2)).not.toBeDisabled();
+  expect(node.find('.ReportControlPanel__select').at(3)).not.toBeDisabled();
 });
 
 it('should set or reset following selects according to getTheRightCombination function', () => {
-  const node = mount(<ControlPanel {...data} onChange={spy} />);
+  const node = mount(<ReportControlPanel {...data} onChange={spy} />);
   node.instance().changeView({target: {value: 'foo'}});
 
   expect(spy).toHaveBeenCalledWith({
@@ -114,7 +114,7 @@ it('should set or reset following selects according to getTheRightCombination fu
 });
 
 it('should disable options, which would create wrong combination', () => {
-  const node = mount(<ControlPanel {...data} onChange={spy} />);
+  const node = mount(<ReportControlPanel {...data} onChange={spy} />);
   node.setProps({view: 'baz'});
 
   expect(node.find('[value="groupBybar"]').first()).toBeDisabled();
@@ -123,22 +123,22 @@ it('should disable options, which would create wrong combination', () => {
 it('should show process definition name', async () => {
   extractProcessDefinitionName.mockReturnValue('aName');
 
-  const node = await mount(<ControlPanel {...data} />);
+  const node = await mount(<ReportControlPanel {...data} />);
 
-  expect(node.find('.ControlPanel__popover')).toIncludeText('aName');
+  expect(node.find('.ReportControlPanel__popover')).toIncludeText('aName');
 });
 
 it('should change process definition name if process definition is updated', async () => {
-  const node = await mount(<ControlPanel {...data} />);
+  const node = await mount(<ReportControlPanel {...data} />);
 
   extractProcessDefinitionName.mockReturnValue('aName');
   node.setProps({processDefinitionKey: 'bar'});
 
-  expect(node.find('.ControlPanel__popover')).toIncludeText('aName');
+  expect(node.find('.ReportControlPanel__popover')).toIncludeText('aName');
 });
 
 it('should load the variables of the process', () => {
-  const node = mount(<ControlPanel {...data} />);
+  const node = mount(<ReportControlPanel {...data} />);
 
   node.setProps({processDefinitionKey: 'bar', processDefinitionVersion: 'ALL'});
 
@@ -146,7 +146,7 @@ it('should load the variables of the process', () => {
 });
 
 it('should include variables in the groupby options', () => {
-  const node = mount(<ControlPanel {...data} />);
+  const node = mount(<ReportControlPanel {...data} />);
 
   node.setState({variables: [{name: 'Var1'}, {name: 'Var2'}]});
 

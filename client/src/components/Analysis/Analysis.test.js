@@ -6,7 +6,7 @@ import {loadProcessDefinitions} from 'services';
 
 import Analysis from './Analysis';
 
-jest.mock('./ControlPanel', () => () => <div>ControlPanel</div>);
+jest.mock('./AnalysisControlPanel', () => () => <div>ControlPanel</div>);
 jest.mock('components', () => {
   return {
     BPMNDiagram: () => <div>BPMNDiagram</div>

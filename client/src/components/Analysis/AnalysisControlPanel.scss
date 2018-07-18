@@ -1,0 +1,60 @@
+.AnalysisControlPanel {
+  background-color: #f4f4f4;
+  border-radius: 8px;
+  border: 1px solid #dfdfdf;
+  padding: 12px 12px 0 12px;
+}
+
+.AnalysisControlPanel__popover {
+  width: 100%;
+}
+
+.AnalysisControlPanel__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: inline;
+}
+
+.AnalysisControlPanel__item {
+  display: inline-block;
+  position: relative;
+  padding-top: 22px;
+  padding-right: 20px;
+  margin-bottom: 24px;
+}
+
+.AnalysisControlPanel__item--select {
+  width: 15%;
+  min-width: 200px;
+}
+
+.AnalysisControlPanel__item--filter {
+  display: inline;
+  padding-top: 27px;
+}
+
+.AnalysisControlPanel__label {
+  color: #626262;
+  font-size: 0.875em;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.AnalysisControlPanel__select {
+  width: 100%;
+}
+
+.AnalysisControlPanel__config {
+  color: #333;
+  background-color: #f8f8f8;
+  border: 1px solid #bbb;
+  border-radius: 3px;
+  display: inline-block;
+  cursor: default;
+}
+
+.AnalysisControlPanel__config--hover {
+  background-color: rgba(48, 116, 142, 0.6);
+}
