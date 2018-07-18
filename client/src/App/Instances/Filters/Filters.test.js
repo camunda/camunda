@@ -3,10 +3,14 @@ import {shallow} from 'enzyme';
 
 import {DEFAULT_FILTER, FILTER_TYPES, DIRECTION} from 'modules/constants';
 import Button from 'modules/components/Button';
+import {mockResolvedAsyncFn} from 'modules/testUtils';
 
 import Filters from './Filters';
 import Filter from './Filter';
 import * as Styled from './styled';
+import * as api from 'modules/api/instances/instances';
+
+api.fetchGroupedWorkflowInstances = mockResolvedAsyncFn([]);
 
 describe('Filters', () => {
   const spy = jest.fn();
