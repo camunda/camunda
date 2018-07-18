@@ -1,46 +1,52 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 import * as Styled from './styled.js';
 
 import {fetchWorkflowInstanceBySelection} from 'modules/api/instances';
-
+import {batchRetry} from 'modules/api/selections';
 import Selection from '../Selection';
 
 export default class SelectionList extends React.Component {
+  static propTypes = {
+    selections: PropTypes.array.isRequired
+  };
   state = {selectionsInstances: [], newSelectionIndex: 0, openSelection: null};
-
   componentDidMount = async () => {
-    this.props.selections.map(async selection => {
-      const selectionData = await fetchWorkflowInstanceBySelection(selection);
+    //TODO: replace loop with this.props.selections.map
+    for (let index = 0; index < 10; index++) {
+      const selectionIndex = this.state.newSelectionIndex;
+      const selectionData = await fetchWorkflowInstanceBySelection();
       this.setState(prevState => ({
         selectionsInstances: [
-          ...prevState.selectionsInstances,
-          {...selectionData, id: this.state.newSelectionIndex}
+          {...selectionData, id: selectionIndex},
+          ...prevState.selectionsInstances
         ],
-        newSelectionIndex: this.state.newSelectionIndex + 1
+        newSelectionIndex: selectionIndex + 1
       }));
-    });
+    }
   };
 
-  retySelection = async selectionObject => {
-    //TODO: handle request
-    // try {
-    //   await batchRety(selectionObject);
-    // } catch (e) {
-    //   console.log(e);
-    // }
-    console.log('selection instances are retried');
+  retrySelection = async evt => {
+    evt && evt.stopPropagation();
+
+    try {
+      await batchRetry();
+    } catch (e) {
+      console.log(e);
+    }
   };
 
   deleteSelection = selectionID => {
-    const selectionIndex = this.state.selectionsInstances
+    const {selectionsInstances} = this.state;
+    const {selectionIndex} = selectionsInstances
       .map(instance => instance.id)
       .indexOf(selectionID);
 
-    this.state.selectionsInstances.splice(selectionIndex, 1);
+    selectionsInstances.splice(selectionIndex, 1);
 
     this.setState({
-      selectionsInstances: this.state.selectionsInstances
+      selectionsInstances
     });
   };
 
@@ -52,23 +58,32 @@ export default class SelectionList extends React.Component {
   };
 
   render() {
+    const {selectionsInstances} = this.state;
     return (
       <Styled.SelectionList>
-        {this.state.selectionsInstances.map((selection, index) => {
-          const {id, workfowInstances, totalCount} = selection;
-          return (
-            <Selection
-              isOpen={this.state.openSelection === id}
-              key={id}
-              selectionId={id}
-              instances={workfowInstances}
-              count={totalCount}
-              onClick={() => this.toggleSelection(id)}
-              onRetry={() => this.retySelection(selection)}
-              onDelete={() => this.deleteSelection(id)}
-            />
-          );
-        })}
+        {selectionsInstances.length ? (
+          selectionsInstances.map(selection => {
+            const {id, workfowInstances, totalCount} = selection;
+            return (
+              <Styled.SelectionWrapper key={id}>
+                <Selection
+                  isOpen={this.state.openSelection === id}
+                  selectionId={id}
+                  instances={workfowInstances}
+                  count={totalCount}
+                  onClick={() => this.toggleSelection(id)}
+                  onRetry={evt => this.retrySelection(evt)}
+                  onDelete={() => this.deleteSelection(id)}
+                />
+              </Styled.SelectionWrapper>
+            );
+          })
+        ) : (
+          <Styled.NoSelectionWrapper>
+            To create a new Selection, select some instances from the list and
+            click ”Create new Selection”.
+          </Styled.NoSelectionWrapper>
+        )}
       </Styled.SelectionList>
     );
   }
