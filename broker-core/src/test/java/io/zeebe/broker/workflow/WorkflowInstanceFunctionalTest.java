@@ -90,7 +90,7 @@ public class WorkflowInstanceFunctionalTest {
     assertThat(startEvent.position()).isGreaterThan(response.position());
     assertThat(startEvent.value())
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
-        .containsEntry(PROP_WORKFLOW_VERSION, 1)
+        .containsEntry(PROP_WORKFLOW_VERSION, 1L)
         .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
         .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "foo");
   }
@@ -118,7 +118,7 @@ public class WorkflowInstanceFunctionalTest {
     assertThat(sequenceFlow.sourceRecordPosition()).isEqualTo(startEvent.position());
     assertThat(sequenceFlow.value())
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
-        .containsEntry(PROP_WORKFLOW_VERSION, 1)
+        .containsEntry(PROP_WORKFLOW_VERSION, 1L)
         .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
         .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "foo");
   }
@@ -141,7 +141,7 @@ public class WorkflowInstanceFunctionalTest {
     assertThat(event.sourceRecordPosition()).isEqualTo(sequenceFlow.position());
     assertThat(event.value())
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
-        .containsEntry(PROP_WORKFLOW_VERSION, 1)
+        .containsEntry(PROP_WORKFLOW_VERSION, 1L)
         .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
         .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "foo");
   }
@@ -164,7 +164,7 @@ public class WorkflowInstanceFunctionalTest {
     assertThat(completedEvent.sourceRecordPosition()).isEqualTo(endEvent.position());
     assertThat(completedEvent.value())
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
-        .containsEntry(PROP_WORKFLOW_VERSION, 1)
+        .containsEntry(PROP_WORKFLOW_VERSION, 1L)
         .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
         .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "");
   }
@@ -187,7 +187,7 @@ public class WorkflowInstanceFunctionalTest {
     assertThat(completedEvent.sourceRecordPosition()).isEqualTo(startEvent.position());
     assertThat(completedEvent.value())
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
-        .containsEntry(PROP_WORKFLOW_VERSION, 1)
+        .containsEntry(PROP_WORKFLOW_VERSION, 1L)
         .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
         .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "");
   }
@@ -216,7 +216,7 @@ public class WorkflowInstanceFunctionalTest {
     assertThat(completedEvent.sourceRecordPosition()).isEqualTo(activityCompleted.position());
     assertThat(completedEvent.value())
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
-        .containsEntry(PROP_WORKFLOW_VERSION, 1)
+        .containsEntry(PROP_WORKFLOW_VERSION, 1L)
         .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
         .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "");
   }
@@ -244,7 +244,7 @@ public class WorkflowInstanceFunctionalTest {
     assertThat(activatedEvent.sourceRecordPosition()).isEqualTo(activityReady.position());
     assertThat(activatedEvent.value())
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
-        .containsEntry(PROP_WORKFLOW_VERSION, 1)
+        .containsEntry(PROP_WORKFLOW_VERSION, 1L)
         .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
         .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "foo");
   }
@@ -271,7 +271,7 @@ public class WorkflowInstanceFunctionalTest {
     assertThat(createJobCmd.sourceRecordPosition()).isEqualTo(activityActivated.position());
     assertThat(createJobCmd.value())
         .containsEntry(PROP_JOB_TYPE, "bar")
-        .containsEntry(PROP_JOB_RETRIES, 5);
+        .containsEntry(PROP_JOB_RETRIES, 5L);
   }
 
   @SuppressWarnings("unchecked")
@@ -295,7 +295,7 @@ public class WorkflowInstanceFunctionalTest {
     assertThat(headers)
         .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
-        .containsEntry("workflowDefinitionVersion", 1)
+        .containsEntry("workflowDefinitionVersion", 1L)
         .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "foo")
         .containsKey("activityInstanceKey");
 
@@ -336,7 +336,7 @@ public class WorkflowInstanceFunctionalTest {
         .isEqualTo(activityCompleting.position());
     assertThat(activityCompletedEvent.value())
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
-        .containsEntry(PROP_WORKFLOW_VERSION, 1)
+        .containsEntry(PROP_WORKFLOW_VERSION, 1L)
         .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
         .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "foo");
   }
@@ -613,7 +613,7 @@ public class WorkflowInstanceFunctionalTest {
     assertThat(event.key()).isEqualTo(workflowInstanceKey);
     assertThat(event.value())
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "yaml-workflow")
-        .containsEntry(PROP_WORKFLOW_VERSION, 1)
+        .containsEntry(PROP_WORKFLOW_VERSION, 1L)
         .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
         .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "");
   }

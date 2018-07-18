@@ -85,7 +85,7 @@ public class CancelWorkflowInstanceTest {
     assertThat(workflowInstanceCanceledEvent.key()).isEqualTo(workflowInstanceKey);
     assertThat(workflowInstanceCanceledEvent.value())
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
-        .containsEntry(PROP_WORKFLOW_VERSION, 1)
+        .containsEntry(PROP_WORKFLOW_VERSION, 1L)
         .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
         .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "");
 
@@ -130,7 +130,7 @@ public class CancelWorkflowInstanceTest {
     assertThat(activityTerminatedEvent.sourceRecordPosition()).isEqualTo(cancelWorkflow.position());
     assertThat(activityTerminatedEvent.value())
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
-        .containsEntry(PROP_WORKFLOW_VERSION, 1)
+        .containsEntry(PROP_WORKFLOW_VERSION, 1L)
         .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
         .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "task");
   }
@@ -165,7 +165,7 @@ public class CancelWorkflowInstanceTest {
     assertThat(headers)
         .containsEntry("workflowInstanceKey", workflowInstanceKey)
         .containsEntry("bpmnProcessId", "process")
-        .containsEntry("workflowDefinitionVersion", 1)
+        .containsEntry("workflowDefinitionVersion", 1L)
         .containsEntry("activityId", "task");
   }
 

@@ -82,8 +82,8 @@ public class ManagementSubscriptionTest {
     assertThat(subscribeRequest.intent()).isEqualTo(SubscriberIntent.SUBSCRIBE);
     assertThat(subscribeRequest.partitionId()).isEqualTo(Protocol.SYSTEM_PARTITION);
     assertThat(subscribeRequest.getCommand())
-        .containsEntry("startPosition", 0)
-        .containsEntry("bufferSize", 1024)
+        .containsEntry("startPosition", 0L)
+        .containsEntry("bufferSize", 1024L)
         .containsEntry("name", SUBSCRIPTION_NAME)
         .doesNotContainEntry("forceStart", true);
   }
@@ -131,7 +131,7 @@ public class ManagementSubscriptionTest {
 
     assertThat(subscribeRequest.intent()).isEqualTo(SubscriberIntent.SUBSCRIBE);
     assertThat(subscribeRequest.partitionId()).isEqualTo(Protocol.SYSTEM_PARTITION);
-    assertThat(subscribeRequest.getCommand()).containsEntry("startPosition", 0);
+    assertThat(subscribeRequest.getCommand()).containsEntry("startPosition", 0L);
   }
 
   @Test
@@ -178,7 +178,7 @@ public class ManagementSubscriptionTest {
             .get();
 
     assertThat(subscribeRequest.getCommand())
-        .containsEntry("startPosition", 654)
+        .containsEntry("startPosition", 654L)
         .doesNotContainEntry("forceStart", true);
   }
 
@@ -240,7 +240,7 @@ public class ManagementSubscriptionTest {
             .findFirst()
             .get();
 
-    assertThat(addSubscriptionRequest.getCommand()).containsEntry("bufferSize", bufferSize);
+    assertThat(addSubscriptionRequest.getCommand()).containsEntry("bufferSize", (long) bufferSize);
   }
 
   @Test
@@ -268,7 +268,7 @@ public class ManagementSubscriptionTest {
             .findFirst()
             .get();
 
-    assertThat(addSubscriptionRequest.getCommand()).containsEntry("bufferSize", bufferSize);
+    assertThat(addSubscriptionRequest.getCommand()).containsEntry("bufferSize", (long) bufferSize);
   }
 
   @Test

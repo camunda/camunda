@@ -122,7 +122,7 @@ public class CreateWorkflowInstanceTest {
     assertThat(resp.intent()).isEqualTo(CREATED);
     assertThat(resp.getValue())
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
-        .containsEntry(PROP_WORKFLOW_VERSION, 1)
+        .containsEntry(PROP_WORKFLOW_VERSION, 1L)
         .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, resp.key());
   }
 
@@ -150,7 +150,7 @@ public class CreateWorkflowInstanceTest {
             .sendAndAwait();
 
     // then
-    final int workflowKey = extractWorkflowKey(deployment2);
+    final long workflowKey = extractWorkflowKey(deployment2);
 
     final SubscribedRecord event =
         testClient
@@ -163,7 +163,7 @@ public class CreateWorkflowInstanceTest {
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
         .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, resp.key())
         .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "bar")
-        .containsEntry(PROP_WORKFLOW_VERSION, 2)
+        .containsEntry(PROP_WORKFLOW_VERSION, 2L)
         .containsEntry(PROP_WORKFLOW_KEY, workflowKey);
   }
 
@@ -191,7 +191,7 @@ public class CreateWorkflowInstanceTest {
             .sendAndAwait();
 
     // then
-    final int workflowKey = extractWorkflowKey(deployment1);
+    final long workflowKey = extractWorkflowKey(deployment1);
 
     final SubscribedRecord event =
         testClient
@@ -204,7 +204,7 @@ public class CreateWorkflowInstanceTest {
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
         .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, resp.key())
         .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "foo")
-        .containsEntry(PROP_WORKFLOW_VERSION, 1)
+        .containsEntry(PROP_WORKFLOW_VERSION, 1L)
         .containsEntry(PROP_WORKFLOW_KEY, workflowKey);
   }
 
@@ -218,7 +218,7 @@ public class CreateWorkflowInstanceTest {
             ClientApiRule.DEFAULT_TOPIC_NAME,
             Bpmn.createExecutableWorkflow("process").startEvent("bar").endEvent().done());
 
-    final int workflowKey = extractWorkflowKey(depl);
+    final long workflowKey = extractWorkflowKey(depl);
 
     // when
     final ExecuteCommandResponse resp =
@@ -236,7 +236,7 @@ public class CreateWorkflowInstanceTest {
     assertThat(resp.intent()).isEqualTo(CREATED);
     assertThat(resp.getValue())
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
-        .containsEntry(PROP_WORKFLOW_VERSION, 2)
+        .containsEntry(PROP_WORKFLOW_VERSION, 2L)
         .containsEntry(PROP_WORKFLOW_KEY, workflowKey)
         .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, resp.key());
   }
@@ -251,7 +251,7 @@ public class CreateWorkflowInstanceTest {
 
     testClient.deploy(Bpmn.createExecutableWorkflow("process").startEvent().endEvent().done());
 
-    final int workflowKey = extractWorkflowKey(depl);
+    final long workflowKey = extractWorkflowKey(depl);
 
     // when
     final ExecuteCommandResponse resp =
@@ -269,7 +269,7 @@ public class CreateWorkflowInstanceTest {
     assertThat(resp.intent()).isEqualTo(CREATED);
     assertThat(resp.getValue())
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
-        .containsEntry(PROP_WORKFLOW_VERSION, 1)
+        .containsEntry(PROP_WORKFLOW_VERSION, 1L)
         .containsEntry(PROP_WORKFLOW_KEY, workflowKey)
         .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, resp.key());
   }
@@ -303,7 +303,7 @@ public class CreateWorkflowInstanceTest {
     assertThat(resp.getValue())
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
         .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, resp.key())
-        .containsEntry(PROP_WORKFLOW_VERSION, 1)
+        .containsEntry(PROP_WORKFLOW_VERSION, 1L)
         .containsEntry(PROP_WORKFLOW_PAYLOAD, MSGPACK_PAYLOAD);
   }
 
@@ -461,11 +461,11 @@ public class CreateWorkflowInstanceTest {
 
     assertThat(workflowInstanceEvents.get(0).value())
         .containsEntry("workflowInstanceKey", workflowInstance1)
-        .containsEntry("version", 1);
+        .containsEntry("version", 1L);
 
     assertThat(workflowInstanceEvents.get(1).value())
         .containsEntry("workflowInstanceKey", resp.key())
-        .containsEntry("version", 2);
+        .containsEntry("version", 2L);
 
     final long createdTasks =
         testClient.receiveEvents().ofTypeJob().withIntent(JobIntent.CREATED).limit(2).count();
@@ -514,11 +514,11 @@ public class CreateWorkflowInstanceTest {
 
     assertThat(workflowInstanceEvents.get(0).value())
         .containsEntry("workflowInstanceKey", workflowInstance1)
-        .containsEntry("version", 1);
+        .containsEntry("version", 1L);
 
     assertThat(workflowInstanceEvents.get(1).value())
         .containsEntry("workflowInstanceKey", resp.key())
-        .containsEntry("version", 2);
+        .containsEntry("version", 2L);
 
     final long createdJobs =
         testClient.receiveEvents().ofTypeJob().withIntent(JobIntent.CREATED).limit(2).count();
@@ -615,9 +615,9 @@ public class CreateWorkflowInstanceTest {
   }
 
   @SuppressWarnings("unchecked")
-  private int extractWorkflowKey(final ExecuteCommandResponse deployment1) {
+  private long extractWorkflowKey(final ExecuteCommandResponse deployment1) {
     final List<Map<String, Object>> deployedWorkflows =
         (List<Map<String, Object>>) deployment1.getValue().get("deployedWorkflows");
-    return (int) deployedWorkflows.get(0).get(PROP_WORKFLOW_KEY);
+    return (long) deployedWorkflows.get(0).get(PROP_WORKFLOW_KEY);
   }
 }

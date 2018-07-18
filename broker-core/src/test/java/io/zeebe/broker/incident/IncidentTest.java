@@ -118,7 +118,7 @@ public class IncidentTest {
         .containsEntry("workflowInstanceKey", workflowInstanceKey)
         .containsEntry("activityId", "failingTask")
         .containsEntry("activityInstanceKey", failureEvent.key())
-        .containsEntry("jobKey", -1);
+        .containsEntry("jobKey", -1L);
   }
 
   @Test
@@ -150,7 +150,7 @@ public class IncidentTest {
         .containsEntry("workflowInstanceKey", workflowInstanceKey)
         .containsEntry("activityId", "failingTask")
         .containsEntry("activityInstanceKey", failureEvent.key())
-        .containsEntry("jobKey", -1);
+        .containsEntry("jobKey", -1L);
   }
 
   @Test
@@ -184,7 +184,7 @@ public class IncidentTest {
         .containsEntry("workflowInstanceKey", workflowInstanceKey)
         .containsEntry("activityId", "failingTask")
         .containsEntry("activityInstanceKey", followUpEvent.key())
-        .containsEntry("jobKey", -1);
+        .containsEntry("jobKey", -1L);
   }
 
   @Test
@@ -220,7 +220,7 @@ public class IncidentTest {
         .containsEntry("workflowInstanceKey", workflowInstanceKey)
         .containsEntry("activityId", "failingTask")
         .containsEntry("activityInstanceKey", followUpEvent.key())
-        .containsEntry("jobKey", -1);
+        .containsEntry("jobKey", -1L);
   }
 
   @Test
@@ -287,7 +287,7 @@ public class IncidentTest {
         .containsEntry("workflowInstanceKey", workflowInstanceKey)
         .containsEntry("activityId", "service")
         .containsEntry("activityInstanceKey", followUpEvent.key())
-        .containsEntry("jobKey", -1);
+        .containsEntry("jobKey", -1L);
   }
 
   @Test
@@ -366,7 +366,7 @@ public class IncidentTest {
         .containsEntry("workflowInstanceKey", workflowInstanceKey)
         .containsEntry("activityId", "service")
         .containsEntry("activityInstanceKey", followUpEvent.key())
-        .containsEntry("jobKey", -1);
+        .containsEntry("jobKey", -1L);
   }
 
   @Test
@@ -438,7 +438,7 @@ public class IncidentTest {
         .containsEntry("workflowInstanceKey", workflowInstanceKey)
         .containsEntry("activityId", "service")
         .containsEntry("activityInstanceKey", followUpEvent.key())
-        .containsEntry("jobKey", -1);
+        .containsEntry("jobKey", -1L);
   }
 
   @Test
@@ -505,7 +505,7 @@ public class IncidentTest {
         .containsEntry("workflowInstanceKey", workflowInstanceKey)
         .containsEntry("activityId", "service")
         .containsEntry("activityInstanceKey", followUpEvent.key())
-        .containsEntry("jobKey", -1);
+        .containsEntry("jobKey", -1L);
   }
 
   @Test
@@ -1085,9 +1085,9 @@ public class IncidentTest {
         .containsEntry("errorMessage", "No more retries left.")
         .containsEntry("failureEventPosition", failedEvent.position())
         .containsEntry("bpmnProcessId", "")
-        .containsEntry("workflowInstanceKey", -1)
+        .containsEntry("workflowInstanceKey", -1L)
         .containsEntry("activityId", "")
-        .containsEntry("activityInstanceKey", -1)
+        .containsEntry("activityInstanceKey", -1L)
         .containsEntry("jobKey", failedEvent.key());
   }
 
@@ -1111,9 +1111,9 @@ public class IncidentTest {
         .containsEntry("errorType", ErrorType.JOB_NO_RETRIES.name())
         .containsEntry("errorMessage", "No more retries left.")
         .containsEntry("bpmnProcessId", "")
-        .containsEntry("workflowInstanceKey", -1)
+        .containsEntry("workflowInstanceKey", -1L)
         .containsEntry("activityId", "")
-        .containsEntry("activityInstanceKey", -1)
+        .containsEntry("activityInstanceKey", -1L)
         .containsEntry("jobKey", jobEvent.key());
   }
 

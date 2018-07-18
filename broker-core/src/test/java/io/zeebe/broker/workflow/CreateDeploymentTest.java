@@ -98,8 +98,8 @@ public class CreateDeploymentTest {
     assertThat(deployedWorkflows.get(0))
         .containsExactly(
             entry("bpmnProcessId", "process"),
-            entry("version", 1),
-            entry("workflowKey", 1),
+            entry("version", 1L),
+            entry("workflowKey", 1L),
             entry("resourceName", "wf1.bpmn"));
 
     deployedWorkflows =
@@ -108,8 +108,8 @@ public class CreateDeploymentTest {
     assertThat(deployedWorkflows.get(0))
         .containsExactly(
             entry("bpmnProcessId", "process"),
-            entry("version", 2),
-            entry("workflowKey", 2),
+            entry("version", 2L),
+            entry("workflowKey", 2L),
             entry("resourceName", "wf2.bpmn"));
   }
 
@@ -297,10 +297,10 @@ public class CreateDeploymentTest {
 
     // then
     final Map<String, Object> workflow1 = getDeployedWorkflow(d1, 0);
-    assertThat(workflow1.get("version")).isEqualTo(1);
+    assertThat(workflow1.get("version")).isEqualTo(1L);
 
     final Map<String, Object> workflow2 = getDeployedWorkflow(d2, 0);
-    assertThat(workflow2.get("version")).isEqualTo(1);
+    assertThat(workflow2.get("version")).isEqualTo(1L);
   }
 
   private Map<String, Object> deploymentResource(final byte[] resource, String name) {
