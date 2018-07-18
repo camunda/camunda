@@ -22,12 +22,6 @@ export async function fetchWorkflowInstancesCount(payload) {
   return resJson.count;
 }
 
-export async function batchRety() {
-  // TODO: TBD
-  // const body = { instances }
-  //  await post('/api/selection/...', body);
-}
-
 export async function fetchWorkflowInstanceBySelection(payload) {
   //TODO: replace mock data;
   const demoInstance = {
