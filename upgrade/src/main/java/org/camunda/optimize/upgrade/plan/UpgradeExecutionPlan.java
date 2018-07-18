@@ -51,7 +51,7 @@ public class UpgradeExecutionPlan implements UpgradePlan {
   }
 
   private void addEnvironmentFolderToClasspath() throws Exception {
-    String location = ".." + File.separator + "environment";
+    String location = ".." + "/" + "environment";
     String pathToJarExecutable = UpgradeMain.class
       .getProtectionDomain()
       .getCodeSource()
@@ -69,8 +69,8 @@ public class UpgradeExecutionPlan implements UpgradePlan {
    */
   private String removeJarFileNameFromPath(String executionFolderPath) {
     if (executionFolderPath.trim().endsWith("jar")) {
-      int i = executionFolderPath.lastIndexOf(File.separator);
-      executionFolderPath = executionFolderPath.substring(0, i) + File.separator;
+      int i = executionFolderPath.lastIndexOf("/");
+      executionFolderPath = executionFolderPath.substring(0, i) + "/";
     }
     return executionFolderPath;
   }
