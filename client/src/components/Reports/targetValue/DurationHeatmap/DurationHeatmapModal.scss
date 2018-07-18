@@ -1,12 +1,13 @@
-.DurationHeatmapModal__Table {
-  max-height: 30%;
-}
-
 .DurationHeatmapModal__modal-content-container {
   display: flex;
   flex-direction: column;
   height: 100%;
   min-height: 0;
+}
+
+.DurationHeatmapModal__Table {
+  max-height: 30%;
+  overflow: auto;
 }
 
 .DurationHeatmapModal__warning {
@@ -20,7 +21,6 @@
 
 .DurationHeatmapModal__selection {
   display: flex;
-
   min-width: 0;
   flex-grow: 1;
   align-items: flex-start;
