@@ -19,6 +19,7 @@ import static io.zeebe.util.StringUtil.getBytes;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.zeebe.UnstableTest;
 import io.zeebe.logstreams.impl.snapshot.fs.FsReadableSnapshot;
 import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotStorage;
 import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotStorageConfiguration;
@@ -31,6 +32,7 @@ import org.agrona.BitUtil;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
 
 public class FsTemporarySnapshotWriterTest {
@@ -112,6 +114,7 @@ public class FsTemporarySnapshotWriterTest {
   }
 
   @Test
+  @Category(UnstableTest.class)
   public void shouldStillHaveLastSnapshotIfFailToMoveTemporaryFile() throws Exception {
     // given
     final byte[] badChecksum = new byte[] {0};
