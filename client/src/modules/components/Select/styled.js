@@ -14,7 +14,7 @@ export const Select = themed(styled.select`
 
   background-color: ${themeStyle({
     dark: '#3e3f45',
-    light: Colors.uiLight03
+    light: Colors.uiLight01
   })};
   color: ${themeStyle({
     dark: '#ffffff',
