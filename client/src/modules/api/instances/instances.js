@@ -16,6 +16,12 @@ export async function fetchWorkflowInstances(options) {
   return await response.json();
 }
 
+export async function fetchGroupedWorkflowInstances() {
+  const response = await get('/api/workflows/grouped');
+
+  return await response.json();
+}
+
 export async function fetchWorkflowInstancesCount(payload) {
   const response = await post(`${URL}/count`, payload);
   const resJson = await response.json();

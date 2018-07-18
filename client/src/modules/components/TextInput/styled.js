@@ -17,10 +17,7 @@ export const Input = themed(styled.input`
 
   height: 26px;
   width: 100%;
-  padding-left: 8px;
-  padding-right: 11px;
-  padding-top: 4px;
-  padding-bottom: 5px;
+  padding: 4px 11px 5px 8px;
   border: solid 1px
     ${themeStyle({
       dark: Colors.uiDark05,

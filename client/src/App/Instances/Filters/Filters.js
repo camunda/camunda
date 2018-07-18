@@ -5,15 +5,19 @@ import Panel from 'modules/components/Panel';
 import Button from 'modules/components/Button';
 import TextInput from 'modules/components/TextInput';
 import Textarea from 'modules/components/Textarea';
+import Select from 'modules/components/Select';
 import {DEFAULT_FILTER, FILTER_TYPES, DIRECTION} from 'modules/constants';
 import {isEqual} from 'modules/utils';
+import * as api from 'modules/api/instances';
 
 import Filter from './Filter';
 import * as Styled from './styled';
+import {parseWorkflowNames} from './service';
 
 const PLACEHOLDER = {
   errorMessage: 'Error Message',
-  instanceIds: 'Instance Id(s) separated by space or comma'
+  instanceIds: 'Instance Id(s) separated by space or comma',
+  workflowName: 'Workflow'
 };
 
 const fieldParser = {
@@ -27,6 +31,27 @@ export default class Filters extends React.Component {
     onFilterChange: PropTypes.func,
     onBulkFilterChange: PropTypes.func,
     resetFilter: PropTypes.func
+  };
+
+  state = {
+    workflowNames: [],
+    currentWorkflowName: ''
+  };
+
+  componentDidMount = async () => {
+    const groupedWorkflows = await api.fetchGroupedWorkflowInstances();
+
+    this.setState({
+      workflowNames: parseWorkflowNames(groupedWorkflows)
+    });
+  };
+
+  handleWorkflowsNameChange = event => {
+    const {value} = event.target;
+
+    this.setState({
+      currentWorkflowName: value
+    });
   };
 
   handleFieldChange = event => {
@@ -46,6 +71,15 @@ export default class Filters extends React.Component {
         <Panel.Body>
           <Styled.Filters>
             <Styled.Field>
+              <Textarea
+                name="ids"
+                placeholder={PLACEHOLDER.instanceIds}
+                onBlur={this.handleFieldChange}
+                aria-label={PLACEHOLDER.instanceIds}
+                aria-required="false"
+              />
+            </Styled.Field>
+            <Styled.Field>
               <TextInput
                 name="errorMessage"
                 placeholder={PLACEHOLDER.errorMessage}
@@ -55,12 +89,13 @@ export default class Filters extends React.Component {
               />
             </Styled.Field>
             <Styled.Field>
-              <Textarea
-                name="ids"
-                placeholder={PLACEHOLDER.instanceIds}
-                onBlur={this.handleFieldChange}
-                aria-label={PLACEHOLDER.instanceIds}
-                aria-required="false"
+              <Select
+                value={this.state.currentWorkflowName}
+                disabled={this.state.workflowNames.length === 0}
+                name="workflowName"
+                placeholder={PLACEHOLDER.workflowName}
+                options={this.state.workflowNames}
+                onChange={this.handleWorkflowsNameChange}
               />
             </Styled.Field>
             <Filter
