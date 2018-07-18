@@ -3,6 +3,8 @@ import {shallow} from 'enzyme';
 
 import {DEFAULT_FILTER, FILTER_TYPES, DIRECTION} from 'modules/constants';
 import Button from 'modules/components/Button';
+import Textarea from 'modules/components/Textarea';
+import TextInput from 'modules/components/TextInput';
 import {mockResolvedAsyncFn} from 'modules/testUtils';
 
 import Filters from './Filters';
@@ -83,6 +85,8 @@ describe('Filters', () => {
 
       // then
       expect(errorMessageNode.length).toEqual(1);
+      expect(errorMessageNode.type()).toEqual(TextInput);
+      expect(errorMessageNode.props().name).toEqual('errorMessage');
       expect(errorMessageNode.props().onBlur).toEqual(
         node.instance().handleFieldChange
       );
@@ -126,6 +130,8 @@ describe('Filters', () => {
 
       // then
       expect(instanceIdsNode.length).toEqual(1);
+      expect(instanceIdsNode.type()).toEqual(Textarea);
+      expect(instanceIdsNode.props().name).toEqual('ids');
       expect(instanceIdsNode.props().onBlur).toEqual(
         node.instance().handleFieldChange
       );

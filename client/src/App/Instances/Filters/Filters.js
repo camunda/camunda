@@ -75,8 +75,6 @@ export default class Filters extends React.Component {
                 name="ids"
                 placeholder={PLACEHOLDER.instanceIds}
                 onBlur={this.handleFieldChange}
-                aria-label={PLACEHOLDER.instanceIds}
-                aria-required="false"
               />
             </Styled.Field>
             <Styled.Field>
@@ -85,7 +83,6 @@ export default class Filters extends React.Component {
                 placeholder={PLACEHOLDER.errorMessage}
                 onBlur={this.handleFieldChange}
                 aria-label={PLACEHOLDER.errorMessage}
-                aria-required="false"
               />
             </Styled.Field>
             <Styled.Field>
