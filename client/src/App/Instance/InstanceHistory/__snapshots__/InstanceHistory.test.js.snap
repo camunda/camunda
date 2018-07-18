@@ -2,9 +2,16 @@
 
 exports[`InstanceHistory should render a pane with InstanceLog section and Copyright 1`] = `
 <Pane
-  instanceLog={
+  activitiesDetails={
+    Array [
+      Object {
+        "bar": "bar",
+      },
+    ]
+  }
+  instance={
     Object {
-      "foo": "bar",
+      "foo": "foo",
     }
   }
 >
@@ -15,9 +22,16 @@ exports[`InstanceHistory should render a pane with InstanceLog section and Copyr
   </PanelHeader>
   <Styled(Styled(PanelBody))>
     <InstanceLog
-      instanceLog={
+      activitiesDetails={
+        Array [
+          Object {
+            "bar": "bar",
+          },
+        ]
+      }
+      instance={
         Object {
-          "foo": "bar",
+          "foo": "foo",
         }
       }
     />

@@ -32,21 +32,21 @@ export function getElementType({businessObject, type}) {
 }
 
 /**
- * @returns { activityId : { name , type }}
+ * @returns { flowNodeId : { name , type }}
  * @param {*} elementRegistry (bpmn elementRegistry)
  */
-export function getActivitiesInfoMap(elementRegistry) {
-  const activitiesInfoMap = {};
+export function getFlowNodesDetails(elementRegistry) {
+  const flowNodeDetails = {};
 
   elementRegistry.forEach(element => {
     const type = getElementType(element);
     if (!!type) {
-      activitiesInfoMap[element.id] = {
+      flowNodeDetails[element.id] = {
         name: element.businessObject.name || UNNAMED_ACTIVITY,
         type
       };
     }
   });
 
-  return activitiesInfoMap;
+  return flowNodeDetails;
 }

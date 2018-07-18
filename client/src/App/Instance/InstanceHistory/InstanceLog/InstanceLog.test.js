@@ -8,27 +8,27 @@ import InstanceLog from './InstanceLog';
 import * as Styled from './styled';
 
 const mockProps = {
-  instanceLog: {
-    workflowId: 'foo',
-    activities: [
-      {
-        state: 'someState1',
-        type: 'someType1',
-        name: 'someName1',
-        id: '1'
-      },
-      {
-        state: 'someState2',
-        type: 'someType2',
-        name: 'someName2',
-        id: '2'
-      }
-    ]
-  }
+  instance: {
+    workflowId: 'foo'
+  },
+  activitiesDetails: [
+    {
+      state: 'someState1',
+      type: 'someType1',
+      name: 'someName1',
+      id: '1'
+    },
+    {
+      state: 'someState2',
+      type: 'someType2',
+      name: 'someName2',
+      id: '2'
+    }
+  ]
 };
 
 describe('InstanceLog', () => {
-  it('should not render empty InstanceLog if there is no instanceLog', () => {
+  it('should not render empty InstanceLog if there is no instance', () => {
     // given
     const node = shallow(<InstanceLog />);
 
@@ -38,37 +38,43 @@ describe('InstanceLog', () => {
     expect(InstanceLogNode.children().length).toBe(0);
   });
 
-  it('should render selected header and entries if there is instanceLog', () => {
+  it('should only render selected header if there is instance and no activitiesDetails', () => {
     // given
-    const node = shallow(<InstanceLog {...mockProps} />);
-    const {instanceLog} = mockProps;
+    const {instance} = mockProps;
+    const node = shallow(<InstanceLog instance={instance} />);
 
     // then
-    // Header
     const HeaderNode = node.find(Styled.Header);
     expect(HeaderNode).toHaveLength(1);
     expect(HeaderNode.prop('isSelected')).toBe(true);
-    expect(HeaderNode.contains(getWorkflowName(instanceLog))).toBe(true);
+    expect(HeaderNode.contains(getWorkflowName(instance))).toBe(true);
     // DocumentIcon
     const DocumentIconNode = HeaderNode.find(Styled.DocumentIcon);
     expect(DocumentIconNode).toHaveLength(1);
     expect(DocumentIconNode.prop('isSelected')).toBe(true);
+
+    // Log Entries
+    expect(node.find(Styled.LogEntry)).toHaveLength(0);
+  });
+
+  it('should render entries if there are actvitiesDetails', () => {
+    // given
+    const node = shallow(<InstanceLog {...mockProps} />);
+    const {activitiesDetails} = mockProps;
+
+    // then
     // Log Entries
     const LogEntryNodes = node.find(Styled.LogEntry);
-    expect(LogEntryNodes).toHaveLength(instanceLog.activities.length);
+    expect(LogEntryNodes).toHaveLength(activitiesDetails.length);
     LogEntryNodes.forEach((LogEntryNode, idx) => {
       expect(LogEntryNode.prop('isSelected')).toBe(false);
-      expect(LogEntryNode.contains(instanceLog.activities[idx].name));
+      expect(LogEntryNode.contains(activitiesDetails[idx].name));
       // FlowNodeIcon
       const FlowNodeIconNode = LogEntryNode.find(Styled.FlowNodeIcon);
       expect(FlowNodeIconNode).toHaveLength(1);
       expect(FlowNodeIconNode.prop('isSelected')).toBe(false);
-      expect(FlowNodeIconNode.prop('state')).toBe(
-        instanceLog.activities[idx].state
-      );
-      expect(FlowNodeIconNode.prop('type')).toBe(
-        instanceLog.activities[idx].type
-      );
+      expect(FlowNodeIconNode.prop('state')).toBe(activitiesDetails[idx].state);
+      expect(FlowNodeIconNode.prop('type')).toBe(activitiesDetails[idx].type);
     });
 
     // snapshot
@@ -78,9 +84,7 @@ describe('InstanceLog', () => {
   it('should change selection when clicking on a log entry', () => {
     // given
     const node = shallow(<InstanceLog {...mockProps} />);
-    const {
-      instanceLog: {activities}
-    } = mockProps;
+    const {activitiesDetails} = mockProps;
     const LogEntryNodes = node.find(Styled.LogEntry);
 
     LogEntryNodes.forEach((LogEntryNode, idx) => {
@@ -90,7 +94,7 @@ describe('InstanceLog', () => {
       LogEntryNode = node.find(Styled.LogEntry).at(idx);
 
       // then
-      expect(node.state('selected')).toBe(activities[idx].id);
+      expect(node.state('selected')).toBe(activitiesDetails[idx].id);
       expect(LogEntryNode.prop('isSelected')).toBe(true);
       // FlowNodeIcon
       const FlowNodeIconNode = LogEntryNode.find(Styled.FlowNodeIcon);
@@ -102,10 +106,8 @@ describe('InstanceLog', () => {
   it('should change selection to header when clicking on it', () => {
     // given
     const node = shallow(<InstanceLog {...mockProps} />);
-    const {
-      instanceLog: {activities}
-    } = mockProps;
-    node.setState({selected: activities[0].id});
+    const {activitiesDetails} = mockProps;
+    node.setState({selected: activitiesDetails[0].id});
     node.update();
     let HeaderNode = node.find(Styled.Header);
 

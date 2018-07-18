@@ -26,7 +26,7 @@ export default class Instance extends Component {
 
   state = {
     instance: null,
-    instanceLog: null,
+    activitiesDetails: null,
     loaded: false
   };
 
@@ -40,13 +40,11 @@ export default class Instance extends Component {
     });
   }
 
-  // TODO:
-  // make activitiesWithInfo in service
-  onActivitiesInfoReady = activitiesInfoMap => {
+  onFlowNodesDetailsReady = flowNodesDetails => {
     const {instance} = this.state;
     const {activityInstanceId} = getActiveIncident(instance.incidents) || {};
 
-    const activitiesWithInfo = instance.activities.map(activity => {
+    const activitiesDetails = instance.activities.map(activity => {
       // change activity state to incident in case the activity is active
       // and it has an active incident
       let {state} = {...activity};
@@ -56,12 +54,12 @@ export default class Instance extends Component {
 
       return {
         ...activity,
-        ...activitiesInfoMap[activity.activityId],
+        ...flowNodesDetails[activity.activityId],
         state
       };
     });
 
-    this.setState({instanceLog: {...instance, activities: activitiesWithInfo}});
+    this.setState({activitiesDetails});
   };
 
   render() {
@@ -83,9 +81,12 @@ export default class Instance extends Component {
             <SplitPane>
               <DiagramPanel
                 instance={this.state.instance}
-                onActivitiesInfoReady={this.onActivitiesInfoReady}
+                onFlowNodesDetailsReady={this.onFlowNodesDetailsReady}
               />
-              <InstanceHistory instanceLog={this.state.instanceLog} />
+              <InstanceHistory
+                instance={this.state.instance}
+                activitiesDetails={this.state.activitiesDetails}
+              />
             </SplitPane>
           </Styled.Instance>
         </Content>

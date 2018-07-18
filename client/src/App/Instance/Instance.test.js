@@ -57,7 +57,7 @@ api.fetchWorkflowInstance = mockResolvedAsyncFn(INSTANCE);
 
 const initialState = {
   instance: null,
-  instanceLog: null,
+  activitiesDetails: null,
   loaded: false
 };
 
@@ -103,31 +103,30 @@ describe('Instance', () => {
     });
   });
 
-  describe('onActivitiesInfoReady', () => {
-    it('should set state.instanceLog from given activitiesInfoMap', async () => {
+  describe('onFlowNodesDetailsReady', () => {
+    it('should set state.activitiesDetails from given flowNodesDetails', async () => {
       // given
       const node = shallow(component);
-      const mockActivitiesInfoMap = {
+      const mockFlowNodesDetails = {
         foo: {name: 'foo', amount: 20}
       };
-      const expectedInstanceLog = {
-        ...INSTANCE,
-        activities: [
-          {...INSTANCE.activities[0], ...mockActivitiesInfoMap.foo},
-          {
-            ...INSTANCE.activities[1],
-            state: ACTIVITY_STATE.INCIDENT
-          }
-        ]
-      };
+      const expectedActivitiesDetails = [
+        {...INSTANCE.activities[0], ...mockFlowNodesDetails.foo},
+        {
+          ...INSTANCE.activities[1],
+          state: ACTIVITY_STATE.INCIDENT
+        }
+      ];
 
       // when
       await flushPromises();
-      node.instance().onActivitiesInfoReady(mockActivitiesInfoMap);
+      node.instance().onFlowNodesDetailsReady(mockFlowNodesDetails);
       node.update();
 
       // then
-      expect(node.state('instanceLog')).toEqual(expectedInstanceLog);
+      expect(node.state('activitiesDetails')).toEqual(
+        expectedActivitiesDetails
+      );
     });
   });
 
@@ -135,8 +134,11 @@ describe('Instance', () => {
     it('should display a Header, DiagramPanel and Copyright', async () => {
       // given
       const node = shallow(component);
-      const INSTANCE_LOG = {foo: 'bar'};
-      node.setState({instanceLog: INSTANCE_LOG});
+      const ACTIVITIES_DETAILS = [{foo: 'bar'}];
+      node.setState({
+        instance: INSTANCE,
+        activitiesDetails: ACTIVITIES_DETAILS
+      });
       await flushPromises();
       node.update();
 
@@ -152,13 +154,16 @@ describe('Instance', () => {
       const DiagramPanelNode = node.find(DiagramPanel);
       expect(DiagramPanelNode).toHaveLength(1);
       expect(DiagramPanelNode.prop('instance')).toEqual(INSTANCE);
-      expect(DiagramPanelNode.prop('onActivitiesInfoReady')).toBe(
-        node.instance().onActivitiesInfoReady
+      expect(DiagramPanelNode.prop('onFlowNodesDetailsReady')).toBe(
+        node.instance().onFlowNodesDetailsReady
       );
       // InstanceHistory
       const InstanceHistoryNode = node.find(InstanceHistory);
       expect(InstanceHistoryNode).toHaveLength(1);
-      expect(InstanceHistoryNode.prop('instanceLog')).toEqual(INSTANCE_LOG);
+      expect(InstanceHistoryNode.prop('instance')).toEqual(INSTANCE);
+      expect(InstanceHistoryNode.prop('activitiesDetails')).toEqual(
+        ACTIVITIES_DETAILS
+      );
       // snapshot
       expect(node).toMatchSnapshot();
     });

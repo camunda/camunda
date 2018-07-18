@@ -11,7 +11,10 @@ import * as Styled from './styled';
 describe('InstanceHistory', () => {
   it('should render a pane with InstanceLog section and Copyright', () => {
     // given
-    const mockProps = {instanceLog: {foo: 'bar'}};
+    const mockProps = {
+      instance: {foo: 'foo'},
+      activitiesDetails: [{bar: 'bar'}]
+    };
     const node = shallow(<InstanceHistory {...mockProps} />);
 
     // then
@@ -27,7 +30,10 @@ describe('InstanceHistory', () => {
     // Instance Log
     const InstanceLogNode = PaneBodyNode.find(InstanceLog);
     expect(InstanceLogNode).toHaveLength(1);
-    expect(InstanceLogNode.prop('instanceLog')).toEqual(mockProps.instanceLog);
+    expect(InstanceLogNode.prop('instance')).toEqual(mockProps.instance);
+    expect(InstanceLogNode.prop('activitiesDetails')).toEqual(
+      mockProps.activitiesDetails
+    );
     // Pane Footer
     const PaneFooterNode = node.find(Styled.PaneFooter);
     expect(PaneFooterNode).toHaveLength(1);

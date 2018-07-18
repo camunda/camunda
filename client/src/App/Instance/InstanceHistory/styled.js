@@ -5,7 +5,6 @@ import {Colors, themed, themeStyle} from 'modules/theme';
 import SplitPane from 'modules/components/SplitPane';
 
 export const PaneBody = styled(SplitPane.Pane.Body)`
-  display: flex;
   flex-direction: row;
 `;
 

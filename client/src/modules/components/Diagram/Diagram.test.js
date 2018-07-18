@@ -17,8 +17,8 @@ const xmlMock = '<foo />';
 api.workflowXML = mockResolvedAsyncFn(xmlMock);
 
 // mocking service
-const activitiesInfoMapMock = {};
-service.getActivitiesInfoMap = jest.fn(() => activitiesInfoMapMock);
+const flowNodesDetails = {};
+service.getFlowNodesDetails = jest.fn(() => flowNodesDetails);
 
 describe('Diagram', () => {
   const workflowId = 'some-id';
@@ -139,12 +139,12 @@ describe('Diagram', () => {
 
     it('should import the xml in the Viewer and reset zoom', async () => {
       // given
-      const onActivitiesInfoReadyMock = jest.fn();
+      const onFlowNodesDetailsReady = jest.fn();
       const node = shallow(
         <Diagram
           workflowId={workflowId}
           theme={'light'}
-          onActivitiesInfoReady={onActivitiesInfoReadyMock}
+          onFlowNodesDetailsReady={onFlowNodesDetailsReady}
         />
       );
       const nodeInstance = node.instance();
@@ -155,10 +155,10 @@ describe('Diagram', () => {
       const args = nodeInstance.Viewer.importXML.mock.calls[0];
       expect(args[0]).toBe(nodeInstance.workflowXML);
       expect(typeof args[1]).toBe('function');
-      expect(service.getActivitiesInfoMap).toBeCalledWith(
+      expect(service.getFlowNodesDetails).toBeCalledWith(
         nodeInstance.Viewer.elementRegistry
       );
-      expect(onActivitiesInfoReadyMock).toBeCalledWith(activitiesInfoMapMock);
+      expect(onFlowNodesDetailsReady).toBeCalledWith(flowNodesDetails);
       expect(handleZoomResetSpy).toHaveBeenCalledTimes(1);
     });
   });

@@ -8,7 +8,15 @@ import * as Styled from './styled';
 
 export default class InstanceLog extends React.Component {
   static propTypes = {
-    instanceLog: PropTypes.object
+    instance: PropTypes.object,
+    activitiesDetails: PropTypes.arrayOf(
+      PropTypes.shape({
+        state: PropTypes.string,
+        type: PropTypes.string,
+        name: PropTypes.string,
+        id: PropTypes.id
+      })
+    )
   };
 
   state = {
@@ -35,11 +43,11 @@ export default class InstanceLog extends React.Component {
   );
 
   render() {
-    const {instanceLog} = this.props;
+    const {instance, activitiesDetails} = this.props;
 
     return (
       <Styled.InstanceLog {...this.props}>
-        {!instanceLog ? null : (
+        {!instance ? null : (
           <React.Fragment>
             <Styled.Header
               isSelected={this.state.selected === HEADER}
@@ -48,9 +56,11 @@ export default class InstanceLog extends React.Component {
               <Styled.DocumentIcon
                 isSelected={this.state.selected === HEADER}
               />
-              {getWorkflowName(instanceLog)}
+              {getWorkflowName(instance)}
             </Styled.Header>
-            {instanceLog.activities.map(this.renderLogEntry)}
+            {!activitiesDetails
+              ? null
+              : activitiesDetails.map(this.renderLogEntry)}
           </React.Fragment>
         )}
       </Styled.InstanceLog>

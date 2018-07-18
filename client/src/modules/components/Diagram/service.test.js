@@ -1,8 +1,4 @@
-import {
-  getDiagramColors,
-  getElementType,
-  getActivitiesInfoMap
-} from './service';
+import {getElementType, getFlowNodesDetails} from './service';
 
 import {ACTIVITY_TYPE, UNNAMED_ACTIVITY} from 'modules/constants';
 
@@ -49,7 +45,7 @@ describe('Diagram service', () => {
   describe('getActivitiesInfoMap', () => {
     // given
     const elementRegistry = [someTask, someNoNamed, someEvent, someGateway];
-    const expectedActivitiesInfoMap = {
+    const expectedFlowNodesDetails = {
       someTask: {
         name: someTask.businessObject.name,
         type: getElementType(someTask)
@@ -62,8 +58,8 @@ describe('Diagram service', () => {
     };
 
     // then
-    expect(getActivitiesInfoMap(elementRegistry)).toEqual(
-      expectedActivitiesInfoMap
+    expect(getFlowNodesDetails(elementRegistry)).toEqual(
+      expectedFlowNodesDetails
     );
   });
 });

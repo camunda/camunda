@@ -9,7 +9,8 @@ import * as Styled from './styled';
 
 export default class InstanceHistory extends React.Component {
   static propTypes = {
-    instanceLog: PropTypes.object
+    instance: PropTypes.object,
+    activitiesDetails: PropTypes.array
   };
 
   render() {
@@ -17,7 +18,10 @@ export default class InstanceHistory extends React.Component {
       <SplitPane.Pane {...this.props}>
         <SplitPane.Pane.Header>Instance History</SplitPane.Pane.Header>
         <Styled.PaneBody>
-          <InstanceLog instanceLog={this.props.instanceLog} />
+          <InstanceLog
+            instance={this.props.instance}
+            activitiesDetails={this.props.activitiesDetails}
+          />
           <Styled.Section>B</Styled.Section>
           <Styled.Section>C</Styled.Section>
         </Styled.PaneBody>

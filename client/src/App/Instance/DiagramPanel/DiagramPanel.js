@@ -21,7 +21,7 @@ export default class DiagramPanel extends React.Component {
       errorMessage: PropTypes.string
     }).isRequired,
     paneId: PropTypes.string,
-    onActivitiesInfoReady: PropTypes.func
+    onFlowNodesDetailsReady: PropTypes.func
   };
 
   render() {
@@ -47,7 +47,7 @@ export default class DiagramPanel extends React.Component {
           <DiagramBar instance={instance} />
           <Diagram
             workflowId={instance.workflowId}
-            onActivitiesInfoReady={this.props.onActivitiesInfoReady}
+            onFlowNodesDetailsReady={this.props.onFlowNodesDetailsReady}
           />
         </SplitPane.Pane.Body>
       </SplitPane.Pane>

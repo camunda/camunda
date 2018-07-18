@@ -1,23 +1,25 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`InstanceLog should render selected header and entries if there is instanceLog 1`] = `
+exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
 <Themed(styled.div)
-  instanceLog={
+  activitiesDetails={
+    Array [
+      Object {
+        "id": "1",
+        "name": "someName1",
+        "state": "someState1",
+        "type": "someType1",
+      },
+      Object {
+        "id": "2",
+        "name": "someName2",
+        "state": "someState2",
+        "type": "someType2",
+      },
+    ]
+  }
+  instance={
     Object {
-      "activities": Array [
-        Object {
-          "id": "1",
-          "name": "someName1",
-          "state": "someState1",
-          "type": "someType1",
-        },
-        Object {
-          "id": "2",
-          "name": "someName2",
-          "state": "someState2",
-          "type": "someType2",
-        },
-      ],
       "workflowId": "foo",
     }
   }

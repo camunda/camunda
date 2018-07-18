@@ -7,13 +7,14 @@ import {themed} from 'modules/theme';
 import * as Styled from './styled';
 import DiagramControls from './DiagramControls';
 import * as api from 'modules/api/diagram';
-import {getDiagramColors, getActivitiesInfoMap} from './service';
+import {getDiagramColors, getFlowNodesDetails} from './service';
 
 class Diagram extends React.Component {
   static propTypes = {
     theme: PropTypes.string.isRequired,
     workflowId: PropTypes.string.isRequired,
-    onActivitiesInfoReady: PropTypes.func
+    // callback function called when flowNodesDetails is ready
+    onFlowNodesDetailsReady: PropTypes.func
   };
 
   constructor(props) {
@@ -53,12 +54,12 @@ class Diagram extends React.Component {
         return console.log('Error rendering diagram:', e);
       }
 
-      // in case onActivitiesInfoReady is provided, calculate info map and
-      // pass it to the function
-      const {onActivitiesInfoReady} = this.props;
-      if (typeof onActivitiesInfoReady === 'function') {
+      // in case onFlowNodesDetailsReady callback function is provided, call it with
+      // flowNodesDetails
+      const {onFlowNodesDetailsReady} = this.props;
+      if (typeof onFlowNodesDetailsReady === 'function') {
         const elementRegistry = this.Viewer.get('elementRegistry');
-        onActivitiesInfoReady(getActivitiesInfoMap(elementRegistry));
+        onFlowNodesDetailsReady(getFlowNodesDetails(elementRegistry));
       }
 
       this.handleZoomReset();
