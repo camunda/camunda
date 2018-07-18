@@ -39,10 +39,11 @@ const mockOnClick = jest.fn();
 const mockOnRetry = jest.fn();
 const mockOnDelete = jest.fn();
 
-describe('selection', () => {
+describe('Selection', () => {
   let node;
+  let isOpen;
   beforeEach(() => {
-    let isOpen = true;
+    isOpen = true;
     node = shallow(
       <Selection
         isOpen={isOpen}
@@ -54,6 +55,37 @@ describe('selection', () => {
         onDelete={mockOnDelete}
       />
     );
+  });
+
+  it('should contain a Header', () => {
+    expect(node.find(Styled.Header)).toExist();
+  });
+
+  it('should contain Instances', () => {
+    expect(node.find(Styled.Instance)).toExist();
+  });
+
+  it('should contain a Footer', () => {
+    expect(node.find(Styled.Footer)).toExist();
+  });
+
+  it('should contain Action Icons', () => {
+    expect(node.find(Styled.Actions)).toExist();
+  });
+
+  it('should only have Header when closed', () => {
+    //given
+    node.setProps({isOpen: false});
+
+    // when
+    node.update();
+
+    // then
+    expect(node.find(Styled.Header)).toExist();
+
+    expect(node.find(Styled.Instance)).not.toExist();
+    expect(node.find(Styled.Footer)).not.toExist();
+    expect(node.find(Styled.Actions)).not.toExist();
   });
 
   it('should call the passed toggle method', () => {
@@ -75,9 +107,5 @@ describe('selection', () => {
     expect(node.instance().getBody(workfowInstances).length).toBe(
       workfowInstances.length
     );
-  });
-
-  it('should calculate the number of not displayed instance in the selection', () => {
-    // console.log(node.find(Styled.MoreInstances).text());
   });
 });
