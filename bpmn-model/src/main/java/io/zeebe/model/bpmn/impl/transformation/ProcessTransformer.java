@@ -18,9 +18,12 @@ package io.zeebe.model.bpmn.impl.transformation;
 import io.zeebe.model.bpmn.BpmnAspect;
 import io.zeebe.model.bpmn.impl.error.ErrorCollector;
 import io.zeebe.model.bpmn.impl.instance.FlowElementImpl;
+import io.zeebe.model.bpmn.impl.instance.MessageImpl;
 import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
 import io.zeebe.model.bpmn.impl.instance.StartEventImpl;
 import io.zeebe.model.bpmn.impl.transformation.nodes.ExclusiveGatewayTransformer;
+import io.zeebe.model.bpmn.impl.transformation.nodes.IntermediateCatchEventTransformer;
+import io.zeebe.model.bpmn.impl.transformation.nodes.ReceiveTaskTransformer;
 import io.zeebe.model.bpmn.impl.transformation.nodes.SequenceFlowTransformer;
 import io.zeebe.model.bpmn.impl.transformation.nodes.task.ServiceTaskTransformer;
 import io.zeebe.model.bpmn.instance.ExclusiveGateway;
@@ -38,8 +41,12 @@ public class ProcessTransformer {
   private final ServiceTaskTransformer serviceTaskTransformer = new ServiceTaskTransformer();
   private final ExclusiveGatewayTransformer exclusiveGatewayTransformer =
       new ExclusiveGatewayTransformer();
+  private final IntermediateCatchEventTransformer intermediateCatchEventTransformer =
+      new IntermediateCatchEventTransformer();
+  private final ReceiveTaskTransformer receiveTaskTransformer = new ReceiveTaskTransformer();
 
-  public void transform(ErrorCollector errorCollector, ProcessImpl process) {
+  public void transform(
+      ErrorCollector errorCollector, ProcessImpl process, Map<String, MessageImpl> messagesById) {
     final List<FlowElementImpl> flowElements = collectFlowElements(process);
     process.getFlowElements().addAll(flowElements);
 
@@ -51,6 +58,9 @@ public class ProcessTransformer {
     sequenceFlowTransformer.transform(errorCollector, process.getSequenceFlows(), flowElementsById);
     serviceTaskTransformer.transform(errorCollector, process.getServiceTasks());
     exclusiveGatewayTransformer.transform(process.getExclusiveGateways());
+    intermediateCatchEventTransformer.transform(
+        errorCollector, process.getIntermediateCatchEvents(), messagesById);
+    receiveTaskTransformer.transform(errorCollector, process.getReceiveTasks(), messagesById);
 
     transformBpmnAspects(process);
   }
@@ -62,6 +72,8 @@ public class ProcessTransformer {
     flowElements.addAll(process.getSequenceFlows());
     flowElements.addAll(process.getServiceTasks());
     flowElements.addAll(process.getExclusiveGateways());
+    flowElements.addAll(process.getIntermediateCatchEvents());
+    flowElements.addAll(process.getReceiveTasks());
     return flowElements;
   }
 

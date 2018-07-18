@@ -18,7 +18,20 @@ package io.zeebe.model.bpmn;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.model.bpmn.instance.*;
+import io.zeebe.model.bpmn.instance.ExclusiveGateway;
+import io.zeebe.model.bpmn.instance.FlowNode;
+import io.zeebe.model.bpmn.instance.InputOutputMapping;
+import io.zeebe.model.bpmn.instance.IntermediateMessageCatchEvent;
+import io.zeebe.model.bpmn.instance.MessageSubscription;
+import io.zeebe.model.bpmn.instance.OutputBehavior;
+import io.zeebe.model.bpmn.instance.ReceiveTask;
+import io.zeebe.model.bpmn.instance.SequenceFlow;
+import io.zeebe.model.bpmn.instance.ServiceTask;
+import io.zeebe.model.bpmn.instance.StartEvent;
+import io.zeebe.model.bpmn.instance.TaskDefinition;
+import io.zeebe.model.bpmn.instance.TaskHeaders;
+import io.zeebe.model.bpmn.instance.Workflow;
+import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import java.util.List;
 import org.junit.Test;
 
@@ -181,6 +194,49 @@ public class BpmnBuilderTest {
   }
 
   @Test
+  public void shouldBuildWorkflowWithIntermediateMessageCatchEvent() {
+    final WorkflowDefinition workflowDefinition =
+        Bpmn.createExecutableWorkflow("process")
+            .startEvent()
+            .intermediateCatchEvent(
+                "catch-event", m -> m.messageName("order canceled").correlationKey("$.orderId"))
+            .endEvent()
+            .done();
+
+    final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
+
+    final IntermediateMessageCatchEvent catchEvent =
+        workflow.findFlowElementById(wrapString("catch-event"));
+    assertThat(catchEvent).isNotNull();
+
+    final MessageSubscription subscription = catchEvent.getMessageSubscription();
+    assertThat(subscription).isNotNull();
+    assertThat(subscription.getMessageName()).isEqualTo("order canceled");
+    assertThat(subscription.getCorrelationKey().getExpression()).isEqualTo(wrapString("$.orderId"));
+  }
+
+  @Test
+  public void shouldBuildWorkflowWithReceiveTask() {
+    final WorkflowDefinition workflowDefinition =
+        Bpmn.createExecutableWorkflow("process")
+            .startEvent()
+            .receiveTask(
+                "receive-task", m -> m.messageName("order canceled").correlationKey("$.orderId"))
+            .endEvent()
+            .done();
+
+    final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
+
+    final ReceiveTask receiveTask = workflow.findFlowElementById(wrapString("receive-task"));
+    assertThat(receiveTask).isNotNull();
+
+    final MessageSubscription subscription = receiveTask.getMessageSubscription();
+    assertThat(subscription).isNotNull();
+    assertThat(subscription.getMessageName()).isEqualTo("order canceled");
+    assertThat(subscription.getCorrelationKey().getExpression()).isEqualTo(wrapString("$.orderId"));
+  }
+
+  @Test
   public void shouldConvertWorkflowToString() {
     final WorkflowDefinition workflowDefinition =
         Bpmn.createExecutableWorkflow("process")
@@ -199,7 +255,6 @@ public class BpmnBuilderTest {
             .done();
 
     final String workflowAsString = Bpmn.convertToString(workflowDefinition);
-
     Bpmn.readFromXmlString(workflowAsString);
 
     final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));

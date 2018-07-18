@@ -15,8 +15,18 @@
  */
 package io.zeebe.model.bpmn.builder;
 
-import io.zeebe.model.bpmn.impl.instance.*;
+import io.zeebe.model.bpmn.impl.instance.DefinitionsImpl;
+import io.zeebe.model.bpmn.impl.instance.EndEventImpl;
+import io.zeebe.model.bpmn.impl.instance.ExclusiveGatewayImpl;
+import io.zeebe.model.bpmn.impl.instance.FlowNodeImpl;
+import io.zeebe.model.bpmn.impl.instance.IntermediateCatchEventImpl;
+import io.zeebe.model.bpmn.impl.instance.MessageEventDefinitionImpl;
+import io.zeebe.model.bpmn.impl.instance.MessageImpl;
 import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
+import io.zeebe.model.bpmn.impl.instance.ReceiveTaskImpl;
+import io.zeebe.model.bpmn.impl.instance.SequenceFlowImpl;
+import io.zeebe.model.bpmn.impl.instance.ServiceTaskImpl;
+import io.zeebe.model.bpmn.impl.instance.StartEventImpl;
 import io.zeebe.model.bpmn.impl.transformation.BpmnTransformer;
 import io.zeebe.model.bpmn.impl.validation.BpmnValidator;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
@@ -32,6 +42,8 @@ public class BpmnBuilder {
   private final AtomicLong nextId = new AtomicLong();
 
   private final List<FlowNodeImpl> flowNodes = new ArrayList<>();
+
+  private final List<MessageImpl> messages = new ArrayList<>();
 
   private ProcessImpl process;
   private FlowNodeImpl sourceNode;
@@ -181,6 +193,45 @@ public class BpmnBuilder {
     return this;
   }
 
+  public BpmnBuilder intermediateCatchEvent(
+      String id, Consumer<BpmnMessageEventBuilder> messageBuilder) {
+    final IntermediateCatchEventImpl catchEvent = new IntermediateCatchEventImpl();
+    catchEvent.setId(id);
+
+    connectToSequenceFlow(catchEvent);
+
+    process.getIntermediateCatchEvents().add(catchEvent);
+    addFlowNode(catchEvent);
+
+    final BpmnMessageEventBuilder builder = new BpmnMessageEventBuilder(messages);
+    messageBuilder.accept(builder);
+    final MessageImpl message = builder.done();
+
+    final MessageEventDefinitionImpl messageEventDefinition = new MessageEventDefinitionImpl();
+    messageEventDefinition.setMessageRef(message.getId());
+    catchEvent.setMessageEventDefinition(messageEventDefinition);
+
+    return this;
+  }
+
+  public BpmnBuilder receiveTask(String id, Consumer<BpmnMessageEventBuilder> messageBuilder) {
+    final ReceiveTaskImpl receiveTask = new ReceiveTaskImpl();
+    receiveTask.setId(id);
+
+    connectToSequenceFlow(receiveTask);
+
+    process.getReceiveTasks().add(receiveTask);
+    addFlowNode(receiveTask);
+
+    final BpmnMessageEventBuilder builder = new BpmnMessageEventBuilder(messages);
+    messageBuilder.accept(builder);
+    final MessageImpl message = builder.done();
+
+    receiveTask.setMessageRef(message.getId());
+
+    return this;
+  }
+
   private FlowNodeImpl getFlowNode(String activityId) {
     return flowNodes
         .stream()
@@ -216,6 +267,7 @@ public class BpmnBuilder {
   public WorkflowDefinition done() {
     final DefinitionsImpl definitionsImpl = new DefinitionsImpl();
     definitionsImpl.getProcesses().add(process);
+    definitionsImpl.getMessages().addAll(messages);
 
     validator.validate(definitionsImpl);
 

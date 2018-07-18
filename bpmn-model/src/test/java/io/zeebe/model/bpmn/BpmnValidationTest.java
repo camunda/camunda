@@ -240,4 +240,44 @@ public class BpmnValidationTest {
     // when
     Bpmn.readFromXmlFile(bpmnFile);
   }
+
+  @Test
+  public void testMissingMessageName() {
+    // expect
+    expectedException.expect(InvalidModelException.class);
+    expectedException.expectMessage("A message must have a name.");
+
+    // when
+    Bpmn.createExecutableWorkflow("process")
+        .startEvent()
+        .intermediateCatchEvent("catch-event", m -> m.correlationKey("$.orderId"))
+        .done();
+  }
+
+  @Test
+  public void testMissingMessageCorrelationKey() {
+    // expect
+    expectedException.expect(InvalidModelException.class);
+    expectedException.expectMessage("A subscription must have a correlation-key.");
+
+    // when
+    Bpmn.createExecutableWorkflow("process")
+        .startEvent()
+        .intermediateCatchEvent("catch-event", m -> m.messageName("order canceled"))
+        .done();
+  }
+
+  @Test
+  public void testInvalidMessageCorrelationKey() {
+    // expect
+    expectedException.expect(InvalidModelException.class);
+    expectedException.expectMessage("JSON path query 'foo' is not valid");
+
+    // when
+    Bpmn.createExecutableWorkflow("process")
+        .startEvent()
+        .intermediateCatchEvent(
+            "catch-event", m -> m.messageName("order canceled").correlationKey("foo"))
+        .done();
+  }
 }
