@@ -1,0 +1,3 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Textarea should match snapshot 1`] = `<Themed(styled.textarea) />`;
