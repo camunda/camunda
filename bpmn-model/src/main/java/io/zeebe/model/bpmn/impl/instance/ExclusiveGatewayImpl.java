@@ -13,58 +13,72 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.zeebe.model.bpmn.impl.instance;
 
-import io.zeebe.model.bpmn.BpmnConstants;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_DEFAULT;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_EXCLUSIVE_GATEWAY;
+
+import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.model.bpmn.builder.ExclusiveGatewayBuilder;
 import io.zeebe.model.bpmn.instance.ExclusiveGateway;
+import io.zeebe.model.bpmn.instance.Gateway;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
-import java.util.ArrayList;
-import java.util.List;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlIDREF;
-import javax.xml.bind.annotation.XmlTransient;
+import org.camunda.bpm.model.xml.ModelBuilder;
+import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
+import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
+import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
+import org.camunda.bpm.model.xml.type.reference.AttributeReference;
 
-public class ExclusiveGatewayImpl extends FlowNodeImpl implements ExclusiveGateway {
-  private SequenceFlowImpl defaultFlow;
+/**
+ * The BPMN exclusiveGateway element
+ *
+ * @author Sebastian Menski
+ */
+public class ExclusiveGatewayImpl extends GatewayImpl implements ExclusiveGateway {
 
-  private List<SequenceFlow> sequenceFlowsWithConditions = new ArrayList<>();
+  protected static AttributeReference<SequenceFlow> defaultAttribute;
 
-  @XmlIDREF
-  @XmlAttribute(name = BpmnConstants.BPMN_ATTRIBUTE_DEFAULT)
-  public void setDefaultFlow(SequenceFlowImpl defaultFlow) {
-    this.defaultFlow = defaultFlow;
+  public static void registerType(ModelBuilder modelBuilder) {
+    final ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(ExclusiveGateway.class, BPMN_ELEMENT_EXCLUSIVE_GATEWAY)
+            .namespaceUri(BPMN20_NS)
+            .extendsType(Gateway.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<ExclusiveGateway>() {
+                  @Override
+                  public ExclusiveGateway newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new ExclusiveGatewayImpl(instanceContext);
+                  }
+                });
+
+    defaultAttribute =
+        typeBuilder
+            .stringAttribute(BPMN_ATTRIBUTE_DEFAULT)
+            .idAttributeReference(SequenceFlow.class)
+            .build();
+
+    typeBuilder.build();
+  }
+
+  public ExclusiveGatewayImpl(ModelTypeInstanceContext context) {
+    super(context);
   }
 
   @Override
-  public SequenceFlowImpl getDefaultFlow() {
-    return defaultFlow;
-  }
-
-  @XmlTransient
-  public void setOutgoingSequenceFlowsWithConditions(
-      List<SequenceFlow> sequenceFlowsWithConditions) {
-    this.sequenceFlowsWithConditions = sequenceFlowsWithConditions;
+  public ExclusiveGatewayBuilder builder() {
+    return new ExclusiveGatewayBuilder((BpmnModelInstance) modelInstance, this);
   }
 
   @Override
-  public List<SequenceFlow> getOutgoingSequenceFlowsWithConditions() {
-    return sequenceFlowsWithConditions;
+  public SequenceFlow getDefault() {
+    return defaultAttribute.getReferenceTargetElement(this);
   }
 
   @Override
-  public String toString() {
-    final StringBuilder builder = new StringBuilder();
-    builder.append("ExclusiveGateway [id=");
-    builder.append(getId());
-    builder.append(", name=");
-    builder.append(getName());
-    builder.append(", incoming=");
-    builder.append(getIncoming());
-    builder.append(", outgoing=");
-    builder.append(getOutgoing());
-    builder.append(", default=");
-    builder.append(defaultFlow != null ? defaultFlow.getId() : "null");
-    builder.append("]");
-    return builder.toString();
+  public void setDefault(SequenceFlow defaultFlow) {
+    defaultAttribute.setReferenceTargetElement(this, defaultFlow);
   }
 }

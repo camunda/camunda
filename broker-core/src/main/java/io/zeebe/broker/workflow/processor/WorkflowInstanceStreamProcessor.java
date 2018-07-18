@@ -18,7 +18,13 @@
 package io.zeebe.broker.workflow.processor;
 
 import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.EMPTY_PAYLOAD;
-
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.incident.data.IncidentRecord;
@@ -48,20 +54,20 @@ import io.zeebe.broker.workflow.map.WorkflowInstanceIndex.WorkflowInstance;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
-import io.zeebe.model.bpmn.BpmnAspect;
-import io.zeebe.model.bpmn.instance.EndEvent;
-import io.zeebe.model.bpmn.instance.ExclusiveGateway;
-import io.zeebe.model.bpmn.instance.FlowElement;
-import io.zeebe.model.bpmn.instance.FlowNode;
-import io.zeebe.model.bpmn.instance.InputOutputMapping;
-import io.zeebe.model.bpmn.instance.IntermediateMessageCatchEvent;
-import io.zeebe.model.bpmn.instance.MessageSubscription;
-import io.zeebe.model.bpmn.instance.OutputBehavior;
-import io.zeebe.model.bpmn.instance.SequenceFlow;
-import io.zeebe.model.bpmn.instance.ServiceTask;
-import io.zeebe.model.bpmn.instance.StartEvent;
-import io.zeebe.model.bpmn.instance.TaskDefinition;
-import io.zeebe.model.bpmn.instance.Workflow;
+import io.zeebe.model.old.bpmn.BpmnAspect;
+import io.zeebe.model.old.bpmn.instance.EndEvent;
+import io.zeebe.model.old.bpmn.instance.ExclusiveGateway;
+import io.zeebe.model.old.bpmn.instance.FlowElement;
+import io.zeebe.model.old.bpmn.instance.FlowNode;
+import io.zeebe.model.old.bpmn.instance.InputOutputMapping;
+import io.zeebe.model.old.bpmn.instance.IntermediateMessageCatchEvent;
+import io.zeebe.model.old.bpmn.instance.MessageSubscription;
+import io.zeebe.model.old.bpmn.instance.OutputBehavior;
+import io.zeebe.model.old.bpmn.instance.SequenceFlow;
+import io.zeebe.model.old.bpmn.instance.ServiceTask;
+import io.zeebe.model.old.bpmn.instance.StartEvent;
+import io.zeebe.model.old.bpmn.instance.TaskDefinition;
+import io.zeebe.model.old.bpmn.instance.Workflow;
 import io.zeebe.msgpack.el.CompiledJsonCondition;
 import io.zeebe.msgpack.el.JsonConditionException;
 import io.zeebe.msgpack.el.JsonConditionInterpreter;
@@ -86,13 +92,6 @@ import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycleAware {
   private static final UnsafeBuffer EMPTY_JOB_TYPE = new UnsafeBuffer("".getBytes());
@@ -712,7 +711,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
           .setActivityId(serviceTask.getIdAsBuffer())
           .setActivityInstanceKey(event.getKey());
 
-      final io.zeebe.model.bpmn.instance.TaskHeaders customHeaders = serviceTask.getTaskHeaders();
+      final io.zeebe.model.old.bpmn.instance.TaskHeaders customHeaders =
+          serviceTask.getTaskHeaders();
 
       if (!customHeaders.isEmpty()) {
         jobCommand.setCustomHeaders(customHeaders.asMsgpackEncoded());

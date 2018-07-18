@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.workflow.map;
 
-import io.zeebe.model.bpmn.instance.Workflow;
+import io.zeebe.model.old.bpmn.instance.Workflow;
 
 public class DeployedWorkflow {
   private final Workflow workflow;

@@ -13,14 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.zeebe.model.bpmn.instance;
 
-import io.zeebe.model.bpmn.BpmnAspect;
-import org.agrona.DirectBuffer;
+import java.util.Collection;
 
-public interface FlowElement {
+/**
+ * The BPMN flowElement element
+ *
+ * @author Daniel Meyer
+ * @author Sebastian Menski
+ */
+public interface FlowElement extends BaseElement {
 
-  DirectBuffer getIdAsBuffer();
+  String getName();
 
-  BpmnAspect getBpmnAspect();
+  void setName(String name);
+
+  Auditing getAuditing();
+
+  void setAuditing(Auditing auditing);
+
+  Monitoring getMonitoring();
+
+  void setMonitoring(Monitoring monitoring);
+
+  Collection<CategoryValue> getCategoryValueRefs();
 }

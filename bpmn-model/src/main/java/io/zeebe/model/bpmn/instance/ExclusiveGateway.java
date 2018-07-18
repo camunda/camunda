@@ -13,13 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.zeebe.model.bpmn.instance;
 
-import java.util.List;
+import io.zeebe.model.bpmn.builder.ExclusiveGatewayBuilder;
 
-public interface ExclusiveGateway extends FlowNode {
+/**
+ * The BPMN exclusiveGateway element
+ *
+ * @author Sebastian Menski
+ */
+public interface ExclusiveGateway extends Gateway {
 
-  List<SequenceFlow> getOutgoingSequenceFlowsWithConditions();
+  @Override
+  ExclusiveGatewayBuilder builder();
 
-  SequenceFlow getDefaultFlow();
+  SequenceFlow getDefault();
+
+  void setDefault(SequenceFlow defaultFlow);
 }

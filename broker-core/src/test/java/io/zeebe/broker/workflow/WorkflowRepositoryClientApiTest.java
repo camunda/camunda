@@ -23,8 +23,8 @@ import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.old.bpmn.Bpmn;
+import io.zeebe.model.old.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ControlMessageResponse;

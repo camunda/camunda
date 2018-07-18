@@ -13,13 +13,55 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.zeebe.model.bpmn.instance;
 
-public interface ServiceTask extends FlowNode {
+import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 
-  TaskDefinition getTaskDefinition();
+/**
+ * The BPMN serviceTask element
+ *
+ * @author Sebastian Menski
+ */
+public interface ServiceTask extends Task {
 
-  TaskHeaders getTaskHeaders();
+  @Override
+  ServiceTaskBuilder builder();
 
-  InputOutputMapping getInputOutputMapping();
+  String getImplementation();
+
+  void setImplementation(String implementation);
+
+  Operation getOperation();
+
+  void setOperation(Operation operation);
+
+  /** camunda extensions */
+  String getCamundaClass();
+
+  void setCamundaClass(String camundaClass);
+
+  String getCamundaDelegateExpression();
+
+  void setCamundaDelegateExpression(String camundaExpression);
+
+  String getCamundaExpression();
+
+  void setCamundaExpression(String camundaExpression);
+
+  String getCamundaResultVariable();
+
+  void setCamundaResultVariable(String camundaResultVariable);
+
+  String getCamundaType();
+
+  void setCamundaType(String camundaType);
+
+  String getCamundaTopic();
+
+  void setCamundaTopic(String camundaTopic);
+
+  String getCamundaTaskPriority();
+
+  void setCamundaTaskPriority(String taskPriority);
 }

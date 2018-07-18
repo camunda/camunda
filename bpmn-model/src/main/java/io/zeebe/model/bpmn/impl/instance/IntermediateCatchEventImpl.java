@@ -13,39 +13,52 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.zeebe.model.bpmn.impl.instance;
 
-import io.zeebe.model.bpmn.BpmnConstants;
-import io.zeebe.model.bpmn.instance.IntermediateMessageCatchEvent;
-import io.zeebe.model.bpmn.instance.MessageSubscription;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlTransient;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_INTERMEDIATE_CATCH_EVENT;
 
-public class IntermediateCatchEventImpl extends FlowNodeImpl
-    implements IntermediateMessageCatchEvent {
+import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.model.bpmn.builder.IntermediateCatchEventBuilder;
+import io.zeebe.model.bpmn.impl.BpmnModelConstants;
+import io.zeebe.model.bpmn.instance.CatchEvent;
+import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
+import org.camunda.bpm.model.xml.ModelBuilder;
+import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
+import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
+import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
 
-  private MessageEventDefinitionImpl messageEventDefinition;
+/**
+ * The BPMN intermediateCatchEvent element
+ *
+ * @author Sebastian Menski
+ */
+public class IntermediateCatchEventImpl extends CatchEventImpl implements IntermediateCatchEvent {
 
-  private MessageSubscription messageSubscription;
+  public static void registerType(ModelBuilder modelBuilder) {
+    final ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(IntermediateCatchEvent.class, BPMN_ELEMENT_INTERMEDIATE_CATCH_EVENT)
+            .namespaceUri(BpmnModelConstants.BPMN20_NS)
+            .extendsType(CatchEvent.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<IntermediateCatchEvent>() {
+                  @Override
+                  public IntermediateCatchEvent newInstance(
+                      ModelTypeInstanceContext instanceContext) {
+                    return new IntermediateCatchEventImpl(instanceContext);
+                  }
+                });
 
-  @XmlElement(
-      name = BpmnConstants.BPMN_ELEMENT_MESSAGE_EVENT_DEFINITION,
-      namespace = BpmnConstants.BPMN20_NS)
-  public void setMessageEventDefinition(MessageEventDefinitionImpl messageEventDefinition) {
-    this.messageEventDefinition = messageEventDefinition;
+    typeBuilder.build();
   }
 
-  public MessageEventDefinitionImpl getMessageEventDefinition() {
-    return messageEventDefinition;
+  public IntermediateCatchEventImpl(ModelTypeInstanceContext context) {
+    super(context);
   }
 
   @Override
-  public MessageSubscription getMessageSubscription() {
-    return messageSubscription;
-  }
-
-  @XmlTransient
-  public void setMessageSubscription(MessageSubscription messageSubscription) {
-    this.messageSubscription = messageSubscription;
+  public IntermediateCatchEventBuilder builder() {
+    return new IntermediateCatchEventBuilder((BpmnModelInstance) modelInstance, this);
   }
 }

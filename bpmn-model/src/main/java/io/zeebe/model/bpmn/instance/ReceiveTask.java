@@ -13,9 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.zeebe.model.bpmn.instance;
 
-public interface ReceiveTask extends FlowNode {
+import io.zeebe.model.bpmn.builder.ReceiveTaskBuilder;
 
-  MessageSubscription getMessageSubscription();
+/**
+ * The BPMN receiveTask element
+ *
+ * @author Sebastian Menski
+ */
+public interface ReceiveTask extends Task {
+
+  @Override
+  ReceiveTaskBuilder builder();
+
+  String getImplementation();
+
+  void setImplementation(String implementation);
+
+  boolean instantiate();
+
+  void setInstantiate(boolean instantiate);
+
+  Message getMessage();
+
+  void setMessage(Message message);
+
+  Operation getOperation();
+
+  void setOperation(Operation operation);
 }

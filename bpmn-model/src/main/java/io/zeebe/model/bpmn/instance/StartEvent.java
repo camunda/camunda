@@ -13,6 +13,44 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.zeebe.model.bpmn.instance;
 
-public interface StartEvent extends FlowNode {}
+import io.zeebe.model.bpmn.builder.StartEventBuilder;
+
+/**
+ * The BPMN startEvent element
+ *
+ * @author Sebastian Menski
+ */
+public interface StartEvent extends CatchEvent {
+
+  @Override
+  StartEventBuilder builder();
+
+  boolean isInterrupting();
+
+  void setInterrupting(boolean isInterrupting);
+
+  /** camunda extensions */
+
+  /** @deprecated use isCamundaAsyncBefore() instead. */
+  @Deprecated
+  boolean isCamundaAsync();
+
+  /** @deprecated use setCamundaAsyncBefore(isCamundaAsyncBefore) instead. */
+  @Deprecated
+  void setCamundaAsync(boolean isCamundaAsync);
+
+  String getCamundaFormHandlerClass();
+
+  void setCamundaFormHandlerClass(String camundaFormHandlerClass);
+
+  String getCamundaFormKey();
+
+  void setCamundaFormKey(String camundaFormKey);
+
+  String getCamundaInitiator();
+
+  void setCamundaInitiator(String camundaInitiator);
+}

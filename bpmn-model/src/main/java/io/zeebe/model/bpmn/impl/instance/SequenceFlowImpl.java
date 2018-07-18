@@ -13,107 +13,136 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.zeebe.model.bpmn.impl.instance;
 
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_IS_IMMEDIATE;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_SOURCE_REF;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_TARGET_REF;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_SEQUENCE_FLOW;
 
-import io.zeebe.model.bpmn.BpmnConstants;
+import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.model.bpmn.builder.SequenceFlowBuilder;
+import io.zeebe.model.bpmn.instance.ConditionExpression;
+import io.zeebe.model.bpmn.instance.FlowElement;
 import io.zeebe.model.bpmn.instance.FlowNode;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
-import io.zeebe.msgpack.el.CompiledJsonCondition;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElement;
-import org.agrona.DirectBuffer;
+import io.zeebe.model.bpmn.instance.bpmndi.BpmnEdge;
+import org.camunda.bpm.model.xml.ModelBuilder;
+import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
+import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
+import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
+import org.camunda.bpm.model.xml.type.attribute.Attribute;
+import org.camunda.bpm.model.xml.type.child.ChildElement;
+import org.camunda.bpm.model.xml.type.child.SequenceBuilder;
+import org.camunda.bpm.model.xml.type.reference.AttributeReference;
 
+/**
+ * The BPMN sequenceFlow element
+ *
+ * @author Sebastian Menski
+ */
 public class SequenceFlowImpl extends FlowElementImpl implements SequenceFlow {
-  private DirectBuffer sourceRef;
-  private DirectBuffer targetRef;
 
-  private FlowNodeImpl sourceNode;
-  private FlowNodeImpl targetNode;
+  protected static AttributeReference<FlowNode> sourceRefAttribute;
+  protected static AttributeReference<FlowNode> targetRefAttribute;
+  protected static Attribute<Boolean> isImmediateAttribute;
+  protected static ChildElement<ConditionExpression> conditionExpressionCollection;
 
-  private ConditionExpressionImpl conditionExpression;
+  public static void registerType(ModelBuilder modelBuilder) {
+    final ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(SequenceFlow.class, BPMN_ELEMENT_SEQUENCE_FLOW)
+            .namespaceUri(BPMN20_NS)
+            .extendsType(FlowElement.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<SequenceFlow>() {
+                  @Override
+                  public SequenceFlow newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new SequenceFlowImpl(instanceContext);
+                  }
+                });
 
-  @XmlAttribute(name = BpmnConstants.BPMN_ELEMENT_SOURCE_REF)
-  public void setSourceRef(String sourceRef) {
-    this.sourceRef = wrapString(sourceRef);
+    sourceRefAttribute =
+        typeBuilder
+            .stringAttribute(BPMN_ATTRIBUTE_SOURCE_REF)
+            .required()
+            .idAttributeReference(FlowNode.class)
+            .build();
+
+    targetRefAttribute =
+        typeBuilder
+            .stringAttribute(BPMN_ATTRIBUTE_TARGET_REF)
+            .required()
+            .idAttributeReference(FlowNode.class)
+            .build();
+
+    isImmediateAttribute = typeBuilder.booleanAttribute(BPMN_ATTRIBUTE_IS_IMMEDIATE).build();
+
+    final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
+
+    conditionExpressionCollection = sequenceBuilder.element(ConditionExpression.class).build();
+
+    typeBuilder.build();
   }
 
-  public String getSourceRef() {
-    return bufferAsString(sourceRef);
-  }
-
-  @XmlAttribute(name = BpmnConstants.BPMN_ELEMENT_TARGET_REF)
-  public void setTargetRef(String targetRef) {
-    this.targetRef = wrapString(targetRef);
-  }
-
-  public String getTargetRef() {
-    return bufferAsString(targetRef);
-  }
-
-  public DirectBuffer getSourceRefAsBuffer() {
-    return sourceRef;
-  }
-
-  public DirectBuffer getTargetRefAsBuffer() {
-    return targetRef;
-  }
-
-  @Override
-  public FlowNode getSourceNode() {
-    return sourceNode;
-  }
-
-  public void setSourceNode(FlowNodeImpl sourceElement) {
-    this.sourceNode = sourceElement;
-  }
-
-  @Override
-  public FlowNode getTargetNode() {
-    return targetNode;
-  }
-
-  public void setTargetNode(FlowNodeImpl targetElement) {
-    this.targetNode = targetElement;
-  }
-
-  @XmlElement(
-      name = BpmnConstants.BPMN_ELEMENT_CONDITION_EXPRESSION,
-      namespace = BpmnConstants.BPMN20_NS)
-  public void setConditionExpression(ConditionExpressionImpl conditionExpression) {
-    this.conditionExpression = conditionExpression;
-  }
-
-  public ConditionExpressionImpl getConditionExpression() {
-    return conditionExpression;
+  public SequenceFlowImpl(ModelTypeInstanceContext context) {
+    super(context);
   }
 
   @Override
-  public boolean hasCondition() {
-    return conditionExpression != null;
+  public SequenceFlowBuilder builder() {
+    return new SequenceFlowBuilder((BpmnModelInstance) modelInstance, this);
   }
 
   @Override
-  public CompiledJsonCondition getCondition() {
-    return hasCondition() ? conditionExpression.getCondition() : null;
+  public FlowNode getSource() {
+    return sourceRefAttribute.getReferenceTargetElement(this);
   }
 
   @Override
-  public String toString() {
-    final StringBuilder builder = new StringBuilder();
-    builder.append("SequenceFlow [id=");
-    builder.append(getId());
-    builder.append(", name=");
-    builder.append(getName());
-    builder.append(", sourceRef=");
-    builder.append(getSourceRef());
-    builder.append(", targetRef=");
-    builder.append(getTargetRef());
-    builder.append(", condition=");
-    builder.append(conditionExpression);
-    builder.append("]");
-    return builder.toString();
+  public void setSource(FlowNode source) {
+    sourceRefAttribute.setReferenceTargetElement(this, source);
+  }
+
+  @Override
+  public FlowNode getTarget() {
+    return targetRefAttribute.getReferenceTargetElement(this);
+  }
+
+  @Override
+  public void setTarget(FlowNode target) {
+    targetRefAttribute.setReferenceTargetElement(this, target);
+  }
+
+  @Override
+  public boolean isImmediate() {
+    return isImmediateAttribute.getValue(this);
+  }
+
+  @Override
+  public void setImmediate(boolean isImmediate) {
+    isImmediateAttribute.setValue(this, isImmediate);
+  }
+
+  @Override
+  public ConditionExpression getConditionExpression() {
+    return conditionExpressionCollection.getChild(this);
+  }
+
+  @Override
+  public void setConditionExpression(ConditionExpression conditionExpression) {
+    conditionExpressionCollection.setChild(this, conditionExpression);
+  }
+
+  @Override
+  public void removeConditionExpression() {
+    conditionExpressionCollection.removeChild(this);
+  }
+
+  @Override
+  public BpmnEdge getDiagramElement() {
+    return (BpmnEdge) super.getDiagramElement();
   }
 }

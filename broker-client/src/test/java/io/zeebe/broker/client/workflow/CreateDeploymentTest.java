@@ -18,6 +18,7 @@ package io.zeebe.broker.client.workflow;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
+<<<<<<< HEAD:broker-client/src/test/java/io/zeebe/broker/client/workflow/CreateDeploymentTest.java
 import io.zeebe.broker.client.ZeebeClient;
 import io.zeebe.broker.client.api.commands.Workflow;
 import io.zeebe.broker.client.api.events.DeploymentEvent;
@@ -25,6 +26,15 @@ import io.zeebe.broker.client.cmd.ClientCommandRejectedException;
 import io.zeebe.broker.client.util.ClientRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+=======
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.commands.Workflow;
+import io.zeebe.client.api.events.DeploymentEvent;
+import io.zeebe.client.cmd.ClientCommandRejectedException;
+import io.zeebe.client.util.ClientRule;
+import io.zeebe.model.old.bpmn.Bpmn;
+import io.zeebe.model.old.bpmn.instance.WorkflowDefinition;
+>>>>>>> chore(bpmn-model): bring in new model api:client-java/src/test/java/io/zeebe/client/workflow/CreateDeploymentTest.java
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.DeploymentIntent;
