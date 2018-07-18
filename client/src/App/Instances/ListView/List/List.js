@@ -138,6 +138,7 @@ export default class List extends React.Component {
                   onChange={({isChecked}) =>
                     this.handleToggleSelectAll(isChecked)
                   }
+                  title="Select all instances"
                 />
               </Styled.CheckAll>
               Workflow Definition
@@ -189,6 +190,7 @@ export default class List extends React.Component {
                     onChange={({isChecked}) => {
                       this.onSelectionChange(isChecked, instance);
                     }}
+                    title={`Select instance ${instance.id}`}
                   />
 
                   <StateIcon instance={instance} />
@@ -198,7 +200,10 @@ export default class List extends React.Component {
                 </Styled.Selection>
               </TD>
               <TD>
-                <Styled.InstanceAnchor to={`/instances/${instance.id}`}>
+                <Styled.InstanceAnchor
+                  to={`/instances/${instance.id}`}
+                  title={`View instance ${instance.id}`}
+                >
                   {instance.id}
                 </Styled.InstanceAnchor>
               </TD>

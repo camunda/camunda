@@ -12,7 +12,8 @@ export default class Checkbox extends React.Component {
     label: PropTypes.string,
     name: PropTypes.string,
     type: PropTypes.oneOf(['selection']),
-    value: PropTypes.string
+    value: PropTypes.string,
+    title: PropTypes.string
   };
 
   constructor(props) {
@@ -56,6 +57,7 @@ export default class Checkbox extends React.Component {
       isIndeterminate,
       isChecked,
       type,
+      title,
       ...other
     } = this.props;
     return (
@@ -68,10 +70,16 @@ export default class Checkbox extends React.Component {
           innerRef={this.inputRef}
           checkboxType={type}
           onChange={event => event}
-          aria-label={label}
+          aria-label={label || title}
+          title={label || title}
           {...other}
         />
-        <Styled.CustomCheckbox {...{isIndeterminate}} checkboxType={type} />
+        <Styled.CustomCheckbox
+          {...{isIndeterminate}}
+          checkboxType={type}
+          aria-label={label || title}
+          title={label || title}
+        />
         {label && (
           <Styled.Label checked={isChecked || isIndeterminate}>
             {label}

@@ -12,6 +12,7 @@ export default function HeaderSortIcon({
     <Styled.SortIcon
       sortOrder={sortBy === sortKey ? sortOrder : null}
       onClick={() => handleSorting(sortKey)}
+      title={`Sort by ${sortKey}`}
     />
   );
 }
