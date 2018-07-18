@@ -63,7 +63,7 @@ export default class ListView extends React.Component {
 
   loadData = async () => {
     const instances = await fetchWorkflowInstances({
-      filter: parseFilterForRequest(this.props.filter),
+      ...parseFilterForRequest(this.props.filter),
       sorting: this.state.sorting,
       firstResult: this.state.firstElement,
       maxResults: 50

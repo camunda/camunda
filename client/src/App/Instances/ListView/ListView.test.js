@@ -166,7 +166,7 @@ describe('ListView', () => {
 
       // then
       expect(api.fetchWorkflowInstances).toBeCalledWith({
-        filter: parseFilterForRequest(node.prop('filter')),
+        ...parseFilterForRequest(node.prop('filter')),
         sorting: node.state('sorting'),
         firstResult: node.state('firstElement'),
         maxResults: 50
