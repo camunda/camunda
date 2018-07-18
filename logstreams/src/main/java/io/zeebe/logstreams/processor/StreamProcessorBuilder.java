@@ -17,13 +17,18 @@ package io.zeebe.logstreams.processor;
 
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
+import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotController;
 import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.spi.SnapshotStorage;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.logstreams.state.SnapshotController;
+import io.zeebe.servicecontainer.ServiceBuilder;
+import io.zeebe.servicecontainer.ServiceContainer;
+import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
 
 public class StreamProcessorBuilder {
   protected int id;
@@ -37,6 +42,7 @@ public class StreamProcessorBuilder {
 
   protected Duration snapshotPeriod;
   protected SnapshotStorage snapshotStorage;
+  protected SnapshotController snapshotController;
 
   protected LogStreamReader logStreamReader;
   protected LogStreamRecordWriter logStreamWriter;
@@ -77,6 +83,11 @@ public class StreamProcessorBuilder {
 
   public StreamProcessorBuilder snapshotStorage(SnapshotStorage snapshotStorage) {
     this.snapshotStorage = snapshotStorage;
+    return this;
+  }
+
+  public StreamProcessorBuilder snapshotController(SnapshotController snapshotController) {
+    this.snapshotController = snapshotController;
     return this;
   }
 
@@ -141,8 +152,6 @@ public class StreamProcessorBuilder {
 
     ctx.setActorScheduler(actorScheduler);
 
-    ctx.setSnapshotStorage(snapshotStorage);
-
     ctx.setEventFilter(eventFilter);
     ctx.setReadOnly(readOnly);
 
@@ -150,6 +159,12 @@ public class StreamProcessorBuilder {
       snapshotPeriod = Duration.ofMinutes(1);
     }
     ctx.setSnapshotPeriod(snapshotPeriod);
+
+    if (snapshotController == null && snapshotStorage != null) {
+      snapshotController =
+          new FsSnapshotController(snapshotStorage, name, streamProcessor.getStateResource());
+    }
+    ctx.setSnapshotController(snapshotController);
 
     logStreamReader = new BufferedLogStreamReader();
     ctx.setLogStreamReader(logStreamReader);

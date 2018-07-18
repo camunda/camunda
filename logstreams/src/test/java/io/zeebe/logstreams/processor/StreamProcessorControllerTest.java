@@ -518,6 +518,25 @@ public class StreamProcessorControllerTest {
   }
 
   @Test
+  public void shouldRecoverLastPositionFromSnapshotUsingRocksDBSnapshotController() {
+    // given
+    final long firstEventPosition = writeEventAndWaitUntilProcessed(EVENT_1);
+
+    controller.closeAsync().join();
+
+    // when
+    controller.openAsync().join();
+
+    final long secondEventPosition = writeEventAndWaitUntilProcessed(EVENT_2);
+
+    // then
+    assertThat(streamProcessor.getEvents())
+        .hasSize(2)
+        .extracting(LoggedEvent::getPosition)
+        .containsExactly(firstEventPosition, secondEventPosition);
+  }
+
+  @Test
   public void shouldFailOnProcessEvent() {
     // given
 

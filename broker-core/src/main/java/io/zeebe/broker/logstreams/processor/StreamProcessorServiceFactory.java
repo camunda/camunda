@@ -25,9 +25,13 @@ import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.processor.EventFilter;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.spi.SnapshotStorage;
+import io.zeebe.logstreams.state.SnapshotController;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.RecordMetadata;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceContainer;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.util.EnsureUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -63,6 +67,7 @@ public class StreamProcessorServiceFactory implements Service<StreamProcessorSer
     private final LogStream logStream;
     private final SnapshotStorage snapshotStorage;
 
+    private SnapshotController snapshotController;
     private String processorName;
     private int processorId = -1;
     private StreamProcessor streamProcessor;
@@ -103,6 +108,11 @@ public class StreamProcessorServiceFactory implements Service<StreamProcessorSer
       return this;
     }
 
+    public Builder snapshotController(SnapshotController snapshotController) {
+      this.snapshotController = snapshotController;
+      return this;
+    }
+
     public Builder readOnly(boolean readOnly) {
       this.readOnly = readOnly;
       return this;
@@ -129,6 +139,7 @@ public class StreamProcessorServiceFactory implements Service<StreamProcessorSer
       return LogStreams.createStreamProcessor(processorName, processorId, streamProcessor)
           .actorScheduler(actorScheduler)
           .serviceContainer(serviceContainer)
+          .snapshotController(snapshotController)
           .snapshotStorage(snapshotStorage)
           .snapshotPeriod(snapshotPeriod)
           .logStream(logStream)
