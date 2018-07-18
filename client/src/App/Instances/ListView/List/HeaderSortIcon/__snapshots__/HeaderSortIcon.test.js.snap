@@ -4,6 +4,7 @@ exports[`HeaderSortIcon should render SortIcon with sortOrder 1`] = `
 <Styled(SortIcon)
   onClick={[Function]}
   sortOrder="asc"
+  title="Sort by foo"
 />
 `;
 
@@ -11,5 +12,6 @@ exports[`HeaderSortIcon should render SortIcon with sortOrder null 1`] = `
 <Styled(SortIcon)
   onClick={[Function]}
   sortOrder={null}
+  title="Sort by bar"
 />
 `;
