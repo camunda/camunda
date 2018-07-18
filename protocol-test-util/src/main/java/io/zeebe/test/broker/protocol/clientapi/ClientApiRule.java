@@ -83,13 +83,10 @@ public class ClientApiRule extends ExternalResource {
 
     msgPackHelper = new MsgPackHelper();
     streamAddress = transport.registerRemoteAddress(brokerAddress);
-    doRepeatedly(() -> getPartitionsFromTopology(Protocol.SYSTEM_TOPIC))
-        .until(Objects::nonNull, Objects::isNull);
 
     if (usesDefaultTopic) {
       final List<Integer> partitionIds =
-          doRepeatedly(() -> getPartitionsFromTopology(DEFAULT_TOPIC_NAME))
-              .until(p -> !p.isEmpty());
+          doRepeatedly(() -> getPartitionIds(DEFAULT_TOPIC_NAME)).until(p -> !p.isEmpty());
       defaultPartitionId = partitionIds.get(0);
     }
   }
@@ -298,41 +295,6 @@ public class ClientApiRule extends ExternalResource {
         .data()
         .done()
         .sendAndAwait();
-  }
-
-  @SuppressWarnings("unchecked")
-  public List<Integer> getPartitionsFromTopology(String topicName) {
-    final ControlMessageResponse response =
-        createControlMessageRequest()
-            .messageType(ControlMessageType.REQUEST_TOPOLOGY)
-            .data()
-            .done()
-            .sendAndAwait();
-
-    final Map<String, Object> topology = response.getData();
-    final List<Map<String, Object>> brokers = (List<Map<String, Object>>) topology.get("brokers");
-
-    final Set<Integer> partitionIds = new HashSet<>();
-    for (Map<String, Object> broker : brokers) {
-      final List<Map<String, Object>> brokerPartitionStates =
-          (List<Map<String, Object>>) broker.get("partitions");
-      for (Map<String, Object> brokerPartitionState : brokerPartitionStates) {
-        if (topicName.equals(brokerPartitionState.get("topicName"))) {
-          partitionIds.add((int) brokerPartitionState.get("partitionId"));
-        }
-      }
-    }
-    return new ArrayList<>(partitionIds);
-  }
-
-  public int getSinglePartitionId(String topicName) {
-    final List<Integer> partitionIds = getPartitionsFromTopology(topicName);
-    if (partitionIds.size() != 1) {
-      throw new RuntimeException(
-          "There are " + partitionIds.size() + " partitions of topic " + topicName);
-    } else {
-      return partitionIds.get(0);
-    }
   }
 
   public int getDefaultPartitionId() {
