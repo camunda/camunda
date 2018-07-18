@@ -9,24 +9,27 @@ import org.slf4j.LoggerFactory;
 
 public class UpgradeFrom21To22 implements Upgrade {
 
+  public static final String FROM_VERSION = "2.1.0";
+  public static final String TO_VERSION = "2.2.0";
+
   private Logger logger = LoggerFactory.getLogger(getClass());
 
   @Override
   public String getInitialVersion() {
-    return "2.1.0";
+    return FROM_VERSION;
   }
 
   @Override
   public String getTargetVersion() {
-    return "2.2.0";
+    return TO_VERSION;
   }
 
   @Override
   public void performUpgrade() {
     try {
       UpgradePlan upgradePlan = UpgradePlanBuilder.createUpgradePlan()
-      .fromVersion("2.1.0-SNAPSHOT")
-      .toVersion("2.2.0")
+      .fromVersion(FROM_VERSION)
+      .toVersion(TO_VERSION)
       // add upgrade steps here
       .build();
 

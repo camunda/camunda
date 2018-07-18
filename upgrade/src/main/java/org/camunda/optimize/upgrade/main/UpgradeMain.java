@@ -37,6 +37,7 @@ public class UpgradeMain {
     System.out.println("Execute upgrade...");
     upgrade.performUpgrade();
     System.out.println("Finished upgrade successfully!");
+    System.exit(0);
   }
 
   private static String removeAppendixFromVersion(String versionWithAppendix) {

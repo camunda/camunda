@@ -1,5 +1,8 @@
 package org.camunda.optimize.upgrade.plan;
 
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.joran.JoranConfigurator;
+import ch.qos.logback.core.joran.spi.JoranException;
 import org.apache.http.HttpHost;
 import org.camunda.optimize.service.es.schema.type.MetadataType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -12,6 +15,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URL;
@@ -37,6 +42,7 @@ public class UpgradeExecutionPlan implements UpgradePlan {
 
   public UpgradeExecutionPlan() throws Exception {
     addEnvironmentFolderToClasspath();
+    defineLogbackLoggingConfiguration();
     configurationService = new ConfigurationService();
     validationService = new ValidationService(configurationService);
     validationService.validateExecutionPath();
@@ -46,14 +52,27 @@ public class UpgradeExecutionPlan implements UpgradePlan {
 
   private void addEnvironmentFolderToClasspath() throws Exception {
     String location = ".." + File.separator + "environment";
-    String executionFolderPath = UpgradeMain.class
+    String pathToJarExecutable = UpgradeMain.class
       .getProtectionDomain()
       .getCodeSource()
       .getLocation()
       .toURI()
       .getPath();
-    executionFolderPath = executionFolderPath.replaceAll("%20", " ");
-    addDirectoryToClasspath(executionFolderPath + location);
+    pathToJarExecutable = pathToJarExecutable.replaceAll("%20", " ");
+    String executionPath = removeJarFileNameFromPath(pathToJarExecutable);
+    addDirectoryToClasspath(executionPath + location);
+  }
+
+  /**
+   * Takes a path like '/home/user/Optimize/upgrade/upgrade-optimize-2.2.0-SNAPSHOT.jar' and
+   * removes the filename from it, which would result in '/home/user/Optimize/upgrade/'
+   */
+  private String removeJarFileNameFromPath(String executionFolderPath) {
+    if (executionFolderPath.trim().endsWith("jar")) {
+      int i = executionFolderPath.lastIndexOf(File.separator);
+      executionFolderPath = executionFolderPath.substring(0, i) + File.separator;
+    }
+    return executionFolderPath;
   }
 
   private void addDirectoryToClasspath(String s) throws Exception {
@@ -66,6 +85,47 @@ public class UpgradeExecutionPlan implements UpgradePlan {
     Method method = urlClass.getDeclaredMethod("addURL", URL.class);
     method.setAccessible(true);
     method.invoke(urlClassLoader, u.toURL());
+  }
+
+  private void defineLogbackLoggingConfiguration() {
+    LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+    loggerContext.reset();
+    JoranConfigurator configurator = new JoranConfigurator();
+    InputStream configStream = null;
+    try {
+      configStream = getLogbackConfigurationFileStream();
+      if (configStream != null) {
+        configurator.setContext(loggerContext);
+        configurator.doConfigure(configStream); // loads logback file
+        configStream.close();
+      }
+    } catch (JoranException | IOException e) {
+      // if no logging is configured don't do anything
+    } finally {
+      if (configStream != null) {
+        try {
+          configStream.close();
+        } catch (IOException e) {
+          logger.error("error closing stream", e);
+        }
+      }
+    }
+  }
+
+  private InputStream getLogbackConfigurationFileStream() {
+    InputStream stream  = this.getClass().getClassLoader().getResourceAsStream("environment-logback.xml");
+    if(stream != null) {
+      return stream;
+    }
+    stream = this.getClass().getClassLoader().getResourceAsStream("logback-test.xml");
+    if(stream != null) {
+      return stream;
+    }
+    stream = this.getClass().getClassLoader().getResourceAsStream("logback.xml");
+    if(stream != null) {
+      return stream;
+    }
+    return null;
   }
 
   private RestClient initClient() {
@@ -91,6 +151,7 @@ public class UpgradeExecutionPlan implements UpgradePlan {
   }
 
   public void updateOptimizeVersion(ESIndexAdjuster ESIndexAdjuster) {
+    logger.info("Updating Elasticsearch data structure version tag from {} to {}.", fromVersion, toVersion);
     ESIndexAdjuster.updateData(
       configurationService.getMetaDataType(),
       termQuery(MetadataType.SCHEMA_VERSION, fromVersion),
