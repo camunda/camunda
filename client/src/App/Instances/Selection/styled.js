@@ -43,7 +43,7 @@ export const Header = themed(styled.div`
 `);
 
 export const Headline = styled.div`
-  padding: 0 7px 0 8px;
+  padding-left: 7px;
 `;
 
 export const Actions = styled.div`

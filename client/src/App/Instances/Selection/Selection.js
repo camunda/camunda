@@ -2,8 +2,10 @@ import React, {Fragment} from 'react';
 import PropTypes from 'prop-types';
 import StateIcon from 'modules/components/StateIcon';
 import Dropdown from 'modules/components/Dropdown';
+import BadgeComponent from 'modules/components/Badge';
 
 import {getWorkflowName} from 'modules/utils/instance';
+import {BADGE_TYPE} from 'modules/constants';
 import {Down, Right, Batch, Retry} from 'modules/components/Icon';
 
 import * as Styled from './styled.js';
@@ -76,7 +78,13 @@ export default class Selection extends React.Component {
         <Styled.Header {...{onClick, isOpen}}>
           {getArrowIcon(isOpen)}
           <Styled.Headline>Selection {selectionId + 1}</Styled.Headline>
-          {/*TODO: ICON <span>{count}</span> */}
+          <BadgeComponent
+            type={
+              isOpen ? BADGE_TYPE.OPENSELECTIONHEAD : BADGE_TYPE.SELECTIONHEAD
+            }
+          >
+            {count}
+          </BadgeComponent>
           {isOpen && getActions(onRetry, onDelete)}
         </Styled.Header>
         {isOpen && (

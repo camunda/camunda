@@ -81,3 +81,12 @@ export const ACTIVITY_STATE = {
   TERMINATED: 'TERMINATED',
   INCIDENT: 'INCIDENT'
 };
+
+export const BADGE_TYPE = {
+  FILTERS: 'filters',
+  SELECTIONS: 'selections',
+  SELECTIONHEAD: 'selectionHead',
+  OPENSELECTIONHEAD: 'openSelectionHead',
+  INCIDENTS: 'incidents',
+  INSTANCES: 'instances'
+};
