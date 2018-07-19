@@ -98,20 +98,6 @@ export const DropdownMenu = themed(styled.div`
   &:before {
     ${PointerShadow};
   }
-
-  &:hover {
-    background: ${themeStyle({
-      dark: Colors.uiDark06,
-      light: Colors.uiLight05
-    })};
-  }
-
-  &:active {
-    background: ${themeStyle({
-      dark: Colors.darkActive,
-      light: Colors.lightActive
-    })};
-  }
 `);
 
 export const Option = themed(styled.button`
@@ -139,6 +125,21 @@ export const Option = themed(styled.button`
   /* Other */
   cursor: pointer;
 
+
+  &:hover {
+    background: ${themeStyle({
+      dark: Colors.uiDark06,
+      light: Colors.uiLight05
+    })};
+  }
+
+  &:active {
+    background: ${themeStyle({
+      dark: Colors.darkActive,
+      light: Colors.lightActive
+    })};
+  }
+
   &:first-child:hover:after, &:first-child:hover:before {
   ${PointerBasics};
   }
@@ -148,7 +149,7 @@ export const Option = themed(styled.button`
     ${PointerBody}
       border-bottom-color: ${themeStyle({
         dark: Colors.uiDark06,
-        light: Colors.uiLight02
+        light: Colors.uiLight05
       })};
   }
 
