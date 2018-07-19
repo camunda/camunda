@@ -162,10 +162,21 @@ public class ActorTask {
 
   /** Used to externally submit a job. */
   public void submit(ActorJob job) {
+    // get reference to jobs queue
+    final Queue<ActorJob> submittedJobs = this.submittedJobs;
+
     // add job to queue
     submittedJobs.offer(job);
-    // wakeup task if waiting
-    tryWakeup();
+
+    if (submittedJobs != this.submittedJobs) {
+      // jobs queue was replaced (see onClosed method)
+      // in case the job was offer after the original queue was drained
+      // we have to manually fail the job to make sure does not get lost
+      failJob(job);
+    } else {
+      // wakeup task if waiting
+      tryWakeup();
+    }
   }
 
   public boolean execute(ActorThread runner) {
@@ -308,11 +319,19 @@ public class ActorTask {
 
     while ((j = activeJobsQueue.poll()) != null) {
       // cancel and discard jobs
-      j.failFuture("Actor is closed");
+      failJob(j);
     }
 
     if (taskMetrics != null) {
       taskMetrics.close();
+    }
+  }
+
+  private void failJob(ActorJob job) {
+    try {
+      job.failFuture("Actor is closed");
+    } catch (IllegalStateException e) {
+      // job is already completed or failed, ignore
     }
   }
 
@@ -358,7 +377,7 @@ public class ActorTask {
     // discard next jobs
     ActorJob next;
     while ((next = fastLaneJobs.poll()) != null) {
-      next.failFuture("Actor is closed");
+      failJob(next);
     }
   }
 
