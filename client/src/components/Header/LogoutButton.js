@@ -21,8 +21,8 @@ export default withErrorHandling(
             redirect: true
           });
         },
-        () => {
-          alert('Could not logout');
+        error => {
+          alert(`Unable to logout: ${error.statusText}`);
         }
       );
     };
