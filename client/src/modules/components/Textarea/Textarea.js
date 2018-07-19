@@ -8,10 +8,5 @@ export default function Textarea(props) {
 }
 
 Textarea.propTypes = {
-  'aria-label': PropTypes.string,
-  name: PropTypes.string,
-  onBlur: PropTypes.func,
-  onChange: PropTypes.func,
-  placeholder: PropTypes.string,
-  value: PropTypes.string
+  placeholder: PropTypes.string
 };

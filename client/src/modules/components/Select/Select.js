@@ -5,11 +5,7 @@ import * as Styled from './styled';
 export default class Select extends React.Component {
   static propTypes = {
     options: PropTypes.array.isRequired,
-    name: PropTypes.string.isRequired,
     placeholder: PropTypes.string,
-    value: PropTypes.string,
-    onChange: PropTypes.func,
-    'aria-label': PropTypes.string,
     disabled: PropTypes.bool
   };
 
