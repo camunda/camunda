@@ -23,12 +23,17 @@ public class EventType extends StrictTypeMappingCreator {
   public static final String DATE_TIME = "dateTime";
   public static final String PAYLOAD = "payload";
 
+  public static final String METADATA = "metadata";
+
   public static final String JOB_TYPE = "jobType";
   public static final String JOB_RETRIES = "jobRetries";
   public static final String JOB_WORKER = "jobWorker";
+  public static final String JOB_DEADLINE = "jobDeadline";
+  public static final String JOB_CUSTOM_HEADERS = "jobCustomHeaders";
 
   public static final String INCIDENT_ERROR_TYPE = "incidentErrorType";
   public static final String INCIDENT_ERROR_MSG = "incidentErrorMessage";
+  public static final String JOB_KEY = "jobKey";
 
   @Autowired
   private OperateProperties operateProperties;
@@ -70,8 +75,21 @@ public class EventType extends StrictTypeMappingCreator {
         .field("format", operateProperties.getElasticsearch().getDateFormat())
       .endObject()
       .startObject(PAYLOAD)
-        .field("type", "keyword")   //TODO may be we should use Text data type here?
+        .field("type", "keyword")   // TODO may be we should use Text data type here?
       .endObject()
+      .startObject(METADATA)
+        .field("type", "nested")
+        .startObject("properties");
+
+      addNestedMetadataField(newBuilder)
+        .endObject()
+      .endObject();
+
+    return newBuilder;
+  }
+
+  private XContentBuilder addNestedMetadataField(XContentBuilder builder) throws IOException {
+    builder
       .startObject(JOB_RETRIES)
         .field("type", "integer")
       .endObject()
@@ -81,14 +99,23 @@ public class EventType extends StrictTypeMappingCreator {
       .startObject(JOB_WORKER)
         .field("type", "keyword")
       .endObject()
+      .startObject(JOB_DEADLINE)
+        .field("type", "date")
+        .field("format", operateProperties.getElasticsearch().getDateFormat())
+      .endObject()
+      .startObject(JOB_CUSTOM_HEADERS)
+        .field("enabled", false)
+      .endObject()
       .startObject(INCIDENT_ERROR_TYPE)
         .field("type", "keyword")
       .endObject()
       .startObject(INCIDENT_ERROR_MSG)
         .field("type", "keyword")
       .endObject()
-      ;
-    return newBuilder;
+      .startObject(JOB_KEY)
+        .field("type", "keyword")
+      .endObject();
+    return builder;
   }
 
 }

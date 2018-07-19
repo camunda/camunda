@@ -1,8 +1,12 @@
 package org.camunda.operate.zeebe;
 
+import static org.camunda.operate.entities.IncidentState.fromZeebeIncidentState;
+
 import java.util.HashSet;
 import java.util.Set;
+
 import org.camunda.operate.entities.EventEntity;
+import org.camunda.operate.entities.EventMetadataEntity;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.es.writer.EntityStorage;
 import org.camunda.operate.util.ZeebeUtil;
@@ -10,8 +14,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
 import io.zeebe.client.api.events.IncidentEvent;
 import io.zeebe.client.api.events.IncidentState;
+import io.zeebe.client.api.record.RecordMetadata;
 import io.zeebe.client.api.subscription.IncidentEventHandler;
 
 
@@ -57,9 +63,8 @@ public class IncidentEventTransformer extends AbstractEventTransformer implement
       if (event.getWorkflowInstanceKey() != null) {
         incidentEntity.setWorkflowInstanceId(String.valueOf(event.getWorkflowInstanceKey()));
       }
-//      incidentEntity.setProcessDefinitionKey(event.getBpmnProcessId());
 
-      org.camunda.operate.entities.IncidentState incidentState = org.camunda.operate.entities.IncidentState.fromZeebeIncidentState(event.getState());
+      org.camunda.operate.entities.IncidentState incidentState = fromZeebeIncidentState(event.getState());
 
       incidentEntity.setState(incidentState);
 
@@ -71,19 +76,25 @@ public class IncidentEventTransformer extends AbstractEventTransformer implement
   }
 
   private void convertEvent(IncidentEvent event) throws InterruptedException {
-    //we will store sequence flows separately, no need to store them in events
-    if (!event.getState().equals(io.zeebe.client.api.events.WorkflowInstanceState.SEQUENCE_FLOW_TAKEN)) {
-      EventEntity eventEntity = new EventEntity();
-      loadEventGeneralData(event, eventEntity);
-      eventEntity.setWorkflowInstanceId(String.valueOf(event.getWorkflowInstanceKey()));
-      eventEntity.setBpmnProcessId(event.getBpmnProcessId());
-      eventEntity.setActivityId(event.getActivityId());
-      eventEntity.setActivityInstanceId(String.valueOf(event.getActivityInstanceKey()));
-      eventEntity.setIncidentErrorType(event.getErrorType());
-      eventEntity.setIncidentErrorMessage(event.getErrorMessage());
+    EventEntity eventEntity = new EventEntity();
 
-      //TODO will wait till capacity available, can throw InterruptedException
-      entityStorage.getOperateEntititesQueue(event.getMetadata().getTopicName()).put(eventEntity);
-    }
+    loadEventGeneralData(event, eventEntity);
+
+    eventEntity.setWorkflowInstanceId(String.valueOf(event.getWorkflowInstanceKey()));
+    eventEntity.setBpmnProcessId(event.getBpmnProcessId());
+    eventEntity.setActivityId(event.getActivityId());
+    eventEntity.setActivityInstanceId(String.valueOf(event.getActivityInstanceKey()));
+
+    EventMetadataEntity eventMetadata = new EventMetadataEntity();
+    eventMetadata.setIncidentErrorMessage(event.getErrorMessage());
+    eventMetadata.setIncidentErrorType(event.getErrorType());
+    eventMetadata.setJobKey(String.valueOf(event.getJobKey()));
+    eventEntity.setMetadata(eventMetadata);
+
+    RecordMetadata metadata = event.getMetadata();
+    String topicName = metadata.getTopicName();
+
+    // TODO will wait till capacity available, can throw InterruptedException
+    entityStorage.getOperateEntititesQueue(topicName).put(eventEntity);
   }
 }

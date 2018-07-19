@@ -208,8 +208,8 @@ public class EventIT extends OperateIntegrationTest {
           assertThat(eventEntity.getActivityInstanceId()).as(assertionName + ".activityInstanceId").isNotNull();
         }
         if (eventSourceType.equals(EventSourceType.INCIDENT)) {
-          assertThat(eventEntity.getIncidentErrorMessage()).as(assertionName + ".incidentErrorMessage").isNotEmpty();
-          assertThat(eventEntity.getIncidentErrorType()).as(assertionName + ".incidentErrorType").isNotEmpty();
+          assertThat(eventEntity.getMetadata().getIncidentErrorMessage()).as(assertionName + ".incidentErrorMessage").isNotEmpty();
+          assertThat(eventEntity.getMetadata().getIncidentErrorType()).as(assertionName + ".incidentErrorType").isNotEmpty();
         }
       });
   }

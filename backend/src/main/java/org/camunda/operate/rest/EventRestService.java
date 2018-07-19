@@ -45,8 +45,8 @@ public class EventRestService {
   @ApiOperation("List Zeebe events")
   @PostMapping
   public List<EventDto> getEvents(@RequestBody EventQueryDto eventQuery,
-    @RequestParam("firstResult") Integer firstResult,
-    @RequestParam("maxResults") Integer maxResults) {
+    @RequestParam(name = "firstResult", required = false) Integer firstResult,
+    @RequestParam(name = "maxResults", required = false) Integer maxResults) {
     final List<EventEntity> eventEntities = eventReader.queryEvents(eventQuery, firstResult, maxResults);
     return EventDto.createFrom(eventEntities);
   }

@@ -13,6 +13,8 @@
 package org.camunda.operate.entities;
 
 import java.time.OffsetDateTime;
+import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class EventEntity extends OperateEntity {
@@ -39,17 +41,9 @@ public class EventEntity extends OperateEntity {
   private String payload;
 
   /**
-   * Job data.
+   * Metadata
    */
-  private String jobType;
-  private Integer jobRetries;
-  private String jobWorker;
-
-  /**
-   * Incident data.
-   */
-  private String incidentErrorType;
-  private String incidentErrorMessage;
+  private EventMetadataEntity metadata;
 
   public String getWorkflowId() {
     return workflowId;
@@ -123,44 +117,12 @@ public class EventEntity extends OperateEntity {
     this.payload = payload;
   }
 
-  public String getJobType() {
-    return jobType;
+  public EventMetadataEntity getMetadata() {
+    return metadata;
   }
 
-  public void setJobType(String jobType) {
-    this.jobType = jobType;
-  }
-
-  public Integer getJobRetries() {
-    return jobRetries;
-  }
-
-  public void setJobRetries(Integer jobRetries) {
-    this.jobRetries = jobRetries;
-  }
-
-  public String getJobWorker() {
-    return jobWorker;
-  }
-
-  public void setJobWorker(String jobWorker) {
-    this.jobWorker = jobWorker;
-  }
-
-  public String getIncidentErrorType() {
-    return incidentErrorType;
-  }
-
-  public void setIncidentErrorType(String incidentErrorType) {
-    this.incidentErrorType = incidentErrorType;
-  }
-
-  public String getIncidentErrorMessage() {
-    return incidentErrorMessage;
-  }
-
-  public void setIncidentErrorMessage(String incidentErrorMessage) {
-    this.incidentErrorMessage = incidentErrorMessage;
+  public void setMetadata(EventMetadataEntity metadata) {
+    this.metadata = metadata;
   }
 
   @Override
@@ -202,15 +164,8 @@ public class EventEntity extends OperateEntity {
       return false;
     if (dateTime != null ? !dateTime.equals(that.dateTime) : that.dateTime != null)
       return false;
-    if (payload != null ? !payload.equals(that.payload) : that.payload != null)
-      return false;
-    if (jobRetries != null ? !jobRetries.equals(that.jobRetries) : that.jobRetries != null)
-      return false;
-    if (jobWorker != null ? !jobWorker.equals(that.jobWorker) : that.jobWorker != null)
-      return false;
-    if (incidentErrorType != null ? !incidentErrorType.equals(that.incidentErrorType) : that.incidentErrorType != null)
-      return false;
-    return incidentErrorMessage != null ? incidentErrorMessage.equals(that.incidentErrorMessage) : that.incidentErrorMessage == null;
+
+    return payload != null ? !payload.equals(that.payload) : that.payload != null;
   }
 
   @Override
@@ -225,10 +180,6 @@ public class EventEntity extends OperateEntity {
     result = 31 * result + (eventType != null ? eventType.hashCode() : 0);
     result = 31 * result + (dateTime != null ? dateTime.hashCode() : 0);
     result = 31 * result + (payload != null ? payload.hashCode() : 0);
-    result = 31 * result + (jobRetries != null ? jobRetries.hashCode() : 0);
-    result = 31 * result + (jobWorker != null ? jobWorker.hashCode() : 0);
-    result = 31 * result + (incidentErrorType != null ? incidentErrorType.hashCode() : 0);
-    result = 31 * result + (incidentErrorMessage != null ? incidentErrorMessage.hashCode() : 0);
     return result;
   }
 }

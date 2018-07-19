@@ -12,32 +12,36 @@
  */
 package org.camunda.operate.es.reader;
 
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
 import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.es.types.EventType;
-import org.camunda.operate.es.types.WorkflowInstanceType;
 import org.camunda.operate.rest.dto.EventQueryDto;
 import org.camunda.operate.rest.dto.SortingDto;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @Component
 public class EventReader {
@@ -55,12 +59,16 @@ public class EventReader {
   private ObjectMapper objectMapper;
 
   public List<EventEntity> queryEvents(EventQueryDto eventQuery, Integer firstResult, Integer maxResults) {
-    SearchRequestBuilder searchRequest = createSearchRequest(eventQuery)
-      .setFetchSource(null, WorkflowInstanceType.ACTIVITIES);
+    SearchRequestBuilder searchRequest = createSearchRequest(eventQuery);
 
     applySorting(searchRequest, null);
 
-    return paginate(searchRequest, firstResult, maxResults);
+    if (firstResult != null && maxResults != null) {
+      return paginate(searchRequest, firstResult, maxResults);
+    }
+    else {
+      return scroll(searchRequest);
+    }
   }
 
   private void applySorting(SearchRequestBuilder searchRequestBuilder, SortingDto sorting) {
@@ -79,6 +87,32 @@ public class EventReader {
       .get();
 
     return mapSearchHits(response.getHits().getHits());
+  }
+
+  protected List<EventEntity> scroll(SearchRequestBuilder builder) {
+    TimeValue keepAlive = new TimeValue(60000);
+
+    SearchResponse response = builder
+      .setScroll(keepAlive)
+      .get();
+
+    List<EventEntity> result = new ArrayList<>();
+
+    do {
+
+      SearchHits hits = response.getHits();
+      String scrollId = response.getScrollId();
+
+      result.addAll(mapSearchHits(hits.getHits()));
+
+      response = esClient
+          .prepareSearchScroll(scrollId)
+          .setScroll(keepAlive)
+          .get();
+
+    } while (response.getHits().getHits().length != 0);
+
+    return result;
   }
 
   protected List<EventEntity> mapSearchHits(SearchHit[] searchHits) {

@@ -6,19 +6,24 @@ import org.camunda.operate.entities.EventType;
 import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.util.DateUtil;
 import io.zeebe.client.api.record.Record;
+import io.zeebe.client.api.record.RecordMetadata;
 
 
 public abstract class AbstractEventTransformer {
 
   protected void updateMetadataFields(OperateEntity operateEntity, Record zeebeRecord) {
-    operateEntity.setPartitionId(zeebeRecord.getMetadata().getPartitionId());
-    operateEntity.setPosition(zeebeRecord.getMetadata().getPosition());
+    RecordMetadata metadata = zeebeRecord.getMetadata();
+
+    operateEntity.setPartitionId(metadata.getPartitionId());
+    operateEntity.setPosition(metadata.getPosition());
   }
 
   protected void loadEventGeneralData(Record record, EventEntity eventEntity) {
-    eventEntity.setId(String.valueOf(record.getMetadata().getPosition()));
-    eventEntity.setEventSourceType(EventSourceType.fromZeebeValueType(record.getMetadata().getValueType()));
-    eventEntity.setDateTime(DateUtil.toOffsetDateTime(record.getMetadata().getTimestamp()));
-    eventEntity.setEventType(EventType.fromZeebeIntent(record.getMetadata().getIntent()));
+    RecordMetadata metadata = record.getMetadata();
+
+    eventEntity.setId(String.valueOf(metadata.getPosition()));
+    eventEntity.setEventSourceType(EventSourceType.fromZeebeValueType(metadata.getValueType()));
+    eventEntity.setDateTime(DateUtil.toOffsetDateTime(metadata.getTimestamp()));
+    eventEntity.setEventType(EventType.fromZeebeIntent(metadata.getIntent()));
   }
 }
