@@ -8,6 +8,13 @@ export default function Badge(props) {
 }
 
 Badge.propTypes = {
-  type: PropTypes.oneOf(['filters', 'selections', 'incidents', 'instances']),
+  type: PropTypes.oneOf([
+    'filters',
+    'selections',
+    'selectionHead',
+    'openSelectionHead',
+    'incidents',
+    'instances'
+  ]),
   children: PropTypes.node.isRequired
 };

@@ -1,9 +1,9 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`Badge should match snapshot 1`] = `
-<styled.div
+<Themed(styled.div)
   className="shouldBePassedThrough"
 >
   child content
-</styled.div>
+</Themed(styled.div)>
 `;

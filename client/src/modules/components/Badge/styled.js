@@ -1,12 +1,12 @@
 import styled from 'styled-components';
-import {Colors} from 'modules/theme';
+import {Colors, themed, themeStyle} from 'modules/theme';
 
-export const Badge = styled.div`
+export const Badge = themed(styled.div`
   display: inline-block;
   height: 17px;
   padding-left: 9px;
   padding-right: 9px;
-  margin-left: 6px;
+  margin-left: 7px;
 
   background-color: ${({type}) => {
     switch (type) {
@@ -16,6 +16,13 @@ export const Badge = styled.div`
         return Colors.selections;
       case 'incidents':
         return Colors.incidentsAndErrors;
+      case 'selectionHead':
+        return themeStyle({
+          dark: '#ffffff',
+          light: Colors.selections
+        });
+      case 'openSelectionHead':
+        return '#ffffff';
       default:
         return '#a4a2a2';
     }
@@ -24,6 +31,13 @@ export const Badge = styled.div`
     switch (type) {
       case 'filters':
         return Colors.uiDark01;
+      case 'selectionHead':
+        return themeStyle({
+          dark: Colors.uiDark03,
+          light: '#ffffff'
+        });
+      case 'openSelectionHead':
+        return Colors.selections;
       default:
         return '#ffffff';
     }
@@ -34,4 +48,4 @@ export const Badge = styled.div`
   line-height: 17px;
 
   border-radius: 8.5px;
-`;
+`);
