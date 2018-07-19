@@ -39,10 +39,8 @@ export default class Filters extends React.Component {
   };
 
   componentDidMount = async () => {
-    const groupedWorkflows = await api.fetchGroupedWorkflowInstances();
-
     this.setState({
-      workflowNames: parseWorkflowNames(groupedWorkflows)
+      workflowNames: await api.fetchGroupedWorkflowInstances()
     });
   };
 
@@ -64,7 +62,6 @@ export default class Filters extends React.Component {
 
   render() {
     const {active, incidents, canceled, completed} = this.props.filter;
-
     return (
       <Panel isRounded>
         <Panel.Header isRounded>Filters</Panel.Header>
@@ -91,7 +88,7 @@ export default class Filters extends React.Component {
                 disabled={this.state.workflowNames.length === 0}
                 name="workflowName"
                 placeholder={PLACEHOLDER.workflowName}
-                options={this.state.workflowNames}
+                options={parseWorkflowNames(this.state.workflowNames)}
                 onChange={this.handleWorkflowsNameChange}
               />
             </Styled.Field>

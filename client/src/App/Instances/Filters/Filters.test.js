@@ -5,14 +5,31 @@ import {DEFAULT_FILTER, FILTER_TYPES, DIRECTION} from 'modules/constants';
 import Button from 'modules/components/Button';
 import Textarea from 'modules/components/Textarea';
 import TextInput from 'modules/components/TextInput';
-import {mockResolvedAsyncFn} from 'modules/testUtils';
+import Select from 'modules/components/Select';
+import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
+import * as api from 'modules/api/instances/instances';
 
 import Filters from './Filters';
 import Filter from './Filter';
 import * as Styled from './styled';
-import * as api from 'modules/api/instances/instances';
+import {parseWorkflowNames} from './service';
 
-api.fetchGroupedWorkflowInstances = mockResolvedAsyncFn([]);
+const mockGroupedWorkflowInstances = [
+  {
+    bpmnProcessId: 'demoProcess',
+    name: 'New demo process',
+    workflows: []
+  },
+  {
+    bpmnProcessId: 'orderProcess',
+    name: 'Order',
+    workflows: []
+  }
+];
+
+api.fetchGroupedWorkflowInstances = mockResolvedAsyncFn(
+  mockGroupedWorkflowInstances
+);
 
 describe('Filters', () => {
   const spy = jest.fn();
@@ -168,6 +185,52 @@ describe('Filters', () => {
       expect(spy).toHaveBeenCalledWith({
         ids: []
       });
+    });
+  });
+
+  describe('workflowName filter', () => {
+    it('should render an workflowName select field', () => {
+      // given
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const workflowNameNode = node.find({name: 'workflowName'});
+
+      // then
+      expect(workflowNameNode.length).toEqual(1);
+      expect(workflowNameNode.type()).toEqual(Select);
+      expect(workflowNameNode.props().name).toEqual('workflowName');
+      expect(workflowNameNode.props().value).toEqual('');
+      expect(workflowNameNode.props().placeholder).toEqual('Workflow');
+      expect(workflowNameNode.props().onChange).toEqual(
+        node.instance().handleWorkflowsNameChange
+      );
+    });
+
+    it('should fetch grouped workflows and set state', async () => {
+      // given
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+
+      //when
+      await flushPromises();
+      node.update();
+      // then
+      expect(api.fetchGroupedWorkflowInstances).toHaveBeenCalled();
+      expect(node.state().workflowNames).toEqual(mockGroupedWorkflowInstances);
+      expect(node.find({name: 'workflowName'}).props().options).toEqual(
+        parseWorkflowNames(mockGroupedWorkflowInstances)
+      );
+    });
+
+    it('should update state with selected option', () => {
+      // given
+      const value = mockGroupedWorkflowInstances[0].bpmnProcessId;
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+
+      //when
+      node.instance().handleWorkflowsNameChange({target: {value: value}});
+      node.update();
+
+      // then
+      expect(node.state().currentWorkflowName).toEqual(value);
     });
   });
 });
