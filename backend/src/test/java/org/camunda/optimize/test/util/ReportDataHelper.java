@@ -20,6 +20,7 @@ import static org.camunda.optimize.service.es.report.command.util.ReportConstant
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_DURATION_PROPERTY;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FLOW_NODE_ENTITY;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FREQUENCY_PROPERTY;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MIN_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_PROCESS_INSTANCE_ENTITY;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_RAW_DATA_OPERATION;
 
@@ -233,6 +234,25 @@ public class ReportDataHelper {
     return reportData;
   }
 
+  public static ReportDataDto createMinFlowNodeDurationGroupByFlowNodeHeatmapReport(
+      String processDefinitionKey,
+      String processDefinitionVersion
+  ) {
+    ViewDto view = createMinFlowNodeDurationView();
+
+    GroupByDto groupByDto = createGroupByFlowNode();
+
+    ReportDataDto reportData = createReportDataViewRaw(
+        processDefinitionKey,
+        processDefinitionVersion,
+        HEAT_VISUALIZATION,
+        view,
+        groupByDto
+    );
+
+    return reportData;
+  }
+
   private static GroupByDto createGroupByFlowNode() {
     GroupByDto groupByDto = new FlowNodesGroupByDto();
     return groupByDto;
@@ -345,6 +365,14 @@ public class ReportDataHelper {
   private static ViewDto createAvgFlowNodeDurationView() {
     ViewDto view = new ViewDto();
     view.setOperation(VIEW_AVERAGE_OPERATION);
+    view.setEntity(VIEW_FLOW_NODE_ENTITY);
+    view.setProperty(VIEW_DURATION_PROPERTY);
+    return view;
+  }
+
+  private static ViewDto createMinFlowNodeDurationView() {
+    ViewDto view = new ViewDto();
+    view.setOperation(VIEW_MIN_OPERATION);
     view.setEntity(VIEW_FLOW_NODE_ENTITY);
     view.setProperty(VIEW_DURATION_PROPERTY);
     return view;
