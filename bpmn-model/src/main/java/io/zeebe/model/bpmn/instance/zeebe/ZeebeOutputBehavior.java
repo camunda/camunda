@@ -15,16 +15,8 @@
  */
 package io.zeebe.model.bpmn.instance.zeebe;
 
-import io.zeebe.model.bpmn.instance.BpmnModelElementInstance;
-import java.util.Collection;
-
-public interface ZeebeIoMapping extends BpmnModelElementInstance {
-
-  ZeebeOutputBehavior getOutputBehavior();
-
-  void setOutputBehavhior(ZeebeOutputBehavior behavior);
-
-  Collection<ZeebeInput> getInputs();
-
-  Collection<ZeebeOutput> getOutputs();
+public enum ZeebeOutputBehavior {
+  none,
+  merge,
+  overwrite;
 }

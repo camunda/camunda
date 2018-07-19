@@ -20,6 +20,7 @@ package io.zeebe.broker.workflow;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.junit.Assert.fail;
 
 import io.zeebe.broker.system.workflow.repository.data.ResourceType;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
@@ -306,6 +307,16 @@ public class CreateDeploymentTest {
 
     final Map<String, Object> workflow2 = getDeployedWorkflow(d2, 0);
     assertThat(workflow2.get("version")).isEqualTo(1L);
+  }
+
+  @Test
+  public void shouldValidateRuntimeAspectOnDeployment() {
+    fail("implement and link to detail testcases");
+  }
+
+  @Test
+  public void shouldValidatDesigntimeAspectOnDeployment() {
+    fail("implement and link to detail testcases");
   }
 
   private Map<String, Object> deploymentResource(final byte[] resource, String name) {

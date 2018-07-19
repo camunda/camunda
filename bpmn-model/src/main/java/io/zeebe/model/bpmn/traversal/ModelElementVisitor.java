@@ -13,18 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.model.bpmn.instance.zeebe;
+package io.zeebe.model.bpmn.traversal;
 
 import io.zeebe.model.bpmn.instance.BpmnModelElementInstance;
-import java.util.Collection;
 
-public interface ZeebeIoMapping extends BpmnModelElementInstance {
+@FunctionalInterface
+public interface ModelElementVisitor {
 
-  ZeebeOutputBehavior getOutputBehavior();
-
-  void setOutputBehavhior(ZeebeOutputBehavior behavior);
-
-  Collection<ZeebeInput> getInputs();
-
-  Collection<ZeebeOutput> getOutputs();
+  void visit(BpmnModelElementInstance instance);
 }

@@ -19,6 +19,7 @@ package io.zeebe.model.bpmn;
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
 
 import io.zeebe.model.bpmn.builder.ProcessBuilder;
+import io.zeebe.model.bpmn.impl.BpmnImpl;
 import io.zeebe.model.bpmn.impl.BpmnParser;
 import io.zeebe.model.bpmn.impl.instance.*;
 import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
@@ -74,7 +75,7 @@ import org.camunda.bpm.model.xml.impl.util.IoUtil;
  */
 public class Bpmn {
 
-  public static final Bpmn INSTANCE = new Bpmn();
+  public static final Bpmn INSTANCE = new BpmnImpl();
 
   /** the parser used by the Bpmn implementation. */
   private final BpmnParser bpmnParser = new BpmnParser();

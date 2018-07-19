@@ -22,6 +22,7 @@ import io.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 
@@ -68,7 +69,7 @@ public abstract class AbstractServiceTaskBuilder<B extends AbstractServiceTaskBu
     return myself;
   }
 
-  public B zeebeOutputBehavior(String outputBehavior) {
+  public B zeebeOutputBehavior(ZeebeOutputBehavior outputBehavior) {
     final ZeebeIoMapping ioMapping = getCreateSingleExtensionElement(ZeebeIoMapping.class);
     ioMapping.setOutputBehavhior(outputBehavior);
 

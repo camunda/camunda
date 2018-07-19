@@ -21,6 +21,7 @@ import io.zeebe.model.bpmn.impl.instance.BpmnModelElementInstanceImpl;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
 import java.util.Collection;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
@@ -30,7 +31,7 @@ import org.camunda.bpm.model.xml.type.child.ChildElementCollection;
 
 public class ZeebeIoMappingImpl extends BpmnModelElementInstanceImpl implements ZeebeIoMapping {
 
-  private static Attribute<String> outputBehaviorAttribute;
+  private static Attribute<ZeebeOutputBehavior> outputBehaviorAttribute;
   protected static ChildElementCollection<ZeebeInput> inputCollection;
   protected static ChildElementCollection<ZeebeOutput> outputCollection;
 
@@ -39,12 +40,12 @@ public class ZeebeIoMappingImpl extends BpmnModelElementInstanceImpl implements 
   }
 
   @Override
-  public String getOutputBehavior() {
+  public ZeebeOutputBehavior getOutputBehavior() {
     return outputBehaviorAttribute.getValue(this);
   }
 
   @Override
-  public void setOutputBehavhior(String behavior) {
+  public void setOutputBehavhior(ZeebeOutputBehavior behavior) {
     outputBehaviorAttribute.setValue(this, behavior);
   }
 
@@ -67,7 +68,7 @@ public class ZeebeIoMappingImpl extends BpmnModelElementInstanceImpl implements 
 
     outputBehaviorAttribute =
         typeBuilder
-            .stringAttribute(ZeebeConstants.ATTRIBUTE_OUTPUT_BEHAVIOR)
+            .enumAttribute(ZeebeConstants.ATTRIBUTE_OUTPUT_BEHAVIOR, ZeebeOutputBehavior.class)
             .namespace(BpmnModelConstants.ZEEBE_NS)
             .build();
 

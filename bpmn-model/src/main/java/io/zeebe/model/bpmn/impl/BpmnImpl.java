@@ -13,18 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.model.bpmn.instance.zeebe;
+package io.zeebe.model.bpmn.impl;
 
-import io.zeebe.model.bpmn.instance.BpmnModelElementInstance;
-import java.util.Collection;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.BpmnTypeHierarchy;
+import java.util.List;
+import org.camunda.bpm.model.xml.type.ModelElementType;
 
-public interface ZeebeIoMapping extends BpmnModelElementInstance {
+public class BpmnImpl extends Bpmn {
 
-  ZeebeOutputBehavior getOutputBehavior();
+  private final BpmnTypeHierarchy typeHierarchy = new BpmnTypeHierarchy();
 
-  void setOutputBehavhior(ZeebeOutputBehavior behavior);
+  public BpmnImpl() {
+    super();
+    getBpmnModel().getTypes().forEach(typeHierarchy::registerType);
+  }
 
-  Collection<ZeebeInput> getInputs();
-
-  Collection<ZeebeOutput> getOutputs();
+  public List<ModelElementType> getHierarchy(ModelElementType type) {
+    return typeHierarchy.getHierarchy(type);
+  }
 }

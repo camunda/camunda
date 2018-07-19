@@ -63,7 +63,7 @@ public abstract class AbstractFlowNodeBuilder<
     super(modelInstance, element, selfType);
   }
 
-  private SequenceFlowBuilder getCurrentSequenceFlowBuilder() {
+  protected SequenceFlowBuilder getCurrentSequenceFlowBuilder() {
     if (currentSequenceFlowBuilder == null) {
       final SequenceFlow sequenceFlow = createSibling(SequenceFlow.class);
       currentSequenceFlowBuilder = sequenceFlow.builder();
