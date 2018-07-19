@@ -4,6 +4,7 @@ import {BPMNDiagram, TargetValueBadge} from 'components';
 import HeatmapOverlay from './HeatmapOverlay';
 
 import {calculateTargetValueHeat, convertToMilliseconds} from './service';
+import {getRelativeValue} from '../service';
 import {formatters} from 'services';
 
 import './Heatmap.css';
@@ -57,7 +58,21 @@ const Heatmap = props => {
       <TargetValueBadge key="targetValueBadge" values={targetValue.values} />
     ];
   } else {
-    heatmapComponent = <HeatmapOverlay data={data} formatter={props.formatter} />;
+    heatmapComponent = (
+      <HeatmapOverlay
+        data={data}
+        formatter={data => {
+          if (props.property === 'frequency') {
+            return `${props.formatter(data)}\u00A0(${getRelativeValue(
+              data,
+              props.processInstanceCount
+            )})`;
+          } else {
+            return props.formatter(data);
+          }
+        }}
+      />
+    );
   }
 
   return (

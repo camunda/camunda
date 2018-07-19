@@ -5,7 +5,7 @@ import {Table as TableRenderer} from 'components';
 import {processRawData} from 'services';
 import {withErrorHandling} from 'HOC';
 
-import {getCamundaEndpoints} from './service';
+import {getCamundaEndpoints, getRelativeValue} from './service';
 
 export default withErrorHandling(
   class Table extends React.Component {
@@ -30,14 +30,7 @@ export default withErrorHandling(
     }
 
     render() {
-      const {
-        data,
-        configuration: {excludedColumns, columnOrder},
-        formatter = v => v,
-        labels,
-        errorMessage,
-        disableReportScrolling
-      } = this.props;
+      const {data, errorMessage, disableReportScrolling} = this.props;
 
       if (!data || typeof data !== 'object') {
         return <ReportBlankSlate message={errorMessage} />;
@@ -48,33 +41,45 @@ export default withErrorHandling(
       }
 
       return (
-        <TableRenderer
-          disableReportScrolling={disableReportScrolling}
-          {...formatData(
-            data,
-            formatter,
-            labels,
-            excludedColumns,
-            columnOrder,
-            this.state.camundaEndpoints
-          )}
-        />
+        <TableRenderer disableReportScrolling={disableReportScrolling} {...this.formatData()} />
       );
     }
+
+    formatData = () => {
+      const {
+        formatter = v => v,
+        labels,
+        configuration: {excludedColumns, columnOrder},
+        data,
+        property,
+        processInstanceCount
+      } = this.props;
+
+      if (isRaw(data)) {
+        // raw data
+        return processRawData(data, excludedColumns, columnOrder, this.state.camundaEndpoints);
+      } else {
+        // normal two-dimensional data
+        if (property === 'frequency') {
+          return {
+            head: [...labels, 'Relative Frequency'],
+            body: Object.keys(data).map(key => [
+              key,
+              formatter(data[key]),
+              getRelativeValue(data[key], processInstanceCount)
+            ])
+          };
+        } else {
+          return {
+            head: labels,
+            body: Object.keys(data).map(key => [key, formatter(data[key])])
+          };
+        }
+      }
+    };
   }
 );
 
 function isRaw(data) {
   return data.length;
-}
-
-export function formatData(data, formatter, labels, excludedColumns, columnOrder, endpoint) {
-  if (isRaw(data)) {
-    // raw data
-    return processRawData(data, excludedColumns, columnOrder, endpoint);
-  } else {
-    // normal two-dimensional data
-    const body = Object.keys(data).map(key => [key, formatter(data[key])]);
-    return {head: labels, body};
-  }
 }

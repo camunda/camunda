@@ -4,7 +4,7 @@ import {mount} from 'enzyme';
 import Table from './Table';
 import {processRawData} from 'services';
 
-import {getCamundaEndpoints} from './service';
+import {getCamundaEndpoints, getRelativeValue} from './service';
 
 jest.mock('components', () => {
   return {
@@ -20,7 +20,8 @@ jest.mock('services', () => {
 
 jest.mock('./service', () => {
   return {
-    getCamundaEndpoints: jest.fn().mockReturnValue('camundaEndpoint')
+    getCamundaEndpoints: jest.fn().mockReturnValue('camundaEndpoint'),
+    getRelativeValue: jest.fn().mockReturnValue('12.3%')
   };
 });
 
@@ -57,6 +58,31 @@ it('should display data for key-value pairs', async () => {
   expect(node).toIncludeText('1');
   expect(node).toIncludeText('2');
   expect(node).toIncludeText('3');
+});
+
+it('should display the relative percentage for frequency views', () => {
+  getRelativeValue.mockClear();
+
+  const node = mount(
+    <Table
+      data={{
+        a: 1,
+        b: 2,
+        c: 3
+      }}
+      formatter={v => v}
+      configuration={{}}
+      labels={['key', 'value', 'relative']}
+      property="frequency"
+      processInstanceCount={5}
+    />
+  );
+
+  expect(getRelativeValue).toHaveBeenCalledWith(1, 5);
+  expect(getRelativeValue).toHaveBeenCalledWith(2, 5);
+  expect(getRelativeValue).toHaveBeenCalledWith(3, 5);
+
+  expect(node).toIncludeText('12.3%');
 });
 
 it('should process raw data', async () => {

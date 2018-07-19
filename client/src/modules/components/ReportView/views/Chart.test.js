@@ -4,6 +4,8 @@ import {mount} from 'enzyme';
 import Chart from './Chart';
 import ChartRenderer from 'chart.js';
 
+import {getRelativeValue} from './service';
+
 jest.mock('chart.js', () =>
   jest.fn(() => {
     return {
@@ -11,6 +13,12 @@ jest.mock('chart.js', () =>
     };
   })
 );
+
+jest.mock('./service', () => {
+  return {
+    getRelativeValue: jest.fn().mockReturnValue('12.3%')
+  };
+});
 
 it('should construct a Chart', () => {
   mount(<Chart data={{foo: 123}} />);
@@ -93,4 +101,21 @@ it('should generate colors', () => {
 
   expect(colors).toHaveLength(7);
   expect(colors[5]).not.toEqual(colors[6]);
+});
+
+it('should include the relative value in tooltips', () => {
+  getRelativeValue.mockClear();
+
+  const data = {foo: 123};
+  const node = mount(
+    <Chart data={data} processInstanceCount={5} property="frequency" formatter={v => v} />
+  );
+
+  const response = node
+    .instance()
+    .createChartOptions('bar')
+    .tooltips.callbacks.label({index: 0, datasetIndex: 0}, {datasets: [{data: [3]}]});
+
+  expect(getRelativeValue).toHaveBeenCalledWith(3, 5);
+  expect(response).toBe('3 (12.3%)');
 });

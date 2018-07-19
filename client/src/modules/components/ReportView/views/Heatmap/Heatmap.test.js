@@ -5,6 +5,7 @@ import Heatmap from './Heatmap';
 import HeatmapOverlay from './HeatmapOverlay';
 import {calculateTargetValueHeat, convertToMilliseconds} from './service';
 import {formatters} from 'services';
+import {getRelativeValue} from '../service';
 
 jest.mock('components', () => {
   return {
@@ -22,6 +23,12 @@ jest.mock('./service', () => {
   return {
     calculateTargetValueHeat: jest.fn(),
     convertToMilliseconds: jest.fn()
+  };
+});
+
+jest.mock('../service', () => {
+  return {
+    getRelativeValue: jest.fn().mockReturnValue('12.3%')
   };
 });
 
@@ -156,6 +163,27 @@ it('should show a tooltip with information if no actual value is available', () 
   expect(tooltip.textContent).toContain(
     'Cannot compare target and actual value'.replace(/ /g, '\u00A0')
   );
+});
+
+it('should show the relative frequency in a tooltip', () => {
+  getRelativeValue.mockClear();
+  const node = mount(
+    <Heatmap
+      data={{}}
+      xml={diagramXml}
+      formatter={v => v}
+      processInstanceCount={5}
+      property="frequency"
+    />
+  );
+
+  const tooltip = node
+    .find(HeatmapOverlay)
+    .props()
+    .formatter(3);
+
+  expect(getRelativeValue).toHaveBeenCalledWith(3, 5);
+  expect(tooltip).toBe('3\u00A0(12.3%)');
 });
 
 it('should not display an error message if data is valid', () => {

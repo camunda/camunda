@@ -133,7 +133,7 @@ export default class ReportView extends React.Component {
   };
 
   renderReport = report => {
-    let {data, result} = report;
+    let {data, result, processInstanceCount} = report;
     let config;
 
     const visualizations = ['pie', 'line', 'bar', 'table'];
@@ -162,7 +162,9 @@ export default class ReportView extends React.Component {
             data: formattedResult,
             labels: [groupByLabel, viewLabel],
             configuration: data.configuration,
-            disableReportScrolling: this.props.disableReportScrolling
+            disableReportScrolling: this.props.disableReportScrolling,
+            property: data.view.property,
+            processInstanceCount
           }
         };
         break;
@@ -172,7 +174,9 @@ export default class ReportView extends React.Component {
           props: {
             data: result,
             xml: data.configuration.xml,
-            targetValue: data.configuration.targetValue
+            targetValue: data.configuration.targetValue,
+            property: data.view.property,
+            processInstanceCount
           }
         };
         break;
@@ -184,7 +188,8 @@ export default class ReportView extends React.Component {
           props: {
             data: this.formatResult(data, result),
             type: data.visualization,
-            property: data.view.property
+            property: data.view.property,
+            processInstanceCount
           }
         };
         break;

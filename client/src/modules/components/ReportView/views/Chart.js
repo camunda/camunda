@@ -2,6 +2,8 @@ import React from 'react';
 import ChartRenderer from 'chart.js';
 import ReportBlankSlate from '../ReportBlankSlate';
 
+import {getRelativeValue} from './service';
+
 import './Chart.css';
 
 export default class Chart extends React.Component {
@@ -170,8 +172,18 @@ export default class Chart extends React.Component {
       animation: false,
       tooltips: {
         callbacks: {
-          label: ({index, datasetIndex}, {datasets}) =>
-            this.props.formatter(datasets[datasetIndex].data[index])
+          label: ({index, datasetIndex}, {datasets}) => {
+            const formatted = this.props.formatter(datasets[datasetIndex].data[index]);
+
+            if (this.props.property === 'frequency') {
+              return `${formatted} (${getRelativeValue(
+                datasets[datasetIndex].data[index],
+                this.props.processInstanceCount
+              )})`;
+            } else {
+              return formatted;
+            }
+          }
         }
       }
     };
