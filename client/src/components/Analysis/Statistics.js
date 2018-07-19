@@ -118,8 +118,9 @@ export default class Statistics extends React.Component {
     });
   };
 
-  createChart = (node, dataFct, labelSuffix = '') =>
-    new ChartRenderer(node, {
+  createChart = (node, dataFct, labelSuffix = '') => {
+    const {viewer} = this.props;
+    return new ChartRenderer(node, {
       type: 'bar',
       data: {
         labels: Object.keys(this.state.data.followingNodes),
@@ -145,6 +146,25 @@ export default class Statistics extends React.Component {
               datasets[datasetIndex].data[index] + labelSuffix
           }
         },
+        hover: {
+          onHover: (e, activeElements) => {
+            const canvas = viewer.get('canvas');
+            if (activeElements.length > 0) {
+              // mouse in
+              const {gateway} = this.props;
+              const sequenceFlow = gateway.outgoing.find(
+                element => element.name === activeElements[0]._model.label
+              );
+              canvas.addMarker(sequenceFlow, 'chart-hover');
+            } else {
+              // mouse out
+              const elementRegistry = viewer.get('elementRegistry');
+              elementRegistry.forEach(element => {
+                canvas.removeMarker(element, 'chart-hover');
+              });
+            }
+          }
+        },
         scales: {
           yAxes: [
             {
@@ -157,4 +177,5 @@ export default class Statistics extends React.Component {
         }
       }
     });
+  };
 }

@@ -58,6 +58,7 @@ export default class DiagramBehavior extends React.Component {
         gfx.setAttribute('rx', '14px');
         gfx.setAttribute('ry', '14px');
       }
+      this.props.setViewer(viewer);
     });
 
     viewer.on('element.hover', this.hoverHandler);

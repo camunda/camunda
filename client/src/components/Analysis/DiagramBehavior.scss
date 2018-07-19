@@ -21,6 +21,11 @@
   fill: rgba(66, 180, 21, 0.7) !important;
 }
 
+g.chart-hover path {
+  stroke: #b5152b !important;
+  stroke-width: 3px !important;
+}
+
 .DiagramBehavior__overlay {
   display: inline-block;
   background-color: white;
