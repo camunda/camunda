@@ -21,6 +21,7 @@ import org.camunda.optimize.service.es.report.command.count.CountProcessInstance
 import org.camunda.optimize.service.es.report.command.count.CountProcessInstanceFrequencyByVariableCommand;
 import org.camunda.optimize.service.es.report.command.count.CountTotalProcessInstanceFrequencyCommand;
 import org.camunda.optimize.service.es.report.command.max.MaxFlowNodeDurationByFlowNodeCommand;
+import org.camunda.optimize.service.es.report.command.median.MedianFlowNodeDurationByFlowNodeCommand;
 import org.camunda.optimize.service.es.report.command.min.MinFlowNodeDurationByFlowNodeCommand;
 import org.camunda.optimize.service.es.report.command.util.ReportUtil;
 import org.camunda.optimize.service.exceptions.OptimizeException;
@@ -40,6 +41,7 @@ import static org.camunda.optimize.service.es.report.command.util.ReportConstant
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FLOW_NODE_ENTITY;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FREQUENCY_PROPERTY;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MAX_OPERATION;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MEDIAN_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MIN_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_PROCESS_INSTANCE_ENTITY;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_RAW_DATA_OPERATION;
@@ -85,6 +87,46 @@ public class ReportEvaluator {
         break;
       case VIEW_MAX_OPERATION:
         evaluationCommand = extractEntityForMaximumOperation(reportData);
+        break;
+      case VIEW_MEDIAN_OPERATION:
+        evaluationCommand = extractEntityForMedianOperation(reportData);
+        break;
+    }
+    return evaluationCommand;
+  }
+
+  private Command extractEntityForMedianOperation(ReportDataDto reportData) {
+   Command evaluationCommand = new NotSupportedCommand();
+    String entity = reportData.getView().getEntity();
+    ValidationHelper.ensureNotEmpty("view entity", entity);
+    switch (entity) {
+      case VIEW_FLOW_NODE_ENTITY:
+        evaluationCommand = extractPropertyForMedianFlowNode(reportData);
+        break;
+    }
+    return evaluationCommand;
+  }
+
+  private Command extractPropertyForMedianFlowNode(ReportDataDto reportData) {
+    Command evaluationCommand = new NotSupportedCommand();
+    String property = reportData.getView().getProperty();
+    ValidationHelper.ensureNotEmpty("view property", property);
+    switch (property) {
+      case VIEW_DURATION_PROPERTY:
+        evaluationCommand = extractGroupForMedianFlowNodeDuration(reportData);
+        break;
+    }
+    return evaluationCommand;
+  }
+
+  private Command extractGroupForMedianFlowNodeDuration(ReportDataDto reportData) {
+    Command evaluationCommand = new NotSupportedCommand();
+    ValidationHelper.ensureNotNull("group by", reportData.getGroupBy());
+    String type = reportData.getGroupBy().getType();
+    ValidationHelper.ensureNotEmpty("group by type", type);
+    switch (type) {
+      case GROUP_BY_FLOW_NODES_TYPE:
+        evaluationCommand = new MedianFlowNodeDurationByFlowNodeCommand();
         break;
     }
     return evaluationCommand;

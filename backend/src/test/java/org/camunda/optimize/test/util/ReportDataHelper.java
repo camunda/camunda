@@ -20,6 +20,7 @@ import static org.camunda.optimize.service.es.report.command.util.ReportConstant
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FLOW_NODE_ENTITY;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FREQUENCY_PROPERTY;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MAX_OPERATION;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MEDIAN_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MIN_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_PROCESS_INSTANCE_ENTITY;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_RAW_DATA_OPERATION;
@@ -254,6 +255,22 @@ public class ReportDataHelper {
     );
   }
 
+  public static ReportDataDto createMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(
+      String processDefinitionKey,
+      String processDefinitionVersion
+  ) {
+    ViewDto view = createMedianFlowNodeDurationView();
+    GroupByDto groupByDto = createGroupByFlowNode();
+
+    return createReportDataViewRaw(
+        processDefinitionKey,
+        processDefinitionVersion,
+        HEAT_VISUALIZATION,
+        view,
+        groupByDto
+    );
+  }
+
   private static GroupByDto createGroupByFlowNode() {
     return new FlowNodesGroupByDto();
   }
@@ -372,6 +389,14 @@ public class ReportDataHelper {
   private static ViewDto createMaxFlowNodeDurationView() {
     ViewDto view = new ViewDto();
     view.setOperation(VIEW_MAX_OPERATION);
+    view.setEntity(VIEW_FLOW_NODE_ENTITY);
+    view.setProperty(VIEW_DURATION_PROPERTY);
+    return view;
+  }
+
+  private static ViewDto createMedianFlowNodeDurationView() {
+    ViewDto view = new ViewDto();
+    view.setOperation(VIEW_MEDIAN_OPERATION);
     view.setEntity(VIEW_FLOW_NODE_ENTITY);
     view.setProperty(VIEW_DURATION_PROPERTY);
     return view;
