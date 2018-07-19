@@ -7,6 +7,11 @@ export default function processRawData(
   columnOrder = {processInstanceProps: [], variables: []},
   endpoints = {}
 ) {
+  const allColumnsLength = Object.keys(data[0]).length - 1 + Object.keys(data[0].variables).length;
+  // If all columns is excluded return a message to enable one
+  if (allColumnsLength === excludedColumns.length)
+    return {head: ['No Data'], body: [['You need to enable at least one table column']]};
+
   const processInstanceProps = Object.keys(data[0]).filter(
     entry => entry !== 'variables' && !excludedColumns.includes(entry)
   );

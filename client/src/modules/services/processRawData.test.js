@@ -91,3 +91,10 @@ it('should not make the process instance id a link if no endpoint is specified',
 
   expect(cell).toBe('123');
 });
+
+it('should show no data message when all column are excluded', () => {
+  expect(processRawData(data, ['processInstanceId', 'prop2', 'var__var1', 'var__var2'])).toEqual({
+    head: ['No Data'],
+    body: [['You need to enable at least one table column']]
+  });
+});
