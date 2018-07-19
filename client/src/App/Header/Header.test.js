@@ -18,9 +18,12 @@ describe('Header', () => {
   it('should show the count of all instances', () => {
     const node = shallow(<Header active="dashboard" instances={123} />);
 
-    const badge = node.find('Styled(Badge)[type="instances"]').render();
-
-    expect(badge.text()).toEqual('123');
+    expect(
+      node
+        .find('Styled(Badge)[type="instances"]')
+        .dive()
+        .contains(123)
+    );
   });
 
   it('should show other provided properties', () => {
@@ -47,15 +50,16 @@ describe('Header', () => {
     expect(
       node
         .find('Styled(Badge)[type="filters"]')
-        .render()
-        .text()
-    ).toBe('0');
+        .dive()
+        .contains(0)
+    );
     expect(
       node
         .find('Styled(Badge)[type="selections"]')
-        .render()
-        .text()
-    ).toBe('0');
+        .dive()
+        .contains(0)
+    );
+
     expect(node.find('Styled(Badge)[type="incidents"]')).toExist();
   });
 
