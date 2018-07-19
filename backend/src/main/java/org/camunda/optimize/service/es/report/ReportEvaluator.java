@@ -1,9 +1,9 @@
 package org.camunda.optimize.service.es.report;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.dto.optimize.query.report.group.GroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ViewDto;
+import org.camunda.optimize.dto.optimize.query.report.group.GroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.group.StartDateGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
@@ -16,11 +16,12 @@ import org.camunda.optimize.service.es.report.command.avg.AverageFlowNodeDuratio
 import org.camunda.optimize.service.es.report.command.avg.AverageProcessInstanceDurationByVariableCommand;
 import org.camunda.optimize.service.es.report.command.avg.AverageProcessInstanceDurationGroupedByStartDateCommand;
 import org.camunda.optimize.service.es.report.command.avg.AverageTotalProcessInstanceDurationCommand;
-import org.camunda.optimize.service.es.report.command.min.MinFlowNodeDurationByFlowNodeCommand;
 import org.camunda.optimize.service.es.report.command.count.CountFlowNodeFrequencyByFlowNodeCommand;
 import org.camunda.optimize.service.es.report.command.count.CountProcessInstanceFrequencyByStartDateCommand;
 import org.camunda.optimize.service.es.report.command.count.CountProcessInstanceFrequencyByVariableCommand;
 import org.camunda.optimize.service.es.report.command.count.CountTotalProcessInstanceFrequencyCommand;
+import org.camunda.optimize.service.es.report.command.max.MaxFlowNodeDurationByFlowNodeCommand;
+import org.camunda.optimize.service.es.report.command.min.MinFlowNodeDurationByFlowNodeCommand;
 import org.camunda.optimize.service.es.report.command.util.ReportUtil;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.ValidationHelper;
@@ -38,6 +39,7 @@ import static org.camunda.optimize.service.es.report.command.util.ReportConstant
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_DURATION_PROPERTY;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FLOW_NODE_ENTITY;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FREQUENCY_PROPERTY;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MAX_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MIN_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_PROCESS_INSTANCE_ENTITY;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_RAW_DATA_OPERATION;
@@ -80,6 +82,47 @@ public class ReportEvaluator {
         break;
       case VIEW_MIN_OPERATION:
         evaluationCommand = extractEntityForMinimumOperation(reportData);
+        break;
+      case VIEW_MAX_OPERATION:
+        evaluationCommand = extractEntityForMaximumOperation(reportData);
+        break;
+    }
+    return evaluationCommand;
+  }
+
+  private Command extractEntityForMaximumOperation(ReportDataDto reportData) {
+   Command evaluationCommand = new NotSupportedCommand();
+    String entity = reportData.getView().getEntity();
+    ValidationHelper.ensureNotEmpty("view entity", entity);
+    switch (entity) {
+      case VIEW_FLOW_NODE_ENTITY:
+        evaluationCommand = extractPropertyForMaximumFlowNode(reportData);
+        break;
+    }
+    return evaluationCommand;
+  }
+
+  private Command extractPropertyForMaximumFlowNode(ReportDataDto reportData) {
+    Command evaluationCommand = new NotSupportedCommand();
+    String property = reportData.getView().getProperty();
+    ValidationHelper.ensureNotEmpty("view property", property);
+    switch (property) {
+      case VIEW_DURATION_PROPERTY:
+        evaluationCommand = extractGroupForMaximumFlowNodeDuration(reportData);
+        break;
+    }
+    return evaluationCommand;
+  }
+
+  private Command extractGroupForMaximumFlowNodeDuration(ReportDataDto reportData) {
+    Command evaluationCommand = new NotSupportedCommand();
+    ValidationHelper.ensureNotNull("group by", reportData.getGroupBy());
+    String type = reportData.getGroupBy().getType();
+    ValidationHelper.ensureNotEmpty("group by type", type);
+    switch (type) {
+      case GROUP_BY_FLOW_NODES_TYPE:
+        evaluationCommand = new MaxFlowNodeDurationByFlowNodeCommand();
+        break;
     }
     return evaluationCommand;
   }

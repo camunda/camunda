@@ -1,13 +1,12 @@
 package org.camunda.optimize.test.util;
 
-import org.camunda.optimize.dto.optimize.query.report.group.FlowNodesGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.group.GroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ViewDto;
+import org.camunda.optimize.dto.optimize.query.report.group.FlowNodesGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.group.GroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.group.NoneGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.group.StartDateGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.group.VariableGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.group.value.GroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.group.value.StartDateGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.group.value.VariableGroupByValueDto;
 
@@ -20,6 +19,7 @@ import static org.camunda.optimize.service.es.report.command.util.ReportConstant
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_DURATION_PROPERTY;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FLOW_NODE_ENTITY;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FREQUENCY_PROPERTY;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MAX_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MIN_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_PROCESS_INSTANCE_ENTITY;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_RAW_DATA_OPERATION;
@@ -69,15 +69,13 @@ public class ReportDataHelper {
     ViewDto view = createAvgPIDurationView();
     GroupByDto groupByDto = createGroupByStartDateDto(dateInterval);
 
-    ReportDataDto reportData = createReportDataViewRaw(
+    return createReportDataViewRaw(
         processDefinitionKey,
         processDefinitionVersion,
         TABLE_VISUALIZATION,
         view,
         groupByDto
     );
-
-    return reportData;
   }
 
   public static ReportDataDto createPICountFrequencyGroupByStartDate(
@@ -138,15 +136,13 @@ public class ReportDataHelper {
 
     GroupByDto groupByDto = createGroupByFlowNode();
 
-    ReportDataDto reportData = createReportDataViewRaw(
+    return createReportDataViewRaw(
         processDefinitionKey,
         processDefinitionVersion,
         HEAT_VISUALIZATION,
         view,
         groupByDto
     );
-
-    return reportData;
   }
 
   public static ReportDataDto createCountProcessInstanceFrequencyGroupByVariable(
@@ -159,15 +155,13 @@ public class ReportDataHelper {
     ViewDto view = createCountPiFrequencyView();
     GroupByDto groupByDto = createGroupByVariable(variableName, variableType);
 
-    ReportDataDto reportData = createReportDataViewRaw(
+    return createReportDataViewRaw(
         processDefinitionKey,
         processDefinitionVersion,
         HEAT_VISUALIZATION,
         view,
         groupByDto
     );
-
-    return reportData;
   }
 
   public static ReportDataDto createAvgProcessInstanceDurationGroupByVariable(
@@ -180,15 +174,13 @@ public class ReportDataHelper {
     ViewDto view = createAvgPIDurationView();
     GroupByDto groupByDto = createGroupByVariable(variableName, variableType);
 
-    ReportDataDto reportData = createReportDataViewRaw(
+    return createReportDataViewRaw(
         processDefinitionKey,
         processDefinitionVersion,
         HEAT_VISUALIZATION,
         view,
         groupByDto
     );
-
-    return reportData;
   }
 
   public static ReportDataDto createCountFlowNodeFrequencyGroupByFlowNoneNumber(
@@ -204,15 +196,13 @@ public class ReportDataHelper {
 
     GroupByDto groupByDto = createGroupByNone();
 
-    ReportDataDto reportData = createReportDataViewRaw(
+    return createReportDataViewRaw(
       processDefinitionKey,
       processDefinitionVersion,
       SINGLE_NUMBER_VISUALIZATION,
       view,
       groupByDto
     );
-
-    return reportData;
   }
 
   public static ReportDataDto createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
@@ -223,15 +213,13 @@ public class ReportDataHelper {
 
     GroupByDto groupByDto = createGroupByFlowNode();
 
-    ReportDataDto reportData = createReportDataViewRaw(
+    return createReportDataViewRaw(
         processDefinitionKey,
         processDefinitionVersion,
         HEAT_VISUALIZATION,
         view,
         groupByDto
     );
-
-    return reportData;
   }
 
   public static ReportDataDto createMinFlowNodeDurationGroupByFlowNodeHeatmapReport(
@@ -239,23 +227,35 @@ public class ReportDataHelper {
       String processDefinitionVersion
   ) {
     ViewDto view = createMinFlowNodeDurationView();
-
     GroupByDto groupByDto = createGroupByFlowNode();
 
-    ReportDataDto reportData = createReportDataViewRaw(
+    return createReportDataViewRaw(
         processDefinitionKey,
         processDefinitionVersion,
         HEAT_VISUALIZATION,
         view,
         groupByDto
     );
+  }
 
-    return reportData;
+  public static ReportDataDto createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(
+      String processDefinitionKey,
+      String processDefinitionVersion
+  ) {
+    ViewDto view = createMaxFlowNodeDurationView();
+    GroupByDto groupByDto = createGroupByFlowNode();
+
+    return createReportDataViewRaw(
+        processDefinitionKey,
+        processDefinitionVersion,
+        HEAT_VISUALIZATION,
+        view,
+        groupByDto
+    );
   }
 
   private static GroupByDto createGroupByFlowNode() {
-    GroupByDto groupByDto = new FlowNodesGroupByDto();
-    return groupByDto;
+    return new FlowNodesGroupByDto();
   }
 
   private static GroupByDto createGroupByVariable(String variableName, String variableType) {
@@ -275,20 +275,17 @@ public class ReportDataHelper {
     ViewDto view = createAvgPIDurationView();
     GroupByDto groupByDto = createGroupByNone();
 
-    ReportDataDto reportData = createReportDataViewRaw(
+    return createReportDataViewRaw(
         processDefinitionKey,
         processDefinitionVersion,
         HEAT_VISUALIZATION,
         view,
         groupByDto
     );
-
-    return reportData;
   }
 
   private static GroupByDto createGroupByNone() {
-    GroupByDto groupByDto = new NoneGroupByDto();
-    return groupByDto;
+    return new NoneGroupByDto();
   }
 
   public static ReportDataDto createPiFrequencyCountGroupedByNone(
@@ -298,15 +295,13 @@ public class ReportDataHelper {
     ViewDto view = createCountPiFrequencyView();
     GroupByDto groupByDto = createGroupByNone();
 
-    ReportDataDto reportData = createReportDataViewRaw(
+    return createReportDataViewRaw(
         processDefinitionKey,
         processDefinitionVersion,
         HEAT_VISUALIZATION,
         view,
         groupByDto
     );
-
-    return reportData;
   }
 
   public static ReportDataDto createPiFrequencyCountGroupedByNoneAsNumber(String processDefinitionKey, String processDefinitionVersion) {
@@ -314,7 +309,7 @@ public class ReportDataHelper {
 
     GroupByDto groupByDto = createGroupByNone();
 
-    ReportDataDto reportData = createReportDataViewRaw(
+    return createReportDataViewRaw(
         processDefinitionKey,
         processDefinitionVersion,
         //does not really affect backend, since command object is instantiated based on
@@ -323,8 +318,6 @@ public class ReportDataHelper {
         view,
         groupByDto
     );
-
-    return reportData;
   }
 
   public static ReportDataDto createAvgPiDurationAsNumberGroupByNone(
@@ -335,15 +328,13 @@ public class ReportDataHelper {
     ViewDto view = createAvgPIDurationView();
     GroupByDto groupByDto = createGroupByNone();
 
-    ReportDataDto reportData = createReportDataViewRaw(
+    return createReportDataViewRaw(
         processDefinitionKey,
         processDefinitionVersion,
         SINGLE_NUMBER_VISUALIZATION,
         view,
         groupByDto
     );
-
-    return reportData;
   }
 
   private static ViewDto createCountPiFrequencyView() {
@@ -373,6 +364,14 @@ public class ReportDataHelper {
   private static ViewDto createMinFlowNodeDurationView() {
     ViewDto view = new ViewDto();
     view.setOperation(VIEW_MIN_OPERATION);
+    view.setEntity(VIEW_FLOW_NODE_ENTITY);
+    view.setProperty(VIEW_DURATION_PROPERTY);
+    return view;
+  }
+
+  private static ViewDto createMaxFlowNodeDurationView() {
+    ViewDto view = new ViewDto();
+    view.setOperation(VIEW_MAX_OPERATION);
     view.setEntity(VIEW_FLOW_NODE_ENTITY);
     view.setProperty(VIEW_DURATION_PROPERTY);
     return view;

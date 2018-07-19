@@ -6,6 +6,7 @@ public class ReportConstants {
   public static final String VIEW_COUNT_OPERATION = "count";
   public static final String VIEW_AVERAGE_OPERATION = "avg";
   public static final String VIEW_MIN_OPERATION = "min";
+  public static final String VIEW_MAX_OPERATION = "max";
 
   public static final String VIEW_FLOW_NODE_ENTITY = "flowNode";
   public static final String VIEW_PROCESS_INSTANCE_ENTITY = "processInstance";
