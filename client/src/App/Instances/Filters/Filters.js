@@ -68,6 +68,16 @@ export default class Filters extends React.Component {
         <Panel.Body>
           <Styled.Filters>
             <Styled.Field>
+              <Select
+                value={this.state.currentWorkflowName}
+                disabled={this.state.workflowNames.length === 0}
+                name="workflowName"
+                placeholder={PLACEHOLDER.workflowName}
+                options={parseWorkflowNames(this.state.workflowNames)}
+                onChange={this.handleWorkflowsNameChange}
+              />
+            </Styled.Field>
+            <Styled.Field>
               <Textarea
                 name="ids"
                 placeholder={PLACEHOLDER.instanceIds}
@@ -82,16 +92,7 @@ export default class Filters extends React.Component {
                 aria-label={PLACEHOLDER.errorMessage}
               />
             </Styled.Field>
-            <Styled.Field>
-              <Select
-                value={this.state.currentWorkflowName}
-                disabled={this.state.workflowNames.length === 0}
-                name="workflowName"
-                placeholder={PLACEHOLDER.workflowName}
-                options={parseWorkflowNames(this.state.workflowNames)}
-                onChange={this.handleWorkflowsNameChange}
-              />
-            </Styled.Field>
+
             <Filter
               type={FILTER_TYPES.RUNNING}
               filter={{
