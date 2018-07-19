@@ -36,6 +36,21 @@ class Diagram extends React.Component {
     }
   }
 
+  onDiagramLoaded = e => {
+    if (e) {
+      return console.log('Error rendering diagram:', e);
+    }
+
+    this.handleZoomReset();
+
+    // in case onFlowNodesDetailsReady callback function is provided, call it with flowNodesDetails
+    const {onFlowNodesDetailsReady} = this.props;
+    if (typeof onFlowNodesDetailsReady === 'function') {
+      const elementRegistry = this.Viewer.get('elementRegistry');
+      onFlowNodesDetailsReady(getFlowNodesDetails(elementRegistry));
+    }
+  };
+
   initViewer = () => {
     // detach Viewer if it exists
     if (this.Viewer) {
@@ -49,21 +64,7 @@ class Diagram extends React.Component {
       bpmnRenderer: getDiagramColors(theme)
     });
 
-    this.Viewer.importXML(this.workflowXML, e => {
-      if (e) {
-        return console.log('Error rendering diagram:', e);
-      }
-
-      // in case onFlowNodesDetailsReady callback function is provided, call it with
-      // flowNodesDetails
-      const {onFlowNodesDetailsReady} = this.props;
-      if (typeof onFlowNodesDetailsReady === 'function') {
-        const elementRegistry = this.Viewer.get('elementRegistry');
-        onFlowNodesDetailsReady(getFlowNodesDetails(elementRegistry));
-      }
-
-      this.handleZoomReset();
-    });
+    this.Viewer.importXML(this.workflowXML, this.onDiagramLoaded);
   };
 
   containerRef = node => {
