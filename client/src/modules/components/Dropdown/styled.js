@@ -1,5 +1,32 @@
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
+
+const PointerBasics = css`
+  position: absolute;
+  bottom: 100%;
+  right: 15px;
+  border: solid transparent;
+  content: ' ';
+  pointer-events: none;
+`;
+
+const PointerBody = css`
+  border-width: 7px;
+  margin-right: -7px;
+  border-bottom-color: ${themeStyle({
+    dark: Colors.uiDark04,
+    light: Colors.uiLight02
+  })};
+`;
+
+const PointerShadow = css`
+  border-width: 8px;
+  margin-right: -8px;
+  border-bottom-color: ${themeStyle({
+    dark: Colors.uiDark06,
+    light: Colors.uiLight05
+  })};
+`;
 
 export const Label = styled.button`
   display: flex;
@@ -62,29 +89,14 @@ export const DropdownMenu = themed(styled.div`
   /* Other */
   &:after,
   &:before {
-    position: absolute;
-    bottom: 100%;
-    right: 15px;
-    border: solid transparent;
-    content: ' ';
-    pointer-events: none;
+    ${PointerBasics};
   }
 
   &:after {
-    border-width: 7px;
-    margin-right: -7px;
-    border-bottom-color: ${themeStyle({
-      dark: Colors.uiDark04,
-      light: Colors.uiLight02
-    })};
+    ${PointerBody};
   }
   &:before {
-    border-width: 8px;
-    margin-right: -8px;
-    border-bottom-color: ${themeStyle({
-      dark: Colors.uiDark06,
-      light: Colors.uiLight05
-    })};
+    ${PointerShadow};
   }
 
   &:hover {
@@ -127,6 +139,29 @@ export const Option = themed(styled.button`
   /* Other */
   cursor: pointer;
 
+  &:first-child:hover:after, &:first-child:hover:before {
+  ${PointerBasics};
+  }
+
+  &:first-child:hover:after{
+    z-index: 1;
+    ${PointerBody}
+      border-bottom-color: ${themeStyle({
+        dark: Colors.uiDark06,
+        light: Colors.uiLight02
+      })};
+  }
+
+  &:first-child:active:after{
+      z-index: 1;
+      ${PointerBody}
+      border-bottom-color: ${themeStyle({
+        dark: Colors.darkActive,
+        light: Colors.lightActive
+      })};
+  }
+  
+  /* Add Border between options */
   &:not(:last-child) {
     border-bottom: 1px solid ${themeStyle({
       dark: Colors.uiDark06,
