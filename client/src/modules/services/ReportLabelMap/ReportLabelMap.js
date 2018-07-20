@@ -4,7 +4,10 @@ const options = {
     {key: 'count_processInstance_frequency', label: 'Count Process Instance Frequency'},
     {key: 'count_flowNode_frequency', label: 'Count Flow Node Frequency'},
     {key: 'avg_processInstance_duration', label: 'Average Process Instance Duration'},
-    {key: 'avg_flowNode_duration', label: 'Average Flow Node Duration'}
+    {key: 'avg_flowNode_duration', label: 'Average Flow Node Duration'},
+    {key: 'min_flowNode_duration', label: 'Minimum Flow Node Duration'},
+    {key: 'median_flowNode_duration', label: 'Median Flow Node Duration'},
+    {key: 'max_flowNode_duration', label: 'Max Flow Node Duration'}
   ],
   groupBy: [
     {key: 'none_null', label: 'None'},
@@ -43,6 +46,15 @@ const allowedOptionsMatrix = {
     variable: ['table', 'pie', 'line', 'bar']
   },
   avg_flowNode_duration: {
+    flowNodes: ['heat', 'pie', 'line', 'bar', 'table']
+  },
+  min_flowNode_duration: {
+    flowNodes: ['heat', 'pie', 'line', 'bar', 'table']
+  },
+  median_flowNode_duration: {
+    flowNodes: ['heat', 'pie', 'line', 'bar', 'table']
+  },
+  max_flowNode_duration: {
     flowNodes: ['heat', 'pie', 'line', 'bar', 'table']
   }
 };
