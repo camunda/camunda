@@ -28,7 +28,12 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.commands.BrokerInfo;
 import io.zeebe.client.api.commands.PartitionInfo;
 import io.zeebe.client.api.commands.Topology;
-import io.zeebe.client.api.events.*;
+import io.zeebe.client.api.events.DeploymentEvent;
+import io.zeebe.client.api.events.IncidentState;
+import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.client.api.events.JobState;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.events.WorkflowInstanceState;
 import io.zeebe.client.api.subscription.JobWorker;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.model.bpmn.Bpmn;
@@ -49,7 +54,6 @@ import java.time.Duration;
 import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
@@ -228,8 +232,6 @@ public class BrokerRecoveryTest {
   }
 
   @Test
-  // FIXME: https://github.com/zeebe-io/zeebe/issues/567
-  @Category(io.zeebe.UnstableTest.class)
   public void shouldDeployNewWorkflowVersionAfterRestart() {
     // given
     clientRule
