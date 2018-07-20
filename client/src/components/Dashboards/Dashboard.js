@@ -67,6 +67,10 @@ export default withErrorHandling(
     }
 
     componentDidMount = async () => {
+      await this.renderDashboard();
+    };
+
+    renderDashboard = async () => {
       await this.props.mightFail(
         loadDashboard(this.id),
         async response => {
@@ -394,6 +398,7 @@ export default withErrorHandling(
                   <AutoRefreshBehavior
                     key="autorefresh"
                     interval={this.state.autoRefreshInterval}
+                    renderDashboard={this.renderDashboard}
                   />
                 ]
               }
