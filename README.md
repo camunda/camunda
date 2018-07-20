@@ -18,6 +18,8 @@ And if you don't want to run the tests
 mvn clean install -DskipTests
 ```
 
+**On Windows** make sure you run this in a command line as Administrator - as some npm modules need to be able to create symlinks.
+
 After the build is completed, you will find the distributions under
 ```
 distro/target
