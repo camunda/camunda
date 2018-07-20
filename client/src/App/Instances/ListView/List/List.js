@@ -63,8 +63,8 @@ export default class List extends React.Component {
     return false;
   };
 
-  handleToggleSelectAll = isChecked => {
-    const selected = isChecked ? {ids: new Set()} : this.props.filter;
+  handleToggleSelectAll = (event, isChecked) => {
+    const selected = isChecked ? this.props.filter : {ids: new Set()};
 
     this.props.onSelectionUpdate({
       query: {$set: selected},
@@ -89,9 +89,7 @@ export default class List extends React.Component {
         <Checkbox
           type="selection"
           isChecked={isSelected}
-          onChange={({isChecked}) => {
-            this.onSelectionChange(isChecked, instance);
-          }}
+          onChange={this.onSelectionChange(instance)}
         />
 
         <StateIcon instance={instance} />
@@ -100,12 +98,12 @@ export default class List extends React.Component {
     );
   };
 
-  onSelectionChange = (isChecked, instance) => {
+  onSelectionChange = instance => (event, isChecked) => {
     const {selection, filter} = this.props;
 
     const updateOptions = [
-      {exclusionList: {[isChecked ? '$add' : '$remove']: [instance.id]}},
-      {query: {ids: {[isChecked ? '$remove' : '$add']: [instance.id]}}}
+      {exclusionList: {[isChecked ? '$remove' : '$add']: [instance.id]}},
+      {query: {ids: {[isChecked ? '$add' : '$remove']: [instance.id]}}}
     ];
 
     const selectionUpdate =
@@ -135,9 +133,7 @@ export default class List extends React.Component {
               <Styled.CheckAll>
                 <Checkbox
                   isChecked={this.areAllInstancesSelected()}
-                  onChange={({isChecked}) =>
-                    this.handleToggleSelectAll(isChecked)
-                  }
+                  onChange={this.handleToggleSelectAll}
                   title="Select all instances"
                 />
               </Styled.CheckAll>
@@ -187,9 +183,7 @@ export default class List extends React.Component {
                   <Checkbox
                     type="selection"
                     isChecked={this.isSelected(instance.id)}
-                    onChange={({isChecked}) => {
-                      this.onSelectionChange(isChecked, instance);
-                    }}
+                    onChange={this.onSelectionChange(instance)}
                     title={`Select instance ${instance.id}`}
                   />
 

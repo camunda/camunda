@@ -32,42 +32,11 @@ export const Input = themed(styled.input`
   position: absolute;
   opacity: 0;
 
-  /* default: empty checkbox */
-  + div:after {
-    content: none;
-  }
-  /* show checkmark*/
-  &:checked + div:after {
-    content: '';
-  }
-
-  /* background of selection checkbox */
-  &:checked + div:before {
-    background-color: ${({checkboxType}) =>
-      checkboxType === 'selection' && Colors.selections};
-  }
-
-  /* add boxshadow to checked boxes*/
-  &:checked + div:before {
-    box-shadow: 0 2px 2px 0
-      ${themeStyle({
-        dark: 'rgba(0, 0, 0, 0.5)',
-        light: ({checkboxType}) =>
-          checkboxType === 'selection'
-            ? 'rgba(0, 0, 0, 0.5)'
-            : 'rgba(231, 233, 238, 0.35)'
-      })};
-  }
-
-  /* simulate focus */
-  &:focus + div:before {
-    outline: rgb(59, 153, 252) auto 4px;
-  }
-
-  /* show indeterminate*/
-  &:indeterminate + div:after {
-    content: '';
-  }
+  height: 100%;
+  top: 0;
+  left: 0;
+  margin: 0;
+  padding: 0;
 `);
 
 export const CustomCheckbox = themed(styled.div`
@@ -94,13 +63,50 @@ export const CustomCheckbox = themed(styled.div`
       light: Colors.uiLight01
     })};
   }
+
+  /* background of selection checkbox */
+  &:before {
+    background-color: ${({checked, checkboxType}) =>
+      checked && checkboxType === 'selection' && Colors.selections};
+  }
+
+  /* add boxshadow to checked boxes */
+  &:before {
+    box-shadow: ${({checked}) => checked && '0 2px 2px 0'}
+      ${({checked}) =>
+        checked &&
+        themeStyle({
+          dark: 'rgba(0, 0, 0, 0.5)',
+          light: ({checkboxType}) =>
+            checkboxType === 'selection'
+              ? 'rgba(0, 0, 0, 0.5)'
+              : 'rgba(231, 233, 238, 0.35)'
+        })};
+  }
+
+  /* simulate focus */
+  &:before {
+    outline: ${({focused}) => focused && 'rgb(59, 153, 252) auto 1px'};
+    -moz-outline-radius: ${({focused}) => focused && '3px'};
+  }
+
+  /* default: empty checkbox */
+  &:after {
+    content: none;
+  }
+
+  /* show checkmark/indeterminate */
+  &:after {
+    content: ${({checked, indeterminate}) =>
+      (checked || indeterminate) && "''"};
+  }
+
   /* checkmark/indeterminate styles*/
   &:after {
-    content: '';    
     position: absolute;
     border-style: solid;
-    ${({isIndeterminate}) =>
-      isIndeterminate ? indeterminateStyles : checkMarkStyles};
+    ${({indeterminate}) =>
+      indeterminate ? indeterminateStyles : checkMarkStyles};
     border-color: ${themeStyle({
       dark: '#ffffff',
       light: ({checkboxType}) =>
@@ -108,6 +114,7 @@ export const CustomCheckbox = themed(styled.div`
     })};
     };
   }
+
 `);
 
 const indeterminateStyles = `

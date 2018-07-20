@@ -26,26 +26,27 @@ export default class Filter extends React.Component {
     return Object.values(this.props.filter).filter(value => value).length;
   };
 
-  isIndeterminate = () => {
-    return this.getCheckedChildrenCount() === 1;
+  areAllChildrenChecked = () => {
+    const childrenCount = this.getCheckedChildrenCount();
+    return this.childFilterTypes.length === childrenCount;
   };
 
-  handleChange = type => async () => {
-    const {filter} = this.props;
-    const newFilter = {
-      [type]: filter[type] ? !filter[type] : true
-    };
+  isIndeterminate = () => {
+    const childrenCount = this.getCheckedChildrenCount();
+    return childrenCount >= 1 && childrenCount < this.childFilterTypes.length;
+  };
 
-    this.props.onChange(newFilter);
+  handleChange = type => (event, isChecked) => {
+    this.props.onChange({[type]: isChecked});
   };
 
   onResetFilter = () => {
     const change = {};
-    const bothChecked = this.getCheckedChildrenCount() === 2;
+    const allChildrenChecked = this.areAllChildrenChecked();
 
     this.childFilterTypes.map(type =>
       Object.assign(change, {
-        [type]: bothChecked ? !this.props.filter[type] : true
+        [type]: !allChildrenChecked
       })
     );
 
@@ -58,9 +59,10 @@ export default class Filter extends React.Component {
       <Styled.Filters>
         <div>
           <Checkbox
+            id={type}
             label={INSTANCES_LABELS[type]}
             isIndeterminate={this.isIndeterminate()}
-            isChecked={this.getCheckedChildrenCount() === 2}
+            isChecked={this.areAllChildrenChecked()}
             onChange={this.onResetFilter}
           />
         </div>
@@ -69,6 +71,7 @@ export default class Filter extends React.Component {
             return (
               <Checkbox
                 key={type}
+                id={type}
                 label={INSTANCES_LABELS[type]}
                 isChecked={filter[type] || false}
                 onChange={this.handleChange(type)}

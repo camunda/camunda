@@ -19,31 +19,34 @@ export default class Checkbox extends React.Component {
   constructor(props) {
     super(props);
     this.el = {};
+    this.state = {
+      isFocused: false
+    };
   }
 
   componentDidMount() {
-    const {isIndeterminate, isChecked} = this.props;
+    const {isIndeterminate} = this.props;
 
     if (isIndeterminate) {
       this.el.indeterminate = isIndeterminate;
     }
-    this.setState({isChecked});
   }
 
   componentDidUpdate(prevProps) {
-    const {isIndeterminate, isChecked} = this.props;
+    const {isIndeterminate} = this.props;
 
     if (prevProps.isIndeterminate !== isIndeterminate) {
       this.el.indeterminate = isIndeterminate;
     }
-
-    if (prevProps.isChecked !== isChecked) {
-      this.setState({isChecked});
-    }
   }
 
-  handleOnClick = () => {
-    this.props.onChange({isChecked: this.el.checked});
+  handleChange = event => {
+    this.props.onChange(event, event.target.checked);
+  };
+
+  handleFocus = event => {
+    const {isFocused} = this.state;
+    this.setState({isFocused: !isFocused});
   };
 
   inputRef = node => {
@@ -52,6 +55,7 @@ export default class Checkbox extends React.Component {
 
   render() {
     const {
+      id,
       label,
       onChange,
       isIndeterminate,
@@ -60,28 +64,34 @@ export default class Checkbox extends React.Component {
       title,
       ...other
     } = this.props;
+    const {isFocused} = this.state;
     return (
-      <Styled.Checkbox onClick={this.handleOnClick}>
+      <Styled.Checkbox>
+        <Styled.CustomCheckbox
+          checkboxType={type}
+          checked={isChecked}
+          indeterminate={isIndeterminate}
+          focused={isFocused}
+        />
+
         <Styled.Input
           data-test="checkbox-input"
+          id={id}
           indeterminate={isIndeterminate}
           type="checkbox"
-          checked={this.props.isChecked}
+          checked={isChecked}
           innerRef={this.inputRef}
           checkboxType={type}
-          onChange={event => event}
-          aria-label={label || title}
+          onChange={this.handleChange}
+          onFocus={this.handleFocus}
+          onBlur={this.handleFocus}
+          aria-label={!id ? label || title : null}
           title={label || title}
           {...other}
         />
-        <Styled.CustomCheckbox
-          {...{isIndeterminate}}
-          checkboxType={type}
-          aria-label={label || title}
-          title={label || title}
-        />
+
         {label && (
-          <Styled.Label checked={isChecked || isIndeterminate}>
+          <Styled.Label checked={isChecked || isIndeterminate} htmlFor={id}>
             {label}
           </Styled.Label>
         )}

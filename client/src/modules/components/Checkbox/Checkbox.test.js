@@ -25,16 +25,17 @@ describe('<Checkbox />', () => {
   });
 
   it('should toggle "isChecked" prop on click', () => {
-    let checkState = true;
+    let checkState = false;
     const mockOnChange = jest
       .fn()
-      .mockImplementation(isChecked => (checkState = !isChecked));
+      .mockImplementation((event, isChecked) => (checkState = isChecked));
     const node = shallow(
       <Checkbox onChange={mockOnChange} isChecked={checkState} />
     );
-    expect(checkState).toBe(true);
-    node.find(Styled.Checkbox).simulate('click');
+
     expect(checkState).toBe(false);
+    node.find(Styled.Input).simulate('change', {target: {checked: true}});
+    expect(checkState).toBe(true);
   });
 
   it('should display a label if passed as props', () => {
@@ -50,9 +51,12 @@ describe('<Checkbox />', () => {
     const node = shallow(
       <Checkbox onChange={mockOnChange} isChecked={checkState} />
     );
-    node.instance().inputRef({checked: true});
-    node.instance().handleOnClick();
 
-    expect(mockOnChange).toBeCalledWith({isChecked: true});
+    const event = {target: {checked: true}};
+
+    node.instance().inputRef({checked: true});
+    node.instance().handleOnChange(event);
+
+    expect(mockOnChange).toBeCalledWith(event, true);
   });
 });
