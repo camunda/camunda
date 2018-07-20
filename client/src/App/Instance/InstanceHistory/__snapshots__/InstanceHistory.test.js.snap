@@ -35,9 +35,20 @@ exports[`InstanceHistory should render a pane with InstanceLog section and Copyr
         }
       }
     />
-    <Themed(styled.div)>
-      B
-    </Themed(styled.div)>
+    <InstanceEvents
+      activitiesDetails={
+        Array [
+          Object {
+            "bar": "bar",
+          },
+        ]
+      }
+      instance={
+        Object {
+          "foo": "foo",
+        }
+      }
+    />
     <Themed(styled.div)>
       C
     </Themed(styled.div)>

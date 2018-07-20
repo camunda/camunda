@@ -28,16 +28,6 @@ const mockProps = {
 };
 
 describe('InstanceLog', () => {
-  it('should not render empty InstanceLog if there is no instance', () => {
-    // given
-    const node = shallow(<InstanceLog />);
-
-    // then
-    const InstanceLogNode = node.find(Styled.InstanceLog);
-    expect(InstanceLogNode).toHaveLength(1);
-    expect(InstanceLogNode.children().length).toBe(0);
-  });
-
   it('should only render selected header if there is instance and no activitiesDetails', () => {
     // given
     const {instance} = mockProps;

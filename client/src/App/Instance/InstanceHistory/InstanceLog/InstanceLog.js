@@ -48,23 +48,19 @@ export default class InstanceLog extends React.Component {
 
     return (
       <Styled.InstanceLog {...this.props}>
-        {!instance ? null : (
-          <React.Fragment>
-            <Styled.Header
-              href="#"
-              isSelected={this.state.selected === HEADER}
-              onClick={() => this.setSelected(HEADER)}
-            >
-              <Styled.DocumentIcon
-                isSelected={this.state.selected === HEADER}
-              />
-              {getWorkflowName(instance)}
-            </Styled.Header>
-            {!activitiesDetails
-              ? null
-              : activitiesDetails.map(this.renderLogEntry)}
-          </React.Fragment>
-        )}
+        <React.Fragment>
+          <Styled.Header
+            href="#"
+            isSelected={this.state.selected === HEADER}
+            onClick={() => this.setSelected(HEADER)}
+          >
+            <Styled.DocumentIcon isSelected={this.state.selected === HEADER} />
+            {getWorkflowName(instance)}
+          </Styled.Header>
+          {!activitiesDetails
+            ? null
+            : activitiesDetails.map(this.renderLogEntry)}
+        </React.Fragment>
       </Styled.InstanceLog>
     );
   }

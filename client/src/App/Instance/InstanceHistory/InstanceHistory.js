@@ -5,11 +5,12 @@ import SplitPane from 'modules/components/SplitPane';
 import Copyright from 'modules/components/Copyright';
 
 import InstanceLog from './InstanceLog';
+import InstanceEvents from './InstanceEvents';
 import * as Styled from './styled';
 
 export default class InstanceHistory extends React.Component {
   static propTypes = {
-    instance: PropTypes.object,
+    instance: PropTypes.object.isRequired,
     activitiesDetails: PropTypes.array
   };
 
@@ -22,7 +23,10 @@ export default class InstanceHistory extends React.Component {
             instance={this.props.instance}
             activitiesDetails={this.props.activitiesDetails}
           />
-          <Styled.Section>B</Styled.Section>
+          <InstanceEvents
+            instance={this.props.instance}
+            activitiesDetails={this.props.activitiesDetails}
+          />
           <Styled.Section>C</Styled.Section>
         </Styled.PaneBody>
         <Styled.PaneFooter>
