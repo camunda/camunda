@@ -1,7 +1,7 @@
 import {default as reportLabelMap} from './ReportLabelMap';
 
 it('should return all possible options for a type', () => {
-  expect(reportLabelMap.getOptions(reportLabelMap.view)).toHaveLength(5);
+  expect(reportLabelMap.getOptions(reportLabelMap.view)).toHaveLength(8);
 });
 
 it('should create a report view object for a given key', () => {
