@@ -214,6 +214,8 @@ public class LogBlockIndexWriterTest {
     writer.writeEvents(2, EVENT_1, true);
     writer.writeEvents(2, EVENT_2, true);
 
+    waitUntil(() -> blockIndex.size() == 2);
+
     logStreamRule.getClock().addTime(SNAPSHOT_INTERVAL);
     waitUntil(() -> getSnapshotCount() > 0);
 
