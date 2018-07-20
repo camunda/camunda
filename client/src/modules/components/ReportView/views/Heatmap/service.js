@@ -182,6 +182,11 @@ function drawSequenceFlow(data, waypoints, value, {xOffset, yOffset}) {
 }
 
 export function addDiagramTooltip(viewer, element, tooltipContent) {
+  const elementGraphics = viewer.get('elementRegistry').getGraphics(element);
+  if (!elementGraphics) {
+    return;
+  }
+
   // create overlay node from html string
   const container = document.createElement('div');
 
@@ -204,11 +209,7 @@ export function addDiagramTooltip(viewer, element, tooltipContent) {
 
   // calculate element width
   const elementWidth = parseInt(
-    viewer
-      .get('elementRegistry')
-      .getGraphics(element)
-      .querySelector('.djs-hit')
-      .getAttribute('width'),
+    elementGraphics.querySelector('.djs-hit').getAttribute('width'),
     10
   );
 

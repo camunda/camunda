@@ -1,5 +1,5 @@
 import React from 'react';
-import {Select, Popover, ProcessDefinitionSelection} from 'components';
+import {Select, Popover, ProcessDefinitionSelection, Button} from 'components';
 
 import {Filter} from './filter';
 import {reportLabelMap, extractProcessDefinitionName} from 'services';
@@ -226,10 +226,29 @@ export default class ReportControlPanel extends React.Component {
               onChange={this.props.onChange}
             />
           </li>
+          {this.props.visualization === 'heat' && (
+            <li className="ReportControlPanel__item">
+              <Button
+                active={this.props.configuration.alwaysShowTooltips}
+                onClick={this.toggleAllTooltips}
+              >
+                Always show tooltips
+              </Button>
+            </li>
+          )}
         </ul>
       </div>
     );
   }
+
+  toggleAllTooltips = () => {
+    this.props.onChange({
+      configuration: {
+        ...this.props.configuration,
+        alwaysShowTooltips: !this.props.configuration.alwaysShowTooltips
+      }
+    });
+  };
 
   renderOptions = type => {
     const options = reportLabelMap.getOptions(type);

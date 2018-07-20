@@ -163,16 +163,33 @@ export default withErrorHandling(
         data.configuration = {...data.configuration, targetValue: {}};
       }
 
+      if (updates.visualization && updates.visualization !== this.state.data.visualization) {
+        data.configuration = {...data.configuration, alwaysShowTooltips: false};
+      }
+
       this.setState({data});
 
-      let reportResult;
-      if (this.allFieldsAreSelected(data)) {
-        reportResult = await getReportData(data);
+      const updatedSomethingOtherThanConfiguration = Object.keys(updates).find(
+        entry => entry !== 'configuration'
+      );
+      if (updatedSomethingOtherThanConfiguration) {
+        let reportResult;
+        if (this.allFieldsAreSelected(data)) {
+          reportResult = await getReportData(data);
+        }
+        if (!reportResult) {
+          reportResult = {data};
+        }
+        this.setState({reportResult});
+      } else {
+        let reportResult = this.state.reportResult || {data};
+        this.setState({
+          reportResult: {
+            ...reportResult,
+            data: {...reportResult.data, configuration: data.configuration}
+          }
+        });
       }
-      if (!reportResult) {
-        reportResult = {data};
-      }
-      this.setState({reportResult});
     };
 
     loadXmlToConfiguration = async data => {

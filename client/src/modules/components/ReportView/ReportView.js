@@ -174,6 +174,7 @@ export default class ReportView extends React.Component {
           props: {
             data: result,
             xml: data.configuration.xml,
+            alwaysShowTooltips: data.configuration.alwaysShowTooltips,
             targetValue: data.configuration.targetValue,
             property: data.view.property,
             processInstanceCount

@@ -36,3 +36,15 @@ it('should remove old tooltips on rerendering', () => {
 
   expect(removeSpy).toHaveBeenCalledTimes(1);
 });
+
+it('should add a tooltip for every element if tooltips are always shown', () => {
+  addDiagramTooltip.mockClear();
+  const data = {a: '1', b: '2', c: '3', d: '4', e: '5'};
+  mount(<Tooltip viewer={viewer} data={data} formatter={v => v} alwaysShow />);
+
+  expect(addDiagramTooltip).toHaveBeenCalledWith(viewer, 'a', '1');
+  expect(addDiagramTooltip).toHaveBeenCalledWith(viewer, 'b', '2');
+  expect(addDiagramTooltip).toHaveBeenCalledWith(viewer, 'c', '3');
+  expect(addDiagramTooltip).toHaveBeenCalledWith(viewer, 'd', '4');
+  expect(addDiagramTooltip).toHaveBeenCalledWith(viewer, 'e', '5');
+});

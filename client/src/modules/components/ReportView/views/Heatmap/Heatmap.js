@@ -28,6 +28,7 @@ const Heatmap = props => {
       <HeatmapOverlay
         key="heatmap"
         data={heat}
+        alwaysShow={props.alwaysShowTooltips}
         formatter={(_, id) => {
           const node = document.createElement('div');
 
@@ -61,6 +62,7 @@ const Heatmap = props => {
     heatmapComponent = (
       <HeatmapOverlay
         data={data}
+        alwaysShow={props.alwaysShowTooltips}
         formatter={data => {
           if (props.property === 'frequency') {
             return `${props.formatter(data)}\u00A0(${getRelativeValue(

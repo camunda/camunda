@@ -23,7 +23,8 @@ jest.mock('components', () => {
         {title} {children}
       </div>
     ),
-    ProcessDefinitionSelection: props => <div>ProcessDefinitionSelection</div>
+    ProcessDefinitionSelection: props => <div>ProcessDefinitionSelection</div>,
+    Button: props => <button {...props} />
   };
 });
 
@@ -152,4 +153,16 @@ it('should include variables in the groupby options', () => {
 
   expect(node).toIncludeText('Var1');
   expect(node).toIncludeText('Var2');
+});
+
+it('should show an "Always show tooltips" button for heatmaps', () => {
+  const node = mount(<ReportControlPanel {...data} visualization="heat" />);
+
+  expect(node).toIncludeText('Always show tooltips');
+});
+
+it('should not show an "Always show tooltips" button for other visualizations', () => {
+  const node = mount(<ReportControlPanel {...data} visualization="something" />);
+
+  expect(node).not.toIncludeText('Always show tooltips');
 });

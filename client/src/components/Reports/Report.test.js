@@ -234,6 +234,30 @@ it('should evaluate the report after updating', async () => {
   expect(getReportData).toHaveBeenCalled();
 });
 
+it('should not evaluate the report after updating only the configuration', async () => {
+  const node = await mount(shallow(<Report {...props} />).get(0));
+
+  node.setState({
+    data: {
+      processDefinitionKey: 'test key',
+      processDefinitionVersion: 'test version',
+      view: {
+        operation: 'foo'
+      },
+      groupBy: {
+        type: 'bar'
+      },
+      visualization: 'number'
+    },
+    ...sampleReport
+  });
+
+  getReportData.mockClear();
+  await node.instance().updateReport({configuration: 'someOtherConfiguration'});
+
+  expect(getReportData).not.toHaveBeenCalled();
+});
+
 it('should reset the report data to its original state after canceling', async () => {
   const node = mount(shallow(<Report {...props} />).get(0));
 
