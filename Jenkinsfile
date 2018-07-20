@@ -13,9 +13,9 @@ pipeline {
     agent { node { label 'ubuntu-large' } }
 
     options {
-        buildDiscarder(logRotator(daysToKeepStr:'14', numToKeepStr:'50'))
-            timestamps()
-            timeout(time: 45, unit: 'MINUTES')
+        buildDiscarder(logRotator(daysToKeepStr:'14', numToKeepStr:'10'))
+        timestamps()
+        timeout(time: 45, unit: 'MINUTES')
     }
 
     stages {
