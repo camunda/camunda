@@ -67,10 +67,10 @@ export const DropdownMenu = themed(styled.div`
   /* Display & Box Model */
   min-width: 186px;
   margin-top: 5px;
-  box-shadow: 0 2px 2px 0
+  box-shadow: 0 0 2px 0
     ${themeStyle({
-      dark: 'rgba(0, 0, 0, 0.5)',
-      light: 'rgba(231, 233, 238, 0.5)'
+      dark: 'rgba(0, 0, 0, 0.6)',
+      light: ' rgba(0, 0, 0, 0.2)'
     })};
   border: 1px solid
     ${themeStyle({dark: Colors.uiDark06, light: Colors.uiLight05})};
@@ -154,7 +154,7 @@ export const Option = themed(styled.button`
   }
 
   &:first-child:active:after{
-      z-index: 1;
+     /* / z-index: 1; */
       ${PointerBody}
       border-bottom-color: ${themeStyle({
         dark: Colors.darkActive,
