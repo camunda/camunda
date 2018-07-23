@@ -71,8 +71,8 @@ public class WorkflowRepositoryTest {
         .containsOnly(
             entry("topicName", "test-topic"),
             entry("bpmnProcessId", "wf"),
-            entry("version", -1),
-            entry("workflowKey", -1));
+            entry("version", -1L),
+            entry("workflowKey", -1L));
   }
 
   @Test
@@ -97,8 +97,8 @@ public class WorkflowRepositoryTest {
         .containsOnly(
             entry("topicName", "test-topic"),
             entry("bpmnProcessId", "wf"),
-            entry("version", 2),
-            entry("workflowKey", -1));
+            entry("version", 2L),
+            entry("workflowKey", -1L));
   }
 
   @Test
@@ -120,7 +120,7 @@ public class WorkflowRepositoryTest {
         brokerRule.getReceivedControlMessageRequestsByType(ControlMessageType.GET_WORKFLOW).get(0);
     assertThat(request.getData())
         .containsOnly(
-            entry("topicName", "test-topic"), entry("version", -1), entry("workflowKey", 123));
+            entry("topicName", "test-topic"), entry("version", -1L), entry("workflowKey", 123L));
   }
 
   @Test

@@ -23,18 +23,15 @@ import org.agrona.DirectBuffer;
 
 public interface TypedResponseWriter {
 
-  /** @return true if successful */
-  void writeRejection(TypedRecord<?> record, RejectionType type, String reason);
+  void writeRejection(TypedRecord<?> rejection);
 
-  /** @return true if successful */
-  void writeRejection(TypedRecord<?> record, RejectionType type, DirectBuffer reason);
+  void writeRejectionOnCommand(TypedRecord<?> command, RejectionType type, DirectBuffer reason);
 
-  /**
-   * Writes the given record as response.
-   *
-   * @return true if successful
-   */
-  void writeRecord(Intent intent, TypedRecord<?> record);
+  void writeRejectionOnCommand(TypedRecord<?> command, RejectionType type, String reason);
+
+  void writeEvent(TypedRecord<?> event);
+
+  void writeEventOnCommand(long eventKey, Intent eventState, TypedRecord<?> command);
 
   /**
    * Submits the response to transport.

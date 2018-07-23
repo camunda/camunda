@@ -284,7 +284,7 @@ public class TestTopicClient {
     if (!partitionIdsOfOpenSubscription.contains(partitionId)) {
       final ExecuteCommandResponse response =
           apiRule.openTopicSubscription(partitionId, "test", 0).await();
-      assertThat(response.key()).isGreaterThanOrEqualTo(0);
+      assertThat(response.intent()).isEqualTo(SubscriberIntent.SUBSCRIBED);
 
       partitionIdsOfOpenSubscription.add(partitionId);
     }

@@ -47,7 +47,6 @@ public class TypedStreamEnvironment {
   }
 
   private TypedStreamReader reader;
-  private TypedStreamWriter writer;
 
   public TypedStreamEnvironment(LogStream stream, ServerOutput output) {
     this.output = output;
@@ -70,8 +69,8 @@ public class TypedStreamEnvironment {
     return new TypedEventStreamProcessorBuilder(this);
   }
 
-  public TypedStreamWriter buildStreamWriter() {
-    return new TypedStreamWriterImpl(stream, EVENT_REGISTRY);
+  public TypedCommandWriter buildCommandWriter() {
+    return new TypedCommandWriterImpl(stream, EVENT_REGISTRY);
   }
 
   public TypedStreamReader buildStreamReader() {
@@ -83,12 +82,5 @@ public class TypedStreamEnvironment {
       reader = buildStreamReader();
     }
     return reader;
-  }
-
-  public TypedStreamWriter getStreamWriter() {
-    if (writer == null) {
-      writer = buildStreamWriter();
-    }
-    return writer;
   }
 }

@@ -43,6 +43,7 @@ public class TypedStreamProcessor implements StreamProcessor {
   protected final ServerOutput output;
   protected final RecordProcessorMap recordProcessors;
   protected final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
+  private final KeyGenerator keyGenerator;
 
   protected final RecordMetadata metadata = new RecordMetadata();
   protected final EnumMap<ValueType, Class<? extends UnpackedObject>> eventRegistry;
@@ -61,10 +62,12 @@ public class TypedStreamProcessor implements StreamProcessor {
       RecordProcessorMap recordProcessors,
       List<StreamProcessorLifecycleAware> lifecycleListeners,
       EnumMap<ValueType, Class<? extends UnpackedObject>> eventRegistry,
+      KeyGenerator keyGenerator,
       TypedStreamEnvironment environment) {
     this.snapshotSupport = snapshotSupport;
     this.output = output;
     this.recordProcessors = recordProcessors;
+    this.keyGenerator = keyGenerator;
     recordProcessors.values().forEachRemaining(p -> this.lifecycleListeners.add(p));
 
     this.lifecycleListeners.addAll(lifecycleListeners);
@@ -80,7 +83,7 @@ public class TypedStreamProcessor implements StreamProcessor {
   public void onOpen(StreamProcessorContext context) {
     this.eventProcessorWrapper =
         new DelegatingEventProcessor(
-            context.getId(), output, context.getLogStream(), eventRegistry);
+            context.getId(), output, context.getLogStream(), eventRegistry, keyGenerator);
 
     this.actor = context.getActorControl();
     this.streamProcessorContext = context;
@@ -148,10 +151,11 @@ public class TypedStreamProcessor implements StreamProcessor {
         int streamProcessorId,
         ServerOutput output,
         LogStream logStream,
-        EnumMap<ValueType, Class<? extends UnpackedObject>> eventRegistry) {
+        EnumMap<ValueType, Class<? extends UnpackedObject>> eventRegistry,
+        KeyGenerator keyGenerator) {
       this.streamProcessorId = streamProcessorId;
       this.logStream = logStream;
-      this.writer = new TypedStreamWriterImpl(logStream, eventRegistry);
+      this.writer = new TypedStreamWriterImpl(logStream, eventRegistry, keyGenerator);
       this.responseWriter = new TypedResponseWriterImpl(output, logStream.getPartitionId());
     }
 
@@ -198,5 +202,9 @@ public class TypedStreamProcessor implements StreamProcessor {
 
   public TypedStreamEnvironment getEnvironment() {
     return environment;
+  }
+
+  public KeyGenerator getKeyGenerator() {
+    return keyGenerator;
   }
 }

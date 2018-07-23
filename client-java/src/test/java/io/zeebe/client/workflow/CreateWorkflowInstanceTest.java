@@ -88,9 +88,9 @@ public class CreateWorkflowInstanceTest {
     assertThat(commandRequest.getCommand())
         .containsOnly(
             entry("bpmnProcessId", "foo"),
-            entry("version", CreateWorkflowInstanceCommandStep1.LATEST_VERSION),
-            entry("workflowKey", -1),
-            entry("workflowInstanceKey", -1),
+            entry("version", (long) CreateWorkflowInstanceCommandStep1.LATEST_VERSION),
+            entry("workflowKey", -1L),
+            entry("workflowInstanceKey", -1L),
             entry("payload", MsgPackHelper.EMTPY_OBJECT));
 
     assertThat(workflowInstance.getState()).isEqualTo(WorkflowInstanceState.CREATED);
@@ -134,9 +134,9 @@ public class CreateWorkflowInstanceTest {
     assertThat(commandRequest.getCommand())
         .containsOnly(
             entry("bpmnProcessId", "foo"),
-            entry("version", CreateWorkflowInstanceCommandStep1.LATEST_VERSION),
-            entry("workflowKey", -1),
-            entry("workflowInstanceKey", -1),
+            entry("version", (long) CreateWorkflowInstanceCommandStep1.LATEST_VERSION),
+            entry("workflowKey", -1L),
+            entry("workflowInstanceKey", -1L),
             entry("payload", msgPackConverter.convertToMsgPack(payload)));
 
     assertThat(workflowInstance.getBpmnProcessId()).isEqualTo("foo");
@@ -175,9 +175,9 @@ public class CreateWorkflowInstanceTest {
     assertThat(commandRequest.getCommand())
         .containsOnly(
             entry("bpmnProcessId", "foo"),
-            entry("version", 2),
-            entry("workflowKey", -1),
-            entry("workflowInstanceKey", -1),
+            entry("version", 2L),
+            entry("workflowKey", -1L),
+            entry("workflowInstanceKey", -1L),
             entry("payload", MsgPackHelper.EMTPY_OBJECT));
 
     assertThat(workflowInstance.getBpmnProcessId()).isEqualTo("foo");
@@ -208,9 +208,9 @@ public class CreateWorkflowInstanceTest {
     final ExecuteCommandRequest commandRequest = brokerRule.getReceivedCommandRequests().get(0);
     assertThat(commandRequest.getCommand())
         .containsOnly(
-            entry("version", -1),
-            entry("workflowKey", 2),
-            entry("workflowInstanceKey", -1),
+            entry("version", -1L),
+            entry("workflowKey", 2L),
+            entry("workflowInstanceKey", -1L),
             entry("payload", MsgPackHelper.EMTPY_OBJECT));
 
     assertThat(workflowInstance.getWorkflowKey()).isEqualTo(2);

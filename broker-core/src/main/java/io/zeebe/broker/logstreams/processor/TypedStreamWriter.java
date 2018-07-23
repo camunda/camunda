@@ -23,39 +23,29 @@ import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.protocol.intent.Intent;
 import java.util.function.Consumer;
 
-public interface TypedStreamWriter {
-  /** @return position of new event, negative value on failure */
+/** Things that only a stream processor should write to the log stream (+ commands) */
+public interface TypedStreamWriter extends TypedCommandWriter {
   void writeRejection(
       TypedRecord<? extends UnpackedObject> command, RejectionType type, String reason);
 
-  /** @return position of new event, negative value on failure */
   void writeRejection(
       TypedRecord<? extends UnpackedObject> command,
       RejectionType type,
       String reason,
       Consumer<RecordMetadata> metadata);
 
-  /** @return position of new event, negative value on failure */
-  void writeNewCommand(Intent intent, UnpackedObject value);
+  /** @return the key of the event */
+  long writeNewEvent(Intent intent, UnpackedObject value);
 
-  /** @return position of new event, negative value on failure */
-  void writeFollowUpCommand(long key, Intent intent, UnpackedObject value);
-
-  /** @return position of new event, negative value on failure */
-  void writeFollowUpCommand(
-      long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata);
-
-  /** @return position of new event, negative value on failure */
-  void writeNewEvent(Intent intent, UnpackedObject value);
-
-  /** @return position of new event, negative value on failure */
   void writeFollowUpEvent(long key, Intent intent, UnpackedObject value);
 
-  /** @return position of new event, negative value on failure */
   void writeFollowUpEvent(
       long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata);
 
   TypedBatchWriter newBatch();
 
+  KeyGenerator getKeyGenerator();
+
+  /** @return position of new event, negative value on failure */
   long flush();
 }

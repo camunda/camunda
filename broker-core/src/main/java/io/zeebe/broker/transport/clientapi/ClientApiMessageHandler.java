@@ -149,7 +149,7 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
     if (key != ExecuteCommandRequestDecoder.keyNullValue()) {
       logStreamWriter.key(key);
     } else {
-      logStreamWriter.positionAsKey();
+      logStreamWriter.keyNull();
     }
 
     final long sourceRecordPosition = executeCommandRequestDecoder.sourceRecordPosition();

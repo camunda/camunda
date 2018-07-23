@@ -43,6 +43,8 @@ public class TypedEventStreamProcessorBuilder {
   protected RecordProcessorMap eventProcessors = new RecordProcessorMap();
   protected List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
 
+  private KeyGenerator keyGenerator;
+
   public TypedEventStreamProcessorBuilder(TypedStreamEnvironment environment) {
     this.environment = environment;
   }
@@ -100,6 +102,13 @@ public class TypedEventStreamProcessorBuilder {
     return this;
   }
 
+  /** Only required if a stream processor writes events to its own stream. */
+  public TypedEventStreamProcessorBuilder keyGenerator(KeyGenerator keyGenerator) {
+    this.keyGenerator = keyGenerator;
+    withStateResource(keyGenerator);
+    return this;
+  }
+
   public TypedEventStreamProcessorBuilder withStateResource(ZbMap<?, ?> map) {
     this.stateResources.add(new ZbMapSnapshotSupport<>(map));
     withListener(
@@ -140,6 +149,7 @@ public class TypedEventStreamProcessorBuilder {
         eventProcessors,
         lifecycleListeners,
         environment.getEventRegistry(),
+        keyGenerator,
         environment);
   }
 

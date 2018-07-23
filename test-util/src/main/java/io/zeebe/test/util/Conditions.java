@@ -20,10 +20,10 @@ import org.assertj.core.api.Condition;
 /** useful assertj conditions */
 public class Conditions {
 
-  public static Condition<Object> isLowerThan(int i) {
+  public static Condition<Object> isLowerThan(long i) {
     return new Condition<>(
         v -> {
-          return (int) v < i;
+          return (long) v < i;
         },
         "lower than %s",
         i);

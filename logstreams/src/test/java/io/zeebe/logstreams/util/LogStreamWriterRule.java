@@ -98,7 +98,7 @@ public class LogStreamWriterRule extends ExternalResource {
   }
 
   public long tryWrite(final DirectBuffer value) {
-    return tryWrite(w -> w.positionAsKey().value(value));
+    return tryWrite(w -> w.keyNull().value(value));
   }
 
   public long tryWrite(final long key, final DirectBuffer value) {

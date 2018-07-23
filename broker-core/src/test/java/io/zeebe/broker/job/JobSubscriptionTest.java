@@ -84,7 +84,7 @@ public class JobSubscriptionTest {
     assertThat(jobEvent.timestamp()).isGreaterThanOrEqualTo(response.timestamp());
     assertThat(jobEvent.value())
         .containsEntry("type", "foo")
-        .containsEntry("retries", 3)
+        .containsEntry("retries", 3L)
         .containsEntry("worker", "bar");
 
     final List<Intent> jobStates =
@@ -140,7 +140,7 @@ public class JobSubscriptionTest {
   public void shouldRemoveJobSubscription() {
     // given
     final ControlMessageResponse openResponse = apiRule.openJobSubscription("foo").await();
-    final int subscriberKey = (int) openResponse.getData().get("subscriberKey");
+    final long subscriberKey = (long) openResponse.getData().get("subscriberKey");
 
     // when
     final ControlMessageResponse closeResponse =
@@ -162,7 +162,7 @@ public class JobSubscriptionTest {
     // given
     final String jobType = "foo";
     final ControlMessageResponse openResponse = apiRule.openJobSubscription(jobType).await();
-    final int subscriberKey = (int) openResponse.getData().get("subscriberKey");
+    final long subscriberKey = (long) openResponse.getData().get("subscriberKey");
 
     apiRule.closeJobSubscription(subscriberKey).await();
 
@@ -336,10 +336,10 @@ public class JobSubscriptionTest {
   public void shouldDistributeJobsInRoundRobinFashion() {
     // given
     final String jobType = "foo";
-    final int subscriber1 =
-        (int) apiRule.openJobSubscription(jobType).await().getData().get("subscriberKey");
-    final int subscriber2 =
-        (int) apiRule.openJobSubscription(jobType).await().getData().get("subscriberKey");
+    final long subscriber1 =
+        (long) apiRule.openJobSubscription(jobType).await().getData().get("subscriberKey");
+    final long subscriber2 =
+        (long) apiRule.openJobSubscription(jobType).await().getData().get("subscriberKey");
 
     // when
     testClient.createJob(jobType);
@@ -381,7 +381,7 @@ public class JobSubscriptionTest {
     final ExecuteCommandResponse response = testClient.createJob("foo");
 
     final ControlMessageResponse subscriptionResponse = apiRule.openJobSubscription("foo").await();
-    final int secondSubscriberKey = (int) subscriptionResponse.getData().get("subscriberKey");
+    final long secondSubscriberKey = (long) subscriptionResponse.getData().get("subscriberKey");
 
     final Optional<SubscribedRecord> jobEvent =
         apiRule
@@ -413,7 +413,7 @@ public class JobSubscriptionTest {
   public void shouldOpenSubscriptionConcurrentWithRemoval() {
     // given
     final ControlMessageResponse openResponse = apiRule.openJobSubscription("foo").await();
-    final int subscriberKey = (int) openResponse.getData().get("subscriberKey");
+    final long subscriberKey = (long) openResponse.getData().get("subscriberKey");
 
     // when doing concurrent close and open
     apiRule.closeJobSubscription(subscriberKey); // async important to reproduce race condition
@@ -421,7 +421,7 @@ public class JobSubscriptionTest {
 
     // then the open response should be success
     assertThat(reopenResponse.getData()).containsKey("subscriberKey");
-    final int secondSubscriberKey = (int) reopenResponse.getData().get("subscriberKey");
+    final long secondSubscriberKey = (long) reopenResponse.getData().get("subscriberKey");
 
     // and we should be able to receive jobs for the new subscription
     final ExecuteCommandResponse response = testClient.createJob("foo");
@@ -617,7 +617,7 @@ public class JobSubscriptionTest {
             .done()
             .sendAndAwait();
 
-    assertThat(response.getData().get("subscriberKey")).isEqualTo(0);
+    assertThat(response.getData().get("subscriberKey")).isEqualTo(0L);
 
     testClient.createJob("foo");
     testClient.createJob("foo");
@@ -646,7 +646,7 @@ public class JobSubscriptionTest {
   @Test
   public void shouldIgnoreCreditsRequestIfSubscriptionDoesNotExist() {
     // given
-    final int nonExistingSubscriberKey = 444;
+    final long nonExistingSubscriberKey = 444;
     final ControlMessageRequestBuilder request =
         apiRule
             .createControlMessageRequest()
@@ -716,8 +716,8 @@ public class JobSubscriptionTest {
 
     apiRule.moveMessageStreamToTail();
 
-    final int secondSubscriber =
-        (int)
+    final long secondSubscriber =
+        (long)
             apiRule
                 .openJobSubscription(apiRule.getDefaultPartitionId(), jobType, 10000, credits)
                 .await()

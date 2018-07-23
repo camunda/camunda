@@ -128,9 +128,9 @@ public class ServiceTaskTest {
             entry("bpmnProcessId", "process"),
             entry("workflowDefinitionVersion", 1),
             entry("workflowKey", (int) workflowInstance.getWorkflowKey()),
-            entry("workflowInstanceKey", workflowInstance.getWorkflowInstanceKey()),
+            entry("workflowInstanceKey", (int) workflowInstance.getWorkflowInstanceKey()),
             entry("activityId", "task"),
-            entry("activityInstanceKey", activityInstance.getMetadata().getKey()));
+            entry("activityInstanceKey", (int) activityInstance.getMetadata().getKey()));
 
     assertThat(jobEvent.getCustomHeaders()).containsOnly(entry("cust1", "a"), entry("cust2", "b"));
   }

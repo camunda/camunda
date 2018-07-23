@@ -157,7 +157,7 @@ public class FailJobTest {
 
     final ControlMessageResponse subscriptionResponse =
         apiRule.openJobSubscription(JOB_TYPE).await();
-    final int subscriberKey = (int) subscriptionResponse.getData().get("subscriberKey");
+    final long subscriberKey = (long) subscriptionResponse.getData().get("subscriberKey");
 
     final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
     apiRule.closeJobSubscription(subscriberKey).await();

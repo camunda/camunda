@@ -144,9 +144,9 @@ public class PartitionedTopicSubscriptionTest {
   @Test
   public void shouldCloseAllOpenSubscriptions() {
     // given
-    final int subscriberKey1 = 456;
+    final long subscriberKey1 = 456;
     broker1.stubTopicSubscriptionApi(subscriberKey1);
-    final int subscriberKey2 = 789;
+    final long subscriberKey2 = 789;
     broker2.stubTopicSubscriptionApi(subscriberKey2);
 
     final TopicSubscription subscription =
@@ -207,7 +207,7 @@ public class PartitionedTopicSubscriptionTest {
   public void shouldCloseSuccessfulSubscriptionIfAnotherSubscriptionCannotBeOpened()
       throws Exception {
     // given
-    final int subscriberKey1 = 456;
+    final long subscriberKey1 = 456;
     broker1.stubTopicSubscriptionApi(subscriberKey1);
 
     final ResponseController responseController =
@@ -247,7 +247,7 @@ public class PartitionedTopicSubscriptionTest {
   public void shouldCloseSubscriptionIfASingleSubscriptionIsAborted() throws InterruptedException {
     // given
     broker1.stubTopicSubscriptionApi(456);
-    final int subscriberKey2 = 789;
+    final long subscriberKey2 = 789;
     broker2.stubTopicSubscriptionApi(subscriberKey2);
 
     final TopicSubscription subscription =
@@ -400,8 +400,8 @@ public class PartitionedTopicSubscriptionTest {
     broker1.stubTopicSubscriptionApi(456);
     broker2.stubTopicSubscriptionApi(789);
 
-    final int position1 = 987;
-    final int position2 = 546;
+    final long position1 = 987;
+    final long position2 = 546;
 
     clientRule
         .topicClient()
@@ -426,7 +426,7 @@ public class PartitionedTopicSubscriptionTest {
     broker1.stubTopicSubscriptionApi(456);
     broker2.stubTopicSubscriptionApi(789);
 
-    final int position1 = 987;
+    final long position1 = 987;
 
     clientRule
         .topicClient()
@@ -442,7 +442,7 @@ public class PartitionedTopicSubscriptionTest {
     assertThat(broker1Request.getCommand()).containsEntry("startPosition", position1);
 
     final ExecuteCommandRequest broker2Request = getSubscribeRequests(broker2).get(0);
-    assertThat(broker2Request.getCommand()).containsEntry("startPosition", -1);
+    assertThat(broker2Request.getCommand()).containsEntry("startPosition", -1L);
   }
 
   protected List<ExecuteCommandRequest> getOpenSubscriptionRequests(StubBrokerRule broker) {

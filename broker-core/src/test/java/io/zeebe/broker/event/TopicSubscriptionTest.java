@@ -162,7 +162,7 @@ public class TopicSubscriptionTest {
     SubscribedRecord jobEvent = jobEvents.get(0);
     assertThat(jobEvent.subscriberKey()).isEqualTo(subscriberKey);
     assertThat(jobEvent.subscriptionType()).isEqualTo(SubscriptionType.TOPIC_SUBSCRIPTION);
-    assertThat(jobEvent.position()).isEqualTo(jobKey);
+    assertThat(jobEvent.position()).isGreaterThan(0L);
     assertThat(jobEvent.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
     assertThat(jobEvent.recordType()).isEqualTo(RecordType.COMMAND);
     assertThat(jobEvent.valueType()).isEqualTo(ValueType.JOB);
@@ -173,12 +173,12 @@ public class TopicSubscriptionTest {
     jobEvent = jobEvents.get(1);
     assertThat(jobEvent.subscriberKey()).isEqualTo(subscriberKey);
     assertThat(jobEvent.subscriptionType()).isEqualTo(SubscriptionType.TOPIC_SUBSCRIPTION);
-    assertThat(jobEvent.position()).isGreaterThan(jobKey);
+    assertThat(jobEvent.position()).isGreaterThan(jobEvents.get(0).position());
     assertThat(jobEvent.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
     assertThat(jobEvent.recordType()).isEqualTo(RecordType.EVENT);
     assertThat(jobEvent.valueType()).isEqualTo(ValueType.JOB);
     assertThat(jobEvent.intent()).isEqualTo(JobIntent.CREATED);
-    assertThat(jobEvent.sourceRecordPosition()).isEqualTo(jobKey);
+    assertThat(jobEvent.sourceRecordPosition()).isEqualTo(jobEvents.get(0).position());
     assertThat(jobEvent.timestamp()).isEqualTo(fixedClockEpoch);
   }
 

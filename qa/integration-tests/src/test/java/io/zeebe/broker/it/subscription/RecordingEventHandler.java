@@ -55,18 +55,18 @@ public class RecordingEventHandler implements RecordHandler {
     return records;
   }
 
-  public void assertJobRecord(int index, long taskKey, String intent) throws IOException {
-    final List<Record> taskEvents =
+  public void assertJobRecord(int index, long jobKey, String intent) throws IOException {
+    final List<Record> jobEvents =
         records
             .stream()
             .filter(e -> e.getMetadata().getValueType() == ValueType.JOB)
             .collect(Collectors.toList());
 
-    final Record taskEvent = taskEvents.get(index);
+    final Record taskEvent = jobEvents.get(index);
 
     final RecordMetadata eventMetadata = taskEvent.getMetadata();
     assertThat(eventMetadata.getValueType()).isEqualTo(ValueType.JOB);
-    assertThat(eventMetadata.getKey()).isEqualTo(taskKey);
+    assertThat(eventMetadata.getKey()).isEqualTo(jobKey);
     assertThat(eventMetadata.getIntent()).isEqualTo(intent);
   }
 

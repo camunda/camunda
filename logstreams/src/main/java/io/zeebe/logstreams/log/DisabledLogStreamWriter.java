@@ -29,6 +29,11 @@ public class DisabledLogStreamWriter implements LogStreamRecordWriter {
   }
 
   @Override
+  public LogStreamRecordWriter keyNull() {
+    return this;
+  }
+
+  @Override
   public LogStreamRecordWriter key(long key) {
     return this;
   }

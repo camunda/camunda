@@ -81,7 +81,7 @@ public class CompleteJobTest {
         .containsOnly(
             entry("deadline", baseEvent.getDeadline().toEpochMilli()),
             entry("worker", baseEvent.getWorker()),
-            entry("retries", baseEvent.getRetries()),
+            entry("retries", baseEvent.getRetries().longValue()),
             entry("type", baseEvent.getType()),
             entry("headers", baseEvent.getHeaders()),
             entry("customHeaders", baseEvent.getCustomHeaders()),

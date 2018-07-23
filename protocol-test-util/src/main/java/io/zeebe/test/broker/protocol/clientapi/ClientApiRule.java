@@ -281,7 +281,7 @@ public class ClientApiRule extends ExternalResource {
       return partitions
           .stream()
           .filter(p -> topicName.equals(p.get("topic")))
-          .map(p -> (Integer) p.get("id"))
+          .map(p -> ((Number) p.get("id")).intValue())
           .collect(Collectors.toList());
     } catch (Exception e) {
       return Collections.EMPTY_LIST;

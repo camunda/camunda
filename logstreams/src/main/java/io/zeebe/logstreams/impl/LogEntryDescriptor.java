@@ -56,6 +56,8 @@ import org.agrona.MutableDirectBuffer;
  */
 public class LogEntryDescriptor {
 
+  public static final long KEY_NULL_VALUE = -1;
+
   public static final int VERSION_OFFSET;
 
   public static final int POSITION_OFFSET;

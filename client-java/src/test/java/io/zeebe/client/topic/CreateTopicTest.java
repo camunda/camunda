@@ -82,7 +82,7 @@ public class CreateTopicTest {
 
     assertThat(request.getCommand())
         .containsOnly(
-            entry("name", "newTopic"), entry("partitions", 14), entry("replicationFactor", 3));
+            entry("name", "newTopic"), entry("partitions", 14L), entry("replicationFactor", 3L));
 
     assertThat(responseEvent.getMetadata().getKey()).isEqualTo(123L);
     assertThat(responseEvent.getMetadata().getTopicName()).isEqualTo(Protocol.SYSTEM_TOPIC);

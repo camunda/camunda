@@ -66,8 +66,10 @@ public class DeploymentCreateEventProcessor implements TypedRecordProcessor<Depl
     }
 
     if (accepted) {
+      final long key = streamWriter.getKeyGenerator().nextKey();
+
       streamWriter.writeFollowUpEvent(
-          event.getKey(),
+          key,
           DeploymentIntent.CREATED,
           event.getValue(),
           m ->

@@ -88,9 +88,9 @@ public class UpdatePayloadTest {
     assertThat(request.getCommand())
         .containsOnly(
             entry("bpmnProcessId", baseEvent.getBpmnProcessId()),
-            entry("version", baseEvent.getVersion()),
-            entry("workflowKey", (int) baseEvent.getWorkflowKey()),
-            entry("workflowInstanceKey", (int) baseEvent.getWorkflowInstanceKey()),
+            entry("version", (long) baseEvent.getVersion()),
+            entry("workflowKey", baseEvent.getWorkflowKey()),
+            entry("workflowInstanceKey", baseEvent.getWorkflowInstanceKey()),
             entry("activityId", baseEvent.getActivityId()),
             entry("payload", ENCODED_PAYLOAD));
 

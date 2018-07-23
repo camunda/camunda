@@ -18,6 +18,7 @@
 package io.zeebe.broker.subscription.message;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
+import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
@@ -63,6 +64,7 @@ public class MessageService implements Service<MessageService> {
     final MessageDataStore messageDataStore = new MessageDataStore();
 
     return env.newStreamProcessor()
+        .keyGenerator(new KeyGenerator(0, 1))
         .onCommand(
             ValueType.MESSAGE, MessageIntent.PUBLISH, new PublishMessageProcessor(messageDataStore))
         .withStateResource(messageDataStore)

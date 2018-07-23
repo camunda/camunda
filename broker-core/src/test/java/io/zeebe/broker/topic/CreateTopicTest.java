@@ -69,8 +69,8 @@ public class CreateTopicTest {
     assertThat(response.getValue())
         .containsExactly(
             entry("name", topicName),
-            entry("partitions", 2),
-            entry("replicationFactor", 1),
+            entry("partitions", 2L),
+            entry("replicationFactor", 1L),
             entry("partitionIds", Collections.EMPTY_LIST));
 
     assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
@@ -86,8 +86,8 @@ public class CreateTopicTest {
     assertThat(response.getValue())
         .containsExactly(
             entry("name", Protocol.SYSTEM_TOPIC),
-            entry("partitions", 2),
-            entry("replicationFactor", 1),
+            entry("partitions", 2L),
+            entry("replicationFactor", 1L),
             entry("partitionIds", Collections.EMPTY_LIST));
 
     assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
@@ -109,8 +109,8 @@ public class CreateTopicTest {
     assertThat(response.getValue())
         .containsExactly(
             entry("name", topicName),
-            entry("partitions", 2),
-            entry("replicationFactor", 1),
+            entry("partitions", 2L),
+            entry("replicationFactor", 1L),
             entry("partitionIds", Collections.EMPTY_LIST));
 
     assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
@@ -132,8 +132,8 @@ public class CreateTopicTest {
     assertThat(response.getValue())
         .containsExactly(
             entry("name", topicName),
-            entry("partitions", numberOfPartitions),
-            entry("replicationFactor", 1),
+            entry("partitions", (long) numberOfPartitions),
+            entry("replicationFactor", 1L),
             entry("partitionIds", Collections.EMPTY_LIST));
 
     assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
@@ -155,8 +155,8 @@ public class CreateTopicTest {
     assertThat(response.getValue())
         .containsExactly(
             entry("name", topicName),
-            entry("partitions", numberOfPartitions),
-            entry("replicationFactor", 1),
+            entry("partitions", (long) numberOfPartitions),
+            entry("replicationFactor", 1L),
             entry("partitionIds", Collections.EMPTY_LIST));
   }
 
@@ -177,8 +177,8 @@ public class CreateTopicTest {
     assertThat(response.getValue())
         .containsExactly(
             entry("name", topicName),
-            entry("partitions", 1),
-            entry("replicationFactor", 0),
+            entry("partitions", 1L),
+            entry("replicationFactor", 0L),
             entry("partitionIds", Collections.EMPTY_LIST));
   }
 
@@ -197,8 +197,8 @@ public class CreateTopicTest {
     assertThat(response.getValue())
         .containsExactly(
             entry("name", topicName),
-            entry("partitions", 1),
-            entry("replicationFactor", -1),
+            entry("partitions", 1L),
+            entry("replicationFactor", -1L),
             entry("partitionIds", Collections.EMPTY_LIST));
 
     assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
@@ -221,8 +221,8 @@ public class CreateTopicTest {
     assertThat(response.getValue())
         .containsExactly(
             entry("name", topicName),
-            entry("partitions", 1),
-            entry("replicationFactor", 1),
+            entry("partitions", 1L),
+            entry("replicationFactor", 1L),
             entry("partitionIds", Collections.EMPTY_LIST));
 
     assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
@@ -279,7 +279,7 @@ public class CreateTopicTest {
       for (Map<String, Object> brokerPartitionState : brokerPartitionStates) {
         final String state = brokerPartitionState.get("state").toString();
         if (state.equals(LEADER_STATE)) {
-          expectedPartitions.remove(brokerPartitionState.get("partitionId"));
+          expectedPartitions.remove(((Number) brokerPartitionState.get("partitionId")).intValue());
         }
       }
     }

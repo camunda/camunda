@@ -95,7 +95,7 @@ public class CreateJobTest {
 
     assertThat(request.getCommand())
         .containsOnly(
-            entry("retries", 3),
+            entry("retries", 3L),
             entry("type", "fooType"),
             entry("headers", new HashMap<>()),
             entry("customHeaders", Maps.newHashMap("beverage", "apple juice")),
@@ -131,7 +131,7 @@ public class CreateJobTest {
     final ExecuteCommandRequest request = brokerRule.getReceivedCommandRequests().get(0);
     assertThat(request.getCommand())
         .containsOnly(
-            entry("retries", CreateJobCommandStep1.DEFAULT_RETRIES),
+            entry("retries", (long) CreateJobCommandStep1.DEFAULT_RETRIES),
             entry("type", "fooType"),
             entry("headers", Collections.emptyMap()),
             entry("customHeaders", Collections.emptyMap()),

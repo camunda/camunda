@@ -107,8 +107,8 @@ public class TopicSubscriptionTest {
     assertThat(subscribeRequest.intent()).isEqualTo(SubscriberIntent.SUBSCRIBE);
 
     assertThat(subscribeRequest.getCommand())
-        .containsEntry("startPosition", 0) // default start position
-        .containsEntry("bufferSize", 1024)
+        .containsEntry("startPosition", 0L) // default start position
+        .containsEntry("bufferSize", 1024L)
         .containsEntry("name", SUBSCRIPTION_NAME)
         .doesNotContainEntry("forceStart", true);
   }
@@ -163,7 +163,7 @@ public class TopicSubscriptionTest {
             .get();
 
     assertThat(subscribeRequest.intent()).isEqualTo(SubscriberIntent.SUBSCRIBE);
-    assertThat(subscribeRequest.getCommand()).containsEntry("startPosition", 0);
+    assertThat(subscribeRequest.getCommand()).containsEntry("startPosition", 0L);
   }
 
   @Test
@@ -193,7 +193,7 @@ public class TopicSubscriptionTest {
 
     assertThat(subscribeRequest.getCommand())
         .hasEntrySatisfying("startPosition", Conditions.isLowerThan(0))
-        .containsEntry("bufferSize", 1024)
+        .containsEntry("bufferSize", 1024L)
         .containsEntry("name", SUBSCRIPTION_NAME)
         .doesNotContainEntry("forceStart", true);
   }
@@ -224,8 +224,8 @@ public class TopicSubscriptionTest {
     assertThat(subscribeRequest.intent()).isEqualTo(SubscriberIntent.SUBSCRIBE);
 
     assertThat(subscribeRequest.getCommand())
-        .containsEntry("startPosition", 654)
-        .containsEntry("bufferSize", 1024)
+        .containsEntry("startPosition", 654L)
+        .containsEntry("bufferSize", 1024L)
         .containsEntry("name", SUBSCRIPTION_NAME)
         .doesNotContainEntry("forceStart", true);
   }
@@ -341,7 +341,7 @@ public class TopicSubscriptionTest {
 
     final ExecuteCommandRequest lastAck = acknowledgements.get(acknowledgements.size() - 1);
     assertThat(lastAck.getCommand().get("name")).isEqualTo(SUBSCRIPTION_NAME);
-    assertThat(lastAck.getCommand().get("ackPosition")).isEqualTo(1);
+    assertThat(lastAck.getCommand().get("ackPosition")).isEqualTo(1L);
 
     final ControlMessageRequest removeRequest =
         broker
@@ -428,7 +428,7 @@ public class TopicSubscriptionTest {
             .findFirst()
             .get();
 
-    assertThat(addSubscriptionRequest.getCommand()).containsEntry("bufferSize", bufferSize);
+    assertThat(addSubscriptionRequest.getCommand()).containsEntry("bufferSize", (long) bufferSize);
   }
 
   @Test
@@ -459,7 +459,7 @@ public class TopicSubscriptionTest {
             .findFirst()
             .get();
 
-    assertThat(addSubscriptionRequest.getCommand()).containsEntry("bufferSize", bufferSize);
+    assertThat(addSubscriptionRequest.getCommand()).containsEntry("bufferSize", (long) bufferSize);
   }
 
   @Test
@@ -1159,8 +1159,8 @@ public class TopicSubscriptionTest {
             .get();
 
     assertThat(reopenRequest.getCommand())
-        .containsEntry("startPosition", 0)
-        .containsEntry("bufferSize", 1024)
+        .containsEntry("startPosition", 0L)
+        .containsEntry("bufferSize", 1024L)
         .containsEntry("name", SUBSCRIPTION_NAME)
         .doesNotContainEntry("forceStart", true);
 
@@ -1235,7 +1235,7 @@ public class TopicSubscriptionTest {
   @Test
   public void shouldCloseSubscriptionWhileOpeningSubscriber() {
     // given
-    final int subscriberKey = 123;
+    final long subscriberKey = 123;
 
     broker.stubTopicSubscriptionApi(0L);
     final ResponseController responseController =

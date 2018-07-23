@@ -117,9 +117,9 @@ public class JobWorkerTest {
     assertThat(subscriptionRequest.getData())
         .contains(
             entry("worker", "foo"),
-            entry("timeout", 10000),
+            entry("timeout", 10000L),
             entry("jobType", "bar"),
-            entry("credits", 456));
+            entry("credits", 456L));
   }
 
   @Test
@@ -149,7 +149,7 @@ public class JobWorkerTest {
         .isEqualByComparingTo(ControlMessageType.REMOVE_JOB_SUBSCRIPTION);
 
     assertThat(subscriptionRequest.partitionId()).isEqualTo(clientRule.getDefaultPartitionId());
-    assertThat(subscriptionRequest.getData()).contains(entry("subscriberKey", 123));
+    assertThat(subscriptionRequest.getData()).contains(entry("subscriberKey", 123L));
   }
 
   @Test
@@ -219,7 +219,7 @@ public class JobWorkerTest {
     assertThat(subscriptionRequest.messageType())
         .isEqualByComparingTo(ControlMessageType.ADD_JOB_SUBSCRIPTION);
 
-    assertThat(subscriptionRequest.getData()).containsEntry("credits", bufferSize);
+    assertThat(subscriptionRequest.getData()).containsEntry("credits", (long) bufferSize);
   }
 
   @Test
@@ -244,7 +244,7 @@ public class JobWorkerTest {
     assertThat(subscriptionRequest.messageType())
         .isEqualByComparingTo(ControlMessageType.ADD_JOB_SUBSCRIPTION);
 
-    assertThat(subscriptionRequest.getData()).containsEntry("credits", bufferSize);
+    assertThat(subscriptionRequest.getData()).containsEntry("credits", (long) bufferSize);
   }
 
   @Test
@@ -286,7 +286,7 @@ public class JobWorkerTest {
     final ControlMessageRequest subscriptionRequest = getSubscribeRequests().findFirst().get();
 
     assertThat(subscriptionRequest.getData())
-        .contains(entry("timeout", (int) TimeUnit.DAYS.toMillis(10L)));
+        .contains(entry("timeout", TimeUnit.DAYS.toMillis(10L)));
   }
 
   @Test
@@ -720,8 +720,8 @@ public class JobWorkerTest {
         getCreditRequests().collect(Collectors.toList());
 
     assertThat(creditRequests).isNotEmpty();
-    final int numSubmittedCredits =
-        creditRequests.stream().mapToInt((r) -> (int) r.getData().get("credits")).sum();
+    final long numSubmittedCredits =
+        creditRequests.stream().mapToLong((r) -> (long) r.getData().get("credits")).sum();
     assertThat(numSubmittedCredits).isGreaterThan(0);
   }
 
@@ -747,7 +747,7 @@ public class JobWorkerTest {
 
     final ControlMessageRequest reopenRequest = getSubscribeRequests().skip(1).findFirst().get();
     assertThat(reopenRequest.getData())
-        .contains(entry("worker", "owner"), entry("timeout", 10000), entry("jobType", "foo"));
+        .contains(entry("worker", "owner"), entry("timeout", 10000L), entry("jobType", "foo"));
   }
 
   @Test
@@ -776,7 +776,7 @@ public class JobWorkerTest {
     final ControlMessageRequest request = controlMessageRequests.get(0);
     assertThat(request.messageType())
         .isEqualTo(ControlMessageType.INCREASE_JOB_SUBSCRIPTION_CREDITS);
-    assertThat(request.getData()).contains(entry("credits", 123), entry("subscriberKey", 456));
+    assertThat(request.getData()).contains(entry("credits", 123L), entry("subscriberKey", 456L));
   }
 
   @Test
@@ -829,7 +829,7 @@ public class JobWorkerTest {
 
     int totalReplenishedCredits = 0;
     for (ControlMessageRequest request : creditRequests) {
-      final int replenishedCredits = (int) request.getData().get("credits");
+      final long replenishedCredits = (long) request.getData().get("credits");
       assertThat(replenishedCredits).isGreaterThan(0);
       totalReplenishedCredits += replenishedCredits;
     }
@@ -852,8 +852,7 @@ public class JobWorkerTest {
 
     assertThat(subscriptionRequest.getData())
         .containsEntry("worker", client.getConfiguration().getDefaultJobWorkerName())
-        .containsEntry(
-            "timeout", (int) client.getConfiguration().getDefaultJobTimeout().toMillis());
+        .containsEntry("timeout", client.getConfiguration().getDefaultJobTimeout().toMillis());
   }
 
   protected void failJobFailure() {

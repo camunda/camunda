@@ -41,6 +41,6 @@ public class InitialEvent {
 
     metadata.reset().valueType(ValueType.NOOP);
 
-    return logStreamWriter.positionAsKey().metadataWriter(metadata).value(EMPTY_OBJECT).tryWrite();
+    return logStreamWriter.keyNull().metadataWriter(metadata).value(EMPTY_OBJECT).tryWrite();
   }
 }

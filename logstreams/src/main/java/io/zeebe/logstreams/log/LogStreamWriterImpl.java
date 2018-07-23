@@ -22,6 +22,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
+import io.zeebe.logstreams.impl.LogEntryDescriptor;
 import io.zeebe.util.EnsureUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.buffer.DirectBufferWriter;
@@ -59,6 +60,11 @@ public class LogStreamWriterImpl implements LogStreamRecordWriter {
   public void wrap(LogStream log) {
     this.logStream = log;
     reset();
+  }
+
+  @Override
+  public LogStreamRecordWriter keyNull() {
+    return key(LogEntryDescriptor.KEY_NULL_VALUE);
   }
 
   @Override
@@ -120,7 +126,7 @@ public class LogStreamWriterImpl implements LogStreamRecordWriter {
   @Override
   public void reset() {
     positionAsKey = false;
-    key = -1L;
+    key = LogEntryDescriptor.KEY_NULL_VALUE;
     metadataWriter = metadataWriterInstance;
     valueWriter = null;
     sourceRecordPosition = -1L;
@@ -133,9 +139,6 @@ public class LogStreamWriterImpl implements LogStreamRecordWriter {
   @Override
   public long tryWrite() {
     EnsureUtil.ensureNotNull("value", valueWriter);
-    if (!positionAsKey) {
-      EnsureUtil.ensureGreaterThanOrEqual("key", key, 0);
-    }
 
     long result = -1;
 

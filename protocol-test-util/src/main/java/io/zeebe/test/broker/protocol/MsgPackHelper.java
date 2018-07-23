@@ -15,6 +15,7 @@
  */
 package io.zeebe.test.broker.protocol;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -26,6 +27,10 @@ public class MsgPackHelper {
 
   public MsgPackHelper() {
     this.objectMapper = new ObjectMapper(new MessagePackFactory());
+    // in the default setting, jackson deserializes numbers as Integer/Long/BigDecimal
+    // depending on the value range; with that setting, asserting code has to do type conversion;
+    // => we ensure it is always Long
+    this.objectMapper.configure(DeserializationFeature.USE_LONG_FOR_INTS, true);
   }
 
   @SuppressWarnings("unchecked")

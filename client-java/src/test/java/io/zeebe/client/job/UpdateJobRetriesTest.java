@@ -63,7 +63,7 @@ public class UpdateJobRetriesTest {
         .containsOnly(
             entry("deadline", baseEvent.getDeadline().toEpochMilli()),
             entry("worker", baseEvent.getWorker()),
-            entry("retries", 4),
+            entry("retries", 4L),
             entry("type", baseEvent.getType()),
             entry("headers", baseEvent.getHeaders()),
             entry("customHeaders", baseEvent.getCustomHeaders()),

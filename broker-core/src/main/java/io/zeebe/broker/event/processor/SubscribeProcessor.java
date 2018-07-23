@@ -37,6 +37,8 @@ public class SubscribeProcessor implements EventProcessor {
   protected TopicSubscriberEvent subscriberEvent;
 
   protected EventProcessor state;
+  private long subscriberKey;
+
   protected final RequestFailureProcessor failedRequestState = new RequestFailureProcessor();
   protected final CreateSubscriptionServiceProcessor createProcessorState =
       new CreateSubscriptionServiceProcessor();
@@ -55,11 +57,14 @@ public class SubscribeProcessor implements EventProcessor {
     this.event = event;
     this.metadata = metadata;
     this.subscriberEvent = subscriberEvent;
+    this.subscriberKey = -1;
   }
 
   @Override
   public void processEvent(EventLifecycleContext ctx) {
     final DirectBuffer subscriptionName = subscriberEvent.getName();
+
+    subscriberKey = manager.nextSubscriberKey();
 
     if (subscriptionName.capacity() > maximumNameLength) {
       failedRequestState.wrapError(
@@ -124,7 +129,7 @@ public class SubscribeProcessor implements EventProcessor {
       final TopicSubscriptionPushProcessor processor =
           new TopicSubscriptionPushProcessor(
               metadata.getRequestStreamId(),
-              event.getKey(),
+              subscriberKey,
               resumePosition,
               subscriptionName,
               subscriberEvent.getBufferSize(),
@@ -189,7 +194,7 @@ public class SubscribeProcessor implements EventProcessor {
       return writer
           .metadataWriter(metadata)
           .valueWriter(subscriberEvent)
-          .key(event.getKey())
+          .key(subscriberKey)
           .tryWrite();
     }
   }

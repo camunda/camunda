@@ -29,8 +29,8 @@ import io.zeebe.broker.clustering.orchestration.id.IdGenerator;
 import io.zeebe.broker.clustering.orchestration.state.KnownTopics;
 import io.zeebe.broker.clustering.orchestration.state.KnownTopicsListener;
 import io.zeebe.broker.clustering.orchestration.state.TopicInfo;
+import io.zeebe.broker.logstreams.processor.TypedCommandWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
-import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.msgpack.value.IntegerValue;
 import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.protocol.intent.TopicIntent;
@@ -67,7 +67,7 @@ public class TopicCreationService extends Actor
 
   private KnownTopics knownTopics;
   private TopologyManager topologyManager;
-  private TypedStreamWriter streamWriter;
+  private TypedCommandWriter streamWriter;
   private IdGenerator idGenerator;
   private NodeSelector nodeSelector;
   private ClientTransport clientTransport;
@@ -86,7 +86,7 @@ public class TopicCreationService extends Actor
     final Partition leaderSystemPartition = leaderSystemPartitionInjector.getValue();
     final TypedStreamEnvironment typedStreamEnvironment =
         new TypedStreamEnvironment(leaderSystemPartition.getLogStream(), null);
-    streamWriter = typedStreamEnvironment.buildStreamWriter();
+    streamWriter = typedStreamEnvironment.buildCommandWriter();
 
     knownTopics.registerTopicListener(this);
     topologyManager.addTopologyPartitionListener(this);
@@ -312,7 +312,7 @@ public class TopicCreationService extends Actor
   }
 
   private void writeEvent(final long key, final TopicIntent intent, final TopicRecord topicEvent) {
-    streamWriter.writeFollowUpEvent(key, intent, topicEvent);
+    streamWriter.writeFollowUpCommand(key, intent, topicEvent);
 
     if (streamWriter.flush() >= 0) {
       actor.done();

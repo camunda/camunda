@@ -22,6 +22,7 @@ import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.streamProce
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
+import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
 import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
@@ -170,8 +171,9 @@ public class KnownTopics implements Service<KnownTopics>, StreamProcessorLifecyc
     final TypedStreamProcessor streamProcessor =
         new TypedStreamEnvironment(partition.getLogStream(), serverTransport.getOutput())
             .newStreamProcessor()
+            .keyGenerator(KeyGenerator.createTopicKeyGenerator())
             .onCommand(ValueType.TOPIC, TopicIntent.CREATE, topicCreateProcessor)
-            .onEvent(ValueType.TOPIC, TopicIntent.CREATE_COMPLETE, topicCreatedProcessor)
+            .onCommand(ValueType.TOPIC, TopicIntent.CREATE_COMPLETE, topicCreatedProcessor)
             .withListener(this)
             .withStateResource(knownTopics)
             .build();

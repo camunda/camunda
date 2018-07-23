@@ -22,16 +22,16 @@ import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.protocol.intent.Intent;
 import java.util.function.Consumer;
 
-public interface TypedBatchWriter {
-  void addNewCommand(Intent intent, UnpackedObject value);
+/** Things that any actor can write to a partition. */
+public interface TypedCommandWriter {
 
-  void addFollowUpCommand(long key, Intent intent, UnpackedObject value);
+  void writeNewCommand(Intent intent, UnpackedObject value);
 
-  /** @return the key of the new event */
-  long addNewEvent(Intent intent, UnpackedObject value);
+  void writeFollowUpCommand(long key, Intent intent, UnpackedObject value);
 
-  void addFollowUpEvent(long key, Intent intent, UnpackedObject value);
-
-  void addFollowUpEvent(
+  void writeFollowUpCommand(
       long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata);
+
+  /** @return position of new record, negative value on failure */
+  long flush();
 }

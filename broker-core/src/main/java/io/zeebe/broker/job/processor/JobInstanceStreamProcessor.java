@@ -57,6 +57,7 @@ public class JobInstanceStreamProcessor {
 
     return environment
         .newStreamProcessor()
+        .keyGenerator(KeyGenerator.createJobKeyGenerator())
         .onCommand(ValueType.JOB, JobIntent.CREATE, new CreateJobProcessor())
         .onCommand(ValueType.JOB, JobIntent.ACTIVATE, new ActivateJobProcessor())
         .onCommand(ValueType.JOB, JobIntent.COMPLETE, new CompleteJobProcessor())
@@ -71,9 +72,9 @@ public class JobInstanceStreamProcessor {
   private class CreateJobProcessor implements CommandProcessor<JobRecord> {
 
     @Override
-    public CommandResult onCommand(TypedRecord<JobRecord> command, CommandControl commandControl) {
-      jobIndex.putJobInstance(command.getKey(), STATE_CREATED);
-      return commandControl.accept(JobIntent.CREATED);
+    public void onCommand(TypedRecord<JobRecord> command, CommandControl commandControl) {
+      final long jobKey = commandControl.accept(JobIntent.CREATED);
+      jobIndex.putJobInstance(jobKey, STATE_CREATED);
     }
   }
 
@@ -137,15 +138,15 @@ public class JobInstanceStreamProcessor {
 
   private class CompleteJobProcessor implements CommandProcessor<JobRecord> {
     @Override
-    public CommandResult onCommand(TypedRecord<JobRecord> command, CommandControl commandControl) {
+    public void onCommand(TypedRecord<JobRecord> command, CommandControl commandControl) {
       final short state = jobIndex.getJobState(command.getKey());
 
       final boolean isCompletable = state == STATE_ACTIVATED || state == STATE_TIMED_OUT;
       if (isCompletable) {
         jobIndex.remove(command.getKey());
-        return commandControl.accept(JobIntent.COMPLETED);
+        commandControl.accept(JobIntent.COMPLETED);
       } else {
-        return commandControl.reject(
+        commandControl.reject(
             RejectionType.NOT_APPLICABLE, "Job is not in state: ACTIVATED, TIMED_OUT");
       }
     }
@@ -153,14 +154,14 @@ public class JobInstanceStreamProcessor {
 
   private class FailJobProcessor implements CommandProcessor<JobRecord> {
     @Override
-    public CommandResult onCommand(TypedRecord<JobRecord> command, CommandControl commandControl) {
+    public void onCommand(TypedRecord<JobRecord> command, CommandControl commandControl) {
       final short state = jobIndex.getJobState(command.getKey());
 
       if (state == STATE_ACTIVATED) {
         jobIndex.putJobInstance(command.getKey(), STATE_FAILED);
-        return commandControl.accept(JobIntent.FAILED);
+        commandControl.accept(JobIntent.FAILED);
       } else {
-        return commandControl.reject(RejectionType.NOT_APPLICABLE, "Job is not in state ACTIVATED");
+        commandControl.reject(RejectionType.NOT_APPLICABLE, "Job is not in state ACTIVATED");
       }
     }
   }
@@ -169,46 +170,46 @@ public class JobInstanceStreamProcessor {
     private static final String REJECTION_REASON = "Job is not in state ACTIVATED";
 
     @Override
-    public CommandResult onCommand(TypedRecord<JobRecord> command, CommandControl commandControl) {
+    public void onCommand(TypedRecord<JobRecord> command, CommandControl commandControl) {
       final short state = jobIndex.getJobState(command.getKey());
 
       if (state == STATE_ACTIVATED) {
         jobIndex.putJobInstance(command.getKey(), STATE_TIMED_OUT);
-        return commandControl.accept(JobIntent.TIMED_OUT);
+        commandControl.accept(JobIntent.TIMED_OUT);
       } else {
-        return commandControl.reject(RejectionType.NOT_APPLICABLE, REJECTION_REASON);
+        commandControl.reject(RejectionType.NOT_APPLICABLE, REJECTION_REASON);
       }
     }
   }
 
   private class UpdateRetriesJobProcessor implements CommandProcessor<JobRecord> {
     @Override
-    public CommandResult onCommand(TypedRecord<JobRecord> command, CommandControl commandControl) {
+    public void onCommand(TypedRecord<JobRecord> command, CommandControl commandControl) {
       final short state = jobIndex.getJobState(command.getKey());
       final JobRecord value = command.getValue();
 
       if (state == STATE_FAILED) {
         if (value.getRetries() > 0) {
-          return commandControl.accept(JobIntent.RETRIES_UPDATED);
+          commandControl.accept(JobIntent.RETRIES_UPDATED);
         } else {
-          return commandControl.reject(RejectionType.BAD_VALUE, "Retries must be greater than 0");
+          commandControl.reject(RejectionType.BAD_VALUE, "Retries must be greater than 0");
         }
       } else {
-        return commandControl.reject(RejectionType.NOT_APPLICABLE, "Job is not in state FAILED");
+        commandControl.reject(RejectionType.NOT_APPLICABLE, "Job is not in state FAILED");
       }
     }
   }
 
   private class CancelJobProcessor implements CommandProcessor<JobRecord> {
     @Override
-    public CommandResult onCommand(TypedRecord<JobRecord> command, CommandControl commandControl) {
+    public void onCommand(TypedRecord<JobRecord> command, CommandControl commandControl) {
 
       final short state = jobIndex.getJobState(command.getKey());
       if (state > 0) {
         jobIndex.remove(command.getKey());
-        return commandControl.accept(JobIntent.CANCELED);
+        commandControl.accept(JobIntent.CANCELED);
       } else {
-        return commandControl.reject(RejectionType.NOT_APPLICABLE, "Job does not exist");
+        commandControl.reject(RejectionType.NOT_APPLICABLE, "Job does not exist");
       }
     }
   }

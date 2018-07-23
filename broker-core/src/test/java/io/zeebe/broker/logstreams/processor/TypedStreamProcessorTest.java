@@ -83,6 +83,7 @@ public class TypedStreamProcessorTest {
 
     final TypedStreamProcessor streamProcessor =
         env.newStreamProcessor()
+            .keyGenerator(new KeyGenerator(0, 1))
             .onCommand(ValueType.TOPIC, TopicIntent.CREATE, new BatchProcessor())
             .build();
 

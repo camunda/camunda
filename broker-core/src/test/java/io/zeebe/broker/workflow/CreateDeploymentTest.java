@@ -27,6 +27,7 @@ import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -74,7 +75,7 @@ public class CreateDeploymentTest {
     // then
     final SubscribedRecord createDeploymentCommand = getFirstDeploymentCreateCommand();
 
-    assertThat(resp.key()).isEqualTo(createDeploymentCommand.position());
+    assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
     assertThat(resp.position()).isGreaterThanOrEqualTo(0L);
     assertThat(resp.sourceRecordPosition()).isEqualTo(createDeploymentCommand.position());
     assertThat(resp.partitionId()).isEqualTo(Protocol.SYSTEM_PARTITION);
@@ -98,8 +99,8 @@ public class CreateDeploymentTest {
     assertThat(deployedWorkflows.get(0))
         .containsExactly(
             entry("bpmnProcessId", "process"),
-            entry("version", 1),
-            entry("workflowKey", 1),
+            entry("version", 1L),
+            entry("workflowKey", 1L),
             entry("resourceName", "wf1.bpmn"));
 
     deployedWorkflows =
@@ -108,8 +109,8 @@ public class CreateDeploymentTest {
     assertThat(deployedWorkflows.get(0))
         .containsExactly(
             entry("bpmnProcessId", "process"),
-            entry("version", 2),
-            entry("workflowKey", 2),
+            entry("version", 2L),
+            entry("workflowKey", 2L),
             entry("resourceName", "wf2.bpmn"));
   }
 
@@ -148,7 +149,7 @@ public class CreateDeploymentTest {
         apiRule.topic().deployWithResponse("not-existing", WORKFLOW);
 
     // then
-    assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
+    assertThat(resp.key()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
     assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATE);
     assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
@@ -168,7 +169,7 @@ public class CreateDeploymentTest {
     // then
     final SubscribedRecord createDeploymentCommand = getFirstDeploymentCreateCommand();
 
-    assertThat(resp.key()).isEqualTo(createDeploymentCommand.position());
+    assertThat(resp.key()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
     assertThat(resp.sourceRecordPosition()).isEqualTo(createDeploymentCommand.position());
     assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATE);
@@ -201,7 +202,7 @@ public class CreateDeploymentTest {
     // then
     final SubscribedRecord createDeploymentCommand = getFirstDeploymentCreateCommand();
 
-    assertThat(resp.key()).isEqualTo(createDeploymentCommand.position());
+    assertThat(resp.key()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
     assertThat(resp.sourceRecordPosition()).isEqualTo(createDeploymentCommand.position());
     assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
@@ -228,7 +229,7 @@ public class CreateDeploymentTest {
     // then
     final SubscribedRecord createDeploymentCommand = getFirstDeploymentCreateCommand();
 
-    assertThat(resp.key()).isEqualTo(createDeploymentCommand.position());
+    assertThat(resp.key()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
     assertThat(resp.sourceRecordPosition()).isEqualTo(createDeploymentCommand.position());
     assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATE);
@@ -249,7 +250,7 @@ public class CreateDeploymentTest {
                 "invalid.bpmn");
 
     // then
-    assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
+    assertThat(resp.key()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
     assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATE);
     assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
@@ -297,10 +298,10 @@ public class CreateDeploymentTest {
 
     // then
     final Map<String, Object> workflow1 = getDeployedWorkflow(d1, 0);
-    assertThat(workflow1.get("version")).isEqualTo(1);
+    assertThat(workflow1.get("version")).isEqualTo(1L);
 
     final Map<String, Object> workflow2 = getDeployedWorkflow(d2, 0);
-    assertThat(workflow2.get("version")).isEqualTo(1);
+    assertThat(workflow2.get("version")).isEqualTo(1L);
   }
 
   private Map<String, Object> deploymentResource(final byte[] resource, String name) {
