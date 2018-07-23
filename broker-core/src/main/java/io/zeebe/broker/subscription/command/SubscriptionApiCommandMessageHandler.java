@@ -18,15 +18,20 @@
 package io.zeebe.broker.subscription.command;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
+import io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder;
 import io.zeebe.broker.subscription.MessageHeaderDecoder;
 import io.zeebe.broker.subscription.OpenMessageSubscriptionDecoder;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
+import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
+import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerMessageHandler;
 import io.zeebe.transport.ServerOutput;
@@ -40,11 +45,18 @@ public class SubscriptionApiCommandMessageHandler implements ServerMessageHandle
   private final OpenMessageSubscriptionCommand openMessageSubscriptionCommand =
       new OpenMessageSubscriptionCommand();
 
+  private final CorrelateWorkflowInstanceSubscriptionCommand
+      correlateWorkflowInstanceSubscriptionCommand =
+          new CorrelateWorkflowInstanceSubscriptionCommand();
+
   private final LogStreamRecordWriter logStreamWriter = new LogStreamWriterImpl();
   private final RecordMetadata recordMetadata = new RecordMetadata();
 
   private final MessageSubscriptionRecord messageSubscriptionRecord =
       new MessageSubscriptionRecord();
+
+  private final WorkflowInstanceSubscriptionRecord workflowInstanceSubscriptionRecord =
+      new WorkflowInstanceSubscriptionRecord();
 
   private final Int2ObjectHashMap<Partition> leaderPartitions;
 
@@ -68,6 +80,9 @@ public class SubscriptionApiCommandMessageHandler implements ServerMessageHandle
         case OpenMessageSubscriptionDecoder.TEMPLATE_ID:
           return onOpenMessageSubscription(buffer, offset, length);
 
+        case CorrelateWorkflowInstanceSubscriptionDecoder.TEMPLATE_ID:
+          return onCorrelateWorkflowInstanceSubscription(buffer, offset, length);
+
         default:
           break;
       }
@@ -79,26 +94,6 @@ public class SubscriptionApiCommandMessageHandler implements ServerMessageHandle
   private boolean onOpenMessageSubscription(DirectBuffer buffer, int offset, int length) {
     openMessageSubscriptionCommand.wrap(buffer, offset, length);
 
-    final int subscriptionPartitionId = openMessageSubscriptionCommand.getSubscriptionPartitionId();
-    final Partition partition = leaderPartitions.get(subscriptionPartitionId);
-    if (partition == null) {
-      // ignore message if you are not the leader of the partition
-      return true;
-    }
-
-    logStreamWriter.wrap(partition.getLogStream());
-
-    return writeOpenMessageSubscriptionCommand();
-  }
-
-  private boolean writeOpenMessageSubscriptionCommand() {
-
-    recordMetadata
-        .reset()
-        .recordType(RecordType.COMMAND)
-        .valueType(ValueType.MESSAGE_SUBSCRIPTION)
-        .intent(MessageSubscriptionIntent.OPEN);
-
     messageSubscriptionRecord
         .setWorkflowInstancePartitionId(
             openMessageSubscriptionCommand.getWorkflowInstancePartitionId())
@@ -107,11 +102,50 @@ public class SubscriptionApiCommandMessageHandler implements ServerMessageHandle
         .setMessageName(openMessageSubscriptionCommand.getMessageName())
         .setCorrelationKey(openMessageSubscriptionCommand.getCorrelationKey());
 
+    return writeCommand(
+        openMessageSubscriptionCommand.getSubscriptionPartitionId(),
+        ValueType.MESSAGE_SUBSCRIPTION,
+        MessageSubscriptionIntent.OPEN,
+        messageSubscriptionRecord);
+  }
+
+  private boolean onCorrelateWorkflowInstanceSubscription(
+      DirectBuffer buffer, int offset, int length) {
+    correlateWorkflowInstanceSubscriptionCommand.wrap(buffer, offset, length);
+
+    workflowInstanceSubscriptionRecord
+        .setWorkflowInstanceKey(
+            correlateWorkflowInstanceSubscriptionCommand.getWorkflowInstanceKey())
+        .setActivityInstanceKey(
+            correlateWorkflowInstanceSubscriptionCommand.getActivityInstanceKey())
+        .setMessageName(correlateWorkflowInstanceSubscriptionCommand.getMessageName())
+        .setPayload(correlateWorkflowInstanceSubscriptionCommand.getPayload());
+
+    return writeCommand(
+        correlateWorkflowInstanceSubscriptionCommand.getWorkflowInstancePartitionId(),
+        ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION,
+        WorkflowInstanceSubscriptionIntent.CORRELATE,
+        workflowInstanceSubscriptionRecord);
+  }
+
+  private boolean writeCommand(
+      int partitionId, ValueType valueType, Intent intent, UnpackedObject command) {
+
+    final Partition partition = leaderPartitions.get(partitionId);
+    if (partition == null) {
+      // ignore message if you are not the leader of the partition
+      return true;
+    }
+
+    logStreamWriter.wrap(partition.getLogStream());
+
+    recordMetadata.reset().recordType(RecordType.COMMAND).valueType(valueType).intent(intent);
+
     final long position =
         logStreamWriter
             .positionAsKey()
             .metadataWriter(recordMetadata)
-            .valueWriter(messageSubscriptionRecord)
+            .valueWriter(command)
             .tryWrite();
 
     return position > 0;

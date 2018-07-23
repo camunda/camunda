@@ -20,48 +20,100 @@ package io.zeebe.broker.subscription.message.processor;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsArray;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.zeebe.broker.logstreams.processor.SideEffectProducer;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.data.MessageRecord;
 import io.zeebe.broker.subscription.message.state.MessageDataStore;
-import io.zeebe.broker.subscription.message.state.MessageDataStore.MessageEntry;
+import io.zeebe.broker.subscription.message.state.MessageDataStore.Message;
+import io.zeebe.broker.subscription.message.state.MessageSubscriptionDataStore;
+import io.zeebe.broker.subscription.message.state.MessageSubscriptionDataStore.MessageSubscription;
+import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.MessageIntent;
+import java.util.List;
+import java.util.function.Consumer;
 
 public class PublishMessageProcessor implements TypedRecordProcessor<MessageRecord> {
 
-  private final MessageDataStore dataStore;
+  private final MessageDataStore messageStore;
+  private final MessageSubscriptionDataStore subscriptionStore;
 
-  public PublishMessageProcessor(MessageDataStore dataStore) {
-    this.dataStore = dataStore;
+  private SubscriptionCommandSender commandSender;
+
+  private TypedResponseWriter responseWriter;
+  private MessageRecord messageRecord;
+  private List<MessageSubscription> matchingSubscriptions;
+
+  public PublishMessageProcessor(
+      MessageDataStore messageStore, MessageSubscriptionDataStore subscriptionStore) {
+    this.messageStore = messageStore;
+    this.subscriptionStore = subscriptionStore;
   }
 
   @Override
   public void processRecord(
       TypedRecord<MessageRecord> record,
       TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter) {
+      TypedStreamWriter streamWriter,
+      Consumer<SideEffectProducer> sideEffect,
+      EventLifecycleContext ctx) {
+    this.responseWriter = responseWriter;
 
-    final MessageRecord message = record.getValue();
-    final MessageEntry entry =
-        new MessageEntry(
-            bufferAsString(message.getName()),
-            bufferAsString(message.getCorrelationKey()),
-            bufferAsArray(message.getPayload()),
-            message.hasMessageId() ? bufferAsString(message.getMessageId()) : null);
+    messageRecord = record.getValue();
 
-    if (message.hasMessageId() && dataStore.hasMessage(entry)) {
+    final Message message =
+        new Message(
+            bufferAsString(messageRecord.getName()),
+            bufferAsString(messageRecord.getCorrelationKey()),
+            bufferAsArray(messageRecord.getPayload()),
+            messageRecord.hasMessageId() ? bufferAsString(messageRecord.getMessageId()) : null);
+
+    if (messageRecord.hasMessageId() && messageStore.hasMessage(message)) {
       final String rejectionReason =
           String.format(
-              "message with id '%s' is already published", bufferAsString(message.getMessageId()));
+              "message with id '%s' is already published",
+              bufferAsString(messageRecord.getMessageId()));
+
       streamWriter.writeRejection(record, RejectionType.BAD_VALUE, rejectionReason);
       responseWriter.writeRejectionOnCommand(record, RejectionType.BAD_VALUE, rejectionReason);
+
     } else {
       final long key = streamWriter.writeNewEvent(MessageIntent.PUBLISHED, record.getValue());
       responseWriter.writeEventOnCommand(key, MessageIntent.PUBLISHED, record);
-      dataStore.addMessage(entry);
+
+      matchingSubscriptions =
+          subscriptionStore.findSubscriptions(message.getName(), message.getCorrelationKey());
+
+      sideEffect.accept(this::correlateMessage);
+
+      messageStore.addMessage(message);
     }
+  }
+
+  private boolean correlateMessage() {
+    for (MessageSubscription sub : matchingSubscriptions) {
+      final boolean success =
+          commandSender.correlateWorkflowInstanceSubscription(
+              sub.getWorkflowInstancePartitionId(),
+              sub.getWorkflowInstanceKey(),
+              sub.getActivityInstanceKey(),
+              messageRecord.getName(),
+              messageRecord.getPayload());
+
+      if (!success) {
+        // try again
+        return false;
+      }
+    }
+
+    return responseWriter.flush();
+  }
+
+  public void setSubscriptionCommandSender(SubscriptionCommandSender sender) {
+    this.commandSender = sender;
   }
 }

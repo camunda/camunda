@@ -17,25 +17,81 @@
  */
 package io.zeebe.broker.subscription.message.processor;
 
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+
+import io.zeebe.broker.logstreams.processor.SideEffectProducer;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
+import io.zeebe.broker.subscription.message.state.MessageDataStore;
+import io.zeebe.broker.subscription.message.state.MessageDataStore.Message;
+import io.zeebe.broker.subscription.message.state.MessageSubscriptionDataStore;
+import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
+import java.util.function.Consumer;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class OpenMessageSubscriptionProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
+
+  private final MessageDataStore messageStore;
+  private final MessageSubscriptionDataStore subscriptionStore;
+
+  private final DirectBuffer messagePayload = new UnsafeBuffer(0, 0);
+
+  private SubscriptionCommandSender commandSender;
+
+  private MessageSubscriptionRecord subscriptionRecord;
+
+  public OpenMessageSubscriptionProcessor(
+      MessageDataStore messageStore, MessageSubscriptionDataStore subscriptionStore) {
+    this.messageStore = messageStore;
+    this.subscriptionStore = subscriptionStore;
+  }
 
   @Override
   public void processRecord(
       TypedRecord<MessageSubscriptionRecord> record,
       TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter) {
+      TypedStreamWriter streamWriter,
+      Consumer<SideEffectProducer> sideEffect,
+      EventLifecycleContext ctx) {
+
+    subscriptionRecord = record.getValue();
+
+    final Message message =
+        messageStore.findMessage(
+            bufferAsString(subscriptionRecord.getMessageName()),
+            bufferAsString(subscriptionRecord.getCorrelationKey()));
+
+    if (message != null) {
+      messagePayload.wrap(message.getPayload());
+
+      sideEffect.accept(this::correlateMessage);
+    }
 
     // currently, the command is always accepted
     // later, it will check if the subscription is already opened before
     streamWriter.writeFollowUpEvent(
-        record.getKey(), MessageSubscriptionIntent.OPENED, record.getValue());
+        record.getKey(), MessageSubscriptionIntent.OPENED, subscriptionRecord);
+
+    subscriptionStore.addSubscription(subscriptionRecord);
+  }
+
+  private boolean correlateMessage() {
+    return commandSender.correlateWorkflowInstanceSubscription(
+        subscriptionRecord.getWorkflowInstancePartitionId(),
+        subscriptionRecord.getWorkflowInstanceKey(),
+        subscriptionRecord.getActivityInstanceKey(),
+        subscriptionRecord.getMessageName(),
+        messagePayload);
+  }
+
+  public void setSubscriptionCommandSender(SubscriptionCommandSender sender) {
+    this.commandSender = sender;
   }
 }

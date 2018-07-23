@@ -29,6 +29,7 @@ import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.TransportMessage;
+import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
@@ -47,6 +48,10 @@ public class SubscriptionCommandSender implements TopologyPartitionListener {
 
   private final OpenMessageSubscriptionCommand openMessageSubscriptionCommand =
       new OpenMessageSubscriptionCommand();
+
+  private final CorrelateWorkflowInstanceSubscriptionCommand
+      correlateWorkflowInstanceSubscriptionCommand =
+          new CorrelateWorkflowInstanceSubscriptionCommand();
 
   private final TransportMessage subscriptionMessage = new TransportMessage();
 
@@ -86,13 +91,6 @@ public class SubscriptionCommandSender implements TopologyPartitionListener {
     }
 
     final int subscriptionPartitionId = getSubscriptionPartitionId(correlationKey);
-    final RemoteAddress partitionLeader = partitionLeaders.get(subscriptionPartitionId);
-    if (partitionLeader == null) {
-      // retry when no leader is known
-      return false;
-    }
-
-    subscriptionMessage.remoteAddress(partitionLeader);
 
     openMessageSubscriptionCommand.setSubscriptionPartitionId(subscriptionPartitionId);
     openMessageSubscriptionCommand.setWorkflowInstancePartitionId(partitionId);
@@ -100,15 +98,48 @@ public class SubscriptionCommandSender implements TopologyPartitionListener {
     openMessageSubscriptionCommand.setActivityInstanceKey(activityInstanceKey);
     openMessageSubscriptionCommand.getMessageName().wrap(messageName);
     openMessageSubscriptionCommand.getCorrelationKey().wrap(correlationKey);
-    subscriptionMessage.writer(openMessageSubscriptionCommand);
 
-    return subscriptionClient.getOutput().sendMessage(subscriptionMessage);
+    return sendSubscriptipnCommand(subscriptionPartitionId, openMessageSubscriptionCommand);
   }
 
   private int getSubscriptionPartitionId(DirectBuffer correlationKey) {
     final int hashCode = SubscriptionUtil.getSubscriptionHashCode(correlationKey);
     final int index = Math.abs(hashCode % partitionIds.size());
     return partitionIds.getInt(index);
+  }
+
+  public boolean correlateWorkflowInstanceSubscription(
+      int workflowInstancePartitionId,
+      long workflowInstanceKey,
+      long activityInstanceKey,
+      DirectBuffer messageName,
+      DirectBuffer payload) {
+
+    correlateWorkflowInstanceSubscriptionCommand.setWorkflowInstancePartitionId(
+        workflowInstancePartitionId);
+    correlateWorkflowInstanceSubscriptionCommand.setWorkflowInstanceKey(workflowInstanceKey);
+    correlateWorkflowInstanceSubscriptionCommand.setActivityInstanceKey(activityInstanceKey);
+    correlateWorkflowInstanceSubscriptionCommand.getMessageName().wrap(messageName);
+    correlateWorkflowInstanceSubscriptionCommand.getPayload().wrap(payload);
+    subscriptionMessage.writer(correlateWorkflowInstanceSubscriptionCommand);
+
+    return sendSubscriptipnCommand(
+        workflowInstancePartitionId, correlateWorkflowInstanceSubscriptionCommand);
+  }
+
+  private boolean sendSubscriptipnCommand(
+      final int receiverPartitionId, final BufferWriter command) {
+
+    final RemoteAddress partitionLeader = partitionLeaders.get(receiverPartitionId);
+    if (partitionLeader == null) {
+      // retry when no leader is known
+      return false;
+    }
+
+    subscriptionMessage.remoteAddress(partitionLeader);
+    subscriptionMessage.writer(command);
+
+    return subscriptionClient.getOutput().sendMessage(subscriptionMessage);
   }
 
   public boolean hasPartitionIds() {

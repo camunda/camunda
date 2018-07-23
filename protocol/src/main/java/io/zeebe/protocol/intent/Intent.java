@@ -31,7 +31,8 @@ public interface Intent {
           TopicIntent.class,
           WorkflowInstanceIntent.class,
           MessageIntent.class,
-          MessageSubscriptionIntent.class);
+          MessageSubscriptionIntent.class,
+          WorkflowInstanceSubscriptionIntent.class);
 
   Intent UNKNOWN =
       new Intent() {
@@ -78,6 +79,8 @@ public interface Intent {
         return MessageIntent.from(intent);
       case MESSAGE_SUBSCRIPTION:
         return MessageSubscriptionIntent.from(intent);
+      case WORKFLOW_INSTANCE_SUBSCRIPTION:
+        return WorkflowInstanceSubscriptionIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
@@ -112,6 +115,8 @@ public interface Intent {
         return WorkflowInstanceIntent.valueOf(intent);
       case MESSAGE_SUBSCRIPTION:
         return MessageSubscriptionIntent.valueOf(intent);
+      case WORKFLOW_INSTANCE_SUBSCRIPTION:
+        return WorkflowInstanceSubscriptionIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;

@@ -17,7 +17,10 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.broker.test.MsgPackUtil.*;
+import static io.zeebe.broker.test.MsgPackUtil.JSON_MAPPER;
+import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_MAPPER;
+import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_PAYLOAD;
+import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
@@ -175,6 +178,41 @@ public class UpdatePayloadTest {
     final byte[] payload = (byte[]) activityCompletedEvent.value().get("payload");
     assertThat(MSGPACK_MAPPER.readTree(payload))
         .isEqualTo(JSON_MAPPER.readTree("{'obj':{'testAttr':'test'}, 'b':'wf'}"));
+  }
+
+  @Test
+  public void shouldUpdatePayloadWhenCatchEventIsEntered() throws Exception {
+    // given
+    testClient.deploy(
+        Bpmn.createExecutableWorkflow("wf")
+            .startEvent()
+            .intermediateCatchEvent("catch-event", b -> b.messageName("msg").correlationKey("$.id"))
+            .done());
+
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance("wf", asMsgPack("id", "123"));
+
+    final SubscribedRecord catchEventEntered =
+        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.CATCH_EVENT_ENTERED);
+
+    // when
+    updatePayload(
+        catchEventEntered.position(),
+        workflowInstanceKey,
+        catchEventEntered.key(),
+        MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'id':'123', 'x': 1}")));
+
+    testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.PAYLOAD_UPDATED);
+
+    testClient.publishMessage("msg", "123", asMsgPack("y", 2));
+
+    // then
+    final SubscribedRecord catchEventOccurred =
+        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.CATCH_EVENT_OCCURRED);
+
+    final byte[] payload = (byte[]) catchEventOccurred.value().get("payload");
+    assertThat(MSGPACK_MAPPER.readTree(payload))
+        .isEqualTo(JSON_MAPPER.readTree("{'id':'123', 'x': 1, 'y': 2}"));
   }
 
   @Test

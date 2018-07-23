@@ -39,7 +39,9 @@ public enum WorkflowInstanceIntent implements Intent {
   PAYLOAD_UPDATED((short) 15),
 
   CATCH_EVENT_ENTERING((short) 16),
-  CATCH_EVENT_ENTERED((short) 17);
+  CATCH_EVENT_ENTERED((short) 17),
+  CATCH_EVENT_OCCURRING((short) 18),
+  CATCH_EVENT_OCCURRED((short) 19);
 
   private short value;
 
@@ -89,6 +91,10 @@ public enum WorkflowInstanceIntent implements Intent {
         return CATCH_EVENT_ENTERING;
       case 17:
         return CATCH_EVENT_ENTERED;
+      case 18:
+        return CATCH_EVENT_OCCURRING;
+      case 19:
+        return CATCH_EVENT_OCCURRED;
       default:
         return Intent.UNKNOWN;
     }
