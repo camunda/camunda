@@ -26,7 +26,6 @@ export const Center = styled(SplitPane)`
 export const Selections = styled.div`
   width: 479px;
   display: flex;
-
   margin-left: 1px;
 `;
 
@@ -40,6 +39,9 @@ export const RightExpandButton = styled(ExpandButton)`
 `;
 
 export const SelectionHeader = styled(Panel.Header)`
+  display: flex;
+  justify-content: flex-start;
+
   padding-left: 45px;
   display: flex;
   flex-shrink: 0;
