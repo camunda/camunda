@@ -119,7 +119,7 @@ export default class Statistics extends React.Component {
   };
 
   createChart = (node, dataFct, labelSuffix = '') => {
-    let isHover = false;
+    let isInside = false;
     const {viewer} = this.props;
     return new ChartRenderer(node, {
       type: 'bar',
@@ -151,15 +151,15 @@ export default class Statistics extends React.Component {
           onHover: (e, activeElements) => {
             const canvas = viewer.get('canvas');
             const classMark = 'chart-hover';
-            if (activeElements.length > 0 && !isHover) {
-              // mouse in
+            if (activeElements.length > 0 && !isInside) {
+              // triggered once the mouse move from outside to inside a bar box
               this.markSequenceFlow(canvas, activeElements, classMark);
-              isHover = true;
-            } else if (activeElements.length <= 0 && isHover) {
-              // mouse out
+              isInside = true;
+            } else if (activeElements.length <= 0 && isInside) {
+              // triggered once the mouse move from inside to outside the barchart box
               const elementRegistry = viewer.get('elementRegistry');
               elementRegistry.forEach(element => canvas.removeMarker(element, classMark));
-              isHover = false;
+              isInside = false;
             }
           }
         },
@@ -179,12 +179,12 @@ export default class Statistics extends React.Component {
 
   markSequenceFlow = (canvas, activeElements, classMark) => {
     const {gateway} = this.props;
-    const HoveredElementLabel = activeElements[0]._model.label;
+    const hoveredElementLabel = activeElements[0]._model.label;
     const sequenceFlow = gateway.outgoing.find(
       element =>
-        element.name === HoveredElementLabel ||
-        element.targetRef.name === HoveredElementLabel ||
-        element.targetRef.id === HoveredElementLabel
+        element.name === hoveredElementLabel ||
+        element.targetRef.name === hoveredElementLabel ||
+        element.targetRef.id === hoveredElementLabel
     );
     if (sequenceFlow) canvas.addMarker(sequenceFlow, classMark);
   };
