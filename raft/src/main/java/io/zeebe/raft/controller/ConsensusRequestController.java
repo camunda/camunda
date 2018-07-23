@@ -20,7 +20,10 @@ import static io.zeebe.raft.PollRequestEncoder.lastEventTermNullValue;
 
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.raft.*;
+import io.zeebe.raft.Loggers;
+import io.zeebe.raft.Raft;
+import io.zeebe.raft.RaftMember;
+import io.zeebe.raft.RaftMembers;
 import io.zeebe.transport.ClientResponse;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.ActorControl;
@@ -144,7 +147,8 @@ public class ConsensusRequestController {
                 }
               }
             } else {
-              LOG.debug("Failed to receive {} response", requestName, throwable);
+              LOG.debug(
+                  "Failed to receive {} response from {}", requestName, member.getRemoteAddress());
             }
 
             if (pendingRequests == 0 && !isGranted()) {
