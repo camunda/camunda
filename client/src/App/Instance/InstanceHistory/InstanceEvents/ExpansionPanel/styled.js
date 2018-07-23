@@ -53,6 +53,5 @@ export const Summary = themed(styled.div`
 
 export const Details = styled.div`
   padding-left: 22px;
-  display: ${({expanded}) => (expanded ? 'flex' : 'none')};
-  flex-direction: column;
+  display: ${({expanded}) => (expanded ? 'block' : 'none')};
 `;

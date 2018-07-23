@@ -26,9 +26,11 @@ export const EventsContainer = styled.div`
   padding-left: 15px;
 `;
 
-export const MetaDataEntry = themed(styled.p`
+export const DataEntry = themed(styled.div`
   opacity: 0.9;
   color: ${themeStyle({
     light: Colors.uiLight06
   })};
+  padding-top: 7px;
+  padding-bottom: 7px;
 `);

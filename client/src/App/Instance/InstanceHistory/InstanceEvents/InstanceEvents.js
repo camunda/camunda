@@ -47,14 +47,25 @@ export default class InstanceEvents extends React.Component {
     }
   }
 
-  renderEventMetadata = metadata => {
-    return Object.entries(metadata)
+  renderData = data => {
+    return Object.entries(data)
       .filter(([_, value]) => Boolean(value))
-      .map(([key, value], idx) => (
-        <Styled.MetaDataEntry
-          key={idx}
-        >{`${key}: ${value}`}</Styled.MetaDataEntry>
-      ));
+      .map(([key, value], idx) => {
+        if (typeof value !== 'object') {
+          return (
+            <Styled.DataEntry key={idx}>{`${key}: ${value}`}</Styled.DataEntry>
+          );
+        }
+
+        return (
+          <ExpansionPanel>
+            <ExpansionPanel.Summary>{key}</ExpansionPanel.Summary>
+            <ExpansionPanel.Details>
+              {!!value && this.renderData(value)}
+            </ExpansionPanel.Details>
+          </ExpansionPanel>
+        );
+      });
   };
 
   renderEvent = ({eventType, metadata}, idx) => {
@@ -64,7 +75,7 @@ export default class InstanceEvents extends React.Component {
       <ExpansionPanel key={key}>
         <ExpansionPanel.Summary>{eventType}</ExpansionPanel.Summary>
         <ExpansionPanel.Details>
-          {!!metadata && this.renderEventMetadata(metadata)}
+          {!!metadata && this.renderData(metadata)}
         </ExpansionPanel.Details>
       </ExpansionPanel>
     );
