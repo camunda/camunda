@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.logstreams.rocksdb;
+package io.zeebe.logstreams.state;
 
 import io.zeebe.logstreams.impl.Loggers;
-import io.zeebe.logstreams.state.SnapshotMetadata;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,14 +23,14 @@ import java.util.function.Predicate;
 import org.slf4j.Logger;
 
 /** Handles how snapshots/databases are stored on the file system. */
-public class RocksDBStorage {
+public class StateStorage {
   private static final Logger LOG = Loggers.ROCKSDB_LOGGER;
 
   private static final String SEPARATOR = "_";
   private final File runtimeDirectory;
   private final File snapshotsDirectory;
 
-  public RocksDBStorage(final File runtimeDirectory, final File snapshotsDirectory) {
+  public StateStorage(final File runtimeDirectory, final File snapshotsDirectory) {
     this.runtimeDirectory = runtimeDirectory;
     this.snapshotsDirectory = snapshotsDirectory;
   }
@@ -44,7 +43,7 @@ public class RocksDBStorage {
     return snapshotsDirectory;
   }
 
-  public File getSnapshotDirectoryFor(final SnapshotMetadata metadata) {
+  public File getSnapshotDirectoryFor(final StateSnapshotMetadata metadata) {
     if (metadata == null) {
       throw new NullPointerException();
     }
@@ -61,7 +60,7 @@ public class RocksDBStorage {
     return new File(snapshotsDirectory, path);
   }
 
-  public SnapshotMetadata getSnapshotMetadata(final File folder) {
+  public StateSnapshotMetadata getSnapshotMetadata(final File folder) {
     if (folder == null) {
       throw new NullPointerException();
     }
@@ -73,24 +72,24 @@ public class RocksDBStorage {
     final String name = folder.getName();
     final String[] parts = name.split(SEPARATOR, 3);
 
-    return new SnapshotMetadata(
+    return new StateSnapshotMetadata(
         Long.parseLong(parts[0]),
         Long.parseLong(parts[1]),
         Integer.parseInt(parts[2]),
         folder.exists());
   }
 
-  public List<SnapshotMetadata> list() {
+  public List<StateSnapshotMetadata> list() {
     return list(s -> true);
   }
 
-  public List<SnapshotMetadata> listRecoverable(long lastSuccessfulProcessedEventPosition) {
+  public List<StateSnapshotMetadata> listRecoverable(long lastSuccessfulProcessedEventPosition) {
     return list(s -> s.getLastWrittenEventPosition() <= lastSuccessfulProcessedEventPosition);
   }
 
-  public List<SnapshotMetadata> list(Predicate<SnapshotMetadata> filter) {
+  public List<StateSnapshotMetadata> list(Predicate<StateSnapshotMetadata> filter) {
     final File[] snapshotFolders = snapshotsDirectory.listFiles();
-    final List<SnapshotMetadata> snapshots = new ArrayList<>();
+    final List<StateSnapshotMetadata> snapshots = new ArrayList<>();
 
     if (snapshotFolders == null || snapshotFolders.length == 0) {
       return snapshots;
@@ -99,7 +98,7 @@ public class RocksDBStorage {
     for (final File folder : snapshotFolders) {
       if (folder.isDirectory()) {
         try {
-          final SnapshotMetadata metadata = getSnapshotMetadata(folder);
+          final StateSnapshotMetadata metadata = getSnapshotMetadata(folder);
 
           if (filter.test(metadata)) {
             snapshots.add(metadata);

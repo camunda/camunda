@@ -40,6 +40,7 @@ public class RaftPersistentConfigurationManager extends Actor {
   private static final String PARTITION_METAFILE_NAME = "partition.json";
   private static final String PARTITION_LOG_DIR = "segments";
   private static final String PARTITION_SNAPSHOTS_DIR = "snapshots";
+  private static final String PARTITION_STATES_DIR = "state";
 
   private final List<RaftPersistentConfiguration> configurations = new ArrayList<>();
   private final DataCfg dataConfiguration;
@@ -72,8 +73,11 @@ public class RaftPersistentConfigurationManager extends Actor {
       if (configFile.exists()) {
         final File logDirectory = new File(partitionDirectory, PARTITION_LOG_DIR);
         final File snapshotsDirectory = new File(partitionDirectory, PARTITION_SNAPSHOTS_DIR);
+        final File statesDirectory = new File(partitionDirectory, PARTITION_STATES_DIR);
+
         configurations.add(
-            new RaftPersistentConfiguration(configFile, logDirectory, snapshotsDirectory));
+            new RaftPersistentConfiguration(
+                configFile, logDirectory, snapshotsDirectory, statesDirectory));
         partitionCountPerDataDirectory[offset]++;
       }
     }
@@ -114,8 +118,12 @@ public class RaftPersistentConfigurationManager extends Actor {
               final File snapshotDirectory = new File(partitionDirectory, PARTITION_SNAPSHOTS_DIR);
               snapshotDirectory.mkdir();
 
+              final File statesDirectory = new File(partitionDirectory, PARTITION_STATES_DIR);
+              statesDirectory.mkdir();
+
               final RaftPersistentConfiguration storage =
-                  new RaftPersistentConfiguration(metafile, logDirectory, snapshotDirectory);
+                  new RaftPersistentConfiguration(
+                      metafile, logDirectory, snapshotDirectory, statesDirectory);
 
               storage
                   .setTopicName(topicName)

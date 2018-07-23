@@ -20,8 +20,8 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.state.SnapshotController;
-import io.zeebe.logstreams.state.SnapshotMetadata;
+import io.zeebe.logstreams.spi.SnapshotController;
+import io.zeebe.logstreams.state.StateSnapshotMetadata;
 import io.zeebe.util.LangUtil;
 import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.*;
@@ -150,7 +150,7 @@ public class StreamProcessorController extends Actor {
   }
 
   private long recoverFromSnapshot(long commitPosition, int term) throws Exception {
-    final SnapshotMetadata recovered =
+    final StateSnapshotMetadata recovered =
         snapshotController.recover(commitPosition, term, this::validateSnapshot);
     final long snapshotPosition = recovered.getLastSuccessfulProcessedEventPosition();
 
@@ -170,7 +170,7 @@ public class StreamProcessorController extends Actor {
     return snapshotPosition;
   }
 
-  private boolean validateSnapshot(final SnapshotMetadata metadata) {
+  private boolean validateSnapshot(final StateSnapshotMetadata metadata) {
     final boolean wasFound = logStreamReader.seek(metadata.getLastWrittenEventPosition());
     boolean isValid = false;
 
@@ -422,45 +422,41 @@ public class StreamProcessorController extends Actor {
   private void doCreateSnapshot() {
     if (currentEvent != null) {
       final long commitPosition = streamProcessorContext.getLogStream().getCommitPosition();
+      final long lastWrittenPosition =
+          lastWrittenEventPosition > lastSuccessfulProcessedEventPosition
+              ? lastWrittenEventPosition
+              : lastSuccessfulProcessedEventPosition;
 
-      // TODO: delegate to snapshot controller?
-      final boolean snapshotAlreadyPresent =
-          lastSuccessfulProcessedEventPosition <= snapshotPosition;
+      final StateSnapshotMetadata metadata =
+          new StateSnapshotMetadata(
+              lastSuccessfulProcessedEventPosition,
+              lastWrittenPosition,
+              streamProcessorContext.getLogStream().getTerm(),
+              false);
 
-      if (!snapshotAlreadyPresent) {
-        // ensure that the last written event was committed
-        if (commitPosition >= lastWrittenEventPosition) {
-          writeSnapshot(lastSuccessfulProcessedEventPosition);
-        }
-      }
+      writeSnapshot(metadata, commitPosition);
     }
 
-    // re-rest to cpu bound
+    // reset to cpu bound
     actor.setSchedulingHints(SchedulingHints.cpuBound(ActorPriority.REGULAR));
   }
 
-  private void writeSnapshot(final long eventPosition) {
-    final SnapshotMetadata metadata =
-        new SnapshotMetadata(
-            eventPosition,
-            lastWrittenEventPosition,
-            streamProcessorContext.getLogStream().getTerm(),
-            false);
+  private void writeSnapshot(final StateSnapshotMetadata metadata, long commitPosition) {
+    final long start = System.currentTimeMillis();
+    final String name = streamProcessorContext.getName();
+    LOG.info(
+        "Write snapshot for stream processor {} at event position {}.",
+        name,
+        metadata.getLastSuccessfulProcessedEventPosition());
 
     try {
-      final long start = System.currentTimeMillis();
-      final String name = streamProcessorContext.getName();
-      LOG.info("Write snapshot for stream processor {} at event position {}.", name, eventPosition);
-
-      snapshotController.takeSnapshot(metadata);
+      snapshotController.takeSnapshot(metadata, commitPosition);
 
       final long snapshotCreationTime = System.currentTimeMillis() - start;
       LOG.info("Creation of snapshot {} took {} ms.", name, snapshotCreationTime);
-
-      // metrics.recordSnapshotSize(snapshotSize);
       metrics.recordSnapshotCreationTime(snapshotCreationTime);
 
-      snapshotPosition = eventPosition;
+      snapshotPosition = lastSuccessfulProcessedEventPosition;
     } catch (Exception e) {
       LOG.error("Stream processor '{}' failed. Can not write snapshot.", getName(), e);
     }

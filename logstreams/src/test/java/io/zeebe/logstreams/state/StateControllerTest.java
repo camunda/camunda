@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.logstreams.rocksdb;
+package io.zeebe.logstreams.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -29,20 +29,20 @@ import org.junit.rules.TemporaryFolder;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 
-public class RocksDBControllerTest {
+public class StateControllerTest {
   @Rule public TemporaryFolder tempFolderRule = new TemporaryFolder();
   @Rule public AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
 
-  private RocksDBStorage storage;
-  private RocksDBController controller;
+  private StateStorage storage;
+  private StateController controller;
 
   @Before
   public void setup() throws IOException {
     final File snapshotsDirectory = tempFolderRule.newFolder("snapshots");
     final File runtimeDirectory = tempFolderRule.newFolder("runtime");
-    storage = new RocksDBStorage(runtimeDirectory, snapshotsDirectory);
+    storage = new StateStorage(runtimeDirectory, snapshotsDirectory);
 
-    controller = new RocksDBController();
+    controller = new StateController();
     autoCloseableRule.manage(controller);
   }
 

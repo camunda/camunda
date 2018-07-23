@@ -16,12 +16,8 @@
 package io.zeebe.logstreams.impl.snapshot.fs;
 
 import io.zeebe.logstreams.impl.Loggers;
-import io.zeebe.logstreams.spi.ReadableSnapshot;
-import io.zeebe.logstreams.spi.SnapshotStorage;
-import io.zeebe.logstreams.spi.SnapshotSupport;
-import io.zeebe.logstreams.spi.SnapshotWriter;
-import io.zeebe.logstreams.state.SnapshotController;
-import io.zeebe.logstreams.state.SnapshotMetadata;
+import io.zeebe.logstreams.spi.*;
+import io.zeebe.logstreams.state.StateSnapshotMetadata;
 import java.util.function.Predicate;
 import org.slf4j.Logger;
 
@@ -40,7 +36,16 @@ public class FsSnapshotController implements SnapshotController {
   }
 
   @Override
-  public void takeSnapshot(SnapshotMetadata metadata) throws Exception {
+  public void takeSnapshot(StateSnapshotMetadata metadata, long commitPosition) throws Exception {
+    if (metadata.getLastWrittenEventPosition() > commitPosition) {
+      return;
+    }
+
+    takeSnapshot(metadata);
+  }
+
+  @Override
+  public void takeSnapshot(final StateSnapshotMetadata metadata) throws Exception {
     if (storage.snapshotExists(name, metadata.getLastSuccessfulProcessedEventPosition())) {
       return;
     }
@@ -58,26 +63,37 @@ public class FsSnapshotController implements SnapshotController {
   }
 
   @Override
-  public SnapshotMetadata recover(long commitPosition, int term, Predicate<SnapshotMetadata> filter)
-      throws Exception {
-    SnapshotMetadata metadata = SnapshotMetadata.createInitial(term);
+  public StateSnapshotMetadata recover(
+      long commitPosition, int term, Predicate<StateSnapshotMetadata> filter) throws Exception {
+    StateSnapshotMetadata metadata = StateSnapshotMetadata.createInitial(term);
 
     final ReadableSnapshot lastSnapshot = storage.getLastSnapshot(name);
     if (lastSnapshot != null) {
-      final SnapshotMetadata recovered =
-          new SnapshotMetadata(lastSnapshot.getPosition(), lastSnapshot.getPosition(), term, true);
+      final StateSnapshotMetadata recovered =
+          new StateSnapshotMetadata(
+              lastSnapshot.getPosition(), lastSnapshot.getPosition(), term, true);
 
-      if (filter.test(recovered)) {
-        lastSnapshot.recoverFromSnapshot(resource);
-        metadata = recovered;
-      }
+      lastSnapshot.recoverFromSnapshot(resource);
+      metadata = recovered;
     }
 
     return metadata;
   }
 
   @Override
-  public void purgeAllExcept(SnapshotMetadata metadata) throws Exception {
-    // NOOP since we only keep one last snapshot always
+  public void purgeAll(final Predicate<StateSnapshotMetadata> filter) throws Exception {
+    storage
+        .listSnapshots()
+        .stream()
+        .filter(s -> s.getName().equals(name) && filter.test(convertMetadata(s)))
+        .forEach(this::purge);
+  }
+
+  private void purge(io.zeebe.logstreams.spi.SnapshotMetadata metadata) {
+    storage.purgeSnapshot(metadata.getName());
+  }
+
+  private StateSnapshotMetadata convertMetadata(io.zeebe.logstreams.spi.SnapshotMetadata metadata) {
+    return new StateSnapshotMetadata(metadata.getPosition(), metadata.getPosition(), -1, true);
   }
 }

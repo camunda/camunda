@@ -13,34 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.logstreams.rocksdb;
+package io.zeebe.logstreams.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.logstreams.state.SnapshotMetadata;
 import io.zeebe.test.util.AutoCloseableRule;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class RocksDBStorageTest {
+public class StateStorageTest {
   @Rule public TemporaryFolder tempFolderRule = new TemporaryFolder();
   @Rule public AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
 
   private File root;
-  private RocksDBStorage storage;
+  private StateStorage storage;
 
   @Before
   public void setup() throws Exception {
     final File snapshotsDirectory = tempFolderRule.newFolder("snapshots");
     final File runtimeDirectory = tempFolderRule.newFolder("runtime");
-    storage = new RocksDBStorage(runtimeDirectory, snapshotsDirectory);
+    storage = new StateStorage(runtimeDirectory, snapshotsDirectory);
   }
 
   @Test
@@ -52,8 +50,8 @@ public class RocksDBStorageTest {
     final File expected = new File(storage.getSnapshotsDirectory(), "13_12_3");
 
     // when
-    final SnapshotMetadata metadata =
-        new SnapshotMetadata(
+    final StateSnapshotMetadata metadata =
+        new StateSnapshotMetadata(
             lastSuccessfulProcessedEventPosition,
             lastWrittenEventPosition,
             lastWrittenEventTerm,
@@ -70,7 +68,7 @@ public class RocksDBStorageTest {
     final File folder = tempFolderRule.newFolder("13_12_3");
 
     // when
-    final SnapshotMetadata metadata = storage.getSnapshotMetadata(folder);
+    final StateSnapshotMetadata metadata = storage.getSnapshotMetadata(folder);
 
     // then
     assertThat(metadata.getLastSuccessfulProcessedEventPosition()).isEqualTo(13L);
@@ -85,7 +83,7 @@ public class RocksDBStorageTest {
     final File folder = new File(tempFolderRule.getRoot(), "1_2_0");
 
     // when
-    final SnapshotMetadata metadata = storage.getSnapshotMetadata(folder);
+    final StateSnapshotMetadata metadata = storage.getSnapshotMetadata(folder);
 
     // then
     assertThat(metadata.getLastSuccessfulProcessedEventPosition()).isEqualTo(1L);
@@ -104,13 +102,6 @@ public class RocksDBStorageTest {
         .isInstanceOf(IllegalArgumentException.class);
   }
 
-  // TODO: Write one day :)
-  @Test
-  @Ignore
-  public void shouldThrowExceptionIfPatternIsWrong() {
-    final String[] wrongPatterns = new String[] {};
-  }
-
   @Test
   public void shouldListAllFoldersWhoseNameMatchExpectedPattern() throws IOException {
     // given
@@ -123,13 +114,13 @@ public class RocksDBStorageTest {
           createSnapshotDirectory("1"),
           createSnapshotDirectory("1_2")
         };
-    final SnapshotMetadata[] expected =
-        new SnapshotMetadata[] {
-          new SnapshotMetadata(1, 2, 0, true), new SnapshotMetadata(0, 0, 0, true)
+    final StateSnapshotMetadata[] expected =
+        new StateSnapshotMetadata[] {
+          new StateSnapshotMetadata(1, 2, 0, true), new StateSnapshotMetadata(0, 0, 0, true)
         };
 
     // when
-    final List<SnapshotMetadata> valid = storage.list();
+    final List<StateSnapshotMetadata> valid = storage.list();
 
     // then
     assertThat(valid).containsExactlyInAnyOrder(expected);
@@ -144,13 +135,13 @@ public class RocksDBStorageTest {
           createSnapshotDirectory("2_3_0"),
           createSnapshotDirectory("3_4_0")
         };
-    final SnapshotMetadata[] expected =
-        new SnapshotMetadata[] {
-          new SnapshotMetadata(1, 2, 0, true), new SnapshotMetadata(2, 3, 0, true)
+    final StateSnapshotMetadata[] expected =
+        new StateSnapshotMetadata[] {
+          new StateSnapshotMetadata(1, 2, 0, true), new StateSnapshotMetadata(2, 3, 0, true)
         };
 
     // when
-    final List<SnapshotMetadata> valid = storage.listRecoverable(3L);
+    final List<StateSnapshotMetadata> valid = storage.listRecoverable(3L);
 
     // then
     assertThat(valid).containsExactlyInAnyOrder(expected);

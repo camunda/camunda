@@ -19,7 +19,7 @@ import io.zeebe.logstreams.impl.Loggers;
 import java.util.Objects;
 import org.slf4j.Logger;
 
-public class SnapshotMetadata implements Comparable<SnapshotMetadata> {
+public class StateSnapshotMetadata implements Comparable<StateSnapshotMetadata> {
   public static final long INITIAL_LAST_PROCESSED_EVENT_POSITION = -1;
   public static final long INITIAL_LAST_WRITTEN_EVENT_POSITION = -1;
   private static final Logger LOG = Loggers.ROCKSDB_LOGGER;
@@ -33,12 +33,12 @@ public class SnapshotMetadata implements Comparable<SnapshotMetadata> {
    * @param term the current term
    * @return a snapshot metadata based on nothing but the term
    */
-  public static SnapshotMetadata createInitial(int term) {
-    return new SnapshotMetadata(
+  public static StateSnapshotMetadata createInitial(int term) {
+    return new StateSnapshotMetadata(
         INITIAL_LAST_PROCESSED_EVENT_POSITION, INITIAL_LAST_WRITTEN_EVENT_POSITION, term, false);
   }
 
-  public SnapshotMetadata(
+  public StateSnapshotMetadata(
       long lastSuccessfulProcessedEventPosition,
       long lastWrittenEventPosition,
       int lastWrittenEventTerm,
@@ -82,17 +82,17 @@ public class SnapshotMetadata implements Comparable<SnapshotMetadata> {
   }
 
   public boolean isInitial() {
-    return lastSuccessfulProcessedEventPosition == INITIAL_LAST_PROCESSED_EVENT_POSITION
-        && lastWrittenEventPosition == INITIAL_LAST_WRITTEN_EVENT_POSITION;
+    return getLastSuccessfulProcessedEventPosition() == INITIAL_LAST_PROCESSED_EVENT_POSITION
+        && getLastWrittenEventPosition() == INITIAL_LAST_WRITTEN_EVENT_POSITION;
   }
 
   @Override
   public boolean equals(Object obj) {
-    if (!(obj instanceof SnapshotMetadata)) {
+    if (!(obj instanceof StateSnapshotMetadata)) {
       return false;
     }
 
-    final SnapshotMetadata other = (SnapshotMetadata) obj;
+    final StateSnapshotMetadata other = (StateSnapshotMetadata) obj;
 
     return getLastSuccessfulProcessedEventPosition()
             == other.getLastSuccessfulProcessedEventPosition()
@@ -103,28 +103,28 @@ public class SnapshotMetadata implements Comparable<SnapshotMetadata> {
   @Override
   public int hashCode() {
     return Objects.hash(
-        lastSuccessfulProcessedEventPosition,
-        lastWrittenEventPosition,
-        lastWrittenEventTerm,
-        exists);
+        getLastSuccessfulProcessedEventPosition(),
+        getLastWrittenEventPosition(),
+        getLastWrittenEventTerm(),
+        exists());
   }
 
   @Override
   public String toString() {
-    return "SnapshotMetadata{"
+    return "StateSnapshotMetadata{"
         + "lastSuccessfulProcessedEventPosition="
-        + lastSuccessfulProcessedEventPosition
+        + getLastSuccessfulProcessedEventPosition()
         + ", lastWrittenEventPosition="
-        + lastWrittenEventPosition
+        + getLastWrittenEventPosition()
         + ", lastWrittenEventTerm="
-        + lastWrittenEventTerm
+        + getLastWrittenEventTerm()
         + ", exists="
-        + exists
+        + exists()
         + '}';
   }
 
   @Override
-  public int compareTo(SnapshotMetadata o) {
+  public int compareTo(StateSnapshotMetadata o) {
     int result =
         Long.compare(
             getLastSuccessfulProcessedEventPosition(), o.getLastSuccessfulProcessedEventPosition());

@@ -47,6 +47,10 @@ public class KeyGenerator extends UnpackedObject {
     return key;
   }
 
+  public void setKey(long key) {
+    nextKey.setValue(key + stepSize);
+  }
+
   public static KeyGenerator createWorkflowInstanceKeyGenerator() {
     return new KeyGenerator(WF_OFFSET, STEP_SIZE);
   }

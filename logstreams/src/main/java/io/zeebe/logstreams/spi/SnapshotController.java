@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.logstreams.state;
+package io.zeebe.logstreams.spi;
 
+import io.zeebe.logstreams.state.StateSnapshotMetadata;
 import java.util.function.Predicate;
 
 public interface SnapshotController {
@@ -24,7 +25,18 @@ public interface SnapshotController {
    *
    * @param metadata current state metadata
    */
-  void takeSnapshot(SnapshotMetadata metadata) throws Exception;
+  void takeSnapshot(StateSnapshotMetadata metadata) throws Exception;
+
+  /**
+   * Temporary addition to add commitPosition to parameters, will be removed since it's only useful
+   * for FsSnapshotController.
+   *
+   * @param metadata current state metadata
+   * @param commitPosition temporary parameter, to be removed once Fs package is removed
+   */
+  default void takeSnapshot(StateSnapshotMetadata metadata, long commitPosition) throws Exception {
+    takeSnapshot(metadata);
+  }
 
   /**
    * Recovers the state from the latest snapshot and returns the corresponding metadata. The
@@ -34,8 +46,20 @@ public interface SnapshotController {
    * @param commitPosition current log stream commit position
    * @return recovered state metadata
    */
-  SnapshotMetadata recover(long commitPosition, int term, Predicate<SnapshotMetadata> filter)
-      throws Exception;
+  StateSnapshotMetadata recover(
+      long commitPosition, int term, Predicate<StateSnapshotMetadata> filter) throws Exception;
+
+  /**
+   * Purges all snapshots which return true for the given matcher.
+   *
+   * @param matcher predicate used to match
+   */
+  void purgeAll(Predicate<StateSnapshotMetadata> matcher) throws Exception;
+
+  /** Purges all snapshots. */
+  default void purgeAll() throws Exception {
+    purgeAll(s -> true);
+  }
 
   /**
    * Purges old and invalid snapshots. Should be done once we are sure we can discard other
@@ -43,5 +67,7 @@ public interface SnapshotController {
    *
    * @param metadata last taken/recovered snapshot metadata
    */
-  void purgeAllExcept(SnapshotMetadata metadata) throws Exception;
+  default void purgeAllExcept(StateSnapshotMetadata metadata) throws Exception {
+    purgeAll(s -> !s.equals(metadata));
+  }
 }

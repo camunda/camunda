@@ -16,23 +16,33 @@
 package io.zeebe.logstreams.processor;
 
 import static io.zeebe.test.util.TestUtil.waitUntil;
+import static io.zeebe.util.StringUtil.getBytes;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
+import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotController;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.spi.ReadableSnapshot;
+import io.zeebe.logstreams.spi.SnapshotController;
+import io.zeebe.logstreams.state.StateController;
+import io.zeebe.logstreams.state.StateSnapshotController;
+import io.zeebe.logstreams.state.StateSnapshotMetadata;
+import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.logstreams.util.LogStreamReaderRule;
 import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.logstreams.util.LogStreamWriterRule;
+import io.zeebe.logstreams.util.MutableStateSnapshotMetadata;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import java.io.File;
+import java.io.IOException;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -45,13 +55,29 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
+import org.rocksdb.RocksDBException;
 
+@RunWith(Parameterized.class)
 public class StreamProcessorControllerTest {
+  enum StateBackends {
+    ROCKSDB,
+    INMEMORY
+  }
+
+  @Parameterized.Parameters
+  public static Collection<Object[]> data() {
+    return Arrays.asList(new Object[][] {{StateBackends.ROCKSDB}, {StateBackends.INMEMORY}});
+  }
+
   private static final String PROCESSOR_NAME = "testProcessor";
   private static final int PROCESSOR_ID = 1;
   private static final Duration SNAPSHOT_INTERVAL = Duration.ofMinutes(1);
 
+  private static final byte[] STATE_KEY = getBytes("stateValue");
   private static final DirectBuffer EVENT_1 = wrapString("FOO");
   private static final DirectBuffer EVENT_2 = wrapString("BAR");
 
@@ -64,46 +90,39 @@ public class StreamProcessorControllerTest {
   public RuleChain ruleChain =
       RuleChain.outerRule(temporaryFolder).around(logStreamRule).around(reader).around(writer);
 
-  private StreamProcessorController controller;
+  private StateBackends stateBackend;
+
+  private StreamProcessorService streamProcessorService;
+  private StreamProcessorController streamProcessorController;
   private RecordingStreamProcessor streamProcessor;
+  private SnapshotController snapshotController;
   private EventProcessor eventProcessor;
   private EventFilter eventFilter;
+  private StateController stateController;
+
+  public StreamProcessorControllerTest(StateBackends stateBackend) {
+    this.stateBackend = stateBackend;
+  }
 
   @Before
-  public void init() {
+  public void setup() throws Exception {
     streamProcessor = RecordingStreamProcessor.createSpy();
     eventProcessor = streamProcessor.getEventProcessorSpy();
-
     eventFilter = mock(EventFilter.class);
     when(eventFilter.applies(any())).thenReturn(true);
 
-    final StreamProcessorService streamProcessorService =
-        LogStreams.createStreamProcessor(PROCESSOR_NAME, PROCESSOR_ID, streamProcessor)
-            .logStream(logStreamRule.getLogStream())
-            .snapshotStorage(logStreamRule.getSnapshotStorage())
-            .actorScheduler(logStreamRule.getActorScheduler())
-            .eventFilter(eventFilter)
-            .snapshotPeriod(SNAPSHOT_INTERVAL)
-            .serviceContainer(logStreamRule.getServiceContainer())
-            .build()
-            .join();
-
-    controller = streamProcessorService.getController();
-  }
-
-  private void changeMockInActorContext(Runnable runnable) {
-    streamProcessor.getContext().getActorControl().call(runnable).join();
+    installStreamProcessorService();
   }
 
   @Test
-  public void testStreamProcessorLifecycle() {
+  public void testStreamProcessorLifecycle() throws Exception {
     // when
     writeEventAndWaitUntilProcessed(EVENT_1);
 
-    controller.closeAsync().join();
+    streamProcessorController.closeAsync().join();
 
     // then
-    final InOrder inOrder = inOrder(streamProcessor, eventProcessor);
+    final InOrder inOrder = inOrder(streamProcessor, eventProcessor, snapshotController);
     inOrder.verify(streamProcessor, times(1)).onOpen(any());
     inOrder.verify(streamProcessor, times(1)).onEvent(any());
 
@@ -112,31 +131,32 @@ public class StreamProcessorControllerTest {
     inOrder.verify(eventProcessor, times(1)).writeEvent(any());
     inOrder.verify(eventProcessor, times(1)).updateState();
 
+    inOrder.verify(snapshotController, times(1)).takeSnapshot(any(), anyLong());
     inOrder.verify(streamProcessor, times(1)).onClose();
+
     inOrder.verifyNoMoreInteractions();
   }
 
   @Test
   public void testAsyncProcessEvent()
       throws InterruptedException, ExecutionException, TimeoutException {
+    // given
     final ActorFuture<Void> whenProcessingInvoked = new CompletableActorFuture<>();
     final ActorFuture<Void> whenProcessingDone = new CompletableActorFuture<>();
 
+    // when
     changeMockInActorContext(
         () ->
             doAnswer(
                     invocation -> {
                       final EventLifecycleContext ctx = invocation.getArgument(0);
                       ctx.async(whenProcessingDone);
-
                       whenProcessingInvoked.complete(null);
-
                       return null;
                     })
                 .when(eventProcessor)
                 .processEvent(any()));
 
-    // when
     writer.writeEvent(EVENT_1, true);
     whenProcessingInvoked.get(5, TimeUnit.SECONDS);
 
@@ -165,17 +185,17 @@ public class StreamProcessorControllerTest {
     // future passed during processEvent does not continue when a new
     // event is written (the stream processor is triggered on commit update)
 
+    // given
     final ActorFuture<Void> whenProcessingInvoked = new CompletableActorFuture<>();
     final ActorFuture<Void> whenProcessingDone = new CompletableActorFuture<>();
 
+    // when
     changeMockInActorContext(
         () ->
             doAnswer(
                     invocation -> {
                       final EventLifecycleContext ctx = invocation.getArgument(0);
-
-                      if (!whenProcessingDone.isDone()) // only block on first invocation
-                      {
+                      if (!whenProcessingDone.isDone()) { // only block on first invocation
                         ctx.async(whenProcessingDone);
                         whenProcessingInvoked.complete(null);
                       }
@@ -207,8 +227,10 @@ public class StreamProcessorControllerTest {
   @Test
   public void testAsyncProcessEventCompleteExceptionally()
       throws InterruptedException, ExecutionException, TimeoutException {
+    // given
     final ActorFuture<Void> whenProcessingInvoked = new CompletableActorFuture<>();
 
+    // when
     changeMockInActorContext(
         () ->
             doAnswer(
@@ -248,11 +270,9 @@ public class StreamProcessorControllerTest {
 
   @Test
   public void shouldExecuteSideEffectsUntilDone() {
-    // given
+    // when
     changeMockInActorContext(
         () -> when(eventProcessor.executeSideEffects()).thenReturn(false, false, true));
-
-    // when
     writeEventAndWaitUntilProcessed(EVENT_1);
 
     // then
@@ -266,10 +286,8 @@ public class StreamProcessorControllerTest {
 
   @Test
   public void shouldWriteEventUntilDone() {
-    // given
-    changeMockInActorContext(() -> when(eventProcessor.writeEvent(any())).thenReturn(-1L, -1L, 1L));
-
     // when
+    changeMockInActorContext(() -> when(eventProcessor.writeEvent(any())).thenReturn(-1L, -1L, 1L));
     writeEventAndWaitUntilProcessed(EVENT_1);
 
     // then
@@ -283,12 +301,10 @@ public class StreamProcessorControllerTest {
 
   @Test
   public void shouldSkipEventIfNoEventProcessorIsProvided() {
-    // given
+    // when
     // return null as event processor for first event
     changeMockInActorContext(
         () -> doReturn(null).doCallRealMethod().when(streamProcessor).onEvent(any()));
-
-    // when
     writer.writeEvent(EVENT_1, true);
     final long secondEventPosition = writer.writeEvent(EVENT_2, true);
 
@@ -305,10 +321,8 @@ public class StreamProcessorControllerTest {
 
   @Test
   public void shouldSkipEventIfEventFilterIsNotMet() {
-    // given
-    changeMockInActorContext(() -> when(eventFilter.applies(any())).thenReturn(false, true));
-
     // when
+    changeMockInActorContext(() -> when(eventFilter.applies(any())).thenReturn(false, true));
     writer.writeEvent(EVENT_1, true);
     final long secondEventPosition = writer.writeEvent(EVENT_2, true);
 
@@ -325,18 +339,18 @@ public class StreamProcessorControllerTest {
 
   @Test
   public void shouldSuspendAndResume() {
-    // given
+    // when
     streamProcessor.suspend();
 
-    assertThat(controller.isSuspended()).isTrue();
+    // then
+    assertThat(streamProcessorController.isSuspended()).isTrue();
 
     // when
     writer.writeEvent(EVENT_1, true);
-
     streamProcessor.resume();
 
     // then
-    waitUntil(() -> !controller.isSuspended());
+    waitUntil(() -> !streamProcessorController.isSuspended());
     waitUntil(() -> streamProcessor.getProcessedEventCount() == 1);
   }
 
@@ -345,6 +359,7 @@ public class StreamProcessorControllerTest {
     // given
     final AtomicLong writtenEventPosition = new AtomicLong();
 
+    // when
     changeMockInActorContext(
         () ->
             when(eventProcessor.writeEvent(any()))
@@ -360,13 +375,9 @@ public class StreamProcessorControllerTest {
                       return position;
                     }));
 
-    // when
     final long firstEventPosition = writeEventAndWaitUntilProcessed(EVENT_1);
-
     waitUntil(() -> writtenEventPosition.get() > 0);
-
     final long position = writtenEventPosition.get();
-
     writer.waitForPositionToBeAppended(position);
     logStreamRule.setCommitPosition(position);
 
@@ -399,6 +410,7 @@ public class StreamProcessorControllerTest {
     // given
     final AtomicInteger invocations = new AtomicInteger();
 
+    // when
     changeMockInActorContext(
         () ->
             doAnswer(
@@ -408,18 +420,16 @@ public class StreamProcessorControllerTest {
                     })
                 .when(eventProcessor)
                 .executeSideEffects());
-
-    // when
     writer.writeEvent(EVENT_1, true);
 
     waitUntil(() -> invocations.get() >= 1);
 
-    final ActorFuture<Void> future = controller.closeAsync();
+    final ActorFuture<Void> future = streamProcessorController.closeAsync();
 
     // then
-    waitUntil(() -> future.isDone());
+    waitUntil(future::isDone);
 
-    assertThat(controller.isOpened()).isFalse();
+    assertThat(streamProcessorController.isOpened()).isFalse();
   }
 
   @Test
@@ -427,6 +437,7 @@ public class StreamProcessorControllerTest {
     // given
     final AtomicInteger invocations = new AtomicInteger();
 
+    // when
     changeMockInActorContext(
         () ->
             doAnswer(
@@ -436,97 +447,154 @@ public class StreamProcessorControllerTest {
                     })
                 .when(eventProcessor)
                 .writeEvent(any()));
-
-    // when
     writer.writeEvent(EVENT_1, true);
 
     waitUntil(() -> invocations.get() >= 1);
 
-    final ActorFuture<Void> future = controller.closeAsync();
+    final ActorFuture<Void> future = streamProcessorController.closeAsync();
 
     // then
-    waitUntil(() -> future.isDone());
+    waitUntil(future::isDone);
 
-    assertThat(controller.isOpened()).isFalse();
+    assertThat(streamProcessorController.isOpened()).isFalse();
   }
 
   @Test
-  public void shouldWriteSnapshot() {
+  public void shouldWriteSnapshot() throws Exception {
     // given
-    final long lastEventPosition = writeEventAndWaitUntilProcessed(EVENT_1);
+    final ArgumentCaptor<StateSnapshotMetadata> args =
+        ArgumentCaptor.forClass(StateSnapshotMetadata.class);
 
     // when
+    final long lastEventPosition = writeEventAndWaitUntilProcessed(EVENT_1);
     logStreamRule.getClock().addTime(SNAPSHOT_INTERVAL);
 
     // then
-    waitUntil(() -> getLatestSnapshot() != null);
-
-    final long snapshotPosition = getLatestSnapshot().getPosition();
-    assertThat(snapshotPosition).isEqualTo(lastEventPosition);
+    verify(snapshotController, timeout(5000).times(1)).takeSnapshot(args.capture(), anyLong());
+    assertThat(args.getValue().getLastSuccessfulProcessedEventPosition())
+        .isEqualTo(lastEventPosition);
+    assertThat(args.getValue().getLastWrittenEventPosition()).isEqualTo(lastEventPosition);
+    assertThat(args.getValue().getLastWrittenEventTerm())
+        .isEqualTo(logStreamRule.getLogStream().getTerm());
   }
 
   @Test
-  public void shouldWriteSnapshotOnClosing() {
+  public void shouldWriteSnapshotOnClosing() throws Exception {
     // given
+    final ArgumentCaptor<StateSnapshotMetadata> args =
+        ArgumentCaptor.forClass(StateSnapshotMetadata.class);
+
+    // when
     final long lastEventPosition = writeEventAndWaitUntilProcessed(EVENT_1);
-
-    // when
-    controller.closeAsync().join();
+    streamProcessorController.closeAsync().join();
 
     // then
-    assertThat(getLatestSnapshot()).isNotNull();
-
-    final long snapshotPosition = getLatestSnapshot().getPosition();
-    assertThat(snapshotPosition).isEqualTo(lastEventPosition);
+    verify(snapshotController, timeout(5000).times(1)).takeSnapshot(args.capture(), anyLong());
+    assertThat(args.getValue().getLastSuccessfulProcessedEventPosition())
+        .isEqualTo(lastEventPosition);
+    assertThat(args.getValue().getLastWrittenEventPosition()).isEqualTo(lastEventPosition);
+    assertThat(args.getValue().getLastWrittenEventTerm())
+        .isEqualTo(logStreamRule.getLogStream().getTerm());
   }
 
   @Test
-  public void shouldRecoverStateFromSnapshot() {
-    // given
-    writeEventAndWaitUntilProcessed(EVENT_1);
-
-    streamProcessor.getSnapshot().setValue("foo");
-
-    controller.closeAsync().join();
-
-    streamProcessor.getSnapshot().setValue(null);
-
+  public void shouldRecoverStateFromLatestValidSnapshot() throws RocksDBException {
     // when
-    controller.openAsync().join();
+    writeEventAndWaitUntilProcessed(EVENT_1);
+    setState("foo");
+    streamProcessorController.closeAsync().join();
+    streamProcessorController.openAsync().join();
+    writeEventAndWaitUntilProcessed(EVENT_2);
+    setState("bar");
+    streamProcessorController.closeAsync().join();
+    setState("unexpected");
+    streamProcessorController.openAsync().join();
 
     // then
-    assertThat(streamProcessor.getSnapshot().getValue()).isEqualTo("foo");
+    assertThat(getState()).isEqualTo("bar");
+  }
+
+  @Test
+  public void shouldNotRecoverFromSnapshotWithInvalidLastWrittenTerm() throws Exception {
+    // test here does not apply to in-memory state
+    if (stateBackend == StateBackends.INMEMORY) {
+      return;
+    }
+
+    // given
+    final long lastProcessedEventPosition = writeEventAndWaitUntilProcessed(EVENT_1);
+    final StateSnapshotMetadata valid =
+        new StateSnapshotMetadata(
+            lastProcessedEventPosition,
+            lastProcessedEventPosition,
+            logStreamRule.getLogStream().getTerm(),
+            false);
+    final StateSnapshotMetadata invalid =
+        new StateSnapshotMetadata(
+            lastProcessedEventPosition,
+            lastProcessedEventPosition,
+            logStreamRule.getLogStream().getTerm() + 1,
+            false);
+
+    // when
+    setState("valid");
+    streamProcessorController.closeAsync().join();
+    streamProcessorController.openAsync().join();
+
+    setState("invalid");
+    snapshotController.takeSnapshot(invalid);
+
+    streamProcessorController.closeAsync().join();
+    streamProcessorController.openAsync().join();
+
+    // then
+    assertThat(getState()).isEqualTo("valid");
+  }
+
+  @Test
+  public void shouldNotRecoverFromSnapshotWithUncommittedLastWrittenEvent() throws Exception {
+    // test here does not apply to in-memory state
+    if (stateBackend == StateBackends.INMEMORY) {
+      return;
+    }
+
+    // given
+    final long lastProcessedEventPosition = writeEventAndWaitUntilProcessed(EVENT_1);
+    final StateSnapshotMetadata valid =
+        new StateSnapshotMetadata(
+            lastProcessedEventPosition,
+            lastProcessedEventPosition,
+            logStreamRule.getLogStream().getTerm(),
+            false);
+    final StateSnapshotMetadata invalid =
+        new StateSnapshotMetadata(
+            lastProcessedEventPosition,
+            logStreamRule.getCommitPosition() + 1,
+            logStreamRule.getLogStream().getTerm(),
+            false);
+
+    // when
+    setState("valid");
+    streamProcessorController.closeAsync().join();
+    streamProcessorController.openAsync().join();
+
+    setState("invalid");
+    snapshotController.takeSnapshot(invalid);
+
+    streamProcessorController.closeAsync().join();
+    streamProcessorController.openAsync().join();
+
+    // then
+    assertThat(getState()).isEqualTo("valid");
   }
 
   @Test
   public void shouldRecoverLastPositionFromSnapshot() {
-    // given
-    final long firstEventPosition = writeEventAndWaitUntilProcessed(EVENT_1);
-
-    controller.closeAsync().join();
-
     // when
-    controller.openAsync().join();
-
-    final long secondEventPosition = writeEventAndWaitUntilProcessed(EVENT_2);
-
-    // then
-    assertThat(streamProcessor.getEvents())
-        .hasSize(2)
-        .extracting(LoggedEvent::getPosition)
-        .containsExactly(firstEventPosition, secondEventPosition);
-  }
-
-  @Test
-  public void shouldRecoverLastPositionFromSnapshotUsingRocksDBSnapshotController() {
-    // given
     final long firstEventPosition = writeEventAndWaitUntilProcessed(EVENT_1);
+    streamProcessorController.closeAsync().join();
 
-    controller.closeAsync().join();
-
-    // when
-    controller.openAsync().join();
-
+    streamProcessorController.openAsync().join();
     final long secondEventPosition = writeEventAndWaitUntilProcessed(EVENT_2);
 
     // then
@@ -538,16 +606,13 @@ public class StreamProcessorControllerTest {
 
   @Test
   public void shouldFailOnProcessEvent() {
-    // given
-
+    // when
     changeMockInActorContext(
         () -> doThrow(new RuntimeException("expected")).when(eventProcessor).processEvent(any()));
-
-    // when
     writer.writeEvents(2, EVENT_1, true);
 
     // then
-    waitUntil(() -> controller.isFailed());
+    waitUntil(() -> streamProcessorController.isFailed());
 
     final InOrder inOrder = inOrder(eventProcessor);
     inOrder.verify(eventProcessor, times(1)).processEvent(any());
@@ -556,16 +621,13 @@ public class StreamProcessorControllerTest {
 
   @Test
   public void shouldFailOnExecuteSideEffects() {
-    // given
-
+    // when
     changeMockInActorContext(
         () -> doThrow(new RuntimeException("expected")).when(eventProcessor).executeSideEffects());
-
-    // when
     writer.writeEvents(2, EVENT_1, true);
 
     // then
-    waitUntil(() -> controller.isFailed());
+    waitUntil(() -> streamProcessorController.isFailed());
 
     final InOrder inOrder = inOrder(eventProcessor);
     inOrder.verify(eventProcessor, times(1)).processEvent(any());
@@ -575,16 +637,13 @@ public class StreamProcessorControllerTest {
 
   @Test
   public void shouldFailOnWriteEvent() {
-    // given
-
+    // when
     changeMockInActorContext(
         () -> doThrow(new RuntimeException("expected")).when(eventProcessor).writeEvent(any()));
-
-    // when
     writer.writeEvents(2, EVENT_1, true);
 
     // then
-    waitUntil(() -> controller.isFailed());
+    waitUntil(() -> streamProcessorController.isFailed());
 
     final InOrder inOrder = inOrder(eventProcessor);
     inOrder.verify(eventProcessor, times(1)).processEvent(any());
@@ -595,16 +654,13 @@ public class StreamProcessorControllerTest {
 
   @Test
   public void shouldFailOnUpdateState() {
-    // given
-
+    // when
     changeMockInActorContext(
         () -> doThrow(new RuntimeException("expected")).when(eventProcessor).updateState());
-
-    // when
     writer.writeEvents(2, EVENT_1, true);
 
     // then
-    waitUntil(() -> controller.isFailed());
+    waitUntil(() -> streamProcessorController.isFailed());
 
     final InOrder inOrder = inOrder(eventProcessor);
     inOrder.verify(eventProcessor, times(1)).processEvent(any());
@@ -616,9 +672,10 @@ public class StreamProcessorControllerTest {
 
   @Test
   public void shouldFailToWriteEventIfReadOnly() {
-    controller.closeAsync().join();
+    // when
+    streamProcessorController.closeAsync().join();
 
-    controller =
+    streamProcessorController =
         LogStreams.createStreamProcessor("read-only", PROCESSOR_ID, streamProcessor)
             .logStream(logStreamRule.getLogStream())
             .snapshotStorage(logStreamRule.getSnapshotStorage())
@@ -645,13 +702,112 @@ public class StreamProcessorControllerTest {
     writer.writeEvent(EVENT_1, true);
 
     // then
-    waitUntil(() -> controller.isFailed());
+    waitUntil(() -> streamProcessorController.isFailed());
 
     final InOrder inOrder = inOrder(eventProcessor);
     inOrder.verify(eventProcessor, times(1)).processEvent(any());
     inOrder.verify(eventProcessor, times(1)).executeSideEffects();
     inOrder.verify(eventProcessor, times(1)).writeEvent(any());
     inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
+  public void shouldTakeStateSnapshotEvenIfLastWrittenEventIsUncommitted() throws Exception {
+    if (stateBackend != StateBackends.ROCKSDB) {
+      return;
+    }
+
+    // given
+    final ArgumentCaptor<StateSnapshotMetadata> args =
+        ArgumentCaptor.forClass(StateSnapshotMetadata.class);
+    final MutableStateSnapshotMetadata expectedState =
+        new MutableStateSnapshotMetadata(-1, -1, -1, true);
+
+    // when
+    changeMockInActorContext(
+        () ->
+            doAnswer(
+                    i -> {
+                      expectedState.setLastWrittenEventPosition(writer.writeEvent(EVENT_2, false));
+                      expectedState.setLastWrittenEventTerm(logStreamRule.getLogStream().getTerm());
+                      return expectedState.getLastWrittenEventPosition();
+                    })
+                .when(eventProcessor)
+                .writeEvent(any()));
+    expectedState.setLastSuccessfulProcessedEventPosition(writeEventAndWaitUntilProcessed(EVENT_1));
+
+    // when
+    logStreamRule.getClock().addTime(SNAPSHOT_INTERVAL);
+    streamProcessorController.closeAsync().join();
+
+    // then
+    verify(snapshotController, timeout(5000).times(1)).takeSnapshot(args.capture(), anyLong());
+    assertThat(args.getValue()).isEqualTo(expectedState);
+  }
+
+  @Test
+  public void shouldNotTakeFsSnapshotIfLastWrittenEventIsUncommitted() throws Exception {
+    if (stateBackend != StateBackends.INMEMORY) {
+      return;
+    }
+
+    // when
+    changeMockInActorContext(
+        () -> {
+          doAnswer(i -> writer.writeEvent(EVENT_2, false)).when(eventProcessor).writeEvent(any());
+        });
+    writeEventAndWaitUntilProcessed(EVENT_1);
+
+    // when
+    logStreamRule.getClock().addTime(SNAPSHOT_INTERVAL);
+    streamProcessorController.closeAsync().join();
+
+    // then
+    verify(snapshotController, times(1)).takeSnapshot(any(), anyLong());
+    verify(snapshotController, never()).takeSnapshot(any());
+  }
+
+  private void installStreamProcessorService() throws IOException {
+    switch (stateBackend) {
+      case ROCKSDB:
+        stateController = spy(new StateController());
+        streamProcessor.setStateController(stateController);
+        snapshotController =
+            spy(new StateSnapshotController(stateController, createStateStorage()));
+        break;
+      case INMEMORY:
+        snapshotController =
+            spy(
+                new FsSnapshotController(
+                    logStreamRule.getSnapshotStorage(),
+                    PROCESSOR_NAME,
+                    streamProcessor.getStateResource()));
+        break;
+    }
+
+    streamProcessorService =
+        LogStreams.createStreamProcessor(PROCESSOR_NAME, PROCESSOR_ID, streamProcessor)
+            .logStream(logStreamRule.getLogStream())
+            .actorScheduler(logStreamRule.getActorScheduler())
+            .eventFilter(eventFilter)
+            .serviceContainer(logStreamRule.getServiceContainer())
+            .snapshotController(snapshotController)
+            .snapshotPeriod(SNAPSHOT_INTERVAL)
+            .build()
+            .join();
+
+    streamProcessorController = streamProcessorService.getController();
+  }
+
+  private void changeMockInActorContext(Runnable runnable) {
+    streamProcessor.getContext().getActorControl().call(runnable).join();
+  }
+
+  private StateStorage createStateStorage() throws IOException {
+    final File runtimeDirectory = temporaryFolder.newFolder("state-runtime");
+    final File snapshotsDirectory = temporaryFolder.newFolder("state-snapshots");
+
+    return new StateStorage(runtimeDirectory, snapshotsDirectory);
   }
 
   private long writeEventAndWaitUntilProcessed(DirectBuffer event) {
@@ -663,12 +819,31 @@ public class StreamProcessorControllerTest {
     return eventPosition;
   }
 
-  private ReadableSnapshot getLatestSnapshot() {
-    try {
-      return logStreamRule.getSnapshotStorage().getLastSnapshot(PROCESSOR_NAME);
-    } catch (Exception e) {
-      fail("Fail to read snapshot", e);
-      return null;
+  private void setState(final String value) throws RocksDBException {
+    switch (stateBackend) {
+      case ROCKSDB:
+        stateController.getDb().put(STATE_KEY, getBytes(value));
+        break;
+      case INMEMORY:
+        streamProcessor.getSnapshot().setValue(value);
+        break;
     }
+  }
+
+  private String getState() throws RocksDBException {
+    final String state;
+
+    switch (stateBackend) {
+      case ROCKSDB:
+        state = new String(stateController.getDb().get(STATE_KEY));
+        break;
+      case INMEMORY:
+        state = streamProcessor.getSnapshot().getValue();
+        break;
+      default:
+        throw new IllegalStateException("unexpected case");
+    }
+
+    return state;
   }
 }

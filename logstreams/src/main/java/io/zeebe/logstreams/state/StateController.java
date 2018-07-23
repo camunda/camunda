@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.logstreams.rocksdb;
+package io.zeebe.logstreams.state;
 
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.util.ByteValue;
@@ -32,16 +32,16 @@ import org.slf4j.Logger;
  * <p>Current suggested method of customizing RocksDB instance per stream processor is to subclass
  * this class and to override the protected methods to your liking.
  *
- * <p>Another option would be to use a Builder class and make RocksDBController entirely controlled
+ * <p>Another option would be to use a Builder class and make StateController entirely controlled
  * through its properties.
  */
-public class RocksDBController implements AutoCloseable {
+public class StateController implements AutoCloseable {
   private static final Logger LOG = Loggers.ROCKSDB_LOGGER;
 
   private boolean isOpened = false;
   private RocksDB db;
-  private File dbDirectory;
-  private List<AutoCloseable> closeables = new ArrayList<>();
+  protected File dbDirectory;
+  protected List<AutoCloseable> closeables = new ArrayList<>();
 
   static {
     RocksDB.loadLibrary();
@@ -135,5 +135,13 @@ public class RocksDBController implements AutoCloseable {
 
   protected Env getDbEnv() {
     return Env.getDefault();
+  }
+
+  protected void ensureIsOpened(String operation) {
+    if (!isOpened()) {
+      final String message =
+          String.format("%s cannot be executed unless database is opened", operation);
+      throw new IllegalStateException(message);
+    }
   }
 }

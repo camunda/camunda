@@ -19,8 +19,8 @@ import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotController;
 import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.spi.SnapshotController;
 import io.zeebe.logstreams.spi.SnapshotStorage;
-import io.zeebe.logstreams.state.SnapshotController;
 import io.zeebe.servicecontainer.ServiceBuilder;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
@@ -138,8 +138,14 @@ public class StreamProcessorBuilder {
     Objects.requireNonNull(streamProcessor, "No stream processor provided.");
     Objects.requireNonNull(logStream, "No log stream provided.");
     Objects.requireNonNull(actorScheduler, "No task scheduler provided.");
-    Objects.requireNonNull(snapshotStorage, "No snapshot storage provided.");
     Objects.requireNonNull(serviceContainer, "No service container provided.");
+
+    // TODO: collapse once we get rid of snapshot storage
+    if (snapshotStorage == null) {
+      Objects.requireNonNull(snapshotController, "No snapshot controller provided.");
+    } else if (snapshotController == null) {
+      Objects.requireNonNull(snapshotStorage, "No snapshot storage provided.");
+    }
   }
 
   private StreamProcessorContext createContext() {
