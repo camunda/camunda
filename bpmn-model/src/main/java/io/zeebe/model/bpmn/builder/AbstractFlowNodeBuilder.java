@@ -81,6 +81,10 @@ public abstract class AbstractFlowNodeBuilder<
     return myself;
   }
 
+  public B condition(String condition) {
+    return condition(null, condition);
+  }
+
   protected void connectTarget(FlowNode target) {
     // check if compensation was started
     if (isBoundaryEventWithStartedCompensation()) {
@@ -312,13 +316,13 @@ public abstract class AbstractFlowNodeBuilder<
     return new TransactionBuilder(modelInstance, transaction);
   }
 
-  public Gateway findLastGateway() {
+  private <T extends Gateway> T findLastGateway(Class<T> gatewayType) {
     FlowNode lastGateway = element;
     while (true) {
       try {
         lastGateway = lastGateway.getPreviousNodes().singleResult();
-        if (lastGateway instanceof Gateway) {
-          return (Gateway) lastGateway;
+        if (gatewayType.isAssignableFrom(lastGateway.getClass())) {
+          return gatewayType.cast(lastGateway);
         }
       } catch (final BpmnModelException e) {
         throw new BpmnModelException(
@@ -329,7 +333,12 @@ public abstract class AbstractFlowNodeBuilder<
 
   @SuppressWarnings("rawtypes")
   public AbstractGatewayBuilder moveToLastGateway() {
-    return findLastGateway().builder();
+    return findLastGateway(Gateway.class).builder();
+  }
+
+  @SuppressWarnings("rawtypes")
+  public AbstractExclusiveGatewayBuilder moveToLastExclusiveGateway() {
+    return findLastGateway(ExclusiveGateway.class).builder();
   }
 
   @SuppressWarnings("rawtypes")

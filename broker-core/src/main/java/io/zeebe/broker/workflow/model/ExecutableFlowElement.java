@@ -15,43 +15,29 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.map;
+package io.zeebe.broker.workflow.model;
 
-import io.zeebe.broker.workflow.model.ExecutableWorkflow;
+import io.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
 
-public class DeployedWorkflow {
-  private final ExecutableWorkflow workflow;
+public abstract class ExecutableFlowElement {
 
-  private final long key;
+  private final DirectBuffer id;
+  private BpmnAspect bpmnAspect;
 
-  private final int version;
-
-  private long fetched;
-
-  public DeployedWorkflow(ExecutableWorkflow workflow, long key, int version, long fetched) {
-    this.workflow = workflow;
-    this.key = key;
-    this.version = version;
-    this.fetched = fetched;
+  public ExecutableFlowElement(String id) {
+    this.id = BufferUtil.wrapString(id);
   }
 
-  public ExecutableWorkflow getWorkflow() {
-    return workflow;
+  public DirectBuffer getId() {
+    return id;
   }
 
-  public int getVersion() {
-    return version;
+  public void setBpmnAspect(BpmnAspect bpmnAspect) {
+    this.bpmnAspect = bpmnAspect;
   }
 
-  public long getKey() {
-    return key;
-  }
-
-  public long getFetched() {
-    return fetched;
-  }
-
-  public void setFetched(long fetched) {
-    this.fetched = fetched;
+  public BpmnAspect getBpmnAspect() {
+    return bpmnAspect;
   }
 }

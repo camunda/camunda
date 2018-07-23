@@ -15,43 +15,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.map;
+package io.zeebe.broker.workflow.model;
 
-import io.zeebe.broker.workflow.model.ExecutableWorkflow;
+public enum BpmnAspect {
+  NONE,
 
-public class DeployedWorkflow {
-  private final ExecutableWorkflow workflow;
+  // exactly one outgoing sequence flow
+  TAKE_SEQUENCE_FLOW,
 
-  private final long key;
+  // end event, no outgoing sequence flow
+  CONSUME_TOKEN,
 
-  private final int version;
+  // xor-gateway
+  EXCLUSIVE_SPLIT,
 
-  private long fetched;
+  // or-gateway
+  INCLUSIVE_SPLIT,
 
-  public DeployedWorkflow(ExecutableWorkflow workflow, long key, int version, long fetched) {
-    this.workflow = workflow;
-    this.key = key;
-    this.version = version;
-    this.fetched = fetched;
-  }
+  // and-gateway
+  PARALLEL_SPLIT,
 
-  public ExecutableWorkflow getWorkflow() {
-    return workflow;
-  }
-
-  public int getVersion() {
-    return version;
-  }
-
-  public long getKey() {
-    return key;
-  }
-
-  public long getFetched() {
-    return fetched;
-  }
-
-  public void setFetched(long fetched) {
-    this.fetched = fetched;
-  }
+  // joining and-/or-gateway
+  MERGE,
 }

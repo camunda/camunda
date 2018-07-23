@@ -27,8 +27,7 @@ import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -48,8 +47,8 @@ public class CreateDeploymentTest {
   @Test
   public void shouldDeployWorkflowModel() {
     // given
-    final WorkflowDefinition workflow =
-        Bpmn.createExecutableWorkflow("process").startEvent().endEvent().done();
+    final BpmnModelInstance workflow =
+        Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
     // when
     final DeploymentEvent result =
         clientRule
@@ -114,11 +113,8 @@ public class CreateDeploymentTest {
   @Test
   public void shouldNotDeployNonExecutableModel() {
     // given
-    final WorkflowDefinition model =
-        Bpmn.createExecutableWorkflow("not-executable").startEvent().endEvent().done();
-
-    final ProcessImpl workflowImpl = (ProcessImpl) model.getWorkflows().iterator().next();
-    workflowImpl.setExecutable(false);
+    final BpmnModelInstance model =
+        Bpmn.createProcess("not-executable").startEvent().endEvent().done();
 
     // then
     exception.expect(ClientCommandRejectedException.class);

@@ -28,7 +28,7 @@ import io.zeebe.broker.client.cmd.ClientCommandRejectedException;
 import io.zeebe.broker.client.impl.workflow.CreateWorkflowInstanceCommandImpl;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.test.util.AutoCloseableRule;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -41,8 +41,8 @@ import org.junit.rules.Timeout;
 public class DeploymentClusteredTest {
   private static final int PARTITION_COUNT = 3;
 
-  private static final WorkflowDefinition WORKFLOW =
-      Bpmn.createExecutableWorkflow("process").startEvent().endEvent().done();
+  private static final BpmnModelInstance WORKFLOW =
+      Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
 
   public AutoCloseableRule closeables = new AutoCloseableRule();
   public Timeout testTimeout = Timeout.seconds(60);

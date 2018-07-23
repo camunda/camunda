@@ -54,9 +54,9 @@ public class ServiceTaskTest {
         .getWorkflowClient()
         .newDeployCommand()
         .addWorkflowModel(
-            Bpmn.createExecutableWorkflow("process")
+            Bpmn.createExecutableProcess("process")
                 .startEvent("start")
-                .serviceTask("task", t -> t.taskType("foo"))
+                .serviceTask("task", t -> t.zeebeTaskType("foo"))
                 .endEvent("end")
                 .done(),
             "workflow.bpmn")
@@ -89,11 +89,14 @@ public class ServiceTaskTest {
         .getWorkflowClient()
         .newDeployCommand()
         .addWorkflowModel(
-            Bpmn.createExecutableWorkflow("process")
+            Bpmn.createExecutableProcess("process")
                 .startEvent("start")
                 .serviceTask(
                     "task",
-                    t -> t.taskType("foo").taskHeader("cust1", "a").taskHeader("cust2", "b"))
+                    t ->
+                        t.zeebeTaskType("foo")
+                            .zeebeTaskHeader("cust1", "a")
+                            .zeebeTaskHeader("cust2", "b"))
                 .endEvent("end")
                 .done(),
             "workflow.bpmn")
@@ -142,9 +145,9 @@ public class ServiceTaskTest {
         .getWorkflowClient()
         .newDeployCommand()
         .addWorkflowModel(
-            Bpmn.createExecutableWorkflow("process")
+            Bpmn.createExecutableProcess("process")
                 .startEvent("start")
-                .serviceTask("task", t -> t.taskType("foo"))
+                .serviceTask("task", t -> t.zeebeTaskType("foo"))
                 .endEvent("end")
                 .done(),
             "workflow.bpmn")
@@ -179,9 +182,9 @@ public class ServiceTaskTest {
         .getWorkflowClient()
         .newDeployCommand()
         .addWorkflowModel(
-            Bpmn.createExecutableWorkflow("process")
+            Bpmn.createExecutableProcess("process")
                 .startEvent("start")
-                .serviceTask("task", t -> t.taskType("foo").input("$.foo", "$.bar"))
+                .serviceTask("task", t -> t.zeebeTaskType("foo").zeebeInput("$.foo", "$.bar"))
                 .endEvent("end")
                 .done(),
             "workflow.bpmn")
@@ -216,9 +219,9 @@ public class ServiceTaskTest {
         .getWorkflowClient()
         .newDeployCommand()
         .addWorkflowModel(
-            Bpmn.createExecutableWorkflow("process")
+            Bpmn.createExecutableProcess("process")
                 .startEvent("start")
-                .serviceTask("task", t -> t.taskType("foo").output("$.foo", "$.bar"))
+                .serviceTask("task", t -> t.zeebeTaskType("foo").zeebeOutput("$.foo", "$.bar"))
                 .endEvent("end")
                 .done(),
             "workflow.bpmn")
@@ -257,10 +260,14 @@ public class ServiceTaskTest {
         .getWorkflowClient()
         .newDeployCommand()
         .addWorkflowModel(
-            Bpmn.createExecutableWorkflow("process")
+            Bpmn.createExecutableProcess("process")
                 .startEvent("start")
                 .serviceTask(
-                    "task", t -> t.taskType("foo").input("$.foo", "$.foo").output("$.foo", "$.foo"))
+                    "task",
+                    t ->
+                        t.zeebeTaskType("foo")
+                            .zeebeInput("$.foo", "$.foo")
+                            .zeebeOutput("$.foo", "$.foo"))
                 .endEvent("end")
                 .done(),
             "workflow.bpmn")
@@ -304,10 +311,14 @@ public class ServiceTaskTest {
         .getWorkflowClient()
         .newDeployCommand()
         .addWorkflowModel(
-            Bpmn.createExecutableWorkflow("process")
+            Bpmn.createExecutableProcess("process")
                 .startEvent("start")
                 .serviceTask(
-                    "task", t -> t.taskType("foo").input("$.foo", "$.foo").output("$.foo", "$.foo"))
+                    "task",
+                    t ->
+                        t.zeebeTaskType("foo")
+                            .zeebeInput("$.foo", "$.foo")
+                            .zeebeOutput("$.foo", "$.foo"))
                 .endEvent("end")
                 .done(),
             "workflow.bpmn")

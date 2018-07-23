@@ -16,7 +16,7 @@
 package io.zeebe.broker.client.api.commands;
 
 import io.zeebe.broker.client.api.events.DeploymentEvent;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 
@@ -94,7 +94,7 @@ public interface DeployWorkflowCommandStep1 {
    *     to the broker.
    */
   DeployWorkflowCommandBuilderStep2 addWorkflowModel(
-      WorkflowDefinition workflowDefinition, String resourceName);
+      BpmnModelInstance workflowDefinition, String resourceName);
 
   interface DeployWorkflowCommandBuilderStep2
       extends DeployWorkflowCommandStep1, FinalCommandStep<DeploymentEvent> {

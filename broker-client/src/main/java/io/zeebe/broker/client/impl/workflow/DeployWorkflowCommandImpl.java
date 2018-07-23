@@ -28,11 +28,12 @@ import io.zeebe.broker.client.impl.RequestManager;
 import io.zeebe.broker.client.impl.command.DeploymentCommandImpl;
 import io.zeebe.broker.client.impl.command.DeploymentResourceImpl;
 import io.zeebe.broker.client.impl.record.RecordImpl;
-import io.zeebe.model.bpmn.BpmnModelApi;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.util.StreamUtil;
+import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -47,8 +48,6 @@ public class DeployWorkflowCommandImpl extends CommandImpl<DeploymentEvent>
   private final DeploymentCommandImpl command = new DeploymentCommandImpl(DeploymentIntent.CREATE);
 
   private final List<DeploymentResource> resources = new ArrayList<>();
-
-  private final BpmnModelApi bpmn = new BpmnModelApi();
 
   public DeployWorkflowCommandImpl(final RequestManager commandManager, String topic) {
     super(commandManager);
@@ -136,11 +135,12 @@ public class DeployWorkflowCommandImpl extends CommandImpl<DeploymentEvent>
 
   @Override
   public DeployWorkflowCommandBuilderStep2 addWorkflowModel(
-      final WorkflowDefinition workflowDefinition, String resourceName) {
+      final BpmnModelInstance workflowDefinition, String resourceName) {
     ensureNotNull("workflow model", workflowDefinition);
 
-    final String bpmnXml = bpmn.convertToString(workflowDefinition);
-    return addResourceStringUtf8(bpmnXml, resourceName);
+    final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+    Bpmn.writeModelToStream(outStream, workflowDefinition);
+    return addResourceBytes(outStream.toByteArray(), resourceName);
   }
 
   @Override

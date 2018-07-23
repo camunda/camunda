@@ -30,8 +30,8 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.zeebe.UnstableTest;
 import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.model.old.bpmn.Bpmn;
-import io.zeebe.model.old.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -62,16 +62,16 @@ public class IncidentTest {
 
   private TestTopicClient testClient;
 
-  private static final WorkflowDefinition WORKFLOW_INPUT_MAPPING =
-      Bpmn.createExecutableWorkflow("process")
+  private static final BpmnModelInstance WORKFLOW_INPUT_MAPPING =
+      Bpmn.createExecutableProcess("process")
           .startEvent()
-          .serviceTask("failingTask", t -> t.taskType("test").input("$.foo", "$.foo"))
+          .serviceTask("failingTask", t -> t.zeebeTaskType("test").zeebeInput("$.foo", "$.foo"))
           .done();
 
-  private static final WorkflowDefinition WORKFLOW_OUTPUT_MAPPING =
-      Bpmn.createExecutableWorkflow("process")
+  private static final BpmnModelInstance WORKFLOW_OUTPUT_MAPPING =
+      Bpmn.createExecutableProcess("process")
           .startEvent()
-          .serviceTask("failingTask", t -> t.taskType("test").output("$.foo", "$.foo"))
+          .serviceTask("failingTask", t -> t.zeebeTaskType("test").zeebeOutput("$.foo", "$.foo"))
           .done();
 
   private static final byte[] PAYLOAD;
@@ -230,9 +230,10 @@ public class IncidentTest {
   public void shouldCreateIncidentForInvalidResultOnInputMapping() throws Throwable {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("failingTask", t -> t.taskType("external").input("$.string", "$"))
+            .serviceTask(
+                "failingTask", t -> t.zeebeTaskType("external").zeebeInput("$.string", "$"))
             .done());
 
     // when
@@ -254,9 +255,9 @@ public class IncidentTest {
   public void shouldResolveIncidentForInvalidResultOnInputMapping() throws Throwable {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("service", t -> t.taskType("external").input("$.string", "$"))
+            .serviceTask("service", t -> t.zeebeTaskType("external").zeebeInput("$.string", "$"))
             .done());
 
     // when
@@ -297,11 +298,14 @@ public class IncidentTest {
   public void shouldCreateIncidentForInvalidResultOnOutputMapping() throws Throwable {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask(
                 "failingTask",
-                t -> t.taskType("external").input("$.jsonObject", "$").output("$.testAttr", "$"))
+                t ->
+                    t.zeebeTaskType("external")
+                        .zeebeInput("$.jsonObject", "$")
+                        .zeebeOutput("$.testAttr", "$"))
             .done());
 
     testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
@@ -327,11 +331,14 @@ public class IncidentTest {
   public void shouldResolveIncidentForInvalidResultOnOutputMapping() throws Throwable {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask(
                 "service",
-                t -> t.taskType("external").input("$.jsonObject", "$").output("$.testAttr", "$"))
+                t ->
+                    t.zeebeTaskType("external")
+                        .zeebeInput("$.jsonObject", "$")
+                        .zeebeOutput("$.testAttr", "$"))
             .done());
 
     final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
@@ -376,11 +383,14 @@ public class IncidentTest {
   public void shouldCreateIncidentForInAndOutputMappingAndNoTaskCompletePayload() throws Throwable {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask(
                 "failingTask",
-                t -> t.taskType("external").input("$.jsonObject", "$").output("$.testAttr", "$"))
+                t ->
+                    t.zeebeTaskType("external")
+                        .zeebeInput("$.jsonObject", "$")
+                        .zeebeOutput("$.testAttr", "$"))
             .done());
 
     testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
@@ -403,11 +413,14 @@ public class IncidentTest {
       throws Throwable {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask(
                 "service",
-                t -> t.taskType("external").input("$.jsonObject", "$").output("$.testAttr", "$"))
+                t ->
+                    t.zeebeTaskType("external")
+                        .zeebeInput("$.jsonObject", "$")
+                        .zeebeOutput("$.testAttr", "$"))
             .done());
 
     final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
@@ -448,9 +461,10 @@ public class IncidentTest {
   public void shouldCreateIncidentForOutputMappingAndNoTaskCompletePayload() throws Throwable {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("failingTask", t -> t.taskType("external").output("$.testAttr", "$"))
+            .serviceTask(
+                "failingTask", t -> t.zeebeTaskType("external").zeebeOutput("$.testAttr", "$"))
             .done());
 
     testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
@@ -472,9 +486,9 @@ public class IncidentTest {
   public void shouldResolveIncidentForOutputMappingAndNoTaskCompletePayload() throws Throwable {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("service", t -> t.taskType("external").output("$.testAttr", "$"))
+            .serviceTask("service", t -> t.zeebeTaskType("external").zeebeOutput("$.testAttr", "$"))
             .done());
 
     final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
@@ -515,12 +529,15 @@ public class IncidentTest {
   public void shouldCreateIncidentIfExclusiveGatewayHasNoMatchingCondition() {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("workflow")
+        Bpmn.createExecutableProcess("workflow")
             .startEvent()
             .exclusiveGateway("xor")
-            .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
+            .sequenceFlowId("s1")
+            .condition("$.foo < 5")
             .endEvent()
-            .sequenceFlow("s2", s -> s.condition("$.foo >= 5 && $.foo < 10"))
+            .moveToLastGateway()
+            .sequenceFlowId("s2")
+            .condition("$.foo >= 5 && $.foo < 10")
             .endEvent()
             .done());
 
@@ -550,12 +567,15 @@ public class IncidentTest {
   public void shouldCreateIncidentIfConditionFailsToEvaluate() {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("workflow")
+        Bpmn.createExecutableProcess("workflow")
             .startEvent()
             .exclusiveGateway("xor")
-            .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
+            .sequenceFlowId("s1")
+            .condition("$.foo < 5")
             .endEvent()
-            .sequenceFlow("s2", s -> s.condition("$.foo >= 5 && $.foo < 10"))
+            .moveToLastGateway()
+            .sequenceFlowId("s2")
+            .condition("$.foo >= 5 && $.foo < 10")
             .endEvent()
             .done());
 
@@ -578,12 +598,15 @@ public class IncidentTest {
   public void shouldResolveIncidentForFailedCondition() throws Throwable {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("workflow")
+        Bpmn.createExecutableProcess("workflow")
             .startEvent()
             .exclusiveGateway("xor")
-            .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
+            .sequenceFlowId("s1")
+            .condition("$.foo < 5")
             .endEvent()
-            .sequenceFlow("s2", s -> s.condition("$.foo >= 5 && $.foo < 10"))
+            .moveToLastGateway()
+            .sequenceFlowId("s2")
+            .condition("$.foo >= 5 && $.foo < 10")
             .endEvent()
             .done());
 
@@ -649,12 +672,15 @@ public class IncidentTest {
   public void shouldResolveIncidentForFailedConditionAfterUploadingWrongPayload() throws Throwable {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("workflow")
+        Bpmn.createExecutableProcess("workflow")
             .startEvent()
             .exclusiveGateway("xor")
-            .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
+            .sequenceFlowId("s1")
+            .condition("$.foo < 5")
             .endEvent()
-            .sequenceFlow("s2", s -> s.condition("$.foo >= 5 && $.foo < 10"))
+            .moveToLastGateway()
+            .sequenceFlowId("s2")
+            .condition("$.foo >= 5 && $.foo < 10")
             .endEvent()
             .done());
 
@@ -761,12 +787,15 @@ public class IncidentTest {
   public void shouldResolveIncidentForExclusiveGatewayWithoutMatchingCondition() throws Throwable {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("workflow")
+        Bpmn.createExecutableProcess("workflow")
             .startEvent()
             .exclusiveGateway("xor")
-            .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
+            .sequenceFlowId("s1")
+            .condition("$.foo < 5")
             .endEvent()
-            .sequenceFlow("s2", s -> s.condition("$.foo >= 5 && $.foo < 10"))
+            .moveToLastGateway()
+            .sequenceFlowId("s2")
+            .condition("$.foo >= 5 && $.foo < 10")
             .endEvent()
             .done());
 
@@ -791,12 +820,15 @@ public class IncidentTest {
   @Test
   public void shouldFailToResolveIncident() throws Exception {
     // given
-    final WorkflowDefinition modelInstance =
-        Bpmn.createExecutableWorkflow("process")
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask(
                 "failingTask",
-                t -> t.taskType("external").input("$.foo", "$.foo").input("$.bar", "$.bar"))
+                t ->
+                    t.zeebeTaskType("external")
+                        .zeebeInput("$.foo", "$.foo")
+                        .zeebeInput("$.bar", "$.bar"))
             .done();
 
     testClient.deploy(modelInstance);

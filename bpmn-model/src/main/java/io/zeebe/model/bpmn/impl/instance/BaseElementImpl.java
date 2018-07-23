@@ -20,7 +20,9 @@ import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_ID;
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_BASE_ELEMENT;
 
+import io.zeebe.model.bpmn.Query;
 import io.zeebe.model.bpmn.instance.BaseElement;
+import io.zeebe.model.bpmn.instance.BpmnModelElementInstance;
 import io.zeebe.model.bpmn.instance.Documentation;
 import io.zeebe.model.bpmn.instance.ExtensionElements;
 import io.zeebe.model.bpmn.instance.di.DiagramElement;
@@ -92,6 +94,22 @@ public abstract class BaseElementImpl extends BpmnModelElementInstanceImpl imple
   }
 
   @Override
+  public <T extends BpmnModelElementInstance> T getSingleExtensionElement(Class<T> type) {
+    final ExtensionElements extensionElements = getExtensionElements();
+    if (extensionElements != null) {
+      final Query<T> query = extensionElements.getElementsQuery().filterByType(type);
+
+      if (query.count() < 1) {
+        return null;
+      } else {
+        return query.singleResult();
+      }
+    } else {
+      return null;
+    }
+  }
+
+  @Override
   public void setExtensionElements(ExtensionElements extensionElements) {
     extensionElementsChild.setChild(this, extensionElements);
   }
@@ -115,7 +133,7 @@ public abstract class BaseElementImpl extends BpmnModelElementInstanceImpl imple
   @SuppressWarnings("rawtypes")
   public Collection<Reference> getIncomingReferencesByType(
       Class<? extends ModelElementInstance> referenceSourceTypeClass) {
-    final Collection<Reference> references = new ArrayList<Reference>();
+    final Collection<Reference> references = new ArrayList<>();
     // we traverse all incoming references in reverse direction
     for (final Reference<?> reference : idAttribute.getIncomingReferences()) {
 

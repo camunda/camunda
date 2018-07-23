@@ -33,7 +33,7 @@ import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
@@ -100,11 +100,11 @@ public class ZeebeObjectMapperTest {
   @Test
   public void shouldSerializeAndDeserializeRecords() throws InterruptedException {
     // given
-    final WorkflowDefinition workflow =
-        Bpmn.createExecutableWorkflow("workflow")
+    final BpmnModelInstance workflow =
+        Bpmn.createExecutableProcess("workflow")
             .startEvent("start")
-            .serviceTask("task1", t -> t.taskType("task").taskHeader("cust", "val"))
-            .serviceTask("task2", t -> t.taskType("task").input("$.baz", "$.baz"))
+            .serviceTask("task1", t -> t.zeebeTaskType("task").zeebeTaskHeader("cust", "val"))
+            .serviceTask("task2", t -> t.zeebeTaskType("task").zeebeInput("$.baz", "$.baz"))
             .endEvent("end")
             .done();
 
@@ -253,7 +253,7 @@ public class ZeebeObjectMapperTest {
         .getWorkflowClient()
         .newDeployCommand()
         .addWorkflowModel(
-            Bpmn.createExecutableWorkflow("workflow").startEvent().done(), "workflow.bpmn")
+            Bpmn.createExecutableProcess("workflow").startEvent().done(), "workflow.bpmn")
         .send()
         .join();
 
@@ -283,7 +283,7 @@ public class ZeebeObjectMapperTest {
         .getWorkflowClient()
         .newDeployCommand()
         .addWorkflowModel(
-            Bpmn.createExecutableWorkflow("workflow").startEvent().done(), "workflow.bpmn")
+            Bpmn.createExecutableProcess("workflow").startEvent().done(), "workflow.bpmn")
         .send()
         .join();
 

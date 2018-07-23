@@ -15,43 +15,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.map;
+package io.zeebe.broker.workflow.model.transformation;
 
-import io.zeebe.broker.workflow.model.ExecutableWorkflow;
+import io.zeebe.model.bpmn.instance.BpmnModelElementInstance;
 
-public class DeployedWorkflow {
-  private final ExecutableWorkflow workflow;
+public interface ModelElementTransformer<T extends BpmnModelElementInstance> {
 
-  private final long key;
+  Class<T> getType();
 
-  private final int version;
-
-  private long fetched;
-
-  public DeployedWorkflow(ExecutableWorkflow workflow, long key, int version, long fetched) {
-    this.workflow = workflow;
-    this.key = key;
-    this.version = version;
-    this.fetched = fetched;
-  }
-
-  public ExecutableWorkflow getWorkflow() {
-    return workflow;
-  }
-
-  public int getVersion() {
-    return version;
-  }
-
-  public long getKey() {
-    return key;
-  }
-
-  public long getFetched() {
-    return fetched;
-  }
-
-  public void setFetched(long fetched) {
-    this.fetched = fetched;
-  }
+  void transform(T element, TransformContext context);
 }

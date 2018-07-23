@@ -27,7 +27,7 @@ import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Before;
@@ -37,10 +37,10 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 public class CancelWorkflowInstanceTest {
-  private static final WorkflowDefinition WORKFLOW =
-      Bpmn.createExecutableWorkflow("process")
+  private static final BpmnModelInstance WORKFLOW =
+      Bpmn.createExecutableProcess("process")
           .startEvent("start")
-          .serviceTask("task", t -> t.taskType("test"))
+          .serviceTask("task", t -> t.zeebeTaskType("test"))
           .endEvent("end")
           .done();
 

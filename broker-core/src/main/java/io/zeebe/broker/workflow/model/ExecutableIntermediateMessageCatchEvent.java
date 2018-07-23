@@ -15,43 +15,33 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.map;
+package io.zeebe.broker.workflow.model;
 
-import io.zeebe.broker.workflow.model.ExecutableWorkflow;
+import io.zeebe.msgpack.jsonpath.JsonPathQuery;
+import org.agrona.DirectBuffer;
 
-public class DeployedWorkflow {
-  private final ExecutableWorkflow workflow;
+public class ExecutableIntermediateMessageCatchEvent extends ExecutableFlowNode {
 
-  private final long key;
+  private JsonPathQuery correlationKey;
+  private DirectBuffer messageName;
 
-  private final int version;
-
-  private long fetched;
-
-  public DeployedWorkflow(ExecutableWorkflow workflow, long key, int version, long fetched) {
-    this.workflow = workflow;
-    this.key = key;
-    this.version = version;
-    this.fetched = fetched;
+  public ExecutableIntermediateMessageCatchEvent(String id) {
+    super(id);
   }
 
-  public ExecutableWorkflow getWorkflow() {
-    return workflow;
+  public JsonPathQuery getCorrelationKey() {
+    return correlationKey;
   }
 
-  public int getVersion() {
-    return version;
+  public void setCorrelationKey(JsonPathQuery correlationKey) {
+    this.correlationKey = correlationKey;
   }
 
-  public long getKey() {
-    return key;
+  public DirectBuffer getMessageName() {
+    return messageName;
   }
 
-  public long getFetched() {
-    return fetched;
-  }
-
-  public void setFetched(long fetched) {
-    this.fetched = fetched;
+  public void setMessageName(DirectBuffer messageName) {
+    this.messageName = messageName;
   }
 }

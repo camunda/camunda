@@ -30,8 +30,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
-import io.zeebe.model.old.bpmn.Bpmn;
-import io.zeebe.model.old.bpmn.instance.OutputBehavior;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
@@ -70,9 +70,9 @@ public class WorkflowTaskIOMappingTest {
   public void shouldUseDefaultInputMappingIfNoMappingIsSpecified() throws IOException {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("service", t -> t.taskType("external"))
+            .serviceTask("service", t -> t.zeebeTaskType("external"))
             .endEvent()
             .done());
 
@@ -91,14 +91,14 @@ public class WorkflowTaskIOMappingTest {
   public void shouldCreateTwoNewObjectsViaInputMapping() throws IOException {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask(
                 "service",
                 t ->
-                    t.taskType("external")
-                        .input(NODE_STRING_PATH, "$.newFoo")
-                        .input(NODE_JSON_OBJECT_PATH, "$.newObj"))
+                    t.zeebeTaskType("external")
+                        .zeebeInput(NODE_STRING_PATH, "$.newFoo")
+                        .zeebeInput(NODE_JSON_OBJECT_PATH, "$.newObj"))
             .endEvent()
             .done());
 
@@ -116,9 +116,9 @@ public class WorkflowTaskIOMappingTest {
   public void shouldUseEmptyObjectIfCreatedWithNoPayload() {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("service", t -> t.taskType("external"))
+            .serviceTask("service", t -> t.zeebeTaskType("external"))
             .endEvent()
             .done());
 
@@ -135,10 +135,11 @@ public class WorkflowTaskIOMappingTest {
   public void shouldCreateIncidentForNoMatchOnInputMapping() {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask(
-                "service", t -> t.taskType("external").input("$.notExisting", NODE_ROOT_PATH))
+                "service",
+                t -> t.zeebeTaskType("external").zeebeInput("$.notExisting", NODE_ROOT_PATH))
             .endEvent()
             .done());
 
@@ -158,14 +159,14 @@ public class WorkflowTaskIOMappingTest {
   public void shouldCreateIncidentForNonMatchingAndMatchingValueOnInputMapping() {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask(
                 "service",
                 t ->
-                    t.taskType("external")
-                        .input("$.notExisting", "$.nullVal")
-                        .input(NODE_STRING_PATH, "$.existing"))
+                    t.zeebeTaskType("external")
+                        .zeebeInput("$.notExisting", "$.nullVal")
+                        .zeebeInput(NODE_STRING_PATH, "$.existing"))
             .endEvent()
             .done());
 
@@ -185,9 +186,9 @@ public class WorkflowTaskIOMappingTest {
   public void shouldUseDefaultOutputMapping() throws IOException {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("service", t -> t.taskType("external"))
+            .serviceTask("service", t -> t.zeebeTaskType("external"))
             .endEvent()
             .done());
 
@@ -209,9 +210,9 @@ public class WorkflowTaskIOMappingTest {
   public void shouldUseDefaultOutputMappingWithNoWorkflowPayload() throws IOException {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("service", t -> t.taskType("external"))
+            .serviceTask("service", t -> t.zeebeTaskType("external"))
             .endEvent()
             .done());
 
@@ -232,9 +233,10 @@ public class WorkflowTaskIOMappingTest {
   public void shouldUseOutputMappingWithNoWorkflowPayload() throws IOException {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("service", t -> t.taskType("external").output("$.string", "$.foo"))
+            .serviceTask(
+                "service", t -> t.zeebeTaskType("external").zeebeOutput("$.string", "$.foo"))
             .endEvent()
             .done());
 
@@ -255,9 +257,11 @@ public class WorkflowTaskIOMappingTest {
   public void shouldUseNoneOutputBehaviorWithoutCompletePayload() throws IOException {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("service", t -> t.taskType("external").outputBehavior(OutputBehavior.NONE))
+            .serviceTask(
+                "service",
+                t -> t.zeebeTaskType("external").zeebeOutputBehavior(ZeebeOutputBehavior.none))
             .endEvent()
             .done());
 
@@ -278,9 +282,11 @@ public class WorkflowTaskIOMappingTest {
   public void shouldUseNoneOutputBehaviorAndCompletePayload() throws IOException {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("service", t -> t.taskType("external").outputBehavior(OutputBehavior.NONE))
+            .serviceTask(
+                "service",
+                t -> t.zeebeTaskType("external").zeebeOutputBehavior(ZeebeOutputBehavior.none))
             .endEvent()
             .done());
 
@@ -301,10 +307,11 @@ public class WorkflowTaskIOMappingTest {
   public void shouldUseOverwriteOutputBehaviorWithoutCompletePayload() throws IOException {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask(
-                "service", t -> t.taskType("external").outputBehavior(OutputBehavior.OVERWRITE))
+                "service",
+                t -> t.zeebeTaskType("external").zeebeOutputBehavior(ZeebeOutputBehavior.overwrite))
             .endEvent()
             .done());
 
@@ -325,10 +332,11 @@ public class WorkflowTaskIOMappingTest {
   public void shouldUseOverwriteOutputBehaviorAndCompletePayload() throws IOException {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask(
-                "service", t -> t.taskType("external").outputBehavior(OutputBehavior.OVERWRITE))
+                "service",
+                t -> t.zeebeTaskType("external").zeebeOutputBehavior(ZeebeOutputBehavior.overwrite))
             .endEvent()
             .done());
 
@@ -350,14 +358,14 @@ public class WorkflowTaskIOMappingTest {
       throws IOException {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask(
                 "service",
                 t ->
-                    t.taskType("external")
-                        .outputBehavior(OutputBehavior.OVERWRITE)
-                        .output("$.string", "$.foo"))
+                    t.zeebeTaskType("external")
+                        .zeebeOutputBehavior(ZeebeOutputBehavior.overwrite)
+                        .zeebeOutput("$.string", "$.foo"))
             .endEvent()
             .done());
 
@@ -379,14 +387,14 @@ public class WorkflowTaskIOMappingTest {
       shouldCreateIncidentOnOverwriteOutputBehaviorWithOutputMappingAndWithoutCompletedPayload() {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask(
                 "service",
                 t ->
-                    t.taskType("external")
-                        .outputBehavior(OutputBehavior.OVERWRITE)
-                        .output("$.string", "$.foo"))
+                    t.zeebeTaskType("external")
+                        .zeebeOutputBehavior(ZeebeOutputBehavior.overwrite)
+                        .zeebeOutput("$.string", "$.foo"))
             .endEvent()
             .done());
 
@@ -409,9 +417,9 @@ public class WorkflowTaskIOMappingTest {
   public void shouldUseDefaultOutputMappingWithNoCompletePayload() throws IOException {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("service", t -> t.taskType("external"))
+            .serviceTask("service", t -> t.zeebeTaskType("external"))
             .endEvent()
             .done());
 
@@ -432,9 +440,9 @@ public class WorkflowTaskIOMappingTest {
   public void shouldUseDefaultOutputMappingWithNoCreatedPayload() throws IOException {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("service", t -> t.taskType("external"))
+            .serviceTask("service", t -> t.zeebeTaskType("external"))
             .endEvent()
             .done());
 
@@ -455,9 +463,9 @@ public class WorkflowTaskIOMappingTest {
   public void shouldNotSeePayloadOfWorkflowInstanceBefore() throws IOException {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("service", t -> t.taskType("external"))
+            .serviceTask("service", t -> t.zeebeTaskType("external"))
             .endEvent()
             .done());
 
@@ -490,9 +498,10 @@ public class WorkflowTaskIOMappingTest {
   public void shouldNotSeePayloadOfWorkflowInstanceBeforeOnOutputMapping() throws IOException {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("service", t -> t.taskType("external").output("$", "$.taskPayload"))
+            .serviceTask(
+                "service", t -> t.zeebeTaskType("external").zeebeOutput("$", "$.taskPayload"))
             .endEvent()
             .done());
 
@@ -534,10 +543,11 @@ public class WorkflowTaskIOMappingTest {
     final Map<String, String> inputMapping = new HashMap<>();
     inputMapping.put(NODE_ROOT_PATH, NODE_ROOT_PATH);
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask(
-                "service", t -> t.taskType("external").input(NODE_ROOT_PATH, NODE_ROOT_PATH))
+                "service",
+                t -> t.zeebeTaskType("external").zeebeInput(NODE_ROOT_PATH, NODE_ROOT_PATH))
             .endEvent()
             .done());
 
@@ -559,9 +569,9 @@ public class WorkflowTaskIOMappingTest {
   public void shouldUseWFPayloadIfCompleteWithNoPayload() {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("service", t -> t.taskType("external"))
+            .serviceTask("service", t -> t.zeebeTaskType("external"))
             .endEvent()
             .done());
 
@@ -582,14 +592,14 @@ public class WorkflowTaskIOMappingTest {
   public void shouldUseOutputMappingToAddObjectsToWorkflowPayload() throws IOException {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask(
                 "service",
                 t ->
-                    t.taskType("external")
-                        .output(NODE_STRING_PATH, "$.newFoo")
-                        .output(NODE_JSON_OBJECT_PATH, "$.newObj"))
+                    t.zeebeTaskType("external")
+                        .zeebeOutput(NODE_STRING_PATH, "$.newFoo")
+                        .zeebeOutput(NODE_JSON_OBJECT_PATH, "$.newObj"))
             .endEvent()
             .done());
 
@@ -613,10 +623,11 @@ public class WorkflowTaskIOMappingTest {
   public void shouldCreateIncidentForNotMatchingOnOutputMapping() {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask(
-                "service", t -> t.taskType("external").output("$.notExisting", "$.notExist"))
+                "service",
+                t -> t.zeebeTaskType("external").zeebeOutput("$.notExisting", "$.notExist"))
             .endEvent()
             .done());
 
@@ -640,14 +651,14 @@ public class WorkflowTaskIOMappingTest {
   public void shouldUseInOutMapping() throws IOException {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask(
                 "service",
                 t ->
-                    t.taskType("external")
-                        .input(NODE_JSON_OBJECT_PATH, NODE_ROOT_PATH)
-                        .output("$.testAttr", "$.result"))
+                    t.zeebeTaskType("external")
+                        .zeebeInput(NODE_JSON_OBJECT_PATH, NODE_ROOT_PATH)
+                        .zeebeOutput("$.testAttr", "$.result"))
             .endEvent()
             .done());
 

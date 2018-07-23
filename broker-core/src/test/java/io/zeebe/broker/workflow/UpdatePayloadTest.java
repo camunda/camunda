@@ -25,8 +25,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.model.old.bpmn.Bpmn;
-import io.zeebe.model.old.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
@@ -43,12 +43,16 @@ import org.junit.rules.RuleChain;
 
 public class UpdatePayloadTest {
 
-  private static final WorkflowDefinition WORKFLOW =
-      Bpmn.createExecutableWorkflow("process")
+  private static final BpmnModelInstance WORKFLOW =
+      Bpmn.createExecutableProcess("process")
           .startEvent()
           .serviceTask(
-              "task-1", t -> t.taskType("task-1").taskRetries(5).output("$.jsonObject", "$.obj"))
-          .serviceTask("task-2", t -> t.taskType("task-2").taskRetries(5))
+              "task-1",
+              t ->
+                  t.zeebeTaskType("task-1")
+                      .zeebeTaskRetries(5)
+                      .zeebeOutput("$.jsonObject", "$.obj"))
+          .serviceTask("task-2", t -> t.zeebeTaskType("task-2").zeebeTaskRetries(5))
           .endEvent()
           .done();
 

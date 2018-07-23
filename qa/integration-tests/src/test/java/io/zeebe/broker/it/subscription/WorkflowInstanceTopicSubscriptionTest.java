@@ -25,7 +25,7 @@ import io.zeebe.broker.client.api.subscription.WorkflowInstanceEventHandler;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.test.util.TestUtil;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -48,8 +48,8 @@ public class WorkflowInstanceTopicSubscriptionTest {
   public void setUp() {
     this.client = clientRule.getClient().topicClient();
 
-    final WorkflowDefinition workflow =
-        Bpmn.createExecutableWorkflow("process").startEvent("a").endEvent("b").done();
+    final BpmnModelInstance workflow =
+        Bpmn.createExecutableProcess("process").startEvent("a").endEvent("b").done();
 
     client
         .workflowClient()

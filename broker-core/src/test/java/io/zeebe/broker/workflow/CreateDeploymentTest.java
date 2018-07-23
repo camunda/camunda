@@ -25,8 +25,8 @@ import static org.junit.Assert.fail;
 import io.zeebe.broker.system.workflow.repository.data.ResourceType;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
-import io.zeebe.model.old.bpmn.Bpmn;
-import io.zeebe.model.old.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.clientapi.RecordType;
@@ -37,6 +37,7 @@ import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
 import io.zeebe.util.StreamUtil;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -52,8 +53,8 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class CreateDeploymentTest {
-  private static final WorkflowDefinition WORKFLOW =
-      Bpmn.createExecutableWorkflow("process").startEvent().endEvent().done();
+  private static final BpmnModelInstance WORKFLOW =
+      Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
@@ -328,8 +329,10 @@ public class CreateDeploymentTest {
     return deploymentResource;
   }
 
-  private byte[] bpmnXml(final WorkflowDefinition definition) {
-    return Bpmn.convertToString(definition).getBytes(UTF_8);
+  private byte[] bpmnXml(final BpmnModelInstance definition) {
+    final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+    Bpmn.writeModelToStream(outStream, definition);
+    return outStream.toByteArray();
   }
 
   @SuppressWarnings("unchecked")

@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.SubscriptionUtil;
@@ -55,12 +55,12 @@ public class IntermediateMessageCatchEventTest {
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
-  private static final WorkflowDefinition WORKFLOW =
-      Bpmn.createExecutableWorkflow("wf")
+  private static final BpmnModelInstance WORKFLOW =
+      Bpmn.createExecutableProcess("wf")
           .startEvent()
-          .intermediateCatchEvent(
-              "catch-event", c -> c.messageName("order canceled").correlationKey("$.orderId"))
-          .sequenceFlow("to-end")
+          .intermediateCatchEvent("catch-event")
+          .message(m -> m.name("order canceled").zeebeCorrelationKey("$.orderId"))
+          .sequenceFlowId("to-end")
           .endEvent()
           .done();
 

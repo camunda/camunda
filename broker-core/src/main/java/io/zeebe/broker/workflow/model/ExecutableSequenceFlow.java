@@ -15,43 +15,32 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.map;
+package io.zeebe.broker.workflow.model;
 
-import io.zeebe.broker.workflow.model.ExecutableWorkflow;
+import io.zeebe.msgpack.el.CompiledJsonCondition;
 
-public class DeployedWorkflow {
-  private final ExecutableWorkflow workflow;
+public class ExecutableSequenceFlow extends ExecutableFlowElement {
 
-  private final long key;
+  private ExecutableFlowNode target;
+  private CompiledJsonCondition condition;
 
-  private final int version;
-
-  private long fetched;
-
-  public DeployedWorkflow(ExecutableWorkflow workflow, long key, int version, long fetched) {
-    this.workflow = workflow;
-    this.key = key;
-    this.version = version;
-    this.fetched = fetched;
+  public ExecutableSequenceFlow(String id) {
+    super(id);
   }
 
-  public ExecutableWorkflow getWorkflow() {
-    return workflow;
+  public void setTarget(ExecutableFlowNode target) {
+    this.target = target;
   }
 
-  public int getVersion() {
-    return version;
+  public ExecutableFlowNode getTarget() {
+    return target;
   }
 
-  public long getKey() {
-    return key;
+  public void setCondition(CompiledJsonCondition condition) {
+    this.condition = condition;
   }
 
-  public long getFetched() {
-    return fetched;
-  }
-
-  public void setFetched(long fetched) {
-    this.fetched = fetched;
+  public CompiledJsonCondition getCondition() {
+    return condition;
   }
 }

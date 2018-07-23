@@ -37,7 +37,7 @@ import io.zeebe.broker.client.api.subscription.TopicSubscription;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -50,8 +50,8 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
 public class ManagementSubscriptionTest {
-  private static final WorkflowDefinition WORKFLOW =
-      Bpmn.createExecutableWorkflow("wf").startEvent().done();
+  private static final BpmnModelInstance WORKFLOW =
+      Bpmn.createExecutableProcess("wf").startEvent().done();
 
   public static final String SUBSCRIPTION_NAME = "foo";
 

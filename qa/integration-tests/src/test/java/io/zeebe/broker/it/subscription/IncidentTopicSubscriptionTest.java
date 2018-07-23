@@ -27,7 +27,7 @@ import io.zeebe.broker.client.api.subscription.IncidentEventHandler;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.test.util.TestUtil;
 import java.io.IOException;
 import java.time.Duration;
@@ -51,10 +51,10 @@ public class IncidentTopicSubscriptionTest {
   public void setUp() {
     this.client = clientRule.getClient().topicClient();
 
-    final WorkflowDefinition workflow =
-        Bpmn.createExecutableWorkflow("process")
+    final BpmnModelInstance workflow =
+        Bpmn.createExecutableProcess("process")
             .startEvent("start")
-            .serviceTask("task", t -> t.taskType("test").input("$.foo", "$.foo"))
+            .serviceTask("task", t -> t.zeebeTaskType("test").zeebeInput("$.foo", "$.foo"))
             .endEvent("end")
             .done();
 

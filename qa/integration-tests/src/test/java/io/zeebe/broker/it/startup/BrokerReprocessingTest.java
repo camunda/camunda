@@ -38,7 +38,7 @@ import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftServiceNames;
 import io.zeebe.raft.state.RaftState;
@@ -98,25 +98,25 @@ public class BrokerReprocessingTest {
   @Parameter(1)
   public String name;
 
-  private static final WorkflowDefinition WORKFLOW =
-      Bpmn.createExecutableWorkflow("process")
+  private static final BpmnModelInstance WORKFLOW =
+      Bpmn.createExecutableProcess("process")
           .startEvent("start")
-          .serviceTask("task", t -> t.taskType("foo"))
+          .serviceTask("task", t -> t.zeebeTaskType("foo"))
           .endEvent("end")
           .done();
 
-  private static final WorkflowDefinition WORKFLOW_TWO_TASKS =
-      Bpmn.createExecutableWorkflow("process")
+  private static final BpmnModelInstance WORKFLOW_TWO_TASKS =
+      Bpmn.createExecutableProcess("process")
           .startEvent("start")
-          .serviceTask("task1", t -> t.taskType("foo"))
-          .serviceTask("task2", t -> t.taskType("bar"))
+          .serviceTask("task1", t -> t.zeebeTaskType("foo"))
+          .serviceTask("task2", t -> t.zeebeTaskType("bar"))
           .endEvent("end")
           .done();
 
-  private static final WorkflowDefinition WORKFLOW_INCIDENT =
-      Bpmn.createExecutableWorkflow("process")
+  private static final BpmnModelInstance WORKFLOW_INCIDENT =
+      Bpmn.createExecutableProcess("process")
           .startEvent("start")
-          .serviceTask("task", t -> t.taskType("test").input("$.foo", "$.foo"))
+          .serviceTask("task", t -> t.zeebeTaskType("test").zeebeInput("$.foo", "$.foo"))
           .endEvent("end")
           .done();
 

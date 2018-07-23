@@ -16,11 +16,10 @@
 package io.zeebe.test.broker.protocol.clientapi;
 
 import static io.zeebe.util.buffer.BufferUtil.bufferAsArray;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.model.old.bpmn.Bpmn;
-import io.zeebe.model.old.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
@@ -33,6 +32,7 @@ import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.protocol.intent.SubscriberIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -61,11 +61,11 @@ public class TestTopicClient {
     this.partitionId = partitionId;
   }
 
-  public long deploy(final WorkflowDefinition workflow) {
+  public long deploy(final BpmnModelInstance workflow) {
     return deploy(ClientApiRule.DEFAULT_TOPIC_NAME, workflow);
   }
 
-  public long deploy(String topic, final WorkflowDefinition workflow) {
+  public long deploy(String topic, final BpmnModelInstance workflow) {
     final ExecuteCommandResponse response = deployWithResponse(topic, workflow);
 
     assertThat(response.recordType())
@@ -79,14 +79,15 @@ public class TestTopicClient {
     return deployWithResponse(topic, resource, "BPMN_XML", "process.bpmn");
   }
 
-  public ExecuteCommandResponse deployWithResponse(
-      String topic, final WorkflowDefinition workflow) {
+  public ExecuteCommandResponse deployWithResponse(String topic, final BpmnModelInstance workflow) {
     return deployWithResponse(topic, workflow, "process.bpmn");
   }
 
   public ExecuteCommandResponse deployWithResponse(
-      String topic, final WorkflowDefinition workflow, String resourceName) {
-    final byte[] resource = Bpmn.convertToString(workflow).getBytes(UTF_8);
+      String topic, final BpmnModelInstance workflow, String resourceName) {
+    final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+    Bpmn.writeModelToStream(outStream, workflow);
+    final byte[] resource = outStream.toByteArray();
 
     return deployWithResponse(topic, resource, "BPMN_XML", resourceName);
   }

@@ -23,8 +23,8 @@ import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.model.old.bpmn.Bpmn;
-import io.zeebe.model.old.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ControlMessageResponse;
@@ -37,11 +37,11 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 public class WorkflowRepositoryClientApiTest {
-  private static final WorkflowDefinition WORKFLOW =
-      Bpmn.createExecutableWorkflow("process").startEvent().endEvent().done();
+  private static final BpmnModelInstance WORKFLOW =
+      Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
 
-  private static final WorkflowDefinition WORKFLOW_2 =
-      Bpmn.createExecutableWorkflow("process2").startEvent().endEvent().done();
+  private static final BpmnModelInstance WORKFLOW_2 =
+      Bpmn.createExecutableProcess("process2").startEvent().endEvent().done();
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 

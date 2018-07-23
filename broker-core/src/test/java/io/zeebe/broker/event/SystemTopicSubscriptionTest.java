@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.model.old.bpmn.Bpmn;
+import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
@@ -89,7 +89,7 @@ public class SystemTopicSubscriptionTest {
   public void shouldPushDeploymentEvents() {
     // given
     final long deploymentKey =
-        apiRule.topic().deploy(Bpmn.createExecutableWorkflow("wf").startEvent().done());
+        apiRule.topic().deploy(Bpmn.createExecutableProcess("wf").startEvent().done());
 
     // when
     final ExecuteCommandResponse addResponse =

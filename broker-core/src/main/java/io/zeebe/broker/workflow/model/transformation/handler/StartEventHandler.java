@@ -15,43 +15,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.map;
+package io.zeebe.broker.workflow.model.transformation.handler;
 
+import io.zeebe.broker.workflow.model.ExecutableFlowNode;
 import io.zeebe.broker.workflow.model.ExecutableWorkflow;
+import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
+import io.zeebe.broker.workflow.model.transformation.TransformContext;
+import io.zeebe.model.bpmn.instance.StartEvent;
 
-public class DeployedWorkflow {
-  private final ExecutableWorkflow workflow;
+public class StartEventHandler implements ModelElementTransformer<StartEvent> {
 
-  private final long key;
-
-  private final int version;
-
-  private long fetched;
-
-  public DeployedWorkflow(ExecutableWorkflow workflow, long key, int version, long fetched) {
-    this.workflow = workflow;
-    this.key = key;
-    this.version = version;
-    this.fetched = fetched;
+  @Override
+  public Class<StartEvent> getType() {
+    return StartEvent.class;
   }
 
-  public ExecutableWorkflow getWorkflow() {
-    return workflow;
-  }
-
-  public int getVersion() {
-    return version;
-  }
-
-  public long getKey() {
-    return key;
-  }
-
-  public long getFetched() {
-    return fetched;
-  }
-
-  public void setFetched(long fetched) {
-    this.fetched = fetched;
+  @Override
+  public void transform(StartEvent element, TransformContext context) {
+    final ExecutableWorkflow workflow = context.getCurrentWorkflow();
+    final ExecutableFlowNode startEvent =
+        workflow.getElementById(element.getId(), ExecutableFlowNode.class);
+    workflow.setStartEvent(startEvent);
   }
 }

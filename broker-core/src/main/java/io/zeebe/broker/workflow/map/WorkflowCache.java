@@ -23,10 +23,12 @@ import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.clustering.base.topology.TopologyPartitionListener;
 import io.zeebe.broker.system.workflow.repository.api.management.FetchWorkflowRequest;
 import io.zeebe.broker.system.workflow.repository.api.management.FetchWorkflowResponse;
+import io.zeebe.broker.workflow.model.ExecutableWorkflow;
+import io.zeebe.broker.workflow.model.transformation.BpmnTransformer;
 import io.zeebe.clustering.management.FetchWorkflowResponseDecoder;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.old.bpmn.BpmnModelApi;
-import io.zeebe.model.old.bpmn.instance.Workflow;
-import io.zeebe.model.old.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.transport.ClientResponse;
 import io.zeebe.transport.ClientTransport;
@@ -42,6 +44,7 @@ import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.io.DirectBufferInputStream;
 
 public class WorkflowCache implements TopologyPartitionListener {
   public static final long LATEST_VERSION_REFRESH_INTERVAL = Duration.ofSeconds(10).toMillis();
@@ -62,6 +65,7 @@ public class WorkflowCache implements TopologyPartitionListener {
   private final TopologyManager topologyManager;
 
   private final DirectBuffer topicName;
+  private final BpmnTransformer transformer = new BpmnTransformer();
 
   private volatile RemoteAddress systemTopicLeaderAddress;
 
@@ -130,13 +134,20 @@ public class WorkflowCache implements TopologyPartitionListener {
         final DirectBuffer bpmnXml = fetchRespose.getBpmnXml();
         final int version = fetchRespose.getVersion();
 
-        final WorkflowDefinition workflowDefinition = bpmn.readFromXmlBuffer(bpmnXml);
-        final Collection<Workflow> workflows = workflowDefinition.getWorkflows();
+        // TODO: pull these things apart
+        // TODO: may wanna catch exceptions
+        final BpmnModelInstance modelInstance =
+            Bpmn.readModelFromStream(new DirectBufferInputStream(bpmnXml));
 
-        final Workflow workflow =
-            workflows
+        // TODO: do design time and runtime validation
+
+        final List<ExecutableWorkflow> definitions =
+            transformer.transformDefinitions(modelInstance);
+
+        final ExecutableWorkflow workflow =
+            definitions
                 .stream()
-                .filter((w) -> BufferUtil.equals(bpmnProcessId, w.getBpmnProcessId()))
+                .filter((w) -> BufferUtil.equals(bpmnProcessId, w.getId()))
                 .findFirst()
                 .get();
 
