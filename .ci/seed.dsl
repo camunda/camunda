@@ -110,7 +110,11 @@ multibranchPipelineJob('camunda-optimize') {
 
   orphanedItemStrategy {
     discardOldItems {
-      daysToKeep(0)
+      daysToKeep(1)
     }
+  }
+
+  triggers {
+    periodic(1440) // Minutes - Re-index once a day, if not triggered before
   }
 }
