@@ -36,9 +36,7 @@ exports[`InstanceEvents should render grouped events if events or activities cha
           <Summary>
             fooCreated
           </Summary>
-          <Details>
-            META DATA
-          </Details>
+          <Details />
         </ExpansionPanel>
         <ExpansionPanel
           key="fooActiviated1"
@@ -46,9 +44,7 @@ exports[`InstanceEvents should render grouped events if events or activities cha
           <Summary>
             fooActiviated
           </Summary>
-          <Details>
-            META DATA
-          </Details>
+          <Details />
         </ExpansionPanel>
       </Details>
     </ExpansionPanel>
@@ -67,9 +63,7 @@ exports[`InstanceEvents should render grouped events if events or activities cha
           <Summary>
             barCreated
           </Summary>
-          <Details>
-            META DATA
-          </Details>
+          <Details />
         </ExpansionPanel>
         <ExpansionPanel
           key="barActivated1"
@@ -77,9 +71,7 @@ exports[`InstanceEvents should render grouped events if events or activities cha
           <Summary>
             barActivated
           </Summary>
-          <Details>
-            META DATA
-          </Details>
+          <Details />
         </ExpansionPanel>
       </Details>
     </ExpansionPanel>
@@ -89,9 +81,7 @@ exports[`InstanceEvents should render grouped events if events or activities cha
       <Summary>
         baz
       </Summary>
-      <Details>
-        META DATA
-      </Details>
+      <Details />
     </ExpansionPanel>
   </styled.div>
 </Themed(styled.div)>
