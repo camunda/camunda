@@ -9,7 +9,10 @@ export function isDurationHeatmap({
     processDefinitionKey &&
     processDefinitionVersion &&
     view.entity === 'flowNode' &&
-    view.operation === 'avg' &&
+    (view.operation === 'avg' ||
+      view.operation === 'min' ||
+      view.operation === 'max' ||
+      view.operation === 'median') &&
     view.property === 'duration' &&
     groupBy.type === 'flowNodes' &&
     visualization === 'heat'
