@@ -8,22 +8,6 @@ import * as Styled from './styled';
 describe('<Checkbox />', () => {
   const mockOnChange = jest.fn();
 
-  it('should update "isChecked" state according to props', () => {
-    // given
-    let isChecked = true;
-    const node = shallow(
-      <Checkbox onChange={mockOnChange} isChecked={isChecked} />
-    );
-    expect(node.state().isChecked).toBe(true);
-
-    // when
-    isChecked = false;
-    node.setProps({isChecked});
-
-    // then
-    expect(node.state().isChecked).toBe(false);
-  });
-
   it('should toggle "isChecked" prop on click', () => {
     let checkState = false;
     const mockOnChange = jest
@@ -55,7 +39,7 @@ describe('<Checkbox />', () => {
     const event = {target: {checked: true}};
 
     node.instance().inputRef({checked: true});
-    node.instance().handleOnChange(event);
+    node.instance().handleChange(event);
 
     expect(mockOnChange).toBeCalledWith(event, true);
   });
