@@ -389,7 +389,6 @@
               <goal>shade</goal>
             </goals>
             <configuration>
-              <generateUniqueDependencyReducedPom>true</generateUniqueDependencyReducedPom>
               <filters>
                 <filter>
                   <artifact>org.bouncycastle:*</artifact>
