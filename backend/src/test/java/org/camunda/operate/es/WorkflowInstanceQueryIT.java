@@ -4,7 +4,6 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import org.camunda.operate.entities.ActivityInstanceEntity;
@@ -19,6 +18,8 @@ import org.camunda.operate.es.writer.PersistenceException;
 import org.camunda.operate.rest.dto.IncidentDto;
 import org.camunda.operate.rest.dto.SortingDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceDto;
+import org.camunda.operate.rest.dto.WorkflowInstanceRequestDto;
+import org.camunda.operate.rest.dto.WorkflowInstanceResponseDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
 import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ElasticsearchTestRule;
@@ -43,6 +44,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Tests Elasticsearch queries for workflow instances.
  */
 public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
+
+  @FunctionalInterface
+  interface FiltersSupplier {
+    void applyFilters(WorkflowInstanceQueryDto query);
+  }
 
   private static final String QUERY_INSTANCES_URL = WORKFLOW_INSTANCE_URL;
   private static final String GET_INSTANCE_URL = WORKFLOW_INSTANCE_URL + "/%s";
@@ -69,54 +75,38 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
   }
 
   @Test
-  public void testQueryAllRunningCount() throws Exception {
-    createData();
-
-    //query running instances
-    WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
-    workflowInstanceQueryDto.setRunning(true);
-    workflowInstanceQueryDto.setActive(true);
-    workflowInstanceQueryDto.setIncidents(true);
-
-    testCountQuery(workflowInstanceQueryDto, 3);
-
-  }
-
-  @Test
   public void testQueryAllRunning() throws Exception {
     createData();
 
     //query running instances
-    WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
-    workflowInstanceQueryDto.setRunning(true);
-    workflowInstanceQueryDto.setActive(true);
-    workflowInstanceQueryDto.setIncidents(true);
+    WorkflowInstanceRequestDto workflowInstanceQueryDto = createWorkflowInstanceQuery(q -> {
+      q.setRunning(true);
+      q.setActive(true);
+      q.setIncidents(true);
+    });
 
-    MockHttpServletRequestBuilder request = post(query(0, 100))
-        .content(mockMvcTestRule.json(workflowInstanceQueryDto))
-        .contentType(mockMvcTestRule.getContentType());
+    MockHttpServletRequestBuilder request = post(query(0, 100)).content(mockMvcTestRule.json(workflowInstanceQueryDto))
+      .contentType(mockMvcTestRule.getContentType());
 
-    MvcResult mvcResult = mockMvc.perform(request)
-        .andExpect(status().isOk())
-        .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-        .andReturn();
+    MvcResult mvcResult = mockMvc.perform(request).andExpect(status().isOk()).andExpect(content().contentType(mockMvcTestRule.getContentType())).andReturn();
 
-     List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
+    WorkflowInstanceResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<WorkflowInstanceResponseDto>() {
+    });
 
-     assertThat(workflowInstanceDtos.size()).isEqualTo(3);
-
-     for (WorkflowInstanceDto workflowInstanceDto: workflowInstanceDtos) {
-       assertThat(workflowInstanceDto.getEndDate()).isNull();
-       assertThat(workflowInstanceDto.getState()).isEqualTo(WorkflowInstanceState.ACTIVE);
-       assertThat(workflowInstanceDto.getActivities()).isEmpty();
-     }
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(3);
+    assertThat(response.getTotalCount()).isEqualTo(3);
+    for (WorkflowInstanceDto workflowInstanceDto : response.getWorkflowInstances()) {
+      assertThat(workflowInstanceDto.getEndDate()).isNull();
+      assertThat(workflowInstanceDto.getState()).isEqualTo(WorkflowInstanceState.ACTIVE);
+      assertThat(workflowInstanceDto.getActivities()).isEmpty();
+    }
   }
 
   @Test
   public void testQueryByStartAndEndDate() throws Exception {
     //given
     final OffsetDateTime date1 = OffsetDateTime.of(2018, 1, 1, 15, 30, 30, 156, OffsetDateTime.now().getOffset());      //January 1, 2018
-    final OffsetDateTime date2 = OffsetDateTime.of(2018, 2, 1, 12, 00, 30, 457, OffsetDateTime.now().getOffset());      //February 1, 2018
+    final OffsetDateTime date2 = OffsetDateTime.of(2018, 2, 1, 12, 0, 30, 457, OffsetDateTime.now().getOffset());      //February 1, 2018
     final OffsetDateTime date3 = OffsetDateTime.of(2018, 3, 1, 17, 15, 14, 235, OffsetDateTime.now().getOffset());      //March 1, 2018
     final OffsetDateTime date4 = OffsetDateTime.of(2018, 4, 1, 2, 12, 0, 0, OffsetDateTime.now().getOffset());          //April 1, 2018
     final OffsetDateTime date5 = OffsetDateTime.of(2018, 5, 1, 23, 30, 15, 666, OffsetDateTime.now().getOffset());      //May 1, 2018
@@ -126,55 +116,61 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     persist(workflowInstance1, workflowInstance2, workflowInstance3);
 
     //when
-    WorkflowInstanceQueryDto query = createGetAllWorkflowInstancesQuery();
-    query.setStartDateAfter(date1.minus(1, ChronoUnit.DAYS));
-    query.setStartDateBefore(date3);
+    WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(q -> {
+      q.setStartDateAfter(date1.minus(1, ChronoUnit.DAYS));
+      q.setStartDateBefore(date3);
+    });
     //then
     requestAndAssertIds(query, "TEST CASE #1", workflowInstance1.getId(), workflowInstance2.getId());
 
     //test inclusion for startDateAfter and exclusion for startDateBefore
     //when
-    query = createGetAllWorkflowInstancesQuery();
-    query.setStartDateAfter(date1);
-    query.setStartDateBefore(date3);
+    query = createGetAllWorkflowInstancesQuery(q -> {
+      q.setStartDateAfter(date1);
+      q.setStartDateBefore(date3);
+    });
     //then
     requestAndAssertIds(query, "TEST CASE #2", workflowInstance1.getId(), workflowInstance2.getId());
 
     //when
-    query = createGetAllWorkflowInstancesQuery();
-    query.setStartDateAfter(date1.plus(1, ChronoUnit.MILLIS));
-    query.setStartDateBefore(date3.plus(1, ChronoUnit.MILLIS));
+    query = createGetAllWorkflowInstancesQuery(q -> {
+      q.setStartDateAfter(date1.plus(1, ChronoUnit.MILLIS));
+      q.setStartDateBefore(date3.plus(1, ChronoUnit.MILLIS));
+    });
     //then
     requestAndAssertIds(query, "TEST CASE #3", workflowInstance2.getId(), workflowInstance3.getId());
 
     //test combination of start date and end date
     //when
-    query = createGetAllWorkflowInstancesQuery();
-    query.setStartDateAfter(date2.minus(1, ChronoUnit.DAYS));
-    query.setStartDateBefore(date3.plus(1, ChronoUnit.DAYS));
-    query.setEndDateAfter(date4.minus(1, ChronoUnit.DAYS));
-    query.setEndDateBefore(date4.plus(1, ChronoUnit.DAYS));
+    query = createGetAllWorkflowInstancesQuery(q -> {
+      q.setStartDateAfter(date2.minus(1, ChronoUnit.DAYS));
+      q.setStartDateBefore(date3.plus(1, ChronoUnit.DAYS));
+      q.setEndDateAfter(date4.minus(1, ChronoUnit.DAYS));
+      q.setEndDateBefore(date4.plus(1, ChronoUnit.DAYS));
+    });
     //then
     requestAndAssertIds(query, "TEST CASE #4", workflowInstance2.getId());
 
     //test inclusion for endDateAfter and exclusion for endDateBefore
     //when
-    query = createGetAllWorkflowInstancesQuery();
-    query.setEndDateAfter(date4);
-    query.setEndDateBefore(date5);
+    query = createGetAllWorkflowInstancesQuery(q -> {
+      q.setEndDateAfter(date4);
+      q.setEndDateBefore(date5);
+    });
     //then
     requestAndAssertIds(query, "TEST CASE #5", workflowInstance2.getId());
 
     //when
-    query = createGetAllWorkflowInstancesQuery();
-    query.setEndDateAfter(date4);
-    query.setEndDateBefore(date5.plus(1, ChronoUnit.MILLIS));
+    query = createGetAllWorkflowInstancesQuery(q -> {
+      q.setEndDateAfter(date4);
+      q.setEndDateBefore(date5.plus(1, ChronoUnit.MILLIS));
+    });
     //then
     requestAndAssertIds(query, "TEST CASE #6", workflowInstance1.getId(), workflowInstance2.getId());
 
   }
 
-  private void requestAndAssertIds(WorkflowInstanceQueryDto query, String testCaseName, String... ids) throws Exception {
+  private void requestAndAssertIds(WorkflowInstanceRequestDto query, String testCaseName, String... ids) throws Exception {
     MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(mockMvcTestRule.json(query))
       .contentType(mockMvcTestRule.getContentType());
@@ -184,9 +180,9 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
       .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
 
-    List<WorkflowInstanceDto> workflowInstances = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
+    WorkflowInstanceResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<WorkflowInstanceResponseDto>() { });
 
-    assertThat(workflowInstances).as(testCaseName).extracting(WorkflowInstanceType.ID).containsExactlyInAnyOrder(ids);
+    assertThat(response.getWorkflowInstances()).as(testCaseName).extracting(WorkflowInstanceType.ID).containsExactlyInAnyOrder(ids);
   }
 
   @Test
@@ -217,8 +213,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     persist(workflowInstance1, workflowInstance2);
 
     //given
-    WorkflowInstanceQueryDto query = createGetAllWorkflowInstancesQuery();
-    query.setErrorMessage(errorMessage);
+    WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(q -> q.setErrorMessage(errorMessage));
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
         .content(mockMvcTestRule.json(query))
@@ -229,12 +224,12 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
         .andExpect(content().contentType(mockMvcTestRule.getContentType()))
         .andReturn();
 
-    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
+    WorkflowInstanceResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<WorkflowInstanceResponseDto>() { });
 
     //then
-    assertThat(workflowInstanceDtos.size()).isEqualTo(1);
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(1);
 
-    assertThat(workflowInstanceDtos.get(0).getIncidents())
+    assertThat(response.getWorkflowInstances().get(0).getIncidents())
       .filteredOn(incident -> incident.getState().equals(IncidentState.ACTIVE))
       .extracting(WorkflowInstanceType.ERROR_MSG)
       .containsExactly(errorMessage);
@@ -269,8 +264,8 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     persist(workflowInstance1, workflowInstance2);
 
     //when
-    WorkflowInstanceQueryDto query = createGetAllWorkflowInstancesQuery();
-    query.setActivityId(activityId);
+    WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(q ->
+      q.setActivityId(activityId));
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
         .content(mockMvcTestRule.json(query))
@@ -280,12 +275,12 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
         .andExpect(content().contentType(mockMvcTestRule.getContentType()))
         .andReturn();
 
-    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
+    WorkflowInstanceResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<WorkflowInstanceResponseDto>() { });
 
     //then
-    assertThat(workflowInstanceDtos.size()).isEqualTo(1);
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(1);
 
-    assertThat(workflowInstanceDtos.get(0).getId())
+    assertThat(response.getWorkflowInstances().get(0).getId())
       .isEqualTo(workflowInstance1.getId());
 
   }
@@ -298,8 +293,9 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     final WorkflowInstanceEntity workflowInstance3 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
     persist(workflowInstance1, workflowInstance2, workflowInstance3);
 
-    WorkflowInstanceQueryDto query = createGetAllWorkflowInstancesQuery();
-    query.setIds(Arrays.asList(workflowInstance1.getId(), workflowInstance2.getId()));
+    WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(q ->
+      q.setIds(Arrays.asList(workflowInstance1.getId(), workflowInstance2.getId()))
+    );
 
     //when
     MockHttpServletRequestBuilder request = post(query(0, 100))
@@ -312,11 +308,42 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
         .andReturn();
 
     //then
-    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
+    WorkflowInstanceResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<WorkflowInstanceResponseDto>() { });
 
-    assertThat(workflowInstanceDtos).hasSize(2);
+    assertThat(response.getWorkflowInstances()).hasSize(2);
 
-    assertThat(workflowInstanceDtos).extracting(WorkflowInstanceType.ID).containsExactlyInAnyOrder(workflowInstance1.getId(), workflowInstance2.getId());
+    assertThat(response.getWorkflowInstances()).extracting(WorkflowInstanceType.ID).containsExactlyInAnyOrder(workflowInstance1.getId(), workflowInstance2.getId());
+  }
+
+  @Test
+  public void testQueryByExcludeIds() throws Exception {
+    //given
+    final WorkflowInstanceEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
+    final WorkflowInstanceEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.CANCELED);
+    final WorkflowInstanceEntity workflowInstance3 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
+    final WorkflowInstanceEntity workflowInstance4 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
+    persist(workflowInstance1, workflowInstance2, workflowInstance3, workflowInstance4);
+
+    WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(q ->
+      q.setExcludeIds(Arrays.asList(workflowInstance1.getId(), workflowInstance3.getId()))
+    );
+
+    //when
+    MockHttpServletRequestBuilder request = post(query(0, 100))
+        .content(mockMvcTestRule.json(query))
+        .contentType(mockMvcTestRule.getContentType());
+
+    MvcResult mvcResult = mockMvc.perform(request)
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(mockMvcTestRule.getContentType()))
+        .andReturn();
+
+    //then
+    WorkflowInstanceResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<WorkflowInstanceResponseDto>() { });
+
+    assertThat(response.getWorkflowInstances()).hasSize(2);
+
+    assertThat(response.getWorkflowInstances()).extracting(WorkflowInstanceType.ID).containsExactlyInAnyOrder(workflowInstance2.getId(), workflowInstance4.getId());
   }
 
   @Test
@@ -336,8 +363,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     persist(workflowInstance1, workflowInstance2, workflowInstance3, workflowInstance4);
 
-    WorkflowInstanceQueryDto query = createGetAllWorkflowInstancesQuery();
-    query.setWorkflowIds(Arrays.asList(wfId1, wfId3));
+    WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(q -> q.setWorkflowIds(Arrays.asList(wfId1, wfId3)));
 
     //when
     MockHttpServletRequestBuilder request = post(query(0, 100))
@@ -350,11 +376,11 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
       .andReturn();
 
     //then
-    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
+    WorkflowInstanceResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<WorkflowInstanceResponseDto>() { });
 
-    assertThat(workflowInstanceDtos).hasSize(3);
+    assertThat(response.getWorkflowInstances()).hasSize(3);
 
-    assertThat(workflowInstanceDtos).extracting(WorkflowInstanceType.ID)
+    assertThat(response.getWorkflowInstances()).extracting(WorkflowInstanceType.ID)
       .containsExactlyInAnyOrder(workflowInstance1.getId(), workflowInstance3.getId(), workflowInstance4.getId());
   }
 
@@ -372,7 +398,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     createData();
 
     //query running instances
-    WorkflowInstanceQueryDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
+    WorkflowInstanceRequestDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
 
     //page 1
     MockHttpServletRequestBuilder request = post(query(0, 3))
@@ -382,8 +408,9 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(content().contentType(mockMvcTestRule.getContentType()))
         .andReturn();
-     List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
-     assertThat(workflowInstanceDtos.size()).isEqualTo(3);
+     WorkflowInstanceResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<WorkflowInstanceResponseDto>() { });
+     assertThat(response.getWorkflowInstances().size()).isEqualTo(3);
+     assertThat(response.getTotalCount()).isEqualTo(5);
 
     //page 2
     request = post(query(3, 3))
@@ -393,8 +420,9 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
       .andExpect(status().isOk())
       .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
-    workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
-    assertThat(workflowInstanceDtos.size()).isEqualTo(2);
+    response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<WorkflowInstanceResponseDto>() { });
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(2);
+    assertThat(response.getTotalCount()).isEqualTo(5);
   }
 
 
@@ -403,7 +431,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     createData();
 
     //query running instances
-    WorkflowInstanceQueryDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
+    WorkflowInstanceRequestDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
     final SortingDto sorting = new SortingDto();
     sorting.setSortBy("startDate");
     sorting.setSortOrder("asc");
@@ -418,11 +446,11 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
       .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
 
-    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
+    WorkflowInstanceResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<WorkflowInstanceResponseDto>() { });
 
-    assertThat(workflowInstanceDtos.size()).isEqualTo(5);
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(5);
 
-    assertThat(workflowInstanceDtos).isSortedAccordingTo(Comparator.comparing(WorkflowInstanceDto::getStartDate));
+    assertThat(response.getWorkflowInstances()).isSortedAccordingTo(Comparator.comparing(WorkflowInstanceDto::getStartDate));
   }
 
   @Test
@@ -430,7 +458,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     createData();
 
     //query running instances
-    WorkflowInstanceQueryDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
+    WorkflowInstanceRequestDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
     final SortingDto sorting = new SortingDto();
     sorting.setSortBy("startDate");
     sorting.setSortOrder("desc");
@@ -445,11 +473,11 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
       .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
 
-    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
+    WorkflowInstanceResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<WorkflowInstanceResponseDto>() { });
 
-    assertThat(workflowInstanceDtos.size()).isEqualTo(5);
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(5);
 
-    assertThat(workflowInstanceDtos).isSortedAccordingTo((o1, o2) -> o2.getStartDate().compareTo(o1.getStartDate()));
+    assertThat(response.getWorkflowInstances()).isSortedAccordingTo((o1, o2) -> o2.getStartDate().compareTo(o1.getStartDate()));
   }
 
   @Test
@@ -457,7 +485,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     createData();
 
     //query running instances
-    WorkflowInstanceQueryDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
+    WorkflowInstanceRequestDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
     final SortingDto sorting = new SortingDto();
     sorting.setSortBy("id");
     sorting.setSortOrder("asc");
@@ -472,11 +500,11 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
       .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
 
-    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
+    WorkflowInstanceResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<WorkflowInstanceResponseDto>() { });
 
-    assertThat(workflowInstanceDtos.size()).isEqualTo(5);
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(5);
 
-    assertThat(workflowInstanceDtos).isSortedAccordingTo(Comparator.comparing(WorkflowInstanceDto::getId));
+    assertThat(response.getWorkflowInstances()).isSortedAccordingTo(Comparator.comparing(WorkflowInstanceDto::getId));
   }
 
   @Test
@@ -484,7 +512,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     createData();
 
     //query running instances
-    WorkflowInstanceQueryDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
+    WorkflowInstanceRequestDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
     final SortingDto sorting = new SortingDto();
     sorting.setSortBy("id");
     sorting.setSortOrder("desc");
@@ -499,11 +527,11 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
       .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
 
-    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
+    WorkflowInstanceResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<WorkflowInstanceResponseDto>() { });
 
-    assertThat(workflowInstanceDtos.size()).isEqualTo(5);
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(5);
 
-    assertThat(workflowInstanceDtos).isSortedAccordingTo((o1, o2) -> o2.getId().compareTo(o1.getId()));
+    assertThat(response.getWorkflowInstances()).isSortedAccordingTo((o1, o2) -> o2.getId().compareTo(o1.getId()));
   }
 
   @Test
@@ -511,7 +539,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     createData();
 
     //query running instances
-    WorkflowInstanceQueryDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
+    WorkflowInstanceRequestDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
     final SortingDto sorting = new SortingDto();
     sorting.setSortBy("endDate");
     sorting.setSortOrder("asc");
@@ -526,11 +554,11 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
       .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
 
-    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
+    WorkflowInstanceResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<WorkflowInstanceResponseDto>() { });
 
-    assertThat(workflowInstanceDtos.size()).isEqualTo(5);
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(5);
 
-    assertThat(workflowInstanceDtos).isSortedAccordingTo((o1, o2) -> {
+    assertThat(response.getWorkflowInstances()).isSortedAccordingTo((o1, o2) -> {
       //nulls are always at the end
       if (o1.getEndDate() == null && o2.getEndDate() == null) {
         return 0;
@@ -549,7 +577,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     createData();
 
     //query running instances
-    WorkflowInstanceQueryDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
+    WorkflowInstanceRequestDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
     final SortingDto sorting = new SortingDto();
     sorting.setSortBy("endDate");
     sorting.setSortOrder("desc");
@@ -564,11 +592,11 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
       .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
 
-    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
+    WorkflowInstanceResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<WorkflowInstanceResponseDto>() { });
 
-    assertThat(workflowInstanceDtos.size()).isEqualTo(5);
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(5);
 
-    assertThat(workflowInstanceDtos).isSortedAccordingTo((o1, o2) -> {
+    assertThat(response.getWorkflowInstances()).isSortedAccordingTo((o1, o2) -> {
       //nulls are always at the end
       if (o1.getEndDate() == null && o2.getEndDate() == null) {
         return 0;
@@ -582,37 +610,39 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     });
   }
 
-  @Test
-  public void testQueryAllFinishedCount() throws Exception {
-    createData();
-
-    WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
-    workflowInstanceQueryDto.setFinished(true);
-    workflowInstanceQueryDto.setCompleted(true);
-    workflowInstanceQueryDto.setCanceled(true);
-
-    testCountQuery(workflowInstanceQueryDto, 2);
+  private WorkflowInstanceRequestDto createGetAllWorkflowInstancesQuery() {
+    return
+      createWorkflowInstanceQuery(q -> {
+      q.setRunning(true);
+      q.setActive(true);
+      q.setIncidents(true);
+      q.setFinished(true);
+      q.setCompleted(true);
+      q.setCanceled(true);
+    });
   }
 
-  private WorkflowInstanceQueryDto createGetAllWorkflowInstancesQuery() {
-    WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
-    workflowInstanceQueryDto.setRunning(true);
-    workflowInstanceQueryDto.setActive(true);
-    workflowInstanceQueryDto.setIncidents(true);
-    workflowInstanceQueryDto.setFinished(true);
-    workflowInstanceQueryDto.setCompleted(true);
-    workflowInstanceQueryDto.setCanceled(true);
-    return workflowInstanceQueryDto;
+  private WorkflowInstanceRequestDto createGetAllWorkflowInstancesQuery(FiltersSupplier filtersSupplier) {
+    final WorkflowInstanceRequestDto workflowInstanceQuery = createGetAllWorkflowInstancesQuery();
+    filtersSupplier.applyFilters(workflowInstanceQuery.getQueries().get(0));
+
+    return workflowInstanceQuery;
+  }
+
+  private WorkflowInstanceRequestDto createGetAllFinishedQuery() {
+    return
+      createWorkflowInstanceQuery(q -> {
+        q.setFinished(true);
+        q.setCompleted(true);
+        q.setCanceled(true);
+      });
   }
 
   @Test
   public void testQueryAllFinished() throws Exception {
     createData();
 
-    WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
-    workflowInstanceQueryDto.setFinished(true);
-    workflowInstanceQueryDto.setCompleted(true);
-    workflowInstanceQueryDto.setCanceled(true);
+    WorkflowInstanceRequestDto workflowInstanceQueryDto = createGetAllFinishedQuery();
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(mockMvcTestRule.json(workflowInstanceQueryDto))
@@ -623,10 +653,11 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
       .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
 
-    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
+    WorkflowInstanceResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<WorkflowInstanceResponseDto>() { });
 
-    assertThat(workflowInstanceDtos.size()).isEqualTo(2);
-    for (WorkflowInstanceDto workflowInstanceDto : workflowInstanceDtos) {
+    assertThat(response.getTotalCount()).isEqualTo(2);
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(2);
+    for (WorkflowInstanceDto workflowInstanceDto : response.getWorkflowInstances()) {
       assertThat(workflowInstanceDto.getEndDate()).isNotNull();
       assertThat(workflowInstanceDto.getState()).isIn(WorkflowInstanceState.COMPLETED, WorkflowInstanceState.CANCELED);
       assertThat(workflowInstanceDto.getActivities()).isEmpty();
@@ -634,19 +665,10 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
   }
 
   @Test
-  public void testQueryFinishedAndRunningCount() throws Exception {
-    createData();
-
-    WorkflowInstanceQueryDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
-
-    testCountQuery(workflowInstanceQueryDto, 5);
-  }
-
-  @Test
   public void testQueryFinishedAndRunning() throws Exception {
     createData();
 
-    WorkflowInstanceQueryDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
+    WorkflowInstanceRequestDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(mockMvcTestRule.json(workflowInstanceQueryDto))
@@ -657,29 +679,51 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
       .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
 
-    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
+    WorkflowInstanceResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<WorkflowInstanceResponseDto>() { });
 
-    assertThat(workflowInstanceDtos.size()).isEqualTo(5);
+    assertThat(response.getTotalCount()).isEqualTo(5);
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(5);
   }
 
   @Test
-  public void testQueryFinishedCompletedCount() throws Exception {
+  public void testQueryWithTwoFragments() throws Exception {
     createData();
 
-    WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
-    workflowInstanceQueryDto.setFinished(true);
-    workflowInstanceQueryDto.setCompleted(true);
+    WorkflowInstanceRequestDto workflowInstanceQueryDto = createWorkflowInstanceQuery(q -> {
+      q.setRunning(true);    //1st fragment
+      q.setActive(true);
+      q.setIncidents(true);
+    });
+    //2nd fragment
+    WorkflowInstanceQueryDto query2 = new WorkflowInstanceQueryDto();
+    query2.setFinished(true);
+    query2.setCompleted(true);
+    query2.setCanceled(true);
+    workflowInstanceQueryDto.getQueries().add(query2);
 
-    testCountQuery(workflowInstanceQueryDto, 1);
+    MockHttpServletRequestBuilder request = post(query(0, 100))
+      .content(mockMvcTestRule.json(workflowInstanceQueryDto))
+      .contentType(mockMvcTestRule.getContentType());
+
+    MvcResult mvcResult = mockMvc.perform(request)
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
+      .andReturn();
+
+    WorkflowInstanceResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<WorkflowInstanceResponseDto>() { });
+
+    assertThat(response.getTotalCount()).isEqualTo(5);
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(5);
   }
 
   @Test
   public void testQueryFinishedCompleted() throws Exception {
     createData();
 
-    WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
-    workflowInstanceQueryDto.setFinished(true);
-    workflowInstanceQueryDto.setCompleted(true);
+    WorkflowInstanceRequestDto workflowInstanceQueryDto = createWorkflowInstanceQuery(q -> {
+      q.setFinished(true);
+      q.setCompleted(true);
+    });
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(mockMvcTestRule.json(workflowInstanceQueryDto))
@@ -690,31 +734,23 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
       .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
 
-    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
+    WorkflowInstanceResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<WorkflowInstanceResponseDto>() { });
 
-    assertThat(workflowInstanceDtos.size()).isEqualTo(1);
-    assertThat(workflowInstanceDtos.get(0).getEndDate()).isNotNull();
-    assertThat(workflowInstanceDtos.get(0).getState()).isEqualTo(WorkflowInstanceState.COMPLETED);
-    assertThat(workflowInstanceDtos.get(0).getActivities()).isEmpty();
-  }
-  @Test
-  public void testQueryFinishedCanceledCount() throws Exception {
-    createData();
-
-    WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
-    workflowInstanceQueryDto.setFinished(true);
-    workflowInstanceQueryDto.setCanceled(true);
-
-    testCountQuery(workflowInstanceQueryDto, 1);
+    assertThat(response.getTotalCount()).isEqualTo(1);
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(1);
+    assertThat(response.getWorkflowInstances().get(0).getEndDate()).isNotNull();
+    assertThat(response.getWorkflowInstances().get(0).getState()).isEqualTo(WorkflowInstanceState.COMPLETED);
+    assertThat(response.getWorkflowInstances().get(0).getActivities()).isEmpty();
   }
 
   @Test
   public void testQueryFinishedCanceled() throws Exception {
     createData();
 
-    WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
-    workflowInstanceQueryDto.setFinished(true);
-    workflowInstanceQueryDto.setCanceled(true);
+    WorkflowInstanceRequestDto workflowInstanceQueryDto = createWorkflowInstanceQuery(q -> {
+      q.setFinished(true);
+      q.setCanceled(true);
+    });
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(mockMvcTestRule.json(workflowInstanceQueryDto))
@@ -725,32 +761,23 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
       .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
 
-    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
+    WorkflowInstanceResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<WorkflowInstanceResponseDto>() { });
 
-    assertThat(workflowInstanceDtos.size()).isEqualTo(1);
-    assertThat(workflowInstanceDtos.get(0).getEndDate()).isNotNull();
-    assertThat(workflowInstanceDtos.get(0).getState()).isEqualTo(WorkflowInstanceState.CANCELED);
-    assertThat(workflowInstanceDtos.get(0).getActivities()).isEmpty();
-  }
-
-  @Test
-  public void testQueryRunningWithIncidentsCount() throws Exception {
-    createData();
-
-    WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
-    workflowInstanceQueryDto.setRunning(true);
-    workflowInstanceQueryDto.setIncidents(true);
-
-    testCountQuery(workflowInstanceQueryDto, 1);
+    assertThat(response.getTotalCount()).isEqualTo(1);
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(1);
+    assertThat(response.getWorkflowInstances().get(0).getEndDate()).isNotNull();
+    assertThat(response.getWorkflowInstances().get(0).getState()).isEqualTo(WorkflowInstanceState.CANCELED);
+    assertThat(response.getWorkflowInstances().get(0).getActivities()).isEmpty();
   }
 
   @Test
   public void testQueryRunningWithIncidents() throws Exception {
     createData();
 
-    WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
-    workflowInstanceQueryDto.setRunning(true);
-    workflowInstanceQueryDto.setIncidents(true);
+    WorkflowInstanceRequestDto workflowInstanceQueryDto = createWorkflowInstanceQuery(q -> {
+      q.setRunning(true);
+      q.setIncidents(true);
+    });
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(mockMvcTestRule.json(workflowInstanceQueryDto))
@@ -763,15 +790,16 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
         .contentType(mockMvcTestRule.getContentType()))
       .andReturn();
 
-    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
+    WorkflowInstanceResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<WorkflowInstanceResponseDto>() { });
 
-    assertThat(workflowInstanceDtos.size()).isEqualTo(1);
-    assertThat(workflowInstanceDtos.get(0).getActivities()).isEmpty();
-    assertThat(workflowInstanceDtos.get(0).getIncidents().size()).isEqualTo(2);
+    assertThat(response.getTotalCount()).isEqualTo(1);
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(1);
+    assertThat(response.getWorkflowInstances().get(0).getActivities()).isEmpty();
+    assertThat(response.getWorkflowInstances().get(0).getIncidents().size()).isEqualTo(2);
 
 
     IncidentDto activeIncident = null;
-    for (IncidentDto incident: workflowInstanceDtos.get(0).getIncidents()) {
+    for (IncidentDto incident: response.getWorkflowInstances().get(0).getIncidents()) {
       if (incident.getState().equals(IncidentState.ACTIVE)) {
         activeIncident = incident;
       }
@@ -780,23 +808,13 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
   }
 
   @Test
-  public void testQueryRunningWithoutIncidentsCount() throws Exception {
-    createData();
-
-    WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
-    workflowInstanceQueryDto.setRunning(true);
-    workflowInstanceQueryDto.setActive(true);
-
-    testCountQuery(workflowInstanceQueryDto, 2);
-  }
-
-  @Test
   public void testQueryRunningWithoutIncidents() throws Exception {
     createData();
 
-    WorkflowInstanceQueryDto workflowInstanceQueryDto = new WorkflowInstanceQueryDto();
-    workflowInstanceQueryDto.setRunning(true);
-    workflowInstanceQueryDto.setActive(true);
+    WorkflowInstanceRequestDto workflowInstanceQueryDto = createWorkflowInstanceQuery(q -> {
+      q.setRunning(true);
+      q.setActive(true);
+    });
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(mockMvcTestRule.json(workflowInstanceQueryDto))
@@ -808,11 +826,12 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
       .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
 
-    List<WorkflowInstanceDto> workflowInstanceDtos = mockMvcTestRule.listFromResponse(mvcResult, WorkflowInstanceDto.class);
+    WorkflowInstanceResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<WorkflowInstanceResponseDto>() { });
 
-    assertThat(workflowInstanceDtos.size()).isEqualTo(2);
+    assertThat(response.getTotalCount()).isEqualTo(2);
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(2);
 
-    for (WorkflowInstanceDto workflowInstanceDto: workflowInstanceDtos) {
+    for (WorkflowInstanceDto workflowInstanceDto: response.getWorkflowInstances()) {
       assertThat(workflowInstanceDto.getActivities()).isEmpty();
       IncidentDto activeIncident = null;
       for (IncidentDto incident : workflowInstanceDto.getIncidents()) {
@@ -851,17 +870,6 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     assertThat(workflowInstanceDto.getIncidents().size()).isGreaterThan(0);
     assertThat(workflowInstanceDto.getIncidents().size()).isEqualTo(instanceWithoutIncident.getIncidents().size());
 
-  }
-
-  private void testCountQuery(WorkflowInstanceQueryDto workflowInstanceQueryDto, int count) throws Exception {
-    MockHttpServletRequestBuilder request = post(COUNT_INSTANCES_URL)
-      .content(mockMvcTestRule.json(workflowInstanceQueryDto))
-      .contentType(mockMvcTestRule.getContentType());
-
-    mockMvc.perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-      .andExpect(content().json(String.format("{\"count\":%d}",count)));
   }
 
   private void createData() {
@@ -945,4 +953,16 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
   private String query(int firstResult, int maxResults) {
     return String.format("%s?firstResult=%d&maxResults=%d", QUERY_INSTANCES_URL, firstResult, maxResults);
   }
+
+  private WorkflowInstanceRequestDto createWorkflowInstanceQuery(FiltersSupplier filtersSupplier) {
+    WorkflowInstanceRequestDto request = new WorkflowInstanceRequestDto();
+    WorkflowInstanceQueryDto query = new WorkflowInstanceQueryDto();
+    filtersSupplier.applyFilters(query);
+    request.getQueries().add(query);
+    return request;
+  }
+
+
 }
+
+
