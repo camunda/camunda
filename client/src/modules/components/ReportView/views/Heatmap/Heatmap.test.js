@@ -28,7 +28,7 @@ jest.mock('./service', () => {
 
 jest.mock('../service', () => {
   return {
-    getRelativeValue: jest.fn().mockReturnValue('12.3%')
+    getRelativeValue: jest.fn()
   };
 });
 
@@ -167,6 +167,8 @@ it('should show a tooltip with information if no actual value is available', () 
 
 it('should show the relative frequency in a tooltip', () => {
   getRelativeValue.mockClear();
+  getRelativeValue.mockReturnValue('12.3%');
+
   const node = mount(
     <Heatmap
       data={{}}

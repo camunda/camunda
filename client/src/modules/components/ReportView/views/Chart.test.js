@@ -16,7 +16,7 @@ jest.mock('chart.js', () =>
 
 jest.mock('./service', () => {
   return {
-    getRelativeValue: jest.fn().mockReturnValue('12.3%')
+    getRelativeValue: jest.fn()
   };
 });
 
@@ -105,6 +105,7 @@ it('should generate colors', () => {
 
 it('should include the relative value in tooltips', () => {
   getRelativeValue.mockClear();
+  getRelativeValue.mockReturnValue('12.3%');
 
   const data = {foo: 123};
   const node = mount(

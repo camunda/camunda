@@ -21,7 +21,7 @@ jest.mock('services', () => {
 jest.mock('./service', () => {
   return {
     getCamundaEndpoints: jest.fn().mockReturnValue('camundaEndpoint'),
-    getRelativeValue: jest.fn().mockReturnValue('12.3%')
+    getRelativeValue: jest.fn()
   };
 });
 
@@ -62,6 +62,7 @@ it('should display data for key-value pairs', async () => {
 
 it('should display the relative percentage for frequency views', () => {
   getRelativeValue.mockClear();
+  getRelativeValue.mockReturnValue('12.3%');
 
   const node = mount(
     <Table
