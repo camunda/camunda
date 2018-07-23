@@ -33,10 +33,9 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
             Instances
           </span>
           <Styled(Badge)
+            badgeContent={0}
             type="instances"
-          >
-            0
-          </Styled(Badge)>
+          />
         </Link>
       </Themed(styled.span)>
     </li>
@@ -53,10 +52,9 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
             Filters
           </span>
           <Styled(Badge)
+            badgeContent={0}
             type="filters"
-          >
-            0
-          </Styled(Badge)>
+          />
         </Link>
       </Themed(styled.span)>
     </li>
@@ -73,10 +71,9 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
             Selections
           </span>
           <Styled(Badge)
+            badgeContent={0}
             type="selections"
-          >
-            0
-          </Styled(Badge)>
+          />
         </Link>
       </Themed(styled.span)>
     </li>
@@ -93,10 +90,9 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
             Incidents
           </span>
           <Styled(Badge)
+            badgeContent={0}
             type="incidents"
-          >
-            0
-          </Styled(Badge)>
+          />
         </Link>
       </Themed(styled.span)>
     </li>

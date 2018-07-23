@@ -82,9 +82,9 @@ export default class Selection extends React.Component {
             type={
               isOpen ? BADGE_TYPE.OPENSELECTIONHEAD : BADGE_TYPE.SELECTIONHEAD
             }
-          >
-            {count}
-          </BadgeComponent>
+            badgeContent={count}
+          />
+
           {isOpen && getActions(onRetry, onDelete)}
         </Styled.Header>
         {isOpen && (

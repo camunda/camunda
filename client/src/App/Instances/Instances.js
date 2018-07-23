@@ -13,6 +13,9 @@ import {
   getFilterQueryString
 } from 'modules/utils/filter';
 
+// import ComboBadge from './ComboBadge';
+import BadgeComponent from 'modules/components/Badge';
+
 import Header from '../Header';
 import ListView from './ListView';
 import SelectionList from './SelectionList';
@@ -37,7 +40,9 @@ class Instances extends Component {
       filterCount: filterCount || 0,
       selection: createNewSelectionFragment(),
       selections: selections || [[]],
-      errorMessage: null
+      errorMessage: null,
+      instancesInSelections: 5000,
+      selectionCount: 10
     };
   }
 
@@ -134,6 +139,13 @@ class Instances extends Component {
     this.props.storeStateLocally({filter: DEFAULT_FILTER});
   };
 
+  adjustCounter = reducedCount => {
+    this.setState(prevState => ({
+      instancesInSelections: prevState.instancesInSelections - reducedCount,
+      selectionCount: prevState.selectionCount - 1
+    }));
+  };
+
   render() {
     const {running, incidents: incidentsCount} = this.props.getStateLocally();
     return (
@@ -184,11 +196,18 @@ class Instances extends Component {
             <Styled.Selections>
               <Panel isRounded>
                 <Styled.SelectionHeader isRounded>
-                  Selections
+                  <span>Selections</span>
+                  <BadgeComponent
+                    type={'comboSelection'}
+                    badgeContent={this.state.instancesInSelections}
+                    circleContent={this.state.selectionCount}
+                  />
                 </Styled.SelectionHeader>
                 <Panel.Body>
-                  {/* <SelectionDisplay selections={this.state.selections} /> */}
-                  <SelectionList selections={this.state.selections} />
+                  <SelectionList
+                    selections={this.state.selections}
+                    onChange={this.adjustCounter}
+                  />
                 </Panel.Body>
                 <Styled.RightExpandButton
                   direction={DIRECTION.RIGHT}

@@ -41,7 +41,7 @@ export default class Header extends React.Component {
       <Styled.ListLink active={this.props.active === 'instances'}>
         <Link to="/instances" title={title}>
           <span>{label}</span>
-          <Styled.Badge type={type}>{count}</Styled.Badge>
+          <Styled.Badge type={type} badgeContent={count} />
         </Link>
       </Styled.ListLink>
     );
