@@ -47,13 +47,25 @@ export default class InstanceEvents extends React.Component {
     }
   }
 
-  renderEvent = ({eventType}, idx) => {
+  renderEventMetadata = metadata => {
+    return Object.entries(metadata)
+      .filter(([_, value]) => Boolean(value))
+      .map(([key, value], idx) => (
+        <Styled.MetaDataEntry
+          key={idx}
+        >{`${key}: ${value}`}</Styled.MetaDataEntry>
+      ));
+  };
+
+  renderEvent = ({eventType, metadata}, idx) => {
     const key = `${eventType}${idx}`;
 
     return (
       <ExpansionPanel key={key}>
         <ExpansionPanel.Summary>{eventType}</ExpansionPanel.Summary>
-        <ExpansionPanel.Details>META DATA</ExpansionPanel.Details>
+        <ExpansionPanel.Details>
+          {!!metadata && this.renderEventMetadata(metadata)}
+        </ExpansionPanel.Details>
       </ExpansionPanel>
     );
   };
@@ -63,9 +75,7 @@ export default class InstanceEvents extends React.Component {
 
     return (
       <ExpansionPanel key={key}>
-        <ExpansionPanel.Summary bold={Boolean(events)}>
-          {name}
-        </ExpansionPanel.Summary>
+        <ExpansionPanel.Summary bold={true}>{name}</ExpansionPanel.Summary>
         <ExpansionPanel.Details>
           {events.map(this.renderEvent)}
         </ExpansionPanel.Details>

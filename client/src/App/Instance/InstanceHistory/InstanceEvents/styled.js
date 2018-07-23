@@ -26,7 +26,9 @@ export const EventsContainer = styled.div`
   padding-left: 15px;
 `;
 
-export const SelectionRow = styled.div`
-  ${({isSelected}) =>
-    !!isSelected ? `background-color: ${Colors.selections}` : ''};
-`;
+export const MetaDataEntry = themed(styled.p`
+  opacity: 0.9;
+  color: ${themeStyle({
+    light: Colors.uiLight06
+  })};
+`);
