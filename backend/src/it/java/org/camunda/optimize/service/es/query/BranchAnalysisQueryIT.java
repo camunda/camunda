@@ -106,10 +106,10 @@ public class BranchAnalysisQueryIT {
     return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
-  private void startSimpleGatewayProcessAndTakeTask1(ProcessDefinitionEngineDto processDefinition) throws IOException {
+  private ProcessInstanceEngineDto startSimpleGatewayProcessAndTakeTask1(ProcessDefinitionEngineDto processDefinition) throws IOException {
     Map<String, Object> variables = new HashMap<>();
     variables.put("goToTask1", true);
-    engineRule.startProcessInstance(processDefinition.getId(), variables);
+    return engineRule.startProcessInstance(processDefinition.getId(), variables);
   }
 
   private void startSimpleGatewayProcessAndTakeTask2(ProcessDefinitionEngineDto processDefinition) throws IOException {
@@ -249,8 +249,9 @@ public class BranchAnalysisQueryIT {
   public void branchAnalysisWithDtoFilteredByDateBefore() throws Exception {
     //given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
-    startSimpleGatewayProcessAndTakeTask1(processDefinition);
-    OffsetDateTime now = OffsetDateTime.now();
+    ProcessInstanceEngineDto processInstance = startSimpleGatewayProcessAndTakeTask1(processDefinition);
+    OffsetDateTime now =
+        engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -260,11 +261,11 @@ public class BranchAnalysisQueryIT {
     dto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
     dto.setGateway(SPLITTING_GATEWAY_ID);
     dto.setEnd(END_EVENT_ID);
-    DateUtilHelper.addDateFilter("<=", "start_date", now, dto);
+
+    DateUtilHelper.addStartDateFilter(null, now, dto);
     logger.debug("Preparing query on [{}] with operator [{}], type [{}], date [{}]", processDefinition, "<=", "start_date", now);
 
     BranchAnalysisDto result = getBranchAnalysisDto(dto);
-
     //then
     assertThat(result, is(notNullValue()));
     assertThat(result.getEndEvent(), is(END_EVENT_ID));
@@ -286,7 +287,9 @@ public class BranchAnalysisQueryIT {
   public void branchAnalysisWithDtoFilteredByDateAfter() throws Exception {
     //given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
-    startSimpleGatewayProcessAndTakeTask1(processDefinition);
+    ProcessInstanceEngineDto processInstance = startSimpleGatewayProcessAndTakeTask1(processDefinition);
+    OffsetDateTime now =
+        engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -295,7 +298,7 @@ public class BranchAnalysisQueryIT {
     dto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
     dto.setGateway(SPLITTING_GATEWAY_ID);
     dto.setEnd(END_EVENT_ID);
-    DateUtilHelper.addDateFilter(">", "start_date", OffsetDateTime.now(), dto);
+    DateUtilHelper.addStartDateFilter(now.plusSeconds(1L), null, dto);
 
     //when
     BranchAnalysisDto result = getBranchAnalysisDto(dto);
@@ -317,40 +320,6 @@ public class BranchAnalysisQueryIT {
     assertThat(task2.getActivityCount(), is(0L));
   }
 
-  @Test
-  public void branchAnalysisWithGtEndDateCriteria() throws Exception {
-    //given
-    ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
-    startSimpleGatewayProcessAndTakeTask1(processDefinition);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
-    dto.setProcessDefinitionKey(processDefinition.getKey());
-    dto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
-    dto.setGateway(SPLITTING_GATEWAY_ID);
-    dto.setEnd(END_EVENT_ID);
-    DateUtilHelper.addDateFilter("<", "end_date", nowPlusTimeInSec(10), dto);
-
-    //when
-    BranchAnalysisDto result = getBranchAnalysisDto(dto);
-
-    //then
-    assertThat(result, is(notNullValue()));
-    assertThat(result.getEndEvent(), is(END_EVENT_ID));
-    assertThat(result.getTotal(), is(1L));
-    assertThat(result.getFollowingNodes().size(), is(2));
-
-    BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(TASK_ID_1);
-    assertThat(task1.getActivityId(), is(TASK_ID_1));
-    assertThat(task1.getActivitiesReached(), is(1L));
-    assertThat(task1.getActivityCount(), is(1L));
-
-    BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get(TASK_ID_2);
-    assertThat(task2.getActivityId(), is(TASK_ID_2));
-    assertThat(task2.getActivitiesReached(), is(0L));
-    assertThat(task2.getActivityCount(), is(0L));
-  }
 
   @Test
   public void branchAnalysisWithMixedDateCriteria() throws Exception {
@@ -365,8 +334,7 @@ public class BranchAnalysisQueryIT {
     dto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
     dto.setGateway(SPLITTING_GATEWAY_ID);
     dto.setEnd(END_EVENT_ID);
-    DateUtilHelper.addDateFilter("<", "end_date", nowPlusTimeInSec(10), dto);
-    DateUtilHelper.addDateFilter(">", "start_date", nowPlusTimeInSec(-20), dto);
+    DateUtilHelper.addStartDateFilter(nowPlusTimeInSec(-20), null, dto);
 
     //when
     BranchAnalysisDto result = getBranchAnalysisDto(dto);

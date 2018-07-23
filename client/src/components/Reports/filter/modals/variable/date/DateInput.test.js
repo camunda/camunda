@@ -19,6 +19,19 @@ const props = {
   }
 };
 
+const exampleFilter = {
+  type: 'variable',
+  data: {
+    name: 'aVariableName',
+    type: 'Date',
+    data: {
+      type: 'fixed',
+      start: '2018-07-09T00:00:00',
+      end: '2018-07-12T23:59:59'
+    }
+  }
+};
+
 it('should show a DatePicker', () => {
   const node = mount(<DateInput {...props} />);
 
@@ -26,10 +39,7 @@ it('should show a DatePicker', () => {
 });
 
 it('should parse an existing filter', () => {
-  const parsed = DateInput.parseFilter([
-    {data: {values: ['2018-07-09']}},
-    {data: {values: ['2018-07-12']}}
-  ]);
+  const parsed = DateInput.parseFilter(exampleFilter);
 
   expect(parsed.startDate).toBeDefined();
   expect(parsed.endDate).toBeDefined();
@@ -46,24 +56,5 @@ it('should convert a start and end-date to two compatible variable filters', () 
     }
   );
 
-  expect(spy).toHaveBeenCalledWith(
-    {
-      type: 'variable',
-      data: {
-        name: 'aVariableName',
-        type: 'Date',
-        operator: '>=',
-        values: ['2018-07-09T00:00:00']
-      }
-    },
-    {
-      type: 'variable',
-      data: {
-        name: 'aVariableName',
-        type: 'Date',
-        operator: '<=',
-        values: ['2018-07-12T23:59:59']
-      }
-    }
-  );
+  expect(spy).toHaveBeenCalledWith(exampleFilter);
 });

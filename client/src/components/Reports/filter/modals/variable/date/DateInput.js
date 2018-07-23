@@ -4,7 +4,7 @@ import moment from 'moment';
 import {DatePicker} from 'components';
 
 export default class DateInput extends React.Component {
-  static defaultFilter = {startDate: moment(), endDate: moment()};
+  static defaultFilter = {type: 'fixed', startDate: moment(), endDate: moment()};
 
   componentDidMount() {
     this.props.setValid(true);
@@ -27,33 +27,25 @@ export default class DateInput extends React.Component {
     this.props.setValid(valid);
   };
 
-  static parseFilter = ([start, end]) => {
+  static parseFilter = ({data: {data: {start, end}}}) => {
     return {
-      startDate: moment(start.data.values[0]),
-      endDate: moment(end.data.values[0])
+      startDate: moment(start),
+      endDate: moment(end)
     };
   };
 
   static addFilter = (addFilter, variable, filter) => {
-    addFilter(
-      {
-        type: 'variable',
+    addFilter({
+      type: 'variable',
+      data: {
+        name: variable.name,
+        type: variable.type,
         data: {
-          name: variable.name,
-          type: variable.type,
-          operator: '>=',
-          values: [filter.startDate.startOf('day').format('YYYY-MM-DDTHH:mm:ss')]
-        }
-      },
-      {
-        type: 'variable',
-        data: {
-          name: variable.name,
-          type: variable.type,
-          operator: '<=',
-          values: [filter.endDate.endOf('day').format('YYYY-MM-DDTHH:mm:ss')]
+          type: 'fixed',
+          start: filter.startDate.startOf('day').format('YYYY-MM-DDTHH:mm:ss'),
+          end: filter.endDate.endOf('day').format('YYYY-MM-DDTHH:mm:ss')
         }
       }
-    );
+    });
   };
 }

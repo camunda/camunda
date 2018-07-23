@@ -1,11 +1,9 @@
 package org.camunda.optimize.qa.performance;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.camunda.optimize.dto.optimize.query.report.filter.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.util.ExecutedFlowNodeFilterBuilder;
 import org.camunda.optimize.qa.performance.framework.PerfTest;
@@ -17,7 +15,6 @@ import org.camunda.optimize.qa.performance.steps.decorator.HeatMapDataGeneration
 import org.junit.Before;
 import org.junit.Test;
 
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -45,33 +42,6 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
     test = testBuilder
         .step(new GetFrequencyGetHeatMapStep(filter))
         .done();
-
-    // when
-    PerfTestResult testResult = test.run();
-    PerfTestStepResult stepResult =
-      testResult.getResult(GetFrequencyGetHeatMapStep.class);
-
-    // then
-    assertThat(stepResult.getDurationInMs(), is(lessThan(configuration.getMaxServiceExecutionDuration())));
-  }
-
-  @Test
-  public void getFrequencyHeatmapWithDateFilter() {
-    // given
-    String operator = "<";
-    String type = "start_date";
-    DateFilterDataDto date = new DateFilterDataDto();
-    date.setOperator(operator);
-    date.setType(type);
-    date.setValue(OffsetDateTime.now());
-
-    DateFilterDto dateFilterDto = new DateFilterDto();
-    dateFilterDto.setData(date);
-    filter.add(dateFilterDto);
-
-    test = testBuilder
-      .step(new GetFrequencyGetHeatMapStep(filter))
-      .done();
 
     // when
     PerfTestResult testResult = test.run();
@@ -133,34 +103,6 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
   @Test
   public void getDurationHeatmapWithoutFilter() {
     //given
-    test = testBuilder
-        .step(new GetDurationGetHeatMapStep(filter))
-        .done();
-
-    // when
-    PerfTestResult testResult = test.run();
-    PerfTestStepResult stepResult =
-      testResult.getResult(GetDurationGetHeatMapStep.class);
-
-    // then
-    assertThat(stepResult.getDurationInMs(), is(lessThan(configuration.getMaxServiceExecutionDuration())));
-  }
-
-  @Test
-  public void getDurationHeatmapWithDateFilter() {
-    // given
-    String operator = "<";
-    String type = "start_date";
-
-    DateFilterDataDto date = new DateFilterDataDto();
-    date.setOperator(operator);
-    date.setType(type);
-    date.setValue(OffsetDateTime.now());
-
-    DateFilterDto dateFilterDto = new DateFilterDto();
-    dateFilterDto.setData(date);
-    filter.add(dateFilterDto);
-
     test = testBuilder
         .step(new GetDurationGetHeatMapStep(filter))
         .done();

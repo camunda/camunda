@@ -16,9 +16,12 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     // given
     embeddedOptimizeRule.reloadConfiguration();
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
-    String processDefinitionId = processInstance.getDefinitionId();
+    OffsetDateTime processInstanceStartTime =
+        engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    LocalDateUtil.setCurrentTime(processInstanceStartTime);
 
     RawDataReportResultDto result = createAndEvaluateReport(
         processInstance.getProcessDefinitionKey(),
@@ -45,5 +48,4 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     embeddedOptimizeRule.reloadConfiguration();
     embeddedOptimizeRule.getNewAuthenticationToken();
   }
-
 }

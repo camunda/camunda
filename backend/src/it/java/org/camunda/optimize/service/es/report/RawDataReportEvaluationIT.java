@@ -436,7 +436,7 @@ public class RawDataReportEvaluationIT {
     // when
     ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(
         processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
-    reportData.setFilter(DateUtilHelper.createDateFilter("<", "start_date", past));
+    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(null, past.minusSeconds(1L)));
     RawDataReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -451,7 +451,7 @@ public class RawDataReportEvaluationIT {
     // when
     reportData = ReportDataHelper.createReportDataViewRawAsTable(
         processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
-    reportData.setFilter(DateUtilHelper.createDateFilter(">=", "start_date", past));
+    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(past, null));
     result = evaluateReport(reportData);
 
     // then

@@ -2,6 +2,7 @@ package org.camunda.optimize.service.es.filter;
 
 import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -9,6 +10,7 @@ import org.junit.runners.Parameterized;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestContextManager;
 
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -19,7 +21,7 @@ public class RollingDateFilterUnitsIT extends AbstractRollingDateFilterIT {
   @Parameterized.Parameters
   public static Collection<Object[]> data() {
     return Arrays.asList(new Object[][] {
-        { "days", 1 }, { "minutes", 1 }, { "hours", 1 }, { "weeks", 1 }, { "months", 1 }, { "nanos", 0 }
+        { "days", 1 }, { "minutes", 1 }, { "hours", 1 }, { "weeks", 1 }, { "months", 1 }
     });
   }
 
@@ -34,17 +36,26 @@ public class RollingDateFilterUnitsIT extends AbstractRollingDateFilterIT {
   @Test
   public void rollingDateFilterInReport() throws Exception {
     // given
+
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+    OffsetDateTime processInstanceStartTime =
+        engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // the clock of the engine and the clock of the computer running
+    // the tests might not be aligned. Therefore we want to simulate
+    // that the process instance is not started later than now.
+    LocalDateUtil.setCurrentTime(processInstanceStartTime);
 
     // when
     RawDataReportResultDto result = createAndEvaluateReport(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion(),
         unit,
-        false
+        true
     );
+
 
     //then
     assertResults(processInstance, result, expectedPiCount);

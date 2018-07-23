@@ -1,11 +1,9 @@
 package org.camunda.optimize.qa.performance;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.camunda.optimize.dto.optimize.query.report.filter.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.util.ExecutedFlowNodeFilterBuilder;
 import org.camunda.optimize.qa.performance.framework.PerfTest;
@@ -16,7 +14,6 @@ import org.camunda.optimize.qa.performance.steps.GetBranchAnalysisStep;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -54,33 +51,6 @@ public class BranchAnalysisPerformanceTest extends OptimizePerformanceTestCase {
 
     // then
     assertThat(stepResult.getDurationInMs(), is(lessThan(configuration.getMaxServiceExecutionDuration() * CORRELATION_FACTOR)));
-  }
-
-  @Test
-  public void getBranchAnalysisWithDateFilter() {
-    // given
-    String operator = "<";
-    String type = "start_date";
-
-    DateFilterDataDto date = new DateFilterDataDto();
-    date.setOperator(operator);
-    date.setType(type);
-    date.setValue(OffsetDateTime.now());
-
-    DateFilterDto dateFilterDto = new DateFilterDto();
-    dateFilterDto.setData(date);
-    filter.add(dateFilterDto);
-
-    // when
-    PerfTestResult testResult = test.run();
-    PerfTestStepResult stepResult =
-      testResult.getResult(GetBranchAnalysisStep.class);
-
-    // then
-    assertThat(
-      stepResult.getDurationInMs(),
-      is(lessThan(configuration.getMaxServiceExecutionDuration() * CORRELATION_FACTOR))
-    );
   }
 
   @Test

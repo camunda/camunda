@@ -1,7 +1,6 @@
-package org.camunda.optimize.dto.optimize.query.report.filter.data;
+package org.camunda.optimize.dto.optimize.query.report.filter.data.startDate;
 
-
-public class RollingDateFilterDataDto implements FilterDataDto  {
+public class RelativeStartDateFilterStartDto {
 
   protected Long value;
   protected String unit;
@@ -21,4 +20,5 @@ public class RollingDateFilterDataDto implements FilterDataDto  {
   public void setUnit(String unit) {
     this.unit = unit;
   }
+
 }

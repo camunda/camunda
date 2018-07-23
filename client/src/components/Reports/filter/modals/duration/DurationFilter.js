@@ -9,9 +9,9 @@ export default class DurationFilter extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      value: props.filterData ? props.filterData[0].data.value.toString() : '7',
-      operator: props.filterData ? props.filterData[0].data.operator : '>',
-      unit: props.filterData ? props.filterData[0].data.unit : 'days'
+      value: props.filterData ? props.filterData.data.value.toString() : '7',
+      operator: props.filterData ? props.filterData.data.operator : '>',
+      unit: props.filterData ? props.filterData.data.unit : 'days'
     };
   }
 

@@ -111,7 +111,7 @@ public class MixedFilterIT {
           .build();
 
     filterList.addAll(flowNodeFilter);
-    filterList.addAll(DateUtilHelper.createDateFilter("<", "start_date", date));
+    filterList.addAll(DateUtilHelper.createFixedStartDateFilter(null , date.minusSeconds(1L)));
     RawDataReportResultDto rawDataReportResultDto = evaluateReportWithFilter(processDefinition, filterList);
 
     // then

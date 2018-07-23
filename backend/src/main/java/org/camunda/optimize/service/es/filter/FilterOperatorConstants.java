@@ -2,6 +2,8 @@ package org.camunda.optimize.service.es.filter;
 
 public class FilterOperatorConstants {
 
+  // TODO: throw away after refactoring variable filters
+
   public static final String IN = "in";
   public static final String NOT_IN = "not in";
 

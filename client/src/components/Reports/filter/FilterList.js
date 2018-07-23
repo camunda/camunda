@@ -53,71 +53,112 @@ export default class FilterList extends React.Component {
     for (let i = 0; i < this.props.data.length; i++) {
       const filter = this.props.data[i];
 
-      if (filter.type === 'date') {
-        // combine two separate filter entries into one date filter pill
-        const nextFilter = this.props.data[i + 1];
+      if (filter.type === 'startDate') {
+        const {type} = filter.data;
 
-        list.push(
-          <li
-            key={i}
-            onClick={this.props.openEditFilterModal(filter, nextFilter)}
-            className="FilterList__item"
-          >
-            <ActionItem
-              onClick={evt => {
-                evt.stopPropagation();
-                this.props.deleteFilter(filter, nextFilter);
-              }}
-              className="FilterList__action-item"
+        if (type === 'fixed') {
+          list.push(
+            <li
+              key={i}
+              onClick={this.props.openEditFilterModal(filter)}
+              className="FilterList__item"
             >
-              <span className="FilterList__parameter-name">Start Date</span>
-              {this.createOperator('is between')}
-              <span className="FilterList__value">
-                {moment(filter.data.value).format('YYYY-MM-DD')}
-              </span>{' '}
-              {this.createOperator('and')}{' '}
-              <span className="FilterList__value">
-                {moment(nextFilter.data.value).format('YYYY-MM-DD')}
-              </span>
-            </ActionItem>
-          </li>
-        );
+              <ActionItem
+                onClick={evt => {
+                  evt.stopPropagation();
+                  this.props.deleteFilter(filter);
+                }}
+                className="FilterList__action-item"
+              >
+                <span className="FilterList__parameter-name">Start Date</span>
+                {this.createOperator('is between')}
+                <span className="FilterList__value">
+                  {moment(filter.data.start).format('YYYY-MM-DD')}
+                </span>{' '}
+                {this.createOperator('and')}{' '}
+                <span className="FilterList__value">
+                  {moment(filter.data.end).format('YYYY-MM-DD')}
+                </span>
+              </ActionItem>
+            </li>
+          );
+        } else {
+          const {unit, value} = filter.data.start;
 
-        i++;
+          list.push(
+            <li
+              key={i}
+              onClick={this.props.openEditFilterModal(filter)}
+              className="FilterList__item"
+            >
+              <ActionItem
+                onClick={evt => {
+                  evt.stopPropagation();
+                  this.props.deleteFilter(filter);
+                }}
+                className="FilterList__action-item"
+              >
+                <span className="FilterList__parameter-name">Start Date </span>
+                less than{' '}
+                <span className="FilterList__value">
+                  {value.toString()} {unit.slice(0, -1)}
+                  {value > 1 && 's'}
+                </span>{' '}
+                ago
+              </ActionItem>
+            </li>
+          );
+        }
       } else {
         if (filter.type === 'variable') {
-          const {name, type, operator, values} = filter.data;
+          const {name, type, data} = filter.data;
 
           if (type === 'Date') {
-            const nextFilter = this.props.data[i + 1];
             list.push(
               <li
                 key={i}
-                onClick={this.props.openEditFilterModal(filter, nextFilter)}
+                onClick={this.props.openEditFilterModal(filter)}
                 className="FilterList__item"
               >
                 <ActionItem
                   onClick={evt => {
                     evt.stopPropagation();
-                    this.props.deleteFilter(filter, nextFilter);
+                    this.props.deleteFilter(filter);
                   }}
                   className="FilterList__action-item"
                 >
                   <span className="FilterList__parameter-name">{name}</span>
                   {this.createOperator('is between')}
                   <span className="FilterList__value">
-                    {moment(filter.data.values[0]).format('YYYY-MM-DD')}
+                    {moment(data.start).format('YYYY-MM-DD')}
                   </span>
                   {this.createOperator('and')}
-                  <span className="FilterList__value">
-                    {moment(nextFilter.data.values[0]).format('YYYY-MM-DD')}
-                  </span>
+                  <span className="FilterList__value">{moment(data.end).format('YYYY-MM-DD')}</span>
                 </ActionItem>
               </li>
             );
-
-            i++;
+          } else if (type === 'Boolean') {
+            list.push(
+              <li
+                key={i}
+                onClick={this.props.openEditFilterModal(filter)}
+                className="FilterList__item"
+              >
+                <ActionItem
+                  onClick={evt => {
+                    evt.stopPropagation();
+                    this.props.deleteFilter(filter);
+                  }}
+                  className="FilterList__action-item"
+                >
+                  <span className="FilterList__parameter-name">{name}</span>
+                  {this.createOperator('is')}
+                  <span className="FilterList__value">{data.value.toString()}</span>
+                </ActionItem>
+              </li>
+            );
           } else {
+            const {operator, values} = data;
             list.push(
               <li
                 key={i}
@@ -182,32 +223,6 @@ export default class FilterList extends React.Component {
                     </span>
                   );
                 })}
-              </ActionItem>
-            </li>
-          );
-        } else if (filter.type === 'rollingDate') {
-          const {unit, value} = filter.data;
-
-          list.push(
-            <li
-              key={i}
-              onClick={this.props.openEditFilterModal(filter)}
-              className="FilterList__item"
-            >
-              <ActionItem
-                onClick={evt => {
-                  evt.stopPropagation();
-                  this.props.deleteFilter(filter);
-                }}
-                className="FilterList__action-item"
-              >
-                <span className="FilterList__parameter-name">Start Date </span>
-                less than{' '}
-                <span className="FilterList__value">
-                  {value.toString()} {unit.slice(0, -1)}
-                  {value > 1 && 's'}
-                </span>{' '}
-                ago
               </ActionItem>
             </li>
           );

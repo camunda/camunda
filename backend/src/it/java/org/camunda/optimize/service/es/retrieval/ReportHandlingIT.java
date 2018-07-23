@@ -3,11 +3,9 @@ package org.camunda.optimize.service.es.retrieval;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.util.ExecutedFlowNodeFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
@@ -15,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportRe
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.util.DateUtilHelper;
 import org.elasticsearch.action.get.GetResponse;
 import org.junit.After;
 import org.junit.Rule;
@@ -210,7 +209,7 @@ public class ReportHandlingIT {
     reportData.setProcessDefinitionKey("procdef");
     reportData.setProcessDefinitionVersion("123");
 
-    reportData.getFilter().addAll(createDateFilter());
+    reportData.getFilter().addAll(DateUtilHelper.createFixedStartDateFilter(null, null));
     reportData.getFilter().addAll(createVariableFilter());
     reportData.getFilter().addAll(createExecutedFlowNodeFilter());
     ReportDefinitionDto report = new ReportDefinitionDto();
@@ -233,17 +232,6 @@ public class ReportHandlingIT {
     assertThat(newReport.getData(), is(notNullValue()));
     reportData = newReport.getData();
     assertThat(reportData.getFilter().size(), is(3));
-  }
-
-  public List<FilterDto> createDateFilter() {
-    DateFilterDataDto date = new DateFilterDataDto();
-    date.setOperator("foo");
-    date.setType("bar");
-    date.setValue(OffsetDateTime.now());
-
-    DateFilterDto dateFilterDto = new DateFilterDto();
-    dateFilterDto.setData(date);
-    return Collections.singletonList(dateFilterDto);
   }
 
   private List<FilterDto> createVariableFilter() {

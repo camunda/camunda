@@ -46,6 +46,9 @@ public abstract class AbstractRollingDateFilterIT {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
         .name("aProcessName")
         .startEvent()
+        .serviceTask()
+        .camundaExpression("${true}")
+        .userTask()
         .endEvent()
         .done();
     return engineRule.deployAndStartProcessWithVariables(processModel, variables);

@@ -23,22 +23,16 @@ it('should render an unordered list', () => {
   expect(node.find('ul')).toBePresent();
 });
 
-it('should display a single filter entry for two related start dates', () => {
+it('should display a start date filter', () => {
   const startDate = '2017-11-16T00:00:00';
   const endDate = '2017-11-26T23:59:59';
   const data = [
     {
-      type: 'date',
+      type: 'startDate',
       data: {
-        operator: '>=',
-        value: startDate
-      }
-    },
-    {
-      type: 'date',
-      data: {
-        operator: '<=',
-        value: endDate
+        type: 'fixed',
+        start: startDate,
+        end: endDate
       }
     }
   ];
@@ -46,6 +40,8 @@ it('should display a single filter entry for two related start dates', () => {
   const node = mount(<FilterList data={data} openEditFilterModal={jest.fn()} />);
 
   expect(node.find('li').length).toBe(1);
+  expect(node).toIncludeText('2017-11-16');
+  expect(node).toIncludeText('2017-11-26');
 });
 
 it('should display "and" between filter entries', () => {
@@ -56,78 +52,17 @@ it('should display "and" between filter entries', () => {
   expect(node).toIncludeText('and');
 });
 
-it('should remove both date filter parts for a date filter entry', () => {
-  const startDate = '2017-11-16T00:00:00';
-  const endDate = '2017-11-26T23:59:59';
-  const data = [
-    {
-      type: 'date',
-      data: {
-        operator: '>=',
-        value: startDate
-      }
-    },
-    {
-      type: 'date',
-      data: {
-        operator: '<=',
-        value: endDate
-      }
-    }
-  ];
-  const spy = jest.fn();
-
-  const node = mount(<FilterList data={data} deleteFilter={spy} openEditFilterModal={jest.fn()} />);
-
-  node.find('button').simulate('click');
-
-  expect(spy.mock.calls[0].length).toBe(2);
-  expect(spy.mock.calls[0][0]).toBe(data[0]);
-  expect(spy.mock.calls[0][1]).toBe(data[1]);
-});
-
-it('should remove date variable filter parts for a date variable filter entry', () => {
-  const startDate = '2017-11-16T00:00:00';
-  const endDate = '2017-11-26T23:59:59';
-  const data = [
-    {
-      type: 'variable',
-      data: {
-        name: 'aDateVar',
-        type: 'Date',
-        operator: '>=',
-        values: [startDate]
-      }
-    },
-    {
-      type: 'variable',
-      data: {
-        name: 'aDateVar',
-        type: 'Date',
-        operator: '<=',
-        values: [endDate]
-      }
-    }
-  ];
-  const spy = jest.fn();
-
-  const node = mount(<FilterList data={data} deleteFilter={spy} openEditFilterModal={jest.fn()} />);
-
-  node.find('button').simulate('click');
-
-  expect(spy.mock.calls[0].length).toBe(2);
-  expect(spy.mock.calls[0][0]).toBe(data[0]);
-  expect(spy.mock.calls[0][1]).toBe(data[1]);
-});
-
 it('should display a simple variable filter', () => {
   const data = [
     {
       type: 'variable',
       data: {
         name: 'varName',
-        operator: 'in',
-        values: ['varValue']
+        type: 'String',
+        data: {
+          operator: 'in',
+          values: ['varValue']
+        }
       }
     }
   ];
@@ -137,7 +72,7 @@ it('should display a simple variable filter', () => {
   expect(node).toIncludeText('varName is varValue');
 });
 
-it('should combine two date variable filters to a range', () => {
+it('should display a date variable filter as a range', () => {
   const startDate = '2017-11-16T00:00:00';
   const endDate = '2017-11-26T23:59:59';
   const data = [
@@ -146,17 +81,11 @@ it('should combine two date variable filters to a range', () => {
       data: {
         name: 'aDateVar',
         type: 'Date',
-        operator: '>=',
-        values: [startDate]
-      }
-    },
-    {
-      type: 'variable',
-      data: {
-        name: 'aDateVar',
-        type: 'Date',
-        operator: '<=',
-        values: [endDate]
+        data: {
+          type: 'fixed',
+          start: startDate,
+          end: endDate
+        }
       }
     }
   ];
@@ -171,8 +100,11 @@ it('should combine multiple variable values with or', () => {
       type: 'variable',
       data: {
         name: 'varName',
-        operator: 'in',
-        values: ['varValue', 'varValue2']
+        type: 'String',
+        data: {
+          operator: 'in',
+          values: ['varValue', 'varValue2']
+        }
       }
     }
   ];
@@ -188,8 +120,11 @@ it('should combine multiple variable names with neither/nor for the not in opera
       type: 'variable',
       data: {
         name: 'varName',
-        operator: 'not in',
-        values: ['varValue', 'varValue2']
+        type: 'String',
+        data: {
+          operator: 'not in',
+          values: ['varValue', 'varValue2']
+        }
       }
     }
   ];
@@ -259,15 +194,19 @@ it('should display a flow node filter with multiple selected nodes', () => {
 it('should display a rolling date filter', () => {
   const data = [
     {
-      type: 'rollingDate',
+      type: 'startDate',
       data: {
-        value: 18,
-        unit: 'hours'
+        type: 'relative',
+        start: {
+          value: 18,
+          unit: 'hours'
+        },
+        end: null
       }
     }
   ];
 
-  const node = mount(<FilterList data={data} openEditFilterModal={jest.fn()} a />);
+  const node = mount(<FilterList data={data} openEditFilterModal={jest.fn()} />);
 
   expect(node).toIncludeText('Start Date less than 18 hours ago');
 });

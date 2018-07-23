@@ -31,4 +31,7 @@ public class ReportConstants {
   public static final String SINGLE_NUMBER_VISUALIZATION = "number";
 
   public static final String ALL_VERSIONS = "ALL";
+
+  public static final String FIXED_DATE_FILTER = "fixed";
+  public static final String RELATIVE_DATE_FILTER = "relative";
 }

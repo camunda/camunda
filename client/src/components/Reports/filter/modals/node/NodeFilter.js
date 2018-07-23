@@ -10,7 +10,7 @@ export default class NodeFilter extends React.Component {
     super(props);
 
     this.state = {
-      selectedNodes: this.props.filterData ? this.props.filterData[0].data.values : []
+      selectedNodes: this.props.filterData ? this.props.filterData.data.values : []
     };
   }
 

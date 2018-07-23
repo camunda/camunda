@@ -17,7 +17,7 @@ const props = {
 };
 
 it('should assume variable value true per default', () => {
-  expect(BooleanInput.defaultFilter.values[0]).toEqual(true);
+  expect(BooleanInput.defaultFilter.value).toEqual(true);
 });
 
 it('should show true and false operator fields', () => {
@@ -36,5 +36,5 @@ it('should set the value when clicking on the operator fields', () => {
     .at(1)
     .simulate('click');
 
-  expect(spy).toHaveBeenCalledWith({operator: '=', values: [false]});
+  expect(spy).toHaveBeenCalledWith({value: false});
 });

@@ -19,12 +19,12 @@ export default class VariableFilter extends React.Component {
 
   componentDidMount = async () => {
     if (this.props.filterData) {
-      const filterData = this.props.filterData[0].data;
+      const filterData = this.props.filterData.data;
 
       const InputComponent = this.getInputComponentForVariable(filterData);
       const filter = InputComponent.parseFilter
         ? InputComponent.parseFilter(this.props.filterData)
-        : {operator: filterData.operator, values: filterData.values};
+        : filterData.data;
 
       this.setState({
         selectedVariable: {name: filterData.name, type: filterData.type},
@@ -124,7 +124,7 @@ export default class VariableFilter extends React.Component {
           data: {
             name: variable.name,
             type: variable.type,
-            ...this.state.filter
+            data: this.state.filter
           }
         });
   };

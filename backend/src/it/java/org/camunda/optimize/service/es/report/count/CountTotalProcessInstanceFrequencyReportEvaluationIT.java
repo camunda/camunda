@@ -4,11 +4,9 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.util.ExecutedFlowNodeFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.result.NumberReportResultDto;
@@ -17,6 +15,7 @@ import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.util.DateUtilHelper;
 import org.camunda.optimize.test.util.ReportDataHelper;
 import org.junit.Rule;
 import org.junit.Test;
@@ -150,7 +149,7 @@ public class CountTotalProcessInstanceFrequencyReportEvaluationIT {
     ReportDataDto reportData = ReportDataHelper.createPiFrequencyCountGroupedByNone(
         processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion()
     );
-    reportData.setFilter(createDateFilter("<", "start_date", past));
+    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(null, past.minusSeconds(1L)));
     NumberReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -161,23 +160,12 @@ public class CountTotalProcessInstanceFrequencyReportEvaluationIT {
     reportData = ReportDataHelper.createPiFrequencyCountGroupedByNone(
         processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion()
     );
-    reportData.setFilter(createDateFilter(">=", "start_date", past));
+    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(past, null));
     result = evaluateReport(reportData);
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult(), is(1L));
-  }
-
-  public List<FilterDto> createDateFilter(String operator, String type, OffsetDateTime dateValue) {
-    DateFilterDataDto date = new DateFilterDataDto();
-    date.setOperator(operator);
-    date.setType(type);
-    date.setValue(dateValue);
-
-    DateFilterDto dateFilterDto = new DateFilterDto();
-    dateFilterDto.setData(date);
-    return Collections.singletonList(dateFilterDto);
   }
 
   @Test

@@ -12,13 +12,13 @@ export default class DateFilter extends React.Component {
     let startDate, endDate, mode, dynamicValue, dynamicUnit;
 
     if (props.filterData) {
-      if (props.filterData[0].type === 'date') {
-        startDate = moment(props.filterData[0].data.value);
-        endDate = moment(props.filterData[1].data.value);
+      if (props.filterData.data.type === 'fixed') {
+        startDate = moment(props.filterData.data.start);
+        endDate = moment(props.filterData.data.end);
       } else {
         mode = 'dynamic';
-        dynamicValue = props.filterData[0].data.value;
-        dynamicUnit = props.filterData[0].data.unit;
+        dynamicValue = props.filterData.data.start.value;
+        dynamicUnit = props.filterData.data.start.unit;
       }
     }
 
@@ -34,30 +34,24 @@ export default class DateFilter extends React.Component {
 
   createFilter = () => {
     if (this.state.mode === 'static') {
-      this.props.addFilter(
-        {
-          type: 'date',
-          data: {
-            type: 'start_date',
-            operator: '>=',
-            value: this.state.startDate.startOf('day').format('YYYY-MM-DDTHH:mm:ss')
-          }
-        },
-        {
-          type: 'date',
-          data: {
-            type: 'start_date',
-            operator: '<=',
-            value: this.state.endDate.endOf('day').format('YYYY-MM-DDTHH:mm:ss')
-          }
+      this.props.addFilter({
+        type: 'startDate',
+        data: {
+          type: 'fixed',
+          start: this.state.startDate.startOf('day').format('YYYY-MM-DDTHH:mm:ss'),
+          end: this.state.endDate.endOf('day').format('YYYY-MM-DDTHH:mm:ss')
         }
-      );
+      });
     } else if (this.state.mode === 'dynamic') {
       this.props.addFilter({
-        type: 'rollingDate',
+        type: 'startDate',
         data: {
-          value: parseFloat(this.state.dynamicValue),
-          unit: this.state.dynamicUnit
+          type: 'relative',
+          start: {
+            value: parseFloat(this.state.dynamicValue),
+            unit: this.state.dynamicUnit
+          },
+          end: null
         }
       });
     }

@@ -116,8 +116,10 @@ it('should create a new filter', () => {
     data: {
       name: 'foo',
       type: 'String',
-      operator: 'not in',
-      values: ['value1', 'value2']
+      data: {
+        operator: 'not in',
+        values: ['value1', 'value2']
+      }
     }
   });
 });
@@ -125,14 +127,17 @@ it('should create a new filter', () => {
 it('should use custom filter parsing logic from input components', () => {
   DateInput.parseFilter.mockClear();
 
-  const existingFilter = [
-    {
+  const existingFilter = {
+    data: {
+      type: 'Date',
+      name: 'aDateVar',
       data: {
-        type: 'Date',
-        name: 'aDateVar'
+        type: 'static',
+        start: 'someDate',
+        end: 'someOtherDate'
       }
     }
-  ];
+  };
   mount(<VariableFilter filterData={existingFilter} />);
 
   expect(DateInput.parseFilter).toHaveBeenCalledWith(existingFilter);

@@ -4,7 +4,7 @@ import {ButtonGroup, Button} from 'components';
 import classnames from 'classnames';
 
 export default class BooleanInput extends React.Component {
-  static defaultFilter = {operator: '=', values: [true]};
+  static defaultFilter = {value: true};
 
   componentDidMount() {
     this.props.setValid(true);
@@ -12,7 +12,7 @@ export default class BooleanInput extends React.Component {
 
   setOperator = value => evt => {
     evt.preventDefault();
-    this.props.changeFilter({operator: '=', values: [value]});
+    this.props.changeFilter({value});
   };
 
   render() {
@@ -21,13 +21,13 @@ export default class BooleanInput extends React.Component {
         <ButtonGroup>
           <Button
             onClick={this.setOperator(true)}
-            className={classnames({'is-active': this.props.filter.values[0] === true})}
+            className={classnames({'is-active': this.props.filter.value === true})}
           >
             is true
           </Button>
           <Button
             onClick={this.setOperator(false)}
-            className={classnames({'is-active': this.props.filter.values[0] === false})}
+            className={classnames({'is-active': this.props.filter.value === false})}
           >
             is false
           </Button>
