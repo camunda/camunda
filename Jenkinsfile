@@ -61,15 +61,16 @@ spec:
     command: ["cat"]
     tty: true
     env:
-      # every JVM process will get a 1/4 of HEAP from total memory
-      - name: JAVA_TOOL_OPTIONS
-        value: |
-          -XX:+UnlockExperimentalVMOptions
-          -XX:+UseCGroupMemoryLimitForHeap
       - name: LIMITS_CPU
         valueFrom:
           resourceFieldRef:
             resource: limits.cpu
+      # every JVM process will get a 1/2 of HEAP from total memory
+      - name: JAVA_TOOL_OPTIONS
+        value: |
+          -XX:+UnlockExperimentalVMOptions
+          -XX:+UseCGroupMemoryLimitForHeap
+          -XX:MaxRAMFraction=\$(LIMITS_CPU)
       - name: TZ
         value: Europe/Berlin
       - name: DOCKER_HOST
@@ -77,10 +78,10 @@ spec:
     resources:
       limits:
         cpu: 2
-        memory: 2Gi
+        memory: 3Gi
       requests:
         cpu: 2
-        memory: 2Gi
+        memory: 3Gi
   - name: node
     image: ${NODEJS_DOCKER_IMAGE()}
     command: ["cat"]
@@ -122,9 +123,9 @@ void integrationTestSteps(String engineVersion = 'latest') {
   }
   container('maven') {
     installDockerBinaries()
-    sh ("""echo '${REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin""")
+    sh ("""echo '${CAM_REGISTRY_PSW}' | docker login -u ${CAM_REGISTRY_USR} registry.camunda.cloud --password-stdin""")
     setupPermissionsForHostDirs('backend')
-    runMaven("-T\$LIMITS_CPU -Pproduction,it,engine-${engineVersion},postgresql -pl backend -am install")
+    runMaven("-T\$LIMITS_CPU -Pproduction,it,engine-${engineVersion} -pl backend -am install")
   }
 }
 
@@ -171,7 +172,7 @@ void installDockerBinaries() {
     curl -sSL https://github.com/docker/compose/releases/download/1.21.2/docker-compose-Linux-x86_64 -o /usr/local/bin/docker-compose
     chmod +x /usr/local/bin/docker-compose
     docker-compose version
-    
+
     curl -sSL https://download.docker.com/linux/static/stable/x86_64/docker-18.03.1-ce.tgz | \
       tar xvzf -  --strip-components=1 -C /usr/local/bin/
     docker info
@@ -199,13 +200,13 @@ pipeline {
   environment {
     NODE_ENV = "ci"
     NEXUS = credentials("camunda-nexus")
-    REGISTRY = credentials('docker-registry-ci3')
+    GCR_REGISTRY = credentials('docker-registry-ci3')
   }
 
   options {
     buildDiscarder(logRotator(numToKeepStr:'50', artifactNumToKeepStr: '3'))
     timestamps()
-    timeout(time: 30, unit: 'MINUTES')
+    timeout(time: 60, unit: 'MINUTES')
   }
 
   stages {
@@ -245,6 +246,9 @@ pipeline {
       }
     }
     stage('ITs against different engines') {
+      environment {
+        CAM_REGISTRY = credentials('repository-camunda-cloud')
+      }
       parallel {
         stage('IT Latest') {
           agent {
@@ -254,9 +258,6 @@ pipeline {
               defaultContainer 'jnlp'
               yaml mavenNodeJSDindAgent(env)
             }
-          }
-          environment {
-            CAMBPM_VERSION = "7.10.0-SNAPSHOT"
           }
           steps {
             integrationTestSteps('latest')
@@ -281,9 +282,6 @@ pipeline {
               yaml mavenNodeJSDindAgent(env)
             }
           }
-          environment {
-            CAMBPM_VERSION = "7.9.1-SNAPSHOT"
-          }
           steps {
             integrationTestSteps('7.9')
           }
@@ -306,9 +304,6 @@ pipeline {
               defaultContainer 'jnlp'
               yaml mavenNodeJSDindAgent(env)
             }
-          }
-          environment {
-            CAMBPM_VERSION = "7.8.7-SNAPSHOT"
           }
           steps {
             integrationTestSteps('7.8')
@@ -354,12 +349,12 @@ pipeline {
             VERSION = readMavenPom().getVersion().replace('-SNAPSHOT', '')
             SNAPSHOT = readMavenPom().getVersion().contains('SNAPSHOT')
             IMAGE_TAG = getImageTag()
-            REGISTRY = credentials('docker-registry-ci3')
+            GCR_REGISTRY = credentials('docker-registry-ci3')
           }
           steps {
             container('docker') {
               sh ("""
-                echo '${REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
+                echo '${GCR_REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
 
                 docker build -t ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG} \
                   --build-arg=SKIP_DOWNLOAD=true \

@@ -38,7 +38,7 @@
     <dependency>
       <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-engine</artifactId>
-      <version>${version.camunda}</version>
+      <version>${version.camunda}-ee</version>
       <scope>provided</scope>
       <exclusions>
         <exclusion>

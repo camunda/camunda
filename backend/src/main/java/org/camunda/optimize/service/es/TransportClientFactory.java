@@ -8,6 +8,7 @@ import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -15,7 +16,7 @@ import java.net.InetAddress;
 import java.util.concurrent.TimeUnit;
 
 
-public class TransportClientFactory implements FactoryBean<Client> {
+public class TransportClientFactory implements FactoryBean<Client>, DisposableBean {
   private final Logger logger = LoggerFactory.getLogger(TransportClientFactory.class);
   private SchemaInitializingClient instance;
   private TransportClient internalClient;
@@ -62,5 +63,12 @@ public class TransportClientFactory implements FactoryBean<Client> {
   @Override
   public boolean isSingleton() {
     return true;
+  }
+
+  @Override
+  public void destroy() throws Exception {
+    if (instance != null){
+      instance.close();
+    }
   }
 }

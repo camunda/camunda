@@ -18,11 +18,11 @@
       <version>1.0.2.Final</version>
       <scope>provided</scope>
     </dependency>
-    
+
     <dependency>
       <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-engine-rest</artifactId>
-      <version>${camunda.engine.version}</version>
+      <version>${camunda.engine.version}-ee</version>
       <type>war</type>
       <classifier>tomcat</classifier>
     </dependency>
@@ -30,14 +30,14 @@
     <dependency>
       <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-engine</artifactId>
-      <version>${camunda.engine.version}</version>
+      <version>${camunda.engine.version}-ee</version>
       <scope>provided</scope>
     </dependency>
 
     <dependency>
       <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-engine-rest-core</artifactId>
-      <version>${camunda.engine.version}</version>
+      <version>${camunda.engine.version}-ee</version>
       <scope>provided</scope>
     </dependency>
 

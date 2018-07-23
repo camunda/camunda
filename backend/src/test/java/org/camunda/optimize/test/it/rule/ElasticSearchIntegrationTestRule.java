@@ -117,6 +117,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     }
   }
 
+  @Override
   protected void starting(Description description) {
     initObjectMapper();
     this.initEsclient();

@@ -191,7 +191,7 @@
     <dependency>
       <groupId>org.camunda.bpm.model</groupId>
       <artifactId>camunda-bpmn-model</artifactId>
-      <version>${camunda.engine.version}</version>
+      <version>${camunda.engine.version}-ee</version>
     </dependency>
 
     <dependency>
@@ -611,6 +611,10 @@
                   <goal>exec</goal>
                 </goals>
                 <configuration>
+                  <environmentVariables>
+                    <CAMBPM_VERSION>${camunda.engine.version}</CAMBPM_VERSION>
+                    <ES_VERSION>${elasticsearch.version}</ES_VERSION>
+                  </environmentVariables>
                   <skip>${skip.docker}</skip>
                   <executable>docker-compose</executable>
                   <workingDirectory>..</workingDirectory>
