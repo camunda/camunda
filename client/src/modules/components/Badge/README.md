@@ -1,9 +1,12 @@
 Example:
 
 ```js
-<Badge>1234</Badge>
-<Badge type="filters">1234</Badge>
-<Badge type="selections">1234</Badge>
-<Badge type="incidents">1234</Badge>
-<Badge type="instances">1234</Badge>
+<Badge badgeContent={1234}></Badge>
+<Badge type="filters" badgeContent={1234}/>
+<Badge type="selections" badgeContent={1234}/>
+<Badge type="incidents" badgeContent={1234} />
+<Badge type="instances" badgeContent={1234} />
+<Badge type="selectionHead" badgeContent={1234} />
+<Badge type="openSelectionHead" badgeContent={1234} />
+<Badge type="comboSelection" badgeContent={1234} circleContent={9}/>
 ```

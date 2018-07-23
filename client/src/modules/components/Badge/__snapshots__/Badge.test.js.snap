@@ -1,9 +1,14 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Badge should match snapshot 1`] = `
+exports[`Badge should show combo badge styles 1`] = `
 <Themed(styled.div)
-  className="shouldBePassedThrough"
+  badgeContent={123}
+  circleContent={10}
+  type="comboSelection"
 >
-  child content
+  <Themed(styled.div)>
+    10
+  </Themed(styled.div)>
+  123
 </Themed(styled.div)>
 `;

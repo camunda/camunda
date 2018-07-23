@@ -1,5 +1,27 @@
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
+
+const backgroundColors = {
+  filters: Colors.filtersAndWarnings,
+  selections: Colors.selections,
+  incidents: Colors.incidentsAndErrors,
+  selectionHead: themeStyle({
+    dark: '#ffffff',
+    light: Colors.selections
+  }),
+  openSelectionHead: '#ffffff',
+  comboSelection: Colors.selections
+};
+
+const colors = {
+  filters: Colors.uiDark01,
+  selectionHead: themeStyle({
+    dark: Colors.uiDark03,
+    light: '#ffffff'
+  }),
+  openSelectionHead: Colors.selections,
+  comboSelection: '#ffffff'
+};
 
 export const Badge = themed(styled.div`
   display: inline-block;
@@ -8,44 +30,45 @@ export const Badge = themed(styled.div`
   padding-right: 9px;
   margin-left: 7px;
 
-  background-color: ${({type}) => {
-    switch (type) {
-      case 'filters':
-        return Colors.filtersAndWarnings;
-      case 'selections':
-        return Colors.selections;
-      case 'incidents':
-        return Colors.incidentsAndErrors;
-      case 'selectionHead':
-        return themeStyle({
-          dark: '#ffffff',
-          light: Colors.selections
-        });
-      case 'openSelectionHead':
-        return '#ffffff';
-      default:
-        return '#a4a2a2';
-    }
-  }};
-  color: ${({type}) => {
-    switch (type) {
-      case 'filters':
-        return Colors.uiDark01;
-      case 'selectionHead':
-        return themeStyle({
-          dark: Colors.uiDark03,
-          light: '#ffffff'
-        });
-      case 'openSelectionHead':
-        return Colors.selections;
-      default:
-        return '#ffffff';
-    }
-  }};
+  border-radius: 8.5px;
+
+  background: ${({type}) => backgroundColors[type] || '#a4a2a2'};
+  color: ${({type}) => colors[type] || '#ffffff'};
 
   font-size: 12px;
   font-weight: 600;
   line-height: 17px;
 
-  border-radius: 8.5px;
+  ${({type}) => type === 'comboSelection' && comboSelectionStyles};
+`);
+
+const comboSelectionStyles = css`
+  position: relative;
+  padding-left: 15px;
+  margin-left: 20px;
+`;
+
+export const Circle = themed(styled.div`
+  /* Positioning  */
+  position: absolute;
+
+  /* Display & Box Model */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 50%;
+  right: 40px;
+  bottom: -4px;
+  padding: 1px 2px;
+  border-style: solid;
+  border-width: 3px;
+  border-color: ${themeStyle({
+    dark: Colors.uiDark03,
+    light: Colors.uiLight02
+  })};
+  border-radius: 50%;
+
+  /* Color */
+  color: white;
+  background: ${Colors.selections};
 `);

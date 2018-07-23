@@ -4,7 +4,14 @@ import PropTypes from 'prop-types';
 import * as Styled from './styled';
 
 export default function Badge(props) {
-  return <Styled.Badge {...props} />;
+  return (
+    <Styled.Badge {...props}>
+      {props.type === 'comboSelection' && (
+        <Styled.Circle>{props.circleContent}</Styled.Circle>
+      )}
+      {props.badgeContent}
+    </Styled.Badge>
+  );
 }
 
 Badge.propTypes = {
@@ -13,8 +20,10 @@ Badge.propTypes = {
     'selections',
     'selectionHead',
     'openSelectionHead',
+    'comboSelection',
     'incidents',
     'instances'
   ]),
-  children: PropTypes.node.isRequired
+  badgeContent: PropTypes.number.isRequired,
+  circleContent: PropTypes.number
 };
