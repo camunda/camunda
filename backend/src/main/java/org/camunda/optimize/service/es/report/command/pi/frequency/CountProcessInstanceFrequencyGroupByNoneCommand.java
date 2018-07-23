@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.es.report.command.count;
+package org.camunda.optimize.service.es.report.command.pi.frequency;
 
 import org.camunda.optimize.dto.optimize.query.report.result.NumberReportResultDto;
 import org.camunda.optimize.service.es.report.command.ReportCommand;

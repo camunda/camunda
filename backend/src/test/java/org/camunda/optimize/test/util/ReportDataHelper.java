@@ -26,26 +26,6 @@ import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator
 
 public class ReportDataHelper {
 
-  public static ReportDataDto createReportRawDataGroupByFlowNodesAsTable(String processDefinitionKey, String processDefinitionVersion) {
-    return createReportDataViewRaw(
-        processDefinitionKey,
-        processDefinitionVersion,
-        TABLE_VISUALIZATION,
-        new ViewDto(VIEW_RAW_DATA_OPERATION),
-        createGroupByFlowNode()
-    );
-  }
-
-  public static ReportDataDto createReportRawDataGroupByStartDateAsTable(String processDefinitionKey, String processDefinitionVersion) {
-    return createReportDataViewRaw(
-        processDefinitionKey,
-        processDefinitionVersion,
-        TABLE_VISUALIZATION,
-        new ViewDto(VIEW_RAW_DATA_OPERATION),
-        createGroupByStartDateDto(DATE_UNIT_DAY)
-    );
-  }
-
   public static ReportDataDto createReportDataViewRawAsTable(
       String processDefinitionKey,
       String processDefinitionVersion

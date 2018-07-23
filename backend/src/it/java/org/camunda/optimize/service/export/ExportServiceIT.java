@@ -56,7 +56,7 @@ public class ExportServiceIT {
         "Raw Data Grouped By None"
       },
       {
-        ReportDataHelper.createReportRawDataGroupByFlowNodesAsTable(
+        ReportDataHelper.createReportDataViewRawAsTable(
           FAKE,
           FAKE
         ),
@@ -64,7 +64,7 @@ public class ExportServiceIT {
         "Raw Data Grouped By Flow Nodes"
       },
       {
-        ReportDataHelper.createReportRawDataGroupByStartDateAsTable(
+        ReportDataHelper.createReportDataViewRawAsTable(
           FAKE,
           FAKE
         ),

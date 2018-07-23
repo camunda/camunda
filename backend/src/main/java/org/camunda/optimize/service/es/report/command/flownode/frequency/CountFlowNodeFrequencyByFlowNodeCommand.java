@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.es.report.command.max;
+package org.camunda.optimize.service.es.report.command.flownode.frequency;
 
 import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
 import org.camunda.optimize.service.es.report.command.FlowNodeGroupingCommand;
@@ -11,33 +11,23 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.metrics.max.InternalMax;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ACTIVITY_ID;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ACTIVITY_TYPE;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DURATION;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.max;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
-public class MaxFlowNodeDurationByFlowNodeCommand extends FlowNodeGroupingCommand {
+public class CountFlowNodeFrequencyByFlowNodeCommand extends FlowNodeGroupingCommand {
 
   private static final String MI_BODY = "multiInstanceBody";
-  private static final String EVENTS_AGGREGATION = "events";
-  private static final String FILTERED_EVENTS_AGGREGATION = "filteredEvents";
-  private static final String ACTIVITY_ID_TERMS_AGGREGATION = "activities";
-  private static final String MAX_DURATION_AGGREGATION = "aggregatedDuration";
 
   @Override
   protected MapReportResultDto evaluate() {
 
-    logger.debug("Evaluating maximum flow node duration grouped by flow node report " +
+    logger.debug("Evaluating count flow node frequency grouped by flow node report " +
       "for process definition key [{}] and version [{}]",
       reportData.getProcessDefinitionKey(),
       reportData.getProcessDefinitionVersion());
@@ -46,7 +36,6 @@ public class MaxFlowNodeDurationByFlowNodeCommand extends FlowNodeGroupingComman
         reportData.getProcessDefinitionKey(),
         reportData.getProcessDefinitionVersion()
     );
-
     queryFilterEnhancer.addFilterToQuery(query, reportData.getFilter());
 
     SearchResponse response = esclient
@@ -68,37 +57,31 @@ public class MaxFlowNodeDurationByFlowNodeCommand extends FlowNodeGroupingComman
 
   private AggregationBuilder createAggregation() {
     return
-      nested(EVENTS, EVENTS_AGGREGATION)
+      nested("events", "events")
         .subAggregation(
-          filter(
-            FILTERED_EVENTS_AGGREGATION,
+            filter(
+            "filteredEvents",
             boolQuery()
               .mustNot(
-                termQuery(EVENTS + "." + ACTIVITY_TYPE, MI_BODY)
+                termQuery("events.activityType", MI_BODY)
               )
           )
-            .subAggregation(AggregationBuilders
-              .terms(ACTIVITY_ID_TERMS_AGGREGATION)
-              .size(Integer.MAX_VALUE)
-              .field(EVENTS + "." + ACTIVITY_ID)
-              .subAggregation(
-                max(MAX_DURATION_AGGREGATION)
-                  .field(EVENTS + "." + DURATION)
-              )
-            )
+          .subAggregation(AggregationBuilders
+            .terms("activities")
+            .size(Integer.MAX_VALUE)
+            .field("events.activityId")
+          )
         );
   }
 
   private Map<String, Long> processAggregations(Aggregations aggregations) {
     ValidationHelper.ensureNotNull("aggregations", aggregations);
-    Nested activities = aggregations.get(EVENTS_AGGREGATION);
-    Filter filteredActivities = activities.getAggregations().get(FILTERED_EVENTS_AGGREGATION);
-    Terms terms = filteredActivities.getAggregations().get(ACTIVITY_ID_TERMS_AGGREGATION);
+    Nested activities = aggregations.get("events");
+    Filter filteredActivities = activities.getAggregations().get("filteredEvents");
+    Terms terms = filteredActivities.getAggregations().get("activities");
     Map<String, Long> result = new HashMap<>();
     for (Terms.Bucket b : terms.getBuckets()) {
-      InternalMax maximumDuration = b.getAggregations().get(MAX_DURATION_AGGREGATION);
-      long roundedDuration = Math.round(maximumDuration.getValue());
-      result.put(b.getKeyAsString(), roundedDuration);
+      result.put(b.getKeyAsString(), b.getDocCount());
     }
     return result;
   }

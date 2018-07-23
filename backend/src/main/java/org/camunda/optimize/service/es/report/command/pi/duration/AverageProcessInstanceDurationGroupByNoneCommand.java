@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.es.report.command.avg;
+package org.camunda.optimize.service.es.report.command.pi.duration;
 
 import org.camunda.optimize.dto.optimize.query.report.result.NumberReportResultDto;
 import org.camunda.optimize.service.es.report.command.ReportCommand;
