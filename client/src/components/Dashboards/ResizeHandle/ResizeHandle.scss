@@ -16,3 +16,18 @@
   border-bottom: 3px solid gray;
   border-right: 3px solid gray;
 }
+
+.ResizeHandle__dropShadow {
+  background-color: #f5f5f5;
+  position: absolute;
+  transition: 0.2s;
+  opacity: 0;
+}
+
+.ResizeHandle__dropShadow--active {
+  opacity: 1;
+}
+
+.ResizeHandle__dropShadow--invalid {
+  background-color: #ffe0e0;
+}

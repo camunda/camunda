@@ -38,8 +38,10 @@ it('should call the resizeStart callback when starting to drag', () => {
   const spy = jest.fn();
   const node = mount(
     <main>
-      <div className="DashboardObject">
-        <ResizeHandle onResizeStart={spy} />
+      <div className="DashboardView">
+        <div className="DashboardObject">
+          <ResizeHandle onResizeStart={spy} />
+        </div>
       </div>
     </main>
   );
@@ -56,8 +58,10 @@ it('should add dragging CSS class to surrounding dashboard object', () => {
   const spy = jest.fn();
   const node = mount(
     <main>
-      <div className="DashboardObject">
-        <ResizeHandle onResizeStart={spy} />
+      <div className="DashboardView">
+        <div className="DashboardObject">
+          <ResizeHandle onResizeStart={spy} />
+        </div>
       </div>
     </main>
   );
@@ -74,14 +78,16 @@ it('should update the width and height of the report when dragging', () => {
   const spy = jest.fn();
   const node = mount(
     <main>
-      <div
-        className="DashboardObject"
-        style={{
-          width: '10px',
-          height: '10px'
-        }}
-      >
-        <ResizeHandle {...props} onResizeStart={spy} />
+      <div className="DashboardView">
+        <div
+          className="DashboardObject"
+          style={{
+            width: '10px',
+            height: '10px'
+          }}
+        >
+          <ResizeHandle {...props} onResizeStart={spy} />
+        </div>
       </div>
     </main>
   );
@@ -111,14 +117,16 @@ it('should update the width and height of the report when scrolling', () => {
   const spy = jest.fn();
   const node = mount(
     <main>
-      <div
-        className="DashboardObject"
-        style={{
-          width: '10px',
-          height: '10px'
-        }}
-      >
-        <ResizeHandle {...props} onResizeStart={spy} />
+      <div className="DashboardView">
+        <div
+          className="DashboardObject"
+          style={{
+            width: '10px',
+            height: '10px'
+          }}
+        >
+          <ResizeHandle {...props} onResizeStart={spy} />
+        </div>
       </div>
     </main>
   );
@@ -144,7 +152,7 @@ it('should update the width and height of the report when scrolling', () => {
 });
 
 it('should call the update report callback on drop', () => {
-  snapInPosition.mockReturnValueOnce({
+  snapInPosition.mockReturnValue({
     position: {x: 1, y: 1},
     dimensions: {width: 3, height: 1}
   });
@@ -152,14 +160,16 @@ it('should call the update report callback on drop', () => {
   const spy = jest.fn();
   const node = mount(
     <main>
-      <div
-        className="DashboardObject"
-        style={{
-          width: '0px',
-          height: '0px'
-        }}
-      >
-        <ResizeHandle {...props} updateReport={spy} />
+      <div className="DashboardView">
+        <div
+          className="DashboardObject"
+          style={{
+            width: '0px',
+            height: '0px'
+          }}
+        >
+          <ResizeHandle {...props} updateReport={spy} />
+        </div>
       </div>
     </main>
   );
@@ -199,14 +209,16 @@ it('should call the dragEnd callback on drop', () => {
   const spy = jest.fn();
   const node = mount(
     <main>
-      <div
-        className="DashboardObject"
-        style={{
-          width: '0px',
-          height: '0px'
-        }}
-      >
-        <ResizeHandle {...props} onResizeEnd={spy} />
+      <div className="DashboardView">
+        <div
+          className="DashboardObject"
+          style={{
+            width: '0px',
+            height: '0px'
+          }}
+        >
+          <ResizeHandle {...props} onResizeEnd={spy} />
+        </div>
       </div>
     </main>
   );
@@ -240,26 +252,28 @@ it('should not update the report when it is dropped somewhere where is no space'
   const spy = jest.fn();
   const node = mount(
     <main>
-      <div
-        className="DashboardObject"
-        style={{
-          width: '0px',
-          height: '0px'
-        }}
-      >
-        <ResizeHandle
-          {...props}
-          reports={[
-            {
-              position: {x: 2, y: 0},
-              dimensions: {width: 1, height: 4}
-            },
-            {
-              position: {x: 3, y: 1},
-              dimensions: {width: 2, height: 2}
-            }
-          ]}
-        />
+      <div className="DashboardView">
+        <div
+          className="DashboardObject"
+          style={{
+            width: '0px',
+            height: '0px'
+          }}
+        >
+          <ResizeHandle
+            {...props}
+            reports={[
+              {
+                position: {x: 2, y: 0},
+                dimensions: {width: 1, height: 4}
+              },
+              {
+                position: {x: 3, y: 1},
+                dimensions: {width: 2, height: 2}
+              }
+            ]}
+          />
+        </div>
       </div>
     </main>
   );
@@ -287,4 +301,58 @@ it('should not update the report when it is dropped somewhere where is no space'
     .stopDragging();
 
   expect(spy).not.toHaveBeenCalled();
+});
+
+it('should create a drop shadow', () => {
+  const spy = jest.fn();
+  const node = mount(
+    <main>
+      <div className="DashboardView">
+        <div className="DashboardObject">
+          <ResizeHandle onDragStart={spy} />
+        </div>
+      </div>
+    </main>
+  );
+
+  expect(node.getDOMNode().querySelector('.ResizeHandle__dropShadow')).not.toBeNull();
+});
+
+it('should update the dropshadow on drag', () => {
+  const node = mount(
+    <main>
+      <div className="DashboardView">
+        <div
+          className="DashboardObject"
+          style={{
+            top: '10px',
+            left: '10px'
+          }}
+        >
+          <ResizeHandle {...props} onDragStart={jest.fn()} />
+        </div>
+      </div>
+    </main>
+  );
+
+  const spy = jest.spyOn(node.find(ResizeHandle).instance(), 'updateDropPreview');
+
+  node
+    .find(ResizeHandle)
+    .instance()
+    .startDragging({
+      preventDefault: jest.fn(),
+      screenX: 0,
+      screenY: 0
+    });
+
+  node
+    .find(ResizeHandle)
+    .instance()
+    .saveMouseAndUpdateCardSize({
+      screenX: 5,
+      screenY: 5
+    });
+
+  expect(spy).toHaveBeenCalled();
 });

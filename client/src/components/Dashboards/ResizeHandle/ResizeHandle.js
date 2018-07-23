@@ -8,6 +8,18 @@ export default class ResizeHandle extends React.Component {
     return <div className="ResizeHandle" ref={this.storeNode} onMouseDown={this.startDragging} />;
   }
 
+  componentDidMount() {
+    this.dashboard = this.resizeHandle.closest('.DashboardView');
+    this.dropShadow = document.createElement('div');
+    this.dropShadow.classList.add('ResizeHandle__dropShadow');
+
+    this.dashboard.appendChild(this.dropShadow);
+  }
+
+  componentWillUnmount() {
+    this.dashboard.removeChild(this.dropShadow);
+  }
+
   storeNode = element => {
     this.resizeHandle = element;
   };
@@ -45,10 +57,12 @@ export default class ResizeHandle extends React.Component {
     document.body.addEventListener('mouseup', this.stopDragging);
     this.scrollContainer.addEventListener('scroll', this.updateCardSize);
 
-    // make sure report card is topmost element
+    // make sure report card and its shadow are topmost elements
+    this.dashboard.appendChild(this.dropShadow);
     this.reportCard.parentNode.appendChild(this.reportCard);
 
     this.reportCard.classList.add('ResizeHandle--dragging');
+    this.dropShadow.classList.add('ResizeHandle__dropShadow--active');
 
     this.props.onResizeStart();
   };
@@ -58,6 +72,7 @@ export default class ResizeHandle extends React.Component {
     this.lastMousePosition.y = evt.screenY;
 
     this.updateCardSize();
+    this.updateDropPreview();
   };
 
   updateCardSize = () => {
@@ -79,6 +94,30 @@ export default class ResizeHandle extends React.Component {
           this.startScrollPosition.y,
         this.props.tileDimensions.innerHeight
       ) + 'px';
+  };
+
+  updateDropPreview = () => {
+    const placement = snapInPosition({
+      tileDimensions: this.props.tileDimensions,
+      report: this.props.report,
+      changes: {
+        width: parseInt(this.reportCard.style.width, 10) - this.cardStartSize.width,
+        height: parseInt(this.reportCard.style.height, 10) - this.cardStartSize.height
+      }
+    });
+
+    applyPlacement({placement, tileDimensions: this.props.tileDimensions, node: this.dropShadow});
+
+    if (
+      collidesWithReport({
+        placement,
+        reports: this.props.reports.filter(report => report !== this.props.report)
+      })
+    ) {
+      this.dropShadow.classList.add('ResizeHandle__dropShadow--invalid');
+    } else {
+      this.dropShadow.classList.remove('ResizeHandle__dropShadow--invalid');
+    }
   };
 
   stopDragging = () => {
@@ -129,6 +168,7 @@ export default class ResizeHandle extends React.Component {
     }
 
     this.reportCard.classList.remove('ResizeHandle--dragging');
+    this.dropShadow.classList.remove('ResizeHandle__dropShadow--active');
     this.props.onResizeEnd();
   };
 }

@@ -37,8 +37,10 @@ it('should call the dragStart callback when starting to drag', () => {
   const spy = jest.fn();
   const node = mount(
     <main>
-      <div className="DashboardObject">
-        <DragBehavior onDragStart={spy} />
+      <div className="DashboardView">
+        <div className="DashboardObject">
+          <DragBehavior onDragStart={spy} />
+        </div>
       </div>
     </main>
   );
@@ -55,8 +57,10 @@ it('should add dragging CSS class to surrounding dashboard object', () => {
   const spy = jest.fn();
   const node = mount(
     <main>
-      <div className="DashboardObject">
-        <DragBehavior onDragStart={spy} />
+      <div className="DashboardView">
+        <div className="DashboardObject">
+          <DragBehavior onDragStart={spy} />
+        </div>
       </div>
     </main>
   );
@@ -73,14 +77,16 @@ it('should update the x and y position of the report when dragging', () => {
   const spy = jest.fn();
   const node = mount(
     <main>
-      <div
-        className="DashboardObject"
-        style={{
-          top: '10px',
-          left: '10px'
-        }}
-      >
-        <DragBehavior onDragStart={spy} />
+      <div className="DashboardView">
+        <div
+          className="DashboardObject"
+          style={{
+            top: '10px',
+            left: '10px'
+          }}
+        >
+          <DragBehavior {...props} onDragStart={spy} />
+        </div>
       </div>
     </main>
   );
@@ -110,14 +116,16 @@ it('should update the x and y position of the report when scrolling', () => {
   const spy = jest.fn();
   const node = mount(
     <main>
-      <div
-        className="DashboardObject"
-        style={{
-          top: '10px',
-          left: '10px'
-        }}
-      >
-        <DragBehavior onDragStart={spy} />
+      <div className="DashboardView">
+        <div
+          className="DashboardObject"
+          style={{
+            top: '10px',
+            left: '10px'
+          }}
+        >
+          <DragBehavior onDragStart={spy} />
+        </div>
       </div>
     </main>
   );
@@ -142,21 +150,23 @@ it('should update the x and y position of the report when scrolling', () => {
 });
 
 it('should call the update report callback on drop', () => {
-  snapInPosition.mockReturnValueOnce({
+  snapInPosition.mockReturnValue({
     position: {x: 3, y: 1},
     dimensions: {width: 1, height: 1}
   });
   const spy = jest.fn();
   const node = mount(
     <main>
-      <div
-        className="DashboardObject"
-        style={{
-          top: '0px',
-          left: '0px'
-        }}
-      >
-        <DragBehavior {...props} updateReport={spy} />
+      <div className="DashboardView">
+        <div
+          className="DashboardObject"
+          style={{
+            top: '0px',
+            left: '0px'
+          }}
+        >
+          <DragBehavior {...props} updateReport={spy} />
+        </div>
       </div>
     </main>
   );
@@ -196,14 +206,16 @@ it('should call the dragEnd callback on drop', () => {
   const spy = jest.fn();
   const node = mount(
     <main>
-      <div
-        className="DashboardObject"
-        style={{
-          top: '0px',
-          left: '0px'
-        }}
-      >
-        <DragBehavior {...props} onDragEnd={spy} />
+      <div className="DashboardView">
+        <div
+          className="DashboardObject"
+          style={{
+            top: '0px',
+            left: '0px'
+          }}
+        >
+          <DragBehavior {...props} onDragEnd={spy} />
+        </div>
       </div>
     </main>
   );
@@ -237,26 +249,28 @@ it('should not update the report when it is dropped somewhere where is no space'
   const spy = jest.fn();
   const node = mount(
     <main>
-      <div
-        className="DashboardObject"
-        style={{
-          top: '0px',
-          left: '0px'
-        }}
-      >
-        <DragBehavior
-          {...props}
-          reports={[
-            {
-              position: {x: 2, y: 0},
-              dimensions: {width: 1, height: 4}
-            },
-            {
-              position: {x: 3, y: 1},
-              dimensions: {width: 2, height: 2}
-            }
-          ]}
-        />
+      <div className="DashboardView">
+        <div
+          className="DashboardObject"
+          style={{
+            top: '0px',
+            left: '0px'
+          }}
+        >
+          <DragBehavior
+            {...props}
+            reports={[
+              {
+                position: {x: 2, y: 0},
+                dimensions: {width: 1, height: 4}
+              },
+              {
+                position: {x: 3, y: 1},
+                dimensions: {width: 2, height: 2}
+              }
+            ]}
+          />
+        </div>
       </div>
     </main>
   );
@@ -284,4 +298,58 @@ it('should not update the report when it is dropped somewhere where is no space'
     .stopDragging();
 
   expect(spy).not.toHaveBeenCalled();
+});
+
+it('should create a drop shadow', () => {
+  const spy = jest.fn();
+  const node = mount(
+    <main>
+      <div className="DashboardView">
+        <div className="DashboardObject">
+          <DragBehavior onDragStart={spy} />
+        </div>
+      </div>
+    </main>
+  );
+
+  expect(node.getDOMNode().querySelector('.DragBehavior__dropShadow')).not.toBeNull();
+});
+
+it('should update the dropshadow on drag', () => {
+  const node = mount(
+    <main>
+      <div className="DashboardView">
+        <div
+          className="DashboardObject"
+          style={{
+            top: '10px',
+            left: '10px'
+          }}
+        >
+          <DragBehavior {...props} onDragStart={jest.fn()} />
+        </div>
+      </div>
+    </main>
+  );
+
+  const spy = jest.spyOn(node.find(DragBehavior).instance(), 'updateDropPreview');
+
+  node
+    .find(DragBehavior)
+    .instance()
+    .startDragging({
+      preventDefault: jest.fn(),
+      screenX: 0,
+      screenY: 0
+    });
+
+  node
+    .find(DragBehavior)
+    .instance()
+    .saveMouseAndUpdateCardPosition({
+      screenX: 5,
+      screenY: 5
+    });
+
+  expect(spy).toHaveBeenCalled();
 });

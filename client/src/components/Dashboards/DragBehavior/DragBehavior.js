@@ -15,6 +15,18 @@ export default class DragBehavior extends React.Component {
     );
   }
 
+  componentDidMount() {
+    this.dashboard = this.dragBehaviorNode.closest('.DashboardView');
+    this.dropShadow = document.createElement('div');
+    this.dropShadow.classList.add('DragBehavior__dropShadow');
+
+    this.dashboard.appendChild(this.dropShadow);
+  }
+
+  componentWillUnmount() {
+    this.dashboard.removeChild(this.dropShadow);
+  }
+
   storeNode = element => {
     this.dragBehaviorNode = element;
   };
@@ -51,10 +63,12 @@ export default class DragBehavior extends React.Component {
     document.body.addEventListener('mousemove', this.saveMouseAndUpdateCardPosition);
     this.scrollContainer.addEventListener('scroll', this.updateCardPosition);
 
-    // make sure report card is topmost element
+    // make sure report card and its shadow are topmost elements
+    this.dashboard.appendChild(this.dropShadow);
     this.reportCard.parentNode.appendChild(this.reportCard);
 
     this.reportCard.classList.add('DragBehavior--dragging');
+    this.dropShadow.classList.add('DragBehavior__dropShadow--active');
 
     this.props.onDragStart();
   };
@@ -64,6 +78,7 @@ export default class DragBehavior extends React.Component {
     this.lastMousePosition.y = evt.screenY;
 
     this.updateCardPosition();
+    this.updateDropPreview();
   };
 
   updateCardPosition = () => {
@@ -81,6 +96,30 @@ export default class DragBehavior extends React.Component {
       this.scrollContainer.scrollTop -
       this.startScrollPosition.y +
       'px';
+  };
+
+  updateDropPreview = () => {
+    const placement = snapInPosition({
+      tileDimensions: this.props.tileDimensions,
+      report: this.props.report,
+      changes: {
+        x: parseInt(this.reportCard.style.left, 10) - this.cardStartPosition.x,
+        y: parseInt(this.reportCard.style.top, 10) - this.cardStartPosition.y
+      }
+    });
+
+    applyPlacement({placement, tileDimensions: this.props.tileDimensions, node: this.dropShadow});
+
+    if (
+      collidesWithReport({
+        placement,
+        reports: this.props.reports.filter(report => report !== this.props.report)
+      })
+    ) {
+      this.dropShadow.classList.add('DragBehavior__dropShadow--invalid');
+    } else {
+      this.dropShadow.classList.remove('DragBehavior__dropShadow--invalid');
+    }
   };
 
   stopDragging = () => {
@@ -130,6 +169,7 @@ export default class DragBehavior extends React.Component {
     }
 
     this.reportCard.classList.remove('DragBehavior--dragging');
+    this.dropShadow.classList.remove('DragBehavior__dropShadow--active');
     this.props.onDragEnd();
   };
 }
