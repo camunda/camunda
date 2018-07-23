@@ -33,7 +33,8 @@ const props = {
       endEvent: 3
     },
     processInstanceCount: 5
-  }
+  },
+  setViewer: jest.fn()
 };
 
 it('should add an end event overlay if an endEvent is selected', () => {
@@ -115,4 +116,11 @@ it('should deselct a selected element when clicking on it', () => {
 
   viewer.on.mock.calls.find(call => call[0] === 'element.click')[1]({element: gateway});
   expect(spy).toHaveBeenCalledWith('gateway', null);
+});
+
+it('should invoke setViewer function one time on load', () => {
+  props.setViewer.mockClear();
+  mount(<DiagramBehavior {...props} />);
+
+  expect(props.setViewer).toHaveBeenCalledTimes(1);
 });

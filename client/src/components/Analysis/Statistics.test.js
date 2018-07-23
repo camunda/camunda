@@ -38,7 +38,10 @@ const props = {
   config: {
     filter: []
   },
-  gateway: {id: 'g', outgoing: [{targetRef: {id: 'a'}}, {targetRef: {id: 'b'}}]},
+  gateway: {
+    id: 'g',
+    outgoing: [{name: 'testLabel', targetRef: {id: 'a', name: 'a'}}, {targetRef: {id: 'b'}}]
+  },
   endEvent: {id: 'e'}
 };
 
@@ -80,4 +83,20 @@ it('should create two Charts', async () => {
   });
 
   expect(ChartRenderer.mock.instances.length).toBe(2);
+});
+
+it('should invoke add Marker when called Mark Sequence flow function', async () => {
+  const canvas = {
+    addMarker: jest.fn()
+  };
+
+  const activeElements = [
+    {
+      _model: {label: 'testLabel'}
+    }
+  ];
+
+  const node = mount(<Statistics {...props} />);
+  node.instance().markSequenceFlow(canvas, activeElements, 'testMark');
+  expect(canvas.addMarker).toBeCalledWith(props.gateway.outgoing[0], 'testMark');
 });

@@ -25,8 +25,7 @@ export default class Analysis extends React.Component {
       hoveredNode: null,
       gateway: null,
       endEvent: null,
-      xml: null,
-      viewer: null
+      xml: null
     };
   }
 
@@ -48,7 +47,7 @@ export default class Analysis extends React.Component {
   };
 
   render() {
-    const {xml, config, hoveredControl, hoveredNode, gateway, endEvent, data, viewer} = this.state;
+    const {xml, config, hoveredControl, hoveredNode, gateway, endEvent, data} = this.state;
 
     return (
       <div className="Analysis">
@@ -81,7 +80,12 @@ export default class Analysis extends React.Component {
         </div>
         {gateway &&
           endEvent && (
-            <Statistics gateway={gateway} endEvent={endEvent} config={config} viewer={viewer} />
+            <Statistics
+              gateway={gateway}
+              endEvent={endEvent}
+              config={config}
+              viewer={this.viewer}
+            />
           )}
       </div>
     );
@@ -106,7 +110,7 @@ export default class Analysis extends React.Component {
   }
 
   setViewer = viewer => {
-    this.setState({viewer: viewer});
+    this.viewer = viewer;
   };
 
   updateHoveredControl = newField => {
