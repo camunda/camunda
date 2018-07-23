@@ -1,0 +1,39 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ExpansionPanel should not be expanded by default 1`] = `
+<Themed(styled.div)>
+  <Summary
+    expanded={false}
+    key=".0"
+    toggleExpand={[Function]}
+  >
+    foo summary
+  </Summary>
+  <Details
+    expanded={false}
+    key=".1"
+    toggleExpand={[Function]}
+  >
+    Foo Details
+  </Details>
+</Themed(styled.div)>
+`;
+
+exports[`ExpansionPanel toggleExpand should change expanded state 1`] = `
+<Themed(styled.div)>
+  <Summary
+    expanded={true}
+    key=".0"
+    toggleExpand={[Function]}
+  >
+    foo summary
+  </Summary>
+  <Details
+    expanded={true}
+    key=".1"
+    toggleExpand={[Function]}
+  >
+    Foo Details
+  </Details>
+</Themed(styled.div)>
+`;

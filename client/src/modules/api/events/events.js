@@ -1,6 +1,6 @@
 import {post} from 'modules/request';
 
-const URL = `/api/events?firstResult=0&maxResults=1000`;
+const URL = `/api/events`;
 
 export async function fetchEvents(workflowInstanceId) {
   const response = await post(URL, {workflowInstanceId});

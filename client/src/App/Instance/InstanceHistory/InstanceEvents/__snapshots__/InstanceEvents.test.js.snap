@@ -1,0 +1,98 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`InstanceEvents should render grouped events if events or activities changed 1`] = `
+<Themed(styled.div)
+  activitiesDetails={
+    Array [
+      Object {
+        "id": "foo",
+        "name": "foo name",
+      },
+      Object {
+        "id": "bar",
+        "name": "bar name",
+      },
+    ]
+  }
+  instance={
+    Object {
+      "id": "foo",
+    }
+  }
+>
+  <styled.div>
+    <ExpansionPanel
+      key="foo name0"
+    >
+      <Summary
+        bold={true}
+      >
+        foo name
+      </Summary>
+      <Details>
+        <ExpansionPanel
+          key="fooCreated0"
+        >
+          <Summary>
+            fooCreated
+          </Summary>
+          <Details>
+            META DATA
+          </Details>
+        </ExpansionPanel>
+        <ExpansionPanel
+          key="fooActiviated1"
+        >
+          <Summary>
+            fooActiviated
+          </Summary>
+          <Details>
+            META DATA
+          </Details>
+        </ExpansionPanel>
+      </Details>
+    </ExpansionPanel>
+    <ExpansionPanel
+      key="bar name1"
+    >
+      <Summary
+        bold={true}
+      >
+        bar name
+      </Summary>
+      <Details>
+        <ExpansionPanel
+          key="barCreated0"
+        >
+          <Summary>
+            barCreated
+          </Summary>
+          <Details>
+            META DATA
+          </Details>
+        </ExpansionPanel>
+        <ExpansionPanel
+          key="barActivated1"
+        >
+          <Summary>
+            barActivated
+          </Summary>
+          <Details>
+            META DATA
+          </Details>
+        </ExpansionPanel>
+      </Details>
+    </ExpansionPanel>
+    <ExpansionPanel
+      key="baz2"
+    >
+      <Summary>
+        baz
+      </Summary>
+      <Details>
+        META DATA
+      </Details>
+    </ExpansionPanel>
+  </styled.div>
+</Themed(styled.div)>
+`;

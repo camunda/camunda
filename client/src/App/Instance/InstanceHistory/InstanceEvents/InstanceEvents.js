@@ -53,7 +53,7 @@ export default class InstanceEvents extends React.Component {
     return (
       <ExpansionPanel key={key}>
         <ExpansionPanel.Summary>{eventType}</ExpansionPanel.Summary>
-        <ExpansionPanel.Details>World</ExpansionPanel.Details>
+        <ExpansionPanel.Details>META DATA</ExpansionPanel.Details>
       </ExpansionPanel>
     );
   };
@@ -63,7 +63,9 @@ export default class InstanceEvents extends React.Component {
 
     return (
       <ExpansionPanel key={key}>
-        <ExpansionPanel.Summary bold={!!events}>{name}</ExpansionPanel.Summary>
+        <ExpansionPanel.Summary bold={Boolean(events)}>
+          {name}
+        </ExpansionPanel.Summary>
         <ExpansionPanel.Details>
           {events.map(this.renderEvent)}
         </ExpansionPanel.Details>
