@@ -73,6 +73,7 @@ public class ValidationHelper {
     ensureNotNull("view", viewDto);
     ensureNotEmpty("view operation", viewDto.getOperation());
     ensureNotEmpty("visualization", dataDto.getVisualization());
+    ensureNotNull("group by", dataDto.getGroupBy());
     validateDefinition(dataDto);
 
     if (dataDto.getFilter() != null) {

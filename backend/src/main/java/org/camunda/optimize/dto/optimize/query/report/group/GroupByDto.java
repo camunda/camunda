@@ -1,5 +1,6 @@
 package org.camunda.optimize.dto.optimize.query.report.group;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -43,6 +44,11 @@ public abstract class GroupByDto<VALUE extends GroupByValueDto>{
 
   public void setType(String type) {
     this.type = type;
+  }
+
+  @JsonIgnore
+  public String getKey() {
+    return type;
   }
 
   @Override

@@ -1,24 +1,16 @@
-package org.camunda.optimize.service.es.report.command.avg;
+package org.camunda.optimize.service.es.report.command.count;
 
 import org.camunda.optimize.dto.optimize.query.report.result.NumberReportResultDto;
 import org.camunda.optimize.service.es.report.command.ReportCommand;
-import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.metrics.avg.InternalAvg;
 
-public class AverageTotalProcessInstanceDurationCommand extends ReportCommand<NumberReportResultDto> {
-
-
-  public static final String AVG_DURATION = "avgDuration";
+public class CountProcessInstanceFrequencyGroupByNoneCommand extends ReportCommand<NumberReportResultDto> {
 
   @Override
   protected NumberReportResultDto evaluate() {
 
-    logger.debug("Evaluating average process instance duration grouped by none report " +
+    logger.debug("Evaluating count process instance frequency grouped by none report " +
       "for process definition key [{}] and version [{}]",
       reportData.getProcessDefinitionKey(),
       reportData.getProcessDefinitionVersion());
@@ -35,25 +27,12 @@ public class AverageTotalProcessInstanceDurationCommand extends ReportCommand<Nu
       .setQuery(query)
       .setFetchSource(false)
       .setSize(0)
-      .addAggregation(createAggregation())
       .get();
 
     NumberReportResultDto numberResult = new NumberReportResultDto();
-    numberResult.setResult(processAggregations(response.getAggregations()));
+    numberResult.setResult(response.getHits().getTotalHits());
     numberResult.setProcessInstanceCount(response.getHits().getTotalHits());
     return numberResult;
-  }
-
-  private long processAggregations(Aggregations aggregations) {
-    InternalAvg averageDuration = aggregations.get(AVG_DURATION);
-    long roundedDuration = Math.round(averageDuration.getValue());
-    return roundedDuration;
-  }
-
-  private AggregationBuilder createAggregation() {
-    return AggregationBuilders
-      .avg(AVG_DURATION)
-      .field(ProcessInstanceType.DURATION);
   }
 
 }

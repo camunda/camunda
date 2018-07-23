@@ -37,4 +37,9 @@ public class ViewDto {
   public void setProperty(String property) {
     this.property = property;
   }
+
+  public String getKey() {
+    String seperator = "_";
+    return operation + seperator + entity + seperator + property;
+  }
 }
