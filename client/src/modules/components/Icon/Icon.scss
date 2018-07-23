@@ -31,7 +31,8 @@ $icons: (
   'overflow-menu-vertical',
   'overflow-menu-horizontal',
   'open-in-cockpit',
-  'copy-document'
+  'copy-document',
+  'check-small'
 );
 
 @each $icon in $icons {

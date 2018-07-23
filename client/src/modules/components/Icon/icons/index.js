@@ -17,6 +17,7 @@ import overflowMenuVertical from '-!svg-react-loader!./overflow-menu-vertical.sv
 import overflowMenuHorizontal from '-!svg-react-loader!./overflow-menu-horizontal.svg';
 import openInCockpit from '-!svg-react-loader!./open-in-cockpit.svg';
 import copyDocument from '-!svg-react-loader!./copy-document.svg';
+import checkSmall from '-!svg-react-loader!./check-small.svg';
 
 const icons = {
   autorefresh,
@@ -35,7 +36,8 @@ const icons = {
   'overflow-menu-vertical': overflowMenuVertical,
   'overflow-menu-horizontal': overflowMenuHorizontal,
   'open-in-cockpit': openInCockpit,
-  'copy-document': copyDocument
+  'copy-document': copyDocument,
+  'check-small': checkSmall
 };
 
 export default icons;
