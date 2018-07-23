@@ -24,9 +24,6 @@ export default class AutoRefreshBehavior extends React.Component {
   }
 
   runTimer = () => {
-    this.timer = setInterval(async () => {
-      await this.props.renderDashboard();
-      this.props.loadReportData();
-    }, this.props.interval);
+    this.timer = setInterval(this.props.loadReportData, this.props.interval);
   };
 }

@@ -190,6 +190,11 @@ export default withErrorHandling(
     };
 
     setAutorefresh = timeout => () => {
+      clearInterval(this.timer);
+      if (timeout)
+        this.timer = setInterval(async () => {
+          await this.renderDashboard();
+        }, timeout);
       this.setState({
         autoRefreshInterval: timeout
       });
@@ -398,7 +403,6 @@ export default withErrorHandling(
                   <AutoRefreshBehavior
                     key="autorefresh"
                     interval={this.state.autoRefreshInterval}
-                    renderDashboard={this.renderDashboard}
                   />
                 ]
               }

@@ -227,6 +227,18 @@ it('should add an autorefresh addon when autorefresh mode is active', () => {
   expect(node).toIncludeText('Addons: AutoRefreshBehavior');
 });
 
+it('should invoke the renderDashboard function after the interval duration ends', async () => {
+  jest.useFakeTimers();
+  const node = mount(shallow(<Dashboard {...props} />).get(0));
+  node.setState({loaded: true, autoRefreshInterval: 600});
+
+  node.instance().renderDashboard = jest.fn();
+  node.update();
+  node.instance().setAutorefresh(600)();
+  jest.runTimersToTime(700);
+  expect(await node.instance().renderDashboard).toHaveBeenCalledTimes(1);
+});
+
 describe('edit mode', async () => {
   it('should provide a link to view mode', () => {
     props.match.params.viewMode = 'edit';
