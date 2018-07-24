@@ -7,9 +7,6 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.util.ExecutedFlowNodeFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.result.NumberReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -18,7 +15,6 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.DateUtilHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -27,15 +23,11 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_NONE_TYPE;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_AVERAGE_OPERATION;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_DURATION_PROPERTY;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_PROCESS_INSTANCE_ENTITY;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.*;
 import static org.camunda.optimize.test.util.ReportDataHelper.createAvgPiDurationHeatMapGroupByNone;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -223,76 +215,6 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
   }
 
   @Test
-  public void dateFilterInReport() throws Exception {
-    // given
-    OffsetDateTime startDate = OffsetDateTime.now();
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
-    OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
-
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    // when
-    ReportDataDto reportData = createAvgPiDurationHeatMapGroupByNone(
-        processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion());
-    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(null, past.minusSeconds(1L)));
-    NumberReportResultDto result = evaluateReport(reportData);
-
-    // then
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult(), is(0L));
-
-    // when
-    reportData = createAvgPiDurationHeatMapGroupByNone(
-        processInstanceDto.getProcessDefinitionKey(),processInstanceDto.getProcessDefinitionVersion());
-    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(past, null));
-    result = evaluateReport(reportData);
-
-    // then
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult(), is(1000L));
-  }
-
-  @Test
-  public void variableFilterInReport() throws Exception {
-    // given
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("var", true);
-    OffsetDateTime startDate = OffsetDateTime.now();
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcessWithVariables(variables);
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
-    String processDefinitionId = processInstanceDto.getDefinitionId();
-    engineRule.startProcessInstance(processDefinitionId);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    // when
-    ReportDataDto reportData = createAvgPiDurationHeatMapGroupByNone(
-        processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
-    );
-    reportData.setFilter(createVariableFilter());
-    NumberReportResultDto result = evaluateReport(reportData);
-
-    // then
-    assertThat(result.getResult(), is(1000L));
-  }
-
-  private List<FilterDto> createVariableFilter() {
-    VariableFilterDataDto data = new VariableFilterDataDto();
-    data.setName("var");
-    data.setType("boolean");
-    data.setOperator("=");
-    data.setValues(Collections.singletonList("true"));
-
-    VariableFilterDto variableFilterDto = new VariableFilterDto();
-    variableFilterDto.setData(data);
-    return Collections.singletonList(variableFilterDto);
-  }
-
-  @Test
   public void flowNodeFilterInReport() throws Exception {
     // given
     Map<String, Object> variables = new HashMap<>();
@@ -359,22 +281,6 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
       .endEvent()
       .done();
     return engineRule.deployAndStartProcess(processModel);
-  }
-
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcessWithVariables(Map<String, Object> variables) {
-    return deployAndStartSimpleServiceTaskProcessWithVariables(TEST_ACTIVITY, variables);
-  }
-
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcessWithVariables(String activityId,
-                                                                                       Map<String, Object> variables) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-      .startEvent()
-      .serviceTask(activityId)
-      .camundaExpression("${true}")
-      .endEvent()
-      .done();
-    return engineRule.deployAndStartProcessWithVariables(processModel, variables);
   }
 
   private ProcessDefinitionEngineDto deploySimpleGatewayProcessDefinition() throws Exception {

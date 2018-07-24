@@ -16,10 +16,9 @@
       "data": {
         "name": "approved",
         "type": "Boolean",
-        "operator": "=",
-        "values": [
-          true
-        ]
+        "data": {
+          "value": true
+        }
       }
     }
   ]

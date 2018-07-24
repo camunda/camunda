@@ -41,7 +41,6 @@ export default class DateInput extends React.Component {
         name: variable.name,
         type: variable.type,
         data: {
-          type: 'fixed',
           start: filter.startDate.startOf('day').format('YYYY-MM-DDTHH:mm:ss'),
           end: filter.endDate.endOf('day').format('YYYY-MM-DDTHH:mm:ss')
         }

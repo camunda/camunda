@@ -6,11 +6,6 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.util.ExecutedFlowNodeFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.group.StartDateGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -36,24 +31,11 @@ import java.time.DayOfWeek;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.DATE_UNIT_DAY;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.DATE_UNIT_HOUR;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.DATE_UNIT_MONTH;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.DATE_UNIT_WEEK;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.DATE_UNIT_YEAR;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_START_DATE_TYPE;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_AVERAGE_OPERATION;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_DURATION_PROPERTY;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_PROCESS_INSTANCE_ENTITY;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.*;
 import static org.camunda.optimize.test.util.ReportDataHelper.createAvgPIDurationGroupByStartDateReport;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -63,7 +45,6 @@ import static org.hamcrest.core.IsNull.notNullValue;
 public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
 
   private static final String PROCESS_DEFINITION_KEY = "123";
-  private static final String TEST_ACTIVITY = "testActivity";
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
@@ -485,7 +466,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
   }
 
   @Test
-  public void dateFilterInReport() throws Exception {
+  public void filterInReport() throws Exception {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -509,71 +490,6 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
       processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion(), DATE_UNIT_DAY);
     reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(past, null));
     result = evaluateReport(reportData);
-
-    // then
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
-  }
-
-  @Test
-  public void variableFilterInReport() throws Exception {
-    // given
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("var", true);
-    OffsetDateTime startDate = OffsetDateTime.now();
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcessWithVariables(variables);
-    adjustProcessInstanceDates(processInstanceDto.getId(), startDate, 0L, 1L);
-    String processDefinitionId = processInstanceDto.getDefinitionId();
-    engineRule.startProcessInstance(processDefinitionId);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    // when
-    ReportDataDto reportData = createAvgPIDurationGroupByStartDateReport(
-        processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion(), DATE_UNIT_DAY);
-    reportData.setFilter(createVariableFilter());
-    MapReportResultDto result = evaluateReport(reportData);
-
-    // then
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
-  }
-
-  private List<FilterDto> createVariableFilter() {
-    VariableFilterDataDto data = new VariableFilterDataDto();
-    data.setName("var");
-    data.setType("boolean");
-    data.setOperator("=");
-    data.setValues(Collections.singletonList("true"));
-
-    VariableFilterDto variableFilterDto = new VariableFilterDto();
-    variableFilterDto.setData(data);
-    return Collections.singletonList(variableFilterDto);
-  }
-
-  @Test
-  public void flowNodeFilterInReport() throws Exception {
-    // given
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("goToTask1", true);
-    ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId(), variables);
-    processInstanceDto.setProcessDefinitionKey(processDefinition.getKey());
-    processInstanceDto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
-    adjustProcessInstanceDates(processInstanceDto.getId(), OffsetDateTime.now(), 0L, 1L);
-    variables.put("goToTask1", false);
-    engineRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    // when
-    ReportDataDto reportData = createAvgPIDurationGroupByStartDateReport(
-        processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion(), DATE_UNIT_DAY);
-    List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
-          .id("task1")
-          .build();
-    reportData.getFilter().addAll(flowNodeFilter);
-    MapReportResultDto result = evaluateReport(reportData);
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
@@ -651,40 +567,6 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
     return engineRule.deployProcessAndGetProcessDefinition(processModel);
   }
 
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcessWithVariables(Map<String, Object> variables) {
-    return deployAndStartSimpleServiceTaskProcessWithVariables(TEST_ACTIVITY, variables);
-  }
-
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcessWithVariables(String activityId,
-                                                                                       Map<String, Object> variables) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-      .startEvent()
-      .serviceTask(activityId)
-      .camundaExpression("${true}")
-      .endEvent()
-      .done();
-    return engineRule.deployAndStartProcessWithVariables(processModel, variables);
-  }
-
-  private ProcessDefinitionEngineDto deploySimpleGatewayProcessDefinition() throws Exception {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
-      .startEvent("startEvent")
-      .exclusiveGateway("splittingGateway")
-        .name("Should we go to task 1?")
-        .condition("yes", "${goToTask1}")
-        .serviceTask("task1")
-          .camundaExpression("${true}")
-      .exclusiveGateway("mergeGateway")
-        .endEvent("endEvent")
-      .moveToNode("splittingGateway")
-        .condition("no", "${!goToTask1}")
-        .serviceTask("task2")
-          .camundaExpression("${true}")
-        .connectTo("mergeGateway")
-      .done();
-    return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
-  }
 
   private String createNewReport() {
     Response response =

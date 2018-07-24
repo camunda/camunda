@@ -3,14 +3,8 @@ package org.camunda.optimize.service.es.report.count;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.builder.AbstractServiceTaskBuilder;
-import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.util.ExecutedFlowNodeFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -27,18 +21,12 @@ import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_COUNT_OPERATION;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FLOW_NODE_ENTITY;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FREQUENCY_PROPERTY;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.*;
 import static org.camunda.optimize.test.util.ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
 
@@ -365,73 +353,6 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
   }
 
   @Test
-  public void variableFilterInReport() {
-    // given
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("var", true);
-    ProcessInstanceEngineDto processInstance = deployAndStartSimpleServiceTaskProcessWithVariables(variables);
-    String processDefinitionId = processInstance.getDefinitionId();
-    engineRule.startProcessInstance(processDefinitionId);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    // when
-    ReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
-        processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion()
-    );
-    reportData.setFilter(createVariableFilter());
-    MapReportResultDto result = evaluateReport(reportData);
-
-    // then
-    assertThat(result.getResult(), is(notNullValue()));
-    Map<String, Long> flowNodeIdToExecutionFrequency = result.getResult();
-    assertThat(flowNodeIdToExecutionFrequency.size(), is(3));
-    assertThat(flowNodeIdToExecutionFrequency.get(TEST_ACTIVITY ), is(1L));
-  }
-
-  private List<FilterDto> createVariableFilter() {
-    VariableFilterDataDto data = new VariableFilterDataDto();
-    data.setName("var");
-    data.setType("boolean");
-    data.setOperator("=");
-    data.setValues(Collections.singletonList("true"));
-
-    VariableFilterDto variableFilterDto = new VariableFilterDto();
-    variableFilterDto.setData(data);
-    return Collections.singletonList(variableFilterDto);
-  }
-
-  @Test
-  public void flowNodeFilterInReport() throws Exception {
-    // given
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("goToTask1", true);
-    ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
-    engineRule.startProcessInstance(processDefinition.getId(), variables);
-    variables.put("goToTask1", false);
-    engineRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    // when
-    ReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
-        processDefinition.getKey(), String.valueOf(processDefinition.getVersion())
-    );
-    List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
-          .id("task1")
-          .build();
-    reportData.getFilter().addAll(flowNodeFilter);
-    MapReportResultDto result = evaluateReport(reportData);
-
-    // then
-    assertThat(result.getResult(), is(notNullValue()));
-    Map<String, Long> flowNodeIdToExecutionFrequency = result.getResult();
-    assertThat(flowNodeIdToExecutionFrequency.size(), is(5));
-    assertThat(flowNodeIdToExecutionFrequency.get("task1" ), is(1L));
-    assertThat(flowNodeIdToExecutionFrequency.get("task2" ), is(nullValue()));
-  }
-
-  @Test
   public void optimizeExceptionOnViewEntityIsNull() {
     // given
     ReportDataDto dataDto = createCountFlowNodeFrequencyGroupByFlowNode("123", "1");
@@ -498,40 +419,6 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     return engineRule.deployAndStartProcess(processModel);
   }
 
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcessWithVariables(Map<String, Object> variables) {
-    return deployAndStartSimpleServiceTaskProcessWithVariables(TEST_ACTIVITY, variables);
-  }
-
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcessWithVariables(String activityId,
-                                                                                       Map<String, Object> variables) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-      .startEvent()
-        .serviceTask(activityId)
-        .camundaExpression("${true}")
-      .endEvent()
-      .done();
-    return engineRule.deployAndStartProcessWithVariables(processModel, variables);
-  }
-
-  private ProcessDefinitionEngineDto deploySimpleGatewayProcessDefinition() throws Exception {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
-      .startEvent("startEvent")
-      .exclusiveGateway("splittingGateway")
-        .name("Should we go to task 1?")
-        .condition("yes", "${goToTask1}")
-        .serviceTask("task1")
-          .camundaExpression("${true}")
-      .exclusiveGateway("mergeGateway")
-        .endEvent("endEvent")
-      .moveToNode("splittingGateway")
-        .condition("no", "${!goToTask1}")
-        .serviceTask("task2")
-          .camundaExpression("${true}")
-        .connectTo("mergeGateway")
-      .done();
-    return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
-  }
 
   private MapReportResultDto evaluateReport(ReportDataDto reportData) {
     Response response = evaluateReportAndReturnResponse(reportData);

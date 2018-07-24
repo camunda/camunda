@@ -5,7 +5,7 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ViewDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.*;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.ExecutedFlowNodeFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.data.variable.VariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.startDate.StartDateFilterDataDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 
@@ -69,10 +69,9 @@ public class ValidationHelper {
         } else if (filterDto instanceof VariableFilterDto) {
           VariableFilterDto variableFilterDto = (VariableFilterDto) filterDto;
           VariableFilterDataDto variableFilterData = variableFilterDto.getData();
-          ensureNotEmpty("operator", variableFilterData.getOperator());
+          ensureNotEmpty("data", variableFilterData.getData());
           ensureNotEmpty("name", variableFilterData.getName());
           ensureNotEmpty("type", variableFilterData.getType());
-          ensureNotEmpty("value", variableFilterData.getValues());
         } else if (filterDto instanceof ExecutedFlowNodeFilterDto) {
           ExecutedFlowNodeFilterDto executedFlowNodeFilterDto = (ExecutedFlowNodeFilterDto) filterDto;
           ExecutedFlowNodeFilterDataDto flowNodeFilterData = executedFlowNodeFilterDto.getData();
@@ -93,13 +92,6 @@ public class ValidationHelper {
   public static void ensureNotNull(String fieldName, Object object) {
     if (object == null) {
       throw new OptimizeValidationException(fieldName + " is not allowed to be null");
-    }
-  }
-
-  public static void ensureIsInstanceOf(String fieldName, Object object, Class clazz) {
-    ensureNotNull(fieldName, object);
-    if (clazz.isInstance(object)) {
-      throw new OptimizeValidationException(fieldName + " should be an instance of " + clazz.getSimpleName());
     }
   }
 

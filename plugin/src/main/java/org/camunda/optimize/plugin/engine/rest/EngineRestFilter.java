@@ -1,9 +1,8 @@
 package org.camunda.optimize.plugin.engine.rest;
 
-import java.io.IOException;
-
 import javax.annotation.Resource;
 import javax.ws.rs.client.ClientRequestContext;
+import java.io.IOException;
 
 @Resource
 public interface EngineRestFilter {

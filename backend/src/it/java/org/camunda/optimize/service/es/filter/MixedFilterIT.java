@@ -7,7 +7,6 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.util.ExecutedFlowNodeFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -15,6 +14,7 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.DateUtilHelper;
+import org.camunda.optimize.test.util.VariableFilterUtilHelper;
 import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,13 +26,11 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.IN;
-import static org.camunda.optimize.service.util.VariableHelper.STRING_TYPE;
 import static org.camunda.optimize.test.util.ReportDataHelper.createReportDataViewRawAsTable;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -103,7 +101,7 @@ public class MixedFilterIT {
     // when
     List<FilterDto> filterList = new ArrayList<>();
 
-    VariableFilterDto filter = createVariableFilter(IN, "var", STRING_TYPE, "value");
+    VariableFilterDto filter = VariableFilterUtilHelper.createStringVariableFilter("var", IN, "value");
     filterList.add(filter);
 
     List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
@@ -118,17 +116,6 @@ public class MixedFilterIT {
     assertThat(rawDataReportResultDto.getResult().size(), is(1));
   }
 
-  private VariableFilterDto createVariableFilter(String operator, String variableName, String variableType, String variableValue) {
-    VariableFilterDataDto data = new VariableFilterDataDto();
-    data.setName(variableName);
-    data.setType(variableType);
-    data.setOperator(operator);
-    data.setValues(Collections.singletonList(variableValue));
-    VariableFilterDto variableFilterDto = new VariableFilterDto();
-    variableFilterDto.setData(data);
-
-    return variableFilterDto;
-  }
 
   private ProcessDefinitionEngineDto deploySimpleProcessDefinition() throws IOException {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()

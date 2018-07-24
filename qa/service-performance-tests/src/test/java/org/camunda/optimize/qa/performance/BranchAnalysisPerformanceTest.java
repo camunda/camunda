@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.data.variable.StringVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.util.ExecutedFlowNodeFilterBuilder;
 import org.camunda.optimize.qa.performance.framework.PerfTest;
 import org.camunda.optimize.qa.performance.framework.PerfTestResult;
@@ -56,11 +56,8 @@ public class BranchAnalysisPerformanceTest extends OptimizePerformanceTestCase {
   @Test
   public void getBranchAnalysisWithVariableFilter() {
     // given
-    VariableFilterDataDto data = new VariableFilterDataDto();
+    StringVariableFilterDataDto data = new StringVariableFilterDataDto(IN, Collections.singletonList("aStringValue"));
     data.setName("var");
-    data.setType("string");
-    data.setOperator(IN);
-    data.setValues(Collections.singletonList("aStringValue"));
 
     VariableFilterDto variableFilterDto = new VariableFilterDto();
     variableFilterDto.setData(data);

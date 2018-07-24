@@ -9,7 +9,7 @@ import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.util.ExecutedFlowNodeFilterBuilder;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -42,7 +42,7 @@ import static org.junit.Assert.assertThat;
 
 public class BranchAnalysisQueryIT {
   public static final String PROCESS_DEFINITION_KEY = "aProcessDefinitionKey";
-  public static final String PROCESS_DEFINITION_VERSION = "1";
+  private static final String PROCESS_DEFINITION_VERSION = "1";
   private Logger logger = LoggerFactory.getLogger(BranchAnalysisQueryIT.class);
   private static final String GATEWAY_ACTIVITY = "gw_1";
 
@@ -504,11 +504,8 @@ public class BranchAnalysisQueryIT {
   }
 
   private List<FilterDto> createVariableFilter() {
-    VariableFilterDataDto data = new VariableFilterDataDto();
+    BooleanVariableFilterDataDto data = new BooleanVariableFilterDataDto("true");
     data.setName("goToTask1");
-    data.setType("boolean");
-    data.setOperator("=");
-    data.setValues(Collections.singletonList("true"));
 
     VariableFilterDto variableFilterDto = new VariableFilterDto();
     variableFilterDto.setData(data);

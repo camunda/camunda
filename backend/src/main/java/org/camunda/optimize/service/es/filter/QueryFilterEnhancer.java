@@ -5,7 +5,7 @@ import org.camunda.optimize.dto.optimize.query.report.filter.data.CompletedInsta
 import org.camunda.optimize.dto.optimize.query.report.filter.data.DurationFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.ExecutedFlowNodeFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.RunningInstancesOnlyFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.data.variable.VariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.startDate.StartDateFilterDataDto;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.beans.factory.annotation.Autowired;

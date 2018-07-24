@@ -7,9 +7,6 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.util.ExecutedFlowNodeFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.group.StartDateGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
@@ -19,7 +16,6 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.DateUtilHelper;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -36,24 +32,11 @@ import java.time.DayOfWeek;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.DATE_UNIT_DAY;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.DATE_UNIT_HOUR;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.DATE_UNIT_MONTH;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.DATE_UNIT_WEEK;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.DATE_UNIT_YEAR;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_START_DATE_TYPE;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_COUNT_OPERATION;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FREQUENCY_PROPERTY;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_PROCESS_INSTANCE_ENTITY;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.*;
 import static org.camunda.optimize.test.util.ReportDataHelper.createPICountFrequencyGroupByStartDate;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -67,7 +50,6 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
   public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule();
 
-  private static final String TEST_ACTIVITY = "testActivity";
 
   @Rule
   public RuleChain chain = RuleChain
@@ -489,71 +471,6 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
   }
 
   @Test
-  public void dateFilterInReport() throws Exception {
-    // given
-    ProcessInstanceEngineDto processInstance = deployAndStartSimpleServiceTaskProcess();
-    OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    // when
-    ReportDataDto reportData = createPICountFrequencyGroupByStartDate(
-        processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion(), DATE_UNIT_DAY
-    );
-    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(null, past.minusSeconds(1L)));
-    MapReportResultDto result = evaluateReport(reportData);
-
-    // then
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(0));
-
-    // when
-    reportData = createPICountFrequencyGroupByStartDate(
-        processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion(), DATE_UNIT_DAY);
-    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(past, null));
-    result = evaluateReport(reportData);
-
-    // then
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
-  }
-
-  @Test
-  public void variableFilterInReport() {
-    // given
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("var", true);
-    ProcessInstanceEngineDto processInstance = deployAndStartSimpleServiceTaskProcessWithVariables(variables);
-    String processDefinitionId = processInstance.getDefinitionId();
-    engineRule.startProcessInstance(processDefinitionId);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    // when
-    ReportDataDto reportData = createPICountFrequencyGroupByStartDate(
-        processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion(), DATE_UNIT_DAY
-    );
-    reportData.setFilter(createVariableFilter());
-    MapReportResultDto result = evaluateReport(reportData);
-
-    // then
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
-  }
-
-  private List<FilterDto> createVariableFilter() {
-    VariableFilterDataDto data = new VariableFilterDataDto();
-    data.setName("var");
-    data.setType("boolean");
-    data.setOperator("=");
-    data.setValues(Collections.singletonList("true"));
-
-    VariableFilterDto variableFilterDto = new VariableFilterDto();
-    variableFilterDto.setData(data);
-    return Collections.singletonList(variableFilterDto);
-  }
-
-  @Test
   public void flowNodeFilterInReport() throws Exception {
     // given
     Map<String, Object> variables = new HashMap<>();
@@ -633,22 +550,6 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       .endEvent()
       .done();
     return engineRule.deployProcessAndGetProcessDefinition(processModel);
-  }
-
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcessWithVariables(Map<String, Object> variables) {
-    return deployAndStartSimpleServiceTaskProcessWithVariables(TEST_ACTIVITY, variables);
-  }
-
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcessWithVariables(String activityId,
-                                                                                       Map<String, Object> variables) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-      .startEvent()
-      .serviceTask(activityId)
-      .camundaExpression("${true}")
-      .endEvent()
-      .done();
-    return engineRule.deployAndStartProcessWithVariables(processModel, variables);
   }
 
   private ProcessDefinitionEngineDto deploySimpleGatewayProcessDefinition() throws Exception {
