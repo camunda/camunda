@@ -50,12 +50,10 @@ it('should compose a key for a given group object', () => {
 });
 
 it('should return the right option if only one is allowed', () => {
-  expect(reportLabelMap.getTheOnlyOption('groupBy', 'rawData_ignored_ignored', '')).toEqual(
-    'none_null'
-  );
+  expect(reportLabelMap.getTheOnlyOption('groupBy', 'rawData_null_null', '')).toEqual('none_null');
 
   expect(
-    reportLabelMap.getTheOnlyOption('visualization', 'rawData_ignored_ignored', 'none_null')
+    reportLabelMap.getTheOnlyOption('visualization', 'rawData_null_null', 'none_null')
   ).toEqual('table');
 
   expect(reportLabelMap.getTheOnlyOption('groupBy', 'avg_flowNode_duration', '')).toEqual(
@@ -64,9 +62,9 @@ it('should return the right option if only one is allowed', () => {
 });
 
 it('should return the right new combination given the old one', () => {
-  expect(reportLabelMap.getTheRightCombination('rawData_ignored_ignored', '', '')).toEqual({
+  expect(reportLabelMap.getTheRightCombination('rawData_null_null', '', '')).toEqual({
     groupBy: {type: 'none', value: null},
-    view: {entity: 'ignored', operation: 'rawData', property: 'ignored'},
+    view: {entity: 'null', operation: 'rawData', property: 'null'},
     visualization: 'table'
   });
 

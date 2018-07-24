@@ -25,7 +25,6 @@ const exampleFilter = {
     name: 'aVariableName',
     type: 'Date',
     data: {
-      type: 'fixed',
       start: '2018-07-09T00:00:00',
       end: '2018-07-12T23:59:59'
     }

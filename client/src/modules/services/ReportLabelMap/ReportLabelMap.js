@@ -1,6 +1,6 @@
 const options = {
   view: [
-    {key: 'rawData_ignored_ignored', label: 'Raw Data'},
+    {key: 'rawData_null_null', label: 'Raw Data'},
     {key: 'count_processInstance_frequency', label: 'Count Process Instance Frequency'},
     {key: 'count_flowNode_frequency', label: 'Count Flow Node Frequency'},
     {key: 'avg_processInstance_duration', label: 'Average Process Instance Duration'},
@@ -29,7 +29,7 @@ const options = {
 };
 
 const allowedOptionsMatrix = {
-  rawData_ignored_ignored: {
+  rawData_null_null: {
     none: ['table']
   },
   count_processInstance_frequency: {
