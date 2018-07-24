@@ -19,7 +19,7 @@ const selection = {
 const filter = {defaultFilterSelection};
 const total = 27;
 
-const successResponse = [{id: 1}];
+const successResponse = {totalCount: 123, workflowInstances: [{id: 1}]};
 api.fetchWorkflowInstances = mockResolvedAsyncFn(successResponse);
 
 describe('ListView', () => {
@@ -166,12 +166,14 @@ describe('ListView', () => {
 
       // then
       expect(api.fetchWorkflowInstances).toBeCalledWith({
-        ...parseFilterForRequest(node.prop('filter')),
+        queries: [{...parseFilterForRequest(node.prop('filter'))}],
         sorting: node.state('sorting'),
-        firstResult: node.state('firstElement'),
+        firstResult: 0,
         maxResults: 50
       });
-      expect(node.state('instances')).toEqual(successResponse);
+      expect(node.state('instances')).toEqual(
+        successResponse.workflowInstances
+      );
     });
   });
 

@@ -10,6 +10,9 @@ import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.types.WorkflowInstanceType;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.SortingDto;
+import org.camunda.operate.rest.dto.WorkflowInstanceDto;
+import org.camunda.operate.rest.dto.WorkflowInstanceRequestDto;
+import org.camunda.operate.rest.dto.WorkflowInstanceResponseDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
 import org.camunda.operate.rest.exception.NotFoundException;
 import org.elasticsearch.action.get.GetResponse;
@@ -77,28 +80,14 @@ public class WorkflowInstanceReader {
   private DateTimeFormatter dateTimeFormatter;
 
   /**
-   * Counts workflow instances filtered by different criteria.
-   * @param workflowInstanceQuery
-   * @return
-   */
-  public long countWorkflowInstances(WorkflowInstanceQueryDto workflowInstanceQuery) {
-    SearchResponse response = createSearchRequest(workflowInstanceQuery)
-      .setFetchSource(false)
-      .setSize(0)
-      .get();
-
-    return response.getHits().getTotalHits();
-  }
-
-  /**
    * Queries workflow instances by different criteria (with pagination).
-   * @param workflowInstanceQuery
+   * @param workflowInstanceRequest
    * @param firstResult
    * @param maxResults
    * @return
    */
-  public List<WorkflowInstanceEntity> queryWorkflowInstances(WorkflowInstanceQueryDto workflowInstanceQuery, Integer firstResult, Integer maxResults) {
-    SearchRequestBuilder searchRequest = createSearchRequest(workflowInstanceQuery)
+  public WorkflowInstanceResponseDto queryWorkflowInstances(WorkflowInstanceRequestDto workflowInstanceRequest, Integer firstResult, Integer maxResults) {
+    SearchRequestBuilder searchRequest = createSearchRequest(workflowInstanceRequest)
       .setFetchSource(null, WorkflowInstanceType.ACTIVITIES);
 
     if (firstResult != null && maxResults != null) {
@@ -107,18 +96,19 @@ public class WorkflowInstanceReader {
     else {
       return scroll(searchRequest);
     }
+
   }
 
-  protected SearchRequestBuilder createSearchRequest(WorkflowInstanceQueryDto queryDto) {
+  protected SearchRequestBuilder createSearchRequest(WorkflowInstanceRequestDto request) {
 
-    final QueryBuilder query = createQuery(queryDto);
+    final QueryBuilder query = createRequestQuery(request);
 
     ConstantScoreQueryBuilder constantScoreQuery = QueryBuilders.constantScoreQuery(query);
 
     logger.debug("Workflow instance search request: \n{}", constantScoreQuery.toString());
 
     final SearchRequestBuilder searchRequestBuilder = esClient.prepareSearch(workflowInstanceType.getType());
-    applySorting(searchRequestBuilder, queryDto.getSorting());
+    applySorting(searchRequestBuilder, request.getSorting());
     return searchRequestBuilder.setQuery(constantScoreQuery);
   }
 
@@ -131,42 +121,65 @@ public class WorkflowInstanceReader {
     }
   }
 
-  private QueryBuilder createQuery(WorkflowInstanceQueryDto queryDto) {
-    final QueryBuilder runningFinishedQuery = createRunningFinishedQuery(queryDto);
+  private QueryBuilder createRequestQuery(WorkflowInstanceRequestDto request) {
+
+    List<QueryBuilder> queries = new ArrayList<>();
+
+    request.getQueries().stream()
+      .forEach(query -> queries.add(createQueryFragment(query)));
+
+    final QueryBuilder queryBuilder = joinWithOr(queries.toArray(new QueryBuilder[request.getQueries().size()]));
+
+    if (queryBuilder == null) {
+      return createMatchNoneQuery();
+    }
+
+    return queryBuilder;
+  }
+
+  private QueryBuilder createQueryFragment(WorkflowInstanceQueryDto query) {
+    final QueryBuilder runningFinishedQuery = createRunningFinishedQuery(query);
 
     QueryBuilder idsQuery = null;
-    if (queryDto.getIds() != null && !queryDto.getIds().isEmpty()) {
-      idsQuery = createIdsQuery(queryDto.getIds());
+    if (query.getIds() != null && !query.getIds().isEmpty()) {
+      idsQuery = createIdsQuery(query.getIds());
     }
 
     QueryBuilder errorMessageQuery = null;
-    if (queryDto.getErrorMessage() != null) {
-      errorMessageQuery = createErrorMessageQuery(queryDto.getErrorMessage());
+    if (query.getErrorMessage() != null) {
+      errorMessageQuery = createErrorMessageQuery(query.getErrorMessage());
     }
 
     QueryBuilder activityIdQuery = null;
-    if (queryDto.getActivityId() != null) {
-      activityIdQuery = createActivityIdQuery(queryDto.getActivityId());
+    if (query.getActivityId() != null) {
+      activityIdQuery = createActivityIdQuery(query.getActivityId());
     }
 
     QueryBuilder createDateQuery = null;
-    if (queryDto.getStartDateAfter() != null || queryDto.getStartDateBefore() != null) {
-      createDateQuery = createStartDateQuery(queryDto);
+    if (query.getStartDateAfter() != null || query.getStartDateBefore() != null) {
+      createDateQuery = createStartDateQuery(query);
     }
 
     QueryBuilder endDateQuery = null;
-    if (queryDto.getEndDateAfter() != null || queryDto.getEndDateBefore() != null) {
-      endDateQuery = createEndDateQuery(queryDto);
+    if (query.getEndDateAfter() != null || query.getEndDateBefore() != null) {
+      endDateQuery = createEndDateQuery(query);
     }
 
     QueryBuilder workflowIdQuery = null;
-    if (queryDto.getWorkflowIds() != null && !queryDto.getWorkflowIds().isEmpty()) {
-      workflowIdQuery = createWorkflowIdsQuery(queryDto.getWorkflowIds());
+    if (query.getWorkflowIds() != null && !query.getWorkflowIds().isEmpty()) {
+      workflowIdQuery = createWorkflowIdsQuery(query.getWorkflowIds());
     }
 
-    QueryBuilder query = joinWithAnd(runningFinishedQuery, idsQuery, errorMessageQuery, activityIdQuery, createDateQuery, endDateQuery, workflowIdQuery);
+    QueryBuilder excludeIdsQuery = null;
+    if (query.getExcludeIds() != null && !query.getExcludeIds().isEmpty()) {
+      excludeIdsQuery = createExcludeIdsQuery(query.getExcludeIds());
+    }
 
-    return query;
+    return joinWithAnd(runningFinishedQuery, idsQuery, errorMessageQuery, activityIdQuery, createDateQuery, endDateQuery, workflowIdQuery, excludeIdsQuery);
+  }
+
+  private QueryBuilder createExcludeIdsQuery(List<String> excludeIds) {
+    return boolQuery().mustNot(termsQuery(WorkflowInstanceType.ID, excludeIds));
   }
 
   private QueryBuilder createWorkflowIdsQuery(List<String> workflowId) {
@@ -214,16 +227,20 @@ public class WorkflowInstanceReader {
     return termsQuery(WorkflowInstanceType.ID, ids);
   }
 
-  protected List<WorkflowInstanceEntity> paginate(SearchRequestBuilder builder, int firstResult, int maxResults) {
+  protected WorkflowInstanceResponseDto paginate(SearchRequestBuilder builder, int firstResult, int maxResults) {
     SearchResponse response = builder
       .setFrom(firstResult)
       .setSize(maxResults)
       .get();
 
-    return mapSearchHits(response.getHits().getHits());
+    final List<WorkflowInstanceEntity> workflowInstanceEntities = mapSearchHits(response.getHits().getHits());
+    WorkflowInstanceResponseDto responseDto = new WorkflowInstanceResponseDto();
+    responseDto.setWorkflowInstances(WorkflowInstanceDto.createFrom(workflowInstanceEntities));
+    responseDto.setTotalCount(response.getHits().getTotalHits());
+    return responseDto;
   }
 
-  protected List<WorkflowInstanceEntity> scroll(SearchRequestBuilder builder) {
+  protected WorkflowInstanceResponseDto scroll(SearchRequestBuilder builder) {
     TimeValue keepAlive = new TimeValue(60000);
 
     SearchResponse response = builder
@@ -246,7 +263,10 @@ public class WorkflowInstanceReader {
 
     } while (response.getHits().getHits().length != 0);
 
-    return result;
+    WorkflowInstanceResponseDto responseDto = new WorkflowInstanceResponseDto();
+    responseDto.setWorkflowInstances(WorkflowInstanceDto.createFrom(result));
+    responseDto.setTotalCount(response.getHits().getTotalHits());
+    return responseDto;
   }
 
   protected List<WorkflowInstanceEntity> mapSearchHits(SearchHit[] searchHits) {

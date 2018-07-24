@@ -6,7 +6,7 @@ import {fetchWorkflowInstancesCount} from './instances';
 describe('dashboard api', () => {
   it('should call post with the right url', async () => {
     //given
-    const successResponse = {json: mockResolvedAsyncFn({count: '123'})};
+    const successResponse = {json: mockResolvedAsyncFn({totalCount: '123'})};
     wrappers.post = mockResolvedAsyncFn(successResponse);
 
     // when
@@ -14,7 +14,7 @@ describe('dashboard api', () => {
 
     // then
     expect(wrappers.post.mock.calls[0][0]).toBe(
-      '/api/workflow-instances/count'
+      '/api/workflow-instances?firstResult=0&maxResults=1'
     );
     expect(successResponse.json).toBeCalled();
     expect(response).toEqual('123');

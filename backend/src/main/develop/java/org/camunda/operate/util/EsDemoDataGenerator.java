@@ -15,13 +15,13 @@ import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.writer.ElasticsearchBulkProcessor;
 import org.camunda.operate.es.writer.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.rest.dto.WorkflowInstanceRequestDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.DependsOn;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 
@@ -43,7 +43,7 @@ public class EsDemoDataGenerator {
 
     Random random = new Random();
 
-    final long count = workflowInstanceReader.countWorkflowInstances(new WorkflowInstanceQueryDto());
+    final long count = workflowInstanceReader.queryWorkflowInstances(createGetAllWorkflowInstancesQuery(), 0, 1).getTotalCount();
     if (count == 0) {
 
       List<OperateEntity> workflowInstances = new ArrayList<>();
@@ -82,6 +82,19 @@ public class EsDemoDataGenerator {
 
     }
 
+  }
+
+  private WorkflowInstanceRequestDto createGetAllWorkflowInstancesQuery() {
+    WorkflowInstanceRequestDto query = new WorkflowInstanceRequestDto();
+    WorkflowInstanceQueryDto sf = new WorkflowInstanceQueryDto();
+    sf.setRunning(true);
+    sf.setActive(true);
+    sf.setIncidents(true);
+    sf.setFinished(true);
+    sf.setCompleted(true);
+    sf.setCanceled(true);
+    query.getQueries().add(sf);
+    return query;
   }
 
   private IncidentEntity createIncident(IncidentState state) {

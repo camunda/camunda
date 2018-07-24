@@ -1,26 +1,13 @@
 package org.camunda.operate.rest.dto;
 
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.List;
-import org.camunda.operate.rest.exception.InvalidRequestException;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
 @ApiModel("Workflow instance query")
 public class WorkflowInstanceQueryDto {
 
-  public static final String SORT_BY_ID = "id";
-  public static final String SORT_BY_START_DATE = "startDate";
-  public static final String SORT_BY_END_DATE = "endDate";
-
-  public static final List<String> VALID_SORT_BY_VALUES;
-  static {
-    VALID_SORT_BY_VALUES = new ArrayList<>();
-    VALID_SORT_BY_VALUES.add(SORT_BY_ID);
-    VALID_SORT_BY_VALUES.add(SORT_BY_START_DATE);
-    VALID_SORT_BY_VALUES.add(SORT_BY_END_DATE);
-  }
 
   private boolean running;
   private boolean active;
@@ -51,7 +38,7 @@ public class WorkflowInstanceQueryDto {
 
   private List<String> workflowIds;
 
-  private SortingDto sorting;
+  private List<String> excludeIds;
 
   public WorkflowInstanceQueryDto() {
   }
@@ -168,15 +155,12 @@ public class WorkflowInstanceQueryDto {
     this.workflowIds = workflowIds;
   }
 
-  public SortingDto getSorting() {
-    return sorting;
+  public List<String> getExcludeIds() {
+    return excludeIds;
   }
 
-  public void setSorting(SortingDto sorting) {
-    if (sorting != null && !VALID_SORT_BY_VALUES.contains(sorting.getSortBy())) {
-      throw new InvalidRequestException("SortBy parameter has invalid value: " + sorting.getSortBy());
-    }
-    this.sorting = sorting;
+  public void setExcludeIds(List<String> excludeIds) {
+    this.excludeIds = excludeIds;
   }
 
   @Override
@@ -216,7 +200,7 @@ public class WorkflowInstanceQueryDto {
       return false;
     if (workflowIds != null ? !workflowIds.equals(that.workflowIds) : that.workflowIds != null)
       return false;
-    return sorting != null ? sorting.equals(that.sorting) : that.sorting == null;
+    return excludeIds != null ? excludeIds.equals(that.excludeIds) : that.excludeIds == null;
   }
 
   @Override
@@ -235,7 +219,7 @@ public class WorkflowInstanceQueryDto {
     result = 31 * result + (endDateAfter != null ? endDateAfter.hashCode() : 0);
     result = 31 * result + (endDateBefore != null ? endDateBefore.hashCode() : 0);
     result = 31 * result + (workflowIds != null ? workflowIds.hashCode() : 0);
-    result = 31 * result + (sorting != null ? sorting.hashCode() : 0);
+    result = 31 * result + (excludeIds != null ? excludeIds.hashCode() : 0);
     return result;
   }
 }

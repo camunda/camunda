@@ -9,7 +9,6 @@ export async function fetchWorkflowInstance(id) {
 
 export async function fetchWorkflowInstances(options) {
   const {firstResult, maxResults, ...payload} = options;
-
   const url = `${URL}?firstResult=${firstResult}&maxResults=${maxResults}`;
   const response = await post(url, payload);
 
@@ -23,9 +22,12 @@ export async function fetchGroupedWorkflowInstances() {
 }
 
 export async function fetchWorkflowInstancesCount(payload) {
-  const response = await post(`${URL}/count`, payload);
+  const url = `${URL}?firstResult=${0}&maxResults=${1}`;
+  const response = await post(url, {
+    queries: [{...payload}]
+  });
   const resJson = await response.json();
-  return resJson.count;
+  return resJson.totalCount;
 }
 
 export async function fetchWorkflowInstanceBySelection(payload) {
