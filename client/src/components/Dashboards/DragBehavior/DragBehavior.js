@@ -127,14 +127,16 @@ export default class DragBehavior extends React.Component {
       return;
     }
 
+    const {tileDimensions, report, reports} = this.props;
+
     this.dragging = false;
 
     document.body.removeEventListener('mousemove', this.saveMouseAndUpdateCardPosition);
     this.scrollContainer.removeEventListener('scroll', this.updateCardPosition);
 
     const newPlacement = snapInPosition({
-      tileDimensions: this.props.tileDimensions,
-      report: this.props.report,
+      tileDimensions,
+      report,
       changes: {
         x: parseInt(this.reportCard.style.left, 10) - this.cardStartPosition.x,
         y: parseInt(this.reportCard.style.top, 10) - this.cardStartPosition.y
@@ -144,28 +146,23 @@ export default class DragBehavior extends React.Component {
     if (
       !collidesWithReport({
         placement: newPlacement,
-        reports: this.props.reports.filter(report => report !== this.props.report)
+        reports: reports.filter(report => report !== this.props.report)
       })
     ) {
-      applyPlacement({
-        placement: newPlacement,
-        tileDimensions: this.props.tileDimensions,
-        node: this.reportCard
-      });
+      applyPlacement({placement: newPlacement, tileDimensions, node: this.reportCard});
 
       this.props.updateReport({
-        report: this.props.report,
+        report,
         position: newPlacement.position
       });
     } else {
-      applyPlacement({
-        placement: {
-          position: this.props.report.position,
-          dimensions: this.props.report.dimensions
-        },
-        tileDimensions: this.props.tileDimensions,
-        node: this.reportCard
-      });
+      const placement = {
+        position: report.position,
+        dimensions: report.dimensions
+      };
+
+      applyPlacement({placement, tileDimensions, node: this.reportCard});
+      applyPlacement({placement, tileDimensions, node: this.dropShadow});
     }
 
     this.reportCard.classList.remove('DragBehavior--dragging');

@@ -125,6 +125,8 @@ export default class ResizeHandle extends React.Component {
       return;
     }
 
+    const {tileDimensions, report, reports} = this.props;
+
     this.dragging = false;
 
     document.body.removeEventListener('mousemove', this.saveMouseAndUpdateCardSize);
@@ -132,8 +134,8 @@ export default class ResizeHandle extends React.Component {
     this.scrollContainer.removeEventListener('scroll', this.updateCardSize);
 
     const newPlacement = snapInPosition({
-      tileDimensions: this.props.tileDimensions,
-      report: this.props.report,
+      tileDimensions,
+      report,
       changes: {
         width: parseInt(this.reportCard.style.width, 10) - this.cardStartSize.width,
         height: parseInt(this.reportCard.style.height, 10) - this.cardStartSize.height
@@ -143,28 +145,23 @@ export default class ResizeHandle extends React.Component {
     if (
       !collidesWithReport({
         placement: newPlacement,
-        reports: this.props.reports.filter(report => report !== this.props.report)
+        reports: reports.filter(report => report !== this.props.report)
       })
     ) {
-      applyPlacement({
-        placement: newPlacement,
-        tileDimensions: this.props.tileDimensions,
-        node: this.reportCard
-      });
+      applyPlacement({placement: newPlacement, tileDimensions, node: this.reportCard});
 
       this.props.updateReport({
-        report: this.props.report,
+        report,
         dimensions: newPlacement.dimensions
       });
     } else {
-      applyPlacement({
-        placement: {
-          position: this.props.report.position,
-          dimensions: this.props.report.dimensions
-        },
-        tileDimensions: this.props.tileDimensions,
-        node: this.reportCard
-      });
+      const placement = {
+        position: report.position,
+        dimensions: report.dimensions
+      };
+
+      applyPlacement({placement, tileDimensions, node: this.reportCard});
+      applyPlacement({placement, tileDimensions, node: this.dropShadow});
     }
 
     this.reportCard.classList.remove('ResizeHandle--dragging');

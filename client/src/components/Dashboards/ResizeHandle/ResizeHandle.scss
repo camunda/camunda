@@ -22,6 +22,7 @@
   position: absolute;
   transition: 0.2s;
   opacity: 0;
+  pointer-events: none;
 }
 
 .ResizeHandle__dropShadow--active {

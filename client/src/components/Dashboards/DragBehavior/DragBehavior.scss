@@ -16,6 +16,7 @@
   position: absolute;
   transition: 0.2s;
   opacity: 0;
+  pointer-events: none;
 }
 
 .DragBehavior__dropShadow--active {
