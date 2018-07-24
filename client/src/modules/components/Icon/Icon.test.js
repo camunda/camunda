@@ -5,7 +5,7 @@ import Icon from './Icon';
 
 jest.mock('./icons', () => {
   return {
-    plus: () => <svg />
+    plus: props => <svg {...props} />
   };
 });
 
@@ -35,4 +35,21 @@ it('should render an icon provided as child content', () => {
   const node = mount(<Icon>I am a custom Icon</Icon>);
 
   expect(node).toIncludeText('I am a custom Icon');
+});
+
+it('should be possible to provide a classname to the Icon', () => {
+  const node = mount(<Icon type="plus" className="customClassname" />);
+
+  expect(node.find('.customClassname')).toBePresent();
+});
+
+it('should be possible to provide a size to the Icon', () => {
+  const node = mount(<Icon type="plus" size="10px" />);
+
+  expect(node.find('svg')).toHaveProp('style', {
+    minWidth: '10px',
+    minHeight: '10px',
+    maxWidth: '10px',
+    maxHeight: '10px'
+  });
 });

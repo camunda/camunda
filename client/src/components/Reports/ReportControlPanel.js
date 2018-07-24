@@ -1,8 +1,8 @@
 import React from 'react';
-import {Select, Popover, ProcessDefinitionSelection, Button} from 'components';
+import {Popover, ProcessDefinitionSelection, Button, Dropdown, Input} from 'components';
 
 import {Filter} from './filter';
-import {reportLabelMap, extractProcessDefinitionName} from 'services';
+import {extractProcessDefinitionName, reportConfig} from 'services';
 
 import {TargetValueComparison} from './targetValue';
 
@@ -10,13 +10,18 @@ import {loadVariables} from './service';
 
 import './ReportControlPanel.css';
 
+const {view, groupBy, visualization, getLabelFor, isAllowed, getNext} = reportConfig;
+const groupByVariablePageSize = 5;
+
 export default class ReportControlPanel extends React.Component {
   constructor(props) {
     super(props);
 
     this.state = {
       processDefinitionName: this.props.processDefinitionKey,
-      variables: []
+      variables: [],
+      variableTypeaheadValue: '',
+      variableStartIdx: 0
     };
   }
 
@@ -42,51 +47,6 @@ export default class ReportControlPanel extends React.Component {
         variables: await loadVariables(processDefinitionKey, processDefinitionVersion)
       });
     }
-  };
-
-  changeView = evt => {
-    const viewKey = evt.target.value;
-    const {groupBy, visualization} = this.getCurrentProps();
-    const newCombination = reportLabelMap.getTheRightCombination(viewKey, groupBy, visualization);
-
-    this.props.onChange({
-      ...newCombination,
-      configuration: {
-        ...this.props.configuration,
-        targetValue: {active: false}
-      }
-    });
-  };
-  changeGroup = evt => {
-    const groupByKey = evt.target.value;
-    const {view, visualization} = this.getCurrentProps();
-    const newCombination = reportLabelMap.getTheRightCombination(view, groupByKey, visualization);
-
-    this.props.onChange({
-      ...newCombination,
-      configuration: {
-        ...this.props.configuration,
-        targetValue: {...this.props.configuration.targetValue, active: false}
-      }
-    });
-  };
-
-  changeVisualization = evt => {
-    this.props.onChange({
-      visualization: evt.target.value,
-      configuration: {
-        ...this.props.configuration,
-        targetValue: {active: false}
-      }
-    });
-  };
-
-  getCurrentProps = () => {
-    return {
-      view: reportLabelMap.objectToKey(this.props.view, 'view'),
-      groupBy: reportLabelMap.objectToKey(this.props.groupBy, 'groupBy'),
-      visualization: reportLabelMap.objectToKey(this.props.visualization, 'visualization')
-    };
   };
 
   definitionConfig = () => {
@@ -121,29 +81,6 @@ export default class ReportControlPanel extends React.Component {
     }
   };
 
-  isEmpty = prop => {
-    if (typeof prop === 'object') {
-      let result = false;
-      if (Object.keys(prop).length === 0) return true;
-      Object.values(prop).forEach(str => {
-        if (str !== null && this.isEmpty(str)) {
-          result = true;
-        }
-      });
-      return result;
-    } else if (typeof prop === 'string') {
-      return prop === '';
-    }
-  };
-
-  isViewSelected = () => {
-    return !this.isEmpty(this.props.view);
-  };
-
-  isGroupBySelected = () => {
-    return !this.isEmpty(this.props.groupBy);
-  };
-
   render() {
     return (
       <div className="ReportControlPanel">
@@ -159,7 +96,7 @@ export default class ReportControlPanel extends React.Component {
               <ProcessDefinitionSelection
                 {...this.definitionConfig()}
                 xml={this.props.configuration.xml}
-                onChange={this.props.onChange}
+                onChange={this.props.updateReport}
                 renderDiagram={true}
                 enableAllVersionSelection={true}
               />
@@ -169,52 +106,24 @@ export default class ReportControlPanel extends React.Component {
             <label htmlFor="ReportControlPanel__view" className="ReportControlPanel__label">
               View
             </label>
-            <Select
-              className="ReportControlPanel__select"
-              name="ReportControlPanel__view"
-              value={reportLabelMap.objectToKey(this.props.view, reportLabelMap.view)}
-              onChange={this.changeView}
-            >
-              {addSelectionOption()}
-              {this.renderOptions('view')}
-            </Select>
+            {this.renderDropdown('view', view)}
           </li>
           <li className="ReportControlPanel__item ReportControlPanel__item--select">
             <label htmlFor="ReportControlPanel__group-by" className="ReportControlPanel__label">
               Group by
             </label>
-            <Select
-              disabled={!this.isViewSelected()}
-              className="ReportControlPanel__select"
-              name="ReportControlPanel__group-by"
-              value={reportLabelMap.objectToKey(this.props.groupBy, reportLabelMap.groupBy)}
-              onChange={this.changeGroup}
-            >
-              {addSelectionOption()}
-              {this.isViewSelected() && this.renderOptions('groupBy')}
-            </Select>
+            {this.renderDropdown('groupBy', groupBy)}
           </li>
           <li className="ReportControlPanel__item ReportControlPanel__item--select">
             <label htmlFor="ReportControlPanel__visualize-as" className="ReportControlPanel__label">
               Visualize as
             </label>
-            <Select
-              disabled={!this.isGroupBySelected() || !this.isViewSelected()}
-              className="ReportControlPanel__select"
-              name="ReportControlPanel__visualize-as"
-              value={this.props.visualization}
-              onChange={this.changeVisualization}
-            >
-              {addSelectionOption()}
-              {this.isGroupBySelected() &&
-                this.isViewSelected() &&
-                this.renderOptions('visualization')}
-            </Select>
+            {this.renderDropdown('visualization', visualization)}
           </li>
           <li className="ReportControlPanel__item ReportControlPanel__item--filter">
             <Filter
               data={this.props.filter}
-              onChange={this.props.onChange}
+              onChange={this.props.updateReport}
               {...this.definitionConfig()}
               xml={this.props.configuration.xml}
             />
@@ -223,7 +132,7 @@ export default class ReportControlPanel extends React.Component {
             <TargetValueComparison
               reportResult={this.props.reportResult}
               configuration={this.props.configuration}
-              onChange={this.props.onChange}
+              onChange={this.props.updateReport}
             />
           </li>
           {this.props.visualization === 'heat' && (
@@ -242,7 +151,7 @@ export default class ReportControlPanel extends React.Component {
   }
 
   toggleAllTooltips = () => {
-    this.props.onChange({
+    this.props.updateReport({
       configuration: {
         ...this.props.configuration,
         alwaysShowTooltips: !this.props.configuration.alwaysShowTooltips
@@ -250,33 +159,215 @@ export default class ReportControlPanel extends React.Component {
     });
   };
 
-  renderOptions = type => {
-    const options = reportLabelMap.getOptions(type);
-    const {groupBy, view} = this.getCurrentProps();
-    const enabled = reportLabelMap.getEnabledOptions(type, view, groupBy);
+  renderDropdown = (type, config) => {
+    let disabled = false;
+    if (type === 'groupBy' && !this.props.view) {
+      disabled = true;
+    }
+    if (type === 'visualization' && (!this.props.view || !this.props.groupBy)) {
+      disabled = true;
+    }
+    return (
+      <Dropdown
+        label={getLabelFor(config, this.props[type]) || 'Please Select...'}
+        className="ReportControlPanel__dropdown"
+        disabled={disabled}
+      >
+        {Object.keys(config).map(key => {
+          const {label, data} = config[key];
 
+          const submenu = Object.keys(data).find(key => Array.isArray(data[key]));
+          if (submenu) {
+            return this.renderSubmenu(submenu, type, data, label, key);
+          } else {
+            return this.renderNormalOption(type, data, label, key);
+          }
+        })}
+      </Dropdown>
+    );
+  };
+
+  renderSubmenu = (submenu, type, data, label, key) => {
+    const disabled = type === 'groupBy' && !isAllowed(this.props.view, data);
+    const checked = isChecked(data, this.props[type]);
+    return (
+      <Dropdown.Submenu
+        label={label}
+        key={key}
+        disabled={disabled}
+        checked={checked}
+        onClick={() => this.setState({variableStartIdx: 0, variableTypeaheadValue: ''})}
+      >
+        {type === 'groupBy' && key === 'variable'
+          ? this.renderVariables()
+          : data[submenu].map((entry, idx) => {
+              const subData = {...data, [submenu]: entry.data};
+              const checked = isChecked(subData, this.props[type]);
+              return (
+                <Dropdown.Option
+                  key={idx}
+                  checked={checked}
+                  onClick={() => this.update(type, subData)}
+                >
+                  {entry.label}
+                </Dropdown.Option>
+              );
+            })}
+      </Dropdown.Submenu>
+    );
+  };
+
+  renderNormalOption = (type, data, label, key) => {
+    let disabled = false;
     if (type === 'groupBy') {
-      options.push(
-        ...this.state.variables.map(variable => {
-          return {
-            key: reportLabelMap.objectToKey({type: 'variable', value: variable}, type),
-            label: `Variable - ${variable.name}`
-          };
-        })
-      );
+      disabled = !isAllowed(this.props.view, data);
+    } else if (type === 'visualization') {
+      disabled = !isAllowed(this.props.view, this.props.groupBy, data);
+    }
+    const checked = isChecked(data, this.props[type]);
+    return (
+      <Dropdown.Option
+        key={key}
+        checked={checked}
+        onClick={() => this.update(type, data)}
+        disabled={disabled}
+      >
+        {label}
+      </Dropdown.Option>
+    );
+  };
+
+  renderVariables = () => {
+    const currentlySelected =
+      this.props.groupBy && this.props.groupBy.type === 'variable' && this.props.groupBy.value;
+    const filteredVars = this.state.variables.filter(
+      ({name, type}) =>
+        name.toLowerCase().includes(this.state.variableTypeaheadValue.toLowerCase()) &&
+        (!currentlySelected || name !== currentlySelected.name || type !== currentlySelected.type)
+    );
+    const remaining = Math.max(
+      filteredVars.length - this.state.variableStartIdx - groupByVariablePageSize,
+      0
+    );
+    return (
+      <div className="ReportControlPanel__variablesDropdown" onClick={this.catchClick}>
+        <div className="ReportControlPanel__variableInputContainer">
+          <Input
+            value={this.state.variableTypeaheadValue}
+            onKeyDown={evt => evt.stopPropagation()}
+            onChange={evt =>
+              this.setState({variableTypeaheadValue: evt.target.value, variableStartIdx: 0})
+            }
+          />
+        </div>
+        {currentlySelected && (
+          <Dropdown.Option checked onClick={evt => (evt.nativeEvent.isCloseEvent = true)}>
+            {currentlySelected.name}
+          </Dropdown.Option>
+        )}
+        {this.state.variableStartIdx > 0 && (
+          <div className="ReportControlPanel__variableInputContainer">
+            <Button
+              onClick={() =>
+                this.setState({
+                  variableStartIdx:
+                    this.state.variableStartIdx -
+                    Math.min(groupByVariablePageSize, this.state.variableStartIdx)
+                })
+              }
+            >
+              Previous items
+            </Button>
+          </div>
+        )}
+        <div className="ReportControlPanel__variableOptionsList">
+          {filteredVars
+            .slice(
+              this.state.variableStartIdx,
+              this.state.variableStartIdx + groupByVariablePageSize
+            )
+            .map((variable, idx) => (
+              <Dropdown.Option
+                key={idx}
+                onClick={evt => {
+                  evt.nativeEvent.isCloseEvent = true;
+                  this.update('groupBy', {type: 'variable', value: {...variable}});
+                }}
+              >
+                {variable.name}
+              </Dropdown.Option>
+            ))}
+        </div>
+        {remaining > 0 && (
+          <div className="ReportControlPanel__variableInputContainer ReportControlPanel__loadMoreContainer">
+            <span className="ReportControlPanel__moreItemsLabel">
+              {remaining} more item{remaining > 1 && 's'}
+            </span>
+            <Button
+              onClick={() =>
+                this.setState({
+                  variableStartIdx:
+                    this.state.variableStartIdx + Math.min(groupByVariablePageSize, remaining)
+                })
+              }
+            >
+              Load More
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  catchClick = evt => {
+    if (!evt.nativeEvent.isCloseEvent) {
+      evt.stopPropagation();
+    }
+  };
+
+  update = (type, data) => {
+    const update = {
+      [type]: data,
+      configuration: {
+        ...this.props.configuration,
+        targetValue: {...this.props.configuration.targetValue, active: false}
+      }
+    };
+
+    const config = {
+      view: this.props.view,
+      groupBy: this.props.groupBy,
+      visualization: this.props.visualization,
+      ...update
+    };
+
+    const nextGroup = getNext(config.view);
+    if (nextGroup) {
+      config.groupBy = nextGroup;
+      update.groupBy = nextGroup;
     }
 
-    return options.map(({key, label}) => {
-      const keyType = key.split('_')[0];
-      return (
-        <Select.Option disabled={enabled && !enabled.includes(keyType)} key={key} value={key}>
-          {label}
-        </Select.Option>
-      );
-    });
+    const nextVis = getNext(config.view, config.groupBy);
+    if (nextVis) {
+      config.visualization = nextVis;
+      update.visualization = nextVis;
+    }
+    if (!isAllowed(config.view, config.groupBy)) {
+      update.groupBy = null;
+      update.visualization = null;
+    } else if (!isAllowed(config.view, config.groupBy, config.visualization)) {
+      update.visualization = null;
+    }
+    this.props.updateReport(update);
   };
 }
 
-function addSelectionOption() {
-  return <Select.Option value="">Please select...</Select.Option>;
+function isChecked(data, current) {
+  return (
+    current &&
+    Object.keys(data).every(
+      prop =>
+        JSON.stringify(current[prop]) === JSON.stringify(data[prop]) || Array.isArray(data[prop])
+    )
+  );
 }

@@ -8,6 +8,9 @@ export function isDurationHeatmap({
   return (
     processDefinitionKey &&
     processDefinitionVersion &&
+    view &&
+    groupBy &&
+    visualization &&
     view.entity === 'flowNode' &&
     (view.operation === 'avg' ||
       view.operation === 'min' ||

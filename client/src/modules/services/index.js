@@ -1,6 +1,6 @@
 import * as formattersImport from './formatters';
+import * as reportConfigImport from './reportConfig';
 
-export {reportLabelMap} from './ReportLabelMap';
 export {getFlowNodeNames} from './GetFlowNodeNames';
 export {extractProcessDefinitionName} from './GetProcessDefinitionName';
 export {loadProcessDefinitions} from './LoadProcessDefinitions';
@@ -10,3 +10,4 @@ export {isDurationValue} from './isDurationValue';
 
 // unfortunately, there is no syntax like "export * as formatters from './formatters'"
 export const formatters = formattersImport;
+export const reportConfig = reportConfigImport;

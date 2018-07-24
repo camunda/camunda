@@ -20,12 +20,12 @@ jest.mock('components', () => {
 
 jest.mock('services', () => {
   return {
-    reportLabelMap: {
-      objectToLabel: () => 'foo',
-      objectToKey: () => 'foo',
-      keyToLabel: () => 'foo',
-      getOptions: () => [],
-      keyToObject: () => 'foo'
+    reportConfig: {
+      getLabelFor: () => 'foo',
+      view: {foo: {data: 'foo', label: 'viewfoo'}},
+      groupBy: {
+        foo: {data: 'foo', label: 'groupbyfoo'}
+      }
     },
     getFlowNodeNames: jest.fn().mockReturnValue({
       a: 'foo',
@@ -139,9 +139,7 @@ it('should instruct to add view option if not available', () => {
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '1',
-      view: {
-        operation: ''
-      },
+      view: null,
       groupBy: {
         type: 'bar'
       },
@@ -165,9 +163,7 @@ it('should instruct to add group by option if not available', () => {
       view: {
         operation: 'foo'
       },
-      groupBy: {
-        type: ''
-      },
+      groupBy: null,
       visualization: 'number'
     },
     result: 1234
@@ -191,7 +187,7 @@ it('should instruct to add visualization option if not available', () => {
       groupBy: {
         type: 'bar'
       },
-      visualization: ''
+      visualization: null
     },
     result: 1234
   };

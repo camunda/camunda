@@ -72,9 +72,9 @@ export default withErrorHandling(
       const data = {
         processDefinitionKey: theOnlyKey || '',
         processDefinitionVersion: latestVersion || '',
-        view: {operation: '', entity: '', property: ''},
-        groupBy: {type: '', unit: null},
-        visualization: '',
+        view: null,
+        groupBy: null,
+        visualization: null,
         filter: [],
         configuration: {}
       };
@@ -204,21 +204,7 @@ export default withErrorHandling(
 
     allFieldsAreSelected = data => {
       const {processDefinitionKey, view, groupBy, visualization} = data;
-      return (
-        this.isNotEmpty(processDefinitionKey) &&
-        (this.viewGroupbyAndVisualizationFieldsAreSelected(view, groupBy, visualization) ||
-          this.rawDataCombinationIsSelected(view.operation, visualization))
-      );
-    };
-
-    viewGroupbyAndVisualizationFieldsAreSelected = (view, groupBy, visualization) => {
-      const operation = view.operation;
-      const type = groupBy.type;
-      return this.isNotEmpty(operation) && this.isNotEmpty(type) && this.isNotEmpty(visualization);
-    };
-
-    rawDataCombinationIsSelected = (operation, visualization) => {
-      return operation === 'rawData' && this.isNotEmpty(visualization);
+      return this.isNotEmpty(processDefinitionKey) && view && groupBy && visualization;
     };
 
     isNotEmpty = str => {
@@ -316,7 +302,11 @@ export default withErrorHandling(
             </div>
           </div>
 
-          <ReportControlPanel {...data} reportResult={reportResult} onChange={this.updateReport} />
+          <ReportControlPanel
+            {...data}
+            reportResult={reportResult}
+            updateReport={this.updateReport}
+          />
           <div className="Report__view">
             <ReportView
               report={reportResult}

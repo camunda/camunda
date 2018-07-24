@@ -1,11 +1,10 @@
 .DropdownOption,
 a.DropdownOption,
 button.DropdownOption {
-  display: block;
   white-space: nowrap;
   color: #333;
   text-decoration: none;
-  padding: 6px 12px;
+  padding: 6px 12px 6px 17px;
   font-size: 1em;
   background-color: white;
   border: none;
@@ -41,4 +40,11 @@ button.DropdownOption {
       border: none;
     }
   }
+}
+
+.Button .Icon.DropdownOption__checkMark {
+  margin-left: -12px;
+  margin-right: 2px;
+  min-width: 10px;
+  width: 10px;
 }

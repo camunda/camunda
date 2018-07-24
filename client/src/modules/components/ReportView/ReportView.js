@@ -1,11 +1,13 @@
 import React from 'react';
 
 import {ErrorBoundary} from 'components';
-import {reportLabelMap, getFlowNodeNames, formatters} from 'services';
+import {getFlowNodeNames, formatters, reportConfig} from 'services';
 import moment from 'moment';
 import ReportBlankSlate from './ReportBlankSlate';
 
 import {Number, Table, Heatmap, Chart} from './views';
+
+const {view, groupBy, getLabelFor} = reportConfig;
 
 const defaultErrorMessage =
   'Cannot display data for the given report builder settings. Please choose another combination!';
@@ -56,10 +58,8 @@ export default class ReportView extends React.Component {
 
   checkViewAndRenderReport = report => {
     const {data} = report;
-    if (this.isEmpty(data.view.operation)) {
+    if (!data.view) {
       return this.buildInstructionMessage('View');
-    } else if (data.view.operation === 'rawData') {
-      return this.checkVisualizationAndRenderReport(report);
     } else {
       return this.checkGroupByAndRenderReport(report);
     }
@@ -67,7 +67,7 @@ export default class ReportView extends React.Component {
 
   checkGroupByAndRenderReport = report => {
     const {data} = report;
-    if (this.isEmpty(data.groupBy.type)) {
+    if (!data.groupBy) {
       return this.buildInstructionMessage('Group by');
     } else {
       return this.checkVisualizationAndRenderReport(report);
@@ -76,7 +76,7 @@ export default class ReportView extends React.Component {
 
   checkVisualizationAndRenderReport = report => {
     const {data} = report;
-    if (this.isEmpty(data.visualization)) {
+    if (!data.visualization) {
       return this.buildInstructionMessage('Visualize as');
     } else {
       return this.renderReport(report);
@@ -153,8 +153,8 @@ export default class ReportView extends React.Component {
         };
         break;
       case 'table':
-        const viewLabel = reportLabelMap.objectToLabel(data.view, reportLabelMap.view);
-        const groupByLabel = reportLabelMap.objectToLabel(data.groupBy, reportLabelMap.groupBy);
+        const viewLabel = getLabelFor(view, data.view);
+        const groupByLabel = getLabelFor(groupBy, data.groupBy);
         const formattedResult = this.formatResult(data, result);
         config = {
           component: Table,

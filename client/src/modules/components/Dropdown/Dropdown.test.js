@@ -15,6 +15,8 @@ jest.mock('./DropdownOption', () => {
   };
 });
 
+jest.mock('./Submenu', () => props => <div>Submenu: {JSON.stringify(props)}</div>);
+
 it('should render without crashing', () => {
   mount(<Dropdown />);
 });
@@ -186,4 +188,17 @@ it('should change focus after pressing an arrow key if opened', () => {
   expect(document.activeElement.textContent).toBe('foo');
   node.simulate('keyDown', {key: 'ArrowDown'});
   expect(document.activeElement.textContent).toBe('bar');
+});
+
+it('should pass open, offset and onOpen properties to submenus', () => {
+  const node = mount(
+    <Dropdown>
+      <Dropdown.Submenu />
+    </Dropdown>
+  );
+
+  const submenuNode = node.find(Dropdown.Submenu);
+  expect(submenuNode).toHaveProp('open');
+  expect(submenuNode).toHaveProp('offset');
+  expect(submenuNode).toHaveProp('onOpen');
 });
