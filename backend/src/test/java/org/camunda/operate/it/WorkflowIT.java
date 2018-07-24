@@ -15,6 +15,7 @@ package org.camunda.operate.it;
 import java.util.List;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.es.reader.WorkflowReader;
+import org.camunda.operate.es.types.WorkflowType;
 import org.camunda.operate.es.writer.ElasticsearchBulkProcessor;
 import org.camunda.operate.es.writer.EntityStorage;
 import org.camunda.operate.rest.dto.WorkflowGroupDto;
@@ -134,8 +135,6 @@ public class WorkflowIT extends OperateIntegrationTest {
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //then
-    workflowReader.getWorkflowsGrouped();
-
     MockHttpServletRequestBuilder request = get(QUERY_WORKFLOWS_GROUPED_URL);
 
     MvcResult mvcResult = mockMvc.perform(request)
@@ -153,7 +152,7 @@ public class WorkflowIT extends OperateIntegrationTest {
     assertThat(demoProcessWorkflowGroup.getWorkflows()).hasSize(2);
     assertThat(demoProcessWorkflowGroup.getName()).isEqualTo(demoProcessName);
     assertThat(demoProcessWorkflowGroup.getWorkflows()).isSortedAccordingTo((w1, w2) -> Integer.valueOf(w2.getVersion()).compareTo(w1.getVersion()));
-    assertThat(demoProcessWorkflowGroup.getWorkflows()).extracting("id").containsExactlyInAnyOrder(demoProcessV1Id, demoProcessV2Id);
+    assertThat(demoProcessWorkflowGroup.getWorkflows()).extracting(WorkflowType.ID).containsExactlyInAnyOrder(demoProcessV1Id, demoProcessV2Id);
 
     assertThat(workflowGroupDtos).filteredOn(wg -> wg.getBpmnProcessId().equals(orderProcessId)).hasSize(1);
     final WorkflowGroupDto orderProcessWorkflowGroup =
@@ -161,7 +160,7 @@ public class WorkflowIT extends OperateIntegrationTest {
     assertThat(orderProcessWorkflowGroup.getWorkflows()).hasSize(3);
     assertThat(orderProcessWorkflowGroup.getName()).isEqualTo(orderProcessName);
     assertThat(orderProcessWorkflowGroup.getWorkflows()).isSortedAccordingTo((w1, w2) -> Integer.valueOf(w2.getVersion()).compareTo(w1.getVersion()));
-    assertThat(orderProcessWorkflowGroup.getWorkflows()).extracting("id").containsExactlyInAnyOrder(orderProcessV1Id, orderProcessV2Id, orderProcessV3Id);
+    assertThat(orderProcessWorkflowGroup.getWorkflows()).extracting(WorkflowType.ID).containsExactlyInAnyOrder(orderProcessV1Id, orderProcessV2Id, orderProcessV3Id);
 
 
     assertThat(workflowGroupDtos).filteredOn(wg -> wg.getBpmnProcessId().equals(loanProcessId)).hasSize(1);

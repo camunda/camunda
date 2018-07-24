@@ -52,7 +52,6 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
   private static final String QUERY_INSTANCES_URL = WORKFLOW_INSTANCE_URL;
   private static final String GET_INSTANCE_URL = WORKFLOW_INSTANCE_URL + "/%s";
-  private static final String COUNT_INSTANCES_URL = WORKFLOW_INSTANCE_URL + "/count";
 
   private Random random = new Random();
 

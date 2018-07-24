@@ -12,13 +12,26 @@
  */
 package org.camunda.operate.util;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import org.camunda.operate.entities.WorkflowInstanceEntity;
+import org.camunda.operate.es.writer.PersistenceException;
+import org.elasticsearch.action.bulk.BulkItemResponse;
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.SearchHit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 public abstract class ElasticsearchUtil {
+
+  private static Logger logger = LoggerFactory.getLogger(ElasticsearchUtil.class);
 
   public static QueryBuilder joinWithOr(BoolQueryBuilder boolQueryBuilder, QueryBuilder... queries) {
     List<QueryBuilder> notNullQueries = CollectionUtil.throwAwayNullElements(queries);
@@ -75,4 +88,44 @@ public abstract class ElasticsearchUtil {
   public static BoolQueryBuilder createMatchNoneQuery() {
     return boolQuery().must(QueryBuilders.wrapperQuery("{\"match_none\": {}}"));
   }
+
+  public static List<WorkflowInstanceEntity> mapSearchHits(SearchHit[] searchHits, ObjectMapper objectMapper) {
+    List<WorkflowInstanceEntity> result = new ArrayList<>();
+    for (SearchHit searchHit : searchHits) {
+      String searchHitAsString = searchHit.getSourceAsString();
+      result.add(fromSearchHit(searchHitAsString, objectMapper));
+    }
+    return result;
+  }
+
+  public static WorkflowInstanceEntity fromSearchHit(String workflowInstanceString, ObjectMapper objectMapper) {
+    WorkflowInstanceEntity workflowInstance = null;
+    try {
+      workflowInstance = objectMapper.readValue(workflowInstanceString, WorkflowInstanceEntity.class);
+    } catch (IOException e) {
+      logger.error("Error while reading workflow instance from Elasticsearch!", e);
+      throw new RuntimeException("Error while reading workflow instance from Elasticsearch!", e);
+    }
+    return workflowInstance;
+  }
+
+
+  public static void processBulkRequest(BulkRequestBuilder bulkRequest) throws PersistenceException {
+    if (bulkRequest.request().requests().size() > 0) {
+      try {
+        final BulkResponse bulkItemResponses = bulkRequest.execute().get();
+        final BulkItemResponse[] items = bulkItemResponses.getItems();
+        for (BulkItemResponse responseItem : items) {
+          if (responseItem.isFailed()) {
+            logger.error(String.format("%s failed for type [%s] and id [%s]: %s", responseItem.getOpType(), responseItem.getType(), responseItem.getId(),
+              responseItem.getFailureMessage()), responseItem.getFailure().getCause());
+            throw new PersistenceException("Operation failed: " + responseItem.getFailureMessage(), responseItem.getFailure().getCause(), responseItem.getItemId());
+          }
+        }
+      } catch (InterruptedException | java.util.concurrent.ExecutionException ex) {
+        throw new PersistenceException("Error when processing bulk request against Elasticsearch: " + ex.getMessage(), ex);
+      }
+    }
+  }
+
 }

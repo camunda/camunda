@@ -1,6 +1,5 @@
 package org.camunda.operate.es.reader;
 
-import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,10 +10,11 @@ import org.camunda.operate.es.types.WorkflowInstanceType;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.SortingDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceDto;
+import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceRequestDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceResponseDto;
-import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
 import org.camunda.operate.rest.exception.NotFoundException;
+import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
@@ -24,7 +24,6 @@ import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
-import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
@@ -54,7 +53,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 @Component
 public class WorkflowInstanceReader {
 
-  private Logger logger = LoggerFactory.getLogger(WorkflowInstanceReader.class);
+  private static Logger logger = LoggerFactory.getLogger(WorkflowInstanceReader.class);
 
   private static final String ACTIVE_INCIDENT = ACTIVE.toString();
   private static final String INCIDENT_STATE_TERM = String.format("%s.%s", INCIDENTS, STATE);
@@ -99,7 +98,7 @@ public class WorkflowInstanceReader {
 
   }
 
-  protected SearchRequestBuilder createSearchRequest(WorkflowInstanceRequestDto request) {
+  public SearchRequestBuilder createSearchRequest(WorkflowInstanceRequestDto request) {
 
     final QueryBuilder query = createRequestQuery(request);
 
@@ -233,7 +232,7 @@ public class WorkflowInstanceReader {
       .setSize(maxResults)
       .get();
 
-    final List<WorkflowInstanceEntity> workflowInstanceEntities = mapSearchHits(response.getHits().getHits());
+    final List<WorkflowInstanceEntity> workflowInstanceEntities = ElasticsearchUtil.mapSearchHits(response.getHits().getHits(), objectMapper);
     WorkflowInstanceResponseDto responseDto = new WorkflowInstanceResponseDto();
     responseDto.setWorkflowInstances(WorkflowInstanceDto.createFrom(workflowInstanceEntities));
     responseDto.setTotalCount(response.getHits().getTotalHits());
@@ -254,7 +253,7 @@ public class WorkflowInstanceReader {
       SearchHits hits = response.getHits();
       String scrollId = response.getScrollId();
 
-      result.addAll(mapSearchHits(hits.getHits()));
+      result.addAll(ElasticsearchUtil.mapSearchHits(hits.getHits(), objectMapper));
 
       response = esClient
           .prepareSearchScroll(scrollId)
@@ -269,15 +268,6 @@ public class WorkflowInstanceReader {
     return responseDto;
   }
 
-  protected List<WorkflowInstanceEntity> mapSearchHits(SearchHit[] searchHits) {
-    List<WorkflowInstanceEntity> result = new ArrayList<>();
-    for (SearchHit searchHit : searchHits) {
-      String searchHitAsString = searchHit.getSourceAsString();
-      result.add(fromSearchHit(searchHitAsString));
-    }
-    return result;
-  }
-
   /**
    * Searches for workflow instance by id.
    * @param workflowInstanceId
@@ -287,22 +277,11 @@ public class WorkflowInstanceReader {
     final GetResponse response = esClient.prepareGet(workflowInstanceType.getType(), workflowInstanceType.getType(), workflowInstanceId).get();
 
     if (response.isExists()) {
-      return fromSearchHit(response.getSourceAsString());
+      return ElasticsearchUtil.fromSearchHit(response.getSourceAsString(), objectMapper);
     }
     else {
       throw new NotFoundException(String.format("Could not find workflow instance with id '%s'.", workflowInstanceId));
     }
-  }
-
-  private WorkflowInstanceEntity fromSearchHit(String workflowInstanceString) {
-    WorkflowInstanceEntity workflowInstance = null;
-    try {
-      workflowInstance = objectMapper.readValue(workflowInstanceString, WorkflowInstanceEntity.class);
-    } catch (IOException e) {
-      logger.error("Error while reading workflow instance from Elasticsearch!", e);
-      throw new RuntimeException("Error while reading workflow instance from Elasticsearch!", e);
-    }
-    return workflowInstance;
   }
 
   private QueryBuilder createRunningFinishedQuery(WorkflowInstanceQueryDto query) {

@@ -162,7 +162,7 @@ public class ZeebeDemoDataGenerator {
       .jobType(taskType)
       .handler((jobClient, job) ->
       {
-        final int scenarioCount = random.nextInt(2);
+        final int scenarioCount = random.nextInt(3);
         switch (scenarioCount) {
         case 0:
           //leave the task active
@@ -170,6 +170,10 @@ public class ZeebeDemoDataGenerator {
         case 1:
           //successfully complete task
           jobClient.newCompleteCommand(job).send().join();
+          break;
+        case 2:
+          //fail task -> create incident
+          jobClient.newFailCommand(job).retries(0).send().join();
           break;
         }
       })

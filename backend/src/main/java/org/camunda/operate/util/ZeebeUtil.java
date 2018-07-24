@@ -167,7 +167,9 @@ public class ZeebeUtil {
 
     return client.topicClient(topicName).newSubscription().name(subscriptionName).incidentEventHandler(incidentEvent -> {
       JobEventImpl jobEvent = new JobEventImpl(new ZeebeObjectMapperImpl());
-      jobEvent.setKey(incidentEvent.getJobKey());
+      if (incidentEvent.getJobKey() != null) {
+        jobEvent.setKey(incidentEvent.getJobKey());
+      }
       jobEvent.setTopicName(topicName);
       jobEvent.setPartitionId(incidentEvent.getMetadata().getPartitionId());
       jobEvent.setType(incidentEvent.getActivityId());
@@ -189,8 +191,12 @@ public class ZeebeUtil {
     WorkflowInstanceEventImpl workflowInstanceEvent = new WorkflowInstanceEventImpl(new ZeebeObjectMapperImpl());
     workflowInstanceEvent.setKey(Long.valueOf(workflowInstanceId));
     workflowInstanceEvent.setBpmnProcessId(bpmnProcessId);
+    workflowInstanceEvent.setVersion(1);
     workflowInstanceEvent.setWorkflowKey(Long.valueOf(workflowId));
     workflowInstanceEvent.setWorkflowInstanceKey(Long.valueOf(workflowInstanceId));
+    workflowInstanceEvent.setPayload(newPayload);
+    workflowInstanceEvent.setKey(Long.valueOf(workflowInstanceId));
+    workflowInstanceEvent.setTopicName(topicName);
     client.topicClient(topicName).workflowClient().newUpdatePayloadCommand(workflowInstanceEvent).payload(newPayload).send().join();
   }
 

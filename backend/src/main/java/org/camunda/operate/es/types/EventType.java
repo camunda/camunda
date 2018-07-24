@@ -33,7 +33,7 @@ public class EventType extends StrictTypeMappingCreator {
 
   public static final String INCIDENT_ERROR_TYPE = "incidentErrorType";
   public static final String INCIDENT_ERROR_MSG = "incidentErrorMessage";
-  public static final String JOB_KEY = "jobKey";
+  public static final String JOB_ID = "jobId";
 
   @Autowired
   private OperateProperties operateProperties;
@@ -112,7 +112,7 @@ public class EventType extends StrictTypeMappingCreator {
       .startObject(INCIDENT_ERROR_MSG)
         .field("type", "keyword")
       .endObject()
-      .startObject(JOB_KEY)
+      .startObject(JOB_ID)
         .field("type", "keyword")
       .endObject();
     return builder;

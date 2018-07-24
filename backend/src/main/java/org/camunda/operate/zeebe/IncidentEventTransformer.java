@@ -80,15 +80,21 @@ public class IncidentEventTransformer extends AbstractEventTransformer implement
 
     loadEventGeneralData(event, eventEntity);
 
-    eventEntity.setWorkflowInstanceId(String.valueOf(event.getWorkflowInstanceKey()));
+    if (event.getWorkflowInstanceKey() != null) {
+      eventEntity.setWorkflowInstanceId(String.valueOf(event.getWorkflowInstanceKey()));
+    }
     eventEntity.setBpmnProcessId(event.getBpmnProcessId());
     eventEntity.setActivityId(event.getActivityId());
-    eventEntity.setActivityInstanceId(String.valueOf(event.getActivityInstanceKey()));
+    if (event.getActivityInstanceKey() != null) {
+      eventEntity.setActivityInstanceId(String.valueOf(event.getActivityInstanceKey()));
+    }
 
     EventMetadataEntity eventMetadata = new EventMetadataEntity();
     eventMetadata.setIncidentErrorMessage(event.getErrorMessage());
     eventMetadata.setIncidentErrorType(event.getErrorType());
-    eventMetadata.setJobKey(String.valueOf(event.getJobKey()));
+    if (event.getJobKey() != null) {
+      eventMetadata.setJobId(String.valueOf(event.getJobKey()));
+    }
     eventEntity.setMetadata(eventMetadata);
 
     RecordMetadata metadata = event.getMetadata();

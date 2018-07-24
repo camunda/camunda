@@ -6,14 +6,12 @@ import java.util.List;
 import java.util.Map;
 import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.property.OperateProperties;
-import org.elasticsearch.action.bulk.BulkItemResponse;
+import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
-import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 
@@ -30,7 +28,7 @@ public class ElasticsearchBulkProcessor extends Thread {
 
   public void persistOperateEntities(List<? extends OperateEntity> entitiesToPersist) throws PersistenceException {
 
-      logger.debug("Writing [{}] entities to elasticsearch", entitiesToPersist.size());
+      logger.debug("Writing [{}] entities to Elasticsearch", entitiesToPersist.size());
       BulkRequestBuilder bulkRequest = esClient.prepareBulk();
       for (OperateEntity operateEntity : entitiesToPersist) {
         final ElasticsearchRequestCreator esRequestCreator = esRequestCreatorsMap.get(operateEntity.getClass());
@@ -40,27 +38,8 @@ public class ElasticsearchBulkProcessor extends Thread {
           bulkRequest = esRequestCreator.addRequestToBulkQuery(bulkRequest, operateEntity);
         }
       }
-      processBulkRequest(bulkRequest);
+      ElasticsearchUtil.processBulkRequest(bulkRequest);
 
-
-  }
-
-  protected void processBulkRequest(BulkRequestBuilder bulkRequest) throws PersistenceException {
-    if (bulkRequest.request().requests().size() > 0) {
-      try {
-        final BulkResponse bulkItemResponses = bulkRequest.execute().get();
-        final BulkItemResponse[] items = bulkItemResponses.getItems();
-        for (BulkItemResponse responseItem : items) {
-          if (responseItem.isFailed()) {
-            logger.error(String.format("%s failed for type [%s] and id [%s]: %s", responseItem.getOpType(), responseItem.getType(), responseItem.getId(),
-              responseItem.getFailureMessage()), responseItem.getFailure().getCause());
-            throw new PersistenceException("Operation failed: " + responseItem.getFailureMessage(), responseItem.getFailure().getCause(), responseItem.getItemId());
-          }
-        }
-      } catch (InterruptedException | java.util.concurrent.ExecutionException ex) {
-        throw new PersistenceException("Error when persisting the entities to Elasticsearch: " + ex.getMessage(), ex);
-      }
-    }
   }
 
   @Autowired

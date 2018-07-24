@@ -12,9 +12,9 @@
  */
 package org.camunda.operate.rest;
 
-import org.apache.http.HttpStatus;
 import org.camunda.operate.JacksonConfig;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
+import org.camunda.operate.es.writer.BatchOperationWriter;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
@@ -40,6 +40,9 @@ public class WorkflowInstanceRestServiceTest extends OperateIntegrationTest {
   @MockBean
   private WorkflowInstanceReader workflowInstanceReader;
 
+  @MockBean
+  private BatchOperationWriter batchOperationWriter;
+
   @Test
   public void testQueryWithWrongSortBy() throws Exception {
     //when
@@ -52,7 +55,7 @@ public class WorkflowInstanceRestServiceTest extends OperateIntegrationTest {
     //then
     final MvcResult mvcResult =
       mockMvcTestRule.getMockMvc().perform(request)
-        .andExpect(status().is(HttpStatus.SC_BAD_REQUEST))
+        .andExpect(status().isBadRequest())
         .andReturn();
 
     assertThat(mvcResult.getResolvedException().getMessage()).contains("SortBy");
@@ -71,7 +74,7 @@ public class WorkflowInstanceRestServiceTest extends OperateIntegrationTest {
     //then
     final MvcResult mvcResult =
       mockMvcTestRule.getMockMvc().perform(request)
-        .andExpect(status().is(HttpStatus.SC_BAD_REQUEST))
+        .andExpect(status().isBadRequest())
         .andReturn();
 
     assertThat(mvcResult.getResolvedException().getMessage()).contains("SortOrder");

@@ -24,6 +24,8 @@ public class WorkflowInstanceDto {
 
   private List<ActivityInstanceDto> activities = new ArrayList<>();
 
+  private List<OperationDto> operations = new ArrayList<>();
+
   public String getId() {
     return id;
   }
@@ -88,6 +90,14 @@ public class WorkflowInstanceDto {
     this.activities = activities;
   }
 
+  public List<OperationDto> getOperations() {
+    return operations;
+  }
+
+  public void setOperations(List<OperationDto> operations) {
+    this.operations = operations;
+  }
+
   public static WorkflowInstanceDto createFrom(WorkflowInstanceEntity workflowInstanceEntity) {
     if (workflowInstanceEntity == null) {
       return null;
@@ -101,6 +111,7 @@ public class WorkflowInstanceDto {
     workflowInstance.setWorkflowId(workflowInstanceEntity.getWorkflowId());
     workflowInstance.setIncidents(IncidentDto.createFrom(workflowInstanceEntity.getIncidents()));
     workflowInstance.setActivities(ActivityInstanceDto.createFrom(workflowInstanceEntity.getActivities()));
+    workflowInstance.setOperations(OperationDto.createFrom(workflowInstanceEntity.getOperations()));
     return workflowInstance;
   }
 
@@ -139,7 +150,9 @@ public class WorkflowInstanceDto {
       return false;
     if (incidents != null ? !incidents.equals(that.incidents) : that.incidents != null)
       return false;
-    return activities != null ? activities.equals(that.activities) : that.activities == null;
+    if (activities != null ? !activities.equals(that.activities) : that.activities != null)
+      return false;
+    return operations != null ? operations.equals(that.operations) : that.operations == null;
   }
 
   @Override
@@ -152,6 +165,7 @@ public class WorkflowInstanceDto {
     result = 31 * result + (businessKey != null ? businessKey.hashCode() : 0);
     result = 31 * result + (incidents != null ? incidents.hashCode() : 0);
     result = 31 * result + (activities != null ? activities.hashCode() : 0);
+    result = 31 * result + (operations != null ? operations.hashCode() : 0);
     return result;
   }
 }

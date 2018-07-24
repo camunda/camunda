@@ -15,6 +15,8 @@ public class OperateProperties {
 
   private boolean startLoadingDataOnStartup = true;
 
+  private Long batchOperationMaxSize;
+
   /**
    *  Configuration parameters for elasticsearch client.
    */
@@ -30,6 +32,14 @@ public class OperateProperties {
 
   public void setStartLoadingDataOnStartup(boolean startLoadingDataOnStartup) {
     this.startLoadingDataOnStartup = startLoadingDataOnStartup;
+  }
+
+  public Long getBatchOperationMaxSize() {
+    return batchOperationMaxSize;
+  }
+
+  public void setBatchOperationMaxSize(Long batchOperationMaxSize) {
+    this.batchOperationMaxSize = batchOperationMaxSize;
   }
 
   public ElasticsearchProperties getElasticsearch() {

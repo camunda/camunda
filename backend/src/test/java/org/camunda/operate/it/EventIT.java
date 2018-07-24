@@ -87,18 +87,20 @@ public class EventIT extends OperateIntegrationTest {
     topicSubscription.close();
 
     //complete task A
-    jobWorker = zeebeUtil.completeTask(topicName, taskA, zeebeTestRule.getWorkerName(), "{\"goToTaskC\": true}");
+    String taskAPayload = "{\"goToTaskC\":true}";
+    jobWorker = zeebeUtil.completeTask(topicName, taskA, zeebeTestRule.getWorkerName(), taskAPayload);
     elasticsearchTestRule.processAllEvents(10);
     jobWorker.close();
     jobWorker = null;
 
     //update process payload //TODO update payload command is giving timeout for some reason
-    final String updatedPayload = "{\"goToTaskC\": true, \"var\": \"b\"}";
-//    zeebeUtil.updatePayload(topicName, workflowInstanceId, updatedPayload, processId, workflowId);
-//    elasticsearchTestRule.processAllEvents(10);
+    final String updatedPayload = "{\"a\": \"c\"}";
+    zeebeUtil.updatePayload(topicName, workflowInstanceId, updatedPayload, processId, workflowId);
+    elasticsearchTestRule.processAllEvents(10);
 
     //complete task C
-    jobWorker = zeebeUtil.completeTask(topicName, taskC, zeebeTestRule.getWorkerName(), updatedPayload);
+    final String taskCPayload = "{\"b\": \"d\"}";
+    jobWorker = zeebeUtil.completeTask(topicName, taskC, zeebeTestRule.getWorkerName(), taskCPayload);
     elasticsearchTestRule.processAllEvents(10);
     jobWorker.close();
     jobWorker = null;
@@ -125,21 +127,23 @@ public class EventIT extends OperateIntegrationTest {
     //INCIDENT events do not have workflowId for some reason
     assertEvent(eventEntities, EventSourceType.INCIDENT, EventType.DELETED, 1, processId, null, workflowInstanceId, null, "taskA");
 
-    String newPayload = "{\"goToTaskC\":true}";
-    assertEvent(eventEntities, EventSourceType.JOB, EventType.COMPLETED, 1, processId, workflowId, workflowInstanceId, newPayload, "taskA");
-    String newJoinedPayload = "{\"a\":\"b\",\"goToTaskC\":true}";
-    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ACTIVITY_COMPLETING, 1, processId, workflowId, workflowInstanceId, newPayload, "taskA");
-    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ACTIVITY_COMPLETED, 1, processId, workflowId, workflowInstanceId, newJoinedPayload, "taskA");
-    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.GATEWAY_ACTIVATED, 1, processId, workflowId, workflowInstanceId, newJoinedPayload, "gateway");
+    assertEvent(eventEntities, EventSourceType.JOB, EventType.COMPLETED, 1, processId, workflowId, workflowInstanceId, taskAPayload, "taskA");
+    String afterTaskAJoinedPayload = "{\"a\":\"b\",\"goToTaskC\":true}";
+    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ACTIVITY_COMPLETING, 1, processId, workflowId, workflowInstanceId, taskAPayload, "taskA");
+    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ACTIVITY_COMPLETED, 1, processId, workflowId, workflowInstanceId, afterTaskAJoinedPayload, "taskA");
+    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.GATEWAY_ACTIVATED, 1, processId, workflowId, workflowInstanceId, afterTaskAJoinedPayload, "gateway");
 
-    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ACTIVITY_READY, 1, processId, workflowId, workflowInstanceId, newJoinedPayload, "taskC");
-    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ACTIVITY_ACTIVATED, 1, processId, workflowId, workflowInstanceId, newJoinedPayload, "taskC");
-    assertEvent(eventEntities, EventSourceType.JOB, EventType.CREATED, 1, processId, workflowId, workflowInstanceId, newJoinedPayload, "taskC");
-    assertEvent(eventEntities, EventSourceType.JOB, EventType.ACTIVATED, 1, processId, workflowId, workflowInstanceId, newJoinedPayload, "taskC");
-    assertEvent(eventEntities, EventSourceType.JOB, EventType.COMPLETED, 1, processId, workflowId, workflowInstanceId, updatedPayload, "taskC");
-    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ACTIVITY_COMPLETING, 1, processId, workflowId, workflowInstanceId, updatedPayload, "taskC");
+    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ACTIVITY_READY, 1, processId, workflowId, workflowInstanceId, afterTaskAJoinedPayload, "taskC");
+    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ACTIVITY_ACTIVATED, 1, processId, workflowId, workflowInstanceId, afterTaskAJoinedPayload, "taskC");
+    assertEvent(eventEntities, EventSourceType.JOB, EventType.CREATED, 1, processId, workflowId, workflowInstanceId, afterTaskAJoinedPayload, "taskC");
 
-    String finalPayload = "{\"a\":\"b\",\"goToTaskC\":true,\"var\":\"b\"}";
+    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.PAYLOAD_UPDATED, 1, processId, workflowId, workflowInstanceId, updatedPayload, null);
+
+    assertEvent(eventEntities, EventSourceType.JOB, EventType.ACTIVATED, 1, processId, workflowId, workflowInstanceId, afterTaskAJoinedPayload, "taskC");
+    assertEvent(eventEntities, EventSourceType.JOB, EventType.COMPLETED, 1, processId, workflowId, workflowInstanceId, taskCPayload, "taskC");
+    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ACTIVITY_COMPLETING, 1, processId, workflowId, workflowInstanceId, taskCPayload, "taskC");
+
+    String finalPayload = "{\"a\":\"c\", \"b\": \"d\"}";
     assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ACTIVITY_COMPLETED, 1, processId, workflowId, workflowInstanceId, finalPayload, "taskC");
     assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.END_EVENT_OCCURRED, 1, processId, workflowId, workflowInstanceId, finalPayload, "end1");
     assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.COMPLETED, 1, processId, workflowId, workflowInstanceId, finalPayload);

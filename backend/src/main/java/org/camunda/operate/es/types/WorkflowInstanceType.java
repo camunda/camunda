@@ -15,12 +15,14 @@ public class WorkflowInstanceType extends StrictTypeMappingCreator {
   public static final String START_DATE = "startDate";
   public static final String END_DATE = "endDate";
   public static final String INCIDENTS = "incidents";
+  public static final String OPERATIONS = "operations";
   public static final String ACTIVITY_ID = "activityId";
   public static final String ACTIVITY_INSTANCE_ID = "activityInstanceId";
   public static final String JOB_ID = "jobId";
   public static final String ERROR_TYPE = "errorType";
   public static final String ERROR_MSG = "errorMessage";
   public static final String STATE = "state";
+  public static final String TYPE = "type";
   public static final String BUSINESS_KEY = "businessKey";
   public static final String ACTIVITIES = "activities";
 
@@ -65,6 +67,12 @@ public class WorkflowInstanceType extends StrictTypeMappingCreator {
         .field("type", "nested")
         .startObject("properties");
           addNestedActivitiesField(newBuilder)
+        .endObject()
+      .endObject()
+      .startObject(OPERATIONS)
+        .field("type", "nested")
+        .startObject("properties");
+          addNestedOperationsField(newBuilder)
         .endObject()
       .endObject()
       .startObject(PARTITION_ID)
@@ -123,6 +131,25 @@ public class WorkflowInstanceType extends StrictTypeMappingCreator {
       .startObject(END_DATE)
         .field("type", "date")
         .field("format", operateProperties.getElasticsearch().getDateFormat())
+      .endObject();
+    return builder;
+  }
+
+  private XContentBuilder addNestedOperationsField(XContentBuilder builder) throws IOException {
+    builder
+      .startObject(TYPE)
+      .field("type", "keyword")
+      .endObject()
+      .startObject(STATE)
+      .field("type", "keyword")
+      .endObject()
+      .startObject(START_DATE)
+      .field("type", "date")
+      .field("format", operateProperties.getElasticsearch().getDateFormat())
+      .endObject()
+      .startObject(END_DATE)
+      .field("type", "date")
+      .field("format", operateProperties.getElasticsearch().getDateFormat())
       .endObject();
     return builder;
   }

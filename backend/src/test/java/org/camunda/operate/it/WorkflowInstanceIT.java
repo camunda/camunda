@@ -74,8 +74,6 @@ public class WorkflowInstanceIT extends OperateIntegrationTest {
 
     //when
     final String workflowInstanceId = zeebeUtil.startWorkflowInstance(topicName, processId, "{\"a\": \"b\"}");
-
-    //when
     elasticsearchTestRule.processAllEvents(10);
 
     //then
@@ -130,7 +128,7 @@ public class WorkflowInstanceIT extends OperateIntegrationTest {
 
 
     String processId = "demoProcess";
-    zeebeUtil.deployWorkflowToTheTopic(topicName, "demoProcess_v_1.bpmn");
+    final String workflowId = zeebeUtil.deployWorkflowToTheTopic(topicName, "demoProcess_v_1.bpmn");
     final String workflowInstanceId = zeebeUtil.startWorkflowInstance(topicName, processId, "{\"a\": \"b\"}");
 
     //when
@@ -154,6 +152,10 @@ public class WorkflowInstanceIT extends OperateIntegrationTest {
     assertStartActivityCompleted(workflowInstanceEntity.getActivities().get(0));
     assertActivityIsActive(workflowInstanceEntity.getActivities().get(1), "taskA");
 
+    zeebeUtil.updatePayload(topicName, workflowInstanceId, "{\"foo\":\"b\"}", processId, workflowId);
+    elasticsearchTestRule.processAllEvents(5);
+
+    //TODO how to resolve the incident?
   }
 
   @Test

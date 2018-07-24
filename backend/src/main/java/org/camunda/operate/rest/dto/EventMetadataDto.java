@@ -33,7 +33,7 @@ public class EventMetadataDto {
   */
   private String incidentErrorType;
   private String incidentErrorMessage;
-  private String jobKey;
+  private String jobId;
 
   public String getJobType() {
     return jobType;
@@ -91,12 +91,12 @@ public class EventMetadataDto {
     this.incidentErrorMessage = incidentErrorMessage;
   }
 
-  public String getJobKey() {
-    return jobKey;
+  public String getJobId() {
+    return jobId;
   }
 
-  public void setJobKey(String jobKey) {
-    this.jobKey = jobKey;
+  public void setJobId(String jobId) {
+    this.jobId = jobId;
   }
 
   public static EventMetadataDto createFrom(EventMetadataEntity eventMetadataEntity) {
@@ -105,7 +105,7 @@ public class EventMetadataDto {
     eventMetadata.setIncidentErrorType(eventMetadataEntity.getIncidentErrorType());
     eventMetadata.setJobCustomHeaders(eventMetadataEntity.getJobCustomHeaders());
     eventMetadata.setJobDeadline(eventMetadataEntity.getJobDeadline());
-    eventMetadata.setJobKey(eventMetadataEntity.getJobKey());
+    eventMetadata.setJobId(eventMetadataEntity.getJobId());
     eventMetadata.setJobRetries(eventMetadataEntity.getJobRetries());
     eventMetadata.setJobType(eventMetadataEntity.getJobType());
     eventMetadata.setJobWorker(eventMetadataEntity.getJobWorker());

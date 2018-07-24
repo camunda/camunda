@@ -85,10 +85,7 @@ public class JobEventTransformer extends AbstractEventTransformer implements Job
     eventMetadata.setJobWorker(event.getWorker());
     eventMetadata.setJobCustomHeaders(event.getCustomHeaders());
 
-    final Object jobKey = headers.get(ACTIVITY_INSTANCE_KEY_HEADER);
-    if (jobKey != null) {
-      eventMetadata.setJobKey(String.valueOf(jobKey));
-    }
+    eventMetadata.setJobId(String.valueOf(event.getKey()));
 
     Instant jobDeadline = event.getDeadline();
     if (jobDeadline != null) {

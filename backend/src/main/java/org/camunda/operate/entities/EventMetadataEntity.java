@@ -31,7 +31,7 @@ public class EventMetadataEntity {
   */
   private String incidentErrorType;
   private String incidentErrorMessage;
-  private String jobKey;
+  private String jobId;
 
   public String getJobType() {
     return jobType;
@@ -89,12 +89,12 @@ public class EventMetadataEntity {
     this.incidentErrorMessage = incidentErrorMessage;
   }
 
-  public String getJobKey() {
-    return jobKey;
+  public String getJobId() {
+    return jobId;
   }
 
-  public void setJobKey(String jobKey) {
-    this.jobKey = jobKey;
+  public void setJobId(String jobId) {
+    this.jobId = jobId;
   }
 
 }
