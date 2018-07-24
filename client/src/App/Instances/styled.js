@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 
+import BadgeComponent from 'modules/components/Badge';
 import SplitPane from 'modules/components/SplitPane';
 import Panel from 'modules/components/Panel';
 import ExpandButton from 'modules/components/ExpandButton';
@@ -45,4 +46,8 @@ export const SelectionHeader = styled(Panel.Header)`
   padding-left: 45px;
   display: flex;
   flex-shrink: 0;
+`;
+
+export const Badge = styled(BadgeComponent)`
+  top: 2px;
 `;

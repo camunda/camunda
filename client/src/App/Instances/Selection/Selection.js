@@ -78,7 +78,7 @@ export default class Selection extends React.Component {
         <Styled.Header {...{onClick, isOpen}}>
           {getArrowIcon(isOpen)}
           <Styled.Headline>Selection {selectionId + 1}</Styled.Headline>
-          <BadgeComponent
+          <Styled.Badge
             type={
               isOpen ? BADGE_TYPE.OPENSELECTIONHEAD : BADGE_TYPE.SELECTIONHEAD
             }

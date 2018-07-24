@@ -13,8 +13,7 @@ import {
   getFilterQueryString
 } from 'modules/utils/filter';
 
-// import ComboBadge from './ComboBadge';
-import BadgeComponent from 'modules/components/Badge';
+import {BADGE_TYPE} from 'modules/constants';
 
 import Header from '../Header';
 import ListView from './ListView';
@@ -197,8 +196,8 @@ class Instances extends Component {
               <Panel isRounded>
                 <Styled.SelectionHeader isRounded>
                   <span>Selections</span>
-                  <BadgeComponent
-                    type={'comboSelection'}
+                  <Styled.Badge
+                    type={BADGE_TYPE.COMBOSELECTION}
                     badgeContent={this.state.instancesInSelections}
                     circleContent={this.state.selectionCount}
                   />

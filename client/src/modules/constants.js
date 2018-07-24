@@ -87,6 +87,7 @@ export const BADGE_TYPE = {
   SELECTIONS: 'selections',
   SELECTIONHEAD: 'selectionHead',
   OPENSELECTIONHEAD: 'openSelectionHead',
+  COMBOSELECTION: 'comboSelection',
   INCIDENTS: 'incidents',
   INSTANCES: 'instances'
 };

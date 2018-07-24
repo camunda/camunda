@@ -3,6 +3,8 @@ import {themed, themeStyle, Colors} from 'modules/theme';
 
 import {RemoveItem} from 'modules/components/Icon';
 
+import BadgeComponent from 'modules/components/Badge';
+
 const themedWith = (dark, light) => {
   return themeStyle({
     dark,
@@ -63,6 +65,10 @@ export const DropdownTrigger = styled.div`
 
 export const DeleteIcon = styled(RemoveItem)`
   opacity: 0.45;
+`;
+
+export const Badge = styled(BadgeComponent)`
+  top: 2px;
 `;
 
 export const OptionLabel = styled.label`
