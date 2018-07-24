@@ -459,6 +459,8 @@ public class WorkflowInstanceFunctionalTest {
             .endEvent("end")
             .done();
 
+    Bpmn.writeModelToStream(System.out, workflowDefinition);
+
     testClient.deploy(workflowDefinition);
 
     // when

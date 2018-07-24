@@ -30,6 +30,7 @@ public class ProcessValidator implements ModelElementValidator<Process> {
 
   @Override
   public void validate(Process element, ValidationResultCollector validationResultCollector) {
+
     final Collection<StartEvent> topLevelStartEvents =
         element.getChildElementsByType(StartEvent.class);
     if (topLevelStartEvents.size() != 1) {

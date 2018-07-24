@@ -96,7 +96,7 @@ public class CreateDeploymentTest {
   public void shouldNotDeployInvalidModel() throws Exception {
     // then
     exception.expect(ClientCommandRejectedException.class);
-    exception.expectMessage("The process must contain at least one none start event.");
+    exception.expectMessage("Must have exactly one start event");
 
     // when
     clientRule
@@ -118,7 +118,7 @@ public class CreateDeploymentTest {
 
     // then
     exception.expect(ClientCommandRejectedException.class);
-    exception.expectMessage("BPMN model must contain at least one executable process");
+    exception.expectMessage("Must contain at least one executable process");
 
     // when
     clientRule

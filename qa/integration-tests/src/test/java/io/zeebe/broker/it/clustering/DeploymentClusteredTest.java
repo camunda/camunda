@@ -244,7 +244,7 @@ public class DeploymentClusteredTest {
     expectedException.expect(ClientCommandRejectedException.class);
     expectedException.expectMessage("Command (CREATE) was rejected");
     expectedException.expectMessage("Failed to deploy resource 'invalid.bpmn'");
-    expectedException.expectMessage("Failed to read BPMN model");
+    expectedException.expectMessage("SAXException while parsing input stream");
 
     // when
     client

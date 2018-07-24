@@ -69,7 +69,7 @@ public class TestTopicClient {
     final ExecuteCommandResponse response = deployWithResponse(topic, workflow);
 
     assertThat(response.recordType())
-        .withFailMessage("Deployment failed: %s", response.getValue().get("errorMessage"))
+        .withFailMessage("Deployment failed: %s", response.rejectionReason())
         .isEqualTo(RecordType.EVENT);
 
     return response.key();

@@ -32,7 +32,9 @@ public class SequenceFlowValidator implements ModelElementValidator<SequenceFlow
 
     if (element.getSource() instanceof ExclusiveGateway) {
       final ExclusiveGateway gateway = (ExclusiveGateway) element.getSource();
-      if (gateway.getDefault() != element && element.getConditionExpression() == null) {
+      if (gateway.getOutgoing().size() > 1
+          && gateway.getDefault() != element
+          && element.getConditionExpression() == null) {
         validationResultCollector.addError(0, "Must have a condition or be default flow");
       }
     }

@@ -30,7 +30,7 @@
       <groupId>io.zeebe</groupId>
       <artifactId>zb-bpmn-model</artifactId>
     </dependency>
-
+    
     <dependency>
       <groupId>org.msgpack</groupId>
       <artifactId>msgpack-core</artifactId>

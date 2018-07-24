@@ -20,7 +20,6 @@ package io.zeebe.broker.workflow;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
-import static org.junit.Assert.fail;
 
 import io.zeebe.broker.system.workflow.repository.data.ResourceType;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
@@ -163,7 +162,7 @@ public class CreateDeploymentTest {
   }
 
   @Test
-  public void shouldRejectDeploymentIfNotValid() throws Exception {
+  public void shouldRejectDeploymentIfNotValidDesignTimeAspect() throws Exception {
     // given
     final Path path = Paths.get(getClass().getResource("/workflows/invalid_process.bpmn").toURI());
     final byte[] resource = Files.readAllBytes(path);
@@ -180,8 +179,31 @@ public class CreateDeploymentTest {
     assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATE);
     assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+    assertThat(resp.rejectionReason()).contains("ERROR: Must have exactly one start event");
+  }
+
+  @Test
+  public void shouldRejectDeploymentIfNotValidRuntimeAspect() throws Exception {
+    // given
+    final Path path =
+        Paths.get(getClass().getResource("/workflows/invalid_process_condition.bpmn").toURI());
+    final byte[] resource = Files.readAllBytes(path);
+
+    // when
+    final ExecuteCommandResponse resp =
+        apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, resource);
+
+    // then
+    final SubscribedRecord createDeploymentCommand = getFirstDeploymentCreateCommand();
+
+    assertThat(resp.key()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
+    assertThat(resp.sourceRecordPosition()).isEqualTo(createDeploymentCommand.position());
+    assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATE);
+    assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
     assertThat(resp.rejectionReason())
-        .contains("The process must contain at least one none start event.");
+        .contains("Element: flow2 > conditionExpression")
+        .contains("ERROR: Condition expression is invalid");
   }
 
   @Test
@@ -214,7 +236,7 @@ public class CreateDeploymentTest {
     assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
     assertThat(resp.rejectionReason())
         .contains("Resource 'process2.bpmn':")
-        .contains("The process must contain at least one none start event.");
+        .contains("ERROR: Must have exactly one start event");
     assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATE);
   }
 
@@ -262,7 +284,7 @@ public class CreateDeploymentTest {
     assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
     assertThat(resp.rejectionReason())
         .contains("Failed to deploy resource 'invalid.bpmn':")
-        .contains("Failed to read BPMN model");
+        .contains("SAXException while parsing input stream");
   }
 
   @Test
@@ -308,16 +330,6 @@ public class CreateDeploymentTest {
 
     final Map<String, Object> workflow2 = getDeployedWorkflow(d2, 0);
     assertThat(workflow2.get("version")).isEqualTo(1L);
-  }
-
-  @Test
-  public void shouldValidateRuntimeAspectOnDeployment() {
-    fail("implement and link to detail testcases");
-  }
-
-  @Test
-  public void shouldValidatDesigntimeAspectOnDeployment() {
-    fail("implement and link to detail testcases");
   }
 
   private Map<String, Object> deploymentResource(final byte[] resource, String name) {

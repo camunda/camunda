@@ -48,6 +48,10 @@ public class ValidationVisitor extends TypeHierarchyVisitor {
     }
   }
 
+  public void reset() {
+    this.resultCollector = new ValidationResultsCollectorImpl();
+  }
+
   public ValidationResults getValidationResult() {
     return resultCollector.getResults();
   }

@@ -28,7 +28,6 @@ import io.zeebe.broker.workflow.model.transformation.BpmnTransformer;
 import io.zeebe.clustering.management.FetchWorkflowResponseDecoder;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.old.bpmn.BpmnModelApi;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.transport.ClientResponse;
 import io.zeebe.transport.ClientTransport;
@@ -38,8 +37,8 @@ import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
-import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
@@ -58,8 +57,6 @@ public class WorkflowCache implements TopologyPartitionListener {
   private final Map<DirectBuffer, Int2ObjectHashMap<DeployedWorkflow>>
       workflowsByProcessIdAndVersion = new HashMap<>();
   private final Map<DirectBuffer, DeployedWorkflow> latestWorkflowsByProcessId = new HashMap<>();
-
-  private final BpmnModelApi bpmn = new BpmnModelApi();
 
   private final ClientTransport clientTransport;
   private final TopologyManager topologyManager;

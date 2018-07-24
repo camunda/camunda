@@ -15,24 +15,25 @@
  */
 package io.zeebe.model.bpmn.validation.zeebe;
 
-import java.util.ArrayList;
+import io.zeebe.model.bpmn.instance.Definitions;
+import io.zeebe.model.bpmn.instance.Process;
 import java.util.Collection;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
+import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
-public class ZeebeDesignTimeValidators {
+public class DefinitionsValidator implements ModelElementValidator<Definitions> {
 
-  public static final Collection<ModelElementValidator<?>> VALIDATORS;
+  @Override
+  public Class<Definitions> getElementType() {
+    return Definitions.class;
+  }
 
-  static {
-    VALIDATORS = new ArrayList<>();
-    VALIDATORS.add(new ProcessValidator());
-    VALIDATORS.add(new ServiceTaskValidator());
-    VALIDATORS.add(new ZeebeTaskDefinitionValidator());
-    VALIDATORS.add(new ZeebeIoMappingValidator());
-    VALIDATORS.add(new ExclusiveGatewayValidator());
-    VALIDATORS.add(new SequenceFlowValidator());
-    VALIDATORS.add(new MessageValidator());
-    VALIDATORS.add(new ZeebeSubscriptionValidator());
-    VALIDATORS.add(new DefinitionsValidator());
+  @Override
+  public void validate(Definitions element, ValidationResultCollector validationResultCollector) {
+    final Collection<Process> processes = element.getChildElementsByType(Process.class);
+
+    if (!processes.stream().anyMatch(p -> p.isExecutable())) {
+      validationResultCollector.addError(0, "Must contain at least one executable process");
+    }
   }
 }
