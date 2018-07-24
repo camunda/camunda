@@ -6,7 +6,7 @@ export default class AutoRefreshBehavior extends React.Component {
   }
 
   componentDidMount() {
-    this.runTimer();
+    this.timer = setInterval(this.props.loadReportData, this.props.interval);
   }
 
   componentWillUnmount() {
@@ -19,11 +19,7 @@ export default class AutoRefreshBehavior extends React.Component {
       nextProps.loadReportData !== this.props.loadReportData
     ) {
       clearInterval(this.timer);
-      this.runTimer();
+      this.timer = setInterval(nextProps.loadReportData, nextProps.interval);
     }
   }
-
-  runTimer = () => {
-    this.timer = setInterval(this.props.loadReportData, this.props.interval);
-  };
 }
