@@ -63,13 +63,18 @@ export default class ListView extends React.Component {
 
   loadData = async () => {
     const instances = await fetchWorkflowInstances({
-      ...parseFilterForRequest(this.props.filter),
+      queries: [
+        {
+          ...parseFilterForRequest(this.props.filter)
+        }
+      ],
       sorting: this.state.sorting,
       firstResult: this.state.firstElement,
       maxResults: 50
     });
-
-    this.setState({instances});
+    this.setState({
+      instances: instances.workflowInstances
+    });
   };
 
   // (1) should make state sort order asc if key is currently sorted by in desc order
