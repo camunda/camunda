@@ -30,6 +30,14 @@
 
   <dependencies>
 
+    <!-- depend on frontend -->
+    <dependency>
+      <groupId>org.camunda.optimize</groupId>
+      <artifactId>client</artifactId>
+      <version>${project.version}</version>
+      <type>pom</type>
+    </dependency>
+
     <!-- jetty -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -80,7 +88,7 @@
       <version>${jersey.version}</version>
     </dependency>
 
-    <!-- Jaxon -->
+    <!-- Jackson -->
     <dependency>
       <groupId>com.fasterxml.jackson.jaxrs</groupId>
       <artifactId>jackson-jaxrs-json-provider</artifactId>
@@ -106,7 +114,8 @@
       <artifactId>json-path</artifactId>
       <version>${jsonpath.version}</version>
     </dependency>
-    <!--ES-->
+
+    <!-- ES -->
     <dependency>
       <groupId>org.elasticsearch.client</groupId>
       <artifactId>transport</artifactId>
@@ -260,7 +269,7 @@
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpmime</artifactId>
-      <!-- please note that it can conflict with transitive httpclient
+      <!-- Please note that it can conflict with transitive httpclient
       from elasticsearch transport -->
       <version>${httpclient.version}</version>
       <exclusions>
@@ -271,7 +280,7 @@
       </exclusions>
     </dependency>
 
-    <!--plugin-->
+    <!-- Plugin -->
     <dependency>
       <groupId>org.camunda.optimize</groupId>
       <artifactId>plugin</artifactId>
@@ -357,7 +366,7 @@
           <argLine>-Xmx1024m -XX:MaxPermSize=256m</argLine>
           <skipTests>${skip.unit.tests}</skipTests>
           <trimStackTrace>false</trimStackTrace>
-          <forkCount>${env.LIMITS_CPU:-1}</forkCount>
+          <forkCount>${env.LIMITS_CPU}</forkCount>
           <reuseForks>true</reuseForks>
         </configuration>
       </plugin>
@@ -666,14 +675,15 @@
                 <configuration>
                   <skip>${skip.docker}</skip>
                   <target name="check-cambpm-is-running" description="Check whether CamBPM is running">
-                    <echo message="Checking CamBPM is running" />
-                    <waitfor maxwait="60" maxwaitunit="second" checkevery="1" checkeveryunit="second">
+                    <echo message="Check CamBPM Tomcat is running..." />
+                    <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
                       <socket server="localhost" port="${tomcat.connector.http.port}" />
                     </waitfor>
-                    <waitfor maxwait="60" maxwaitunit="second" checkevery="1" checkeveryunit="second">
+                    <echo message="CamBPM Tomcat socket is open. Checking for manager app to become available..." />
+                    <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
                       <http url="http://admin:admin@localhost:${tomcat.connector.http.port}/manager/text/list" />
                     </waitfor>
-                    <echo message="CamBPM is running" />
+                    <echo message="CamBPM Tomcat manager app is running." />
                   </target>
                 </configuration>
                 <goals>

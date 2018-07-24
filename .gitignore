@@ -16,6 +16,7 @@ errorShots/
 client/.vscode/
 client/dist
 client/*.md
+client/.node/
 
 qa/engine-rest-secure/overlays
 qa/engine-rest-custom/overlays

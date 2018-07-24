@@ -40,6 +40,10 @@
     <logback.version>1.2.3</logback.version>
     <slf4j.version>1.7.25</slf4j.version>
 
+    <version.node>v8.11.3</version.node>
+    <version.yarn>v1.7.0</version.yarn>
+    <skip.fe.build>false</skip.fe.build>
+
     <skip.docker>false</skip.docker>
     <database>h2</database>
     <docker.compose.file>docker-compose.yml</docker.compose.file>
@@ -94,10 +98,7 @@
             <version>2.5.3</version>
             <configuration>
               <releaseProfiles>production,engine-latest</releaseProfiles>
-              <!--&lt;!&ndash;branchName>release-ci3</branchName>-->
-              <!--<pushChanges>false</pushChanges>-->
-              <!--<localCheckout>true</localCheckout>-->
-              <allowTimestampedSnapshots>true</allowTimestampedSnapshots>
+              <localCheckout>true</localCheckout>
             </configuration>
           </plugin>
           <plugin>
@@ -138,31 +139,8 @@
             </executions>
           </plugin>
           <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-gpg-plugin</artifactId>
-            <version>1.6</version>
-            <configuration>
-              <skip>true</skip>
-            </configuration>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-deploy-plugin</artifactId>
-            <version>2.8.2</version>
-            <configuration>
-              <skip>true</skip>
-            </configuration>
-          </plugin>
-          <plugin>
             <groupId>org.sonatype.plugins</groupId>
             <artifactId>nexus-staging-maven-plugin</artifactId>
-            <version>1.6.7</version>
-            <extensions>true</extensions>
-            <configuration>
-              <serverId>camunda-nexus</serverId>
-              <nexusUrl>https://app.camunda.com/nexus/</nexusUrl>
-              <skipStaging>true</skipStaging>
-            </configuration>
           </plugin>
         </plugins>
       </build>
@@ -232,8 +210,36 @@
           <artifactId>cargo-maven2-plugin</artifactId>
           <version>1.6.8</version>
         </plugin>
+        <plugin>
+          <groupId>org.sonatype.plugins</groupId>
+          <artifactId>nexus-staging-maven-plugin</artifactId>
+          <version>1.6.7</version>
+          <extensions>true</extensions>
+          <configuration>
+            <serverId>camunda-nexus</serverId>
+            <nexusUrl>https://app.camunda.com/nexus/</nexusUrl>
+            <skipStaging>true</skipStaging>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-deploy-plugin</artifactId>
+          <version>2.8.2</version>
+        </plugin>
+        <plugin>
+          <groupId>com.github.eirslett</groupId>
+          <artifactId>frontend-maven-plugin</artifactId>
+          <version>1.6</version>
+        </plugin>
       </plugins>
     </pluginManagement>
+
+    <plugins>
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>nexus-staging-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
   </build>
 
   <distributionManagement>
