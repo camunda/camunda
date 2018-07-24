@@ -9,20 +9,12 @@ def static NODEJS_DOCKER_IMAGE() { return "node:8.11.2-alpine" }
 def static DIND_DOCKER_IMAGE() { return "docker:18.03.1-ce-dind" }
 def static PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
 
-String getGitCommitMsg() {
-  return sh(script: 'git log --format=%B -n 1 HEAD', returnStdout: true).trim()
-}
-
 String getGitCommitHash() {
   return sh(script: 'git rev-parse --verify HEAD', returnStdout: true).trim()
 }
 
 String getBranchSlug() {
   return env.BRANCH_NAME.toLowerCase().replaceAll(/[^a-z0-9-]/, '-').minus('-deploy')
-}
-
-String getAuthorEmail() {
-  return sh(script: "git show -s --pretty=format:%ae ${getGitCommitHash()}", returnStdout: true).trim()
 }
 
 String getImageTag() {

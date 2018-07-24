@@ -1,4 +1,4 @@
-FROM alpine:latest as builder
+FROM alpine:3.8 as builder
 WORKDIR /build
 
 ARG REPO=camunda-optimize
@@ -17,10 +17,10 @@ COPY docker/download.sh /bin/
 RUN /bin/download.sh
 
 ############ Production image ###############
-FROM openjdk:8u151-jre-alpine3.7
+FROM openjdk:8u171-jre-alpine3.8
 
 ENV OPTIMIZE_HOME=/optimize
-ENV JAVA_OPTS="-Xms512m -Xmx512m -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap"
+ENV JAVA_OPTS="-Xms512m -Xmx512m -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m"
 ENV OPTIMIZE_CLASSPATH=${OPTIMIZE_HOME}/environment:${OPTIMIZE_HOME}/plugin/*:${OPTIMIZE_HOME}/*
 ENV WAIT_FOR=
 ENV WAIT_FOR_TIMEOUT=30
