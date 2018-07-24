@@ -2,11 +2,6 @@
 
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 
-// general properties for CI execution
-def static NODE_POOL() { return "slaves" }
-def static MAVEN_DOCKER_IMAGE() { return "maven:3.5.3-jdk-8-slim" }
-def static NODEJS_DOCKER_IMAGE() { return "node:8.11.2-alpine" }
-def static DIND_DOCKER_IMAGE() { return "docker:18.03.1-ce-dind" }
 def static PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
 
 String getGitCommitHash() {
@@ -35,75 +30,6 @@ void buildNotification(String buildStatus) {
   def recipients = [[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']]
 
   emailext subject: subject, body: body, recipientProviders: recipients
-}
-
-static String mavenNodeJSDindAgent(env) {
-  return """
-apiVersion: v1
-kind: Pod
-metadata:
-  labels:
-    agent: optimize-ci-build
-spec:
-  nodeSelector:
-    cloud.google.com/gke-nodepool: ${NODE_POOL()}
-  containers:
-  - name: maven
-    image: ${MAVEN_DOCKER_IMAGE()}
-    command: ["cat"]
-    tty: true
-    env:
-      - name: LIMITS_CPU
-        valueFrom:
-          resourceFieldRef:
-            resource: limits.cpu
-      # every JVM process will get a 1/2 of HEAP from total memory
-      - name: JAVA_TOOL_OPTIONS
-        value: |
-          -XX:+UnlockExperimentalVMOptions
-          -XX:+UseCGroupMemoryLimitForHeap
-          -XX:MaxRAMFraction=\$(LIMITS_CPU)
-      - name: TZ
-        value: Europe/Berlin
-      - name: DOCKER_HOST
-        value: tcp://localhost:2375
-    resources:
-      limits:
-        cpu: 2
-        memory: 3Gi
-      requests:
-        cpu: 2
-        memory: 3Gi
-  - name: node
-    image: ${NODEJS_DOCKER_IMAGE()}
-    command: ["cat"]
-    tty: true
-    env:
-      - name: LIMITS_CPU
-        valueFrom:
-          resourceFieldRef:
-            resource: limits.cpu
-    resources:
-      limits:
-        cpu: 2
-        memory: 1Gi
-      requests:
-        cpu: 2
-        memory: 1Gi
-  - name: docker
-    image: ${DIND_DOCKER_IMAGE()}
-    args: ["--storage-driver=overlay2"]
-    securityContext:
-      privileged: true
-    tty: true
-    resources:
-      limits:
-        cpu: 4
-        memory: 4Gi
-      requests:
-        cpu: 4
-        memory: 4Gi
-"""
 }
 
 void integrationTestSteps(String engineVersion = 'latest') {
@@ -184,7 +110,7 @@ pipeline {
       cloud 'optimize-ci'
       label "optimize-ci-build_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
       defaultContainer 'jnlp'
-      yaml mavenNodeJSDindAgent(env)
+      yamlFile '.ci/podSpecs/mavenNodeJSDindAgent.yml'
     }
   }
 
@@ -248,7 +174,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-latest_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenNodeJSDindAgent(env)
+              yamlFile '.ci/podSpecs/mavenNodeJSDindAgent.yml'
             }
           }
           steps {
@@ -271,7 +197,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-7.9_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenNodeJSDindAgent(env)
+              yamlFile '.ci/podSpecs/mavenNodeJSDindAgent.yml'
             }
           }
           steps {
@@ -294,7 +220,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-7.8_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenNodeJSDindAgent(env)
+              yamlFile '.ci/podSpecs/mavenNodeJSDindAgent.yml'
             }
           }
           steps {

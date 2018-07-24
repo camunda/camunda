@@ -1,0 +1,65 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    agent: optimize-ci-build
+spec:
+  nodeSelector:
+    cloud.google.com/gke-nodepool: slaves
+  containers:
+  - name: maven
+    image: maven:3.5.3-jdk-8-slim
+    command: ["cat"]
+    tty: true
+    env:
+      - name: LIMITS_CPU
+        valueFrom:
+          resourceFieldRef:
+            resource: limits.cpu
+      # every JVM process will get a 1/2 of HEAP from total memory
+      - name: JAVA_TOOL_OPTIONS
+        value: |
+          -XX:+UnlockExperimentalVMOptions
+          -XX:+UseCGroupMemoryLimitForHeap
+          -XX:MaxRAMFraction=$(LIMITS_CPU)
+      - name: TZ
+        value: Europe/Berlin
+      - name: DOCKER_HOST
+        value: tcp://localhost:2375
+    resources:
+      limits:
+        cpu: 2
+        memory: 3Gi
+      requests:
+        cpu: 2
+        memory: 3Gi
+  - name: node
+    image: node:8.11.2-alpine
+    command: ["cat"]
+    tty: true
+    env:
+      - name: LIMITS_CPU
+        valueFrom:
+          resourceFieldRef:
+            resource: limits.cpu
+    resources:
+      limits:
+        cpu: 2
+        memory: 1Gi
+      requests:
+        cpu: 2
+        memory: 1Gi
+  - name: docker
+    image: docker:18.03.1-ce-dind
+    args: ["--storage-driver=overlay2"]
+    securityContext:
+      privileged: true
+    tty: true
+    resources:
+      limits:
+        cpu: 4
+        memory: 4Gi
+      requests:
+        cpu: 4
+        memory: 4Gi
