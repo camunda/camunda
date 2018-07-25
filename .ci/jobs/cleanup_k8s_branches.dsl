@@ -11,7 +11,7 @@ pipelineJob('cleanup-optimize-k8s-branches') {
   }
 
   parameters {
-    stringParam('INFRASTRUCTURE_BRANCH', 'SRE-155', 'Branch to use for checkout of deployment script.')
+    stringParam('INFRASTRUCTURE_BRANCH', 'master', 'Branch to use for checkout of deployment script.')
     booleanParam('DRY_RUN', false, 'Enable dry-run mode.')
   }
 

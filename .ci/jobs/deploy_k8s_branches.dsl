@@ -11,7 +11,7 @@ pipelineJob('deploy-optimize-branch-to-k8s') {
   }
 
   parameters {
-    stringParam('INFRASTRUCTURE_BRANCH', 'SRE-155', 'Branch to use for checkout of deployment script.')
+    stringParam('INFRASTRUCTURE_BRANCH', 'master', 'Branch to use for checkout of deployment script.')
     stringParam('BRANCH', 'master', 'Branch to use for deployment.')
     booleanParam('DRY_RUN', false, 'Enable dry-run mode.')
   }
