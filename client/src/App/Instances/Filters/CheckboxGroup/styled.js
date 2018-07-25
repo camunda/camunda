@@ -1,11 +1,11 @@
 import styled from 'styled-components';
 
-export const Filters = styled.div`
+export const CheckboxGroup = styled.div`
   padding: 10px 0;
   display: flex;
   flex-direction: column;
 `;
 
-export const NestedFilters = styled.div`
+export const NestedCheckboxes = styled.div`
   padding-left: 26px;
 `;

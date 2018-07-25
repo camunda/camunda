@@ -1,9 +1,9 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import Filter from './';
+import CheckboxeGroup from './';
 
-describe('Filter', () => {
+describe('CheckboxeGroup', () => {
   let node;
   let active, incidents;
 
@@ -15,7 +15,7 @@ describe('Filter', () => {
     incidents = false;
 
     node = shallow(
-      <Filter
+      <CheckboxeGroup
         type={'running'}
         filter={{active, incidents}}
         onChange={mockOnChange}
@@ -30,7 +30,7 @@ describe('Filter', () => {
     incidents = false;
     active = undefined;
     node = shallow(
-      <Filter
+      <CheckboxeGroup
         type={'running'}
         filter={{active, incidents}}
         onChange={mockOnChange}
@@ -47,7 +47,7 @@ describe('Filter', () => {
     incidents = false;
 
     node = shallow(
-      <Filter
+      <CheckboxeGroup
         type={'running'}
         filter={{active, incidents}}
         onChange={mockOnChange}
@@ -62,7 +62,7 @@ describe('Filter', () => {
   describe('Parent Checkbox', () => {
     beforeEach(() => {
       node = shallow(
-        <Filter
+        <CheckboxeGroup
           type={'running'}
           filter={{active, incidents}}
           onChange={mockOnChange}

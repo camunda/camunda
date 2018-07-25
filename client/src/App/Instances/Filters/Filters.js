@@ -10,7 +10,7 @@ import {DEFAULT_FILTER, FILTER_TYPES, DIRECTION} from 'modules/constants';
 import {isEqual} from 'modules/utils';
 import * as api from 'modules/api/instances';
 
-import Filter from './Filter';
+import CheckboxGroup from './CheckboxGroup';
 import * as Styled from './styled';
 import {parseWorkflowNames} from './service';
 
@@ -92,8 +92,7 @@ export default class Filters extends React.Component {
                 aria-label={PLACEHOLDER.errorMessage}
               />
             </Styled.Field>
-
-            <Filter
+            <CheckboxGroup
               type={FILTER_TYPES.RUNNING}
               filter={{
                 active,
@@ -101,7 +100,7 @@ export default class Filters extends React.Component {
               }}
               onChange={this.props.onFilterChange}
             />
-            <Filter
+            <CheckboxGroup
               type={FILTER_TYPES.FINISHED}
               filter={{
                 completed,

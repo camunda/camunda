@@ -6,7 +6,7 @@ import {INSTANCES_LABELS} from 'modules/constants';
 
 import * as Styled from './styled.js';
 
-export default class Filter extends React.Component {
+export default class CheckboxGroup extends React.Component {
   static propTypes = {
     filter: PropTypes.shape({
       active: PropTypes.bool,
@@ -56,7 +56,7 @@ export default class Filter extends React.Component {
   render() {
     const {type, filter} = this.props;
     return (
-      <Styled.Filters>
+      <Styled.CheckboxGroup>
         <div>
           <Checkbox
             id={type}
@@ -66,7 +66,7 @@ export default class Filter extends React.Component {
             onChange={this.onResetFilter}
           />
         </div>
-        <Styled.NestedFilters>
+        <Styled.NestedCheckboxes>
           {this.childFilterTypes.map(type => {
             return (
               <Checkbox
@@ -78,8 +78,8 @@ export default class Filter extends React.Component {
               />
             );
           })}
-        </Styled.NestedFilters>
-      </Styled.Filters>
+        </Styled.NestedCheckboxes>
+      </Styled.CheckboxGroup>
     );
   }
 }

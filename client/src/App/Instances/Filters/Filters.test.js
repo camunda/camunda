@@ -10,7 +10,7 @@ import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 import * as api from 'modules/api/instances/instances';
 
 import Filters from './Filters';
-import Filter from './Filter';
+import CheckboxGroup from './CheckboxGroup/';
 import * as Styled from './styled';
 import {parseWorkflowNames} from './service';
 
@@ -50,7 +50,7 @@ describe('Filters', () => {
       filter: {active, incidents, completed, canceled}
     } = mockProps;
     const node = shallow(<Filters {...mockProps} />);
-    const FilterNodes = node.find(Filter);
+    const FilterNodes = node.find(CheckboxGroup);
 
     // then
     expect(FilterNodes).toHaveLength(2);
