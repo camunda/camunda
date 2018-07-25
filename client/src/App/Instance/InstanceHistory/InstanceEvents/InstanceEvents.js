@@ -58,7 +58,7 @@ export default class InstanceEvents extends React.Component {
         }
 
         return (
-          <ExpansionPanel>
+          <ExpansionPanel key={idx}>
             <ExpansionPanel.Summary>{key}</ExpansionPanel.Summary>
             <ExpansionPanel.Details>
               {!!value && this.renderData(value)}
@@ -104,9 +104,9 @@ export default class InstanceEvents extends React.Component {
     return (
       <Styled.InstanceEvents {...this.props}>
         <Styled.EventsContainer>
-          {!this.state.groupedEvents
-            ? null
-            : this.state.groupedEvents.map(this.renderGroup)}
+          {this.state.groupedEvents
+            ? this.state.groupedEvents.map(this.renderGroup)
+            : null}
         </Styled.EventsContainer>
       </Styled.InstanceEvents>
     );

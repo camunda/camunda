@@ -57,9 +57,9 @@ export default class InstanceLog extends React.Component {
             <Styled.DocumentIcon isSelected={this.state.selected === HEADER} />
             {getWorkflowName(instance)}
           </Styled.Header>
-          {!activitiesDetails
-            ? null
-            : activitiesDetails.map(this.renderLogEntry)}
+          {activitiesDetails
+            ? activitiesDetails.map(this.renderLogEntry)
+            : null}
         </React.Fragment>
       </Styled.InstanceLog>
     );
