@@ -7,7 +7,7 @@ const options = {
     {key: 'avg_flowNode_duration', label: 'Average Flow Node Duration'},
     {key: 'min_flowNode_duration', label: 'Minimum Flow Node Duration'},
     {key: 'median_flowNode_duration', label: 'Median Flow Node Duration'},
-    {key: 'max_flowNode_duration', label: 'Max Flow Node Duration'}
+    {key: 'max_flowNode_duration', label: 'Maximum Flow Node Duration'}
   ],
   groupBy: [
     {key: 'none_null', label: 'None'},
