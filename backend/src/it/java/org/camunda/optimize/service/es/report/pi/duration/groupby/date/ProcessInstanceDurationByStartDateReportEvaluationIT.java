@@ -16,6 +16,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 import org.camunda.optimize.service.es.report.util.AvgProcessInstanceDurationByStartDateReportDataCreator;
 import org.camunda.optimize.service.es.report.util.MaxProcessInstanceDurationByStartDateReportDataCreator;
+import org.camunda.optimize.service.es.report.util.MedianProcessInstanceDurationByStartDateReportDataCreator;
 import org.camunda.optimize.service.es.report.util.MinProcessInstanceDurationByStartDateReportDataCreator;
 import org.camunda.optimize.service.es.report.util.ReportDataCreator;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -57,6 +58,7 @@ import static org.camunda.optimize.service.es.report.command.util.ReportConstant
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_AVERAGE_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_DURATION_PROPERTY;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MAX_OPERATION;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MEDIAN_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MIN_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_PROCESS_INSTANCE_ENTITY;
 import static org.camunda.optimize.test.util.VariableFilterUtilHelper.createBooleanVariableFilter;
@@ -123,7 +125,8 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     return new Object[]{
       new Object[]{new AvgProcessInstanceDurationByStartDateReportDataCreator(), VIEW_AVERAGE_OPERATION},
       new Object[]{new MinProcessInstanceDurationByStartDateReportDataCreator(), VIEW_MIN_OPERATION},
-      new Object[]{new MaxProcessInstanceDurationByStartDateReportDataCreator(), VIEW_MAX_OPERATION}
+      new Object[]{new MaxProcessInstanceDurationByStartDateReportDataCreator(), VIEW_MAX_OPERATION},
+      new Object[]{new MedianProcessInstanceDurationByStartDateReportDataCreator(), VIEW_MEDIAN_OPERATION}
     };
   }
 
@@ -171,7 +174,8 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     return new Object[]{
       new Object[]{new AvgProcessInstanceDurationByStartDateReportDataCreator(), VIEW_AVERAGE_OPERATION},
       new Object[]{new MinProcessInstanceDurationByStartDateReportDataCreator(), VIEW_MIN_OPERATION},
-      new Object[]{new MaxProcessInstanceDurationByStartDateReportDataCreator(), VIEW_MAX_OPERATION}
+      new Object[]{new MaxProcessInstanceDurationByStartDateReportDataCreator(), VIEW_MAX_OPERATION},
+      new Object[]{new MedianProcessInstanceDurationByStartDateReportDataCreator(), VIEW_MEDIAN_OPERATION}
     };
   }
 
@@ -188,11 +192,12 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
     adjustProcessInstanceDates(processInstanceDto.getId(), startDate, 0L, 1L);
     processInstanceDto = engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
-    adjustProcessInstanceDates(processInstanceDto.getId(), startDate, 0L, 3L);
+    adjustProcessInstanceDates(processInstanceDto.getId(), startDate, 0L, 9L);
+    processInstanceDto = engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
+    adjustProcessInstanceDates(processInstanceDto.getId(), startDate, 0L, 2L);
     ProcessInstanceEngineDto processInstanceDto3 =
       engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
     adjustProcessInstanceDates(processInstanceDto3.getId(), startDate, -1L, 1L);
-
 
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -216,14 +221,15 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
   private Object[] parametersForProcessInstancesStartedAtSameIntervalAreGroupedTogether() {
     return new Object[]{
-      new Object[]{new AvgProcessInstanceDurationByStartDateReportDataCreator(), 2000L, 1000L},
+      new Object[]{new AvgProcessInstanceDurationByStartDateReportDataCreator(), 4000L, 1000L},
       new Object[]{new MinProcessInstanceDurationByStartDateReportDataCreator(), 1000L, 1000L},
-      new Object[]{new MaxProcessInstanceDurationByStartDateReportDataCreator(), 3000L, 1000L}
+      new Object[]{new MaxProcessInstanceDurationByStartDateReportDataCreator(), 9000L, 1000L},
+      new Object[]{new MedianProcessInstanceDurationByStartDateReportDataCreator(), 2000L, 1000L}
     };
   }
 
   @Test
-  @Parameters
+  @Parameters(source = ReportDataCreatorProvider.class)
   public void resultIsSortedInDescendingOrder(ReportDataCreator reportDataCreator) throws Exception {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
@@ -251,13 +257,6 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     Map<String, Long> resultMap = result.getResult();
     assertThat(resultMap.size(), is(3));
     assertThat(new ArrayList<>(resultMap.keySet()), isInDescendingOrdering());
-  }
-
-  private Object[] parametersForResultIsSortedInDescendingOrder() {
-    return new Object[]{
-      new Object[]{new AvgProcessInstanceDurationByStartDateReportDataCreator()},
-      new Object[]{new MinProcessInstanceDurationByStartDateReportDataCreator()}
-    };
   }
 
   private Matcher<? super List<String>> isInDescendingOrdering()
@@ -302,7 +301,9 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
     adjustProcessInstanceDates(processInstanceDto.getId(), startDate, 0L, 1L);
     processInstanceDto = engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
-    adjustProcessInstanceDates(processInstanceDto.getId(), startDate, 0L, 3L);
+    adjustProcessInstanceDates(processInstanceDto.getId(), startDate, 0L, 9L);
+    processInstanceDto = engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
+    adjustProcessInstanceDates(processInstanceDto.getId(), startDate, 0L, 2L);
     ProcessInstanceEngineDto processInstanceDto3 =
       engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
     adjustProcessInstanceDates(processInstanceDto3.getId(), startDate, -2L, 1L);
@@ -334,9 +335,10 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
   private Object[] parametersForEmptyIntervalBetweenTwoProcessInstances() {
     return new Object[]{
-      new Object[]{new AvgProcessInstanceDurationByStartDateReportDataCreator(), 2000L},
+      new Object[]{new AvgProcessInstanceDurationByStartDateReportDataCreator(), 4000L},
       new Object[]{new MinProcessInstanceDurationByStartDateReportDataCreator(), 1000L},
-      new Object[]{new MaxProcessInstanceDurationByStartDateReportDataCreator(), 3000L}
+      new Object[]{new MaxProcessInstanceDurationByStartDateReportDataCreator(), 9000L},
+      new Object[]{new MedianProcessInstanceDurationByStartDateReportDataCreator(), 2000L}
     };
   }
 
@@ -762,7 +764,8 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
       return new Object[]{
         new Object[]{new AvgProcessInstanceDurationByStartDateReportDataCreator()},
         new Object[]{new MinProcessInstanceDurationByStartDateReportDataCreator()},
-        new Object[]{new MaxProcessInstanceDurationByStartDateReportDataCreator()}
+        new Object[]{new MaxProcessInstanceDurationByStartDateReportDataCreator()},
+        new Object[]{new MedianProcessInstanceDurationByStartDateReportDataCreator()}
       };
     }
   }

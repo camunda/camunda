@@ -14,6 +14,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 import org.camunda.optimize.service.es.report.util.AvgProcessInstanceDurationByNoneReportDataCreator;
 import org.camunda.optimize.service.es.report.util.MaxProcessInstanceDurationByNoneReportDataCreator;
+import org.camunda.optimize.service.es.report.util.MedianProcessInstanceDurationByNoneReportDataCreator;
 import org.camunda.optimize.service.es.report.util.MinProcessInstanceDurationByNoneReportDataCreator;
 import org.camunda.optimize.service.es.report.util.ReportDataCreator;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -38,6 +39,7 @@ import static org.camunda.optimize.service.es.report.command.util.ReportConstant
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_AVERAGE_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_DURATION_PROPERTY;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MAX_OPERATION;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MEDIAN_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MIN_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_PROCESS_INSTANCE_ENTITY;
 import static org.camunda.optimize.test.util.VariableFilterUtilHelper.createBooleanVariableFilter;
@@ -98,7 +100,8 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     return new Object[]{
       new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator(), VIEW_AVERAGE_OPERATION},
       new Object[]{new MinProcessInstanceDurationByNoneReportDataCreator(), VIEW_MIN_OPERATION},
-      new Object[]{new MaxProcessInstanceDurationByNoneReportDataCreator(), VIEW_MAX_OPERATION}
+      new Object[]{new MaxProcessInstanceDurationByNoneReportDataCreator(), VIEW_MAX_OPERATION},
+      new Object[]{new MedianProcessInstanceDurationByNoneReportDataCreator(), VIEW_MEDIAN_OPERATION}
     };
   }
 
@@ -138,7 +141,8 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     return new Object[]{
       new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator(), VIEW_AVERAGE_OPERATION},
       new Object[]{new MinProcessInstanceDurationByNoneReportDataCreator(), VIEW_MIN_OPERATION},
-      new Object[]{new MaxProcessInstanceDurationByNoneReportDataCreator(), VIEW_MAX_OPERATION}
+      new Object[]{new MaxProcessInstanceDurationByNoneReportDataCreator(), VIEW_MAX_OPERATION},
+      new Object[]{new MedianProcessInstanceDurationByNoneReportDataCreator(), VIEW_MEDIAN_OPERATION}
     };
   }
 
@@ -160,7 +164,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     Map<String, OffsetDateTime> endDatesToUpdate = new HashMap<>();
     endDatesToUpdate.put(processInstanceDto.getId(), startDate.plusSeconds(1));
     endDatesToUpdate.put(processInstanceDto2.getId(), startDate.plusSeconds(2));
-    endDatesToUpdate.put(processInstanceDto3.getId(), startDate.plusSeconds(3));
+    endDatesToUpdate.put(processInstanceDto3.getId(), startDate.plusSeconds(9));
     engineDatabaseRule.updateProcessInstanceEndDates(endDatesToUpdate);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -177,9 +181,10 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
   private Object[] parametersForEvaluateReportForMultipleEvents() {
     return new Object[]{
-      new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator(), 2000L},
+      new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator(), 4000L},
       new Object[]{new MinProcessInstanceDurationByNoneReportDataCreator(), 1000L},
-      new Object[]{new MaxProcessInstanceDurationByNoneReportDataCreator(), 3000L}
+      new Object[]{new MaxProcessInstanceDurationByNoneReportDataCreator(), 9000L},
+      new Object[]{new MedianProcessInstanceDurationByNoneReportDataCreator(), 2000L}
     };
   }
 
@@ -207,7 +212,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
     processInstanceDto = engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
     engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(3));
+    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(9));
     processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
     engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(2));
@@ -228,9 +233,10 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
   private Object[] parametersForReportAcrossAllVersions() {
     return new Object[]{
-      new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator(), 2000L},
+      new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator(), 4000L},
       new Object[]{new MinProcessInstanceDurationByNoneReportDataCreator(), 1000L},
-      new Object[]{new MaxProcessInstanceDurationByNoneReportDataCreator(), 3000L}
+      new Object[]{new MaxProcessInstanceDurationByNoneReportDataCreator(), 9000L},
+      new Object[]{new MedianProcessInstanceDurationByNoneReportDataCreator(), 2000L}
     };
   }
 
@@ -248,7 +254,10 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
     processInstanceDto = engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
     engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(3));
+    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(9));
+    processInstanceDto = engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
+    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(2));
     deployAndStartSimpleServiceTaskProcess();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -266,9 +275,10 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
   private Object[] parametersForOtherProcessDefinitionsDoNoAffectResult() {
     return new Object[]{
-      new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator(), 2000L},
+      new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator(), 4000L},
       new Object[]{new MinProcessInstanceDurationByNoneReportDataCreator(), 1000L},
-      new Object[]{new MaxProcessInstanceDurationByNoneReportDataCreator(), 3000L}
+      new Object[]{new MaxProcessInstanceDurationByNoneReportDataCreator(), 9000L},
+      new Object[]{new MedianProcessInstanceDurationByNoneReportDataCreator(), 2000L}
     };
   }
 
@@ -433,7 +443,8 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
       return new Object[]{
         new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator()},
         new Object[]{new MinProcessInstanceDurationByNoneReportDataCreator()},
-        new Object[]{new MaxProcessInstanceDurationByNoneReportDataCreator()}
+        new Object[]{new MaxProcessInstanceDurationByNoneReportDataCreator()},
+        new Object[]{new MedianProcessInstanceDurationByNoneReportDataCreator()}
       };
     }
   }

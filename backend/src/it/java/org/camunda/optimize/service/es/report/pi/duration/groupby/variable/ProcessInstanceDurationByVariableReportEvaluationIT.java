@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.util.AvgProcessInstanceDurationGroupByVariableReportDataCreator;
 import org.camunda.optimize.service.es.report.util.MaxProcessInstanceDurationGroupByVariableReportDataCreator;
+import org.camunda.optimize.service.es.report.util.MedianProcessInstanceDurationGroupByVariableReportDataCreator;
 import org.camunda.optimize.service.es.report.util.MinProcessInstanceDurationGroupByVariableReportDataCreator;
 import org.camunda.optimize.service.es.report.util.ReportDataCreator;
 import org.camunda.optimize.service.util.VariableHelper;
@@ -43,6 +44,7 @@ import static org.camunda.optimize.service.es.report.command.util.ReportConstant
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_AVERAGE_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_DURATION_PROPERTY;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MAX_OPERATION;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MEDIAN_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MIN_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_PROCESS_INSTANCE_ENTITY;
 import static org.hamcrest.CoreMatchers.is;
@@ -109,7 +111,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     return new Object[]{
       new Object[]{new AvgProcessInstanceDurationGroupByVariableReportDataCreator(), VIEW_AVERAGE_OPERATION},
       new Object[]{new MinProcessInstanceDurationGroupByVariableReportDataCreator(), VIEW_MIN_OPERATION},
-      new Object[]{new MaxProcessInstanceDurationGroupByVariableReportDataCreator(), VIEW_MAX_OPERATION}
+      new Object[]{new MaxProcessInstanceDurationGroupByVariableReportDataCreator(), VIEW_MAX_OPERATION},
+      new Object[]{new MedianProcessInstanceDurationGroupByVariableReportDataCreator(), VIEW_MEDIAN_OPERATION}
     };
   }
 
@@ -160,7 +163,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     return new Object[]{
       new Object[]{new AvgProcessInstanceDurationGroupByVariableReportDataCreator(), VIEW_AVERAGE_OPERATION},
       new Object[]{new MinProcessInstanceDurationGroupByVariableReportDataCreator(), VIEW_MIN_OPERATION},
-      new Object[]{new MaxProcessInstanceDurationGroupByVariableReportDataCreator(), VIEW_MAX_OPERATION}
+      new Object[]{new MaxProcessInstanceDurationGroupByVariableReportDataCreator(), VIEW_MAX_OPERATION},
+      new Object[]{new MedianProcessInstanceDurationGroupByVariableReportDataCreator(), VIEW_MEDIAN_OPERATION}
     };
   }
 
@@ -249,26 +253,19 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     OffsetDateTime endDate = startDate.plusSeconds(1);
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar1");
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), endDate);
+    ProcessDefinitionEngineDto processDefinitionDto = deploySimpleServiceTaskProcess();
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
     variables.put("foo", "bar2");
-    ProcessInstanceEngineDto processInstanceDto2 =
-      engineRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto2.getId(), startDate);
-    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto2.getId(), endDate);
-    processInstanceDto2 = engineRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
-    startDate = OffsetDateTime.now();
-    endDate = startDate.plusSeconds(3);
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto2.getId(), startDate);
-    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto2.getId(), endDate);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 9);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 2);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
     ReportDataDto reportData = reportDataCreator.create(
-        processInstanceDto.getProcessDefinitionKey(),
-        processInstanceDto.getProcessDefinitionVersion(),
+        processDefinitionDto.getKey(),
+        String.valueOf(processDefinitionDto.getVersion()),
       "foo",
       "String"
     );
@@ -276,8 +273,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
 
     // then
     ReportDataDto resultReportDataDto = result.getData();
-    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
+    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processDefinitionDto.getKey()));
+    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(String.valueOf(processDefinitionDto.getVersion())));
     assertThat(result.getResult(), is(notNullValue()));
     Map<String, Long> variableValueToCount = result.getResult();
     assertThat(variableValueToCount.size(), is(2));
@@ -287,9 +284,10 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
 
   private Object[] parametersForMultipleProcessInstances() {
     return new Object[]{
-      new Object[]{new AvgProcessInstanceDurationGroupByVariableReportDataCreator(), 1000L, 2000L},
+      new Object[]{new AvgProcessInstanceDurationGroupByVariableReportDataCreator(), 1000L, 4000L},
       new Object[]{new MinProcessInstanceDurationGroupByVariableReportDataCreator(), 1000L, 1000L},
-      new Object[]{new MaxProcessInstanceDurationGroupByVariableReportDataCreator(), 1000L, 3000L}
+      new Object[]{new MaxProcessInstanceDurationGroupByVariableReportDataCreator(), 1000L, 9000L},
+      new Object[]{new MedianProcessInstanceDurationGroupByVariableReportDataCreator(), 1000L, 2000L}
     };
   }
 
@@ -612,6 +610,19 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
       .collect(Collectors.toList());
   }
 
+  private void startProcessInstanceShiftedBySeconds(Map<String, Object> variables,
+                                                    String processDefinitionId,
+                                                    int secondsToShift) throws SQLException {
+    ProcessInstanceEngineDto processInstanceDto2;
+    OffsetDateTime startDate;
+    OffsetDateTime endDate;
+    processInstanceDto2 = engineRule.startProcessInstance(processDefinitionId, variables);
+    startDate = OffsetDateTime.now();
+    endDate = startDate.plusSeconds(secondsToShift);
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto2.getId(), startDate);
+    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto2.getId(), endDate);
+  }
+
   private ProcessDefinitionEngineDto deploySimpleServiceTaskProcess() {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
@@ -687,7 +698,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
       return new Object[]{
         new Object[]{new AvgProcessInstanceDurationGroupByVariableReportDataCreator()},
         new Object[]{new MinProcessInstanceDurationGroupByVariableReportDataCreator()},
-        new Object[]{new MaxProcessInstanceDurationGroupByVariableReportDataCreator()}
+        new Object[]{new MaxProcessInstanceDurationGroupByVariableReportDataCreator()},
+        new Object[]{new MedianProcessInstanceDurationGroupByVariableReportDataCreator()}
       };
     }
   }

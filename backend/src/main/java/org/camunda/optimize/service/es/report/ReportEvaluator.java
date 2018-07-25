@@ -12,14 +12,17 @@ import org.camunda.optimize.service.es.report.command.NotSupportedCommand;
 import org.camunda.optimize.service.es.report.command.RawDataCommand;
 import org.camunda.optimize.service.es.report.command.flownode.duration.AverageFlowNodeDurationByFlowNodeCommand;
 import org.camunda.optimize.service.es.report.command.pi.duration.groupby.date.MaxProcessInstanceDurationGroupedByStartDateCommand;
+import org.camunda.optimize.service.es.report.command.pi.duration.groupby.date.MedianProcessInstanceDurationGroupedByStartDateCommand;
 import org.camunda.optimize.service.es.report.command.pi.duration.groupby.date.MinProcessInstanceDurationGroupedByStartDateCommand;
 import org.camunda.optimize.service.es.report.command.pi.duration.groupby.none.MaxProcessInstanceDurationGroupByNoneCommand;
+import org.camunda.optimize.service.es.report.command.pi.duration.groupby.none.MedianProcessInstanceDurationGroupByNoneCommand;
 import org.camunda.optimize.service.es.report.command.pi.duration.groupby.none.MinProcessInstanceDurationGroupByNoneCommand;
 import org.camunda.optimize.service.es.report.command.pi.duration.groupby.variable.AverageProcessInstanceDurationByVariableCommand;
 import org.camunda.optimize.service.es.report.command.pi.duration.groupby.none.AverageProcessInstanceDurationGroupByNoneCommand;
 import org.camunda.optimize.service.es.report.command.pi.duration.groupby.date.AverageProcessInstanceDurationGroupedByStartDateCommand;
 import org.camunda.optimize.service.es.report.command.flownode.frequency.CountFlowNodeFrequencyByFlowNodeCommand;
 import org.camunda.optimize.service.es.report.command.pi.duration.groupby.variable.MaxProcessInstanceDurationByVariableCommand;
+import org.camunda.optimize.service.es.report.command.pi.duration.groupby.variable.MedianProcessInstanceDurationByVariableCommand;
 import org.camunda.optimize.service.es.report.command.pi.duration.groupby.variable.MinProcessInstanceDurationByVariableCommand;
 import org.camunda.optimize.service.es.report.command.pi.frequency.CountProcessInstanceFrequencyByStartDateCommand;
 import org.camunda.optimize.service.es.report.command.pi.frequency.CountProcessInstanceFrequencyByVariableCommand;
@@ -49,6 +52,7 @@ import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator
 import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createMaxFlowNodeDurationView;
 import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createMaxProcessInstanceDurationView;
 import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createMedianFlowNodeDurationView;
+import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createMedianProcessInstanceDurationView;
 import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createMinFlowNodeDurationView;
 import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createMinProcessInstanceDurationView;
 import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createRawDataView;
@@ -68,77 +72,21 @@ public class ReportEvaluator {
   private static Map<String, Map<String, Command>> viewToGroupByToCommand = new HashMap<>();
 
   static {
-    Map<String, Command> groupByToCommand = new HashMap<>();
+    addRawDataView();
 
-    groupByToCommand.put(createGroupByNone().getKey(), new RawDataCommand());
-    viewToGroupByToCommand.put(createRawDataView().getKey(), groupByToCommand);
+    addCountProcessInstanceFrequencyView();
+    addCountFlowNodeFrequencyView();
 
-    groupByToCommand = new HashMap<>();
-    groupByToCommand.put(createGroupByNone().getKey(), new CountProcessInstanceFrequencyGroupByNoneCommand());
-    groupByToCommand.put(createGroupByStartDateDto().getKey(), new CountProcessInstanceFrequencyByStartDateCommand());
-    groupByToCommand.put(createGroupByVariable().getKey(), new CountProcessInstanceFrequencyByVariableCommand());
-    viewToGroupByToCommand.put(createCountProcessInstanceFrequencyView().getKey(), groupByToCommand);
+    addAverageProcessInstanceDurationView();
+    addMinProcessInstanceDurationView();
+    addMaxProcessInstanceDurationView();
+    addMedianProcessInstanceDurationView();
 
-    groupByToCommand = new HashMap<>();
-    groupByToCommand.put(createGroupByFlowNode().getKey(), new CountFlowNodeFrequencyByFlowNodeCommand());
-    viewToGroupByToCommand.put(createCountFlowNodeFrequencyView().getKey(), groupByToCommand);
-
-    // average process instance duration view
-    groupByToCommand = new HashMap<>();
-    groupByToCommand.put(
-      createGroupByNone().getKey(),
-      new AverageProcessInstanceDurationGroupByNoneCommand()
-    );
-    groupByToCommand.put(
-      createGroupByStartDateDto().getKey(),
-      new AverageProcessInstanceDurationGroupedByStartDateCommand()
-    );
-    groupByToCommand.put(createGroupByVariable().getKey(), new AverageProcessInstanceDurationByVariableCommand());
-    viewToGroupByToCommand.put(createAverageProcessInstanceDurationView().getKey(), groupByToCommand);
-
-    // min process instance duration view
-    groupByToCommand = new HashMap<>();
-    groupByToCommand.put(
-      createGroupByNone().getKey(),
-      new MinProcessInstanceDurationGroupByNoneCommand()
-    );
-    groupByToCommand.put(
-      createGroupByStartDateDto().getKey(),
-      new MinProcessInstanceDurationGroupedByStartDateCommand()
-    );
-    groupByToCommand.put(createGroupByVariable().getKey(), new MinProcessInstanceDurationByVariableCommand());
-    viewToGroupByToCommand.put(createMinProcessInstanceDurationView().getKey(), groupByToCommand);
-
-    // max process instance duration view
-    groupByToCommand = new HashMap<>();
-    groupByToCommand.put(
-      createGroupByNone().getKey(),
-      new MaxProcessInstanceDurationGroupByNoneCommand()
-    );
-    groupByToCommand.put(
-      createGroupByStartDateDto().getKey(),
-      new MaxProcessInstanceDurationGroupedByStartDateCommand()
-    );
-    groupByToCommand.put(createGroupByVariable().getKey(), new MaxProcessInstanceDurationByVariableCommand());
-    viewToGroupByToCommand.put(createMaxProcessInstanceDurationView().getKey(), groupByToCommand);
-
-    groupByToCommand = new HashMap<>();
-    groupByToCommand.put(createGroupByFlowNode().getKey(), new AverageFlowNodeDurationByFlowNodeCommand());
-    viewToGroupByToCommand.put(createAverageFlowNodeDurationView().getKey(), groupByToCommand);
-
-    groupByToCommand = new HashMap<>();
-    groupByToCommand.put(createGroupByFlowNode().getKey(), new MinFlowNodeDurationByFlowNodeCommand());
-    viewToGroupByToCommand.put(createMinFlowNodeDurationView().getKey(), groupByToCommand);
-
-    groupByToCommand = new HashMap<>();
-    groupByToCommand.put(createGroupByFlowNode().getKey(), new MaxFlowNodeDurationByFlowNodeCommand());
-    viewToGroupByToCommand.put(createMaxFlowNodeDurationView().getKey(), groupByToCommand);
-
-    groupByToCommand = new HashMap<>();
-    groupByToCommand.put(createGroupByFlowNode().getKey(), new MedianFlowNodeDurationByFlowNodeCommand());
-    viewToGroupByToCommand.put(createMedianFlowNodeDurationView().getKey(), groupByToCommand);
+    addAverageFlowNodeDurationView();
+    addMindFlowNodeDurationView();
+    addMaxFlowNodeDurationView();
+    addMedianFlowNodeDurationView();
   }
-
 
   public ReportResultDto evaluate(ReportDataDto reportData) throws OptimizeException {
     CommandContext commandContext = createCommandContext(reportData);
@@ -172,4 +120,115 @@ public class ReportEvaluator {
     commandContext.setReportData(reportData);
     return commandContext;
   }
+
+  private static void addMedianFlowNodeDurationView() {
+    Map<String, Command> groupByToCommand;
+    groupByToCommand = new HashMap<>();
+    groupByToCommand.put(createGroupByFlowNode().getKey(), new MedianFlowNodeDurationByFlowNodeCommand());
+    viewToGroupByToCommand.put(createMedianFlowNodeDurationView().getKey(), groupByToCommand);
+  }
+
+  private static void addMaxFlowNodeDurationView() {
+    Map<String, Command> groupByToCommand;
+    groupByToCommand = new HashMap<>();
+    groupByToCommand.put(createGroupByFlowNode().getKey(), new MaxFlowNodeDurationByFlowNodeCommand());
+    viewToGroupByToCommand.put(createMaxFlowNodeDurationView().getKey(), groupByToCommand);
+  }
+
+  private static void addMindFlowNodeDurationView() {
+    Map<String, Command> groupByToCommand;
+    groupByToCommand = new HashMap<>();
+    groupByToCommand.put(createGroupByFlowNode().getKey(), new MinFlowNodeDurationByFlowNodeCommand());
+    viewToGroupByToCommand.put(createMinFlowNodeDurationView().getKey(), groupByToCommand);
+  }
+
+  private static void addAverageFlowNodeDurationView() {
+    Map<String, Command> groupByToCommand;
+    groupByToCommand = new HashMap<>();
+    groupByToCommand.put(createGroupByFlowNode().getKey(), new AverageFlowNodeDurationByFlowNodeCommand());
+    viewToGroupByToCommand.put(createAverageFlowNodeDurationView().getKey(), groupByToCommand);
+  }
+
+  private static void addRawDataView() {
+    Map<String, Command> groupByToCommand = new HashMap<>();
+    groupByToCommand.put(createGroupByNone().getKey(), new RawDataCommand());
+    viewToGroupByToCommand.put(createRawDataView().getKey(), groupByToCommand);
+  }
+
+  private static void addCountProcessInstanceFrequencyView() {
+    Map<String, Command> groupByToCommand;
+    groupByToCommand = new HashMap<>();
+    groupByToCommand.put(createGroupByNone().getKey(), new CountProcessInstanceFrequencyGroupByNoneCommand());
+    groupByToCommand.put(createGroupByStartDateDto().getKey(), new CountProcessInstanceFrequencyByStartDateCommand());
+    groupByToCommand.put(createGroupByVariable().getKey(), new CountProcessInstanceFrequencyByVariableCommand());
+    viewToGroupByToCommand.put(createCountProcessInstanceFrequencyView().getKey(), groupByToCommand);
+  }
+
+  private static void addCountFlowNodeFrequencyView() {
+    Map<String, Command> groupByToCommand;
+    groupByToCommand = new HashMap<>();
+    groupByToCommand.put(createGroupByFlowNode().getKey(), new CountFlowNodeFrequencyByFlowNodeCommand());
+    viewToGroupByToCommand.put(createCountFlowNodeFrequencyView().getKey(), groupByToCommand);
+  }
+
+  private static void addAverageProcessInstanceDurationView() {
+    Map<String, Command> groupByToCommand;
+    groupByToCommand = new HashMap<>();
+    groupByToCommand.put(
+      createGroupByNone().getKey(),
+      new AverageProcessInstanceDurationGroupByNoneCommand()
+    );
+    groupByToCommand.put(
+      createGroupByStartDateDto().getKey(),
+      new AverageProcessInstanceDurationGroupedByStartDateCommand()
+    );
+    groupByToCommand.put(createGroupByVariable().getKey(), new AverageProcessInstanceDurationByVariableCommand());
+    viewToGroupByToCommand.put(createAverageProcessInstanceDurationView().getKey(), groupByToCommand);
+  }
+
+  private static void addMinProcessInstanceDurationView() {
+    Map<String, Command> groupByToCommand;
+    groupByToCommand = new HashMap<>();
+    groupByToCommand.put(
+      createGroupByNone().getKey(),
+      new MinProcessInstanceDurationGroupByNoneCommand()
+    );
+    groupByToCommand.put(
+      createGroupByStartDateDto().getKey(),
+      new MinProcessInstanceDurationGroupedByStartDateCommand()
+    );
+    groupByToCommand.put(createGroupByVariable().getKey(), new MinProcessInstanceDurationByVariableCommand());
+    viewToGroupByToCommand.put(createMinProcessInstanceDurationView().getKey(), groupByToCommand);
+  }
+
+  private static void addMaxProcessInstanceDurationView() {
+    Map<String, Command> groupByToCommand;
+    groupByToCommand = new HashMap<>();
+    groupByToCommand.put(
+      createGroupByNone().getKey(),
+      new MaxProcessInstanceDurationGroupByNoneCommand()
+    );
+    groupByToCommand.put(
+      createGroupByStartDateDto().getKey(),
+      new MaxProcessInstanceDurationGroupedByStartDateCommand()
+    );
+    groupByToCommand.put(createGroupByVariable().getKey(), new MaxProcessInstanceDurationByVariableCommand());
+    viewToGroupByToCommand.put(createMaxProcessInstanceDurationView().getKey(), groupByToCommand);
+  }
+
+  private static void addMedianProcessInstanceDurationView() {
+    Map<String, Command> groupByToCommand;
+    groupByToCommand = new HashMap<>();
+    groupByToCommand.put(
+      createGroupByNone().getKey(),
+      new MedianProcessInstanceDurationGroupByNoneCommand()
+    );
+    groupByToCommand.put(
+      createGroupByStartDateDto().getKey(),
+      new MedianProcessInstanceDurationGroupedByStartDateCommand()
+    );
+    groupByToCommand.put(createGroupByVariable().getKey(), new MedianProcessInstanceDurationByVariableCommand());
+    viewToGroupByToCommand.put(createMedianProcessInstanceDurationView().getKey(), groupByToCommand);
+  }
+
 }
