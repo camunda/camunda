@@ -45,7 +45,7 @@ export const CustomCheckbox = themed(styled.div`
   margin-right: 10px;
   width: 12px;
   height: 12px;
-  
+
   /* box styles */
   &:before {
     content: '';
@@ -86,8 +86,8 @@ export const CustomCheckbox = themed(styled.div`
 
   /* simulate focus */
   &:before {
-    outline: ${({focused}) => focused && 'rgb(59, 153, 252) auto 1px'};
-    -moz-outline-radius: ${({focused}) => focused && '3px'};
+    box-shadow: ${({focused}) =>
+      focused && '0px 0px 0px 1px rgb(59, 153, 252)'};
   }
 
   /* default: empty checkbox */
@@ -118,18 +118,18 @@ export const CustomCheckbox = themed(styled.div`
 `);
 
 const indeterminateStyles = `
-left: 4px;
-top: 4px;
-width: 6px;
-height: 2px;
-border-width: 0 0 2px 0;
+  left: 4px;
+  top: 4px;
+  width: 6px;
+  height: 2px;
+  border-width: 0 0 2px 0;
 `;
 
 const checkMarkStyles = `
-left: 2px;
-top: 4px;
-height:3px;
-width: 8px;
-border-width: 0 0 2px 2px;
-transform: rotate(-50deg);
+  left: 2px;
+  top: 4px;
+  height:3px;
+  width: 8px;
+  border-width: 0 0 2px 2px;
+  transform: rotate(-50deg);
 `;
