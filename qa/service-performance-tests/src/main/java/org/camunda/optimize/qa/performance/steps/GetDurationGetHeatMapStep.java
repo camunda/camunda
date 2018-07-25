@@ -10,7 +10,7 @@ import ru.yandex.qatools.allure.annotations.Step;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.DATE_UNIT_YEAR;
-import static org.camunda.optimize.test.util.ReportDataHelper.createAvgPIDurationGroupByStartDateReport;
+import static org.camunda.optimize.test.util.ReportDataHelper.createAverageProcessInstanceDurationGroupByStartDateReport;
 
 public class GetDurationGetHeatMapStep extends GetHeatMapStep {
 
@@ -31,6 +31,6 @@ public class GetDurationGetHeatMapStep extends GetHeatMapStep {
 
   @Override
   protected ReportDataDto createRequest(String processDefinitionKey, String processDefinitionVersion) {
-    return createAvgPIDurationGroupByStartDateReport(processDefinitionKey,  processDefinitionVersion, DATE_UNIT_YEAR);
+    return createAverageProcessInstanceDurationGroupByStartDateReport(processDefinitionKey,  processDefinitionVersion, DATE_UNIT_YEAR);
   }
 }
