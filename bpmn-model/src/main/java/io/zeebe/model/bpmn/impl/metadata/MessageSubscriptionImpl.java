@@ -17,19 +17,21 @@ package io.zeebe.model.bpmn.impl.metadata;
 
 import io.zeebe.model.bpmn.instance.MessageSubscription;
 import io.zeebe.msgpack.jsonpath.JsonPathQuery;
+import io.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
 
 public class MessageSubscriptionImpl implements MessageSubscription {
 
-  private final String messageName;
+  private final DirectBuffer messageName;
   private final JsonPathQuery correlationKey;
 
   public MessageSubscriptionImpl(String messageName, JsonPathQuery correlationKey) {
-    this.messageName = messageName;
+    this.messageName = BufferUtil.wrapString(messageName);
     this.correlationKey = correlationKey;
   }
 
   @Override
-  public String getMessageName() {
+  public DirectBuffer getMessageName() {
     return messageName;
   }
 

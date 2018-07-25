@@ -40,6 +40,7 @@
         <validValue name="TOPIC">8</validValue>
         <validValue name="ID">9</validValue>
         <validValue name="MESSAGE">10</validValue>
+        <validValue name="MESSAGE_SUBSCRIPTION">11</validValue>
     </enum>
 
     <enum name="ControlMessageType" encodingType="uint8" description="The type of the control message.">

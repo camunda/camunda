@@ -23,9 +23,12 @@ import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
+import io.zeebe.broker.subscription.message.processor.OpenMessageSubscriptionProcessor;
+import io.zeebe.broker.subscription.message.processor.PublishMessageProcessor;
 import io.zeebe.broker.subscription.message.state.MessageDataStore;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.MessageIntent;
+import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceGroupReference;
@@ -67,6 +70,10 @@ public class MessageService implements Service<MessageService> {
         .keyGenerator(new KeyGenerator(0, 1))
         .onCommand(
             ValueType.MESSAGE, MessageIntent.PUBLISH, new PublishMessageProcessor(messageDataStore))
+        .onCommand(
+            ValueType.MESSAGE_SUBSCRIPTION,
+            MessageSubscriptionIntent.OPEN,
+            new OpenMessageSubscriptionProcessor())
         .withStateResource(messageDataStore)
         .build();
   }

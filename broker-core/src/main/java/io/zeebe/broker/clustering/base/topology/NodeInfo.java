@@ -25,6 +25,7 @@ public class NodeInfo {
   private final SocketAddress clientApiAddress;
   private final SocketAddress managementApiAddress;
   private final SocketAddress replicationApiAddress;
+  private final SocketAddress subscriptionApiAddress;
 
   private final Set<PartitionInfo> leaders = new HashSet<>();
   private final Set<PartitionInfo> followers = new HashSet<>();
@@ -32,10 +33,12 @@ public class NodeInfo {
   public NodeInfo(
       final SocketAddress clientApiAddress,
       final SocketAddress managementApiAddress,
-      final SocketAddress replicationApiAddress) {
+      final SocketAddress replicationApiAddress,
+      final SocketAddress subscriptionApiAddress) {
     this.clientApiAddress = clientApiAddress;
     this.managementApiAddress = managementApiAddress;
     this.replicationApiAddress = replicationApiAddress;
+    this.subscriptionApiAddress = subscriptionApiAddress;
   }
 
   public SocketAddress getClientApiAddress() {
@@ -48,6 +51,10 @@ public class NodeInfo {
 
   public SocketAddress getReplicationApiAddress() {
     return replicationApiAddress;
+  }
+
+  public SocketAddress getSubscriptionApiAddress() {
+    return subscriptionApiAddress;
   }
 
   public Set<PartitionInfo> getLeaders() {
@@ -77,8 +84,8 @@ public class NodeInfo {
   @Override
   public String toString() {
     return String.format(
-        "Node{clientApi=%s, managementApi=%s, replicationApi=%s}",
-        clientApiAddress, managementApiAddress, replicationApiAddress);
+        "Node{clientApi=%s, managementApi=%s, replicationApi=%s, subscriptionApi=%s}",
+        clientApiAddress, managementApiAddress, replicationApiAddress, subscriptionApiAddress);
   }
 
   @Override

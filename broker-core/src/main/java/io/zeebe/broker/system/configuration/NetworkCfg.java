@@ -28,6 +28,7 @@ public class NetworkCfg implements ConfigurationEntry {
   private SocketBindingClientApiCfg client = new SocketBindingClientApiCfg();
   private SocketBindingManagementCfg management = new SocketBindingManagementCfg();
   private SocketBindingReplicationCfg replication = new SocketBindingReplicationCfg();
+  private SocketBindingSubscriptionCfg subscription = new SocketBindingSubscriptionCfg();
 
   @Override
   public void init(BrokerCfg brokerCfg, String brokerBase, Environment environment) {
@@ -35,6 +36,7 @@ public class NetworkCfg implements ConfigurationEntry {
     client.applyDefaults(this);
     management.applyDefaults(this);
     replication.applyDefaults(this);
+    subscription.applyDefaults(this);
   }
 
   private void applyEnvironment(Environment environment) {
@@ -87,5 +89,13 @@ public class NetworkCfg implements ConfigurationEntry {
 
   public void setReplication(SocketBindingReplicationCfg replicationApi) {
     this.replication = replicationApi;
+  }
+
+  public SocketBindingSubscriptionCfg getSubscription() {
+    return subscription;
+  }
+
+  public void setSubscription(SocketBindingSubscriptionCfg subscription) {
+    this.subscription = subscription;
   }
 }

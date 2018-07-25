@@ -134,6 +134,21 @@ replicationFactor = 1
 # Sets the buffer size used for buffering outgoing raft (replication) messages
 # sendBufferSize = "16M"
 
+[network.subscription]
+
+# Overrides the host the subscription api binds to
+# host = "localhost"
+#
+# Sets the port the subscription api binds to
+# port = 51018
+#
+# Overrides the size of the buffer to be used for buffering outgoing messages to
+# other brokers through the subscription protocols
+# sendBufferSize = "16M"
+#
+# Sets the buffer size used for receiving subscription messages and others
+# receiveBufferSize = "8M"
+
 [data]
 
 # This section allows to configure Zeebe's data storage. Data is stored in

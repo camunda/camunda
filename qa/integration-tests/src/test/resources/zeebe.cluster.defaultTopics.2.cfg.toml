@@ -16,5 +16,8 @@ port = 41016
 [network.replication]
 port = 41017
 
+[network.subscription]
+port = 41018
+
 [cluster]
 initialContactPoints = [ "localhost:51016" ]
