@@ -27,7 +27,7 @@ public class MetadataService {
   private final String version;
 
   public MetadataService() {
-    this.version = Version.VERSION;
+    this.version = removeAppendixFromVersion(Version.VERSION);;
   }
 
   @PostConstruct
@@ -44,6 +44,13 @@ public class MetadataService {
         return null;
       });
     }
+  }
+
+  private static String removeAppendixFromVersion(String versionWithAppendix) {
+    // The version might have an appendix like 2.2.0-SNAPSHOT
+    int indexOfMinus = versionWithAppendix.indexOf("-");
+    indexOfMinus = indexOfMinus == -1 ? versionWithAppendix.length() : indexOfMinus;
+    return versionWithAppendix.substring(0, indexOfMinus);
   }
 
   private MetadataDto initMetadata() {
