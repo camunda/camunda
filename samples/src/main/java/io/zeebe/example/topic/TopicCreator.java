@@ -15,9 +15,9 @@
  */
 package io.zeebe.example.topic;
 
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.ZeebeClientBuilder;
-import io.zeebe.client.api.events.TopicEvent;
+import io.zeebe.broker.client.ZeebeClient;
+import io.zeebe.broker.client.ZeebeClientBuilder;
+import io.zeebe.broker.client.api.events.TopicEvent;
 
 public class TopicCreator {
 

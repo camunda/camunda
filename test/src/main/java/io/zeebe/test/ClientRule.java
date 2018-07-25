@@ -17,15 +17,15 @@ package io.zeebe.test;
 
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.clients.JobClient;
-import io.zeebe.client.api.clients.TopicClient;
-import io.zeebe.client.api.clients.WorkflowClient;
-import io.zeebe.client.api.commands.BrokerInfo;
-import io.zeebe.client.api.commands.Partition;
-import io.zeebe.client.api.commands.PartitionInfo;
-import io.zeebe.client.api.commands.Topic;
-import io.zeebe.client.api.commands.Topology;
+import io.zeebe.broker.client.ZeebeClient;
+import io.zeebe.broker.client.api.clients.JobClient;
+import io.zeebe.broker.client.api.clients.TopicClient;
+import io.zeebe.broker.client.api.clients.WorkflowClient;
+import io.zeebe.broker.client.api.commands.BrokerInfo;
+import io.zeebe.broker.client.api.commands.Partition;
+import io.zeebe.broker.client.api.commands.PartitionInfo;
+import io.zeebe.broker.client.api.commands.Topic;
+import io.zeebe.broker.client.api.commands.Topology;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;

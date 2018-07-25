@@ -17,15 +17,15 @@ package io.zeebe.broker.it.subscription;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.broker.client.api.clients.TopicClient;
+import io.zeebe.broker.client.api.events.IncidentEvent;
+import io.zeebe.broker.client.api.events.IncidentState;
+import io.zeebe.broker.client.api.events.JobEvent;
+import io.zeebe.broker.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.broker.client.api.record.ValueType;
+import io.zeebe.broker.client.api.subscription.IncidentEventHandler;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.client.api.clients.TopicClient;
-import io.zeebe.client.api.events.IncidentEvent;
-import io.zeebe.client.api.events.IncidentState;
-import io.zeebe.client.api.events.JobEvent;
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
-import io.zeebe.client.api.record.ValueType;
-import io.zeebe.client.api.subscription.IncidentEventHandler;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.test.util.TestUtil;

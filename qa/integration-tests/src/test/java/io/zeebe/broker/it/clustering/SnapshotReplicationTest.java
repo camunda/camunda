@@ -15,22 +15,28 @@
  */
 package io.zeebe.broker.it.clustering;
 
-import static io.zeebe.broker.it.clustering.ClusteringRule.*;
+import static io.zeebe.broker.it.clustering.ClusteringRule.BROKER_1_CLIENT_ADDRESS;
+import static io.zeebe.broker.it.clustering.ClusteringRule.BROKER_2_CLIENT_ADDRESS;
+import static io.zeebe.broker.it.clustering.ClusteringRule.BROKER_3_CLIENT_ADDRESS;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.snapshotStorageServiceName;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logBlockIndexWriterService;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.UnstableTest;
 import io.zeebe.broker.Broker;
+import io.zeebe.broker.client.api.commands.Partition;
+import io.zeebe.broker.client.api.commands.Topic;
 import io.zeebe.broker.clustering.base.snapshots.SnapshotReplicationService;
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.client.api.commands.Partition;
-import io.zeebe.client.api.commands.Topic;
 import io.zeebe.logstreams.snapshot.SerializableWrapper;
 import io.zeebe.logstreams.spi.ReadableSnapshot;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.logstreams.spi.SnapshotWriter;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.SocketAddress;

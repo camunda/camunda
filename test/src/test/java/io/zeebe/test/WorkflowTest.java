@@ -15,8 +15,8 @@
  */
 package io.zeebe.test;
 
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.broker.client.ZeebeClient;
+import io.zeebe.broker.client.api.events.WorkflowInstanceEvent;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

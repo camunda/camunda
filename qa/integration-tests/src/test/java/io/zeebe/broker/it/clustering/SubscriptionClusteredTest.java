@@ -18,17 +18,23 @@ package io.zeebe.broker.it.clustering;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.broker.client.ZeebeClient;
+import io.zeebe.broker.client.api.commands.Partition;
+import io.zeebe.broker.client.api.commands.Topic;
+import io.zeebe.broker.client.api.events.JobState;
+import io.zeebe.broker.client.api.events.RaftEvent;
+import io.zeebe.broker.client.api.events.RaftState;
+import io.zeebe.broker.client.impl.job.CreateJobCommandImpl;
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.commands.Partition;
-import io.zeebe.client.api.commands.Topic;
-import io.zeebe.client.api.events.*;
-import io.zeebe.client.impl.job.CreateJobCommandImpl;
 import io.zeebe.test.util.AutoCloseableRule;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.*;
-import org.junit.rules.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
 
 public class SubscriptionClusteredTest {
   private static final int PARTITION_COUNT = 5;
