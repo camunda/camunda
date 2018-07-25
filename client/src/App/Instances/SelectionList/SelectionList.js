@@ -5,24 +5,34 @@ import * as Styled from './styled.js';
 
 import {fetchWorkflowInstanceBySelection} from 'modules/api/instances';
 import {batchRetry} from 'modules/api/selections';
-import Selection from '../Selection';
+import Selection from '../Selection/index.js';
 
 export default class SelectionList extends React.Component {
   static propTypes = {
-    selections: PropTypes.array.isRequired
+    selections: PropTypes.array.isRequired,
+    onChange: PropTypes.func.isRequired
   };
-  state = {selectionsInstances: [], newSelectionIndex: 0, openSelection: null};
+  state = {
+    selectionsInstances: [],
+    newSelectionIndex: 0,
+    openSelection: null
+  };
   componentDidMount = async () => {
     //TODO: replace loop with this.props.selections.map
+
     for (let index = 0; index < 10; index++) {
+      // query selections data
       const selectionIndex = this.state.newSelectionIndex;
       const selectionData = await fetchWorkflowInstanceBySelection();
+
       this.setState(prevState => ({
         selectionsInstances: [
           {...selectionData, id: selectionIndex},
           ...prevState.selectionsInstances
         ],
-        newSelectionIndex: selectionIndex + 1
+        newSelectionIndex: selectionIndex + 1,
+        totalInstancesCount:
+          prevState.totalInstancesCount + selectionData.totalCount
       }));
     }
   };
@@ -39,11 +49,16 @@ export default class SelectionList extends React.Component {
 
   deleteSelection = selectionID => {
     const {selectionsInstances} = this.state;
-    const {selectionIndex} = selectionsInstances
-      .map(instance => instance.id)
-      .indexOf(selectionID);
+    const deletedInstance = selectionsInstances
+      .map(({id, totalCount}, index) => {
+        return id === selectionID && {id, totalCount, index};
+      })
+      .filter(instance => instance.id)
+      .shift();
 
-    selectionsInstances.splice(selectionIndex, 1);
+    selectionsInstances.splice(deletedInstance.index, 1);
+
+    this.props.onChange(deletedInstance.totalCount);
 
     this.setState({
       selectionsInstances

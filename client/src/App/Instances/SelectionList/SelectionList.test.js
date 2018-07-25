@@ -43,6 +43,7 @@ selectionsApi.batchRetry = mockResolvedAsyncFn();
 instancesApi.fetchWorkflowInstanceBySelection = mockResolvedAsyncFn(
   mockSelectionData
 );
+const mockAdjustCount = mockResolvedAsyncFn();
 
 describe.only('SelectionList', () => {
   let node;
@@ -55,7 +56,9 @@ describe.only('SelectionList', () => {
         query: {active: true, incidents: true, ids: Array(0)}
       }
     ];
-    node = shallow(<SelectionList selections={selections} />);
+    node = shallow(
+      <SelectionList selections={selections} onChange={mockAdjustCount} />
+    );
     await node.instance().componentDidMount();
   });
 
@@ -73,7 +76,7 @@ describe.only('SelectionList', () => {
     expect(node.instance().state.selectionsInstances.length).toBe(20);
 
     // when
-    node.instance().deleteSelection(0);
+    node.instance().deleteSelection(1);
 
     // then
     expect(node.instance().state.selectionsInstances.length).toBe(19);
