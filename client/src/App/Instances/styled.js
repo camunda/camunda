@@ -50,4 +50,5 @@ export const SelectionHeader = styled(Panel.Header)`
 
 export const Badge = styled(BadgeComponent)`
   top: 2px;
+  margin-left: 13px;
 `;
