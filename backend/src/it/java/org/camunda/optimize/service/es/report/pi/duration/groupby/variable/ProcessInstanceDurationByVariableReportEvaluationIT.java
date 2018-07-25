@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.util.AvgProcessInstanceDurationGroupByVariableReportDataCreator;
+import org.camunda.optimize.service.es.report.util.MaxProcessInstanceDurationGroupByVariableReportDataCreator;
 import org.camunda.optimize.service.es.report.util.MinProcessInstanceDurationGroupByVariableReportDataCreator;
 import org.camunda.optimize.service.es.report.util.ReportDataCreator;
 import org.camunda.optimize.service.util.VariableHelper;
@@ -41,6 +42,7 @@ import static org.camunda.optimize.service.es.report.command.util.ReportConstant
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_VARIABLE_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_AVERAGE_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_DURATION_PROPERTY;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MAX_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MIN_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_PROCESS_INSTANCE_ENTITY;
 import static org.hamcrest.CoreMatchers.is;
@@ -106,7 +108,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
   private Object[] parametersForSimpleReportEvaluation() {
     return new Object[]{
       new Object[]{new AvgProcessInstanceDurationGroupByVariableReportDataCreator(), VIEW_AVERAGE_OPERATION},
-      new Object[]{new MinProcessInstanceDurationGroupByVariableReportDataCreator(), VIEW_MIN_OPERATION}
+      new Object[]{new MinProcessInstanceDurationGroupByVariableReportDataCreator(), VIEW_MIN_OPERATION},
+      new Object[]{new MaxProcessInstanceDurationGroupByVariableReportDataCreator(), VIEW_MAX_OPERATION}
     };
   }
 
@@ -156,7 +159,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
   private Object[] parametersForSimpleReportEvaluationById() {
     return new Object[]{
       new Object[]{new AvgProcessInstanceDurationGroupByVariableReportDataCreator(), VIEW_AVERAGE_OPERATION},
-      new Object[]{new MinProcessInstanceDurationGroupByVariableReportDataCreator(), VIEW_MIN_OPERATION}
+      new Object[]{new MinProcessInstanceDurationGroupByVariableReportDataCreator(), VIEW_MIN_OPERATION},
+      new Object[]{new MaxProcessInstanceDurationGroupByVariableReportDataCreator(), VIEW_MAX_OPERATION}
     };
   }
 
@@ -284,7 +288,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
   private Object[] parametersForMultipleProcessInstances() {
     return new Object[]{
       new Object[]{new AvgProcessInstanceDurationGroupByVariableReportDataCreator(), 1000L, 2000L},
-      new Object[]{new MinProcessInstanceDurationGroupByVariableReportDataCreator(), 1000L, 1000L}
+      new Object[]{new MinProcessInstanceDurationGroupByVariableReportDataCreator(), 1000L, 1000L},
+      new Object[]{new MaxProcessInstanceDurationGroupByVariableReportDataCreator(), 1000L, 3000L}
     };
   }
 
@@ -681,7 +686,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     public static Object[] provideReportDataCreator() {
       return new Object[]{
         new Object[]{new AvgProcessInstanceDurationGroupByVariableReportDataCreator()},
-        new Object[]{new MinProcessInstanceDurationGroupByVariableReportDataCreator()}
+        new Object[]{new MinProcessInstanceDurationGroupByVariableReportDataCreator()},
+        new Object[]{new MaxProcessInstanceDurationGroupByVariableReportDataCreator()}
       };
     }
   }

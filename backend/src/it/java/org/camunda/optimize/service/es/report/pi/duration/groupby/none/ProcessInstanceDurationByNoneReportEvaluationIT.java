@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.result.NumberReportResultD
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 import org.camunda.optimize.service.es.report.util.AvgProcessInstanceDurationByNoneReportDataCreator;
+import org.camunda.optimize.service.es.report.util.MaxProcessInstanceDurationByNoneReportDataCreator;
 import org.camunda.optimize.service.es.report.util.MinProcessInstanceDurationByNoneReportDataCreator;
 import org.camunda.optimize.service.es.report.util.ReportDataCreator;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -36,6 +37,7 @@ import java.util.Map;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_NONE_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_AVERAGE_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_DURATION_PROPERTY;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MAX_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MIN_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_PROCESS_INSTANCE_ENTITY;
 import static org.camunda.optimize.test.util.VariableFilterUtilHelper.createBooleanVariableFilter;
@@ -63,7 +65,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
   @Test
   @Parameters
-  public void reportEvaluationForOneProcess(ReportDataCreator creator, String operation, long expectedDuration) throws Exception {
+  public void reportEvaluationForOneProcess(ReportDataCreator creator, String operation) throws Exception {
 
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
@@ -89,19 +91,20 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_DURATION_PROPERTY));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(GROUP_BY_NONE_TYPE));
     assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult(), is(expectedDuration));
+    assertThat(result.getResult(), is(1000L));
   }
 
   private Object[] parametersForReportEvaluationForOneProcess() {
     return new Object[]{
-      new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator(), VIEW_AVERAGE_OPERATION, 1000L},
-      new Object[]{new MinProcessInstanceDurationByNoneReportDataCreator(), VIEW_MIN_OPERATION, 1000L}
+      new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator(), VIEW_AVERAGE_OPERATION},
+      new Object[]{new MinProcessInstanceDurationByNoneReportDataCreator(), VIEW_MIN_OPERATION},
+      new Object[]{new MaxProcessInstanceDurationByNoneReportDataCreator(), VIEW_MAX_OPERATION}
     };
   }
 
   @Test
   @Parameters
-  public void reportEvaluationById(ReportDataCreator creator, String operation, long expectedDuration) throws Exception {
+  public void reportEvaluationById(ReportDataCreator creator, String operation) throws Exception {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -128,13 +131,14 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_DURATION_PROPERTY));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(GROUP_BY_NONE_TYPE));
     assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult(), is(expectedDuration));
+    assertThat(result.getResult(), is(1000L));
   }
 
   private Object[] parametersForReportEvaluationById() {
     return new Object[]{
-      new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator(), VIEW_AVERAGE_OPERATION, 1000L},
-      new Object[]{new MinProcessInstanceDurationByNoneReportDataCreator(), VIEW_MIN_OPERATION, 1000L}
+      new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator(), VIEW_AVERAGE_OPERATION},
+      new Object[]{new MinProcessInstanceDurationByNoneReportDataCreator(), VIEW_MIN_OPERATION},
+      new Object[]{new MaxProcessInstanceDurationByNoneReportDataCreator(), VIEW_MAX_OPERATION}
     };
   }
 
@@ -174,13 +178,14 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
   private Object[] parametersForEvaluateReportForMultipleEvents() {
     return new Object[]{
       new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator(), 2000L},
-      new Object[]{new MinProcessInstanceDurationByNoneReportDataCreator(), 1000L}
+      new Object[]{new MinProcessInstanceDurationByNoneReportDataCreator(), 1000L},
+      new Object[]{new MaxProcessInstanceDurationByNoneReportDataCreator(), 3000L}
     };
   }
 
   @Test
-  @Parameters
-  public void noAvailableProcessInstancesReturnsZero(ReportDataCreator reportDataCreator, Long expectedDuration) {
+  @Parameters(source = ReportDataCreatorProvider.class)
+  public void noAvailableProcessInstancesReturnsZero(ReportDataCreator reportDataCreator) {
     // when
     ReportDataDto reportData =
       reportDataCreator.create("fooProcessDefinition", "1");
@@ -188,14 +193,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult(), is(expectedDuration));
-  }
-
-  private Object[] parametersForNoAvailableProcessInstancesReturnsZero() {
-    return new Object[]{
-                 new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator(), 0L},
-                 new Object[]{new MinProcessInstanceDurationByNoneReportDataCreator(), 0L}
-    };
+    assertThat(result.getResult(), is(0L));
   }
 
   @Test
@@ -230,8 +228,9 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
   private Object[] parametersForReportAcrossAllVersions() {
     return new Object[]{
-                 new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator(), 2000L},
-                 new Object[]{new MinProcessInstanceDurationByNoneReportDataCreator(), 1000L}
+      new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator(), 2000L},
+      new Object[]{new MinProcessInstanceDurationByNoneReportDataCreator(), 1000L},
+      new Object[]{new MaxProcessInstanceDurationByNoneReportDataCreator(), 3000L}
     };
   }
 
@@ -267,8 +266,9 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
   private Object[] parametersForOtherProcessDefinitionsDoNoAffectResult() {
     return new Object[]{
-                 new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator(), 2000L},
-                 new Object[]{new MinProcessInstanceDurationByNoneReportDataCreator(), 1000L}
+      new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator(), 2000L},
+      new Object[]{new MinProcessInstanceDurationByNoneReportDataCreator(), 1000L},
+      new Object[]{new MaxProcessInstanceDurationByNoneReportDataCreator(), 3000L}
     };
   }
 
@@ -432,7 +432,8 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     public static Object[] provideReportDataCreator() {
       return new Object[]{
         new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator()},
-        new Object[]{new MinProcessInstanceDurationByNoneReportDataCreator()}
+        new Object[]{new MinProcessInstanceDurationByNoneReportDataCreator()},
+        new Object[]{new MaxProcessInstanceDurationByNoneReportDataCreator()}
       };
     }
   }

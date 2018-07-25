@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 import org.camunda.optimize.service.es.report.util.AvgProcessInstanceDurationByStartDateReportDataCreator;
+import org.camunda.optimize.service.es.report.util.MaxProcessInstanceDurationByStartDateReportDataCreator;
 import org.camunda.optimize.service.es.report.util.MinProcessInstanceDurationByStartDateReportDataCreator;
 import org.camunda.optimize.service.es.report.util.ReportDataCreator;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -55,6 +56,7 @@ import static org.camunda.optimize.service.es.report.command.util.ReportConstant
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_START_DATE_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_AVERAGE_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_DURATION_PROPERTY;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MAX_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MIN_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_PROCESS_INSTANCE_ENTITY;
 import static org.camunda.optimize.test.util.VariableFilterUtilHelper.createBooleanVariableFilter;
@@ -120,7 +122,8 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
   private Object[] parametersForSimpleReportEvaluation() {
     return new Object[]{
       new Object[]{new AvgProcessInstanceDurationByStartDateReportDataCreator(), VIEW_AVERAGE_OPERATION},
-      new Object[]{new MinProcessInstanceDurationByStartDateReportDataCreator(), VIEW_MIN_OPERATION}
+      new Object[]{new MinProcessInstanceDurationByStartDateReportDataCreator(), VIEW_MIN_OPERATION},
+      new Object[]{new MaxProcessInstanceDurationByStartDateReportDataCreator(), VIEW_MAX_OPERATION}
     };
   }
 
@@ -167,7 +170,8 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
   private Object[] parametersForSimpleReportEvaluationById() {
     return new Object[]{
       new Object[]{new AvgProcessInstanceDurationByStartDateReportDataCreator(), VIEW_AVERAGE_OPERATION},
-      new Object[]{new MinProcessInstanceDurationByStartDateReportDataCreator(), VIEW_MIN_OPERATION}
+      new Object[]{new MinProcessInstanceDurationByStartDateReportDataCreator(), VIEW_MIN_OPERATION},
+      new Object[]{new MaxProcessInstanceDurationByStartDateReportDataCreator(), VIEW_MAX_OPERATION}
     };
   }
 
@@ -213,7 +217,8 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
   private Object[] parametersForProcessInstancesStartedAtSameIntervalAreGroupedTogether() {
     return new Object[]{
       new Object[]{new AvgProcessInstanceDurationByStartDateReportDataCreator(), 2000L, 1000L},
-      new Object[]{new MinProcessInstanceDurationByStartDateReportDataCreator(), 1000L, 1000L}
+      new Object[]{new MinProcessInstanceDurationByStartDateReportDataCreator(), 1000L, 1000L},
+      new Object[]{new MaxProcessInstanceDurationByStartDateReportDataCreator(), 3000L, 1000L}
     };
   }
 
@@ -330,7 +335,8 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
   private Object[] parametersForEmptyIntervalBetweenTwoProcessInstances() {
     return new Object[]{
       new Object[]{new AvgProcessInstanceDurationByStartDateReportDataCreator(), 2000L},
-      new Object[]{new MinProcessInstanceDurationByStartDateReportDataCreator(), 1000L}
+      new Object[]{new MinProcessInstanceDurationByStartDateReportDataCreator(), 1000L},
+      new Object[]{new MaxProcessInstanceDurationByStartDateReportDataCreator(), 3000L}
     };
   }
 
@@ -517,7 +523,8 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
   private Object[] parametersForReportAcrossAllVersions() {
     return new Object[]{
       new Object[]{new AvgProcessInstanceDurationByStartDateReportDataCreator(), 1500L},
-      new Object[]{new MinProcessInstanceDurationByStartDateReportDataCreator(), 1000L}
+      new Object[]{new MinProcessInstanceDurationByStartDateReportDataCreator(), 1000L},
+      new Object[]{new MaxProcessInstanceDurationByStartDateReportDataCreator(), 2000L}
     };
   }
 
@@ -550,7 +557,8 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
   private Object[] parametersForOtherProcessDefinitionsDoNoAffectResult() {
     return new Object[]{
       new Object[]{new AvgProcessInstanceDurationByStartDateReportDataCreator(), 1000L},
-      new Object[]{new MinProcessInstanceDurationByStartDateReportDataCreator(), 1000L}
+      new Object[]{new MinProcessInstanceDurationByStartDateReportDataCreator(), 1000L},
+      new Object[]{new MaxProcessInstanceDurationByStartDateReportDataCreator(), 1000L}
     };
   }
 
@@ -753,7 +761,8 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     public static Object[] provideReportDataCreator() {
       return new Object[]{
         new Object[]{new AvgProcessInstanceDurationByStartDateReportDataCreator()},
-        new Object[]{new MinProcessInstanceDurationByStartDateReportDataCreator()}
+        new Object[]{new MinProcessInstanceDurationByStartDateReportDataCreator()},
+        new Object[]{new MaxProcessInstanceDurationByStartDateReportDataCreator()}
       };
     }
   }

@@ -19,6 +19,7 @@ import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator
 import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createAverageProcessInstanceDurationView;
 import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createCountProcessInstanceFrequencyView;
 import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createMaxFlowNodeDurationView;
+import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createMaxProcessInstanceDurationView;
 import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createMedianFlowNodeDurationView;
 import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createMinFlowNodeDurationView;
 import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createMinProcessInstanceDurationView;
@@ -64,6 +65,24 @@ public class ReportDataHelper {
   ) {
 
     ViewDto view = createMinProcessInstanceDurationView();
+    GroupByDto groupByDto = createGroupByStartDateDto(dateInterval);
+
+    return createReportDataViewRaw(
+        processDefinitionKey,
+        processDefinitionVersion,
+        TABLE_VISUALIZATION,
+        view,
+        groupByDto
+    );
+  }
+
+  public static ReportDataDto createMaxProcessInstanceDurationGroupByStartDateReport(
+      String processDefinitionKey,
+      String processDefinitionVersion,
+      String dateInterval
+  ) {
+
+    ViewDto view = createMaxProcessInstanceDurationView();
     GroupByDto groupByDto = createGroupByStartDateDto(dateInterval);
 
     return createReportDataViewRaw(
@@ -191,6 +210,25 @@ public class ReportDataHelper {
     );
   }
 
+  public static ReportDataDto createMaxProcessInstanceDurationGroupByVariable(
+      String processDefinitionKey,
+      String processDefinitionVersion,
+      String variableName,
+      String variableType
+  ) {
+
+    ViewDto view = createMaxProcessInstanceDurationView();
+    GroupByDto groupByDto = createGroupByVariable(variableName, variableType);
+
+    return createReportDataViewRaw(
+        processDefinitionKey,
+        processDefinitionVersion,
+        HEAT_VISUALIZATION,
+        view,
+        groupByDto
+    );
+  }
+
   public static ReportDataDto createCountFlowNodeFrequencyGroupByFlowNoneNumber(
     String processDefinitionKey,
     String processDefinitionVersion
@@ -301,6 +339,23 @@ public class ReportDataHelper {
   ) {
 
     ViewDto view = createMinProcessInstanceDurationView();
+    GroupByDto groupByDto = createGroupByNone();
+
+    return createReportDataViewRaw(
+        processDefinitionKey,
+        processDefinitionVersion,
+        HEAT_VISUALIZATION,
+        view,
+        groupByDto
+    );
+  }
+
+  public static ReportDataDto createMaxProcessInstanceDurationHeatMapGroupByNone(
+      String processDefinitionKey,
+      String processDefinitionVersion
+  ) {
+
+    ViewDto view = createMaxProcessInstanceDurationView();
     GroupByDto groupByDto = createGroupByNone();
 
     return createReportDataViewRaw(
