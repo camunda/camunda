@@ -27,12 +27,14 @@ import io.zeebe.broker.system.workflow.repository.data.DeploymentRecord;
 import io.zeebe.broker.system.workflow.repository.data.DeploymentResource;
 import io.zeebe.broker.system.workflow.repository.data.ResourceType;
 import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex;
+import io.zeebe.broker.workflow.model.yaml.BpmnYamlParser;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.Process;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.util.buffer.BufferUtil;
+import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Collection;
@@ -42,6 +44,7 @@ import org.agrona.io.DirectBufferInputStream;
 
 public class DeploymentCreateEventProcessor implements TypedRecordProcessor<DeploymentRecord> {
   private final BpmnValidator validator = new BpmnValidator();
+  private final BpmnYamlParser yamlParser = new BpmnYamlParser();
 
   private final WorkflowRepositoryIndex index;
 
@@ -165,22 +168,25 @@ public class DeploymentCreateEventProcessor implements TypedRecordProcessor<Depl
 
   private BpmnModelInstance readWorkflowDefinition(DeploymentResource deploymentResource) {
     final DirectBuffer resource = deploymentResource.getResource();
+    final DirectBufferInputStream resourceStream = new DirectBufferInputStream(resource);
 
     switch (deploymentResource.getResourceType()) {
       case YAML_WORKFLOW:
-        // TODO: do YAML conversion here
-
+        return yamlParser.readFromStream(resourceStream);
       case BPMN_XML:
       default:
-        return Bpmn.readModelFromStream(new DirectBufferInputStream(resource));
+        return Bpmn.readModelFromStream(resourceStream);
     }
   }
 
   private void transformWorkflowResource(
       final DeploymentResource deploymentResource, final BpmnModelInstance definition) {
     if (deploymentResource.getResourceType() != ResourceType.BPMN_XML) {
-      //      final DirectBuffer bpmnXml = wrapString(bpmn.convertToString(definition));
-      //      deploymentResource.setResource(bpmnXml);
+      final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+      Bpmn.writeModelToStream(outStream, definition);
+
+      final DirectBuffer bpmnXml = BufferUtil.wrapArray(outStream.toByteArray());
+      deploymentResource.setResource(bpmnXml);
     }
   }
 
