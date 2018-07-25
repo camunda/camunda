@@ -21,9 +21,13 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-broker-client</artifactId>
+      <artifactId>zeebe-client-java</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-broker-client</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>

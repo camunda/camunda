@@ -10,5 +10,8 @@ replicationFactor = 1
 [network]
 portOffset = 1
 
+[network.gateway]
+enabled = false
+
 [cluster]
 initialContactPoints = [ "localhost:26502" ]

@@ -92,6 +92,17 @@ replicationFactor = 1
 # replication
 # defaultSendBufferSize = "16M"
 
+[network.gateway]
+
+# Enables embedded gateway to start
+# enabled = true
+#
+# Overrides the host the gateway binds to
+# host = "localhost"
+#
+# Sets the port the gateway binds to
+# port = 26500
+
 [network.client]
 
 # Allows to override the host the client api binds to
@@ -148,6 +159,7 @@ replicationFactor = 1
 #
 # Sets the buffer size used for receiving subscription messages and others
 # receiveBufferSize = "8M"
+
 
 [data]
 

@@ -1,0 +1,33 @@
+syntax = 'proto3';
+package gateway_protocol;
+
+option java_multiple_files = false;
+option java_package = "io.zeebe.gateway.protocol";
+
+message HealthRequest {
+}
+
+message Partition {
+  int32 partitionId = 1;
+  string topicName = 2;
+  enum PartitionBrokerRole {
+    LEADER = 0;
+    FOLLOW = 1;
+  }
+  PartitionBrokerRole role = 3;
+}
+
+message BrokerInfo {
+  string host = 1;
+  int32 port = 2;
+  repeated Partition partitions = 3;
+}
+
+message HealthResponse {
+  repeated BrokerInfo brokers = 1;
+}
+
+service Gateway {
+  rpc Health (HealthRequest) returns (HealthResponse) {
+  }
+}

@@ -32,8 +32,8 @@ public class DurationUtil {
           "no value given; expected format: [value][unit], e.g. '1s', '1.5ms'");
     }
 
-    long value;
-    ChronoUnit unit;
+    final long value;
+    final ChronoUnit unit;
 
     // TODO: could also be a static Map
     switch (matchedUnit) {
