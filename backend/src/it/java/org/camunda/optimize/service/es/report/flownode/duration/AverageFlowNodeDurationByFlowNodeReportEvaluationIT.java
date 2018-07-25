@@ -1,9 +1,10 @@
-package org.camunda.optimize.service.es.report.max;
+package org.camunda.optimize.service.es.report.flownode.duration;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
 import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.command.util.ReportConstants;
@@ -19,17 +20,19 @@ import org.junit.rules.RuleChain;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import java.io.IOException;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.*;
-import static org.camunda.optimize.test.util.ReportDataHelper.createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport;
+import static org.camunda.optimize.test.util.ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
 
 
-public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
+public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
 
   private static final String START_EVENT = "startEvent";
   private static final String END_EVENT = "endEvent";
@@ -57,7 +60,7 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = getMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+    ReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -66,15 +69,15 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processDefinition.getKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(String.valueOf(processDefinition.getVersion())));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getOperation(), is(VIEW_MAX_OPERATION));
+    assertThat(resultReportDataDto.getView().getOperation(), is(VIEW_AVERAGE_OPERATION));
     assertThat(resultReportDataDto.getView().getEntity(), is(VIEW_FLOW_NODE_ENTITY));
     assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_DURATION_PROPERTY));
     assertThat(result.getResult(), is(notNullValue()));
-    Map<String, Long> flowNodeIdToMaximumExecutionDuration = result.getResult();
-    assertThat(flowNodeIdToMaximumExecutionDuration.size(), is(3));
-    assertThat(flowNodeIdToMaximumExecutionDuration.get(SERVICE_TASK_ID ), is(20L));
-    assertThat(flowNodeIdToMaximumExecutionDuration.get(START_EVENT ), is(20L));
-    assertThat(flowNodeIdToMaximumExecutionDuration.get(END_EVENT ), is(20L));
+    Map<String, Long> flowNodeIdToAverageExecutionDuration = result.getResult();
+    assertThat(flowNodeIdToAverageExecutionDuration.size(), is(3));
+    assertThat(flowNodeIdToAverageExecutionDuration.get(SERVICE_TASK_ID ), is(20L));
+    assertThat(flowNodeIdToAverageExecutionDuration.get(START_EVENT ), is(20L));
+    assertThat(flowNodeIdToAverageExecutionDuration.get(END_EVENT ), is(20L));
   }
 
   @Test
@@ -89,13 +92,13 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = getMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+    ReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
-    Map<String, Long> flowNodeIdToMaximumExecutionDuration = result.getResult();
-    assertThat(flowNodeIdToMaximumExecutionDuration.size(), is(3));
-    assertThat(flowNodeIdToMaximumExecutionDuration.get(SERVICE_TASK_ID ), is(30L));
+    Map<String, Long> flowNodeIdToAverageExecutionDuration = result.getResult();
+    assertThat(flowNodeIdToAverageExecutionDuration.size(), is(3));
+    assertThat(flowNodeIdToAverageExecutionDuration.get(SERVICE_TASK_ID ), is(20L));
   }
 
   @Test
@@ -104,27 +107,27 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     ProcessDefinitionEngineDto processDefinition = deployProcessWithTwoTasks();
 
     ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 100L);
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 10L);
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 20L);
     processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 10L);
-    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 200L);
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 20L);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
     ReportDataDto reportData =
-      getMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+      getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
-    Map<String, Long> flowNodeIdToMaximumExecutionDuration = result.getResult();
-    assertThat(flowNodeIdToMaximumExecutionDuration.size(), is(4));
-    assertThat(flowNodeIdToMaximumExecutionDuration.get(SERVICE_TASK_ID ), is(100L));
-    assertThat(flowNodeIdToMaximumExecutionDuration.get(SERVICE_TASK_ID_2 ), is(200L));
+    Map<String, Long> flowNodeIdToAverageExecutionDuration = result.getResult();
+    assertThat(flowNodeIdToAverageExecutionDuration.size(), is(4));
+    assertThat(flowNodeIdToAverageExecutionDuration.get(SERVICE_TASK_ID ), is(10L));
+    assertThat(flowNodeIdToAverageExecutionDuration.get(SERVICE_TASK_ID_2 ), is(20L));
   }
 
-  private ProcessDefinitionEngineDto deployProcessWithTwoTasks() {
+  private ProcessDefinitionEngineDto deployProcessWithTwoTasks() throws IOException {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess")
       .startEvent(START_EVENT)
       .serviceTask(SERVICE_TASK_ID)
@@ -152,16 +155,16 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
-    ReportDataDto reportData = createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(
+    ReportDataDto reportData = createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
         latestDefinition.getKey(), ReportConstants.ALL_VERSIONS
     );
     MapReportResultDto result = evaluateReport(reportData);
 
     //then
-    Map<String, Long> flowNodeIdToMaximumExecutionDuration = result.getResult();
-    assertThat(flowNodeIdToMaximumExecutionDuration.size(), is(4));
-    assertThat(flowNodeIdToMaximumExecutionDuration.get(SERVICE_TASK_ID ), is(40L));
-    assertThat(flowNodeIdToMaximumExecutionDuration.get(SERVICE_TASK_ID_2 ), is(40L));
+    Map<String, Long> flowNodeIdToAverageExecutionDuration = result.getResult();
+    assertThat(flowNodeIdToAverageExecutionDuration.size(), is(4));
+    assertThat(flowNodeIdToAverageExecutionDuration.get(SERVICE_TASK_ID ), is(40L));
+    assertThat(flowNodeIdToAverageExecutionDuration.get(SERVICE_TASK_ID_2 ), is(40L));
   }
 
   @Test
@@ -180,15 +183,15 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
-    ReportDataDto reportData = createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(
+    ReportDataDto reportData = createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
         latestDefinition.getKey(), ReportConstants.ALL_VERSIONS
     );
     MapReportResultDto result = evaluateReport(reportData);
 
     //then
-    Map<String, Long> flowNodeIdToMaximumExecutionDuration = result.getResult();
-    assertThat(flowNodeIdToMaximumExecutionDuration.size(), is(3));
-    assertThat(flowNodeIdToMaximumExecutionDuration.get(SERVICE_TASK_ID ), is(40L));
+    Map<String, Long> flowNodeIdToAverageExecutionDuration = result.getResult();
+    assertThat(flowNodeIdToAverageExecutionDuration.size(), is(3));
+    assertThat(flowNodeIdToAverageExecutionDuration.get(SERVICE_TASK_ID ), is(40L));
   }
 
   @Test
@@ -197,7 +200,7 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
     ProcessDefinitionEngineDto processDefinition2 = deploySimpleServiceTaskProcessDefinition();
     ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 20L);
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 40L);
     processInstanceDto = engineRule.startProcessInstance(processDefinition2.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 40L);
 
@@ -205,15 +208,15 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
-    ReportDataDto reportData = createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(
+    ReportDataDto reportData = createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
         processDefinition.getKey(), ReportConstants.ALL_VERSIONS
     );
     MapReportResultDto result = evaluateReport(reportData);
 
     //then
-    Map<String, Long> flowNodeIdToMaximumExecutionDuration = result.getResult();
-    assertThat(flowNodeIdToMaximumExecutionDuration.size(), is(3));
-    assertThat(flowNodeIdToMaximumExecutionDuration.get(SERVICE_TASK_ID ), is(40L));
+    Map<String, Long> flowNodeIdToAverageExecutionDuration = result.getResult();
+    assertThat(flowNodeIdToAverageExecutionDuration.size(), is(3));
+    assertThat(flowNodeIdToAverageExecutionDuration.get(SERVICE_TASK_ID ), is(40L));
   }
 
   @Test
@@ -222,29 +225,52 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
     ProcessDefinitionEngineDto processDefinition2 = deploySimpleServiceTaskProcessDefinition();
     ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 80L);
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 40L);
     processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 40L);
     processInstanceDto = engineRule.startProcessInstance(processDefinition2.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 20L);
     processInstanceDto = engineRule.startProcessInstance(processDefinition2.getId());
-    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 100L);
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 20L);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData1 = getMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+    ReportDataDto reportData1 = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
     MapReportResultDto result1 = evaluateReport(reportData1);
-    ReportDataDto reportData2 = getMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition2);
+    ReportDataDto reportData2 = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition2);
     MapReportResultDto result2 = evaluateReport(reportData2);
 
     // then
-    Map<String, Long> flowNodeIdToMaximumExecutionDuration = result1.getResult();
-    assertThat(flowNodeIdToMaximumExecutionDuration.size(), is(3));
-    assertThat(flowNodeIdToMaximumExecutionDuration.get(SERVICE_TASK_ID ), is(80L));
-    Map<String, Long> flowNodeIdToMaximumExecutionDuration2 = result2.getResult();
-    assertThat(flowNodeIdToMaximumExecutionDuration2.size(), is(3));
-    assertThat(flowNodeIdToMaximumExecutionDuration2.get(SERVICE_TASK_ID ), is(100L));
+    Map<String, Long> flowNodeIdToAverageExecutionDuration = result1.getResult();
+    assertThat(flowNodeIdToAverageExecutionDuration.size(), is(3));
+    assertThat(flowNodeIdToAverageExecutionDuration.get(SERVICE_TASK_ID ), is(40L));
+    Map<String, Long> flowNodeIdToAverageExecutionDuration2 = result2.getResult();
+    assertThat(flowNodeIdToAverageExecutionDuration2.size(), is(3));
+    assertThat(flowNodeIdToAverageExecutionDuration2.get(SERVICE_TASK_ID ), is(20L));
+  }
+
+  @Test
+  public void evaluateReportWithIrrationalAverageNumberAsResult() throws Exception {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
+    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 100L);
+    processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 300L);
+    processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 600L);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    ReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+    MapReportResultDto result = evaluateReport(reportData);
+
+    // then
+    Map<String, Long> flowNodeIdToAverageExecutionDuration = result.getResult();
+    assertThat(flowNodeIdToAverageExecutionDuration.size(), is(3));
+    assertThat(flowNodeIdToAverageExecutionDuration.get(SERVICE_TASK_ID ), is(333L));
   }
 
   @Test
@@ -252,12 +278,12 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
 
     // when
     ReportDataDto reportData =
-      createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport("nonExistingProcessDefinitionId", "1");
+      createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport("nonExistingProcessDefinitionId", "1");
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
-    Map<String, Long> flowNodeIdToMaximumExecutionDuration = result.getResult();
-    assertThat(flowNodeIdToMaximumExecutionDuration.size(), is(0));
+    Map<String, Long> flowNodeIdToAverageExecutionDuration = result.getResult();
+    assertThat(flowNodeIdToAverageExecutionDuration.size(), is(0));
   }
 
   @Test
@@ -290,13 +316,13 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
 
     // when
     ReportDataDto reportData =
-      createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(subProcessDefinition.getKey(), String.valueOf(subProcessDefinition.getVersion()));
+      createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(subProcessDefinition.getKey(), String.valueOf(subProcessDefinition.getVersion()));
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
-    Map<String, Long> flowNodeIdToMaximumExecutionDuration = result.getResult();
-    assertThat(flowNodeIdToMaximumExecutionDuration.size(), is(3));
-    assertThat(flowNodeIdToMaximumExecutionDuration.get(SERVICE_TASK_ID ), is(10L));
+    Map<String, Long> flowNodeIdToAverageExecutionDuration = result.getResult();
+    assertThat(flowNodeIdToAverageExecutionDuration.size(), is(3));
+    assertThat(flowNodeIdToAverageExecutionDuration.get(SERVICE_TASK_ID ), is(10L));
   }
 
   @Test
@@ -307,23 +333,23 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     ProcessInstanceEngineDto processInstanceDto;
     for (int i = 0; i < 11; i++) {
       processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
-      engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), i);
+      engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 10L);
     }
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = getMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+    ReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
-    Map<String, Long> flowNodeIdToMaximumExecutionDuration = result.getResult();
-    assertThat(flowNodeIdToMaximumExecutionDuration.size(), is(3));
-    assertThat(flowNodeIdToMaximumExecutionDuration.get(SERVICE_TASK_ID ), is(10L));
+    Map<String, Long> flowNodeIdToAverageExecutionDuration = result.getResult();
+    assertThat(flowNodeIdToAverageExecutionDuration.size(), is(3));
+    assertThat(flowNodeIdToAverageExecutionDuration.get(SERVICE_TASK_ID ), is(10L));
   }
 
   @Test
-  public void dateFilterInReport() throws Exception {
+  public void filterInReport() throws Exception {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
     ProcessInstanceEngineDto processInstance = engineRule.startProcessInstance(processDefinition.getId());
@@ -333,8 +359,8 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = getMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(null, past.minusSeconds(1L)));
+    ReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+    reportData.setFilter(createStartDateFilter(null, past.minusSeconds(1L)));
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -343,8 +369,8 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     assertThat(flowNodeIdToExecutionFrequency.size(), is(0));
 
     // when
-    reportData = getMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(past, null));
+    reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+    reportData.setFilter(createStartDateFilter(past, null));
     result = evaluateReport(reportData);
 
     // then
@@ -354,11 +380,15 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     assertThat(flowNodeIdToExecutionFrequency.get(SERVICE_TASK_ID ), is(10L));
   }
 
+  private List<FilterDto> createStartDateFilter(OffsetDateTime startDate, OffsetDateTime endDate) {
+    return DateUtilHelper.createFixedStartDateFilter(startDate, endDate);
+  }
+
   @Test
   public void optimizeExceptionOnViewEntityIsNull() {
     // given
     ReportDataDto dataDto =
-      createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(PROCESS_DEFINITION_KEY, "1");
+      createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getView().setEntity(null);
 
     //when
@@ -372,7 +402,7 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
   public void optimizeExceptionOnViewPropertyIsNull() {
     // given
     ReportDataDto dataDto =
-      createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(PROCESS_DEFINITION_KEY, "1");
+      createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getView().setProperty(null);
 
     //when
@@ -386,7 +416,7 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
   public void optimizeExceptionOnGroupByTypeIsNull() {
     // given
     ReportDataDto dataDto =
-      createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(PROCESS_DEFINITION_KEY, "1");
+      createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getGroupBy().setType(null);
 
     //when
@@ -396,7 +426,7 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     assertThat(response.getStatus(), is(400));
   }
 
-  private ProcessDefinitionEngineDto deploySimpleServiceTaskProcessDefinition() {
+  private ProcessDefinitionEngineDto deploySimpleServiceTaskProcessDefinition() throws IOException {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess" )
       .startEvent(START_EVENT)
       .serviceTask(SERVICE_TASK_ID)
@@ -420,8 +450,8 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
       .post(Entity.json(reportData));
   }
 
-  private ReportDataDto getMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(ProcessDefinitionEngineDto processDefinition) {
-    return createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
+  private ReportDataDto getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(ProcessDefinitionEngineDto processDefinition) {
+    return createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
   }
 
 }

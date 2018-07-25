@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.es.report.count;
+package org.camunda.optimize.service.es.report.flownode.frquency;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;

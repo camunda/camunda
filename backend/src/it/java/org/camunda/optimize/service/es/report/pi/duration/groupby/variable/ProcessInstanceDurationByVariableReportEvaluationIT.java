@@ -1,5 +1,7 @@
-package org.camunda.optimize.service.es.report.count;
+package org.camunda.optimize.service.es.report.pi.duration.groupby.variable;
 
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
@@ -9,6 +11,9 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.report.util.AvgProcessInstanceDurationGroupByVariableReportDataCreator;
+import org.camunda.optimize.service.es.report.util.MinProcessInstanceDurationGroupByVariableReportDataCreator;
+import org.camunda.optimize.service.es.report.util.ReportDataCreator;
 import org.camunda.optimize.service.util.VariableHelper;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -18,10 +23,12 @@ import org.camunda.optimize.test.util.DateUtilHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+import org.junit.runner.RunWith;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.HashMap;
@@ -30,14 +37,19 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.*;
-import static org.camunda.optimize.test.util.ReportDataHelper.createCountProcessInstanceFrequencyGroupByVariable;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_VARIABLE_TYPE;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_AVERAGE_OPERATION;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_DURATION_PROPERTY;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MIN_OPERATION;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_PROCESS_INSTANCE_ENTITY;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
 
 
-public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
+@RunWith(JUnitParamsRunner.class)
+public class ProcessInstanceDurationByVariableReportEvaluationIT {
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
@@ -50,16 +62,21 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule).around(engineDatabaseRule);
 
   @Test
-  public void simpleReportEvaluation() {
+  @Parameters
+  public void simpleReportEvaluation(ReportDataCreator reportDataCreator, String operation) throws SQLException {
     // given
+    OffsetDateTime startDate = OffsetDateTime.now();
+    OffsetDateTime endDate = startDate.plusSeconds(1);
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar");
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
+    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), endDate);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(
+    ReportDataDto reportData = reportDataCreator.create(
         processInstanceDto.getProcessDefinitionKey(),
       processInstanceDto.getProcessDefinitionVersion(),
       "foo",
@@ -73,9 +90,9 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getOperation(), is(VIEW_COUNT_OPERATION));
+    assertThat(resultReportDataDto.getView().getOperation(), is(operation));
     assertThat(resultReportDataDto.getView().getEntity(), is(VIEW_PROCESS_INSTANCE_ENTITY));
-    assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_FREQUENCY_PROPERTY));
+    assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_DURATION_PROPERTY));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(GROUP_BY_VARIABLE_TYPE));
     VariableGroupByDto variableGroupByDto = (VariableGroupByDto) resultReportDataDto.getGroupBy();
     assertThat(variableGroupByDto.getValue().getName(), is("foo"));
@@ -83,73 +100,36 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(1));
     Map<String, Long> resultMap = result.getResult();
-    assertThat(resultMap.get("bar"), is(1L));
+    assertThat(resultMap.get("bar"), is(1000L));
   }
 
-  private String createAndStoreDefaultReportDefinition(String processDefinitionKey,
-                                                       String processDefinitionVersion,
-                                                       String variableName,
-                                                       String variableType) {
-    String id = createNewReport();
-    ReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(
-        processDefinitionKey, processDefinitionVersion, variableName, variableType
-    );
-    ReportDefinitionDto report = new ReportDefinitionDto();
-    report.setData(reportData);
-    report.setId(id);
-    report.setLastModifier("something");
-    report.setName("something");
-    report.setCreated(OffsetDateTime.now());
-    report.setLastModified(OffsetDateTime.now());
-    report.setOwner("something");
-    updateReport(id, report);
-    return id;
-  }
-
-  private String createNewReport() {
-    Response response =
-      embeddedOptimizeRule.target("report")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .post(Entity.json(""));
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(IdDto.class).getId();
-  }
-
-  private void updateReport(String id, ReportDefinitionDto updatedReport) {
-    Response response =
-      embeddedOptimizeRule.target("report/" + id)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .put(Entity.json(updatedReport));
-    assertThat(response.getStatus(), is(204));
-  }
-
-  private MapReportResultDto evaluateReportById(String reportId) {
-    Response response = embeddedOptimizeRule.target("report/" + reportId + "/evaluate")
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-      .get();
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(MapReportResultDto.class);
+  private Object[] parametersForSimpleReportEvaluation() {
+    return new Object[]{
+      new Object[]{new AvgProcessInstanceDurationGroupByVariableReportDataCreator(), VIEW_AVERAGE_OPERATION},
+      new Object[]{new MinProcessInstanceDurationGroupByVariableReportDataCreator(), VIEW_MIN_OPERATION}
+    };
   }
 
   @Test
-  public void simpleReportEvaluationById() {
+  @Parameters
+  public void simpleReportEvaluationById(ReportDataCreator reportDataCreator, String operation) throws SQLException {
     // given
+    OffsetDateTime startDate = OffsetDateTime.now();
+    OffsetDateTime endDate = startDate.plusSeconds(1);
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar");
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleServiceTaskProcess(variables);
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstance.getId(), startDate);
+    engineDatabaseRule.changeProcessInstanceEndDate(processInstance.getId(), endDate);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-    String reportId = createAndStoreDefaultReportDefinition(
-        processInstance.getProcessDefinitionKey(),
+    ReportDataDto reportData = reportDataCreator.create(
+      processInstance.getProcessDefinitionKey(),
       processInstance.getProcessDefinitionVersion(),
       "foo",
       "String"
     );
+    String reportId = createAndStoreDefaultReportDefinition(reportData);
 
     // when
     MapReportResultDto result = evaluateReportById(reportId);
@@ -160,9 +140,9 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getOperation(), is(VIEW_COUNT_OPERATION));
+    assertThat(resultReportDataDto.getView().getOperation(), is(operation));
     assertThat(resultReportDataDto.getView().getEntity(), is(VIEW_PROCESS_INSTANCE_ENTITY));
-    assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_FREQUENCY_PROPERTY));
+    assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_DURATION_PROPERTY));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(GROUP_BY_VARIABLE_TYPE));
     VariableGroupByDto variableGroupByDto = (VariableGroupByDto) resultReportDataDto.getGroupBy();
     assertThat(variableGroupByDto.getValue().getName(), is("foo"));
@@ -170,22 +150,36 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(1));
     Map<String, Long> resultMap = result.getResult();
-    assertThat(resultMap.get("bar"), is(1L));
+    assertThat(resultMap.get("bar"), is(1000L));
+  }
+
+  private Object[] parametersForSimpleReportEvaluationById() {
+    return new Object[]{
+      new Object[]{new AvgProcessInstanceDurationGroupByVariableReportDataCreator(), VIEW_AVERAGE_OPERATION},
+      new Object[]{new MinProcessInstanceDurationGroupByVariableReportDataCreator(), VIEW_MIN_OPERATION}
+    };
   }
 
   @Test
-  public void reportAcrossAllVersions() {
+  @Parameters(source = ReportDataCreatorProvider.class)
+  public void reportAcrossAllVersions(ReportDataCreator reportDataCreator) throws SQLException {
     // given
+    OffsetDateTime startDate = OffsetDateTime.now();
+    OffsetDateTime endDate = startDate.plusSeconds(1);
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar");
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
+    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), endDate);
     variables.put("foo", "bar2");
-    deployAndStartSimpleServiceTaskProcess(variables);
+    processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
+    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), endDate);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(
+    ReportDataDto reportData = reportDataCreator.create(
         processInstanceDto.getProcessDefinitionKey(),
         ALL_VERSIONS,
       "foo",
@@ -200,23 +194,30 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     assertThat(result.getResult(), is(notNullValue()));
     Map<String, Long> variableValueToCount = result.getResult();
     assertThat(variableValueToCount.size(), is(2));
-    assertThat(variableValueToCount.get("bar"), is(1L));
-    assertThat(variableValueToCount.get("bar2"), is(1L));
+    assertThat(variableValueToCount.get("bar"), is(1000L));
+    assertThat(variableValueToCount.get("bar2"), is(1000L));
   }
 
   @Test
-  public void otherProcessDefinitionsDoNoAffectResult() {
+  @Parameters(source = ReportDataCreatorProvider.class)
+  public void otherProcessDefinitionsDoNoAffectResult(ReportDataCreator reportDataCreator) throws SQLException {
     // given
+    OffsetDateTime startDate = OffsetDateTime.now();
+    OffsetDateTime endDate = startDate.plusSeconds(1);
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar");
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
+    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), endDate);
     variables.put("foo", "bar2");
-    deployAndStartSimpleServiceTaskProcess(variables);
+    processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
+    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), endDate);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(
+    ReportDataDto reportData = reportDataCreator.create(
         processInstanceDto.getProcessDefinitionKey(),
         processInstanceDto.getProcessDefinitionVersion(),
       "foo",
@@ -231,23 +232,37 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     assertThat(result.getResult(), is(notNullValue()));
     Map<String, Long> variableValueToCount = result.getResult();
     assertThat(variableValueToCount.size(), is(1));
-    assertThat(variableValueToCount.get("bar"), is(1L));
+    assertThat(variableValueToCount.get("bar2"), is(1000L));
   }
 
   @Test
-  public void multipleProcessInstances() {
+  @Parameters
+  public void multipleProcessInstances(ReportDataCreator reportDataCreator,
+                                       long firstVariableDuration,
+                                       long secondVariableDuration) throws SQLException {
     // given
+    OffsetDateTime startDate = OffsetDateTime.now();
+    OffsetDateTime endDate = startDate.plusSeconds(1);
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar1");
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
+    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), endDate);
     variables.put("foo", "bar2");
-    engineRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
-    engineRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    ProcessInstanceEngineDto processInstanceDto2 =
+      engineRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto2.getId(), startDate);
+    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto2.getId(), endDate);
+    processInstanceDto2 = engineRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    startDate = OffsetDateTime.now();
+    endDate = startDate.plusSeconds(3);
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto2.getId(), startDate);
+    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto2.getId(), endDate);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(
+    ReportDataDto reportData = reportDataCreator.create(
         processInstanceDto.getProcessDefinitionKey(),
         processInstanceDto.getProcessDefinitionVersion(),
       "foo",
@@ -262,23 +277,68 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     assertThat(result.getResult(), is(notNullValue()));
     Map<String, Long> variableValueToCount = result.getResult();
     assertThat(variableValueToCount.size(), is(2));
-    assertThat(variableValueToCount.get("bar1"), is(1L));
-    assertThat(variableValueToCount.get("bar2"), is(2L));
+    assertThat(variableValueToCount.get("bar1"), is(firstVariableDuration));
+    assertThat(variableValueToCount.get("bar2"), is(secondVariableDuration));
+  }
+
+  private Object[] parametersForMultipleProcessInstances() {
+    return new Object[]{
+      new Object[]{new AvgProcessInstanceDurationGroupByVariableReportDataCreator(), 1000L, 2000L},
+      new Object[]{new MinProcessInstanceDurationGroupByVariableReportDataCreator(), 1000L, 1000L}
+    };
   }
 
   @Test
-  public void variableTypeIsImportant() {
+  @Parameters(source = ReportDataCreatorProvider.class)
+  public void noAvailableDurationReturnsZero(ReportDataCreator reportDataCreator) {
     // given
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
+      .startEvent()
+      .userTask()
+      .endEvent()
+      .done();
     Map<String, Object> variables = new HashMap<>();
-    variables.put("foo", "1");
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
-    variables.put("foo", 1);
-    engineRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    variables.put("foo", "bar");
+    ProcessInstanceEngineDto processInstanceDto =
+      engineRule.deployAndStartProcessWithVariables(processModel, variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(
+    ReportDataDto reportData = reportDataCreator.create(
+        processInstanceDto.getProcessDefinitionKey(),
+        processInstanceDto.getProcessDefinitionVersion(),
+      "foo",
+      "String"
+    );
+    MapReportResultDto result = evaluateReport(reportData);
+
+    // then
+    assertThat(result.getResult(), is(notNullValue()));
+    assertThat(result.getResult().get("bar"), is(0L));
+  }
+
+  @Test
+  @Parameters(source = ReportDataCreatorProvider.class)
+  public void variableTypeIsImportant(ReportDataCreator reportDataCreator) throws SQLException {
+    // given
+    OffsetDateTime startDate = OffsetDateTime.now();
+    OffsetDateTime endDate = startDate.plusSeconds(1);
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("foo", "1");
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
+    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), endDate);
+    variables.put("foo", 1);
+    ProcessInstanceEngineDto processInstanceDto2 =
+      engineRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto2.getId(), startDate);
+    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto2.getId(), endDate);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    ReportDataDto reportData = reportDataCreator.create(
         processInstanceDto.getProcessDefinitionKey(),
         processInstanceDto.getProcessDefinitionVersion(),
       "foo",
@@ -293,22 +353,30 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     assertThat(result.getResult(), is(notNullValue()));
     Map<String, Long> variableValueToCount = result.getResult();
     assertThat(variableValueToCount.size(), is(1));
-    assertThat(variableValueToCount.get("1"), is(1L));
+    assertThat(variableValueToCount.get("1"), is(1000L));
   }
 
   @Test
-  public void otherVariablesDoNotDistortTheResult() {
+  @Parameters(source = ReportDataCreatorProvider.class)
+  public void otherVariablesDoNotDistortTheResult(ReportDataCreator reportDataCreator) throws SQLException {
     // given
+    OffsetDateTime startDate = OffsetDateTime.now();
+    OffsetDateTime endDate = startDate.plusSeconds(1);
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo1", "bar1");
     variables.put("foo2", "bar1");
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
-    engineRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
+    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), endDate);
+    ProcessInstanceEngineDto processInstanceDto2 =
+      engineRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto2.getId(), startDate);
+    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto2.getId(), endDate);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(
+    ReportDataDto reportData = reportDataCreator.create(
         processInstanceDto.getProcessDefinitionKey(),
         processInstanceDto.getProcessDefinitionVersion(),
       "foo1",
@@ -323,12 +391,15 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     assertThat(result.getResult(), is(notNullValue()));
     Map<String, Long> variableValueToCount = result.getResult();
     assertThat(variableValueToCount.size(), is(1));
-    assertThat(variableValueToCount.get("bar1"), is(2L));
+    assertThat(variableValueToCount.get("bar1"), is(1000L));
   }
 
   @Test
-  public void worksWithAllVariableTypes() {
+  @Parameters(source = ReportDataCreatorProvider.class)
+  public void worksWithAllVariableTypes(ReportDataCreator reportDataCreator) throws SQLException {
     // given
+    OffsetDateTime startDate = OffsetDateTime.now();
+    OffsetDateTime endDate = startDate.plusSeconds(1);
     Map<String, String> varNameToTypeMap = createVarNameToTypeMap();
     Map<String, Object> variables = new HashMap<>();
     variables.put("dateVar", OffsetDateTime.now().withOffsetSameLocal(ZoneOffset.UTC));
@@ -339,13 +410,15 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     variables.put("doubleVar", 5.5);
     variables.put("stringVar", "aString");
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
+    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), endDate);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     for (Map.Entry<String, Object> entry : variables.entrySet()) {
       // when
       String variableType = varNameToTypeMap.get(entry.getKey());
-      ReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(
+      ReportDataDto reportData = reportDataCreator.create(
         processInstanceDto.getProcessDefinitionKey(),
         processInstanceDto.getProcessDefinitionVersion(),
         entry.getKey(),
@@ -361,9 +434,9 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
         OffsetDateTime temporal = (OffsetDateTime) variables.get(entry.getKey());
         String dateAsString =
           embeddedOptimizeRule.getDateTimeFormatter().format(temporal.withOffsetSameLocal(ZoneOffset.UTC));
-        assertThat(variableValueToCount.get(dateAsString), is(1L));
+        assertThat(variableValueToCount.get(dateAsString), is(1000L));
       } else {
-        assertThat(variableValueToCount.get(entry.getValue().toString()), is(1L));
+        assertThat(variableValueToCount.get(entry.getValue().toString()), is(1000L));
       }
     }
   }
@@ -381,23 +454,27 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
   }
 
   @Test
-  public void dateFilterInReport() {
+  @Parameters(source = ReportDataCreatorProvider.class)
+  public void filterInReportWorks(ReportDataCreator reportDataCreator) throws SQLException {
     // given
+    OffsetDateTime startDate = OffsetDateTime.now();
+    OffsetDateTime endDate = startDate.plusSeconds(1);
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar");
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleServiceTaskProcess(variables);
-    OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstance.getId(), startDate);
+    engineDatabaseRule.changeProcessInstanceEndDate(processInstance.getId(), endDate);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(
+    ReportDataDto reportData = reportDataCreator.create(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion(),
       "foo",
       "String"
     );
-    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(null, past.minusSeconds(1L)));
+    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(null, startDate.minusSeconds(1L)));
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -406,20 +483,21 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     assertThat(variableValueToCount.size(), is(0));
 
     // when
-    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(past, null));
+    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(startDate, null));
     result = evaluateReport(reportData);
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
     variableValueToCount = result.getResult();
     assertThat(variableValueToCount.size(), is(1));
-    assertThat(variableValueToCount.get("bar"), is(1L));
+    assertThat(variableValueToCount.get("bar"), is(1000L));
   }
 
   @Test
-  public void optimizeExceptionOnViewEntityIsNull() {
+  @Parameters(source = ReportDataCreatorProvider.class)
+  public void optimizeExceptionOnViewEntityIsNull(ReportDataCreator reportDataCreator) {
     // given
-    ReportDataDto dataDto = createCountProcessInstanceFrequencyGroupByVariable(
+    ReportDataDto dataDto = reportDataCreator.create(
         "123",
         "1",
       "foo",
@@ -435,9 +513,10 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
   }
 
   @Test
-  public void optimizeExceptionOnViewPropertyIsNull() {
+  @Parameters(source = ReportDataCreatorProvider.class)
+  public void optimizeExceptionOnViewPropertyIsNull(ReportDataCreator reportDataCreator) {
     // given
-    ReportDataDto dataDto = createCountProcessInstanceFrequencyGroupByVariable(
+    ReportDataDto dataDto = reportDataCreator.create(
         "123",
         "1",
       "foo",
@@ -453,9 +532,10 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
   }
 
   @Test
-  public void optimizeExceptionOnGroupByTypeIsNull() {
+  @Parameters(source = ReportDataCreatorProvider.class)
+  public void optimizeExceptionOnGroupByTypeIsNull(ReportDataCreator reportDataCreator) {
     // given
-    ReportDataDto dataDto = createCountProcessInstanceFrequencyGroupByVariable(
+    ReportDataDto dataDto = reportDataCreator.create(
         "123",
         "1",
       "foo",
@@ -471,9 +551,10 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
   }
 
   @Test
-  public void optimizeExceptionOnGroupByValueNameIsNull() {
+  @Parameters(source = ReportDataCreatorProvider.class)
+  public void optimizeExceptionOnGroupByValueNameIsNull(ReportDataCreator reportDataCreator) {
     // given
-    ReportDataDto dataDto = createCountProcessInstanceFrequencyGroupByVariable(
+    ReportDataDto dataDto = reportDataCreator.create(
         "123",
         "1",
       "foo",
@@ -490,9 +571,10 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
   }
 
   @Test
-  public void optimizeExceptionOnGroupByValueTypeIsNull() {
+  @Parameters(source = ReportDataCreatorProvider.class)
+  public void optimizeExceptionOnGroupByValueTypeIsNull(ReportDataCreator reportDataCreator) {
     // given
-    ReportDataDto dataDto = createCountProcessInstanceFrequencyGroupByVariable(
+    ReportDataDto dataDto = reportDataCreator.create(
         "123",
         "1",
       "foo",
@@ -550,5 +632,57 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
       .post(Entity.json(reportData));
   }
 
+  private String createNewReport() {
+    Response response =
+      embeddedOptimizeRule.target("report")
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
+        .post(Entity.json(""));
+    assertThat(response.getStatus(), is(200));
 
+    return response.readEntity(IdDto.class).getId();
+  }
+
+  private void updateReport(String id, ReportDefinitionDto updatedReport) {
+    Response response =
+      embeddedOptimizeRule.target("report/" + id)
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
+        .put(Entity.json(updatedReport));
+    assertThat(response.getStatus(), is(204));
+  }
+
+  private MapReportResultDto evaluateReportById(String reportId) {
+    Response response = embeddedOptimizeRule.target("report/" + reportId + "/evaluate")
+      .request()
+      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
+      .get();
+    assertThat(response.getStatus(), is(200));
+
+    return response.readEntity(MapReportResultDto.class);
+  }
+
+  private String createAndStoreDefaultReportDefinition(ReportDataDto reportData) {
+    String id = createNewReport();
+
+    ReportDefinitionDto report = new ReportDefinitionDto();
+    report.setData(reportData);
+    report.setId(id);
+    report.setLastModifier("something");
+    report.setName("something");
+    report.setCreated(OffsetDateTime.now());
+    report.setLastModified(OffsetDateTime.now());
+    report.setOwner("something");
+    updateReport(id, report);
+    return id;
+  }
+
+  public static class ReportDataCreatorProvider {
+    public static Object[] provideReportDataCreator() {
+      return new Object[]{
+        new Object[]{new AvgProcessInstanceDurationGroupByVariableReportDataCreator()},
+        new Object[]{new MinProcessInstanceDurationGroupByVariableReportDataCreator()}
+      };
+    }
+  }
 }

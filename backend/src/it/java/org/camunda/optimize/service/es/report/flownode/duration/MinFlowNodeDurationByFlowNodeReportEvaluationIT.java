@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.es.report.min;
+package org.camunda.optimize.service.es.report.flownode.duration;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;

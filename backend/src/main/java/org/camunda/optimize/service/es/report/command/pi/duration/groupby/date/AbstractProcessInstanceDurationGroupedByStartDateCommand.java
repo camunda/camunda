@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.es.report.command.pi.duration;
+package org.camunda.optimize.service.es.report.command.pi.duration.groupby.date;
 
 import org.camunda.optimize.dto.optimize.query.report.group.StartDateGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.group.value.StartDateGroupByValueDto;
@@ -9,27 +9,28 @@ import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
-import org.elasticsearch.search.aggregations.metrics.avg.InternalAvg;
 import org.joda.time.DateTime;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class AverageProcessInstanceDurationGroupedByStartDateCommand extends ReportCommand<MapReportResultDto> {
+public abstract class AbstractProcessInstanceDurationGroupedByStartDateCommand<AGG extends Aggregation>
+    extends ReportCommand<MapReportResultDto> {
 
-  private static final String AVG_DURATION = "avgDuration";
+  private static final String DURATION_AGGREGATION = "durationAggregation";
   private static final String DATE_HISTOGRAM_AGGREGATION = "dateIntervalGrouping";
 
   @Override
   protected MapReportResultDto evaluate() throws OptimizeException {
 
-    logger.debug("Evaluating average process instance duration grouped by start date report " +
+    logger.debug("Evaluating process instance duration grouped by start date report " +
       "for process definition key [{}] and version [{}]",
       reportData.getProcessDefinitionKey(),
       reportData.getProcessDefinitionVersion());
@@ -52,6 +53,7 @@ public class AverageProcessInstanceDurationGroupedByStartDateCommand extends Rep
       .addAggregation(createAggregation(groupByStartDate.getUnit()))
       .get();
 
+
     MapReportResultDto mapResult = new MapReportResultDto();
     mapResult.setResult(processAggregations(response.getAggregations()));
     mapResult.setProcessInstanceCount(response.getHits().getTotalHits());
@@ -68,8 +70,8 @@ public class AverageProcessInstanceDurationGroupedByStartDateCommand extends Rep
       DateTime key = (DateTime) entry.getKey();    // Key
       String formattedDate = key.toString(configurationService.getOptimizeDateFormat());
 
-      InternalAvg averageDuration = entry.getAggregations().get(AVG_DURATION);
-      long roundedDuration = Math.round(averageDuration.getValue());
+      AGG aggregation = entry.getAggregations().get(DURATION_AGGREGATION);
+      long roundedDuration = processAggregationOperation(aggregation);
       result.put(formattedDate, roundedDuration);
     }
     return result;
@@ -83,10 +85,13 @@ public class AverageProcessInstanceDurationGroupedByStartDateCommand extends Rep
       .order(BucketOrder.key(false))
       .dateHistogramInterval(interval)
       .subAggregation(
-        AggregationBuilders
-          .avg(AVG_DURATION)
-          .field(ProcessInstanceType.DURATION)
+        createAggregationOperation(DURATION_AGGREGATION, ProcessInstanceType.DURATION)
       );
   }
+
+  protected abstract long processAggregationOperation(AGG aggregation);
+
+  protected abstract AggregationBuilder createAggregationOperation(String aggregationName, String fieldName);
+
 
 }

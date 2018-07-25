@@ -72,7 +72,7 @@ public class ExportServiceIT {
         "Raw Data Grouped By PI Start Date"
       },
       {
-        ReportDataHelper.createPICountFrequencyGroupByStartDate(
+        ReportDataHelper.createCountProcessInstanceFrequencyGroupByStartDate(
           FAKE,
           FAKE,
           DATE_UNIT_DAY
@@ -89,7 +89,7 @@ public class ExportServiceIT {
         "Count Flow Nodes Grouped By Flow Node"
       },
       {
-        ReportDataHelper.createAvgPIDurationGroupByStartDateReport(
+        ReportDataHelper.createAverageProcessInstanceDurationGroupByStartDateReport(
           FAKE,
           FAKE,
           DATE_UNIT_DAY

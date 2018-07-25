@@ -2,7 +2,7 @@
 engines:
   '1':
     name: default
-    rest: 'http://localhost:${http.port}/engine-rest'
+    rest: 'http://localhost:8080/engine-rest'
     authentication:
       enabled: false
       password: ''

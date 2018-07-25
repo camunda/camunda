@@ -8,7 +8,6 @@ import static org.camunda.optimize.service.es.report.command.util.GroupByDtoCrea
 import static org.camunda.optimize.service.es.report.command.util.GroupByDtoCreator.createGroupByNone;
 import static org.camunda.optimize.service.es.report.command.util.GroupByDtoCreator.createGroupByStartDateDto;
 import static org.camunda.optimize.service.es.report.command.util.GroupByDtoCreator.createGroupByVariable;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.DATE_UNIT_DAY;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.HEAT_VISUALIZATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.SINGLE_NUMBER_VISUALIZATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.TABLE_VISUALIZATION;
@@ -22,6 +21,7 @@ import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator
 import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createMaxFlowNodeDurationView;
 import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createMedianFlowNodeDurationView;
 import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createMinFlowNodeDurationView;
+import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createMinProcessInstanceDurationView;
 
 
 public class ReportDataHelper {
@@ -39,7 +39,7 @@ public class ReportDataHelper {
     );
   }
 
-  public static ReportDataDto createAvgPIDurationGroupByStartDateReport(
+  public static ReportDataDto createAverageProcessInstanceDurationGroupByStartDateReport(
       String processDefinitionKey,
       String processDefinitionVersion,
       String dateInterval
@@ -57,7 +57,25 @@ public class ReportDataHelper {
     );
   }
 
-  public static ReportDataDto createPICountFrequencyGroupByStartDate(
+  public static ReportDataDto createMinProcessInstanceDurationGroupByStartDateReport(
+      String processDefinitionKey,
+      String processDefinitionVersion,
+      String dateInterval
+  ) {
+
+    ViewDto view = createMinProcessInstanceDurationView();
+    GroupByDto groupByDto = createGroupByStartDateDto(dateInterval);
+
+    return createReportDataViewRaw(
+        processDefinitionKey,
+        processDefinitionVersion,
+        TABLE_VISUALIZATION,
+        view,
+        groupByDto
+    );
+  }
+
+  public static ReportDataDto createCountProcessInstanceFrequencyGroupByStartDate(
       String processDefinitionKey,
       String processDefinitionVersion,
       String dateInterval
@@ -135,7 +153,7 @@ public class ReportDataHelper {
     );
   }
 
-  public static ReportDataDto createAvgProcessInstanceDurationGroupByVariable(
+  public static ReportDataDto createAverageProcessInstanceDurationGroupByVariable(
       String processDefinitionKey,
       String processDefinitionVersion,
       String variableName,
@@ -143,6 +161,25 @@ public class ReportDataHelper {
   ) {
 
     ViewDto view = createAverageProcessInstanceDurationView();
+    GroupByDto groupByDto = createGroupByVariable(variableName, variableType);
+
+    return createReportDataViewRaw(
+        processDefinitionKey,
+        processDefinitionVersion,
+        HEAT_VISUALIZATION,
+        view,
+        groupByDto
+    );
+  }
+
+  public static ReportDataDto createMinProcessInstanceDurationGroupByVariable(
+      String processDefinitionKey,
+      String processDefinitionVersion,
+      String variableName,
+      String variableType
+  ) {
+
+    ViewDto view = createMinProcessInstanceDurationView();
     GroupByDto groupByDto = createGroupByVariable(variableName, variableType);
 
     return createReportDataViewRaw(
@@ -247,6 +284,23 @@ public class ReportDataHelper {
   ) {
 
     ViewDto view = createAverageProcessInstanceDurationView();
+    GroupByDto groupByDto = createGroupByNone();
+
+    return createReportDataViewRaw(
+        processDefinitionKey,
+        processDefinitionVersion,
+        HEAT_VISUALIZATION,
+        view,
+        groupByDto
+    );
+  }
+
+  public static ReportDataDto createMinProcessInstanceDurationHeatMapGroupByNone(
+      String processDefinitionKey,
+      String processDefinitionVersion
+  ) {
+
+    ViewDto view = createMinProcessInstanceDurationView();
     GroupByDto groupByDto = createGroupByNone();
 
     return createReportDataViewRaw(

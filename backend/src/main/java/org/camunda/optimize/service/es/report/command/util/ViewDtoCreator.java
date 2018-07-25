@@ -56,6 +56,14 @@ public class ViewDtoCreator {
     return view;
   }
 
+  public static ViewDto createMinProcessInstanceDurationView() {
+    ViewDto view = new ViewDto();
+    view.setOperation(VIEW_MIN_OPERATION);
+    view.setEntity(VIEW_PROCESS_INSTANCE_ENTITY);
+    view.setProperty(VIEW_DURATION_PROPERTY);
+    return view;
+  }
+
   public static ViewDto createAverageFlowNodeDurationView() {
     ViewDto view = new ViewDto();
     view.setOperation(VIEW_AVERAGE_OPERATION);

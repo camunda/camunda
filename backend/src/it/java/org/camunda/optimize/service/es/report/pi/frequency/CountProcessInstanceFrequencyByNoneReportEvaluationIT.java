@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.es.report.count;
+package org.camunda.optimize.service.es.report.pi.frequency;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -32,7 +32,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
 
 
-public class CountTotalProcessInstanceFrequencyReportEvaluationIT {
+public class CountProcessInstanceFrequencyByNoneReportEvaluationIT {
 
   public static final String PROCESS_DEFINITION_KEY = "123";
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
