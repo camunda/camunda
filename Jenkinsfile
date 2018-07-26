@@ -73,11 +73,30 @@ pipeline {
         }
       }
     }
-    stage('ITs against different engines') {
+    stage('Integration and Migration tests') {
       environment {
         CAM_REGISTRY = credentials('repository-camunda-cloud')
       }
       parallel {
+        stage('Migration') {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build-it-migration_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yamlFile '.ci/podSpecs/mavenDindAgent.yml'
+            }
+          }
+          steps {
+            migrationTestSteps('latest')
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+              archiveTestArtifacts('backend', 'migration')
+            }
+          }
+        }
         stage('IT Latest') {
           agent {
             kubernetes {
@@ -263,17 +282,37 @@ void buildNotification(String buildStatus) {
 void integrationTestSteps(String engineVersion = 'latest') {
   container('maven') {
     installDockerBinaries()
-    sh ("""echo '${CAM_REGISTRY_PSW}' | docker login -u ${CAM_REGISTRY_USR} registry.camunda.cloud --password-stdin""")
+    dockerRegistryLogin()
     setupPermissionsForHostDirs('backend')
+
     runMaven("install -Pproduction,it,engine-${engineVersion} -pl backend -am -T\$LIMITS_CPU")
   }
 }
 
+void migrationTestSteps(String engineVersion = 'latest') {
+  container('maven') {
+    installDockerBinaries()
+    dockerRegistryLogin()
+    sh ("""apt-get update && apt-get install -y jq""")
+    setupPermissionsForHostDirs('backend')
+
+    runMaven("-T\$LIMITS_CPU -f upgrade/pom.xml clean install")
+    runMaven("-T\$LIMITS_CPU -f qa/pom.xml clean install")
+    runMaven("-T\$LIMITS_CPU -f backend/pom.xml -Dskip.docker -Pproduction,it,engine-${engineVersion} dependency:copy-dependencies@copy-dependencies")
+    runMaven("-T\$LIMITS_CPU -f qa/upgrade-es-schema-tests/pom.xml clean test")
+    runMaven("-T\$LIMITS_CPU -f backend/pom.xml -Dskip.docker -Pproduction,it,engine-${engineVersion} install")
+  }
+}
+
+void dockerRegistryLogin() {
+  sh ("""echo '${CAM_REGISTRY_PSW}' | docker login -u ${CAM_REGISTRY_USR} registry.camunda.cloud --password-stdin""")
+}
+
 void setupPermissionsForHostDirs(String directory) {
   sh("""#!/bin/bash -ex
-    mkdir -p ${directory}/target/{es_logs,cambpm_logs}
+    mkdir -p ${directory}/target/{es_logs,cambpm_logs,qa_libs}
     # must be 1000 so ES and CamBPM can write to the mounted volumes defined in docker-compose.yml
-    chown -R 1000:1000 ${directory}/target/{es_logs,cambpm_logs}
+    chown -R 1000:1000 ${directory}/target/{es_logs,cambpm_logs,qa_libs}
   """)
 }
 
