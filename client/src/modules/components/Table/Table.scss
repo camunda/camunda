@@ -25,6 +25,11 @@
 
   .rt-table {
     min-height: 0;
+    -ms-overflow-style: -ms-autohiding-scrollbar; /* IE FIX */
+  }
+
+  .rt-tbody {
+    padding-bottom: 15px; /* IE FIX */
   }
 
   .rt-noData {
