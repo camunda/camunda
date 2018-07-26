@@ -4,3 +4,8 @@ export function parseWorkflowNames(workflows) {
     label: item.name || item.bpmnProcessId
   }));
 }
+
+export const fieldParser = {
+  errorMessage: value => (value.length === 0 ? null : value),
+  ids: value => value.split(/[ ,]+/).filter(Boolean)
+};

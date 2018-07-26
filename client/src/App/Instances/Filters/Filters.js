@@ -12,17 +12,12 @@ import * as api from 'modules/api/instances';
 
 import CheckboxGroup from './CheckboxGroup';
 import * as Styled from './styled';
-import {parseWorkflowNames} from './service';
+import {parseWorkflowNames, fieldParser} from './service';
 
-const PLACEHOLDER = {
-  errorMessage: 'Error Message',
-  instanceIds: 'Instance Id(s) separated by space or comma',
-  workflowName: 'Workflow'
-};
-
-const fieldParser = {
-  errorMessage: value => (value.length === 0 ? null : value),
-  ids: value => value.split(/[ ,]+/).filter(Boolean)
+const FIELDS = {
+  errorMessage: {name: 'errorMessage', placeholder: 'Error Message'},
+  ids: {name: 'ids', placeholder: 'Instance Id(s) separated by space or comma'},
+  workflowName: {name: 'workflowName', placeholder: 'Workflow'}
 };
 
 export default class Filters extends React.Component {
@@ -71,25 +66,24 @@ export default class Filters extends React.Component {
               <Select
                 value={this.state.currentWorkflowName}
                 disabled={this.state.workflowNames.length === 0}
-                name="workflowName"
-                placeholder={PLACEHOLDER.workflowName}
+                name={FIELDS.workflowName.name}
+                placeholder={FIELDS.workflowName.placeholder}
                 options={parseWorkflowNames(this.state.workflowNames)}
                 onChange={this.handleWorkflowsNameChange}
               />
             </Styled.Field>
             <Styled.Field>
               <Textarea
-                name="ids"
-                placeholder={PLACEHOLDER.instanceIds}
+                name={FIELDS.ids.name}
+                placeholder={FIELDS.ids.placeholder}
                 onBlur={this.handleFieldChange}
               />
             </Styled.Field>
             <Styled.Field>
               <TextInput
-                name="errorMessage"
-                placeholder={PLACEHOLDER.errorMessage}
+                name={FIELDS.errorMessage.name}
+                placeholder={FIELDS.errorMessage.placeholder}
                 onBlur={this.handleFieldChange}
-                aria-label={PLACEHOLDER.errorMessage}
               />
             </Styled.Field>
             <CheckboxGroup
