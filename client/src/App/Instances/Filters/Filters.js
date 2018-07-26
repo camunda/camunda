@@ -12,12 +12,18 @@ import * as api from 'modules/api/instances';
 
 import CheckboxGroup from './CheckboxGroup';
 import * as Styled from './styled';
-import {parseWorkflowNames, fieldParser} from './service';
+import {
+  parseWorkflowNames,
+  parseWorkflowVersions,
+  addAllVersionsOption,
+  fieldParser
+} from './service';
 
 const FIELDS = {
   errorMessage: {name: 'errorMessage', placeholder: 'Error Message'},
   ids: {name: 'ids', placeholder: 'Instance Id(s) separated by space or comma'},
-  workflowName: {name: 'workflowName', placeholder: 'Workflow'}
+  workflowName: {name: 'workflowName', placeholder: 'Workflow'},
+  workflowVersion: {name: 'workflowVersion', placeholder: 'Workflow Version'}
 };
 
 export default class Filters extends React.Component {
@@ -29,22 +35,43 @@ export default class Filters extends React.Component {
   };
 
   state = {
-    workflowNames: [],
-    currentWorkflowName: ''
+    groupedWorkflows: [],
+    currentWorkflow: {},
+    currentWorkflowVersion: ''
   };
 
   componentDidMount = async () => {
     this.setState({
-      workflowNames: await api.fetchGroupedWorkflowInstances()
+      groupedWorkflows: await api.fetchGroupedWorkflowInstances()
     });
   };
 
-  handleWorkflowsNameChange = event => {
+  handleWorkflowNameChange = event => {
     const {value} = event.target;
+    const currentWorkflow = this.state.groupedWorkflows.find(
+      item => item.bpmnProcessId === value
+    );
+    const version = currentWorkflow ? currentWorkflow.workflows[0].id : '';
 
     this.setState({
-      currentWorkflowName: value
+      currentWorkflow: currentWorkflow || {},
+      currentWorkflowVersion: version
     });
+  };
+
+  getWorkflowVersions = () => {
+    const value = this.state.currentWorkflowVersion;
+
+    return value === 'all'
+      ? this.state.currentWorkflow.workflows.map(item => item.id)
+      : [value];
+  };
+
+  handleWorkflowVersionChange = event => {
+    const {value} = event.target;
+
+    value !== '' &&
+      this.setState({currentWorkflowVersion: value}, this.getWorkflowVersions);
   };
 
   handleFieldChange = event => {
@@ -57,6 +84,9 @@ export default class Filters extends React.Component {
 
   render() {
     const {active, incidents, canceled, completed} = this.props.filter;
+    const workflowVersions = addAllVersionsOption(
+      parseWorkflowVersions(this.state.currentWorkflow.workflows)
+    );
     return (
       <Panel isRounded>
         <Panel.Header isRounded>Filters</Panel.Header>
@@ -64,12 +94,22 @@ export default class Filters extends React.Component {
           <Styled.Filters>
             <Styled.Field>
               <Select
-                value={this.state.currentWorkflowName}
-                disabled={this.state.workflowNames.length === 0}
+                value={this.state.currentWorkflow.bpmnProcessId || ''}
+                disabled={this.state.groupedWorkflows.length === 0}
                 name={FIELDS.workflowName.name}
                 placeholder={FIELDS.workflowName.placeholder}
-                options={parseWorkflowNames(this.state.workflowNames)}
-                onChange={this.handleWorkflowsNameChange}
+                options={parseWorkflowNames(this.state.groupedWorkflows)}
+                onChange={this.handleWorkflowNameChange}
+              />
+            </Styled.Field>
+            <Styled.Field>
+              <Select
+                value={this.state.currentWorkflowVersion}
+                disabled={!this.state.currentWorkflow.bpmnProcessId}
+                name={FIELDS.workflowVersion.name}
+                placeholder={FIELDS.workflowVersion.placeholder}
+                options={workflowVersions}
+                onChange={this.handleWorkflowVersionChange}
               />
             </Styled.Field>
             <Styled.Field>

@@ -14,11 +14,30 @@ import CheckboxGroup from './CheckboxGroup/';
 import * as Styled from './styled';
 import {parseWorkflowNames} from './service';
 
-const mockGroupedWorkflowInstances = [
+const groupedWorkflowsMock = [
   {
     bpmnProcessId: 'demoProcess',
     name: 'New demo process',
-    workflows: []
+    workflows: [
+      {
+        id: '6',
+        name: 'New demo process',
+        version: 3,
+        bpmnProcessId: 'demoProcess'
+      },
+      {
+        id: '4',
+        name: 'Demo process',
+        version: 2,
+        bpmnProcessId: 'demoProcess'
+      },
+      {
+        id: '1',
+        name: 'Demo process',
+        version: 1,
+        bpmnProcessId: 'demoProcess'
+      }
+    ]
   },
   {
     bpmnProcessId: 'orderProcess',
@@ -27,9 +46,7 @@ const mockGroupedWorkflowInstances = [
   }
 ];
 
-api.fetchGroupedWorkflowInstances = mockResolvedAsyncFn(
-  mockGroupedWorkflowInstances
-);
+api.fetchGroupedWorkflowInstances = mockResolvedAsyncFn(groupedWorkflowsMock);
 
 describe('Filters', () => {
   const spy = jest.fn();
@@ -201,7 +218,7 @@ describe('Filters', () => {
       expect(workflowNameNode.props().value).toEqual('');
       expect(workflowNameNode.props().placeholder).toEqual('Workflow');
       expect(workflowNameNode.props().onChange).toEqual(
-        node.instance().handleWorkflowsNameChange
+        node.instance().handleWorkflowNameChange
       );
     });
 
@@ -214,23 +231,117 @@ describe('Filters', () => {
       node.update();
       // then
       expect(api.fetchGroupedWorkflowInstances).toHaveBeenCalled();
-      expect(node.state().workflowNames).toEqual(mockGroupedWorkflowInstances);
+      expect(node.state().groupedWorkflows).toEqual(groupedWorkflowsMock);
       expect(node.find({name: 'workflowName'}).props().options).toEqual(
-        parseWorkflowNames(mockGroupedWorkflowInstances)
+        parseWorkflowNames(groupedWorkflowsMock)
       );
     });
 
-    it('should update state with selected option', () => {
+    it('should update state with selected option', async () => {
       // given
-      const value = mockGroupedWorkflowInstances[0].bpmnProcessId;
+      const value = groupedWorkflowsMock[0].bpmnProcessId;
       const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
 
       //when
-      node.instance().handleWorkflowsNameChange({target: {value: value}});
+      await flushPromises();
+      node.instance().handleWorkflowNameChange({target: {value: value}});
       node.update();
 
       // then
-      expect(node.state().currentWorkflowName).toEqual(value);
+      expect(node.state().currentWorkflow).toEqual(groupedWorkflowsMock[0]);
+    });
+  });
+
+  describe('workflowVersion filter', () => {
+    it('should exist and be disabled by default', () => {
+      // given
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const workflowVersionNode = node.find({name: 'workflowVersion'});
+
+      // then
+      expect(workflowVersionNode.length).toEqual(1);
+      expect(workflowVersionNode.type()).toEqual(Select);
+      expect(workflowVersionNode.props().name).toEqual('workflowVersion');
+      expect(workflowVersionNode.props().value).toEqual('');
+      expect(workflowVersionNode.props().placeholder).toEqual(
+        'Workflow Version'
+      );
+      expect(workflowVersionNode.props().onChange).toEqual(
+        node.instance().handleWorkflowVersionChange
+      );
+    });
+
+    it('should be display the latest version of a selected workflowName', async () => {
+      // given
+      const value = groupedWorkflowsMock[0].bpmnProcessId;
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+
+      //when
+      await flushPromises();
+      node.instance().handleWorkflowNameChange({target: {value: value}});
+      node.update();
+
+      // then
+      expect(node.find({name: 'workflowVersion'}).props().value).toEqual(
+        groupedWorkflowsMock[0].workflows[0].id
+      );
+    });
+
+    it('should display an all versions option', async () => {
+      const value = groupedWorkflowsMock[0].bpmnProcessId;
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+
+      //when
+      await flushPromises();
+      node.instance().handleWorkflowNameChange({target: {value: value}});
+      node.update();
+
+      const options = node.find({name: 'workflowVersion'}).props().options;
+
+      // then
+      expect(options[0].label).toEqual('Version 3');
+      expect(options[options.length - 1].value).toEqual('all');
+      expect(options[options.length - 1].label).toEqual('All versions');
+    });
+
+    it('should not allow the selection of the first option', async () => {
+      const value = groupedWorkflowsMock[0].bpmnProcessId;
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+
+      //when
+      await flushPromises();
+      // select workflowName, the version is set to the latest
+      node.instance().handleWorkflowNameChange({target: {value: value}});
+      node.update();
+
+      // select WorkflowVersion option, 1st
+      node.instance().handleWorkflowVersionChange({target: {value: ''}});
+      node.update();
+
+      // then
+      // should keep the last version option selected
+      expect(node.find({name: 'workflowVersion'}).props().value).toEqual(
+        groupedWorkflowsMock[0].workflows[0].id
+      );
+    });
+
+    it('should reset after a the workflowName field is also reseted ', async () => {
+      const value = groupedWorkflowsMock[0].bpmnProcessId;
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+
+      //when
+      await flushPromises();
+      // select workflowName, the version is set to the latest
+      node.instance().handleWorkflowNameChange({target: {value: value}});
+      node.update();
+
+      // select WorkflowVersion option, 1st
+      node.instance().handleWorkflowNameChange({target: {value: ''}});
+      node.update();
+
+      // then
+      // should keep the last version option selected
+      expect(node.find({name: 'workflowVersion'}).props().value).toEqual('');
     });
   });
 });

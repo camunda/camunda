@@ -4,6 +4,7 @@ import * as Styled from './styled';
 
 export default function Select(props) {
   const {options, placeholder, ...otherProps} = props;
+
   return (
     <Styled.Select
       {...otherProps}
