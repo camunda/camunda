@@ -36,14 +36,15 @@ void integrationTestSteps(String engineVersion = 'latest') {
   container('node') {
     sh ('''
       cd ./client
-      ./build_client.sh $(pwd)
+      yarn
+      yarn build
     ''')
   }
   container('maven') {
     installDockerBinaries()
     sh ("""echo '${CAM_REGISTRY_PSW}' | docker login -u ${CAM_REGISTRY_USR} registry.camunda.cloud --password-stdin""")
     setupPermissionsForHostDirs('backend')
-    runMaven("-T\$LIMITS_CPU -Pproduction,it,engine-${engineVersion} -pl backend -am install")
+    runMaven("-T\$LIMITS_CPU -Dskip.fe.build -Pproduction,it,engine-${engineVersion} -pl backend -am install")
   }
 }
 
@@ -128,14 +129,34 @@ pipeline {
   }
 
   stages {
+    stage ('Build Frontend') {
+      steps {
+        container('node') {
+          sh ('''
+            cd ./client
+            yarn
+            yarn build
+          ''')
+        }
+      }
+    }
+    stage('Build Backend') {
+      steps {
+        container('maven') {
+          // prepare maven container
+          installDockerBinaries()
+          setupPermissionsForHostDirs('upgrade')
+
+          runMaven('-Dskip.fe.build -Dskip.docker -DskipTests -Pproduction install -T\$LIMITS_CPU')
+        }
+      }
+    }
     stage('Unit tests') {
       parallel {
         stage('Backend') {
           steps {
             container('maven') {
-              installDockerBinaries()
-              setupPermissionsForHostDirs('upgrade')
-              runMaven('-Dskip.fe.build=true -T\$LIMITS_CPU install')
+              runMaven('-Dskip.fe.build test -T\$LIMITS_CPU')
             }
           }
           post {
@@ -152,7 +173,6 @@ pipeline {
             container('node') {
               sh ('''
                 cd ./client
-                ./build_client.sh $(pwd)
                 yarn test:ci
               ''')
             }
@@ -246,7 +266,7 @@ pipeline {
     stage('RESTAPI Docs') {
       steps {
         container('maven') {
-          runMaven('-f backend/pom.xml -DskipTests -Pdocs clean package')
+          runMaven('-f backend/pom.xml -DskipTests -Pdocs,production clean package')
         }
       }
       post {
