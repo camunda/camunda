@@ -16,8 +16,6 @@ pipelineJob('performance-large-dataset') {
     stringParam('ES_VERSION', '6.0.0', 'Elasticsearch version to use.')
   }
 
-  jdk '(Default)'
-
   triggers {
     cron('H 3 * * *')
   }

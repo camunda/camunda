@@ -16,8 +16,6 @@ pipelineJob('deploy-optimize-branch-to-k8s') {
     booleanParam('DRY_RUN', false, 'Enable dry-run mode.')
   }
 
-  jdk '(Default)'
-
   triggers {
     cron('H 3 * * *')
   }

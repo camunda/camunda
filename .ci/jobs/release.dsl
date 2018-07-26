@@ -15,6 +15,4 @@ pipelineJob('camunda-optimize-release') {
     stringParam('DEVELOPMENT_VERSION', '1.1.0-SNAPSHOT', 'Next development version.')
   }
 
-  jdk '(Default)'
-
 }

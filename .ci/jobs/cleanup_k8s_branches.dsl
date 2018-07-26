@@ -15,8 +15,6 @@ pipelineJob('cleanup-optimize-k8s-branches') {
     booleanParam('DRY_RUN', false, 'Enable dry-run mode.')
   }
 
-  jdk '(Default)'
-
   triggers {
     cron('H 5 * * *')
   }
