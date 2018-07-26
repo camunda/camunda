@@ -1,7 +1,10 @@
 import React from 'react';
 import {shallow} from 'enzyme';
+import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 
 import Dropdown from './Dropdown';
+
+import * as Styled from './styled';
 
 describe('Dropdown', () => {
   let Child, node;
@@ -15,9 +18,7 @@ describe('Dropdown', () => {
     node.instance().storeContainer(document.createElement('div'));
   });
 
-  it('should be closed initially', () => {
-    expect(node.state().open).toBe(false);
-  });
+  it('should be closed initially', () => {});
 
   it('should not display its child contents when it is closed', () => {
     expect(node.find(Child)).not.toExist();
@@ -43,6 +44,26 @@ describe('Dropdown', () => {
 
   it('should match snapshot', () => {
     expect(node).toMatchSnapshot();
+  });
+});
+
+describe('DropdownMenu', () => {
+  let node, Child, placement;
+  beforeEach(() => {
+    Child = () => <span>I am a child component</span>;
+    node = shallow(
+      <Styled.DropdownMenu placement={'top'}>
+        <Child />
+      </Styled.DropdownMenu>
+    );
+  });
+
+  it('should render bottom as default placement direction', async () => {
+    //
+  });
+
+  it('should pass prop "placement" to children', () => {
+    //
   });
 });
 

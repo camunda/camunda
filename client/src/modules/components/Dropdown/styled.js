@@ -1,13 +1,21 @@
 import styled, {css} from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
-const PointerBasics = css`
-  position: absolute;
+const PointerTop = css`
+  top: 100%;
+  left: 15px;
+`;
+const PointerBottom = css`
   bottom: 100%;
   right: 15px;
+`;
+
+const PointerBasics = css`
+  position: absolute;
   border: solid transparent;
   content: ' ';
   pointer-events: none;
+  ${({placement}) => (placement === 'top' ? PointerTop : PointerBottom)};
 `;
 
 const PointerBody = css`
@@ -17,6 +25,7 @@ const PointerBody = css`
     dark: Colors.uiDark04,
     light: Colors.uiLight02
   })};
+  ${({placement}) => (placement === 'top' ? 'transform: rotate(180deg)' : '')};
 `;
 
 const PointerShadow = css`
@@ -26,6 +35,8 @@ const PointerShadow = css`
     dark: Colors.uiDark06,
     light: Colors.uiLight05
   })};
+
+  ${({placement}) => (placement === 'top' ? 'transform: rotate(180deg)' : '')};
 `;
 
 export const Label = styled.button`
@@ -61,8 +72,8 @@ export const Dropdown = styled.div`
 export const DropdownMenu = themed(styled.div`
   /* Positioning */
   position: absolute;
-  right: -1px;
-  top: 17px;
+  right: ${({placement}) => (placement === 'top' ? '-148px' : '-1px')};
+  ${({placement}) => (placement === 'top' ? 'bottom: 25px;' : 'top:17px')};
 
   /* Display & Box Model */
   min-width: 186px;
@@ -99,6 +110,63 @@ export const DropdownMenu = themed(styled.div`
     ${PointerShadow};
   }
 `);
+
+const PointerBottomOptions = placement => {
+  const bottom = css`
+  &:first-child:hover:after, &:first-child:hover:before {
+    ${PointerBasics};
+    }
+  
+    &:first-child:hover:after, &:first-child:hover:before {
+    ${PointerBasics};
+    }
+  
+    &:first-child:hover:after{
+      z-index: 1;
+      ${PointerBody}
+        border-bottom-color: ${themeStyle({
+          dark: Colors.uiDark06,
+          light: Colors.uiLight05
+        })};
+    }
+  
+    &:first-child:active:after{
+        ${PointerBody}
+        border-bottom-color: ${themeStyle({
+          dark: Colors.darkActive,
+          light: Colors.lightActive
+        })};
+    }
+  `;
+
+  const top = css`
+&:last-child:hover:after, &:last-child:hover:before {
+  ${PointerBasics};
+  }
+
+  &:last-child:hover:after, &:last-child:hover:before {
+  ${PointerBasics};
+  }
+
+  &:last-child:hover:after{
+    z-index: 1;
+    ${PointerBody}
+      border-bottom-color: ${themeStyle({
+        dark: Colors.uiDark06,
+        light: Colors.uiLight05
+      })};
+  }
+
+  &:last-child:active:after{
+      ${PointerBody}
+      border-bottom-color: ${themeStyle({
+        dark: Colors.darkActive,
+        light: Colors.lightActive
+      })};
+  }
+`;
+  return placement === 'top' ? top : bottom;
+};
 
 export const Option = themed(styled.button`
   /* Positioning */
@@ -139,29 +207,10 @@ export const Option = themed(styled.button`
       light: Colors.lightActive
     })};
   }
+ 
+  ${({placement}) => PointerBottomOptions(placement)};
 
-  &:first-child:hover:after, &:first-child:hover:before {
-  ${PointerBasics};
-  }
 
-  &:first-child:hover:after{
-    z-index: 1;
-    ${PointerBody}
-      border-bottom-color: ${themeStyle({
-        dark: Colors.uiDark06,
-        light: Colors.uiLight05
-      })};
-  }
-
-  &:first-child:active:after{
-     /* / z-index: 1; */
-      ${PointerBody}
-      border-bottom-color: ${themeStyle({
-        dark: Colors.darkActive,
-        light: Colors.lightActive
-      })};
-  }
-  
   /* Add Border between options */
   &:not(:last-child) {
     border-bottom: 1px solid ${themeStyle({

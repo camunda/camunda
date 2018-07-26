@@ -9,6 +9,8 @@ export default class Dropdown extends React.Component {
   static propTypes = {
     /** The content that is visible on the dropdown trigger. Must be non-interactive phrasing content. Supported labels types: string, component.*/
     label: PropTypes.node.isRequired,
+    /** This defines if the dropdown opens to the top or bottom.*/
+    placement: PropTypes.oneOf(['top', 'bottom']),
     /** The options of this dropdown. Each child should be a `Dropdown.Option` instance */
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
@@ -47,6 +49,14 @@ export default class Dropdown extends React.Component {
       <Styled.LabelWrapper>{label}</Styled.LabelWrapper>
     );
 
+  childwithProps = () => {
+    return React.Children.map(this.props.children, child => {
+      return React.cloneElement(child, {
+        placement: this.props.placement
+      });
+    });
+  };
+
   render() {
     return (
       <Styled.Dropdown innerRef={this.storeContainer}>
@@ -55,7 +65,9 @@ export default class Dropdown extends React.Component {
           <Down />
         </Styled.Label>
         {this.state.open && (
-          <Styled.DropdownMenu>{this.props.children}</Styled.DropdownMenu>
+          <Styled.DropdownMenu placement={this.props.placement}>
+            {this.childwithProps()}
+          </Styled.DropdownMenu>
         )}
       </Styled.Dropdown>
     );
