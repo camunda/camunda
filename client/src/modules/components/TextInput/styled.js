@@ -30,7 +30,7 @@ export const Input = themed(styled.input`
     light: Colors.uiLight04
   })};
   color: ${themeStyle({
-    dark: '#ffffff',
+    dark: 'rgba(255, 255, 255, 0.9)',
     light: Colors.uiDark03
   })};
 

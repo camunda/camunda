@@ -30,7 +30,7 @@ export const Textarea = themed(styled.textarea`
     light: Colors.uiLight04
   })};
   color: ${themeStyle({
-    dark: '#ffffff',
+    dark: 'rgba(255, 255, 255, 0.9)',
     light: Colors.uiDark03
   })};
 

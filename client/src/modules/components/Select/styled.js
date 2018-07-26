@@ -1,5 +1,17 @@
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
+
+const disabledStyleDark = css`
+  background-color: rgba(62, 63, 69, 0.4);
+  border-color: rgba(91, 94, 99, 0.2);
+  color: rgba(255, 255, 255, 0.5);
+`;
+
+const disabledStyleLight = css`
+  background-color: rgba(242, 243, 245, 0.4);
+  border: solid 1px rgba(176, 186, 199, 0.2);
+  color: rgba(98, 98, 110, 0.7);
+`;
 
 export const Select = themed(styled.select`
   width: 100%;
@@ -27,7 +39,9 @@ export const Select = themed(styled.select`
   box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.08);
 
   &:disabled {
-    opacity: 0.5;
+    ${({theme}) => (theme === 'dark' ? disabledStyleDark : disabledStyleLight)};
+
+    box-shadow: none;
     cursor: not-allowed;
   }
 `);
