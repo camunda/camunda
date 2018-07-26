@@ -3,8 +3,8 @@ import React from 'react';
 import {BPMNDiagram, TargetValueBadge} from 'components';
 import HeatmapOverlay from './HeatmapOverlay';
 
-import {calculateTargetValueHeat, convertToMilliseconds} from './service';
-import {getRelativeValue} from '../service';
+import {calculateTargetValueHeat} from './service';
+import {getRelativeValue, convertToMilliseconds} from '../service';
 import {formatters} from 'services';
 
 import './Heatmap.css';

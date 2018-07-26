@@ -1,5 +1,6 @@
 import HeatmapJS from 'heatmap.js';
 import './Tooltip.css';
+import {convertToMilliseconds} from '../service';
 
 const SEQUENCEFLOW_RADIUS = 30;
 const SEQUENCEFLOW_STEPWIDTH = 10;
@@ -268,19 +269,4 @@ export function calculateTargetValueHeat(durationData, targetValues) {
   });
 
   return data;
-}
-
-const units = {
-  years: 1000 * 60 * 60 * 24 * 30 * 12,
-  months: 1000 * 60 * 60 * 24 * 30,
-  weeks: 1000 * 60 * 60 * 24 * 7,
-  days: 1000 * 60 * 60 * 24,
-  hours: 1000 * 60 * 60,
-  minutes: 1000 * 60,
-  seconds: 1000,
-  millis: 1
-};
-
-export function convertToMilliseconds(value, unit) {
-  return value * units[unit];
 }

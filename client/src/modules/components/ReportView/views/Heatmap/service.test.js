@@ -1,6 +1,9 @@
 import {calculateTargetValueHeat} from './service';
 
 jest.mock('heatmap.js', () => {});
+jest.mock('../service', () => ({
+  convertToMilliseconds: value => value
+}));
 
 describe('calculateTargetValueHeat', () => {
   it('should return the relative difference between actual and target value', () => {

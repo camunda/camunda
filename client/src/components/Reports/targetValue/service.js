@@ -22,3 +22,16 @@ export function isDurationHeatmap({
 export function isSingleNumber({processDefinitionKey, processDefinitionVersion, visualization}) {
   return processDefinitionKey && processDefinitionVersion && visualization === 'number';
 }
+
+export function isBarChart({processDefinitionKey, processDefinitionVersion, visualization}) {
+  return processDefinitionKey && processDefinitionVersion && visualization === 'bar';
+}
+
+export function isValidNumber(value) {
+  if (typeof value === 'number') {
+    return true;
+  }
+  if (typeof value === 'string') {
+    return value.trim() && !isNaN(value.trim()) && +value >= 0;
+  }
+}

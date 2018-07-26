@@ -4,7 +4,7 @@ import {mount} from 'enzyme';
 import Chart from './Chart';
 import ChartRenderer from 'chart.js';
 
-import {getRelativeValue} from './service';
+import {getRelativeValue, convertToMilliseconds} from './service';
 
 jest.mock('chart.js', () =>
   jest.fn(() => {
@@ -16,7 +16,8 @@ jest.mock('chart.js', () =>
 
 jest.mock('./service', () => {
   return {
-    getRelativeValue: jest.fn()
+    getRelativeValue: jest.fn(),
+    convertToMilliseconds: jest.fn()
   };
 });
 
@@ -109,7 +110,13 @@ it('should include the relative value in tooltips', () => {
 
   const data = {foo: 123};
   const node = mount(
-    <Chart data={data} processInstanceCount={5} property="frequency" formatter={v => v} />
+    <Chart
+      data={data}
+      processInstanceCount={5}
+      property="frequency"
+      targetValue={{active: false}}
+      formatter={v => v}
+    />
   );
 
   const response = node
@@ -119,4 +126,53 @@ it('should include the relative value in tooltips', () => {
 
   expect(getRelativeValue).toHaveBeenCalledWith(3, 5);
   expect(response).toBe('3 (12.3%)');
+});
+
+it('should return the default bar color if targetvalue is not active', () => {
+  const data = {foo: 123};
+  const node = mount(<Chart data={data} />);
+
+  const value = node.instance().determinBarColor({active: false, values: null}, data);
+  expect(value).toEqual('#1991c8');
+});
+
+it('should return red color for all bars below a target value', () => {
+  const data = {foo: 123, bar: 5};
+  const node = mount(<Chart data={data} />);
+
+  const value = node.instance().determinBarColor(
+    {
+      active: true,
+      values: {
+        isAbove: false,
+        target: '10',
+        dateFormat: ''
+      }
+    },
+    data
+  );
+  expect(value).toEqual(['#1991c8', '#A62A31']);
+});
+
+it('should set LineAt option to 0 if the target value is not active', () => {
+  const data = {foo: 123, bar: 5};
+  const node = mount(<Chart data={data} />);
+  const value = node.instance().getFormattedTargetValue({active: false, values: {}});
+  expect(value).toBe(0);
+});
+
+it('should set LineAt option to target value if it is active', () => {
+  const data = {foo: 123, bar: 5};
+  const node = mount(<Chart data={data} />);
+  const value = node.instance().getFormattedTargetValue({active: true, values: {target: 10}});
+  expect(value).toBe(10);
+});
+
+it('should invoke convertToMilliSeconds when target value is set to Date Format', () => {
+  const data = {foo: 123, bar: 5};
+  const node = mount(<Chart data={data} />);
+  node
+    .instance()
+    .getFormattedTargetValue({active: true, values: {target: 10, dateFormat: 'millis'}});
+  expect(convertToMilliseconds).toBeCalledWith(10, 'millis');
 });

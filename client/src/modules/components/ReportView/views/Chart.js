@@ -2,7 +2,7 @@ import React from 'react';
 import ChartRenderer from 'chart.js';
 import ReportBlankSlate from '../ReportBlankSlate';
 
-import {getRelativeValue} from './service';
+import {getRelativeValue, convertToMilliseconds} from './service';
 
 import './Chart.css';
 
@@ -35,7 +35,7 @@ export default class Chart extends React.Component {
   };
 
   createNewChart = () => {
-    const {data, type} = this.props;
+    const {data, type, targetValue} = this.props;
 
     if (!data || typeof data !== 'object') {
       return;
@@ -50,18 +50,43 @@ export default class Chart extends React.Component {
         datasets: [
           {
             data: Object.values(data),
-            ...this.createDatasetOptions(type, data)
+            ...this.createDatasetOptions(type, data, targetValue)
           }
         ]
       },
-      options: this.createChartOptions(type, data)
+      options: this.createChartOptions(type, data, targetValue),
+      plugins: [
+        {
+          id: 'horizontalLine',
+          afterDraw: this.drawHorizentalLine
+        }
+      ]
     });
+  };
+
+  drawHorizentalLine = chart => {
+    if (chart.options.lineAt) {
+      let lineAt = chart.options.lineAt;
+      const ctxPlugin = chart.chart.ctx;
+      const xAxe = chart.scales[chart.options.scales.xAxes[0].id];
+      const yAxe = chart.scales[chart.options.scales.yAxes[0].id];
+
+      ctxPlugin.strokeStyle = '#A62A31';
+      ctxPlugin.beginPath();
+      // calculate the percentage position of the whole axis
+      lineAt = lineAt * 100 / yAxe.max;
+      // calulate the position in pixel from the top axis
+      lineAt = (100 - lineAt) / 100 * yAxe.height + yAxe.top;
+      ctxPlugin.moveTo(xAxe.left, lineAt);
+      ctxPlugin.lineTo(xAxe.right, lineAt);
+      ctxPlugin.stroke();
+    }
   };
 
   componentDidMount = this.createNewChart;
   componentDidUpdate = this.createNewChart;
 
-  createDatasetOptions = (type, data) => {
+  createDatasetOptions = (type, data, targetValue) => {
     switch (type) {
       case 'pie':
         return {
@@ -76,9 +101,10 @@ export default class Chart extends React.Component {
           borderWidth: 2
         };
       case 'bar':
+        const barColor = this.determinBarColor(targetValue, data);
         return {
-          borderColor: '#1991c8',
-          backgroundColor: '#1991c8',
+          borderColor: barColor,
+          backgroundColor: barColor,
           borderWidth: 1
         };
       default:
@@ -100,13 +126,24 @@ export default class Chart extends React.Component {
     return colors;
   };
 
+  determinBarColor = ({active, values}, data) => {
+    if (!active) return '#1991c8';
+    const barValue = values.dateFormat
+      ? convertToMilliseconds(values.target, values.dateFormat)
+      : values.target;
+    return Object.values(data).map(height => {
+      if (values.isAbove) return height < barValue ? '#1991c8' : '#A62A31';
+      else return height >= barValue ? '#1991c8' : '#A62A31';
+    });
+  };
+
   createPieOptions = () => {
     return {
       legend: {display: true}
     };
   };
 
-  createBarOptions = data => {
+  createBarOptions = (data, targetValue) => {
     return {
       legend: {display: false},
       scales: {
@@ -118,8 +155,16 @@ export default class Chart extends React.Component {
             }
           }
         ]
-      }
+      },
+      // plugin proberty
+      lineAt: targetValue ? this.getFormattedTargetValue(targetValue) : 0
     };
+  };
+
+  getFormattedTargetValue = ({active, values}) => {
+    if (!active) return 0;
+    if (!values.dateFormat) return values.target;
+    return convertToMilliseconds(values.target, values.dateFormat);
   };
 
   createDurationFormattingOptions = data => {
@@ -151,7 +196,7 @@ export default class Chart extends React.Component {
     };
   };
 
-  createChartOptions = (type, data) => {
+  createChartOptions = (type, data, targetValue) => {
     let options;
     switch (type) {
       case 'pie':
@@ -159,7 +204,7 @@ export default class Chart extends React.Component {
         break;
       case 'line':
       case 'bar':
-        options = this.createBarOptions(data);
+        options = this.createBarOptions(data, targetValue);
         break;
       default:
         options = {};

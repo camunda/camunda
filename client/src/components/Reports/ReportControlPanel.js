@@ -53,7 +53,7 @@ export default class ReportControlPanel extends React.Component {
       ...newCombination,
       configuration: {
         ...this.props.configuration,
-        targetValue: {...this.props.configuration.targetValue, active: false}
+        targetValue: {active: false}
       }
     });
   };
@@ -76,7 +76,7 @@ export default class ReportControlPanel extends React.Component {
       visualization: evt.target.value,
       configuration: {
         ...this.props.configuration,
-        targetValue: {...this.props.configuration.targetValue, active: false}
+        targetValue: {active: false}
       }
     });
   };

@@ -2,6 +2,8 @@ import React from 'react';
 
 import {LabeledInput, ErrorMessage} from 'components';
 
+import {isValidNumber} from '../service';
+
 import './NumberInputs.css';
 
 export default class NumberInputs extends React.Component {
@@ -26,17 +28,8 @@ export default class NumberInputs extends React.Component {
     });
   }
 
-  isValid = value => {
-    if (typeof value === 'number') {
-      return true;
-    }
-    if (typeof value === 'string') {
-      return value.trim() && !isNaN(value.trim()) && +value >= 0;
-    }
-  };
-
   isTooLow = (baseline, target) => {
-    if (!this.isValid(baseline) || !this.isValid(target)) {
+    if (!isValidNumber(baseline) || !isValidNumber(target)) {
       return false;
     }
     return parseFloat(target) <= parseFloat(baseline);
@@ -45,7 +38,7 @@ export default class NumberInputs extends React.Component {
   change = type => ({target: {value}}) => {
     const newData = {...this.props.data, [type]: value};
 
-    const isValid = this.isValid(value);
+    const isValid = isValidNumber(value);
     const tooLow = this.isTooLow(newData.baseline, newData.target);
 
     this.props.setData(newData);
@@ -55,8 +48,8 @@ export default class NumberInputs extends React.Component {
 
   render() {
     const tooLow = this.state.tooLow;
-    const baselineInvalid = !this.isValid(this.props.data.baseline);
-    const targetInvalid = !this.isValid(this.props.data.target);
+    const baselineInvalid = !isValidNumber(this.props.data.baseline);
+    const targetInvalid = !isValidNumber(this.props.data.target);
     return (
       <React.Fragment>
         <LabeledInput

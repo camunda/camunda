@@ -3,9 +3,9 @@ import {mount} from 'enzyme';
 
 import Heatmap from './Heatmap';
 import HeatmapOverlay from './HeatmapOverlay';
-import {calculateTargetValueHeat, convertToMilliseconds} from './service';
+import {calculateTargetValueHeat} from './service';
 import {formatters} from 'services';
-import {getRelativeValue} from '../service';
+import {getRelativeValue, convertToMilliseconds} from '../service';
 
 jest.mock('components', () => {
   return {
@@ -21,14 +21,14 @@ jest.mock('./HeatmapOverlay', () => props => <div>HeatmapOverlay</div>);
 
 jest.mock('./service', () => {
   return {
-    calculateTargetValueHeat: jest.fn(),
-    convertToMilliseconds: jest.fn()
+    calculateTargetValueHeat: jest.fn()
   };
 });
 
 jest.mock('../service', () => {
   return {
-    getRelativeValue: jest.fn()
+    getRelativeValue: jest.fn(),
+    convertToMilliseconds: jest.fn()
   };
 });
 

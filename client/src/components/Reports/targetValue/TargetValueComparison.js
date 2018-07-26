@@ -2,7 +2,7 @@ import React from 'react';
 
 import TargetValueModal from './TargetValueModal';
 
-import {isSingleNumber, isDurationHeatmap} from './service';
+import {isSingleNumber, isDurationHeatmap, isBarChart} from './service';
 
 import {ButtonGroup, Button} from 'components';
 import settingsIcon from './settings.svg';
@@ -84,7 +84,8 @@ export default class TargetValueComparison extends React.Component {
   isEnabled = () => {
     return (
       isDurationHeatmap(this.props.reportResult.data) ||
-      isSingleNumber(this.props.reportResult.data)
+      isSingleNumber(this.props.reportResult.data) ||
+      isBarChart(this.props.reportResult.data)
     );
   };
 

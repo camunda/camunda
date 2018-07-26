@@ -190,7 +190,8 @@ export default class ReportView extends React.Component {
             data: this.formatResult(data, result),
             type: data.visualization,
             property: data.view.property,
-            processInstanceCount
+            processInstanceCount,
+            targetValue: data.configuration.targetValue
           }
         };
         break;
