@@ -255,6 +255,45 @@ it('should adjust date shown in table to unit', () => {
   expect(node.find(Table)).toIncludeText('2015-03-25');
 });
 
+it('should adjust groupby Start Date option in table to unit', () => {
+  const specialExampleReport = {
+    ...exampleDurationReport,
+    data: {
+      ...exampleDurationReport.data,
+      groupBy: {
+        type: 'startDate',
+        value: {unit: 'month'}
+      }
+    }
+  };
+  const node = mount(<ReportView report={specialExampleReport} />);
+  node.setState({
+    loaded: true
+  });
+  expect(node.find(Table)).not.toIncludeText('2015-03-25T12:00:00Z');
+  expect(node.find(Table)).toIncludeText('Mar 2015');
+});
+
+it('should adjust groupby Variable Date option in table to unit', () => {
+  const specialExampleReport = {
+    ...exampleDurationReport,
+    data: {
+      ...exampleDurationReport.data,
+      groupBy: {
+        type: 'variable',
+        value: {type: 'Date'}
+      }
+    }
+  };
+  const node = mount(<ReportView report={specialExampleReport} />);
+  node.setState({
+    loaded: true
+  });
+  console.log(node.find(Table).debug());
+  expect(node.find(Table)).not.toIncludeText('2015-03-25T12:00:00Z');
+  expect(node.find(Table)).toIncludeText('2015-03-25 13:03:00');
+});
+
 it('should sort time data descending for tables', () => {
   const node = mount(<ReportView report={exampleDurationReport} />);
   node.setState({

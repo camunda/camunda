@@ -230,14 +230,9 @@ export default class ReportView extends React.Component {
     );
   };
 
-  formatResult = (data, result) => {
-    const groupBy = data.groupBy;
-    if (!groupBy.unit || !result || data.view.operation === 'rawData') {
-      // the result data is no time series
-      return result;
-    }
+  getDateFormat(unit) {
     let dateFormat;
-    switch (groupBy.unit) {
+    switch (unit) {
       case 'hour':
         dateFormat = 'YYYY-MM-DD HH:00:00';
         break;
@@ -251,9 +246,24 @@ export default class ReportView extends React.Component {
       case 'year':
         dateFormat = 'YYYY';
         break;
+      case 'second':
       default:
         dateFormat = 'YYYY-MM-DD HH:MM:SS';
     }
+    return dateFormat;
+  }
+
+  formatResult = (data, result) => {
+    const groupBy = data.groupBy;
+    let unit = groupBy.unit;
+    if (!unit && groupBy.type === 'startDate') unit = groupBy.value.unit;
+    else if (!unit && groupBy.type === 'variable' && groupBy.value.type === 'Date') unit = 'second';
+
+    if (!unit || !result || data.view.operation === 'rawData') {
+      // the result data is no time series
+      return result;
+    }
+    const dateFormat = this.getDateFormat(unit);
     const formattedResult = {};
     Object.keys(result)
       .sort((a, b) => {
