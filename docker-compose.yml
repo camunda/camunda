@@ -9,7 +9,6 @@ services:
       - bootstrap.memory_lock=true
       - discovery.type=single-node
       - action.auto_create_index=false
-      - path.repo=/es_snapshots
       - path.logs=/usr/share/elasticsearch/logs
       - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
     ulimits:
@@ -20,7 +19,6 @@ services:
       - 9200:9200
       - 9300:9300
     volumes:
-      - "./backend/target/es_snapshots:/es_snapshots"
       - "./backend/target/es_logs:/usr/share/elasticsearch/logs"
       - "./backend/src/it/resources/es_conf/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml"
       - "./backend/src/it/resources/es_conf/log4j2.properties:/usr/share/elasticsearch/config/log4j2.properties"

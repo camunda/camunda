@@ -10,8 +10,6 @@ import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.service.util.CustomDeserializer;
 import org.camunda.optimize.service.util.CustomSerializer;
 import org.camunda.optimize.test.util.PropertyUtil;
-import org.elasticsearch.action.admin.cluster.repositories.put.PutRepositoryResponse;
-import org.elasticsearch.action.admin.cluster.snapshots.create.CreateSnapshotResponse;
 import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.WriteRequest;
@@ -134,42 +132,6 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
       this.refreshOptimizeIndexInElasticsearch();
     }
   }
-
-
-  @Override
-  protected void failed(Throwable e, Description description) {
-    logger.info("test failure detected, preparing ES dump");
-
-    String repositoryName = description.getClassName().toLowerCase();
-
-    Settings settings = Settings.builder()
-        .put("location", "./")
-        .put("compress", false).build();
-
-    PutRepositoryResponse putRepositoryResponse = esclient.admin().cluster()
-        .preparePutRepository(repositoryName)
-        .setType("fs").setSettings(settings).get();
-
-    logger.info("created repository [{}]", repositoryName);
-
-
-    String snapshotName = description.getMethodName().toLowerCase();
-    logger.info("creating snapshot [{}]", snapshotName);
-    CreateSnapshotResponse createSnapshotResponse = esclient
-        .admin().cluster()
-        .prepareCreateSnapshot(repositoryName, snapshotName.toLowerCase())
-        .setWaitForCompletion(true)
-        .setIndices(properties.getProperty("camunda.optimize.es.index"))
-        .get();
-
-    int status = createSnapshotResponse.status().getStatus();
-    if (status == 200) {
-      logger.info("Snapshot was created");
-    } else {
-      logger.info("Snapshot return code [{}]", status);
-    }
-  }
-
 
   public void refreshOptimizeIndexInElasticsearch() {
     try {

@@ -50,9 +50,9 @@ void integrationTestSteps(String engineVersion = 'latest') {
 
 void setupPermissionsForHostDirs(String directory) {
   sh("""#!/bin/bash -ex
-    mkdir -p ${directory}/target/{es_logs,es_snapshots,cambpm_logs}
+    mkdir -p ${directory}/target/{es_logs,cambpm_logs}
     # must be 1000 so ES and CamBPM can write to the mounted volumes defined in docker-compose.yml
-    chown -R 1000:1000 ${directory}/target/{es_logs,es_snapshots,cambpm_logs}
+    chown -R 1000:1000 ${directory}/target/{es_logs,cambpm_logs}
   """)
 }
 
@@ -60,17 +60,17 @@ void archiveTestArtifacts(String srcDirectory, String destDirectory = null) {
   container('maven') {
     // fix permissions for jnlp slave as maven user is root so we can archive the artifacts
     sh ("""#!/bin/bash -ex
-      chown -R 10000:10000 ${srcDirectory}/target/{es_logs,es_snapshots,cambpm_logs}
+      chown -R 10000:10000 ${srcDirectory}/target/{es_logs,cambpm_logs}
     """)
   }
 
-  if (destDirectory != null) {
+  if (destDirectory == null) {
+    destDirectory = srcDirectory
+  } else {
     sh ("""
       mkdir -p ${destDirectory}
-      cp -R ${srcDirectory}/target/es_* ${srcDirectory}/target/cambpm_logs ${destDirectory}
+      cp -R ${srcDirectory}/target/es_logs ${srcDirectory}/target/cambpm_logs ${destDirectory}
     """)
-  } else {
-    destDirectory = srcDirectory
   }
 
   archiveArtifacts(
@@ -162,9 +162,6 @@ pipeline {
           post {
             always {
               junit testResults: '**/surefire-reports/**/*.xml', keepLongStdio: true
-            }
-            failure {
-              archiveTestArtifacts('upgrade')
             }
           }
         }
