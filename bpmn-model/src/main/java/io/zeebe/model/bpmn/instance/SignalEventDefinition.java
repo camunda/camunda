@@ -26,8 +26,4 @@ public interface SignalEventDefinition extends EventDefinition {
   Signal getSignal();
 
   void setSignal(Signal signal);
-
-  boolean isCamundaAsync();
-
-  void setCamundaAsync(boolean camundaAsync);
 }

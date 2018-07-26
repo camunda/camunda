@@ -81,30 +81,6 @@ public class AbstractMultiInstanceLoopCharacteristicsBuilder<
   }
 
   /**
-   * Sets the camunda collection expression.
-   *
-   * @param expression the collection expression
-   * @return the builder object
-   */
-  public B camundaCollection(String expression) {
-    element.setCamundaCollection(expression);
-
-    return myself;
-  }
-
-  /**
-   * Sets the camunda element variable name.
-   *
-   * @param variableName the name of the element variable
-   * @return the builder object
-   */
-  public B camundaElementVariable(String variableName) {
-    element.setCamundaElementVariable(variableName);
-
-    return myself;
-  }
-
-  /**
    * Finishes the building of a multi instance loop characteristics.
    *
    * @return the parent activity builder

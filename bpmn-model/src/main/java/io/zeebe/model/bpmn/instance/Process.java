@@ -19,7 +19,6 @@ package io.zeebe.model.bpmn.instance;
 import io.zeebe.model.bpmn.ProcessType;
 import io.zeebe.model.bpmn.builder.ProcessBuilder;
 import java.util.Collection;
-import java.util.List;
 
 /**
  * The BPMN process element
@@ -67,47 +66,4 @@ public interface Process extends CallableElement {
   Collection<ResourceRole> getResourceRoles();
 
   Collection<Process> getSupports();
-
-  /** camunda extensions */
-  String getCamundaCandidateStarterGroups();
-
-  void setCamundaCandidateStarterGroups(String camundaCandidateStarterGroups);
-
-  List<String> getCamundaCandidateStarterGroupsList();
-
-  void setCamundaCandidateStarterGroupsList(List<String> camundaCandidateStarterGroupsList);
-
-  String getCamundaCandidateStarterUsers();
-
-  void setCamundaCandidateStarterUsers(String camundaCandidateStarterUsers);
-
-  List<String> getCamundaCandidateStarterUsersList();
-
-  void setCamundaCandidateStarterUsersList(List<String> camundaCandidateStarterUsersList);
-
-  String getCamundaJobPriority();
-
-  void setCamundaJobPriority(String jobPriority);
-
-  String getCamundaTaskPriority();
-
-  void setCamundaTaskPriority(String taskPriority);
-
-  @Deprecated
-  Integer getCamundaHistoryTimeToLive();
-
-  @Deprecated
-  void setCamundaHistoryTimeToLive(Integer historyTimeToLive);
-
-  String getCamundaHistoryTimeToLiveString();
-
-  void setCamundaHistoryTimeToLiveString(String historyTimeToLive);
-
-  Boolean isCamundaStartableInTasklist();
-
-  void setCamundaIsStartableInTasklist(Boolean isStartableInTasklist);
-
-  String getCamundaVersionTag();
-
-  void setCamundaVersionTag(String versionTag);
 }

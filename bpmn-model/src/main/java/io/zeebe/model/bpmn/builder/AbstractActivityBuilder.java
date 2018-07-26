@@ -21,9 +21,6 @@ import io.zeebe.model.bpmn.instance.Activity;
 import io.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
 import io.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
-import io.zeebe.model.bpmn.instance.camunda.CamundaInputOutput;
-import io.zeebe.model.bpmn.instance.camunda.CamundaInputParameter;
-import io.zeebe.model.bpmn.instance.camunda.CamundaOutputParameter;
 import io.zeebe.model.bpmn.instance.dc.Bounds;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -59,44 +56,6 @@ public abstract class AbstractActivityBuilder<
     return miCharacteristics.builder();
   }
 
-  /**
-   * Creates a new camunda input parameter extension element with the given name and value.
-   *
-   * @param name the name of the input parameter
-   * @param value the value of the input parameter
-   * @return the builder object
-   */
-  public B camundaInputParameter(String name, String value) {
-    final CamundaInputOutput camundaInputOutput =
-        getCreateSingleExtensionElement(CamundaInputOutput.class);
-
-    final CamundaInputParameter camundaInputParameter =
-        createChild(camundaInputOutput, CamundaInputParameter.class);
-    camundaInputParameter.setCamundaName(name);
-    camundaInputParameter.setTextContent(value);
-
-    return myself;
-  }
-
-  /**
-   * Creates a new camunda output parameter extension element with the given name and value.
-   *
-   * @param name the name of the output parameter
-   * @param value the value of the output parameter
-   * @return the builder object
-   */
-  public B camundaOutputParameter(String name, String value) {
-    final CamundaInputOutput camundaInputOutput =
-        getCreateSingleExtensionElement(CamundaInputOutput.class);
-
-    final CamundaOutputParameter camundaOutputParameter =
-        createChild(camundaInputOutput, CamundaOutputParameter.class);
-    camundaOutputParameter.setCamundaName(name);
-    camundaOutputParameter.setTextContent(value);
-
-    return myself;
-  }
-
   protected double calculateXCoordinate(Bounds boundaryEventBounds) {
     final BpmnShape attachedToElement = findBpmnShape(element);
 
@@ -108,7 +67,7 @@ public abstract class AbstractActivityBuilder<
 
       final Collection<BoundaryEvent> boundaryEvents =
           element.getParentElement().getChildElementsByType(BoundaryEvent.class);
-      final Collection<BoundaryEvent> attachedBoundaryEvents = new ArrayList<BoundaryEvent>();
+      final Collection<BoundaryEvent> attachedBoundaryEvents = new ArrayList<>();
 
       final Iterator<BoundaryEvent> iterator = boundaryEvents.iterator();
       while (iterator.hasNext()) {

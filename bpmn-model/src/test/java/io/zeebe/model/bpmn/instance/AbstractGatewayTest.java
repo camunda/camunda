@@ -16,13 +16,11 @@
 
 package io.zeebe.model.bpmn.instance;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_NS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.GatewayDirection;
 import java.io.InputStream;
-import java.util.Arrays;
 import java.util.Collection;
 import org.camunda.bpm.model.xml.impl.util.ReflectUtil;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
@@ -45,9 +43,7 @@ public abstract class AbstractGatewayTest<G extends Gateway> extends BpmnModelEl
 
   @Override
   public Collection<AttributeAssumption> getAttributesAssumptions() {
-    return Arrays.asList(
-        new AttributeAssumption(CAMUNDA_NS, "asyncBefore", false, false, false),
-        new AttributeAssumption(CAMUNDA_NS, "asyncAfter", false, false, false));
+    return null;
   }
 
   @Before

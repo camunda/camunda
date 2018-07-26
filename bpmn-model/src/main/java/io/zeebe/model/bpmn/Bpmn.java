@@ -16,9 +16,7 @@
 
 package io.zeebe.model.bpmn;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.ACTIVITI_NS;
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_NS;
 
 import io.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.zeebe.model.bpmn.impl.BpmnParser;
@@ -30,32 +28,6 @@ import io.zeebe.model.bpmn.impl.instance.bpmndi.BpmnLabelImpl;
 import io.zeebe.model.bpmn.impl.instance.bpmndi.BpmnLabelStyleImpl;
 import io.zeebe.model.bpmn.impl.instance.bpmndi.BpmnPlaneImpl;
 import io.zeebe.model.bpmn.impl.instance.bpmndi.BpmnShapeImpl;
-import io.zeebe.model.bpmn.impl.instance.camunda.CamundaConnectorIdImpl;
-import io.zeebe.model.bpmn.impl.instance.camunda.CamundaConnectorImpl;
-import io.zeebe.model.bpmn.impl.instance.camunda.CamundaConstraintImpl;
-import io.zeebe.model.bpmn.impl.instance.camunda.CamundaEntryImpl;
-import io.zeebe.model.bpmn.impl.instance.camunda.CamundaExecutionListenerImpl;
-import io.zeebe.model.bpmn.impl.instance.camunda.CamundaExpressionImpl;
-import io.zeebe.model.bpmn.impl.instance.camunda.CamundaFailedJobRetryTimeCycleImpl;
-import io.zeebe.model.bpmn.impl.instance.camunda.CamundaFieldImpl;
-import io.zeebe.model.bpmn.impl.instance.camunda.CamundaFormDataImpl;
-import io.zeebe.model.bpmn.impl.instance.camunda.CamundaFormFieldImpl;
-import io.zeebe.model.bpmn.impl.instance.camunda.CamundaFormPropertyImpl;
-import io.zeebe.model.bpmn.impl.instance.camunda.CamundaInImpl;
-import io.zeebe.model.bpmn.impl.instance.camunda.CamundaInputOutputImpl;
-import io.zeebe.model.bpmn.impl.instance.camunda.CamundaInputParameterImpl;
-import io.zeebe.model.bpmn.impl.instance.camunda.CamundaListImpl;
-import io.zeebe.model.bpmn.impl.instance.camunda.CamundaMapImpl;
-import io.zeebe.model.bpmn.impl.instance.camunda.CamundaOutImpl;
-import io.zeebe.model.bpmn.impl.instance.camunda.CamundaOutputParameterImpl;
-import io.zeebe.model.bpmn.impl.instance.camunda.CamundaPotentialStarterImpl;
-import io.zeebe.model.bpmn.impl.instance.camunda.CamundaPropertiesImpl;
-import io.zeebe.model.bpmn.impl.instance.camunda.CamundaPropertyImpl;
-import io.zeebe.model.bpmn.impl.instance.camunda.CamundaScriptImpl;
-import io.zeebe.model.bpmn.impl.instance.camunda.CamundaStringImpl;
-import io.zeebe.model.bpmn.impl.instance.camunda.CamundaTaskListenerImpl;
-import io.zeebe.model.bpmn.impl.instance.camunda.CamundaValidationImpl;
-import io.zeebe.model.bpmn.impl.instance.camunda.CamundaValueImpl;
 import io.zeebe.model.bpmn.impl.instance.dc.BoundsImpl;
 import io.zeebe.model.bpmn.impl.instance.dc.FontImpl;
 import io.zeebe.model.bpmn.impl.instance.dc.PointImpl;
@@ -186,7 +158,6 @@ public class Bpmn {
     final BpmnModelInstance modelInstance = INSTANCE.doCreateEmptyModel();
     final Definitions definitions = modelInstance.newInstance(Definitions.class);
     definitions.setTargetNamespace(BPMN20_NS);
-    definitions.getDomElement().registerNamespace("camunda", CAMUNDA_NS);
     modelInstance.setDefinitions(definitions);
     final Process process = modelInstance.newInstance(Process.class);
     definitions.addChildElement(process);
@@ -217,7 +188,6 @@ public class Bpmn {
   /** Register known types of the BPMN model */
   protected Bpmn() {
     bpmnModelBuilder = ModelBuilder.createInstance("BPMN Model");
-    bpmnModelBuilder.alternativeNamespace(ACTIVITI_NS, CAMUNDA_NS);
     doRegisterTypes(bpmnModelBuilder);
     bpmnModel = bpmnModelBuilder.build();
   }
@@ -472,34 +442,6 @@ public class Bpmn {
     BpmnLabelStyleImpl.registerType(bpmnModelBuilder);
     BpmnPlaneImpl.registerType(bpmnModelBuilder);
     BpmnShapeImpl.registerType(bpmnModelBuilder);
-
-    /** camunda extensions */
-    CamundaConnectorImpl.registerType(bpmnModelBuilder);
-    CamundaConnectorIdImpl.registerType(bpmnModelBuilder);
-    CamundaConstraintImpl.registerType(bpmnModelBuilder);
-    CamundaEntryImpl.registerType(bpmnModelBuilder);
-    CamundaExecutionListenerImpl.registerType(bpmnModelBuilder);
-    CamundaExpressionImpl.registerType(bpmnModelBuilder);
-    CamundaFailedJobRetryTimeCycleImpl.registerType(bpmnModelBuilder);
-    CamundaFieldImpl.registerType(bpmnModelBuilder);
-    CamundaFormDataImpl.registerType(bpmnModelBuilder);
-    CamundaFormFieldImpl.registerType(bpmnModelBuilder);
-    CamundaFormPropertyImpl.registerType(bpmnModelBuilder);
-    CamundaInImpl.registerType(bpmnModelBuilder);
-    CamundaInputOutputImpl.registerType(bpmnModelBuilder);
-    CamundaInputParameterImpl.registerType(bpmnModelBuilder);
-    CamundaListImpl.registerType(bpmnModelBuilder);
-    CamundaMapImpl.registerType(bpmnModelBuilder);
-    CamundaOutputParameterImpl.registerType(bpmnModelBuilder);
-    CamundaOutImpl.registerType(bpmnModelBuilder);
-    CamundaPotentialStarterImpl.registerType(bpmnModelBuilder);
-    CamundaPropertiesImpl.registerType(bpmnModelBuilder);
-    CamundaPropertyImpl.registerType(bpmnModelBuilder);
-    CamundaScriptImpl.registerType(bpmnModelBuilder);
-    CamundaStringImpl.registerType(bpmnModelBuilder);
-    CamundaTaskListenerImpl.registerType(bpmnModelBuilder);
-    CamundaValidationImpl.registerType(bpmnModelBuilder);
-    CamundaValueImpl.registerType(bpmnModelBuilder);
   }
 
   /** @return the {@link Model} instance to use */

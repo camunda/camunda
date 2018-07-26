@@ -20,11 +20,6 @@ import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_SOURCE_REF;
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_TARGET_REF;
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_FLOW_NODE;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_ASYNC_AFTER;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_ASYNC_BEFORE;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_EXCLUSIVE;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_JOB_PRIORITY;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_NS;
 
 import io.zeebe.model.bpmn.BpmnModelException;
 import io.zeebe.model.bpmn.Query;
@@ -39,7 +34,6 @@ import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
-import org.camunda.bpm.model.xml.type.attribute.Attribute;
 import org.camunda.bpm.model.xml.type.child.SequenceBuilder;
 import org.camunda.bpm.model.xml.type.reference.AttributeReference;
 import org.camunda.bpm.model.xml.type.reference.ElementReferenceCollection;
@@ -54,13 +48,6 @@ public abstract class FlowNodeImpl extends FlowElementImpl implements FlowNode {
 
   protected static ElementReferenceCollection<SequenceFlow, Incoming> incomingCollection;
   protected static ElementReferenceCollection<SequenceFlow, Outgoing> outgoingCollection;
-
-  /** Camunda Attributes */
-  protected static Attribute<Boolean> camundaAsyncAfter;
-
-  protected static Attribute<Boolean> camundaAsyncBefore;
-  protected static Attribute<Boolean> camundaExclusive;
-  protected static Attribute<String> camundaJobPriority;
 
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
@@ -83,31 +70,6 @@ public abstract class FlowNodeImpl extends FlowElementImpl implements FlowNode {
             .elementCollection(Outgoing.class)
             .qNameElementReferenceCollection(SequenceFlow.class)
             .build();
-
-    /** Camunda Attributes */
-    camundaAsyncAfter =
-        typeBuilder
-            .booleanAttribute(CAMUNDA_ATTRIBUTE_ASYNC_AFTER)
-            .namespace(CAMUNDA_NS)
-            .defaultValue(false)
-            .build();
-
-    camundaAsyncBefore =
-        typeBuilder
-            .booleanAttribute(CAMUNDA_ATTRIBUTE_ASYNC_BEFORE)
-            .namespace(CAMUNDA_NS)
-            .defaultValue(false)
-            .build();
-
-    camundaExclusive =
-        typeBuilder
-            .booleanAttribute(CAMUNDA_ATTRIBUTE_EXCLUSIVE)
-            .namespace(CAMUNDA_NS)
-            .defaultValue(true)
-            .build();
-
-    camundaJobPriority =
-        typeBuilder.stringAttribute(CAMUNDA_ATTRIBUTE_JOB_PRIORITY).namespace(CAMUNDA_NS).build();
 
     typeBuilder.build();
   }
@@ -163,60 +125,19 @@ public abstract class FlowNodeImpl extends FlowElementImpl implements FlowNode {
 
   @Override
   public Query<FlowNode> getPreviousNodes() {
-    final Collection<FlowNode> previousNodes = new HashSet<FlowNode>();
+    final Collection<FlowNode> previousNodes = new HashSet<>();
     for (final SequenceFlow sequenceFlow : getIncoming()) {
       previousNodes.add(sequenceFlow.getSource());
     }
-    return new QueryImpl<FlowNode>(previousNodes);
+    return new QueryImpl<>(previousNodes);
   }
 
   @Override
   public Query<FlowNode> getSucceedingNodes() {
-    final Collection<FlowNode> succeedingNodes = new HashSet<FlowNode>();
+    final Collection<FlowNode> succeedingNodes = new HashSet<>();
     for (final SequenceFlow sequenceFlow : getOutgoing()) {
       succeedingNodes.add(sequenceFlow.getTarget());
     }
-    return new QueryImpl<FlowNode>(succeedingNodes);
-  }
-
-  /** Camunda Attributes */
-  @Override
-  public boolean isCamundaAsyncBefore() {
-    return camundaAsyncBefore.getValue(this);
-  }
-
-  @Override
-  public void setCamundaAsyncBefore(boolean isCamundaAsyncBefore) {
-    camundaAsyncBefore.setValue(this, isCamundaAsyncBefore);
-  }
-
-  @Override
-  public boolean isCamundaAsyncAfter() {
-    return camundaAsyncAfter.getValue(this);
-  }
-
-  @Override
-  public void setCamundaAsyncAfter(boolean isCamundaAsyncAfter) {
-    camundaAsyncAfter.setValue(this, isCamundaAsyncAfter);
-  }
-
-  @Override
-  public boolean isCamundaExclusive() {
-    return camundaExclusive.getValue(this);
-  }
-
-  @Override
-  public void setCamundaExclusive(boolean isCamundaExclusive) {
-    camundaExclusive.setValue(this, isCamundaExclusive);
-  }
-
-  @Override
-  public String getCamundaJobPriority() {
-    return camundaJobPriority.getValue(this);
-  }
-
-  @Override
-  public void setCamundaJobPriority(String jobPriority) {
-    camundaJobPriority.setValue(this, jobPriority);
+    return new QueryImpl<>(succeedingNodes);
   }
 }

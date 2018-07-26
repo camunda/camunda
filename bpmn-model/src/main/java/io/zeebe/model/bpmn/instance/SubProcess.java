@@ -38,14 +38,4 @@ public interface SubProcess extends Activity {
   Collection<FlowElement> getFlowElements();
 
   Collection<Artifact> getArtifacts();
-
-  /** camunda extensions */
-
-  /** @deprecated use isCamundaAsyncBefore() instead. */
-  @Deprecated
-  boolean isCamundaAsync();
-
-  /** @deprecated use setCamundaAsyncBefore(isCamundaAsyncBefore) instead. */
-  @Deprecated
-  void setCamundaAsync(boolean isCamundaAsync);
 }

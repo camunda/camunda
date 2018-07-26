@@ -35,13 +35,4 @@ public interface ScriptTask extends Task {
   Script getScript();
 
   void setScript(Script script);
-
-  /** camunda extensions */
-  String getCamundaResultVariable();
-
-  void setCamundaResultVariable(String camundaResultVariable);
-
-  String getCamundaResource();
-
-  void setCamundaResource(String camundaResource);
 }

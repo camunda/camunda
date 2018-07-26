@@ -16,7 +16,6 @@
 
 package io.zeebe.model.bpmn.instance;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_NS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.model.bpmn.impl.instance.OperationRef;
@@ -34,16 +33,7 @@ public class MessageEventDefinitionTest extends AbstractEventDefinitionTest {
 
   @Override
   public Collection<AttributeAssumption> getAttributesAssumptions() {
-    return Arrays.asList(
-        new AttributeAssumption("messageRef"),
-        /** camunda extensions */
-        new AttributeAssumption(CAMUNDA_NS, "class"),
-        new AttributeAssumption(CAMUNDA_NS, "delegateExpression"),
-        new AttributeAssumption(CAMUNDA_NS, "expression"),
-        new AttributeAssumption(CAMUNDA_NS, "resultVariable"),
-        new AttributeAssumption(CAMUNDA_NS, "topic"),
-        new AttributeAssumption(CAMUNDA_NS, "type"),
-        new AttributeAssumption(CAMUNDA_NS, "taskPriority"));
+    return Arrays.asList(new AttributeAssumption("messageRef"));
   }
 
   @Test
@@ -53,6 +43,5 @@ public class MessageEventDefinitionTest extends AbstractEventDefinitionTest {
     assertThat(eventDefinition).isNotNull();
     assertThat(eventDefinition.getMessage().getId()).isEqualTo("message");
     assertThat(eventDefinition.getOperation()).isNull();
-    assertThat(eventDefinition.getCamundaTaskPriority()).isEqualTo("5");
   }
 }

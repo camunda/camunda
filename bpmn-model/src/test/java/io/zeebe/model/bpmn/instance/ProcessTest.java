@@ -16,15 +16,10 @@
 
 package io.zeebe.model.bpmn.instance;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_NS;
-import static org.assertj.core.api.Assertions.assertThat;
-
-import io.zeebe.model.bpmn.BpmnTestConstants;
 import io.zeebe.model.bpmn.ProcessType;
 import io.zeebe.model.bpmn.impl.instance.Supports;
 import java.util.Arrays;
 import java.util.Collection;
-import org.junit.Test;
 
 /** @author Sebastian Menski */
 public class ProcessTest extends BpmnModelElementInstanceTest {
@@ -53,49 +48,6 @@ public class ProcessTest extends BpmnModelElementInstanceTest {
     return Arrays.asList(
         new AttributeAssumption("processType", false, false, ProcessType.None),
         new AttributeAssumption("isClosed", false, false, false),
-        new AttributeAssumption("isExecutable"),
-        // TODO: definitionalCollaborationRef
-        /** camunda extensions */
-        new AttributeAssumption(CAMUNDA_NS, "candidateStarterGroups"),
-        new AttributeAssumption(CAMUNDA_NS, "candidateStarterUsers"),
-        new AttributeAssumption(CAMUNDA_NS, "jobPriority"),
-        new AttributeAssumption(CAMUNDA_NS, "taskPriority"),
-        new AttributeAssumption(CAMUNDA_NS, "historyTimeToLive"),
-        new AttributeAssumption(CAMUNDA_NS, "isStartableInTasklist", false, false, true),
-        new AttributeAssumption(CAMUNDA_NS, "versionTag"));
-  }
-
-  @Test
-  public void testCamundaJobPriority() {
-    final Process process = modelInstance.newInstance(Process.class);
-    assertThat(process.getCamundaJobPriority()).isNull();
-
-    process.setCamundaJobPriority("15");
-
-    assertThat(process.getCamundaJobPriority()).isEqualTo("15");
-  }
-
-  @Test
-  public void testCamundaTaskPriority() {
-    // given
-    final Process proc = modelInstance.newInstance(Process.class);
-    assertThat(proc.getCamundaTaskPriority()).isNull();
-    // when
-    proc.setCamundaTaskPriority(BpmnTestConstants.TEST_PROCESS_TASK_PRIORITY);
-    // then
-    assertThat(proc.getCamundaTaskPriority())
-        .isEqualTo(BpmnTestConstants.TEST_PROCESS_TASK_PRIORITY);
-  }
-
-  @Test
-  public void testCamundaHistoryTimeToLive() {
-    // given
-    final Process proc = modelInstance.newInstance(Process.class);
-    assertThat(proc.getCamundaHistoryTimeToLive()).isNull();
-    // when
-    proc.setCamundaHistoryTimeToLive(BpmnTestConstants.TEST_HISTORY_TIME_TO_LIVE);
-    // then
-    assertThat(proc.getCamundaHistoryTimeToLive())
-        .isEqualTo(BpmnTestConstants.TEST_HISTORY_TIME_TO_LIVE);
+        new AttributeAssumption("isExecutable"));
   }
 }

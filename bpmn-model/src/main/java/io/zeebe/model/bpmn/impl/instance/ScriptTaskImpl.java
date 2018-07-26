@@ -19,9 +19,6 @@ package io.zeebe.model.bpmn.impl.instance;
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_SCRIPT_FORMAT;
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_SCRIPT_TASK;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_RESOURCE;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_RESULT_VARIABLE;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_NS;
 
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ScriptTaskBuilder;
@@ -46,11 +43,6 @@ public class ScriptTaskImpl extends TaskImpl implements ScriptTask {
   protected static Attribute<String> scriptFormatAttribute;
   protected static ChildElement<Script> scriptChild;
 
-  /** camunda extensions */
-  protected static Attribute<String> camundaResultVariableAttribute;
-
-  protected static Attribute<String> camundaResourceAttribute;
-
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -70,16 +62,6 @@ public class ScriptTaskImpl extends TaskImpl implements ScriptTask {
     final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
     scriptChild = sequenceBuilder.element(Script.class).build();
-
-    /** camunda extensions */
-    camundaResultVariableAttribute =
-        typeBuilder
-            .stringAttribute(CAMUNDA_ATTRIBUTE_RESULT_VARIABLE)
-            .namespace(CAMUNDA_NS)
-            .build();
-
-    camundaResourceAttribute =
-        typeBuilder.stringAttribute(CAMUNDA_ATTRIBUTE_RESOURCE).namespace(CAMUNDA_NS).build();
 
     typeBuilder.build();
   }
@@ -111,26 +93,5 @@ public class ScriptTaskImpl extends TaskImpl implements ScriptTask {
   @Override
   public void setScript(Script script) {
     scriptChild.setChild(this, script);
-  }
-
-  /** camunda extensions */
-  @Override
-  public String getCamundaResultVariable() {
-    return camundaResultVariableAttribute.getValue(this);
-  }
-
-  @Override
-  public void setCamundaResultVariable(String camundaResultVariable) {
-    camundaResultVariableAttribute.setValue(this, camundaResultVariable);
-  }
-
-  @Override
-  public String getCamundaResource() {
-    return camundaResourceAttribute.getValue(this);
-  }
-
-  @Override
-  public void setCamundaResource(String camundaResource) {
-    camundaResourceAttribute.setValue(this, camundaResource);
   }
 }

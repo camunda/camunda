@@ -16,8 +16,6 @@
 
 package io.zeebe.model.bpmn.instance;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_NS;
-
 import io.zeebe.model.bpmn.MultiInstanceFlowCondition;
 import io.zeebe.model.bpmn.impl.instance.LoopDataInputRef;
 import io.zeebe.model.bpmn.impl.instance.LoopDataOutputRef;
@@ -50,11 +48,6 @@ public class MultiInstanceLoopCharacteristicsTest extends BpmnModelElementInstan
         new AttributeAssumption("isSequential", false, false, false),
         new AttributeAssumption("behavior", false, false, MultiInstanceFlowCondition.All),
         new AttributeAssumption("oneBehaviorEventRef"),
-        new AttributeAssumption("noneBehaviorEventRef"),
-        new AttributeAssumption(CAMUNDA_NS, "asyncBefore", false, false, false),
-        new AttributeAssumption(CAMUNDA_NS, "asyncAfter", false, false, false),
-        new AttributeAssumption(CAMUNDA_NS, "exclusive", false, false, true),
-        new AttributeAssumption(CAMUNDA_NS, "collection"),
-        new AttributeAssumption(CAMUNDA_NS, "elementVariable"));
+        new AttributeAssumption("noneBehaviorEventRef"));
   }
 }

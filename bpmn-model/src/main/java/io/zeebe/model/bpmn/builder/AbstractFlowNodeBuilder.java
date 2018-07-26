@@ -46,8 +46,6 @@ import io.zeebe.model.bpmn.instance.SubProcess;
 import io.zeebe.model.bpmn.instance.Transaction;
 import io.zeebe.model.bpmn.instance.UserTask;
 import io.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
-import io.zeebe.model.bpmn.instance.camunda.CamundaExecutionListener;
-import io.zeebe.model.bpmn.instance.camunda.CamundaFailedJobRetryTimeCycle;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
 /** @author Sebastian Menski */
@@ -361,128 +359,6 @@ public abstract class AbstractFlowNodeBuilder<
       connectTarget(targetNode);
       return targetNode.builder();
     }
-  }
-
-  /**
-   * Sets the Camunda AsyncBefore attribute for the build flow node.
-   *
-   * @param asyncBefore boolean value to set
-   * @return the builder object
-   */
-  public B camundaAsyncBefore(boolean asyncBefore) {
-    element.setCamundaAsyncBefore(asyncBefore);
-    return myself;
-  }
-
-  /**
-   * Sets the Camunda asyncBefore attribute to true.
-   *
-   * @return the builder object
-   */
-  public B camundaAsyncBefore() {
-    element.setCamundaAsyncBefore(true);
-    return myself;
-  }
-
-  /**
-   * Sets the Camunda asyncAfter attribute for the build flow node.
-   *
-   * @param asyncAfter boolean value to set
-   * @return the builder object
-   */
-  public B camundaAsyncAfter(boolean asyncAfter) {
-    element.setCamundaAsyncAfter(asyncAfter);
-    return myself;
-  }
-
-  /**
-   * Sets the Camunda asyncAfter attribute to true.
-   *
-   * @return the builder object
-   */
-  public B camundaAsyncAfter() {
-    element.setCamundaAsyncAfter(true);
-    return myself;
-  }
-
-  /**
-   * Sets the Camunda exclusive attribute to true.
-   *
-   * @return the builder object
-   */
-  public B notCamundaExclusive() {
-    element.setCamundaExclusive(false);
-    return myself;
-  }
-
-  /**
-   * Sets the camunda exclusive attribute for the build flow node.
-   *
-   * @param exclusive boolean value to set
-   * @return the builder object
-   */
-  public B camundaExclusive(boolean exclusive) {
-    element.setCamundaExclusive(exclusive);
-    return myself;
-  }
-
-  public B camundaJobPriority(String jobPriority) {
-    element.setCamundaJobPriority(jobPriority);
-    return myself;
-  }
-
-  /**
-   * Sets the camunda failedJobRetryTimeCycle attribute for the build flow node.
-   *
-   * @param retryTimeCycle the retry time cycle value to set
-   * @return the builder object
-   */
-  public B camundaFailedJobRetryTimeCycle(String retryTimeCycle) {
-    final CamundaFailedJobRetryTimeCycle failedJobRetryTimeCycle =
-        createInstance(CamundaFailedJobRetryTimeCycle.class);
-    failedJobRetryTimeCycle.setTextContent(retryTimeCycle);
-
-    addExtensionElement(failedJobRetryTimeCycle);
-
-    return myself;
-  }
-
-  @SuppressWarnings("rawtypes")
-  public B camundaExecutionListenerClass(String eventName, Class listenerClass) {
-    return camundaExecutionListenerClass(eventName, listenerClass.getName());
-  }
-
-  public B camundaExecutionListenerClass(String eventName, String fullQualifiedClassName) {
-    final CamundaExecutionListener executionListener =
-        createInstance(CamundaExecutionListener.class);
-    executionListener.setCamundaEvent(eventName);
-    executionListener.setCamundaClass(fullQualifiedClassName);
-
-    addExtensionElement(executionListener);
-
-    return myself;
-  }
-
-  public B camundaExecutionListenerExpression(String eventName, String expression) {
-    final CamundaExecutionListener executionListener =
-        createInstance(CamundaExecutionListener.class);
-    executionListener.setCamundaEvent(eventName);
-    executionListener.setCamundaExpression(expression);
-
-    addExtensionElement(executionListener);
-
-    return myself;
-  }
-
-  public B camundaExecutionListenerDelegateExpression(String eventName, String delegateExpression) {
-    final CamundaExecutionListener executionListener =
-        createInstance(CamundaExecutionListener.class);
-    executionListener.setCamundaEvent(eventName);
-    executionListener.setCamundaDelegateExpression(delegateExpression);
-
-    addExtensionElement(executionListener);
-
-    return myself;
   }
 
   public B compensationStart() {

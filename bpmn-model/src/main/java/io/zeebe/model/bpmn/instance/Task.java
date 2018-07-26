@@ -25,16 +25,6 @@ import io.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
  */
 public interface Task extends Activity {
 
-  /** camunda extensions */
-
-  /** @deprecated use isCamundaAsyncBefore() instead. */
-  @Deprecated
-  boolean isCamundaAsync();
-
-  /** @deprecated use setCamundaAsyncBefore(isCamundaAsyncBefore) instead; */
-  @Deprecated
-  void setCamundaAsync(boolean isCamundaAsync);
-
   @Override
   BpmnShape getDiagramElement();
 }

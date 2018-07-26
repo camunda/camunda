@@ -19,7 +19,6 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.Condition;
 import io.zeebe.model.bpmn.instance.ConditionalEventDefinition;
 import io.zeebe.model.bpmn.instance.Event;
-import java.util.List;
 
 public class AbstractConditionalEventDefinitionBuilder<
         B extends AbstractConditionalEventDefinitionBuilder<B>>
@@ -40,42 +39,6 @@ public class AbstractConditionalEventDefinitionBuilder<
     final Condition condition = createInstance(Condition.class);
     condition.setTextContent(conditionText);
     element.setCondition(condition);
-    return myself;
-  }
-
-  /**
-   * Sets the camunda variable name attribute, that defines on which variable the condition should
-   * be evaluated.
-   *
-   * @param variableName the variable on which the condition should be evaluated
-   * @return the builder object
-   */
-  public B camundaVariableName(String variableName) {
-    element.setCamundaVariableName(variableName);
-    return myself;
-  }
-
-  /**
-   * Set the camunda variable events attribute, that defines the variable event on which the
-   * condition should be evaluated.
-   *
-   * @param variableEvents the events on which the condition should be evaluated
-   * @return the builder object
-   */
-  public B camundaVariableEvents(String variableEvents) {
-    element.setCamundaVariableEvents(variableEvents);
-    return myself;
-  }
-
-  /**
-   * Set the camunda variable events attribute, that defines the variable event on which the
-   * condition should be evaluated.
-   *
-   * @param variableEvents the events on which the condition should be evaluated
-   * @return the builder object
-   */
-  public B camundaVariableEvents(List<String> variableEvents) {
-    element.setCamundaVariableEventsList(variableEvents);
     return myself;
   }
 

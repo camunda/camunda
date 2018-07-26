@@ -21,8 +21,6 @@ import io.zeebe.model.bpmn.instance.CompensateEventDefinition;
 import io.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.zeebe.model.bpmn.instance.EscalationEventDefinition;
 import io.zeebe.model.bpmn.instance.StartEvent;
-import io.zeebe.model.bpmn.instance.camunda.CamundaFormData;
-import io.zeebe.model.bpmn.instance.camunda.CamundaFormField;
 
 /** @author Sebastian Menski */
 public abstract class AbstractStartEventBuilder<B extends AbstractStartEventBuilder<B>>
@@ -34,73 +32,6 @@ public abstract class AbstractStartEventBuilder<B extends AbstractStartEventBuil
   }
 
   /** camunda extensions */
-
-  /**
-   * @deprecated use camundaAsyncBefore() instead.
-   *     <p>Sets the camunda async attribute to true.
-   * @return the builder object
-   */
-  @Deprecated
-  public B camundaAsync() {
-    element.setCamundaAsyncBefore(true);
-    return myself;
-  }
-
-  /**
-   * @deprecated use camundaAsyncBefore(isCamundaAsyncBefore) instead.
-   *     <p>Sets the camunda async attribute.
-   * @param isCamundaAsync the async state of the task
-   * @return the builder object
-   */
-  @Deprecated
-  public B camundaAsync(boolean isCamundaAsync) {
-    element.setCamundaAsyncBefore(isCamundaAsync);
-    return myself;
-  }
-
-  /**
-   * Sets the camunda form handler class attribute.
-   *
-   * @param camundaFormHandlerClass the class name of the form handler
-   * @return the builder object
-   */
-  public B camundaFormHandlerClass(String camundaFormHandlerClass) {
-    element.setCamundaFormHandlerClass(camundaFormHandlerClass);
-    return myself;
-  }
-
-  /**
-   * Sets the camunda form key attribute.
-   *
-   * @param camundaFormKey the form key to set
-   * @return the builder object
-   */
-  public B camundaFormKey(String camundaFormKey) {
-    element.setCamundaFormKey(camundaFormKey);
-    return myself;
-  }
-
-  /**
-   * Sets the camunda initiator attribute.
-   *
-   * @param camundaInitiator the initiator to set
-   * @return the builder object
-   */
-  public B camundaInitiator(String camundaInitiator) {
-    element.setCamundaInitiator(camundaInitiator);
-    return myself;
-  }
-
-  /**
-   * Creates a new camunda form field extension element.
-   *
-   * @return the builder object
-   */
-  public CamundaStartEventFormFieldBuilder camundaFormField() {
-    final CamundaFormData camundaFormData = getCreateSingleExtensionElement(CamundaFormData.class);
-    final CamundaFormField camundaFormField = createChild(camundaFormData, CamundaFormField.class);
-    return new CamundaStartEventFormFieldBuilder(modelInstance, element, camundaFormField);
-  }
 
   /**
    * Sets a catch all error definition.

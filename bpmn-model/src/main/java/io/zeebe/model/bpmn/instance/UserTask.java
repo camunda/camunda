@@ -18,7 +18,6 @@ package io.zeebe.model.bpmn.instance;
 
 import io.zeebe.model.bpmn.builder.UserTaskBuilder;
 import java.util.Collection;
-import java.util.List;
 
 /**
  * The BPMN userTask element
@@ -35,45 +34,4 @@ public interface UserTask extends Task {
   void setImplementation(String implementation);
 
   Collection<Rendering> getRenderings();
-
-  /** camunda extensions */
-  String getCamundaAssignee();
-
-  void setCamundaAssignee(String camundaAssignee);
-
-  String getCamundaCandidateGroups();
-
-  void setCamundaCandidateGroups(String camundaCandidateGroups);
-
-  List<String> getCamundaCandidateGroupsList();
-
-  void setCamundaCandidateGroupsList(List<String> camundaCandidateGroupsList);
-
-  String getCamundaCandidateUsers();
-
-  void setCamundaCandidateUsers(String camundaCandidateUsers);
-
-  List<String> getCamundaCandidateUsersList();
-
-  void setCamundaCandidateUsersList(List<String> camundaCandidateUsersList);
-
-  String getCamundaDueDate();
-
-  void setCamundaDueDate(String camundaDueDate);
-
-  String getCamundaFollowUpDate();
-
-  void setCamundaFollowUpDate(String camundaFollowUpDate);
-
-  String getCamundaFormHandlerClass();
-
-  void setCamundaFormHandlerClass(String camundaFormHandlerClass);
-
-  String getCamundaFormKey();
-
-  void setCamundaFormKey(String camundaFormKey);
-
-  String getCamundaPriority();
-
-  void setCamundaPriority(String camundaPriority);
 }

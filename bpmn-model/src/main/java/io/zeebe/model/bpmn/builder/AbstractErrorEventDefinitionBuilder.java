@@ -33,18 +33,6 @@ public abstract class AbstractErrorEventDefinitionBuilder<
     return super.id(identifier);
   }
 
-  /** Sets the error code variable attribute. */
-  public B errorCodeVariable(String errorCodeVariable) {
-    element.setCamundaErrorCodeVariable(errorCodeVariable);
-    return myself;
-  }
-
-  /** Sets the error message variable attribute. */
-  public B errorMessageVariable(String errorMessageVariable) {
-    element.setCamundaErrorMessageVariable(errorMessageVariable);
-    return myself;
-  }
-
   /** Sets the error attribute with errorCode. */
   public B error(String errorCode) {
     element.setError(findErrorForNameAndCode(errorCode));

@@ -16,8 +16,6 @@
 
 package io.zeebe.model.bpmn.instance;
 
-import java.util.List;
-
 /**
  * The BPMN conditionalEventDefinition element
  *
@@ -28,16 +26,4 @@ public interface ConditionalEventDefinition extends EventDefinition {
   Condition getCondition();
 
   void setCondition(Condition condition);
-
-  String getCamundaVariableName();
-
-  void setCamundaVariableName(String variableName);
-
-  String getCamundaVariableEvents();
-
-  void setCamundaVariableEvents(String variableEvent);
-
-  List<String> getCamundaVariableEventsList();
-
-  void setCamundaVariableEventsList(List<String> variableEventsList);
 }

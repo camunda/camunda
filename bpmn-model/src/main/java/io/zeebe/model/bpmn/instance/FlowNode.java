@@ -38,20 +38,4 @@ public interface FlowNode extends FlowElement {
   Query<FlowNode> getPreviousNodes();
 
   Query<FlowNode> getSucceedingNodes();
-
-  boolean isCamundaAsyncBefore();
-
-  void setCamundaAsyncBefore(boolean isCamundaAsyncBefore);
-
-  boolean isCamundaAsyncAfter();
-
-  void setCamundaAsyncAfter(boolean isCamundaAsyncAfter);
-
-  boolean isCamundaExclusive();
-
-  void setCamundaExclusive(boolean isCamundaExclusive);
-
-  String getCamundaJobPriority();
-
-  void setCamundaJobPriority(String jobPriority);
 }

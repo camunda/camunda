@@ -15,7 +15,6 @@
  */
 package io.zeebe.model.bpmn.instance;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_NS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
@@ -26,10 +25,7 @@ public class ErrorEventDefinitionTest extends AbstractEventDefinitionTest {
 
   @Override
   public Collection<AttributeAssumption> getAttributesAssumptions() {
-    return Arrays.asList(
-        new AttributeAssumption("errorRef"),
-        new AttributeAssumption(CAMUNDA_NS, "errorCodeVariable"),
-        new AttributeAssumption(CAMUNDA_NS, "errorMessageVariable"));
+    return Arrays.asList(new AttributeAssumption("errorRef"));
   }
 
   @Test

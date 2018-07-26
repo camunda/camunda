@@ -18,8 +18,6 @@ package io.zeebe.model.bpmn.impl.instance;
 
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_PARALLEL_GATEWAY;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_ASYNC;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_NS;
 
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ParallelGatewayBuilder;
@@ -29,7 +27,6 @@ import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
-import org.camunda.bpm.model.xml.type.attribute.Attribute;
 
 /**
  * The BPMN parallelGateway element
@@ -37,8 +34,6 @@ import org.camunda.bpm.model.xml.type.attribute.Attribute;
  * @author Sebastian Menski
  */
 public class ParallelGatewayImpl extends GatewayImpl implements ParallelGateway {
-
-  protected static Attribute<Boolean> camundaAsyncAttribute;
 
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
@@ -54,36 +49,12 @@ public class ParallelGatewayImpl extends GatewayImpl implements ParallelGateway 
                   }
                 });
 
-    /** camunda extensions */
-    camundaAsyncAttribute =
-        typeBuilder
-            .booleanAttribute(CAMUNDA_ATTRIBUTE_ASYNC)
-            .namespace(CAMUNDA_NS)
-            .defaultValue(false)
-            .build();
-
     typeBuilder.build();
   }
 
   @Override
   public ParallelGatewayBuilder builder() {
     return new ParallelGatewayBuilder((BpmnModelInstance) modelInstance, this);
-  }
-
-  /** camunda extensions */
-
-  /** @deprecated use isCamundaAsyncBefore() instead. */
-  @Override
-  @Deprecated
-  public boolean isCamundaAsync() {
-    return camundaAsyncAttribute.getValue(this);
-  }
-
-  /** @deprecated use setCamundaAsyncBefore(isCamundaAsyncBefore) instead. */
-  @Override
-  @Deprecated
-  public void setCamundaAsync(boolean isCamundaAsync) {
-    camundaAsyncAttribute.setValue(this, isCamundaAsync);
   }
 
   public ParallelGatewayImpl(ModelTypeInstanceContext context) {

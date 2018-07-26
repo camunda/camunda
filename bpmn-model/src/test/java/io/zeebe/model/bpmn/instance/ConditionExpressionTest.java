@@ -16,7 +16,6 @@
 
 package io.zeebe.model.bpmn.instance;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_NS;
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.XSI_NS;
 
 import java.util.Arrays;
@@ -38,7 +37,6 @@ public class ConditionExpressionTest extends BpmnModelElementInstanceTest {
   @Override
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return Arrays.asList(
-        new AttributeAssumption(XSI_NS, "type", false, false, "tFormalExpression"),
-        new AttributeAssumption(CAMUNDA_NS, "resource"));
+        new AttributeAssumption(XSI_NS, "type", false, false, "tFormalExpression"));
   }
 }

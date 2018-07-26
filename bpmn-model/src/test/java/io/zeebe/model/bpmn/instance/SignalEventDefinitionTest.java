@@ -15,7 +15,6 @@
  */
 package io.zeebe.model.bpmn.instance;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_NS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
@@ -26,9 +25,7 @@ public class SignalEventDefinitionTest extends AbstractEventDefinitionTest {
 
   @Override
   public Collection<AttributeAssumption> getAttributesAssumptions() {
-    return Arrays.asList(
-        new AttributeAssumption("signalRef"),
-        new AttributeAssumption(CAMUNDA_NS, "async", false, false, false));
+    return Arrays.asList(new AttributeAssumption("signalRef"));
   }
 
   @Test
@@ -36,10 +33,6 @@ public class SignalEventDefinitionTest extends AbstractEventDefinitionTest {
     final SignalEventDefinition eventDefinition =
         eventDefinitionQuery.filterByType(SignalEventDefinition.class).singleResult();
     assertThat(eventDefinition).isNotNull();
-    assertThat(eventDefinition.isCamundaAsync()).isFalse();
-
-    eventDefinition.setCamundaAsync(true);
-    assertThat(eventDefinition.isCamundaAsync()).isTrue();
 
     final Signal signal = eventDefinition.getSignal();
     assertThat(signal).isNotNull();

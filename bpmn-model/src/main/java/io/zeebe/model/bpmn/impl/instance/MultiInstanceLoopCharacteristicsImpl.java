@@ -22,12 +22,6 @@ import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_IS_SEQUEN
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_MULTI_INSTANCE_LOOP_CHARACTERISTICS;
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_NONE_BEHAVIOR_EVENT_REF;
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_ONE_BEHAVIOR_EVENT_REF;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_ASYNC_AFTER;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_ASYNC_BEFORE;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_COLLECTION;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_ELEMENT_VARIABLE;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_EXCLUSIVE;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_NS;
 
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.MultiInstanceFlowCondition;
@@ -74,11 +68,6 @@ public class MultiInstanceLoopCharacteristicsImpl extends LoopCharacteristicsImp
   protected static ChildElementCollection<ComplexBehaviorDefinition>
       complexBehaviorDefinitionCollection;
   protected static ChildElement<CompletionCondition> completionConditionChild;
-  protected static Attribute<Boolean> camundaAsyncAfter;
-  protected static Attribute<Boolean> camundaAsyncBefore;
-  protected static Attribute<Boolean> camundaExclusive;
-  protected static Attribute<String> camundaCollection;
-  protected static Attribute<String> camundaElementVariable;
 
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
@@ -143,36 +132,6 @@ public class MultiInstanceLoopCharacteristicsImpl extends LoopCharacteristicsImp
         sequenceBuilder.elementCollection(ComplexBehaviorDefinition.class).build();
 
     completionConditionChild = sequenceBuilder.element(CompletionCondition.class).build();
-
-    camundaAsyncAfter =
-        typeBuilder
-            .booleanAttribute(CAMUNDA_ATTRIBUTE_ASYNC_AFTER)
-            .namespace(CAMUNDA_NS)
-            .defaultValue(false)
-            .build();
-
-    camundaAsyncBefore =
-        typeBuilder
-            .booleanAttribute(CAMUNDA_ATTRIBUTE_ASYNC_BEFORE)
-            .namespace(CAMUNDA_NS)
-            .defaultValue(false)
-            .build();
-
-    camundaExclusive =
-        typeBuilder
-            .booleanAttribute(CAMUNDA_ATTRIBUTE_EXCLUSIVE)
-            .namespace(CAMUNDA_NS)
-            .defaultValue(true)
-            .build();
-
-    camundaCollection =
-        typeBuilder.stringAttribute(CAMUNDA_ATTRIBUTE_COLLECTION).namespace(CAMUNDA_NS).build();
-
-    camundaElementVariable =
-        typeBuilder
-            .stringAttribute(CAMUNDA_ATTRIBUTE_ELEMENT_VARIABLE)
-            .namespace(CAMUNDA_NS)
-            .build();
 
     typeBuilder.build();
   }
@@ -289,55 +248,5 @@ public class MultiInstanceLoopCharacteristicsImpl extends LoopCharacteristicsImp
   @Override
   public void setNoneBehaviorEventRef(EventDefinition noneBehaviorEventRef) {
     noneBehaviorEventRefAttribute.setReferenceTargetElement(this, noneBehaviorEventRef);
-  }
-
-  @Override
-  public boolean isCamundaAsyncBefore() {
-    return camundaAsyncBefore.getValue(this);
-  }
-
-  @Override
-  public void setCamundaAsyncBefore(boolean isCamundaAsyncBefore) {
-    camundaAsyncBefore.setValue(this, isCamundaAsyncBefore);
-  }
-
-  @Override
-  public boolean isCamundaAsyncAfter() {
-    return camundaAsyncAfter.getValue(this);
-  }
-
-  @Override
-  public void setCamundaAsyncAfter(boolean isCamundaAsyncAfter) {
-    camundaAsyncAfter.setValue(this, isCamundaAsyncAfter);
-  }
-
-  @Override
-  public boolean isCamundaExclusive() {
-    return camundaExclusive.getValue(this);
-  }
-
-  @Override
-  public void setCamundaExclusive(boolean isCamundaExclusive) {
-    camundaExclusive.setValue(this, isCamundaExclusive);
-  }
-
-  @Override
-  public String getCamundaCollection() {
-    return camundaCollection.getValue(this);
-  }
-
-  @Override
-  public void setCamundaCollection(String expression) {
-    camundaCollection.setValue(this, expression);
-  }
-
-  @Override
-  public String getCamundaElementVariable() {
-    return camundaElementVariable.getValue(this);
-  }
-
-  @Override
-  public void setCamundaElementVariable(String variableName) {
-    camundaElementVariable.setValue(this, variableName);
   }
 }

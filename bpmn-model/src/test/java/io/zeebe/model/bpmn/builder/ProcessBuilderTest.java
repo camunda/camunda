@@ -17,36 +17,12 @@
 package io.zeebe.model.bpmn.builder;
 
 import static io.zeebe.model.bpmn.BpmnTestConstants.BOUNDARY_ID;
-import static io.zeebe.model.bpmn.BpmnTestConstants.CALL_ACTIVITY_ID;
 import static io.zeebe.model.bpmn.BpmnTestConstants.CATCH_ID;
 import static io.zeebe.model.bpmn.BpmnTestConstants.CONDITION_ID;
-import static io.zeebe.model.bpmn.BpmnTestConstants.EXTERNAL_TASK_ID;
-import static io.zeebe.model.bpmn.BpmnTestConstants.PROCESS_ID;
 import static io.zeebe.model.bpmn.BpmnTestConstants.SERVICE_TASK_ID;
 import static io.zeebe.model.bpmn.BpmnTestConstants.START_EVENT_ID;
 import static io.zeebe.model.bpmn.BpmnTestConstants.SUB_PROCESS_ID;
-import static io.zeebe.model.bpmn.BpmnTestConstants.TASK_ID;
-import static io.zeebe.model.bpmn.BpmnTestConstants.TEST_CLASS_API;
 import static io.zeebe.model.bpmn.BpmnTestConstants.TEST_CONDITION;
-import static io.zeebe.model.bpmn.BpmnTestConstants.TEST_CONDITIONAL_VARIABLE_EVENTS;
-import static io.zeebe.model.bpmn.BpmnTestConstants.TEST_CONDITIONAL_VARIABLE_EVENTS_LIST;
-import static io.zeebe.model.bpmn.BpmnTestConstants.TEST_CONDITIONAL_VARIABLE_NAME;
-import static io.zeebe.model.bpmn.BpmnTestConstants.TEST_DELEGATE_EXPRESSION_API;
-import static io.zeebe.model.bpmn.BpmnTestConstants.TEST_DUE_DATE_API;
-import static io.zeebe.model.bpmn.BpmnTestConstants.TEST_EXPRESSION_API;
-import static io.zeebe.model.bpmn.BpmnTestConstants.TEST_EXTERNAL_TASK_TOPIC;
-import static io.zeebe.model.bpmn.BpmnTestConstants.TEST_FOLLOW_UP_DATE_API;
-import static io.zeebe.model.bpmn.BpmnTestConstants.TEST_GROUPS_API;
-import static io.zeebe.model.bpmn.BpmnTestConstants.TEST_GROUPS_LIST_API;
-import static io.zeebe.model.bpmn.BpmnTestConstants.TEST_HISTORY_TIME_TO_LIVE;
-import static io.zeebe.model.bpmn.BpmnTestConstants.TEST_PRIORITY_API;
-import static io.zeebe.model.bpmn.BpmnTestConstants.TEST_PROCESS_TASK_PRIORITY;
-import static io.zeebe.model.bpmn.BpmnTestConstants.TEST_SERVICE_TASK_PRIORITY;
-import static io.zeebe.model.bpmn.BpmnTestConstants.TEST_STARTABLE_IN_TASKLIST;
-import static io.zeebe.model.bpmn.BpmnTestConstants.TEST_STRING_API;
-import static io.zeebe.model.bpmn.BpmnTestConstants.TEST_USERS_API;
-import static io.zeebe.model.bpmn.BpmnTestConstants.TEST_USERS_LIST_API;
-import static io.zeebe.model.bpmn.BpmnTestConstants.TEST_VERSION_TAG;
 import static io.zeebe.model.bpmn.BpmnTestConstants.TRANSACTION_ID;
 import static io.zeebe.model.bpmn.BpmnTestConstants.USER_TASK_ID;
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
@@ -62,11 +38,8 @@ import io.zeebe.model.bpmn.GatewayDirection;
 import io.zeebe.model.bpmn.TransactionMethod;
 import io.zeebe.model.bpmn.instance.Activity;
 import io.zeebe.model.bpmn.instance.Association;
-import io.zeebe.model.bpmn.instance.BaseElement;
 import io.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.zeebe.model.bpmn.instance.BpmnModelElementInstance;
-import io.zeebe.model.bpmn.instance.BusinessRuleTask;
-import io.zeebe.model.bpmn.instance.CallActivity;
 import io.zeebe.model.bpmn.instance.CompensateEventDefinition;
 import io.zeebe.model.bpmn.instance.ConditionalEventDefinition;
 import io.zeebe.model.bpmn.instance.Definitions;
@@ -77,7 +50,6 @@ import io.zeebe.model.bpmn.instance.Escalation;
 import io.zeebe.model.bpmn.instance.EscalationEventDefinition;
 import io.zeebe.model.bpmn.instance.Event;
 import io.zeebe.model.bpmn.instance.EventDefinition;
-import io.zeebe.model.bpmn.instance.ExtensionElements;
 import io.zeebe.model.bpmn.instance.FlowElement;
 import io.zeebe.model.bpmn.instance.FlowNode;
 import io.zeebe.model.bpmn.instance.Gateway;
@@ -102,18 +74,7 @@ import io.zeebe.model.bpmn.instance.TimeDuration;
 import io.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.zeebe.model.bpmn.instance.Transaction;
 import io.zeebe.model.bpmn.instance.UserTask;
-import io.zeebe.model.bpmn.instance.camunda.CamundaExecutionListener;
-import io.zeebe.model.bpmn.instance.camunda.CamundaFailedJobRetryTimeCycle;
-import io.zeebe.model.bpmn.instance.camunda.CamundaFormData;
-import io.zeebe.model.bpmn.instance.camunda.CamundaFormField;
-import io.zeebe.model.bpmn.instance.camunda.CamundaIn;
-import io.zeebe.model.bpmn.instance.camunda.CamundaInputOutput;
-import io.zeebe.model.bpmn.instance.camunda.CamundaInputParameter;
-import io.zeebe.model.bpmn.instance.camunda.CamundaOut;
-import io.zeebe.model.bpmn.instance.camunda.CamundaOutputParameter;
-import io.zeebe.model.bpmn.instance.camunda.CamundaTaskListener;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.camunda.bpm.model.xml.Model;
@@ -384,34 +345,24 @@ public class ProcessBuilderTest {
             .executable()
             .startEvent()
             .name("Invoice received")
-            .camundaFormKey("embedded:app:forms/start-form.html")
             .userTask()
             .name("Assign Approver")
-            .camundaFormKey("embedded:app:forms/assign-approver.html")
-            .camundaAssignee("demo")
             .userTask("approveInvoice")
             .name("Approve Invoice")
-            .camundaFormKey("embedded:app:forms/approve-invoice.html")
-            .camundaAssignee("${approver}")
             .exclusiveGateway()
             .name("Invoice approved?")
             .gatewayDirection(GatewayDirection.Diverging)
             .condition("yes", "${approved}")
             .userTask()
             .name("Prepare Bank Transfer")
-            .camundaFormKey("embedded:app:forms/prepare-bank-transfer.html")
-            .camundaCandidateGroups("accounting")
             .serviceTask()
             .name("Archive Invoice")
-            .camundaClass("org.camunda.bpm.example.invoice.service.ArchiveInvoiceService")
             .endEvent()
             .name("Invoice processed")
             .moveToLastGateway()
             .condition("no", "${!approved}")
             .userTask()
             .name("Review Invoice")
-            .camundaFormKey("embedded:app:forms/review-invoice.html")
-            .camundaAssignee("demo")
             .exclusiveGateway()
             .name("Review successful?")
             .gatewayDirection(GatewayDirection.Diverging)
@@ -425,303 +376,18 @@ public class ProcessBuilderTest {
   }
 
   @Test
-  public void testProcessCamundaExtensions() {
-    modelInstance =
-        Bpmn.createProcess(PROCESS_ID)
-            .camundaJobPriority("${somePriority}")
-            .camundaTaskPriority(TEST_PROCESS_TASK_PRIORITY)
-            .camundaHistoryTimeToLive(TEST_HISTORY_TIME_TO_LIVE)
-            .camundaStartableInTasklist(TEST_STARTABLE_IN_TASKLIST)
-            .camundaVersionTag(TEST_VERSION_TAG)
-            .startEvent()
-            .endEvent()
-            .done();
-
-    final Process process = modelInstance.getModelElementById(PROCESS_ID);
-    assertThat(process.getCamundaJobPriority()).isEqualTo("${somePriority}");
-    assertThat(process.getCamundaTaskPriority()).isEqualTo(TEST_PROCESS_TASK_PRIORITY);
-    assertThat(process.getCamundaHistoryTimeToLive()).isEqualTo(TEST_HISTORY_TIME_TO_LIVE);
-    assertThat(process.isCamundaStartableInTasklist()).isEqualTo(TEST_STARTABLE_IN_TASKLIST);
-    assertThat(process.getCamundaVersionTag()).isEqualTo(TEST_VERSION_TAG);
-  }
-
-  @Test
-  public void testProcessStartableInTasklist() {
-    modelInstance = Bpmn.createProcess(PROCESS_ID).startEvent().endEvent().done();
-
-    final Process process = modelInstance.getModelElementById(PROCESS_ID);
-    assertThat(process.isCamundaStartableInTasklist()).isEqualTo(true);
-  }
-
-  @Test
-  public void testTaskCamundaExternalTask() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .serviceTask(EXTERNAL_TASK_ID)
-            .camundaExternalTask(TEST_EXTERNAL_TASK_TOPIC)
-            .endEvent()
-            .done();
-
-    final ServiceTask serviceTask = modelInstance.getModelElementById(EXTERNAL_TASK_ID);
-    assertThat(serviceTask.getCamundaType()).isEqualTo("external");
-    assertThat(serviceTask.getCamundaTopic()).isEqualTo(TEST_EXTERNAL_TASK_TOPIC);
-  }
-
-  @Test
-  public void testTaskCamundaExtensions() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .serviceTask(TASK_ID)
-            .camundaAsyncBefore()
-            .notCamundaExclusive()
-            .camundaJobPriority("${somePriority}")
-            .camundaTaskPriority(TEST_SERVICE_TASK_PRIORITY)
-            .camundaFailedJobRetryTimeCycle(FAILED_JOB_RETRY_TIME_CYCLE)
-            .endEvent()
-            .done();
-
-    final ServiceTask serviceTask = modelInstance.getModelElementById(TASK_ID);
-    assertThat(serviceTask.isCamundaAsyncBefore()).isTrue();
-    assertThat(serviceTask.isCamundaExclusive()).isFalse();
-    assertThat(serviceTask.getCamundaJobPriority()).isEqualTo("${somePriority}");
-    assertThat(serviceTask.getCamundaTaskPriority()).isEqualTo(TEST_SERVICE_TASK_PRIORITY);
-
-    assertCamundaFailedJobRetryTimeCycle(serviceTask);
-  }
-
-  @Test
-  public void testServiceTaskCamundaExtensions() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .serviceTask(TASK_ID)
-            .camundaClass(TEST_CLASS_API)
-            .camundaDelegateExpression(TEST_DELEGATE_EXPRESSION_API)
-            .camundaExpression(TEST_EXPRESSION_API)
-            .camundaResultVariable(TEST_STRING_API)
-            .camundaTopic(TEST_STRING_API)
-            .camundaType(TEST_STRING_API)
-            .camundaTaskPriority(TEST_SERVICE_TASK_PRIORITY)
-            .camundaFailedJobRetryTimeCycle(FAILED_JOB_RETRY_TIME_CYCLE)
-            .done();
-
-    final ServiceTask serviceTask = modelInstance.getModelElementById(TASK_ID);
-    assertThat(serviceTask.getCamundaClass()).isEqualTo(TEST_CLASS_API);
-    assertThat(serviceTask.getCamundaDelegateExpression()).isEqualTo(TEST_DELEGATE_EXPRESSION_API);
-    assertThat(serviceTask.getCamundaExpression()).isEqualTo(TEST_EXPRESSION_API);
-    assertThat(serviceTask.getCamundaResultVariable()).isEqualTo(TEST_STRING_API);
-    assertThat(serviceTask.getCamundaTopic()).isEqualTo(TEST_STRING_API);
-    assertThat(serviceTask.getCamundaType()).isEqualTo(TEST_STRING_API);
-    assertThat(serviceTask.getCamundaTaskPriority()).isEqualTo(TEST_SERVICE_TASK_PRIORITY);
-
-    assertCamundaFailedJobRetryTimeCycle(serviceTask);
-  }
-
-  @Test
-  public void testServiceTaskCamundaClass() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .serviceTask(TASK_ID)
-            .camundaClass(getClass().getName())
-            .done();
-
-    final ServiceTask serviceTask = modelInstance.getModelElementById(TASK_ID);
-    assertThat(serviceTask.getCamundaClass()).isEqualTo(getClass().getName());
-  }
-
-  @Test
-  public void testSendTaskCamundaExtensions() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .sendTask(TASK_ID)
-            .camundaClass(TEST_CLASS_API)
-            .camundaDelegateExpression(TEST_DELEGATE_EXPRESSION_API)
-            .camundaExpression(TEST_EXPRESSION_API)
-            .camundaResultVariable(TEST_STRING_API)
-            .camundaTopic(TEST_STRING_API)
-            .camundaType(TEST_STRING_API)
-            .camundaTaskPriority(TEST_SERVICE_TASK_PRIORITY)
-            .camundaFailedJobRetryTimeCycle(FAILED_JOB_RETRY_TIME_CYCLE)
-            .endEvent()
-            .done();
-
-    final SendTask sendTask = modelInstance.getModelElementById(TASK_ID);
-    assertThat(sendTask.getCamundaClass()).isEqualTo(TEST_CLASS_API);
-    assertThat(sendTask.getCamundaDelegateExpression()).isEqualTo(TEST_DELEGATE_EXPRESSION_API);
-    assertThat(sendTask.getCamundaExpression()).isEqualTo(TEST_EXPRESSION_API);
-    assertThat(sendTask.getCamundaResultVariable()).isEqualTo(TEST_STRING_API);
-    assertThat(sendTask.getCamundaTopic()).isEqualTo(TEST_STRING_API);
-    assertThat(sendTask.getCamundaType()).isEqualTo(TEST_STRING_API);
-    assertThat(sendTask.getCamundaTaskPriority()).isEqualTo(TEST_SERVICE_TASK_PRIORITY);
-
-    assertCamundaFailedJobRetryTimeCycle(sendTask);
-  }
-
-  @Test
-  public void testSendTaskCamundaClass() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .sendTask(TASK_ID)
-            .camundaClass(this.getClass())
-            .endEvent()
-            .done();
-
-    final SendTask sendTask = modelInstance.getModelElementById(TASK_ID);
-    assertThat(sendTask.getCamundaClass()).isEqualTo(this.getClass().getName());
-  }
-
-  @Test
-  public void testUserTaskCamundaExtensions() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .userTask(TASK_ID)
-            .camundaAssignee(TEST_STRING_API)
-            .camundaCandidateGroups(TEST_GROUPS_API)
-            .camundaCandidateUsers(TEST_USERS_LIST_API)
-            .camundaDueDate(TEST_DUE_DATE_API)
-            .camundaFollowUpDate(TEST_FOLLOW_UP_DATE_API)
-            .camundaFormHandlerClass(TEST_CLASS_API)
-            .camundaFormKey(TEST_STRING_API)
-            .camundaPriority(TEST_PRIORITY_API)
-            .camundaFailedJobRetryTimeCycle(FAILED_JOB_RETRY_TIME_CYCLE)
-            .endEvent()
-            .done();
-
-    final UserTask userTask = modelInstance.getModelElementById(TASK_ID);
-    assertThat(userTask.getCamundaAssignee()).isEqualTo(TEST_STRING_API);
-    assertThat(userTask.getCamundaCandidateGroups()).isEqualTo(TEST_GROUPS_API);
-    assertThat(userTask.getCamundaCandidateGroupsList()).containsAll(TEST_GROUPS_LIST_API);
-    assertThat(userTask.getCamundaCandidateUsers()).isEqualTo(TEST_USERS_API);
-    assertThat(userTask.getCamundaCandidateUsersList()).containsAll(TEST_USERS_LIST_API);
-    assertThat(userTask.getCamundaDueDate()).isEqualTo(TEST_DUE_DATE_API);
-    assertThat(userTask.getCamundaFollowUpDate()).isEqualTo(TEST_FOLLOW_UP_DATE_API);
-    assertThat(userTask.getCamundaFormHandlerClass()).isEqualTo(TEST_CLASS_API);
-    assertThat(userTask.getCamundaFormKey()).isEqualTo(TEST_STRING_API);
-    assertThat(userTask.getCamundaPriority()).isEqualTo(TEST_PRIORITY_API);
-
-    assertCamundaFailedJobRetryTimeCycle(userTask);
-  }
-
-  @Test
-  public void testBusinessRuleTaskCamundaExtensions() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .businessRuleTask(TASK_ID)
-            .camundaClass(TEST_CLASS_API)
-            .camundaDelegateExpression(TEST_DELEGATE_EXPRESSION_API)
-            .camundaExpression(TEST_EXPRESSION_API)
-            .camundaResultVariable("resultVar")
-            .camundaTopic("topic")
-            .camundaType("type")
-            .camundaDecisionRef("decisionRef")
-            .camundaDecisionRefBinding("latest")
-            .camundaDecisionRefVersion("7")
-            .camundaDecisionRefVersionTag("0.1.0")
-            .camundaDecisionRefTenantId("tenantId")
-            .camundaMapDecisionResult("singleEntry")
-            .camundaTaskPriority(TEST_SERVICE_TASK_PRIORITY)
-            .camundaFailedJobRetryTimeCycle(FAILED_JOB_RETRY_TIME_CYCLE)
-            .endEvent()
-            .done();
-
-    final BusinessRuleTask businessRuleTask = modelInstance.getModelElementById(TASK_ID);
-    assertThat(businessRuleTask.getCamundaClass()).isEqualTo(TEST_CLASS_API);
-    assertThat(businessRuleTask.getCamundaDelegateExpression())
-        .isEqualTo(TEST_DELEGATE_EXPRESSION_API);
-    assertThat(businessRuleTask.getCamundaExpression()).isEqualTo(TEST_EXPRESSION_API);
-    assertThat(businessRuleTask.getCamundaResultVariable()).isEqualTo("resultVar");
-    assertThat(businessRuleTask.getCamundaTopic()).isEqualTo("topic");
-    assertThat(businessRuleTask.getCamundaType()).isEqualTo("type");
-    assertThat(businessRuleTask.getCamundaDecisionRef()).isEqualTo("decisionRef");
-    assertThat(businessRuleTask.getCamundaDecisionRefBinding()).isEqualTo("latest");
-    assertThat(businessRuleTask.getCamundaDecisionRefVersion()).isEqualTo("7");
-    assertThat(businessRuleTask.getCamundaDecisionRefVersionTag()).isEqualTo("0.1.0");
-    assertThat(businessRuleTask.getCamundaDecisionRefTenantId()).isEqualTo("tenantId");
-    assertThat(businessRuleTask.getCamundaMapDecisionResult()).isEqualTo("singleEntry");
-    assertThat(businessRuleTask.getCamundaTaskPriority()).isEqualTo(TEST_SERVICE_TASK_PRIORITY);
-
-    assertCamundaFailedJobRetryTimeCycle(businessRuleTask);
-  }
-
-  @Test
-  public void testBusinessRuleTaskCamundaClass() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .businessRuleTask(TASK_ID)
-            .camundaClass(Bpmn.class)
-            .endEvent()
-            .done();
-
-    final BusinessRuleTask businessRuleTask = modelInstance.getModelElementById(TASK_ID);
-    assertThat(businessRuleTask.getCamundaClass()).isEqualTo("io.zeebe.model.bpmn.Bpmn");
-  }
-
-  @Test
-  public void testScriptTaskCamundaExtensions() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .scriptTask(TASK_ID)
-            .camundaResultVariable(TEST_STRING_API)
-            .camundaResource(TEST_STRING_API)
-            .camundaFailedJobRetryTimeCycle(FAILED_JOB_RETRY_TIME_CYCLE)
-            .endEvent()
-            .done();
-
-    final ScriptTask scriptTask = modelInstance.getModelElementById(TASK_ID);
-    assertThat(scriptTask.getCamundaResultVariable()).isEqualTo(TEST_STRING_API);
-    assertThat(scriptTask.getCamundaResource()).isEqualTo(TEST_STRING_API);
-
-    assertCamundaFailedJobRetryTimeCycle(scriptTask);
-  }
-
-  @Test
-  public void testStartEventCamundaExtensions() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent(START_EVENT_ID)
-            .camundaAsyncBefore()
-            .notCamundaExclusive()
-            .camundaFormHandlerClass(TEST_CLASS_API)
-            .camundaFormKey(TEST_STRING_API)
-            .camundaInitiator(TEST_STRING_API)
-            .camundaFailedJobRetryTimeCycle(FAILED_JOB_RETRY_TIME_CYCLE)
-            .done();
-
-    final StartEvent startEvent = modelInstance.getModelElementById(START_EVENT_ID);
-    assertThat(startEvent.isCamundaAsyncBefore()).isTrue();
-    assertThat(startEvent.isCamundaExclusive()).isFalse();
-    assertThat(startEvent.getCamundaFormHandlerClass()).isEqualTo(TEST_CLASS_API);
-    assertThat(startEvent.getCamundaFormKey()).isEqualTo(TEST_STRING_API);
-    assertThat(startEvent.getCamundaInitiator()).isEqualTo(TEST_STRING_API);
-
-    assertCamundaFailedJobRetryTimeCycle(startEvent);
-  }
-
-  @Test
   public void testErrorDefinitionsForStartEvent() {
     modelInstance =
         Bpmn.createProcess()
             .startEvent("start")
             .errorEventDefinition("event")
-            .errorCodeVariable("errorCodeVariable")
-            .errorMessageVariable("errorMessageVariable")
             .error("errorCode")
             .errorEventDefinitionDone()
             .endEvent()
             .done();
 
     assertErrorEventDefinition("start", "errorCode");
-    assertErrorEventDefinitionForErrorVariables(
-        "start", "errorCodeVariable", "errorMessageVariable");
+    assertErrorEventDefinitionForErrorVariables("start");
   }
 
   @Test
@@ -730,86 +396,13 @@ public class ProcessBuilderTest {
         Bpmn.createProcess()
             .startEvent("start")
             .errorEventDefinition()
-            .errorCodeVariable("errorCodeVariable")
-            .errorMessageVariable("errorMessageVariable")
             .error("errorCode")
             .errorEventDefinitionDone()
             .endEvent()
             .done();
 
     assertErrorEventDefinition("start", "errorCode");
-    assertErrorEventDefinitionForErrorVariables(
-        "start", "errorCodeVariable", "errorMessageVariable");
-  }
-
-  @Test
-  public void testCallActivityCamundaExtension() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .callActivity(CALL_ACTIVITY_ID)
-            .calledElement(TEST_STRING_API)
-            .camundaAsyncBefore()
-            .camundaCalledElementBinding("version")
-            .camundaCalledElementVersion("1.0")
-            .camundaCalledElementVersionTag("ver-1.0")
-            .camundaCalledElementTenantId("t1")
-            .camundaCaseRef("case")
-            .camundaCaseBinding("deployment")
-            .camundaCaseVersion("2")
-            .camundaCaseTenantId("t2")
-            .camundaIn("in-source", "in-target")
-            .camundaOut("out-source", "out-target")
-            .camundaVariableMappingClass(TEST_CLASS_API)
-            .camundaVariableMappingDelegateExpression(TEST_DELEGATE_EXPRESSION_API)
-            .notCamundaExclusive()
-            .camundaFailedJobRetryTimeCycle(FAILED_JOB_RETRY_TIME_CYCLE)
-            .endEvent()
-            .done();
-
-    final CallActivity callActivity = modelInstance.getModelElementById(CALL_ACTIVITY_ID);
-    assertThat(callActivity.getCalledElement()).isEqualTo(TEST_STRING_API);
-    assertThat(callActivity.isCamundaAsyncBefore()).isTrue();
-    assertThat(callActivity.getCamundaCalledElementBinding()).isEqualTo("version");
-    assertThat(callActivity.getCamundaCalledElementVersion()).isEqualTo("1.0");
-    assertThat(callActivity.getCamundaCalledElementVersionTag()).isEqualTo("ver-1.0");
-    assertThat(callActivity.getCamundaCalledElementTenantId()).isEqualTo("t1");
-    assertThat(callActivity.getCamundaCaseRef()).isEqualTo("case");
-    assertThat(callActivity.getCamundaCaseBinding()).isEqualTo("deployment");
-    assertThat(callActivity.getCamundaCaseVersion()).isEqualTo("2");
-    assertThat(callActivity.getCamundaCaseTenantId()).isEqualTo("t2");
-    assertThat(callActivity.isCamundaExclusive()).isFalse();
-
-    final CamundaIn camundaIn =
-        (CamundaIn)
-            callActivity.getExtensionElements().getUniqueChildElementByType(CamundaIn.class);
-    assertThat(camundaIn.getCamundaSource()).isEqualTo("in-source");
-    assertThat(camundaIn.getCamundaTarget()).isEqualTo("in-target");
-
-    final CamundaOut camundaOut =
-        (CamundaOut)
-            callActivity.getExtensionElements().getUniqueChildElementByType(CamundaOut.class);
-    assertThat(camundaOut.getCamundaSource()).isEqualTo("out-source");
-    assertThat(camundaOut.getCamundaTarget()).isEqualTo("out-target");
-
-    assertThat(callActivity.getCamundaVariableMappingClass()).isEqualTo(TEST_CLASS_API);
-    assertThat(callActivity.getCamundaVariableMappingDelegateExpression())
-        .isEqualTo(TEST_DELEGATE_EXPRESSION_API);
-    assertCamundaFailedJobRetryTimeCycle(callActivity);
-  }
-
-  @Test
-  public void testCallActivityCamundaVariableMappingClass() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .callActivity(CALL_ACTIVITY_ID)
-            .camundaVariableMappingClass(this.getClass())
-            .endEvent()
-            .done();
-
-    final CallActivity callActivity = modelInstance.getModelElementById(CALL_ACTIVITY_ID);
-    assertThat(callActivity.getCamundaVariableMappingClass()).isEqualTo(this.getClass().getName());
+    assertErrorEventDefinitionForErrorVariables("start");
   }
 
   @Test
@@ -818,7 +411,6 @@ public class ProcessBuilderTest {
         Bpmn.createProcess()
             .startEvent()
             .subProcess(SUB_PROCESS_ID)
-            .camundaAsyncBefore()
             .embeddedSubProcess()
             .startEvent()
             .userTask()
@@ -830,8 +422,6 @@ public class ProcessBuilderTest {
 
     final SubProcess subProcess = modelInstance.getModelElementById(SUB_PROCESS_ID);
     final ServiceTask serviceTask = modelInstance.getModelElementById(SERVICE_TASK_ID);
-    assertThat(subProcess.isCamundaAsyncBefore()).isTrue();
-    assertThat(subProcess.isCamundaExclusive()).isTrue();
     assertThat(subProcess.getChildElementsByType(Event.class)).hasSize(2);
     assertThat(subProcess.getChildElementsByType(Task.class)).hasSize(1);
     assertThat(subProcess.getFlowElements()).hasSize(5);
@@ -850,17 +440,9 @@ public class ProcessBuilderTest {
 
     final SubProcess subProcess = modelInstance.getModelElementById(SUB_PROCESS_ID);
 
-    subProcess
-        .builder()
-        .camundaAsyncBefore()
-        .embeddedSubProcess()
-        .startEvent()
-        .userTask()
-        .endEvent();
+    subProcess.builder().embeddedSubProcess().startEvent().userTask().endEvent();
 
     final ServiceTask serviceTask = modelInstance.getModelElementById(SERVICE_TASK_ID);
-    assertThat(subProcess.isCamundaAsyncBefore()).isTrue();
-    assertThat(subProcess.isCamundaExclusive()).isTrue();
     assertThat(subProcess.getChildElementsByType(Event.class)).hasSize(2);
     assertThat(subProcess.getChildElementsByType(Task.class)).hasSize(1);
     assertThat(subProcess.getFlowElements()).hasSize(5);
@@ -873,13 +455,10 @@ public class ProcessBuilderTest {
         Bpmn.createProcess()
             .startEvent()
             .subProcess(SUB_PROCESS_ID + 1)
-            .camundaAsyncBefore()
             .embeddedSubProcess()
             .startEvent()
             .userTask()
             .subProcess(SUB_PROCESS_ID + 2)
-            .camundaAsyncBefore()
-            .notCamundaExclusive()
             .embeddedSubProcess()
             .startEvent()
             .userTask()
@@ -894,8 +473,6 @@ public class ProcessBuilderTest {
 
     final SubProcess subProcess = modelInstance.getModelElementById(SUB_PROCESS_ID + 1);
     final ServiceTask serviceTask = modelInstance.getModelElementById(SERVICE_TASK_ID + 2);
-    assertThat(subProcess.isCamundaAsyncBefore()).isTrue();
-    assertThat(subProcess.isCamundaExclusive()).isTrue();
     assertThat(subProcess.getChildElementsByType(Event.class)).hasSize(2);
     assertThat(subProcess.getChildElementsByType(Task.class)).hasSize(2);
     assertThat(subProcess.getChildElementsByType(SubProcess.class)).hasSize(1);
@@ -904,8 +481,6 @@ public class ProcessBuilderTest {
 
     final SubProcess nestedSubProcess = modelInstance.getModelElementById(SUB_PROCESS_ID + 2);
     final ServiceTask nestedServiceTask = modelInstance.getModelElementById(SERVICE_TASK_ID + 1);
-    assertThat(nestedSubProcess.isCamundaAsyncBefore()).isTrue();
-    assertThat(nestedSubProcess.isCamundaExclusive()).isFalse();
     assertThat(nestedSubProcess.getChildElementsByType(Event.class)).hasSize(2);
     assertThat(nestedSubProcess.getChildElementsByType(Task.class)).hasSize(1);
     assertThat(nestedSubProcess.getFlowElements()).hasSize(5);
@@ -928,7 +503,6 @@ public class ProcessBuilderTest {
         Bpmn.createProcess()
             .startEvent()
             .transaction(TRANSACTION_ID)
-            .camundaAsyncBefore()
             .method(TransactionMethod.Image)
             .embeddedSubProcess()
             .startEvent()
@@ -941,8 +515,6 @@ public class ProcessBuilderTest {
 
     final Transaction transaction = modelInstance.getModelElementById(TRANSACTION_ID);
     final ServiceTask serviceTask = modelInstance.getModelElementById(SERVICE_TASK_ID);
-    assertThat(transaction.isCamundaAsyncBefore()).isTrue();
-    assertThat(transaction.isCamundaExclusive()).isTrue();
     assertThat(transaction.getMethod()).isEqualTo(TransactionMethod.Image);
     assertThat(transaction.getChildElementsByType(Event.class)).hasSize(2);
     assertThat(transaction.getChildElementsByType(Task.class)).hasSize(1);
@@ -962,17 +534,9 @@ public class ProcessBuilderTest {
 
     final Transaction transaction = modelInstance.getModelElementById(TRANSACTION_ID);
 
-    transaction
-        .builder()
-        .camundaAsyncBefore()
-        .embeddedSubProcess()
-        .startEvent()
-        .userTask()
-        .endEvent();
+    transaction.builder().embeddedSubProcess().startEvent().userTask().endEvent();
 
     final ServiceTask serviceTask = modelInstance.getModelElementById(SERVICE_TASK_ID);
-    assertThat(transaction.isCamundaAsyncBefore()).isTrue();
-    assertThat(transaction.isCamundaExclusive()).isTrue();
     assertThat(transaction.getChildElementsByType(Event.class)).hasSize(2);
     assertThat(transaction.getChildElementsByType(Task.class)).hasSize(1);
     assertThat(transaction.getFlowElements()).hasSize(5);
@@ -993,31 +557,6 @@ public class ProcessBuilderTest {
     final ScriptTask scriptTask = modelInstance.getModelElementById("script");
     assertThat(scriptTask.getScriptFormat()).isEqualTo("groovy");
     assertThat(scriptTask.getScript().getTextContent()).isEqualTo("println \"hello, world\";");
-  }
-
-  @Test
-  public void testEventBasedGatewayAsyncAfter() {
-    try {
-      modelInstance =
-          Bpmn.createProcess().startEvent().eventBasedGateway().camundaAsyncAfter().done();
-
-      fail("Expected UnsupportedOperationException");
-    } catch (final UnsupportedOperationException ex) {
-      // happy path
-    }
-
-    try {
-      modelInstance =
-          Bpmn.createProcess()
-              .startEvent()
-              .eventBasedGateway()
-              .camundaAsyncAfter(true)
-              .endEvent()
-              .done();
-      fail("Expected UnsupportedOperationException");
-    } catch (final UnsupportedOperationException ex) {
-      // happy ending :D
-    }
   }
 
   @Test
@@ -1211,47 +750,11 @@ public class ProcessBuilderTest {
             .messageEventDefinition()
             .id("messageEventDefinition")
             .message("message")
-            .camundaTaskPriority(TEST_SERVICE_TASK_PRIORITY)
-            .camundaType("external")
-            .camundaTopic("TOPIC")
             .done();
 
     final MessageEventDefinition event =
         modelInstance.getModelElementById("messageEventDefinition");
-    assertThat(event.getCamundaTaskPriority()).isEqualTo(TEST_SERVICE_TASK_PRIORITY);
-    assertThat(event.getCamundaTopic()).isEqualTo("TOPIC");
-    assertThat(event.getCamundaType()).isEqualTo("external");
     assertThat(event.getMessage().getName()).isEqualTo("message");
-  }
-
-  @Test
-  public void testIntermediateMessageThrowEventWithTaskPriority() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .intermediateThrowEvent("throw1")
-            .messageEventDefinition("messageEventDefinition")
-            .camundaTaskPriority(TEST_SERVICE_TASK_PRIORITY)
-            .done();
-
-    final MessageEventDefinition event =
-        modelInstance.getModelElementById("messageEventDefinition");
-    assertThat(event.getCamundaTaskPriority()).isEqualTo(TEST_SERVICE_TASK_PRIORITY);
-  }
-
-  @Test
-  public void testEndEventWithTaskPriority() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .endEvent("end")
-            .messageEventDefinition("messageEventDefinition")
-            .camundaTaskPriority(TEST_SERVICE_TASK_PRIORITY)
-            .done();
-
-    final MessageEventDefinition event =
-        modelInstance.getModelElementById("messageEventDefinition");
-    assertThat(event.getCamundaTaskPriority()).isEqualTo(TEST_SERVICE_TASK_PRIORITY);
   }
 
   @Test
@@ -1480,84 +983,6 @@ public class ProcessBuilderTest {
   }
 
   @Test
-  public void testIntermediateSignalThrowEventWithPayloadLocalVar() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .intermediateThrowEvent("throw")
-            .signalEventDefinition("signal")
-            .camundaInSourceTarget("source", "target1")
-            .camundaInSourceExpressionTarget("${'sourceExpression'}", "target2")
-            .camundaInAllVariables("all", true)
-            .camundaInBusinessKey("aBusinessKey")
-            .throwEventDefinitionDone()
-            .endEvent()
-            .done();
-
-    assertSignalEventDefinition("throw", "signal");
-    final SignalEventDefinition signalEventDefinition =
-        assertAndGetSingleEventDefinition("throw", SignalEventDefinition.class);
-
-    assertThat(signalEventDefinition.getSignal().getName()).isEqualTo("signal");
-
-    final List<CamundaIn> camundaInParams =
-        signalEventDefinition
-            .getExtensionElements()
-            .getElementsQuery()
-            .filterByType(CamundaIn.class)
-            .list();
-    assertThat(camundaInParams.size()).isEqualTo(4);
-
-    int paramCounter = 0;
-    for (final CamundaIn inParam : camundaInParams) {
-      if (inParam.getCamundaVariables() != null) {
-        assertThat(inParam.getCamundaVariables()).isEqualTo("all");
-        if (inParam.getCamundaLocal()) {
-          paramCounter++;
-        }
-      } else if (inParam.getCamundaBusinessKey() != null) {
-        assertThat(inParam.getCamundaBusinessKey()).isEqualTo("aBusinessKey");
-        paramCounter++;
-      } else if (inParam.getCamundaSourceExpression() != null) {
-        assertThat(inParam.getCamundaSourceExpression()).isEqualTo("${'sourceExpression'}");
-        assertThat(inParam.getCamundaTarget()).isEqualTo("target2");
-        paramCounter++;
-      } else if (inParam.getCamundaSource() != null) {
-        assertThat(inParam.getCamundaSource()).isEqualTo("source");
-        assertThat(inParam.getCamundaTarget()).isEqualTo("target1");
-        paramCounter++;
-      }
-    }
-    assertThat(paramCounter).isEqualTo(camundaInParams.size());
-  }
-
-  @Test
-  public void testIntermediateSignalThrowEventWithPayload() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .intermediateThrowEvent("throw")
-            .signalEventDefinition("signal")
-            .camundaInAllVariables("all")
-            .throwEventDefinitionDone()
-            .endEvent()
-            .done();
-
-    final SignalEventDefinition signalEventDefinition =
-        assertAndGetSingleEventDefinition("throw", SignalEventDefinition.class);
-
-    final List<CamundaIn> camundaInParams =
-        signalEventDefinition
-            .getExtensionElements()
-            .getElementsQuery()
-            .filterByType(CamundaIn.class)
-            .list();
-    assertThat(camundaInParams.size()).isEqualTo(1);
-
-    assertThat(camundaInParams.get(0).getCamundaVariables()).isEqualTo("all");
-  }
-
-  @Test
   public void testMessageBoundaryEvent() {
     modelInstance =
         Bpmn.createProcess()
@@ -1629,174 +1054,6 @@ public class ProcessBuilderTest {
   }
 
   @Test
-  public void testCamundaTaskListenerByClassName() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .userTask("task")
-            .camundaTaskListenerClass("start", "aClass")
-            .endEvent()
-            .done();
-
-    final UserTask userTask = modelInstance.getModelElementById("task");
-    final ExtensionElements extensionElements = userTask.getExtensionElements();
-    final Collection<CamundaTaskListener> taskListeners =
-        extensionElements.getChildElementsByType(CamundaTaskListener.class);
-    assertThat(taskListeners).hasSize(1);
-
-    final CamundaTaskListener taskListener = taskListeners.iterator().next();
-    assertThat(taskListener.getCamundaClass()).isEqualTo("aClass");
-    assertThat(taskListener.getCamundaEvent()).isEqualTo("start");
-  }
-
-  @Test
-  public void testCamundaTaskListenerByClass() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .userTask("task")
-            .camundaTaskListenerClass("start", this.getClass())
-            .endEvent()
-            .done();
-
-    final UserTask userTask = modelInstance.getModelElementById("task");
-    final ExtensionElements extensionElements = userTask.getExtensionElements();
-    final Collection<CamundaTaskListener> taskListeners =
-        extensionElements.getChildElementsByType(CamundaTaskListener.class);
-    assertThat(taskListeners).hasSize(1);
-
-    final CamundaTaskListener taskListener = taskListeners.iterator().next();
-    assertThat(taskListener.getCamundaClass()).isEqualTo(this.getClass().getName());
-    assertThat(taskListener.getCamundaEvent()).isEqualTo("start");
-  }
-
-  @Test
-  public void testCamundaTaskListenerByExpression() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .userTask("task")
-            .camundaTaskListenerExpression("start", "anExpression")
-            .endEvent()
-            .done();
-
-    final UserTask userTask = modelInstance.getModelElementById("task");
-    final ExtensionElements extensionElements = userTask.getExtensionElements();
-    final Collection<CamundaTaskListener> taskListeners =
-        extensionElements.getChildElementsByType(CamundaTaskListener.class);
-    assertThat(taskListeners).hasSize(1);
-
-    final CamundaTaskListener taskListener = taskListeners.iterator().next();
-    assertThat(taskListener.getCamundaExpression()).isEqualTo("anExpression");
-    assertThat(taskListener.getCamundaEvent()).isEqualTo("start");
-  }
-
-  @Test
-  public void testCamundaTaskListenerByDelegateExpression() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .userTask("task")
-            .camundaTaskListenerDelegateExpression("start", "aDelegate")
-            .endEvent()
-            .done();
-
-    final UserTask userTask = modelInstance.getModelElementById("task");
-    final ExtensionElements extensionElements = userTask.getExtensionElements();
-    final Collection<CamundaTaskListener> taskListeners =
-        extensionElements.getChildElementsByType(CamundaTaskListener.class);
-    assertThat(taskListeners).hasSize(1);
-
-    final CamundaTaskListener taskListener = taskListeners.iterator().next();
-    assertThat(taskListener.getCamundaDelegateExpression()).isEqualTo("aDelegate");
-    assertThat(taskListener.getCamundaEvent()).isEqualTo("start");
-  }
-
-  @Test
-  public void testCamundaExecutionListenerByClassName() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .userTask("task")
-            .camundaExecutionListenerClass("start", "aClass")
-            .endEvent()
-            .done();
-
-    final UserTask userTask = modelInstance.getModelElementById("task");
-    final ExtensionElements extensionElements = userTask.getExtensionElements();
-    final Collection<CamundaExecutionListener> executionListeners =
-        extensionElements.getChildElementsByType(CamundaExecutionListener.class);
-    assertThat(executionListeners).hasSize(1);
-
-    final CamundaExecutionListener executionListener = executionListeners.iterator().next();
-    assertThat(executionListener.getCamundaClass()).isEqualTo("aClass");
-    assertThat(executionListener.getCamundaEvent()).isEqualTo("start");
-  }
-
-  @Test
-  public void testCamundaExecutionListenerByClass() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .userTask("task")
-            .camundaExecutionListenerClass("start", this.getClass())
-            .endEvent()
-            .done();
-
-    final UserTask userTask = modelInstance.getModelElementById("task");
-    final ExtensionElements extensionElements = userTask.getExtensionElements();
-    final Collection<CamundaExecutionListener> executionListeners =
-        extensionElements.getChildElementsByType(CamundaExecutionListener.class);
-    assertThat(executionListeners).hasSize(1);
-
-    final CamundaExecutionListener executionListener = executionListeners.iterator().next();
-    assertThat(executionListener.getCamundaClass()).isEqualTo(this.getClass().getName());
-    assertThat(executionListener.getCamundaEvent()).isEqualTo("start");
-  }
-
-  @Test
-  public void testCamundaExecutionListenerByExpression() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .userTask("task")
-            .camundaExecutionListenerExpression("start", "anExpression")
-            .endEvent()
-            .done();
-
-    final UserTask userTask = modelInstance.getModelElementById("task");
-    final ExtensionElements extensionElements = userTask.getExtensionElements();
-    final Collection<CamundaExecutionListener> executionListeners =
-        extensionElements.getChildElementsByType(CamundaExecutionListener.class);
-    assertThat(executionListeners).hasSize(1);
-
-    final CamundaExecutionListener executionListener = executionListeners.iterator().next();
-    assertThat(executionListener.getCamundaExpression()).isEqualTo("anExpression");
-    assertThat(executionListener.getCamundaEvent()).isEqualTo("start");
-  }
-
-  @Test
-  public void testCamundaExecutionListenerByDelegateExpression() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .userTask("task")
-            .camundaExecutionListenerDelegateExpression("start", "aDelegateExpression")
-            .endEvent()
-            .done();
-
-    final UserTask userTask = modelInstance.getModelElementById("task");
-    final ExtensionElements extensionElements = userTask.getExtensionElements();
-    final Collection<CamundaExecutionListener> executionListeners =
-        extensionElements.getChildElementsByType(CamundaExecutionListener.class);
-    assertThat(executionListeners).hasSize(1);
-
-    final CamundaExecutionListener executionListener = executionListeners.iterator().next();
-    assertThat(executionListener.getCamundaDelegateExpression()).isEqualTo("aDelegateExpression");
-    assertThat(executionListener.getCamundaEvent()).isEqualTo("start");
-  }
-
-  @Test
   public void testMultiInstanceLoopCharacteristicsSequential() {
     modelInstance =
         Bpmn.createProcess()
@@ -1806,8 +1063,6 @@ public class ProcessBuilderTest {
             .sequential()
             .cardinality("card")
             .completionCondition("compl")
-            .camundaCollection("coll")
-            .camundaElementVariable("element")
             .multiInstanceDone()
             .endEvent()
             .done();
@@ -1822,8 +1077,6 @@ public class ProcessBuilderTest {
     assertThat(miCharacteristic.isSequential()).isTrue();
     assertThat(miCharacteristic.getLoopCardinality().getTextContent()).isEqualTo("card");
     assertThat(miCharacteristic.getCompletionCondition().getTextContent()).isEqualTo("compl");
-    assertThat(miCharacteristic.getCamundaCollection()).isEqualTo("coll");
-    assertThat(miCharacteristic.getCamundaElementVariable()).isEqualTo("element");
   }
 
   @Test
@@ -1846,127 +1099,6 @@ public class ProcessBuilderTest {
 
     final MultiInstanceLoopCharacteristics miCharacteristic = miCharacteristics.iterator().next();
     assertThat(miCharacteristic.isSequential()).isFalse();
-  }
-
-  @Test
-  public void testTaskWithCamundaInputOutput() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .userTask("task")
-            .camundaInputParameter("foo", "bar")
-            .camundaInputParameter("yoo", "hoo")
-            .camundaOutputParameter("one", "two")
-            .camundaOutputParameter("three", "four")
-            .endEvent()
-            .done();
-
-    final UserTask task = modelInstance.getModelElementById("task");
-    assertCamundaInputOutputParameter(task);
-  }
-
-  @Test
-  public void testTaskWithCamundaInputOutputWithExistingExtensionElements() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .userTask("task")
-            .camundaExecutionListenerExpression("end", "${true}")
-            .camundaInputParameter("foo", "bar")
-            .camundaInputParameter("yoo", "hoo")
-            .camundaOutputParameter("one", "two")
-            .camundaOutputParameter("three", "four")
-            .endEvent()
-            .done();
-
-    final UserTask task = modelInstance.getModelElementById("task");
-    assertCamundaInputOutputParameter(task);
-  }
-
-  @Test
-  public void testTaskWithCamundaInputOutputWithExistingCamundaInputOutput() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .userTask("task")
-            .camundaInputParameter("foo", "bar")
-            .camundaOutputParameter("one", "two")
-            .endEvent()
-            .done();
-
-    final UserTask task = modelInstance.getModelElementById("task");
-
-    task.builder().camundaInputParameter("yoo", "hoo").camundaOutputParameter("three", "four");
-
-    assertCamundaInputOutputParameter(task);
-  }
-
-  @Test
-  public void testSubProcessWithCamundaInputOutput() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .subProcess("subProcess")
-            .camundaInputParameter("foo", "bar")
-            .camundaInputParameter("yoo", "hoo")
-            .camundaOutputParameter("one", "two")
-            .camundaOutputParameter("three", "four")
-            .embeddedSubProcess()
-            .startEvent()
-            .endEvent()
-            .subProcessDone()
-            .endEvent()
-            .done();
-
-    final SubProcess subProcess = modelInstance.getModelElementById("subProcess");
-    assertCamundaInputOutputParameter(subProcess);
-  }
-
-  @Test
-  public void testSubProcessWithCamundaInputOutputWithExistingExtensionElements() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .subProcess("subProcess")
-            .camundaExecutionListenerExpression("end", "${true}")
-            .camundaInputParameter("foo", "bar")
-            .camundaInputParameter("yoo", "hoo")
-            .camundaOutputParameter("one", "two")
-            .camundaOutputParameter("three", "four")
-            .embeddedSubProcess()
-            .startEvent()
-            .endEvent()
-            .subProcessDone()
-            .endEvent()
-            .done();
-
-    final SubProcess subProcess = modelInstance.getModelElementById("subProcess");
-    assertCamundaInputOutputParameter(subProcess);
-  }
-
-  @Test
-  public void testSubProcessWithCamundaInputOutputWithExistingCamundaInputOutput() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .subProcess("subProcess")
-            .camundaInputParameter("foo", "bar")
-            .camundaOutputParameter("one", "two")
-            .embeddedSubProcess()
-            .startEvent()
-            .endEvent()
-            .subProcessDone()
-            .endEvent()
-            .done();
-
-    final SubProcess subProcess = modelInstance.getModelElementById("subProcess");
-
-    subProcess
-        .builder()
-        .camundaInputParameter("yoo", "hoo")
-        .camundaOutputParameter("three", "four");
-
-    assertCamundaInputOutputParameter(subProcess);
   }
 
   @Test
@@ -2234,16 +1366,13 @@ public class ProcessBuilderTest {
             .moveToActivity("task")
             .boundaryEvent("boundary")
             .errorEventDefinition("event")
-            .errorCodeVariable("errorCodeVariable")
-            .errorMessageVariable("errorMessageVariable")
             .error("errorCode")
             .errorEventDefinitionDone()
             .endEvent("boundaryEnd")
             .done();
 
     assertErrorEventDefinition("boundary", "errorCode");
-    assertErrorEventDefinitionForErrorVariables(
-        "boundary", "errorCodeVariable", "errorMessageVariable");
+    assertErrorEventDefinitionForErrorVariables("boundary");
   }
 
   @Test
@@ -2256,16 +1385,13 @@ public class ProcessBuilderTest {
             .moveToActivity("task")
             .boundaryEvent("boundary")
             .errorEventDefinition()
-            .errorCodeVariable("errorCodeVariable")
-            .errorMessageVariable("errorMessageVariable")
             .error("errorCode")
             .errorEventDefinitionDone()
             .endEvent("boundaryEnd")
             .done();
 
     assertErrorEventDefinition("boundary", "errorCode");
-    assertErrorEventDefinitionForErrorVariables(
-        "boundary", "errorCodeVariable", "errorMessageVariable");
+    assertErrorEventDefinitionForErrorVariables("boundary");
   }
 
   @Test
@@ -2519,84 +1645,6 @@ public class ProcessBuilderTest {
   }
 
   @Test
-  public void testUserTaskCamundaFormField() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .userTask(TASK_ID)
-            .camundaFormField()
-            .camundaId("myFormField_1")
-            .camundaLabel("Form Field One")
-            .camundaType("string")
-            .camundaDefaultValue("myDefaultVal_1")
-            .camundaFormFieldDone()
-            .camundaFormField()
-            .camundaId("myFormField_2")
-            .camundaLabel("Form Field Two")
-            .camundaType("integer")
-            .camundaDefaultValue("myDefaultVal_2")
-            .camundaFormFieldDone()
-            .endEvent()
-            .done();
-
-    final UserTask userTask = modelInstance.getModelElementById(TASK_ID);
-    assertCamundaFormField(userTask);
-  }
-
-  @Test
-  public void testUserTaskCamundaFormFieldWithExistingCamundaFormData() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .userTask(TASK_ID)
-            .camundaFormField()
-            .camundaId("myFormField_1")
-            .camundaLabel("Form Field One")
-            .camundaType("string")
-            .camundaDefaultValue("myDefaultVal_1")
-            .camundaFormFieldDone()
-            .endEvent()
-            .done();
-
-    final UserTask userTask = modelInstance.getModelElementById(TASK_ID);
-
-    userTask
-        .builder()
-        .camundaFormField()
-        .camundaId("myFormField_2")
-        .camundaLabel("Form Field Two")
-        .camundaType("integer")
-        .camundaDefaultValue("myDefaultVal_2")
-        .camundaFormFieldDone();
-
-    assertCamundaFormField(userTask);
-  }
-
-  @Test
-  public void testStartEventCamundaFormField() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent(START_EVENT_ID)
-            .camundaFormField()
-            .camundaId("myFormField_1")
-            .camundaLabel("Form Field One")
-            .camundaType("string")
-            .camundaDefaultValue("myDefaultVal_1")
-            .camundaFormFieldDone()
-            .camundaFormField()
-            .camundaId("myFormField_2")
-            .camundaLabel("Form Field Two")
-            .camundaType("integer")
-            .camundaDefaultValue("myDefaultVal_2")
-            .camundaFormFieldDone()
-            .endEvent()
-            .done();
-
-    final StartEvent startEvent = modelInstance.getModelElementById(START_EVENT_ID);
-    assertCamundaFormField(startEvent);
-  }
-
-  @Test
   public void testCompensateEventDefintionCatchStartEvent() {
     modelInstance =
         Bpmn.createProcess()
@@ -2765,31 +1813,6 @@ public class ProcessBuilderTest {
   }
 
   @Test
-  public void testConditionalEventDefinitionCamundaExtensions() {
-    modelInstance =
-        Bpmn.createProcess()
-            .startEvent()
-            .intermediateCatchEvent()
-            .conditionalEventDefinition(CONDITION_ID)
-            .condition(TEST_CONDITION)
-            .camundaVariableEvents(TEST_CONDITIONAL_VARIABLE_EVENTS)
-            .camundaVariableEvents(TEST_CONDITIONAL_VARIABLE_EVENTS_LIST)
-            .camundaVariableName(TEST_CONDITIONAL_VARIABLE_NAME)
-            .conditionalEventDefinitionDone()
-            .endEvent()
-            .done();
-
-    final ConditionalEventDefinition conditionalEventDef =
-        modelInstance.getModelElementById(CONDITION_ID);
-    assertThat(conditionalEventDef.getCamundaVariableEvents())
-        .isEqualTo(TEST_CONDITIONAL_VARIABLE_EVENTS);
-    assertThat(conditionalEventDef.getCamundaVariableEventsList())
-        .containsAll(TEST_CONDITIONAL_VARIABLE_EVENTS_LIST);
-    assertThat(conditionalEventDef.getCamundaVariableName())
-        .isEqualTo(TEST_CONDITIONAL_VARIABLE_NAME);
-  }
-
-  @Test
   public void testIntermediateConditionalEventDefinition() {
 
     modelInstance =
@@ -2910,18 +1933,10 @@ public class ProcessBuilderTest {
     return error;
   }
 
-  protected void assertErrorEventDefinitionForErrorVariables(
-      String elementId, String errorCodeVariable, String errorMessageVariable) {
+  protected void assertErrorEventDefinitionForErrorVariables(String elementId) {
     final ErrorEventDefinition errorEventDefinition =
         assertAndGetSingleEventDefinition(elementId, ErrorEventDefinition.class);
     assertThat(errorEventDefinition).isNotNull();
-    if (errorCodeVariable != null) {
-      assertThat(errorEventDefinition.getCamundaErrorCodeVariable()).isEqualTo(errorCodeVariable);
-    }
-    if (errorMessageVariable != null) {
-      assertThat(errorEventDefinition.getCamundaErrorMessageVariable())
-          .isEqualTo(errorMessageVariable);
-    }
   }
 
   protected void assertOnlyOneErrorExists(String errorCode) {
@@ -2947,40 +1962,6 @@ public class ProcessBuilderTest {
 
   protected void assertCompensationEventDefinition(String elementId) {
     assertAndGetSingleEventDefinition(elementId, CompensateEventDefinition.class);
-  }
-
-  protected void assertCamundaInputOutputParameter(BaseElement element) {
-    final CamundaInputOutput camundaInputOutput =
-        element
-            .getExtensionElements()
-            .getElementsQuery()
-            .filterByType(CamundaInputOutput.class)
-            .singleResult();
-    assertThat(camundaInputOutput).isNotNull();
-
-    final List<CamundaInputParameter> camundaInputParameters =
-        new ArrayList<>(camundaInputOutput.getCamundaInputParameters());
-    assertThat(camundaInputParameters).hasSize(2);
-
-    CamundaInputParameter camundaInputParameter = camundaInputParameters.get(0);
-    assertThat(camundaInputParameter.getCamundaName()).isEqualTo("foo");
-    assertThat(camundaInputParameter.getTextContent()).isEqualTo("bar");
-
-    camundaInputParameter = camundaInputParameters.get(1);
-    assertThat(camundaInputParameter.getCamundaName()).isEqualTo("yoo");
-    assertThat(camundaInputParameter.getTextContent()).isEqualTo("hoo");
-
-    final List<CamundaOutputParameter> camundaOutputParameters =
-        new ArrayList<>(camundaInputOutput.getCamundaOutputParameters());
-    assertThat(camundaOutputParameters).hasSize(2);
-
-    CamundaOutputParameter camundaOutputParameter = camundaOutputParameters.get(0);
-    assertThat(camundaOutputParameter.getCamundaName()).isEqualTo("one");
-    assertThat(camundaOutputParameter.getTextContent()).isEqualTo("two");
-
-    camundaOutputParameter = camundaOutputParameters.get(1);
-    assertThat(camundaOutputParameter.getCamundaName()).isEqualTo("three");
-    assertThat(camundaOutputParameter.getTextContent()).isEqualTo("four");
   }
 
   protected void assertTimerWithDate(String elementId, String timerDate) {
@@ -3019,48 +2000,6 @@ public class ProcessBuilderTest {
     final EventDefinition eventDefinition = eventDefinitions.iterator().next();
     assertThat(eventDefinition).isNotNull().isInstanceOf(eventDefinitionType);
     return (T) eventDefinition;
-  }
-
-  protected void assertCamundaFormField(BaseElement element) {
-    assertThat(element.getExtensionElements()).isNotNull();
-
-    final CamundaFormData camundaFormData =
-        element
-            .getExtensionElements()
-            .getElementsQuery()
-            .filterByType(CamundaFormData.class)
-            .singleResult();
-    assertThat(camundaFormData).isNotNull();
-
-    final List<CamundaFormField> camundaFormFields =
-        new ArrayList<>(camundaFormData.getCamundaFormFields());
-    assertThat(camundaFormFields).hasSize(2);
-
-    CamundaFormField camundaFormField = camundaFormFields.get(0);
-    assertThat(camundaFormField.getCamundaId()).isEqualTo("myFormField_1");
-    assertThat(camundaFormField.getCamundaLabel()).isEqualTo("Form Field One");
-    assertThat(camundaFormField.getCamundaType()).isEqualTo("string");
-    assertThat(camundaFormField.getCamundaDefaultValue()).isEqualTo("myDefaultVal_1");
-
-    camundaFormField = camundaFormFields.get(1);
-    assertThat(camundaFormField.getCamundaId()).isEqualTo("myFormField_2");
-    assertThat(camundaFormField.getCamundaLabel()).isEqualTo("Form Field Two");
-    assertThat(camundaFormField.getCamundaType()).isEqualTo("integer");
-    assertThat(camundaFormField.getCamundaDefaultValue()).isEqualTo("myDefaultVal_2");
-  }
-
-  protected void assertCamundaFailedJobRetryTimeCycle(BaseElement element) {
-    assertThat(element.getExtensionElements()).isNotNull();
-
-    final CamundaFailedJobRetryTimeCycle camundaFailedJobRetryTimeCycle =
-        element
-            .getExtensionElements()
-            .getElementsQuery()
-            .filterByType(CamundaFailedJobRetryTimeCycle.class)
-            .singleResult();
-    assertThat(camundaFailedJobRetryTimeCycle).isNotNull();
-    assertThat(camundaFailedJobRetryTimeCycle.getTextContent())
-        .isEqualTo(FAILED_JOB_RETRY_TIME_CYCLE);
   }
 
   @Test

@@ -19,8 +19,6 @@ package io.zeebe.model.bpmn.impl.instance;
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_TRIGGERED_BY_EVENT;
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_SUB_PROCESS;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_ASYNC;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_NS;
 
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.SubProcessBuilder;
@@ -50,9 +48,6 @@ public class SubProcessImpl extends ActivityImpl implements SubProcess {
   protected static ChildElementCollection<FlowElement> flowElementCollection;
   protected static ChildElementCollection<Artifact> artifactCollection;
 
-  /** camunda extensions */
-  protected static Attribute<Boolean> camundaAsyncAttribute;
-
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -77,14 +72,6 @@ public class SubProcessImpl extends ActivityImpl implements SubProcess {
     flowElementCollection = sequenceBuilder.elementCollection(FlowElement.class).build();
 
     artifactCollection = sequenceBuilder.elementCollection(Artifact.class).build();
-
-    /** camunda extensions */
-    camundaAsyncAttribute =
-        typeBuilder
-            .booleanAttribute(CAMUNDA_ATTRIBUTE_ASYNC)
-            .namespace(CAMUNDA_NS)
-            .defaultValue(false)
-            .build();
 
     typeBuilder.build();
   }
@@ -121,21 +108,5 @@ public class SubProcessImpl extends ActivityImpl implements SubProcess {
   @Override
   public Collection<Artifact> getArtifacts() {
     return artifactCollection.get(this);
-  }
-
-  /** camunda extensions */
-
-  /** @deprecated use isCamundaAsyncBefore() instead. */
-  @Override
-  @Deprecated
-  public boolean isCamundaAsync() {
-    return camundaAsyncAttribute.getValue(this);
-  }
-
-  /** @deprecated use setCamundaAsyncBefore(isCamundaAsyncBefore) instead. */
-  @Override
-  @Deprecated
-  public void setCamundaAsync(boolean isCamundaAsync) {
-    camundaAsyncAttribute.setValue(this, isCamundaAsync);
   }
 }

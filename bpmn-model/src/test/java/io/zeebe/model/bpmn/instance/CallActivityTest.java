@@ -16,8 +16,6 @@
 
 package io.zeebe.model.bpmn.instance;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_NS;
-
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -36,19 +34,6 @@ public class CallActivityTest extends BpmnModelElementInstanceTest {
 
   @Override
   public Collection<AttributeAssumption> getAttributesAssumptions() {
-    return Arrays.asList(
-        new AttributeAssumption("calledElement"),
-        /** camunda extensions */
-        new AttributeAssumption(CAMUNDA_NS, "async", false, false, false),
-        new AttributeAssumption(CAMUNDA_NS, "calledElementBinding"),
-        new AttributeAssumption(CAMUNDA_NS, "calledElementVersion"),
-        new AttributeAssumption(CAMUNDA_NS, "calledElementVersionTag"),
-        new AttributeAssumption(CAMUNDA_NS, "calledElementTenantId"),
-        new AttributeAssumption(CAMUNDA_NS, "caseRef"),
-        new AttributeAssumption(CAMUNDA_NS, "caseBinding"),
-        new AttributeAssumption(CAMUNDA_NS, "caseVersion"),
-        new AttributeAssumption(CAMUNDA_NS, "caseTenantId"),
-        new AttributeAssumption(CAMUNDA_NS, "variableMappingClass"),
-        new AttributeAssumption(CAMUNDA_NS, "variableMappingDelegateExpression"));
+    return Arrays.asList(new AttributeAssumption("calledElement"));
   }
 }

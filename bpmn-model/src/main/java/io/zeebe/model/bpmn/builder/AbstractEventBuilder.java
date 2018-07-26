@@ -18,9 +18,6 @@ package io.zeebe.model.bpmn.builder;
 
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.Event;
-import io.zeebe.model.bpmn.instance.camunda.CamundaInputOutput;
-import io.zeebe.model.bpmn.instance.camunda.CamundaInputParameter;
-import io.zeebe.model.bpmn.instance.camunda.CamundaOutputParameter;
 
 /** @author Sebastian Menski */
 public abstract class AbstractEventBuilder<B extends AbstractEventBuilder<B, E>, E extends Event>
@@ -28,43 +25,5 @@ public abstract class AbstractEventBuilder<B extends AbstractEventBuilder<B, E>,
 
   protected AbstractEventBuilder(BpmnModelInstance modelInstance, E element, Class<?> selfType) {
     super(modelInstance, element, selfType);
-  }
-
-  /**
-   * Creates a new camunda input parameter extension element with the given name and value.
-   *
-   * @param name the name of the input parameter
-   * @param value the value of the input parameter
-   * @return the builder object
-   */
-  public B camundaInputParameter(String name, String value) {
-    final CamundaInputOutput camundaInputOutput =
-        getCreateSingleExtensionElement(CamundaInputOutput.class);
-
-    final CamundaInputParameter camundaInputParameter =
-        createChild(camundaInputOutput, CamundaInputParameter.class);
-    camundaInputParameter.setCamundaName(name);
-    camundaInputParameter.setTextContent(value);
-
-    return myself;
-  }
-
-  /**
-   * Creates a new camunda output parameter extension element with the given name and value.
-   *
-   * @param name the name of the output parameter
-   * @param value the value of the output parameter
-   * @return the builder object
-   */
-  public B camundaOutputParameter(String name, String value) {
-    final CamundaInputOutput camundaInputOutput =
-        getCreateSingleExtensionElement(CamundaInputOutput.class);
-
-    final CamundaOutputParameter camundaOutputParameter =
-        createChild(camundaInputOutput, CamundaOutputParameter.class);
-    camundaOutputParameter.setCamundaName(name);
-    camundaOutputParameter.setTextContent(value);
-
-    return myself;
   }
 }

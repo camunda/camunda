@@ -16,8 +16,6 @@
 
 package io.zeebe.model.bpmn.instance;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_NS;
-
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -36,12 +34,6 @@ public class StartEventTest extends BpmnModelElementInstanceTest {
 
   @Override
   public Collection<AttributeAssumption> getAttributesAssumptions() {
-    return Arrays.asList(
-        new AttributeAssumption("isInterrupting", false, false, true),
-        /** camunda extensions */
-        new AttributeAssumption(CAMUNDA_NS, "async", false, false, false),
-        new AttributeAssumption(CAMUNDA_NS, "formHandlerClass"),
-        new AttributeAssumption(CAMUNDA_NS, "formKey"),
-        new AttributeAssumption(CAMUNDA_NS, "initiator"));
+    return Arrays.asList(new AttributeAssumption("isInterrupting", false, false, true));
   }
 }

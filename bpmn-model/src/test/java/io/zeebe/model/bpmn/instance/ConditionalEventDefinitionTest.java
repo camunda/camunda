@@ -15,7 +15,6 @@
  */
 package io.zeebe.model.bpmn.instance;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_NS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
@@ -31,9 +30,7 @@ public class ConditionalEventDefinitionTest extends AbstractEventDefinitionTest 
 
   @Override
   public Collection<AttributeAssumption> getAttributesAssumptions() {
-    return Arrays.asList(
-        new AttributeAssumption(CAMUNDA_NS, "variableName"),
-        new AttributeAssumption(CAMUNDA_NS, "variableEvents"));
+    return null;
   }
 
   @Test
@@ -41,8 +38,6 @@ public class ConditionalEventDefinitionTest extends AbstractEventDefinitionTest 
     final ConditionalEventDefinition eventDefinition =
         eventDefinitionQuery.filterByType(ConditionalEventDefinition.class).singleResult();
     assertThat(eventDefinition).isNotNull();
-    assertThat(eventDefinition.getCamundaVariableEvents()).isNull();
-    assertThat(eventDefinition.getCamundaVariableName()).isNull();
     final Expression condition = eventDefinition.getCondition();
     assertThat(condition).isNotNull();
     assertThat(condition.getTextContent()).isEqualTo("${test}");

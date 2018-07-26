@@ -16,8 +16,6 @@
 
 package io.zeebe.model.bpmn.instance;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_NS;
-
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -36,16 +34,6 @@ public class UserTaskTest extends BpmnModelElementInstanceTest {
 
   @Override
   public Collection<AttributeAssumption> getAttributesAssumptions() {
-    return Arrays.asList(
-        new AttributeAssumption("implementation", false, false, "##unspecified"),
-        /** camunda extensions */
-        new AttributeAssumption(CAMUNDA_NS, "assignee"),
-        new AttributeAssumption(CAMUNDA_NS, "candidateGroups"),
-        new AttributeAssumption(CAMUNDA_NS, "candidateUsers"),
-        new AttributeAssumption(CAMUNDA_NS, "dueDate"),
-        new AttributeAssumption(CAMUNDA_NS, "followUpDate"),
-        new AttributeAssumption(CAMUNDA_NS, "formHandlerClass"),
-        new AttributeAssumption(CAMUNDA_NS, "formKey"),
-        new AttributeAssumption(CAMUNDA_NS, "priority"));
+    return Arrays.asList(new AttributeAssumption("implementation", false, false, "##unspecified"));
   }
 }

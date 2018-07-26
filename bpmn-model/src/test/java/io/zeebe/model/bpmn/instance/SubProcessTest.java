@@ -16,8 +16,6 @@
 
 package io.zeebe.model.bpmn.instance;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_NS;
-
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -39,9 +37,6 @@ public class SubProcessTest extends BpmnModelElementInstanceTest {
 
   @Override
   public Collection<AttributeAssumption> getAttributesAssumptions() {
-    return Arrays.asList(
-        new AttributeAssumption("triggeredByEvent", false, false, false),
-        /** camunda extensions */
-        new AttributeAssumption(CAMUNDA_NS, "async", false, false, false));
+    return Arrays.asList(new AttributeAssumption("triggeredByEvent", false, false, false));
   }
 }

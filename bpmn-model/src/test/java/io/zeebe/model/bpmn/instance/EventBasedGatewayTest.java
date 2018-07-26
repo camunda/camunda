@@ -16,7 +16,6 @@
 package io.zeebe.model.bpmn.instance;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 
 import io.zeebe.model.bpmn.EventBasedGatewayType;
 import java.util.Arrays;
@@ -40,24 +39,5 @@ public class EventBasedGatewayTest extends AbstractGatewayTest<EventBasedGateway
   @Test
   public void getEventGatewayType() {
     assertThat(gateway.getEventGatewayType()).isEqualTo(EventBasedGatewayType.Parallel);
-  }
-
-  @Test
-  public void shouldFailSetAsyncAfterToEventBasedGateway() {
-    // fetching should fail
-    try {
-      gateway.isCamundaAsyncAfter();
-      fail("Expected: UnsupportedOperationException");
-    } catch (final UnsupportedOperationException ex) {
-      // True
-    }
-
-    // set the attribute should fail to!
-    try {
-      gateway.setCamundaAsyncAfter(false);
-      fail("Expected: UnsupportedOperationException");
-    } catch (final UnsupportedOperationException ex) {
-      // True
-    }
   }
 }

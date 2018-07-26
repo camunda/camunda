@@ -96,16 +96,4 @@ public class EventBasedGatewayImpl extends GatewayImpl implements EventBasedGate
   public void setEventGatewayType(EventBasedGatewayType eventGatewayType) {
     eventGatewayTypeAttribute.setValue(this, eventGatewayType);
   }
-
-  @Override
-  public boolean isCamundaAsyncAfter() {
-    throw new UnsupportedOperationException(
-        "'asyncAfter' is not supported for 'Event Based Gateway'");
-  }
-
-  @Override
-  public void setCamundaAsyncAfter(boolean isCamundaAsyncAfter) {
-    throw new UnsupportedOperationException(
-        "'asyncAfter' is not supported for 'Event Based Gateway'");
-  }
 }

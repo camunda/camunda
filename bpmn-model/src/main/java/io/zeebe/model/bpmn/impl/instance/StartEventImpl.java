@@ -19,11 +19,6 @@ package io.zeebe.model.bpmn.impl.instance;
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_IS_INTERRUPTING;
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_START_EVENT;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_ASYNC;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_FORM_HANDLER_CLASS;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_FORM_KEY;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_INITIATOR;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_NS;
 
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.StartEventBuilder;
@@ -43,13 +38,6 @@ public class StartEventImpl extends CatchEventImpl implements StartEvent {
 
   protected static Attribute<Boolean> isInterruptingAttribute;
 
-  /** camunda extensions */
-  protected static Attribute<Boolean> camundaAsyncAttribute;
-
-  protected static Attribute<String> camundaFormHandlerClassAttribute;
-  protected static Attribute<String> camundaFormKeyAttribute;
-  protected static Attribute<String> camundaInitiatorAttribute;
-
   public static void registerType(ModelBuilder modelBuilder) {
 
     final ModelElementTypeBuilder typeBuilder =
@@ -67,26 +55,6 @@ public class StartEventImpl extends CatchEventImpl implements StartEvent {
 
     isInterruptingAttribute =
         typeBuilder.booleanAttribute(BPMN_ATTRIBUTE_IS_INTERRUPTING).defaultValue(true).build();
-
-    /** camunda extensions */
-    camundaAsyncAttribute =
-        typeBuilder
-            .booleanAttribute(CAMUNDA_ATTRIBUTE_ASYNC)
-            .namespace(CAMUNDA_NS)
-            .defaultValue(false)
-            .build();
-
-    camundaFormHandlerClassAttribute =
-        typeBuilder
-            .stringAttribute(CAMUNDA_ATTRIBUTE_FORM_HANDLER_CLASS)
-            .namespace(CAMUNDA_NS)
-            .build();
-
-    camundaFormKeyAttribute =
-        typeBuilder.stringAttribute(CAMUNDA_ATTRIBUTE_FORM_KEY).namespace(CAMUNDA_NS).build();
-
-    camundaInitiatorAttribute =
-        typeBuilder.stringAttribute(CAMUNDA_ATTRIBUTE_INITIATOR).namespace(CAMUNDA_NS).build();
 
     typeBuilder.build();
   }
@@ -108,51 +76,5 @@ public class StartEventImpl extends CatchEventImpl implements StartEvent {
   @Override
   public void setInterrupting(boolean isInterrupting) {
     isInterruptingAttribute.setValue(this, isInterrupting);
-  }
-
-  /** camunda extensions */
-
-  /** @deprecated use isCamundaAsyncBefore() instead. */
-  @Override
-  @Deprecated
-  public boolean isCamundaAsync() {
-    return camundaAsyncAttribute.getValue(this);
-  }
-
-  /** @deprecated use setCamundaAsyncBefore(isCamundaAsyncBefore) instead. */
-  @Override
-  @Deprecated
-  public void setCamundaAsync(boolean isCamundaAsync) {
-    camundaAsyncAttribute.setValue(this, isCamundaAsync);
-  }
-
-  @Override
-  public String getCamundaFormHandlerClass() {
-    return camundaFormHandlerClassAttribute.getValue(this);
-  }
-
-  @Override
-  public void setCamundaFormHandlerClass(String camundaFormHandlerClass) {
-    camundaFormHandlerClassAttribute.setValue(this, camundaFormHandlerClass);
-  }
-
-  @Override
-  public String getCamundaFormKey() {
-    return camundaFormKeyAttribute.getValue(this);
-  }
-
-  @Override
-  public void setCamundaFormKey(String camundaFormKey) {
-    camundaFormKeyAttribute.setValue(this, camundaFormKey);
-  }
-
-  @Override
-  public String getCamundaInitiator() {
-    return camundaInitiatorAttribute.getValue(this);
-  }
-
-  @Override
-  public void setCamundaInitiator(String camundaInitiator) {
-    camundaInitiatorAttribute.setValue(this, camundaInitiator);
   }
 }

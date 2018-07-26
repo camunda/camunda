@@ -45,41 +45,6 @@ public abstract class AbstractMessageEventDefinitionBuilder<
   }
 
   /**
-   * Sets the camunda topic attribute. This is only meaningful when the {@link #camundaType(String)}
-   * attribute has the value <code>external</code>.
-   *
-   * @param camundaTopic the topic to set
-   * @return the builder object
-   */
-  public B camundaTopic(String camundaTopic) {
-    element.setCamundaTopic(camundaTopic);
-    return myself;
-  }
-
-  /**
-   * Sets the camunda type attribute.
-   *
-   * @param camundaType the type of the service task
-   * @return the builder object
-   */
-  public B camundaType(String camundaType) {
-    element.setCamundaType(camundaType);
-    return myself;
-  }
-
-  /**
-   * Sets the camunda task priority attribute. This is only meaningful when the {@link
-   * #camundaType(String)} attribute has the value <code>external</code>.
-   *
-   * @param taskPriority the priority for the external task
-   * @return the builder object
-   */
-  public B camundaTaskPriority(String taskPriority) {
-    element.setCamundaTaskPriority(taskPriority);
-    return myself;
-  }
-
-  /**
    * Finishes the building of a message event definition.
    *
    * @param <T>

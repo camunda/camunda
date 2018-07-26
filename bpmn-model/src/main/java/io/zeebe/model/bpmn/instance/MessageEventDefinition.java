@@ -30,33 +30,4 @@ public interface MessageEventDefinition extends EventDefinition {
   Operation getOperation();
 
   void setOperation(Operation operation);
-
-  /** camunda extensions */
-  String getCamundaClass();
-
-  void setCamundaClass(String camundaClass);
-
-  String getCamundaDelegateExpression();
-
-  void setCamundaDelegateExpression(String camundaExpression);
-
-  String getCamundaExpression();
-
-  void setCamundaExpression(String camundaExpression);
-
-  String getCamundaResultVariable();
-
-  void setCamundaResultVariable(String camundaResultVariable);
-
-  String getCamundaTopic();
-
-  void setCamundaTopic(String camundaTopic);
-
-  String getCamundaType();
-
-  void setCamundaType(String camundaType);
-
-  String getCamundaTaskPriority();
-
-  void setCamundaTaskPriority(String taskPriority);
 }

@@ -26,9 +26,4 @@ public interface ConditionExpression extends FormalExpression {
   String getType();
 
   void setType(String type);
-
-  /** camunda extensions */
-  String getCamundaResource();
-
-  void setCamundaResource(String camundaResource);
 }

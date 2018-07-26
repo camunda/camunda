@@ -21,14 +21,6 @@ import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_IMPLEME
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_MESSAGE_REF;
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_OPERATION_REF;
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_SEND_TASK;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_CLASS;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_DELEGATE_EXPRESSION;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_EXPRESSION;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_RESULT_VARIABLE;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_TASK_PRIORITY;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_TOPIC;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_TYPE;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_NS;
 
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.SendTaskBuilder;
@@ -53,16 +45,6 @@ public class SendTaskImpl extends TaskImpl implements SendTask {
   protected static Attribute<String> implementationAttribute;
   protected static AttributeReference<Message> messageRefAttribute;
   protected static AttributeReference<Operation> operationRefAttribute;
-
-  /** camunda extensions */
-  protected static Attribute<String> camundaClassAttribute;
-
-  protected static Attribute<String> camundaDelegateExpressionAttribute;
-  protected static Attribute<String> camundaExpressionAttribute;
-  protected static Attribute<String> camundaResultVariableAttribute;
-  protected static Attribute<String> camundaTopicAttribute;
-  protected static Attribute<String> camundaTypeAttribute;
-  protected static Attribute<String> camundaTaskPriorityAttribute;
 
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
@@ -95,34 +77,6 @@ public class SendTaskImpl extends TaskImpl implements SendTask {
             .stringAttribute(BPMN_ATTRIBUTE_OPERATION_REF)
             .qNameAttributeReference(Operation.class)
             .build();
-
-    /** camunda extensions */
-    camundaClassAttribute =
-        typeBuilder.stringAttribute(CAMUNDA_ATTRIBUTE_CLASS).namespace(CAMUNDA_NS).build();
-
-    camundaDelegateExpressionAttribute =
-        typeBuilder
-            .stringAttribute(CAMUNDA_ATTRIBUTE_DELEGATE_EXPRESSION)
-            .namespace(CAMUNDA_NS)
-            .build();
-
-    camundaExpressionAttribute =
-        typeBuilder.stringAttribute(CAMUNDA_ATTRIBUTE_EXPRESSION).namespace(CAMUNDA_NS).build();
-
-    camundaResultVariableAttribute =
-        typeBuilder
-            .stringAttribute(CAMUNDA_ATTRIBUTE_RESULT_VARIABLE)
-            .namespace(CAMUNDA_NS)
-            .build();
-
-    camundaTopicAttribute =
-        typeBuilder.stringAttribute(CAMUNDA_ATTRIBUTE_TOPIC).namespace(CAMUNDA_NS).build();
-
-    camundaTypeAttribute =
-        typeBuilder.stringAttribute(CAMUNDA_ATTRIBUTE_TYPE).namespace(CAMUNDA_NS).build();
-
-    camundaTaskPriorityAttribute =
-        typeBuilder.stringAttribute(CAMUNDA_ATTRIBUTE_TASK_PRIORITY).namespace(CAMUNDA_NS).build();
 
     typeBuilder.build();
   }
@@ -164,76 +118,5 @@ public class SendTaskImpl extends TaskImpl implements SendTask {
   @Override
   public void setOperation(Operation operation) {
     operationRefAttribute.setReferenceTargetElement(this, operation);
-  }
-
-  /** camunda extensions */
-  @Override
-  public String getCamundaClass() {
-    return camundaClassAttribute.getValue(this);
-  }
-
-  @Override
-  public void setCamundaClass(String camundaClass) {
-    camundaClassAttribute.setValue(this, camundaClass);
-  }
-
-  @Override
-  public String getCamundaDelegateExpression() {
-    return camundaDelegateExpressionAttribute.getValue(this);
-  }
-
-  @Override
-  public void setCamundaDelegateExpression(String camundaExpression) {
-    camundaDelegateExpressionAttribute.setValue(this, camundaExpression);
-  }
-
-  @Override
-  public String getCamundaExpression() {
-    return camundaExpressionAttribute.getValue(this);
-  }
-
-  @Override
-  public void setCamundaExpression(String camundaExpression) {
-    camundaExpressionAttribute.setValue(this, camundaExpression);
-  }
-
-  @Override
-  public String getCamundaResultVariable() {
-    return camundaResultVariableAttribute.getValue(this);
-  }
-
-  @Override
-  public void setCamundaResultVariable(String camundaResultVariable) {
-    camundaResultVariableAttribute.setValue(this, camundaResultVariable);
-  }
-
-  @Override
-  public String getCamundaTopic() {
-    return camundaTopicAttribute.getValue(this);
-  }
-
-  @Override
-  public void setCamundaTopic(String camundaTopic) {
-    camundaTopicAttribute.setValue(this, camundaTopic);
-  }
-
-  @Override
-  public String getCamundaType() {
-    return camundaTypeAttribute.getValue(this);
-  }
-
-  @Override
-  public void setCamundaType(String camundaType) {
-    camundaTypeAttribute.setValue(this, camundaType);
-  }
-
-  @Override
-  public String getCamundaTaskPriority() {
-    return camundaTaskPriorityAttribute.getValue(this);
-  }
-
-  @Override
-  public void setCamundaTaskPriority(String taskPriority) {
-    camundaTaskPriorityAttribute.setValue(this, taskPriority);
   }
 }

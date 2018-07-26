@@ -21,14 +21,6 @@ import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_IS_CLOS
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_IS_EXECUTABLE;
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_PROCESS_TYPE;
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_PROCESS;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_CANDIDATE_STARTER_GROUPS;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_CANDIDATE_STARTER_USERS;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_HISTORY_TIME_TO_LIVE;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_IS_STARTABLE_IN_TASKLIST;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_JOB_PRIORITY;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_TASK_PRIORITY;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_VERSION_TAG;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_NS;
 
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.ProcessType;
@@ -44,10 +36,8 @@ import io.zeebe.model.bpmn.instance.Process;
 import io.zeebe.model.bpmn.instance.Property;
 import io.zeebe.model.bpmn.instance.ResourceRole;
 import java.util.Collection;
-import java.util.List;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
-import org.camunda.bpm.model.xml.impl.util.StringUtil;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
 import org.camunda.bpm.model.xml.type.attribute.Attribute;
@@ -78,16 +68,6 @@ public class ProcessImpl extends CallableElementImpl implements Process {
   protected static ChildElementCollection<CorrelationSubscription>
       correlationSubscriptionCollection;
   protected static ElementReferenceCollection<Process, Supports> supportsCollection;
-
-  /** camunda extensions */
-  protected static Attribute<String> camundaCandidateStarterGroupsAttribute;
-
-  protected static Attribute<String> camundaCandidateStarterUsersAttribute;
-  protected static Attribute<String> camundaJobPriorityAttribute;
-  protected static Attribute<String> camundaTaskPriorityAttribute;
-  protected static Attribute<String> camundaHistoryTimeToLiveAttribute;
-  protected static Attribute<Boolean> camundaIsStartableInTasklistAttribute;
-  protected static Attribute<String> camundaVersionTagAttribute;
 
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
@@ -140,41 +120,6 @@ public class ProcessImpl extends CallableElementImpl implements Process {
             .elementCollection(Supports.class)
             .qNameElementReferenceCollection(Process.class)
             .build();
-
-    /** camunda extensions */
-    camundaCandidateStarterGroupsAttribute =
-        typeBuilder
-            .stringAttribute(CAMUNDA_ATTRIBUTE_CANDIDATE_STARTER_GROUPS)
-            .namespace(CAMUNDA_NS)
-            .build();
-
-    camundaCandidateStarterUsersAttribute =
-        typeBuilder
-            .stringAttribute(CAMUNDA_ATTRIBUTE_CANDIDATE_STARTER_USERS)
-            .namespace(CAMUNDA_NS)
-            .build();
-
-    camundaJobPriorityAttribute =
-        typeBuilder.stringAttribute(CAMUNDA_ATTRIBUTE_JOB_PRIORITY).namespace(CAMUNDA_NS).build();
-
-    camundaTaskPriorityAttribute =
-        typeBuilder.stringAttribute(CAMUNDA_ATTRIBUTE_TASK_PRIORITY).namespace(CAMUNDA_NS).build();
-
-    camundaHistoryTimeToLiveAttribute =
-        typeBuilder
-            .stringAttribute(CAMUNDA_ATTRIBUTE_HISTORY_TIME_TO_LIVE)
-            .namespace(CAMUNDA_NS)
-            .build();
-
-    camundaIsStartableInTasklistAttribute =
-        typeBuilder
-            .booleanAttribute(CAMUNDA_ATTRIBUTE_IS_STARTABLE_IN_TASKLIST)
-            .defaultValue(true)
-            .namespace(CAMUNDA_NS)
-            .build();
-
-    camundaVersionTagAttribute =
-        typeBuilder.stringAttribute(CAMUNDA_ATTRIBUTE_VERSION_TAG).namespace(CAMUNDA_NS).build();
 
     typeBuilder.build();
   }
@@ -271,116 +216,5 @@ public class ProcessImpl extends CallableElementImpl implements Process {
   @Override
   public Collection<Process> getSupports() {
     return supportsCollection.getReferenceTargetElements(this);
-  }
-
-  /** camunda extensions */
-  @Override
-  public String getCamundaCandidateStarterGroups() {
-    return camundaCandidateStarterGroupsAttribute.getValue(this);
-  }
-
-  @Override
-  public void setCamundaCandidateStarterGroups(String camundaCandidateStarterGroups) {
-    camundaCandidateStarterGroupsAttribute.setValue(this, camundaCandidateStarterGroups);
-  }
-
-  @Override
-  public List<String> getCamundaCandidateStarterGroupsList() {
-    final String groupsString = camundaCandidateStarterGroupsAttribute.getValue(this);
-    return StringUtil.splitCommaSeparatedList(groupsString);
-  }
-
-  @Override
-  public void setCamundaCandidateStarterGroupsList(List<String> camundaCandidateStarterGroupsList) {
-    final String candidateStarterGroups =
-        StringUtil.joinCommaSeparatedList(camundaCandidateStarterGroupsList);
-    camundaCandidateStarterGroupsAttribute.setValue(this, candidateStarterGroups);
-  }
-
-  @Override
-  public String getCamundaCandidateStarterUsers() {
-    return camundaCandidateStarterUsersAttribute.getValue(this);
-  }
-
-  @Override
-  public void setCamundaCandidateStarterUsers(String camundaCandidateStarterUsers) {
-    camundaCandidateStarterUsersAttribute.setValue(this, camundaCandidateStarterUsers);
-  }
-
-  @Override
-  public List<String> getCamundaCandidateStarterUsersList() {
-    final String candidateStarterUsers = camundaCandidateStarterUsersAttribute.getValue(this);
-    return StringUtil.splitCommaSeparatedList(candidateStarterUsers);
-  }
-
-  @Override
-  public void setCamundaCandidateStarterUsersList(List<String> camundaCandidateStarterUsersList) {
-    final String candidateStarterUsers =
-        StringUtil.joinCommaSeparatedList(camundaCandidateStarterUsersList);
-    camundaCandidateStarterUsersAttribute.setValue(this, candidateStarterUsers);
-  }
-
-  @Override
-  public String getCamundaJobPriority() {
-    return camundaJobPriorityAttribute.getValue(this);
-  }
-
-  @Override
-  public void setCamundaJobPriority(String jobPriority) {
-    camundaJobPriorityAttribute.setValue(this, jobPriority);
-  }
-
-  @Override
-  public String getCamundaTaskPriority() {
-    return camundaTaskPriorityAttribute.getValue(this);
-  }
-
-  @Override
-  public void setCamundaTaskPriority(String taskPriority) {
-    camundaTaskPriorityAttribute.setValue(this, taskPriority);
-  }
-
-  @Override
-  public Integer getCamundaHistoryTimeToLive() {
-    final String ttl = getCamundaHistoryTimeToLiveString();
-    if (ttl != null) {
-      return Integer.parseInt(ttl);
-    }
-    return null;
-  }
-
-  @Override
-  public void setCamundaHistoryTimeToLive(Integer historyTimeToLive) {
-    setCamundaHistoryTimeToLiveString(String.valueOf(historyTimeToLive));
-  }
-
-  @Override
-  public String getCamundaHistoryTimeToLiveString() {
-    return camundaHistoryTimeToLiveAttribute.getValue(this);
-  }
-
-  @Override
-  public void setCamundaHistoryTimeToLiveString(String historyTimeToLive) {
-    camundaHistoryTimeToLiveAttribute.setValue(this, historyTimeToLive);
-  }
-
-  @Override
-  public Boolean isCamundaStartableInTasklist() {
-    return camundaIsStartableInTasklistAttribute.getValue(this);
-  }
-
-  @Override
-  public void setCamundaIsStartableInTasklist(Boolean isStartableInTasklist) {
-    camundaIsStartableInTasklistAttribute.setValue(this, isStartableInTasklist);
-  }
-
-  @Override
-  public String getCamundaVersionTag() {
-    return camundaVersionTagAttribute.getValue(this);
-  }
-
-  @Override
-  public void setCamundaVersionTag(String versionTag) {
-    camundaVersionTagAttribute.setValue(this, versionTag);
   }
 }

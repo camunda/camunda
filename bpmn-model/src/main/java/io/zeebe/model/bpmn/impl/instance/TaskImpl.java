@@ -18,8 +18,6 @@ package io.zeebe.model.bpmn.impl.instance;
 
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_TASK;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_ATTRIBUTE_ASYNC;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_NS;
 
 import io.zeebe.model.bpmn.builder.AbstractTaskBuilder;
 import io.zeebe.model.bpmn.instance.Activity;
@@ -56,14 +54,6 @@ public class TaskImpl extends ActivityImpl implements Task {
                   }
                 });
 
-    /** camunda extensions */
-    camundaAsyncAttribute =
-        typeBuilder
-            .booleanAttribute(CAMUNDA_ATTRIBUTE_ASYNC)
-            .namespace(CAMUNDA_NS)
-            .defaultValue(false)
-            .build();
-
     typeBuilder.build();
   }
 
@@ -75,22 +65,6 @@ public class TaskImpl extends ActivityImpl implements Task {
   @SuppressWarnings("rawtypes")
   public AbstractTaskBuilder builder() {
     throw new ModelTypeException("No builder implemented.");
-  }
-
-  /** camunda extensions */
-
-  /** @deprecated use isCamundaAsyncBefore() instead. */
-  @Override
-  @Deprecated
-  public boolean isCamundaAsync() {
-    return camundaAsyncAttribute.getValue(this);
-  }
-
-  /** @deprecated use setCamundaAsyncBefore(isCamundaAsyncBefore) instead. */
-  @Override
-  @Deprecated
-  public void setCamundaAsync(boolean isCamundaAsync) {
-    camundaAsyncAttribute.setValue(this, isCamundaAsync);
   }
 
   @Override

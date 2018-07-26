@@ -67,11 +67,4 @@ public class ConditionalSequenceFlowTest {
     assertThat(conditionExpression2.getTextContent()).isEqualTo("${test}");
     assertThat(conditionExpression3.getTextContent()).isEmpty();
   }
-
-  @Test
-  public void shouldHaveResource() {
-    assertThat(conditionExpression1.getCamundaResource()).isNull();
-    assertThat(conditionExpression2.getCamundaResource()).isNull();
-    assertThat(conditionExpression3.getCamundaResource()).isEqualTo("test.groovy");
-  }
 }

@@ -16,9 +16,6 @@
 
 package io.zeebe.model.bpmn.instance;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.CAMUNDA_NS;
-
-import java.util.Arrays;
 import java.util.Collection;
 
 /** @author Sebastian Menski */
@@ -36,8 +33,6 @@ public class TaskTest extends BpmnModelElementInstanceTest {
 
   @Override
   public Collection<AttributeAssumption> getAttributesAssumptions() {
-    return Arrays.asList(
-        /** camunda extensions */
-        new AttributeAssumption(CAMUNDA_NS, "async", false, false, false));
+    return null;
   }
 }

@@ -35,33 +35,4 @@ public interface ServiceTask extends Task {
   Operation getOperation();
 
   void setOperation(Operation operation);
-
-  /** camunda extensions */
-  String getCamundaClass();
-
-  void setCamundaClass(String camundaClass);
-
-  String getCamundaDelegateExpression();
-
-  void setCamundaDelegateExpression(String camundaExpression);
-
-  String getCamundaExpression();
-
-  void setCamundaExpression(String camundaExpression);
-
-  String getCamundaResultVariable();
-
-  void setCamundaResultVariable(String camundaResultVariable);
-
-  String getCamundaType();
-
-  void setCamundaType(String camundaType);
-
-  String getCamundaTopic();
-
-  void setCamundaTopic(String camundaTopic);
-
-  String getCamundaTaskPriority();
-
-  void setCamundaTaskPriority(String taskPriority);
 }

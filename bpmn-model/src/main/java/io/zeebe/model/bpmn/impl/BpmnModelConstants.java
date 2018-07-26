@@ -47,12 +47,6 @@ public final class BpmnModelConstants {
 
   public static final String XPATH_NS = "http://www.w3.org/1999/XPath";
 
-  /** @deprecated use {@link #CAMUNDA_NS} */
-  @Deprecated public static final String ACTIVITI_NS = "http://activiti.org/bpmn";
-
-  /** CAMUNDA_NS namespace */
-  public static final String CAMUNDA_NS = "http://camunda.org/schema/1.0/bpmn";
-
   // elements ////////////////////////////////////////
 
   public static final String BPMN_ELEMENT_BASE_ELEMENT = "baseElement";
@@ -263,36 +257,6 @@ public final class BpmnModelConstants {
   public static final String BPMNDI_ELEMENT_BPMN_LABEL = "BPMNLabel";
   public static final String BPMNDI_ELEMENT_BPMN_EDGE = "BPMNEdge";
 
-  /** camunda extensions */
-  public static final String CAMUNDA_ELEMENT_CONNECTOR = "connector";
-
-  public static final String CAMUNDA_ELEMENT_CONNECTOR_ID = "connectorId";
-  public static final String CAMUNDA_ELEMENT_CONSTRAINT = "constraint";
-  public static final String CAMUNDA_ELEMENT_ENTRY = "entry";
-  public static final String CAMUNDA_ELEMENT_EXECUTION_LISTENER = "executionListener";
-  public static final String CAMUNDA_ELEMENT_EXPRESSION = "expression";
-  public static final String CAMUNDA_ELEMENT_FAILED_JOB_RETRY_TIME_CYCLE =
-      "failedJobRetryTimeCycle";
-  public static final String CAMUNDA_ELEMENT_FIELD = "field";
-  public static final String CAMUNDA_ELEMENT_FORM_DATA = "formData";
-  public static final String CAMUNDA_ELEMENT_FORM_FIELD = "formField";
-  public static final String CAMUNDA_ELEMENT_FORM_PROPERTY = "formProperty";
-  public static final String CAMUNDA_ELEMENT_IN = "in";
-  public static final String CAMUNDA_ELEMENT_INPUT_OUTPUT = "inputOutput";
-  public static final String CAMUNDA_ELEMENT_INPUT_PARAMETER = "inputParameter";
-  public static final String CAMUNDA_ELEMENT_LIST = "list";
-  public static final String CAMUNDA_ELEMENT_MAP = "map";
-  public static final String CAMUNDA_ELEMENT_OUTPUT_PARAMETER = "outputParameter";
-  public static final String CAMUNDA_ELEMENT_OUT = "out";
-  public static final String CAMUNDA_ELEMENT_POTENTIAL_STARTER = "potentialStarter";
-  public static final String CAMUNDA_ELEMENT_PROPERTIES = "properties";
-  public static final String CAMUNDA_ELEMENT_PROPERTY = "property";
-  public static final String CAMUNDA_ELEMENT_SCRIPT = "script";
-  public static final String CAMUNDA_ELEMENT_STRING = "string";
-  public static final String CAMUNDA_ELEMENT_TASK_LISTENER = "taskListener";
-  public static final String CAMUNDA_ELEMENT_VALIDATION = "validation";
-  public static final String CAMUNDA_ELEMENT_VALUE = "value";
-
   // attributes //////////////////////////////////////
 
   /** XSI attributes * */
@@ -412,80 +376,4 @@ public final class BpmnModelConstants {
   public static final String BPMNDI_ATTRIBUTE_CHOREOGRAPHY_ACTIVITY_SHAPE =
       "choreographyActivityShape";
   public static final String BPMNDI_ATTRIBUTE_LABEL_STYLE = "labelStyle";
-
-  /** camunda extensions */
-  public static final String CAMUNDA_ATTRIBUTE_ASSIGNEE = "assignee";
-
-  public static final String CAMUNDA_ATTRIBUTE_ASYNC = "async";
-  public static final String CAMUNDA_ATTRIBUTE_ASYNC_BEFORE = "asyncBefore";
-  public static final String CAMUNDA_ATTRIBUTE_ASYNC_AFTER = "asyncAfter";
-  public static final String CAMUNDA_ATTRIBUTE_BUSINESS_KEY = "businessKey";
-  public static final String CAMUNDA_ATTRIBUTE_CALLED_ELEMENT_BINDING = "calledElementBinding";
-  public static final String CAMUNDA_ATTRIBUTE_CALLED_ELEMENT_VERSION = "calledElementVersion";
-  public static final String CAMUNDA_ATTRIBUTE_CALLED_ELEMENT_VERSION_TAG =
-      "calledElementVersionTag";
-  public static final String CAMUNDA_ATTRIBUTE_CALLED_ELEMENT_TENANT_ID = "calledElementTenantId";
-  public static final String CAMUNDA_ATTRIBUTE_CANDIDATE_GROUPS = "candidateGroups";
-  public static final String CAMUNDA_ATTRIBUTE_CANDIDATE_STARTER_GROUPS = "candidateStarterGroups";
-  public static final String CAMUNDA_ATTRIBUTE_CANDIDATE_STARTER_USERS = "candidateStarterUsers";
-  public static final String CAMUNDA_ATTRIBUTE_CANDIDATE_USERS = "candidateUsers";
-  public static final String CAMUNDA_ATTRIBUTE_CLASS = "class";
-  public static final String CAMUNDA_ATTRIBUTE_COLLECTION = "collection";
-  public static final String CAMUNDA_ATTRIBUTE_CONFIG = "config";
-  public static final String CAMUNDA_ATTRIBUTE_DATE_PATTERN = "datePattern";
-  public static final String CAMUNDA_ATTRIBUTE_DECISION_REF = "decisionRef";
-  public static final String CAMUNDA_ATTRIBUTE_DECISION_REF_BINDING = "decisionRefBinding";
-  public static final String CAMUNDA_ATTRIBUTE_DECISION_REF_VERSION = "decisionRefVersion";
-  public static final String CAMUNDA_ATTRIBUTE_DECISION_REF_VERSION_TAG = "decisionRefVersionTag";
-  public static final String CAMUNDA_ATTRIBUTE_DECISION_REF_TENANT_ID = "decisionRefTenantId";
-  public static final String CAMUNDA_ATTRIBUTE_DEFAULT = "default";
-  public static final String CAMUNDA_ATTRIBUTE_DEFAULT_VALUE = "defaultValue";
-  public static final String CAMUNDA_ATTRIBUTE_DELEGATE_EXPRESSION = "delegateExpression";
-  public static final String CAMUNDA_ATTRIBUTE_DUE_DATE = "dueDate";
-  public static final String CAMUNDA_ATTRIBUTE_FOLLOW_UP_DATE = "followUpDate";
-  public static final String CAMUNDA_ATTRIBUTE_ELEMENT_VARIABLE = "elementVariable";
-  public static final String CAMUNDA_ATTRIBUTE_EVENT = "event";
-  public static final String CAMUNDA_ATTRIBUTE_ERROR_CODE_VARIABLE = "errorCodeVariable";
-  public static final String CAMUNDA_ATTRIBUTE_ERROR_MESSAGE_VARIABLE = "errorMessageVariable";
-  public static final String CAMUNDA_ATTRIBUTE_EXCLUSIVE = "exclusive";
-  public static final String CAMUNDA_ATTRIBUTE_EXPRESSION = "expression";
-  public static final String CAMUNDA_ATTRIBUTE_FORM_HANDLER_CLASS = "formHandlerClass";
-  public static final String CAMUNDA_ATTRIBUTE_FORM_KEY = "formKey";
-  public static final String CAMUNDA_ATTRIBUTE_ID = "id";
-  public static final String CAMUNDA_ATTRIBUTE_INITIATOR = "initiator";
-  public static final String CAMUNDA_ATTRIBUTE_JOB_PRIORITY = "jobPriority";
-  public static final String CAMUNDA_ATTRIBUTE_TASK_PRIORITY = "taskPriority";
-  public static final String CAMUNDA_ATTRIBUTE_KEY = "key";
-  public static final String CAMUNDA_ATTRIBUTE_LABEL = "label";
-  public static final String CAMUNDA_ATTRIBUTE_LOCAL = "local";
-  public static final String CAMUNDA_ATTRIBUTE_MAP_DECISION_RESULT = "mapDecisionResult";
-  public static final String CAMUNDA_ATTRIBUTE_NAME = "name";
-  public static final String CAMUNDA_ATTRIBUTE_PRIORITY = "priority";
-  public static final String CAMUNDA_ATTRIBUTE_READABLE = "readable";
-  public static final String CAMUNDA_ATTRIBUTE_REQUIRED = "required";
-  public static final String CAMUNDA_ATTRIBUTE_RESOURCE = "resource";
-  public static final String CAMUNDA_ATTRIBUTE_RESULT_VARIABLE = "resultVariable";
-  public static final String CAMUNDA_ATTRIBUTE_SCRIPT_FORMAT = "scriptFormat";
-  public static final String CAMUNDA_ATTRIBUTE_SOURCE = "source";
-  public static final String CAMUNDA_ATTRIBUTE_SOURCE_EXPRESSION = "sourceExpression";
-  public static final String CAMUNDA_ATTRIBUTE_STRING_VALUE = "stringValue";
-  public static final String CAMUNDA_ATTRIBUTE_TARGET = "target";
-  public static final String CAMUNDA_ATTRIBUTE_TOPIC = "topic";
-  public static final String CAMUNDA_ATTRIBUTE_TYPE = "type";
-  public static final String CAMUNDA_ATTRIBUTE_VALUE = "value";
-  public static final String CAMUNDA_ATTRIBUTE_VARIABLE = "variable";
-  public static final String CAMUNDA_ATTRIBUTE_VARIABLE_MAPPING_CLASS = "variableMappingClass";
-  public static final String CAMUNDA_ATTRIBUTE_VARIABLE_MAPPING_DELEGATE_EXPRESSION =
-      "variableMappingDelegateExpression";
-  public static final String CAMUNDA_ATTRIBUTE_VARIABLES = "variables";
-  public static final String CAMUNDA_ATTRIBUTE_WRITEABLE = "writeable";
-  public static final String CAMUNDA_ATTRIBUTE_CASE_REF = "caseRef";
-  public static final String CAMUNDA_ATTRIBUTE_CASE_BINDING = "caseBinding";
-  public static final String CAMUNDA_ATTRIBUTE_CASE_VERSION = "caseVersion";
-  public static final String CAMUNDA_ATTRIBUTE_CASE_TENANT_ID = "caseTenantId";
-  public static final String CAMUNDA_ATTRIBUTE_VARIABLE_NAME = "variableName";
-  public static final String CAMUNDA_ATTRIBUTE_VARIABLE_EVENTS = "variableEvents";
-  public static final String CAMUNDA_ATTRIBUTE_HISTORY_TIME_TO_LIVE = "historyTimeToLive";
-  public static final String CAMUNDA_ATTRIBUTE_IS_STARTABLE_IN_TASKLIST = "isStartableInTasklist";
-  public static final String CAMUNDA_ATTRIBUTE_VERSION_TAG = "versionTag";
 }
