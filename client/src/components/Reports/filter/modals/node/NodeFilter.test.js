@@ -115,6 +115,19 @@ it('should create preview of selected node', () => {
   expect(node.find('#modal_content')).toIncludeText(flowNode.name);
 });
 
+it('should show the id of the flow node if the name is null', () => {
+  const node = mount(<NodeFilter />);
+
+  const flowNode = {
+    name: null,
+    id: 'bar'
+  };
+
+  node.instance().toggleNode(flowNode);
+
+  expect(node.find('#modal_content')).toIncludeText(flowNode.id);
+});
+
 it('should create preview of selected nodes linked by or', () => {
   const node = mount(<NodeFilter />);
 

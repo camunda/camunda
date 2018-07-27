@@ -217,7 +217,9 @@ export default class FilterList extends React.Component {
                   return (
                     <span key={idx}>
                       <span className="FilterList__value">
-                        {flowNodes ? flowNodes[value.toString()] : value.toString()}
+                        {flowNodes
+                          ? flowNodes[value.toString()] || value.toString()
+                          : value.toString()}
                       </span>
                       {idx < values.length - 1 && this.createOperator('or')}
                     </span>

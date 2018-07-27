@@ -175,6 +175,23 @@ it('should display flow node name instead of id after the names are loaded', asy
   expect(node).toIncludeText('Executed Flow Node is flow Node hello');
 });
 
+it('should display the node id if the name is null for Exectuted flow Node', async () => {
+  const data = [
+    {
+      type: 'executedFlowNodes',
+      data: {
+        operator: 'in',
+        values: ['flowNode']
+      }
+    }
+  ];
+
+  const node = await mount(<FilterList id={'qwe'} data={data} openEditFilterModal={jest.fn()} />);
+  node.setState({flowNodeNames: {flowNode: null}});
+
+  expect(node).toIncludeText('Executed Flow Node is flowNode');
+});
+
 it('should display a flow node filter with multiple selected nodes', () => {
   const data = [
     {

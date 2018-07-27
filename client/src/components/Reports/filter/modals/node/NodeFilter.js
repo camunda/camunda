@@ -54,7 +54,9 @@ export default class NodeFilter extends React.Component {
         <li key={idx} className="NodeFilter__preview-item">
           <span key={idx}>
             {' '}
-            <span className="NodeFilter__preview-item-value">{selectedNode.name}</span>{' '}
+            <span className="NodeFilter__preview-item-value">
+              {selectedNode.name || selectedNode.id}
+            </span>{' '}
             {idx < this.state.selectedNodes.length - 1 && this.createOperator('or')}
           </span>
         </li>
