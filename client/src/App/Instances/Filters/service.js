@@ -1,3 +1,5 @@
+import {isValid, endOfDay, startOfDay, addMinutes, format} from 'date-fns';
+
 export const FIELDS = {
   errorMessage: {name: 'errorMessage', placeholder: 'Error Message'},
   ids: {name: 'ids', placeholder: 'Instance Id(s) separated by space or comma'},
@@ -27,7 +29,27 @@ export function addAllVersionsOption(options = []) {
   return options;
 }
 
-const parseDate = value => value;
+const parseDate = value => {
+  let date = new Date(value);
+  const isValidDate = isValid(date);
+  let startDateAfter, startDateBefore;
+
+  if (!isValidDate) {
+    return null;
+  }
+
+  // temporary condition to check for presence of time in user input
+  // as we can't decide based on a string
+  const hasTime = value.indexOf(':') !== -1;
+
+  startDateAfter = hasTime ? date : startOfDay(date);
+  startDateBefore = hasTime ? addMinutes(date, 1) : endOfDay(date);
+
+  return {
+    startDateAfter: format(startDateAfter),
+    startDateBefore: format(startDateBefore)
+  };
+};
 
 export const fieldParser = {
   errorMessage: value => (value.length === 0 ? null : value),
