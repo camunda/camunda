@@ -44,7 +44,7 @@ void integrationTestSteps(String engineVersion = 'latest') {
     installDockerBinaries()
     sh ("""echo '${CAM_REGISTRY_PSW}' | docker login -u ${CAM_REGISTRY_USR} registry.camunda.cloud --password-stdin""")
     setupPermissionsForHostDirs('backend')
-    runMaven("-T\$LIMITS_CPU -Dskip.fe.build -Pproduction,it,engine-${engineVersion} -pl backend -am install")
+    runMaven("install -Pproduction,it,engine-${engineVersion} -Dskip.fe.build -pl backend -am -T\$LIMITS_CPU")
   }
 }
 
@@ -147,7 +147,7 @@ pipeline {
           installDockerBinaries()
           setupPermissionsForHostDirs('upgrade')
 
-          runMaven('-Dskip.fe.build -Dskip.docker -DskipTests -Pproduction install -T\$LIMITS_CPU')
+          runMaven('install -Pproduction -Dskip.fe.build -Dskip.docker -DskipTests -T\$LIMITS_CPU')
         }
       }
     }
@@ -156,7 +156,7 @@ pipeline {
         stage('Backend') {
           steps {
             container('maven') {
-              runMaven('-Dskip.fe.build test -T\$LIMITS_CPU')
+              runMaven('test -Dskip.fe.build -T\$LIMITS_CPU')
             }
           }
           post {
@@ -266,7 +266,7 @@ pipeline {
     stage('RESTAPI Docs') {
       steps {
         container('maven') {
-          runMaven('-f backend/pom.xml -DskipTests -Pdocs,production clean package')
+          runMaven('clean package -Pdocs,production -DskipTests -f backend/pom.xml')
         }
       }
       post {
@@ -283,7 +283,7 @@ pipeline {
           }
           steps {
             container('maven') {
-              runMaven('-Pproduction -Dskip.fe.build -DskipTests deploy')
+              runMaven('deploy -Pproduction -Dskip.fe.build -DskipTests')
             }
           }
         }
