@@ -120,8 +120,6 @@ import:
       isEnabled: true
   #The name of the import index type.
   indexType: import-index
-  #The name of the id set based import index type
-  scrollImportIndexType: scroll-import-index
   #States how often the import index should be stored to Elasticsearch.
   importIndexStorageIntervalInSec: 10
   writer:
