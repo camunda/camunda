@@ -115,15 +115,13 @@ describe('Filters', () => {
     it('should render an errorMessage field', () => {
       // given
       const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
-      const errorMessageNode = node.find({name: 'errorMessage'});
+      const field = node.find({name: 'errorMessage'});
 
       // then
-      expect(errorMessageNode.length).toEqual(1);
-      expect(errorMessageNode.type()).toEqual(TextInput);
-      expect(errorMessageNode.props().name).toEqual('errorMessage');
-      expect(errorMessageNode.props().onBlur).toEqual(
-        node.instance().handleFieldChange
-      );
+      expect(field.length).toEqual(1);
+      expect(field.type()).toEqual(TextInput);
+      expect(field.props().name).toEqual('errorMessage');
+      expect(field.props().onBlur).toEqual(node.instance().handleFieldChange);
     });
 
     it('should call onFilterChange with the right error message', () => {
@@ -160,15 +158,13 @@ describe('Filters', () => {
     it('should render an instanceIds field', () => {
       // given
       const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
-      const instanceIdsNode = node.find({name: 'ids'});
+      const field = node.find({name: 'ids'});
 
       // then
-      expect(instanceIdsNode.length).toEqual(1);
-      expect(instanceIdsNode.type()).toEqual(Textarea);
-      expect(instanceIdsNode.props().name).toEqual('ids');
-      expect(instanceIdsNode.props().onBlur).toEqual(
-        node.instance().handleFieldChange
-      );
+      expect(field.length).toEqual(1);
+      expect(field.type()).toEqual(Textarea);
+      expect(field.props().name).toEqual('ids');
+      expect(field.props().onBlur).toEqual(node.instance().handleFieldChange);
     });
 
     it('should call onFilterChange with the right instance ids', () => {
@@ -209,15 +205,15 @@ describe('Filters', () => {
     it('should render an workflowName select field', () => {
       // given
       const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
-      const workflowNameNode = node.find({name: 'workflowName'});
+      const field = node.find({name: 'workflowName'});
 
       // then
-      expect(workflowNameNode.length).toEqual(1);
-      expect(workflowNameNode.type()).toEqual(Select);
-      expect(workflowNameNode.props().name).toEqual('workflowName');
-      expect(workflowNameNode.props().value).toEqual('');
-      expect(workflowNameNode.props().placeholder).toEqual('Workflow');
-      expect(workflowNameNode.props().onChange).toEqual(
+      expect(field.length).toEqual(1);
+      expect(field.type()).toEqual(Select);
+      expect(field.props().name).toEqual('workflowName');
+      expect(field.props().value).toEqual('');
+      expect(field.props().placeholder).toEqual('Workflow');
+      expect(field.props().onChange).toEqual(
         node.instance().handleWorkflowNameChange
       );
     });
@@ -256,17 +252,15 @@ describe('Filters', () => {
     it('should exist and be disabled by default', () => {
       // given
       const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
-      const workflowVersionNode = node.find({name: 'workflowVersion'});
+      const field = node.find({name: 'workflowVersion'});
 
       // then
-      expect(workflowVersionNode.length).toEqual(1);
-      expect(workflowVersionNode.type()).toEqual(Select);
-      expect(workflowVersionNode.props().name).toEqual('workflowVersion');
-      expect(workflowVersionNode.props().value).toEqual('');
-      expect(workflowVersionNode.props().placeholder).toEqual(
-        'Workflow Version'
-      );
-      expect(workflowVersionNode.props().onChange).toEqual(
+      expect(field.length).toEqual(1);
+      expect(field.type()).toEqual(Select);
+      expect(field.props().name).toEqual('workflowVersion');
+      expect(field.props().value).toEqual('');
+      expect(field.props().placeholder).toEqual('Workflow Version');
+      expect(field.props().onChange).toEqual(
         node.instance().handleWorkflowVersionChange
       );
     });
@@ -302,6 +296,8 @@ describe('Filters', () => {
       expect(options[0].label).toEqual('Version 3');
       expect(options[options.length - 1].value).toEqual('all');
       expect(options[options.length - 1].label).toEqual('All versions');
+      // groupedWorkflowsMock.workflows.length + 1 (All versions)
+      expect(options.length).toEqual(4);
     });
 
     it('should not allow the selection of the first option', async () => {
@@ -342,6 +338,61 @@ describe('Filters', () => {
       // then
       // should keep the last version option selected
       expect(node.find({name: 'workflowVersion'}).props().value).toEqual('');
+    });
+  });
+
+  describe('flowNode filter', () => {
+    it('should exist and be disabled by default', () => {
+      // given
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const field = node.find({name: 'flowNode'});
+
+      // then
+      expect(field.length).toEqual(1);
+      expect(field.type()).toEqual(Select);
+      expect(field.props().name).toEqual('flowNode');
+      expect(field.props().value).toEqual('');
+      expect(field.props().placeholder).toEqual('Flow Node');
+      expect(field.props().onChange).toEqual(
+        node.instance().handleFlowNodeChange
+      );
+    });
+
+    it('should be disabled if all versions are selected', async () => {
+      const value = groupedWorkflowsMock[0].bpmnProcessId;
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+
+      //when
+      await flushPromises();
+      // select workflowName, the version is set to the latest
+      node.instance().handleWorkflowNameChange({target: {value: value}});
+      node.update();
+
+      node.instance().handleWorkflowVersionChange({target: {value: 'all'}});
+      node.update();
+
+      // then
+      // should keep the last version option selected
+      expect(node.find({name: 'flowNode'}).props().disabled).toEqual(true);
+    });
+
+    it('should not be disabled when a version is selected', async () => {
+      const value = groupedWorkflowsMock[0].bpmnProcessId;
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+
+      //when
+      await flushPromises();
+      // select workflowName, the version is set to the latest
+      node.instance().handleWorkflowNameChange({target: {value: value}});
+      node.update();
+
+      node.instance().handleWorkflowVersionChange({
+        target: {value: groupedWorkflowsMock[0].workflows[0].id}
+      });
+      node.update();
+
+      // then
+      expect(node.find({name: 'flowNode'}).props().disabled).toEqual(false);
     });
   });
 });

@@ -16,15 +16,9 @@ import {
   parseWorkflowNames,
   parseWorkflowVersions,
   addAllVersionsOption,
-  fieldParser
+  fieldParser,
+  FIELDS
 } from './service';
-
-const FIELDS = {
-  errorMessage: {name: 'errorMessage', placeholder: 'Error Message'},
-  ids: {name: 'ids', placeholder: 'Instance Id(s) separated by space or comma'},
-  workflowName: {name: 'workflowName', placeholder: 'Workflow'},
-  workflowVersion: {name: 'workflowVersion', placeholder: 'Workflow Version'}
-};
 
 export default class Filters extends React.Component {
   static propTypes = {
@@ -37,7 +31,8 @@ export default class Filters extends React.Component {
   state = {
     groupedWorkflows: [],
     currentWorkflow: {},
-    currentWorkflowVersion: ''
+    currentWorkflowVersion: '',
+    currentWorkflowNode: ''
   };
 
   componentDidMount = async () => {
@@ -82,11 +77,16 @@ export default class Filters extends React.Component {
     });
   };
 
+  handleFlowNodeChange = event => {
+    console.log(event.target.value);
+  };
+
   render() {
     const {active, incidents, canceled, completed} = this.props.filter;
     const workflowVersions = addAllVersionsOption(
       parseWorkflowVersions(this.state.currentWorkflow.workflows)
     );
+
     return (
       <Panel isRounded>
         <Panel.Header isRounded>Filters</Panel.Header>
@@ -124,6 +124,19 @@ export default class Filters extends React.Component {
                 name={FIELDS.errorMessage.name}
                 placeholder={FIELDS.errorMessage.placeholder}
                 onBlur={this.handleFieldChange}
+              />
+            </Styled.Field>
+            <Styled.Field>
+              <Select
+                value={this.state.currentWorkflowNode}
+                disabled={
+                  this.state.currentWorkflowVersion === '' ||
+                  this.state.currentWorkflowVersion === 'all'
+                }
+                name={FIELDS.flowNode.name}
+                placeholder={FIELDS.flowNode.placeholder}
+                options={[]}
+                onChange={this.handleFlowNodeChange}
               />
             </Styled.Field>
             <CheckboxGroup
