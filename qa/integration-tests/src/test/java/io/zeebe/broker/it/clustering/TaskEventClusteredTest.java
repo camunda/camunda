@@ -17,13 +17,17 @@ package io.zeebe.broker.it.clustering;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.broker.client.ZeebeClient;
+import io.zeebe.broker.client.api.commands.BrokerInfo;
+import io.zeebe.broker.client.api.commands.Topic;
+import io.zeebe.broker.client.api.commands.Topics;
+import io.zeebe.broker.client.api.events.JobEvent;
+import io.zeebe.broker.client.api.events.JobState;
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.commands.*;
-import io.zeebe.client.api.events.JobEvent;
-import io.zeebe.client.api.events.JobState;
 import io.zeebe.test.util.AutoCloseableRule;
-import org.junit.*;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class TaskEventClusteredTest {

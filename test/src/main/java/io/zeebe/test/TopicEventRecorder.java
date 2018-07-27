@@ -15,11 +15,11 @@
  */
 package io.zeebe.test;
 
-import io.zeebe.client.api.clients.TopicClient;
-import io.zeebe.client.api.events.JobEvent;
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
-import io.zeebe.client.api.events.WorkflowInstanceState;
-import io.zeebe.client.api.subscription.TopicSubscription;
+import io.zeebe.broker.client.api.clients.TopicClient;
+import io.zeebe.broker.client.api.events.JobEvent;
+import io.zeebe.broker.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.broker.client.api.events.WorkflowInstanceState;
+import io.zeebe.broker.client.api.subscription.TopicSubscription;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;

@@ -15,11 +15,11 @@
  */
 package io.zeebe.example.workflow;
 
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.ZeebeClientBuilder;
-import io.zeebe.client.api.clients.WorkflowClient;
-import io.zeebe.client.api.commands.WorkflowResource;
-import io.zeebe.client.api.commands.Workflows;
+import io.zeebe.broker.client.ZeebeClient;
+import io.zeebe.broker.client.ZeebeClientBuilder;
+import io.zeebe.broker.client.api.clients.WorkflowClient;
+import io.zeebe.broker.client.api.commands.WorkflowResource;
+import io.zeebe.broker.client.api.commands.Workflows;
 
 public class DeploymentViewer {
 

@@ -18,16 +18,18 @@ package io.zeebe.broker.it.clustering;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 
+import io.zeebe.broker.client.api.commands.BrokerInfo;
+import io.zeebe.broker.client.api.events.JobEvent;
+import io.zeebe.broker.client.api.events.JobState;
+import io.zeebe.broker.client.api.subscription.JobWorker;
+import io.zeebe.broker.client.api.subscription.TopicSubscription;
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.client.api.commands.BrokerInfo;
-import io.zeebe.client.api.events.JobEvent;
-import io.zeebe.client.api.events.JobState;
-import io.zeebe.client.api.subscription.JobWorker;
-import io.zeebe.client.api.subscription.TopicSubscription;
 import io.zeebe.test.util.AutoCloseableRule;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.junit.*;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 

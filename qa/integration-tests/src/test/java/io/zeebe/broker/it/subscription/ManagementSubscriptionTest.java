@@ -18,21 +18,36 @@ package io.zeebe.broker.it.subscription;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.broker.client.ZeebeClient;
+import io.zeebe.broker.client.api.commands.DeploymentCommand;
+import io.zeebe.broker.client.api.commands.DeploymentCommandName;
+import io.zeebe.broker.client.api.commands.DeploymentResource;
+import io.zeebe.broker.client.api.commands.ResourceType;
+import io.zeebe.broker.client.api.commands.TopicCommand;
+import io.zeebe.broker.client.api.commands.TopicCommandName;
+import io.zeebe.broker.client.api.commands.Workflow;
+import io.zeebe.broker.client.api.events.DeploymentEvent;
+import io.zeebe.broker.client.api.events.DeploymentState;
+import io.zeebe.broker.client.api.events.TopicEvent;
+import io.zeebe.broker.client.api.events.TopicState;
+import io.zeebe.broker.client.api.record.Record;
+import io.zeebe.broker.client.api.record.RecordType;
+import io.zeebe.broker.client.api.record.ValueType;
+import io.zeebe.broker.client.api.subscription.TopicSubscription;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.commands.*;
-import io.zeebe.client.api.events.*;
-import io.zeebe.client.api.record.*;
-import io.zeebe.client.api.subscription.TopicSubscription;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.*;
-import org.junit.rules.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
 
 public class ManagementSubscriptionTest {
   private static final WorkflowDefinition WORKFLOW =

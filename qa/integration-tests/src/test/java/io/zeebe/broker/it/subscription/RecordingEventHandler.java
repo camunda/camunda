@@ -17,10 +17,10 @@ package io.zeebe.broker.it.subscription;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.client.api.record.Record;
-import io.zeebe.client.api.record.RecordMetadata;
-import io.zeebe.client.api.record.ValueType;
-import io.zeebe.client.api.subscription.RecordHandler;
+import io.zeebe.broker.client.api.record.Record;
+import io.zeebe.broker.client.api.record.RecordMetadata;
+import io.zeebe.broker.client.api.record.ValueType;
+import io.zeebe.broker.client.api.subscription.RecordHandler;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;

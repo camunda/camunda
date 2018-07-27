@@ -23,8 +23,8 @@ import static io.zeebe.broker.it.clustering.ClusteringRule.BROKER_4_CLIENT_ADDRE
 import static io.zeebe.broker.it.clustering.ClusteringRule.BROKER_4_TOML;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.broker.client.api.commands.BrokerInfo;
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.client.api.commands.BrokerInfo;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
 import java.util.List;

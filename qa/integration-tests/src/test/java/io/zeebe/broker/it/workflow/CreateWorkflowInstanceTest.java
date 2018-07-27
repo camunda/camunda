@@ -16,16 +16,18 @@
 package io.zeebe.broker.it.workflow;
 
 import static io.zeebe.test.util.TestUtil.waitUntil;
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.Assertions.entry;
 
+import io.zeebe.broker.client.api.events.DeploymentEvent;
+import io.zeebe.broker.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.broker.client.api.events.WorkflowInstanceState;
+import io.zeebe.broker.client.cmd.BrokerErrorException;
+import io.zeebe.broker.client.cmd.ClientCommandRejectedException;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
-import io.zeebe.client.api.events.DeploymentEvent;
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
-import io.zeebe.client.api.events.WorkflowInstanceState;
-import io.zeebe.client.cmd.BrokerErrorException;
-import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.model.bpmn.Bpmn;
 import java.util.Collections;
 import org.junit.Before;

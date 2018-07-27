@@ -15,24 +15,26 @@
  */
 package io.zeebe.broker.it.job;
 
-import static io.zeebe.broker.it.util.TopicEventRecorder.*;
+import static io.zeebe.broker.it.util.TopicEventRecorder.jobCommand;
+import static io.zeebe.broker.it.util.TopicEventRecorder.jobRetries;
+import static io.zeebe.broker.it.util.TopicEventRecorder.state;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.broker.client.ZeebeClient;
+import io.zeebe.broker.client.api.clients.JobClient;
+import io.zeebe.broker.client.api.commands.JobCommand;
+import io.zeebe.broker.client.api.commands.JobCommandName;
+import io.zeebe.broker.client.api.commands.Topic;
+import io.zeebe.broker.client.api.commands.Topics;
+import io.zeebe.broker.client.api.events.JobEvent;
+import io.zeebe.broker.client.api.events.JobState;
+import io.zeebe.broker.client.api.subscription.JobWorker;
+import io.zeebe.broker.client.impl.job.CreateJobCommandImpl;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.clients.JobClient;
-import io.zeebe.client.api.commands.JobCommand;
-import io.zeebe.client.api.commands.JobCommandName;
-import io.zeebe.client.api.commands.Topic;
-import io.zeebe.client.api.commands.Topics;
-import io.zeebe.client.api.events.JobEvent;
-import io.zeebe.client.api.events.JobState;
-import io.zeebe.client.api.subscription.JobWorker;
-import io.zeebe.client.impl.job.CreateJobCommandImpl;
 import io.zeebe.test.util.TestUtil;
 import java.time.Duration;
 import java.time.Instant;

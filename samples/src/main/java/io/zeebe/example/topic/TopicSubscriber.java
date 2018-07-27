@@ -15,11 +15,11 @@
  */
 package io.zeebe.example.topic;
 
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.ZeebeClientBuilder;
-import io.zeebe.client.api.clients.TopicClient;
-import io.zeebe.client.api.record.RecordMetadata;
-import io.zeebe.client.api.subscription.TopicSubscription;
+import io.zeebe.broker.client.ZeebeClient;
+import io.zeebe.broker.client.ZeebeClientBuilder;
+import io.zeebe.broker.client.api.clients.TopicClient;
+import io.zeebe.broker.client.api.record.RecordMetadata;
+import io.zeebe.broker.client.api.subscription.TopicSubscription;
 import java.util.Scanner;
 
 public class TopicSubscriber {

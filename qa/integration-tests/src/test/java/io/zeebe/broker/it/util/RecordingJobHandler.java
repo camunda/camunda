@@ -15,10 +15,12 @@
  */
 package io.zeebe.broker.it.util;
 
-import io.zeebe.client.api.clients.JobClient;
-import io.zeebe.client.api.events.JobEvent;
-import io.zeebe.client.api.subscription.JobHandler;
-import java.util.*;
+import io.zeebe.broker.client.api.clients.JobClient;
+import io.zeebe.broker.client.api.events.JobEvent;
+import io.zeebe.broker.client.api.subscription.JobHandler;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class RecordingJobHandler implements JobHandler {
   protected List<JobEvent> handledJobs = Collections.synchronizedList(new ArrayList<>());

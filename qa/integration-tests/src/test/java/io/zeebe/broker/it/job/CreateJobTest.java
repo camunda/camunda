@@ -19,18 +19,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.entry;
 
+import io.zeebe.broker.client.ClientProperties;
+import io.zeebe.broker.client.api.clients.JobClient;
+import io.zeebe.broker.client.api.events.JobEvent;
+import io.zeebe.broker.client.api.events.JobState;
+import io.zeebe.broker.client.cmd.BrokerErrorException;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.client.ClientProperties;
-import io.zeebe.client.api.clients.JobClient;
-import io.zeebe.client.api.events.JobEvent;
-import io.zeebe.client.api.events.JobState;
-import io.zeebe.client.cmd.BrokerErrorException;
 import java.util.Collections;
 import java.util.Properties;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.*;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
 
 public class CreateJobTest {
 

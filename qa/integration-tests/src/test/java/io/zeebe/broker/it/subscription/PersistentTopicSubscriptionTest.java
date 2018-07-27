@@ -17,10 +17,10 @@ package io.zeebe.broker.it.subscription;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.broker.client.api.clients.TopicClient;
+import io.zeebe.broker.client.api.subscription.TopicSubscription;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.client.api.clients.TopicClient;
-import io.zeebe.client.api.subscription.TopicSubscription;
 import io.zeebe.test.util.TestUtil;
 import org.junit.Before;
 import org.junit.Rule;

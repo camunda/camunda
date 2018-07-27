@@ -18,12 +18,14 @@ package io.zeebe.broker.it.workflow;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.broker.client.api.commands.DeploymentResource;
+import io.zeebe.broker.client.api.commands.ResourceType;
+import io.zeebe.broker.client.api.commands.Workflow;
+import io.zeebe.broker.client.api.events.DeploymentEvent;
+import io.zeebe.broker.client.cmd.ClientCommandRejectedException;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
-import io.zeebe.client.api.commands.*;
-import io.zeebe.client.api.events.DeploymentEvent;
-import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
