@@ -71,10 +71,13 @@ export default class Filters extends React.Component {
 
   handleFieldChange = event => {
     const {value, name} = event.target;
+    const parsedValue = fieldParser[name](value);
+    const filterValue =
+      name === 'startDate' || name === 'endDate'
+        ? {...parsedValue} // value is an object, nr: startDate: {startDateAfter: ..., startDateBefore: ...}
+        : {[name]: parsedValue}; // value is an string
 
-    this.props.onFilterChange({
-      [name]: fieldParser[name](value)
-    });
+    this.props.onFilterChange(filterValue);
   };
 
   handleFlowNodeChange = event => {
