@@ -137,6 +137,8 @@ export const view = {
   }
 };
 
+const getDataKeys = data => Object.keys(typeof data === 'object' ? data : {...data});
+
 /**
  * Retrieves the first level subobject form the configuration that corresponds to the entry. This does not fetch any submenu entries.
  *
@@ -147,9 +149,12 @@ const getObject = (config, entry) => {
   if (!entry || !config) {
     return;
   }
-  for (const key of Object.keys(config)) {
+  const keys = Object.keys(config);
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
     const {data} = config[key];
-    const dataKeys = Object.keys(data);
+
+    const dataKeys = getDataKeys(data);
     if (
       dataKeys.every(
         prop =>
@@ -177,7 +182,7 @@ export const getLabelFor = (config, entry) => {
       return `${label}: ${entry.value.name}`;
     }
 
-    const dataKeys = Object.keys(data);
+    const dataKeys = getDataKeys(data);
 
     const submenu = dataKeys.find(key => Array.isArray(data[key]));
     if (submenu) {
@@ -189,7 +194,7 @@ export const getLabelFor = (config, entry) => {
 
 const getNextObject = (view, targetView) => {
   const {data} = view;
-  const dataKeys = Object.keys(data);
+  const dataKeys = getDataKeys(data);
 
   let next = view.next;
 

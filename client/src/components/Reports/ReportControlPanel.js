@@ -13,6 +13,8 @@ import './ReportControlPanel.css';
 const {view, groupBy, visualization, getLabelFor, isAllowed, getNext} = reportConfig;
 const groupByVariablePageSize = 5;
 
+const getDataKeys = data => Object.keys(typeof data === 'object' ? data : {...data});
+
 export default class ReportControlPanel extends React.Component {
   constructor(props) {
     super(props);
@@ -176,7 +178,7 @@ export default class ReportControlPanel extends React.Component {
         {Object.keys(config).map(key => {
           const {label, data} = config[key];
 
-          const submenu = Object.keys(data).find(key => Array.isArray(data[key]));
+          const submenu = getDataKeys(data).find(key => Array.isArray(data[key]));
           if (submenu) {
             return this.renderSubmenu(submenu, type, data, label, key);
           } else {
@@ -365,7 +367,7 @@ export default class ReportControlPanel extends React.Component {
 function isChecked(data, current) {
   return (
     current &&
-    Object.keys(data).every(
+    getDataKeys(data).every(
       prop =>
         JSON.stringify(current[prop]) === JSON.stringify(data[prop]) || Array.isArray(data[prop])
     )
