@@ -152,7 +152,7 @@ export default withErrorHandling(
       const processDefinitionWasUpdated =
         updates.processDefinitionKey || updates.processDefinitionVersion;
       if (processDefinitionWasUpdated) {
-        data.configuration = {...data.configuration, targetValue: {}};
+        data.configuration = {...data.configuration, excludedColumns: [], targetValue: {}};
         data.filter = data.filter.filter(
           ({type}) => type !== 'executedFlowNodes' && type !== 'variable'
         );
