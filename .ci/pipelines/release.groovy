@@ -36,6 +36,36 @@ void buildNotification(String buildStatus) {
   emailext subject: subject, body: body, recipientProviders: recipients
 }
 
+void runRelease(params) {
+  def pushChanges = 'true'
+  def skipDeploy = 'false'
+
+  if (!params.PUSH_CHANGES) {
+    pushChanges = 'false'
+    skipDeploy='true'
+  }
+
+  sh ("""
+    mvn -DpushChanges=${pushChanges} -DskipTests -Prelease,production,engine-latest release:prepare release:perform \
+    -Dtag=${params.RELEASE_VERSION} -DreleaseVersion=${params.RELEASE_VERSION} -DdevelopmentVersion=${params.DEVELOPMENT_VERSION} \
+    --settings=settings.xml '-Darguments=--settings=settings.xml -DskipTests -DskipNexusStagingDeployMojo=${skipDeploy} -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn' \
+    -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+  """)
+
+
+  sh ("""
+    # auto-update previousVersion property
+    if [ ! -z "\${PREVIOUS_VERSION}" ]; then
+      sed -i "s/project.previousVersion>.*</project.previousVersion>${params.RELEASE_VERSION}</g" pom.xml
+      git add pom.xml
+      git commit -m "chore(release): update previousVersion to new release version ${params.RELEASE_VERSION}"
+      if [ "${pushChanges}" == "true" ]; then
+        git push origin ${params.BRANCH}
+      fi
+    fi
+  """)
+}
+
 static String mavenDindAgent() {
   return """
 apiVersion: v1
@@ -140,27 +170,12 @@ pipeline {
     }
     stage('Release') {
       environment {
-        PREVIOUS_VERSION = calculatePreviousVersion(params.RELEASE_VERSION)
+        PREVIOUS_VERSION = "${calculatePreviousVersion(params.RELEASE_VERSION)}"
       }
       steps {
         container('maven') {
           sshagent(['camunda-jenkins-github-ssh']) {
-            sh ("""
-              mvn -DskipTests -Prelease,production,engine-latest release:prepare release:perform \
-              -Dtag=${params.RELEASE_VERSION} -DreleaseVersion=${params.RELEASE_VERSION} -DdevelopmentVersion=${params.DEVELOPMENT_VERSION} \
-              --settings=settings.xml '-Darguments=--settings=settings.xml -DskipTests -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn' \
-              -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
-            """)
-
-            sh ("""
-              # auto-update previousVersion property
-              if [ ! -z "\${PREVIOUS_VERSION}" ]; then
-                sed -i "s/project.previousVersion>.*</project.previousVersion>${params.RELEASE_VERSION}</g" pom.xml
-                git add pom.xml
-                git commit -m "chore(release): update previousVersion to new release version ${params.RELEASE_VERSION}"
-                git push origin ${params.BRANCH}
-              fi
-            """)
+            runRelease(params)
           }
         }
       }
@@ -174,6 +189,9 @@ pipeline {
       }
     }
     stage('Upload camunda.org') {
+      when {
+        expression { params.PUSH_CHANGES == true }
+      }
       steps {
         container('jnlp') {
           sshagent(['jenkins-camunda-web']) {
@@ -188,6 +206,9 @@ pipeline {
       }
     }
     stage('Docker Image') {
+      when {
+        expression { params.PUSH_CHANGES == true }
+      }
       environment {
         VERSION = "${params.RELEASE_VERSION}"
         GCR_REGISTRY = credentials('docker-registry-ci3')
