@@ -53,16 +53,16 @@ public class ClusteringRule extends ExternalResource {
   public static final int SYSTEM_TOPIC_REPLICATION_FACTOR = 3;
 
   public static final String BROKER_1_TOML = "zeebe.cluster.1.cfg.toml";
-  public static final SocketAddress BROKER_1_CLIENT_ADDRESS = new SocketAddress("0.0.0.0", 51015);
+  public static final SocketAddress BROKER_1_CLIENT_ADDRESS = new SocketAddress("0.0.0.0", 26501);
 
   public static final String BROKER_2_TOML = "zeebe.cluster.2.cfg.toml";
-  public static final SocketAddress BROKER_2_CLIENT_ADDRESS = new SocketAddress("0.0.0.0", 41015);
+  public static final SocketAddress BROKER_2_CLIENT_ADDRESS = new SocketAddress("0.0.0.0", 26511);
 
   public static final String BROKER_3_TOML = "zeebe.cluster.3.cfg.toml";
-  public static final SocketAddress BROKER_3_CLIENT_ADDRESS = new SocketAddress("0.0.0.0", 31015);
+  public static final SocketAddress BROKER_3_CLIENT_ADDRESS = new SocketAddress("0.0.0.0", 26521);
 
   public static final String BROKER_4_TOML = "zeebe.cluster.4.cfg.toml";
-  public static final SocketAddress BROKER_4_CLIENT_ADDRESS = new SocketAddress("0.0.0.0", 21015);
+  public static final SocketAddress BROKER_4_CLIENT_ADDRESS = new SocketAddress("0.0.0.0", 26531);
 
   private SocketAddress[] brokerAddresses =
       new SocketAddress[] {

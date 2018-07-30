@@ -25,7 +25,7 @@ public class DeploymentViewer {
 
   public static void main(final String[] args) {
 
-    final String broker = "localhost:51015";
+    final String broker = "localhost:26501";
 
     final ZeebeClientBuilder clientBuilder =
         ZeebeClient.newClientBuilder().brokerContactPoint(broker);

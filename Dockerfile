@@ -14,7 +14,7 @@ RUN apk add --no-cache bash && \
     tar xfvz ${ZB_HOME}/*.tar.gz --strip 1 -C ${ZB_HOME}/ && rm ${ZB_HOME}/*.tar.gz
 
 WORKDIR ${ZB_HOME}
-EXPOSE 51016 51017 51015
+EXPOSE 26500 26501 26502 26503 26504
 VOLUME ${ZB_HOME}/data
 
 COPY docker/utils/startup.sh /usr/local/bin

@@ -39,7 +39,7 @@ public class ManagementApiRule extends ExternalResource {
   private ActorScheduler scheduler;
 
   public ManagementApiRule() {
-    this("localhost", 51016);
+    this("localhost", 26502);
   }
 
   public ManagementApiRule(String host, int port) {

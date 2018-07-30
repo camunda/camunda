@@ -429,7 +429,7 @@ public class SnapshotReplicationServiceTest {
   }
 
   private NodeInfo createLeaderNodeInfo() {
-    return createNodeInfo("0.0.0.0", 51015);
+    return createNodeInfo("0.0.0.0", 26501);
   }
 
   private NodeInfo createNodeInfo(final String host, final int port) {

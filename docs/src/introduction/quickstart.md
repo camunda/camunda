@@ -56,13 +56,13 @@ cd bin/
 09:04:17.776 [] [main] INFO  io.zeebe.broker.system - Scheduler configuration: Threads{cpu-bound: 2, io-bound: 2}.
 09:04:17.815 [] [main] INFO  io.zeebe.broker.system - Version: X.Y.Z
 09:04:17.861 [] [main] INFO  io.zeebe.broker.clustering - Starting standalone broker.
-09:04:17.865 [service-controller] [0.0.0.0:51015-zb-actors-1] INFO  io.zeebe.broker.transport - Bound managementApi.server to /0.0.0.0:51016
-09:04:17.887 [service-controller] [0.0.0.0:51015-zb-actors-0] INFO  io.zeebe.transport - Bound clientApi.server to /0.0.0.0:51015
-09:04:17.888 [service-controller] [0.0.0.0:51015-zb-actors-0] INFO  io.zeebe.transport - Bound replicationApi.server to /0.0.0.0:51017
-09:04:17.911 [io.zeebe.broker.clustering.base.bootstrap.BootstrapSystemTopic] [0.0.0.0:51015-zb-actors-1] INFO  io.zeebe.broker.clustering - Boostrapping internal system topic 'internal-system' with replication factor 1.
-09:04:18.065 [service-controller] [0.0.0.0:51015-zb-actors-0] INFO  io.zeebe.raft - Created raft internal-system-0 with configuration RaftConfiguration{heartbeatInterval='250ms', electionInterval='1s', leaveTimeout='1s'}
-09:04:18.069 [io.zeebe.broker.clustering.base.bootstrap.BootstrapSystemTopic] [0.0.0.0:51015-zb-actors-0] INFO  io.zeebe.broker.clustering - Bootstrapping default topics [TopicCfg{name='default-topic', partitions=1, replicationFactor=1}]
-09:04:18.122 [internal-system-0] [0.0.0.0:51015-zb-actors-1] INFO  io.zeebe.raft - Joined raft in term 0
+09:04:17.865 [service-controller] [0.0.0.0:26500-zb-actors-1] INFO  io.zeebe.broker.transport - Bound managementApi.server to /0.0.0.0:26502
+09:04:17.887 [service-controller] [0.0.0.0:26500-zb-actors-0] INFO  io.zeebe.transport - Bound clientApi.server to /0.0.0.0:26500
+09:04:17.888 [service-controller] [0.0.0.0:26500-zb-actors-0] INFO  io.zeebe.transport - Bound replicationApi.server to /0.0.0.0:26503
+09:04:17.911 [io.zeebe.broker.clustering.base.bootstrap.BootstrapSystemTopic] [0.0.0.0:26500-zb-actors-1] INFO  io.zeebe.broker.clustering - Boostrapping internal system topic 'internal-system' with replication factor 1.
+09:04:18.065 [service-controller] [0.0.0.0:26500-zb-actors-0] INFO  io.zeebe.raft - Created raft internal-system-0 with configuration RaftConfiguration{heartbeatInterval='250ms', electionInterval='1s', leaveTimeout='1s'}
+09:04:18.069 [io.zeebe.broker.clustering.base.bootstrap.BootstrapSystemTopic] [0.0.0.0:26500-zb-actors-0] INFO  io.zeebe.broker.clustering - Bootstrapping default topics [TopicCfg{name='default-topic', partitions=1, replicationFactor=1}]
+09:04:18.122 [internal-system-0] [0.0.0.0:26500-zb-actors-1] INFO  io.zeebe.raft - Joined raft in term 0
 ```
 
 You will see some output which contains the version of the broker, or different
@@ -114,11 +114,11 @@ We can now see our new topic in the topology of the Zeebe broker.
 +-----------------+--------------+----------------+---------+
 |   TOPIC NAME    | PARTITION ID | BROKER ADDRESS |  STATE  |
 +-----------------+--------------+----------------+---------+
-| internal-system |            0 | 0.0.0.0:51015  | LEADER  |
+| internal-system |            0 | 0.0.0.0:26500  | LEADER  |
 +-----------------+--------------+----------------+---------+
-| default-topic   |            1 | 0.0.0.0:51015  | LEADER  |
+| default-topic   |            1 | 0.0.0.0:26500  | LEADER  |
 +-----------------+--------------+----------------+---------+
-| quickstart      |            2 | 0.0.0.0:51015  | LEADER  |
+| quickstart      |            2 | 0.0.0.0:26500  | LEADER  |
 +-----------------+--------------+----------------+---------+
 ```
 

@@ -526,7 +526,7 @@ public class BrokerReprocessingTest {
     assertThat(raftAfterRestart.getState()).isEqualTo(RaftState.LEADER);
     assertThat(raftAfterRestart.getTerm()).isGreaterThanOrEqualTo(9);
     assertThat(raftAfterRestart.getMemberSize()).isEqualTo(0);
-    assertThat(raftAfterRestart.getVotedFor()).isEqualTo(new SocketAddress("0.0.0.0", 51017));
+    assertThat(raftAfterRestart.getVotedFor()).isEqualTo(new SocketAddress("0.0.0.0", 26503));
   }
 
   @Test

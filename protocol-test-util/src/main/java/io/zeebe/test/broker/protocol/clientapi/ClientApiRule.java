@@ -56,7 +56,7 @@ public class ClientApiRule extends ExternalResource {
   }
 
   public ClientApiRule(boolean usesDefaultTopic) {
-    this("localhost", 51015, usesDefaultTopic);
+    this("localhost", 26501, usesDefaultTopic);
   }
 
   public ClientApiRule(String host, int port, boolean usesDefaultTopic) {

@@ -26,7 +26,7 @@ import java.util.Scanner;
 
 public class JobWorkerCreator {
   public static void main(String[] args) {
-    final String broker = "127.0.0.1:51015";
+    final String broker = "127.0.0.1:26501";
     final String topic = "default-topic";
 
     final String jobType = "foo";

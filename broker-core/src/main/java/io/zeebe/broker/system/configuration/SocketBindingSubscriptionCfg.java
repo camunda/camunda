@@ -20,7 +20,7 @@ package io.zeebe.broker.system.configuration;
 public class SocketBindingSubscriptionCfg extends SocketBindingCfg {
   private String receiveBufferSize = "8M";
 
-  public static final int DEFAULT_PORT = 51018;
+  public static final int DEFAULT_PORT = 26504;
 
   public SocketBindingSubscriptionCfg() {
     port = DEFAULT_PORT;

@@ -67,7 +67,7 @@ public class StubBrokerRule extends ExternalResource {
   protected AtomicReference<Topology> currentTopology = new AtomicReference<>();
 
   public StubBrokerRule() {
-    this("127.0.0.1", 51015);
+    this("127.0.0.1", 26501);
   }
 
   public StubBrokerRule(String host, int port) {

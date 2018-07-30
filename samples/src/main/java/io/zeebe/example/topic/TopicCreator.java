@@ -22,7 +22,7 @@ import io.zeebe.broker.client.api.events.TopicEvent;
 public class TopicCreator {
 
   public static void main(final String[] args) {
-    final String broker = "localhost:51015";
+    final String broker = "localhost:26501";
     final String topic = "test";
     final int partitions = 1;
     final int replicationFactor = 1;

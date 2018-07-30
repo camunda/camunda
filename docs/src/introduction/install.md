@@ -36,9 +36,9 @@ Once the Zeebe broker has started, it should produce the following output:
 10:49:52.342 [] [main] INFO  io.zeebe.broker.system - Scheduler configuration: Threads{cpu-bound: 2, io-bound: 2}.
 10:49:52.383 [] [main] INFO  io.zeebe.broker.system - Version: X.Y.Z
 10:49:52.430 [] [main] INFO  io.zeebe.broker.clustering - Starting standalone broker.
-10:49:52.435 [service-controller] [0.0.0.0:51015-zb-actors-1] INFO  io.zeebe.broker.transport - Bound managementApi.server to /0.0.0.0:51016
-10:49:52.460 [service-controller] [0.0.0.0:51015-zb-actors-1] INFO  io.zeebe.transport - Bound clientApi.server to /0.0.0.0:51015
-10:49:52.460 [service-controller] [0.0.0.0:51015-zb-actors-1] INFO  io.zeebe.transport - Bound replicationApi.server to /0.0.0.0:51017
+10:49:52.435 [service-controller] [0.0.0.0:26500-zb-actors-1] INFO  io.zeebe.broker.transport - Bound managementApi.server to /0.0.0.0:26502
+10:49:52.460 [service-controller] [0.0.0.0:26500-zb-actors-1] INFO  io.zeebe.transport - Bound clientApi.server to /0.0.0.0:26501
+10:49:52.460 [service-controller] [0.0.0.0:26500-zb-actors-1] INFO  io.zeebe.transport - Bound replicationApi.server to /0.0.0.0:26503
 ```
 
 ## Using Docker
@@ -46,14 +46,14 @@ Once the Zeebe broker has started, it should produce the following output:
 You can run Zeebe with Docker:
 
 ```bash
-docker run --name zeebe -p 51015:51015 camunda/zeebe:latest
+docker run --name zeebe -p 26500:26500 camunda/zeebe:latest
 ```
 
 ### Exposed Ports
 
-- `51015`: Client API
-- `51016`: Management API for broker to broker communcation
-- `51017`: Replication API for broker to broker replication
+- `26500`: Client API
+- `26502`: Management API for broker to broker communcation
+- `26503`: Replication API for broker to broker replication
 
 ### Volumes
 
@@ -131,7 +131,7 @@ eval $(docker-machine env zeebe)
 Then run Zeebe:
 
 ```
-docker run --rm -p 51015:51015 -p 51016:51016 -p 51017:51017 camunda/zeebe:latest
+docker run --rm -p 26500:26500 camunda/zeebe:latest
 ```
 
 To get the ip of Zeebe:
@@ -144,5 +144,5 @@ docker-machine ip zeebe
 
 Verify that you can connect to Zeebe:
 ```
-telnet 192.168.99.100 51015
+telnet 192.168.99.100 26500
 ```

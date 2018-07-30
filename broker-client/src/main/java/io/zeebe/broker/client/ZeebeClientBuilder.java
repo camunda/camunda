@@ -32,7 +32,7 @@ public interface ZeebeClientBuilder {
 
   /**
    * @param contactPoint the IP socket address of a broker that the client can initially connect to.
-   *     Must be in format <code>host:port</code>. The default value is <code>127.0.0.1:51015</code>
+   *     Must be in format <code>host:port</code>. The default value is <code>127.0.0.1:26501</code>
    *     .
    */
   ZeebeClientBuilder brokerContactPoint(String contactPoint);

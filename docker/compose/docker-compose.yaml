@@ -10,7 +10,7 @@ services:
     broker-1:
         image: camunda/zeebe:${ZEEBE_VERSION:-latest}
         ports:
-            - 51015:51015
+            - 26500:26500
         environment:
             - ZEEBE_LOG_LEVEL=${ZEEBE_LOG_LEVEL:-debug}
             - BOOTSTRAP=3
@@ -20,10 +20,10 @@ services:
     broker-2:
         image: camunda/zeebe:${ZEEBE_VERSION:-latest}
         ports:
-            - 51016:51015
+            - 26510:26500
         environment:
             - ZEEBE_LOG_LEVEL=${ZEEBE_LOG_LEVEL:-debug}
-            - INITIAL_CONTACT_POINT=broker-1:51016
+            - INITIAL_CONTACT_POINT=broker-1:26502
             - BOOTSTRAP=0
         volumes:
             - broker_2:/usr/local/zeebe/data
@@ -31,10 +31,10 @@ services:
     broker-3:
         image: camunda/zeebe:${ZEEBE_VERSION:-latest}
         ports:
-            - 51017:51015
+            - 26520:26500
         environment:
             - ZEEBE_LOG_LEVEL=${ZEEBE_LOG_LEVEL:-debug}
-            - INITIAL_CONTACT_POINT=broker-1:51016
+            - INITIAL_CONTACT_POINT=broker-1:26502
             - BOOTSTRAP=0
         volumes:
             - broker_3:/usr/local/zeebe/data
