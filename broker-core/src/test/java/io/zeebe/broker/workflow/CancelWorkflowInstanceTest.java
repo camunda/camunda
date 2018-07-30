@@ -17,9 +17,13 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.*;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_ACTIVITY_ID;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_INSTANCE_KEY;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_VERSION;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ACTIVITY_TERMINATED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.CANCEL;
+import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
@@ -133,6 +137,40 @@ public class CancelWorkflowInstanceTest {
         .containsEntry(PROP_WORKFLOW_VERSION, 1L)
         .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
         .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "task");
+  }
+
+  @Test
+  public void shouldCancelIntermediateCatchEvent() {
+    // given
+    testClient.deploy(
+        Bpmn.createExecutableWorkflow("wf")
+            .startEvent()
+            .intermediateCatchEvent("catch-event", b -> b.messageName("msg").correlationKey("$.id"))
+            .done());
+
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance("wf", asMsgPack("id", "123"));
+
+    final SubscribedRecord catchEventEntered =
+        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.CATCH_EVENT_ENTERED);
+
+    final ExecuteCommandResponse response = cancelWorkflowInstance(workflowInstanceKey);
+
+    // then
+    assertThat(response.intent()).isEqualTo(WorkflowInstanceIntent.CANCELED);
+
+    final SubscribedRecord cancelWorkflow =
+        testClient.receiveFirstWorkflowInstanceCommand(WorkflowInstanceIntent.CANCEL);
+    final SubscribedRecord activityTerminatedEvent =
+        testClient.receiveFirstWorkflowInstanceEvent(ACTIVITY_TERMINATED);
+
+    assertThat(activityTerminatedEvent.key()).isEqualTo(catchEventEntered.key());
+    assertThat(activityTerminatedEvent.sourceRecordPosition()).isEqualTo(cancelWorkflow.position());
+    assertThat(activityTerminatedEvent.value())
+        .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "wf")
+        .containsEntry(PROP_WORKFLOW_VERSION, 1L)
+        .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
+        .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "catch-event");
   }
 
   @Test

@@ -25,8 +25,19 @@ import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.intent.*;
-import java.util.*;
+import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.protocol.intent.IncidentIntent;
+import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.intent.MessageIntent;
+import io.zeebe.protocol.intent.SubscriberIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
 
@@ -253,6 +264,28 @@ public class TestTopicClient {
         .sendAndAwait();
   }
 
+  public ExecuteCommandResponse publishMessage(String messageName, String correlationKey) {
+    return publishMessage(messageName, correlationKey, new byte[0]);
+  }
+
+  public ExecuteCommandResponse publishMessage(
+      String messageName, String correlationKey, DirectBuffer payload) {
+    return publishMessage(messageName, correlationKey, BufferUtil.bufferAsArray(payload));
+  }
+
+  public ExecuteCommandResponse publishMessage(
+      String messageName, String correlationKey, byte[] payload) {
+    return apiRule
+        .createCmdRequest()
+        .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
+        .command()
+        .put("name", messageName)
+        .put("correlationKey", correlationKey)
+        .put("payload", payload)
+        .done()
+        .sendAndAwait();
+  }
+
   /**
    * @return an infinite stream of received subscribed events; make sure to use short-circuiting
    *     operations to reduce it to a finite stream
@@ -384,6 +417,17 @@ public class TestTopicClient {
         .ofTypeWorkflowInstance()
         .withIntent(intent)
         .filter(r -> (Long) r.value().get("workflowInstanceKey") == wfInstanceKey)
+        .findFirst()
+        .get();
+  }
+
+  public SubscribedRecord receiveFirstWorkflowInstanceEvent(
+      long wfInstanceKey, String activityId, Intent intent) {
+    return receiveEvents()
+        .ofTypeWorkflowInstance()
+        .withIntent(intent)
+        .filter(r -> (Long) r.value().get("workflowInstanceKey") == wfInstanceKey)
+        .filter(r -> activityId.equals(r.value().get("activityId")))
         .findFirst()
         .get();
   }

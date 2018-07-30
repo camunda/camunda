@@ -37,6 +37,7 @@ import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamReader;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
+import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.map.ActivityInstanceMap;
 import io.zeebe.broker.workflow.map.DeployedWorkflow;
@@ -77,6 +78,7 @@ import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.transport.ClientResponse;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.metrics.Metric;
@@ -106,6 +108,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
   private final MappingProcessor payloadMappingProcessor = new MappingProcessor(4096);
   private final JsonConditionInterpreter conditionInterpreter = new JsonConditionInterpreter();
 
+  private TypedStreamReader streamReader;
   private SubscriptionCommandSender subscriptionCommandSender;
 
   private final ClientTransport managementApiClient;
@@ -173,6 +176,11 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
             WorkflowInstanceIntent.CATCH_EVENT_ENTERING,
             w -> isActive(w.getWorkflowInstanceKey()),
             new CatchEventEnteringProcessor())
+        .onEvent(
+            ValueType.WORKFLOW_INSTANCE,
+            WorkflowInstanceIntent.CATCH_EVENT_OCCURRING,
+            w -> isActive(w.getWorkflowInstanceKey()),
+            new CatchEventOccurringProcessor())
         .onCommand(
             ValueType.WORKFLOW_INSTANCE,
             WorkflowInstanceIntent.UPDATE_PAYLOAD,
@@ -199,6 +207,11 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
             bpmnAspectProcessor)
         .onEvent(
             ValueType.WORKFLOW_INSTANCE,
+            WorkflowInstanceIntent.CATCH_EVENT_OCCURRED,
+            w -> isActive(w.getWorkflowInstanceKey()),
+            bpmnAspectProcessor)
+        .onEvent(
+            ValueType.WORKFLOW_INSTANCE,
             WorkflowInstanceIntent.CANCELED,
             (Consumer<WorkflowInstanceRecord>)
                 (e) -> workflowInstanceEventCanceled.incrementOrdered())
@@ -209,6 +222,10 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
                 (e) -> workflowInstanceEventCompleted.incrementOrdered())
         .onEvent(ValueType.JOB, JobIntent.CREATED, new JobCreatedProcessor())
         .onEvent(ValueType.JOB, JobIntent.COMPLETED, new JobCompletedEventProcessor())
+        .onCommand(
+            ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION,
+            WorkflowInstanceSubscriptionIntent.CORRELATE,
+            new CorrelateWorkflowInstanceSubscription())
         .withStateResource(workflowInstanceIndex.getMap())
         .withStateResource(activityInstanceMap.getMap())
         .withStateResource(payloadCache.getMap())
@@ -230,6 +247,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
     final String topicName =
         logStream.getTopicName().getStringWithoutLengthUtf8(0, logStream.getTopicName().capacity());
     final String partitionId = Integer.toString(logStream.getPartitionId());
+
+    this.streamReader = streamProcessor.getEnvironment().buildStreamReader();
 
     this.subscriptionCommandSender =
         new SubscriptionCommandSender(
@@ -274,6 +293,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
     workflowInstanceEventCreate.close();
     workflowInstanceEventCanceled.close();
     workflowInstanceEventCompleted.close();
+    streamReader.close();
   }
 
   private boolean isActive(long workflowInstanceKey) {
@@ -702,87 +722,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
     }
   }
 
-  public final class CatchEventEnteringProcessor
-      extends FlowElementEventProcessor<IntermediateMessageCatchEvent> {
-
-    private final MsgPackQueryProcessor queryProcessor = new MsgPackQueryProcessor();
-
-    private WorkflowInstanceRecord workflowInstance;
-    private long activityInstanceKey;
-    private MessageSubscription subscription;
-    private DirectBuffer extractedCorrelationKey;
-
-    @Override
-    void processFlowElementEvent(
-        TypedRecord<WorkflowInstanceRecord> event,
-        TypedStreamWriter streamWriter,
-        IntermediateMessageCatchEvent catchEvent) {
-
-      this.workflowInstance = event.getValue();
-      this.activityInstanceKey = event.getKey();
-      this.subscription = catchEvent.getMessageSubscription();
-
-      if (subscriptionCommandSender.hasPartitionIds()) {
-        onPartitionIdsAvailable(streamWriter);
-
-      } else {
-        // this async fetching will be removed when the partitions are known on startup
-        final ActorFuture<Void> onCompleted = new CompletableActorFuture<>();
-        ctx.async(onCompleted);
-
-        actor.runOnCompletion(
-            subscriptionCommandSender.fetchCreatedTopics(),
-            (v, failure) -> {
-              if (failure == null) {
-                onPartitionIdsAvailable(streamWriter);
-
-                onCompleted.complete(null);
-              } else {
-                onCompleted.completeExceptionally(failure);
-              }
-            });
-      }
-    }
-
-    private void onPartitionIdsAvailable(TypedStreamWriter streamWriter) {
-      extractedCorrelationKey = extractCorrelationKey();
-      sideEffect.accept(this::openMessageSubscription);
-
-      streamWriter.writeFollowUpEvent(
-          activityInstanceKey, WorkflowInstanceIntent.CATCH_EVENT_ENTERED, workflowInstance);
-    }
-
-    private boolean openMessageSubscription() {
-      return subscriptionCommandSender.openMessageSubscription(
-          workflowInstance.getWorkflowInstanceKey(),
-          activityInstanceKey,
-          subscription.getMessageName(),
-          extractedCorrelationKey);
-    }
-
-    private DirectBuffer extractCorrelationKey() {
-      final QueryResults results =
-          queryProcessor.process(subscription.getCorrelationKey(), workflowInstance.getPayload());
-      if (results.size() == 1) {
-        final QueryResult result = results.getSingleResult();
-
-        if (result.isString()) {
-          return result.getString();
-
-        } else if (result.isLong()) {
-          return result.getLongAsBuffer();
-
-        } else {
-          // the exception will be replaces by an incident - #1018
-          throw new RuntimeException("Failed to extract correlation-key: wrong type");
-        }
-      } else {
-        // the exception will be replaces by an incident - #1018
-        throw new RuntimeException("Failed to extract correlation-key: no result");
-      }
-    }
-  }
-
   private final class JobCreatedProcessor implements TypedRecordProcessor<JobRecord> {
 
     @Override
@@ -913,22 +852,201 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
     }
   }
 
+  public final class CatchEventEnteringProcessor
+      extends FlowElementEventProcessor<IntermediateMessageCatchEvent> {
+
+    private final MsgPackQueryProcessor queryProcessor = new MsgPackQueryProcessor();
+
+    private TypedRecord<WorkflowInstanceRecord> event;
+    private WorkflowInstanceRecord workflowInstance;
+    private MessageSubscription subscription;
+    private DirectBuffer extractedCorrelationKey;
+
+    @Override
+    void processFlowElementEvent(
+        TypedRecord<WorkflowInstanceRecord> event,
+        TypedStreamWriter streamWriter,
+        IntermediateMessageCatchEvent catchEvent) {
+
+      this.event = event;
+      this.subscription = catchEvent.getMessageSubscription();
+
+      if (subscriptionCommandSender.hasPartitionIds()) {
+        onPartitionIdsAvailable(streamWriter);
+
+      } else {
+        // this async fetching will be removed when the partitions are known on startup
+        final ActorFuture<Void> onCompleted = new CompletableActorFuture<>();
+        ctx.async(onCompleted);
+
+        actor.runOnCompletion(
+            subscriptionCommandSender.fetchCreatedTopics(),
+            (v, failure) -> {
+              if (failure == null) {
+                onPartitionIdsAvailable(streamWriter);
+
+                onCompleted.complete(null);
+              } else {
+                onCompleted.completeExceptionally(failure);
+              }
+            });
+      }
+    }
+
+    private void onPartitionIdsAvailable(TypedStreamWriter streamWriter) {
+      workflowInstance = event.getValue();
+      extractedCorrelationKey = extractCorrelationKey();
+      sideEffect.accept(this::openMessageSubscription);
+
+      streamWriter.writeFollowUpEvent(
+          event.getKey(), WorkflowInstanceIntent.CATCH_EVENT_ENTERED, workflowInstance);
+
+      workflowInstanceIndex
+          .get(workflowInstance.getWorkflowInstanceKey())
+          .setActivityInstanceKey(event.getKey())
+          .write();
+
+      activityInstanceMap
+          .newActivityInstance(event.getKey())
+          .setActivityId(workflowInstance.getActivityId())
+          .setJobKey(-1L)
+          .write();
+
+      payloadCache.addPayload(
+          workflowInstance.getWorkflowInstanceKey(),
+          event.getPosition(),
+          workflowInstance.getPayload());
+    }
+
+    private boolean openMessageSubscription() {
+      return subscriptionCommandSender.openMessageSubscription(
+          workflowInstance.getWorkflowInstanceKey(),
+          event.getKey(),
+          subscription.getMessageName(),
+          extractedCorrelationKey);
+    }
+
+    private DirectBuffer extractCorrelationKey() {
+      final QueryResults results =
+          queryProcessor.process(subscription.getCorrelationKey(), workflowInstance.getPayload());
+      if (results.size() == 1) {
+        final QueryResult result = results.getSingleResult();
+
+        if (result.isString()) {
+          return result.getString();
+
+        } else if (result.isLong()) {
+          return result.getLongAsBuffer();
+
+        } else {
+          // the exception will be replaces by an incident - #1018
+          throw new RuntimeException("Failed to extract correlation-key: wrong type");
+        }
+      } else {
+        // the exception will be replaces by an incident - #1018
+        throw new RuntimeException("Failed to extract correlation-key: no result");
+      }
+    }
+  }
+
+  private final class CorrelateWorkflowInstanceSubscription
+      implements TypedRecordProcessor<WorkflowInstanceSubscriptionRecord> {
+    private final WorkflowInstanceRecord activityInstanceEvent = new WorkflowInstanceRecord();
+
+    private TypedRecord<WorkflowInstanceSubscriptionRecord> record;
+    private WorkflowInstanceSubscriptionRecord subscription;
+    private TypedStreamWriter streamWriter;
+
+    @Override
+    public void processRecord(
+        TypedRecord<WorkflowInstanceSubscriptionRecord> record,
+        TypedResponseWriter responseWriter,
+        TypedStreamWriter streamWriter,
+        Consumer<SideEffectProducer> sideEffect,
+        EventLifecycleContext ctx) {
+
+      this.record = record;
+      this.subscription = record.getValue();
+      this.streamWriter = streamWriter;
+
+      final WorkflowInstance workflowInstance =
+          workflowInstanceIndex.get(subscription.getWorkflowInstanceKey());
+
+      if (workflowInstance == null
+          || workflowInstance.getActivityInstanceKey() != subscription.getActivityInstanceKey()) {
+        streamWriter.writeRejection(record, RejectionType.NOT_APPLICABLE, "activity is left");
+
+      } else {
+        final long workflowKey = workflowInstance.getWorkflowKey();
+        final DeployedWorkflow workflow = workflowCache.getWorkflowByKey(workflowKey);
+        if (workflow != null) {
+          writeEvents(workflow);
+        } else {
+          fetchWorkflow(workflowKey, this::writeEvents, ctx);
+        }
+      }
+    }
+
+    private void writeEvents(final DeployedWorkflow workflow) {
+      final DirectBuffer activityId =
+          activityInstanceMap
+              .wrapActivityInstanceKey(subscription.getActivityInstanceKey())
+              .getActivityId();
+
+      activityInstanceEvent
+          .setWorkflowKey(workflow.getKey())
+          .setBpmnProcessId(workflow.getWorkflow().getBpmnProcessId())
+          .setVersion(workflow.getVersion())
+          .setWorkflowInstanceKey(subscription.getWorkflowInstanceKey())
+          .setActivityId(activityId)
+          .setPayload(subscription.getPayload());
+
+      final TypedBatchWriter batchWriter = streamWriter.newBatch();
+      batchWriter.addFollowUpEvent(
+          record.getKey(), WorkflowInstanceSubscriptionIntent.CORRELATED, subscription);
+      batchWriter.addFollowUpEvent(
+          subscription.getActivityInstanceKey(),
+          WorkflowInstanceIntent.CATCH_EVENT_OCCURRING,
+          activityInstanceEvent);
+    }
+  }
+
+  private final class CatchEventOccurringProcessor
+      extends FlowElementEventProcessor<IntermediateMessageCatchEvent> {
+
+    @Override
+    void processFlowElementEvent(
+        TypedRecord<WorkflowInstanceRecord> event,
+        TypedStreamWriter streamWriter,
+        IntermediateMessageCatchEvent catchEvent) {
+
+      final WorkflowInstanceRecord activityInstanceEvent = event.getValue();
+
+      final DirectBuffer messagePayload = activityInstanceEvent.getPayload();
+      final DirectBuffer activityInstancePayload =
+          payloadCache.getPayload(activityInstanceEvent.getWorkflowInstanceKey());
+
+      // currently, you can't define any output mapping - so the payload always merged
+      final int payloadLength =
+          payloadMappingProcessor.merge(messagePayload, activityInstancePayload);
+      activityInstanceEvent.setPayload(payloadMappingProcessor.getResultBuffer(), 0, payloadLength);
+
+      streamWriter.writeFollowUpEvent(
+          event.getKey(), WorkflowInstanceIntent.CATCH_EVENT_OCCURRED, activityInstanceEvent);
+
+      workflowInstanceIndex
+          .get(activityInstanceEvent.getWorkflowInstanceKey())
+          .setActivityInstanceKey(-1L)
+          .write();
+
+      activityInstanceMap.remove(event.getKey());
+    }
+  }
+
   private final class CancelWorkflowInstanceProcessor
       implements TypedRecordProcessor<WorkflowInstanceRecord> {
     private final WorkflowInstanceRecord activityInstanceEvent = new WorkflowInstanceRecord();
     private final JobRecord jobRecord = new JobRecord();
-
-    private TypedStreamReader reader;
-
-    @Override
-    public void onOpen(TypedStreamProcessor streamProcessor) {
-      reader = streamProcessor.getEnvironment().buildStreamReader();
-    }
-
-    @Override
-    public void onClose() {
-      reader.close();
-    }
 
     @Override
     public void processRecord(
@@ -956,7 +1074,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         TypedStreamWriter writer,
         TypedResponseWriter responseWriter) {
       final TypedRecord<WorkflowInstanceRecord> workflowInstanceEvent =
-          reader.readValue(workflowInstance.getPosition(), WorkflowInstanceRecord.class);
+          streamReader.readValue(workflowInstance.getPosition(), WorkflowInstanceRecord.class);
 
       workflowInstanceEvent.getValue().setPayload(EMPTY_PAYLOAD);
 

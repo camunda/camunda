@@ -18,14 +18,19 @@
 package io.zeebe.broker.subscription.message;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
+import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
+import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
+import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.processor.OpenMessageSubscriptionProcessor;
 import io.zeebe.broker.subscription.message.processor.PublishMessageProcessor;
 import io.zeebe.broker.subscription.message.state.MessageDataStore;
+import io.zeebe.broker.subscription.message.state.MessageSubscriptionDataStore;
+import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
@@ -33,18 +38,26 @@ import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceGroupReference;
 import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.ServerTransport;
 
-public class MessageService implements Service<MessageService> {
+public class MessageService implements Service<MessageService>, StreamProcessorLifecycleAware {
 
   private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
   private final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector =
       new Injector<>();
 
+  private final Injector<ClientTransport> managementApiClientInjector = new Injector<>();
+  private final Injector<ClientTransport> subscriptionApiClientInjector = new Injector<>();
+  private final Injector<TopologyManager> topologyManagerInjector = new Injector<>();
+
   private final ServiceGroupReference<Partition> partitionsGroupReference =
       ServiceGroupReference.<Partition>create()
           .onAdd((partitionName, partition) -> startStreamProcessors(partitionName, partition))
           .build();
+
+  private PublishMessageProcessor publishMessageProcessor;
+  private OpenMessageSubscriptionProcessor openMessageSubscriptionProcessor;
 
   private void startStreamProcessors(
       ServiceName<Partition> partitionServiceName, Partition partition) {
@@ -64,18 +77,42 @@ public class MessageService implements Service<MessageService> {
 
   private TypedStreamProcessor createStreamProcessors(TypedStreamEnvironment env) {
 
-    final MessageDataStore messageDataStore = new MessageDataStore();
+    final MessageDataStore messageStore = new MessageDataStore();
+    final MessageSubscriptionDataStore subscriptionStore = new MessageSubscriptionDataStore();
+
+    publishMessageProcessor = new PublishMessageProcessor(messageStore, subscriptionStore);
+    openMessageSubscriptionProcessor =
+        new OpenMessageSubscriptionProcessor(messageStore, subscriptionStore);
 
     return env.newStreamProcessor()
         .keyGenerator(new KeyGenerator(0, 1))
-        .onCommand(
-            ValueType.MESSAGE, MessageIntent.PUBLISH, new PublishMessageProcessor(messageDataStore))
+        .onCommand(ValueType.MESSAGE, MessageIntent.PUBLISH, publishMessageProcessor)
         .onCommand(
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.OPEN,
-            new OpenMessageSubscriptionProcessor())
-        .withStateResource(messageDataStore)
+            openMessageSubscriptionProcessor)
+        .withStateResource(messageStore)
+        .withStateResource(subscriptionStore)
+        .withListener(this)
         .build();
+  }
+
+  @Override
+  public void onOpen(TypedStreamProcessor streamProcessor) {
+
+    final LogStream stream = streamProcessor.getEnvironment().getStream();
+
+    final SubscriptionCommandSender subscriptionCommandSender =
+        new SubscriptionCommandSender(
+            streamProcessor.getActor(),
+            getManagementApiClientInjector().getValue(),
+            getSubscriptionApiClientInjector().getValue(),
+            stream.getLogName(),
+            stream.getPartitionId());
+    getTopologyManagerInjector().getValue().addTopologyPartitionListener(subscriptionCommandSender);
+
+    publishMessageProcessor.setSubscriptionCommandSender(subscriptionCommandSender);
+    openMessageSubscriptionProcessor.setSubscriptionCommandSender(subscriptionCommandSender);
   }
 
   @Override
@@ -93,5 +130,17 @@ public class MessageService implements Service<MessageService> {
 
   public Injector<StreamProcessorServiceFactory> getStreamProcessorServiceFactoryInjector() {
     return streamProcessorServiceFactoryInjector;
+  }
+
+  public Injector<ClientTransport> getManagementApiClientInjector() {
+    return managementApiClientInjector;
+  }
+
+  public Injector<ClientTransport> getSubscriptionApiClientInjector() {
+    return subscriptionApiClientInjector;
+  }
+
+  public Injector<TopologyManager> getTopologyManagerInjector() {
+    return topologyManagerInjector;
   }
 }

@@ -28,13 +28,13 @@ public class MessageDataStore extends JsonSnapshotSupport<MessageData> {
     super(MessageData.class);
   }
 
-  public void addMessage(MessageEntry message) {
-    getData().messages.add(message);
+  public void addMessage(Message message) {
+    getData().getMessages().add(message);
   }
 
-  public boolean hasMessage(MessageEntry message) {
+  public boolean hasMessage(Message message) {
     return getData()
-        .messages
+        .getMessages()
         .stream()
         .anyMatch(
             m ->
@@ -44,18 +44,31 @@ public class MessageDataStore extends JsonSnapshotSupport<MessageData> {
                     && m.getCorrelationKey().equals(message.getCorrelationKey()));
   }
 
-  public static class MessageData {
-
-    private List<MessageEntry> messages = new ArrayList<>();
+  public Message findMessage(String name, String correlationKey) {
+    return getData()
+        .getMessages()
+        .stream()
+        .filter(m -> m.getName().equals(name) && m.getCorrelationKey().equals(correlationKey))
+        .findFirst()
+        .orElse(null);
   }
 
-  public static class MessageEntry {
+  public static class MessageData {
+
+    private final List<Message> messages = new ArrayList<>();
+
+    public List<Message> getMessages() {
+      return messages;
+    }
+  }
+
+  public static class Message {
     private final String name;
     private final String correlationKey;
     private final byte[] payload;
     private final String id;
 
-    public MessageEntry(String name, String correlationKey, byte[] payload, String id) {
+    public Message(String name, String correlationKey, byte[] payload, String id) {
       this.name = name;
       this.correlationKey = correlationKey;
       this.payload = payload;
