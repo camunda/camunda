@@ -4,6 +4,8 @@ import VariableFilter from './VariableFilter';
 
 import {DateInput} from './date';
 
+import {loadVariables} from './service';
+
 import {mount} from 'enzyme';
 
 jest.mock('components', () => {
@@ -12,18 +14,9 @@ jest.mock('components', () => {
   Modal.Content = props => <div id="modal_content">{props.children}</div>;
   Modal.Actions = props => <div id="modal_actions">{props.children}</div>;
 
-  const Typeahead = props => {
-    const allowedProps = {...props};
-    delete allowedProps.selectValue;
-    delete allowedProps.initialValue;
-    delete allowedProps.getValues;
-    delete allowedProps.nameRenderer;
-    return <div {...allowedProps}>{props.children}</div>;
-  };
-
   return {
     Modal,
-    Typeahead,
+    Typeahead: props => <div>Typeahead {JSON.stringify(props)}</div>,
     Button: props => <button {...props}>{props.children}</button>,
     ControlGroup: props => <div>{props.children}</div>
   };
@@ -166,4 +159,25 @@ it('should use custom filter adding logic from input components', () => {
   node.find('button[type="primary"]').simulate('click');
 
   expect(DateInput.addFilter).toHaveBeenCalledWith(spy, selectedVariable, filter);
+});
+
+it('should load available variables', () => {
+  loadVariables.mockClear();
+  mount(<VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />);
+
+  expect(loadVariables).toHaveBeenCalledWith('procDefKey', '1');
+});
+
+it('should contain a typeahead with the available variables', async () => {
+  const node = mount(
+    <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
+  );
+
+  loadVariables.mockReturnValueOnce(['varA', 'varB', 'varC']);
+  await node.instance().componentDidMount();
+
+  expect(node).toIncludeText('Typeahead');
+  expect(node).toIncludeText('varA');
+  expect(node).toIncludeText('varB');
+  expect(node).toIncludeText('varC');
 });

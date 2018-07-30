@@ -22,9 +22,19 @@ export default class StringInput extends React.Component {
     numberOfUnselectedValuesToDisplay: valuesToLoad
   };
 
-  componentDidMount() {
+  reset() {
     this.props.setValid(false);
     this.loadAvailableValues();
+  }
+
+  componentDidMount() {
+    this.reset();
+  }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.variable !== this.props.variable) {
+      this.reset();
+    }
   }
 
   loadAvailableValues = debounce(more => {

@@ -1,17 +1,14 @@
 import {get} from 'request';
 
-export function loadVariables(processDefinitionKey, processDefinitionVersion) {
-  return async namePrefix => {
-    const response = await get(`/api/variables`, {
-      processDefinitionKey,
-      processDefinitionVersion,
-      namePrefix,
-      sortOrder: 'asc',
-      orderBy: 'name'
-    });
+export async function loadVariables(processDefinitionKey, processDefinitionVersion) {
+  const response = await get(`/api/variables`, {
+    processDefinitionKey,
+    processDefinitionVersion,
+    sortOrder: 'asc',
+    orderBy: 'name'
+  });
 
-    return await response.json();
-  };
+  return await response.json();
 }
 
 export async function loadValues(

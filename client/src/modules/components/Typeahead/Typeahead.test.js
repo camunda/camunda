@@ -1,33 +1,70 @@
 import React from 'react';
 
 import Typeahead from './Typeahead';
+import {Dropdown} from 'components';
 
 import {mount} from 'enzyme';
 
-it('should initially load available options with empty string as query', () => {
-  const spy = jest.fn();
-  spy.mockReturnValue([{name: 'foo', type: 'Boolean'}, {name: 'bar', type: 'Integer'}]);
-  mount(<Typeahead getValues={spy} />);
-  expect(spy).toHaveBeenCalledWith('');
-});
-
-it('should display available options if dropdown is open', async () => {
-  const getValues = jest.fn();
-  getValues.mockReturnValue([{name: 'foo', type: 'Boolean'}, {name: 'bar', type: 'Integer'}]);
-  const nameRenderer = variable => {
-    return variable.name;
-  };
-  const node = mount(<Typeahead getValues={getValues} nameRenderer={nameRenderer} />);
-
-  await node
-    .find('.Typeahead__input')
-    .first()
-    .simulate('click');
+it('should display available options if dropdown is open', () => {
+  const node = mount(<Typeahead values={['foo', 'bar']} />);
 
   node.setState({
     optionsVisible: true
   });
 
-  expect(node.find('.Typeahead__search-result').at(0)).toIncludeText('foo');
-  expect(node.find('.Typeahead__search-result').at(3)).toIncludeText('bar');
+  expect(node.find(Dropdown.Option).at(0)).toIncludeText('foo');
+  expect(node.find(Dropdown.Option).at(1)).toIncludeText('bar');
+});
+
+it('should format the data based on the provided formatter', () => {
+  const node = mount(<Typeahead values={['foo', 'bar']} formatter={v => v + v} />);
+
+  node.setState({
+    optionsVisible: true
+  });
+
+  expect(node.find(Dropdown.Option).at(0)).toIncludeText('foofoo');
+  expect(node.find(Dropdown.Option).at(1)).toIncludeText('barbar');
+});
+
+it('should only display entries that match the typeahead value', () => {
+  const node = mount(<Typeahead values={['varFoo', 'varBar', 'varFoobar']} />);
+
+  node.setState({
+    optionsVisible: true,
+    query: 'foo'
+  });
+
+  expect(node.find(Dropdown.Option).at(0)).toIncludeText('varFoo');
+  expect(node.find(Dropdown.Option).at(1)).toIncludeText('varFoobar');
+  expect(node).not.toIncludeText('varBar');
+});
+
+it('should only display entries that match the typeahead value, even if there is a formatter', () => {
+  const node = mount(
+    <Typeahead values={['varFoo', 'varBar', 'varFoobar']} formatter={v => v + v} />
+  );
+
+  node.setState({
+    optionsVisible: true,
+    query: 'foobarvar'
+  });
+
+  expect(node.find(Dropdown.Option).at(0)).toIncludeText('varFoobarvarFoobar');
+});
+
+it('should call the provided onSelect method when a selection is done', () => {
+  const spy = jest.fn();
+  const node = mount(<Typeahead values={['foo', 'bar']} onSelect={spy} />);
+
+  node.setState({
+    optionsVisible: true
+  });
+
+  node
+    .find(Dropdown.Option)
+    .at(0)
+    .simulate('click');
+
+  expect(spy).toHaveBeenCalledWith('foo');
 });

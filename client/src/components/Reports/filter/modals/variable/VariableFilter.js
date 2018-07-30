@@ -14,6 +14,7 @@ export default class VariableFilter extends React.Component {
   state = {
     valid: false,
     filter: {},
+    variables: [],
     selectedVariable: null
   };
 
@@ -32,6 +33,13 @@ export default class VariableFilter extends React.Component {
         valid: true
       });
     }
+
+    this.setState({
+      variables: await loadVariables(
+        this.props.processDefinitionKey,
+        this.props.processDefinitionVersion
+      )
+    });
   };
 
   selectVariable = async variable => {
@@ -63,7 +71,7 @@ export default class VariableFilter extends React.Component {
   changeFilter = filter => this.setState({filter});
 
   render() {
-    const {selectedVariable} = this.state;
+    const {selectedVariable, variables} = this.state;
 
     const ValueInput = this.getInputComponentForVariable(selectedVariable);
 
@@ -75,13 +83,10 @@ export default class VariableFilter extends React.Component {
             <ControlGroup layout="horizontal">
               <label htmlFor="VariableFilter__variables">Variable Name</label>
               <Typeahead
-                initialValue={this.getVariableName(selectedVariable)}
-                getValues={loadVariables(
-                  this.props.processDefinitionKey,
-                  this.props.processDefinitionVersion
-                )}
-                selectValue={this.selectVariable}
-                nameRenderer={this.getVariableName}
+                initialValue={selectedVariable}
+                values={variables}
+                onSelect={this.selectVariable}
+                formatter={this.getVariableName}
               />
             </ControlGroup>
             <ValueInput

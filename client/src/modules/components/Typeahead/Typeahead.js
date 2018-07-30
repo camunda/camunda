@@ -1,6 +1,5 @@
 import React from 'react';
 import classnames from 'classnames';
-import debounce from 'debounce';
 import {Input, Dropdown} from 'components';
 
 import './Typeahead.css';
@@ -9,32 +8,22 @@ const valuesShownInBox = 10;
 const valueHeight = 30;
 
 export default class Typeahead extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      values: [],
-      query: '',
-      optionsVisible: false,
-      selectedValueIdx: 0,
-      firstShownOptionIdx: 0
-    };
-  }
+  state = {
+    query: '',
+    optionsVisible: false,
+    selectedValueIdx: 0,
+    firstShownOptionIdx: 0
+  };
 
   componentDidMount() {
     document.body.addEventListener('click', this.close);
-    this.loadValues();
   }
 
   componentDidUpdate(prevProps) {
     if (this.props.initialValue && this.props.initialValue !== prevProps.initialValue) {
-      this.setState(
-        {
-          query: this.props.initialValue
-        },
-        () => {
-          this.loadValues();
-        }
-      );
+      this.setState({
+        query: this.getFormatter()(this.props.initialValue)
+      });
     }
   }
 
@@ -53,7 +42,7 @@ export default class Typeahead extends React.Component {
       this.input.select();
     }
 
-    if (!this.state.optionsVisible && this.state.values) {
+    if (!this.state.optionsVisible) {
       this.setState({
         optionsVisible: true
       });
@@ -68,40 +57,33 @@ export default class Typeahead extends React.Component {
     }
   };
 
-  loadValues = async () => {
+  updateValues = () => {
     this.setState({
-      values: await this.props.getValues(this.state.query)
-    });
-  };
-
-  updateValues = debounce(async () => {
-    this.setState({
-      // Asynchronously request new values
-      values: await this.props.getValues(this.state.query),
       selectedValueIdx: 0,
       firstShownOptionIdx: 0
     });
-  }, 300);
+  };
 
   updateQuery = async evt => {
-    const query = evt.target.value;
-    this.setState({
-      // Synchronously update the input text
-      query
-    });
+    this.setState({query: evt.target.value});
     this.showOptions();
     this.updateValues();
   };
 
-  selectValue = value => _ => {
+  getFormatter = () => this.props.formatter || (v => v);
+
+  selectValue = value => () => {
+    const formatter = this.getFormatter();
     this.setState({
-      values: [],
-      query: this.props.nameRenderer(value),
+      query: formatter(value),
       selectedValueIdx: 0,
       firstShownOptionIdx: 0,
       optionsVisible: false
     });
-    this.props.selectValue(value);
+
+    if (this.props.onSelect) {
+      this.props.onSelect(value);
+    }
     this.close();
   };
 
@@ -113,7 +95,8 @@ export default class Typeahead extends React.Component {
       return;
     }
 
-    const {values, selectedValueIdx, optionsVisible} = this.state;
+    const {selectedValueIdx, optionsVisible} = this.state;
+    const values = this.getFilteredValues();
     if (evt.key === 'Enter') {
       evt.preventDefault();
       if (optionsVisible && values[selectedValueIdx]) {
@@ -154,7 +137,8 @@ export default class Typeahead extends React.Component {
   };
 
   scrollIntoView = selectedValueIdx => {
-    let {firstShownOptionIdx, values} = this.state;
+    let {firstShownOptionIdx} = this.state;
+    const values = this.getFilteredValues();
 
     if (this.optionsList) {
       if (selectedValueIdx === 0) {
@@ -196,8 +180,18 @@ export default class Typeahead extends React.Component {
     this.input = input;
   };
 
+  getFilteredValues = () =>
+    this.props.values.filter(value =>
+      this.getFormatter()(value)
+        .toLowerCase()
+        .includes(this.state.query.toLowerCase())
+    );
+
   render() {
-    const {query, values, selectedValueIdx, optionsVisible} = this.state;
+    const formatter = this.getFormatter();
+
+    const {query, selectedValueIdx, optionsVisible} = this.state;
+    const values = this.getFilteredValues();
 
     const searchResultContainerStyle = {
       maxHeight: valueHeight * valuesShownInBox + 'px',
@@ -234,9 +228,9 @@ export default class Typeahead extends React.Component {
                     })}
                     style={valueStyle}
                     onClick={this.selectValue(value)}
-                    key={this.props.nameRenderer(value)}
+                    key={formatter(value)}
                   >
-                    {this.props.nameRenderer(value)}
+                    {formatter(value)}
                   </Dropdown.Option>
                 );
               })}
