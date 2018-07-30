@@ -21,28 +21,27 @@ import io.zeebe.broker.workflow.model.ExecutableFlowNode;
 import io.zeebe.broker.workflow.model.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
-import io.zeebe.model.bpmn.instance.StartEvent;
+import io.zeebe.model.bpmn.instance.EndEvent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-public class StartEventHandler implements ModelElementTransformer<StartEvent> {
+public class EndEventHandler implements ModelElementTransformer<EndEvent> {
 
   @Override
-  public Class<StartEvent> getType() {
-    return StartEvent.class;
+  public Class<EndEvent> getType() {
+    return EndEvent.class;
   }
 
   @Override
-  public void transform(StartEvent element, TransformContext context) {
-    final ExecutableWorkflow workflow = context.getCurrentWorkflow();
-    final ExecutableFlowNode startEvent =
-        workflow.getElementById(element.getId(), ExecutableFlowNode.class);
-    workflow.setStartEvent(startEvent);
+  public void transform(EndEvent element, TransformContext context) {
+    final ExecutableWorkflow currentWorkflow = context.getCurrentWorkflow();
+    final ExecutableFlowNode endEvent =
+        currentWorkflow.getElementById(element.getId(), ExecutableFlowNode.class);
 
-    bindLifecycle(context, startEvent);
+    bindLifecycle(context, endEvent);
   }
 
-  private void bindLifecycle(TransformContext context, final ExecutableFlowNode startEvent) {
-    startEvent.bindLifecycleState(
-        WorkflowInstanceIntent.START_EVENT_OCCURRED, context.getCurrentFlowNodeOutgoingStep());
+  private void bindLifecycle(TransformContext context, ExecutableFlowNode endEvent) {
+    endEvent.bindLifecycleState(
+        WorkflowInstanceIntent.END_EVENT_OCCURRED, context.getCurrentFlowNodeOutgoingStep());
   }
 }

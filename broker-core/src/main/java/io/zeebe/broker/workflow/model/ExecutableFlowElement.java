@@ -17,13 +17,17 @@
  */
 package io.zeebe.broker.workflow.model;
 
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
+import java.util.EnumMap;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 
 public abstract class ExecutableFlowElement {
 
   private final DirectBuffer id;
-  private BpmnAspect bpmnAspect;
+  private Map<WorkflowInstanceIntent, BpmnStep> bpmnSteps =
+      new EnumMap<>(WorkflowInstanceIntent.class);
 
   public ExecutableFlowElement(String id) {
     this.id = BufferUtil.wrapString(id);
@@ -33,11 +37,11 @@ public abstract class ExecutableFlowElement {
     return id;
   }
 
-  public void setBpmnAspect(BpmnAspect bpmnAspect) {
-    this.bpmnAspect = bpmnAspect;
+  public void bindLifecycleState(WorkflowInstanceIntent state, BpmnStep step) {
+    this.bpmnSteps.put(state, step);
   }
 
-  public BpmnAspect getBpmnAspect() {
-    return bpmnAspect;
+  public BpmnStep getStep(WorkflowInstanceIntent state) {
+    return bpmnSteps.get(state);
   }
 }

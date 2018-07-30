@@ -28,6 +28,7 @@ import io.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 import io.zeebe.msgpack.spec.MsgPackWriter;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.Collection;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
@@ -55,6 +56,13 @@ public class ServiceTaskHandler implements ModelElementTransformer<ServiceTask> 
     transformTaskDefinition(element, serviceTask);
 
     transformTaskHeaders(element, serviceTask);
+
+    bindLifecycle(context, serviceTask);
+  }
+
+  private void bindLifecycle(TransformContext context, final ExecutableServiceTask serviceTask) {
+    serviceTask.bindLifecycleState(
+        WorkflowInstanceIntent.ACTIVITY_COMPLETED, context.getCurrentFlowNodeOutgoingStep());
   }
 
   private void transformTaskDefinition(

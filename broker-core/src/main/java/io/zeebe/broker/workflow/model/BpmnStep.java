@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.workflow.model;
 
-public enum BpmnAspect {
+public enum BpmnStep {
   NONE,
 
   // exactly one outgoing sequence flow

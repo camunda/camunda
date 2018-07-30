@@ -45,7 +45,7 @@ import io.zeebe.broker.workflow.map.PayloadCache;
 import io.zeebe.broker.workflow.map.WorkflowCache;
 import io.zeebe.broker.workflow.map.WorkflowInstanceIndex;
 import io.zeebe.broker.workflow.map.WorkflowInstanceIndex.WorkflowInstance;
-import io.zeebe.broker.workflow.model.BpmnAspect;
+import io.zeebe.broker.workflow.model.BpmnStep;
 import io.zeebe.broker.workflow.model.ExecutableExclusiveGateway;
 import io.zeebe.broker.workflow.model.ExecutableFlowElement;
 import io.zeebe.broker.workflow.model.ExecutableFlowNode;
@@ -125,7 +125,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
   }
 
   public TypedStreamProcessor createStreamProcessor(TypedStreamEnvironment environment) {
-    final BpmnAspectEventProcessor bpmnAspectProcessor = new BpmnAspectEventProcessor();
+    final BpmnStepProcessor bpmnAspectProcessor = new BpmnStepProcessor();
 
     return environment
         .newStreamProcessor()
@@ -1239,19 +1239,18 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
   }
 
   @SuppressWarnings("rawtypes")
-  private final class BpmnAspectEventProcessor
-      extends FlowElementEventProcessor<ExecutableFlowElement> {
+  private final class BpmnStepProcessor extends FlowElementEventProcessor<ExecutableFlowElement> {
 
-    private final Map<BpmnAspect, FlowElementEventProcessor> aspectHandlers;
+    private final Map<BpmnStep, FlowElementEventProcessor> stepHandlers;
 
     private FlowElementEventProcessor delegate;
 
-    private BpmnAspectEventProcessor() {
-      aspectHandlers = new EnumMap<>(BpmnAspect.class);
+    private BpmnStepProcessor() {
+      stepHandlers = new EnumMap<>(BpmnStep.class);
 
-      aspectHandlers.put(BpmnAspect.TAKE_SEQUENCE_FLOW, new TakeSequenceFlowAspectHandler());
-      aspectHandlers.put(BpmnAspect.CONSUME_TOKEN, new ConsumeTokenAspectHandler());
-      aspectHandlers.put(BpmnAspect.EXCLUSIVE_SPLIT, new ExclusiveSplitAspectHandler());
+      stepHandlers.put(BpmnStep.TAKE_SEQUENCE_FLOW, new TakeSequenceFlowAspectHandler());
+      stepHandlers.put(BpmnStep.CONSUME_TOKEN, new ConsumeTokenAspectHandler());
+      stepHandlers.put(BpmnStep.EXCLUSIVE_SPLIT, new ExclusiveSplitAspectHandler());
     }
 
     @Override
@@ -1261,9 +1260,10 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         TypedStreamWriter streamWriter,
         ExecutableFlowElement currentFlowNode) {
 
-      final BpmnAspect bpmnAspect = currentFlowNode.getBpmnAspect();
+      final BpmnStep step =
+          currentFlowNode.getStep((WorkflowInstanceIntent) event.getMetadata().getIntent());
 
-      delegate = aspectHandlers.get(bpmnAspect);
+      delegate = stepHandlers.get(step);
 
       delegate.processFlowElementEvent(event, streamWriter, currentFlowNode);
     }
