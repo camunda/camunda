@@ -137,6 +137,13 @@ export default class Filters extends React.Component {
               />
             </Styled.Field>
             <Styled.Field>
+              <TextInput
+                name={FIELDS.endDate.name}
+                placeholder={FIELDS.endDate.placeholder}
+                onBlur={this.handleFieldChange}
+              />
+            </Styled.Field>
+            <Styled.Field>
               <Select
                 value={this.state.currentWorkflowNode}
                 disabled={

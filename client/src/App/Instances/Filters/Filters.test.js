@@ -446,4 +446,55 @@ describe('Filters', () => {
       expect(spy).toHaveBeenCalledWith({});
     });
   });
+
+  describe('startDate filter', () => {
+    it('should exist', () => {
+      // given
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const field = node.find({name: 'endDate'});
+
+      // then
+      expect(field.length).toEqual(1);
+      expect(field.type()).toEqual(TextInput);
+      expect(field.props().name).toEqual('endDate');
+      expect(field.props().placeholder).toEqual('End Date');
+      expect(field.props().onBlur).toEqual(node.instance().handleFieldChange);
+    });
+
+    it('should update the filters with endDateAfter and endDateBefore values', async () => {
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+
+      //when
+      await flushPromises();
+
+      node.instance().handleFieldChange({
+        target: {value: '25 January 2009', name: 'endDate'}
+      });
+      node.update();
+
+      // then
+      expect(spy).toHaveBeenCalled();
+      expect(spy.mock.calls[0][0].endDateAfter).toContain(
+        '2009-01-25T00:00:00.000'
+      );
+      expect(spy.mock.calls[0][0].endDateBefore).toContain(
+        '2009-01-26T00:00:00.000'
+      );
+    });
+
+    it('should not  update the filters when endDate is invalid', async () => {
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+
+      //when
+      await flushPromises();
+
+      node.instance().handleFieldChange({
+        target: {value: 'invalid date', name: 'endDate'}
+      });
+      node.update();
+
+      // then
+      expect(spy).toHaveBeenCalledWith({});
+    });
+  });
 });

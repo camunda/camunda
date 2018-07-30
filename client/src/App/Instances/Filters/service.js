@@ -29,10 +29,10 @@ export function addAllVersionsOption(options = []) {
   return options;
 }
 
-const parseDate = value => {
+const parseDate = (value, name) => {
   let date = new Date(value);
   const isValidDate = isValid(date);
-  let startDateAfter, startDateBefore;
+  let dateAfter, dateBefore;
   // enforce no comma in the timezone
   const formatWithTimezone = 'YYYY-MM-DDTHH:mm:ss.SSSZZ';
 
@@ -44,17 +44,22 @@ const parseDate = value => {
   // as we can't decide based on a string
   const hasTime = value.indexOf(':') !== -1;
 
-  startDateAfter = hasTime ? date : startOfDay(date);
-  startDateBefore = hasTime ? addMinutes(date, 1) : addDays(date, 1);
+  dateAfter = hasTime ? date : startOfDay(date);
+  dateBefore = hasTime ? addMinutes(date, 1) : addDays(date, 1);
 
   return {
-    startDateAfter: format(startDateAfter, formatWithTimezone),
-    startDateBefore: format(startDateBefore, formatWithTimezone)
+    [`${name}After`]: format(dateAfter, formatWithTimezone),
+    [`${name}Before`]: format(dateBefore, formatWithTimezone)
   };
 };
 
 export const fieldParser = {
   errorMessage: value => (value.length === 0 ? null : value),
   ids: value => value.split(/[ ,]+/).filter(Boolean),
-  startDate: parseDate
+  startDate: value => {
+    return parseDate(value, 'startDate');
+  },
+  endDate: value => {
+    return parseDate(value, 'endDate');
+  }
 };

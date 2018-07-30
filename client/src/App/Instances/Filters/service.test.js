@@ -81,4 +81,16 @@ describe('Filters/service.js', () => {
       expect(output.startDateBefore).toContain('2018-07-05T15:19:00.000');
     });
   });
+
+  describe('fieldParser.endDate()', () => {
+    it('should return object with two keys', () => {
+      const input = 'July 05 2018';
+      const output = fieldParser.endDate(input);
+
+      expect(output.endDateAfter).toBeDefined();
+      expect(output.endDateBefore).toBeDefined();
+      expect(output.endDateAfter.length).toBe(28);
+      expect(output.endDateBefore.length).toBe(28);
+    });
+  });
 });
