@@ -2,10 +2,10 @@ import * as wrappers from 'modules/request/wrappers';
 
 import {mockResolvedAsyncFn} from 'modules/testUtils';
 
-import {workflowXML} from './diagram';
+import {fetchWorkflowXML} from './diagram';
 
 describe('diagram api', () => {
-  describe('workflowXML', () => {
+  describe('fetchWorkflowXML', () => {
     it('should call get with right url and provided workflow id', async () => {
       // given
       const id = 'foo';
@@ -17,7 +17,7 @@ describe('diagram api', () => {
       wrappers.get = mockResolvedAsyncFn(successResponse);
 
       // when
-      const response = await workflowXML(id);
+      const response = await fetchWorkflowXML(id);
 
       // then
       expect(wrappers.get.mock.calls[0][0]).toBe(expectedURL);

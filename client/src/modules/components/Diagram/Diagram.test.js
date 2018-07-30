@@ -14,7 +14,7 @@ const {WrappedComponent: Diagram} = ThemedDiagram;
 
 // mocking api
 const xmlMock = '<foo />';
-api.workflowXML = mockResolvedAsyncFn(xmlMock);
+api.fetchWorkflowXML = mockResolvedAsyncFn(xmlMock);
 
 // mocking service
 const flowNodesDetails = {};
@@ -24,7 +24,7 @@ describe('Diagram', () => {
   const workflowId = 'some-id';
 
   beforeEach(() => {
-    api.workflowXML.mockClear();
+    api.fetchWorkflowXML.mockClear();
   });
 
   it('should set initial containerNode and Viewer to null', () => {
@@ -86,7 +86,7 @@ describe('Diagram', () => {
       await flushPromises();
 
       // then
-      expect(api.workflowXML).toBeCalledWith(workflowId);
+      expect(api.fetchWorkflowXML).toBeCalledWith(workflowId);
       expect(nodeInstance.workflowXML).toBe(xmlMock);
       expect(initViewerSpy).toHaveBeenCalledTimes(1);
     });

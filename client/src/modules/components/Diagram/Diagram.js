@@ -25,7 +25,7 @@ class Diagram extends React.Component {
   }
 
   async componentDidMount() {
-    this.workflowXML = await api.workflowXML(this.props.workflowId);
+    this.workflowXML = await api.fetchWorkflowXML(this.props.workflowId);
     this.initViewer();
   }
 

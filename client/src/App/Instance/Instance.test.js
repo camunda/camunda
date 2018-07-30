@@ -12,7 +12,7 @@ import InstanceDetail from './InstanceDetail';
 import InstanceHistory from './InstanceHistory';
 
 const xmlMock = '<foo />';
-api.workflowXML = mockResolvedAsyncFn(xmlMock);
+api.fetchWorkflowXML = mockResolvedAsyncFn(xmlMock);
 jest.mock('./DiagramPanel');
 
 const INSTANCE = {
