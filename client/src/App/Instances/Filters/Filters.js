@@ -73,7 +73,7 @@ export default class Filters extends React.Component {
     const {value, name} = event.target;
     const parsedValue = fieldParser[name](value);
     const filterValue =
-      name === 'startDate' || name === 'endDate'
+      name === FIELDS.startDate.name || name === FIELDS.endDate.name
         ? {...parsedValue} // value is an object, nr: startDate: {startDateAfter: ..., startDateBefore: ...}
         : {[name]: parsedValue}; // value is an string
 

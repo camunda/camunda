@@ -395,4 +395,55 @@ describe('Filters', () => {
       expect(node.find({name: 'flowNode'}).props().disabled).toEqual(false);
     });
   });
+
+  describe('startDate filter', () => {
+    it('should exist', () => {
+      // given
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const field = node.find({name: 'startDate'});
+
+      // then
+      expect(field.length).toEqual(1);
+      expect(field.type()).toEqual(TextInput);
+      expect(field.props().name).toEqual('startDate');
+      expect(field.props().placeholder).toEqual('Start Date');
+      expect(field.props().onBlur).toEqual(node.instance().handleFieldChange);
+    });
+
+    it('should update the filters with startDateAfter and startDateBefore values', async () => {
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+
+      //when
+      await flushPromises();
+
+      node.instance().handleFieldChange({
+        target: {value: '25 January 2009', name: 'startDate'}
+      });
+      node.update();
+
+      // then
+      expect(spy).toHaveBeenCalled();
+      expect(spy.mock.calls[0][0].startDateAfter).toEqual(
+        '2009-01-25T00:00:00.000+0100'
+      );
+      expect(spy.mock.calls[0][0].startDateBefore).toEqual(
+        '2009-01-26T00:00:00.000+0100'
+      );
+    });
+
+    it('should not  update the filters when startDate is invalid', async () => {
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+
+      //when
+      await flushPromises();
+
+      node.instance().handleFieldChange({
+        target: {value: 'invalid date', name: 'startDate'}
+      });
+      node.update();
+
+      // then
+      expect(spy).toHaveBeenCalledWith({});
+    });
+  });
 });
