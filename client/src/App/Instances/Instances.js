@@ -6,6 +6,7 @@ import Content from 'modules/components/Content';
 import Panel from 'modules/components/Panel';
 import withSharedState from 'modules/components/withSharedState';
 import SplitPane from 'modules/components/SplitPane';
+import Diagram from 'modules/components/Diagram';
 import {DIRECTION, DEFAULT_FILTER} from 'modules/constants';
 import {fetchWorkflowInstancesCount} from 'modules/api/instances';
 import {
@@ -36,6 +37,7 @@ class Instances extends Component {
 
     this.state = {
       filter: {},
+      workflowId: null,
       filterCount: filterCount || 0,
       selection: createNewSelectionFragment(),
       selections: selections || [[]],
@@ -118,6 +120,12 @@ class Instances extends Component {
     this.props.storeStateLocally({filter: filter});
   };
 
+  handleWorkflowIdChange = id => {
+    this.setState({
+      workflowId: id
+    });
+  };
+
   handleBulkFilterChange = (name, value) => {
     this.setState({
       [name]: value
@@ -145,6 +153,8 @@ class Instances extends Component {
     }));
   };
 
+  handleFlowNodesDetailsReady = () => {};
+
   render() {
     const {running, incidents: incidentsCount} = this.props.getStateLocally();
     return (
@@ -163,19 +173,25 @@ class Instances extends Component {
                 filter={this.state.filter}
                 onFilterChange={this.handleFilterChange}
                 resetFilter={this.resetFilter}
-                onBulkFilterChange={this.handleBulkFilterChange}
+                onWorkflowVersionChange={this.handleWorkflowIdChange}
               />
             </Styled.Filters>
 
             <Styled.Center>
               <SplitPane.Pane isRounded>
                 <SplitPane.Pane.Header isRounded>
-                  Process Definition Name
+                  Process Definition
                 </SplitPane.Pane.Header>
                 <SplitPane.Pane.Body>
-                  Process Definition Name content
+                  {this.state.workflowId && (
+                    <Diagram
+                      workflowId={this.state.workflowId}
+                      onFlowNodesDetailsReady={this.handleFlowNodesDetailsReady}
+                    />
+                  )}
                 </SplitPane.Pane.Body>
               </SplitPane.Pane>
+
               <ListView
                 instancesInFilter={this.state.filterCount}
                 filters={{

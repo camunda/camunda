@@ -24,8 +24,8 @@ export default class Filters extends React.Component {
   static propTypes = {
     filter: PropTypes.object.isRequired,
     onFilterChange: PropTypes.func,
-    onBulkFilterChange: PropTypes.func,
-    resetFilter: PropTypes.func
+    resetFilter: PropTypes.func,
+    onWorkflowVersionChange: PropTypes.func
   };
 
   state = {
@@ -48,25 +48,29 @@ export default class Filters extends React.Component {
     );
     const version = currentWorkflow ? currentWorkflow.workflows[0].id : '';
 
-    this.setState({
-      currentWorkflow: currentWorkflow || {},
-      currentWorkflowVersion: version
-    });
+    this.setState(
+      {
+        currentWorkflow: currentWorkflow || {},
+        currentWorkflowVersion: version
+      },
+      this.updateInstancesWorkflowVersion
+    );
   };
 
-  getWorkflowVersions = () => {
-    const value = this.state.currentWorkflowVersion;
+  updateInstancesWorkflowVersion = async () => {
+    const version = this.state.currentWorkflowVersion;
 
-    return value === 'all'
-      ? this.state.currentWorkflow.workflows.map(item => item.id)
-      : [value];
+    this.props.onWorkflowVersionChange(version === 'all' ? null : version);
   };
 
   handleWorkflowVersionChange = event => {
     const {value} = event.target;
 
     value !== '' &&
-      this.setState({currentWorkflowVersion: value}, this.getWorkflowVersions);
+      this.setState(
+        {currentWorkflowVersion: value},
+        this.updateInstancesWorkflowVersion
+      );
   };
 
   handleFieldChange = event => {
