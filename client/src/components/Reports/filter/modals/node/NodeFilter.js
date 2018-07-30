@@ -1,5 +1,6 @@
 import React from 'react';
-import {Modal, Button, BPMNDiagram} from 'components';
+import classnames from 'classnames';
+import {Modal, ButtonGroup, Button, BPMNDiagram} from 'components';
 
 import ClickBehavior from './ClickBehavior';
 
@@ -10,7 +11,8 @@ export default class NodeFilter extends React.Component {
     super(props);
 
     this.state = {
-      selectedNodes: this.props.filterData ? this.props.filterData.data.values : []
+      selectedNodes: this.props.filterData ? this.props.filterData.data.values : [],
+      operator: this.props.filterData ? this.props.filterData.data.operator : 'in'
     };
   }
 
@@ -32,7 +34,7 @@ export default class NodeFilter extends React.Component {
     this.props.addFilter({
       type: 'executedFlowNodes',
       data: {
-        operator: 'in',
+        operator: this.state.operator,
         values
       }
     });
@@ -57,7 +59,8 @@ export default class NodeFilter extends React.Component {
             <span className="NodeFilter__preview-item-value">
               {selectedNode.name || selectedNode.id}
             </span>{' '}
-            {idx < this.state.selectedNodes.length - 1 && this.createOperator('or')}
+            {idx < this.state.selectedNodes.length - 1 &&
+              this.createOperator(this.state.operator === 'in' ? 'or' : 'nor')}
           </span>
         </li>
       );
@@ -67,7 +70,13 @@ export default class NodeFilter extends React.Component {
         <span className="NodeFilter__preview-introduction">
           This is the filter you are about to create:{' '}
         </span>{' '}
-        <span className="NodeFilter__parameter-name">Executed Flow Node</span> is {previewList}
+        <span className="NodeFilter__parameter-name">Executed Flow Node</span>
+        {this.createOperator(
+          this.state.operator === 'in'
+            ? 'is'
+            : this.state.selectedNodes.length > 1 ? 'is neither' : 'is not'
+        )}
+        {previewList}
       </ul>
     );
   };
@@ -84,6 +93,24 @@ export default class NodeFilter extends React.Component {
         <Modal.Header>Add Flow Node Filter</Modal.Header>
         <Modal.Content className="NodeFilter__modal-content">
           {this.createPreviewList()}
+          <div className="VariableFilter__buttonRow">
+            <ButtonGroup>
+              <Button
+                className={classnames({'is-active': this.state.operator === 'in'})}
+                onClick={() => this.setState({operator: 'in'})}
+              >
+                was executed
+              </Button>
+              <Button
+                className={classnames({
+                  'is-active': this.state.operator === 'not in'
+                })}
+                onClick={() => this.setState({operator: 'not in'})}
+              >
+                was not executed
+              </Button>
+            </ButtonGroup>
+          </div>
           {this.props.xml && (
             <div className="NodeFilter__diagram-container">
               <BPMNDiagram xml={this.props.xml}>

@@ -196,7 +196,7 @@ export default class FilterList extends React.Component {
             );
           }
         } else if (filter.type === 'executedFlowNodes') {
-          const {values} = filter.data;
+          const {values, operator} = filter.data;
           const flowNodes = this.state.flowNodeNames;
 
           list.push(
@@ -212,7 +212,10 @@ export default class FilterList extends React.Component {
                 }}
                 className="FilterList__action-item"
               >
-                <span className="FilterList__parameter-name">Executed Flow Node</span> is{' '}
+                <span className="FilterList__parameter-name">Executed Flow Node</span>
+                {this.createOperator(
+                  operator === 'in' ? 'is' : values.length > 1 ? 'is neither' : 'is not'
+                )}
                 {values.map((value, idx) => {
                   return (
                     <span key={idx}>
@@ -221,7 +224,8 @@ export default class FilterList extends React.Component {
                           ? flowNodes[value.toString()] || value.toString()
                           : value.toString()}
                       </span>
-                      {idx < values.length - 1 && this.createOperator('or')}
+                      {idx < values.length - 1 &&
+                        this.createOperator(operator === 'in' ? 'or' : 'nor')}
                     </span>
                   );
                 })}

@@ -208,6 +208,22 @@ it('should display a flow node filter with multiple selected nodes', () => {
   expect(node).toIncludeText('Executed Flow Node is flowNode1 or flowNode2');
 });
 
+it('should display a flow node filter with non-executed nodes', () => {
+  const data = [
+    {
+      type: 'executedFlowNodes',
+      data: {
+        operator: 'not in',
+        values: ['flowNode1', 'flowNode2']
+      }
+    }
+  ];
+
+  const node = mount(<FilterList data={data} openEditFilterModal={jest.fn()} />);
+
+  expect(node).toIncludeText('Executed Flow Node is neither flowNode1 nor flowNode2');
+});
+
 it('should display a rolling date filter', () => {
   const data = [
     {

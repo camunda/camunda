@@ -12,6 +12,7 @@ jest.mock('components', () => {
 
   return {
     Modal,
+    ButtonGroup: props => <div {...props} />,
     Button: props => <button {...props}>{props.children}</button>,
     BPMNDiagram: props => (
       <div id="diagram">
@@ -148,4 +149,27 @@ it('should create preview of selected nodes linked by or', () => {
   expect(content).toIncludeText(flowNode1.name);
   expect(content).toIncludeText('or');
   expect(content).toIncludeText(flowNode2.name);
+});
+
+it('should contain buttons to switch between executed and not executed mode', () => {
+  const node = mount(<NodeFilter />);
+
+  expect(node.find('button').at(0)).toIncludeText('was executed');
+  expect(node.find('button').at(1)).toIncludeText('was not executed');
+});
+
+it('should set the operator when clicking the operator buttons', () => {
+  const node = mount(<NodeFilter />);
+
+  node
+    .find('button')
+    .at(0)
+    .simulate('click');
+  expect(node.state().operator).toBe('in');
+
+  node
+    .find('button')
+    .at(1)
+    .simulate('click');
+  expect(node.state().operator).toBe('not in');
 });
