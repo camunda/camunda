@@ -275,7 +275,7 @@ export default class ReportView extends React.Component {
         }
       })
       .forEach(key => {
-        const formattedDate = moment.utc(key).format(dateFormat);
+        const formattedDate = moment(key).format(dateFormat);
         formattedResult[formattedDate] = result[key];
       });
     return formattedResult;

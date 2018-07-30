@@ -285,8 +285,8 @@ it('should adjust groupby Variable Date option in table to unit', () => {
   node.setState({
     loaded: true
   });
-  expect(node.find(Table)).not.toIncludeText('2015-03-25T12:00:00Z');
-  expect(node.find(Table)).toIncludeText('2015-03-25 12:00:00');
+  expect(node.find(Table)).not.toIncludeText('2015-03-25T');
+  expect(node.find(Table)).toIncludeText('2015-03-25 ');
 });
 
 it('should sort time data descending for tables', () => {
