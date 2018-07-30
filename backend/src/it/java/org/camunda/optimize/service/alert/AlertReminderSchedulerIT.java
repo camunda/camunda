@@ -21,6 +21,7 @@ import java.time.OffsetDateTime;
 import static junit.framework.TestCase.assertTrue;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.HEAT_VISUALIZATION;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 
@@ -78,6 +79,21 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
       embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
       is(0)
     );
+  }
+
+  @Test
+  public void reminderIsNotCreatedOnStartupIfNotDefinedInAlert() throws Exception {
+    //given
+    AlertCreationDto alert = setupBasicAlert();
+    createAlert(alert);
+
+    //when
+    embeddedOptimizeRule.stopOptimize();
+    embeddedOptimizeRule.startOptimize();
+
+
+    //then
+    assertThat(alert.getReminder(), is(nullValue()));
   }
 
 
