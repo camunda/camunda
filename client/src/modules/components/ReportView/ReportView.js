@@ -248,7 +248,7 @@ export default class ReportView extends React.Component {
         break;
       case 'second':
       default:
-        dateFormat = 'YYYY-MM-DD HH:MM:SS';
+        dateFormat = 'YYYY-MM-DD HH:mm:ss';
     }
     return dateFormat;
   }
@@ -275,7 +275,7 @@ export default class ReportView extends React.Component {
         }
       })
       .forEach(key => {
-        const formattedDate = moment(key).format(dateFormat);
+        const formattedDate = moment.utc(key).format(dateFormat);
         formattedResult[formattedDate] = result[key];
       });
     return formattedResult;
