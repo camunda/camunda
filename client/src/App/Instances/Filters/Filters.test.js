@@ -423,11 +423,11 @@ describe('Filters', () => {
 
       // then
       expect(spy).toHaveBeenCalled();
-      expect(spy.mock.calls[0][0].startDateAfter).toEqual(
-        '2009-01-25T00:00:00.000+0100'
+      expect(spy.mock.calls[0][0].startDateAfter).toContain(
+        '2009-01-25T00:00:00.000'
       );
-      expect(spy.mock.calls[0][0].startDateBefore).toEqual(
-        '2009-01-26T00:00:00.000+0100'
+      expect(spy.mock.calls[0][0].startDateBefore).toContain(
+        '2009-01-26T00:00:00.000'
       );
     });
 

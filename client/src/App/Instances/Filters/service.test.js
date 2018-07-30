@@ -63,19 +63,22 @@ describe('Filters/service.js', () => {
       const input = 'July 05 2018';
       const output = fieldParser.startDate(input);
 
-      expect(output.startDateAfter).toBe('2018-07-05T00:00:00.000+0200');
+      // no timezone tested, it differs on environments
+      expect(output.startDateAfter).toContain('2018-07-05T00:00:00.000');
     });
     it('should return startDateBefore = date + 1 day, when no time is provided', () => {
       const input = 'July 05 2018';
       const output = fieldParser.startDate(input);
 
-      expect(output.startDateBefore).toBe('2018-07-06T00:00:00.000+0200');
+      // no timezone tested, it differs on environments
+      expect(output.startDateBefore).toContain('2018-07-06T00:00:00.000');
     });
     it('should return startDateBefore = date + 1 minute, when time is provided', () => {
       const input = 'July 05 2018 15:18';
       const output = fieldParser.startDate(input);
 
-      expect(output.startDateBefore).toBe('2018-07-05T15:19:00.000+0200');
+      // no timezone tested, it differs on environments
+      expect(output.startDateBefore).toContain('2018-07-05T15:19:00.000');
     });
   });
 });
