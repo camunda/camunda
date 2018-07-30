@@ -58,6 +58,7 @@ public class RunningProcessInstanceWriter {
     params.put(ProcessInstanceType.ENGINE, procInst.getEngine());
     params.put(ProcessInstanceType.PROCESS_DEFINITION_VERSION, procInst.getProcessDefinitionVersion());
     params.put(ProcessInstanceType.BUSINESS_KEY, procInst.getBusinessKey());
+    params.put(ProcessInstanceType.STATE, procInst.getState());
 
     Script updateScript = new Script(
       ScriptType.INLINE,
@@ -65,7 +66,8 @@ public class RunningProcessInstanceWriter {
       "ctx._source.startDate = params.startDate;" +
       "ctx._source.processDefinitionVersion = params.processDefinitionVersion;" +
       "ctx._source.engine = params.engine;" +
-      "ctx._source.businessKey = params.businessKey;",
+      "ctx._source.businessKey = params.businessKey;" +
+      "ctx._source.state = params.state",
         params
     );
 

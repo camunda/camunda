@@ -58,6 +58,7 @@ public class FinishedProcessInstanceWriter {
     if (endDate == null) {
       logger.warn("End date should not be null for finished process instances!");
     }
+    params.put(ProcessInstanceType.STATE, procInst.getState());
     params.put(ProcessInstanceType.END_DATE, endDate);
     params.put(ProcessInstanceType.ENGINE, procInst.getEngine());
     params.put(ProcessInstanceType.DURATION, procInst.getDurationInMs());
@@ -72,7 +73,8 @@ public class FinishedProcessInstanceWriter {
             "ctx._source.durationInMs = params.durationInMs;" +
             "ctx._source.processDefinitionVersion = params.processDefinitionVersion;" +
             "ctx._source.engine = params.engine;" +
-            "ctx._source.businessKey = params.businessKey;",
+            "ctx._source.businessKey = params.businessKey;" +
+            "ctx._source.state = params.state;",
         params
     );
 

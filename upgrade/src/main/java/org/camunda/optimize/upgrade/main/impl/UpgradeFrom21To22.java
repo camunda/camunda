@@ -3,8 +3,11 @@ package org.camunda.optimize.upgrade.main.impl;
 import org.camunda.optimize.upgrade.main.Upgrade;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
+import org.camunda.optimize.upgrade.steps.AddFieldStep;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Collections;
 
 
 public class UpgradeFrom21To22 implements Upgrade {
@@ -27,11 +30,19 @@ public class UpgradeFrom21To22 implements Upgrade {
   @Override
   public void performUpgrade() {
     try {
+      AddFieldStep addStateFieldStep = new AddFieldStep(
+              "process-instance",
+              "$.mappings.process-instance.properties",
+              "state",
+              Collections.singletonMap("type", "keyword"),
+              "ctx._source.state = null"
+      );
+
       UpgradePlan upgradePlan = UpgradePlanBuilder.createUpgradePlan()
-      .fromVersion(FROM_VERSION)
-      .toVersion(TO_VERSION)
-      // add upgrade steps here
-      .build();
+              .fromVersion(FROM_VERSION)
+              .toVersion(TO_VERSION)
+              .addUpgradeStep(addStateFieldStep)
+              .build();
 
       upgradePlan.execute();
     } catch (Exception e) {

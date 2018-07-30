@@ -74,6 +74,7 @@ public class FinishedProcessInstanceImportService {
     OffsetDateTime endDate = engineEntity.getEndTime();
     processInstanceDto.setStartDate(startDate);
     processInstanceDto.setEndDate(endDate);
+    processInstanceDto.setState(engineEntity.getState());
     processInstanceDto.setDurationInMs(endDate.toInstant().toEpochMilli() - startDate.toInstant().toEpochMilli());
     processInstanceDto.setEngine(this.engineContext.getEngineAlias());
     return processInstanceDto;

@@ -278,6 +278,21 @@ public class EngineIntegrationRule extends TestWatcher {
     }
   }
 
+  public void externallyTerminateProcessInstance(String processInstanceId) {
+    CloseableHttpClient client = getHttpClient();
+    HttpDelete delete = new HttpDelete(getGetProcessInstanceUri(processInstanceId));
+    try {
+      CloseableHttpResponse response = client.execute(delete);
+      if(response.getStatusLine().getStatusCode() != 204) {
+        logger.error("Could not cancel process definition for process instance [{}]. Reason: wrong response code [{}]",
+                processInstanceId,
+                response.getStatusLine().getStatusCode());
+      }
+    } catch (Exception e) {
+      logger.error("Could not cancel process definition for process instance: " + processInstanceId, e );
+    }
+  }
+
   public void deleteVariableInstanceForProcessInstance(String variableName, String processInstanceId) {
     CloseableHttpClient client = getHttpClient();
     HttpDelete delete = new HttpDelete(getVariableDeleteUri(variableName, processInstanceId));
@@ -360,6 +375,10 @@ public class EngineIntegrationRule extends TestWatcher {
 
   private String getHistoricGetProcessInstanceUri(String processInstanceId) {
     return getEngineUrl() +  "/history/process-instance/" + processInstanceId;
+  }
+
+  private String getGetProcessInstanceUri(String processInstanceId) {
+    return getEngineUrl() +  "/process-instance/" + processInstanceId;
   }
 
   private String getVariableDeleteUri(String variableName, String processInstanceId) {

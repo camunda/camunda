@@ -25,6 +25,7 @@ public class ProcessInstanceDto implements OptimizeDto {
   protected OffsetDateTime endDate;
   protected Long durationInMs;
   protected String engine;
+  protected String state;
   protected List<SimpleEventDto> events = new ArrayList<>();
 
   protected List<StringVariableDto> stringVariables = new ArrayList<>();
@@ -207,5 +208,9 @@ public class ProcessInstanceDto implements OptimizeDto {
   public void setEngine(String engine) {
     this.engine = engine;
   }
+
+  public String getState() { return state; }
+
+  public void setState(String state) { this.state = state; }
 
 }

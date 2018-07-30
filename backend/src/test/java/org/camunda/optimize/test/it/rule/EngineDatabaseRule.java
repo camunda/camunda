@@ -132,6 +132,16 @@ public class EngineDatabaseRule extends TestWatcher {
     connection.commit();
   }
 
+  public void changeProcessInstanceState(String processInstanceId, String newState) throws SQLException {
+    String sql = "UPDATE ACT_HI_PROCINST " +
+            "SET STATE_ = ? WHERE PROC_INST_ID_ = ?";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setString(1, newState);
+    statement.setString(2, processInstanceId);
+    statement.executeUpdate();
+    connection.commit();
+  }
+
   public void updateProcessInstanceStartDates(Map<String, OffsetDateTime> processInstanceIdToStartDate) throws SQLException {
     String sql = "UPDATE ACT_HI_PROCINST " +
       "SET START_TIME_ = ? WHERE PROC_INST_ID_ = ?";

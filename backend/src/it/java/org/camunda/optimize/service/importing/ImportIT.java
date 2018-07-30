@@ -4,6 +4,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.filter.CanceledInstancesOnlyQueryFilter;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EngineConfiguration;
@@ -127,7 +128,21 @@ public class ImportIT  {
     }
   }
 
-  public void deployAndStartUserTaskProcess() {
+  @Test
+  public void processInstanceStateIsImported() {
+    // given
+    createStartAndCancelUserTaskProcess();
+
+    // when
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // then
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
+    assertThat(idsResp.getHits().getAt(0).getSourceAsMap().get(ProcessInstanceType.STATE), is(CanceledInstancesOnlyQueryFilter.EXTERNALLY_TERMINATED));
+  }
+
+  public ProcessInstanceEngineDto deployAndStartUserTaskProcess() {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .startEvent()
       .userTask()
@@ -135,7 +150,12 @@ public class ImportIT  {
       .done();
     Map<String, Object> variables = new HashMap<>();
     variables.put("aVariable", "aStringVariable");
-    engineRule.deployAndStartProcessWithVariables(processModel, variables);
+    return engineRule.deployAndStartProcessWithVariables(processModel, variables);
+  }
+
+  private void createStartAndCancelUserTaskProcess() {
+    ProcessInstanceEngineDto processInstance = deployAndStartUserTaskProcess();
+    engineRule.externallyTerminateProcessInstance(processInstance.getId());
   }
 
   @Test

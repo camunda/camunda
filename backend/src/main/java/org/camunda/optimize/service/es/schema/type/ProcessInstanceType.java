@@ -18,6 +18,7 @@ public class ProcessInstanceType extends StrictTypeMappingCreator {
   public static final String PROCESS_INSTANCE_ID = "processInstanceId";
   public static final String BUSINESS_KEY = "businessKey";
   public static final String EVENTS = "events";
+  public static final String STATE = "state";
 
   public static final String EVENT_ID = "id";
   public static final String ACTIVITY_ID = "activityId";
@@ -75,6 +76,9 @@ public class ProcessInstanceType extends StrictTypeMappingCreator {
               .field("type", "long")
             .endObject()
             .startObject(ENGINE)
+              .field("type", "keyword")
+            .endObject()
+            .startObject(STATE)
               .field("type", "keyword")
             .endObject()
             .startObject(EVENTS)

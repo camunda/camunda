@@ -4,6 +4,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.CanceledInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
@@ -107,7 +108,6 @@ public class MixedFilterIT {
     List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
           .id(USER_TASK_ACTIVITY_ID)
           .build();
-
     filterList.addAll(flowNodeFilter);
     filterList.addAll(DateUtilHelper.createFixedStartDateFilter(null , date.minusSeconds(1L)));
     RawDataReportResultDto rawDataReportResultDto = evaluateReportWithFilter(processDefinition, filterList);

@@ -1,10 +1,7 @@
 package org.camunda.optimize.service.es.filter;
 
 import org.camunda.optimize.dto.optimize.query.report.filter.*;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.CompletedInstancesOnlyFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.DurationFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.ExecutedFlowNodeFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.RunningInstancesOnlyFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.data.*;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.variable.VariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.startDate.StartDateFilterDataDto;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -35,6 +32,10 @@ public class QueryFilterEnhancer {
   @Autowired
   private CompletedInstancesOnlyQueryFilter completedInstancesOnlyQueryFilter;
 
+  @Autowired
+  private CanceledInstancesOnlyQueryFilter canceledInstancesOnlyQueryFilter;
+
+
   public void addFilterToQuery(BoolQueryBuilder query, List<FilterDto> filter) {
     if (filter != null) {
       startDateQueryFilter.addFilters(query, extractStartDateFilters(filter));
@@ -43,6 +44,7 @@ public class QueryFilterEnhancer {
       durationQueryFilter.addFilters(query, extractDurationFilters(filter));
       runningInstancesOnlyQueryFilter.addFilters(query, extractRunningInstancesOnlyFilters(filter));
       completedInstancesOnlyQueryFilter.addFilters(query, extractCompletedInstancesOnlyFilters(filter));
+      canceledInstancesOnlyQueryFilter.addFilters(query, extractCanceledInstancesOnlyFilters(filter));
     }
   }
 
@@ -55,6 +57,18 @@ public class QueryFilterEnhancer {
           return dateFilterDto.getData();
         })
         .collect(Collectors.toList());
+  }
+
+  private List<CanceledInstancesOnlyFilterDataDto> extractCanceledInstancesOnlyFilters(List<FilterDto> filter) {
+    return filter
+      .stream()
+      .filter(CanceledInstancesOnlyFilterDto.class::isInstance)
+      .map(canceledInstancesOnlyFilter -> {
+        CanceledInstancesOnlyFilterDto canceledInstancesOnlyFilterDto =
+                (CanceledInstancesOnlyFilterDto) canceledInstancesOnlyFilter;
+        return canceledInstancesOnlyFilterDto.getData();
+      })
+      .collect(Collectors.toList());
   }
 
   private List<StartDateFilterDataDto> extractStartDateFilters(List<FilterDto> filter) {

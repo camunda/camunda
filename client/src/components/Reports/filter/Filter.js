@@ -63,6 +63,11 @@ export default class Filter extends React.Component {
       'completedInstancesOnly'
     ]);
 
+    filters = this.filterIncompatibleExistingFilters(filters, newFilter.type, [
+      'runningInstancesOnly',
+      'canceledInstancesOnly'
+    ]);
+
     this.props.onChange({filter: [...filters, newFilter]});
     this.closeModal();
   };
@@ -127,6 +132,9 @@ export default class Filter extends React.Component {
           </Dropdown.Option>
           <Dropdown.Option onClick={this.filterByInstancesOnly('completedInstancesOnly')}>
             Completed Instances Only
+          </Dropdown.Option>
+          <Dropdown.Option onClick={this.filterByInstancesOnly('canceledInstancesOnly')}>
+            Canceled Instances Only
           </Dropdown.Option>
           <Dropdown.Option onClick={this.openNewFilterModal('startDate')}>
             Start Date
