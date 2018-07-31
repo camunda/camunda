@@ -27,6 +27,8 @@ jest.mock('components', () => {
   };
   Select.Option = props => <option {...props}>{props.children}</option>;
 
+  const Typeahead = props => <div>Typeahead: {JSON.stringify(props)}</div>;
+
   return {
     Modal,
     ErrorMessage: props => <div {...props}>{props.children}</div>,
@@ -36,7 +38,8 @@ jest.mock('components', () => {
       delete allowedProps.isInvalid;
       return <input {...allowedProps} />;
     },
-    Select
+    Select,
+    Typeahead
   };
 });
 

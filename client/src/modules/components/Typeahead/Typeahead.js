@@ -12,7 +12,8 @@ export default class Typeahead extends React.Component {
     query: '',
     optionsVisible: false,
     selectedValueIdx: 0,
-    firstShownOptionIdx: 0
+    firstShownOptionIdx: 0,
+    lastCommittedValue: ''
   };
 
   componentDidMount() {
@@ -21,8 +22,10 @@ export default class Typeahead extends React.Component {
 
   componentDidUpdate(prevProps) {
     if (this.props.initialValue && this.props.initialValue !== prevProps.initialValue) {
+      const value = this.getFormatter()(this.props.initialValue);
       this.setState({
-        query: this.getFormatter()(this.props.initialValue)
+        query: value,
+        lastCommittedValue: value
       });
     }
   }
@@ -74,8 +77,10 @@ export default class Typeahead extends React.Component {
 
   selectValue = value => () => {
     const formatter = this.getFormatter();
+    const formattedValue = formatter(value);
     this.setState({
-      query: formatter(value),
+      query: formattedValue,
+      lastCommittedValue: formattedValue,
       selectedValueIdx: 0,
       firstShownOptionIdx: 0,
       optionsVisible: false
@@ -85,6 +90,10 @@ export default class Typeahead extends React.Component {
       this.props.onSelect(value);
     }
     this.close();
+  };
+
+  resetToLastCommitted = () => {
+    this.setState({query: this.state.lastCommittedValue});
   };
 
   handleKeyPress = evt => {
@@ -199,17 +208,20 @@ export default class Typeahead extends React.Component {
     };
 
     const valueStyle = {
-      height: valueHeight + 'px'
+      height: valueHeight + 'px',
+      minWidth: this.input && this.input.clientWidth + 'px'
     };
 
     return (
-      <div ref={this.containerRef} className="Typeahead">
+      <div ref={this.containerRef} className={classnames('Typeahead', this.props.className)}>
         <Input
-          className="Typeahead__input"
+          className={classnames('Typeahead__input', {'is-invalid': this.props.isInvalid})}
           value={query}
           onChange={this.updateQuery}
           onClick={this.showOptions}
           onKeyDown={this.handleKeyPress}
+          onBlur={this.resetToLastCommitted}
+          placeholder={this.props.placeholder}
           ref={this.inputRef}
         />
         {optionsVisible &&
@@ -227,6 +239,7 @@ export default class Typeahead extends React.Component {
                       'is-active': index === selectedValueIdx
                     })}
                     style={valueStyle}
+                    onMouseDown={evt => evt.preventDefault()}
                     onClick={this.selectValue(value)}
                     key={formatter(value)}
                   >

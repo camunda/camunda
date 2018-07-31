@@ -1,7 +1,7 @@
 import React from 'react';
 
 import Typeahead from './Typeahead';
-import {Dropdown} from 'components';
+import {Dropdown, Input} from 'components';
 
 import {mount} from 'enzyme';
 
@@ -67,4 +67,18 @@ it('should call the provided onSelect method when a selection is done', () => {
     .simulate('click');
 
   expect(spy).toHaveBeenCalledWith('foo');
+});
+
+it('should reset the query to the latest committed state when the input field blurs', () => {
+  const node = mount(<Typeahead values={['foo', 'bar']} />);
+
+  node.setState({
+    optionsVisible: true,
+    lastCommittedValue: 'foo',
+    query: 'I typed something in the typeahead'
+  });
+
+  node.find(Input).simulate('blur');
+
+  expect(node).toHaveState('query', 'foo');
 });

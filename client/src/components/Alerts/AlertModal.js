@@ -1,7 +1,7 @@
 import React from 'react';
 import update from 'immutability-helper';
 
-import {Modal, Button, Input, Select, ErrorMessage} from 'components';
+import {Modal, Button, Input, Select, ErrorMessage, Typeahead} from 'components';
 import {emailNotificationIsEnabled} from './service';
 
 import ThresholdInput from './ThresholdInput';
@@ -162,7 +162,7 @@ export default class AlertModal extends React.Component {
       ? this.state.threshold.value
       : this.state.threshold;
 
-  updateReport = id => {
+  updateReport = ({id}) => {
     const reportType = this.getReportType(id);
     const currentValue = this.getThresholdValue();
 
@@ -236,24 +236,13 @@ export default class AlertModal extends React.Component {
               <label htmlFor="report-select">
                 <span className="AlertModal__label">when Report</span>
               </label>
-              <Select
-                id="report-select"
-                className="AlertModal__input"
+              <Typeahead
                 isInvalid={errorInput === 'report'}
-                value={reportId}
-                onChange={({target: {value}}) => this.updateReport(value)}
-              >
-                <Select.Option disabled value="">
-                  Please select Report
-                </Select.Option>
-                {this.props.reports.map(({id, name}) => {
-                  return (
-                    <Select.Option key={id} value={id}>
-                      {name}
-                    </Select.Option>
-                  );
-                })}
-              </Select>
+                placeholder="Please select Report"
+                values={this.props.reports}
+                onSelect={this.updateReport}
+                formatter={({name}) => name}
+              />
               <div className="AlertModal__report-selection-note">
                 Note: you can only create an alert for a report visualized as Number
               </div>
@@ -275,7 +264,7 @@ export default class AlertModal extends React.Component {
                   value={threshold}
                   onChange={threshold => this.setState({threshold})}
                   isInvalid={errorInput === 'threshold'}
-                  type={this.getReportType(this.state.reportId)}
+                  type={this.getReportType(reportId)}
                 />
               </div>
               {errorInput === 'threshold' && (

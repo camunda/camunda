@@ -12,6 +12,7 @@ class Input extends React.Component {
         readOnly={props.readOnly}
         type={props.type}
         onChange={props.onChange}
+        onBlur={props.onBlur}
         value={props.value}
         name={props.name}
         className={props.className}
