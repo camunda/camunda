@@ -54,7 +54,7 @@ describe('Filters', () => {
     filter: {active: true, incidents: false, canceled: true, completed: false},
     onFilterChange: spy,
     resetFilter: jest.fn(),
-    onExtraFilterChange: jest.fn()
+    onWorkflowVersionChange: jest.fn()
   };
 
   beforeEach(() => {

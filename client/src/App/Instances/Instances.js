@@ -36,14 +36,14 @@ class Instances extends Component {
     const {filterCount, selections} = props.getStateLocally();
 
     this.state = {
+      errorMessage: null,
       filter: {},
-      workflowId: null,
       filterCount: filterCount || 0,
       selection: createNewSelectionFragment(),
+      selectionCount: 10,
       selections: selections || [[]],
-      errorMessage: null,
       instancesInSelections: 5000,
-      selectionCount: 10
+      workflowId: null
     };
   }
 
@@ -123,12 +123,6 @@ class Instances extends Component {
   handleWorkflowIdChange = id => {
     this.setState({
       workflowId: id
-    });
-  };
-
-  handleBulkFilterChange = (name, value) => {
-    this.setState({
-      [name]: value
     });
   };
 
