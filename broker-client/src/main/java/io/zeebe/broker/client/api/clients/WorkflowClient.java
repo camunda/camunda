@@ -18,6 +18,7 @@ package io.zeebe.broker.client.api.clients;
 import io.zeebe.broker.client.api.commands.CancelWorkflowInstanceCommandStep1;
 import io.zeebe.broker.client.api.commands.CreateWorkflowInstanceCommandStep1;
 import io.zeebe.broker.client.api.commands.DeployWorkflowCommandStep1;
+import io.zeebe.broker.client.api.commands.PublishMessageCommandStep1;
 import io.zeebe.broker.client.api.commands.UpdatePayloadWorkflowInstanceCommandStep1;
 import io.zeebe.broker.client.api.commands.WorkflowRequestStep1;
 import io.zeebe.broker.client.api.commands.WorkflowResourceRequestStep1;
@@ -104,6 +105,22 @@ public interface WorkflowClient {
    * @return a builder for the command
    */
   UpdatePayloadWorkflowInstanceCommandStep1 newUpdatePayloadCommand(WorkflowInstanceEvent event);
+
+  /**
+   * Command to publish a message which can be correlated to a workflow instance.
+   *
+   * <pre>
+   * workflowClient
+   *  .newPublishMessageCommand()
+   *  .messageName("order canceled")
+   *  .correlationKey(orderId)
+   *  .payload(json)
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the command
+   */
+  PublishMessageCommandStep1 newPublishMessageCommand();
 
   /**
    * Request to get the resource of a workflow (i.e. the XML representation).

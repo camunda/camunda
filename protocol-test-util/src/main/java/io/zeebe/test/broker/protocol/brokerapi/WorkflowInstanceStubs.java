@@ -16,6 +16,7 @@
 package io.zeebe.test.broker.protocol.brokerapi;
 
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.function.Consumer;
 
@@ -79,6 +80,26 @@ public class WorkflowInstanceStubs {
             .respondWith()
             .event()
             .intent(WorkflowInstanceIntent.PAYLOAD_UPDATED)
+            .value()
+            .allOf(r -> r.getCommand())
+            .done();
+
+    modifier.accept(builder);
+
+    builder.register();
+  }
+
+  public void registerPublishMessageCommand() {
+    registerPublishMessageCommand(b -> {});
+  }
+
+  public void registerPublishMessageCommand(Consumer<ExecuteCommandResponseBuilder> modifier) {
+    final ExecuteCommandResponseBuilder builder =
+        broker
+            .onExecuteCommandRequest(ValueType.MESSAGE, MessageIntent.PUBLISH)
+            .respondWith()
+            .event()
+            .intent(MessageIntent.PUBLISHED)
             .value()
             .allOf(r -> r.getCommand())
             .done();

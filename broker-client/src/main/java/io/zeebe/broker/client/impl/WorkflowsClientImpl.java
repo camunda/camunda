@@ -19,6 +19,7 @@ import io.zeebe.broker.client.api.clients.WorkflowClient;
 import io.zeebe.broker.client.api.commands.CancelWorkflowInstanceCommandStep1;
 import io.zeebe.broker.client.api.commands.CreateWorkflowInstanceCommandStep1;
 import io.zeebe.broker.client.api.commands.DeployWorkflowCommandStep1;
+import io.zeebe.broker.client.api.commands.PublishMessageCommandStep1;
 import io.zeebe.broker.client.api.commands.UpdatePayloadWorkflowInstanceCommandStep1;
 import io.zeebe.broker.client.api.commands.WorkflowRequestStep1;
 import io.zeebe.broker.client.api.commands.WorkflowResourceRequestStep1;
@@ -26,6 +27,7 @@ import io.zeebe.broker.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.broker.client.impl.workflow.CancelWorkflowInstanceCommandImpl;
 import io.zeebe.broker.client.impl.workflow.CreateWorkflowInstanceCommandImpl;
 import io.zeebe.broker.client.impl.workflow.DeployWorkflowCommandImpl;
+import io.zeebe.broker.client.impl.workflow.PublishMessageCommandImpl;
 import io.zeebe.broker.client.impl.workflow.UpdatePayloadCommandImpl;
 import io.zeebe.broker.client.impl.workflow.WorkflowRequestImpl;
 import io.zeebe.broker.client.impl.workflow.WorkflowResourceRequestImpl;
@@ -57,6 +59,15 @@ public class WorkflowsClientImpl implements WorkflowClient {
   public UpdatePayloadWorkflowInstanceCommandStep1 newUpdatePayloadCommand(
       WorkflowInstanceEvent event) {
     return new UpdatePayloadCommandImpl(client.getCommandManager(), event);
+  }
+
+  @Override
+  public PublishMessageCommandStep1 newPublishMessageCommand() {
+    return new PublishMessageCommandImpl(
+        client.getCommandManager(),
+        client.getObjectMapper(),
+        client.getTopic(),
+        client.getPartitionManager());
   }
 
   @Override

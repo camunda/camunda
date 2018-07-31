@@ -68,7 +68,8 @@ public class ZeebeClientImpl implements ZeebeClient {
 
   protected final ClientTopologyManager topologyManager;
   protected final RequestManager apiCommandManager;
-  protected SubscriptionManager subscriptionManager;
+  protected final SubscriptionManager subscriptionManager;
+  protected final PartitionManager partitionManager;
 
   protected boolean isClosed;
 
@@ -150,6 +151,8 @@ public class ZeebeClientImpl implements ZeebeClient {
     this.subscriptionManager = new SubscriptionManager(this);
     this.transport.registerChannelListener(subscriptionManager);
     this.scheduler.submitActor(subscriptionManager);
+
+    this.partitionManager = new PartitionManager(this);
   }
 
   @Override
@@ -219,6 +222,10 @@ public class ZeebeClientImpl implements ZeebeClient {
 
   public SubscriptionManager getSubscriptionManager() {
     return subscriptionManager;
+  }
+
+  public PartitionManager getPartitionManager() {
+    return partitionManager;
   }
 
   @Override
