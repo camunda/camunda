@@ -32,23 +32,30 @@ export const groupBy = {
   }
 };
 
-const noneGroup = {entity: groupBy.none, then: [visualization.number]};
-const startDateGroup = {
-  entity: groupBy.startDate,
-  then: [visualization.table, visualization.pie, visualization.line, visualization.bar]
-};
-const variableGroup = {
-  entity: groupBy.variable,
-  then: [visualization.table, visualization.pie, visualization.line, visualization.bar]
-};
-const flowNodeGroup = {
-  entity: groupBy.flowNodes,
-  then: [
-    visualization.table,
-    visualization.pie,
-    visualization.line,
-    visualization.bar,
-    visualization.heat
+const combinations = {
+  rawData: [{entity: groupBy.none, then: [visualization.table]}],
+  flowNodes: [
+    {
+      entity: groupBy.flowNodes,
+      then: [
+        visualization.table,
+        visualization.pie,
+        visualization.line,
+        visualization.bar,
+        visualization.heat
+      ]
+    }
+  ],
+  instance: [
+    {entity: groupBy.none, then: [visualization.number]},
+    {
+      entity: groupBy.startDate,
+      then: [visualization.table, visualization.pie, visualization.line, visualization.bar]
+    },
+    {
+      entity: groupBy.variable,
+      then: [visualization.table, visualization.pie, visualization.line, visualization.bar]
+    }
   ]
 };
 
@@ -56,7 +63,7 @@ export const view = {
   rawData: {
     data: {operation: 'rawData'},
     label: 'Raw Data',
-    next: [{entity: groupBy.none, then: [visualization.table]}]
+    next: combinations.rawData
   },
   frequency: {
     data: {
@@ -66,12 +73,12 @@ export const view = {
         {
           data: 'processInstance',
           label: 'Process Instances',
-          next: [noneGroup, startDateGroup, variableGroup]
+          next: combinations.instance
         },
         {
           data: 'flowNode',
           label: 'Flow Nodes',
-          next: [flowNodeGroup]
+          next: combinations.flowNodes
         }
       ]
     },
@@ -85,22 +92,22 @@ export const view = {
         {
           data: 'min',
           label: 'Minimum',
-          next: [noneGroup, startDateGroup, variableGroup]
+          next: combinations.instance
         },
         {
           data: 'avg',
           label: 'Average',
-          next: [noneGroup, startDateGroup, variableGroup]
+          next: combinations.instance
         },
         {
           data: 'median',
           label: 'Median',
-          next: [noneGroup, startDateGroup, variableGroup]
+          next: combinations.instance
         },
         {
           data: 'max',
           label: 'Maximum',
-          next: [noneGroup, startDateGroup, variableGroup]
+          next: combinations.instance
         }
       ]
     },
@@ -114,22 +121,22 @@ export const view = {
         {
           data: 'min',
           label: 'Minimum',
-          next: [flowNodeGroup]
+          next: combinations.flowNodes
         },
         {
           data: 'avg',
           label: 'Average',
-          next: [flowNodeGroup]
+          next: combinations.flowNodes
         },
         {
           data: 'median',
           label: 'Median',
-          next: [flowNodeGroup]
+          next: combinations.flowNodes
         },
         {
           data: 'max',
           label: 'Maximum',
-          next: [flowNodeGroup]
+          next: combinations.flowNodes
         }
       ]
     },
