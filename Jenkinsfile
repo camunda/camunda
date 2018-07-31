@@ -141,6 +141,8 @@ pipeline {
           post {
             always {
               junit testResults: '**/surefire-reports/**/*.xml', keepLongStdio: true
+            }
+            failure {
               archiveTestArtifacts('upgrade')
             }
           }
@@ -183,6 +185,8 @@ pipeline {
           post {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+            }
+            failure {
               archiveTestArtifacts('backend', 'latest')
             }
           }
@@ -206,6 +210,8 @@ pipeline {
           post {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+            }
+            failure {
               archiveTestArtifacts('backend', '7_9')
             }
           }
@@ -229,6 +235,8 @@ pipeline {
           post {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+            }
+            failure {
               archiveTestArtifacts('backend', '7_8')
             }
           }
