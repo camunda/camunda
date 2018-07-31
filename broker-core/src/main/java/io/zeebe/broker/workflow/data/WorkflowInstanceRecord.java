@@ -89,7 +89,7 @@ public class WorkflowInstanceRecord extends UnpackedObject {
     return this;
   }
 
-  public Long getWorkflowInstanceKey() {
+  public long getWorkflowInstanceKey() {
     return workflowInstanceKeyProp.getValue();
   }
 

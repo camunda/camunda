@@ -27,6 +27,7 @@ import io.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
 import io.zeebe.msgpack.jsonpath.JsonPathQuery;
 import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
 
 public class IntermediateCatchEventHandler
@@ -62,5 +63,8 @@ public class IntermediateCatchEventHandler
 
     executableElement.setCorrelationKey(query);
     executableElement.setMessageName(BufferUtil.wrapString(message.getName()));
+
+    executableElement.bindLifecycleState(
+        WorkflowInstanceIntent.CATCH_EVENT_OCCURRED, context.getCurrentFlowNodeOutgoingStep());
   }
 }

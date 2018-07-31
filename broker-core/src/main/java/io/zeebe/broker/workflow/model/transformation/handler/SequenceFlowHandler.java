@@ -17,15 +17,22 @@
  */
 package io.zeebe.broker.workflow.model.transformation.handler;
 
+import io.zeebe.broker.workflow.model.BpmnStep;
 import io.zeebe.broker.workflow.model.ExecutableFlowNode;
 import io.zeebe.broker.workflow.model.ExecutableSequenceFlow;
 import io.zeebe.broker.workflow.model.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
+import io.zeebe.model.bpmn.instance.Activity;
 import io.zeebe.model.bpmn.instance.ConditionExpression;
+import io.zeebe.model.bpmn.instance.EndEvent;
+import io.zeebe.model.bpmn.instance.ExclusiveGateway;
+import io.zeebe.model.bpmn.instance.FlowNode;
+import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
 import io.zeebe.msgpack.el.CompiledJsonCondition;
 import io.zeebe.msgpack.el.JsonConditionFactory;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class SequenceFlowHandler implements ModelElementTransformer<SequenceFlow> {
 
@@ -42,6 +49,27 @@ public class SequenceFlowHandler implements ModelElementTransformer<SequenceFlow
 
     compileCondition(element, sequenceFlow);
     connectWithFlowNodes(element, workflow, sequenceFlow);
+    bindLifecycle(element, sequenceFlow);
+  }
+
+  private void bindLifecycle(SequenceFlow element, final ExecutableSequenceFlow sequenceFlow) {
+    final FlowNode target = element.getTarget();
+
+    final BpmnStep step;
+
+    if (target instanceof Activity) {
+      step = BpmnStep.START_ACTIVITY;
+    } else if (target instanceof IntermediateCatchEvent) {
+      step = BpmnStep.ENTER_INTERMEDIATE_EVENT;
+    } else if (target instanceof ExclusiveGateway) {
+      step = BpmnStep.ACTIVATE_GATEWAY;
+    } else if (target instanceof EndEvent) {
+      step = BpmnStep.TRIGGER_END_EVENT;
+    } else {
+      throw new RuntimeException("Unsupported element");
+    }
+
+    sequenceFlow.bindLifecycleState(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, step);
   }
 
   private void connectWithFlowNodes(

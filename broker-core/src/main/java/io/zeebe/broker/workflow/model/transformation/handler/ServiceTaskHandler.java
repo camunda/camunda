@@ -19,6 +19,7 @@ package io.zeebe.broker.workflow.model.transformation.handler;
 
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.zeebe.broker.workflow.model.BpmnStep;
 import io.zeebe.broker.workflow.model.ExecutableServiceTask;
 import io.zeebe.broker.workflow.model.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
@@ -57,12 +58,11 @@ public class ServiceTaskHandler implements ModelElementTransformer<ServiceTask> 
 
     transformTaskHeaders(element, serviceTask);
 
-    bindLifecycle(context, serviceTask);
+    bindLifecycle(serviceTask);
   }
 
-  private void bindLifecycle(TransformContext context, final ExecutableServiceTask serviceTask) {
-    serviceTask.bindLifecycleState(
-        WorkflowInstanceIntent.ACTIVITY_COMPLETED, context.getCurrentFlowNodeOutgoingStep());
+  private void bindLifecycle(final ExecutableServiceTask serviceTask) {
+    serviceTask.bindLifecycleState(WorkflowInstanceIntent.ACTIVITY_ACTIVATED, BpmnStep.CREATE_JOB);
   }
 
   private void transformTaskDefinition(

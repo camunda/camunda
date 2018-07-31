@@ -15,31 +15,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.model;
+package io.zeebe.broker.workflow.processor;
 
-public enum BpmnStep {
-  NONE,
+import io.zeebe.broker.workflow.model.ExecutableFlowElement;
 
-  // exactly one outgoing sequence flow
-  TAKE_SEQUENCE_FLOW,
+public interface BpmnStepHandler<T extends ExecutableFlowElement> {
 
-  // end event, no outgoing sequence flow
-  CONSUME_TOKEN,
-
-  // xor-gateway
-  EXCLUSIVE_SPLIT,
-
-  CREATE_JOB,
-
-  APPLY_INPUT_MAPPING,
-
-  APPLY_OUTPUT_MAPPING,
-
-  ACTIVATE_GATEWAY,
-
-  ENTER_INTERMEDIATE_EVENT,
-
-  START_ACTIVITY,
-
-  TRIGGER_END_EVENT
+  void handle(BpmnStepContext<T> context);
 }
