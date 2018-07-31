@@ -21,18 +21,29 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import io.zeebe.dispatcher.*;
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.Dispatchers;
+import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.io.FailingBufferWriter;
 import io.zeebe.test.util.io.FailingBufferWriter.FailingBufferWriterException;
 import io.zeebe.transport.impl.TransportChannel;
 import io.zeebe.transport.impl.TransportHeaderDescriptor;
-import io.zeebe.transport.util.*;
+import io.zeebe.transport.util.ControllableServerTransport;
+import io.zeebe.transport.util.EchoRequestResponseHandler;
+import io.zeebe.transport.util.RecordingChannelListener;
+import io.zeebe.transport.util.RecordingMessageHandler;
+import io.zeebe.transport.util.TransportTestUtil;
 import io.zeebe.util.ByteValue;
-import io.zeebe.util.buffer.*;
+import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.util.buffer.BufferWriter;
+import io.zeebe.util.buffer.DirectBufferWriter;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
@@ -42,11 +53,17 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.*;
-import java.util.function.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.mockito.ArgumentMatchers;
 
@@ -659,6 +676,57 @@ public class ClientTransportTest {
 
     final ClientResponse response = responseFuture.join();
     assertThatBuffer(response.getResponseBuffer()).hasBytes(BUF1);
+  }
+
+  @Test
+  public void shouldRetrySendRequestIfChannelIsNotOpen() {
+    // given
+    buildServerTransport(
+        b ->
+            b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
+                .build(null, new EchoRequestResponseHandler()));
+
+    // when
+
+    // don't wait until the channel is opened
+    final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+
+    final ActorFuture<ClientResponse> responseFuture =
+        clientTransport
+            .getOutput()
+            .sendRequest(remote, new DirectBufferWriter().wrap(BUF1), Duration.ofSeconds(2));
+
+    // then
+    final ClientResponse response = responseFuture.join();
+    assertThatBuffer(response.getResponseBuffer()).hasBytes(BUF1);
+  }
+
+  @Test
+  public void shouldRetrySendMessageIfChannelIsNotOpen() throws InterruptedException {
+    // given
+    final DirectBufferWriter writer = new DirectBufferWriter();
+    writer.wrap(BUF1);
+
+    final RecordingMessageHandler messageHandler = new RecordingMessageHandler();
+
+    buildServerTransport(
+        b -> {
+          return b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress()).build(messageHandler, null);
+        });
+
+    // when
+    final TransportMessage message = new TransportMessage();
+    message.writer(writer);
+
+    // don't wait until the channel is opened
+    final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+    message.remoteAddress(remote);
+
+    clientTransport.getOutput().sendMessage(message);
+
+    // then
+    waitUntil(() -> messageHandler.numReceivedMessages() == 1);
+    assertThatBuffer(messageHandler.getMessage(0).getBuffer()).hasBytes(BUF1);
   }
 
   @Test

@@ -15,14 +15,20 @@
  */
 package io.zeebe.transport.impl;
 
-import io.zeebe.transport.*;
-import io.zeebe.transport.impl.sender.*;
+import io.zeebe.transport.ServerOutput;
+import io.zeebe.transport.ServerResponse;
+import io.zeebe.transport.TransportMessage;
+import io.zeebe.transport.impl.sender.OutgoingMessage;
+import io.zeebe.transport.impl.sender.Sender;
+import io.zeebe.transport.impl.sender.TransportHeaderWriter;
 import io.zeebe.util.buffer.BufferWriter;
 import java.nio.ByteBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class ServerOutputImpl implements ServerOutput {
-  private Sender sender;
+  private static final long NO_RETRIES = 0;
+
+  private final Sender sender;
 
   public ServerOutputImpl(Sender sender) {
     this.sender = sender;
@@ -41,10 +47,10 @@ public class ServerOutputImpl implements ServerOutput {
         final int remoteStreamId = transportMessage.getRemoteStreamId();
         final UnsafeBuffer bufferView = new UnsafeBuffer(allocatedBuffer);
         final TransportHeaderWriter headerWriter = new TransportHeaderWriter();
-
         headerWriter.wrapMessage(bufferView, writer, remoteStreamId);
 
-        final OutgoingMessage outgoingMessage = new OutgoingMessage(remoteStreamId, bufferView);
+        final OutgoingMessage outgoingMessage =
+            new OutgoingMessage(remoteStreamId, bufferView, NO_RETRIES);
 
         sender.submitMessage(outgoingMessage);
 
@@ -77,7 +83,8 @@ public class ServerOutputImpl implements ServerOutput {
 
         headerWriter.setStreamId(remoteStreamId).setRequestId(requestId);
 
-        final OutgoingMessage outgoingMessage = new OutgoingMessage(remoteStreamId, bufferView);
+        final OutgoingMessage outgoingMessage =
+            new OutgoingMessage(remoteStreamId, bufferView, NO_RETRIES);
 
         sender.submitMessage(outgoingMessage);
 
