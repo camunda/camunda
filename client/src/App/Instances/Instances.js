@@ -43,7 +43,7 @@ class Instances extends Component {
       selectionCount: 10,
       selections: selections || [[]],
       instancesInSelections: 5000,
-      workflowId: null
+      workflow: null
     };
   }
 
@@ -120,10 +120,8 @@ class Instances extends Component {
     this.props.storeStateLocally({filter: filter});
   };
 
-  handleWorkflowIdChange = id => {
-    this.setState({
-      workflowId: id
-    });
+  handleWorkflowChange = workflow => {
+    this.setState({workflow});
   };
 
   setFilterInURL = filter => {
@@ -151,6 +149,7 @@ class Instances extends Component {
 
   render() {
     const {running, incidents: incidentsCount} = this.props.getStateLocally();
+
     return (
       <Fragment>
         <Header
@@ -167,19 +166,21 @@ class Instances extends Component {
                 filter={this.state.filter}
                 onFilterChange={this.handleFilterChange}
                 resetFilter={this.resetFilter}
-                onWorkflowVersionChange={this.handleWorkflowIdChange}
+                onWorkflowVersionChange={this.handleWorkflowChange}
               />
             </Styled.Filters>
 
             <Styled.Center>
               <SplitPane.Pane isRounded>
                 <SplitPane.Pane.Header isRounded>
-                  Process Definition
+                  {this.state.workflow
+                    ? this.state.workflow.name || this.state.workflow.id
+                    : 'Workflow'}
                 </SplitPane.Pane.Header>
                 <SplitPane.Pane.Body>
-                  {this.state.workflowId && (
+                  {this.state.workflow && (
                     <Diagram
-                      workflowId={this.state.workflowId}
+                      workflowId={this.state.workflow.id}
                       onFlowNodesDetailsReady={this.handleFlowNodesDetailsReady}
                     />
                   )}

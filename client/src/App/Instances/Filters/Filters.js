@@ -7,7 +7,7 @@ import TextInput from 'modules/components/TextInput';
 import Textarea from 'modules/components/Textarea';
 import Select from 'modules/components/Select';
 import {DEFAULT_FILTER, FILTER_TYPES, DIRECTION} from 'modules/constants';
-import {isEqual} from 'modules/utils';
+import {isEqual, isEmpty} from 'modules/utils';
 import * as api from 'modules/api/instances';
 
 import CheckboxGroup from './CheckboxGroup';
@@ -53,14 +53,26 @@ export default class Filters extends React.Component {
         currentWorkflow: currentWorkflow || {},
         currentWorkflowVersion: version
       },
-      this.updateInstancesWorkflowVersion
+      this.updateInstancesWorkflow
     );
   };
 
-  updateInstancesWorkflowVersion = async () => {
+  updateInstancesWorkflow = async () => {
     const version = this.state.currentWorkflowVersion;
+    let workflow = null;
+    // we don't show a diagram when no version is available,
+    // or all versions are selected
+    const isValidVersion =
+      !isEmpty(this.state.currentWorkflow) && version !== 'all';
 
-    this.props.onWorkflowVersionChange(version === 'all' ? null : version);
+    if (isValidVersion) {
+      workflow = this.state.currentWorkflow.workflows.find(item => {
+        return item.id === version;
+      });
+    }
+
+    // needed in the Instances view for diagram display
+    this.props.onWorkflowVersionChange(workflow);
   };
 
   handleWorkflowVersionChange = event => {
@@ -69,7 +81,7 @@ export default class Filters extends React.Component {
     value !== '' &&
       this.setState(
         {currentWorkflowVersion: value},
-        this.updateInstancesWorkflowVersion
+        this.updateInstancesWorkflow
       );
   };
 
