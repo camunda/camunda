@@ -50,15 +50,17 @@ api.fetchGroupedWorkflowInstances = mockResolvedAsyncFn(groupedWorkflowsMock);
 
 describe('Filters', () => {
   const spy = jest.fn();
+  const instancesSpy = jest.fn();
   const mockProps = {
     filter: {active: true, incidents: false, canceled: true, completed: false},
     onFilterChange: spy,
     resetFilter: jest.fn(),
-    onWorkflowVersionChange: jest.fn()
+    onWorkflowVersionChange: instancesSpy
   };
 
   beforeEach(() => {
     spy.mockClear();
+    instancesSpy.mockClear();
   });
 
   it('should render the filters', () => {
@@ -279,6 +281,9 @@ describe('Filters', () => {
       expect(node.find({name: 'workflowVersion'}).props().value).toEqual(
         groupedWorkflowsMock[0].workflows[0].id
       );
+      expect(instancesSpy.mock.calls[0][0]).toEqual(
+        groupedWorkflowsMock[0].workflows[0]
+      );
     });
 
     it('should display an all versions option', async () => {
@@ -319,6 +324,8 @@ describe('Filters', () => {
       expect(node.find({name: 'workflowVersion'}).props().value).toEqual(
         groupedWorkflowsMock[0].workflows[0].id
       );
+      // should not update the workflow in Instances
+      expect(instancesSpy.mock.calls.length).toEqual(1);
     });
 
     it('should reset after a the workflowName field is also reseted ', async () => {
@@ -338,6 +345,9 @@ describe('Filters', () => {
       // then
       // should keep the last version option selected
       expect(node.find({name: 'workflowVersion'}).props().value).toEqual('');
+      expect(node.find({name: 'workflowName'}).props().value).toEqual('');
+      // should update the instances diagrams
+      expect(instancesSpy.mock.calls[1][0]).toEqual(null);
     });
   });
 

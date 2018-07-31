@@ -9,9 +9,17 @@ import * as api from 'modules/api/instances/instances';
 import Filters from './Filters';
 import ListView from './ListView';
 import Header from '../Header';
+import Diagram from 'modules/components/Diagram';
+import PanelBody from 'modules/components/Panel/PanelBody';
+import PanelHeader from 'modules/components/Panel/PanelHeader';
 
 const Instances = WrappedInstances.WrappedComponent;
-
+const workflowMock = {
+  id: '6',
+  name: 'New demo process',
+  version: 3,
+  bpmnProcessId: 'demoProcess'
+};
 const InstancesWithRunningFilter = (
   <Instances
     location={{search: '?filter={"active": false, "incidents": true}'}}
@@ -42,6 +50,18 @@ const InstancesWithoutFilter = (
     }}
     storeStateLocally={() => {}}
     history={{push: () => {}}}
+  />
+);
+
+const InstancesWithWorkflow = (
+  <Instances
+    location={{search: ''}}
+    getStateLocally={() => {
+      return {filterCount: 0};
+    }}
+    storeStateLocally={() => {}}
+    history={{push: () => {}}}
+    workflow={workflowMock}
   />
 );
 
@@ -111,6 +131,9 @@ describe('Instances', () => {
       expect(FiltersNode.prop('onFilterChange')).toBe(
         node.instance().handleFilterChange
       );
+      expect(FiltersNode.prop('onWorkflowVersionChange')).toBe(
+        node.instance().handleWorkflowChange
+      );
       expect(FiltersNode.prop('resetFilter')).toBe(node.instance().resetFilter);
     });
 
@@ -148,6 +171,33 @@ describe('Instances', () => {
       expect(storeStateLocallyMock).toHaveBeenCalledWith({
         filter: DEFAULT_FILTER
       });
+    });
+  });
+
+  describe('rendering a diagram', () => {
+    it('should render no diagram on inital render', () => {
+      // given
+      const node = shallow(InstancesWithRunningFilter);
+
+      // then
+      expect(node.state('workflow')).toEqual(null);
+      expect(node.find(Diagram).length).toBe(0);
+      expect(node.find(PanelHeader).props().children).toBe('Workflow');
+    });
+    it('should render a diagram when workflow data is available ', () => {
+      const node = shallow(InstancesWithWorkflow);
+
+      //when
+      node.instance().handleWorkflowChange(workflowMock);
+      node.update();
+
+      // then
+      expect(node.state('workflow')).toEqual(workflowMock);
+      expect(node.find(Diagram).length).toEqual(1);
+      expect(node.find(Diagram).props().workflowId).toEqual(workflowMock.id);
+      expect(node.find(PanelHeader).props().children).toBe(
+        workflowMock.name || workflowMock.id
+      );
     });
   });
 });
