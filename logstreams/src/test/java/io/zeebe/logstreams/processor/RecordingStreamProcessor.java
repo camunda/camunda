@@ -20,6 +20,7 @@ import static org.mockito.Mockito.spy;
 import io.zeebe.logstreams.impl.LoggedEventImpl;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.SnapshotSupport;
+import io.zeebe.logstreams.state.StateController;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +33,8 @@ public class RecordingStreamProcessor implements StreamProcessor {
 
   private final StringValueSnapshot snapshot = new StringValueSnapshot();
 
+  private StateController stateController;
+
   private StreamProcessorContext context = null;
 
   private EventProcessor eventProcessor =
@@ -42,6 +45,10 @@ public class RecordingStreamProcessor implements StreamProcessor {
               processedEvents.incrementAndGet();
             };
           });
+
+  public void setStateController(StateController stateController) {
+    this.stateController = stateController;
+  }
 
   @Override
   public void onOpen(StreamProcessorContext context) {
@@ -99,5 +106,10 @@ public class RecordingStreamProcessor implements StreamProcessor {
 
   public StreamProcessorContext getContext() {
     return context;
+  }
+
+  @Override
+  public StateController getStateController() {
+    return stateController;
   }
 }

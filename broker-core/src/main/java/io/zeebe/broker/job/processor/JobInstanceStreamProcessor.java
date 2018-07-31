@@ -17,22 +17,28 @@
  */
 package io.zeebe.broker.job.processor;
 
+import static io.zeebe.util.StringUtil.getBytes;
+
 import io.zeebe.broker.job.CreditsRequest;
 import io.zeebe.broker.job.JobSubscriptionManager;
 import io.zeebe.broker.job.data.JobRecord;
-import io.zeebe.broker.job.map.JobInstanceMap;
+import io.zeebe.broker.job.state.JobInstanceStateController;
 import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.broker.transport.clientapi.SubscribedRecordWriter;
 import io.zeebe.logstreams.processor.EventLifecycleContext;
+import io.zeebe.logstreams.state.StateSnapshotController;
+import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.protocol.intent.JobIntent;
+import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
-public class JobInstanceStreamProcessor {
+public class JobInstanceStreamProcessor implements StreamProcessorLifecycleAware {
+
   protected static final short STATE_CREATED = 1;
   protected static final short STATE_ACTIVATED = 2;
   protected static final short STATE_FAILED = 3;
@@ -40,15 +46,16 @@ public class JobInstanceStreamProcessor {
 
   protected SubscribedRecordWriter subscribedEventWriter;
   protected final JobSubscriptionManager jobSubscriptionManager;
-  protected final CreditsRequest creditsRequest = new CreditsRequest();
+  protected final JobInstanceStateController stateController = new JobInstanceStateController();
 
-  protected final JobInstanceMap jobIndex;
   protected int logStreamPartitionId;
+
+  private static final byte[] LATEST_JOB_KEY_BUFFER = getBytes("latestJobKey");
+  private final ByteBuffer dbLongBuffer = ByteBuffer.allocate(Long.BYTES);
+  private final ByteBuffer dbShortBuffer = ByteBuffer.allocate(Short.BYTES);
 
   public JobInstanceStreamProcessor(JobSubscriptionManager jobSubscriptionManager) {
     this.jobSubscriptionManager = jobSubscriptionManager;
-
-    this.jobIndex = new JobInstanceMap();
   }
 
   public TypedStreamProcessor createStreamProcessor(TypedStreamEnvironment environment) {
@@ -65,8 +72,18 @@ public class JobInstanceStreamProcessor {
         .onCommand(ValueType.JOB, JobIntent.TIME_OUT, new TimeOutJobProcessor())
         .onCommand(ValueType.JOB, JobIntent.UPDATE_RETRIES, new UpdateRetriesJobProcessor())
         .onCommand(ValueType.JOB, JobIntent.CANCEL, new CancelJobProcessor())
-        .withStateResource(jobIndex.getMap())
+        .withStateController(stateController)
+        .withListener(this)
         .build();
+  }
+
+  public StateSnapshotController createSnapshotController(StateStorage storage) {
+    return new StateSnapshotController(stateController, storage);
+  }
+
+  @Override
+  public void onOpen(TypedStreamProcessor streamProcessor) {
+    stateController.recoverLatestJobKey(streamProcessor.getKeyGenerator());
   }
 
   private class CreateJobProcessor implements CommandProcessor<JobRecord> {
@@ -74,7 +91,8 @@ public class JobInstanceStreamProcessor {
     @Override
     public void onCommand(TypedRecord<JobRecord> command, CommandControl commandControl) {
       final long jobKey = commandControl.accept(JobIntent.CREATED);
-      jobIndex.putJobInstance(jobKey, STATE_CREATED);
+      stateController.putLatestJobKey(jobKey);
+      stateController.putJobState(jobKey, STATE_CREATED);
     }
   }
 
@@ -97,11 +115,11 @@ public class JobInstanceStreamProcessor {
         Consumer<SideEffectProducer> sideEffect,
         EventLifecycleContext ctx) {
 
-      final short state = jobIndex.getJobState(command.getKey());
+      final short state = stateController.getJobState(command.getKey());
 
       if (state == STATE_CREATED || state == STATE_FAILED || state == STATE_TIMED_OUT) {
         streamWriter.writeFollowUpEvent(command.getKey(), JobIntent.ACTIVATED, command.getValue());
-        jobIndex.putJobInstance(command.getKey(), STATE_ACTIVATED);
+        stateController.putJobState(command.getKey(), STATE_ACTIVATED);
 
         final RecordMetadata metadata = command.getMetadata();
 
@@ -139,11 +157,11 @@ public class JobInstanceStreamProcessor {
   private class CompleteJobProcessor implements CommandProcessor<JobRecord> {
     @Override
     public void onCommand(TypedRecord<JobRecord> command, CommandControl commandControl) {
-      final short state = jobIndex.getJobState(command.getKey());
+      final short state = stateController.getJobState(command.getKey());
 
       final boolean isCompletable = state == STATE_ACTIVATED || state == STATE_TIMED_OUT;
       if (isCompletable) {
-        jobIndex.remove(command.getKey());
+        stateController.deleteJobState(command.getKey());
         commandControl.accept(JobIntent.COMPLETED);
       } else {
         commandControl.reject(
@@ -155,10 +173,10 @@ public class JobInstanceStreamProcessor {
   private class FailJobProcessor implements CommandProcessor<JobRecord> {
     @Override
     public void onCommand(TypedRecord<JobRecord> command, CommandControl commandControl) {
-      final short state = jobIndex.getJobState(command.getKey());
+      final short state = stateController.getJobState(command.getKey());
 
       if (state == STATE_ACTIVATED) {
-        jobIndex.putJobInstance(command.getKey(), STATE_FAILED);
+        stateController.putJobState(command.getKey(), STATE_FAILED);
         commandControl.accept(JobIntent.FAILED);
       } else {
         commandControl.reject(RejectionType.NOT_APPLICABLE, "Job is not in state ACTIVATED");
@@ -171,10 +189,10 @@ public class JobInstanceStreamProcessor {
 
     @Override
     public void onCommand(TypedRecord<JobRecord> command, CommandControl commandControl) {
-      final short state = jobIndex.getJobState(command.getKey());
+      final short state = stateController.getJobState(command.getKey());
 
       if (state == STATE_ACTIVATED) {
-        jobIndex.putJobInstance(command.getKey(), STATE_TIMED_OUT);
+        stateController.putJobState(command.getKey(), STATE_TIMED_OUT);
         commandControl.accept(JobIntent.TIMED_OUT);
       } else {
         commandControl.reject(RejectionType.NOT_APPLICABLE, REJECTION_REASON);
@@ -185,7 +203,7 @@ public class JobInstanceStreamProcessor {
   private class UpdateRetriesJobProcessor implements CommandProcessor<JobRecord> {
     @Override
     public void onCommand(TypedRecord<JobRecord> command, CommandControl commandControl) {
-      final short state = jobIndex.getJobState(command.getKey());
+      final short state = stateController.getJobState(command.getKey());
       final JobRecord value = command.getValue();
 
       if (state == STATE_FAILED) {
@@ -204,9 +222,9 @@ public class JobInstanceStreamProcessor {
     @Override
     public void onCommand(TypedRecord<JobRecord> command, CommandControl commandControl) {
 
-      final short state = jobIndex.getJobState(command.getKey());
+      final short state = stateController.getJobState(command.getKey());
       if (state > 0) {
-        jobIndex.remove(command.getKey());
+        stateController.deleteJobState(command.getKey());
         commandControl.accept(JobIntent.CANCELED);
       } else {
         commandControl.reject(RejectionType.NOT_APPLICABLE, "Job does not exist");

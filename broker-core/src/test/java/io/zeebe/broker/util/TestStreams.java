@@ -23,12 +23,14 @@ import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
+import io.zeebe.broker.logstreams.state.StateStorageFactory;
 import io.zeebe.broker.system.workflow.repository.data.DeploymentRecord;
 import io.zeebe.broker.topic.Records;
 import io.zeebe.broker.topic.StreamProcessorControl;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
+import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotController;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
@@ -36,8 +38,12 @@ import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.processor.*;
+import io.zeebe.logstreams.spi.SnapshotController;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.logstreams.spi.SnapshotSupport;
+import io.zeebe.logstreams.state.StateController;
+import io.zeebe.logstreams.state.StateSnapshotController;
+import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.RecordType;
@@ -46,6 +52,7 @@ import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.util.LangUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorCondition;
@@ -81,7 +88,11 @@ public class TestStreams {
 
   protected ActorScheduler actorScheduler;
 
+  protected StateStorageFactory stateStorageFactory;
+
   protected SnapshotStorage snapshotStorage;
+
+  protected StateStorage stateStorage;
 
   public TestStreams(
       File storageDirectory,
@@ -181,6 +192,19 @@ public class TestStreams {
     return snapshotStorage;
   }
 
+  protected StateStorageFactory getStateStorageFactory() {
+    if (stateStorageFactory == null) {
+      final File rocksDBDirectory = new File(storageDirectory, "state");
+      if (!rocksDBDirectory.exists()) {
+        rocksDBDirectory.mkdir();
+      }
+
+      stateStorageFactory = new StateStorageFactory(rocksDBDirectory);
+    }
+
+    return stateStorageFactory;
+  }
+
   public StreamProcessorControl initStreamProcessor(String log, StreamProcessor streamProcessor) {
     return initStreamProcessor(log, 0, () -> streamProcessor);
   }
@@ -206,7 +230,7 @@ public class TestStreams {
     protected SuspendableStreamProcessor currentStreamProcessor;
     protected StreamProcessorController currentController;
     protected StreamProcessorService currentStreamProcessorService;
-    private Consumer<SnapshotStorage> snapshotCleaner;
+    protected SnapshotController currentSnapshotController;
 
     public StreamProcessorControlImpl(
         LogStream stream, Supplier<StreamProcessor> factory, int streamProcessorId) {
@@ -217,7 +241,11 @@ public class TestStreams {
 
     @Override
     public void purgeSnapshot() {
-      snapshotCleaner.accept(snapshotStorage);
+      try {
+        currentSnapshotController.purgeAll();
+      } catch (Exception e) {
+        LangUtil.rethrowUnchecked(e);
+      }
     }
 
     @Override
@@ -283,8 +311,6 @@ public class TestStreams {
     public void start() {
       currentStreamProcessorService = buildStreamProcessorController();
       currentController = currentStreamProcessorService.getController();
-      final String controllerName = currentController.getName();
-      snapshotCleaner = storage -> storage.purgeSnapshot(controllerName);
     }
 
     @Override
@@ -308,9 +334,19 @@ public class TestStreams {
       // once in a test
       final String name = currentStreamProcessor.wrappedProcessor.getClass().getSimpleName();
 
+      if (currentStreamProcessor.getStateController() != null) {
+        final StateStorage stateStorage = getStateStorageFactory().create(streamProcessorId, name);
+        currentSnapshotController =
+            new StateSnapshotController(currentStreamProcessor.getStateController(), stateStorage);
+      } else {
+        currentSnapshotController =
+            new FsSnapshotController(
+                getSnapshotStorage(), name, currentStreamProcessor.getStateResource());
+      }
+
       return LogStreams.createStreamProcessor(name, streamProcessorId, currentStreamProcessor)
           .logStream(stream)
-          .snapshotStorage(getSnapshotStorage())
+          .snapshotController(currentSnapshotController)
           .actorScheduler(actorScheduler)
           .serviceContainer(serviceContainer)
           .build()
@@ -334,6 +370,11 @@ public class TestStreams {
     @Override
     public SnapshotSupport getStateResource() {
       return wrappedProcessor.getStateResource();
+    }
+
+    @Override
+    public StateController getStateController() {
+      return wrappedProcessor.getStateController();
     }
 
     public void resume() {

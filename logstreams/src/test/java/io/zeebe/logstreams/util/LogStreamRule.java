@@ -25,6 +25,9 @@ import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
@@ -91,6 +94,12 @@ public class LogStreamRule extends ExternalResource {
   protected void after() {
     if (logStream != null) {
       logStream.close();
+    }
+
+    try {
+      serviceContainer.close(5, TimeUnit.SECONDS);
+    } catch (TimeoutException | ExecutionException | InterruptedException e) {
+      e.printStackTrace();
     }
 
     actorScheduler.stop();

@@ -25,6 +25,7 @@ import io.zeebe.logstreams.processor.EventProcessor;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.logstreams.spi.SnapshotSupport;
+import io.zeebe.logstreams.state.StateController;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
@@ -38,6 +39,9 @@ import java.util.List;
 
 @SuppressWarnings({"unchecked"})
 public class TypedStreamProcessor implements StreamProcessor {
+
+  // TODO: remove once we remove snapshot support
+  protected StateController stateController;
 
   protected final SnapshotSupport snapshotSupport;
   protected final ServerOutput output;
@@ -57,6 +61,7 @@ public class TypedStreamProcessor implements StreamProcessor {
   private StreamProcessorContext streamProcessorContext;
 
   public TypedStreamProcessor(
+      StateController stateController,
       SnapshotSupport snapshotSupport,
       ServerOutput output,
       RecordProcessorMap recordProcessors,
@@ -64,6 +69,7 @@ public class TypedStreamProcessor implements StreamProcessor {
       EnumMap<ValueType, Class<? extends UnpackedObject>> eventRegistry,
       KeyGenerator keyGenerator,
       TypedStreamEnvironment environment) {
+    this.stateController = stateController;
     this.snapshotSupport = snapshotSupport;
     this.output = output;
     this.recordProcessors = recordProcessors;
@@ -103,6 +109,11 @@ public class TypedStreamProcessor implements StreamProcessor {
   @Override
   public SnapshotSupport getStateResource() {
     return snapshotSupport;
+  }
+
+  @Override
+  public StateController getStateController() {
+    return stateController;
   }
 
   @Override

@@ -25,6 +25,8 @@ import io.zeebe.broker.job.processor.JobInstanceStreamProcessor;
 import io.zeebe.broker.job.processor.JobTimeOutStreamProcessor;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
+import io.zeebe.logstreams.spi.SnapshotController;
+import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.util.sched.Actor;
@@ -32,7 +34,7 @@ import io.zeebe.util.sched.ActorScheduler;
 import java.time.Duration;
 
 public class JobQueueManagerService implements Service<JobQueueManagerService> {
-  protected static final String NAME = "job.queue.manager";
+  private static final String JOB_QUEUE_STREAM_PROCESSOR_NAME = "job-instance";
   public static final Duration TIME_OUT_INTERVAL = Duration.ofSeconds(30);
 
   private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
@@ -49,18 +51,25 @@ public class JobQueueManagerService implements Service<JobQueueManagerService> {
   public void startJobQueue(ServiceName<Partition> name, Partition partition) {
     final ServerTransport serverTransport = clientApiTransportInjector.getValue();
 
+    final StateStorage stateStorage =
+        partition
+            .getStateStorageFactory()
+            .create(JOB_QUEUE_STREAM_PROCESSOR_ID, JOB_QUEUE_STREAM_PROCESSOR_NAME);
     final JobSubscriptionManager jobSubscriptionManager = jobSubscriptionManagerInjector.getValue();
 
     final JobInstanceStreamProcessor jobInstanceStreamProcessor =
         new JobInstanceStreamProcessor(jobSubscriptionManager);
     final TypedStreamEnvironment env =
         new TypedStreamEnvironment(partition.getLogStream(), serverTransport.getOutput());
+    final SnapshotController snapshotController =
+        jobInstanceStreamProcessor.createSnapshotController(stateStorage);
 
     streamProcessorServiceFactory
         .createService(partition, name)
         .processor(jobInstanceStreamProcessor.createStreamProcessor(env))
         .processorId(JOB_QUEUE_STREAM_PROCESSOR_ID)
-        .processorName("job-instance")
+        .processorName(JOB_QUEUE_STREAM_PROCESSOR_NAME)
+        .snapshotController(snapshotController)
         .build();
 
     startTimeOutService(name, partition, env);

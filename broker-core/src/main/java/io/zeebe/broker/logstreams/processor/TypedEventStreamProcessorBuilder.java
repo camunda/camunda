@@ -23,6 +23,7 @@ import io.zeebe.logstreams.snapshot.ComposedSnapshot;
 import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.logstreams.spi.ComposableSnapshotSupport;
 import io.zeebe.logstreams.spi.SnapshotSupport;
+import io.zeebe.logstreams.state.StateController;
 import io.zeebe.map.ZbMap;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.value.BaseValue;
@@ -38,6 +39,7 @@ import java.util.function.Predicate;
 public class TypedEventStreamProcessorBuilder {
   protected final TypedStreamEnvironment environment;
 
+  protected StateController stateController;
   protected List<ComposableSnapshotSupport> stateResources = new ArrayList<>();
 
   protected RecordProcessorMap eventProcessors = new RecordProcessorMap();
@@ -109,6 +111,19 @@ public class TypedEventStreamProcessorBuilder {
     return this;
   }
 
+  public TypedEventStreamProcessorBuilder withStateController(
+      final StateController stateController) {
+    this.stateController = stateController;
+    withListener(
+        new StreamProcessorLifecycleAware() {
+          @Override
+          public void onClose() {
+            stateController.close();
+          }
+        });
+    return this;
+  }
+
   public TypedEventStreamProcessorBuilder withStateResource(ZbMap<?, ?> map) {
     this.stateResources.add(new ZbMapSnapshotSupport<>(map));
     withListener(
@@ -144,6 +159,7 @@ public class TypedEventStreamProcessorBuilder {
     }
 
     return new TypedStreamProcessor(
+        stateController,
         snapshotSupport,
         environment.getOutput(),
         eventProcessors,

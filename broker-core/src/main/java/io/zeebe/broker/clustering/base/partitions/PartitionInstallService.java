@@ -17,8 +17,15 @@
  */
 package io.zeebe.broker.clustering.base.partitions;
 
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.*;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.FOLLOWER_PARTITION_GROUP_NAME;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_SYSTEM_GROUP_NAME;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.RAFT_SERVICE_GROUP;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.followerPartitionServiceName;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.leaderPartitionServiceName;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.raftInstallServiceName;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.snapshotStorageServiceName;
+import static io.zeebe.broker.logstreams.LogStreamServiceNames.stateStorageFactoryServiceName;
 import static io.zeebe.raft.RaftServiceNames.leaderInitialEventCommittedServiceName;
 import static io.zeebe.raft.RaftServiceNames.raftServiceName;
 
@@ -27,6 +34,8 @@ import io.zeebe.broker.clustering.base.raft.RaftPersistentConfiguration;
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
 import io.zeebe.broker.logstreams.SnapshotStorageService;
+import io.zeebe.broker.logstreams.state.StateStorageFactory;
+import io.zeebe.broker.logstreams.state.StateStorageFactoryService;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.LogStream;
@@ -35,7 +44,11 @@ import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftStateListener;
 import io.zeebe.raft.controller.MemberReplicateLogController;
 import io.zeebe.raft.state.RaftState;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.CompositeServiceBuilder;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.buffer.BufferUtil;
@@ -68,6 +81,7 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
   private ServiceName<LogStream> logStreamServiceName;
 
   private ServiceName<SnapshotStorage> snapshotStorageServiceName;
+  private ServiceName<StateStorageFactory> stateStorageFactoryServiceName;
 
   public PartitionInstallService(
       BrokerCfg brokerCfg,
@@ -121,6 +135,13 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
     snapshotStorageServiceName = snapshotStorageServiceName(logName);
     partitionInstall.createService(snapshotStorageServiceName, snapshotStorageService).install();
 
+    final StateStorageFactoryService stateStorageFactoryService =
+        new StateStorageFactoryService(configuration.getStatesDirectory());
+    stateStorageFactoryServiceName = stateStorageFactoryServiceName(logName);
+    partitionInstall
+        .createService(stateStorageFactoryServiceName, stateStorageFactoryService)
+        .install();
+
     final OneToOneRingBufferChannel messageBuffer =
         new OneToOneRingBufferChannel(
             new UnsafeBuffer(
@@ -144,6 +165,7 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
         .createService(raftServiceName, raftService)
         .dependency(logStreamServiceName, raftService.getLogStreamInjector())
         .dependency(snapshotStorageServiceName)
+        .dependency(stateStorageFactoryServiceName)
         .group(RAFT_SERVICE_GROUP)
         .install();
 
@@ -225,6 +247,7 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
             .dependency(leaderInitialEventCommittedServiceName(raft.getName(), raft.getTerm()))
             .dependency(logStreamServiceName, partition.getLogStreamInjector())
             .dependency(snapshotStorageServiceName, partition.getSnapshotStorageInjector())
+            .dependency(stateStorageFactoryServiceName, partition.getStateStorageFactoryInjector())
             .group(
                 isInternalSystemPartition
                     ? LEADER_PARTITION_SYSTEM_GROUP_NAME
@@ -251,6 +274,7 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
           .createService(partitionServiceName, partition)
           .dependency(logStreamServiceName, partition.getLogStreamInjector())
           .dependency(snapshotStorageServiceName, partition.getSnapshotStorageInjector())
+          .dependency(stateStorageFactoryServiceName, partition.getStateStorageFactoryInjector())
           .group(FOLLOWER_PARTITION_GROUP_NAME)
           .install();
     }

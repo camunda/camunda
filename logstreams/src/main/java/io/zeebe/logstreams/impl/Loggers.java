@@ -19,6 +19,7 @@ import io.zeebe.util.ZbLogger;
 import org.slf4j.Logger;
 
 public class Loggers {
-
   public static final Logger LOGSTREAMS_LOGGER = new ZbLogger("io.zeebe.logstreams");
+  public static final Logger ROCKSDB_LOGGER = new ZbLogger("io.zeebe.logstreams.rocksdb");
+  public static final Logger FS_SNAPSHOT_LOGGER = new ZbLogger("io.zeebe.logstreams.snapshot.fs");
 }
