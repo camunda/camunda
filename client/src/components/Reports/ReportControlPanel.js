@@ -332,7 +332,7 @@ export default class ReportControlPanel extends React.Component {
       [type]: data,
       configuration: {
         ...this.props.configuration,
-        targetValue: {...this.props.configuration.targetValue, active: false}
+        targetValue: {active: false}
       }
     };
 

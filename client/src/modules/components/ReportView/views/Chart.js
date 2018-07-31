@@ -2,9 +2,15 @@ import React from 'react';
 import ChartRenderer from 'chart.js';
 import ReportBlankSlate from '../ReportBlankSlate';
 
-import {getRelativeValue, convertToMilliseconds} from './service';
+import {getRelativeValue} from './service';
+import {formatters} from 'services';
 
 import './Chart.css';
+
+const DEFAULT_COLOR = '#1991c8';
+const TARGET_COLOR = '#A62A31';
+
+const {convertToMilliseconds} = formatters;
 
 export default class Chart extends React.Component {
   storeContainer = container => {
@@ -71,7 +77,7 @@ export default class Chart extends React.Component {
       const xAxe = chart.scales[chart.options.scales.xAxes[0].id];
       const yAxe = chart.scales[chart.options.scales.yAxes[0].id];
 
-      ctxPlugin.strokeStyle = '#A62A31';
+      ctxPlugin.strokeStyle = TARGET_COLOR;
       ctxPlugin.beginPath();
       // calculate the percentage position of the whole axis
       lineAt = lineAt * 100 / yAxe.max;
@@ -96,12 +102,12 @@ export default class Chart extends React.Component {
         };
       case 'line':
         return {
-          borderColor: '#1991c8',
+          borderColor: DEFAULT_COLOR,
           backgroundColor: '#e5f2f8',
           borderWidth: 2
         };
       case 'bar':
-        const barColor = this.determinBarColor(targetValue, data);
+        const barColor = this.determineBarColor(targetValue, data);
         return {
           borderColor: barColor,
           backgroundColor: barColor,
@@ -126,14 +132,14 @@ export default class Chart extends React.Component {
     return colors;
   };
 
-  determinBarColor = ({active, values}, data) => {
-    if (!active) return '#1991c8';
+  determineBarColor = ({active, values}, data) => {
+    if (!active) return DEFAULT_COLOR;
     const barValue = values.dateFormat
       ? convertToMilliseconds(values.target, values.dateFormat)
       : values.target;
     return Object.values(data).map(height => {
-      if (values.isAbove) return height < barValue ? '#1991c8' : '#A62A31';
-      else return height >= barValue ? '#1991c8' : '#A62A31';
+      if (values.isAbove) return height < barValue ? DEFAULT_COLOR : TARGET_COLOR;
+      else return height >= barValue ? DEFAULT_COLOR : TARGET_COLOR;
     });
   };
 
@@ -144,20 +150,23 @@ export default class Chart extends React.Component {
   };
 
   createBarOptions = (data, targetValue) => {
+    const targetLine = targetValue ? this.getFormattedTargetValue(targetValue) : 0;
     return {
       legend: {display: false},
       scales: {
         yAxes: [
           {
             ticks: {
-              ...(this.props.property === 'duration' && this.createDurationFormattingOptions(data)),
-              beginAtZero: true
+              ...(this.props.property === 'duration' &&
+                this.createDurationFormattingOptions(data, targetLine)),
+              beginAtZero: true,
+              suggestedMax: targetLine
             }
           }
         ]
       },
       // plugin proberty
-      lineAt: targetValue ? this.getFormattedTargetValue(targetValue) : 0
+      lineAt: targetLine
     };
   };
 
@@ -167,13 +176,15 @@ export default class Chart extends React.Component {
     return convertToMilliseconds(values.target, values.dateFormat);
   };
 
-  createDurationFormattingOptions = data => {
+  createDurationFormattingOptions = (data, targetLine) => {
     // since the duration is given in milliseconds, chart.js cannot create nice y axis
     // ticks. So we define our own set of possible stepSizes and find one that the maximum
-    // value of the dataset fits into.
-    const minimumStepSize = Math.max(...Object.values(data)) / 10;
+    // value of the dataset fits into or the maximum target line value if it is defined.
+    const targetLineMinStep = targetLine / 10;
+    const DataMinStep = Math.max(...Object.values(data)) / 10;
+    const minimumStepSize = targetLineMinStep > DataMinStep ? targetLineMinStep : DataMinStep;
 
-    const niceStepSize = [
+    const steps = [
       {value: 1, unit: 'ms', base: 1},
       {value: 10, unit: 'ms', base: 1},
       {value: 100, unit: 'ms', base: 1},
@@ -187,8 +198,13 @@ export default class Chart extends React.Component {
       {value: 1000 * 60 * 60 * 24 * 7, unit: 'wk', base: 1000 * 60 * 60 * 24 * 7},
       {value: 1000 * 60 * 60 * 24 * 30, unit: 'm', base: 1000 * 60 * 60 * 24 * 30},
       {value: 1000 * 60 * 60 * 24 * 30 * 6, unit: 'm', base: 1000 * 60 * 60 * 24 * 30},
-      {value: 1000 * 60 * 60 * 24 * 30 * 12, unit: 'y', base: 1000 * 60 * 60 * 24 * 30 * 12}
-    ].find(({value}) => value > minimumStepSize);
+      {value: 1000 * 60 * 60 * 24 * 30 * 12, unit: 'y', base: 1000 * 60 * 60 * 24 * 30 * 12},
+      {value: 10 * 1000 * 60 * 60 * 24 * 30 * 12, unit: 'y', base: 1000 * 60 * 60 * 24 * 30 * 12}, //10s of years
+      {value: 100 * 1000 * 60 * 60 * 24 * 30 * 12, unit: 'y', base: 1000 * 60 * 60 * 24 * 30 * 12} //100s of years
+    ];
+
+    const niceStepSize = steps.find(({value}) => value > minimumStepSize);
+    if (!niceStepSize) return;
 
     return {
       callback: v => v / niceStepSize.base + niceStepSize.unit,

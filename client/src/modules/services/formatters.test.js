@@ -3,7 +3,8 @@ import {
   duration as durationFormatter,
   convertDurationToObject,
   convertDurationToSingleNumber,
-  convertCamelToSpaces
+  convertCamelToSpaces,
+  convertToMilliseconds
 } from './formatters';
 const separator = '\u202F';
 const nbsp = '\u00A0';
@@ -97,4 +98,11 @@ describe('convertDurationToSingleNumber', () => {
 describe('convertCamelToSpaces', () => {
   expect(convertCamelToSpaces('processDefinitionKey')).toBe('Process Definition Key');
   expect(convertCamelToSpaces('engineName')).toBe('Engine Name');
+});
+
+describe('convertToMilliseconds', () => {
+  expect(convertToMilliseconds(5, 'seconds')).toBe(5000);
+  expect(convertToMilliseconds(2, 'months')).toBe(5184000000);
+  expect(convertToMilliseconds(3, 'hours')).toBe(10800000);
+  expect(convertToMilliseconds(100, 'millis')).toBe(100);
 });

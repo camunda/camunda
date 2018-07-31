@@ -4,7 +4,10 @@ import {mount} from 'enzyme';
 import Chart from './Chart';
 import ChartRenderer from 'chart.js';
 
-import {getRelativeValue, convertToMilliseconds} from './service';
+import {getRelativeValue} from './service';
+import {formatters} from 'services';
+
+const {convertToMilliseconds} = formatters;
 
 jest.mock('chart.js', () =>
   jest.fn(() => {
@@ -16,8 +19,13 @@ jest.mock('chart.js', () =>
 
 jest.mock('./service', () => {
   return {
-    getRelativeValue: jest.fn(),
-    convertToMilliseconds: jest.fn()
+    getRelativeValue: jest.fn()
+  };
+});
+
+jest.mock('services', () => {
+  return {
+    formatters: {convertToMilliseconds: jest.fn()}
   };
 });
 
@@ -132,7 +140,7 @@ it('should return the default bar color if targetvalue is not active', () => {
   const data = {foo: 123};
   const node = mount(<Chart data={data} />);
 
-  const value = node.instance().determinBarColor({active: false, values: null}, data);
+  const value = node.instance().determineBarColor({active: false, values: null}, data);
   expect(value).toEqual('#1991c8');
 });
 
@@ -140,7 +148,7 @@ it('should return red color for all bars below a target value', () => {
   const data = {foo: 123, bar: 5};
   const node = mount(<Chart data={data} />);
 
-  const value = node.instance().determinBarColor(
+  const value = node.instance().determineBarColor(
     {
       active: true,
       values: {

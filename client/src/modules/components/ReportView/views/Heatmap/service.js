@@ -1,6 +1,8 @@
 import HeatmapJS from 'heatmap.js';
 import './Tooltip.css';
-import {convertToMilliseconds} from '../service';
+import {formatters} from 'services';
+
+const {convertToMilliseconds} = formatters;
 
 const SEQUENCEFLOW_RADIUS = 30;
 const SEQUENCEFLOW_STEPWIDTH = 10;

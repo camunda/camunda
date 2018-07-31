@@ -77,7 +77,7 @@ it('should add is-active classname to the clicked button in the buttonGroup', ()
 
 it('should display the current target values target', () => {
   const node = mount(<BarChartModal {...validProps} />);
-  node.setState({data: {target: 10}});
+  node.setState({target: 10});
 
   expect(node.find('input').first()).toHaveValue(10);
 });
@@ -114,14 +114,14 @@ it('should hide select dateFormat dropdown when viewProberty is not equal durati
 
 it('should show an error message when invalid target value is typed', () => {
   const node = mount(<BarChartModal {...validProps} />);
-  node.setState({data: {target: 'wrong value'}});
+  node.setState({target: 'wrong value'});
 
   expect(node).toIncludeText('Must be a non-negative number');
 });
 
 it('should disable the confirm button when invalid value is typed into the field', () => {
   const node = mount(<BarChartModal {...validProps} />);
-  node.setState({data: {target: '-1'}});
+  node.setState({target: '-1'});
   expect(node.find('button[type="primary"]')).toBeDisabled();
 });
 

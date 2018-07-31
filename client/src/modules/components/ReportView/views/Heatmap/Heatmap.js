@@ -4,7 +4,7 @@ import {BPMNDiagram, TargetValueBadge} from 'components';
 import HeatmapOverlay from './HeatmapOverlay';
 
 import {calculateTargetValueHeat} from './service';
-import {getRelativeValue, convertToMilliseconds} from '../service';
+import {getRelativeValue} from '../service';
 import {formatters} from 'services';
 
 import './Heatmap.css';
@@ -32,7 +32,7 @@ const Heatmap = props => {
         formatter={(_, id) => {
           const node = document.createElement('div');
 
-          const target = convertToMilliseconds(
+          const target = formatters.convertToMilliseconds(
             targetValue.values[id].value,
             targetValue.values[id].unit
           );

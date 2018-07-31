@@ -8,12 +8,9 @@ import './BarChartModal.css';
 
 export default class BarChartModal extends React.Component {
   state = {
-    data: {
-      isAbove: true,
-      target: 0,
-      dateFormat: ''
-    },
-    viewProperty: ''
+    isAbove: false,
+    target: 0,
+    dateFormat: ''
   };
 
   componentDidMount() {
@@ -25,49 +22,40 @@ export default class BarChartModal extends React.Component {
     if (values) {
       const dateFormat = reportResult.data.view.property !== 'duration' ? '' : values.dateFormat;
       return this.setState({
-        data: {...this.state.data, ...values, dateFormat},
-        viewProperty: reportResult.data.view.property
+        ...this.state,
+        ...values,
+        dateFormat
       });
     }
     return this.setState({
-      data: {
-        ...this.state.data,
-        target: 0,
-        dateFormat: ''
-      },
-      viewProperty: reportResult.data.view.property
+      target: 0,
+      isAbove: false,
+      dateFormat: ''
     });
   }
 
-  componentWillReceiveProps({open, configuration, reportResult}) {
-    const {data: {target, isAbove, dateFormat}, viewProperty} = this.state;
-    const {values} = configuration.targetValue;
-    if (
-      !values ||
-      target !== values.target ||
-      isAbove !== values.isAbove ||
-      dateFormat !== values.dateFormat ||
-      viewProperty !== reportResult.data.view.property
-    )
-      return this.rerenderReport();
+  componentDidUpdate(prevProps) {
+    if (this.props.open !== prevProps.open && this.props.open) {
+      this.rerenderReport();
+    }
   }
 
   render() {
-    const isFieldValid = isValidNumber(this.state.data.target);
+    const isFieldValid = isValidNumber(this.state.target);
     return (
       <Modal open={this.props.open} onClose={this.props.onClose} className="BarChartModal__modal">
         <Modal.Header>Set Target Value</Modal.Header>
         <Modal.Content>
           <ButtonGroup className="BarChartModal__ButtonGroup">
             <Button
-              onClick={() => this.setState({data: {...this.state.data, isAbove: true}})}
-              className={classnames({'is-active': this.state.data.isAbove})}
+              onClick={() => this.setState({...this.state, isAbove: false})}
+              className={classnames({'is-active': !this.state.isAbove})}
             >
               Above
             </Button>
             <Button
-              onClick={() => this.setState({data: {...this.state.data, isAbove: false}})}
-              className={classnames({'is-active': !this.state.data.isAbove})}
+              onClick={() => this.setState({...this.state, isAbove: true})}
+              className={classnames({'is-active': this.state.isAbove})}
             >
               Below
             </Button>
@@ -75,8 +63,8 @@ export default class BarChartModal extends React.Component {
           <LabeledInput
             className="BarChartModal__input"
             label="target"
-            value={this.state.data.target}
-            onChange={e => this.setState({data: {...this.state.data, target: e.target.value}})}
+            value={this.state.target}
+            onChange={e => this.setState({...this.state, target: e.target.value})}
             isInvalid={!isFieldValid}
           >
             {!isFieldValid && (
@@ -85,13 +73,11 @@ export default class BarChartModal extends React.Component {
               </ErrorMessage>
             )}
           </LabeledInput>
-          {this.state.viewProperty === 'duration' && (
+          {this.props.reportResult.data.view.property === 'duration' && (
             <Select
               className="BarChartModal__select"
-              value={this.state.data.dateFormat}
-              onChange={e =>
-                this.setState({data: {...this.state.data, dateFormat: e.target.value}})
-              }
+              value={this.state.dateFormat}
+              onChange={e => this.setState({...this.state, dateFormat: e.target.value})}
             >
               <Select.Option value="millis">Milliseconds</Select.Option>
               <Select.Option value="seconds">Seconds</Select.Option>
@@ -115,6 +101,6 @@ export default class BarChartModal extends React.Component {
   }
 
   confirmModal = () => {
-    this.props.onConfirm({...this.state.data, target: parseFloat(this.state.data.target)});
+    this.props.onConfirm({...this.state, target: parseFloat(this.state.target)});
   };
 }

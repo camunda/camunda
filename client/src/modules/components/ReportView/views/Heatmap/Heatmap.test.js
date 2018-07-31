@@ -5,7 +5,9 @@ import Heatmap from './Heatmap';
 import HeatmapOverlay from './HeatmapOverlay';
 import {calculateTargetValueHeat} from './service';
 import {formatters} from 'services';
-import {getRelativeValue, convertToMilliseconds} from '../service';
+import {getRelativeValue} from '../service';
+
+const {convertToMilliseconds} = formatters;
 
 jest.mock('components', () => {
   return {
@@ -27,15 +29,14 @@ jest.mock('./service', () => {
 
 jest.mock('../service', () => {
   return {
-    getRelativeValue: jest.fn(),
-    convertToMilliseconds: jest.fn()
+    getRelativeValue: jest.fn()
   };
 });
 
 jest.mock('services', () => {
   const durationFct = jest.fn();
   return {
-    formatters: {duration: durationFct}
+    formatters: {duration: durationFct, convertToMilliseconds: jest.fn()}
   };
 });
 
