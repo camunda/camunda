@@ -15,44 +15,118 @@ public class EnrichVariableByInvalidVariables implements VariableImportAdapter {
     PluginVariableDto dto = new PluginVariableDto();
     list.add(dto);
 
+    // engine alias is missing
     dto = new PluginVariableDto();
-    dto.setType("string");
+    dto.setId("123");
+    dto.setName("Foo");
+    dto.setValue("Bar");
+    dto.setType("String");
+    dto.setVersion(1L);
+    dto.setEngineAlias(null);
     dto.setProcessInstanceId(list.get(0).getProcessInstanceId());
     dto.setProcessDefinitionId(list.get(0).getProcessDefinitionId());
     dto.setProcessDefinitionKey(list.get(0).getProcessDefinitionKey());
     list.add(dto);
 
+    // process definition id is missing
     dto = new PluginVariableDto();
-    dto.setName("foo");
+    dto.setId("123");
+    dto.setName("Foo");
+    dto.setValue("Bar");
+    dto.setType("String");
+    dto.setVersion(1L);
+    dto.setEngineAlias("camunda-bpm");
+    dto.setProcessInstanceId(list.get(0).getProcessInstanceId());
+    dto.setProcessDefinitionId(null);
+    dto.setProcessDefinitionKey(list.get(0).getProcessDefinitionKey());
+    list.add(dto);
+
+    // process definition key is missing
+    dto = new PluginVariableDto();
+    dto.setId("123");
+    dto.setName("Foo");
+    dto.setValue("Bar");
+    dto.setType("String");
+    dto.setVersion(1L);
+    dto.setEngineAlias("camunda-bpm");
+    dto.setProcessInstanceId(list.get(0).getProcessInstanceId());
+    dto.setProcessDefinitionId(list.get(0).getProcessDefinitionId());
+    dto.setProcessDefinitionKey(null);
+    list.add(dto);
+
+    // process instance id is missing
+    dto = new PluginVariableDto();
+    dto.setId("123");
+    dto.setName("Foo");
+    dto.setValue("Bar");
+    dto.setType("String");
+    dto.setVersion(1L);
+    dto.setEngineAlias("camunda-bpm");
+    dto.setProcessInstanceId(null);
+    dto.setProcessDefinitionId(list.get(0).getProcessDefinitionId());
+    dto.setProcessDefinitionKey(list.get(0).getProcessDefinitionKey());
+    list.add(dto);
+
+    // type is missing
+    dto = new PluginVariableDto();
+    dto.setId("123");
+    dto.setName("Foo");
+    dto.setValue("Bar");
+    dto.setType(null);
+    dto.setVersion(1L);
+    dto.setEngineAlias("camunda-bpm");
     dto.setProcessInstanceId(list.get(0).getProcessInstanceId());
     dto.setProcessDefinitionId(list.get(0).getProcessDefinitionId());
     dto.setProcessDefinitionKey(list.get(0).getProcessDefinitionKey());
     list.add(dto);
 
+    // version is missing
     dto = new PluginVariableDto();
-    dto.setName("foo");
-    dto.setType("string");
+    dto.setId("123");
+    dto.setName("Foo");
+    dto.setValue("Bar");
+    dto.setType("String");
+    dto.setVersion(null);
+    dto.setEngineAlias("camunda-bpm");
+    dto.setProcessInstanceId(list.get(0).getProcessInstanceId());
     dto.setProcessDefinitionId(list.get(0).getProcessDefinitionId());
     dto.setProcessDefinitionKey(list.get(0).getProcessDefinitionKey());
     list.add(dto);
 
+    // name is missing
     dto = new PluginVariableDto();
-    dto.setName("foo");
-    dto.setType("string");
+    dto.setId("123");
+    dto.setName(null);
+    dto.setValue("Bar");
+    dto.setType("String");
+    dto.setVersion(1L);
+    dto.setEngineAlias("camunda-bpm");
     dto.setProcessInstanceId(list.get(0).getProcessInstanceId());
+    dto.setProcessDefinitionId(list.get(0).getProcessDefinitionId());
     dto.setProcessDefinitionKey(list.get(0).getProcessDefinitionKey());
     list.add(dto);
 
+    // type is invalid
     dto = new PluginVariableDto();
-    dto.setName("foo");
-    dto.setType("string");
+    dto.setId("123");
+    dto.setName("Foo");
+    dto.setValue("Bar");
+    dto.setType("asgasdfad");
+    dto.setVersion(1L);
+    dto.setEngineAlias("camunda-bpm");
     dto.setProcessInstanceId(list.get(0).getProcessInstanceId());
     dto.setProcessDefinitionId(list.get(0).getProcessDefinitionId());
+    dto.setProcessDefinitionKey(list.get(0).getProcessDefinitionKey());
     list.add(dto);
 
+    // id is missing
     dto = new PluginVariableDto();
-    dto.setName("foo");
-    dto.setType("fasdfasdfdfsa");
+    dto.setId(null);
+    dto.setName("Foo");
+    dto.setValue("Bar");
+    dto.setType("String");
+    dto.setVersion(1L);
+    dto.setEngineAlias("camunda-bpm");
     dto.setProcessInstanceId(list.get(0).getProcessInstanceId());
     dto.setProcessDefinitionId(list.get(0).getProcessDefinitionId());
     dto.setProcessDefinitionKey(list.get(0).getProcessDefinitionKey());

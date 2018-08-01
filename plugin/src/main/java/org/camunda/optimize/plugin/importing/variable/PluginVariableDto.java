@@ -1,10 +1,16 @@
 package org.camunda.optimize.plugin.importing.variable;
 
 
+import java.util.Map;
+
 public class PluginVariableDto {
 
   /*
    * The id of the variable.
+   *
+   * Note: This field is required in order to be imported to Optimize.
+   * Also the id must be unique. Otherwise the variable might not
+   * be imported at all.
    */
   private String id;
 
@@ -27,6 +33,16 @@ public class PluginVariableDto {
    * The value of the variable.
    */
   private String value;
+
+  /**
+   * A map containing additional, value-type-dependent properties.
+   *
+   * For variables of type Object, the following properties are returned:
+   *
+   *     objectTypeName: A string representation of the object's type name, e.g. "com.example.MyObject".
+   *     serializationDataFormat: The serialization format used to store the variable, e.g. "application/xml".
+   */
+  private Map<String, Object> valueInfo;
 
   /*
    * The process definition key of the process model, where the variable was created.
@@ -138,5 +154,13 @@ public class PluginVariableDto {
 
   public void setEngineAlias(String engineAlias) {
     this.engineAlias = engineAlias;
+  }
+
+  public Map<String, Object> getValueInfo() {
+    return valueInfo;
+  }
+
+  public void setValueInfo(Map<String, Object> valueInfo) {
+    this.valueInfo = valueInfo;
   }
 }

@@ -14,7 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -90,6 +89,7 @@ public class VariableUpdateInstanceImportService {
     variableDto.setId(pluginVariableDto.getId());
     variableDto.setName(pluginVariableDto.getName());
     variableDto.setValue(pluginVariableDto.getValue());
+    variableDto.setValueInfo(pluginVariableDto.getValueInfo());
     variableDto.setType(pluginVariableDto.getType());
     variableDto.setProcessInstanceId(pluginVariableDto.getProcessInstanceId());
     variableDto.setProcessDefinitionId(pluginVariableDto.getProcessDefinitionId());
@@ -113,6 +113,7 @@ public class VariableUpdateInstanceImportService {
     optimizeDto.setName(engineEntity.getVariableName());
     optimizeDto.setType(engineEntity.getVariableType());
     optimizeDto.setValue(engineEntity.getValue());
+    optimizeDto.setValueInfo(engineEntity.getValueInfo());
 
     optimizeDto.setProcessDefinitionId(engineEntity.getProcessDefinitionId());
     optimizeDto.setProcessDefinitionKey(engineEntity.getProcessDefinitionKey());
@@ -126,6 +127,10 @@ public class VariableUpdateInstanceImportService {
   private boolean isValidVariable(PluginVariableDto variableDto) {
     if (variableDto == null) {
       logger.warn("Refuse to add null variable from import adapter plugin.");
+      return false;
+    } else if (isNullOrEmpty(variableDto.getId())) {
+      logger.warn("Refuse to add variable with name [{}] from variable import adapter plugin. Variable has no id.",
+        variableDto.getName());
       return false;
     } else if (isNullOrEmpty(variableDto.getName())) {
       logger.warn("Refuse to add variable with id [{}] from variable import adapter plugin. Variable has no name.",

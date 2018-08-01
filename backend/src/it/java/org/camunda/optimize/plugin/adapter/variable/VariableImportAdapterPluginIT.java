@@ -1,10 +1,12 @@
 package org.camunda.optimize.plugin.adapter.variable;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.plugin.ImportAdapterProvider;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -189,6 +191,39 @@ public class VariableImportAdapterPluginIT {
     //then only half the variables are added to Optimize
     assertThat(variablesResponseDtos.size(), is(1));
     assertThat(variablesResponseDtos.get(0).getName(), is("var"));
+  }
+
+  @Test
+  public void mapComplexVariableToPrimitiveOne() throws Exception {
+    // given
+    addVariableImportPluginBasePackagesToConfiguration("org.camunda.optimize.plugin.adapter.variable.util5");
+
+    Map<String, Object> person = new HashMap<>();
+    person.put("name", "Kermit");
+    person.put("age", 50);
+    ObjectMapper objectMapper = new ObjectMapper();
+    String personAsString = objectMapper.writeValueAsString(person);
+
+    ComplexVariableDto complexVariableDto = new ComplexVariableDto();
+    complexVariableDto.setType("Object");
+    complexVariableDto.setValue(personAsString);
+    ComplexVariableDto.ValueInfo info = new ComplexVariableDto.ValueInfo();
+    info.setObjectTypeName("org.camunda.foo.Person");
+    info.setSerializationDataFormat("application/json");
+    complexVariableDto.setValueInfo(info);
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("person", complexVariableDto);
+    ProcessInstanceEngineDto instanceDto = deploySimpleServiceTaskWithVariables(variables);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    List<VariableRetrievalDto> variablesResponseDtos = getVariables(instanceDto);
+
+    //then only half the variables are added to Optimize
+    assertThat(variablesResponseDtos.size(), is(1));
+    assertThat(variablesResponseDtos.get(0).getName(), is("personsName"));
+    assertThat(variablesResponseDtos.get(0).getType(), is("String"));
   }
 
   private List<VariableRetrievalDto> getVariables(ProcessInstanceEngineDto processDefinition) {

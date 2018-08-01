@@ -1,6 +1,7 @@
 package org.camunda.optimize.dto.engine;
 
 import java.time.OffsetDateTime;
+import java.util.Map;
 
 public class HistoricVariableUpdateInstanceDto implements EngineDto {
 
@@ -9,6 +10,7 @@ public class HistoricVariableUpdateInstanceDto implements EngineDto {
   private String variableName;
   private String variableType;
   private String value;
+  private Map<String, Object> valueInfo;
   private OffsetDateTime time;
   private long revision;
   private long sequenceCounter;
@@ -104,5 +106,13 @@ public class HistoricVariableUpdateInstanceDto implements EngineDto {
 
   public void setSequenceCounter(long sequenceCounter) {
     this.sequenceCounter = sequenceCounter;
+  }
+
+  public Map<String, Object> getValueInfo() {
+    return valueInfo;
+  }
+
+  public void setValueInfo(Map<String, Object> valueInfo) {
+    this.valueInfo = valueInfo;
   }
 }
