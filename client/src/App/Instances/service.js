@@ -20,5 +20,12 @@ export function parseQueryString(queryString = '') {
 }
 
 export function createNewSelectionFragment() {
-  return {query: {ids: new Set()}, exclusionList: new Set()};
+  return {ids: new Set(), excludeIds: new Set()};
+}
+
+export function getParentFilter(filter) {
+  const appliedFilters = Object.keys(filter);
+  if (appliedFilters.includes('incidents' || 'active')) return {running: true};
+  if (appliedFilters.includes('completed' || 'canceled'))
+    return {finished: true};
 }

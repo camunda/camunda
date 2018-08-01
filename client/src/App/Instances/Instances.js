@@ -1,6 +1,5 @@
 import React, {Component, Fragment} from 'react';
 import PropTypes from 'prop-types';
-import update from 'immutability-helper';
 
 import Content from 'modules/components/Content';
 import Panel from 'modules/components/Panel';
@@ -19,7 +18,11 @@ import {BADGE_TYPE} from 'modules/constants';
 import Header from '../Header';
 import ListView from './ListView';
 import SelectionList from './SelectionList';
-import {parseQueryString, createNewSelectionFragment} from './service';
+import {
+  parseQueryString,
+  createNewSelectionFragment,
+  getParentFilter
+} from './service';
 import Filters from './Filters';
 import * as Styled from './styled.js';
 
@@ -40,9 +43,11 @@ class Instances extends Component {
       filter: {},
       filterCount: filterCount || 0,
       selection: createNewSelectionFragment(),
-      selectionCount: 10,
-      selections: selections || [[]],
+      selections: selections || [],
       instancesInSelections: 5000,
+      selectionCount: 10,
+      rollingSelectionIndex: 0,
+      currentSelection: null,
       workflow: null,
       activityIds: []
     };
@@ -58,30 +63,43 @@ class Instances extends Component {
     }
   }
 
-  handleAddToSelection = () => {
-    const {selection} = this.state;
+  addNewSelection = async () => {
+    const {
+      rollingSelectionIndex: currentSelectionIndex,
+      selection
+    } = this.state;
 
-    this.setState(
-      update(this.state, {
-        selections: {
-          0: {
-            $push: [
-              {
-                query: {
-                  ...selection.query,
-                  ids: [...(selection.query.ids || [])]
-                },
-                exclusionList: [...selection.exclusionList]
-              }
-            ]
-          }
+    // push new Selection to selections array, replace Sets with arrays.
+    await this.setState(prevState => ({
+      selections: [
+        {
+          selectionId: currentSelectionIndex,
+          queries: [
+            {
+              ...this.state.filter,
+              ...getParentFilter(this.state.filter),
+              ...selection,
+              ids: [...(selection.ids || [])],
+              excludeIds: [...(selection.excludeIds || [])]
+            }
+          ]
         },
-        selection: {$set: createNewSelectionFragment()}
-      }),
-      () => {
-        this.props.storeStateLocally({selections: this.state.selections});
-      }
-    );
+        ...prevState.selections
+      ],
+      rollingSelectionIndex: currentSelectionIndex + 1
+    }));
+    this.props.storeStateLocally({selections: this.state.selections});
+  };
+
+  updateSelection = change => {
+    this.setState({
+      selection: {...change}
+    });
+  };
+
+  handleAddToSelection = () => {
+    this.addNewSelection();
+    // addToSelection()
   };
 
   setFilterFromUrl = () => {
@@ -139,11 +157,11 @@ class Instances extends Component {
     this.props.storeStateLocally({filter: DEFAULT_FILTER});
   };
 
-  adjustCounter = reducedCount => {
-    this.setState(prevState => ({
-      instancesInSelections: prevState.instancesInSelections - reducedCount,
-      selectionCount: prevState.selectionCount - 1
-    }));
+  adjustSelectionCounter = ({instanceCount, selectionCount}) => {
+    // this.setState({
+    //   instancesInSelections: instanceCount,
+    //   selectionCount: selectionCount
+    // });
   };
 
   handleFlowNodesDetailsReady = nodes => {
@@ -208,9 +226,7 @@ class Instances extends Component {
                   errorMessage: this.state.errorMessage
                 }}
                 onSelectionUpdate={change => {
-                  this.setState({
-                    selection: update(this.state.selection, change)
-                  });
+                  this.updateSelection(change);
                 }}
                 selection={this.state.selection}
                 filter={this.state.filter}
@@ -231,7 +247,7 @@ class Instances extends Component {
                 <Panel.Body>
                   <SelectionList
                     selections={this.state.selections}
-                    onChange={this.adjustCounter}
+                    onChange={this.adjustSelectionCounter}
                   />
                 </Panel.Body>
                 <Styled.RightExpandButton

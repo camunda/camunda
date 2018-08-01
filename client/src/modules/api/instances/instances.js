@@ -31,37 +31,7 @@ export async function fetchWorkflowInstancesCount(payload) {
 }
 
 export async function fetchWorkflowInstanceBySelection(payload) {
-  //TODO: replace mock data;
-  const demoInstance = {
-    id: '4294984040',
-    workflowId: '1',
-    startDate: '2018-07-10T08:58:58.073+0000',
-    endDate: null,
-    state: 'ACTIVE',
-    businessKey: 'demoProcess',
-    incidents: [
-      {
-        id: '4295665536',
-        errorType: 'IO_MAPPING_ERROR',
-        errorMessage: 'No data found for query $.foo.',
-        state: 'ACTIVE',
-        activityId: 'taskA',
-        activityInstanceId: '4294984912',
-        jobId: null
-      }
-    ],
-    activities: []
-  };
-
-  const times = x => f => {
-    if (x > 0) {
-      f();
-      times(x - 1)(f);
-    }
-  };
-
-  const workfowInstances = [];
-  times(10)(() => workfowInstances.push(demoInstance));
-
-  return {workfowInstances, totalCount: 145};
+  const url = `${URL}?firstResult=${0}&maxResults=${10}`;
+  const response = await post(url, {queries: [...payload.queries]});
+  return await response.json();
 }
