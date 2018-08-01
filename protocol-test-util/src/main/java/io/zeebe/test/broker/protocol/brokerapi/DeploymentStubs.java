@@ -15,13 +15,13 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi;
 
-import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import java.util.function.Consumer;
 
 public class DeploymentStubs {
 
+  public static final int DEFAULT_PARTITION = 1;
   private StubBrokerRule broker;
 
   public DeploymentStubs(StubBrokerRule broker) {
@@ -36,7 +36,7 @@ public class DeploymentStubs {
     final ExecuteCommandResponseBuilder builder =
         broker
             .onExecuteCommandRequest(
-                Protocol.SYSTEM_PARTITION, ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
+                DEFAULT_PARTITION, ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
             .respondWith()
             .event()
             .intent(DeploymentIntent.CREATED)

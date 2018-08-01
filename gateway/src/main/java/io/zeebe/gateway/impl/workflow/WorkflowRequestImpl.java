@@ -26,12 +26,12 @@ public class WorkflowRequestImpl extends ControlMessageRequest<Workflows>
     implements WorkflowRequestStep1 {
   private final Request request;
 
-  public WorkflowRequestImpl(RequestManager client, String topic) {
+  public WorkflowRequestImpl(RequestManager client) {
     super(client, ControlMessageType.LIST_WORKFLOWS, WorkflowsImpl.class);
 
     setTargetPartition(Protocol.SYSTEM_PARTITION);
 
-    request = new Request(topic);
+    request = new Request();
   }
 
   @Override
@@ -46,13 +46,7 @@ public class WorkflowRequestImpl extends ControlMessageRequest<Workflows>
   }
 
   class Request {
-    private final String topicName;
-
     private String bpmnProcessId;
-
-    Request(String topicName) {
-      this.topicName = topicName;
-    }
 
     public String getBpmnProcessId() {
       return bpmnProcessId;
@@ -60,10 +54,6 @@ public class WorkflowRequestImpl extends ControlMessageRequest<Workflows>
 
     public void setBpmnProcessId(String bpmnProcessId) {
       this.bpmnProcessId = bpmnProcessId;
-    }
-
-    public String getTopicName() {
-      return topicName;
     }
   }
 }

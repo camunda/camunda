@@ -15,12 +15,12 @@
  */
 package io.zeebe.gateway.impl.subscription.topic;
 
+import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
+
 import io.zeebe.gateway.ZeebeClientConfiguration;
 import io.zeebe.gateway.api.commands.DeploymentCommand;
-import io.zeebe.gateway.api.commands.TopicCommand;
 import io.zeebe.gateway.api.events.DeploymentEvent;
 import io.zeebe.gateway.api.events.RaftEvent;
-import io.zeebe.gateway.api.events.TopicEvent;
 import io.zeebe.gateway.api.record.RecordType;
 import io.zeebe.gateway.api.record.ValueType;
 import io.zeebe.gateway.api.subscription.DeploymentCommandHandler;
@@ -30,8 +30,6 @@ import io.zeebe.gateway.api.subscription.ManagementSubscriptionBuilderStep1.Mana
 import io.zeebe.gateway.api.subscription.ManagementSubscriptionBuilderStep1.ManagementSubscriptionBuilderStep3;
 import io.zeebe.gateway.api.subscription.RaftEventHandler;
 import io.zeebe.gateway.api.subscription.RecordHandler;
-import io.zeebe.gateway.api.subscription.TopicCommandHandler;
-import io.zeebe.gateway.api.subscription.TopicEventHandler;
 import io.zeebe.gateway.api.subscription.TopicSubscription;
 import io.zeebe.gateway.cmd.ClientException;
 import io.zeebe.gateway.impl.record.RecordImpl;
@@ -100,27 +98,6 @@ public class ManagementSubscriptionBuilderImpl
   }
 
   @Override
-  public ManagementSubscriptionBuilderStep3 topicEventHandler(TopicEventHandler handler) {
-    EnsureUtil.ensureNotNull("topicEventHandler", handler);
-    handlers.put(RecordType.EVENT, ValueType.TOPIC, e -> handler.onTopicEvent((TopicEvent) e));
-
-    return this;
-  }
-
-  @Override
-  public ManagementSubscriptionBuilderStep3 topicCommandHandler(TopicCommandHandler handler) {
-    EnsureUtil.ensureNotNull("topicCommandHandler", handler);
-    handlers.put(
-        RecordType.COMMAND, ValueType.TOPIC, e -> handler.onTopicCommand((TopicCommand) e));
-    handlers.put(
-        RecordType.COMMAND_REJECTION,
-        ValueType.TOPIC,
-        e -> handler.onTopicCommandRejection((TopicCommand) e));
-
-    return this;
-  }
-
-  @Override
   public ManagementSubscriptionBuilderImpl raftEventHandler(final RaftEventHandler handler) {
     EnsureUtil.ensureNotNull("raftEventHandler", handler);
     handlers.put(RecordType.EVENT, ValueType.RAFT, e -> handler.onRaftEvent((RaftEvent) e));
@@ -129,7 +106,7 @@ public class ManagementSubscriptionBuilderImpl
 
   @Override
   public ManagementSubscriptionBuilderStep3 startAtPosition(long position) {
-    this.startPositions.put(Protocol.SYSTEM_PARTITION, position);
+    this.startPositions.put(DEPLOYMENT_PARTITION, position);
     return this;
   }
 
@@ -183,7 +160,7 @@ public class ManagementSubscriptionBuilderImpl
   public Future<TopicSubscriberGroup> buildSubscriberGroup() {
     final TopicSubscriptionSpec subscription =
         new TopicSubscriptionSpec(
-            Protocol.SYSTEM_TOPIC,
+            Protocol.DEFAULT_TOPIC,
             defaultStartPosition,
             startPositions,
             forceStart,

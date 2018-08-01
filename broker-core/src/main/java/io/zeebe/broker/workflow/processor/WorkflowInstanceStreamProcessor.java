@@ -109,9 +109,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
   }
 
   public TypedStreamProcessor createStreamProcessor(TypedStreamEnvironment environment) {
-    final LogStream logStream = environment.getStream();
-    this.workflowCache =
-        new WorkflowCache(managementApiClient, topologyManager, logStream.getTopicName());
+    this.workflowCache = new WorkflowCache(managementApiClient, topologyManager);
 
     final BpmnStepProcessor bpmnStepProcessor =
         new BpmnStepProcessor(

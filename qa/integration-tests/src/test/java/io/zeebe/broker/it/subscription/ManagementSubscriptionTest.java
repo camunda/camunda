@@ -67,8 +67,8 @@ public class ManagementSubscriptionTest {
   public void setUp() {
     this.client = clientRule.getClient();
 
-    final String defaultTopic = clientRule.getClient().getConfiguration().getDefaultTopic();
-    clientRule.waitUntilTopicsExists(defaultTopic);
+    final String topic = client.getConfiguration().getDefaultTopic();
+    clientRule.waitUntilTopicsExists(topic);
   }
 
   @Test
@@ -78,7 +78,7 @@ public class ManagementSubscriptionTest {
         client.newManagementSubscription().name(SUBSCRIPTION_NAME).recordHandler(r -> {}).open();
 
     // then
-    assertThat(subscription.isOpen());
+    assertThat(subscription.isOpen()).isTrue();
   }
 
   @Test

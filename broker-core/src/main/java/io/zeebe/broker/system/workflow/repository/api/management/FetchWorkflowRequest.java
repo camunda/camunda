@@ -37,16 +37,13 @@ public class FetchWorkflowRequest implements BufferReader, BufferWriter {
   private long workflowKey = FetchWorkflowRequestEncoder.workflowKeyNullValue();
   private int version = FetchWorkflowRequestEncoder.versionNullValue();
   private final DirectBuffer bpmnProcessId = new UnsafeBuffer(0, 0);
-  private final DirectBuffer topicName = new UnsafeBuffer(0, 0);
 
   @Override
   public int getLength() {
     return headerEncoder.encodedLength()
         + bodyEncoder.sbeBlockLength()
         + FetchWorkflowRequestEncoder.bpmnProcessIdHeaderLength()
-        + bpmnProcessId.capacity()
-        + FetchWorkflowRequestEncoder.topicNameHeaderLength()
-        + topicName.capacity();
+        + bpmnProcessId.capacity();
   }
 
   public FetchWorkflowRequest workflowKey(long workflowKey) {
@@ -68,11 +65,6 @@ public class FetchWorkflowRequest implements BufferReader, BufferWriter {
     return this;
   }
 
-  public FetchWorkflowRequest topicName(DirectBuffer topicName) {
-    this.topicName.wrap(topicName);
-    return this;
-  }
-
   @Override
   public void write(MutableDirectBuffer buffer, int offset) {
     headerEncoder
@@ -86,8 +78,7 @@ public class FetchWorkflowRequest implements BufferReader, BufferWriter {
         .wrap(buffer, offset + headerEncoder.encodedLength())
         .workflowKey(workflowKey)
         .version(version)
-        .putBpmnProcessId(bpmnProcessId, 0, bpmnProcessId.capacity())
-        .putTopicName(topicName, 0, topicName.capacity());
+        .putBpmnProcessId(bpmnProcessId, 0, bpmnProcessId.capacity());
   }
 
   @Override
@@ -115,12 +106,6 @@ public class FetchWorkflowRequest implements BufferReader, BufferWriter {
 
     // bpmn process id
 
-    final int topicNameLength = bodyDecoder.topicNameLength();
-    offset += FetchWorkflowRequestDecoder.topicNameHeaderLength();
-
-    topicName.wrap(buffer, offset, topicNameLength);
-
-    offset += topicNameLength;
     bodyDecoder.limit(offset);
   }
 
@@ -140,15 +125,10 @@ public class FetchWorkflowRequest implements BufferReader, BufferWriter {
     return bpmnProcessId;
   }
 
-  public DirectBuffer getTopicName() {
-    return topicName;
-  }
-
   public FetchWorkflowRequest reset() {
     workflowKey = FetchWorkflowRequestEncoder.workflowKeyNullValue();
     version = FetchWorkflowRequestEncoder.versionNullValue();
     bpmnProcessId.wrap(0, 0);
-    topicName.wrap(0, 0);
 
     return this;
   }

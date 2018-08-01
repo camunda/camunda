@@ -61,11 +61,10 @@ public class WorkflowRepositoryService implements Service<WorkflowRepositoryServ
   }
 
   public ActorFuture<Tuple<WorkflowMetadata, DirectBuffer>> getLatestWorkflowByBpmnProcessId(
-      String topicName, String bpmnProcessId) {
+      String bpmnProcessId) {
     return actor.call(
         () -> {
-          final WorkflowMetadata metadata =
-              index.getLatestWorkflowByBpmnProcessId(topicName, bpmnProcessId);
+          final WorkflowMetadata metadata = index.getLatestWorkflowByBpmnProcessId(bpmnProcessId);
 
           if (metadata != null) {
             final DirectBuffer resource = resourceCache.getResource(metadata);
@@ -78,11 +77,11 @@ public class WorkflowRepositoryService implements Service<WorkflowRepositoryServ
   }
 
   public ActorFuture<Tuple<WorkflowMetadata, DirectBuffer>> getWorkflowByBpmnProcessIdAndVersion(
-      String topicName, String bpmnProcessId, int version) {
+      String bpmnProcessId, int version) {
     return actor.call(
         () -> {
           final WorkflowMetadata metadata =
-              index.getWorkflowByBpmnProcessIdAndVersion(topicName, bpmnProcessId, version);
+              index.getWorkflowByBpmnProcessIdAndVersion(bpmnProcessId, version);
 
           if (metadata != null) {
             final DirectBuffer resource = resourceCache.getResource(metadata);
@@ -94,18 +93,11 @@ public class WorkflowRepositoryService implements Service<WorkflowRepositoryServ
         });
   }
 
-  public ActorFuture<List<WorkflowMetadata>> getWorkflowsByTopic(String topicName) {
-    return actor.call(
-        () -> {
-          return index.getWorkflowsByTopic(topicName);
-        });
+  public ActorFuture<List<WorkflowMetadata>> getWorkflows() {
+    return actor.call(() -> index.getWorkflows());
   }
 
-  public ActorFuture<List<WorkflowMetadata>> getWorkflowsByBpmnProcessId(
-      String topicName, String bpmnProcessId) {
-    return actor.call(
-        () -> {
-          return index.getWorkflowsByTopicAndBpmnProcessId(topicName, bpmnProcessId);
-        });
+  public ActorFuture<List<WorkflowMetadata>> getWorkflowsByBpmnProcessId(String bpmnProcessId) {
+    return actor.call(() -> index.getWorkflowsByBpmnProcessId(bpmnProcessId));
   }
 }

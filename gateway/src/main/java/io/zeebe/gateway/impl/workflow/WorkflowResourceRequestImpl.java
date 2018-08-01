@@ -32,12 +32,12 @@ public class WorkflowResourceRequestImpl extends ControlMessageRequest<WorkflowR
 
   private final Request request;
 
-  public WorkflowResourceRequestImpl(RequestManager client, String topic) {
+  public WorkflowResourceRequestImpl(RequestManager client) {
     super(client, ControlMessageType.GET_WORKFLOW, WorkflowResourceImpl.class);
 
     setTargetPartition(Protocol.SYSTEM_PARTITION);
 
-    request = new Request(topic);
+    request = new Request();
   }
 
   @Override
@@ -70,15 +70,9 @@ public class WorkflowResourceRequestImpl extends ControlMessageRequest<WorkflowR
   }
 
   class Request {
-    private final String topicName;
-
     private String bpmnProcessId;
     private int version = -1;
     private long workflowKey = -1L;
-
-    Request(String topicName) {
-      this.topicName = topicName;
-    }
 
     public String getBpmnProcessId() {
       return bpmnProcessId;
@@ -102,10 +96,6 @@ public class WorkflowResourceRequestImpl extends ControlMessageRequest<WorkflowR
 
     public void setWorkflowKey(long workflowKey) {
       this.workflowKey = workflowKey;
-    }
-
-    public String getTopicName() {
-      return topicName;
     }
   }
 }

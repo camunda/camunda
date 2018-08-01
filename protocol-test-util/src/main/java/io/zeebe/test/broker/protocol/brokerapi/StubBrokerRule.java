@@ -16,6 +16,7 @@
 package io.zeebe.test.broker.protocol.brokerapi;
 
 import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
+import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
@@ -50,8 +51,7 @@ import org.junit.rules.ExternalResource;
 
 public class StubBrokerRule extends ExternalResource {
   public static final String TEST_TOPIC_NAME = DEFAULT_TOPIC;
-  private static final int DEFAULT_PARTITION = 1;
-  public static final int TEST_PARTITION_ID = DEFAULT_PARTITION;
+  public static final int TEST_PARTITION_ID = DEPLOYMENT_PARTITION;
 
   private ControlledActorClock clock = new ControlledActorClock();
   protected ActorScheduler scheduler;
@@ -106,7 +106,7 @@ public class StubBrokerRule extends ExternalResource {
     final Topology topology = new Topology();
     topology.addLeader(host, port, Protocol.SYSTEM_TOPIC, Protocol.SYSTEM_PARTITION);
 
-    for (int i = DEFAULT_PARTITION; i < DEFAULT_PARTITION + partitionCount; i++) {
+    for (int i = TEST_PARTITION_ID; i < TEST_PARTITION_ID + partitionCount; i++) {
       topology.addLeader(host, port, DEFAULT_TOPIC, i);
     }
 
@@ -386,7 +386,6 @@ public class StubBrokerRule extends ExternalResource {
     // defaults that the config can override
     builder.recordType(RecordType.EVENT);
     builder.intent(Intent.UNKNOWN);
-    builder.partitionId(1);
     builder.key(0);
     builder.position(0);
     builder.valueType(ValueType.RAFT);

@@ -15,20 +15,19 @@
  */
 package io.zeebe.gateway.event;
 
+import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
+import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.api.commands.DeploymentCommand;
-import io.zeebe.gateway.api.commands.TopicCommand;
 import io.zeebe.gateway.api.events.DeploymentEvent;
 import io.zeebe.gateway.api.record.Record;
 import io.zeebe.gateway.api.record.RecordMetadata;
 import io.zeebe.gateway.api.subscription.DeploymentCommandHandler;
 import io.zeebe.gateway.api.subscription.RecordHandler;
-import io.zeebe.gateway.api.subscription.TopicCommandHandler;
 import io.zeebe.gateway.util.ClientRule;
-import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -36,7 +35,6 @@ import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.RaftIntent;
 import io.zeebe.protocol.intent.SubscriberIntent;
-import io.zeebe.protocol.intent.TopicIntent;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.util.AutoCloseableRule;
@@ -90,7 +88,7 @@ public class ManagementSubscriptionTest {
             .get();
 
     assertThat(subscribeRequest.intent()).isEqualTo(SubscriberIntent.SUBSCRIBE);
-    assertThat(subscribeRequest.partitionId()).isEqualTo(Protocol.SYSTEM_PARTITION);
+    assertThat(subscribeRequest.partitionId()).isEqualTo(DEPLOYMENT_PARTITION);
     assertThat(subscribeRequest.getCommand())
         .containsEntry("startPosition", 0L)
         .containsEntry("bufferSize", 1024L)
@@ -140,7 +138,7 @@ public class ManagementSubscriptionTest {
             .get();
 
     assertThat(subscribeRequest.intent()).isEqualTo(SubscriberIntent.SUBSCRIBE);
-    assertThat(subscribeRequest.partitionId()).isEqualTo(Protocol.SYSTEM_PARTITION);
+    assertThat(subscribeRequest.partitionId()).isEqualTo(DEPLOYMENT_PARTITION);
     assertThat(subscribeRequest.getCommand()).containsEntry("startPosition", 0L);
   }
 
@@ -455,126 +453,6 @@ public class ManagementSubscriptionTest {
   }
 
   @Test
-  public void shouldInvokeTopicEventHandler() {
-    // given
-    final List<Record> records = new ArrayList<>();
-    client
-        .newManagementSubscription()
-        .name(SUBSCRIPTION_NAME)
-        .topicEventHandler(records::add)
-        .startAtHeadOfTopic()
-        .open();
-
-    final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
-
-    final Instant expectedEventTimestamp = Instant.now();
-
-    // when pushing two events
-    pushRecord(
-        clientAddress,
-        21L,
-        1L,
-        expectedEventTimestamp,
-        RecordType.EVENT,
-        ValueType.TOPIC,
-        TopicIntent.CREATING);
-    pushRecord(
-        clientAddress,
-        22L,
-        2L,
-        expectedEventTimestamp,
-        RecordType.EVENT,
-        ValueType.TOPIC,
-        TopicIntent.CREATED);
-
-    // then
-    waitUntil(() -> records.size() == 2);
-
-    assertMetadata(
-        records.get(0),
-        21L,
-        1L,
-        expectedEventTimestamp,
-        RecordType.EVENT,
-        ValueType.TOPIC,
-        "CREATING");
-    assertMetadata(
-        records.get(1),
-        22L,
-        2L,
-        expectedEventTimestamp,
-        RecordType.EVENT,
-        ValueType.TOPIC,
-        "CREATED");
-  }
-
-  @Test
-  public void shouldInvokeTopicCommandHandler() {
-    // given
-    final List<Record> records = new ArrayList<>();
-    client
-        .newManagementSubscription()
-        .name(SUBSCRIPTION_NAME)
-        .topicCommandHandler(
-            new TopicCommandHandler() {
-
-              @Override
-              public void onTopicCommand(TopicCommand topicCommand) {
-                records.add(topicCommand);
-              }
-
-              @Override
-              public void onTopicCommandRejection(TopicCommand topicCommand) {
-                records.add(topicCommand);
-              }
-            })
-        .startAtHeadOfTopic()
-        .open();
-
-    final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
-
-    final Instant expectedEventTimestamp = Instant.now();
-
-    // when pushing two events
-    pushRecord(
-        clientAddress,
-        21L,
-        1L,
-        expectedEventTimestamp,
-        RecordType.COMMAND,
-        ValueType.TOPIC,
-        TopicIntent.CREATE);
-    pushRecord(
-        clientAddress,
-        22L,
-        2L,
-        expectedEventTimestamp,
-        RecordType.COMMAND_REJECTION,
-        ValueType.TOPIC,
-        TopicIntent.CREATE);
-
-    // then
-    waitUntil(() -> records.size() == 2);
-
-    assertMetadata(
-        records.get(0),
-        21L,
-        1L,
-        expectedEventTimestamp,
-        RecordType.COMMAND,
-        ValueType.TOPIC,
-        "CREATE");
-    assertMetadata(
-        records.get(1),
-        22L,
-        2L,
-        expectedEventTimestamp,
-        RecordType.COMMAND_REJECTION,
-        ValueType.TOPIC,
-        "CREATE");
-  }
-
-  @Test
   public void shouldInvokeRaftEventHandler() {
     // given
     final List<Record> records = new ArrayList<>();
@@ -706,8 +584,8 @@ public class ManagementSubscriptionTest {
     assertThat(metadata.getPosition()).isEqualTo(expectedPosition);
     assertThat(metadata.getTimestamp()).isEqualTo(expectedTimestamp);
     assertThat(metadata.getValueType()).isEqualTo(clientValueType);
-    assertThat(metadata.getTopicName()).isEqualTo(Protocol.SYSTEM_TOPIC);
-    assertThat(metadata.getPartitionId()).isEqualTo(Protocol.SYSTEM_PARTITION);
+    assertThat(metadata.getTopicName()).isEqualTo(DEFAULT_TOPIC);
+    assertThat(metadata.getPartitionId()).isEqualTo(DEPLOYMENT_PARTITION);
     assertThat(metadata.getRecordType()).isEqualTo(clientRecordType);
     assertThat(metadata.getIntent()).isEqualTo(expectedIntent);
   }
@@ -724,7 +602,7 @@ public class ManagementSubscriptionTest {
 
     broker
         .newSubscribedEvent()
-        .partitionId(Protocol.SYSTEM_PARTITION)
+        .partitionId(DEPLOYMENT_PARTITION)
         .key(key)
         .position(position)
         .recordType(recordType)

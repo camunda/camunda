@@ -63,15 +63,14 @@ public class ListWorkflowsControlMessageHandler extends AbstractControlMessageHa
       final ListWorkflowsControlRequest controlRequest = new ListWorkflowsControlRequest();
       controlRequest.wrap(buffer);
 
-      final String topicName = BufferUtil.bufferAsString(controlRequest.getTopicName());
       final String bpmnProcessId = BufferUtil.bufferAsString(controlRequest.getBpmnProcessId());
 
       final ActorFuture<List<WorkflowMetadata>> future;
 
       if (!bpmnProcessId.isEmpty()) {
-        future = repository.getWorkflowsByBpmnProcessId(topicName, bpmnProcessId);
+        future = repository.getWorkflowsByBpmnProcessId(bpmnProcessId);
       } else {
-        future = repository.getWorkflowsByTopic(topicName);
+        future = repository.getWorkflows();
       }
 
       actor.runOnCompletion(
@@ -90,7 +89,6 @@ public class ListWorkflowsControlMessageHandler extends AbstractControlMessageHa
                   (workflow) ->
                       responseWorklows
                           .add()
-                          .setTopicName(workflow.getTopicName())
                           .setBpmnProcessId(workflow.getBpmnProcessId())
                           .setWorkflowKey(workflow.getKey())
                           .setResourceName(workflow.getResourceName())

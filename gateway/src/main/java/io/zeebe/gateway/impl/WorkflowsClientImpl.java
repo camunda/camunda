@@ -72,11 +72,11 @@ public class WorkflowsClientImpl implements WorkflowClient {
 
   @Override
   public WorkflowResourceRequestStep1 newResourceRequest() {
-    return new WorkflowResourceRequestImpl(client.getCommandManager(), client.getTopic());
+    return new WorkflowResourceRequestImpl(client.getCommandManager());
   }
 
   @Override
   public WorkflowRequestStep1 newWorkflowRequest() {
-    return new WorkflowRequestImpl(client.getCommandManager(), client.getTopic());
+    return new WorkflowRequestImpl(client.getCommandManager());
   }
 }

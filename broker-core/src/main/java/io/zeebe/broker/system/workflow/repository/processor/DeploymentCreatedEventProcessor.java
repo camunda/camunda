@@ -50,8 +50,6 @@ public class DeploymentCreatedEventProcessor implements TypedRecordProcessor<Dep
     final DeploymentRecord deploymentEvent = event.getValue();
     final ValueArray<DeployedWorkflow> deployedWorkflows = deploymentEvent.deployedWorkflows();
 
-    final String topicName = BufferUtil.bufferAsString(deploymentEvent.getTopicName());
-
     for (final DeployedWorkflow deployedWorkflow : deployedWorkflows) {
       final WorkflowMetadata workflowMetadata =
           new WorkflowMetadata()
@@ -59,8 +57,7 @@ public class DeploymentCreatedEventProcessor implements TypedRecordProcessor<Dep
               .setBpmnProcessId(BufferUtil.bufferAsString(deployedWorkflow.getBpmnProcessId()))
               .setEventPosition(event.getPosition())
               .setVersion(deployedWorkflow.getVersion())
-              .setResourceName(BufferUtil.bufferAsString(deployedWorkflow.getResourceName()))
-              .setTopicName(topicName);
+              .setResourceName(BufferUtil.bufferAsString(deployedWorkflow.getResourceName()));
 
       repositoryIndex.add(workflowMetadata);
     }

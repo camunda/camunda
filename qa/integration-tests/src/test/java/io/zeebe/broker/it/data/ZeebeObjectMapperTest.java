@@ -145,7 +145,7 @@ public class ZeebeObjectMapperTest {
     clientRule
         .getClient()
         .newManagementSubscription()
-        .name("test")
+        .name("test-management")
         .recordHandler(records::add)
         .startAtHeadOfTopic()
         .open();

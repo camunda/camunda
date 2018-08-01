@@ -18,6 +18,7 @@
 package io.zeebe.broker.workflow;
 
 import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
+import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -27,7 +28,6 @@ import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
@@ -53,6 +53,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class CreateDeploymentTest {
+
   private static final BpmnModelInstance WORKFLOW =
       Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
 
@@ -68,7 +69,7 @@ public class CreateDeploymentTest {
     final ExecuteCommandResponse resp =
         apiRule
             .createCmdRequest()
-            .partitionId(Protocol.SYSTEM_PARTITION)
+            .partitionId(DEPLOYMENT_PARTITION)
             .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
             .command()
             .put("topicName", DEFAULT_TOPIC)
@@ -84,7 +85,8 @@ public class CreateDeploymentTest {
     assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
     assertThat(resp.position()).isGreaterThanOrEqualTo(0L);
     assertThat(resp.sourceRecordPosition()).isEqualTo(createDeploymentCommand.position());
-    assertThat(resp.partitionId()).isEqualTo(Protocol.SYSTEM_PARTITION);
+    assertThat(resp.partitionId()).isEqualTo(DEPLOYMENT_PARTITION);
+
     assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
     assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATED);
   }
@@ -147,6 +149,7 @@ public class CreateDeploymentTest {
         .contains("process1", "process2");
   }
 
+  @Test
   public void shouldRejectDeploymentIfNotValidDesignTimeAspect() throws Exception {
     // given
     final Path path = Paths.get(getClass().getResource("/workflows/invalid_process.bpmn").toURI());
@@ -202,10 +205,9 @@ public class CreateDeploymentTest {
     final ExecuteCommandResponse resp =
         apiRule
             .createCmdRequest()
-            .partitionId(Protocol.SYSTEM_PARTITION)
+            .partitionId(DEPLOYMENT_PARTITION)
             .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
             .command()
-            .put("topicName", DEFAULT_TOPIC)
             .put("resources", resources)
             .done()
             .sendAndAwait();
@@ -229,10 +231,9 @@ public class CreateDeploymentTest {
     final ExecuteCommandResponse resp =
         apiRule
             .createCmdRequest()
-            .partitionId(Protocol.SYSTEM_PARTITION)
+            .partitionId(DEPLOYMENT_PARTITION)
             .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
             .command()
-            .put("topicName", DEFAULT_TOPIC)
             .put("resources", Collections.emptyList())
             .done()
             .sendAndAwait();
@@ -291,6 +292,22 @@ public class CreateDeploymentTest {
         .containsEntry(WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID, "yaml-workflow");
   }
 
+  @Test
+  public void shouldIncrementWorkflowVersions() {
+    // given
+
+    // when
+    final ExecuteCommandResponse d1 = apiRule.topic().deployWithResponse(WORKFLOW);
+    final ExecuteCommandResponse d2 = apiRule.topic().deployWithResponse(WORKFLOW);
+
+    // then
+    final Map<String, Object> workflow1 = getDeployedWorkflow(d1, 0);
+    assertThat(workflow1.get("version")).isEqualTo(1L);
+
+    final Map<String, Object> workflow2 = getDeployedWorkflow(d2, 0);
+    assertThat(workflow2.get("version")).isEqualTo(2L);
+  }
+
   private Map<String, Object> deploymentResource(final byte[] resource, String name) {
     final Map<String, Object> deploymentResource = new HashMap<>();
     deploymentResource.put("resource", resource);
@@ -315,7 +332,7 @@ public class CreateDeploymentTest {
 
   public SubscribedRecord getFirstDeploymentCreateCommand() {
     return apiRule
-        .topic(Protocol.SYSTEM_PARTITION)
+        .topic(DEPLOYMENT_PARTITION)
         .receiveRecords()
         .skipUntil(r -> r.valueType() == ValueType.DEPLOYMENT)
         .filter(r -> r.valueType() == ValueType.DEPLOYMENT && r.intent() == DeploymentIntent.CREATE)

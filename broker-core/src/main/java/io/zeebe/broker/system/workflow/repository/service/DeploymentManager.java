@@ -32,14 +32,13 @@ import io.zeebe.broker.system.workflow.repository.api.management.FetchWorkflowRe
 import io.zeebe.broker.system.workflow.repository.processor.DeploymentCreateEventProcessor;
 import io.zeebe.broker.system.workflow.repository.processor.DeploymentCreatedEventProcessor;
 import io.zeebe.broker.system.workflow.repository.processor.DeploymentRejectedEventProcessor;
-import io.zeebe.broker.system.workflow.repository.processor.DeploymentTopicCreatingEventProcessor;
 import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex;
 import io.zeebe.broker.transport.controlmessage.ControlMessageHandlerManager;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.DeploymentIntent;
-import io.zeebe.protocol.intent.TopicIntent;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceGroupReference;
@@ -91,6 +90,11 @@ public class DeploymentManager implements Service<DeploymentManager> {
 
   private void installServices(
       final Partition partition, ServiceName<Partition> partitionServiceName) {
+
+    if (partition.getInfo().getPartitionId() != Protocol.DEPLOYMENT_PARTITION) {
+      return;
+    }
+
     final TypedStreamEnvironment streamEnvironment =
         new TypedStreamEnvironment(partition.getLogStream(), clientApiTransport.getOutput());
 
@@ -112,10 +116,6 @@ public class DeploymentManager implements Service<DeploymentManager> {
                 ValueType.DEPLOYMENT,
                 DeploymentIntent.CREATE,
                 new DeploymentRejectedEventProcessor())
-            .onEvent(
-                ValueType.TOPIC,
-                TopicIntent.CREATING,
-                new DeploymentTopicCreatingEventProcessor(repositoryIndex))
             .withStateResource(repositoryIndex)
             .withListener(
                 new StreamProcessorLifecycleAware() {

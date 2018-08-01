@@ -1,122 +1,121 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
-    package="io.zeebe.clustering.management" id="5" version="1"
-    semanticVersion="0.1.0" description="Zeebe Cluster Management Protocol" byteOrder="littleEndian">
+  package="io.zeebe.clustering.management" id="5" version="1"
+  semanticVersion="0.1.0" description="Zeebe Cluster Management Protocol" byteOrder="littleEndian">
 
-    <types>
+  <types>
 
-        <composite name="messageHeader"
-            description="Message identifiers and length of message root">
-            <type name="blockLength" primitiveType="uint16" />
-            <type name="templateId" primitiveType="uint16" />
-            <type name="schemaId" primitiveType="uint16" />
-            <type name="version" primitiveType="uint16" />
-        </composite>
+    <composite name="messageHeader"
+      description="Message identifiers and length of message root">
+      <type name="blockLength" primitiveType="uint16"/>
+      <type name="templateId" primitiveType="uint16"/>
+      <type name="schemaId" primitiveType="uint16"/>
+      <type name="version" primitiveType="uint16"/>
+    </composite>
 
-        <composite name="varDataEncoding">
-            <type name="length" primitiveType="uint16" />
-            <type name="varData" primitiveType="uint8" length="0" characterEncoding="UTF-8" />
-        </composite>
+    <composite name="varDataEncoding">
+      <type name="length" primitiveType="uint16"/>
+      <type name="varData" primitiveType="uint8" length="0" characterEncoding="UTF-8"/>
+    </composite>
 
-        <composite name="blob">
-            <type name="length" primitiveType="uint32" maxValue="524288" />
-            <type name="varData" primitiveType="uint8" length="0" />
-        </composite>
+    <composite name="blob">
+      <type name="length" primitiveType="uint32" maxValue="524288"/>
+      <type name="varData" primitiveType="uint8" length="0"/>
+    </composite>
 
-        <composite name="groupSizeEncoding">
-            <type name="blockLength" primitiveType="uint16" />
-            <type name="numInGroup" primitiveType="uint8" semanticType="NumInGroup" />
-        </composite>
+    <composite name="groupSizeEncoding">
+      <type name="blockLength" primitiveType="uint16"/>
+      <type name="numInGroup" primitiveType="uint8" semanticType="NumInGroup"/>
+    </composite>
 
-        <enum name="errorResponseCode" encodingType="uint8" semanticType="String">
-            <validValue name="PARTITION_NOT_FOUND">0</validValue>
-            <validValue name="INVALID_PARAMETERS">1</validValue>
-            <validValue name="READ_ERROR">2</validValue>
-        </enum>
+    <enum name="errorResponseCode" encodingType="uint8" semanticType="String">
+      <validValue name="PARTITION_NOT_FOUND">0</validValue>
+      <validValue name="INVALID_PARAMETERS">1</validValue>
+      <validValue name="READ_ERROR">2</validValue>
+    </enum>
 
-    </types>
+  </types>
 
-    <sbe:message name="InvitationRequest" id="0">
-        <field name="partitionId" id="0" type="uint16"/>
-        <field name="replicationFactor" id="1" type="uint16"/>
-        <field name="term" id="2" type="uint16"/>
-        <field name="name" id="3" type="uint16"/>
-        <!-- TODO: provide more details to raft -->
-        <group name="members" id="4" dimensionType="groupSizeEncoding">
-            <field name="port" id="5" type="uint16"/>
-            <data name="host" id="6" type="varDataEncoding"/>
-        </group>
-        <data name="topicName" id="7" type="varDataEncoding" />
-    </sbe:message>
+  <sbe:message name="InvitationRequest" id="0">
+    <field name="partitionId" id="0" type="uint16"/>
+    <field name="replicationFactor" id="1" type="uint16"/>
+    <field name="term" id="2" type="uint16"/>
+    <field name="name" id="3" type="uint16"/>
+    <!-- TODO: provide more details to raft -->
+    <group name="members" id="4" dimensionType="groupSizeEncoding">
+      <field name="port" id="5" type="uint16"/>
+      <data name="host" id="6" type="varDataEncoding"/>
+    </group>
+    <data name="topicName" id="7" type="varDataEncoding"/>
+  </sbe:message>
 
-    <sbe:message name="InvitationResponse" id="1">
-        <field name="term" id="1" type="uint16"/>
-    </sbe:message>
+  <sbe:message name="InvitationResponse" id="1">
+    <field name="term" id="1" type="uint16"/>
+  </sbe:message>
 
-    <sbe:message name="CreatePartitionRequest" id="2">
-      <field name="partitionId" id="0" type="uint16"/>
-      <field name="replicationFactor" id="1" type="uint16"/>
-      <data name="topicName" id="2" type="varDataEncoding" />
-    </sbe:message>
+  <sbe:message name="CreatePartitionRequest" id="2">
+    <field name="partitionId" id="0" type="uint16"/>
+    <field name="replicationFactor" id="1" type="uint16"/>
+    <data name="topicName" id="2" type="varDataEncoding"/>
+  </sbe:message>
 
-    <sbe:message name="FetchWorkflowRequest" id="3">
-        <field name="workflowKey" id="0" type="uint64"/>
-        <field name="version" id="1" type="uint16"/>
-        <data name="bpmnProcessId" id="2" type="varDataEncoding"/>
-        <data name="topicName" id="3" type="varDataEncoding" />
-    </sbe:message>
+  <sbe:message name="FetchWorkflowRequest" id="3">
+    <field name="workflowKey" id="0" type="uint64"/>
+    <field name="version" id="1" type="uint16"/>
+    <data name="bpmnProcessId" id="2" type="varDataEncoding"/>
+  </sbe:message>
 
-    <sbe:message name="FetchWorkflowResponse" id="4">
-        <field name="workflowKey" id="1" type="uint64"/>
-        <field name="version" id="2" type="uint16"/>
-        <field name="deploymentKey" id="3" type="uint64"/>
-        <data name="bpmnProcessId" id="4" type="varDataEncoding" />
-        <data name="bpmnXml" id="5" type="varDataEncoding" />
-    </sbe:message>
+  <sbe:message name="FetchWorkflowResponse" id="4">
+    <field name="workflowKey" id="1" type="uint64"/>
+    <field name="version" id="2" type="uint16"/>
+    <field name="deploymentKey" id="3" type="uint64"/>
+    <data name="bpmnProcessId" id="4" type="varDataEncoding"/>
+    <data name="bpmnXml" id="5" type="varDataEncoding"/>
+  </sbe:message>
 
-    <sbe:message name="NotLeaderResponse" id="5">
-    </sbe:message>
+  <sbe:message name="NotLeaderResponse" id="5">
+  </sbe:message>
 
-    <sbe:message name="ListSnapshotsRequest" id="6">
-        <field name="partitionId" id="0" type="uint16" />
-    </sbe:message>
+  <sbe:message name="ListSnapshotsRequest" id="6">
+    <field name="partitionId" id="0" type="uint16"/>
+  </sbe:message>
 
-    <sbe:message name="ListSnapshotsResponse" id="7">
-        <group name="snapshots" id="0" dimensionType="groupSizeEncoding">
-            <field name="length" id="1" type="uint64" />
-            <field name="logPosition" id="2" type="uint64" />
-            <data name="name" id="3" type="varDataEncoding" />
-            <data name="checksum" id="4" type="varDataEncoding" />
-        </group>
-    </sbe:message>
+  <sbe:message name="ListSnapshotsResponse" id="7">
+    <group name="snapshots" id="0" dimensionType="groupSizeEncoding">
+      <field name="length" id="1" type="uint64"/>
+      <field name="logPosition" id="2" type="uint64"/>
+      <data name="name" id="3" type="varDataEncoding"/>
+      <data name="checksum" id="4" type="varDataEncoding"/>
+    </group>
+  </sbe:message>
 
-    <sbe:message name="FetchSnapshotChunkRequest" id="8">
-        <field name="partitionId" id="0" type="uint16" />
-        <field name="logPosition" id="1" type="uint64" />
-        <field name="chunkOffset" id="2" type="uint64" />
-        <field name="chunkLength" id="3" type="int32" />
-        <data name="name" id="4" type="varDataEncoding" />
-    </sbe:message>
+  <sbe:message name="FetchSnapshotChunkRequest" id="8">
+    <field name="partitionId" id="0" type="uint16"/>
+    <field name="logPosition" id="1" type="uint64"/>
+    <field name="chunkOffset" id="2" type="uint64"/>
+    <field name="chunkLength" id="3" type="int32"/>
+    <data name="name" id="4" type="varDataEncoding"/>
+  </sbe:message>
 
-    <sbe:message name="FetchSnapshotChunkResponse" id="9">
-        <data name="data" id="0" type="blob" />
-    </sbe:message>
+  <sbe:message name="FetchSnapshotChunkResponse" id="9">
+    <data name="data" id="0" type="blob"/>
+  </sbe:message>
 
-		<sbe:message name="FetchCreatedTopicsRequest" id="11">
-    </sbe:message>
+  <sbe:message name="FetchCreatedTopicsRequest" id="11">
+  </sbe:message>
 
-    <sbe:message name="FetchCreatedTopicsResponse" id="12">
-        <group name="topics" id="0" dimensionType="groupSizeEncoding">
-	        <group name="partitions" id="1" dimensionType="groupSizeEncoding">
-	             <field name="partitionId" id="2" type="uint16" />
-	        </group>
-          <data name="topicName" id="3" type="varDataEncoding" />            
-        </group>
-    </sbe:message>
+  <sbe:message name="FetchCreatedTopicsResponse" id="12">
+    <group name="topics" id="0" dimensionType="groupSizeEncoding">
+      <group name="partitions" id="1" dimensionType="groupSizeEncoding">
+        <field name="partitionId" id="2" type="uint16"/>
+      </group>
+      <data name="topicName" id="3" type="varDataEncoding"/>
+    </group>
+  </sbe:message>
 
-    <sbe:message name="ErrorResponse" id="10">
-        <field name="code" id="1" type="errorResponseCode" />
-        <data name="data" id="2" type="varDataEncoding" />
-    </sbe:message>
+  <sbe:message name="ErrorResponse" id="10">
+    <field name="code" id="1" type="errorResponseCode"/>
+    <data name="data" id="2" type="varDataEncoding"/>
+  </sbe:message>
 
 </sbe:messageSchema>

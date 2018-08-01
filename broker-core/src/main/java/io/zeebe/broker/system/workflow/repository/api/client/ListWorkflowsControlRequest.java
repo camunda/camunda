@@ -22,20 +22,10 @@ import io.zeebe.msgpack.property.StringProperty;
 import org.agrona.DirectBuffer;
 
 public class ListWorkflowsControlRequest extends UnpackedObject {
-  private StringProperty topicNameProp = new StringProperty("topicName");
   private StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
 
   public ListWorkflowsControlRequest() {
-    declareProperty(topicNameProp).declareProperty(bpmnProcessIdProp);
-  }
-
-  public DirectBuffer getTopicName() {
-    return topicNameProp.getValue();
-  }
-
-  public ListWorkflowsControlRequest setTopicName(String topicName) {
-    topicNameProp.setValue(topicName);
-    return this;
+    this.declareProperty(bpmnProcessIdProp);
   }
 
   public DirectBuffer getBpmnProcessId() {

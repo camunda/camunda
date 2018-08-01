@@ -22,6 +22,7 @@ import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW
 import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_INSTANCE_KEY;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_VERSION;
 import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
+import static io.zeebe.test.broker.protocol.brokerapi.DeploymentStubs.DEFAULT_PARTITION;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,7 +31,6 @@ import io.zeebe.broker.system.workflow.repository.data.ResourceType;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.DeploymentIntent;
@@ -607,7 +607,7 @@ public class WorkflowInstanceFunctionalTest {
     final ExecuteCommandResponse deploymentResp =
         apiRule
             .createCmdRequest()
-            .partitionId(Protocol.SYSTEM_PARTITION)
+            .partitionId(DEFAULT_PARTITION)
             .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
             .command()
             .put("topicName", DEFAULT_TOPIC)

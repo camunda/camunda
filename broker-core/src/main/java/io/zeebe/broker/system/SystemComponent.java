@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.system;
 
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_SYSTEM_GROUP_NAME;
 import static io.zeebe.broker.clustering.orchestration.ClusterOrchestrationLayerServiceNames.KNOWN_TOPICS_SERVICE_NAME;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY;
@@ -70,8 +71,7 @@ public class SystemComponent implements Component {
             TransportServiceNames.CONTROL_MESSAGE_HANDLER_MANAGER,
             deploymentManagerService.getControlMessageHandlerManagerServiceInjector())
         .groupReference(
-            LEADER_PARTITION_SYSTEM_GROUP_NAME,
-            deploymentManagerService.getPartitionsGroupReference())
+            LEADER_PARTITION_GROUP_NAME, deploymentManagerService.getPartitionsGroupReference())
         .install();
 
     final FetchCreatedTopicsRequestHandlerService fetchCreatedTopicsRequestHandler =
