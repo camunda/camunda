@@ -42,7 +42,7 @@ public class ViewDto {
 
   @JsonIgnore
   public String getKey() {
-    String seperator = "_";
-    return operation + seperator + entity + seperator + property;
+    String separator = "_";
+    return operation + separator + entity + separator + property;
   }
 }

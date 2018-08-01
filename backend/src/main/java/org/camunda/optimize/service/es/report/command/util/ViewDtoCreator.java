@@ -1,19 +1,7 @@
 package org.camunda.optimize.service.es.report.command.util;
 
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ViewDto;
-import org.camunda.optimize.dto.optimize.query.report.group.FlowNodesGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.group.GroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.group.NoneGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.group.StartDateGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.group.VariableGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.group.value.StartDateGroupByValueDto;
-import org.camunda.optimize.dto.optimize.query.report.group.value.VariableGroupByValueDto;
 
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.DATE_UNIT_DAY;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.HEAT_VISUALIZATION;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.SINGLE_NUMBER_VISUALIZATION;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.TABLE_VISUALIZATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_AVERAGE_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_COUNT_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_DURATION_PROPERTY;
