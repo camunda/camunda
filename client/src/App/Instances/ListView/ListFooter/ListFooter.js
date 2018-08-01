@@ -20,19 +20,6 @@ class ListFooter extends React.Component {
     storeStateLocally: PropTypes.func.isRequired
   };
 
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      selections: []
-    };
-  }
-
-  componentDidMount() {
-    const {selections} = this.props.getStateLocally();
-    this.setState({selections});
-  }
-
   handleSelectionInteraction = () => {
     this.props.onAddToSelection();
   };
@@ -40,28 +27,29 @@ class ListFooter extends React.Component {
   renderOptions = () => {
     return (
       <React.Fragment>
+        <Dropdown.Option>Add to Current Selection</Dropdown.Option>
         <Dropdown.Option onClick={this.handleSelectionInteraction}>
-          add to selection
+          Create Selection
         </Dropdown.Option>
       </React.Fragment>
     );
   };
 
+  renderSelectionDropDown = () => {
+    return (
+      <Styled.SelectionButton>
+        <Dropdown placement="top" label="Add to Selection...">
+          {this.renderOptions()}
+        </Dropdown>
+      </Styled.SelectionButton>
+    );
+  };
+
   renderSelectionButton = () => {
     return (
-      <React.Fragment>
-        {this.state.selections ? (
-          <Styled.SelectionButton>
-            <Dropdown placement="top" label="Add to Selection...">
-              {this.renderOptions()}
-            </Dropdown>
-          </Styled.SelectionButton>
-        ) : (
-          <Styled.SelectionButton onClick={this.handleSelectionInteraction}>
-            Create Selection
-          </Styled.SelectionButton>
-        )}
-      </React.Fragment>
+      <Styled.SelectionButton onClick={this.handleSelectionInteraction}>
+        Create Selection
+      </Styled.SelectionButton>
     );
   };
 
@@ -71,10 +59,11 @@ class ListFooter extends React.Component {
 
   render() {
     const maxPage = getMaxPage(this.props.total, this.props.perPage);
-    console.log(this.state.selections);
     return (
       <React.Fragment>
-        {this.renderSelectionButton()}
+        {this.props.getStateLocally().selections
+          ? this.renderSelectionDropDown()
+          : this.renderSelectionButton()}
         {this.isPaginationRequired(maxPage, this.props.total) ? (
           <Paginator
             firstElement={this.props.firstElement}
