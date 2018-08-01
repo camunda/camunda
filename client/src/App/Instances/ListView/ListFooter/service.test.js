@@ -1,1 +1,0 @@
-import {getMaxPage} from './service';
