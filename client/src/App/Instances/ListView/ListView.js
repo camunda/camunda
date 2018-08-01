@@ -12,10 +12,7 @@ import {fetchWorkflowInstances} from 'modules/api/instances';
 
 export default class ListView extends React.Component {
   static propTypes = {
-    selection: PropTypes.shape({
-      list: PropTypes.instanceOf(Set),
-      isBlacklist: PropTypes.bool
-    }).isRequired,
+    selection: PropTypes.object.isRequired,
     instancesInFilter: PropTypes.number.isRequired,
     onSelectionUpdate: PropTypes.func.isRequired,
     filter: PropTypes.object.isRequired,
