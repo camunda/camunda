@@ -77,6 +77,7 @@ public class ClientTransportMemoryTest {
             .scheduler(actorSchedulerRule.get())
             .requestMemoryPool(requestMemoryPoolSpy)
             .messageMemoryPool(messageMemoryPoolSpy)
+            .defaultMessageRetryTimeout(Duration.ofMillis(100))
             .build();
     closeables.manage(clientTransport);
   }

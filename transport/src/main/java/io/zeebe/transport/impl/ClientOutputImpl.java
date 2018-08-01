@@ -24,6 +24,7 @@ import io.zeebe.transport.impl.sender.OutgoingRequest;
 import io.zeebe.transport.impl.sender.Sender;
 import io.zeebe.transport.impl.sender.TransportHeaderWriter;
 import io.zeebe.util.buffer.BufferWriter;
+import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.nio.ByteBuffer;
 import java.time.Duration;
@@ -35,10 +36,15 @@ import org.agrona.concurrent.UnsafeBuffer;
 public class ClientOutputImpl implements ClientOutput {
   protected final Sender requestManager;
   protected final Duration defaultRequestRetryTimeout;
+  protected final long defaultMessageRetryTimeoutInMillis;
 
-  public ClientOutputImpl(Sender requestManager, Duration defaultRequestRetryTimeout) {
+  public ClientOutputImpl(
+      Sender requestManager,
+      Duration defaultRequestRetryTimeout,
+      Duration defaultMessageRetryTimeout) {
     this.requestManager = requestManager;
     this.defaultRequestRetryTimeout = defaultRequestRetryTimeout;
+    this.defaultMessageRetryTimeoutInMillis = defaultMessageRetryTimeout.toMillis();
   }
 
   @Override
@@ -54,10 +60,11 @@ public class ClientOutputImpl implements ClientOutput {
         final int remoteStreamId = transportMessage.getRemoteStreamId();
         final UnsafeBuffer bufferView = new UnsafeBuffer(allocatedBuffer);
         final TransportHeaderWriter headerWriter = new TransportHeaderWriter();
-
         headerWriter.wrapMessage(bufferView, writer, remoteStreamId);
+        final long deadline = ActorClock.currentTimeMillis() + defaultMessageRetryTimeoutInMillis;
 
-        final OutgoingMessage outgoingMessage = new OutgoingMessage(remoteStreamId, bufferView);
+        final OutgoingMessage outgoingMessage =
+            new OutgoingMessage(remoteStreamId, bufferView, deadline);
 
         requestManager.submitMessage(outgoingMessage);
 

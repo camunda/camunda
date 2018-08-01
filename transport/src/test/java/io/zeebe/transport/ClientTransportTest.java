@@ -679,6 +679,57 @@ public class ClientTransportTest {
   }
 
   @Test
+  public void shouldRetrySendRequestIfChannelIsNotOpen() {
+    // given
+    buildServerTransport(
+        b ->
+            b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
+                .build(null, new EchoRequestResponseHandler()));
+
+    // when
+
+    // don't wait until the channel is opened
+    final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+
+    final ActorFuture<ClientResponse> responseFuture =
+        clientTransport
+            .getOutput()
+            .sendRequest(remote, new DirectBufferWriter().wrap(BUF1), Duration.ofSeconds(2));
+
+    // then
+    final ClientResponse response = responseFuture.join();
+    assertThatBuffer(response.getResponseBuffer()).hasBytes(BUF1);
+  }
+
+  @Test
+  public void shouldRetrySendMessageIfChannelIsNotOpen() throws InterruptedException {
+    // given
+    final DirectBufferWriter writer = new DirectBufferWriter();
+    writer.wrap(BUF1);
+
+    final RecordingMessageHandler messageHandler = new RecordingMessageHandler();
+
+    buildServerTransport(
+        b -> {
+          return b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress()).build(messageHandler, null);
+        });
+
+    // when
+    final TransportMessage message = new TransportMessage();
+    message.writer(writer);
+
+    // don't wait until the channel is opened
+    final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+    message.remoteAddress(remote);
+
+    clientTransport.getOutput().sendMessage(message);
+
+    // then
+    waitUntil(() -> messageHandler.numReceivedMessages() == 1);
+    assertThatBuffer(messageHandler.getMessage(0).getBuffer()).hasBytes(BUF1);
+  }
+
+  @Test
   public void shouldCloseTransportWhileWaitingForResponse() throws Exception {
     // given
     final AtomicBoolean requestReceived = new AtomicBoolean(false);

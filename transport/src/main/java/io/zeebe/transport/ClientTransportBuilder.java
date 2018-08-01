@@ -56,6 +56,7 @@ public class ClientTransportBuilder {
       new NonBlockingMemoryPool(ByteValue.ofMegabytes(4));
 
   protected Duration defaultRequestRetryTimeout = Duration.ofSeconds(15);
+  protected Duration defaultMessageRetryTimeout = Duration.ofSeconds(1);
 
   public ClientTransportBuilder scheduler(ActorScheduler scheduler) {
     this.scheduler = scheduler;
@@ -114,6 +115,11 @@ public class ClientTransportBuilder {
     return this;
   }
 
+  public ClientTransportBuilder defaultMessageRetryTimeout(Duration duration) {
+    this.defaultMessageRetryTimeout = duration;
+    return this;
+  }
+
   public ClientTransport build() {
     validate();
 
@@ -160,7 +166,8 @@ public class ClientTransportBuilder {
     final Receiver receiver = new Receiver(actorContext, context);
     final Sender sender = actorContext.getSender();
 
-    final ClientOutput output = new ClientOutputImpl(sender, defaultRequestRetryTimeout);
+    final ClientOutput output =
+        new ClientOutputImpl(sender, defaultRequestRetryTimeout, defaultMessageRetryTimeout);
 
     context.setClientOutput(output);
 

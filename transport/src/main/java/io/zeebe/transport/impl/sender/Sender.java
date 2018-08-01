@@ -213,14 +213,19 @@ public class Sender extends Actor implements TimerHandler {
   }
 
   private void onMessageSubmitted(final OutgoingMessage message) {
-    try {
-      final int remoteStreamId = message.getRemoteStreamId();
-
-      final ChannelWriteQueue sendQueue = channelMap.get(remoteStreamId);
-      if (sendQueue != null) {
+    final int remoteStreamId = message.getRemoteStreamId();
+    final ChannelWriteQueue sendQueue = channelMap.get(remoteStreamId);
+    if (sendQueue != null) {
+      try {
         sendQueue.offer(message);
+      } finally {
+        reclaimMessageBuffer(message.getAllocatedBuffer());
       }
-    } finally {
+    } else if (ActorClock.currentTimeMillis() < message.getDeadline()) {
+      // channel not open, retry
+      actor.runDelayed(Duration.ofMillis(10), () -> submittedMessages.offer(message));
+    } else {
+      LOG.trace("Drop message because the channel is not open.");
       reclaimMessageBuffer(message.getAllocatedBuffer());
     }
   }
