@@ -21,10 +21,6 @@ import java.util.List;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.FIXED_DATE_FILTER;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.RELATIVE_DATE_FILTER;
 
-/**
- * Helper class that defines mapping rules between FE Dto and ES filters used
- * on event type
- */
 @Component
 public class StartDateQueryFilter implements QueryFilter<StartDateFilterDataDto> {
 
