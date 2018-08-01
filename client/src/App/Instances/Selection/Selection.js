@@ -2,7 +2,6 @@ import React, {Fragment} from 'react';
 import PropTypes from 'prop-types';
 import StateIcon from 'modules/components/StateIcon';
 import Dropdown from 'modules/components/Dropdown';
-import BadgeComponent from 'modules/components/Badge';
 
 import {getWorkflowName} from 'modules/utils/instance';
 import {BADGE_TYPE} from 'modules/constants';
@@ -27,11 +26,10 @@ export default class Selection extends React.Component {
     onDelete: PropTypes.func.isRequired
   };
 
-  getArrowIcon = isOpen => (isOpen ? <Down /> : <Right />);
+  renderArrowIcon = isOpen => (isOpen ? <Down /> : <Right />);
 
-  getBody = instances => {
+  renderBody = instances => {
     return instances.map((instance, index) => (
-      // <Styled.Instance key={instance.id}> TODO: replace index key with id when realdata is available.
       <Styled.Instance key={index}>
         <StateIcon {...{instance}} />
         <Styled.WorkflowName>{getWorkflowName(instance)}</Styled.WorkflowName>
@@ -40,7 +38,7 @@ export default class Selection extends React.Component {
     ));
   };
 
-  getFooter = (count, numberOfDisplayedInstances) => (
+  renderFooter = (count, numberOfDisplayedInstances) => (
     <Styled.Footer>
       <Styled.MoreInstances>
         {count - numberOfDisplayedInstances + ' more Instances'}
@@ -48,11 +46,11 @@ export default class Selection extends React.Component {
     </Styled.Footer>
   );
 
-  getActions = (onRetry, onDelete) => (
+  renderActions = (onRetry, onDelete) => (
     <Styled.Actions>
       <Styled.DropdownTrigger onClick={evt => evt && evt.stopPropagation()}>
         <Dropdown label={<Batch />}>
-          <Dropdown.Option data-test="logout-button" onClick={onRetry}>
+          <Dropdown.Option onClick={onRetry}>
             <Retry />
             <Styled.OptionLabel>Retry</Styled.OptionLabel>
           </Dropdown.Option>
@@ -72,11 +70,11 @@ export default class Selection extends React.Component {
       instances,
       count
     } = this.props;
-    const {getArrowIcon, getBody, getActions, getFooter} = this;
+    const {renderArrowIcon, renderBody, renderActions, renderFooter} = this;
     return (
       <Styled.Selection>
         <Styled.Header {...{onClick, isOpen}}>
-          {getArrowIcon(isOpen)}
+          {renderArrowIcon(isOpen)}
           <Styled.Headline>Selection {selectionId + 1}</Styled.Headline>
           <Styled.Badge
             type={
@@ -85,12 +83,12 @@ export default class Selection extends React.Component {
             badgeContent={count}
           />
 
-          {isOpen && getActions(onRetry, onDelete)}
+          {isOpen && renderActions(onRetry, onDelete)}
         </Styled.Header>
         {isOpen && (
           <Fragment>
-            {getBody(instances, count)}
-            {getFooter(count, instances.length)}
+            {renderBody(instances, count)}
+            {renderFooter(count, instances.length)}
           </Fragment>
         )}
       </Styled.Selection>
