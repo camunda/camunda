@@ -1,4 +1,5 @@
 import {isValid, addDays, startOfDay, addMinutes, format} from 'date-fns';
+import {ALL_VERSIONS_OPTION} from './constants';
 
 export function parseWorkflowNames(workflows) {
   return workflows.map(item => ({
@@ -15,7 +16,7 @@ export function parseWorkflowVersions(versions = []) {
 }
 
 export function addAllVersionsOption(options = []) {
-  options.push({value: 'all', label: 'All versions'});
+  options.push({value: ALL_VERSIONS_OPTION, label: 'All versions'});
   return options;
 }
 

@@ -7,3 +7,6 @@ export const FIELDS = {
   startDate: {name: 'startDate', placeholder: 'Start Date'},
   endDate: {name: 'endDate', placeholder: 'End Date'}
 };
+
+export const EMPTY_OPTION = '';
+export const ALL_VERSIONS_OPTION = 'all';

@@ -18,7 +18,7 @@ import {
   addAllVersionsOption,
   fieldParser
 } from './service';
-import {FIELDS} from './constants';
+import {FIELDS, EMPTY_OPTION, ALL_VERSIONS_OPTION} from './constants';
 
 export default class Filters extends React.Component {
   static propTypes = {
@@ -47,8 +47,8 @@ export default class Filters extends React.Component {
   state = {
     groupedWorkflows: [],
     currentWorkflow: {},
-    currentWorkflowVersion: '',
-    currentActivityNode: ''
+    currentWorkflowVersion: EMPTY_OPTION,
+    currentActivityId: EMPTY_OPTION
   };
 
   componentDidMount = async () => {
@@ -62,12 +62,15 @@ export default class Filters extends React.Component {
     const currentWorkflow = this.state.groupedWorkflows.find(
       item => item.bpmnProcessId === value
     );
-    const version = currentWorkflow ? currentWorkflow.workflows[0].id : '';
+    const version = currentWorkflow
+      ? currentWorkflow.workflows[0].id
+      : EMPTY_OPTION;
 
     this.setState(
       {
         currentWorkflow: currentWorkflow || {},
-        currentWorkflowVersion: version
+        currentWorkflowVersion: version,
+        currentActivityId: EMPTY_OPTION
       },
       this.updateInstancesWorkflow
     );
@@ -79,7 +82,7 @@ export default class Filters extends React.Component {
     // we don't show a diagram when no version is available,
     // or all versions are selected
     const isValidVersion =
-      !isEmpty(this.state.currentWorkflow) && version !== 'all';
+      !isEmpty(this.state.currentWorkflow) && version !== ALL_VERSIONS_OPTION;
 
     if (isValidVersion) {
       workflow = this.state.currentWorkflow.workflows.find(item => {
@@ -94,9 +97,9 @@ export default class Filters extends React.Component {
   handleWorkflowVersionChange = event => {
     const {value} = event.target;
 
-    value !== '' &&
+    value !== EMPTY_OPTION &&
       this.setState(
-        {currentWorkflowVersion: value},
+        {currentWorkflowVersion: value, currentActivityId: EMPTY_OPTION},
         this.updateInstancesWorkflow
       );
   };
@@ -125,7 +128,6 @@ export default class Filters extends React.Component {
     const workflowVersions = addAllVersionsOption(
       parseWorkflowVersions(this.state.currentWorkflow.workflows)
     );
-    console.log(this.props.filter);
 
     return (
       <Panel isRounded>
@@ -134,7 +136,7 @@ export default class Filters extends React.Component {
           <Styled.Filters>
             <Styled.Field>
               <Select
-                value={this.state.currentWorkflow.bpmnProcessId || ''}
+                value={this.state.currentWorkflow.bpmnProcessId || EMPTY_OPTION}
                 disabled={this.state.groupedWorkflows.length === 0}
                 name={FIELDS.workflowName.name}
                 placeholder={FIELDS.workflowName.placeholder}
@@ -184,8 +186,8 @@ export default class Filters extends React.Component {
               <Select
                 value={this.state.currentActivityId}
                 disabled={
-                  this.state.currentWorkflowVersion === '' ||
-                  this.state.currentWorkflowVersion === 'all'
+                  this.state.currentWorkflowVersion === EMPTY_OPTION ||
+                  this.state.currentWorkflowVersion === ALL_VERSIONS_OPTION
                 }
                 name={FIELDS.activityId.name}
                 placeholder={FIELDS.activityId.placeholder}
