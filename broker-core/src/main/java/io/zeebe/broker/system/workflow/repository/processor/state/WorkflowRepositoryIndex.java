@@ -19,8 +19,11 @@ package io.zeebe.broker.system.workflow.repository.processor.state;
 
 import io.zeebe.broker.logstreams.processor.JsonSnapshotSupport;
 import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex.WorkflowRepositoryIndexData;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 public class WorkflowRepositoryIndex extends JsonSnapshotSupport<WorkflowRepositoryIndexData> {

@@ -15,8 +15,21 @@
  */
 package io.zeebe.dispatcher;
 
-import static io.zeebe.dispatcher.impl.PositionUtil.*;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
+import static io.zeebe.dispatcher.impl.PositionUtil.partitionId;
+import static io.zeebe.dispatcher.impl.PositionUtil.partitionOffset;
+import static io.zeebe.dispatcher.impl.PositionUtil.position;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.TYPE_PADDING;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.flagBatchBegin;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.flagBatchEnd;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.flagFailed;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.flagsOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageLength;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
 
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.dispatcher.impl.log.LogBuffer;

@@ -15,10 +15,16 @@
  */
 package io.zeebe.raft.protocol;
 
-import static io.zeebe.raft.PollRequestEncoder.*;
+import static io.zeebe.raft.PollRequestEncoder.hostHeaderLength;
+import static io.zeebe.raft.PollRequestEncoder.lastEventPositionNullValue;
+import static io.zeebe.raft.PollRequestEncoder.lastEventTermNullValue;
+import static io.zeebe.raft.PollRequestEncoder.partitionIdNullValue;
+import static io.zeebe.raft.PollRequestEncoder.termNullValue;
 
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.raft.*;
+import io.zeebe.raft.PollRequestDecoder;
+import io.zeebe.raft.PollRequestEncoder;
+import io.zeebe.raft.Raft;
 import io.zeebe.transport.SocketAddress;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;

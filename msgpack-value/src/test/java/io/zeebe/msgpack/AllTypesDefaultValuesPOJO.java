@@ -16,7 +16,13 @@
 package io.zeebe.msgpack;
 
 import io.zeebe.msgpack.POJO.POJOEnum;
-import io.zeebe.msgpack.property.*;
+import io.zeebe.msgpack.property.BinaryProperty;
+import io.zeebe.msgpack.property.EnumProperty;
+import io.zeebe.msgpack.property.IntegerProperty;
+import io.zeebe.msgpack.property.LongProperty;
+import io.zeebe.msgpack.property.ObjectProperty;
+import io.zeebe.msgpack.property.PackedProperty;
+import io.zeebe.msgpack.property.StringProperty;
 import org.agrona.DirectBuffer;
 
 public class AllTypesDefaultValuesPOJO extends UnpackedObject {

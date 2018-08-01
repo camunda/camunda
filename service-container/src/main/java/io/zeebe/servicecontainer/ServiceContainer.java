@@ -16,7 +16,9 @@
 package io.zeebe.servicecontainer;
 
 import io.zeebe.util.sched.future.ActorFuture;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public interface ServiceContainer {
   void start();

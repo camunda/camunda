@@ -17,12 +17,20 @@
  */
 package io.zeebe.broker.clustering.api;
 
-import static io.zeebe.clustering.management.InvitationRequestEncoder.*;
-import static io.zeebe.clustering.management.InvitationRequestEncoder.MembersEncoder.*;
+import static io.zeebe.clustering.management.InvitationRequestEncoder.MembersEncoder.hostHeaderLength;
+import static io.zeebe.clustering.management.InvitationRequestEncoder.MembersEncoder.sbeBlockLength;
+import static io.zeebe.clustering.management.InvitationRequestEncoder.MembersEncoder.sbeHeaderSize;
+import static io.zeebe.clustering.management.InvitationRequestEncoder.partitionIdNullValue;
+import static io.zeebe.clustering.management.InvitationRequestEncoder.replicationFactorNullValue;
+import static io.zeebe.clustering.management.InvitationRequestEncoder.termNullValue;
+import static io.zeebe.clustering.management.InvitationRequestEncoder.topicNameHeaderLength;
 
-import io.zeebe.clustering.management.*;
+import io.zeebe.clustering.management.InvitationRequestDecoder;
 import io.zeebe.clustering.management.InvitationRequestDecoder.MembersDecoder;
+import io.zeebe.clustering.management.InvitationRequestEncoder;
 import io.zeebe.clustering.management.InvitationRequestEncoder.MembersEncoder;
+import io.zeebe.clustering.management.MessageHeaderDecoder;
+import io.zeebe.clustering.management.MessageHeaderEncoder;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferWriter;

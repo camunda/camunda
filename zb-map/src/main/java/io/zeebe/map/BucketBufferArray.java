@@ -15,7 +15,21 @@
  */
 package io.zeebe.map;
 
-import static io.zeebe.map.BucketBufferArrayDescriptor.*;
+import static io.zeebe.map.BucketBufferArrayDescriptor.BLOCK_KEY_OFFSET;
+import static io.zeebe.map.BucketBufferArrayDescriptor.BUCKET_BUFFER_BUCKET_COUNT_OFFSET;
+import static io.zeebe.map.BucketBufferArrayDescriptor.BUCKET_BUFFER_HEADER_LENGTH;
+import static io.zeebe.map.BucketBufferArrayDescriptor.BUCKET_DATA_OFFSET;
+import static io.zeebe.map.BucketBufferArrayDescriptor.BUCKET_DEPTH_OFFSET;
+import static io.zeebe.map.BucketBufferArrayDescriptor.BUCKET_FILL_COUNT_OFFSET;
+import static io.zeebe.map.BucketBufferArrayDescriptor.BUCKET_HEADER_LENGTH;
+import static io.zeebe.map.BucketBufferArrayDescriptor.BUCKET_ID_OFFSET;
+import static io.zeebe.map.BucketBufferArrayDescriptor.BUCKET_OVERFLOW_POINTER_OFFSET;
+import static io.zeebe.map.BucketBufferArrayDescriptor.MAIN_BLOCK_COUNT_OFFSET;
+import static io.zeebe.map.BucketBufferArrayDescriptor.MAIN_BUCKET_BUFFER_HEADER_LEN;
+import static io.zeebe.map.BucketBufferArrayDescriptor.MAIN_BUCKET_COUNT_OFFSET;
+import static io.zeebe.map.BucketBufferArrayDescriptor.MAIN_BUFFER_COUNT_OFFSET;
+import static io.zeebe.map.BucketBufferArrayDescriptor.MAIN_HIGHEST_BUCKET_ID;
+import static io.zeebe.map.BucketBufferArrayDescriptor.getBlockValueOffset;
 import static java.lang.Math.addExact;
 import static java.lang.Math.multiplyExact;
 import static org.agrona.BufferUtil.ARRAY_BASE_OFFSET;

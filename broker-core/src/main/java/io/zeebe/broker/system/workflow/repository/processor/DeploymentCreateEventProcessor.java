@@ -20,8 +20,13 @@ package io.zeebe.broker.system.workflow.repository.processor;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
-import io.zeebe.broker.logstreams.processor.*;
-import io.zeebe.broker.system.workflow.repository.data.*;
+import io.zeebe.broker.logstreams.processor.TypedRecord;
+import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
+import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
+import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.broker.system.workflow.repository.data.DeploymentRecord;
+import io.zeebe.broker.system.workflow.repository.data.DeploymentResource;
+import io.zeebe.broker.system.workflow.repository.data.ResourceType;
 import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex;
 import io.zeebe.model.bpmn.BpmnModelApi;
 import io.zeebe.model.bpmn.impl.error.InvalidModelException;

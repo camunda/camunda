@@ -15,12 +15,24 @@
  */
 package io.zeebe.dispatcher.impl.log;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.*;
-import static org.agrona.BitUtil.*;
-import static org.assertj.core.api.Assertions.*;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.FRAME_ALIGNMENT;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.TYPE_MESSAGE;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.TYPE_PADDING;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.framedLength;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
+import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_TAIL_COUNTER_OFFSET;
+import static org.agrona.BitUtil.align;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 import io.zeebe.dispatcher.ClaimedFragment;
 import java.nio.charset.Charset;

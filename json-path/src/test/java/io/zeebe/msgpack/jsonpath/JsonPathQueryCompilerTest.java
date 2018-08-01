@@ -17,7 +17,11 @@ package io.zeebe.msgpack.jsonpath;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.msgpack.filter.*;
+import io.zeebe.msgpack.filter.ArrayIndexFilter;
+import io.zeebe.msgpack.filter.MapValueWithKeyFilter;
+import io.zeebe.msgpack.filter.MsgPackFilter;
+import io.zeebe.msgpack.filter.RootCollectionFilter;
+import io.zeebe.msgpack.filter.WildcardFilter;
 import io.zeebe.msgpack.query.MsgPackFilterContext;
 import org.agrona.DirectBuffer;
 import org.junit.Test;

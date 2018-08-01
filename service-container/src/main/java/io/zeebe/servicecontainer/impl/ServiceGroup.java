@@ -15,8 +15,12 @@
  */
 package io.zeebe.servicecontainer.impl;
 
-import io.zeebe.servicecontainer.*;
-import java.util.*;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceGroupReference;
+import io.zeebe.servicecontainer.ServiceName;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 public class ServiceGroup {
   protected final ServiceName<?> groupName;

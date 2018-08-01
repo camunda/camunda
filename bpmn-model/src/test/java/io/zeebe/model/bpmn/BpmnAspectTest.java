@@ -18,7 +18,12 @@ package io.zeebe.model.bpmn;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.model.bpmn.instance.*;
+import io.zeebe.model.bpmn.instance.EndEvent;
+import io.zeebe.model.bpmn.instance.ExclusiveGateway;
+import io.zeebe.model.bpmn.instance.ServiceTask;
+import io.zeebe.model.bpmn.instance.StartEvent;
+import io.zeebe.model.bpmn.instance.Workflow;
+import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import org.junit.Test;
 
 public class BpmnAspectTest {

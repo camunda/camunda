@@ -17,8 +17,6 @@ package io.zeebe.map.benchmarks;
 
 import java.util.Random;
 
-import org.openjdk.jmh.annotations.*;
-
 @State(Scope.Benchmark)
 public class RandomKeysSupplier
 {

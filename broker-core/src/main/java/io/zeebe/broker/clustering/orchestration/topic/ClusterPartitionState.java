@@ -19,7 +19,11 @@ package io.zeebe.broker.clustering.orchestration.topic;
 
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
 import io.zeebe.broker.clustering.base.topology.ReadableTopology;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 
 public class ClusterPartitionState {

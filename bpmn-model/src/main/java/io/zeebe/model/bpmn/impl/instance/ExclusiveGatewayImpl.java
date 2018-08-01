@@ -20,7 +20,9 @@ import io.zeebe.model.bpmn.instance.ExclusiveGateway;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
 import java.util.ArrayList;
 import java.util.List;
-import javax.xml.bind.annotation.*;
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlIDREF;
+import javax.xml.bind.annotation.XmlTransient;
 
 public class ExclusiveGatewayImpl extends FlowNodeImpl implements ExclusiveGateway {
   private SequenceFlowImpl defaultFlow;

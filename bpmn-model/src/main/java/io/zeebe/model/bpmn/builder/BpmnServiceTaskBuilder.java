@@ -17,7 +17,11 @@ package io.zeebe.model.bpmn.builder;
 
 import io.zeebe.model.bpmn.impl.instance.ExtensionElementsImpl;
 import io.zeebe.model.bpmn.impl.instance.ServiceTaskImpl;
-import io.zeebe.model.bpmn.impl.metadata.*;
+import io.zeebe.model.bpmn.impl.metadata.InputOutputMappingImpl;
+import io.zeebe.model.bpmn.impl.metadata.MappingImpl;
+import io.zeebe.model.bpmn.impl.metadata.TaskDefinitionImpl;
+import io.zeebe.model.bpmn.impl.metadata.TaskHeaderImpl;
+import io.zeebe.model.bpmn.impl.metadata.TaskHeadersImpl;
 import io.zeebe.model.bpmn.instance.OutputBehavior;
 
 public class BpmnServiceTaskBuilder {

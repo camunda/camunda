@@ -15,10 +15,8 @@
  */
 package io.zeebe.map.benchmarks;
 
-import java.io.IOException;
-
 import io.zeebe.map.Long2LongZbMap;
-import org.openjdk.jmh.annotations.*;
+import java.io.IOException;
 
 
 @State(Scope.Benchmark)

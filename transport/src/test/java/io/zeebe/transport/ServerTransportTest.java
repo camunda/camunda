@@ -29,7 +29,9 @@ import io.zeebe.util.ByteValue;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.DirectBuffer;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class ServerTransportTest {

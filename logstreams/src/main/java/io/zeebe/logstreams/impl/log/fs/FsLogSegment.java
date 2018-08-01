@@ -15,7 +15,10 @@
  */
 package io.zeebe.logstreams.impl.log.fs;
 
-import static io.zeebe.logstreams.impl.log.fs.FsLogSegmentDescriptor.*;
+import static io.zeebe.logstreams.impl.log.fs.FsLogSegmentDescriptor.METADATA_LENGTH;
+import static io.zeebe.logstreams.impl.log.fs.FsLogSegmentDescriptor.SEGMENT_CAPACITY_OFFSET;
+import static io.zeebe.logstreams.impl.log.fs.FsLogSegmentDescriptor.SEGMENT_ID_OFFSET;
+import static io.zeebe.logstreams.impl.log.fs.FsLogSegmentDescriptor.SEGMENT_SIZE_OFFSET;
 
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.util.FileUtil;

@@ -15,7 +15,11 @@
  */
 package io.zeebe.util.sched.lifecycle;
 
-import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.*;
+import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.CLOSED;
+import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.CLOSE_REQUESTED;
+import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.CLOSING;
+import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.STARTED;
+import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.STARTING;
 import static org.assertj.core.util.Lists.newArrayList;
 import static org.mockito.Mockito.mock;
 

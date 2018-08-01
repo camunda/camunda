@@ -19,8 +19,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.map.iterator.Bytes2LongZbMapEntry;
 import java.io.IOException;
-import java.util.*;
-import org.junit.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 public class Bytes2LongZbMapLargeBlockSizeTest {
   static final long MISSING_VALUE = -2;

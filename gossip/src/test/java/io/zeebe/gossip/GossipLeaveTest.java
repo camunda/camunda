@@ -21,7 +21,9 @@ import io.zeebe.clustering.gossip.MembershipEventType;
 import io.zeebe.gossip.util.GossipClusterRule;
 import io.zeebe.gossip.util.GossipRule;
 import io.zeebe.util.sched.future.ActorFuture;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.Timeout;
 
 public class GossipLeaveTest {

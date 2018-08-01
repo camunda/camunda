@@ -15,8 +15,12 @@
  */
 package io.zeebe.transport.impl;
 
-import io.zeebe.transport.*;
-import io.zeebe.transport.impl.sender.*;
+import io.zeebe.transport.ServerOutput;
+import io.zeebe.transport.ServerResponse;
+import io.zeebe.transport.TransportMessage;
+import io.zeebe.transport.impl.sender.OutgoingMessage;
+import io.zeebe.transport.impl.sender.Sender;
+import io.zeebe.transport.impl.sender.TransportHeaderWriter;
 import io.zeebe.util.buffer.BufferWriter;
 import java.nio.ByteBuffer;
 import org.agrona.concurrent.UnsafeBuffer;

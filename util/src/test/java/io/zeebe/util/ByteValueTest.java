@@ -15,7 +15,10 @@
  */
 package io.zeebe.util;
 
-import static io.zeebe.util.ByteUnit.*;
+import static io.zeebe.util.ByteUnit.BYTES;
+import static io.zeebe.util.ByteUnit.GIGABYTES;
+import static io.zeebe.util.ByteUnit.KILOBYTES;
+import static io.zeebe.util.ByteUnit.MEGABYTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 

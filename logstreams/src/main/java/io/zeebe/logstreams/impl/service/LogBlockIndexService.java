@@ -16,7 +16,9 @@
 package io.zeebe.logstreams.impl.service;
 
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import java.nio.ByteBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 

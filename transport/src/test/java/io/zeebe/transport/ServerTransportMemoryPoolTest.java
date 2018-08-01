@@ -19,7 +19,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.impl.memory.TransportMemoryPool;
@@ -28,7 +33,10 @@ import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.nio.ByteBuffer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class ServerTransportMemoryPoolTest {

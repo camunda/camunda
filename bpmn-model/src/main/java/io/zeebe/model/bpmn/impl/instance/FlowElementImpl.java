@@ -21,7 +21,10 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import io.zeebe.model.bpmn.BpmnAspect;
 import io.zeebe.model.bpmn.BpmnConstants;
 import io.zeebe.model.bpmn.instance.FlowElement;
-import javax.xml.bind.annotation.*;
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlID;
+import javax.xml.bind.annotation.XmlTransient;
 import org.agrona.DirectBuffer;
 
 public class FlowElementImpl extends BaseElement implements FlowElement {

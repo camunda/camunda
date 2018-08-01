@@ -17,11 +17,16 @@
  */
 package io.zeebe.broker.clustering.base.gossip;
 
-import io.zeebe.broker.system.configuration.*;
+import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.gossip.Gossip;
 import io.zeebe.gossip.GossipConfiguration;
-import io.zeebe.servicecontainer.*;
-import io.zeebe.transport.*;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.transport.BufferingServerTransport;
+import io.zeebe.transport.ClientTransport;
+import io.zeebe.transport.SocketAddress;
 
 /** Start / stop gossip on broker start / stop */
 public class GossipService implements Service<Gossip> {

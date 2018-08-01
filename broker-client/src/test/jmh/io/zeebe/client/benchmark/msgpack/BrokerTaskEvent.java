@@ -18,7 +18,11 @@ package io.zeebe.client.benchmark.msgpack;
 import static io.zeebe.util.StringUtil.getBytes;
 
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.*;
+import io.zeebe.msgpack.property.BinaryProperty;
+import io.zeebe.msgpack.property.EnumProperty;
+import io.zeebe.msgpack.property.LongProperty;
+import io.zeebe.msgpack.property.PackedProperty;
+import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.msgpack.spec.MsgPackReader;
 import io.zeebe.msgpack.spec.MsgPackWriter;
 import java.util.HashMap;

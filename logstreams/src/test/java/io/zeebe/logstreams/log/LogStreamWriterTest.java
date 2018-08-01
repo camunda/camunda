@@ -20,7 +20,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.logstreams.impl.LogEntryDescriptor;
-import io.zeebe.logstreams.util.*;
+import io.zeebe.logstreams.util.LogStreamReaderRule;
+import io.zeebe.logstreams.util.LogStreamRule;
+import io.zeebe.logstreams.util.LogStreamWriterRule;
 import io.zeebe.util.buffer.DirectBufferWriter;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
@@ -28,8 +30,12 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.*;
-import org.junit.rules.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TemporaryFolder;
 
 public class LogStreamWriterTest {
   private static final DirectBuffer EVENT_VALUE = wrapString("value");

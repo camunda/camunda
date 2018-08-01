@@ -17,7 +17,9 @@ package io.zeebe.raft;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.raft.util.*;
+import io.zeebe.raft.util.InMemoryRaftPersistentStorage;
+import io.zeebe.raft.util.RaftClusterRule;
+import io.zeebe.raft.util.RaftRule;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.Rule;

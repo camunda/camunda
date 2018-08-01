@@ -15,11 +15,15 @@
  */
 package io.zeebe.gossip.protocol;
 
-import io.zeebe.clustering.gossip.*;
+import io.zeebe.clustering.gossip.GossipEventDecoder;
 import io.zeebe.clustering.gossip.GossipEventDecoder.CustomEventsDecoder;
 import io.zeebe.clustering.gossip.GossipEventDecoder.MembershipEventsDecoder;
+import io.zeebe.clustering.gossip.GossipEventEncoder;
 import io.zeebe.clustering.gossip.GossipEventEncoder.CustomEventsEncoder;
 import io.zeebe.clustering.gossip.GossipEventEncoder.MembershipEventsEncoder;
+import io.zeebe.clustering.gossip.GossipEventType;
+import io.zeebe.clustering.gossip.MessageHeaderDecoder;
+import io.zeebe.clustering.gossip.MessageHeaderEncoder;
 import io.zeebe.gossip.membership.GossipTerm;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.buffer.BufferReader;

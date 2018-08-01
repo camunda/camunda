@@ -19,12 +19,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.clustering.gossip.MembershipEventType;
 import io.zeebe.gossip.GossipConfiguration;
-import io.zeebe.gossip.membership.*;
+import io.zeebe.gossip.membership.GossipTerm;
+import io.zeebe.gossip.membership.MembershipList;
+import io.zeebe.gossip.membership.MembershipStatus;
 import io.zeebe.gossip.protocol.MembershipEvent;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 /** */
 public class MembershipEventUpdaterTest {

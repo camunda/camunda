@@ -17,14 +17,18 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.*;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_KEY;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.test.broker.protocol.clientapi.*;
+import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
+import io.zeebe.test.broker.protocol.clientapi.ControlMessageResponse;
+import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import java.util.List;
 import java.util.Map;
 import org.junit.Rule;

@@ -18,7 +18,9 @@ package io.zeebe.logstreams.impl.service;
 import io.zeebe.logstreams.impl.log.fs.FsLogStorage;
 import io.zeebe.logstreams.impl.log.fs.FsLogStorageConfiguration;
 import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.sched.ActorScheduler;
 import java.util.function.Function;
 

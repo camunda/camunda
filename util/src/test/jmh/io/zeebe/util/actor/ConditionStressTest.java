@@ -15,12 +15,26 @@
  */
 package io.zeebe.util.actor;
 
-import io.zeebe.util.sched.*;
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorCondition;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Fork;
+import org.openjdk.jmh.annotations.Measurement;
+import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.TearDown;
+import org.openjdk.jmh.annotations.Threads;
+import org.openjdk.jmh.annotations.Warmup;
 
 @BenchmarkMode(Mode.Throughput)
 @Fork(1)

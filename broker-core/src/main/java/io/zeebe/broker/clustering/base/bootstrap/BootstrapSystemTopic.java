@@ -17,8 +17,12 @@
  */
 package io.zeebe.broker.clustering.base.bootstrap;
 
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.*;
-import static io.zeebe.broker.transport.TransportServiceNames.*;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.DEFAULT_TOPICS_BOOTSTRAP_SERVICE_NAME;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LOCAL_NODE;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.SYSTEM_PARTITION_BOOTSTRAP_REPLICATION_SERVICE_NAME;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.partitionInstallServiceName;
+import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_CLIENT_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.clientTransport;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
@@ -27,7 +31,11 @@ import io.zeebe.broker.clustering.base.raft.RaftPersistentConfiguration;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.util.Collections;

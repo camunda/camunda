@@ -15,8 +15,13 @@
  */
 package io.zeebe.logstreams.log;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.*;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedFramedLength;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.framedLength;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.getPosition;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.headerLength;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.positionOffset;
 import static io.zeebe.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
 import static org.assertj.core.api.Assertions.assertThat;
 

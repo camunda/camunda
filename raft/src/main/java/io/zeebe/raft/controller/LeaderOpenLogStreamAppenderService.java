@@ -16,7 +16,9 @@
 package io.zeebe.raft.controller;
 
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 
 public class LeaderOpenLogStreamAppenderService implements Service<Void> {
   private final LogStream logStream;

@@ -17,11 +17,14 @@ package io.zeebe.raft.state;
 
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.intent.RaftIntent;
-import io.zeebe.raft.*;
+import io.zeebe.raft.Raft;
+import io.zeebe.raft.RaftMember;
 import io.zeebe.raft.controller.AppendRaftEventController;
 import io.zeebe.raft.protocol.AppendResponse;
 import io.zeebe.raft.protocol.ConfigurationRequest;
-import io.zeebe.transport.*;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.ServerOutput;
+import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorControl;
 import java.util.Arrays;

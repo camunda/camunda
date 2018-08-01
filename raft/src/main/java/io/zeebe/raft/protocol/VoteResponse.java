@@ -17,7 +17,9 @@ package io.zeebe.raft.protocol;
 
 import static io.zeebe.raft.VoteResponseEncoder.termNullValue;
 
-import io.zeebe.raft.*;
+import io.zeebe.raft.BooleanType;
+import io.zeebe.raft.VoteResponseDecoder;
+import io.zeebe.raft.VoteResponseEncoder;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 

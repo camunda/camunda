@@ -17,16 +17,22 @@ package io.zeebe.map;
 
 import static io.zeebe.map.BucketBufferArray.ALLOCATION_FACTOR;
 import static io.zeebe.map.BucketBufferArray.getBucketAddress;
-import static io.zeebe.map.BucketBufferArrayDescriptor.*;
+import static io.zeebe.map.BucketBufferArrayDescriptor.BUCKET_BUFFER_HEADER_LENGTH;
+import static io.zeebe.map.BucketBufferArrayDescriptor.BUCKET_DATA_OFFSET;
+import static io.zeebe.map.BucketBufferArrayDescriptor.getBlockLength;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.map.types.LongKeyHandler;
 import io.zeebe.map.types.LongValueHandler;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
 import org.agrona.BitUtil;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 public class ZbMapTest {

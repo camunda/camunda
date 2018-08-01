@@ -15,7 +15,8 @@
  */
 package io.zeebe.dispatcher.impl.log;
 
-import static org.agrona.BitUtil.*;
+import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
+import static org.agrona.BitUtil.SIZE_OF_INT;
 
 /**
  * Describes data layout in the log buffer

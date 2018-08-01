@@ -19,7 +19,9 @@ package io.zeebe.broker.services;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.DispatcherBuilder;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 
 public class DispatcherService implements Service<Dispatcher> {
   protected DispatcherBuilder dispatcherBuilder;

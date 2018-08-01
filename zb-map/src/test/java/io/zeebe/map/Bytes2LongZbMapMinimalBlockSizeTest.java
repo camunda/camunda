@@ -18,9 +18,13 @@ package io.zeebe.map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.map.iterator.Bytes2LongZbMapEntry;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 public class Bytes2LongZbMapMinimalBlockSizeTest {
   static final long MISSING_VALUE = -2;

@@ -19,7 +19,11 @@ import static io.zeebe.util.StringUtil.getBytes;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.logstreams.impl.snapshot.fs.*;
+import io.zeebe.logstreams.impl.snapshot.fs.FsReadableSnapshot;
+import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotStorage;
+import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotStorageConfiguration;
+import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotWriter;
+import io.zeebe.logstreams.impl.snapshot.fs.FsTemporarySnapshotWriter;
 import io.zeebe.logstreams.spi.SnapshotMetadata;
 import java.io.File;
 import java.io.IOException;

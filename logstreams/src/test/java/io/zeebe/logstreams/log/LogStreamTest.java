@@ -37,7 +37,9 @@ import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.*;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TemporaryFolder;
 
 public class LogStreamTest {
   public static final int PARTITION_ID = 0;

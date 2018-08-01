@@ -17,10 +17,19 @@
  */
 package io.zeebe.broker.transport.clientapi;
 
-import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.*;
+import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.keyNullValue;
+import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.partitionIdNullValue;
+import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.positionNullValue;
+import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.sourceRecordPositionNullValue;
+import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.timestampNullValue;
+import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.valueHeaderLength;
 
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.*;
+import io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder;
+import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerResponse;

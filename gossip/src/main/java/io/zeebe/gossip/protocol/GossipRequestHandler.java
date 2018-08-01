@@ -15,9 +15,13 @@
  */
 package io.zeebe.gossip.protocol;
 
-import io.zeebe.clustering.gossip.*;
+import io.zeebe.clustering.gossip.GossipEventDecoder;
+import io.zeebe.clustering.gossip.GossipEventType;
+import io.zeebe.clustering.gossip.MessageHeaderDecoder;
 import io.zeebe.gossip.Loggers;
-import io.zeebe.transport.*;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.ServerOutput;
+import io.zeebe.transport.ServerRequestHandler;
 import java.util.EnumMap;
 import java.util.Map;
 import org.agrona.DirectBuffer;

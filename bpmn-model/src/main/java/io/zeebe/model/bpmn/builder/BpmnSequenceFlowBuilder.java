@@ -15,7 +15,10 @@
  */
 package io.zeebe.model.bpmn.builder;
 
-import io.zeebe.model.bpmn.impl.instance.*;
+import io.zeebe.model.bpmn.impl.instance.ConditionExpressionImpl;
+import io.zeebe.model.bpmn.impl.instance.ExclusiveGatewayImpl;
+import io.zeebe.model.bpmn.impl.instance.FlowNodeImpl;
+import io.zeebe.model.bpmn.impl.instance.SequenceFlowImpl;
 
 public class BpmnSequenceFlowBuilder {
   private final BpmnBuilder builder;

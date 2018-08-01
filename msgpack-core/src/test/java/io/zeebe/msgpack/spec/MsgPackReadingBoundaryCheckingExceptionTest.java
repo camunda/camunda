@@ -15,7 +15,11 @@
  */
 package io.zeebe.msgpack.spec;
 
-import static io.zeebe.msgpack.spec.MsgPackCodes.*;
+import static io.zeebe.msgpack.spec.MsgPackCodes.ARRAY32;
+import static io.zeebe.msgpack.spec.MsgPackCodes.BIN32;
+import static io.zeebe.msgpack.spec.MsgPackCodes.MAP32;
+import static io.zeebe.msgpack.spec.MsgPackCodes.STR32;
+import static io.zeebe.msgpack.spec.MsgPackCodes.UINT64;
 
 import java.util.Arrays;
 import java.util.function.Consumer;

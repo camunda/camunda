@@ -16,8 +16,12 @@
 package io.zeebe.gossip.dissemination;
 
 import io.zeebe.clustering.gossip.MembershipEventType;
-import io.zeebe.gossip.membership.*;
-import io.zeebe.gossip.protocol.*;
+import io.zeebe.gossip.membership.GossipTerm;
+import io.zeebe.gossip.membership.Member;
+import io.zeebe.gossip.membership.MembershipList;
+import io.zeebe.gossip.membership.MembershipStatus;
+import io.zeebe.gossip.protocol.MembershipEvent;
+import io.zeebe.gossip.protocol.MembershipEventSupplier;
 import io.zeebe.transport.SocketAddress;
 import java.util.Iterator;
 

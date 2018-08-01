@@ -21,7 +21,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.zeebe.dispatcher.impl.PositionUtil;
-import io.zeebe.logstreams.impl.log.fs.*;
+import io.zeebe.logstreams.impl.log.fs.FsLogSegmentDescriptor;
+import io.zeebe.logstreams.impl.log.fs.FsLogStorage;
+import io.zeebe.logstreams.impl.log.fs.FsLogStorageConfiguration;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.metrics.MetricsManager;
@@ -29,10 +31,14 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Random;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 

@@ -17,9 +17,15 @@ package io.zeebe.servicecontainer.impl;
 
 import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.assertCompleted;
 import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.assertNotCompleted;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceContainer;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;

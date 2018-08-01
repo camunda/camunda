@@ -20,7 +20,9 @@ import io.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.metrics.TaskMetrics;
 import java.time.Duration;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Used to submit {@link ActorTask ActorTasks} and Blocking Actions to the scheduler's internal

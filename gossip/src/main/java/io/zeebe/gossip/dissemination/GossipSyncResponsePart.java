@@ -17,7 +17,9 @@ package io.zeebe.gossip.dissemination;
 
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.collection.Reusable;
-import org.agrona.*;
+import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class GossipSyncResponsePart implements Reusable {

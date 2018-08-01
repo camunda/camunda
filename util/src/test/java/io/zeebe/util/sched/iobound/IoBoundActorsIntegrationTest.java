@@ -18,7 +18,10 @@ package io.zeebe.util.sched.iobound;
 import static io.zeebe.util.sched.SchedulingHints.ioBound;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.util.sched.*;
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorThread;
+import io.zeebe.util.sched.ActorThreadGroup;
+import io.zeebe.util.sched.CpuThreadGroup;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.util.concurrent.atomic.AtomicBoolean;

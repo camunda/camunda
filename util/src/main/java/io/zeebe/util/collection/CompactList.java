@@ -15,7 +15,14 @@
  */
 package io.zeebe.util.collection;
 
-import static io.zeebe.util.collection.CompactListDescriptor.*;
+import static io.zeebe.util.collection.CompactListDescriptor.capacityOffset;
+import static io.zeebe.util.collection.CompactListDescriptor.elementDataOffset;
+import static io.zeebe.util.collection.CompactListDescriptor.elementLengthOffset;
+import static io.zeebe.util.collection.CompactListDescriptor.elementMaxLengthOffset;
+import static io.zeebe.util.collection.CompactListDescriptor.elementOffset;
+import static io.zeebe.util.collection.CompactListDescriptor.framedLength;
+import static io.zeebe.util.collection.CompactListDescriptor.requiredBufferCapacity;
+import static io.zeebe.util.collection.CompactListDescriptor.sizeOffset;
 import static java.lang.Math.max;
 
 import io.zeebe.util.CloseableSilently;

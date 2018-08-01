@@ -15,7 +15,9 @@
  */
 package io.zeebe.util.sched.lifecycle;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import io.zeebe.util.sched.channel.ConcurrentQueueChannel;
 import io.zeebe.util.sched.future.CompletableActorFuture;

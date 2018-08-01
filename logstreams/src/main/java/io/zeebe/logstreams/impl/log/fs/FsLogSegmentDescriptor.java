@@ -15,8 +15,10 @@
  */
 package io.zeebe.logstreams.impl.log.fs;
 
-import static org.agrona.BitUtil.*;
-import static org.agrona.IoUtil.*;
+import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.align;
+import static org.agrona.IoUtil.BLOCK_SIZE;
 
 /**
  * Segment layout

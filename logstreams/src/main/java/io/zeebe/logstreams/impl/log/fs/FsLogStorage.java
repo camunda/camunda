@@ -15,8 +15,12 @@
  */
 package io.zeebe.logstreams.impl.log.fs;
 
-import static io.zeebe.dispatcher.impl.PositionUtil.*;
-import static io.zeebe.logstreams.impl.log.fs.FsLogSegment.*;
+import static io.zeebe.dispatcher.impl.PositionUtil.partitionId;
+import static io.zeebe.dispatcher.impl.PositionUtil.partitionOffset;
+import static io.zeebe.dispatcher.impl.PositionUtil.position;
+import static io.zeebe.logstreams.impl.log.fs.FsLogSegment.END_OF_SEGMENT;
+import static io.zeebe.logstreams.impl.log.fs.FsLogSegment.INSUFFICIENT_CAPACITY;
+import static io.zeebe.logstreams.impl.log.fs.FsLogSegment.NO_DATA;
 import static io.zeebe.logstreams.impl.log.fs.FsLogSegmentDescriptor.METADATA_LENGTH;
 import static io.zeebe.logstreams.impl.log.fs.FsLogSegmentDescriptor.SEGMENT_SIZE_OFFSET;
 import static io.zeebe.util.FileUtil.moveFile;
@@ -34,8 +38,12 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
-import java.nio.file.*;
-import java.util.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.agrona.IoUtil;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;

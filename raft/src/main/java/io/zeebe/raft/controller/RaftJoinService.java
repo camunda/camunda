@@ -15,11 +15,16 @@
  */
 package io.zeebe.raft.controller;
 
-import io.zeebe.raft.*;
+import io.zeebe.raft.Loggers;
+import io.zeebe.raft.Raft;
+import io.zeebe.raft.RaftMember;
+import io.zeebe.raft.RaftMembers;
 import io.zeebe.raft.protocol.ConfigurationRequest;
 import io.zeebe.raft.protocol.ConfigurationResponse;
 import io.zeebe.raft.state.RaftState;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.ClientResponse;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.sched.ActorControl;

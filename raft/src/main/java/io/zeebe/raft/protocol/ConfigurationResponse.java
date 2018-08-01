@@ -15,10 +15,16 @@
  */
 package io.zeebe.raft.protocol;
 
-import static io.zeebe.raft.ConfigurationResponseEncoder.MembersEncoder.*;
+import static io.zeebe.raft.ConfigurationResponseEncoder.MembersEncoder.hostHeaderLength;
+import static io.zeebe.raft.ConfigurationResponseEncoder.MembersEncoder.sbeBlockLength;
+import static io.zeebe.raft.ConfigurationResponseEncoder.MembersEncoder.sbeHeaderSize;
 import static io.zeebe.raft.ConfigurationResponseEncoder.termNullValue;
 
-import io.zeebe.raft.*;
+import io.zeebe.raft.BooleanType;
+import io.zeebe.raft.ConfigurationResponseDecoder;
+import io.zeebe.raft.ConfigurationResponseEncoder;
+import io.zeebe.raft.Raft;
+import io.zeebe.raft.RaftMember;
 import io.zeebe.transport.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;

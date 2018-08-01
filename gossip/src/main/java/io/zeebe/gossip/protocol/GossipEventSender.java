@@ -18,7 +18,12 @@ package io.zeebe.gossip.protocol;
 import io.zeebe.clustering.gossip.GossipEventType;
 import io.zeebe.gossip.Loggers;
 import io.zeebe.gossip.membership.MembershipList;
-import io.zeebe.transport.*;
+import io.zeebe.transport.ClientResponse;
+import io.zeebe.transport.ClientTransport;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.ServerResponse;
+import io.zeebe.transport.ServerTransport;
+import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 

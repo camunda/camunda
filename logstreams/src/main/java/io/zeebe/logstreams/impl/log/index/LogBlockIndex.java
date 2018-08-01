@@ -15,7 +15,12 @@
  */
 package io.zeebe.logstreams.impl.log.index;
 
-import static io.zeebe.logstreams.impl.log.index.LogBlockIndexDescriptor.*;
+import static io.zeebe.logstreams.impl.log.index.LogBlockIndexDescriptor.dataOffset;
+import static io.zeebe.logstreams.impl.log.index.LogBlockIndexDescriptor.entryAddressOffset;
+import static io.zeebe.logstreams.impl.log.index.LogBlockIndexDescriptor.entryLength;
+import static io.zeebe.logstreams.impl.log.index.LogBlockIndexDescriptor.entryLogPositionOffset;
+import static io.zeebe.logstreams.impl.log.index.LogBlockIndexDescriptor.entryOffset;
+import static io.zeebe.logstreams.impl.log.index.LogBlockIndexDescriptor.indexSizeOffset;
 
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.util.StreamUtil;

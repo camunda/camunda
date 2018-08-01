@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.system.workflow.repository.api.client;
 
-import io.zeebe.msgpack.property.*;
+import io.zeebe.msgpack.property.StringProperty;
 import org.agrona.DirectBuffer;
 
 public class WorkflowMetadataAndResource extends WorkflowMetadata {

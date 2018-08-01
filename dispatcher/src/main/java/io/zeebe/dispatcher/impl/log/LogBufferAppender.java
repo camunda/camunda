@@ -15,7 +15,16 @@
  */
 package io.zeebe.dispatcher.impl.log;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.FRAME_ALIGNMENT;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.TYPE_MESSAGE;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.TYPE_PADDING;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.framedLength;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
 import static org.agrona.BitUtil.align;
 import static org.agrona.UnsafeAccess.UNSAFE;
 

@@ -23,7 +23,9 @@ import io.zeebe.raft.event.RaftEvent;
 import io.zeebe.raft.protocol.ConfigurationResponse;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerOutput;
-import io.zeebe.util.sched.*;
+import io.zeebe.util.sched.ActorCondition;
+import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.ScheduledTimer;
 import java.time.Duration;
 import org.slf4j.Logger;
 

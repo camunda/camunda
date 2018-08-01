@@ -15,8 +15,18 @@
  */
 package io.zeebe.msgpack.spec;
 
-import static io.zeebe.msgpack.spec.MsgPackCodes.*;
-import static io.zeebe.msgpack.spec.MsgPackType.*;
+import static io.zeebe.msgpack.spec.MsgPackCodes.isFixStr;
+import static io.zeebe.msgpack.spec.MsgPackCodes.isFixedArray;
+import static io.zeebe.msgpack.spec.MsgPackCodes.isFixedMap;
+import static io.zeebe.msgpack.spec.MsgPackCodes.isNegFixInt;
+import static io.zeebe.msgpack.spec.MsgPackCodes.isPosFixInt;
+import static io.zeebe.msgpack.spec.MsgPackType.ARRAY;
+import static io.zeebe.msgpack.spec.MsgPackType.BINARY;
+import static io.zeebe.msgpack.spec.MsgPackType.EXTENSION;
+import static io.zeebe.msgpack.spec.MsgPackType.FLOAT;
+import static io.zeebe.msgpack.spec.MsgPackType.INTEGER;
+import static io.zeebe.msgpack.spec.MsgPackType.MAP;
+import static io.zeebe.msgpack.spec.MsgPackType.STRING;
 
 /** Describes the list of the message format types defined in the MessagePack specification. */
 public enum MsgPackFormat {

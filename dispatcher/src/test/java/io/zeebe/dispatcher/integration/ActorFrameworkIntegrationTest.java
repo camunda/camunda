@@ -15,7 +15,12 @@
  */
 package io.zeebe.dispatcher.integration;
 
-import io.zeebe.dispatcher.*;
+import io.zeebe.dispatcher.BlockPeek;
+import io.zeebe.dispatcher.ClaimedFragment;
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.Dispatchers;
+import io.zeebe.dispatcher.FragmentHandler;
+import io.zeebe.dispatcher.Subscription;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;

@@ -24,7 +24,8 @@ import io.zeebe.raft.util.RaftRule;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.util.List;
-import org.junit.*;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class RaftFiveNodesTest {
   public ActorSchedulerRule actorScheduler = new ActorSchedulerRule();

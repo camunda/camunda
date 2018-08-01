@@ -17,9 +17,13 @@ package io.zeebe.util.sched.future;
 
 import static org.agrona.UnsafeAccess.UNSAFE;
 
-import io.zeebe.util.sched.*;
+import io.zeebe.util.sched.ActorTask;
+import io.zeebe.util.sched.ActorThread;
+import io.zeebe.util.sched.FutureUtil;
 import java.util.Queue;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;

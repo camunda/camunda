@@ -18,13 +18,21 @@
 package io.zeebe.broker.system.workflow.repository.service;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
-import io.zeebe.broker.logstreams.processor.*;
+import io.zeebe.broker.logstreams.processor.KeyGenerator;
+import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
+import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
+import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
+import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
+import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.system.SystemServiceNames;
 import io.zeebe.broker.system.management.LeaderManagementRequestHandler;
 import io.zeebe.broker.system.workflow.repository.api.client.GetWorkflowControlMessageHandler;
 import io.zeebe.broker.system.workflow.repository.api.client.ListWorkflowsControlMessageHandler;
 import io.zeebe.broker.system.workflow.repository.api.management.FetchWorkflowRequestHandler;
-import io.zeebe.broker.system.workflow.repository.processor.*;
+import io.zeebe.broker.system.workflow.repository.processor.DeploymentCreateEventProcessor;
+import io.zeebe.broker.system.workflow.repository.processor.DeploymentCreatedEventProcessor;
+import io.zeebe.broker.system.workflow.repository.processor.DeploymentRejectedEventProcessor;
+import io.zeebe.broker.system.workflow.repository.processor.DeploymentTopicCreatingEventProcessor;
 import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex;
 import io.zeebe.broker.transport.controlmessage.ControlMessageHandlerManager;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
@@ -32,7 +40,11 @@ import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.TopicIntent;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceGroupReference;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.transport.ServerTransport;
 
 public class DeploymentManager implements Service<DeploymentManager> {

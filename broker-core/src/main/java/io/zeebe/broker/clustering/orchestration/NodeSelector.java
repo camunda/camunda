@@ -18,7 +18,12 @@
 package io.zeebe.broker.clustering.orchestration;
 
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.clustering.base.topology.*;
+import io.zeebe.broker.clustering.base.topology.NodeInfo;
+import io.zeebe.broker.clustering.base.topology.PartitionInfo;
+import io.zeebe.broker.clustering.base.topology.Topology;
+import io.zeebe.broker.clustering.base.topology.TopologyManager;
+import io.zeebe.broker.clustering.base.topology.TopologyMemberListener;
+import io.zeebe.broker.clustering.base.topology.TopologyPartitionListener;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;

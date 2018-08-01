@@ -17,10 +17,14 @@
  */
 package io.zeebe.broker.system.workflow.repository.data;
 
-import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.*;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_KEY;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_VERSION;
 
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.*;
+import io.zeebe.msgpack.property.IntegerProperty;
+import io.zeebe.msgpack.property.LongProperty;
+import io.zeebe.msgpack.property.StringProperty;
 import org.agrona.DirectBuffer;
 
 public class DeployedWorkflow extends UnpackedObject {

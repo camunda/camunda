@@ -20,7 +20,10 @@ import static io.zeebe.test.broker.protocol.brokerapi.data.BrokerPartitionState.
 
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.transport.SocketAddress;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 public class Topology {
 

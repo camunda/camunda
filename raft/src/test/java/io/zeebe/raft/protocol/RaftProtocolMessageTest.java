@@ -29,7 +29,9 @@ import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.BitUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.*;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
 
 public class RaftProtocolMessageTest {
   public static ActorSchedulerRule actorScheduler = new ActorSchedulerRule();

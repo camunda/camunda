@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.clustering.base.topology;
 
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Service;
 
 /** This is us :) */
 public class LocalNodeService implements Service<NodeInfo> {

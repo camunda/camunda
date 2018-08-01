@@ -15,7 +15,8 @@
  */
 package io.zeebe.logstreams.impl.log.index;
 
-import static org.agrona.BitUtil.*;
+import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 public class LogBlockIndexDescriptor {
   public static final int ENTRY_VIRTUAL_POSITION_OFFSET;

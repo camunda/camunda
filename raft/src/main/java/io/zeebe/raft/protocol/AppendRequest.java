@@ -15,11 +15,19 @@
  */
 package io.zeebe.raft.protocol;
 
-import static io.zeebe.raft.AppendRequestDecoder.*;
+import static io.zeebe.raft.AppendRequestDecoder.commitPositionNullValue;
+import static io.zeebe.raft.AppendRequestDecoder.dataHeaderLength;
+import static io.zeebe.raft.AppendRequestDecoder.hostHeaderLength;
+import static io.zeebe.raft.AppendRequestDecoder.partitionIdNullValue;
+import static io.zeebe.raft.AppendRequestDecoder.previousEventPositionNullValue;
+import static io.zeebe.raft.AppendRequestDecoder.previousEventTermNullValue;
+import static io.zeebe.raft.AppendRequestDecoder.termNullValue;
 
 import io.zeebe.logstreams.impl.LoggedEventImpl;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.raft.*;
+import io.zeebe.raft.AppendRequestDecoder;
+import io.zeebe.raft.AppendRequestEncoder;
+import io.zeebe.raft.Raft;
 import io.zeebe.transport.SocketAddress;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;

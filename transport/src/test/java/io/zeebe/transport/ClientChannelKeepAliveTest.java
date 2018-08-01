@@ -29,7 +29,10 @@ import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.agrona.DirectBuffer;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class ClientChannelKeepAliveTest {

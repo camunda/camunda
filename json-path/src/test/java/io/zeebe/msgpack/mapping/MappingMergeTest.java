@@ -17,7 +17,11 @@ package io.zeebe.msgpack.mapping;
 
 import static io.zeebe.msgpack.mapping.MappingBuilder.createMapping;
 import static io.zeebe.msgpack.mapping.MappingBuilder.createMappings;
-import static io.zeebe.msgpack.mapping.MappingTestUtil.*;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.JSON_MAPPER;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.MSGPACK_MAPPER;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.MSG_PACK_BYTES;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.NODE_JSON_OBJECT_PATH;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.NODE_ROOT_PATH;
 import static io.zeebe.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
 import static io.zeebe.msgpack.spec.MsgPackHelper.NIL;
 import static org.assertj.core.api.Assertions.assertThat;

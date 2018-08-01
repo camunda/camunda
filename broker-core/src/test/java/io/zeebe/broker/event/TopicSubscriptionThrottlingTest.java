@@ -21,7 +21,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.intent.*;
+import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.intent.SubscriberIntent;
+import io.zeebe.protocol.intent.SubscriptionIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.util.TestUtil;
 import java.util.List;

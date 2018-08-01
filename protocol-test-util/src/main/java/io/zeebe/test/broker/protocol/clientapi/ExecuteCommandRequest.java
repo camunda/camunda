@@ -15,7 +15,9 @@
  */
 package io.zeebe.test.broker.protocol.clientapi;
 
-import static io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder.*;
+import static io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder.keyNullValue;
+import static io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder.partitionIdNullValue;
+import static io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder.sourceRecordPositionNullValue;
 
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;

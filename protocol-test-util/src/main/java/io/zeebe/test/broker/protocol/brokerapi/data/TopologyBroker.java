@@ -16,7 +16,9 @@
 package io.zeebe.test.broker.protocol.brokerapi.data;
 
 import io.zeebe.transport.SocketAddress;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 public class TopologyBroker {
   private List<BrokerPartitionState> partitions = new ArrayList<>();

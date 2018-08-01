@@ -21,7 +21,9 @@ import io.zeebe.gossip.protocol.CustomEvent;
 import io.zeebe.gossip.protocol.CustomEventConsumer;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.collection.Tuple;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 

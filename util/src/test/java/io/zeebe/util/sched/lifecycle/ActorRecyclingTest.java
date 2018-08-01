@@ -23,7 +23,9 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
-import org.junit.*;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class ActorRecyclingTest {
   @Rule

@@ -17,7 +17,12 @@
  */
 package io.zeebe.broker.subscription.command;
 
-import static io.zeebe.broker.subscription.OpenMessageSubscriptionDecoder.*;
+import static io.zeebe.broker.subscription.OpenMessageSubscriptionDecoder.activityInstanceKeyNullValue;
+import static io.zeebe.broker.subscription.OpenMessageSubscriptionDecoder.correlationKeyHeaderLength;
+import static io.zeebe.broker.subscription.OpenMessageSubscriptionDecoder.messageNameHeaderLength;
+import static io.zeebe.broker.subscription.OpenMessageSubscriptionDecoder.subscriptionPartitionIdNullValue;
+import static io.zeebe.broker.subscription.OpenMessageSubscriptionDecoder.workflowInstanceKeyNullValue;
+import static io.zeebe.broker.subscription.OpenMessageSubscriptionDecoder.workflowInstancePartitionIdNullValue;
 
 import io.zeebe.broker.subscription.OpenMessageSubscriptionDecoder;
 import io.zeebe.broker.subscription.OpenMessageSubscriptionEncoder;

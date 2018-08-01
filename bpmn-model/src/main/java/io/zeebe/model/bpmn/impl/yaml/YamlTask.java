@@ -17,7 +17,10 @@ package io.zeebe.model.bpmn.impl.yaml;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.zeebe.model.bpmn.instance.TaskDefinition;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class YamlTask {
   private String id = "";

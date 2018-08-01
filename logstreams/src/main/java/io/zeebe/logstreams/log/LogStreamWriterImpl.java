@@ -16,7 +16,16 @@
 package io.zeebe.logstreams.log;
 
 import static io.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.*;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.headerLength;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.metadataOffset;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.setKey;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.setMetadataLength;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.setPosition;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.setProducerId;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.setRaftTerm;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.setSourceEventPosition;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.setTimestamp;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.valueOffset;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 import io.zeebe.dispatcher.ClaimedFragment;

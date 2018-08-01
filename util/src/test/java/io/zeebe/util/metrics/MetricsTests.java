@@ -15,7 +15,7 @@
  */
 package io.zeebe.util.metrics;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.HashMap;

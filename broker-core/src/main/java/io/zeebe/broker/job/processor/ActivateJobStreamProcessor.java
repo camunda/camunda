@@ -17,14 +17,23 @@
  */
 package io.zeebe.broker.job.processor;
 
-import static io.zeebe.util.EnsureUtil.*;
+import static io.zeebe.util.EnsureUtil.ensureGreaterThan;
+import static io.zeebe.util.EnsureUtil.ensureLessThanOrEqual;
+import static io.zeebe.util.EnsureUtil.ensureNotNull;
+import static io.zeebe.util.EnsureUtil.ensureNotNullOrEmpty;
 
 import io.zeebe.broker.job.CreditsRequest;
 import io.zeebe.broker.job.CreditsRequestBuffer;
 import io.zeebe.broker.job.JobSubscriptionManager;
 import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.job.processor.JobSubscriptions.SubscriptionIterator;
-import io.zeebe.broker.logstreams.processor.*;
+import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
+import io.zeebe.broker.logstreams.processor.TypedRecord;
+import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
+import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
+import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
+import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
+import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;

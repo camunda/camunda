@@ -22,7 +22,16 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.model.bpmn.impl.error.InvalidModelException;
 import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
-import io.zeebe.model.bpmn.instance.*;
+import io.zeebe.model.bpmn.instance.ExclusiveGateway;
+import io.zeebe.model.bpmn.instance.FlowNode;
+import io.zeebe.model.bpmn.instance.InputOutputMapping;
+import io.zeebe.model.bpmn.instance.OutputBehavior;
+import io.zeebe.model.bpmn.instance.SequenceFlow;
+import io.zeebe.model.bpmn.instance.ServiceTask;
+import io.zeebe.model.bpmn.instance.TaskDefinition;
+import io.zeebe.model.bpmn.instance.TaskHeaders;
+import io.zeebe.model.bpmn.instance.Workflow;
+import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import java.io.File;
 import java.io.InputStream;
 import java.net.URL;

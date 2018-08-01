@@ -18,7 +18,12 @@
 package io.zeebe.broker.job.data;
 
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.*;
+import io.zeebe.msgpack.property.DocumentProperty;
+import io.zeebe.msgpack.property.IntegerProperty;
+import io.zeebe.msgpack.property.LongProperty;
+import io.zeebe.msgpack.property.ObjectProperty;
+import io.zeebe.msgpack.property.PackedProperty;
+import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.protocol.Protocol;
 import org.agrona.DirectBuffer;

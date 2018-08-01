@@ -15,7 +15,9 @@
  */
 package io.zeebe.msgpack.mapping;
 
-import static io.zeebe.msgpack.mapping.MappingTestUtil.*;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.MSGPACK_MAPPER;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.MSG_PACK_BYTES;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.assertThatIsLeafNode;
 
 import io.zeebe.msgpack.jsonpath.JsonPathQuery;
 import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;

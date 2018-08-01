@@ -17,7 +17,10 @@ package io.zeebe.logstreams.impl.service;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Subscription;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.sched.future.ActorFuture;
 
 public class LogWriteBufferSubscriptionService implements Service<Subscription> {

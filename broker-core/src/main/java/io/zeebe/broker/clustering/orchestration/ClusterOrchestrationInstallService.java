@@ -18,9 +18,17 @@
 package io.zeebe.broker.clustering.orchestration;
 
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.TOPOLOGY_MANAGER_SERVICE;
-import static io.zeebe.broker.clustering.orchestration.ClusterOrchestrationLayerServiceNames.*;
+import static io.zeebe.broker.clustering.orchestration.ClusterOrchestrationLayerServiceNames.CLUSTER_ORCHESTRATION_COMPOSITE_SERVICE_NAME;
+import static io.zeebe.broker.clustering.orchestration.ClusterOrchestrationLayerServiceNames.ID_GENERATOR_SERVICE_NAME;
+import static io.zeebe.broker.clustering.orchestration.ClusterOrchestrationLayerServiceNames.KNOWN_TOPICS_SERVICE_NAME;
+import static io.zeebe.broker.clustering.orchestration.ClusterOrchestrationLayerServiceNames.NODE_SELECTOR_SERVICE_NAME;
+import static io.zeebe.broker.clustering.orchestration.ClusterOrchestrationLayerServiceNames.REPLICATION_FACTOR_SERVICE_NAME;
+import static io.zeebe.broker.clustering.orchestration.ClusterOrchestrationLayerServiceNames.REQUEST_PARTITIONS_MESSAGE_HANDLER_SERVICE_NAME;
+import static io.zeebe.broker.clustering.orchestration.ClusterOrchestrationLayerServiceNames.TOPIC_CREATION_SERVICE_NAME;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY;
-import static io.zeebe.broker.transport.TransportServiceNames.*;
+import static io.zeebe.broker.transport.TransportServiceNames.CLIENT_API_SERVER_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.clientTransport;
+import static io.zeebe.broker.transport.TransportServiceNames.serverTransport;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.Partition;
@@ -31,7 +39,13 @@ import io.zeebe.broker.clustering.orchestration.topic.RequestPartitionsMessageHa
 import io.zeebe.broker.clustering.orchestration.topic.TopicCreationService;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.broker.transport.controlmessage.ControlMessageHandlerManager;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.CompositeServiceBuilder;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceContainer;
+import io.zeebe.servicecontainer.ServiceGroupReference;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerTransport;
 import org.slf4j.Logger;

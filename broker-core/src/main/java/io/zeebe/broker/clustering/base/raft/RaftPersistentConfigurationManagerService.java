@@ -19,7 +19,9 @@ package io.zeebe.broker.clustering.base.raft;
 
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;

@@ -17,7 +17,9 @@ package io.zeebe.msgpack;
 
 import static io.zeebe.msgpack.MsgPackUtil.encodeMsgPack;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.msgpack.property.DocumentProperty;
 import io.zeebe.msgpack.spec.MsgPackHelper;

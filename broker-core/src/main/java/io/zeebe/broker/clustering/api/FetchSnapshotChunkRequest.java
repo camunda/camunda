@@ -17,7 +17,11 @@
  */
 package io.zeebe.broker.clustering.api;
 
-import static io.zeebe.clustering.management.FetchSnapshotChunkRequestEncoder.*;
+import static io.zeebe.clustering.management.FetchSnapshotChunkRequestEncoder.chunkLengthNullValue;
+import static io.zeebe.clustering.management.FetchSnapshotChunkRequestEncoder.chunkOffsetNullValue;
+import static io.zeebe.clustering.management.FetchSnapshotChunkRequestEncoder.logPositionNullValue;
+import static io.zeebe.clustering.management.FetchSnapshotChunkRequestEncoder.nameHeaderLength;
+import static io.zeebe.clustering.management.FetchSnapshotChunkRequestEncoder.partitionIdNullValue;
 import static io.zeebe.util.StringUtil.getBytes;
 
 import io.zeebe.broker.util.SbeBufferWriterReader;

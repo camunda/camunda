@@ -18,7 +18,9 @@
 package io.zeebe.broker.job.processor;
 
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.*;
+import io.zeebe.msgpack.property.IntegerProperty;
+import io.zeebe.msgpack.property.LongProperty;
+import io.zeebe.msgpack.property.StringProperty;
 import org.agrona.DirectBuffer;
 
 public class JobSubscriptionRequest extends UnpackedObject {

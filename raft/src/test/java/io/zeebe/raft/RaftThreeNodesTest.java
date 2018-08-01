@@ -18,7 +18,9 @@ package io.zeebe.raft;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.raft.state.RaftState;
-import io.zeebe.raft.util.*;
+import io.zeebe.raft.util.EventInfo;
+import io.zeebe.raft.util.RaftClusterRule;
+import io.zeebe.raft.util.RaftRule;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.util.List;

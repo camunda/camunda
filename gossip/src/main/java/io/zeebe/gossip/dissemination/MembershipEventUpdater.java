@@ -17,7 +17,9 @@ package io.zeebe.gossip.dissemination;
 
 import io.zeebe.clustering.gossip.MembershipEventType;
 import io.zeebe.gossip.Loggers;
-import io.zeebe.gossip.membership.*;
+import io.zeebe.gossip.membership.Member;
+import io.zeebe.gossip.membership.MembershipList;
+import io.zeebe.gossip.membership.MembershipStatus;
 import io.zeebe.gossip.protocol.MembershipEvent;
 import io.zeebe.gossip.protocol.MembershipEventConsumer;
 import org.slf4j.Logger;

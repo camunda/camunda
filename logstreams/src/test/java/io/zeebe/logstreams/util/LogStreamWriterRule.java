@@ -15,7 +15,9 @@
  */
 package io.zeebe.logstreams.util;
 
-import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.test.util.TestUtil;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;

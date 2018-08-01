@@ -15,10 +15,16 @@
  */
 package io.zeebe.raft.protocol;
 
-import static io.zeebe.raft.VoteRequestEncoder.*;
+import static io.zeebe.raft.VoteRequestEncoder.hostHeaderLength;
+import static io.zeebe.raft.VoteRequestEncoder.lastEventPositionNullValue;
+import static io.zeebe.raft.VoteRequestEncoder.lastEventTermNullValue;
+import static io.zeebe.raft.VoteRequestEncoder.partitionIdNullValue;
+import static io.zeebe.raft.VoteRequestEncoder.termNullValue;
 
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.raft.*;
+import io.zeebe.raft.Raft;
+import io.zeebe.raft.VoteRequestDecoder;
+import io.zeebe.raft.VoteRequestEncoder;
 import io.zeebe.transport.SocketAddress;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;

@@ -15,16 +15,31 @@
  */
 package io.zeebe.logstreams.impl.service;
 
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.*;
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStorageAppenderRootService;
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStorageAppenderServiceName;
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStreamRootServiceName;
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logWriteBufferServiceName;
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logWriteBufferSubscriptionServiceName;
 import static io.zeebe.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
 import static io.zeebe.logstreams.log.LogStreamUtil.getAddressForPosition;
 
-import io.zeebe.dispatcher.*;
-import io.zeebe.logstreams.impl.*;
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.DispatcherBuilder;
+import io.zeebe.dispatcher.Dispatchers;
+import io.zeebe.dispatcher.Subscription;
+import io.zeebe.logstreams.impl.LogBlockIndexWriter;
+import io.zeebe.logstreams.impl.LogStorageAppender;
+import io.zeebe.logstreams.impl.LogStreamBuilder;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.CompositeServiceBuilder;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceContainer;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.channel.ActorConditions;

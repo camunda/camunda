@@ -19,7 +19,10 @@ import static io.zeebe.msgpack.mapping.MsgPackNodeType.EXISTING_LEAF_NODE;
 import static io.zeebe.msgpack.mapping.MsgPackNodeType.EXTRACTED_LEAF_NODE;
 
 import io.zeebe.msgpack.spec.MsgPackWriter;
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 

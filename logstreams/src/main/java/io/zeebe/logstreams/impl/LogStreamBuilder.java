@@ -15,7 +15,11 @@
  */
 package io.zeebe.logstreams.impl;
 
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.*;
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logBlockIndexServiceName;
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logBlockIndexWriterService;
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStorageServiceName;
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStreamRootServiceName;
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStreamServiceName;
 import static io.zeebe.util.EnsureUtil.ensureFalse;
 import static io.zeebe.util.EnsureUtil.ensureGreaterThanOrEqual;
 
@@ -23,11 +27,16 @@ import io.zeebe.logstreams.fs.FsSnapshotStorageBuilder;
 import io.zeebe.logstreams.impl.log.fs.FsLogStorage;
 import io.zeebe.logstreams.impl.log.fs.FsLogStorageConfiguration;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
-import io.zeebe.logstreams.impl.service.*;
+import io.zeebe.logstreams.impl.service.FsLogStorageService;
+import io.zeebe.logstreams.impl.service.LogBlockIndexService;
+import io.zeebe.logstreams.impl.service.LogBlockIndexWriterService;
+import io.zeebe.logstreams.impl.service.LogStreamService;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.SnapshotStorage;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.CompositeServiceBuilder;
+import io.zeebe.servicecontainer.ServiceContainer;
+import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;

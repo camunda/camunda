@@ -18,7 +18,9 @@
 package io.zeebe.broker.system.workflow.repository.data;
 
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.*;
+import io.zeebe.msgpack.property.BinaryProperty;
+import io.zeebe.msgpack.property.EnumProperty;
+import io.zeebe.msgpack.property.StringProperty;
 import org.agrona.DirectBuffer;
 
 public class DeploymentResource extends UnpackedObject {

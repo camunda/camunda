@@ -19,7 +19,12 @@ package io.zeebe.broker.job;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceContainer;
+import io.zeebe.servicecontainer.ServiceGroupReference;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;

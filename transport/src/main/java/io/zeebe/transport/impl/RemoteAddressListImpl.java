@@ -15,7 +15,9 @@
  */
 package io.zeebe.transport.impl;
 
-import io.zeebe.transport.*;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.RemoteAddressList;
+import io.zeebe.transport.SocketAddress;
 import java.util.Iterator;
 import java.util.function.Consumer;
 

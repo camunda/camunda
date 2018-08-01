@@ -17,14 +17,19 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.broker.test.MsgPackUtil.*;
+import static io.zeebe.broker.test.MsgPackUtil.JSON_MAPPER;
+import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_MAPPER;
+import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_PAYLOAD;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_ACTIVITY_ID;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
 import static io.zeebe.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
 import static io.zeebe.msgpack.spec.MsgPackHelper.NIL;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.CREATE;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.CREATED;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.*;
+import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_INSTANCE_KEY;
+import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_KEY;
+import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_PAYLOAD;
+import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 

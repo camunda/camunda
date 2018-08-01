@@ -17,9 +17,14 @@
  */
 package io.zeebe.broker.clustering.base.connections;
 
-import io.zeebe.broker.clustering.base.topology.*;
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.broker.clustering.base.topology.Topology;
+import io.zeebe.broker.clustering.base.topology.TopologyManager;
+import io.zeebe.broker.clustering.base.topology.TopologyMemberListener;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.ClientTransport;
 
 /**

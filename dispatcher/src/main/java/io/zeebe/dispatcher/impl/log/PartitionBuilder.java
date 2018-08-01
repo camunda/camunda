@@ -15,7 +15,10 @@
  */
 package io.zeebe.dispatcher.impl.log;
 
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.*;
+import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_COUNT;
+import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_META_DATA_LENGTH;
+import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.partitionDataSectionOffset;
+import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.partitionMetadataSectionOffset;
 
 import io.zeebe.util.allocation.AllocatedBuffer;
 import java.nio.ByteBuffer;

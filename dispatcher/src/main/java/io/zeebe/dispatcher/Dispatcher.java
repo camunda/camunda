@@ -15,7 +15,9 @@
  */
 package io.zeebe.dispatcher;
 
-import static io.zeebe.dispatcher.impl.PositionUtil.*;
+import static io.zeebe.dispatcher.impl.PositionUtil.partitionId;
+import static io.zeebe.dispatcher.impl.PositionUtil.partitionOffset;
+import static io.zeebe.dispatcher.impl.PositionUtil.position;
 import static io.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
 
 import io.zeebe.dispatcher.impl.log.LogBuffer;

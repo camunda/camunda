@@ -15,8 +15,14 @@
  */
 package io.zeebe.transport.impl;
 
-import io.zeebe.transport.*;
-import io.zeebe.transport.impl.sender.*;
+import io.zeebe.transport.ClientOutput;
+import io.zeebe.transport.ClientResponse;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.TransportMessage;
+import io.zeebe.transport.impl.sender.OutgoingMessage;
+import io.zeebe.transport.impl.sender.OutgoingRequest;
+import io.zeebe.transport.impl.sender.Sender;
+import io.zeebe.transport.impl.sender.TransportHeaderWriter;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.nio.ByteBuffer;

@@ -17,7 +17,9 @@
  */
 package io.zeebe.broker.clustering.base.bootstrap;
 
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.*;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.RAFT_BOOTSTRAP_SERVICE;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.RAFT_CONFIGURATION_MANAGER;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.SYSTEM_PARTITION_BOOTSTRAP_SERVICE_NAME;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.topology.NodeInfo;

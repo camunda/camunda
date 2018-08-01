@@ -16,7 +16,11 @@
 package io.zeebe.logstreams.impl.snapshot.fs;
 
 import io.zeebe.logstreams.impl.Loggers;
-import io.zeebe.logstreams.spi.*;
+import io.zeebe.logstreams.spi.ReadableSnapshot;
+import io.zeebe.logstreams.spi.SnapshotController;
+import io.zeebe.logstreams.spi.SnapshotStorage;
+import io.zeebe.logstreams.spi.SnapshotSupport;
+import io.zeebe.logstreams.spi.SnapshotWriter;
 import io.zeebe.logstreams.state.StateSnapshotMetadata;
 import java.util.function.Predicate;
 import org.slf4j.Logger;

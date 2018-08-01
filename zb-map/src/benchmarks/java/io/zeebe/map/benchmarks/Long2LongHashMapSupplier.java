@@ -16,7 +16,6 @@
 package io.zeebe.map.benchmarks;
 
 import java.util.HashMap;
-
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;

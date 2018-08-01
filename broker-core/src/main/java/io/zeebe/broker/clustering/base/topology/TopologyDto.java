@@ -18,7 +18,10 @@
 package io.zeebe.broker.clustering.base.topology;
 
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.*;
+import io.zeebe.msgpack.property.ArrayProperty;
+import io.zeebe.msgpack.property.EnumProperty;
+import io.zeebe.msgpack.property.IntegerProperty;
+import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.raft.state.RaftState;
 import org.agrona.DirectBuffer;

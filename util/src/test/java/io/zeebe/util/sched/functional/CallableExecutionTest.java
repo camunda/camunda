@@ -22,7 +22,9 @@ import io.zeebe.util.TestUtil;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import java.util.concurrent.*;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutionException;
 import org.junit.Rule;
 import org.junit.Test;
 

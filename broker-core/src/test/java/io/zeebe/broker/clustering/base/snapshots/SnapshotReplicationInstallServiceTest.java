@@ -17,7 +17,10 @@
  */
 package io.zeebe.broker.clustering.base.snapshots;
 
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.*;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.FOLLOWER_PARTITION_GROUP_NAME;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.SNAPSHOT_REPLICATION_INSTALL_SERVICE_NAME;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.followerPartitionServiceName;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.snapshotReplicationServiceName;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;

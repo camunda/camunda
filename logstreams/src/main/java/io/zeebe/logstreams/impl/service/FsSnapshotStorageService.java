@@ -18,7 +18,9 @@ package io.zeebe.logstreams.impl.service;
 import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotStorage;
 import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotStorageConfiguration;
 import io.zeebe.logstreams.spi.SnapshotStorage;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 
 public class FsSnapshotStorageService implements Service<SnapshotStorage> {
   private final FsSnapshotStorageConfiguration config;

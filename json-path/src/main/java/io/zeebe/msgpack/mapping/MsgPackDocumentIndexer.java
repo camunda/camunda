@@ -15,7 +15,10 @@
  */
 package io.zeebe.msgpack.mapping;
 
-import static io.zeebe.msgpack.mapping.MsgPackTreeNodeIdConstructor.*;
+import static io.zeebe.msgpack.mapping.MsgPackTreeNodeIdConstructor.JSON_PATH_SEPARATOR;
+import static io.zeebe.msgpack.mapping.MsgPackTreeNodeIdConstructor.JSON_PATH_SEPARATOR_END;
+import static io.zeebe.msgpack.mapping.MsgPackTreeNodeIdConstructor.construct;
+import static io.zeebe.msgpack.mapping.MsgPackTreeNodeIdConstructor.getLastParentId;
 
 import io.zeebe.msgpack.query.MsgPackTokenVisitor;
 import io.zeebe.msgpack.query.MsgPackTraverser;

@@ -17,7 +17,12 @@
  */
 package io.zeebe.broker.transport.clientapi;
 
-import static io.zeebe.protocol.clientapi.SubscribedRecordEncoder.*;
+import static io.zeebe.protocol.clientapi.SubscribedRecordEncoder.keyNullValue;
+import static io.zeebe.protocol.clientapi.SubscribedRecordEncoder.partitionIdNullValue;
+import static io.zeebe.protocol.clientapi.SubscribedRecordEncoder.positionNullValue;
+import static io.zeebe.protocol.clientapi.SubscribedRecordEncoder.sourceRecordPositionNullValue;
+import static io.zeebe.protocol.clientapi.SubscribedRecordEncoder.subscriberKeyNullValue;
+import static io.zeebe.protocol.clientapi.SubscribedRecordEncoder.timestampNullValue;
 
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;

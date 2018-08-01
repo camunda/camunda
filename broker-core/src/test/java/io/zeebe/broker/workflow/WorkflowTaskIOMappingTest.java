@@ -17,7 +17,13 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.broker.test.MsgPackUtil.*;
+import static io.zeebe.broker.test.MsgPackUtil.JSON_DOCUMENT;
+import static io.zeebe.broker.test.MsgPackUtil.JSON_MAPPER;
+import static io.zeebe.broker.test.MsgPackUtil.MERGED_OTHER_WITH_JSON_DOCUMENT;
+import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_MAPPER;
+import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_PAYLOAD;
+import static io.zeebe.broker.test.MsgPackUtil.OTHER_DOCUMENT;
+import static io.zeebe.broker.test.MsgPackUtil.OTHER_PAYLOAD;
 import static io.zeebe.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
 import static org.assertj.core.api.Assertions.assertThat;
 

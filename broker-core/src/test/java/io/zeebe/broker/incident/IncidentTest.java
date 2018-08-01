@@ -17,7 +17,10 @@
  */
 package io.zeebe.broker.incident;
 
-import static io.zeebe.broker.test.MsgPackUtil.*;
+import static io.zeebe.broker.test.MsgPackUtil.JSON_MAPPER;
+import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_MAPPER;
+import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_PAYLOAD;
+import static io.zeebe.broker.test.MsgPackUtil.encodeMsgPack;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;

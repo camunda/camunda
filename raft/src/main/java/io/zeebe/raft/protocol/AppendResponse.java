@@ -15,10 +15,16 @@
  */
 package io.zeebe.raft.protocol;
 
-import static io.zeebe.raft.AppendResponseEncoder.*;
+import static io.zeebe.raft.AppendResponseEncoder.hostHeaderLength;
+import static io.zeebe.raft.AppendResponseEncoder.partitionIdNullValue;
+import static io.zeebe.raft.AppendResponseEncoder.previousEventPositionNullValue;
+import static io.zeebe.raft.AppendResponseEncoder.termNullValue;
 
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.raft.*;
+import io.zeebe.raft.AppendResponseDecoder;
+import io.zeebe.raft.AppendResponseEncoder;
+import io.zeebe.raft.BooleanType;
+import io.zeebe.raft.Raft;
 import io.zeebe.transport.SocketAddress;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;

@@ -27,7 +27,10 @@ import io.zeebe.broker.clustering.base.raft.RaftPersistentConfiguration;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 

@@ -15,7 +15,9 @@
  */
 package io.zeebe.dispatcher.impl.log;
 
-import static org.agrona.BitUtil.*;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_SHORT;
+import static org.agrona.BitUtil.align;
 
 /**
  *
