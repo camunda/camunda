@@ -15,6 +15,8 @@
  */
 package io.zeebe.broker.client.job.subscription;
 
+import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
+import static io.zeebe.protocol.Protocol.SYSTEM_TOPIC;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -41,7 +43,6 @@ import org.junit.rules.RuleChain;
 
 public class PartitionedJobSubscriptionTest {
 
-  public static final String TOPIC = "baz";
   public static final int PARTITION_1 = 1;
   public static final int PARTITION_2 = 2;
 
@@ -60,9 +61,9 @@ public class PartitionedJobSubscriptionTest {
   public void setUp() {
     final Topology topology =
         new Topology()
-            .addLeader(broker1, Protocol.SYSTEM_TOPIC, Protocol.SYSTEM_PARTITION)
-            .addLeader(broker1, TOPIC, PARTITION_1)
-            .addLeader(broker2, TOPIC, PARTITION_2);
+            .addLeader(broker1, SYSTEM_TOPIC, Protocol.SYSTEM_PARTITION)
+            .addLeader(broker1, DEFAULT_TOPIC, PARTITION_1)
+            .addLeader(broker2, DEFAULT_TOPIC, PARTITION_2);
 
     broker1.setCurrentTopology(topology);
     broker2.setCurrentTopology(topology);
@@ -79,7 +80,7 @@ public class PartitionedJobSubscriptionTest {
     // when
     final JobWorker subscription =
         client
-            .topicClient(TOPIC)
+            .topicClient()
             .jobClient()
             .newWorker()
             .jobType(JOB_TYPE)
@@ -121,7 +122,7 @@ public class PartitionedJobSubscriptionTest {
 
     final RecordingJobHandler eventHandler = new RecordingJobHandler();
     client
-        .topicClient(TOPIC)
+        .topicClient()
         .jobClient()
         .newWorker()
         .jobType(JOB_TYPE)

@@ -45,9 +45,9 @@ public class ZeebeTestRule extends ExternalResource {
   public ZeebeTestRule(
       final Supplier<InputStream> configSupplier, final Supplier<Properties> propertiesProvider) {
     brokerRule = new EmbeddedBrokerRule(configSupplier);
-    clientRule = new ClientRule(propertiesProvider, true);
+    clientRule = new ClientRule(propertiesProvider);
 
-    topicEventRecorder = new TopicEventRecorder(clientRule, clientRule.getDefaultTopic());
+    topicEventRecorder = new TopicEventRecorder(clientRule);
   }
 
   public ZeebeClient getClient() {

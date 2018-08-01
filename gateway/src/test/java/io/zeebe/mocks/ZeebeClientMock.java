@@ -18,7 +18,6 @@ package io.zeebe.mocks;
 import io.zeebe.broker.client.ZeebeClient;
 import io.zeebe.broker.client.ZeebeClientConfiguration;
 import io.zeebe.broker.client.api.clients.TopicClient;
-import io.zeebe.broker.client.api.commands.CreateTopicCommandStep1;
 import io.zeebe.broker.client.api.commands.TopicsRequestStep1;
 import io.zeebe.broker.client.api.commands.TopologyRequestStep1;
 import io.zeebe.broker.client.api.record.ZeebeObjectMapper;
@@ -35,22 +34,12 @@ public class ZeebeClientMock implements ZeebeClient {
   }
 
   @Override
-  public TopicClient topicClient(final String topicName) {
-    return null;
-  }
-
-  @Override
   public TopicClient topicClient() {
     return null;
   }
 
   @Override
   public ZeebeObjectMapper objectMapper() {
-    return null;
-  }
-
-  @Override
-  public CreateTopicCommandStep1 newCreateTopicCommand() {
     return null;
   }
 

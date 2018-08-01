@@ -50,7 +50,7 @@ public class BrokerLeaderChangeTest {
   @Ignore("https://github.com/zeebe-io/zeebe/issues/844")
   public void shouldChangeLeaderAfterLeaderDies() {
     // given
-    clusteringRule.createTopic(clientRule.getDefaultTopic(), 1, 3);
+    clusteringRule.waitForTopic(3);
 
     final BrokerInfo leaderForPartition = clusteringRule.getLeaderForPartition(1);
     final String leaderAddress = leaderForPartition.getAddress();

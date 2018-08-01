@@ -26,12 +26,11 @@ public class TopicSubscriber {
 
   public static void main(String[] args) {
     final String broker = "127.0.0.1:26501";
-    final String topic = "default-topic";
 
     final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
     try (ZeebeClient client = builder.build()) {
-      final TopicClient topicClient = client.topicClient(topic);
+      final TopicClient topicClient = client.topicClient();
 
       System.out.println("Opening topic subscription.");
 

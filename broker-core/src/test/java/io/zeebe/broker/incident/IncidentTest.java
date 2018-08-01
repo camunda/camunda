@@ -21,7 +21,6 @@ import static io.zeebe.broker.test.MsgPackUtil.JSON_MAPPER;
 import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_MAPPER;
 import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_PAYLOAD;
 import static io.zeebe.broker.test.MsgPackUtil.encodeMsgPack;
-import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -91,7 +90,7 @@ public class IncidentTest {
   @Before
   public void init() throws Exception {
     testClient = apiRule.topic();
-    apiRule.waitForTopic(DEFAULT_TOPIC_NAME, 1);
+    apiRule.waitForTopic(1);
   }
 
   @Test

@@ -44,7 +44,7 @@ public class JobSubscriber extends Subscriber {
       SubscriptionManager acquisition) {
     super(subscriberKey, partition, subscription.getCapacity(), eventSource, group, acquisition);
     this.client = client;
-    this.jobClient = client.topicClient(subscription.getTopic()).jobClient();
+    this.jobClient = client.topicClient().jobClient();
     this.subscription = subscription;
   }
 

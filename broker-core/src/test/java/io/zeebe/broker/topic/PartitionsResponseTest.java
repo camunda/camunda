@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.topic;
 
+import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -35,7 +36,7 @@ public class PartitionsResponseTest {
     // given
     final PartitionsResponse response = new PartitionsResponse();
 
-    response.addPartition(1, BufferUtil.wrapString("default-topic"));
+    response.addPartition(1, BufferUtil.wrapString(DEFAULT_TOPIC));
     response.addPartition(2, BufferUtil.wrapString("foo"));
     response.addPartition(3, BufferUtil.wrapString("foo"));
 
@@ -56,7 +57,7 @@ public class PartitionsResponseTest {
 
     final JsonNode partition3 = partitions.get(0);
     assertThat(partition3.isObject()).isTrue();
-    assertThat(partition3.get("topic").textValue()).isEqualTo("default-topic");
+    assertThat(partition3.get("topic").textValue()).isEqualTo(DEFAULT_TOPIC);
     assertThat(partition3.get("id").numberValue()).isEqualTo(1);
 
     final JsonNode partition1 = partitions.get(1);

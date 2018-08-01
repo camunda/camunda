@@ -4,7 +4,7 @@
 bootstrap = 3
 
 [[topics]]
-name = "default-topic-1"
+name = "default-topic"
 partitions = 2
 replicationFactor = 2
 

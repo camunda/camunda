@@ -94,29 +94,6 @@ public class SnapshotReplicationTest {
   }
 
   @Test
-  public void shouldReplicateSnapshotsFromLeaderForOtherTopic() throws Exception {
-    // given
-    final Topic topic = clusteringRule.createTopic("super-topic", 1, 2);
-    final SocketAddress leaderAddress =
-        clusteringRule.getLeaderAddressForPartition(topic.getPartitions().get(0).getId());
-    final SocketAddress followerAddress =
-        clusteringRule.getFollowerAddressForPartition(topic.getPartitions().get(0).getId());
-
-    final SnapshotStorage leaderStorage = getSnapshotStorage(topic, leaderAddress);
-    final SnapshotStorage followerStorage = getSnapshotStorage(topic, followerAddress);
-
-    final TestSnapshot snapshot = new TestSnapshot("snap", 1L, "foo");
-
-    // when
-    snapshot.write(leaderStorage);
-    waitForReplication(followerStorage, snapshot);
-
-    // then
-    assertThat(followerStorage.listSnapshots().size()).isEqualTo(1);
-    assertReplicated(followerStorage, snapshot);
-  }
-
-  @Test
   public void shouldReplicateMultipleSnapshots() throws Exception {
     // given
     final Topic topic = clusteringRule.getInternalSystemTopic();

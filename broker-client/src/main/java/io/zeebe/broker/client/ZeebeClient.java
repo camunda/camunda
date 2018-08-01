@@ -16,7 +16,6 @@
 package io.zeebe.broker.client;
 
 import io.zeebe.broker.client.api.clients.TopicClient;
-import io.zeebe.broker.client.api.commands.CreateTopicCommandStep1;
 import io.zeebe.broker.client.api.commands.TopicsRequestStep1;
 import io.zeebe.broker.client.api.commands.TopologyRequestStep1;
 import io.zeebe.broker.client.api.record.ZeebeObjectMapper;
@@ -26,22 +25,6 @@ import io.zeebe.broker.client.impl.ZeebeClientImpl;
 
 /** The client to communicate with a Zeebe broker/cluster. */
 public interface ZeebeClient extends AutoCloseable {
-
-  /**
-   * A client to operate on workflows, jobs and subscriptions.
-   *
-   * <pre>
-   * zeebeClient
-   *  .topicClient("my-topic")
-   *  .workflowClient()
-   *  .newCreateInstanceCommand()
-   *  ...
-   * </pre>
-   *
-   * @param topicName the name of the topic to operate on
-   * @return a client with access to all operations on the given topic
-   */
-  TopicClient topicClient(String topicName);
 
   /**
    * A client to operate on workflows, jobs and subscriptions.
@@ -70,22 +53,6 @@ public interface ZeebeClient extends AutoCloseable {
    * @return an object that provides (de-)serialization of all records to/from JSON.
    */
   ZeebeObjectMapper objectMapper();
-
-  /**
-   * Command to create a new topic.
-   *
-   * <pre>
-   * zeebeClient
-   *  .newCreateTopicCommand()
-   *  .name("my-topic")
-   *  .partitions(3)
-   *  .replicationFactor(1)
-   *  .send();
-   * </pre>
-   *
-   * @return a builder for the command
-   */
-  CreateTopicCommandStep1 newCreateTopicCommand();
 
   /**
    * Request all topics. Can be used to inspect which topics and partitions have been created.

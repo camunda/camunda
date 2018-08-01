@@ -18,7 +18,6 @@ package io.zeebe.broker.client.impl;
 import io.zeebe.broker.client.ZeebeClient;
 import io.zeebe.broker.client.ZeebeClientConfiguration;
 import io.zeebe.broker.client.api.clients.TopicClient;
-import io.zeebe.broker.client.api.commands.CreateTopicCommandStep1;
 import io.zeebe.broker.client.api.commands.TopicsRequestStep1;
 import io.zeebe.broker.client.api.commands.TopologyRequestStep1;
 import io.zeebe.broker.client.api.record.ZeebeObjectMapper;
@@ -28,10 +27,10 @@ import io.zeebe.broker.client.impl.clustering.TopologyRequestImpl;
 import io.zeebe.broker.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.broker.client.impl.subscription.SubscriptionManager;
 import io.zeebe.broker.client.impl.subscription.topic.ManagementSubscriptionBuilderImpl;
-import io.zeebe.broker.client.impl.topic.CreateTopicCommandImpl;
 import io.zeebe.broker.client.impl.topic.TopicsRequestImpl;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.ClientTransportBuilder;
 import io.zeebe.transport.RemoteAddress;
@@ -229,24 +228,13 @@ public class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
-  public TopicClient topicClient(String topicName) {
-    return new TopicClientImpl(this, topicName);
-  }
-
-  @Override
   public TopicClient topicClient() {
-    final String defaultTopic = getConfiguration().getDefaultTopic();
-    return topicClient(defaultTopic);
+    return new TopicClientImpl(this, Protocol.DEFAULT_TOPIC);
   }
 
   @Override
   public ZeebeObjectMapper objectMapper() {
     return objectMapper;
-  }
-
-  @Override
-  public CreateTopicCommandStep1 newCreateTopicCommand() {
-    return new CreateTopicCommandImpl(getCommandManager());
   }
 
   @Override

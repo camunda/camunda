@@ -21,6 +21,7 @@ import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW
 import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_INSTANCE_KEY;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_VERSION;
+import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -609,7 +610,7 @@ public class WorkflowInstanceFunctionalTest {
             .partitionId(Protocol.SYSTEM_PARTITION)
             .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
             .command()
-            .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
+            .put("topicName", DEFAULT_TOPIC)
             .put("resources", Collections.singletonList(deploymentResource))
             .done()
             .sendAndAwait();

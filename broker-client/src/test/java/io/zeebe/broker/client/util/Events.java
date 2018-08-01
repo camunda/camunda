@@ -15,13 +15,14 @@
  */
 package io.zeebe.broker.client.util;
 
+import static io.zeebe.broker.client.util.ClientRule.DEFAULT_PARTITION;
+import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
+
 import io.zeebe.broker.client.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.broker.client.impl.event.JobEventImpl;
 import io.zeebe.broker.client.impl.event.WorkflowInstanceEventImpl;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import java.time.Instant;
 import org.assertj.core.util.Maps;
 
@@ -35,10 +36,10 @@ public class Events {
     baseEvent.setKey(79);
     baseEvent.setWorker("foo");
     baseEvent.setDeadline(Instant.now());
-    baseEvent.setPartitionId(StubBrokerRule.TEST_PARTITION_ID);
+    baseEvent.setPartitionId(DEFAULT_PARTITION);
     baseEvent.setPayload("{\"key\":\"val\"}");
     baseEvent.setRetries(123);
-    baseEvent.setTopicName(ClientApiRule.DEFAULT_TOPIC_NAME);
+    baseEvent.setTopicName(DEFAULT_TOPIC);
     baseEvent.setType("taskTypeFoo");
     baseEvent.setPosition(456);
 
@@ -53,8 +54,8 @@ public class Events {
     baseEvent.setBpmnProcessId("some_proceess");
     baseEvent.setKey(89);
     baseEvent.setPayload("{\"key\":\"val\"}");
-    baseEvent.setPartitionId(StubBrokerRule.TEST_PARTITION_ID);
-    baseEvent.setTopicName(ClientApiRule.DEFAULT_TOPIC_NAME);
+    baseEvent.setPartitionId(DEFAULT_PARTITION);
+    baseEvent.setTopicName(DEFAULT_TOPIC);
     baseEvent.setVersion(123);
     baseEvent.setWorkflowInstanceKey(456L);
     baseEvent.setWorkflowKey(789L);

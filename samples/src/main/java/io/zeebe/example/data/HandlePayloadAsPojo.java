@@ -26,13 +26,12 @@ import java.util.Scanner;
 public class HandlePayloadAsPojo {
   public static void main(String[] args) {
     final String broker = "127.0.0.1:26501";
-    final String topic = "default-topic";
 
     final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
     try (ZeebeClient client = builder.build()) {
-      final WorkflowClient workflowClient = client.topicClient(topic).workflowClient();
-      final JobClient jobClient = client.topicClient(topic).jobClient();
+      final WorkflowClient workflowClient = client.topicClient().workflowClient();
+      final JobClient jobClient = client.topicClient().jobClient();
 
       final Order order = new Order();
       order.setOrderId(31243);

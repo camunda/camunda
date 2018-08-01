@@ -15,6 +15,7 @@
  */
 package io.zeebe;
 
+import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -46,7 +47,7 @@ public class HealthCheckEndpointTest {
         Partition.newBuilder()
             .setPartitionId(5)
             .setRole(PartitionBrokerRole.LEADER)
-            .setTopicName("default-topic")
+            .setTopicName(DEFAULT_TOPIC)
             .build();
 
     this.response =

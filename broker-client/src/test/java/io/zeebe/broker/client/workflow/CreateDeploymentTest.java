@@ -15,6 +15,7 @@
  */
 package io.zeebe.broker.client.workflow;
 
+import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -71,7 +72,7 @@ public class CreateDeploymentTest {
     // when
     final DeploymentEvent deployment =
         client
-            .topicClient("test-topic")
+            .topicClient()
             .workflowClient()
             .newDeployCommand()
             .addWorkflowModel(WORKFLOW_MODEL, "model.bpmn")
@@ -83,9 +84,8 @@ public class CreateDeploymentTest {
 
     final ExecuteCommandRequest commandRequest = brokerRule.getReceivedCommandRequests().get(0);
     assertThat(commandRequest.partitionId()).isEqualTo(Protocol.SYSTEM_PARTITION);
-    assertThat(commandRequest.getCommand()).containsEntry("topicName", "test-topic");
 
-    assertThat(deployment.getDeploymentTopic()).isEqualTo("test-topic");
+    assertThat(deployment.getDeploymentTopic()).isEqualTo(DEFAULT_TOPIC);
     assertThat(deployment.getMetadata().getTopicName()).isEqualTo(Protocol.SYSTEM_TOPIC);
     assertThat(deployment.getMetadata().getSourceRecordPosition()).isEqualTo(1L);
   }

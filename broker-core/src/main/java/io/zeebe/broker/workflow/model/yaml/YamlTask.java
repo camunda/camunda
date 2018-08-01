@@ -19,7 +19,10 @@ package io.zeebe.broker.workflow.model.yaml;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class YamlTask {
   private String id = "";

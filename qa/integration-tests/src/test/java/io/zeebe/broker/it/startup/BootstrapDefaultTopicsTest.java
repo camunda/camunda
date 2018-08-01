@@ -15,6 +15,7 @@
  */
 package io.zeebe.broker.it.startup;
 
+import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.client.api.commands.Partition;
@@ -54,14 +55,14 @@ public class BootstrapDefaultTopicsTest {
   @Test
   public void shouldCreateDefaultTopicsOnBootstrappedBrokers() {
     // given
-    clusteringRule.waitForTopicPartitionReplicationFactor("default-topic-1", 2, 2);
+    clusteringRule.waitForTopicPartitionReplicationFactor(DEFAULT_TOPIC, 2, 2);
 
     // when
     final Map<String, List<Partition>> topics = clientRule.topicsByName();
 
     // then
-    assertThat(topics.containsKey("default-topic-1")).isTrue();
-    assertThat(topics.get("default-topic-1").size()).isEqualTo(2);
+    assertThat(topics.containsKey(DEFAULT_TOPIC)).isTrue();
+    assertThat(topics.get(DEFAULT_TOPIC).size()).isEqualTo(2);
     assertThat(topics.containsKey("default-topic-2")).isFalse();
     assertThat(topics.size()).isEqualTo(2); // default + internal
   }

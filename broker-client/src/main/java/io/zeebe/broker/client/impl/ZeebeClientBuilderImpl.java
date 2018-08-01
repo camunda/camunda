@@ -25,6 +25,7 @@ import io.zeebe.broker.client.ClientProperties;
 import io.zeebe.broker.client.ZeebeClient;
 import io.zeebe.broker.client.ZeebeClientBuilder;
 import io.zeebe.broker.client.ZeebeClientConfiguration;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.time.Duration;
 import java.util.Properties;
@@ -42,7 +43,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   private ActorClock actorClock;
   private String defaultJobWorkerName = "default";
   private Duration defaultJobTimeout = Duration.ofMinutes(5);
-  private String defaultTopic = "default-topic";
+  private String defaultTopic = Protocol.DEFAULT_TOPIC;
 
   @Override
   public String getBrokerContactPoint() {

@@ -15,6 +15,7 @@
  */
 package io.zeebe.test.broker.protocol.clientapi;
 
+import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 
@@ -25,7 +26,6 @@ import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.protocol.clientapi.SubscribedRecordDecoder;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.SubscriberIntent;
-import io.zeebe.protocol.intent.TopicIntent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RemoteAddress;
@@ -42,9 +42,8 @@ import org.agrona.DirectBuffer;
 import org.junit.rules.ExternalResource;
 
 public class ClientApiRule extends ExternalResource {
-  public static final String DEFAULT_TOPIC_NAME = "default-topic";
+
   public static final long DEFAULT_LOCK_DURATION = 10000L;
-  public static final int DEFAULT_REPLICATION_FACTOR = 1;
 
   protected ClientTransport transport;
 
@@ -57,20 +56,14 @@ public class ClientApiRule extends ExternalResource {
   private ControlledActorClock controlledActorClock = new ControlledActorClock();
   private ActorScheduler scheduler;
 
-  private final boolean usesDefaultTopic;
   protected int defaultPartitionId = -1;
 
   public ClientApiRule() {
-    this(true);
+    this("localhost", 26501);
   }
 
-  public ClientApiRule(boolean usesDefaultTopic) {
-    this("localhost", 26501, usesDefaultTopic);
-  }
-
-  public ClientApiRule(String host, int port, boolean usesDefaultTopic) {
+  public ClientApiRule(String host, int port) {
     this.brokerAddress = new SocketAddress(host, port);
-    this.usesDefaultTopic = usesDefaultTopic;
   }
 
   @Override
@@ -93,11 +86,8 @@ public class ClientApiRule extends ExternalResource {
     msgPackHelper = new MsgPackHelper();
     streamAddress = transport.registerRemoteAddress(brokerAddress);
 
-    if (usesDefaultTopic) {
-      final List<Integer> partitionIds =
-          doRepeatedly(() -> getPartitionIds(DEFAULT_TOPIC_NAME)).until(p -> !p.isEmpty());
-      defaultPartitionId = partitionIds.get(0);
-    }
+    final List<Integer> partitionIds = doRepeatedly(this::getPartitionIds).until(p -> !p.isEmpty());
+    defaultPartitionId = partitionIds.get(0);
   }
 
   @Override
@@ -164,7 +154,7 @@ public class ClientApiRule extends ExternalResource {
     return createControlMessageRequest()
         .messageType(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
         .data()
-        .put("topicName", DEFAULT_TOPIC_NAME)
+        .put("topicName", DEFAULT_TOPIC)
         .put("partitionId", defaultPartitionId)
         .put("subscriberKey", subscriberKey)
         .done()
@@ -250,36 +240,13 @@ public class ClientApiRule extends ExternalResource {
     return headerDecoder.templateId() == type;
   }
 
-  public ExecuteCommandResponse createTopic(String name, int partitions) {
-    return createTopic(name, partitions, DEFAULT_REPLICATION_FACTOR);
-  }
+  public void waitForTopic(int partitions) {
 
-  public ExecuteCommandResponse createTopic(String name, int partitions, int replicationFactor) {
-    final ExecuteCommandResponse response =
-        createCmdRequest()
-            .partitionId(Protocol.SYSTEM_PARTITION)
-            .type(ValueType.TOPIC, TopicIntent.CREATE)
-            .command()
-            .put("name", name)
-            .put("partitions", partitions)
-            .put("replicationFactor", replicationFactor)
-            .done()
-            .sendAndAwait();
-
-    if (response.intent() == TopicIntent.CREATING) {
-      waitForTopic(name, partitions);
-    }
-
-    return response;
-  }
-
-  public void waitForTopic(String name, int partitions) {
-
-    waitUntil(() -> getPartitionIds(name).size() >= partitions);
+    waitUntil(() -> getPartitionIds().size() >= partitions);
   }
 
   @SuppressWarnings("unchecked")
-  public List<Integer> getPartitionIds(String topicName) {
+  public List<Integer> getPartitionIds() {
     try {
       final ControlMessageResponse response = requestPartitions();
 
@@ -289,7 +256,7 @@ public class ClientApiRule extends ExternalResource {
 
       return partitions
           .stream()
-          .filter(p -> topicName.equals(p.get("topic")))
+          .filter(p -> DEFAULT_TOPIC.equals(p.get("topic")))
           .map(p -> ((Number) p.get("id")).intValue())
           .collect(Collectors.toList());
     } catch (Exception e) {

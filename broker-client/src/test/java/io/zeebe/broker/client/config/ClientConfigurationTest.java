@@ -15,12 +15,12 @@
  */
 package io.zeebe.broker.client.config;
 
+import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.client.ClientProperties;
 import io.zeebe.broker.client.ZeebeClient;
 import io.zeebe.broker.client.ZeebeClientConfiguration;
-import io.zeebe.broker.client.impl.TopicClientImpl;
 import io.zeebe.broker.client.impl.ZeebeClientImpl;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.util.AutoCloseableRule;
@@ -83,23 +83,6 @@ public class ClientConfigurationTest {
   }
 
   @Test
-  public void shouldConfigureDefaultTopic() {
-    // given
-    final Properties config = new Properties();
-    config.setProperty(ClientProperties.DEFAULT_TOPIC, "my-topic");
-
-    // when
-    final ZeebeClient client = ZeebeClient.newClientBuilder().withProperties(config).build();
-    closeables.manage(client);
-
-    // then
-    assertThat(client.getConfiguration().getDefaultTopic()).isEqualTo("my-topic");
-
-    final TopicClientImpl topicClient = (TopicClientImpl) client.topicClient();
-    assertThat(topicClient.getTopic()).isEqualTo("my-topic");
-  }
-
-  @Test
   public void shouldConfigureDefaultBufferSizes() {
     // given
     final Properties config = new Properties();
@@ -126,7 +109,7 @@ public class ClientConfigurationTest {
 
     assertThat(configuration.getDefaultJobWorkerName()).isEqualTo("default");
     assertThat(configuration.getDefaultJobTimeout()).isEqualTo(Duration.ofMinutes(5));
-    assertThat(configuration.getDefaultTopic()).isEqualTo("default-topic");
+    assertThat(configuration.getDefaultTopic()).isEqualTo(DEFAULT_TOPIC);
     assertThat(configuration.getDefaultTopicSubscriptionBufferSize()).isEqualTo(1024);
     assertThat(configuration.getDefaultJobSubscriptionBufferSize()).isEqualTo(32);
   }

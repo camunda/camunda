@@ -50,7 +50,8 @@ import org.junit.rules.RuleChain;
 
 public class IntermediateMessageCatchEventTest {
 
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  public EmbeddedBrokerRule brokerRule =
+      new EmbeddedBrokerRule("zeebe.unit-test.increased.partitions.cfg.toml");
   public ClientApiRule apiRule = new ClientApiRule();
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
@@ -68,6 +69,7 @@ public class IntermediateMessageCatchEventTest {
 
   @Before
   public void init() {
+    apiRule.waitForTopic(3);
     testClient = apiRule.topic();
     testClient.deploy(WORKFLOW);
   }
@@ -135,48 +137,9 @@ public class IntermediateMessageCatchEventTest {
   }
 
   @Test
-  public void shouldOpenMessageSubscriptionsOnDifferentPartitions() {
-    // given
-    apiRule.createTopic("test", 5);
-    final List<Integer> partitionIds = apiRule.getPartitionIds("test");
-
-    final String correlationKey1 = "order-123";
-    final String correlationKey2 = "order-456";
-    assertThat(getPartitionId(partitionIds, correlationKey1))
-        .isNotEqualTo(getPartitionId(partitionIds, correlationKey2));
-
-    final TestTopicClient workflowPartition = apiRule.topic(partitionIds.get(0));
-    final TestTopicClient subscriptionPartition1 =
-        apiRule.topic(getPartitionId(partitionIds, correlationKey1));
-    final TestTopicClient subscriptionPartition2 =
-        apiRule.topic(getPartitionId(partitionIds, correlationKey2));
-
-    testClient.deploy("test", WORKFLOW);
-
-    // when
-    final long workflowInstanceKey1 =
-        workflowPartition.createWorkflowInstance("wf", asMsgPack("orderId", correlationKey1));
-
-    final long workflowInstanceKey2 =
-        workflowPartition.createWorkflowInstance("wf", asMsgPack("orderId", correlationKey2));
-
-    // then
-    assertThat(
-            findMessageSubscription(subscriptionPartition1, MessageSubscriptionIntent.OPENED)
-                .value())
-        .contains(entry("workflowInstanceKey", workflowInstanceKey1));
-
-    assertThat(
-            findMessageSubscription(subscriptionPartition2, MessageSubscriptionIntent.OPENED)
-                .value())
-        .contains(entry("workflowInstanceKey", workflowInstanceKey2));
-  }
-
-  @Test
   public void shouldOpenMessageSubscriptionsOnSamePartition() {
     // given
-    apiRule.createTopic("test", 5);
-    final List<Integer> partitionIds = apiRule.getPartitionIds("test");
+    final List<Integer> partitionIds = apiRule.getPartitionIds();
 
     final String correlationKey = "order-123";
 
@@ -184,7 +147,7 @@ public class IntermediateMessageCatchEventTest {
     final TestTopicClient subscriptionPartition =
         apiRule.topic(getPartitionId(partitionIds, correlationKey));
 
-    testClient.deploy("test", WORKFLOW);
+    testClient.deploy(WORKFLOW);
 
     // when
     final long workflowInstanceKey1 =

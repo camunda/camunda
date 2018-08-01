@@ -15,6 +15,7 @@
  */
 package io.zeebe.broker.client;
 
+import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -35,7 +36,6 @@ import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RemoteAddress;
@@ -67,6 +67,7 @@ public class ZeebeClientTest {
   protected ZeebeClientImpl client;
 
   private int clientMaxRequests;
+  private String topic = DEFAULT_TOPIC;
 
   @Before
   public void setUp() {
@@ -150,8 +151,6 @@ public class ZeebeClientTest {
   @Test
   public void shouldSendAsyncRequestUpToPoolCapacity() {
     // given
-    final String topic = "foo";
-
     broker.clearTopology();
     broker.addSystemTopic();
     broker.addTopic(topic, 0);
@@ -161,14 +160,13 @@ public class ZeebeClientTest {
 
     // when then
     for (int i = 0; i < clientMaxRequests; i++) {
-      client.topicClient(topic).jobClient().newCreateCommand().jobType("foo").send().join();
+      client.topicClient().jobClient().newCreateCommand().jobType("foo").send().join();
     }
   }
 
   @Test
   public void shouldReleaseRequestsOnGet() throws InterruptedException, ExecutionException {
     // given
-    final String topic = "foo";
 
     broker.clearTopology();
     broker.addSystemTopic();
@@ -180,7 +178,7 @@ public class ZeebeClientTest {
     final List<ZeebeFuture<JobEvent>> futures = new ArrayList<>();
     for (int i = 0; i < clientMaxRequests; i++) {
       final ZeebeFuture<JobEvent> future =
-          client.topicClient(topic).jobClient().newCreateCommand().jobType("bar").send();
+          client.topicClient().jobClient().newCreateCommand().jobType("bar").send();
 
       futures.add(future);
     }
@@ -193,7 +191,7 @@ public class ZeebeClientTest {
     // then
     for (int i = 0; i < clientMaxRequests; i++) {
       final ZeebeFuture<JobEvent> future =
-          client.topicClient(topic).jobClient().newCreateCommand().jobType("bar").send();
+          client.topicClient().jobClient().newCreateCommand().jobType("bar").send();
 
       futures.add(future);
     }
@@ -237,8 +235,6 @@ public class ZeebeClientTest {
   @Test
   public void shouldDistributeNewEntitiesRoundRobin() {
     // given
-    final String topic = "foo";
-
     broker.clearTopology();
     broker.addSystemTopic();
     broker.addTopic(topic, 0);
@@ -246,7 +242,7 @@ public class ZeebeClientTest {
 
     stubJobResponse();
 
-    final JobClient jobClient = client.topicClient(topic).jobClient();
+    final JobClient jobClient = client.topicClient().jobClient();
 
     // when
     final JobEvent job1 = jobClient.newCreateCommand().jobType("bar").send().join();
@@ -261,26 +257,6 @@ public class ZeebeClientTest {
   }
 
   @Test
-  public void shouldFailRequestToNonExistingTopic() {
-    // given
-    final String topic = "foo";
-
-    broker.clearTopology();
-    broker.addSystemTopic();
-
-    stubJobResponse();
-
-    // then
-    exception.expect(ClientException.class);
-    exception.expectMessage(
-        "Cannot determine target partition for request. "
-            + "Request was: [ topic = foo, partition = any, value type = JOB, command = CREATE ]");
-
-    // when
-    client.topicClient(topic).jobClient().newCreateCommand().jobType("bar").send().join();
-  }
-
-  @Test
   public void shouldThrowExceptionOnTimeout() {
     // given
     final JobEventImpl baseEvent = Events.exampleJob();
@@ -291,7 +267,9 @@ public class ZeebeClientTest {
     exception.expect(ClientException.class);
     exception.expectMessage(
         "Request timed out (PT3S). "
-            + "Request was: [ topic = default-topic, partition = 99, value type = JOB, command = COMPLETE ]");
+            + "Request was: [ topic = "
+            + DEFAULT_TOPIC
+            + ", partition = 1, value type = JOB, command = COMPLETE ]");
 
     // when
     client.topicClient().jobClient().newCompleteCommand(baseEvent).send().join();
@@ -348,14 +326,7 @@ public class ZeebeClientTest {
     // when
     final long start = System.currentTimeMillis();
     assertThatThrownBy(
-        () ->
-            client
-                .topicClient("non-existing-topic")
-                .jobClient()
-                .newCreateCommand()
-                .jobType("baz")
-                .send()
-                .join());
+        () -> client.topicClient().jobClient().newCreateCommand().jobType("baz").send().join());
     final long requestDuration = System.currentTimeMillis() - start;
 
     // then
@@ -447,22 +418,6 @@ public class ZeebeClientTest {
   }
 
   @Test
-  public void shouldThrowExceptionIfTopicNameIsNull() {
-    exception.expect(RuntimeException.class);
-    exception.expectMessage("topic name must not be null");
-
-    client.topicClient(null).jobClient().newCreateCommand().jobType("foo").send().join();
-  }
-
-  @Test
-  public void shouldThrowExceptionIfTopicNameIsEmpty() {
-    exception.expect(RuntimeException.class);
-    exception.expectMessage("topic name must not be empty");
-
-    client.topicClient("").jobClient().newCreateCommand().jobType("foo").send().join();
-  }
-
-  @Test
   public void shouldThrowExceptionOnRejectionWithBadValue() {
     // given
     final JobEventImpl baseEvent = Events.exampleJob();
@@ -537,7 +492,7 @@ public class ZeebeClientTest {
 
   protected TopicSubscription openSubscription() {
     return client
-        .topicClient(ClientApiRule.DEFAULT_TOPIC_NAME)
+        .topicClient()
         .newSubscription()
         .name("foo")
         .recordHandler(r -> {})
