@@ -351,20 +351,20 @@ describe('Filters', () => {
     });
   });
 
-  describe('flowNode filter', () => {
+  describe('activityId filter', () => {
     it('should exist and be disabled by default', () => {
       // given
       const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
-      const field = node.find({name: 'flowNode'});
+      const field = node.find({name: 'activityId'});
 
       // then
       expect(field.length).toEqual(1);
       expect(field.type()).toEqual(Select);
-      expect(field.props().name).toEqual('flowNode');
+      expect(field.props().name).toEqual('activityId');
       expect(field.props().value).toEqual('');
       expect(field.props().placeholder).toEqual('Flow Node');
       expect(field.props().onChange).toEqual(
-        node.instance().handleFlowNodeChange
+        node.instance().handleActivityIdChange
       );
     });
 
@@ -383,7 +383,7 @@ describe('Filters', () => {
 
       // then
       // should keep the last version option selected
-      expect(node.find({name: 'flowNode'}).props().disabled).toEqual(true);
+      expect(node.find({name: 'activityId'}).props().disabled).toEqual(true);
     });
 
     it('should not be disabled when a version is selected', async () => {
@@ -402,7 +402,7 @@ describe('Filters', () => {
       node.update();
 
       // then
-      expect(node.find({name: 'flowNode'}).props().disabled).toEqual(false);
+      expect(node.find({name: 'activityId'}).props().disabled).toEqual(false);
     });
   });
 
