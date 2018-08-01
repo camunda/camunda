@@ -1,9 +1,13 @@
 import React from 'react';
-import {mount} from 'enzyme';
+import {mount, shallow} from 'enzyme';
 
 import BPMNDiagram from './BPMNDiagram';
 import NavigatedViewer from 'bpmn-js/lib/NavigatedViewer';
 import Viewer from 'bpmn-js/lib/Viewer';
+
+// since jest does not offer an out of the box way to flush promises:
+// https://github.com/facebook/jest/issues/2157
+const flushPromises = () => new Promise(resolve => setImmediate(resolve));
 
 jest.mock('bpmn-js/lib/NavigatedViewer', () => {
   return class NavigatedViewer {
@@ -14,6 +18,7 @@ jest.mock('bpmn-js/lib/NavigatedViewer', () => {
       };
     }
     attachTo = jest.fn();
+    detach = jest.fn();
     importXML = jest.fn((xml, cb) => cb());
     get = () => {
       return this.canvas;
@@ -30,6 +35,7 @@ jest.mock('bpmn-js/lib/Viewer', () => {
       };
     }
     attachTo = jest.fn();
+    detach = jest.fn();
     importXML = jest.fn((xml, cb) => cb());
     get = () => {
       return this.canvas;
@@ -39,77 +45,133 @@ jest.mock('bpmn-js/lib/Viewer', () => {
 
 const diagramXml = 'some diagram XML';
 
-it('should create a Viewer', () => {
-  const node = mount(<BPMNDiagram />);
+it('should create a Viewer', async () => {
+  const node = mount(shallow(<BPMNDiagram />).get(0));
+
+  await flushPromises();
 
   expect(node.instance().viewer).toBeInstanceOf(NavigatedViewer);
 });
 
-it('should create a Viewer without Navigation if Navigation is disabled', () => {
-  const node = mount(<BPMNDiagram disableNavigation />);
+it('should create a Viewer without Navigation if Navigation is disabled', async () => {
+  const node = mount(shallow(<BPMNDiagram disableNavigation />).get(0));
+
+  await flushPromises();
 
   expect(node.instance().viewer).toBeInstanceOf(Viewer);
 });
 
-it('should import the provided xml', () => {
-  const node = mount(<BPMNDiagram xml={diagramXml} />);
+it('should import the provided xml', async () => {
+  const node = mount(shallow(<BPMNDiagram xml={diagramXml} />).get(0));
+
+  await flushPromises();
 
   expect(node.instance().viewer.importXML).toHaveBeenCalled();
   expect(node.instance().viewer.importXML.mock.calls[0][0]).toBe(diagramXml);
 });
 
-it('should import an updated xml', () => {
-  const node = mount(<BPMNDiagram xml={diagramXml} />);
+it('should import an updated xml', async () => {
+  const node = mount(shallow(<BPMNDiagram xml={diagramXml} />).get(0));
 
   node.setProps({xml: 'some other xml'});
-  expect(node.instance().viewer.importXML.mock.calls[1][0]).toBe('some other xml');
+
+  await flushPromises();
+
+  expect(node.instance().viewer.importXML.mock.calls[0][0]).toBe('some other xml');
 });
 
-it('should resize the diagram to fit the container initially', () => {
-  const node = mount(<BPMNDiagram xml={diagramXml} />);
+it('should resize the diagram to fit the container initially', async () => {
+  const node = mount(shallow(<BPMNDiagram xml={diagramXml} />).get(0));
+
+  await flushPromises();
 
   expect(node.instance().viewer.canvas.resized).toHaveBeenCalled();
 });
 
-it('should not render children when diagram is not loaded', () => {
+it('should not render children when diagram is not loaded', async () => {
   const node = mount(
-    <BPMNDiagram xml={diagramXml}>
-      <p>Additional Content</p>
-    </BPMNDiagram>
+    shallow(
+      <BPMNDiagram xml={diagramXml}>
+        <p>Additional Content</p>
+      </BPMNDiagram>
+    ).get(0)
   );
+
+  await flushPromises();
 
   node.setState({loaded: false});
 
   expect(node).not.toIncludeText('Additional Content');
 });
 
-it('should render children when diagram is renderd', () => {
+it('should render children when diagram is renderd', async () => {
   const node = mount(
-    <BPMNDiagram xml={diagramXml}>
-      <p>Additional Content</p>
-    </BPMNDiagram>
+    shallow(
+      <BPMNDiagram xml={diagramXml}>
+        <p>Additional Content</p>
+      </BPMNDiagram>
+    ).get(0)
   );
+
+  await flushPromises();
 
   expect(node).toIncludeText('Additional Content');
 });
 
-it('should pass viewer instance to children', () => {
+it('should pass viewer instance to children', async () => {
   const node = mount(
-    <BPMNDiagram xml={diagramXml}>
-      <p>Additional Content</p>
-    </BPMNDiagram>
+    shallow(
+      <BPMNDiagram xml={diagramXml}>
+        <p>Additional Content</p>
+      </BPMNDiagram>
+    ).get(0)
   );
+
+  await flushPromises();
+
+  node.setState({loaded: true});
 
   expect(node.find('p').prop('viewer')).toBe(node.instance().viewer);
 });
 
 it('should register an Mutation Observer if its on a Dashboard', () => {
   mount(
-    <div className="DashboardObject">
-      <BPMNDiagram xml={diagramXml} />
-    </div>
+    shallow(
+      <div className="DashboardObject">
+        <BPMNDiagram xml={diagramXml} />
+      </div>
+    ).get(0)
   );
 
   // we can maybe have some meaningful assertion here once jsdom supports MutationObservers:
   // https://github.com/tmpvar/jsdom/issues/639
+});
+
+it('should re-use viewer instances', async () => {
+  const node1 = mount(
+    shallow(
+      <BPMNDiagram xml={diagramXml}>
+        <p>Additional Content</p>
+      </BPMNDiagram>
+    ).get(0)
+  );
+
+  await flushPromises();
+
+  const viewer1 = node1.instance().viewer;
+  node1.unmount();
+
+  const node2 = mount(
+    shallow(
+      <BPMNDiagram xml={diagramXml}>
+        <p>Additional Content</p>
+      </BPMNDiagram>
+    ).get(0)
+  );
+
+  await flushPromises();
+
+  const viewer2 = node2.instance().viewer;
+
+  expect(viewer1).toBe(viewer2);
 });

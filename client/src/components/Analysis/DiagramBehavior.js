@@ -72,6 +72,19 @@ export default class DiagramBehavior extends React.Component {
     viewer.off('element.hover', this.hoverHandler);
     viewer.off('element.out', this.outHandler);
     viewer.off('element.click', this.clickHandler);
+
+    viewer.get('overlays').clear();
+    const elementRegistry = viewer.get('elementRegistry');
+    const canvas = viewer.get('canvas');
+
+    // remove existing selection markers
+    elementRegistry.forEach(({businessObject}) => {
+      if (this.isValidNode(businessObject)) {
+        canvas.removeMarker(businessObject.id, 'DiagramBehavior__highlight');
+        canvas.removeMarker(businessObject.id, 'DiagramBehavior__selected');
+        canvas.removeMarker(businessObject.id, 'DiagramBehavior__clickable');
+      }
+    });
   }
 
   hoverHandler = ({element}) => {

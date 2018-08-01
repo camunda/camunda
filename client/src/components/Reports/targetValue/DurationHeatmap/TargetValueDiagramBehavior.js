@@ -44,7 +44,16 @@ export default class TargetValueDiagramBehavior extends React.Component {
   }
 
   componentWillUnmount() {
-    this.props.viewer.get('eventBus').off('element.click', this.clickHandler);
+    const {viewer} = this.props;
+    const elementRegistry = viewer.get('elementRegistry');
+    const canvas = viewer.get('canvas');
+
+    // remove selectable selectable status indication and highlights for all valid flownodes
+    elementRegistry.forEach(({businessObject}) => {
+      canvas.removeMarker(businessObject.id, 'TargetValueDiagramBehavior__clickable');
+      canvas.removeMarker(businessObject.id, 'TargetValueDiagramBehavior__highlight');
+    });
+    viewer.get('eventBus').off('element.click', this.clickHandler);
   }
 
   clickHandler = ({element}) => {

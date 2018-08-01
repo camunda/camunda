@@ -13,9 +13,38 @@ export default class ClickBehavior extends React.Component {
     this.update();
   }
 
+  componentWillUnmount() {
+    this.teardownEventListeners();
+    this.removeMarkers();
+  }
+
   componentDidUpdate() {
     this.update();
   }
+
+  removeMarkers = () => {
+    const {viewer} = this.props;
+    const elementRegistry = viewer.get('elementRegistry');
+    const canvas = viewer.get('canvas');
+
+    // remove existing selection markers
+    elementRegistry.forEach(element => {
+      if (element.businessObject.$instanceOf('bpmn:FlowNode')) {
+        canvas.removeMarker(element.businessObject.id, 'ClickBehavior__node--selected');
+        canvas.removeMarker(element.businessObject.id, 'ClickBehavior__node');
+      }
+    });
+  };
+
+  onClick = ({element}) => {
+    if (element.businessObject.$instanceOf('bpmn:FlowNode')) {
+      this.props.onClick(element.businessObject);
+    }
+  };
+
+  teardownEventListeners = () => {
+    this.props.viewer.off('element.click', this.onClick);
+  };
 
   update() {
     const {viewer, selectedNodes} = this.props;
@@ -49,10 +78,6 @@ export default class ClickBehavior extends React.Component {
   };
 
   setupEventListeners() {
-    this.props.viewer.on('element.click', ({element}) => {
-      if (element.businessObject.$instanceOf('bpmn:FlowNode')) {
-        this.props.onClick(element.businessObject);
-      }
-    });
+    this.props.viewer.on('element.click', this.onClick);
   }
 }
