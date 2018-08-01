@@ -18,9 +18,8 @@ export default class List extends React.Component {
     onSelectionUpdate: PropTypes.func.isRequired,
     onEntriesPerPageChange: PropTypes.func.isRequired,
     selection: PropTypes.shape({
-      exclusionList: PropTypes.instanceOf(Set),
-      query: PropTypes.object,
-      list: PropTypes.arrayOf(PropTypes.object)
+      excludeIds: PropTypes.instanceOf(Set),
+      ids: PropTypes.instanceOf(Set)
     }).isRequired,
     total: PropTypes.number,
     filter: PropTypes.object,
@@ -49,16 +48,31 @@ export default class List extends React.Component {
     }
   }
 
-  areAllInstancesSelected = () => {
-    const {
-      selection: {query, exclusionList},
-      total,
-      filter
-    } = this.props;
+  compareFilters = (a, b) => {
+    var aKeys = Object.keys(a).sort();
+    var bKeys = Object.keys(b).sort();
+    return JSON.stringify(aKeys) === JSON.stringify(bKeys);
+  };
 
-    if (exclusionList.size > 0) return false;
-    if (query === filter) return true;
-    if (query.ids && query.ids.size === total) return true;
+  getSelectionFilters = selection => {
+    let selectionFilters = {};
+
+    Object.keys(selection).forEach(key => {
+      if (['active', 'incidents', 'completed', 'canceled'].includes(key)) {
+        selectionFilters[key] = selection[key];
+      }
+    });
+    return selectionFilters;
+  };
+
+  areAllInstancesSelected = () => {
+    const {selection, total, filter} = this.props;
+
+    const selectionFilters = this.getSelectionFilters(selection);
+
+    if (selection.excludeIds.size > 0) return false;
+    if (this.compareFilters(selectionFilters, filter)) return true;
+    if (selection.ids && selection.ids.size === total) return true;
 
     return false;
   };
@@ -66,17 +80,17 @@ export default class List extends React.Component {
   handleToggleSelectAll = (event, isChecked) => {
     const selected = isChecked ? this.props.filter : {ids: new Set()};
 
-    this.props.onSelectionUpdate({
-      query: {$set: selected},
-      exclusionList: {$set: new Set()}
-    });
+    this.props.onSelectionUpdate({...selected, excludeIds: new Set()});
   };
 
   isSelected = id => {
-    const {query, exclusionList} = this.props.selection;
-    if (exclusionList.has(id)) return false;
-    if (query === this.props.filter) return true;
-    if (query.ids && query.ids.has(id)) return true;
+    const selection = this.props.selection;
+    const {excludeIds, ids} = selection;
+    const selectionFilters = this.getSelectionFilters(selection);
+
+    if (excludeIds.has(id)) return false;
+    if (this.compareFilters(selectionFilters, this.props.filter)) return true;
+    if (ids && ids.has(id)) return true;
 
     return false;
   };
@@ -98,18 +112,29 @@ export default class List extends React.Component {
     );
   };
 
+  getModifiedIdSet = ({isAdded, set, id}) => {
+    return (isAdded && set.add(id)) || (set.delete(id) && set);
+  };
+
   onSelectionChange = instance => (event, isChecked) => {
     const {selection, filter} = this.props;
+    const selectionFilters = this.getSelectionFilters(selection);
+    const changeType = this.compareFilters(selectionFilters, filter)
+      ? 'excludeIds'
+      : 'Ids';
 
-    const updateOptions = [
-      {exclusionList: {[isChecked ? '$remove' : '$add']: [instance.id]}},
-      {query: {ids: {[isChecked ? '$add' : '$remove']: [instance.id]}}}
-    ];
+    const IdSetChanges =
+      changeType === 'excludeIds'
+        ? {isAdded: !isChecked, set: selection.excludeIds, id: instance.id}
+        : {isAdded: isChecked, set: selection.ids, id: instance.id};
 
-    const selectionUpdate =
-      selection.query === filter ? updateOptions[0] : updateOptions[1];
+    const newIds = this.getModifiedIdSet(IdSetChanges);
 
-    this.props.onSelectionUpdate(selectionUpdate);
+    this.props.onSelectionUpdate(
+      changeType === 'excludeIds'
+        ? {ids: new Set(), excludeIds: newIds}
+        : {ids: newIds, excludeIds: new Set()}
+    );
   };
 
   recalculateHeight() {
