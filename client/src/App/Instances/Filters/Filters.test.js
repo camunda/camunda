@@ -13,6 +13,7 @@ import Filters from './Filters';
 import CheckboxGroup from './CheckboxGroup/';
 import * as Styled from './styled';
 import {parseWorkflowNames} from './service';
+import {ALL_VERSIONS_OPTION} from './constants';
 
 const groupedWorkflowsMock = [
   {
@@ -55,7 +56,19 @@ describe('Filters', () => {
     filter: {active: true, incidents: false, canceled: true, completed: false},
     onFilterChange: spy,
     resetFilter: jest.fn(),
-    onWorkflowVersionChange: instancesSpy
+    onWorkflowVersionChange: instancesSpy,
+    activityIds: []
+  };
+
+  const mockPropsWithActivityIds = {
+    filter: {active: true, incidents: false, canceled: true, completed: false},
+    onFilterChange: spy,
+    resetFilter: jest.fn(),
+    onWorkflowVersionChange: instancesSpy,
+    activityIds: [
+      {value: 'taskA', label: 'task A'},
+      {value: 'taskB', label: 'taskB'}
+    ]
   };
 
   beforeEach(() => {
@@ -299,7 +312,7 @@ describe('Filters', () => {
 
       // then
       expect(options[0].label).toEqual('Version 3');
-      expect(options[options.length - 1].value).toEqual('all');
+      expect(options[options.length - 1].value).toEqual(ALL_VERSIONS_OPTION);
       expect(options[options.length - 1].label).toEqual('All versions');
       // groupedWorkflowsMock.workflows.length + 1 (All versions)
       expect(options.length).toEqual(4);
@@ -366,9 +379,11 @@ describe('Filters', () => {
       expect(field.props().onChange).toEqual(
         node.instance().handleActivityIdChange
       );
+      expect(field.props().disabled).toBe(true);
+      expect(field.props().options.length).toBe(0);
     });
 
-    it('should be disabled if all versions are selected', async () => {
+    it('should be disabled if All versions is selected', async () => {
       const value = groupedWorkflowsMock[0].bpmnProcessId;
       const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
 
@@ -378,11 +393,12 @@ describe('Filters', () => {
       node.instance().handleWorkflowNameChange({target: {value: value}});
       node.update();
 
-      node.instance().handleWorkflowVersionChange({target: {value: 'all'}});
+      node
+        .instance()
+        .handleWorkflowVersionChange({target: {value: ALL_VERSIONS_OPTION}});
       node.update();
 
       // then
-      // should keep the last version option selected
       expect(node.find({name: 'activityId'}).props().disabled).toEqual(true);
     });
 
@@ -403,6 +419,62 @@ describe('Filters', () => {
 
       // then
       expect(node.find({name: 'activityId'}).props().disabled).toEqual(false);
+      expect(node.find({name: 'activityId'}).props().value).toEqual('');
+    });
+
+    it('should be disabled after the workflow name is reseted', async () => {
+      const value = groupedWorkflowsMock[0].bpmnProcessId;
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+
+      //when
+      await flushPromises();
+      // select workflowName, the version is set to the latest
+      node.instance().handleWorkflowNameChange({target: {value: value}});
+      node.update();
+
+      node.instance().handleWorkflowNameChange({target: {value: ''}});
+      node.update();
+
+      // then
+      expect(node.find({name: 'activityId'}).props().disabled).toEqual(true);
+      expect(node.find({name: 'activityId'}).props().options.length).toEqual(0);
+    });
+
+    it('should display a list of activity ids', async () => {
+      // given
+      const node = shallow(
+        <Filters {...mockPropsWithActivityIds} filter={DEFAULT_FILTER} />
+      );
+
+      // then
+      expect(node.find({name: 'activityId'}).props().options.length).toEqual(2);
+    });
+
+    it('should set the state on activityId selection', async () => {
+      // given
+      const value = groupedWorkflowsMock[0].bpmnProcessId;
+      const activityId = mockPropsWithActivityIds.activityIds[0].value;
+      const node = shallow(
+        <Filters {...mockPropsWithActivityIds} filter={DEFAULT_FILTER} />
+      );
+
+      //when
+      await flushPromises();
+      // select workflowName, the version is set to the latest
+      node.instance().handleWorkflowNameChange({target: {value: value}});
+      node.update();
+
+      node.instance().handleActivityIdChange({
+        target: {
+          value: mockPropsWithActivityIds.activityIds[0].value,
+          name: 'activityId'
+        },
+
+        persist: () => {}
+      });
+
+      // then
+      expect(node.state().currentActivityId).toEqual(activityId);
     });
   });
 
@@ -457,7 +529,7 @@ describe('Filters', () => {
     });
   });
 
-  describe('startDate filter', () => {
+  describe('endDate filter', () => {
     it('should exist', () => {
       // given
       const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);

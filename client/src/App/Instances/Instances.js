@@ -170,7 +170,10 @@ class Instances extends Component {
 
     for (node in nodes) {
       if (nodes[node].type === 'TASK') {
-        activityIds.push({value: node, label: nodes[node].name});
+        activityIds.push({
+          value: node,
+          label: nodes[node].name || 'Unnamed task'
+        });
       }
     }
 

@@ -10,7 +10,6 @@ import Filters from './Filters';
 import ListView from './ListView';
 import Header from '../Header';
 import Diagram from 'modules/components/Diagram';
-import PanelBody from 'modules/components/Panel/PanelBody';
 import PanelHeader from 'modules/components/Panel/PanelHeader';
 
 const Instances = WrappedInstances.WrappedComponent;
@@ -175,7 +174,7 @@ describe('Instances', () => {
   });
 
   describe('rendering a diagram', () => {
-    it('should render no diagram on inital render', () => {
+    it('should render no diagram on initial render', () => {
       // given
       const node = shallow(InstancesWithRunningFilter);
 
@@ -184,6 +183,7 @@ describe('Instances', () => {
       expect(node.find(Diagram).length).toBe(0);
       expect(node.find(PanelHeader).props().children).toBe('Workflow');
     });
+
     it('should render a diagram when workflow data is available ', () => {
       const node = shallow(InstancesWithWorkflow);
 
