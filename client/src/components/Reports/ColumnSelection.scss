@@ -2,6 +2,11 @@
   padding: 10px;
 }
 
+.ColumnSelection__entry:nth-child(2) {
+  border-bottom: 0.5px solid #dddddd;
+  padding-bottom: 5px;
+}
+
 .ColumnSelection__entry {
   white-space: nowrap;
   margin-top: 5px;

@@ -8,6 +8,8 @@ import './ColumnSelection.css';
 
 const {convertCamelToSpaces} = formatters;
 
+const VARIABLE_PREFIX = 'var__';
+
 export default {
   Content: function ColumnSelection({report, data, change}) {
     if (!isRawDataReport(report, data)) {
@@ -16,6 +18,12 @@ export default {
 
     const columns = report.result[0];
     const excludedColumns = data.configuration.excludedColumns || [];
+    const normalColumns = Object.keys(columns).filter(entry => entry !== 'variables');
+    const variableColumns = Object.keys(columns.variables);
+    const allColumns = [
+      ...normalColumns,
+      ...variableColumns.map(variable => VARIABLE_PREFIX + variable)
+    ];
 
     const renderEntry = (prefix = '', label = '') => column => (
       <div key={column} className="ColumnSelection__entry">
@@ -40,10 +48,18 @@ export default {
         <Popover icon="overflow-menu-vertical" className="ColumnSelection__Popover">
           <div className="ColumnSelection">
             <div className="ColumnSelection__notice">Table columns to include</div>
-            {Object.keys(columns)
-              .filter(entry => entry !== 'variables')
-              .map(renderEntry())}
-            {Object.keys(columns.variables).map(renderEntry('var__', 'Variable: '))}
+            <div className="ColumnSelection__entry">
+              <Switch
+                className="ColumnSelection__Switch"
+                checked={excludedColumns.length !== allColumns.length}
+                onChange={({target: {checked}}) =>
+                  change('excludedColumns')(checked ? [] : [...allColumns])
+                }
+              />
+              All Columns
+            </div>
+            {normalColumns.map(renderEntry())}
+            {variableColumns.map(renderEntry(VARIABLE_PREFIX, 'Variable: '))}
           </div>
         </Popover>
       </div>

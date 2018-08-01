@@ -24,7 +24,7 @@ jest.mock('services', () => {
   };
 });
 
-it('should have a switch for every column', () => {
+it('should have a switch for every column + all columns switch', () => {
   const node = mount(
     <ColumnSelection
       report={{result: [{a: 1, b: 2, c: 3, variables: {x: 1, y: 2}}]}}
@@ -32,7 +32,7 @@ it('should have a switch for every column', () => {
     />
   );
 
-  expect(node.find('input[type="checkbox"]').length).toBe(5);
+  expect(node.find('input[type="checkbox"]').length).toBe(6);
 });
 
 it('should call the onChange handler', () => {
@@ -44,7 +44,10 @@ it('should call the onChange handler', () => {
       change={() => spy}
     />
   );
-  node.find('input[type="checkbox"]').simulate('change', {target: {checked: false}});
+  node
+    .find('input[type="checkbox"]')
+    .at(1)
+    .simulate('change', {target: {checked: false}});
 
   expect(spy).toHaveBeenCalledWith(['a']);
 });
@@ -56,6 +59,45 @@ it('should change the switches labels to space case instead of camelCase for non
       data={{configuration: {}}}
     />
   );
-  expect(node.find('.ColumnSelection__entry').at(0)).toIncludeText('Process Definition Key');
-  expect(node.find('.ColumnSelection__entry').at(1)).toIncludeText('Variable: testVariable');
+  expect(node.find('.ColumnSelection__entry').at(1)).toIncludeText('Process Definition Key');
+  expect(node.find('.ColumnSelection__entry').at(2)).toIncludeText('Variable: testVariable');
+});
+
+it('should call change with all column names when all columns switch is disabled', () => {
+  const spy = jest.fn();
+  const node = mount(
+    <ColumnSelection
+      report={{result: [{a: 1, b: 3, variables: {}}]}}
+      data={{configuration: {}}}
+      change={() => spy}
+    />
+  );
+  node
+    .find('input[type="checkbox"]')
+    .at(0)
+    .simulate('change', {target: {checked: false}});
+
+  expect(spy).toHaveBeenCalledWith(['a', 'b']);
+});
+
+it('should call change with an empty array when all columns switch is enabled', () => {
+  const spy = jest.fn();
+  const node = mount(
+    <ColumnSelection
+      report={{result: [{a: 1, b: 3, variables: {}}]}}
+      data={{configuration: {}}}
+      change={() => spy}
+    />
+  );
+  node
+    .find('input[type="checkbox"]')
+    .at(0)
+    .simulate('change', {target: {checked: false}});
+
+  node
+    .find('input[type="checkbox"]')
+    .at(0)
+    .simulate('change', {target: {checked: true}});
+
+  expect(spy).toHaveBeenCalledWith([]);
 });
