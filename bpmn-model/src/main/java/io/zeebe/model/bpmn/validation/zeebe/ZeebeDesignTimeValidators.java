@@ -32,9 +32,10 @@ public class ZeebeDesignTimeValidators {
     VALIDATORS.add(new FlowElementValidator());
     VALIDATORS.add(new MessageValidator());
     VALIDATORS.add(new ProcessValidator());
-    VALIDATORS.add(new ServiceTaskValidator());
     VALIDATORS.add(new SequenceFlowValidator());
+    VALIDATORS.add(new ServiceTaskValidator());
     VALIDATORS.add(new StartEventValidator());
+    VALIDATORS.add(new SubProcessValidator());
     VALIDATORS.add(new ZeebeTaskDefinitionValidator());
     VALIDATORS.add(new ZeebeIoMappingValidator());
     VALIDATORS.add(new ZeebeSubscriptionValidator());

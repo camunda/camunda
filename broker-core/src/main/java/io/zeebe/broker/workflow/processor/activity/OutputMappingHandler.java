@@ -58,19 +58,19 @@ public class OutputMappingHandler implements BpmnStepHandler<ExecutableFlowNode>
     final TypedRecord<WorkflowInstanceRecord> record = context.getRecord();
     final WorkflowInstanceRecord activityEvent = record.getValue();
     final ExecutableFlowNode element = context.getElement();
+    final long scopeInstanceKey = activityEvent.getScopeInstanceKey();
 
-    DirectBuffer workflowInstancePayload =
-        payloadCache.getPayload(activityEvent.getWorkflowInstanceKey());
+    DirectBuffer scopeInstancePayload = payloadCache.getPayload(scopeInstanceKey);
 
     final ZeebeOutputBehavior outputBehavior = element.getOutputBehavior();
 
     MappingException mappingException = null;
 
     if (outputBehavior == ZeebeOutputBehavior.none) {
-      activityEvent.setPayload(workflowInstancePayload);
+      activityEvent.setPayload(scopeInstancePayload);
     } else {
       if (outputBehavior == ZeebeOutputBehavior.overwrite) {
-        workflowInstancePayload = EMPTY_PAYLOAD;
+        scopeInstancePayload = EMPTY_PAYLOAD;
       }
 
       final Mapping[] outputMappings = element.getOutputMappings();
@@ -78,7 +78,7 @@ public class OutputMappingHandler implements BpmnStepHandler<ExecutableFlowNode>
 
       try {
         final int resultLen =
-            payloadMappingProcessor.merge(jobPayload, workflowInstancePayload, outputMappings);
+            payloadMappingProcessor.merge(jobPayload, scopeInstancePayload, outputMappings);
         final MutableDirectBuffer mergedPayload = payloadMappingProcessor.getResultBuffer();
         activityEvent.setPayload(mergedPayload, 0, resultLen);
 
@@ -99,6 +99,7 @@ public class OutputMappingHandler implements BpmnStepHandler<ExecutableFlowNode>
           .write();
 
       activityInstanceMap.remove(record.getKey());
+      payloadCache.remove(scopeInstanceKey);
     } else {
       context.raiseIncident(ErrorType.IO_MAPPING_ERROR, mappingException.getMessage());
     }

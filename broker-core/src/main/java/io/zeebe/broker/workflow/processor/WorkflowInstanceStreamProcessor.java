@@ -443,7 +443,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
           .setPayload(createCommand.getPayload())
           .setVersion(createCommand.getVersion())
           .setWorkflowInstanceKey(createCommand.getWorkflowInstanceKey())
-          .setWorkflowKey(createCommand.getWorkflowKey());
+          .setWorkflowKey(createCommand.getWorkflowKey())
+          .setScopeInstanceKey(createCommand.getWorkflowInstanceKey());
       batchWriter.addFollowUpEvent(
           startEventKey, WorkflowInstanceIntent.START_EVENT_OCCURRED, startEventRecord);
     }
@@ -541,6 +542,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
           .newActivityInstance(event.getKey())
           .setActivityId(workflowInstance.getActivityId())
           .setJobKey(-1L)
+          .setScopeInstanceKey(event.getValue().getScopeInstanceKey())
           .write();
 
       payloadCache.addPayload(
@@ -623,18 +625,22 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
       if (jobHeaders.getWorkflowInstanceKey() > 0
           && isJobOpen(record.getKey(), activityInstanceKey)) {
+
+        activityInstanceMap.wrapActivityInstanceKey(activityInstanceKey);
+
         workflowInstanceEvent
             .setBpmnProcessId(jobHeaders.getBpmnProcessId())
             .setVersion(jobHeaders.getWorkflowDefinitionVersion())
             .setWorkflowKey(jobHeaders.getWorkflowKey())
             .setWorkflowInstanceKey(jobHeaders.getWorkflowInstanceKey())
             .setActivityId(jobHeaders.getActivityId())
-            .setPayload(jobEvent.getPayload());
+            .setPayload(jobEvent.getPayload())
+            .setScopeInstanceKey(activityInstanceMap.getScopeInstanceKey());
 
         streamWriter.writeFollowUpEvent(
             activityInstanceKey, WorkflowInstanceIntent.ACTIVITY_COMPLETING, workflowInstanceEvent);
 
-        activityInstanceMap.wrapActivityInstanceKey(activityInstanceKey).setJobKey(-1L).write();
+        activityInstanceMap.setJobKey(-1L).write();
       }
     }
 
@@ -694,6 +700,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
           .setVersion(workflow.getVersion())
           .setWorkflowInstanceKey(subscription.getWorkflowInstanceKey())
           .setActivityId(activityId)
+          .setScopeInstanceKey(activityInstanceMap.getScopeInstanceKey())
           .setPayload(subscription.getPayload());
 
       final TypedBatchWriter batchWriter = streamWriter.newBatch();

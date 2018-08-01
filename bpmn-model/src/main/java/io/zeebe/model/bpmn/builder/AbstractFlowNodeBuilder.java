@@ -306,6 +306,13 @@ public abstract class AbstractFlowNodeBuilder<
     return createTarget(SubProcess.class, id).builder();
   }
 
+  public SubProcessBuilder subProcess(String id, Consumer<SubProcessBuilder> consumer) {
+
+    final SubProcessBuilder builder = createTarget(SubProcess.class, id).builder();
+    consumer.accept(builder);
+    return builder;
+  }
+
   public TransactionBuilder transaction() {
     final Transaction transaction = createTarget(Transaction.class);
     return new TransactionBuilder(modelInstance, transaction);

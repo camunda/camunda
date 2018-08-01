@@ -18,9 +18,9 @@
 package io.zeebe.broker.workflow.processor.flownode;
 
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
+import io.zeebe.broker.workflow.map.ActivityInstanceMap;
 import io.zeebe.broker.workflow.map.PayloadCache;
 import io.zeebe.broker.workflow.map.WorkflowInstanceIndex;
-import io.zeebe.broker.workflow.map.WorkflowInstanceIndex.WorkflowInstance;
 import io.zeebe.broker.workflow.model.ExecutableFlowNode;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
@@ -30,32 +30,44 @@ public class ConsumeTokenHandler implements BpmnStepHandler<ExecutableFlowNode> 
 
   private final PayloadCache payloadCache;
   private final WorkflowInstanceIndex workflowInstanceIndex;
+  private final ActivityInstanceMap activityInstanceMap;
 
   public ConsumeTokenHandler(
-      PayloadCache payloadCache, WorkflowInstanceIndex workflowInstanceIndex) {
+      PayloadCache payloadCache,
+      WorkflowInstanceIndex workflowInstanceIndex,
+      ActivityInstanceMap activityInstanceMap) {
     this.payloadCache = payloadCache;
     this.workflowInstanceIndex = workflowInstanceIndex;
+    this.activityInstanceMap = activityInstanceMap;
   }
 
   @Override
   public void handle(BpmnStepContext<ExecutableFlowNode> context) {
-    final WorkflowInstanceRecord workflowInstanceEvent = context.getValue();
+    final WorkflowInstanceRecord value = context.getValue();
 
-    final WorkflowInstance workflowInstance =
-        workflowInstanceIndex.get(workflowInstanceEvent.getWorkflowInstanceKey());
+    final long scopeInstanceKey = value.getScopeInstanceKey();
+    final long workflowInstanceKey = value.getWorkflowInstanceKey();
 
-    final int activeTokenCount = workflowInstance != null ? workflowInstance.getTokenCount() : 0;
-    if (activeTokenCount == 1) {
-      final long workflowInstanceKey = workflowInstanceEvent.getWorkflowInstanceKey();
+    if (scopeInstanceKey == workflowInstanceKey) {
+      value.setScopeInstanceKey(-1);
 
-      workflowInstanceEvent.setActivityId("");
+      value.setActivityId("");
       context
           .getStreamWriter()
-          .writeFollowUpEvent(
-              workflowInstanceKey, WorkflowInstanceIntent.COMPLETED, workflowInstanceEvent);
+          .writeFollowUpEvent(workflowInstanceKey, WorkflowInstanceIntent.COMPLETED, value);
 
       workflowInstanceIndex.remove(workflowInstanceKey);
       payloadCache.remove(workflowInstanceKey);
+    } else {
+      activityInstanceMap.wrapActivityInstanceKey(scopeInstanceKey);
+
+      value.setScopeInstanceKey(activityInstanceMap.getScopeInstanceKey());
+      value.setActivityId(activityInstanceMap.getActivityId());
+
+      context
+          .getStreamWriter()
+          .writeFollowUpEvent(
+              workflowInstanceKey, WorkflowInstanceIntent.ACTIVITY_COMPLETING, value);
     }
   }
 }

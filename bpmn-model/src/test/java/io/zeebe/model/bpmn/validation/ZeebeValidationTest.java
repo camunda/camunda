@@ -165,6 +165,23 @@ public class ZeebeValidationTest {
             .done(),
         Arrays.asList(
             expect(TimerEventDefinition.class, "Event definition of this type is not supported"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .subProcess("subProcess")
+            .embeddedSubProcess()
+            .startEvent("subProcessStart")
+            .message(b -> b.name("message").zeebeCorrelationKey("correlationKey"))
+            .endEvent()
+            .subProcessDone()
+            .endEvent()
+            .done(),
+        Arrays.asList(expect("subProcessStart", "Must be a none start event"))
+      },
+      {
+        "no-start-event-sub-process.bpmn",
+        Arrays.asList(expect("subProcess", "Must have exactly one start event"))
       }
     };
   }
