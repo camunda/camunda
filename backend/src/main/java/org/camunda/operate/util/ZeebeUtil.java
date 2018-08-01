@@ -30,9 +30,9 @@ import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 @Component
 public class ZeebeUtil {
 
-  private Logger logger = LoggerFactory.getLogger(ZeebeUtil.class);
+  private static final Logger logger = LoggerFactory.getLogger(ZeebeUtil.class);
 
-  public final static Logger ALL_EVENTS_LOGGER = LoggerFactory.getLogger("org.camunda.operate.ALL_EVENTS");
+  public static final Logger ALL_EVENTS_LOGGER = LoggerFactory.getLogger("org.camunda.operate.ALL_EVENTS");
 
   @Autowired
   private ZeebeClient client;

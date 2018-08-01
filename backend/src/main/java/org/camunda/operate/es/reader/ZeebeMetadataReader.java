@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ZeebeMetadataReader {
 
-  private Logger logger = LoggerFactory.getLogger(ZeebeMetadataReader.class);
+  private static final Logger logger = LoggerFactory.getLogger(ZeebeMetadataReader.class);
 
   @Autowired
   protected TransportClient esClient;

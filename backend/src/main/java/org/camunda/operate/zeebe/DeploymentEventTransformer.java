@@ -1,5 +1,8 @@
 package org.camunda.operate.zeebe;
 
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,11 +14,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
-
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.es.writer.EntityStorage;
 import org.camunda.operate.property.OperateProperties;
@@ -28,12 +26,13 @@ import org.springframework.stereotype.Component;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
-
 import io.zeebe.client.api.commands.DeploymentResource;
 import io.zeebe.client.api.commands.ResourceType;
 import io.zeebe.client.api.commands.Workflow;
 import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.api.events.DeploymentState;
+import io.zeebe.client.api.record.Record;
+import io.zeebe.client.api.record.RecordMetadata;
 import io.zeebe.client.api.subscription.DeploymentEventHandler;
 
 
@@ -41,7 +40,7 @@ import io.zeebe.client.api.subscription.DeploymentEventHandler;
 public class DeploymentEventTransformer extends AbstractEventTransformer implements DeploymentEventHandler {
 
   private static final Charset CHARSET = StandardCharsets.UTF_8;
-  private Logger logger = LoggerFactory.getLogger(DeploymentEventTransformer.class);
+  private static final Logger logger = LoggerFactory.getLogger(DeploymentEventTransformer.class);
 
   private final static Set<DeploymentState> STATES = new HashSet<>();
 
@@ -79,7 +78,7 @@ public class DeploymentEventTransformer extends AbstractEventTransformer impleme
           final WorkflowEntity workflowEntity = createEntity(workflow, resource);
           updateMetadataFields(workflowEntity, event);
 
-          entityStorage.getOperateEntititesQueue(deploymentTopic).put(workflowEntity);
+          entityStorage.getOperateEntitiesQueue(deploymentTopic).put(workflowEntity);
         }
 
       }
@@ -89,6 +88,14 @@ public class DeploymentEventTransformer extends AbstractEventTransformer impleme
 
     }
 
+  }
+
+  private void updateMetadataFields(WorkflowEntity operateEntity, Record zeebeRecord) {
+    RecordMetadata metadata = zeebeRecord.getMetadata();
+
+    operateEntity.setPartitionId(metadata.getPartitionId());
+    operateEntity.setPosition(metadata.getPosition());
+    operateEntity.setTopicName(metadata.getTopicName());
   }
 
   public WorkflowEntity createEntity(Workflow workflow, DeploymentResource resource) throws InterruptedException {

@@ -1,5 +1,8 @@
 package org.camunda.operate.util;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import org.camunda.operate.es.writer.EntityStorage;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.zeebe.ZeebeSubscriptionManager;
@@ -9,10 +12,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.subscription.JobWorker;
+import io.zeebe.client.api.subscription.TopicSubscription;
 
 public class ZeebeTestRule extends TestWatcher {
 
-  private Logger logger = LoggerFactory.getLogger(ZeebeTestRule.class);
+  private static final Logger logger = LoggerFactory.getLogger(ZeebeTestRule.class);
 
   @Autowired
   protected ZeebeClient zeebeClient;
@@ -28,6 +33,10 @@ public class ZeebeTestRule extends TestWatcher {
 
   @Autowired
   protected EntityStorage entityStorage;
+
+  private JobWorker jobWorker;
+
+  private List<TopicSubscription> topicSubscriptions = new ArrayList<>();
 
   private String topicName;
   private String workerName;
@@ -53,6 +62,17 @@ public class ZeebeTestRule extends TestWatcher {
 
   @Override
   protected void finished(Description description) {
+
+    if (jobWorker != null && jobWorker.isOpen()) {
+        jobWorker.close();
+        jobWorker = null;
+    }
+
+    for (Iterator<TopicSubscription> iterator = topicSubscriptions.iterator(); iterator.hasNext(); ) {
+      iterator.next().close();
+      iterator.remove();
+    }
+
     operateProperties.getZeebe().getTopics().remove(topicName);
     try {
       zeebeSubscriptionManager.getTopicSubscriptions().get(topicName).close();
@@ -80,5 +100,21 @@ public class ZeebeTestRule extends TestWatcher {
 
   public ZeebeSubscriptionManager getZeebeSubscriptionManager() {
     return zeebeSubscriptionManager;
+  }
+
+  public JobWorker getJobWorker() {
+    return jobWorker;
+  }
+
+  public void setJobWorker(JobWorker jobWorker) {
+    this.jobWorker = jobWorker;
+  }
+
+  public List<TopicSubscription> getTopicSubscriptions() {
+    return topicSubscriptions;
+  }
+
+  public void setTopicSubscriptions(List<TopicSubscription> topicSubscriptions) {
+    this.topicSubscriptions = topicSubscriptions;
   }
 }

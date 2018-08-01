@@ -46,7 +46,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @Component
 public class EventReader {
 
-  private Logger logger = LoggerFactory.getLogger(EventReader.class);
+  private static final Logger logger = LoggerFactory.getLogger(EventReader.class);
 
   @Autowired
   private TransportClient esClient;
@@ -125,7 +125,7 @@ public class EventReader {
   }
 
   private EventEntity fromSearchHit(String eventEntityString) {
-    EventEntity eventEntity = null;
+    EventEntity eventEntity;
     try {
       eventEntity = objectMapper.readValue(eventEntityString, EventEntity.class);
     } catch (IOException e) {

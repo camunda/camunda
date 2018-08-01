@@ -36,7 +36,7 @@ import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppC
 
 public class MockMvcTestRule extends ExternalResource {
 
-  private Logger logger = LoggerFactory.getLogger(MockMvcTestRule.class);
+  private static final Logger logger = LoggerFactory.getLogger(MockMvcTestRule.class);
 
   @Autowired
   @Qualifier("esObjectMapper")

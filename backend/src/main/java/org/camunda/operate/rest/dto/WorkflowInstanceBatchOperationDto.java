@@ -15,7 +15,6 @@ package org.camunda.operate.rest.dto;
 import java.util.ArrayList;
 import java.util.List;
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.rest.exception.InvalidRequestException;
 
 public class WorkflowInstanceBatchOperationDto {
 

@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 @Configuration
 public class EntityStorage {
 
-  private Logger logger = LoggerFactory.getLogger(EntityStorage.class);
+  private static final Logger logger = LoggerFactory.getLogger(EntityStorage.class);
 
   @Autowired
   private OperateProperties operateProperties;
@@ -39,7 +39,7 @@ public class EntityStorage {
     }
   }
 
-  public BlockingQueue<OperateEntity> getOperateEntititesQueue(String topicName) {
+  public BlockingQueue<OperateEntity> getOperateEntitiesQueue(String topicName) {
     return operateEntityMap.get(topicName);
   }
 

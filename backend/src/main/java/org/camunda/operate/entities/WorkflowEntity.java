@@ -8,6 +8,9 @@ public class WorkflowEntity extends OperateEntity {
   private String bpmnProcessId;
   private String bpmnXml;
   private String resourceName;
+  private Integer partitionId;
+  private long position;
+  private String topicName;
 
   public String getName() {
     return name;
@@ -49,6 +52,30 @@ public class WorkflowEntity extends OperateEntity {
     this.resourceName = resourceName;
   }
 
+  public Integer getPartitionId() {
+    return partitionId;
+  }
+
+  public void setPartitionId(Integer partitionId) {
+    this.partitionId = partitionId;
+  }
+
+  public long getPosition() {
+    return position;
+  }
+
+  public void setPosition(long position) {
+    this.position = position;
+  }
+
+  public String getTopicName() {
+    return topicName;
+  }
+
+  public void setTopicName(String topicName) {
+    this.topicName = topicName;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o)
@@ -62,13 +89,19 @@ public class WorkflowEntity extends OperateEntity {
 
     if (version != that.version)
       return false;
+    if (position != that.position)
+      return false;
     if (name != null ? !name.equals(that.name) : that.name != null)
       return false;
     if (bpmnProcessId != null ? !bpmnProcessId.equals(that.bpmnProcessId) : that.bpmnProcessId != null)
       return false;
     if (bpmnXml != null ? !bpmnXml.equals(that.bpmnXml) : that.bpmnXml != null)
       return false;
-    return resourceName != null ? resourceName.equals(that.resourceName) : that.resourceName == null;
+    if (resourceName != null ? !resourceName.equals(that.resourceName) : that.resourceName != null)
+      return false;
+    if (partitionId != null ? !partitionId.equals(that.partitionId) : that.partitionId != null)
+      return false;
+    return topicName != null ? topicName.equals(that.topicName) : that.topicName == null;
   }
 
   @Override
@@ -79,18 +112,16 @@ public class WorkflowEntity extends OperateEntity {
     result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
     result = 31 * result + (bpmnXml != null ? bpmnXml.hashCode() : 0);
     result = 31 * result + (resourceName != null ? resourceName.hashCode() : 0);
+    result = 31 * result + (partitionId != null ? partitionId.hashCode() : 0);
+    result = 31 * result + (int) (position ^ (position >>> 32));
+    result = 31 * result + (topicName != null ? topicName.hashCode() : 0);
     return result;
   }
 
   @Override
   public String toString() {
-    return "WorkflowEntity{"
-      + "name='" + name + '\''
-      + ", version=" + version
-      + ", bpmnProcessId='" + bpmnProcessId + '\''
-      + ", bpmnXml='" + bpmnXml + '\''
-      + ", resourceName='" + resourceName + '\''
-      + "} "
-      + super.toString();
+    return "WorkflowEntity{" + "name='" + name + '\'' + ", version=" + version + ", bpmnProcessId='" + bpmnProcessId + '\'' + ", bpmnXml='" + bpmnXml + '\''
+      + ", resourceName='" + resourceName + '\'' + ", partitionId=" + partitionId + ", position=" + position + ", topicName='" + topicName + '\'' + "} " + super
+      .toString();
   }
 }

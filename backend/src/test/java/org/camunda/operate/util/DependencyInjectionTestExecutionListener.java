@@ -11,7 +11,7 @@ import org.springframework.test.context.support.AbstractTestExecutionListener;
 
 public class DependencyInjectionTestExecutionListener extends AbstractTestExecutionListener {
 
-  private Logger logger = LoggerFactory.getLogger(DependencyInjectionTestExecutionListener.class);
+  private static final Logger logger = LoggerFactory.getLogger(DependencyInjectionTestExecutionListener.class);
 
   @Override
   public void prepareTestInstance(final TestContext testContext) throws Exception {

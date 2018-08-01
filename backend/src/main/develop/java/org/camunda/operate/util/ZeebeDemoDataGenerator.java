@@ -26,7 +26,7 @@ import io.zeebe.client.cmd.ClientCommandRejectedException;
 @ConditionalOnProperty(name= OperateProperties.PREFIX + ".zeebe.demoData", havingValue="true")
 public class ZeebeDemoDataGenerator {
 
-  private Logger logger = LoggerFactory.getLogger(ZeebeDemoDataGenerator.class);
+  private static final Logger logger = LoggerFactory.getLogger(ZeebeDemoDataGenerator.class);
 
   @Autowired
   private ZeebeClient client;

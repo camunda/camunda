@@ -51,6 +51,9 @@ public class WorkflowType extends StrictTypeMappingCreator {
       .endObject()
       .startObject(POSITION)
         .field("type", "long")
+      .endObject()
+      .startObject(TOPIC_NAME)
+        .field("type", "keyword")
       .endObject();
   }
 

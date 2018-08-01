@@ -33,7 +33,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 @Configuration
 public class ElasticsearchConnector {
 
-  private Logger logger = LoggerFactory.getLogger(ElasticsearchConnector.class);
+  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchConnector.class);
 
   @Autowired
   private OperateProperties operateProperties;

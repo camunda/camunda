@@ -17,9 +17,12 @@ import java.util.ArrayList;
 import java.util.List;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.es.writer.PersistenceException;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.support.WriteRequest;
+import org.elasticsearch.action.update.UpdateRequestBuilder;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -31,7 +34,7 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 public abstract class ElasticsearchUtil {
 
-  private static Logger logger = LoggerFactory.getLogger(ElasticsearchUtil.class);
+  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchUtil.class);
 
   public static QueryBuilder joinWithOr(BoolQueryBuilder boolQueryBuilder, QueryBuilder... queries) {
     List<QueryBuilder> notNullQueries = CollectionUtil.throwAwayNullElements(queries);
@@ -99,7 +102,7 @@ public abstract class ElasticsearchUtil {
   }
 
   public static WorkflowInstanceEntity fromSearchHit(String workflowInstanceString, ObjectMapper objectMapper) {
-    WorkflowInstanceEntity workflowInstance = null;
+    WorkflowInstanceEntity workflowInstance;
     try {
       workflowInstance = objectMapper.readValue(workflowInstanceString, WorkflowInstanceEntity.class);
     } catch (IOException e) {
@@ -109,10 +112,16 @@ public abstract class ElasticsearchUtil {
     return workflowInstance;
   }
 
-
   public static void processBulkRequest(BulkRequestBuilder bulkRequest) throws PersistenceException {
+    processBulkRequest(bulkRequest, false);
+  }
+
+  public static void processBulkRequest(BulkRequestBuilder bulkRequest, boolean refreshImmediately) throws PersistenceException {
     if (bulkRequest.request().requests().size() > 0) {
       try {
+        if (refreshImmediately) {
+          bulkRequest = bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+        }
         final BulkResponse bulkItemResponses = bulkRequest.execute().get();
         final BulkItemResponse[] items = bulkItemResponses.getItems();
         for (BulkItemResponse responseItem : items) {
@@ -126,6 +135,17 @@ public abstract class ElasticsearchUtil {
         throw new PersistenceException("Error when processing bulk request against Elasticsearch: " + ex.getMessage(), ex);
       }
     }
+  }
+
+  public static void executeUpdate(UpdateRequestBuilder updateRequest) throws PersistenceException {
+      try {
+        updateRequest.get();
+      } catch (ElasticsearchException e)  {
+        final String errorMessage = String.format("Update request failed for type [%s] and id [%s] with the message [%s].",
+          updateRequest.request().type(), updateRequest.request().id(), e.getMessage());
+        logger.error(errorMessage, e);
+        throw new PersistenceException(errorMessage, e);
+      }
   }
 
 }

@@ -1,5 +1,6 @@
 package org.camunda.operate.es.reader;
 
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,9 +22,11 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
+import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
+import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
@@ -34,11 +37,15 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.apache.lucene.search.join.ScoreMode.None;
 import static org.camunda.operate.entities.IncidentState.ACTIVE;
+import static org.camunda.operate.entities.OperationState.LOCKED;
+import static org.camunda.operate.entities.OperationState.SCHEDULED;
 import static org.camunda.operate.es.types.WorkflowInstanceType.ACTIVITIES;
 import static org.camunda.operate.es.types.WorkflowInstanceType.ACTIVITY_ID;
 import static org.camunda.operate.es.types.WorkflowInstanceType.END_DATE;
 import static org.camunda.operate.es.types.WorkflowInstanceType.ERROR_MSG;
 import static org.camunda.operate.es.types.WorkflowInstanceType.INCIDENTS;
+import static org.camunda.operate.es.types.WorkflowInstanceType.LOCK_EXPIRATION_TIME;
+import static org.camunda.operate.es.types.WorkflowInstanceType.OPERATIONS;
 import static org.camunda.operate.es.types.WorkflowInstanceType.STATE;
 import static org.camunda.operate.util.ElasticsearchUtil.createMatchNoneQuery;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
@@ -53,7 +60,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 @Component
 public class WorkflowInstanceReader {
 
-  private static Logger logger = LoggerFactory.getLogger(WorkflowInstanceReader.class);
+  private static final Logger logger = LoggerFactory.getLogger(WorkflowInstanceReader.class);
 
   private static final String ACTIVE_INCIDENT = ACTIVE.toString();
   private static final String INCIDENT_STATE_TERM = String.format("%s.%s", INCIDENTS, STATE);
@@ -61,6 +68,11 @@ public class WorkflowInstanceReader {
   private static final String ACTIVE_ACTIVITY = ActivityState.ACTIVE.toString();
   private static final String ACTIVITY_STATE_TERM = String.format("%s.%s", ACTIVITIES, STATE);
   private static final String ACTIVITY_ACTIVITYID_TERM = String.format("%s.%s", ACTIVITIES, ACTIVITY_ID);
+  private static final String OPERATION_STATE_TERM = String.format("%s.%s", OPERATIONS, STATE);
+  private static final String SCHEDULED_OPERATION = SCHEDULED.toString();
+  private static final String LOCKED_OPERATION = LOCKED.toString();
+  private static final String LOCK_EXPIRATION_TIME_TERM = String.format("%s.%s", OPERATIONS, LOCK_EXPIRATION_TIME);
+
 
   @Autowired
   private TransportClient esClient;
@@ -95,7 +107,6 @@ public class WorkflowInstanceReader {
     else {
       return scroll(searchRequest);
     }
-
   }
 
   public SearchRequestBuilder createSearchRequest(WorkflowInstanceRequestDto request) {
@@ -348,6 +359,33 @@ public class WorkflowInstanceReader {
 
     return workflowInstanceQuery;
 
+  }
+
+  /**
+   * Request workflow instances, that have scheduled operations or locked but with expired locks.
+   * @param batchSize
+   * @return
+   */
+  public List<WorkflowInstanceEntity> acquireOperations(int batchSize) {
+    final TermQueryBuilder scheduledOperationsQuery = termQuery(OPERATION_STATE_TERM, SCHEDULED_OPERATION);
+    final TermQueryBuilder lockedOperationsQuery = termQuery(OPERATION_STATE_TERM, LOCKED_OPERATION);
+    final RangeQueryBuilder lockExpirationTimeQuery = rangeQuery(LOCK_EXPIRATION_TIME_TERM);
+    lockExpirationTimeQuery.lte(dateTimeFormatter.format(OffsetDateTime.now()));
+
+    final QueryBuilder operationsQuery = joinWithOr(scheduledOperationsQuery, joinWithAnd(lockedOperationsQuery, lockExpirationTimeQuery));
+    final NestedQueryBuilder nestedQuery = nestedQuery(OPERATIONS, operationsQuery, None);
+
+    ConstantScoreQueryBuilder constantScoreQuery = QueryBuilders.constantScoreQuery(nestedQuery);
+
+    final SearchRequestBuilder searchRequestBuilder = esClient.prepareSearch(workflowInstanceType.getType());
+    searchRequestBuilder.setQuery(constantScoreQuery);
+
+    SearchResponse response = searchRequestBuilder
+      .setFrom(0)
+      .setSize(batchSize)
+      .get();
+
+    return ElasticsearchUtil.mapSearchHits(response.getHits().getHits(), objectMapper);
   }
 
 }

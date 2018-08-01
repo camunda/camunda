@@ -1,8 +1,5 @@
 package org.camunda.operate.rest;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import org.camunda.operate.TestApplication;
 import org.camunda.operate.rest.dto.HealthStateDto;
 import org.camunda.operate.util.WebSecurityDisabledConfig;
 import org.camunda.operate.util.nobeans.TestApplicationWithNoBeans;
@@ -14,9 +11,10 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringRunner;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Tests the health check with disabled auhtentication.
+ * Tests the health check with disabled authentication.
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(

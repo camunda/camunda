@@ -13,9 +13,6 @@
 package org.camunda.operate.entities;
 
 import java.time.OffsetDateTime;
-import java.util.Map;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class EventEntity extends OperateEntity {
 
@@ -44,6 +41,9 @@ public class EventEntity extends OperateEntity {
    * Metadata
    */
   private EventMetadataEntity metadata;
+
+  private Integer partitionId;
+  private String topicName;
 
   public String getWorkflowId() {
     return workflowId;
@@ -125,16 +125,20 @@ public class EventEntity extends OperateEntity {
     this.metadata = metadata;
   }
 
-  @Override
-  @JsonIgnore
   public Integer getPartitionId() {
-    return super.getPartitionId();
+    return this.partitionId;
   }
 
-  @Override
-  @JsonIgnore
-  public long getPosition() {
-    return super.getPosition();
+  public void setPartitionId(Integer partitionId) {
+    this.partitionId = partitionId;
+  }
+
+  public String getTopicName() {
+    return topicName;
+  }
+
+  public void setTopicName(String topicName) {
+    this.topicName = topicName;
   }
 
   @Override
@@ -164,8 +168,13 @@ public class EventEntity extends OperateEntity {
       return false;
     if (dateTime != null ? !dateTime.equals(that.dateTime) : that.dateTime != null)
       return false;
-
-    return payload != null ? !payload.equals(that.payload) : that.payload != null;
+    if (payload != null ? !payload.equals(that.payload) : that.payload != null)
+      return false;
+    if (metadata != null ? !metadata.equals(that.metadata) : that.metadata != null)
+      return false;
+    if (partitionId != null ? !partitionId.equals(that.partitionId) : that.partitionId != null)
+      return false;
+    return topicName != null ? topicName.equals(that.topicName) : that.topicName == null;
   }
 
   @Override
@@ -180,6 +189,9 @@ public class EventEntity extends OperateEntity {
     result = 31 * result + (eventType != null ? eventType.hashCode() : 0);
     result = 31 * result + (dateTime != null ? dateTime.hashCode() : 0);
     result = 31 * result + (payload != null ? payload.hashCode() : 0);
+    result = 31 * result + (metadata != null ? metadata.hashCode() : 0);
+    result = 31 * result + (partitionId != null ? partitionId.hashCode() : 0);
+    result = 31 * result + (topicName != null ? topicName.hashCode() : 0);
     return result;
   }
 }

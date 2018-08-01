@@ -39,11 +39,10 @@ public class JacksonConfig {
     javaTimeModule.addSerializer(OffsetDateTime.class, new ElasticsearchConnector.CustomSerializer(dateTimeFormatter()));
     javaTimeModule.addDeserializer(OffsetDateTime.class, new ElasticsearchConnector.CustomDeserializer(dateTimeFormatter()));
 
-    ObjectMapper result = Jackson2ObjectMapperBuilder.json().modules(javaTimeModule)
+    return Jackson2ObjectMapperBuilder.json().modules(javaTimeModule)
       .featuresToDisable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
         DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
       .featuresToEnable(JsonParser.Feature.ALLOW_COMMENTS, SerializationFeature.INDENT_OUTPUT).build();
-    return result;
   }
 
   @Bean

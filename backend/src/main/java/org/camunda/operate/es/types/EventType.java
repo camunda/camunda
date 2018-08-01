@@ -77,12 +77,17 @@ public class EventType extends StrictTypeMappingCreator {
       .startObject(PAYLOAD)
         .field("type", "keyword")   // TODO may be we should use Text data type here?
       .endObject()
+      .startObject(TOPIC_NAME)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(PARTITION_ID)
+        .field("type", "integer")
+      .endObject()
       .startObject(METADATA)
         .field("type", "nested")
-        .startObject("properties");
-
-      addNestedMetadataField(newBuilder)
-        .endObject()
+          .startObject("properties");
+            addNestedMetadataField(newBuilder)
+          .endObject()
       .endObject();
 
     return newBuilder;

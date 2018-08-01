@@ -5,14 +5,17 @@ import java.util.HashMap;
 import java.util.Map;
 import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.EventEntity;
+import org.camunda.operate.entities.EventSourceType;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperateEntity;
+import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.es.types.EventType;
 import org.camunda.operate.es.types.StrictTypeMappingCreator;
 import org.camunda.operate.es.types.WorkflowInstanceType;
 import org.camunda.operate.es.types.WorkflowType;
+import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequestBuilder;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -33,7 +36,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @Configuration
 public class ElasticsearchRequestCreatorsHolder {
 
-  private Logger logger = LoggerFactory.getLogger(ElasticsearchBulkProcessor.class);
+  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchRequestCreatorsHolder.class);
 
   @Autowired
   @Qualifier("esObjectMapper")
@@ -50,6 +53,9 @@ public class ElasticsearchRequestCreatorsHolder {
 
   @Autowired
   private WorkflowInstanceType workflowInstanceType;
+
+  @Autowired
+  private BatchOperationWriter batchOperationWriter;
 
   /**
    * Insert or update workflow instance (UPSERT).
@@ -98,12 +104,10 @@ public class ElasticsearchRequestCreatorsHolder {
         Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(entity), HashMap.class);
         Map<String, Object> params = new HashMap<>();
         params.put("incident", jsonMap);
-        params.put("partitionId", entity.getPartitionId());
         params.put("position", entity.getPosition());
 
         String script =
             "boolean f = false;" +
-            "ctx._source.partitionId = params.partitionId; " +
             "ctx._source.position = params.position; " +
             "for (int j = 0; j < ctx._source.incidents.size(); j++) {" +
               "if (ctx._source.incidents[j].id == params.incident.id) {" +
@@ -148,12 +152,10 @@ public class ElasticsearchRequestCreatorsHolder {
         Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(entity), HashMap.class);
         Map<String, Object> params = new HashMap<>();
         params.put("activity", jsonMap);
-        params.put("partitionId", entity.getPartitionId());
         params.put("position", entity.getPosition());
 
         String script =
             "boolean f = false;" +
-            "ctx._source.partitionId = params.partitionId; " +
             "ctx._source.position = params.position; " +
             "for (int j = 0; j < ctx._source.activities.size(); j++) {" +
               "if (ctx._source.activities[j].id == params.activity.id) {" +
@@ -209,11 +211,20 @@ public class ElasticsearchRequestCreatorsHolder {
   public ElasticsearchRequestCreator<EventEntity> eventEsRequestCreator() {
     return (bulkRequestBuilder, entity) -> {
       try {
-        return bulkRequestBuilder.add(
-          esClient
-            .prepareIndex(eventType.getType(), eventType.getType(), entity.getId())
-            .setSource(objectMapper.writeValueAsString(entity), XContentType.JSON)
-        );
+        //write event
+        bulkRequestBuilder =
+          bulkRequestBuilder.add(esClient.prepareIndex(eventType.getType(), eventType.getType(), entity.getId())
+          .setSource(objectMapper.writeValueAsString(entity), XContentType.JSON));
+
+        //complete operation in workflow instance if needed
+        if (entity.getEventSourceType().equals(EventSourceType.JOB) &&
+          entity.getEventType().equals(org.camunda.operate.entities.EventType.RETRIES_UPDATED)) {
+          final String workflowInstanceId = entity.getWorkflowInstanceId();
+          bulkRequestBuilder = bulkRequestBuilder.add(batchOperationWriter.createOperationCompletedRequest(workflowInstanceId, OperationType.UPDATE_RETRIES));
+          //if we update smth, we need it to have affect at once
+          bulkRequestBuilder.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+        }
+        return bulkRequestBuilder;
       } catch (JsonProcessingException e) {
         logger.error("Error preparing the query to insert event", e);
         throw new PersistenceException(String.format("Error preparing the query to insert event [%s]", entity.getId()), e);

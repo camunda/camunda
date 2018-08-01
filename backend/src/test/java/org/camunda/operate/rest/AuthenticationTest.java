@@ -1,16 +1,7 @@
 package org.camunda.operate.rest;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.operate.rest.AuthenticationRestService.AUTHENTICATION_URL;
-import static org.camunda.operate.security.WebSecurityConfig.*;
-import static org.camunda.operate.security.WebSecurityConfig.LOGOUT_RESOURCE;
-import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
-import static org.springframework.http.MediaType.APPLICATION_JSON;
-
 import java.util.HashMap;
 import java.util.Map;
-
-import org.camunda.operate.TestApplication;
 import org.camunda.operate.rest.dto.UserDto;
 import org.camunda.operate.security.WebSecurityConfig;
 import org.camunda.operate.util.nobeans.TestApplicationWithNoBeans;
@@ -28,6 +19,13 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.operate.rest.AuthenticationRestService.AUTHENTICATION_URL;
+import static org.camunda.operate.security.WebSecurityConfig.COOKIE_JSESSIONID;
+import static org.camunda.operate.security.WebSecurityConfig.LOGIN_RESOURCE;
+import static org.camunda.operate.security.WebSecurityConfig.LOGOUT_RESOURCE;
+import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 
 @RunWith(SpringRunner.class)

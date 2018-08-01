@@ -1,6 +1,7 @@
 package org.camunda.operate.property;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -8,7 +9,7 @@ public class ZeebeProperties {
 
   private String brokerContactPoint = "localhost:51015";
 
-  private List<String> topics = Arrays.asList("default-topic");
+  private List<String> topics = Collections.singletonList("default-topic");
 
   private String worker;
 

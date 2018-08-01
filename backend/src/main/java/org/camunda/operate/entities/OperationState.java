@@ -4,6 +4,7 @@ public enum OperationState {
 
   SCHEDULED,
   LOCKED,
+  SENT,
   FAILED,
   COMPLETED
 

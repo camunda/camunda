@@ -15,7 +15,6 @@ package org.camunda.operate.rest.dto;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
@@ -28,6 +27,8 @@ public class OperationDto {
   private OffsetDateTime endDate;
 
   private OperationState state;
+
+  private String errorMessage;
 
   public OperationType getType() {
     return type;
@@ -61,6 +62,14 @@ public class OperationDto {
     this.state = state;
   }
 
+  public String getErrorMessage() {
+    return errorMessage;
+  }
+
+  public void setErrorMessage(String errorMessage) {
+    this.errorMessage = errorMessage;
+  }
+
   public static OperationDto createFrom(OperationEntity operationEntity) {
     if (operationEntity == null) {
       return null;
@@ -70,6 +79,7 @@ public class OperationDto {
     operation.setStartDate(operationEntity.getStartDate());
     operation.setEndDate(operationEntity.getEndDate());
     operation.setState(operationEntity.getState());
+    operation.setErrorMessage(operationEntity.getErrorMessage());
     return operation;
   }
 
@@ -100,7 +110,9 @@ public class OperationDto {
       return false;
     if (endDate != null ? !endDate.equals(that.endDate) : that.endDate != null)
       return false;
-    return state == that.state;
+    if (state != that.state)
+      return false;
+    return errorMessage != null ? errorMessage.equals(that.errorMessage) : that.errorMessage == null;
   }
 
   @Override
@@ -109,6 +121,7 @@ public class OperationDto {
     result = 31 * result + (startDate != null ? startDate.hashCode() : 0);
     result = 31 * result + (endDate != null ? endDate.hashCode() : 0);
     result = 31 * result + (state != null ? state.hashCode() : 0);
+    result = 31 * result + (errorMessage != null ? errorMessage.hashCode() : 0);
     return result;
   }
 }

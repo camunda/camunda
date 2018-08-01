@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ElasticsearchBulkProcessor extends Thread {
 
-  private Logger logger = LoggerFactory.getLogger(ElasticsearchBulkProcessor.class);
+  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchBulkProcessor.class);
 
   @Autowired
   private TransportClient esClient;
@@ -85,7 +85,7 @@ public class ElasticsearchBulkProcessor extends Thread {
 
     for (String topicName : operateProperties.getZeebe().getTopics()) {
       List<OperateEntity> entitiesToPersist = new ArrayList<>();
-      entityStorage.getOperateEntititesQueue(topicName).drainTo(entitiesToPersist, batchSize);
+      entityStorage.getOperateEntitiesQueue(topicName).drainTo(entitiesToPersist, batchSize);
       if (entitiesToPersist.size() > 0) {
         entitiesCount += entitiesToPersist.size();
         try {

@@ -1,7 +1,5 @@
 package org.camunda.operate.util;
 
-import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import org.camunda.operate.es.ElasticsearchSchemaManager;
 import org.camunda.operate.es.types.TypeMappingCreator;
@@ -15,21 +13,11 @@ import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.MediaType;
-import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.mock.http.MockHttpOutputMessage;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.web.context.WebApplicationContext;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import static org.junit.Assert.assertNotNull;
-import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
 
 
 public class ElasticsearchTestRule extends ExternalResource {
 
-  private Logger logger = LoggerFactory.getLogger(ElasticsearchTestRule.class);
+  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchTestRule.class);
 
   @Autowired
   protected TransportClient esClient;

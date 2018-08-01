@@ -47,7 +47,7 @@ public enum EventType {
 
   UNKNOWN;
 
-  private static Logger logger = LoggerFactory.getLogger(EventType.class);
+  private static final Logger logger = LoggerFactory.getLogger(EventType.class);
 
   public static EventType fromZeebeIntent(String intent) {
     try {

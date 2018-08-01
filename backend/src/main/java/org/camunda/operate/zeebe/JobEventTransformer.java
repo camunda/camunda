@@ -98,7 +98,7 @@ public class JobEventTransformer extends AbstractEventTransformer implements Job
     String topicName = metadata.getTopicName();
 
     // TODO will wait till capacity available, can throw InterruptedException
-    entityStorage.getOperateEntititesQueue(topicName).put(eventEntity);
+    entityStorage.getOperateEntitiesQueue(topicName).put(eventEntity);
   }
 
 }

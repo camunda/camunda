@@ -29,7 +29,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
 @Component
 public class WorkflowReader {
 
-  private Logger logger = LoggerFactory.getLogger(WorkflowReader.class);
+  private static final Logger logger = LoggerFactory.getLogger(WorkflowReader.class);
 
   @Autowired
   private TransportClient esClient;
@@ -75,7 +75,7 @@ public class WorkflowReader {
   }
 
   private WorkflowEntity fromSearchHit(String workflowString) {
-    WorkflowEntity workflow = null;
+    WorkflowEntity workflow;
     try {
       workflow = objectMapper.readValue(workflowString, WorkflowEntity.class);
     } catch (IOException e) {

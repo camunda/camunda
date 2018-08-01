@@ -26,6 +26,9 @@ public class OperateProperties {
   @NestedConfigurationProperty
   private ZeebeProperties zeebe = new ZeebeProperties();
 
+  @NestedConfigurationProperty
+  private OperationExecutorProperties operationExecutor = new OperationExecutorProperties();
+
   public boolean isStartLoadingDataOnStartup() {
     return startLoadingDataOnStartup;
   }
@@ -56,5 +59,13 @@ public class OperateProperties {
 
   public void setZeebe(ZeebeProperties zeebe) {
     this.zeebe = zeebe;
+  }
+
+  public OperationExecutorProperties getOperationExecutor() {
+    return operationExecutor;
+  }
+
+  public void setOperationExecutor(OperationExecutorProperties operationExecutor) {
+    this.operationExecutor = operationExecutor;
   }
 }

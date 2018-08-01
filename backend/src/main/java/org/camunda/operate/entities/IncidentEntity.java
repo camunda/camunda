@@ -5,6 +5,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class IncidentEntity extends OperateEntity {
 
+  public static String UNKNOWN_ERROR_TYPE = "UNKNOWN";
+
+  public static String IO_MAPPING_ERROR_ERROR_TYPE = "IO_MAPPING_ERROR";
+
+  public static String JOB_NO_RETRIES_ERROR_TYPE = "JOB_NO_RETRIES";
+
+  public static String CONDITION_ERROR_ERROR_TYPE = "CONDITION_ERROR";
+
   private String errorType;
 
   private String errorMessage;
@@ -18,6 +26,8 @@ public class IncidentEntity extends OperateEntity {
   private String jobId;
 
   private String workflowInstanceId;
+
+  private long position;
 
   public String getErrorType() {
     return errorType;
@@ -76,16 +86,13 @@ public class IncidentEntity extends OperateEntity {
     this.workflowInstanceId = workflowInstanceId;
   }
 
-  @Override
-  @JsonIgnore
-  public Integer getPartitionId() {
-    return super.getPartitionId();
-  }
-
-  @Override
   @JsonIgnore
   public long getPosition() {
-    return super.getPosition();
+    return this.position;
+  }
+
+  public void setPosition(long position) {
+    this.position = position;
   }
 
   @Override
@@ -99,6 +106,8 @@ public class IncidentEntity extends OperateEntity {
 
     IncidentEntity that = (IncidentEntity) o;
 
+    if (position != that.position)
+      return false;
     if (errorType != null ? !errorType.equals(that.errorType) : that.errorType != null)
       return false;
     if (errorMessage != null ? !errorMessage.equals(that.errorMessage) : that.errorMessage != null)
@@ -124,6 +133,7 @@ public class IncidentEntity extends OperateEntity {
     result = 31 * result + (activityInstanceId != null ? activityInstanceId.hashCode() : 0);
     result = 31 * result + (jobId != null ? jobId.hashCode() : 0);
     result = 31 * result + (workflowInstanceId != null ? workflowInstanceId.hashCode() : 0);
+    result = 31 * result + (int) (position ^ (position >>> 32));
     return result;
   }
 }

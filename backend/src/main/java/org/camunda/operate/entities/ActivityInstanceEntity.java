@@ -27,6 +27,8 @@ public class ActivityInstanceEntity extends OperateEntity {
 
   private String workflowInstanceId;
 
+  private long position;
+
   public String getActivityId() {
     return activityId;
   }
@@ -68,16 +70,13 @@ public class ActivityInstanceEntity extends OperateEntity {
     this.workflowInstanceId = workflowInstanceId;
   }
 
-  @Override
-  @JsonIgnore
-  public Integer getPartitionId() {
-    return super.getPartitionId();
-  }
-
-  @Override
   @JsonIgnore
   public long getPosition() {
-    return super.getPosition();
+    return this.position;
+  }
+
+  public void setPosition(long position) {
+    this.position = position;
   }
 
   @Override
@@ -91,13 +90,17 @@ public class ActivityInstanceEntity extends OperateEntity {
 
     ActivityInstanceEntity that = (ActivityInstanceEntity) o;
 
+    if (position != that.position)
+      return false;
     if (activityId != null ? !activityId.equals(that.activityId) : that.activityId != null)
       return false;
     if (startDate != null ? !startDate.equals(that.startDate) : that.startDate != null)
       return false;
     if (endDate != null ? !endDate.equals(that.endDate) : that.endDate != null)
       return false;
-    return state == that.state;
+    if (state != that.state)
+      return false;
+    return workflowInstanceId != null ? workflowInstanceId.equals(that.workflowInstanceId) : that.workflowInstanceId == null;
   }
 
   @Override
@@ -107,6 +110,8 @@ public class ActivityInstanceEntity extends OperateEntity {
     result = 31 * result + (startDate != null ? startDate.hashCode() : 0);
     result = 31 * result + (endDate != null ? endDate.hashCode() : 0);
     result = 31 * result + (state != null ? state.hashCode() : 0);
+    result = 31 * result + (workflowInstanceId != null ? workflowInstanceId.hashCode() : 0);
+    result = 31 * result + (int) (position ^ (position >>> 32));
     return result;
   }
 }

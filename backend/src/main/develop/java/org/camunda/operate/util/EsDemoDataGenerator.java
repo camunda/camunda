@@ -30,7 +30,7 @@ import org.springframework.stereotype.Component;
 @DependsOn("elasticsearchSchemaManager")
 public class EsDemoDataGenerator {
 
-  private Logger logger = LoggerFactory.getLogger(EsDemoDataGenerator.class);
+  private static final Logger logger = LoggerFactory.getLogger(EsDemoDataGenerator.class);
 
   @Autowired
   private ElasticsearchBulkProcessor elasticsearchBulkProcessor;

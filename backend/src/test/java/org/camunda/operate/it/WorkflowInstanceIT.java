@@ -1,8 +1,6 @@
 package org.camunda.operate.it;
 
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.ActivityState;
@@ -15,13 +13,10 @@ import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
 import org.camunda.operate.util.ZeebeTestRule;
 import org.camunda.operate.util.ZeebeUtil;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import io.zeebe.client.api.subscription.JobWorker;
-import io.zeebe.client.api.subscription.TopicSubscription;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class WorkflowInstanceIT extends OperateIntegrationTest {
@@ -38,29 +33,11 @@ public class WorkflowInstanceIT extends OperateIntegrationTest {
   @Autowired
   private WorkflowInstanceReader workflowInstanceReader;
 
-  private JobWorker jobWorker;
-
-  private List<TopicSubscription> topicSubscriptions = new ArrayList<>();
-
   private OffsetDateTime testStartTime;
 
   @Before
   public void init() {
     testStartTime = OffsetDateTime.now();
-  }
-
-  @After
-  public void cleanup() {
-
-    for (Iterator<TopicSubscription> iterator = topicSubscriptions.iterator(); iterator.hasNext(); ) {
-      iterator.next().close();
-      iterator.remove();
-    }
-
-    if (jobWorker != null && jobWorker.isOpen()) {
-      jobWorker.close();
-      jobWorker = null;
-    }
   }
 
   @Test
@@ -103,13 +80,10 @@ public class WorkflowInstanceIT extends OperateIntegrationTest {
     final String workflowInstanceId = zeebeUtil.startWorkflowInstance(topicName, processId, "{\"a\": \"b\"}");
 
     //create an incident
-    jobWorker = zeebeUtil.failTask(topicName, activityId, zeebeTestRule.getWorkerName(), 3);
-    elasticsearchTestRule.processAllEvents(18);
-    jobWorker.close();
-    jobWorker = null;
+    failTaskWithNoRetriesLeft(activityId);
 
     //when update retries
-    topicSubscriptions.add(zeebeUtil.resolveIncident(topicName, "testIncidentDeleted", workflowId, "{\"a\": \"b\"}"));
+    zeebeTestRule.getTopicSubscriptions().add(zeebeUtil.resolveIncident(topicName, "testIncidentDeleted", workflowId, "{\"a\": \"b\"}"));
     elasticsearchTestRule.processAllEvents(4);
 
     //then
@@ -132,7 +106,7 @@ public class WorkflowInstanceIT extends OperateIntegrationTest {
     final String workflowInstanceId = zeebeUtil.startWorkflowInstance(topicName, processId, "{\"a\": \"b\"}");
 
     //when
-    jobWorker = zeebeUtil.completeTask(topicName, activityId, zeebeTestRule.getWorkerName(), null);      //empty payload provokes incident
+    zeebeTestRule.setJobWorker(zeebeUtil.completeTask(topicName, activityId, zeebeTestRule.getWorkerName(), null));      //empty payload provokes incident
     elasticsearchTestRule.processAllEvents(16);
 
     //then
@@ -169,7 +143,7 @@ public class WorkflowInstanceIT extends OperateIntegrationTest {
     final String workflowInstanceId = zeebeUtil.startWorkflowInstance(topicName, processId, "{\"a\": \"b\"}");
 
     //when
-    topicSubscriptions.add(zeebeUtil.cancelWorkflowInstance(topicName, workflowInstanceId, workflowId));
+    zeebeTestRule.getTopicSubscriptions().add(zeebeUtil.cancelWorkflowInstance(topicName, workflowInstanceId, workflowId));
     elasticsearchTestRule.processAllEvents(15);
 
     //then
@@ -205,6 +179,14 @@ public class WorkflowInstanceIT extends OperateIntegrationTest {
     assertThat(activity.getStartDate()).isAfterOrEqualTo(testStartTime);
     assertThat(activity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
     assertThat(activity.getEndDate()).isNull();
+  }
+
+
+  private void failTaskWithNoRetriesLeft(String taskName) {
+    zeebeTestRule.setJobWorker(zeebeUtil.failTask(zeebeTestRule.getTopicName(), taskName, zeebeTestRule.getWorkerName(), 3));
+    elasticsearchTestRule.processAllEvents(20);
+    zeebeTestRule.getJobWorker().close();
+    zeebeTestRule.setJobWorker(null);
   }
 
 }

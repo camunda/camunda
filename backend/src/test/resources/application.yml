@@ -11,6 +11,8 @@ camunda.bpm.operate:
     demoData: false
     topics:
     worker: operate
+  operationExecutor:
+    executorEnabled: false
 logging:
   level:
     ROOT: INFO

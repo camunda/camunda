@@ -12,7 +12,7 @@ import io.zeebe.client.ZeebeClient;
 @Configuration
 public class ZeebeConnector {
 
-  private Logger logger = LoggerFactory.getLogger(ZeebeConnector.class);
+  private static final Logger logger = LoggerFactory.getLogger(ZeebeConnector.class);
 
   @Autowired
   private OperateProperties operateProperties;
@@ -22,12 +22,10 @@ public class ZeebeConnector {
 
     final String brokerContactPoint = operateProperties.getZeebe().getBrokerContactPoint();
 
-    ZeebeClient zeebeClient = ZeebeClient
+    return ZeebeClient
       .newClientBuilder()
       .brokerContactPoint(brokerContactPoint)
       .build();
-
-    return zeebeClient;
   }
 
 }

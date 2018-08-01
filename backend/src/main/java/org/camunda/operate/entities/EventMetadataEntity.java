@@ -97,4 +97,42 @@ public class EventMetadataEntity {
     this.jobId = jobId;
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o)
+      return true;
+    if (o == null || getClass() != o.getClass())
+      return false;
+
+    EventMetadataEntity that = (EventMetadataEntity) o;
+
+    if (jobType != null ? !jobType.equals(that.jobType) : that.jobType != null)
+      return false;
+    if (jobRetries != null ? !jobRetries.equals(that.jobRetries) : that.jobRetries != null)
+      return false;
+    if (jobWorker != null ? !jobWorker.equals(that.jobWorker) : that.jobWorker != null)
+      return false;
+    if (jobDeadline != null ? !jobDeadline.equals(that.jobDeadline) : that.jobDeadline != null)
+      return false;
+    if (jobCustomHeaders != null ? !jobCustomHeaders.equals(that.jobCustomHeaders) : that.jobCustomHeaders != null)
+      return false;
+    if (incidentErrorType != null ? !incidentErrorType.equals(that.incidentErrorType) : that.incidentErrorType != null)
+      return false;
+    if (incidentErrorMessage != null ? !incidentErrorMessage.equals(that.incidentErrorMessage) : that.incidentErrorMessage != null)
+      return false;
+    return jobId != null ? jobId.equals(that.jobId) : that.jobId == null;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = jobType != null ? jobType.hashCode() : 0;
+    result = 31 * result + (jobRetries != null ? jobRetries.hashCode() : 0);
+    result = 31 * result + (jobWorker != null ? jobWorker.hashCode() : 0);
+    result = 31 * result + (jobDeadline != null ? jobDeadline.hashCode() : 0);
+    result = 31 * result + (jobCustomHeaders != null ? jobCustomHeaders.hashCode() : 0);
+    result = 31 * result + (incidentErrorType != null ? incidentErrorType.hashCode() : 0);
+    result = 31 * result + (incidentErrorMessage != null ? incidentErrorMessage.hashCode() : 0);
+    result = 31 * result + (jobId != null ? jobId.hashCode() : 0);
+    return result;
+  }
 }

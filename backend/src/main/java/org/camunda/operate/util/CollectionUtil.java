@@ -14,6 +14,7 @@ package org.camunda.operate.util;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public abstract class CollectionUtil {
 
@@ -25,6 +26,12 @@ public abstract class CollectionUtil {
       }
     }
     return listOfNotNulls;
+  }
+
+  public static <T, S> Map<T,List<S>> addToMap(Map<T, List<S>> map, T key, S value) {
+    map.computeIfAbsent(key, k -> new ArrayList<S>());
+    map.get(key).add(value);
+    return map;
   }
 
 }

@@ -25,6 +25,8 @@ public class WorkflowInstanceType extends StrictTypeMappingCreator {
   public static final String TYPE = "type";
   public static final String BUSINESS_KEY = "businessKey";
   public static final String ACTIVITIES = "activities";
+  public static final String LOCK_EXPIRATION_TIME = "lockExpirationTime";
+  public static final String LOCK_OWNER = "lockOwner";
 
   @Autowired
   private OperateProperties operateProperties;
@@ -80,6 +82,9 @@ public class WorkflowInstanceType extends StrictTypeMappingCreator {
       .endObject()
       .startObject(POSITION)
         .field("type", "long")
+      .endObject()
+      .startObject(TOPIC_NAME)
+        .field("type", "keyword")
       .endObject();
     return newBuilder;
   }
@@ -137,19 +142,32 @@ public class WorkflowInstanceType extends StrictTypeMappingCreator {
 
   private XContentBuilder addNestedOperationsField(XContentBuilder builder) throws IOException {
     builder
+      .startObject(ID)
+        .field("type", "keyword")
+      .endObject()
       .startObject(TYPE)
-      .field("type", "keyword")
+        .field("type", "keyword")
       .endObject()
       .startObject(STATE)
-      .field("type", "keyword")
+        .field("type", "keyword")
       .endObject()
       .startObject(START_DATE)
-      .field("type", "date")
-      .field("format", operateProperties.getElasticsearch().getDateFormat())
+        .field("type", "date")
+        .field("format", operateProperties.getElasticsearch().getDateFormat())
       .endObject()
       .startObject(END_DATE)
-      .field("type", "date")
-      .field("format", operateProperties.getElasticsearch().getDateFormat())
+        .field("type", "date")
+        .field("format", operateProperties.getElasticsearch().getDateFormat())
+      .endObject()
+      .startObject(LOCK_EXPIRATION_TIME)
+        .field("type", "date")
+        .field("format", operateProperties.getElasticsearch().getDateFormat())
+      .endObject()
+      .startObject(LOCK_OWNER)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(ERROR_MSG)
+        .field("type", "keyword")
       .endObject();
     return builder;
   }

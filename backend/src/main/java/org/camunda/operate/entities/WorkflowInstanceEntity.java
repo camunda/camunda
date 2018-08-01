@@ -22,6 +22,12 @@ public class WorkflowInstanceEntity extends OperateEntity {
 
   private List<OperationEntity> operations = new ArrayList<>();
 
+  private Integer partitionId;
+
+  private long position;
+
+  private String topicName;
+
   public String getWorkflowId() {
     return workflowId;
   }
@@ -86,6 +92,30 @@ public class WorkflowInstanceEntity extends OperateEntity {
     this.operations = operations;
   }
 
+  public Integer getPartitionId() {
+    return partitionId;
+  }
+
+  public void setPartitionId(Integer partitionId) {
+    this.partitionId = partitionId;
+  }
+
+  public long getPosition() {
+    return position;
+  }
+
+  public void setPosition(long position) {
+    this.position = position;
+  }
+
+  public String getTopicName() {
+    return topicName;
+  }
+
+  public void setTopicName(String topicName) {
+    this.topicName = topicName;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o)
@@ -97,6 +127,8 @@ public class WorkflowInstanceEntity extends OperateEntity {
 
     WorkflowInstanceEntity that = (WorkflowInstanceEntity) o;
 
+    if (position != that.position)
+      return false;
     if (workflowId != null ? !workflowId.equals(that.workflowId) : that.workflowId != null)
       return false;
     if (startDate != null ? !startDate.equals(that.startDate) : that.startDate != null)
@@ -111,7 +143,11 @@ public class WorkflowInstanceEntity extends OperateEntity {
       return false;
     if (activities != null ? !activities.equals(that.activities) : that.activities != null)
       return false;
-    return operations != null ? operations.equals(that.operations) : that.operations == null;
+    if (operations != null ? !operations.equals(that.operations) : that.operations != null)
+      return false;
+    if (partitionId != null ? !partitionId.equals(that.partitionId) : that.partitionId != null)
+      return false;
+    return topicName != null ? topicName.equals(that.topicName) : that.topicName == null;
   }
 
   @Override
@@ -125,6 +161,9 @@ public class WorkflowInstanceEntity extends OperateEntity {
     result = 31 * result + (incidents != null ? incidents.hashCode() : 0);
     result = 31 * result + (activities != null ? activities.hashCode() : 0);
     result = 31 * result + (operations != null ? operations.hashCode() : 0);
+    result = 31 * result + (partitionId != null ? partitionId.hashCode() : 0);
+    result = 31 * result + (int) (position ^ (position >>> 32));
+    result = 31 * result + (topicName != null ? topicName.hashCode() : 0);
     return result;
   }
 }

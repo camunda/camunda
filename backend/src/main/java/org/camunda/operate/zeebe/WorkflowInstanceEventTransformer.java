@@ -1,5 +1,23 @@
 package org.camunda.operate.zeebe;
 
+import java.util.HashSet;
+import java.util.Set;
+import org.camunda.operate.entities.ActivityInstanceEntity;
+import org.camunda.operate.entities.ActivityState;
+import org.camunda.operate.entities.EventEntity;
+import org.camunda.operate.entities.WorkflowInstanceEntity;
+import org.camunda.operate.entities.WorkflowInstanceState;
+import org.camunda.operate.es.writer.EntityStorage;
+import org.camunda.operate.util.DateUtil;
+import org.camunda.operate.util.ZeebeUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.record.Record;
+import io.zeebe.client.api.record.RecordMetadata;
+import io.zeebe.client.api.subscription.WorkflowInstanceEventHandler;
 import static io.zeebe.client.api.events.WorkflowInstanceState.ACTIVITY_ACTIVATED;
 import static io.zeebe.client.api.events.WorkflowInstanceState.ACTIVITY_COMPLETED;
 import static io.zeebe.client.api.events.WorkflowInstanceState.ACTIVITY_COMPLETING;
@@ -13,31 +31,11 @@ import static io.zeebe.client.api.events.WorkflowInstanceState.GATEWAY_ACTIVATED
 import static io.zeebe.client.api.events.WorkflowInstanceState.SEQUENCE_FLOW_TAKEN;
 import static io.zeebe.client.api.events.WorkflowInstanceState.START_EVENT_OCCURRED;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import org.camunda.operate.entities.ActivityInstanceEntity;
-import org.camunda.operate.entities.ActivityState;
-import org.camunda.operate.entities.EventEntity;
-import org.camunda.operate.entities.WorkflowInstanceEntity;
-import org.camunda.operate.entities.WorkflowInstanceState;
-import org.camunda.operate.es.writer.EntityStorage;
-import org.camunda.operate.util.DateUtil;
-import org.camunda.operate.util.ZeebeUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
-import io.zeebe.client.api.record.RecordMetadata;
-import io.zeebe.client.api.subscription.WorkflowInstanceEventHandler;
-
 
 @Component
 public class WorkflowInstanceEventTransformer extends AbstractEventTransformer implements WorkflowInstanceEventHandler {
 
-  private Logger logger = LoggerFactory.getLogger(WorkflowInstanceEventTransformer.class);
+  private static final Logger logger = LoggerFactory.getLogger(WorkflowInstanceEventTransformer.class);
 
   private static final Set<io.zeebe.client.api.events.WorkflowInstanceState> WORKFLOW_INSTANCE_STATES = new HashSet<>();
   private static final Set<io.zeebe.client.api.events.WorkflowInstanceState> ACTIVITY_INSTANCE_STATES = new HashSet<>();
@@ -111,7 +109,7 @@ public class WorkflowInstanceEventTransformer extends AbstractEventTransformer i
 
       RecordMetadata metadata = event.getMetadata();
       String topicName = metadata.getTopicName();
-      entityStorage.getOperateEntititesQueue(topicName).put(eventEntity);
+      entityStorage.getOperateEntitiesQueue(topicName).put(eventEntity);
     }
   }
 
@@ -141,7 +139,12 @@ public class WorkflowInstanceEventTransformer extends AbstractEventTransformer i
     updateMetadataFields(activityInstanceEntity, event);
 
     //TODO will wait till capacity available, can throw InterruptedException
-    entityStorage.getOperateEntititesQueue(event.getMetadata().getTopicName()).put(activityInstanceEntity);
+    entityStorage.getOperateEntitiesQueue(event.getMetadata().getTopicName()).put(activityInstanceEntity);
+  }
+
+  private void updateMetadataFields(ActivityInstanceEntity operateEntity, Record zeebeRecord) {
+    RecordMetadata metadata = zeebeRecord.getMetadata();
+    operateEntity.setPosition(metadata.getPosition());
   }
 
   private void convertWorkflowInstanceEvent(WorkflowInstanceEvent event) throws InterruptedException {
@@ -166,7 +169,15 @@ public class WorkflowInstanceEventTransformer extends AbstractEventTransformer i
     updateMetadataFields(entity, event);
 
     // TODO will wait till capacity available, can throw InterruptedException
-    entityStorage.getOperateEntititesQueue(event.getMetadata().getTopicName()).put(entity);
+    entityStorage.getOperateEntitiesQueue(event.getMetadata().getTopicName()).put(entity);
+  }
+
+  private void updateMetadataFields(WorkflowInstanceEntity operateEntity, Record zeebeRecord) {
+    RecordMetadata metadata = zeebeRecord.getMetadata();
+
+    operateEntity.setPartitionId(metadata.getPartitionId());
+    operateEntity.setPosition(metadata.getPosition());
+    operateEntity.setTopicName(metadata.getTopicName());
   }
 
 }

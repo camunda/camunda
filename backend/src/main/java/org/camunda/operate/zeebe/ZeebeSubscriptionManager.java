@@ -38,7 +38,7 @@ import io.zeebe.protocol.Protocol;
 @DependsOn({"entityStorage"})
 public class ZeebeSubscriptionManager {
 
-  private Logger logger = LoggerFactory.getLogger(ZeebeSubscriptionManager.class);
+  private static final Logger logger = LoggerFactory.getLogger(ZeebeSubscriptionManager.class);
 
   @Autowired
   private OperateProperties operateProperties;
@@ -100,9 +100,7 @@ public class ZeebeSubscriptionManager {
   }
 
   private void scheduleSubscriptionRetry(String topic) {
-    scheduler.schedule(() -> {
-      checkAndCreateTopicSubscriptions(topic);
-    }, 2, TimeUnit.SECONDS);
+    scheduler.schedule(() -> checkAndCreateTopicSubscriptions(topic), 2, TimeUnit.SECONDS);
   }
 
   public void removeTopicSubscription(String topicName) {

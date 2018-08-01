@@ -1,8 +1,6 @@
 package org.camunda.operate.it;
 
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.function.Predicate;
 import org.camunda.operate.entities.EventEntity;
@@ -14,12 +12,10 @@ import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
 import org.camunda.operate.util.ZeebeTestRule;
 import org.camunda.operate.util.ZeebeUtil;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import io.zeebe.client.api.subscription.JobWorker;
 import io.zeebe.client.api.subscription.TopicSubscription;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -37,29 +33,11 @@ public class EventIT extends OperateIntegrationTest {
   @Autowired
   private EventReader eventReader;
 
-  private JobWorker jobWorker;
-
-  private List<TopicSubscription> topicSubscriptions = new ArrayList<>();
-
   private OffsetDateTime testStartTime;
 
   @Before
   public void init() {
     testStartTime = OffsetDateTime.now();
-  }
-
-  @After
-  public void cleanup() {
-
-    for (Iterator<TopicSubscription> iterator = topicSubscriptions.iterator(); iterator.hasNext(); ) {
-      iterator.next().close();
-      iterator.remove();
-    }
-
-    if (jobWorker != null && jobWorker.isOpen()) {
-      jobWorker.close();
-      jobWorker = null;
-    }
   }
 
   @Test
@@ -76,10 +54,10 @@ public class EventIT extends OperateIntegrationTest {
     final String workflowInstanceId = zeebeUtil.startWorkflowInstance(topicName, processId, initialPayload);
 
     //create an incident
-    jobWorker = zeebeUtil.failTask(topicName, taskA, zeebeTestRule.getWorkerName(), 3);
+    zeebeTestRule.setJobWorker(zeebeUtil.failTask(topicName, taskA, zeebeTestRule.getWorkerName(), 3));
     elasticsearchTestRule.processAllEvents(20);
-    jobWorker.close();
-    jobWorker = null;
+    zeebeTestRule.getJobWorker().close();
+    zeebeTestRule.setJobWorker(null);
 
     //update retries to delete the incident
     final TopicSubscription topicSubscription = zeebeUtil.resolveIncident(topicName, "testEventsForFinishedWorkflow", workflowId, initialPayload);
@@ -88,10 +66,10 @@ public class EventIT extends OperateIntegrationTest {
 
     //complete task A
     String taskAPayload = "{\"goToTaskC\":true}";
-    jobWorker = zeebeUtil.completeTask(topicName, taskA, zeebeTestRule.getWorkerName(), taskAPayload);
+    zeebeTestRule.setJobWorker(zeebeUtil.completeTask(topicName, taskA, zeebeTestRule.getWorkerName(), taskAPayload));
     elasticsearchTestRule.processAllEvents(13);
-    jobWorker.close();
-    jobWorker = null;
+    zeebeTestRule.getJobWorker().close();
+    zeebeTestRule.setJobWorker(null);
 
     //update process payload //TODO update payload command is giving timeout for some reason
     final String updatedPayload = "{\"a\": \"c\"}";
@@ -100,10 +78,10 @@ public class EventIT extends OperateIntegrationTest {
 
     //complete task C
     final String taskCPayload = "{\"b\": \"d\"}";
-    jobWorker = zeebeUtil.completeTask(topicName, taskC, zeebeTestRule.getWorkerName(), taskCPayload);
+    zeebeTestRule.setJobWorker(zeebeUtil.completeTask(topicName, taskC, zeebeTestRule.getWorkerName(), taskCPayload));
     elasticsearchTestRule.processAllEvents(10);
-    jobWorker.close();
-    jobWorker = null;
+    zeebeTestRule.getJobWorker().close();
+    zeebeTestRule.setJobWorker(null);
 
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
@@ -159,9 +137,9 @@ public class EventIT extends OperateIntegrationTest {
     String processId = "demoProcess";
     final String workflowId = zeebeUtil.deployWorkflowToTheTopic(topicName, "demoProcess_v_1.bpmn");
     final String workflowInstanceId = zeebeUtil.startWorkflowInstance(topicName, processId, "{\"a\": \"b\"}");
-    jobWorker = zeebeUtil.completeTask(topicName, activityId, zeebeTestRule.getWorkerName(), "{\"a\": \"b\"}");
+    zeebeTestRule.setJobWorker(zeebeUtil.completeTask(topicName, activityId, zeebeTestRule.getWorkerName(), "{\"a\": \"b\"}"));
 
-    topicSubscriptions.add(zeebeUtil.cancelWorkflowInstance(topicName, workflowInstanceId, workflowId));
+    zeebeTestRule.getTopicSubscriptions().add(zeebeUtil.cancelWorkflowInstance(topicName, workflowInstanceId, workflowId));
     elasticsearchTestRule.processAllEvents(20);
 
     elasticsearchTestRule.refreshIndexesInElasticsearch();
@@ -186,7 +164,7 @@ public class EventIT extends OperateIntegrationTest {
   public void assertEvent(List<EventEntity> eventEntities, EventSourceType eventSourceType, EventType eventType,
     int count, String processId, String workflowId, String workflowInstanceId, String payload, String activityId) {
     String assertionName = String.format("%s.%s", eventSourceType, eventType);
-    final Predicate<EventEntity> eventEntityFilterCritetia = eventEntity -> {
+    final Predicate<EventEntity> eventEntityFilterCriteria = eventEntity -> {
       boolean b = true;
       if (activityId != null) {
         b = eventEntity.getActivityId().equals(activityId);
@@ -194,8 +172,8 @@ public class EventIT extends OperateIntegrationTest {
       return b && eventEntity.getEventSourceType().equals(eventSourceType) && eventEntity.getEventType().equals(eventType);
     };
     assertThat(eventEntities)
-      .filteredOn(eventEntityFilterCritetia).as(assertionName + ".size").hasSize(count);
-    eventEntities.stream().filter(eventEntityFilterCritetia)
+      .filteredOn(eventEntityFilterCriteria).as(assertionName + ".size").hasSize(count);
+    eventEntities.stream().filter(eventEntityFilterCriteria)
       .forEach(eventEntity -> {
         assertThat(eventEntity.getWorkflowInstanceId()).as(assertionName + ".workflowInstanceId").isEqualTo(workflowInstanceId);
         if (workflowId != null) {

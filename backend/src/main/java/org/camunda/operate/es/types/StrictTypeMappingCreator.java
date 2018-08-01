@@ -10,10 +10,11 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 @Component
 public abstract class StrictTypeMappingCreator implements TypeMappingCreator {
 
-  private Logger logger = LoggerFactory.getLogger(StrictTypeMappingCreator.class);
+  private static final Logger logger = LoggerFactory.getLogger(StrictTypeMappingCreator.class);
 
   public static final String PARTITION_ID = "partitionId";
   public static final String POSITION = "position";
+  public static final String TOPIC_NAME = "topicName";
 
   @Override
   public XContentBuilder getSource() throws IOException {
