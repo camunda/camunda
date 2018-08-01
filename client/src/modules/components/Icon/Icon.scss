@@ -32,7 +32,11 @@ $icons: (
   'overflow-menu-horizontal',
   'open-in-cockpit',
   'copy-document',
-  'check-small'
+  'check-small',
+  'left',
+  'up',
+  'right',
+  'down'
 );
 
 @each $icon in $icons {
