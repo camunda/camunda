@@ -7,6 +7,7 @@
 .EntityList__header {
   display: flex;
   margin-bottom: 18px;
+  align-items: flex-end;
 }
 
 .EntityList__heading {
@@ -88,4 +89,15 @@
 
 .EntityList__no-entities {
   font-style: italic;
+}
+
+.EntityList__createButton {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.EntityList__input {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
 }

@@ -5,7 +5,7 @@ import classnames from 'classnames';
 import {withErrorHandling} from 'HOC';
 import {Redirect, Link} from 'react-router-dom';
 
-import {Button, Modal, Message, Icon} from 'components';
+import {Button, Modal, Message, Icon, Input} from 'components';
 
 import {load, create, remove, duplicate} from './service';
 
@@ -20,7 +20,8 @@ class EntityList extends React.Component {
       redirectToEntity: false,
       loaded: false,
       deleteModalVisible: false,
-      deleteModalEntity: {}
+      deleteModalEntity: {},
+      query: ''
     };
   }
 
@@ -176,6 +177,7 @@ class EntityList extends React.Component {
 
   render() {
     let createButton = null;
+    let searchInput = null;
     if (this.props.operations.includes('create')) {
       createButton = (
         <Button color="green" className="EntityList__createButton" onClick={this.createEntity}>
@@ -183,11 +185,23 @@ class EntityList extends React.Component {
         </Button>
       );
     }
+    if (this.props.operations.includes('search')) {
+      searchInput = (
+        <Input
+          className="EntityList__input"
+          onChange={({target: {value}}) => this.setState({query: value})}
+          placeholder="Filter for name"
+        />
+      );
+    }
 
     const header = (
       <div className="EntityList__header">
         <h1 className="EntityList__heading">{this.props.label}s</h1>
-        <div className="EntityList__tools">{createButton}</div>
+        <div className="EntityList__tools">
+          {createButton}
+          {searchInput}
+        </div>
       </div>
     );
 
@@ -225,22 +239,24 @@ class EntityList extends React.Component {
         </ul>
       ) : (
         <ul className="EntityList__list">
-          {this.formatData(this.state.data).map((row, idx) => {
-            return (
-              <li key={idx} className="EntityList__item">
-                {row.map((cell, idx) => {
-                  return (
-                    <span
-                      key={idx}
-                      className={classnames('EntityList__data', cell.parentClassName)}
-                    >
-                      {this.renderCell(cell)}
-                    </span>
-                  );
-                })}
-              </li>
-            );
-          })}
+          {this.formatData(this.state.data)
+            .filter(row => row[0].content.toLowerCase().includes(this.state.query.toLowerCase()))
+            .map((row, idx) => {
+              return (
+                <li key={idx} className="EntityList__item">
+                  {row.map((cell, idx) => {
+                    return (
+                      <span
+                        key={idx}
+                        className={classnames('EntityList__data', cell.parentClassName)}
+                      >
+                        {this.renderCell(cell)}
+                      </span>
+                    );
+                  })}
+                </li>
+              );
+            })}
         </ul>
       );
     } else {

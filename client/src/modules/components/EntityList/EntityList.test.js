@@ -61,7 +61,8 @@ jest.mock('components', () => {
     Modal,
     Icon: props => <span>{props.type}</span>,
     Message: props => <p>{props.children}</p>,
-    Button: props => <button {...props}>{props.children}</button>
+    Button: props => <button {...props}>{props.children}</button>,
+    Input: props => <input {...props} type="text" />
   };
 });
 
@@ -329,4 +330,51 @@ it('should increase the reports list by 1 when invoking the duplicate onClick', 
   await node.update();
   expect(node.find('ul').children().length).toBe(2);
   expect(node.find('ul')).toIncludeText('copy of "Test Entity"');
+});
+
+it('should display a search input if specified', () => {
+  const node = mount(
+    shallow(<EntityList api="endpoint" label="Report" operations={['search']} />).get(0)
+  );
+  node.setState({
+    loaded: true,
+    data: [sampleEntity]
+  });
+
+  expect(node.find('.EntityList__input')).toBePresent();
+});
+
+it('should when typing a search query Keep only those entries, where the provided value matches anything in the name', () => {
+  const entries = ['foooooo', 'barfoobar', 'barfoo', 'bfbaroobar'].map(el => ({name: el}));
+
+  const node = mount(
+    shallow(<EntityList api="endpoint" label="Report" operations={['search']} />).get(0)
+  );
+  node.setState({
+    loaded: true,
+    data: entries,
+    query: 'foo'
+  });
+
+  expect(node).not.toIncludeText('bfbaroobar');
+  expect(node).toIncludeText('barfoo');
+  expect(node).toIncludeText('foooooo');
+  expect(node).toIncludeText('barfoobar');
+});
+
+it('should when typing a search query filter value in case insensitive', () => {
+  const entries = ['FOO', 'FoO', 'foo', 'fOO'].map(el => ({name: el}));
+  const node = mount(
+    shallow(<EntityList api="endpoint" label="Report" operations={['search']} />).get(0)
+  );
+  node.setState({
+    loaded: true,
+    data: entries,
+    query: 'foo'
+  });
+
+  expect(node).toIncludeText('FOO');
+  expect(node).toIncludeText('FoO');
+  expect(node).toIncludeText('foo');
+  expect(node).toIncludeText('fOO');
 });
