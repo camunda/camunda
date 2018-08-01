@@ -26,12 +26,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class ESIndexAdjuster {
 
-  protected Logger logger = LoggerFactory.getLogger(getClass());
+  private Logger logger = LoggerFactory.getLogger(getClass());
 
   private static final String PUT = "PUT";
   private static final String GET = "GET";
@@ -43,21 +42,15 @@ public class ESIndexAdjuster {
   private static final String UPDATE_BY_QUERY_OPERATION = "/_update_by_query";
   private static final String MAPPING_OPERATION = "/_mapping";
 
-  private static final String TYPE_KEY = "type";
-  private static final String DATE_TYPE = "date";
-  private static final String FORMAT_KEY = "format";
-
   private static final String TEMP_SUFFIX = "-temp";
   private static final int ONE_SECOND = 1000;
   private final RestClient restClient;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   private final ConfigurationService configurationService;
-  private final String dateFormat;
 
   public ESIndexAdjuster(RestClient restClient, ConfigurationService configurationService) {
     this.configurationService = configurationService;
-    this.dateFormat = configurationService.getOptimizeDateFormat();
     this.restClient = restClient;
   }
 
@@ -95,7 +88,7 @@ public class ESIndexAdjuster {
     }
   }
 
-  public String extractMappings(String indexName, String mappingWithIndexName) throws JsonProcessingException {
+  private String extractMappings(String indexName, String mappingWithIndexName) throws JsonProcessingException {
     Map read = JsonPath.parse(mappingWithIndexName).read("$." + indexName);
     return objectMapper.writeValueAsString(read);
   }
@@ -172,8 +165,7 @@ public class ESIndexAdjuster {
     }
   }
 
-
-  protected Map<String, String> getParamsWithRefresh() {
+  private Map<String, String> getParamsWithRefresh() {
     HashMap<String, String> reindexParams = new HashMap<>();
     reindexParams.put("refresh", "true");
     return reindexParams;
@@ -205,53 +197,11 @@ public class ESIndexAdjuster {
     return initialIndexName + TEMP_SUFFIX;
   }
 
-  public String preProcess(String mappingAndSettings) {
-    String dateEnhanced = setDates(mappingAndSettings);
-    return enhanceWithDefaults(dateEnhanced);
+  private String preProcess(String mappingAndSettings) {
+    return enhanceWithDefaults(mappingAndSettings);
   }
 
-  protected String setDates(String mappingAndSettings) {
-    String result = mappingAndSettings;
-    try {
-      HashMap<String, Object> level =
-        objectMapper.readValue(mappingAndSettings, new TypeReference<HashMap <String, Object>>() {});
-      for (Map.Entry<String, Object> e : level.entrySet()) {
-        Object value = e.getValue();
-        processValue(value);
-      }
-      result = objectMapper.writeValueAsString(level);
-    } catch (IOException e) {
-      logger.error("error while processing date types", e);
-    }
-    return result;
-  }
-
-  public void processValue(Object value) {
-    if (value instanceof Map) {
-      enhanceNonMapNodes((HashMap<String, Object>) value);
-    } else if (value instanceof List) {
-      List castValue = (List) value;
-      for (Object o : castValue) {
-        processValue(o);
-      }
-    }
-  }
-
-  protected void enhanceNonMapNodes(HashMap<String, Object> level) {
-    if (
-      level.containsKey(TYPE_KEY) && DATE_TYPE.equals(level.get(TYPE_KEY)) &&
-        !level.containsKey(FORMAT_KEY) && this.dateFormat != null
-      ) {
-      level.put(FORMAT_KEY, dateFormat);
-    } else {
-      for (Map.Entry entry : level.entrySet()) {
-        Object value = entry.getValue();
-        processValue(value);
-      }
-    }
-  }
-
-  protected String enhanceWithDefaults(String mappingAndSettings) {
+  private String enhanceWithDefaults(String mappingAndSettings) {
     String result = mappingAndSettings;
     try {
       HashMap mapping = objectMapper.readValue(mappingAndSettings, HashMap.class);
