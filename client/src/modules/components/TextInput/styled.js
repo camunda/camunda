@@ -5,7 +5,8 @@ import {Colors, themed, themeStyle} from 'modules/theme';
 const placeholderStyle = css`
   &::placeholder {
     color: ${themeStyle({
-      light: Colors.uiLight06
+      light: 'rgba(98, 98, 110, 0.9)',
+      dark: 'rgba(255, 255, 255, 0.7)'
     })};
     font-style: italic;
   }
