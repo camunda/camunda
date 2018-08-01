@@ -1,11 +1,12 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import * as Styled from './styled.js';
-
 import {fetchWorkflowInstanceBySelection} from 'modules/api/instances';
 import {batchRetry} from 'modules/api/selections';
 import Selection from '../Selection/index.js';
+
+import {NO_SELECTIONS_MESSAGE} from './constants';
+import * as Styled from './styled.js';
 
 export default class SelectionList extends React.Component {
   static propTypes = {
@@ -14,27 +15,50 @@ export default class SelectionList extends React.Component {
   };
   state = {
     selectionsInstances: [],
-    newSelectionIndex: 0,
     openSelection: null
   };
+
   componentDidMount = async () => {
-    //TODO: replace loop with this.props.selections.map
+    this.props.selections.map(async (selection, index) => {
+      await this.getSelectionDetails(selection);
+      this.setInstancesCount(this.state.selectionsInstances);
+    });
+  };
 
-    for (let index = 0; index < 10; index++) {
-      // query selections data
-      const selectionIndex = this.state.newSelectionIndex;
-      const selectionData = await fetchWorkflowInstanceBySelection();
+  componentDidUpdate = async prevProps => {
+    if (this.props.selections !== prevProps.selections) {
+      const selectionIds = this.getSelectionIds(this.state.selectionsInstances);
 
-      this.setState(prevState => ({
-        selectionsInstances: [
-          {...selectionData, id: selectionIndex},
-          ...prevState.selectionsInstances
-        ],
-        newSelectionIndex: selectionIndex + 1,
-        totalInstancesCount:
-          prevState.totalInstancesCount + selectionData.totalCount
-      }));
+      this.props.selections.map(async (selection, index) => {
+        if (!selectionIds.includes(selection.selectionId)) {
+          await this.getSelectionDetails(selection);
+          this.setInstancesCount(this.state.selectionsInstances);
+        }
+      });
     }
+  };
+
+  getSelectionIds = selections =>
+    selections.map(selection => selection.selectionId);
+
+  setInstancesCount = selections => {
+    const selectionCount = selections.length;
+    const instanceCount = selections
+      .map(item => item.totalCount)
+      .reduce((prev, next) => prev + next);
+
+    this.props.onChange({instanceCount, selectionCount});
+  };
+
+  getSelectionDetails = async selection => {
+    const {selectionId, ...payload} = selection;
+    const instancesDetails = await fetchWorkflowInstanceBySelection(payload);
+    this.setState(prevState => ({
+      selectionsInstances: [
+        {...selection, ...instancesDetails},
+        ...prevState.selectionsInstances
+      ]
+    }));
   };
 
   retrySelection = async evt => {
@@ -47,22 +71,26 @@ export default class SelectionList extends React.Component {
     }
   };
 
-  deleteSelection = selectionID => {
+  deleteSelection = async selectionID => {
     const {selectionsInstances} = this.state;
     const deletedInstance = selectionsInstances
-      .map(({id, totalCount}, index) => {
-        return id === selectionID && {id, totalCount, index};
+      .map(({selectionId, totalCount}, index) => {
+        console.log(
+          'selectionId === selectionID && {selectionId, totalCount, index}',
+          selectionId === selectionID && {selectionId, totalCount, index}
+        );
+        return selectionId === selectionID && {selectionId, totalCount, index};
       })
-      .filter(instance => instance.id)
+      .filter(instance => instance.selectionId)
       .shift();
 
     selectionsInstances.splice(deletedInstance.index, 1);
 
-    this.props.onChange(deletedInstance.totalCount);
-
-    this.setState({
+    await this.setState({
       selectionsInstances
     });
+
+    this.props.onChange(this.state.selectionsInstances);
   };
 
   toggleSelection = selectionID => {
@@ -78,25 +106,25 @@ export default class SelectionList extends React.Component {
       <Styled.SelectionList>
         {selectionsInstances.length ? (
           selectionsInstances.map(selection => {
-            const {id, workfowInstances, totalCount} = selection;
+            const {selectionId, workflowInstances, totalCount} = selection;
+
             return (
-              <Styled.SelectionWrapper key={id}>
+              <Styled.SelectionWrapper key={selectionId}>
                 <Selection
-                  isOpen={this.state.openSelection === id}
-                  selectionId={id}
-                  instances={workfowInstances}
+                  isOpen={this.state.openSelection === selectionId}
+                  selectionId={selectionId}
+                  instances={workflowInstances}
                   count={totalCount}
-                  onClick={() => this.toggleSelection(id)}
+                  onClick={() => this.toggleSelection(selectionId)}
                   onRetry={evt => this.retrySelection(evt)}
-                  onDelete={() => this.deleteSelection(id)}
+                  onDelete={() => this.deleteSelection(selectionId)}
                 />
               </Styled.SelectionWrapper>
             );
           })
         ) : (
           <Styled.NoSelectionWrapper>
-            To create a new Selection, select some instances from the list and
-            click ”Create new Selection”.
+            {NO_SELECTIONS_MESSAGE}
           </Styled.NoSelectionWrapper>
         )}
       </Styled.SelectionList>
