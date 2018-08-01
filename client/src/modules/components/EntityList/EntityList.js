@@ -26,10 +26,10 @@ class EntityList extends React.Component {
   }
 
   componentDidMount = async () => {
-    await this.loadReportsData();
+    await this.loadData();
   };
 
-  loadReportsData = async () => {
+  loadData = async () => {
     this.props.mightFail(
       load(this.props.api, this.props.displayOnly, this.props.sortBy),
       response => {
@@ -64,11 +64,11 @@ class EntityList extends React.Component {
   };
 
   duplicateEntity = id => async evt => {
-    const {data, name} = this.state.data.find(entity => entity.id === id);
-    const copyReport = {data, name: `Copy of "${name}"`};
-    await duplicate(this.props.api, copyReport);
+    const {data, reports, name} = this.state.data.find(entity => entity.id === id);
+    const copy = {...(data && {data}), ...(reports && {reports}), name: `Copy of "${name}"`};
+    await duplicate(this.props.api, copy);
     // fetch the data again after duplication to update the state
-    await this.loadReportsData();
+    await this.loadData();
   };
 
   closeDeleteModal = () => {

@@ -35,12 +35,12 @@ export async function create(api) {
   return json.id;
 }
 
-export async function duplicate(api, copyReportData) {
+export async function duplicate(api, copyData) {
   const createResponse = await post(`/api/${api}`);
 
   const json = await createResponse.json();
 
-  return await put(`/api/report/${json.id}`, copyReportData);
+  return await put(`/api/${api}/${json.id}`, copyData);
 }
 
 export async function remove(id, api) {

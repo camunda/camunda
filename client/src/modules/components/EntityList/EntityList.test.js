@@ -317,7 +317,7 @@ it('should invoke duplicate on click', async () => {
   expect(duplicate).toHaveBeenCalled();
 });
 
-it('should increase the reports list by 1 when invoking the duplicate onClick', async () => {
+it('should increase the elements in the list by 1 when invoking the duplicate onClick', async () => {
   const node = mount(
     shallow(<EntityList api="endpoint" label="Report" operations={['duplicate']} />).get(0)
   );

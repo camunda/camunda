@@ -7,7 +7,7 @@ export default function Dashboards() {
       api="dashboard"
       label="Dashboard"
       sortBy={'lastModified'}
-      operations={['create', 'edit', 'delete', 'search']}
+      operations={['create', 'edit', 'duplicate', 'delete', 'search']}
     />
   );
 }
