@@ -13,7 +13,7 @@ The cluster is bootstrapped using a set of well-known bootstrap brokers, to whic
 
 ```toml
 [network.gossip]
-initialContactPoints = [ "node1.mycluster.loc:51016" ]
+initialContactPoints = [ "node1.mycluster.loc:26502" ]
 ```
 
 When a broker is connected to the cluster for the first time, it fetches the topology from the initial contact points and then starts gossiping with the other brokers. Brokers keep cluster topology locally across restarts.

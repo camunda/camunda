@@ -23,7 +23,7 @@ import io.zeebe.broker.client.api.events.WorkflowInstanceEvent;
 public class WorkflowInstanceCreator {
 
   public static void main(String[] args) {
-    final String broker = "127.0.0.1:51015";
+    final String broker = "127.0.0.1:26501";
     final String topic = "default-topic";
 
     final String bpmnProcessId = "demoProcess";

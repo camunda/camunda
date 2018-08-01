@@ -23,7 +23,7 @@ import io.zeebe.broker.client.api.events.DeploymentEvent;
 public class WorkflowDeployer {
 
   public static void main(String[] args) {
-    final String broker = "localhost:51015";
+    final String broker = "localhost:26501";
     final String topic = "default-topic";
 
     final ZeebeClientBuilder clientBuilder =

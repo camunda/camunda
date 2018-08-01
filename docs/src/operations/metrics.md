@@ -18,10 +18,10 @@ The details of the format can be read in the [Prometheus documentation][prom-for
 **Example:**
 
 ```
-zb_storage_fs_total_bytes{cluster="zeebe",node="localhost:51015",partition="0",topic="internal-system"} 4192 1522124395234
+zb_storage_fs_total_bytes{cluster="zeebe",node="localhost:26500",partition="0",topic="internal-system"} 4192 1522124395234
 ```
 
-The record above descibes that the total size on bytes of partition `0` of topic `internal-system` on node `localhost:51015` in cluster `zeebe` is `4192`. The last number is a unix epoch timestamp.
+The record above descibes that the total size on bytes of partition `0` of topic `internal-system` on node `localhost:26500` in cluster `zeebe` is `4192`. The last number is a unix epoch timestamp.
 
 ## Configuring Metrics
 

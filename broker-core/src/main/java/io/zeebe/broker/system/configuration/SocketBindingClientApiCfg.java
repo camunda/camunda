@@ -19,7 +19,7 @@ package io.zeebe.broker.system.configuration;
 
 public class SocketBindingClientApiCfg extends SocketBindingCfg {
 
-  public static final int DEFAULT_PORT = 51015;
+  public static final int DEFAULT_PORT = 26501;
   private String controlMessageBufferSize = "8M";
 
   public SocketBindingClientApiCfg() {

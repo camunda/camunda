@@ -25,7 +25,7 @@ import java.util.Scanner;
 
 public class HandlePayloadAsPojo {
   public static void main(String[] args) {
-    final String broker = "127.0.0.1:51015";
+    final String broker = "127.0.0.1:26501";
     final String topic = "default-topic";
 
     final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder().brokerContactPoint(broker);

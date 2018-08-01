@@ -44,13 +44,13 @@ public class RequestTopologyTest {
   @Test
   public void shouldRequestTopics() {
     // given
-    final Map<String, Object> broker1 = buildBroker("0.0.0.0", 51015);
+    final Map<String, Object> broker1 = buildBroker("0.0.0.0", 26501);
     broker1.put(
         "partitions",
         Arrays.asList(
             buildPartition(0, "system", "LEADER"), buildPartition(1, "my-topic", "FOLLOWER")));
 
-    final Map<String, Object> broker2 = buildBroker("0.0.0.0", 41015);
+    final Map<String, Object> broker2 = buildBroker("0.0.0.0", 26511);
     broker2.put(
         "partitions",
         Arrays.asList(
@@ -76,7 +76,7 @@ public class RequestTopologyTest {
     assertThat(returnedBrokers).hasSize(2);
     assertThat(returnedBrokers)
         .extracting(BrokerInfo::getAddress)
-        .contains("0.0.0.0:51015", "0.0.0.0:41015");
+        .contains("0.0.0.0:26501", "0.0.0.0:26511");
 
     assertThat(returnedBrokers.get(0).getPartitions())
         .hasSize(2)

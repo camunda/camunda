@@ -9,7 +9,7 @@ Shows which broker is leader and follower for which partition. Particularly usef
 
 ## Prerequisites
 
-1. Running Zeebe broker with endpoint `localhost:51015` (default)
+1. Running Zeebe broker with endpoint `localhost:26500` (default)
 
 ## TopologyViewer.java
 

@@ -6,7 +6,7 @@
 
 ## Prerequisites
 
-1. Running Zeebe broker with endpoint `localhost:51015` (default)
+1. Running Zeebe broker with endpoint `localhost:26500` (default)
 
 ## TopicSubscriber.java
 

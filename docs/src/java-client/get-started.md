@@ -85,7 +85,7 @@ public class Application
     {
         final Properties clientProperties = new Properties();
         // change the contact point if needed
-        clientProperties.put(ClientProperties.BROKER_CONTACTPOINT, "127.0.0.1:51015");
+        clientProperties.put(ClientProperties.BROKER_CONTACTPOINT, "127.0.0.1:26500");
 
         final ZeebeClient client = ZeebeClient.newClientBuilder()
             .withProperties(clientProperties)
@@ -322,7 +322,7 @@ public class Application
     public static void main(String[] args)
     {
         // after the workflow is deployed
-        
+
         final Map<String, Object> data = new HashMap<>();
         data.put("orderId", 31243);
         data.put("orderItems", Arrays.asList(435, 182, 376));

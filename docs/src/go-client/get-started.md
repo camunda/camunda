@@ -74,7 +74,7 @@ import (
 	"github.com/zeebe-io/zbc-go/zbc"
 )
 
-const BrokerAddr = "0.0.0.0:51015"
+const BrokerAddr = "0.0.0.0:26500"
 
 var errClientStartFailed = errors.New("cannot start client")
 
@@ -104,8 +104,8 @@ You should see similar output:
 ```json
 {
     "AddrByPartitionID": {
-        "0": "0.0.0.0:51015",
-        "1": "0.0.0.0:51015"
+        "0": "0.0.0.0:26500",
+        "1": "0.0.0.0:26500"
     },
     "PartitionIDByTopicName": {
         "default-topic": [
@@ -118,7 +118,7 @@ You should see similar output:
     "Brokers": [
         {
             "Host": "0.0.0.0",
-            "Port": 51015,
+            "Port": 26500,
             "Partitions": [
                 {
                     "State": "LEADER",
@@ -169,7 +169,7 @@ import (
 )
 
 const topicName = "default-topic"
-const brokerAddr = "0.0.0.0:51015"
+const brokerAddr = "0.0.0.0:26500"
 
 var errClientStartFailed = errors.New("cannot start client")
 var errWorkflowDeploymentFailed = errors.New("creating new workflow deployment failed")
@@ -238,7 +238,7 @@ import (
 )
 
 const topicName = "default-topic"
-const brokerAddr = "0.0.0.0:51015"
+const brokerAddr = "0.0.0.0:26500"
 
 var errClientStartFailed = errors.New("cannot start client")
 
@@ -319,7 +319,7 @@ import (
 )
 
 const topicName = "default-topic"
-const brokerAddr = "0.0.0.0:51015"
+const brokerAddr = "0.0.0.0:26500"
 
 var errClientStartFailed = errors.New("cannot start client")
 
@@ -467,7 +467,7 @@ import (
 )
 
 const topicName = "default-topic"
-const brokerAddr = "0.0.0.0:51015"
+const brokerAddr = "0.0.0.0:26500"
 
 var errClientStartFailed = errors.New("cannot start client")
 

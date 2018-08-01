@@ -1,16 +1,7 @@
 # Broker 3
 
-[network.client]
-port = 31015
-
-[network.management]
-port = 31016
-
-[network.replication]
-port = 31017
-
-[network.subscription]
-port = 31018
+[network]
+portOffset = 2
 
 [cluster]
-initialContactPoints = [ "localhost:51016" ]
+initialContactPoints = [ "localhost:26502" ]

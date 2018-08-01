@@ -50,7 +50,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class CreateTopicTest {
-  protected static final SocketAddress BROKER_MGMT_ADDRESS = new SocketAddress("localhost", 51016);
+  protected static final SocketAddress BROKER_MGMT_ADDRESS = new SocketAddress("localhost", 26502);
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
   public ClientApiRule apiRule = new ClientApiRule();
