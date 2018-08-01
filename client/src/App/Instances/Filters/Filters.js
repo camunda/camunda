@@ -16,23 +16,39 @@ import {
   parseWorkflowNames,
   parseWorkflowVersions,
   addAllVersionsOption,
-  fieldParser,
-  FIELDS
+  fieldParser
 } from './service';
+import {FIELDS} from './constants';
 
 export default class Filters extends React.Component {
   static propTypes = {
-    filter: PropTypes.object.isRequired,
+    filter: PropTypes.shape({
+      active: PropTypes.bool,
+      incidents: PropTypes.bool,
+      canceled: PropTypes.bool,
+      completed: PropTypes.bool,
+      activityId: PropTypes.string,
+      errorMessage: PropTypes.string,
+      ids: PropTypes.array,
+      startDateAfter: PropTypes.string,
+      startDateBefore: PropTypes.string
+    }).isRequired,
     onFilterChange: PropTypes.func,
     resetFilter: PropTypes.func,
-    onWorkflowVersionChange: PropTypes.func
+    onWorkflowVersionChange: PropTypes.func,
+    activityIds: PropTypes.arrayOf(
+      PropTypes.shape({
+        label: PropTypes.string,
+        value: PropTypes.string
+      })
+    )
   };
 
   state = {
     groupedWorkflows: [],
     currentWorkflow: {},
     currentWorkflowVersion: '',
-    currentWorkflowNode: ''
+    currentActivityNode: ''
   };
 
   componentDidMount = async () => {
@@ -96,8 +112,12 @@ export default class Filters extends React.Component {
     this.props.onFilterChange(filterValue);
   };
 
-  handleFlowNodeChange = event => {
-    console.log(event.target.value);
+  handleActivityIdChange = event => {
+    event.persist();
+    const {value} = event.target;
+    this.setState({currentActivityId: value}, () => {
+      this.handleFieldChange(event);
+    });
   };
 
   render() {
@@ -105,6 +125,7 @@ export default class Filters extends React.Component {
     const workflowVersions = addAllVersionsOption(
       parseWorkflowVersions(this.state.currentWorkflow.workflows)
     );
+    console.log(this.props.filter);
 
     return (
       <Panel isRounded>
@@ -161,15 +182,15 @@ export default class Filters extends React.Component {
             </Styled.Field>
             <Styled.Field>
               <Select
-                value={this.state.currentWorkflowNode}
+                value={this.state.currentActivityId}
                 disabled={
                   this.state.currentWorkflowVersion === '' ||
                   this.state.currentWorkflowVersion === 'all'
                 }
-                name={FIELDS.flowNode.name}
-                placeholder={FIELDS.flowNode.placeholder}
-                options={[]}
-                onChange={this.handleFlowNodeChange}
+                name={FIELDS.activityId.name}
+                placeholder={FIELDS.activityId.placeholder}
+                options={this.props.activityIds}
+                onChange={this.handleActivityIdChange}
               />
             </Styled.Field>
             <CheckboxGroup

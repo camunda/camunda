@@ -1,15 +1,5 @@
 import {isValid, addDays, startOfDay, addMinutes, format} from 'date-fns';
 
-export const FIELDS = {
-  errorMessage: {name: 'errorMessage', placeholder: 'Error Message'},
-  ids: {name: 'ids', placeholder: 'Instance Id(s) separated by space or comma'},
-  workflowName: {name: 'workflowName', placeholder: 'Workflow'},
-  workflowVersion: {name: 'workflowVersion', placeholder: 'Workflow Version'},
-  flowNode: {name: 'flowNode', placeholder: 'Flow Node'},
-  startDate: {name: 'startDate', placeholder: 'Start Date'},
-  endDate: {name: 'endDate', placeholder: 'End Date'}
-};
-
 export function parseWorkflowNames(workflows) {
   return workflows.map(item => ({
     value: item.bpmnProcessId,
@@ -61,5 +51,6 @@ export const fieldParser = {
   },
   endDate: value => {
     return parseDate(value, 'endDate');
-  }
+  },
+  activityId: value => value
 };

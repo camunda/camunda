@@ -43,7 +43,8 @@ class Instances extends Component {
       selectionCount: 10,
       selections: selections || [[]],
       instancesInSelections: 5000,
-      workflow: null
+      workflow: null,
+      activityIds: []
     };
   }
 
@@ -145,7 +146,20 @@ class Instances extends Component {
     }));
   };
 
-  handleFlowNodesDetailsReady = () => {};
+  handleFlowNodesDetailsReady = nodes => {
+    const activityIds = [];
+    let node;
+
+    for (node in nodes) {
+      if (nodes[node].type === 'TASK') {
+        activityIds.push({value: node, label: nodes[node].name});
+      }
+    }
+
+    this.setState({
+      activityIds
+    });
+  };
 
   render() {
     const {running, incidents: incidentsCount} = this.props.getStateLocally();
@@ -164,8 +178,9 @@ class Instances extends Component {
             <Styled.Filters>
               <Filters
                 filter={this.state.filter}
-                onFilterChange={this.handleFilterChange}
+                activityIds={this.state.activityIds}
                 resetFilter={this.resetFilter}
+                onFilterChange={this.handleFilterChange}
                 onWorkflowVersionChange={this.handleWorkflowChange}
               />
             </Styled.Filters>

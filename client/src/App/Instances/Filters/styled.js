@@ -21,7 +21,7 @@ export const ResetButtonContainer = styled(Panel.Footer)`
 
 export const Filters = styled.div`
   padding: 20px 20px 0 20px;
-  overflow-y: scroll;
+  overflow: auto;
 `;
 
 export const Field = styled.div`
