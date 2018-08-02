@@ -41,7 +41,7 @@ import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.ServerTransport;
 
-public class MessageService implements Service<MessageService>, StreamProcessorLifecycleAware {
+public class MessageService implements Service<MessageService> {
 
   private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
   private final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector =
@@ -55,9 +55,6 @@ public class MessageService implements Service<MessageService>, StreamProcessorL
       ServiceGroupReference.<Partition>create()
           .onAdd((partitionName, partition) -> startStreamProcessors(partitionName, partition))
           .build();
-
-  private PublishMessageProcessor publishMessageProcessor;
-  private OpenMessageSubscriptionProcessor openMessageSubscriptionProcessor;
 
   private void startStreamProcessors(
       ServiceName<Partition> partitionServiceName, Partition partition) {
@@ -80,8 +77,9 @@ public class MessageService implements Service<MessageService>, StreamProcessorL
     final MessageDataStore messageStore = new MessageDataStore();
     final MessageSubscriptionDataStore subscriptionStore = new MessageSubscriptionDataStore();
 
-    publishMessageProcessor = new PublishMessageProcessor(messageStore, subscriptionStore);
-    openMessageSubscriptionProcessor =
+    final PublishMessageProcessor publishMessageProcessor =
+        new PublishMessageProcessor(messageStore, subscriptionStore);
+    final OpenMessageSubscriptionProcessor openMessageSubscriptionProcessor =
         new OpenMessageSubscriptionProcessor(messageStore, subscriptionStore);
 
     return env.newStreamProcessor()
@@ -93,26 +91,29 @@ public class MessageService implements Service<MessageService>, StreamProcessorL
             openMessageSubscriptionProcessor)
         .withStateResource(messageStore)
         .withStateResource(subscriptionStore)
-        .withListener(this)
+        .withListener(
+            new StreamProcessorLifecycleAware() {
+              @Override
+              public void onOpen(TypedStreamProcessor streamProcessor) {
+                final LogStream stream = streamProcessor.getEnvironment().getStream();
+
+                final SubscriptionCommandSender subscriptionCommandSender =
+                    new SubscriptionCommandSender(
+                        streamProcessor.getActor(),
+                        getManagementApiClientInjector().getValue(),
+                        getSubscriptionApiClientInjector().getValue(),
+                        stream.getLogName(),
+                        stream.getPartitionId());
+                getTopologyManagerInjector()
+                    .getValue()
+                    .addTopologyPartitionListener(subscriptionCommandSender);
+
+                publishMessageProcessor.setSubscriptionCommandSender(subscriptionCommandSender);
+                openMessageSubscriptionProcessor.setSubscriptionCommandSender(
+                    subscriptionCommandSender);
+              }
+            })
         .build();
-  }
-
-  @Override
-  public void onOpen(TypedStreamProcessor streamProcessor) {
-
-    final LogStream stream = streamProcessor.getEnvironment().getStream();
-
-    final SubscriptionCommandSender subscriptionCommandSender =
-        new SubscriptionCommandSender(
-            streamProcessor.getActor(),
-            getManagementApiClientInjector().getValue(),
-            getSubscriptionApiClientInjector().getValue(),
-            stream.getLogName(),
-            stream.getPartitionId());
-    getTopologyManagerInjector().getValue().addTopologyPartitionListener(subscriptionCommandSender);
-
-    publishMessageProcessor.setSubscriptionCommandSender(subscriptionCommandSender);
-    openMessageSubscriptionProcessor.setSubscriptionCommandSender(subscriptionCommandSender);
   }
 
   @Override
