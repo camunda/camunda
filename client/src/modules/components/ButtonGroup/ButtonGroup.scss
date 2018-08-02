@@ -8,6 +8,10 @@
   border-radius: 0;
   border-right-width: 0;
 }
+.ButtonGroup .Button:hover,
+.ButtonGroup a.Button:hover {
+  border-right-width: 0;
+}
 
 .ButtonGroup .Button:first-child,
 .ButtonGroup a.Button:first-child {
@@ -19,6 +23,11 @@
 .ButtonGroup a.Button:last-child {
   border-top-right-radius: 3px;
   border-bottom-right-radius: 3px;
+  border-right-width: 1px;
+}
+
+.ButtonGroup .Button:last-child:hover,
+.ButtonGroup a.Button:last-child:hover {
   border-right-width: 1px;
 }
 
