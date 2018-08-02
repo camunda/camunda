@@ -20,6 +20,8 @@ faces-config.NavData
 *.sublime-workspace
 *.h2.db
 *.lock.db
+.cache-main
+.cache-tests
 
 *.DS_Store
 .gradle
