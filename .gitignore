@@ -18,3 +18,4 @@ client/dist
 client/*.md
 
 qa/engine-rest-secure/overlays
+qa/engine-rest-custom/overlays
