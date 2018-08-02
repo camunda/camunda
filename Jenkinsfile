@@ -71,12 +71,6 @@ void archiveTestArtifacts(String srcDirectory, String destDirectory = null) {
     allowEmptyResults: true,
     onlyIfSuccessful: false
   )
-
-  archiveArtifacts(
-    artifacts: "**/target/*-reports/**/*.txt",
-    allowEmptyResults: true,
-    onlyIfSuccessful: false
-  )
 }
 
 void installDockerBinaries() {
