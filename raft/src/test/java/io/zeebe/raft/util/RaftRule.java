@@ -83,6 +83,10 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 public class RaftRule extends ExternalResource implements RaftStateListener {
+
+  public static final String DEFAULT_HOST = "localhost";
+  public static final int DEFAULT_PORT = 9000;
+
   public static final FragmentHandler NOOP_FRAGMENT_HANDLER =
       (buffer, offset, length, streamId, isMarkedFailed) -> FragmentHandler.CONSUME_FRAGMENT_RESULT;
 
@@ -113,6 +117,21 @@ public class RaftRule extends ExternalResource implements RaftStateListener {
   protected final List<RaftState> raftStateChanges = new ArrayList<>();
   protected Set<Integer> interrupedStreams = Collections.synchronizedSet(new HashSet<>());
   private ServiceName<Raft> raftServiceName;
+
+  public RaftRule(
+      final ServiceContainerRule serviceContainerRule,
+      final int portOffset,
+      final String topicName,
+      final int partition,
+      final RaftRule... members) {
+    this(
+        serviceContainerRule,
+        DEFAULT_HOST,
+        DEFAULT_PORT + portOffset,
+        topicName,
+        partition,
+        members);
+  }
 
   public RaftRule(
       final ServiceContainerRule serviceContainerRule,

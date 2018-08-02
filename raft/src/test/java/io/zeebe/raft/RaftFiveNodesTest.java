@@ -31,15 +31,11 @@ public class RaftFiveNodesTest {
   public ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
   public ServiceContainerRule serviceContainerRule = new ServiceContainerRule(actorScheduler);
 
-  public RaftRule raft1 = new RaftRule(serviceContainerRule, "localhost", 8001, "default", 0);
-  public RaftRule raft2 =
-      new RaftRule(serviceContainerRule, "localhost", 8002, "default", 0, raft1);
-  public RaftRule raft3 =
-      new RaftRule(serviceContainerRule, "localhost", 8003, "default", 0, raft2);
-  public RaftRule raft4 =
-      new RaftRule(serviceContainerRule, "localhost", 8004, "default", 0, raft2, raft3);
-  public RaftRule raft5 =
-      new RaftRule(serviceContainerRule, "localhost", 8005, "default", 0, raft3);
+  public RaftRule raft1 = new RaftRule(serviceContainerRule, 1, "default", 0);
+  public RaftRule raft2 = new RaftRule(serviceContainerRule, 2, "default", 0, raft1);
+  public RaftRule raft3 = new RaftRule(serviceContainerRule, 3, "default", 0, raft2);
+  public RaftRule raft4 = new RaftRule(serviceContainerRule, 4, "default", 0, raft2, raft3);
+  public RaftRule raft5 = new RaftRule(serviceContainerRule, 5, "default", 0, raft3);
 
   @Rule
   public RaftClusterRule cluster =
