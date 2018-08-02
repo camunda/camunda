@@ -199,7 +199,6 @@ class EntityList extends React.Component {
       <div className="EntityList__header">
         <h1 className="EntityList__heading">{this.props.label}s</h1>
         <div className="EntityList__tools">{createButton}</div>
-        {searchInput}
       </div>
     );
 
@@ -236,26 +235,29 @@ class EntityList extends React.Component {
           </li>
         </ul>
       ) : (
-        <ul className="EntityList__list">
-          {this.formatData(this.state.data)
-            .filter(row => row[0].content.toLowerCase().includes(this.state.query.toLowerCase()))
-            .map((row, idx) => {
-              return (
-                <li key={idx} className="EntityList__item">
-                  {row.map((cell, idx) => {
-                    return (
-                      <span
-                        key={idx}
-                        className={classnames('EntityList__data', cell.parentClassName)}
-                      >
-                        {this.renderCell(cell)}
-                      </span>
-                    );
-                  })}
-                </li>
-              );
-            })}
-        </ul>
+        <React.Fragment>
+          {searchInput}
+          <ul className="EntityList__list">
+            {this.formatData(this.state.data)
+              .filter(row => row[0].content.toLowerCase().includes(this.state.query.toLowerCase()))
+              .map((row, idx) => {
+                return (
+                  <li key={idx} className="EntityList__item">
+                    {row.map((cell, idx) => {
+                      return (
+                        <span
+                          key={idx}
+                          className={classnames('EntityList__data', cell.parentClassName)}
+                        >
+                          {this.renderCell(cell)}
+                        </span>
+                      );
+                    })}
+                  </li>
+                );
+              })}
+          </ul>
+        </React.Fragment>
       );
     } else {
       list = <div>loading...</div>;

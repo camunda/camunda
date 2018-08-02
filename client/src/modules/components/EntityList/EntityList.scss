@@ -6,6 +6,7 @@
 
 .EntityList__header {
   display: flex;
+  margin-bottom: 18px;
   flex-wrap: wrap;
 }
 
@@ -96,9 +97,5 @@
 }
 
 .EntityList__input {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  flex: 0 1 100%;
-  margin-top: 18px;
+  width: 100%;
 }
