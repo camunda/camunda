@@ -28,6 +28,7 @@ pipeline {
         }
 
         stage('Verify') {
+            failFast true
             parallel {
                 stage('Tests') {
                     steps {
