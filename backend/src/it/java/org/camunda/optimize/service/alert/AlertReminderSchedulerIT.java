@@ -9,12 +9,10 @@ import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.group.FlowNodesGroupByDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.es.reader.AlertReader;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.GenericType;
@@ -32,8 +30,6 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 
 
 public class AlertReminderSchedulerIT extends AbstractAlertIT {
-  @Autowired
-  private AlertReader alertReader;
 
   @Rule
   public RuleChain chain = RuleChain
