@@ -15,14 +15,29 @@
  */
 package io.zeebe.test;
 
+import static io.zeebe.test.EmbeddedBrokerRule.DEFAULT_CONFIG_SUPPLIER;
+
+import io.zeebe.broker.client.ClientProperties;
 import io.zeebe.broker.client.ZeebeClient;
 import io.zeebe.broker.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.broker.system.configuration.SocketBindingClientApiCfg;
+import java.util.Properties;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 public class WorkflowTest {
-  @Rule public final ZeebeTestRule testRule = new ZeebeTestRule();
+  @Rule
+  public final ZeebeTestRule testRule =
+      new ZeebeTestRule(
+          DEFAULT_CONFIG_SUPPLIER,
+          () -> {
+            final Properties properties = new Properties();
+            properties.setProperty(
+                ClientProperties.BROKER_CONTACTPOINT,
+                "localhost:" + (SocketBindingClientApiCfg.DEFAULT_PORT + 200));
+            return properties;
+          });
 
   private ZeebeClient client;
   private String topic;

@@ -1,3 +1,6 @@
 # Default configuration for integration tests 
 
 bootstrap = 1
+
+[network]
+portOffset = 20
