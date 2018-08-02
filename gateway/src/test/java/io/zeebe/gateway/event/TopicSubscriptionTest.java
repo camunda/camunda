@@ -65,7 +65,9 @@ import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -906,6 +908,37 @@ public class TopicSubscriptionTest {
     assertThat(eventHandler.numIncidentEvents()).isEqualTo(0);
     assertThat(eventHandler.numIncidentCommands()).isEqualTo(0);
     assertThat(eventHandler.numRaftEvents()).isEqualTo(0);
+  }
+
+  @Test
+  public void shouldDeserializeWorkflowInstanceEvent() {
+    // given
+    broker.stubTopicSubscriptionApi(123L);
+
+    final RecordingTopicEventHandler eventHandler = subscribeToAllEvents();
+
+    final Map<String, Object> value = new HashMap<>();
+    value.put("scopeInstanceKey", 42);
+
+    final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
+
+    // when
+    broker.pushTopicEvent(
+        clientAddress,
+        b ->
+            b.subscriberKey(123L)
+                .recordType(RecordType.EVENT)
+                .valueType(ValueType.WORKFLOW_INSTANCE)
+                .intent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED)
+                .value()
+                .put("scopeInstanceKey", 42)
+                .done());
+
+    // then
+    waitUntil(() -> eventHandler.numWorkflowInstanceEvents() > 0);
+
+    final WorkflowInstanceEvent workflowInstanceEvent = eventHandler.workflowInstanceEvents.get(0);
+    assertThat(workflowInstanceEvent.getScopeInstanceKey()).isEqualTo(42L);
   }
 
   @Test

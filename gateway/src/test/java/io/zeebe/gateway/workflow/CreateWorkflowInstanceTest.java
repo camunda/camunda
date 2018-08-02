@@ -91,6 +91,7 @@ public class CreateWorkflowInstanceTest {
             entry("version", (long) CreateWorkflowInstanceCommandStep1.LATEST_VERSION),
             entry("workflowKey", -1L),
             entry("workflowInstanceKey", -1L),
+            entry("scopeInstanceKey", -1L),
             entry("payload", MsgPackHelper.EMTPY_OBJECT));
 
     assertThat(workflowInstance.getState()).isEqualTo(WorkflowInstanceState.CREATED);
@@ -137,6 +138,7 @@ public class CreateWorkflowInstanceTest {
             entry("version", (long) CreateWorkflowInstanceCommandStep1.LATEST_VERSION),
             entry("workflowKey", -1L),
             entry("workflowInstanceKey", -1L),
+            entry("scopeInstanceKey", -1L),
             entry("payload", msgPackConverter.convertToMsgPack(payload)));
 
     assertThat(workflowInstance.getBpmnProcessId()).isEqualTo("foo");
@@ -178,6 +180,7 @@ public class CreateWorkflowInstanceTest {
             entry("version", 2L),
             entry("workflowKey", -1L),
             entry("workflowInstanceKey", -1L),
+            entry("scopeInstanceKey", -1L),
             entry("payload", MsgPackHelper.EMTPY_OBJECT));
 
     assertThat(workflowInstance.getBpmnProcessId()).isEqualTo("foo");
@@ -211,6 +214,7 @@ public class CreateWorkflowInstanceTest {
             entry("version", -1L),
             entry("workflowKey", 2L),
             entry("workflowInstanceKey", -1L),
+            entry("scopeInstanceKey", -1L),
             entry("payload", MsgPackHelper.EMTPY_OBJECT));
 
     assertThat(workflowInstance.getWorkflowKey()).isEqualTo(2);

@@ -16,6 +16,7 @@
    "version":-1,
    "workflowKey":-1,
    "workflowInstanceKey":-1,
+   "scopeInstanceKey":-1,
    "activityId":null,
    "payload":{
       "foo":"bar"

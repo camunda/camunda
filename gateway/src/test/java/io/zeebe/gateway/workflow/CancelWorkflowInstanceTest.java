@@ -80,6 +80,7 @@ public class CancelWorkflowInstanceTest {
             entry("version", (long) baseEvent.getVersion()),
             entry("workflowKey", baseEvent.getWorkflowKey()),
             entry("workflowInstanceKey", baseEvent.getWorkflowInstanceKey()),
+            entry("scopeInstanceKey", baseEvent.getScopeInstanceKey()),
             entry("activityId", baseEvent.getActivityId()),
             entry("payload", baseEvent.getPayloadField().getMsgPack()));
 

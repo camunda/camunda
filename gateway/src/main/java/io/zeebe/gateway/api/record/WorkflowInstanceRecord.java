@@ -31,6 +31,12 @@ public interface WorkflowInstanceRecord extends Record {
   long getWorkflowInstanceKey();
 
   /**
+   * @return the key of the activity instance that is the flow scope of this flow element instance;
+   *     -1 for records of the workflow instance itself.
+   */
+  long getScopeInstanceKey();
+
+  /**
    * @return the id of the current activity, or empty if the event does not belong to an activity.
    */
   String getActivityId();
