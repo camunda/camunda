@@ -39,7 +39,6 @@ class Instances extends Component {
     const {filterCount, selections} = props.getStateLocally();
 
     this.state = {
-      errorMessage: null,
       filter: {},
       filterCount: filterCount || 0,
       selection: createNewSelectionFragment(),
@@ -225,16 +224,12 @@ class Instances extends Component {
 
               <ListView
                 instancesInFilter={this.state.filterCount}
-                filters={{
-                  errorMessage: this.state.errorMessage
-                }}
                 onSelectionUpdate={change => {
                   this.updateSelection(change);
                 }}
                 selection={this.state.selection}
                 filter={this.state.filter}
                 onAddToSelection={this.handleAddToSelection}
-                errorMessage={this.state.errorMessage}
               />
             </Styled.Center>
             <Styled.Selections>
