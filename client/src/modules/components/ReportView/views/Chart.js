@@ -138,7 +138,7 @@ export default class Chart extends React.Component {
       ? convertToMilliseconds(values.target, values.dateFormat)
       : values.target;
     return Object.values(data).map(height => {
-      if (values.isAbove) return height < barValue ? DEFAULT_COLOR : TARGET_COLOR;
+      if (values.isBelow) return height < barValue ? DEFAULT_COLOR : TARGET_COLOR;
       else return height >= barValue ? DEFAULT_COLOR : TARGET_COLOR;
     });
   };
@@ -181,8 +181,8 @@ export default class Chart extends React.Component {
     // ticks. So we define our own set of possible stepSizes and find one that the maximum
     // value of the dataset fits into or the maximum target line value if it is defined.
     const targetLineMinStep = targetLine / 10;
-    const DataMinStep = Math.max(...Object.values(data)) / 10;
-    const minimumStepSize = targetLineMinStep > DataMinStep ? targetLineMinStep : DataMinStep;
+    const dataMinStep = Math.max(...Object.values(data)) / 10;
+    const minimumStepSize = Math.max(targetLineMinStep, dataMinStep);
 
     const steps = [
       {value: 1, unit: 'ms', base: 1},

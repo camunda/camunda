@@ -8,7 +8,7 @@ import './BarChartModal.css';
 
 export default class BarChartModal extends React.Component {
   state = {
-    isAbove: false,
+    isBelow: false,
     target: 0,
     dateFormat: ''
   };
@@ -22,14 +22,13 @@ export default class BarChartModal extends React.Component {
     if (values) {
       const dateFormat = reportResult.data.view.property !== 'duration' ? '' : values.dateFormat;
       return this.setState({
-        ...this.state,
         ...values,
         dateFormat
       });
     }
     return this.setState({
       target: 0,
-      isAbove: false,
+      isBelow: false,
       dateFormat: ''
     });
   }
@@ -48,14 +47,14 @@ export default class BarChartModal extends React.Component {
         <Modal.Content>
           <ButtonGroup className="BarChartModal__ButtonGroup">
             <Button
-              onClick={() => this.setState({...this.state, isAbove: false})}
-              className={classnames({'is-active': !this.state.isAbove})}
+              onClick={() => this.setState({isBelow: false})}
+              className={classnames({'is-active': !this.state.isBelow})}
             >
               Above
             </Button>
             <Button
-              onClick={() => this.setState({...this.state, isAbove: true})}
-              className={classnames({'is-active': this.state.isAbove})}
+              onClick={() => this.setState({isBelow: true})}
+              className={classnames({'is-active': this.state.isBelow})}
             >
               Below
             </Button>
@@ -64,7 +63,7 @@ export default class BarChartModal extends React.Component {
             className="BarChartModal__input"
             label="target"
             value={this.state.target}
-            onChange={e => this.setState({...this.state, target: e.target.value})}
+            onChange={e => this.setState({target: e.target.value})}
             isInvalid={!isFieldValid}
           >
             {!isFieldValid && (
@@ -77,7 +76,7 @@ export default class BarChartModal extends React.Component {
             <Select
               className="BarChartModal__select"
               value={this.state.dateFormat}
-              onChange={e => this.setState({...this.state, dateFormat: e.target.value})}
+              onChange={e => this.setState({dateFormat: e.target.value})}
             >
               <Select.Option value="millis">Milliseconds</Select.Option>
               <Select.Option value="seconds">Seconds</Select.Option>

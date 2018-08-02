@@ -57,7 +57,7 @@ const validProps = {
   configuration: {
     targetValue: {
       active: true,
-      values: {type: 'seconds', target: 50, isAbove: false}
+      values: {type: 'seconds', target: 50, isBelow: false}
     }
   }
 };
@@ -104,7 +104,7 @@ it('should hide select dateFormat dropdown when viewProberty is not equal durati
     configuration: {
       targetValue: {
         active: true,
-        values: {type: 'seconds', target: 50, isAbove: false}
+        values: {type: 'seconds', target: 50, isBelow: false}
       }
     }
   };
