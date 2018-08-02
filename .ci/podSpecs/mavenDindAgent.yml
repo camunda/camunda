@@ -29,27 +29,11 @@ spec:
         value: tcp://localhost:2375
     resources:
       limits:
-        cpu: 2
+        cpu: 3
         memory: 3Gi
       requests:
-        cpu: 2
+        cpu: 3
         memory: 3Gi
-  - name: node
-    image: node:8.11.3-alpine
-    command: ["cat"]
-    tty: true
-    env:
-      - name: LIMITS_CPU
-        valueFrom:
-          resourceFieldRef:
-            resource: limits.cpu
-    resources:
-      limits:
-        cpu: 2
-        memory: 1Gi
-      requests:
-        cpu: 2
-        memory: 1Gi
   - name: docker
     image: docker:18.03.1-ce-dind
     args: ["--storage-driver=overlay2"]
