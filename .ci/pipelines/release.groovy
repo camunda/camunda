@@ -55,69 +55,15 @@ void runRelease(params) {
 
   sh ("""
     # auto-update previousVersion property
-    if [ ! -z "\${PREVIOUS_VERSION}" ]; then
+    if [ ! -z \"\${PREVIOUS_VERSION}\" ]; then
       sed -i "s/project.previousVersion>.*</project.previousVersion>${params.RELEASE_VERSION}</g" pom.xml
       git add pom.xml
-      git commit -m "chore(release): update previousVersion to new release version ${params.RELEASE_VERSION}"
-      if [ "${pushChanges}" == "true" ]; then
+      git commit -m \"chore(release): update previousVersion to new release version ${params.RELEASE_VERSION}\"
+      if [ \"${pushChanges}\" = \"true\" ]; then
         git push origin ${params.BRANCH}
       fi
     fi
   """)
-}
-
-static String mavenDindAgent() {
-  return """
-apiVersion: v1
-kind: Pod
-metadata:
-  labels:
-    agent: optimize-ci-build
-spec:
-  nodeSelector:
-    cloud.google.com/gke-nodepool: slaves
-  containers:
-  - name: maven
-    image: maven:3.5.3-jdk-8-slim
-    command: ["cat"]
-    tty: true
-    env:
-      - name: LIMITS_CPU
-        valueFrom:
-          resourceFieldRef:
-            resource: limits.cpu
-      # every JVM process will get a 1/2 of HEAP from total memory
-      - name: JAVA_TOOL_OPTIONS
-        value: |
-          -XX:+UnlockExperimentalVMOptions
-          -XX:+UseCGroupMemoryLimitForHeap
-          -XX:MaxRAMFraction=\$(LIMITS_CPU)
-      - name: TZ
-        value: Europe/Berlin
-      - name: DOCKER_HOST
-        value: tcp://localhost:2375
-    resources:
-      limits:
-        cpu: 2
-        memory: 3Gi
-      requests:
-        cpu: 2
-        memory: 3Gi
-  - name: docker
-    image: docker:18.03.1-ce-dind
-    args: ["--storage-driver=overlay2"]
-    securityContext:
-      privileged: true
-    tty: true
-    resources:
-      limits:
-        cpu: 1
-        memory: 1Gi
-      requests:
-        cpu: 1
-        memory: 1Gi
-
-"""
 }
 
 /******** START PIPELINE *******/
@@ -128,8 +74,15 @@ pipeline {
       cloud 'optimize-ci'
       label "optimize-ci-build_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
       defaultContainer 'jnlp'
-      yaml mavenDindAgent()
+      yamlFile '.ci/podSpecs/mavenNodeJSDindAgent.yml'
     }
+  }
+
+  parameters {
+    string(name: 'RELEASE_VERSION', defaultValue: '1.0.0', description: 'Version to release. Applied to pom.xml and Git tag.')
+    string(name: 'DEVELOPMENT_VERSION', defaultValue: '1.1.0-SNAPSHOT', description: 'Next development version.')
+    string(name: 'BRANCH', defaultValue: 'master', description: 'The branch used for the release checkout.')
+    booleanParam(name: 'PUSH_CHANGES', defaultValue: true, description: 'Should the changes be pushed to remote locations.')
   }
 
   environment {
@@ -138,6 +91,7 @@ pipeline {
   }
 
   options {
+    skipDefaultCheckout(true)
     buildDiscarder(logRotator(numToKeepStr:'50', artifactNumToKeepStr: '3'))
     timestamps()
     timeout(time: 30, unit: 'MINUTES')

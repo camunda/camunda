@@ -4,9 +4,18 @@ pipelineJob('camunda-optimize-release') {
   description 'Release Camunda Optimize to Camunda Nexus and tag GitHub repository.'
 
   definition {
-    cps {
-      script(readFileFromWorkspace('.ci/pipelines/release.groovy'))
-      sandbox()
+    cpsScm {
+      scriptPath('.ci/pipelines/release.groovy')
+      lightweight(false)
+      scm {
+        git {
+          remote {
+            github('camunda/camunda-optimize')
+            credentials('camunda-jenkins-github')
+          }
+          branches('master')
+        }
+      }
     }
   }
 

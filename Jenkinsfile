@@ -33,18 +33,11 @@ void buildNotification(String buildStatus) {
 }
 
 void integrationTestSteps(String engineVersion = 'latest') {
-  container('node') {
-    sh ('''
-      cd ./client
-      yarn
-      yarn build
-    ''')
-  }
   container('maven') {
     installDockerBinaries()
     sh ("""echo '${CAM_REGISTRY_PSW}' | docker login -u ${CAM_REGISTRY_USR} registry.camunda.cloud --password-stdin""")
     setupPermissionsForHostDirs('backend')
-    runMaven("install -Pproduction,it,engine-${engineVersion} -Dskip.fe.build -pl backend -am -T\$LIMITS_CPU")
+    runMaven("install -Pproduction,it,engine-${engineVersion} -pl backend -am -T\$LIMITS_CPU")
   }
 }
 
@@ -129,25 +122,14 @@ pipeline {
   }
 
   stages {
-    stage ('Build Frontend') {
-      steps {
-        container('node') {
-          sh ('''
-            cd ./client
-            yarn
-            yarn build
-          ''')
-        }
-      }
-    }
-    stage('Build Backend') {
+    stage('Build') {
       steps {
         container('maven') {
           // prepare maven container
           installDockerBinaries()
           setupPermissionsForHostDirs('upgrade')
 
-          runMaven('install -Pproduction -Dskip.fe.build -Dskip.docker -DskipTests -T\$LIMITS_CPU')
+          runMaven('install -Pproduction -Dskip.docker -DskipTests -T\$LIMITS_CPU')
         }
       }
     }
