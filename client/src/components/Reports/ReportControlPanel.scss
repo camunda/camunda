@@ -32,7 +32,8 @@
   border-top: 1px solid #bbbbbb;
   border-bottom: 1px solid #bbbbbb;
 
-  &:first-child {
+  &:first-child,
+  & + .ReportControlPanel__variableInputContainer {
     border-top: none;
   }
 
