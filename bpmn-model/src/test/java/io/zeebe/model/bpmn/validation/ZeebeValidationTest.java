@@ -21,6 +21,7 @@ import static org.junit.Assert.fail;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.Message;
+import io.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
@@ -131,7 +132,40 @@ public class ZeebeValidationTest {
         Arrays.asList(
             expect(ZeebeSubscription.class, "zeebe:correlationKey must be present and not empty"))
       },
-      {"default-flow.bpmn", Arrays.asList(expect("gateway", "Default flow must start at gateway"))}
+      {"default-flow.bpmn", Arrays.asList(expect("gateway", "Default flow must start at gateway"))},
+      {
+        Bpmn.createExecutableProcess("process").startEvent().userTask("task").endEvent().done(),
+        Arrays.asList(expect("task", "Elements of this type are not supported"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start")
+            .message(b -> b.name("foo").zeebeCorrelationKey("correlationkey"))
+            .endEvent()
+            .done(),
+        Arrays.asList(expect("start", "Must be a none start event"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .endEvent("end")
+            .signalEventDefinition("foo")
+            .id("eventDefinition")
+            .done(),
+        Arrays.asList(
+            expect("end", "Must be a none end event"),
+            expect("eventDefinition", "Event definition of this type is not supported"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .intermediateCatchEvent("catch")
+            .timerWithCycle("some config")
+            .endEvent()
+            .done(),
+        Arrays.asList(
+            expect(TimerEventDefinition.class, "Event definition of this type is not supported"))
+      }
     };
   }
 

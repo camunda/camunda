@@ -25,14 +25,18 @@ public class ZeebeDesignTimeValidators {
 
   static {
     VALIDATORS = new ArrayList<>();
+    VALIDATORS.add(new DefinitionsValidator());
+    VALIDATORS.add(new EndEventValidator());
+    VALIDATORS.add(new EventDefinitionValidator());
+    VALIDATORS.add(new ExclusiveGatewayValidator());
+    VALIDATORS.add(new FlowElementValidator());
+    VALIDATORS.add(new MessageValidator());
     VALIDATORS.add(new ProcessValidator());
     VALIDATORS.add(new ServiceTaskValidator());
+    VALIDATORS.add(new SequenceFlowValidator());
+    VALIDATORS.add(new StartEventValidator());
     VALIDATORS.add(new ZeebeTaskDefinitionValidator());
     VALIDATORS.add(new ZeebeIoMappingValidator());
-    VALIDATORS.add(new ExclusiveGatewayValidator());
-    VALIDATORS.add(new SequenceFlowValidator());
-    VALIDATORS.add(new MessageValidator());
     VALIDATORS.add(new ZeebeSubscriptionValidator());
-    VALIDATORS.add(new DefinitionsValidator());
   }
 }
