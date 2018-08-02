@@ -21,7 +21,9 @@ const workflowMock = {
 };
 const InstancesWithRunningFilter = (
   <Instances
-    location={{search: '?filter={"active": false, "incidents": true}'}}
+    location={{
+      search: '?filter={"active": false, "incidents": true}'
+    }}
     getStateLocally={() => {
       return {filterCount: 0};
     }}
@@ -80,8 +82,8 @@ describe('Instances', () => {
     api.fetchWorkflowInstances.mockClear();
   });
 
-  describe('filter on initial render', () => {
-    it('should initially render without filters selected', () => {
+  describe('initial render', () => {
+    it('should initially render with the right state', () => {
       const count = getRandomInt(20);
       const node = new Instances({
         getStateLocally: () => {
@@ -91,11 +93,13 @@ describe('Instances', () => {
 
       expect(node.state.filter).toEqual({});
       expect(node.state.filterCount).toBe(count);
+      expect(node.state.activityIds.length).toBe(0);
+      expect(node.state.workflow).toBe(null);
     });
   });
 
   describe('reading filters from url', () => {
-    it('should render the Filter component with provided filters in url', async () => {
+    it('should read and store filters values from url', async () => {
       // given
       const node = shallow(InstancesWithRunningFilter);
 
@@ -104,13 +108,13 @@ describe('Instances', () => {
       expect(node.state('filter').incidents).toBe(true);
     });
 
-    it('should render the Filter with default filter selection when no ?filter=', () => {
+    it('should read and store default filter selection if no filter query in url', () => {
       const node = shallow(InstancesWithoutFilter);
 
       expect(node.state('filter')).toEqual(DEFAULT_FILTER);
     });
 
-    it('should apply default filter selection for an invalid query', () => {
+    it('should read and store default filter selection for an invalid query', () => {
       const node = shallow(InstancesWithInvalidRunningFilter);
 
       expect(node.state('filter')).toEqual(DEFAULT_FILTER);
@@ -130,10 +134,8 @@ describe('Instances', () => {
       expect(FiltersNode.prop('onFilterChange')).toBe(
         node.instance().handleFilterChange
       );
-      expect(FiltersNode.prop('onWorkflowVersionChange')).toBe(
-        node.instance().handleWorkflowChange
-      );
       expect(FiltersNode.prop('resetFilter')).toBe(node.instance().resetFilter);
+      expect(FiltersNode.prop('activityIds')).toBe(node.state('activityIds'));
     });
 
     it('should pass to the Header the filterCount', async () => {
@@ -174,17 +176,29 @@ describe('Instances', () => {
   });
 
   describe('rendering a diagram', () => {
-    it('should render no diagram on initial render', () => {
+    it('should not render a diagram on initial render', () => {
       // given
       const node = shallow(InstancesWithRunningFilter);
 
       // then
-      expect(node.state('workflow')).toEqual(null);
       expect(node.find(Diagram).length).toBe(0);
       expect(node.find(PanelHeader).props().children).toBe('Workflow');
     });
 
+    it('should pass diagram data to Filters component', () => {
+      // given
+      const node = shallow(InstancesWithRunningFilter);
+      const FiltersNode = node.find(Filters);
+
+      // here
+      expect(FiltersNode.prop('activityIds')).toEqual([]);
+      expect(FiltersNode.prop('onWorkflowVersionChange')).toBe(
+        node.instance().handleWorkflowChange
+      );
+    });
+
     it('should render a diagram when workflow data is available ', () => {
+      // given
       const node = shallow(InstancesWithWorkflow);
 
       //when
@@ -195,9 +209,33 @@ describe('Instances', () => {
       expect(node.state('workflow')).toEqual(workflowMock);
       expect(node.find(Diagram).length).toEqual(1);
       expect(node.find(Diagram).props().workflowId).toEqual(workflowMock.id);
+      expect(node.find(Diagram).props().onFlowNodesDetailsReady).toEqual(
+        node.instance().handleFlowNodesDetailsReady
+      );
       expect(node.find(PanelHeader).props().children).toBe(
         workflowMock.name || workflowMock.id
       );
+    });
+
+    it('should update the activityIds when the diagram finishes loading', () => {
+      const nodes = {
+        Task_1t0a4uy: {name: 'Check order items', type: 'TASK'},
+        Task_162x79i: {name: 'Ship Articles', type: 'TASK'}
+      };
+      const options = [
+        {value: 'Task_1t0a4uy', label: 'Check order items'},
+        {value: 'Task_162x79i', label: 'Ship Articles'}
+      ];
+
+      // given
+      const node = shallow(InstancesWithWorkflow);
+
+      // when
+      node.instance().handleFlowNodesDetailsReady(nodes);
+      node.update();
+
+      // then
+      expect(node.state().activityIds).toEqual(options);
     });
   });
 });
