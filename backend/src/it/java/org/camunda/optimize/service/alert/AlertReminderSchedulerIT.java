@@ -4,19 +4,24 @@ import org.camunda.optimize.AbstractAlertIT;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
+import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.group.FlowNodesGroupByDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.reader.AlertReader;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
+import java.util.List;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.HEAT_VISUALIZATION;
@@ -27,6 +32,8 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 
 
 public class AlertReminderSchedulerIT extends AbstractAlertIT {
+  @Autowired
+  private AlertReader alertReader;
 
   @Rule
   public RuleChain chain = RuleChain
@@ -93,9 +100,21 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
 
 
     //then
-    assertThat(alert.getReminder(), is(nullValue()));
+    assertThat(getAllAlerts().get(0).getReminder(), is(nullValue()));
   }
 
+
+  private List<AlertDefinitionDto> getAllAlerts() {
+    Response response =
+            embeddedOptimizeRule.target(ALERT)
+                    .request()
+                    .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
+                    .get();
+
+    assertThat(response.getStatus(), is(200));
+    return response.readEntity(new GenericType<List<AlertDefinitionDto>>() {
+    });
+  }
 
   @Test
   public void reminderJobsAreRemovedOnReportUpdate() throws Exception {
