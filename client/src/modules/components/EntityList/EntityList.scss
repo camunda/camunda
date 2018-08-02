@@ -6,8 +6,7 @@
 
 .EntityList__header {
   display: flex;
-  margin-bottom: 18px;
-  align-items: flex-end;
+  flex-wrap: wrap;
 }
 
 .EntityList__heading {
@@ -100,4 +99,6 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
+  flex: 0 1 100%;
+  margin-top: 18px;
 }

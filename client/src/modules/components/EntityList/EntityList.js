@@ -198,10 +198,8 @@ class EntityList extends React.Component {
     const header = (
       <div className="EntityList__header">
         <h1 className="EntityList__heading">{this.props.label}s</h1>
-        <div className="EntityList__tools">
-          {createButton}
-          {searchInput}
-        </div>
+        <div className="EntityList__tools">{createButton}</div>
+        {searchInput}
       </div>
     );
 
