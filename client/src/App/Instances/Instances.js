@@ -93,6 +93,8 @@ class Instances extends Component {
       selectionCount: selectionCount + 1
     }));
     this.props.storeStateLocally({
+      selectionCount: this.state.selectionCount,
+      instancesInSelectionsCount: this.state.instancesInSelectionsCount,
       selections: this.state.selections,
       rollingSelectionIndex: this.state.rollingSelectionIndex
     });
