@@ -1,4 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Gateway Protocol</name>
@@ -45,6 +47,55 @@
         <artifactId>protobuf-maven-plugin</artifactId>
       </plugin>
     </plugins>
+
   </build>
+
+  <profiles>
+    <profile>
+      <id>golang</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.xolstice.maven.plugins</groupId>
+            <artifactId>protobuf-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>compile-custom</goal>
+                </goals>
+                <configuration>
+                  <pluginId>go</pluginId>
+                  <pluginExecutable>${env.GOPATH}/bin/protoc-gen-go</pluginExecutable>
+                  <pluginParameter>plugins=grpc</pluginParameter>
+
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>copy-golang-proto</id>
+                <phase>generate-sources</phase>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <configuration>
+                  <tasks>
+                    <copy
+                      file="${project.build.directory}/generated-sources/protobuf/go/gateway.pb.go"
+                      tofile="${maven.multiModuleProjectDirectory}/clients/go/pb/gateway.pb.go"
+                      failonerror="true"/>
+                  </tasks>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
 </project>
 
