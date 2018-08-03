@@ -20,8 +20,8 @@ export default class Selection extends React.Component {
         workflowId: PropTypes.string.isRequired
       }).isRequired
     ).isRequired,
-    count: PropTypes.number.isRequired,
-    onClick: PropTypes.func.isRequired,
+    instanceCount: PropTypes.number.isRequired,
+    onToggle: PropTypes.func.isRequired,
     onRetry: PropTypes.func.isRequired,
     onDelete: PropTypes.func.isRequired
   };
@@ -38,10 +38,10 @@ export default class Selection extends React.Component {
     ));
   };
 
-  renderFooter = (count, numberOfDisplayedInstances) => (
+  renderFooter = (instanceCount, numberOfDisplayedInstances) => (
     <Styled.Footer>
       <Styled.MoreInstances>
-        {count - numberOfDisplayedInstances + ' more Instances'}
+        {instanceCount - numberOfDisplayedInstances + ' more Instances'}
       </Styled.MoreInstances>
     </Styled.Footer>
   );
@@ -66,29 +66,29 @@ export default class Selection extends React.Component {
       selectionId,
       onRetry,
       onDelete,
-      onClick,
+      onToggle,
       instances,
-      count
+      instanceCount
     } = this.props;
     const {renderArrowIcon, renderBody, renderActions, renderFooter} = this;
     return (
       <Styled.Selection>
-        <Styled.Header {...{onClick, isOpen}}>
+        <Styled.Header onClick={onToggle} {...{isOpen}}>
           {renderArrowIcon(isOpen)}
           <Styled.Headline>Selection {selectionId + 1}</Styled.Headline>
           <Styled.Badge
             type={
               isOpen ? BADGE_TYPE.OPENSELECTIONHEAD : BADGE_TYPE.SELECTIONHEAD
             }
-            badgeContent={count}
+            badgeContent={instanceCount}
           />
 
           {isOpen && renderActions(onRetry, onDelete)}
         </Styled.Header>
         {isOpen && (
           <Fragment>
-            {renderBody(instances, count)}
-            {renderFooter(count, instances.length)}
+            {renderBody(instances, instanceCount)}
+            {renderFooter(instanceCount, instances.length)}
           </Fragment>
         )}
       </Styled.Selection>

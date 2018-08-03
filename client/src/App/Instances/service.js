@@ -29,3 +29,13 @@ export function getParentFilter(filter) {
   if (appliedFilters.includes('completed' || 'canceled'))
     return {finished: true};
 }
+
+export function getSelectionById(selections, id) {
+  return selections
+    .map(
+      (selection, index) =>
+        selection.selectionId === id && {...selection, index}
+    )
+    .filter(selection => selection.selectionId >= 0)
+    .shift();
+}

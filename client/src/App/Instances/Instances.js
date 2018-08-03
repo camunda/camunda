@@ -1,6 +1,8 @@
 import React, {Component, Fragment} from 'react';
 import PropTypes from 'prop-types';
 
+import {fetchWorkflowInstanceBySelection} from 'modules/api/instances';
+
 import Content from 'modules/components/Content';
 import Panel from 'modules/components/Panel';
 import withSharedState from 'modules/components/withSharedState';
@@ -21,7 +23,8 @@ import SelectionList from './SelectionList';
 import {
   parseQueryString,
   createNewSelectionFragment,
-  getParentFilter
+  getParentFilter,
+  getSelectionById
 } from './service';
 import Filters from './Filters';
 import * as Styled from './styled.js';
@@ -36,17 +39,23 @@ class Instances extends Component {
 
   constructor(props) {
     super(props);
-    const {filterCount, selections} = props.getStateLocally();
+    const {
+      filterCount,
+      selections,
+      rollingSelectionIndex,
+      instancesInSelectionsCount,
+      selectionCount
+    } = props.getStateLocally();
 
     this.state = {
       filter: {},
       filterCount: filterCount || 0,
+      openSelection: null,
       selection: createNewSelectionFragment(),
       selections: selections || [],
-      instancesInSelections: 5000,
-      selectionCount: 10,
-      rollingSelectionIndex: 0,
-      currentSelection: null,
+      instancesInSelectionsCount: instancesInSelectionsCount || 0,
+      selectionCount: selectionCount || 0,
+      rollingSelectionIndex: rollingSelectionIndex || 0,
       workflow: null,
       activityIds: []
     };
@@ -62,43 +71,130 @@ class Instances extends Component {
     }
   }
 
-  addNewSelection = async () => {
+  addSelectionToList = async selection => {
     const {
       rollingSelectionIndex: currentSelectionIndex,
-      selection
+      instancesInSelectionsCount,
+      selectionCount
     } = this.state;
 
-    // push new Selection to selections array, replace Sets with arrays.
+    // Add Id for each selection
     await this.setState(prevState => ({
       selections: [
         {
           selectionId: currentSelectionIndex,
-          queries: [
-            {
-              ...this.state.filter,
-              ...getParentFilter(this.state.filter),
-              ...selection,
-              ids: [...(selection.ids || [])],
-              excludeIds: [...(selection.excludeIds || [])]
-            }
-          ]
+          ...selection
         },
         ...prevState.selections
       ],
-      rollingSelectionIndex: currentSelectionIndex + 1
+      rollingSelectionIndex: currentSelectionIndex + 1,
+      instancesInSelectionsCount:
+        instancesInSelectionsCount + selection.totalCount,
+      selectionCount: selectionCount + 1
     }));
-    this.props.storeStateLocally({selections: this.state.selections});
+    this.props.storeStateLocally({
+      selections: this.state.selections,
+      rollingSelectionIndex: this.state.rollingSelectionIndex
+    });
+  };
+
+  addNewSelection = async () => {
+    const {selection, filter} = this.state;
+
+    //Replace Sets with arrays.
+    const payload = {
+      queries: [
+        {
+          ...filter,
+          ...getParentFilter(filter),
+          ...selection,
+          ids: [...(selection.ids || [])],
+          excludeIds: [...(selection.excludeIds || [])]
+        }
+      ]
+    };
+
+    const instancesDetails = await fetchWorkflowInstanceBySelection(payload);
+
+    this.addSelectionToList({
+      ...payload,
+      ...instancesDetails
+    });
+  };
+
+  updateSelectionData = async selectionId => {
+    const {selection, selections, filter} = this.state;
+    const selectiondata = getSelectionById(selections, selectionId);
+
+    const payload = {
+      queries: [
+        {
+          ...filter,
+          ...getParentFilter(filter),
+          ...selection,
+          ids: [...(selection.ids || [])],
+          excludeIds: [...(selection.excludeIds || [])]
+        },
+        ...(selections[selectiondata.index].queries || '')
+      ]
+    };
+
+    const instancesDetails = await fetchWorkflowInstanceBySelection(payload);
+
+    return {
+      ...(selectiondata && selections[selectiondata.index]),
+      ...payload,
+      ...instancesDetails
+    };
+  };
+
+  addToCurrentSelection = async selectionId => {
+    const selectiondata = getSelectionById(this.state.selections, selectionId);
+    const newSelection = await this.updateSelectionData(selectionId);
+
+    const {selections} = this.state;
+
+    selections[selectiondata.index] = newSelection;
+
+    this.setState(selections);
+    this.props.storeStateLocally({
+      selections
+    });
+  };
+
+  toggleSelection = selectionId => {
+    this.setState({
+      openSelection:
+        selectionId !== this.state.openSelection ? selectionId : null
+    });
   };
 
   updateSelection = change => {
+    console.log(change);
     this.setState({
       selection: {...change}
     });
   };
 
-  handleAddToSelection = () => {
-    this.addNewSelection();
-    // addToSelection()
+  deleteSelection = async deleteId => {
+    const {selections, instancesInSelectionsCount, selectionCount} = this.state;
+
+    const selectionToRemove = getSelectionById(selections, deleteId);
+
+    // remove the selection
+    selections.splice(selectionToRemove.index, 1);
+
+    await this.setState({
+      selections,
+      instancesInSelectionsCount:
+        instancesInSelectionsCount - selectionToRemove.totalCount,
+      selectionCount: selectionCount - 1 || 0
+    });
+    this.props.storeStateLocally({
+      selections,
+      instancesInSelectionsCount: this.state.instancesInSelectionsCount,
+      selectionCount: this.state.selectionCount
+    });
   };
 
   setFilterFromUrl = () => {
@@ -154,13 +250,6 @@ class Instances extends Component {
 
     // reset filter in local storage
     this.props.storeStateLocally({filter: DEFAULT_FILTER});
-  };
-
-  adjustSelectionCounter = ({instanceCount, selectionCount}) => {
-    // this.setState({
-    //   instancesInSelections: instanceCount,
-    //   selectionCount: selectionCount
-    // });
   };
 
   handleFlowNodesDetailsReady = nodes => {
@@ -229,7 +318,11 @@ class Instances extends Component {
                 }}
                 selection={this.state.selection}
                 filter={this.state.filter}
-                onAddToSelection={this.handleAddToSelection}
+                addNewSelection={this.addNewSelection}
+                addToCurrentSelection={() =>
+                  this.addToCurrentSelection(this.state.openSelection)
+                }
+                errorMessage={this.state.errorMessage}
               />
             </Styled.Center>
             <Styled.Selections>
@@ -238,14 +331,16 @@ class Instances extends Component {
                   <span>Selections</span>
                   <Styled.Badge
                     type={BADGE_TYPE.COMBOSELECTION}
-                    badgeContent={this.state.instancesInSelections}
+                    badgeContent={this.state.instancesInSelectionsCount}
                     circleContent={this.state.selectionCount}
                   />
                 </Styled.SelectionHeader>
                 <Panel.Body>
                   <SelectionList
+                    openSelection={this.state.openSelection}
                     selections={this.state.selections}
-                    onChange={this.adjustSelectionCounter}
+                    onDelete={this.deleteSelection}
+                    onToggle={this.toggleSelection}
                   />
                 </Panel.Body>
                 <Styled.RightExpandButton

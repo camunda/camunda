@@ -107,7 +107,6 @@ export const WorkflowName = styled.div`
   margin: 0 64px 0 4px;
 `;
 
-// TODO: change margin when badge is added.
 export const InstanceId = styled.div`
   margin: 0 171px 0 0;
 `;

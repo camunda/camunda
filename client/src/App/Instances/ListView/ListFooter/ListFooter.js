@@ -15,31 +15,22 @@ class ListFooter extends React.Component {
     perPage: PropTypes.number.isRequired,
     firstElement: PropTypes.number.isRequired,
     total: PropTypes.number.isRequired,
-    onAddToSelection: PropTypes.func.isRequired,
+    addNewSelection: PropTypes.func.isRequired,
     getStateLocally: PropTypes.func.isRequired,
-    storeStateLocally: PropTypes.func.isRequired
-  };
-
-  handleSelectionInteraction = () => {
-    this.props.onAddToSelection();
-  };
-
-  renderOptions = () => {
-    return (
-      <React.Fragment>
-        <Dropdown.Option>Add to Current Selection</Dropdown.Option>
-        <Dropdown.Option onClick={this.handleSelectionInteraction}>
-          Create Selection
-        </Dropdown.Option>
-      </React.Fragment>
-    );
+    storeStateLocally: PropTypes.func.isRequired,
+    addToCurrentSelection: PropTypes.func
   };
 
   renderSelectionDropDown = () => {
     return (
       <Styled.SelectionButton>
         <Dropdown placement="top" label="Add to Selection...">
-          {this.renderOptions()}
+          <Dropdown.Option onClick={this.props.addToCurrentSelection}>
+            Add to Current Selection
+          </Dropdown.Option>
+          <Dropdown.Option onClick={this.props.addNewSelection}>
+            Create Selection
+          </Dropdown.Option>
         </Dropdown>
       </Styled.SelectionButton>
     );
@@ -47,7 +38,7 @@ class ListFooter extends React.Component {
 
   renderSelectionButton = () => {
     return (
-      <Styled.SelectionButton onClick={this.handleSelectionInteraction}>
+      <Styled.SelectionButton onClick={this.props.addNewSelection}>
         Create Selection
       </Styled.SelectionButton>
     );
