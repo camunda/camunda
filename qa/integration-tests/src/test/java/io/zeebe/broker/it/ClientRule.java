@@ -57,7 +57,7 @@ public class ClientRule extends ExternalResource {
         });
   }
 
-  public ClientRule(Supplier<Properties> propertiesProvider) {
+  public ClientRule(final Supplier<Properties> propertiesProvider) {
     this.properties = propertiesProvider.get();
   }
 
@@ -86,7 +86,8 @@ public class ClientRule extends ExternalResource {
   public void waitUntilTopicsExists(final String... topicNames) {
     final List<String> expectedTopicNames = Arrays.asList(topicNames);
 
-    doRepeatedly(this::topicsByName).until(t -> t.keySet().containsAll(expectedTopicNames));
+    doRepeatedly(this::topicsByName)
+        .until(t -> t != null && t.keySet().containsAll(expectedTopicNames));
   }
 
   public Map<String, List<Partition>> topicsByName() {
@@ -107,7 +108,7 @@ public class ClientRule extends ExternalResource {
     return defaultPartitions.get(0);
   }
 
-  private List<Integer> getPartitions(String topic) {
+  private List<Integer> getPartitions(final String topic) {
     final Topology topology = client.newTopologyRequest().send().join();
 
     return topology

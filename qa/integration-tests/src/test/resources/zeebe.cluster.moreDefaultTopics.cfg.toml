@@ -23,5 +23,8 @@ name = "thisTopic"
 partitions = 4
 replicationFactor = 1
 
+[network.gateway]
+enabled = false
+
 [cluster]
 initialContactPoints = []

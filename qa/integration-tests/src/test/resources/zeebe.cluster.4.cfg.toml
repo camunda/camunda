@@ -3,5 +3,8 @@
 [network]
 portOffset = 3
 
+[network.gateway]
+enabled = false
+
 [cluster]
 initialContactPoints = [ "localhost:26512" ]

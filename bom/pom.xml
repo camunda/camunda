@@ -44,6 +44,12 @@
 
       <dependency>
         <groupId>io.zeebe</groupId>
+        <artifactId>zeebe-client-java</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
         <artifactId>zeebe-protocol-test-util</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -147,6 +153,18 @@
       <dependency>
         <groupId>io.zeebe</groupId>
         <artifactId>zb-build-tools</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zeebe-gateway-protocol</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zeebe-gateway</artifactId>
         <version>${project.version}</version>
       </dependency>
     </dependencies>

@@ -3,6 +3,9 @@
 
 bootstrap = 3
 
+[network.gateway]
+enabled = false
+
 [data]
 snapshotPeriod = "15m"
 snapshotReplicationPeriod = "5ms"

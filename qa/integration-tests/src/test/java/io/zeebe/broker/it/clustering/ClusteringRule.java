@@ -30,6 +30,7 @@ import io.zeebe.broker.client.api.events.TopicState;
 import io.zeebe.broker.client.impl.ZeebeClientImpl;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.util.TopologyClient;
+import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
@@ -68,6 +69,7 @@ public class ClusteringRule extends ExternalResource {
       new SocketAddress[] {
         BROKER_1_CLIENT_ADDRESS, BROKER_2_CLIENT_ADDRESS, BROKER_3_CLIENT_ADDRESS
       };
+
   private String[] brokerConfigs = new String[] {BROKER_1_TOML, BROKER_2_TOML, BROKER_3_TOML};
 
   // rules
@@ -81,18 +83,22 @@ public class ClusteringRule extends ExternalResource {
   protected final Map<SocketAddress, File> brokerBases = new HashMap<>();
 
   public ClusteringRule(
-      AutoCloseableRule autoCloseableRule,
-      ClientRule clientRule,
-      SocketAddress[] brokerAddresses,
-      String[] brokerConfigs) {
+      final AutoCloseableRule autoCloseableRule,
+      final ClientRule clientRule,
+      final SocketAddress[] brokerAddresses,
+      final String[] brokerConfigs) {
     this(autoCloseableRule, clientRule);
     this.brokerAddresses = brokerAddresses;
     this.brokerConfigs = brokerConfigs;
   }
 
-  public ClusteringRule(AutoCloseableRule autoCloseableRule, ClientRule clientRule) {
+  public ClusteringRule(final AutoCloseableRule autoCloseableRule, final ClientRule clientRule) {
     this.autoCloseableRule = autoCloseableRule;
     this.clientRule = clientRule;
+  }
+
+  public BrokerCfg getBrokerConfig(final SocketAddress address) {
+    return this.brokers.get(address).getConfig();
   }
 
   @Override
@@ -133,7 +139,7 @@ public class ClusteringRule extends ExternalResource {
    * @param partition
    * @return
    */
-  public BrokerInfo getLeaderForPartition(int partition) {
+  public BrokerInfo getLeaderForPartition(final int partition) {
     return doRepeatedly(
             () -> {
               final List<BrokerInfo> brokers =
@@ -149,7 +155,7 @@ public class ClusteringRule extends ExternalResource {
     return new SocketAddress(info.getHost(), info.getPort());
   }
 
-  public BrokerInfo getFollowerForPartition(int partitionId) {
+  public BrokerInfo getFollowerForPartition(final int partitionId) {
     return doRepeatedly(
             () -> {
               final List<BrokerInfo> brokers =
@@ -176,7 +182,8 @@ public class ClusteringRule extends ExternalResource {
     return null;
   }
 
-  private Optional<BrokerInfo> extractPartitionLeader(List<BrokerInfo> brokers, int partition) {
+  private Optional<BrokerInfo> extractPartitionLeader(
+      final List<BrokerInfo> brokers, final int partition) {
     return brokers
         .stream()
         .filter(
@@ -187,7 +194,8 @@ public class ClusteringRule extends ExternalResource {
         .findFirst();
   }
 
-  private Optional<BrokerInfo> extractPartitionFollower(List<BrokerInfo> brokers, int partition) {
+  private Optional<BrokerInfo> extractPartitionFollower(
+      final List<BrokerInfo> brokers, final int partition) {
     return brokers
         .stream()
         .filter(
@@ -212,11 +220,12 @@ public class ClusteringRule extends ExternalResource {
    * @param partitionCount to number of partitions for the new topic
    * @return the created topic
    */
-  public Topic createTopic(String topicName, int partitionCount) {
+  public Topic createTopic(final String topicName, final int partitionCount) {
     return createTopic(topicName, partitionCount, DEFAULT_REPLICATION_FACTOR);
   }
 
-  public Topic createTopic(String topicName, int partitionCount, int replicationFactor) {
+  public Topic createTopic(
+      final String topicName, final int partitionCount, final int replicationFactor) {
     final TopicEvent topicEvent =
         zeebeClient
             .newCreateTopicCommand()
@@ -234,7 +243,10 @@ public class ClusteringRule extends ExternalResource {
   }
 
   private boolean hasPartitionsWithReplicationFactor(
-      List<BrokerInfo> brokers, String topicName, int partitionCount, int replicationFactor) {
+      final List<BrokerInfo> brokers,
+      final String topicName,
+      final int partitionCount,
+      final int replicationFactor) {
     final AtomicLong leaders = new AtomicLong();
     final AtomicLong followers = new AtomicLong();
 
@@ -256,7 +268,7 @@ public class ClusteringRule extends ExternalResource {
   }
 
   public void waitForTopicPartitionReplicationFactor(
-      String topicName, int partitionCount, int replicationFactor) {
+      final String topicName, final int partitionCount, final int replicationFactor) {
     waitForTopology(
         topology ->
             hasPartitionsWithReplicationFactor(
@@ -267,7 +279,7 @@ public class ClusteringRule extends ExternalResource {
     return waitForTopicAvailability(Protocol.SYSTEM_TOPIC);
   }
 
-  private Topic waitForTopicAvailability(String topicName) {
+  private Topic waitForTopicAvailability(final String topicName) {
     return doRepeatedly(
             () -> {
               final Topics topics = zeebeClient.newTopicsRequest().send().join();
@@ -281,7 +293,7 @@ public class ClusteringRule extends ExternalResource {
         .get();
   }
 
-  private Broker startBroker(SocketAddress socketAddress, String configFile) {
+  private Broker startBroker(final SocketAddress socketAddress, final String configFile) {
     final File base = brokerBases.get(socketAddress);
 
     final InputStream config = this.getClass().getClassLoader().getResourceAsStream(configFile);
@@ -299,7 +311,7 @@ public class ClusteringRule extends ExternalResource {
    * @param socketAddress
    * @return
    */
-  public void restartBroker(SocketAddress socketAddress) {
+  public void restartBroker(final SocketAddress socketAddress) {
     final Broker broker = brokers.get(socketAddress);
     if (broker != null) {
       stopBroker(socketAddress);
@@ -316,7 +328,7 @@ public class ClusteringRule extends ExternalResource {
     waitForInternalSystemAndReplicationFactor();
   }
 
-  private void waitUntilBrokerIsAddedToTopology(SocketAddress socketAddress) {
+  private void waitUntilBrokerIsAddedToTopology(final SocketAddress socketAddress) {
     waitForTopology(
         topology ->
             topology
@@ -333,7 +345,7 @@ public class ClusteringRule extends ExternalResource {
    * @param socketAddress
    * @return
    */
-  public List<Integer> getBrokersLeadingPartitions(SocketAddress socketAddress) {
+  public List<Integer> getBrokersLeadingPartitions(final SocketAddress socketAddress) {
     return zeebeClient
         .newTopologyRequest()
         .send()
@@ -364,11 +376,11 @@ public class ClusteringRule extends ExternalResource {
         .collect(Collectors.toList());
   }
 
-  public SocketAddress[] getOtherBrokers(String address) {
+  public SocketAddress[] getOtherBrokers(final String address) {
     return getOtherBrokers(SocketAddress.from(address));
   }
 
-  public SocketAddress[] getOtherBrokers(SocketAddress address) {
+  public SocketAddress[] getOtherBrokers(final SocketAddress address) {
     final List<SocketAddress> collect =
         brokers.keySet().stream().filter((s) -> !s.equals(address)).collect(Collectors.toList());
     return collect.toArray(new SocketAddress[collect.size()]);
@@ -380,7 +392,7 @@ public class ClusteringRule extends ExternalResource {
    * @param topic
    * @return
    */
-  public long getPartitionLeaderCountForTopic(String topic) {
+  public long getPartitionLeaderCountForTopic(final String topic) {
 
     return zeebeClient
         .newTopologyRequest()
@@ -400,11 +412,11 @@ public class ClusteringRule extends ExternalResource {
    *
    * @param socketAddress
    */
-  public void stopBroker(String address) {
+  public void stopBroker(final String address) {
     stopBroker(SocketAddress.from(address));
   }
 
-  public void stopBroker(SocketAddress socketAddress) {
+  public void stopBroker(final SocketAddress socketAddress) {
     final List<Integer> brokersLeadingPartitions = getBrokersLeadingPartitions(socketAddress);
 
     final Broker removedBroker = brokers.remove(socketAddress);
@@ -417,7 +429,7 @@ public class ClusteringRule extends ExternalResource {
     waitUntilBrokerIsRemovedFromTopology(socketAddress);
   }
 
-  private void waitUntilBrokerIsRemovedFromTopology(SocketAddress socketAddress) {
+  private void waitUntilBrokerIsRemovedFromTopology(final SocketAddress socketAddress) {
     waitForTopology(
         topology ->
             topology
@@ -428,7 +440,8 @@ public class ClusteringRule extends ExternalResource {
                             && b.getPort() == socketAddress.port()));
   }
 
-  private void waitForNewLeaderOfPartitions(List<Integer> partitions, SocketAddress oldLeader) {
+  private void waitForNewLeaderOfPartitions(
+      final List<Integer> partitions, final SocketAddress oldLeader) {
     waitForTopology(
         topology ->
             topology

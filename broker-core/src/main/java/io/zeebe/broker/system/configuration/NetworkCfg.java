@@ -29,17 +29,20 @@ public class NetworkCfg implements ConfigurationEntry {
   private SocketBindingManagementCfg management = new SocketBindingManagementCfg();
   private SocketBindingReplicationCfg replication = new SocketBindingReplicationCfg();
   private SocketBindingSubscriptionCfg subscription = new SocketBindingSubscriptionCfg();
+  private SocketBindingGatewayCfg gateway = new SocketBindingGatewayCfg();
 
   @Override
-  public void init(BrokerCfg brokerCfg, String brokerBase, Environment environment) {
+  public void init(
+      final BrokerCfg brokerCfg, final String brokerBase, final Environment environment) {
     applyEnvironment(environment);
     client.applyDefaults(this);
     management.applyDefaults(this);
     replication.applyDefaults(this);
     subscription.applyDefaults(this);
+    gateway.applyDefaults(this);
   }
 
-  private void applyEnvironment(Environment environment) {
+  private void applyEnvironment(final Environment environment) {
     environment.getInt(ENV_PORT_OFFSET).ifPresent(v -> portOffset = v);
   }
 
@@ -47,7 +50,7 @@ public class NetworkCfg implements ConfigurationEntry {
     return host;
   }
 
-  public void setHost(String host) {
+  public void setHost(final String host) {
     this.host = host;
   }
 
@@ -55,7 +58,7 @@ public class NetworkCfg implements ConfigurationEntry {
     return defaultSendBufferSize;
   }
 
-  public void setDefaultSendBufferSize(String defaultSendBufferSize) {
+  public void setDefaultSendBufferSize(final String defaultSendBufferSize) {
     this.defaultSendBufferSize = defaultSendBufferSize;
   }
 
@@ -63,7 +66,7 @@ public class NetworkCfg implements ConfigurationEntry {
     return portOffset;
   }
 
-  public void setPortOffset(int portOffset) {
+  public void setPortOffset(final int portOffset) {
     this.portOffset = portOffset;
   }
 
@@ -71,7 +74,7 @@ public class NetworkCfg implements ConfigurationEntry {
     return client;
   }
 
-  public void setClient(SocketBindingClientApiCfg clientApi) {
+  public void setClient(final SocketBindingClientApiCfg clientApi) {
     this.client = clientApi;
   }
 
@@ -79,7 +82,7 @@ public class NetworkCfg implements ConfigurationEntry {
     return management;
   }
 
-  public void setManagement(SocketBindingManagementCfg managementApi) {
+  public void setManagement(final SocketBindingManagementCfg managementApi) {
     this.management = managementApi;
   }
 
@@ -87,7 +90,7 @@ public class NetworkCfg implements ConfigurationEntry {
     return replication;
   }
 
-  public void setReplication(SocketBindingReplicationCfg replicationApi) {
+  public void setReplication(final SocketBindingReplicationCfg replicationApi) {
     this.replication = replicationApi;
   }
 
@@ -95,7 +98,15 @@ public class NetworkCfg implements ConfigurationEntry {
     return subscription;
   }
 
-  public void setSubscription(SocketBindingSubscriptionCfg subscription) {
+  public void setSubscription(final SocketBindingSubscriptionCfg subscription) {
     this.subscription = subscription;
+  }
+
+  public SocketBindingGatewayCfg getGateway() {
+    return gateway;
+  }
+
+  public void setGateway(final SocketBindingGatewayCfg gateway) {
+    this.gateway = gateway;
   }
 }
