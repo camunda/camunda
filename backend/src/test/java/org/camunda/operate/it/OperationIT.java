@@ -41,7 +41,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
 public class OperationIT extends OperateIntegrationTest {
 
   private static final String POST_BATCH_OPERATION_URL = "/api/workflow-instances/operation";
@@ -114,7 +114,6 @@ public class OperationIT extends OperateIntegrationTest {
   }
 
   @Test
-  @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
   public void testOperationsToManyInstanceException() throws Exception {
 
     operateProperties.setBatchOperationMaxSize(5L);
