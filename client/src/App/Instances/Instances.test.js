@@ -77,100 +77,129 @@ api.fetchWorkflowInstancesCount = mockResolvedAsyncFn(Count);
 api.fetchWorkflowInstances = mockResolvedAsyncFn([]);
 
 describe('Instances', () => {
-  beforeEach(() => {
-    api.fetchWorkflowInstancesCount.mockClear();
-    api.fetchWorkflowInstances.mockClear();
-  });
+  describe('Filters', () => {
+    beforeEach(() => {
+      api.fetchWorkflowInstancesCount.mockClear();
+      api.fetchWorkflowInstances.mockClear();
+    });
 
-  describe('initial render', () => {
-    it('should initially render with the right state', () => {
-      const count = getRandomInt(20);
-      const node = new Instances({
-        getStateLocally: () => {
-          return {filterCount: count, selections: [[]]};
-        }
+    describe('initial render', () => {
+      it('should initially render with the right state', () => {
+        const count = getRandomInt(20);
+        const node = new Instances({
+          getStateLocally: () => {
+            return {filterCount: count, selections: [[]]};
+          }
+        });
+
+        expect(node.state.filter).toEqual({});
+        expect(node.state.filterCount).toBe(count);
+        expect(node.state.activityIds.length).toBe(0);
+        expect(node.state.workflow).toBe(null);
+      });
+    });
+
+    describe('reading filters from url', () => {
+      it('should read and store filters values from url', async () => {
+        // given
+        const node = shallow(InstancesWithRunningFilter);
+
+        // then
+        expect(node.state('filter').active).toBe(false);
+        expect(node.state('filter').incidents).toBe(true);
       });
 
-      expect(node.state.filter).toEqual({});
-      expect(node.state.filterCount).toBe(count);
-      expect(node.state.activityIds.length).toBe(0);
-      expect(node.state.workflow).toBe(null);
-    });
-  });
+      it('should read and store default filter selection if no filter query in url', () => {
+        const node = shallow(InstancesWithoutFilter);
 
-  describe('reading filters from url', () => {
-    it('should read and store filters values from url', async () => {
-      // given
-      const node = shallow(InstancesWithRunningFilter);
+        expect(node.state('filter')).toEqual(DEFAULT_FILTER);
+      });
 
-      // then
-      expect(node.state('filter').active).toBe(false);
-      expect(node.state('filter').incidents).toBe(true);
+      it('should read and store default filter selection for an invalid query', () => {
+        const node = shallow(InstancesWithInvalidRunningFilter);
+
+        expect(node.state('filter')).toEqual(DEFAULT_FILTER);
+      });
     });
 
-    it('should read and store default filter selection if no filter query in url', () => {
-      const node = shallow(InstancesWithoutFilter);
+    describe('rendering children that receive filter data', () => {
+      it('should render the Filter and ListView when filter is in url ', () => {
+        // given
+        const node = shallow(InstancesWithRunningFilter);
+        const FiltersNode = node.find(Filters);
 
-      expect(node.state('filter')).toEqual(DEFAULT_FILTER);
-    });
+        // then
+        expect(node.find(ListView)).toHaveLength(1);
+        expect(FiltersNode).toHaveLength(1);
+        expect(FiltersNode.prop('filter')).toEqual(node.state('filter'));
+        expect(FiltersNode.prop('onFilterChange')).toBe(
+          node.instance().handleFilterChange
+        );
+        expect(FiltersNode.prop('resetFilter')).toBe(
+          node.instance().resetFilter
+        );
+        expect(FiltersNode.prop('activityIds')).toBe(node.state('activityIds'));
+      });
 
-    it('should read and store default filter selection for an invalid query', () => {
-      const node = shallow(InstancesWithInvalidRunningFilter);
+      describe('resetFilter', () => {
+        it('should reset filter to the default value', () => {
+          // given
+          const storeStateLocallyMock = jest.fn();
+          const node = shallow(
+            <Instances
+              storeStateLocally={storeStateLocallyMock}
+              location={{
+                search: '?filter={"active": false, "incidents": true}'
+              }}
+              getStateLocally={() => {
+                return {filterCount: 0};
+              }}
+              history={{push: () => {}}}
+            />
+          );
+          const setFilterInURLlSpy = jest.spyOn(
+            node.instance(),
+            'setFilterInURL'
+          );
 
-      expect(node.state('filter')).toEqual(DEFAULT_FILTER);
-    });
-  });
+          // when
+          node.instance().resetFilter();
 
-  describe('rendering children that receive filter data', () => {
-    it('should render the Filter and ListView when filter is in url ', () => {
-      // given
-      const node = shallow(InstancesWithRunningFilter);
-      const FiltersNode = node.find(Filters);
+          // then
+          expect(setFilterInURLlSpy).toHaveBeenCalledWith(DEFAULT_FILTER);
+          expect(storeStateLocallyMock).toHaveBeenCalledWith({
+            filter: DEFAULT_FILTER
+          });
+        });
+      });
 
-      // then
-      expect(node.find(ListView)).toHaveLength(1);
-      expect(FiltersNode).toHaveLength(1);
-      expect(FiltersNode.prop('filter')).toEqual(node.state('filter'));
-      expect(FiltersNode.prop('onFilterChange')).toBe(
-        node.instance().handleFilterChange
-      );
-      expect(FiltersNode.prop('resetFilter')).toBe(node.instance().resetFilter);
-      expect(FiltersNode.prop('activityIds')).toBe(node.state('activityIds'));
-    });
+      describe('rendering a diagram', () => {
+        it('should render no diagram on inital render', () => {
+          // given
+          const node = shallow(InstancesWithRunningFilter);
 
-    it('should pass to the Header the filterCount', async () => {
-      const node = shallow(InstancesWithRunningFilter);
+          // then
+          expect(node.state('workflow')).toEqual(null);
+          expect(node.find(Diagram).length).toBe(0);
+          expect(node.find(PanelHeader).props().children).toBe('Workflow');
+        });
+        it('should render a diagram when workflow data is available ', () => {
+          const node = shallow(InstancesWithWorkflow);
 
-      await flushPromises();
-      node.update();
+          //when
+          node.instance().handleWorkflowChange(workflowMock);
+          node.update();
 
-      expect(node.find(Header).props().filters).toBe(Count);
-    });
-  });
-
-  describe('resetFilter', () => {
-    it('should reset filter to the default value', () => {
-      // given
-      const storeStateLocallyMock = jest.fn();
-      const node = shallow(
-        <Instances
-          storeStateLocally={storeStateLocallyMock}
-          location={{search: '?filter={"active": false, "incidents": true}'}}
-          getStateLocally={() => {
-            return {filterCount: 0};
-          }}
-          history={{push: () => {}}}
-        />
-      );
-      const setFilterInURLlSpy = jest.spyOn(node.instance(), 'setFilterInURL');
-
-      // when
-      node.instance().resetFilter();
-
-      // then
-      expect(setFilterInURLlSpy).toHaveBeenCalledWith(DEFAULT_FILTER);
-      expect(storeStateLocallyMock).toHaveBeenCalledWith({
-        filter: DEFAULT_FILTER
+          // then
+          expect(node.state('workflow')).toEqual(workflowMock);
+          expect(node.find(Diagram).length).toEqual(1);
+          expect(node.find(Diagram).props().workflowId).toEqual(
+            workflowMock.id
+          );
+          expect(node.find(PanelHeader).props().children).toBe(
+            workflowMock.name || workflowMock.id
+          );
+        });
       });
     });
   });
@@ -215,6 +244,69 @@ describe('Instances', () => {
       expect(node.find(PanelHeader).props().children).toBe(
         workflowMock.name || workflowMock.id
       );
+      const demoSelection = {
+        queries: [{}],
+        selecionId: 0,
+        totalCount: 2,
+        workflowInstances: [
+          {
+            id: '4294984040',
+            workflowId: '1',
+            startDate: '2018-07-10T08:58:58.073+0000',
+            endDate: null,
+            state: 'ACTIVE',
+            businessKey: 'demoProcess',
+            incidents: [],
+            activities: []
+          },
+
+          {
+            id: '4294984041',
+            workflowId: '1',
+            startDate: '2018-07-10T08:58:58.073+0000',
+            endDate: null,
+            state: 'ACTIVE',
+            businessKey: 'demoProcess',
+            incidents: [],
+            activities: []
+          }
+        ]
+      };
+
+      const times = x => f => {
+        if (x > 0) {
+          f();
+          times(x - 1)(f);
+        }
+      };
+
+      api.fetchWorkflowInstanceBySelection = mockResolvedAsyncFn({
+        id: '1',
+        workflowId: '1',
+        startDate: '2018-07-10T08:58:58.073+0000',
+        endDate: null,
+        state: 'ACTIVE',
+        businessKey: 'demoProcess',
+        incidents: [],
+        activities: []
+      });
+
+      const selections = [];
+      selections.push(demoSelection);
+    });
+  });
+
+  describe('Selections', () => {
+    it('should toggle a selection', () => {
+      // given
+      const node = shallow(InstancesWithRunningFilter);
+      node.setState({selections});
+
+      //when
+      node.instance().toggleSelection(demoSelection.selecionId);
+
+      //then
+      expect(node.state('openSelection')).toBe(demoSelection.selecionId);
     });
 
     it('should update the activityIds when the diagram finishes loading', () => {

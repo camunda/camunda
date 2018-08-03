@@ -12,29 +12,9 @@ const demoInstance = {
   endDate: null,
   state: 'ACTIVE',
   businessKey: 'demoProcess',
-  incidents: [
-    {
-      id: '4295665536',
-      errorType: 'IO_MAPPING_ERROR',
-      errorMessage: 'No data found for query $.foo.',
-      state: 'ACTIVE',
-      activityId: 'taskA',
-      activityInstanceId: '4294984912',
-      jobId: null
-    }
-  ],
+  incidents: [],
   activities: []
 };
-
-const times = x => f => {
-  if (x > 0) {
-    f();
-    times(x - 1)(f);
-  }
-};
-
-const workfowInstances = [];
-times(10)(() => workfowInstances.push(demoInstance));
 
 const mockOnClick = jest.fn();
 const mockOnRetry = jest.fn();
@@ -49,9 +29,9 @@ describe('Selection', () => {
       <Selection
         isOpen={isOpen}
         selectionId={0}
-        instances={workfowInstances}
-        count={145}
-        onClick={mockOnClick}
+        instances={[demoInstance]}
+        instanceCount={145}
+        onToggle={mockOnClick}
         onRetry={mockOnRetry}
         onDelete={mockOnDelete}
       />
@@ -99,15 +79,9 @@ describe('Selection', () => {
     expect(mockOnDelete).toHaveBeenCalled();
   });
 
-  it.only('should call the passed retry method', () => {
+  it('should call the passed retry method', () => {
     node.find(Styled.DropdownTrigger).simulate('click');
     node.find(Dropdown.Option).simulate('click');
     expect(mockOnRetry).toHaveBeenCalled();
-  });
-
-  it('should render all passed instances', () => {
-    expect(node.instance().getBody(workfowInstances).length).toBe(
-      workfowInstances.length
-    );
   });
 });
