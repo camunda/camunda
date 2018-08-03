@@ -77,7 +77,7 @@ public class EventIT extends OperateIntegrationTest {
 
     //create an incident
     jobWorker = zeebeUtil.failTask(topicName, taskA, zeebeTestRule.getWorkerName(), 3);
-    elasticsearchTestRule.processAllEvents(10);
+    elasticsearchTestRule.processAllEvents(20);
     jobWorker.close();
     jobWorker = null;
 
@@ -89,14 +89,14 @@ public class EventIT extends OperateIntegrationTest {
     //complete task A
     String taskAPayload = "{\"goToTaskC\":true}";
     jobWorker = zeebeUtil.completeTask(topicName, taskA, zeebeTestRule.getWorkerName(), taskAPayload);
-    elasticsearchTestRule.processAllEvents(10);
+    elasticsearchTestRule.processAllEvents(13);
     jobWorker.close();
     jobWorker = null;
 
     //update process payload //TODO update payload command is giving timeout for some reason
     final String updatedPayload = "{\"a\": \"c\"}";
     zeebeUtil.updatePayload(topicName, workflowInstanceId, updatedPayload, processId, workflowId);
-    elasticsearchTestRule.processAllEvents(10);
+    elasticsearchTestRule.processAllEvents(5);
 
     //complete task C
     final String taskCPayload = "{\"b\": \"d\"}";
