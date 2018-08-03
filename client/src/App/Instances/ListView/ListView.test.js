@@ -25,18 +25,21 @@ api.fetchWorkflowInstances = mockResolvedAsyncFn(successResponse);
 describe('ListView', () => {
   let node;
   let onSelectionUpdate;
-  let onAddToSelection;
+  let addToCurrentSelection;
+  let addNewSelection;
 
   beforeEach(() => {
     onSelectionUpdate = jest.fn();
-    onAddToSelection = jest.fn();
+    addToCurrentSelection = jest.fn();
+    addNewSelection = jest.fn();
     node = shallow(
       <ListView
         selection={selection}
         filter={filter}
         instancesInFilter={total}
         onSelectionUpdate={onSelectionUpdate}
-        onAddToSelection={onAddToSelection}
+        addToCurrentSelection={addToCurrentSelection}
+        addNewSelection={addNewSelection}
       />
     );
     api.fetchWorkflowInstances.mockClear();
@@ -87,7 +90,8 @@ describe('ListView', () => {
     expect(footer.prop('total')).toBe(total);
     expect(footer.prop('perPage')).toBe(14);
     expect(footer.prop('firstElement')).toBe(8);
-    expect(footer.prop('onAddToSelection')).toBe(onAddToSelection);
+    expect(footer.prop('addToCurrentSelection')).toBe(addToCurrentSelection);
+    expect(footer.prop('addNewSelection')).toBe(addNewSelection);
   });
 
   it('should pass a method to the footer to change the firstElement', () => {
@@ -134,7 +138,8 @@ describe('ListView', () => {
           filter={{}}
           instancesInFilter={total}
           onSelectionUpdate={onSelectionUpdate}
-          onAddToSelection={onAddToSelection}
+          addToCurrentSelection={addToCurrentSelection}
+          addNewSelection={addNewSelection}
         />
       );
 

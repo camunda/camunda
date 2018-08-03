@@ -14,7 +14,8 @@ describe('ListFooter', () => {
         }}
         storeStateLocally={() => {}}
         onFirstElementChange={jest.fn()}
-        onAddToSelection={jest.fn()}
+        addNewSelection={jest.fn()}
+        addToCurrentSelection={jest.fn()}
         perPage={10}
         firstElement={0}
         total={6}
@@ -24,7 +25,7 @@ describe('ListFooter', () => {
     expect(node.find(Paginator).length).toBe(0);
   });
 
-  it('should pass the onAddToSelection function with the SelectAll button', () => {
+  it('should add new selection', () => {
     const spy = jest.fn();
     const node = shallow(
       <Footer
@@ -33,14 +34,17 @@ describe('ListFooter', () => {
         }}
         storeStateLocally={() => {}}
         onFirstElementChange={jest.fn()}
-        onAddToSelection={spy}
+        addNewSelection={spy}
+        addToCurrentSelection={jest.fn()}
         perPage={10}
         firstElement={30}
         total={100}
       />
     );
-    const instance = node.instance();
-    instance.handleSelectionInteraction();
+
+    const createSelection = node.find('Dropdown').childAt(1);
+
+    createSelection.simulate('click');
 
     expect(spy).toHaveBeenCalled();
   });
