@@ -44,7 +44,7 @@ export const Badge = themed(styled.div`
 
 const comboSelectionStyles = css`
   position: relative;
-  padding-left: 20px;
+  padding-left: 18px;
 `;
 
 export const Circle = themed(styled.div`
@@ -55,8 +55,8 @@ export const Circle = themed(styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 40%;
-  right: 40px;
+  width: 23px;
+  left: -10px;
   bottom: -3px;
   padding: 1px 2px;
   border-style: solid;
