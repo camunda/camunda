@@ -140,7 +140,6 @@ public class ZeebeRuntimeValidationTest {
                 "Invalid outputs: When using $ as target, no other output can be defined"))
       },
       {
-        // root mapping + specific
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .intermediateCatchEvent("catch")

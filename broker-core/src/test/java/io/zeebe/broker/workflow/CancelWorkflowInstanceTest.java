@@ -143,9 +143,10 @@ public class CancelWorkflowInstanceTest {
   public void shouldCancelIntermediateCatchEvent() {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("wf")
+        Bpmn.createExecutableProcess("wf")
             .startEvent()
-            .intermediateCatchEvent("catch-event", b -> b.messageName("msg").correlationKey("$.id"))
+            .intermediateCatchEvent("catch-event")
+            .message(b -> b.name("msg").zeebeCorrelationKey("$.id"))
             .done());
 
     final long workflowInstanceKey =

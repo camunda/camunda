@@ -23,11 +23,8 @@ import org.agrona.DirectBuffer;
 
 public class ExecutableServiceTask extends ExecutableFlowNode {
 
-  // required?
-  public static final int DEFAULT_TASK_RETRIES = 3;
-
   private DirectBuffer type;
-  private int retries = DEFAULT_TASK_RETRIES;
+  private int retries;
   private DirectBuffer encodedHeaders = JobRecord.NO_HEADERS;
 
   public ExecutableServiceTask(String id) {

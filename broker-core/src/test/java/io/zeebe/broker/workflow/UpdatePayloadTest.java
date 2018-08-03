@@ -188,9 +188,10 @@ public class UpdatePayloadTest {
   public void shouldUpdatePayloadWhenCatchEventIsEntered() throws Exception {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("wf")
+        Bpmn.createExecutableProcess("wf")
             .startEvent()
-            .intermediateCatchEvent("catch-event", b -> b.messageName("msg").correlationKey("$.id"))
+            .intermediateCatchEvent("catch-event")
+            .message(b -> b.name("msg").zeebeCorrelationKey("$.id"))
             .done());
 
     final long workflowInstanceKey =

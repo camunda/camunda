@@ -402,7 +402,7 @@ public class WorkflowInstanceFunctionalTest {
             .sequenceFlowId("s1")
             .condition("$.foo < 5")
             .exclusiveGateway("joinRequest")
-            .moveToLastExclusiveGateway() // TODO: hack to define default flow
+            .moveToLastExclusiveGateway()
             .defaultFlow()
             .sequenceFlowId("s2")
             .connectTo("joinRequest")
@@ -452,14 +452,12 @@ public class WorkflowInstanceFunctionalTest {
             .sequenceFlowId("s1")
             .condition("$.foo < 5")
             .exclusiveGateway("joinRequest")
-            .moveToLastExclusiveGateway() // TODO: hack to define default flow
+            .moveToLastExclusiveGateway()
             .defaultFlow()
             .sequenceFlowId("s2")
             .connectTo("joinRequest")
             .endEvent("end")
             .done();
-
-    Bpmn.writeModelToStream(System.out, workflowDefinition);
 
     testClient.deploy(workflowDefinition);
 

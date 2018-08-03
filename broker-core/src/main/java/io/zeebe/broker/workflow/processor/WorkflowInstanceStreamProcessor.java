@@ -757,7 +757,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
       }
     }
 
-    private void onPartitionIdsAvailable(TypedRecord<WorkflowInstanceRecord> event, TypedStreamWriter streamWriter) {
+    private void onPartitionIdsAvailable(
+        TypedRecord<WorkflowInstanceRecord> event, TypedStreamWriter streamWriter) {
       extractedCorrelationKey = extractCorrelationKey();
       sideEffect.accept(this::openMessageSubscription);
 
@@ -765,9 +766,9 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
           activityInstanceKey, WorkflowInstanceIntent.CATCH_EVENT_ENTERED, workflowInstance);
 
       workflowInstanceIndex
-        .get(workflowInstance.getWorkflowInstanceKey())
-        .setActivityInstanceKey(event.getKey())
-        .write();
+          .get(workflowInstance.getWorkflowInstanceKey())
+          .setActivityInstanceKey(event.getKey())
+          .write();
 
       activityInstanceMap
           .newActivityInstance(event.getKey())

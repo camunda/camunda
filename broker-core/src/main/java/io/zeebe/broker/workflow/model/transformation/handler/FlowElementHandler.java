@@ -43,7 +43,6 @@ public class FlowElementHandler implements ModelElementTransformer<FlowElement> 
 
   static {
     ELEMENT_FACTORIES = new HashMap<>();
-    ELEMENT_FACTORIES.put(ServiceTask.class, ExecutableFlowNode::new);
     ELEMENT_FACTORIES.put(ExclusiveGateway.class, ExecutableExclusiveGateway::new);
     ELEMENT_FACTORIES.put(SequenceFlow.class, ExecutableSequenceFlow::new);
     ELEMENT_FACTORIES.put(ServiceTask.class, ExecutableServiceTask::new);
