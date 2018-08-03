@@ -29,7 +29,7 @@ pipeline {
 
         stage('Verify') {
             parallel {
-                stage('Tests') {
+                stage('1 - Java Tests') {
                     steps {
                         withMaven(jdk: jdkVersion, maven: mavenVersion, mavenSettingsConfig: mavenSettingsConfig) {
                             sh 'mvn -B verify -P skip-unstable-ci'
@@ -42,7 +42,9 @@ pipeline {
                     }
                 }
 
-                stage('JMH') {
+                stage('2 - JMH') {
+                    // delete this line to also run JMH on feature branch
+                    when { anyOf { branch 'master'; branch 'develop' } }
                     agent { node { label 'ubuntu-large' } }
 
                     steps {
