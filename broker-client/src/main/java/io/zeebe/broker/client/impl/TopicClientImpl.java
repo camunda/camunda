@@ -70,4 +70,8 @@ public class TopicClientImpl implements TopicClient {
   public ZeebeClientConfiguration getConfiguration() {
     return client.getConfiguration();
   }
+
+  public PartitionManager getPartitionManager() {
+    return client.getPartitionManager();
+  }
 }

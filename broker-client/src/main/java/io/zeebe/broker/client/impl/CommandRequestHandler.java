@@ -52,10 +52,10 @@ public class CommandRequestHandler implements RequestResponseHandler {
   public CommandRequestHandler(ZeebeObjectMapperImpl objectMapper, CommandImpl command) {
     this.objectMapper = objectMapper;
     this.command = command.getCommand();
-    serialize(command.getCommand());
+    serialize();
   }
 
-  protected void serialize(RecordImpl event) {
+  protected void serialize() {
     int offset = 0;
     headerEncoder
         .wrap(serializedCommand, offset)
@@ -68,7 +68,7 @@ public class CommandRequestHandler implements RequestResponseHandler {
 
     encoder.wrap(serializedCommand, offset);
 
-    final RecordMetadataImpl metadata = event.getMetadata();
+    final RecordMetadataImpl metadata = command.getMetadata();
 
     encoder
         .partitionId(metadata.getPartitionId())
@@ -92,7 +92,7 @@ public class CommandRequestHandler implements RequestResponseHandler {
     final ExpandableDirectBufferOutputStream out =
         new ExpandableDirectBufferOutputStream(serializedCommand, serializedCommandOffset);
 
-    objectMapper.toMsgpack(out, event);
+    objectMapper.toMsgpack(out, command);
 
     // can only write the header after we have written the command, as we don't know the length
     // beforehand

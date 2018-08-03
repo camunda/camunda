@@ -18,15 +18,18 @@ package io.zeebe.broker.client.impl.subscription.topic;
 import io.zeebe.broker.client.api.record.RecordType;
 import io.zeebe.broker.client.api.record.ValueType;
 import io.zeebe.broker.client.api.subscription.RecordHandler;
-import io.zeebe.broker.client.cmd.ClientException;
+import io.zeebe.broker.client.impl.Loggers;
 import io.zeebe.broker.client.impl.record.RecordClassMapping;
 import io.zeebe.broker.client.impl.record.RecordImpl;
 import io.zeebe.broker.client.impl.record.RecordMetadataImpl;
 import io.zeebe.broker.client.impl.record.UntypedRecordImpl;
 import io.zeebe.util.CheckedConsumer;
 import org.agrona.collections.Long2LongHashMap;
+import org.slf4j.Logger;
 
 public class TopicSubscriptionSpec {
+
+  private static final Logger LOGGER = Loggers.SUBSCRIPTION_LOGGER;
 
   protected final String topic;
   protected final boolean forceStart;
@@ -70,12 +73,9 @@ public class TopicSubscriptionSpec {
     final Class<T> targetClass = RecordClassMapping.getRecordImplClass(recordType, valueType);
 
     if (targetClass == null) {
-      throw new ClientException(
-          "Cannot deserialize record "
-              + recordType
-              + "/"
-              + valueType
-              + ": No POJO class registered");
+      LOGGER.debug(
+          "Cannot deserialize record [record-type={}, value-type={}]", recordType, valueType);
+      return;
     }
 
     final T typedRecord = record.asRecordType(targetClass);
