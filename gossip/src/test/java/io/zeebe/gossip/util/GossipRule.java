@@ -71,6 +71,10 @@ import org.junit.rules.ExternalResource;
 import org.mockito.ArgumentMatcher;
 
 public class GossipRule extends ExternalResource {
+
+  public static final String DEFAULT_HOST = "localhost";
+  public static final int DEFAULT_PORT = 8000;
+
   private final SocketAddress socketAddress;
   private final String memberId;
 
@@ -89,9 +93,17 @@ public class GossipRule extends ExternalResource {
   private LocalMembershipListener localMembershipListener;
   private ReceivedEventsCollector receivedEventsCollector = new ReceivedEventsCollector();
 
-  public GossipRule(final String address) {
-    this.socketAddress = SocketAddress.from(address);
-    this.memberId = address;
+  public GossipRule(final int portOffset) {
+    this(DEFAULT_HOST, DEFAULT_PORT + portOffset);
+  }
+
+  public GossipRule(final String host, final int port) {
+    this(new SocketAddress(host, port));
+  }
+
+  public GossipRule(final SocketAddress socketAddress) {
+    this.socketAddress = socketAddress;
+    this.memberId = socketAddress.toString();
   }
 
   public void init(ActorScheduler actorScheduler, GossipConfiguration configuration) {

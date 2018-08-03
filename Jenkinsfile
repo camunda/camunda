@@ -28,11 +28,12 @@ pipeline {
         }
 
         stage('Verify') {
+            failFast true
             parallel {
                 stage('Tests') {
                     steps {
                         withMaven(jdk: jdkVersion, maven: mavenVersion, mavenSettingsConfig: mavenSettingsConfig) {
-                            sh 'mvn -B verify -P skip-unstable-ci'
+                            sh 'mvn -B -T 2 verify -P skip-unstable-ci'
                         }
                     }
                     post {

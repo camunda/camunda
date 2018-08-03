@@ -42,9 +42,9 @@ public class SyncRequestHandlerTest {
 
   private static final GossipConfiguration CONFIGURATION = new GossipConfiguration();
 
-  private GossipRule gossip1 = new GossipRule("localhost:8001");
-  private GossipRule gossip2 = new GossipRule("localhost:8002");
-  private GossipRule gossip3 = new GossipRule("localhost:8003");
+  private GossipRule gossip1 = new GossipRule(1);
+  private GossipRule gossip2 = new GossipRule(2);
+  private GossipRule gossip3 = new GossipRule(3);
 
   @Rule
   public GossipClusterRule cluster =
