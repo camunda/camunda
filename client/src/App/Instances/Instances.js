@@ -172,7 +172,6 @@ class Instances extends Component {
   };
 
   updateSelection = change => {
-    console.log(change);
     this.setState({
       selection: {...change}
     });

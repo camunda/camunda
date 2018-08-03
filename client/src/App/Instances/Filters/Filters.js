@@ -48,12 +48,14 @@ export default class Filters extends React.Component {
     groupedWorkflows: [],
     currentWorkflow: {},
     currentWorkflowVersion: EMPTY_OPTION,
-    currentActivityId: EMPTY_OPTION
+    currentActivityId: EMPTY_OPTION,
+    ids: ''
   };
 
   componentDidMount = async () => {
     this.setState({
-      groupedWorkflows: await api.fetchGroupedWorkflowInstances()
+      groupedWorkflows: await api.fetchGroupedWorkflowInstances(),
+      ids: this.props.filter.ids
     });
   };
 
@@ -123,6 +125,10 @@ export default class Filters extends React.Component {
     });
   };
 
+  onFieldChange = event => {
+    this.setState({[event.target.name]: event.target.value});
+  };
+
   render() {
     const {active, incidents, canceled, completed} = this.props.filter;
     const workflowVersions = addAllVersionsOption(
@@ -156,9 +162,11 @@ export default class Filters extends React.Component {
             </Styled.Field>
             <Styled.Field>
               <Textarea
+                value={this.state.ids}
                 name={FIELDS.ids.name}
                 placeholder={FIELDS.ids.placeholder}
                 onBlur={this.handleFieldChange}
+                onChange={this.onFieldChange}
               />
             </Styled.Field>
             <Styled.Field>
