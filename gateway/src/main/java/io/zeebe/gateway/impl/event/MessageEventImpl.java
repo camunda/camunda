@@ -45,6 +45,8 @@ public class MessageEventImpl extends MessageRecordImpl implements MessageEvent 
     builder.append(getName());
     builder.append(", correlationKey=");
     builder.append(getCorrelationKey());
+    builder.append(", timeToLive=");
+    builder.append(getTimeToLive());
     builder.append(", messageId=");
     builder.append(getMessageId());
     builder.append(", payload=");

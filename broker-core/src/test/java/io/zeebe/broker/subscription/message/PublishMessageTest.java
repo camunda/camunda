@@ -33,6 +33,7 @@ import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandRequestBuilder;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
+import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -54,6 +55,7 @@ public class PublishMessageTest {
             .command()
             .put("name", "order canceled")
             .put("correlationKey", "order-123")
+            .put("timeToLive", 1_000)
             .done()
             .sendAndAwait();
 
@@ -63,6 +65,7 @@ public class PublishMessageTest {
         .containsExactly(
             entry("name", "order canceled"),
             entry("correlationKey", "order-123"),
+            entry("timeToLive", 1_000L),
             entry("payload", EMTPY_OBJECT),
             entry("messageId", ""));
 
@@ -78,6 +81,7 @@ public class PublishMessageTest {
         .containsExactly(
             entry("name", "order canceled"),
             entry("correlationKey", "order-123"),
+            entry("timeToLive", 1_000L),
             entry("payload", EMTPY_OBJECT),
             entry("messageId", ""));
   }
@@ -92,6 +96,7 @@ public class PublishMessageTest {
             .command()
             .put("name", "order canceled")
             .put("correlationKey", "order-123")
+            .put("timeToLive", 1_000)
             .put("payload", MsgPackUtil.MSGPACK_PAYLOAD)
             .done()
             .sendAndAwait();
@@ -110,12 +115,49 @@ public class PublishMessageTest {
             .command()
             .put("name", "order canceled")
             .put("correlationKey", "order-123")
+            .put("timeToLive", 1_000)
             .put("messageId", "msg-1")
             .done()
             .sendAndAwait();
 
     assertThat(response.intent()).isEqualTo(MessageIntent.PUBLISHED);
     assertThat(response.getValue()).contains(entry("messageId", "msg-1"));
+  }
+
+  @Test
+  public void shouldPublishMessageWithZeroTTL() {
+
+    final ExecuteCommandResponse response =
+        apiRule
+            .createCmdRequest()
+            .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
+            .command()
+            .put("name", "order canceled")
+            .put("correlationKey", "order-123")
+            .put("timeToLive", 0)
+            .done()
+            .sendAndAwait();
+
+    assertThat(response.intent()).isEqualTo(MessageIntent.PUBLISHED);
+    assertThat(response.getValue()).contains(entry("timeToLive", 0L));
+  }
+
+  @Test
+  public void shouldPublishMessageWithNegativeTTL() {
+
+    final ExecuteCommandResponse response =
+        apiRule
+            .createCmdRequest()
+            .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
+            .command()
+            .put("name", "order canceled")
+            .put("correlationKey", "order-123")
+            .put("timeToLive", -1L)
+            .done()
+            .sendAndAwait();
+
+    assertThat(response.intent()).isEqualTo(MessageIntent.PUBLISHED);
+    assertThat(response.getValue()).contains(entry("timeToLive", -1L));
   }
 
   @Test
@@ -167,6 +209,7 @@ public class PublishMessageTest {
         .command()
         .put("name", "order canceled")
         .put("correlationKey", "order-123")
+        .put("timeToLive", 1_000)
         .done()
         .sendAndAwait();
 
@@ -177,6 +220,7 @@ public class PublishMessageTest {
             .command()
             .put("name", "order canceled")
             .put("correlationKey", "order-123")
+            .put("timeToLive", 1_000)
             .done()
             .sendAndAwait();
 
@@ -209,6 +253,86 @@ public class PublishMessageTest {
   }
 
   @Test
+  public void shouldDeleteMessageAfterTTL() {
+    // given
+    final long timeToLive = 100;
+
+    final ExecuteCommandResponse response =
+        apiRule
+            .createCmdRequest()
+            .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
+            .command()
+            .put("name", "order canceled")
+            .put("correlationKey", "order-123")
+            .put("timeToLive", timeToLive)
+            .done()
+            .sendAndAwait();
+
+    // when
+    final TestTopicClient testClient = apiRule.topic();
+    testClient.receiveEvents().filter(intent(MessageIntent.PUBLISHED)).findFirst();
+
+    brokerRule
+        .getClock()
+        .addTime(MessageService.MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL.plusMillis(timeToLive));
+
+    // then
+    final SubscribedRecord deletedEvent =
+        testClient
+            .receiveEvents()
+            .filter(intent(MessageIntent.DELETED))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("no delete event found"));
+
+    assertThat(deletedEvent.key()).isEqualTo(response.key());
+    assertThat(deletedEvent.value())
+        .containsExactly(
+            entry("name", "order canceled"),
+            entry("correlationKey", "order-123"),
+            entry("timeToLive", timeToLive),
+            entry("payload", EMTPY_OBJECT),
+            entry("messageId", ""));
+  }
+
+  @Test
+  public void shouldDeleteMessageImmediatelyWithZeroTTL() {
+    // given
+    final ExecuteCommandResponse response =
+        apiRule
+            .createCmdRequest()
+            .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
+            .command()
+            .put("name", "order canceled")
+            .put("correlationKey", "order-123")
+            .put("timeToLive", 0L)
+            .done()
+            .sendAndAwait();
+
+    // when
+    final TestTopicClient testClient = apiRule.topic();
+    testClient.receiveEvents().filter(intent(MessageIntent.PUBLISHED)).findFirst();
+
+    brokerRule.getClock().addTime(MessageService.MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL);
+
+    // then
+    final SubscribedRecord deletedEvent =
+        testClient
+            .receiveEvents()
+            .filter(intent(MessageIntent.DELETED))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("no delete event found"));
+
+    assertThat(deletedEvent.key()).isEqualTo(response.key());
+    assertThat(deletedEvent.value())
+        .containsExactly(
+            entry("name", "order canceled"),
+            entry("correlationKey", "order-123"),
+            entry("timeToLive", 0L),
+            entry("payload", EMTPY_OBJECT),
+            entry("messageId", ""));
+  }
+
+  @Test
   public void shouldFailToPublishMessageWithoutName() {
 
     final ExecuteCommandRequestBuilder request =
@@ -217,6 +341,7 @@ public class PublishMessageTest {
             .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
             .command()
             .put("correlationKey", "order-123")
+            .put("timeToLive", 1_000)
             .done();
 
     assertThatThrownBy(() -> request.sendAndAwait())
@@ -232,10 +357,27 @@ public class PublishMessageTest {
             .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
             .command()
             .put("name", "order canceled")
+            .put("timeToLive", 1_000)
             .done();
 
     assertThatThrownBy(() -> request.sendAndAwait())
         .hasMessageContaining("Property 'correlationKey' has no valid value");
+  }
+
+  @Test
+  public void shouldFailToPublishMessageWithoutTimeToLive() {
+
+    final ExecuteCommandRequestBuilder request =
+        apiRule
+            .createCmdRequest()
+            .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
+            .command()
+            .put("name", "order canceled")
+            .put("correlationKey", "order-123")
+            .done();
+
+    assertThatThrownBy(() -> request.sendAndAwait())
+        .hasMessageContaining("Property 'timeToLive' has no valid value");
   }
 
   private ExecuteCommandResponse publishMessage(
@@ -247,6 +389,7 @@ public class PublishMessageTest {
         .command()
         .put("name", name)
         .put("correlationKey", correlationKey)
+        .put("timeToLive", 1_000)
         .put("messageId", messageId)
         .done()
         .sendAndAwait();

@@ -16,6 +16,7 @@
 package io.zeebe.gateway.api.events;
 
 import io.zeebe.gateway.api.record.Record;
+import java.time.Duration;
 import java.util.Map;
 
 public interface MessageEvent extends Record {
@@ -31,6 +32,9 @@ public interface MessageEvent extends Record {
 
   /** @return the id of the message, or <code>null</code> if not set. */
   String getMessageId();
+
+  /** @return the time-to-live of the message. */
+  Duration getTimeToLive();
 
   /** @return the payload of the message as JSON-formatted string. */
   String getPayload();
