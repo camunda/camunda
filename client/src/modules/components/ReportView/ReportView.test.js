@@ -325,3 +325,16 @@ it('should call the applyAddons function if provided', () => {
 
   expect(spy).toHaveBeenCalled();
 });
+
+it.only('should return flownode Id if name is null when calling applyFlowNodeNames', async () => {
+  const node = mount(<ReportView report={exampleDurationReport} />);
+  node.setState({
+    loaded: true
+  });
+  await node.instance().loadFlowNodeNames('aKey', 1);
+  expect(node.instance().applyFlowNodeNames({a: 25, b: 35, c: 25})).toEqual({
+    foo: 25,
+    bar: 35,
+    c: 25
+  });
+});

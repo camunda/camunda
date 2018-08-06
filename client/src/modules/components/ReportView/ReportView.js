@@ -125,7 +125,7 @@ export default class ReportView extends React.Component {
     if (this.state.flowNodeNames) {
       const chartData = {};
       Object.keys(data).forEach(key => {
-        chartData[this.state.flowNodeNames[key]] = data[key];
+        chartData[this.state.flowNodeNames[key] || key] = data[key];
       });
 
       return chartData;
