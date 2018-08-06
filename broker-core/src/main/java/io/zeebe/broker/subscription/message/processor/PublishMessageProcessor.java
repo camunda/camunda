@@ -34,6 +34,7 @@ import io.zeebe.broker.subscription.message.state.MessageSubscriptionDataStore.M
 import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.MessageIntent;
+import io.zeebe.util.sched.clock.ActorClock;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -65,10 +66,13 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
 
     messageRecord = record.getValue();
 
+    final long deadline = ActorClock.currentTimeMillis() + messageRecord.getTimeToLive();
+
     final Message message =
         new Message(
             bufferAsString(messageRecord.getName()),
             bufferAsString(messageRecord.getCorrelationKey()),
+            deadline,
             bufferAsArray(messageRecord.getPayload()),
             messageRecord.hasMessageId() ? bufferAsString(messageRecord.getMessageId()) : null);
 

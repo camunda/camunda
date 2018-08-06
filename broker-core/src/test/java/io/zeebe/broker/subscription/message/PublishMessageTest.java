@@ -54,6 +54,7 @@ public class PublishMessageTest {
             .command()
             .put("name", "order canceled")
             .put("correlationKey", "order-123")
+            .put("timeToLive", 1_000)
             .done()
             .sendAndAwait();
 
@@ -63,6 +64,7 @@ public class PublishMessageTest {
         .containsExactly(
             entry("name", "order canceled"),
             entry("correlationKey", "order-123"),
+            entry("timeToLive", 1_000L),
             entry("payload", EMTPY_OBJECT),
             entry("messageId", ""));
 
@@ -78,6 +80,7 @@ public class PublishMessageTest {
         .containsExactly(
             entry("name", "order canceled"),
             entry("correlationKey", "order-123"),
+            entry("timeToLive", 1_000L),
             entry("payload", EMTPY_OBJECT),
             entry("messageId", ""));
   }
@@ -92,6 +95,7 @@ public class PublishMessageTest {
             .command()
             .put("name", "order canceled")
             .put("correlationKey", "order-123")
+            .put("timeToLive", 1_000)
             .put("payload", MsgPackUtil.MSGPACK_PAYLOAD)
             .done()
             .sendAndAwait();
@@ -110,6 +114,7 @@ public class PublishMessageTest {
             .command()
             .put("name", "order canceled")
             .put("correlationKey", "order-123")
+            .put("timeToLive", 1_000)
             .put("messageId", "msg-1")
             .done()
             .sendAndAwait();
@@ -167,6 +172,7 @@ public class PublishMessageTest {
         .command()
         .put("name", "order canceled")
         .put("correlationKey", "order-123")
+        .put("timeToLive", 1_000)
         .done()
         .sendAndAwait();
 
@@ -177,6 +183,7 @@ public class PublishMessageTest {
             .command()
             .put("name", "order canceled")
             .put("correlationKey", "order-123")
+            .put("timeToLive", 1_000)
             .done()
             .sendAndAwait();
 
@@ -217,6 +224,7 @@ public class PublishMessageTest {
             .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
             .command()
             .put("correlationKey", "order-123")
+            .put("timeToLive", 1_000)
             .done();
 
     assertThatThrownBy(() -> request.sendAndAwait())
@@ -232,10 +240,27 @@ public class PublishMessageTest {
             .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
             .command()
             .put("name", "order canceled")
+            .put("timeToLive", 1_000)
             .done();
 
     assertThatThrownBy(() -> request.sendAndAwait())
         .hasMessageContaining("Property 'correlationKey' has no valid value");
+  }
+
+  @Test
+  public void shouldFailToPublishMessageWithoutTimeToLive() {
+
+    final ExecuteCommandRequestBuilder request =
+        apiRule
+            .createCmdRequest()
+            .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
+            .command()
+            .put("name", "order canceled")
+            .put("correlationKey", "order-123")
+            .done();
+
+    assertThatThrownBy(() -> request.sendAndAwait())
+        .hasMessageContaining("Property 'timeToLive' has no valid value");
   }
 
   private ExecuteCommandResponse publishMessage(
@@ -247,6 +272,7 @@ public class PublishMessageTest {
         .command()
         .put("name", name)
         .put("correlationKey", correlationKey)
+        .put("timeToLive", 1_000)
         .put("messageId", messageId)
         .done()
         .sendAndAwait();

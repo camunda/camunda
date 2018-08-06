@@ -19,6 +19,7 @@ package io.zeebe.broker.subscription.message.state;
 
 import io.zeebe.broker.logstreams.processor.JsonSnapshotSupport;
 import io.zeebe.broker.subscription.message.state.MessageDataStore.MessageData;
+import io.zeebe.util.sched.clock.ActorClock;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,7 +49,11 @@ public class MessageDataStore extends JsonSnapshotSupport<MessageData> {
     return getData()
         .getMessages()
         .stream()
-        .filter(m -> m.getName().equals(name) && m.getCorrelationKey().equals(correlationKey))
+        .filter(
+            m ->
+                m.getName().equals(name)
+                    && m.getCorrelationKey().equals(correlationKey)
+                    && ActorClock.currentTimeMillis() <= m.getDeadline())
         .findFirst()
         .orElse(null);
   }
@@ -67,12 +72,14 @@ public class MessageDataStore extends JsonSnapshotSupport<MessageData> {
     private final String correlationKey;
     private final byte[] payload;
     private final String id;
+    private final long deadline;
 
-    public Message(String name, String correlationKey, byte[] payload, String id) {
+    public Message(String name, String correlationKey, long deadline, byte[] payload, String id) {
       this.name = name;
       this.correlationKey = correlationKey;
       this.payload = payload;
       this.id = id;
+      this.deadline = deadline;
     }
 
     public String getName() {
@@ -89,6 +96,10 @@ public class MessageDataStore extends JsonSnapshotSupport<MessageData> {
 
     public String getId() {
       return id;
+    }
+
+    public long getDeadline() {
+      return deadline;
     }
   }
 }
