@@ -16,6 +16,7 @@
 package io.zeebe.broker.it.clustering;
 
 import static io.zeebe.broker.it.clustering.ClusteringRule.DEFAULT_REPLICATION_FACTOR;
+import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.client.ZeebeClient;
@@ -56,21 +57,23 @@ public class DeploymentClusteredTest {
   @Rule public ExpectedException expectedException = ExpectedException.none();
 
   private ZeebeClient client;
+  private Topic topic;
 
   @Before
   public void init() {
     client = clientRule.getClient();
+
+    topic = clusteringRule.waitForTopic(PARTITION_COUNT);
   }
 
   @Test
   public void shouldDeployInCluster() {
     // given
-    clusteringRule.createTopic("test", PARTITION_COUNT);
 
     // when
     final DeploymentEvent deploymentEvent =
         client
-            .topicClient("test")
+            .topicClient()
             .workflowClient()
             .newDeployCommand()
             .addWorkflowModel(WORKFLOW, "workflow.bpmn")
@@ -82,13 +85,12 @@ public class DeploymentClusteredTest {
   }
 
   @Test
-  public void shouldDeployWorkflowAndCreateInstances() {
+  public void shouldDeployWorkflowAndCreateInstances() throws Exception {
     // given
-    clusteringRule.createTopic("test", PARTITION_COUNT);
 
     // when
     client
-        .topicClient("test")
+        .topicClient()
         .workflowClient()
         .newDeployCommand()
         .addWorkflowModel(WORKFLOW, "workflow.bpmn")
@@ -99,7 +101,7 @@ public class DeploymentClusteredTest {
     for (int p = 0; p < PARTITION_COUNT; p++) {
       final WorkflowInstanceEvent workflowInstanceEvent =
           client
-              .topicClient("test")
+              .topicClient()
               .workflowClient()
               .newCreateInstanceCommand()
               .bpmnProcessId("process")
@@ -115,7 +117,6 @@ public class DeploymentClusteredTest {
   @Ignore("https://github.com/zeebe-io/zeebe/issues/844")
   public void shouldDeployOnRemainingBrokers() {
     // given
-    clusteringRule.createTopic("test", PARTITION_COUNT);
 
     // when
     clusteringRule.stopBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
@@ -123,7 +124,7 @@ public class DeploymentClusteredTest {
     // then
     final DeploymentEvent deploymentEvent =
         client
-            .topicClient("test")
+            .topicClient()
             .workflowClient()
             .newDeployCommand()
             .addWorkflowModel(WORKFLOW, "workflow.bpmn")
@@ -137,11 +138,10 @@ public class DeploymentClusteredTest {
   @Ignore
   public void shouldCreateInstancesOnRestartedBroker() {
     // given
-    final Topic topic = clusteringRule.createTopic("test", PARTITION_COUNT);
 
     clusteringRule.stopBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
     client
-        .topicClient("test")
+        .topicClient()
         .workflowClient()
         .newDeployCommand()
         .addWorkflowModel(WORKFLOW, "workflow.bpmn")
@@ -151,7 +151,7 @@ public class DeploymentClusteredTest {
     // when
     clusteringRule.restartBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
     clusteringRule.waitForTopicPartitionReplicationFactor(
-        "test", PARTITION_COUNT, DEFAULT_REPLICATION_FACTOR);
+        DEFAULT_TOPIC, PARTITION_COUNT, DEFAULT_REPLICATION_FACTOR);
 
     // then create wf instance on each partition
     topic
@@ -161,7 +161,7 @@ public class DeploymentClusteredTest {
         .forEach(
             partitionId -> {
               final WorkflowInstanceEvent workflowInstanceEvent =
-                  createWorkflowInstanceOnPartition("test", partitionId, "process");
+                  createWorkflowInstanceOnPartition(DEFAULT_TOPIC, partitionId, "process");
 
               assertThat(workflowInstanceEvent.getState()).isEqualTo(WorkflowInstanceState.CREATED);
             });
@@ -172,7 +172,7 @@ public class DeploymentClusteredTest {
     final CreateWorkflowInstanceCommandImpl command =
         (CreateWorkflowInstanceCommandImpl)
             client
-                .topicClient(topic)
+                .topicClient()
                 .workflowClient()
                 .newCreateInstanceCommand()
                 .bpmnProcessId(processId)
@@ -186,8 +186,6 @@ public class DeploymentClusteredTest {
   @Ignore("https://github.com/zeebe-io/zeebe/issues/844")
   public void shouldDeployAfterRestartBroker() {
     // given
-    final String topicName = "test";
-    clusteringRule.createTopic(topicName, PARTITION_COUNT);
 
     // when
     clusteringRule.restartBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
@@ -195,7 +193,7 @@ public class DeploymentClusteredTest {
     // then
     final DeploymentEvent deploymentEvent =
         client
-            .topicClient("test")
+            .topicClient()
             .workflowClient()
             .newDeployCommand()
             .addWorkflowModel(WORKFLOW, "workflow.bpmn")
@@ -206,39 +204,9 @@ public class DeploymentClusteredTest {
   }
 
   @Test
-  public void shouldDeployOnDifferentTopics() {
-    // given
-    clusteringRule.createTopic("test-1", PARTITION_COUNT);
-    clusteringRule.createTopic("test-2", PARTITION_COUNT);
-
-    // when
-    final DeploymentEvent deploymentEventOnTest1 =
-        client
-            .topicClient("test-1")
-            .workflowClient()
-            .newDeployCommand()
-            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-            .send()
-            .join();
-
-    final DeploymentEvent deploymentEventOnTest2 =
-        client
-            .topicClient("test-2")
-            .workflowClient()
-            .newDeployCommand()
-            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-            .send()
-            .join();
-
-    // then
-    assertThat(deploymentEventOnTest1.getDeployedWorkflows().size()).isEqualTo(1);
-    assertThat(deploymentEventOnTest2.getDeployedWorkflows().size()).isEqualTo(1);
-  }
-
-  @Test
   public void shouldNotDeployUnparsable() {
     // given
-    clusteringRule.createTopic("test", PARTITION_COUNT);
+    clusteringRule.waitForTopic(PARTITION_COUNT);
 
     // expect
     expectedException.expect(ClientCommandRejectedException.class);
@@ -248,26 +216,10 @@ public class DeploymentClusteredTest {
 
     // when
     client
-        .topicClient("test")
+        .topicClient()
         .workflowClient()
         .newDeployCommand()
         .addResourceStringUtf8("invalid", "invalid.bpmn")
-        .send()
-        .join();
-  }
-
-  @Test
-  public void shouldNotDeployForNonExistingTopic() {
-    // expect
-    expectedException.expect(ClientCommandRejectedException.class);
-    expectedException.expectMessage("Command (CREATE) was rejected");
-
-    // when
-    client
-        .topicClient("test")
-        .workflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(WORKFLOW, "workflow.bpmn")
         .send()
         .join();
   }

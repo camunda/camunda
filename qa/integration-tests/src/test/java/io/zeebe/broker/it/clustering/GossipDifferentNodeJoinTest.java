@@ -21,6 +21,7 @@ import static io.zeebe.broker.it.clustering.ClusteringRule.BROKER_2_CLIENT_ADDRE
 import static io.zeebe.broker.it.clustering.ClusteringRule.BROKER_2_TOML;
 import static io.zeebe.broker.it.clustering.ClusteringRule.BROKER_4_CLIENT_ADDRESS;
 import static io.zeebe.broker.it.clustering.ClusteringRule.BROKER_4_TOML;
+import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.client.api.commands.BrokerInfo;
@@ -37,7 +38,7 @@ public class GossipDifferentNodeJoinTest {
   private static final int PARTITION_COUNT = 3;
 
   public AutoCloseableRule closeables = new AutoCloseableRule();
-  public Timeout testTimeout = Timeout.seconds(30);
+  public Timeout testTimeout = Timeout.seconds(90);
   public ClientRule clientRule = new ClientRule();
 
   private SocketAddress[] brokerAddresses =
@@ -73,10 +74,10 @@ public class GossipDifferentNodeJoinTest {
     // given
 
     // when
-    clusteringRule.createTopic("test", PARTITION_COUNT);
+    clusteringRule.waitForTopic(PARTITION_COUNT);
 
     // then
-    final long partitionLeaderCount = clusteringRule.getPartitionLeaderCountForTopic("test");
+    final long partitionLeaderCount = clusteringRule.getPartitionLeaderCountForTopic(DEFAULT_TOPIC);
     assertThat(partitionLeaderCount).isEqualTo(PARTITION_COUNT);
   }
 

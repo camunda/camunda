@@ -17,6 +17,8 @@
  */
 package io.zeebe.broker.clustering.base.bootstrap;
 
+import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
+
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.broker.system.configuration.TopicCfg;
@@ -35,6 +37,7 @@ import io.zeebe.util.sched.Actor;
 import java.util.List;
 
 public class BootstrapDefaultTopicsService extends Actor implements Service<Void> {
+
   private final Injector<Partition> partitionInjector = new Injector<>();
   private final RecordMetadata metadata = new RecordMetadata();
   private final LogStreamBatchWriter writer = new LogStreamBatchWriterImpl();
@@ -93,7 +96,13 @@ public class BootstrapDefaultTopicsService extends Actor implements Service<Void
 
   private TopicRecord recordFromConfig(TopicCfg config) {
     final TopicRecord topic = new TopicRecord();
-    topic.setName(BufferUtil.wrapString(config.getName()));
+    final String name = config.getName();
+
+    if (!name.equalsIgnoreCase(DEFAULT_TOPIC)) {
+      throw new IllegalStateException("Only default topic is allowed");
+    }
+
+    topic.setName(BufferUtil.wrapString(name));
     topic.setPartitions(config.getPartitions());
     topic.setReplicationFactor(config.getReplicationFactor());
 

@@ -24,14 +24,13 @@ import io.zeebe.broker.client.api.events.WorkflowInstanceEvent;
 public class NonBlockingWorkflowInstanceCreator {
   public static void main(String[] args) {
     final String broker = "127.0.0.1:26501";
-    final String topic = "default-topic";
     final int numberOfInstances = 100_000;
     final String bpmnProcessId = "demoProcess";
 
     final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
     try (ZeebeClient client = builder.build()) {
-      final WorkflowClient workflowClient = client.topicClient(topic).workflowClient();
+      final WorkflowClient workflowClient = client.topicClient().workflowClient();
 
       System.out.println("Creating " + numberOfInstances + " workflow instances");
 

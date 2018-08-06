@@ -20,10 +20,6 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
 
-import io.zeebe.broker.client.ZeebeClient;
-import io.zeebe.broker.client.api.commands.BrokerInfo;
-import io.zeebe.broker.client.api.commands.PartitionInfo;
-import io.zeebe.broker.client.api.commands.Topology;
 import io.zeebe.broker.client.api.events.DeploymentEvent;
 import io.zeebe.broker.client.api.events.IncidentEvent;
 import io.zeebe.broker.client.api.events.IncidentState;
@@ -32,7 +28,6 @@ import io.zeebe.broker.client.api.events.JobState;
 import io.zeebe.broker.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.broker.client.api.events.WorkflowInstanceState;
 import io.zeebe.broker.client.api.subscription.JobWorker;
-import io.zeebe.broker.client.cmd.ClientCommandRejectedException;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
@@ -530,70 +525,6 @@ public class BrokerReprocessingTest {
   }
 
   @Test
-  public void shouldCreateTopicAfterRestart() {
-    // given
-    final ZeebeClient client = clientRule.getClient();
-    reprocessingTrigger.accept(this);
-
-    // when
-    client.newCreateTopicCommand().name("foo").partitions(2).replicationFactor(1).send().join();
-
-    // then
-    final JobEvent jobEvent =
-        client.topicClient("foo").jobClient().newCreateCommand().jobType("bar").send().join();
-
-    assertThat(jobEvent.getState()).isEqualTo(JobState.CREATED);
-  }
-
-  @Test
-  public void shouldNotCreatePreviouslyCreatedTopicAfterRestart() {
-    // given
-    final ZeebeClient client = clientRule.getClient();
-
-    final String topicName = "foo";
-    client.newCreateTopicCommand().name(topicName).partitions(2).replicationFactor(1).send().join();
-
-    clientRule.waitUntilTopicsExists("foo");
-
-    reprocessingTrigger.accept(this);
-
-    // then
-    exception.expect(ClientCommandRejectedException.class);
-
-    // when
-    client.newCreateTopicCommand().name(topicName).partitions(2).replicationFactor(1).send().join();
-  }
-
-  @Test
-  public void shouldCreateUniquePartitionIdsAfterRestart() {
-    // given
-    final ZeebeClient client = clientRule.getClient();
-
-    client.newCreateTopicCommand().name("foo").partitions(2).replicationFactor(1).send().join();
-
-    clientRule.waitUntilTopicsExists("foo");
-
-    reprocessingTrigger.accept(this);
-
-    // when
-    client.newCreateTopicCommand().name("bar").partitions(2).replicationFactor(1).send().join();
-
-    clientRule.waitUntilTopicsExists("bar");
-
-    // then
-    final Topology topology = client.newTopologyRequest().send().join();
-    final List<BrokerInfo> brokers = topology.getBrokers();
-    assertThat(brokers).hasSize(1);
-
-    final BrokerInfo topologyBroker = brokers.get(0);
-    final List<PartitionInfo> partitions = topologyBroker.getPartitions();
-
-    assertThat(partitions)
-        .hasSize(6); // default partition + system partition + 4 partitions we create here
-    assertThat(partitions).extracting("partitionId").doesNotHaveDuplicates();
-  }
-
-  @Test
   public void shouldAssignUniqueWorkflowInstanceKeyAfterRestart() {
     // given
     clientRule
@@ -694,37 +625,6 @@ public class BrokerReprocessingTest {
 
     // then
     assertThat(deployment2Key).isGreaterThan(deployment1Key);
-  }
-
-  @Test
-  public void shouldAssignUniqueTopicKeyAfterRestart() {
-    // given
-    final ZeebeClient client = clientRule.getClient();
-    final long topic1Key =
-        client
-            .newCreateTopicCommand()
-            .name("foo")
-            .partitions(1)
-            .replicationFactor(1)
-            .send()
-            .join()
-            .getKey();
-
-    // when
-    reprocessingTrigger.accept(this);
-
-    final long topic2Key =
-        client
-            .newCreateTopicCommand()
-            .name("bar")
-            .partitions(1)
-            .replicationFactor(1)
-            .send()
-            .join()
-            .getKey();
-
-    // then
-    assertThat(topic2Key).isGreaterThan(topic1Key);
   }
 
   private WorkflowInstanceEvent startWorkflowInstance(String bpmnProcessId) {

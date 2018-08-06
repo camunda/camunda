@@ -36,13 +36,10 @@ public class TopicEventRecorder extends ExternalResource {
 
   private final ClientRule clientRule;
 
-  private final String topicName;
-
   protected TopicSubscription subscription;
 
-  public TopicEventRecorder(final ClientRule clientRule, final String topicName) {
+  public TopicEventRecorder(final ClientRule clientRule) {
     this.clientRule = clientRule;
-    this.topicName = topicName;
   }
 
   @Override
@@ -56,7 +53,7 @@ public class TopicEventRecorder extends ExternalResource {
   }
 
   private void startRecordingEvents() {
-    final TopicClient client = clientRule.getClient().topicClient(topicName);
+    final TopicClient client = clientRule.getClient().topicClient();
 
     subscription =
         client

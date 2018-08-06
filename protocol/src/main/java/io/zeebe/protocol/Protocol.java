@@ -38,6 +38,9 @@ public class Protocol {
 
   public static final DirectBuffer SYSTEM_TOPIC_BUF = BufferUtil.wrapString(SYSTEM_TOPIC);
 
+  /** By convention, the name of the topic that is the default */
+  public static final String DEFAULT_TOPIC = "default-topic";
+
   /** By convention, the partition id that can be used for topic creation commands */
   public static final int SYSTEM_PARTITION = 0;
 }

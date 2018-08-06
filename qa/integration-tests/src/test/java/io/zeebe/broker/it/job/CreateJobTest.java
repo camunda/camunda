@@ -162,21 +162,6 @@ public class CreateJobTest {
     assertThat(job.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
   }
 
-  @Test
-  public void shouldFailCreateJobIfTopicNameIsNotValid() {
-    // given
-    final JobClient jobClient = clientRule.getClient().topicClient("unknown-topic").jobClient();
-
-    // then
-    thrown.expect(RuntimeException.class);
-    thrown.expectMessage(
-        "Cannot determine target partition for request. "
-            + "Request was: [ topic = unknown-topic, partition = any, value type = JOB, command = CREATE ]");
-
-    // when
-    jobClient.newCreateCommand().jobType("foo").send().join();
-  }
-
   public static class PayloadObject {
     public String foo;
   }

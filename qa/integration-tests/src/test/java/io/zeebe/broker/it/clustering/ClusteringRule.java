@@ -15,6 +15,7 @@
  */
 package io.zeebe.broker.it.clustering;
 
+import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,12 +26,11 @@ import io.zeebe.broker.client.api.commands.BrokerInfo;
 import io.zeebe.broker.client.api.commands.PartitionInfo;
 import io.zeebe.broker.client.api.commands.Topic;
 import io.zeebe.broker.client.api.commands.Topics;
-import io.zeebe.broker.client.api.events.TopicEvent;
-import io.zeebe.broker.client.api.events.TopicState;
 import io.zeebe.broker.client.impl.ZeebeClientImpl;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.util.TopologyClient;
 import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.broker.system.configuration.TopicCfg;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
@@ -115,6 +115,14 @@ public class ClusteringRule extends ExternalResource {
     }
 
     waitForInternalSystemAndReplicationFactor();
+
+    final Broker leaderBroker = brokers.get(brokerAddresses[0]);
+    final BrokerCfg brokerConfiguration = leaderBroker.getBrokerContext().getBrokerConfiguration();
+    final TopicCfg defaultTopicCfg = brokerConfiguration.getTopics().get(0);
+    final int partitions = defaultTopicCfg.getPartitions();
+    final int replicationFactor = defaultTopicCfg.getReplicationFactor();
+
+    waitForTopicPartitionReplicationFactor(DEFAULT_TOPIC, partitions, replicationFactor);
 
     waitUntilBrokersInTopology(brokers.keySet());
   }
@@ -207,7 +215,7 @@ public class ClusteringRule extends ExternalResource {
   }
 
   /**
-   * Creates a topic with the given partition count in the cluster.
+   * Wait for a topic with the given partition count in the cluster.
    *
    * <p>This method returns to the user, if the topic and the partitions are created and the
    * replication factor was reached for each partition. Besides that the topic request needs to be
@@ -216,30 +224,17 @@ public class ClusteringRule extends ExternalResource {
    * <p>The replication factor is per default the number of current brokers in the cluster, see
    * {@link #DEFAULT_REPLICATION_FACTOR}.
    *
-   * @param topicName the name of the topic to create
    * @param partitionCount to number of partitions for the new topic
    * @return the created topic
    */
-  public Topic createTopic(final String topicName, final int partitionCount) {
-    return createTopic(topicName, partitionCount, DEFAULT_REPLICATION_FACTOR);
+  public Topic waitForTopic(int partitionCount) {
+    return waitForTopic(partitionCount, DEFAULT_REPLICATION_FACTOR);
   }
 
-  public Topic createTopic(
-      final String topicName, final int partitionCount, final int replicationFactor) {
-    final TopicEvent topicEvent =
-        zeebeClient
-            .newCreateTopicCommand()
-            .name(topicName)
-            .partitions(partitionCount)
-            .replicationFactor(replicationFactor)
-            .send()
-            .join();
+  public Topic waitForTopic(int partitionCount, int replicationFactor) {
+    waitForTopicPartitionReplicationFactor(DEFAULT_TOPIC, partitionCount, replicationFactor);
 
-    assertThat(topicEvent.getState()).isEqualTo(TopicState.CREATING);
-
-    waitForTopicPartitionReplicationFactor(topicName, partitionCount, replicationFactor);
-
-    return waitForTopicAvailability(topicName);
+    return waitForTopicAvailability(DEFAULT_TOPIC);
   }
 
   private boolean hasPartitionsWithReplicationFactor(
@@ -410,7 +405,7 @@ public class ClusteringRule extends ExternalResource {
    *
    * <p>Returns to the user if the broker was stopped and new leader for the partitions are chosen.
    *
-   * @param socketAddress
+   * @param address
    */
   public void stopBroker(final String address) {
     stopBroker(SocketAddress.from(address));

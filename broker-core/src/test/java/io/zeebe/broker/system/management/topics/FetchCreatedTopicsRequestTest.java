@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.system.management.topics;
 
+import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.system.management.topics.FetchCreatedTopicsResponse.TopicPartitions;
@@ -30,7 +31,7 @@ import org.junit.rules.RuleChain;
 public class FetchCreatedTopicsRequestTest {
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientApiRule clientApiRule = new ClientApiRule(false);
+  public ClientApiRule clientApiRule = new ClientApiRule();
   public ManagementApiRule managementApiRule = new ManagementApiRule();
 
   @Rule
@@ -42,16 +43,17 @@ public class FetchCreatedTopicsRequestTest {
 
   @Test
   public void shouldReturnCreatedTopicWithPartitionIds() {
-
-    clientApiRule.createTopic("test", 3);
-
+    // when
     managementApiRule.sendAndAwait(request, response);
 
-    assertThat(response.getTopics()).extracting(TopicPartitions::getTopicName).contains("test");
+    // then
+    assertThat(response.getTopics())
+        .extracting(TopicPartitions::getTopicName)
+        .contains(DEFAULT_TOPIC);
 
     assertThat(response.getTopics())
-        .filteredOn(t -> t.getTopicName().equals("test"))
+        .filteredOn(t -> t.getTopicName().equals(DEFAULT_TOPIC))
         .flatExtracting(TopicPartitions::getPartitionIds)
-        .hasSize(3);
+        .hasSize(1);
   }
 }

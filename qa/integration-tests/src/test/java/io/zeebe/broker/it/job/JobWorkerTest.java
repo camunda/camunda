@@ -21,12 +21,9 @@ import static io.zeebe.broker.it.util.TopicEventRecorder.state;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.client.ZeebeClient;
 import io.zeebe.broker.client.api.clients.JobClient;
 import io.zeebe.broker.client.api.commands.JobCommand;
 import io.zeebe.broker.client.api.commands.JobCommandName;
-import io.zeebe.broker.client.api.commands.Topic;
-import io.zeebe.broker.client.api.commands.Topics;
 import io.zeebe.broker.client.api.events.JobEvent;
 import io.zeebe.broker.client.api.events.JobState;
 import io.zeebe.broker.client.api.subscription.JobWorker;
@@ -454,67 +451,11 @@ public class JobWorkerTest {
     TestUtil.waitUntil(() -> jobHandler.getHandledJobs().size() > subscriptionCapacity);
   }
 
-  @Test
-  public void shouldReceiveJobsFromMultiplePartitions() {
-    // given
-    final String topicName = "gyros";
-    final int numPartitions = 2;
-
-    final ZeebeClient client = clientRule.getClient();
-    clientRule
-        .getClient()
-        .newCreateTopicCommand()
-        .name(topicName)
-        .partitions(numPartitions)
-        .replicationFactor(1)
-        .send()
-        .join();
-    clientRule.waitUntilTopicsExists(topicName);
-
-    final Topics topics = client.newTopicsRequest().send().join();
-    final Topic topic =
-        topics.getTopics().stream().filter(t -> t.getName().equals(topicName)).findFirst().get();
-
-    final Integer[] partitionIds =
-        topic.getPartitions().stream().mapToInt(p -> p.getId()).boxed().toArray(Integer[]::new);
-
-    final String jobType = "foooo";
-
-    final RecordingJobHandler handler = new RecordingJobHandler();
-
-    createJobOfTypeOnPartition(jobType, topicName, partitionIds[0]);
-    createJobOfTypeOnPartition(jobType, topicName, partitionIds[1]);
-
-    // when
-    clientRule
-        .getClient()
-        .topicClient(topicName)
-        .jobClient()
-        .newWorker()
-        .jobType(jobType)
-        .handler(handler)
-        .timeout(Duration.ofMinutes(5))
-        .name("test")
-        .open();
-
-    // then
-    waitUntil(() -> handler.getHandledJobs().size() == 2);
-
-    final Integer[] receivedPartitionIds =
-        handler
-            .getHandledJobs()
-            .stream()
-            .map(t -> t.getMetadata().getPartitionId())
-            .toArray(Integer[]::new);
-
-    assertThat(receivedPartitionIds).containsExactlyInAnyOrder(partitionIds);
-  }
-
   private JobEvent createJobOfType(String type) {
     return jobClient.newCreateCommand().jobType(type).send().join();
   }
 
-  private JobEvent createJobOfTypeOnPartition(String type, String topic, int partition) {
+  private JobEvent createJobOfTypeOnPartition(String type, int partition) {
     final CreateJobCommandImpl createCommand =
         (CreateJobCommandImpl) jobClient.newCreateCommand().jobType(type);
 

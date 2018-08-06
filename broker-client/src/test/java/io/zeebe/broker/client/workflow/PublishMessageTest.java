@@ -33,9 +33,6 @@ import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import java.io.ByteArrayInputStream;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.stream.IntStream;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -43,29 +40,22 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 public class PublishMessageTest {
+  private static final int FIRST_PARTITION = 1;
+  private static final int PARTITION_COUNT = 10;
+
   public ClientRule clientRule = new ClientRule();
-  public StubBrokerRule brokerRule = new StubBrokerRule();
+  public StubBrokerRule brokerRule = new StubBrokerRule(PARTITION_COUNT);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
-
   @Rule public ExpectedException expectedException = ExpectedException.none();
 
   private final MsgPackConverter msgPackConverter = new MsgPackConverter();
-
-  private static final int FIRST_PARTITION = 1;
-  private static final int PARTITION_SIZE = 10;
-
   private WorkflowClient workflowClient;
 
   @Before
   public void setUp() {
-
     brokerRule.workflowInstances().registerPublishMessageCommand();
-
-    IntStream.range(FIRST_PARTITION, FIRST_PARTITION + PARTITION_SIZE)
-        .forEach(partitionId -> brokerRule.addTopic("foo", partitionId));
-
-    workflowClient = clientRule.getClient().topicClient("foo").workflowClient();
+    workflowClient = clientRule.getClient().topicClient().workflowClient();
   }
 
   @Test
@@ -264,7 +254,7 @@ public class PublishMessageTest {
     // given
     final int expectedPartition =
         FIRST_PARTITION
-            + Math.abs(SubscriptionUtil.getSubscriptionHashCode("order-123") % PARTITION_SIZE);
+            + Math.abs(SubscriptionUtil.getSubscriptionHashCode("order-123") % PARTITION_COUNT);
 
     // when
     final MessageEvent messageEvent =
@@ -286,7 +276,7 @@ public class PublishMessageTest {
     // given
     final int expectedPartition =
         FIRST_PARTITION
-            + Math.abs(SubscriptionUtil.getSubscriptionHashCode("order-123") % PARTITION_SIZE);
+            + Math.abs(SubscriptionUtil.getSubscriptionHashCode("order-123") % PARTITION_COUNT);
 
     // when
     workflowClient
@@ -315,11 +305,11 @@ public class PublishMessageTest {
     // given
     final int expectedPartition1 =
         FIRST_PARTITION
-            + Math.abs(SubscriptionUtil.getSubscriptionHashCode("order-123") % PARTITION_SIZE);
+            + Math.abs(SubscriptionUtil.getSubscriptionHashCode("order-123") % PARTITION_COUNT);
 
     final int expectedPartition2 =
         FIRST_PARTITION
-            + Math.abs(SubscriptionUtil.getSubscriptionHashCode("order-456") % PARTITION_SIZE);
+            + Math.abs(SubscriptionUtil.getSubscriptionHashCode("order-456") % PARTITION_COUNT);
 
     assertThat(expectedPartition1).isNotEqualTo(expectedPartition2);
 
@@ -382,33 +372,7 @@ public class PublishMessageTest {
         .join();
   }
 
-  @Test
-  public void shouldThrowExceptionIfTopicDoesNotExist() {
-    // then
-    expectedException.expect(ClientException.class);
-    expectedException.expectMessage("No topic found with name 'not-existing'");
-
-    // when
-    clientRule
-        .getClient()
-        .topicClient("not-existing")
-        .workflowClient()
-        .newPublishMessageCommand()
-        .messageName("order canceled")
-        .correlationKey("order-123")
-        .send()
-        .join();
-  }
-
   public static class PayloadObject {
     public String foo;
-  }
-
-  public Map<String, Object> buildPartition(int id, String topic) {
-    final Map<String, Object> partition = new HashMap<>();
-    partition.put("topic", topic);
-    partition.put("id", id);
-
-    return partition;
   }
 }

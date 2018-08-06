@@ -15,6 +15,7 @@
  */
 package io.zeebe.broker.it.clustering;
 
+import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.client.ZeebeClient;
@@ -45,12 +46,16 @@ public class TaskEventClusteredTest {
     // given
     final ZeebeClient client = clientRule.getClient();
 
-    final String topicName = "foo";
-    clusteringRule.createTopic(topicName, 1);
+    clusteringRule.waitForTopic(1);
 
     final Topics topics = client.newTopicsRequest().send().join();
     final Topic topic =
-        topics.getTopics().stream().filter(t -> topicName.equals(t.getName())).findFirst().get();
+        topics
+            .getTopics()
+            .stream()
+            .filter(t -> DEFAULT_TOPIC.equals(t.getName()))
+            .findFirst()
+            .get();
 
     final BrokerInfo leader =
         clusteringRule.getLeaderForPartition(topic.getPartitions().get(0).getId());
@@ -61,7 +66,7 @@ public class TaskEventClusteredTest {
 
     // when
     final JobEvent jobEvent =
-        client.topicClient(topicName).jobClient().newCreateCommand().jobType("bar").send().join();
+        client.topicClient().jobClient().newCreateCommand().jobType("bar").send().join();
 
     // then
     assertThat(jobEvent.getState()).isEqualTo(JobState.CREATED);

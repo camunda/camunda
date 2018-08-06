@@ -1,8 +1,8 @@
-# Default configuration for integration tests
+# Configuration file for unit tests
 
 bootstrap = 1
 
 [[topics]]
 name = "default-topic"
-partitions = 1
+partitions = 3
 replicationFactor = 1

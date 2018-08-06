@@ -63,7 +63,8 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class CreateWorkflowInstanceTest {
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  public EmbeddedBrokerRule brokerRule =
+      new EmbeddedBrokerRule("zeebe.unit-test.increased.partitions.cfg.toml");
 
   public ClientApiRule apiRule = new ClientApiRule();
   private TestTopicClient testClient;
@@ -136,12 +137,10 @@ public class CreateWorkflowInstanceTest {
   public void shouldCreateWorkflowInstanceByBpmnProcessIdAndLatestVersion() {
     // given
     testClient.deployWithResponse(
-        ClientApiRule.DEFAULT_TOPIC_NAME,
         Bpmn.createExecutableProcess("process").startEvent("bar").endEvent().done());
 
     final ExecuteCommandResponse deployment2 =
         testClient.deployWithResponse(
-            ClientApiRule.DEFAULT_TOPIC_NAME,
             Bpmn.createExecutableProcess("process").startEvent("bar").endEvent().done());
 
     // when
@@ -178,11 +177,9 @@ public class CreateWorkflowInstanceTest {
     // given
     final ExecuteCommandResponse deployment1 =
         testClient.deployWithResponse(
-            ClientApiRule.DEFAULT_TOPIC_NAME,
             Bpmn.createExecutableProcess("process").startEvent("foo").endEvent().done());
 
     testClient.deployWithResponse(
-        ClientApiRule.DEFAULT_TOPIC_NAME,
         Bpmn.createExecutableProcess("process").startEvent("bar").endEvent().done());
 
     // when
@@ -221,7 +218,6 @@ public class CreateWorkflowInstanceTest {
 
     final ExecuteCommandResponse depl =
         testClient.deployWithResponse(
-            ClientApiRule.DEFAULT_TOPIC_NAME,
             Bpmn.createExecutableProcess("process").startEvent("bar").endEvent().done());
 
     final long workflowKey = extractWorkflowKey(depl);
@@ -252,7 +248,6 @@ public class CreateWorkflowInstanceTest {
     // given
     final ExecuteCommandResponse depl =
         testClient.deployWithResponse(
-            ClientApiRule.DEFAULT_TOPIC_NAME,
             Bpmn.createExecutableProcess("process").startEvent().endEvent().done());
 
     testClient.deploy(Bpmn.createExecutableProcess("process").startEvent().endEvent().done());
@@ -545,7 +540,6 @@ public class CreateWorkflowInstanceTest {
         apiRule
             .topic()
             .deployWithResponse(
-                ClientApiRule.DEFAULT_TOPIC_NAME,
                 StreamUtil.read(resourceAsStream),
                 ResourceType.YAML_WORKFLOW.name(),
                 "simple-workflow.yaml");
@@ -569,14 +563,13 @@ public class CreateWorkflowInstanceTest {
     // given
     final int partitions = 3;
 
-    apiRule.createTopic("test", partitions);
-    final List<Integer> partitionIds = apiRule.getPartitionIds("test");
+    final List<Integer> partitionIds = apiRule.getPartitionIds();
 
     final BpmnModelInstance definition =
         Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
 
     // when
-    apiRule.topic().deploy("test", definition);
+    apiRule.topic().deploy(definition);
 
     // then
     final List<Long> workflowInstanceKeys = new ArrayList<>();
@@ -600,7 +593,6 @@ public class CreateWorkflowInstanceTest {
         apiRule
             .topic()
             .deployWithResponse(
-                ClientApiRule.DEFAULT_TOPIC_NAME,
                 StreamUtil.read(resourceAsStream),
                 ResourceType.BPMN_XML.name(),
                 "collaboration.bpmn");

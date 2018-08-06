@@ -16,12 +16,12 @@
 package io.zeebe.test.broker.protocol.brokerapi.data;
 
 import io.zeebe.transport.SocketAddress;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Objects;
+import java.util.Set;
 
 public class TopologyBroker {
-  private List<BrokerPartitionState> partitions = new ArrayList<>();
+  private Set<BrokerPartitionState> partitions = new LinkedHashSet<>();
 
   protected final String host;
   protected final int port;
@@ -41,7 +41,7 @@ public class TopologyBroker {
     return port;
   }
 
-  public List<BrokerPartitionState> getPartitions() {
+  public Set<BrokerPartitionState> getPartitions() {
     return partitions;
   }
 

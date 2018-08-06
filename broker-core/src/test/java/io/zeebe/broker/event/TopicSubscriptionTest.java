@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.event;
 
+import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
@@ -508,7 +509,7 @@ public class TopicSubscriptionTest {
     // and the subscription service has abnormally closed
     final String name =
         "log.log."
-            + ClientApiRule.DEFAULT_TOPIC_NAME
+            + DEFAULT_TOPIC
             + "."
             + apiRule.getDefaultPartitionId()
             + ".subscription.push.foo"; // TODO: ist das der richtige Name?

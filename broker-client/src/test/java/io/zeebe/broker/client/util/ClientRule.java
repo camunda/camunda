@@ -29,6 +29,8 @@ import org.junit.rules.ExternalResource;
 
 public class ClientRule extends ExternalResource {
 
+  public static final int DEFAULT_PARTITION = 1;
+
   protected final Consumer<ZeebeClientBuilder> configurator;
 
   protected ZeebeClient client;
@@ -66,15 +68,15 @@ public class ClientRule extends ExternalResource {
   }
 
   public WorkflowClient workflowClient() {
-    return client.topicClient(getDefaultTopicName()).workflowClient();
+    return client.topicClient().workflowClient();
   }
 
   public JobClient jobClient() {
-    return client.topicClient(getDefaultTopicName()).jobClient();
+    return client.topicClient().jobClient();
   }
 
   public TopicClient topicClient() {
-    return client.topicClient(getDefaultTopicName());
+    return client.topicClient();
   }
 
   public String getDefaultTopicName() {

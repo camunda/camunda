@@ -15,6 +15,7 @@
  */
 package io.zeebe.test;
 
+import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 
 import io.zeebe.broker.client.ZeebeClient;
@@ -35,26 +36,19 @@ import java.util.stream.Collectors;
 import org.junit.rules.ExternalResource;
 
 public class ClientRule extends ExternalResource {
-  public static final String DEFAULT_TOPIC = "default-topic";
+
   protected int defaultPartition;
 
   protected ZeebeClient client;
-  protected final boolean createDefaultTopic;
 
   protected final Properties properties;
 
   public ClientRule() {
-    this(true);
+    this(Properties::new);
   }
 
-  public ClientRule(final boolean createDefaultTopic) {
-    this(Properties::new, createDefaultTopic);
-  }
-
-  public ClientRule(
-      final Supplier<Properties> propertiesProvider, final boolean createDefaultTopic) {
+  public ClientRule(final Supplier<Properties> propertiesProvider) {
     this.properties = propertiesProvider.get();
-    this.createDefaultTopic = createDefaultTopic;
   }
 
   public ZeebeClient getClient() {
@@ -84,20 +78,11 @@ public class ClientRule extends ExternalResource {
   @Override
   protected void before() {
     client = ZeebeClient.newClientBuilder().withProperties(properties).build();
-
-    if (createDefaultTopic) {
-      createDefaultTopic();
-    }
+    createDefaultTopic();
   }
 
   private void createDefaultTopic() {
-    client
-        .newCreateTopicCommand()
-        .name(DEFAULT_TOPIC)
-        .partitions(1)
-        .replicationFactor(1)
-        .send()
-        .join();
+
     waitUntilTopicsExists(DEFAULT_TOPIC);
 
     final Topology topology = client.newTopologyRequest().send().join();

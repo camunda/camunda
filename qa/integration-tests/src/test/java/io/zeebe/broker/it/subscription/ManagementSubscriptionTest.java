@@ -23,13 +23,9 @@ import io.zeebe.broker.client.api.commands.DeploymentCommand;
 import io.zeebe.broker.client.api.commands.DeploymentCommandName;
 import io.zeebe.broker.client.api.commands.DeploymentResource;
 import io.zeebe.broker.client.api.commands.ResourceType;
-import io.zeebe.broker.client.api.commands.TopicCommand;
-import io.zeebe.broker.client.api.commands.TopicCommandName;
 import io.zeebe.broker.client.api.commands.Workflow;
 import io.zeebe.broker.client.api.events.DeploymentEvent;
 import io.zeebe.broker.client.api.events.DeploymentState;
-import io.zeebe.broker.client.api.events.TopicEvent;
-import io.zeebe.broker.client.api.events.TopicState;
 import io.zeebe.broker.client.api.record.Record;
 import io.zeebe.broker.client.api.record.RecordType;
 import io.zeebe.broker.client.api.record.ValueType;
@@ -133,14 +129,13 @@ public class ManagementSubscriptionTest {
   @Test
   public void shouldReceiveDeploymentCommand() {
     // given
-    final DeploymentEvent deploymentEvent =
-        client
-            .topicClient()
-            .workflowClient()
-            .newDeployCommand()
-            .addWorkflowModel(WORKFLOW, "wf.bpmn")
-            .send()
-            .join();
+    client
+        .topicClient()
+        .workflowClient()
+        .newDeployCommand()
+        .addWorkflowModel(WORKFLOW, "wf.bpmn")
+        .send()
+        .join();
 
     // when
     final List<DeploymentCommand> commands = new ArrayList<>();
@@ -169,80 +164,6 @@ public class ManagementSubscriptionTest {
   }
 
   @Test
-  public void shouldReceiveTopicEvents() {
-    // given
-    final List<TopicEvent> events = new ArrayList<>();
-    client
-        .newManagementSubscription()
-        .name(SUBSCRIPTION_NAME)
-        .topicEventHandler(events::add)
-        .startAtTailOfTopic()
-        .open();
-
-    // when
-    final TopicEvent topicEvent =
-        client
-            .newCreateTopicCommand()
-            .name("my-topic")
-            .partitions(1)
-            .replicationFactor(1)
-            .send()
-            .join();
-
-    waitUntil(() -> events.size() >= 2);
-
-    // then
-    assertThat(events).hasSize(2);
-
-    assertThat(events)
-        .extracting(TopicEvent::getState)
-        .containsExactly(TopicState.CREATING, TopicState.CREATED);
-    assertThat(events).extracting(TopicEvent::getName).containsOnly("my-topic");
-    assertThat(events).extracting(TopicEvent::getKey).containsOnly(topicEvent.getKey());
-    assertThat(events).extracting(TopicEvent::getPartitions).containsOnly(1);
-    assertThat(events).extracting(TopicEvent::getReplicationFactor).containsOnly(1);
-
-    assertThat(events.get(1).getPartitionIds()).containsExactly(2);
-  }
-
-  @Test
-  public void shouldReceiveTopicCommands() {
-    // given
-    final List<TopicCommand> commands = new ArrayList<>();
-    client
-        .newManagementSubscription()
-        .name(SUBSCRIPTION_NAME)
-        .topicCommandHandler(commands::add)
-        .startAtTailOfTopic()
-        .open();
-
-    // when
-    final TopicEvent topicEvent =
-        client
-            .newCreateTopicCommand()
-            .name("my-topic")
-            .partitions(1)
-            .replicationFactor(1)
-            .send()
-            .join();
-
-    waitUntil(() -> commands.size() >= 2);
-
-    // then
-    assertThat(commands).hasSize(2);
-
-    assertThat(commands)
-        .extracting(TopicCommand::getCommandName)
-        .containsExactly(TopicCommandName.CREATE, TopicCommandName.CREATE_COMPLETE);
-    assertThat(commands).extracting(TopicCommand::getName).containsOnly("my-topic");
-    assertThat(commands)
-        .extracting(TopicCommand::getKey)
-        .containsExactly(ExecuteCommandResponseDecoder.keyNullValue(), topicEvent.getKey());
-    assertThat(commands).extracting(TopicCommand::getPartitions).containsOnly(1);
-    assertThat(commands).extracting(TopicCommand::getReplicationFactor).containsOnly(1);
-  }
-
-  @Test
   public void shouldReceiveAllRecords() {
     // given
     final List<Record> records = new ArrayList<>();
@@ -255,28 +176,20 @@ public class ManagementSubscriptionTest {
 
     // when
     client
-        .newCreateTopicCommand()
-        .name("my-topic")
-        .partitions(1)
-        .replicationFactor(1)
-        .send()
-        .join();
-
-    client
-        .topicClient("my-topic")
+        .topicClient()
         .workflowClient()
         .newDeployCommand()
         .addWorkflowModel(WORKFLOW, "wf.bpmn")
         .send()
         .join();
 
-    waitUntil(() -> records.size() >= 6);
+    waitUntil(() -> records.size() >= 2);
 
     // then
-    assertThat(records).hasSize(6);
+    assertThat(records).hasSize(2);
     assertThat(records)
         .extracting(r -> r.getMetadata().getValueType())
-        .containsOnly(ValueType.DEPLOYMENT, ValueType.TOPIC);
+        .containsOnly(ValueType.DEPLOYMENT);
     assertThat(records)
         .extracting(r -> r.getMetadata().getRecordType())
         .containsOnly(RecordType.EVENT, RecordType.COMMAND);

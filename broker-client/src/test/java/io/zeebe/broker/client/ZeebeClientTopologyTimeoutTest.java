@@ -15,6 +15,7 @@
  */
 package io.zeebe.broker.client;
 
+import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -73,7 +74,9 @@ public class ZeebeClientTopologyTimeoutTest {
     exception.expect(ClientException.class);
     exception.expectMessage(
         "Request timed out (PT1S). "
-            + "Request was: [ topic = default-topic, partition = 99, value type = JOB, command = COMPLETE ]");
+            + "Request was: [ topic = "
+            + DEFAULT_TOPIC
+            + ", partition = 1, value type = JOB, command = COMPLETE ]");
 
     // when
     client.topicClient().jobClient().newCompleteCommand(baseEvent).send().join();

@@ -15,6 +15,7 @@
  */
 package io.zeebe.test.broker.protocol.clientapi;
 
+import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsArray;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -62,11 +63,7 @@ public class TestTopicClient {
   }
 
   public long deploy(final BpmnModelInstance workflow) {
-    return deploy(ClientApiRule.DEFAULT_TOPIC_NAME, workflow);
-  }
-
-  public long deploy(String topic, final BpmnModelInstance workflow) {
-    final ExecuteCommandResponse response = deployWithResponse(topic, workflow);
+    final ExecuteCommandResponse response = deployWithResponse(workflow);
 
     assertThat(response.recordType())
         .withFailMessage("Deployment failed: %s", response.rejectionReason())
@@ -75,25 +72,25 @@ public class TestTopicClient {
     return response.key();
   }
 
-  public ExecuteCommandResponse deployWithResponse(String topic, byte[] resource) {
-    return deployWithResponse(topic, resource, "BPMN_XML", "process.bpmn");
+  public ExecuteCommandResponse deployWithResponse(byte[] resource) {
+    return deployWithResponse(resource, "BPMN_XML", "process.bpmn");
   }
 
-  public ExecuteCommandResponse deployWithResponse(String topic, final BpmnModelInstance workflow) {
-    return deployWithResponse(topic, workflow, "process.bpmn");
+  public ExecuteCommandResponse deployWithResponse(final BpmnModelInstance workflow) {
+    return deployWithResponse(workflow, "process.bpmn");
   }
 
   public ExecuteCommandResponse deployWithResponse(
-      String topic, final BpmnModelInstance workflow, String resourceName) {
+      final BpmnModelInstance workflow, String resourceName) {
     final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
     Bpmn.writeModelToStream(outStream, workflow);
     final byte[] resource = outStream.toByteArray();
 
-    return deployWithResponse(topic, resource, "BPMN_XML", resourceName);
+    return deployWithResponse(resource, "BPMN_XML", resourceName);
   }
 
   public ExecuteCommandResponse deployWithResponse(
-      String topic, final byte[] resource, final String resourceType, final String resourceName) {
+      final byte[] resource, final String resourceType, final String resourceName) {
     final Map<String, Object> deploymentResource = new HashMap<>();
     deploymentResource.put("resource", resource);
     deploymentResource.put("resourceType", resourceType);
@@ -104,7 +101,7 @@ public class TestTopicClient {
         .partitionId(Protocol.SYSTEM_PARTITION)
         .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
         .command()
-        .put("topicName", topic)
+        .put("topicName", DEFAULT_TOPIC)
         .put(PROP_WORKFLOW_RESOURCES, Collections.singletonList(deploymentResource))
         .put("resouceType", resourceType)
         .done()

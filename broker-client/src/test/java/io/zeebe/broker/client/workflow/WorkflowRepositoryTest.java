@@ -15,6 +15,7 @@
  */
 package io.zeebe.broker.client.workflow;
 
+import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
@@ -59,7 +60,7 @@ public class WorkflowRepositoryTest {
   public void shouldGetResourceByBpmnProcessId() {
     // when
     client
-        .topicClient("test-topic")
+        .topicClient()
         .workflowClient()
         .newResourceRequest()
         .bpmnProcessId("wf")
@@ -75,7 +76,7 @@ public class WorkflowRepositoryTest {
         brokerRule.getReceivedControlMessageRequestsByType(ControlMessageType.GET_WORKFLOW).get(0);
     assertThat(request.getData())
         .containsOnly(
-            entry("topicName", "test-topic"),
+            entry("topicName", DEFAULT_TOPIC),
             entry("bpmnProcessId", "wf"),
             entry("version", -1L),
             entry("workflowKey", -1L));
@@ -85,7 +86,7 @@ public class WorkflowRepositoryTest {
   public void shouldGetResourceByBpmnProcessIdAndVersion() {
     // when
     client
-        .topicClient("test-topic")
+        .topicClient()
         .workflowClient()
         .newResourceRequest()
         .bpmnProcessId("wf")
@@ -101,7 +102,7 @@ public class WorkflowRepositoryTest {
         brokerRule.getReceivedControlMessageRequestsByType(ControlMessageType.GET_WORKFLOW).get(0);
     assertThat(request.getData())
         .containsOnly(
-            entry("topicName", "test-topic"),
+            entry("topicName", DEFAULT_TOPIC),
             entry("bpmnProcessId", "wf"),
             entry("version", 2L),
             entry("workflowKey", -1L));
@@ -110,13 +111,7 @@ public class WorkflowRepositoryTest {
   @Test
   public void shouldGetResourceByWorkflowKey() {
     // when
-    client
-        .topicClient("test-topic")
-        .workflowClient()
-        .newResourceRequest()
-        .workflowKey(123L)
-        .send()
-        .join();
+    client.topicClient().workflowClient().newResourceRequest().workflowKey(123L).send().join();
 
     // then
     assertThat(brokerRule.getReceivedControlMessageRequestsByType(ControlMessageType.GET_WORKFLOW))
@@ -126,7 +121,7 @@ public class WorkflowRepositoryTest {
         brokerRule.getReceivedControlMessageRequestsByType(ControlMessageType.GET_WORKFLOW).get(0);
     assertThat(request.getData())
         .containsOnly(
-            entry("topicName", "test-topic"), entry("version", -1L), entry("workflowKey", 123L));
+            entry("topicName", DEFAULT_TOPIC), entry("version", -1L), entry("workflowKey", 123L));
   }
 
   @Test
@@ -134,7 +129,7 @@ public class WorkflowRepositoryTest {
     // when
     final WorkflowResource workflowResource =
         client
-            .topicClient("test-topic")
+            .topicClient()
             .workflowClient()
             .newResourceRequest()
             .bpmnProcessId("wf")
@@ -155,13 +150,7 @@ public class WorkflowRepositoryTest {
   @Test
   public void shouldGetWorkflowsByBpmnProcessId() {
     // when
-    client
-        .topicClient("test-topic")
-        .workflowClient()
-        .newWorkflowRequest()
-        .bpmnProcessId("wf1")
-        .send()
-        .join();
+    client.topicClient().workflowClient().newWorkflowRequest().bpmnProcessId("wf1").send().join();
 
     // then
     assertThat(
@@ -173,13 +162,13 @@ public class WorkflowRepositoryTest {
             .getReceivedControlMessageRequestsByType(ControlMessageType.LIST_WORKFLOWS)
             .get(0);
     assertThat(request.getData())
-        .containsOnly(entry("topicName", "test-topic"), entry("bpmnProcessId", "wf1"));
+        .containsOnly(entry("topicName", DEFAULT_TOPIC), entry("bpmnProcessId", "wf1"));
   }
 
   @Test
   public void shouldGetAllWorkflows() {
     // when
-    client.topicClient("test-topic").workflowClient().newWorkflowRequest().send().join();
+    client.topicClient().workflowClient().newWorkflowRequest().send().join();
 
     // then
     assertThat(
@@ -190,14 +179,13 @@ public class WorkflowRepositoryTest {
         brokerRule
             .getReceivedControlMessageRequestsByType(ControlMessageType.LIST_WORKFLOWS)
             .get(0);
-    assertThat(request.getData()).containsOnly(entry("topicName", "test-topic"));
   }
 
   @Test
   public void shouldGetWorkflowResponse() {
     // when
     final Workflows workflows =
-        client.topicClient("test-topic").workflowClient().newWorkflowRequest().send().join();
+        client.topicClient().workflowClient().newWorkflowRequest().send().join();
 
     // then
     assertThat(

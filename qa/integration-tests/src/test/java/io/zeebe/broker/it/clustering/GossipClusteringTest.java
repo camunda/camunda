@@ -15,6 +15,7 @@
  */
 package io.zeebe.broker.it.clustering;
 
+import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.client.api.commands.BrokerInfo;
@@ -28,10 +29,10 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
 public class GossipClusteringTest {
-  private static final int PARTITION_COUNT = 5;
+  private static final int PARTITION_COUNT = 3;
 
   public AutoCloseableRule closeables = new AutoCloseableRule();
-  public Timeout testTimeout = Timeout.seconds(30);
+  public Timeout testTimeout = Timeout.seconds(90);
   public ClientRule clientRule = new ClientRule();
   public ClusteringRule clusteringRule = new ClusteringRule(closeables, clientRule);
 
@@ -59,10 +60,10 @@ public class GossipClusteringTest {
     // given
 
     // when
-    clusteringRule.createTopic("test", PARTITION_COUNT);
+    clusteringRule.waitForTopic(PARTITION_COUNT);
 
     // then
-    final long partitionLeaderCount = clusteringRule.getPartitionLeaderCountForTopic("test");
+    final long partitionLeaderCount = clusteringRule.getPartitionLeaderCountForTopic(DEFAULT_TOPIC);
     assertThat(partitionLeaderCount).isEqualTo(PARTITION_COUNT);
   }
 

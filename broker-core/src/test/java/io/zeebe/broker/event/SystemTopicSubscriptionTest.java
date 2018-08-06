@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.event;
 
+import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
@@ -140,7 +141,6 @@ public class SystemTopicSubscriptionTest {
   @Test
   public void shouldPushTopicEvents() {
     // given
-    apiRule.createTopic("my-topic", 1);
 
     // when
     final ExecuteCommandResponse addResponse =
@@ -153,7 +153,8 @@ public class SystemTopicSubscriptionTest {
         apiRule
             .subscribedEvents()
             .filter(
-                (e) -> e.valueType() == ValueType.TOPIC && "my-topic".equals(e.value().get("name")))
+                (e) ->
+                    e.valueType() == ValueType.TOPIC && DEFAULT_TOPIC.equals(e.value().get("name")))
             .limit(4)
             .collect(Collectors.toList());
 
@@ -166,9 +167,6 @@ public class SystemTopicSubscriptionTest {
     assertThat(topicEvents)
         .extracting(SubscribedRecord::partitionId)
         .containsOnly(Protocol.SYSTEM_PARTITION);
-    assertThat(topicEvents)
-        .extracting(SubscribedRecord::timestamp)
-        .containsOnly(brokerRule.getClock().getCurrentTimeInMillis());
 
     assertThat(topicEvents).extracting(SubscribedRecord::valueType).containsOnly(ValueType.TOPIC);
     assertThat(topicEvents)

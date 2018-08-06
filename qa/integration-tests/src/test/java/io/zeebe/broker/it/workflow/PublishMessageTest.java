@@ -15,6 +15,7 @@
  */
 package io.zeebe.broker.it.workflow;
 
+import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -36,9 +37,11 @@ import org.junit.rules.RuleChain;
 
 public class PublishMessageTest {
 
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  public EmbeddedBrokerRule brokerRule =
+      new EmbeddedBrokerRule("zeebe.unit-test.increased.partitions.cfg.toml");
   public ClientRule clientRule = new ClientRule();
-  public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule, "test", false);
+  public TopicEventRecorder eventRecorder =
+      new TopicEventRecorder(clientRule, DEFAULT_TOPIC, false);
 
   @Rule
   public RuleChain ruleChain =
@@ -56,18 +59,10 @@ public class PublishMessageTest {
 
   @Before
   public void init() {
-    clientRule
-        .getClient()
-        .newCreateTopicCommand()
-        .name("test")
-        .partitions(10)
-        .replicationFactor(1)
-        .send()
-        .join();
 
-    clientRule.waitUntilTopicsExists("test");
+    clientRule.waitUntilTopicsExists(DEFAULT_TOPIC);
 
-    workflowClient = clientRule.getClient().topicClient("test").workflowClient();
+    workflowClient = clientRule.getClient().topicClient().workflowClient();
 
     workflowClient.newDeployCommand().addWorkflowModel(WORKFLOW, "wf.bpmn").send().join();
 
@@ -121,7 +116,7 @@ public class PublishMessageTest {
         workflowClient
             .newPublishMessageCommand()
             .messageName("order canceled")
-            .correlationKey("order-456")
+            .correlationKey("order-124")
             .send()
             .join();
 
@@ -141,7 +136,7 @@ public class PublishMessageTest {
         .newCreateInstanceCommand()
         .bpmnProcessId("wf")
         .latestVersion()
-        .payload("{\"orderId\":\"order-456\"}")
+        .payload("{\"orderId\":\"order-124\"}")
         .send()
         .join();
 

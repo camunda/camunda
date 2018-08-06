@@ -51,7 +51,6 @@ import org.junit.rules.RuleChain;
 
 public class PartitionedTopicSubscriptionTest {
 
-  public static final String TOPIC = "baz";
   public static final int PARTITION_1 = 1;
   public static final int PARTITION_2 = 2;
 
@@ -339,33 +338,6 @@ public class PartitionedTopicSubscriptionTest {
         .hasMessageContaining("Could not open subscriber group");
 
     assertThat(failure.getCause()).hasMessageContaining("Requesting partitions failed");
-
-    assertThat(getSubscribeRequests(broker1)).isEmpty();
-    assertThat(getSubscribeRequests(broker2)).isEmpty();
-  }
-
-  @Test
-  public void shouldNotOpenSubscriptionToNonExistentTopic() {
-    // given
-    final String nonExistingTopic = "jj";
-
-    final TopicSubscriptionBuilderStep3 builder =
-        client
-            .topicClient(nonExistingTopic)
-            .newSubscription()
-            .name("hohoho")
-            .recordHandler(new RecordingHandler());
-
-    // when
-    final Throwable failure = catchThrowable(() -> builder.open());
-
-    // then
-    assertThat(failure)
-        .isInstanceOf(ClientException.class)
-        .hasMessageContaining("Could not open subscriber group");
-
-    assertThat(failure.getCause())
-        .hasMessageContaining("Topic " + nonExistingTopic + " is not known");
 
     assertThat(getSubscribeRequests(broker1)).isEmpty();
     assertThat(getSubscribeRequests(broker2)).isEmpty();

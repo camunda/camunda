@@ -15,6 +15,7 @@
  */
 package io.zeebe.broker.client.cmd;
 
+import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static io.zeebe.protocol.clientapi.ControlMessageType.REQUEST_TOPOLOGY;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -72,33 +73,6 @@ public class ClientCommandManagerTest {
   }
 
   @Test
-  public void testRefreshTopologyRequest() {
-    // given
-    // initial topology has been fetched
-    waitUntil(() -> broker.getReceivedControlMessageRequests().size() == 1);
-
-    broker.jobs().registerCreateCommand();
-
-    // extend topology
-    broker.addTopic("other-topic", 0);
-
-    // when
-    final JobEvent jobEvent =
-        client
-            .topicClient("other-topic")
-            .jobClient()
-            .newCreateCommand()
-            .jobType("foo")
-            .send()
-            .join();
-
-    // then the client has refreshed its topology
-    assertThat(jobEvent).isNotNull();
-
-    assertTopologyRefreshRequests(2);
-  }
-
-  @Test
   public void testRefreshTopologyWhenLeaderIsNotKnown() {
     // given
     // initial topology has been fetched
@@ -107,15 +81,15 @@ public class ClientCommandManagerTest {
     broker.jobs().registerCompleteCommand();
 
     // extend topology
-    broker.addTopic("other-topic", 1);
+    broker.addTopic(DEFAULT_TOPIC, 2);
 
     final JobEventImpl baseEvent = Events.exampleJob();
-    baseEvent.setTopicName("other-topic");
-    baseEvent.setPartitionId(1);
+    baseEvent.setTopicName(DEFAULT_TOPIC);
+    baseEvent.setPartitionId(2);
 
     // when
     final JobEvent jobEvent =
-        client.topicClient("other-topic").jobClient().newCompleteCommand(baseEvent).send().join();
+        client.topicClient().jobClient().newCompleteCommand(baseEvent).send().join();
 
     // then the client has refreshed its topology
     assertThat(jobEvent).isNotNull();

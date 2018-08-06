@@ -40,15 +40,13 @@ public class WorkflowTest {
           });
 
   private ZeebeClient client;
-  private String topic;
 
   @Before
   public void deploy() {
     client = testRule.getClient();
-    topic = testRule.getDefaultTopic();
 
     client
-        .topicClient(topic)
+        .topicClient()
         .workflowClient()
         .newDeployCommand()
         .addResourceFromClasspath("process.bpmn")
@@ -60,7 +58,7 @@ public class WorkflowTest {
   public void shouldCompleteWorkflowInstance() {
     final WorkflowInstanceEvent workflowInstance =
         client
-            .topicClient(topic)
+            .topicClient()
             .workflowClient()
             .newCreateInstanceCommand()
             .bpmnProcessId("process")
@@ -69,7 +67,7 @@ public class WorkflowTest {
             .join();
 
     client
-        .topicClient(topic)
+        .topicClient()
         .jobClient()
         .newWorker()
         .jobType("task")

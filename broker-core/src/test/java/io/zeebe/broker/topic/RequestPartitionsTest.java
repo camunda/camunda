@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.topic;
 
+import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
@@ -34,18 +35,16 @@ import org.junit.rules.RuleChain;
 
 @SuppressWarnings("unchecked")
 public class RequestPartitionsTest {
-  public ClientApiRule apiRule = new ClientApiRule(false);
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule("zeebe.no-default-topic.cfg.toml");
+  public static final int EXPECTED_TOTAL_PARTITIONS = 1;
+  public ClientApiRule apiRule = new ClientApiRule();
+  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
   @Test
   public void shouldReturnCreatedPartitions() {
     // given
-    final String topicName = "foo";
-    final int numPartitions = 2;
-
-    apiRule.createTopic(topicName, 2);
+    apiRule.waitForTopic(EXPECTED_TOTAL_PARTITIONS);
 
     // when
     final ControlMessageResponse response =
@@ -56,33 +55,29 @@ public class RequestPartitionsTest {
             .sendAndAwait();
 
     // then
-    assertResponse(response, numPartitions, topicName);
+    assertResponse(response, EXPECTED_TOTAL_PARTITIONS, DEFAULT_TOPIC);
   }
 
   /** testing snapshotting */
   @Test
   public void shouldReturnCreatedPartitionsAfterRestart() {
     // given
-    final String topicName = "foo";
-    final int numPartitions = 2;
-
-    apiRule.createTopic(topicName, 2);
+    apiRule.waitForTopic(EXPECTED_TOTAL_PARTITIONS);
 
     brokerRule.restartBroker();
 
     // when
     // have to do this multiple times as the stream processor for answering the request may not be
     // available yet
-    apiRule.waitForTopic(topicName, numPartitions);
+    apiRule.waitForTopic(EXPECTED_TOTAL_PARTITIONS);
 
     // then
-    assertResponse(apiRule.requestPartitions(), numPartitions, topicName);
+    assertResponse(apiRule.requestPartitions(), EXPECTED_TOTAL_PARTITIONS, DEFAULT_TOPIC);
   }
 
   @Test
   public void shouldRespondWithErrorWhenRequestAddressesNonSystemPartition() {
     // given
-    apiRule.createTopic("foo", 2);
 
     // when
     // have to do this multiple times as the stream processor for answering the request may not be

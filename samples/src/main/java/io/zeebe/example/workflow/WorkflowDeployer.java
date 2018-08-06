@@ -24,13 +24,12 @@ public class WorkflowDeployer {
 
   public static void main(String[] args) {
     final String broker = "localhost:26501";
-    final String topic = "default-topic";
 
     final ZeebeClientBuilder clientBuilder =
         ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
     try (ZeebeClient client = clientBuilder.build()) {
-      final WorkflowClient workflowClient = client.topicClient(topic).workflowClient();
+      final WorkflowClient workflowClient = client.topicClient().workflowClient();
 
       final DeploymentEvent deploymentEvent =
           workflowClient

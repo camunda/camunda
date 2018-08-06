@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -26,8 +25,7 @@ import io.zeebe.broker.system.workflow.repository.data.ResourceType;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.Protocol;
+import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
@@ -37,7 +35,6 @@ import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
 import io.zeebe.util.StreamUtil;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -53,8 +50,9 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class CreateDeploymentTest {
-  private static final BpmnModelInstance WORKFLOW =
-      Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
+  private static final WorkflowDefinition WORKFLOW =
+      Bpmn.createExecutableWorkflow("process").startEvent().endEvent().done();
+  public static final int PARTITION_ID = 1;
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
@@ -68,7 +66,7 @@ public class CreateDeploymentTest {
     final ExecuteCommandResponse resp =
         apiRule
             .createCmdRequest()
-            .partitionId(Protocol.SYSTEM_PARTITION)
+            .partitionId(1)
             .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
             .command()
             .put("topicName", DEFAULT_TOPIC)
@@ -84,7 +82,7 @@ public class CreateDeploymentTest {
     assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
     assertThat(resp.position()).isGreaterThanOrEqualTo(0L);
     assertThat(resp.sourceRecordPosition()).isEqualTo(createDeploymentCommand.position());
-    assertThat(resp.partitionId()).isEqualTo(Protocol.SYSTEM_PARTITION);
+    assertThat(resp.partitionId()).isEqualTo(1);
     assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
     assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATED);
   }
@@ -147,7 +145,8 @@ public class CreateDeploymentTest {
         .contains("process1", "process2");
   }
 
-  public void shouldRejectDeploymentIfNotValidDesignTimeAspect() throws Exception {
+  @Test
+  public void shouldRejectDeploymentIfNotValid() throws Exception {
     // given
     final Path path = Paths.get(getClass().getResource("/workflows/invalid_process.bpmn").toURI());
     final byte[] resource = Files.readAllBytes(path);
@@ -163,30 +162,8 @@ public class CreateDeploymentTest {
     assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATE);
     assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(resp.rejectionReason()).contains("ERROR: Must have exactly one start event");
-  }
-
-  @Test
-  public void shouldRejectDeploymentIfNotValidRuntimeAspect() throws Exception {
-    // given
-    final Path path =
-        Paths.get(getClass().getResource("/workflows/invalid_process_condition.bpmn").toURI());
-    final byte[] resource = Files.readAllBytes(path);
-
-    // when
-    final ExecuteCommandResponse resp = apiRule.topic().deployWithResponse(resource);
-
-    // then
-    final SubscribedRecord createDeploymentCommand = getFirstDeploymentCreateCommand();
-
-    assertThat(resp.key()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
-    assertThat(resp.sourceRecordPosition()).isEqualTo(createDeploymentCommand.position());
-    assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATE);
-    assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
     assertThat(resp.rejectionReason())
-        .contains("Element: flow2 > conditionExpression")
-        .contains("ERROR: Condition expression is invalid");
+        .contains("The process must contain at least one none start event.");
   }
 
   @Test
@@ -202,10 +179,9 @@ public class CreateDeploymentTest {
     final ExecuteCommandResponse resp =
         apiRule
             .createCmdRequest()
-            .partitionId(Protocol.SYSTEM_PARTITION)
+            .partitionId(PARTITION_ID)
             .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
             .command()
-            .put("topicName", DEFAULT_TOPIC)
             .put("resources", resources)
             .done()
             .sendAndAwait();
@@ -219,7 +195,7 @@ public class CreateDeploymentTest {
     assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
     assertThat(resp.rejectionReason())
         .contains("Resource 'process2.bpmn':")
-        .contains("ERROR: Must have exactly one start event");
+        .contains("The process must contain at least one none start event.");
     assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATE);
   }
 
@@ -229,10 +205,9 @@ public class CreateDeploymentTest {
     final ExecuteCommandResponse resp =
         apiRule
             .createCmdRequest()
-            .partitionId(Protocol.SYSTEM_PARTITION)
+            .partitionId(PARTITION_ID)
             .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
             .command()
-            .put("topicName", DEFAULT_TOPIC)
             .put("resources", Collections.emptyList())
             .done()
             .sendAndAwait();
@@ -264,7 +239,7 @@ public class CreateDeploymentTest {
     assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
     assertThat(resp.rejectionReason())
         .contains("Failed to deploy resource 'invalid.bpmn':")
-        .contains("SAXException while parsing input stream");
+        .contains("Failed to read BPMN model");
   }
 
   @Test
@@ -291,6 +266,25 @@ public class CreateDeploymentTest {
         .containsEntry(WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID, "yaml-workflow");
   }
 
+<<<<<<< HEAD
+=======
+  @Test
+  public void shouldIncrementWorkflowVersions() {
+    // given
+
+    // when
+    final ExecuteCommandResponse d1 = apiRule.topic().deployWithResponse(WORKFLOW);
+    final ExecuteCommandResponse d2 = apiRule.topic().deployWithResponse(WORKFLOW);
+
+    // then
+    final Map<String, Object> workflow1 = getDeployedWorkflow(d1, 0);
+    assertThat(workflow1.get("version")).isEqualTo(1L);
+
+    final Map<String, Object> workflow2 = getDeployedWorkflow(d2, 0);
+    assertThat(workflow2.get("version")).isEqualTo(2L);
+  }
+
+>>>>>>> e2d23a3cc... fix deployment tests
   private Map<String, Object> deploymentResource(final byte[] resource, String name) {
     final Map<String, Object> deploymentResource = new HashMap<>();
     deploymentResource.put("resource", resource);
@@ -300,10 +294,8 @@ public class CreateDeploymentTest {
     return deploymentResource;
   }
 
-  private byte[] bpmnXml(final BpmnModelInstance definition) {
-    final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-    Bpmn.writeModelToStream(outStream, definition);
-    return outStream.toByteArray();
+  private byte[] bpmnXml(final WorkflowDefinition definition) {
+    return Bpmn.convertToString(definition).getBytes(UTF_8);
   }
 
   @SuppressWarnings("unchecked")
@@ -315,7 +307,7 @@ public class CreateDeploymentTest {
 
   public SubscribedRecord getFirstDeploymentCreateCommand() {
     return apiRule
-        .topic(Protocol.SYSTEM_PARTITION)
+        .topic(1)
         .receiveRecords()
         .skipUntil(r -> r.valueType() == ValueType.DEPLOYMENT)
         .filter(r -> r.valueType() == ValueType.DEPLOYMENT && r.intent() == DeploymentIntent.CREATE)
