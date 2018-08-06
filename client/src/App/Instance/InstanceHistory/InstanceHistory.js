@@ -11,7 +11,7 @@ import * as Styled from './styled';
 export default class InstanceHistory extends React.Component {
   static propTypes = {
     instance: PropTypes.object.isRequired,
-    activitiesDetails: PropTypes.array
+    activitiesDetails: PropTypes.object
   };
 
   render() {

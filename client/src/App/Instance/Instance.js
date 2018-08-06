@@ -44,20 +44,24 @@ export default class Instance extends Component {
     const {instance} = this.state;
     const {activityInstanceId} = getActiveIncident(instance.incidents) || {};
 
-    const activitiesDetails = instance.activities.map(activity => {
-      // change activity state to incident in case the activity is active
-      // and it has an active incident
-      let {state} = {...activity};
-      if (state === ACTIVE && activityInstanceId === activity.id) {
-        state = INCIDENT;
-      }
+    const activitiesDetails = instance.activities.reduce(
+      (map, {id, ...activity}) => {
+        // change activity state to incident in case the activity is active
+        // and it has an active incident
+        if (activity.state === ACTIVE && activityInstanceId === activity.id) {
+          activity.state = INCIDENT;
+        }
 
-      return {
-        ...activity,
-        ...flowNodesDetails[activity.activityId],
-        state
-      };
-    });
+        return {
+          ...map,
+          [id]: {
+            ...activity,
+            ...flowNodesDetails[activity.activityId]
+          }
+        };
+      },
+      {}
+    );
 
     this.setState({activitiesDetails});
   };

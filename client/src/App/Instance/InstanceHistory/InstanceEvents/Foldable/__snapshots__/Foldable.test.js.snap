@@ -1,37 +1,37 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`ExpansionPanel should not be expanded by default 1`] = `
+exports[`Foldable should be folded by default 1`] = `
 <Themed(styled.div)>
   <Summary
-    expanded={false}
+    folded={true}
     key=".0"
-    toggleExpand={[Function]}
+    toggleFold={[Function]}
   >
     foo summary
   </Summary>
   <Details
-    expanded={false}
+    folded={true}
     key=".1"
-    toggleExpand={[Function]}
+    toggleFold={[Function]}
   >
     Foo Details
   </Details>
 </Themed(styled.div)>
 `;
 
-exports[`ExpansionPanel toggleExpand should change expanded state 1`] = `
+exports[`Foldable toggleFold should change folded state 1`] = `
 <Themed(styled.div)>
   <Summary
-    expanded={true}
+    folded={false}
     key=".0"
-    toggleExpand={[Function]}
+    toggleFold={[Function]}
   >
     foo summary
   </Summary>
   <Details
-    expanded={true}
+    folded={false}
     key=".1"
-    toggleExpand={[Function]}
+    toggleFold={[Function]}
   >
     Foo Details
   </Details>

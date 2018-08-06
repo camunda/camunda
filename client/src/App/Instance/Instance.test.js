@@ -38,7 +38,7 @@ const INSTANCE = {
     {
       activityId: 'foo',
       endDate: '2018-07-16T09:30:56.276Z',
-      id: 'fooId',
+      id: 'foo',
       startDate: '2018-07-16T09:30:56.276Z',
       state: ACTIVITY_STATE.COMPLETED
     },
@@ -110,13 +110,10 @@ describe('Instance', () => {
       const mockFlowNodesDetails = {
         foo: {name: 'foo', amount: 20}
       };
-      const expectedActivitiesDetails = [
-        {...INSTANCE.activities[0], ...mockFlowNodesDetails.foo},
-        {
-          ...INSTANCE.activities[1],
-          state: ACTIVITY_STATE.INCIDENT
-        }
-      ];
+      const [
+        {id, ...firstActivity},
+        {id: secondId, ...secondActivity}
+      ] = INSTANCE.activities;
 
       // when
       await flushPromises();
@@ -124,9 +121,13 @@ describe('Instance', () => {
       node.update();
 
       // then
-      expect(node.state('activitiesDetails')).toEqual(
-        expectedActivitiesDetails
-      );
+      const activitiesDetails = node.state('activitiesDetails');
+      expect(activitiesDetails.foo).toBeDefined();
+      expect(activitiesDetails.foo).toMatchObject({
+        ...mockFlowNodesDetails.foo,
+        ...firstActivity
+      });
+      expect(activitiesDetails[secondId]).toMatchObject({...secondActivity});
     });
   });
 
@@ -134,7 +135,7 @@ describe('Instance', () => {
     it('should display a Header, DiagramPanel and Copyright', async () => {
       // given
       const node = shallow(component);
-      const ACTIVITIES_DETAILS = [{foo: 'bar'}];
+      const ACTIVITIES_DETAILS = {foo: 'bar'};
       node.setState({
         instance: INSTANCE,
         activitiesDetails: ACTIVITIES_DETAILS

@@ -3,16 +3,14 @@
 exports[`InstanceEvents should render grouped events if events or activities changed 1`] = `
 <Themed(styled.div)
   activitiesDetails={
-    Array [
-      Object {
-        "id": "foo",
-        "name": "foo name",
-      },
-      Object {
-        "id": "bar",
+    Object {
+      "bar": Object {
         "name": "bar name",
       },
-    ]
+      "foo": Object {
+        "name": "foo name",
+      },
+    }
   }
   instance={
     Object {
@@ -21,7 +19,7 @@ exports[`InstanceEvents should render grouped events if events or activities cha
   }
 >
   <styled.div>
-    <ExpansionPanel
+    <Foldable
       key="foo name0"
     >
       <Summary
@@ -30,25 +28,31 @@ exports[`InstanceEvents should render grouped events if events or activities cha
         foo name
       </Summary>
       <Details>
-        <ExpansionPanel
+        <Foldable
           key="fooCreated0"
         >
           <Summary>
             fooCreated
           </Summary>
-          <Details />
-        </ExpansionPanel>
-        <ExpansionPanel
+          <Details>
+            <Themed(styled.div)
+              key="0"
+            >
+              a: b
+            </Themed(styled.div)>
+          </Details>
+        </Foldable>
+        <Foldable
           key="fooActiviated1"
         >
           <Summary>
             fooActiviated
           </Summary>
           <Details />
-        </ExpansionPanel>
+        </Foldable>
       </Details>
-    </ExpansionPanel>
-    <ExpansionPanel
+    </Foldable>
+    <Foldable
       key="bar name1"
     >
       <Summary
@@ -57,32 +61,47 @@ exports[`InstanceEvents should render grouped events if events or activities cha
         bar name
       </Summary>
       <Details>
-        <ExpansionPanel
+        <Foldable
           key="barCreated0"
         >
           <Summary>
             barCreated
           </Summary>
           <Details />
-        </ExpansionPanel>
-        <ExpansionPanel
+        </Foldable>
+        <Foldable
           key="barActivated1"
         >
           <Summary>
             barActivated
           </Summary>
           <Details />
-        </ExpansionPanel>
+        </Foldable>
       </Details>
-    </ExpansionPanel>
-    <ExpansionPanel
+    </Foldable>
+    <Foldable
       key="baz2"
     >
       <Summary>
         baz
       </Summary>
-      <Details />
-    </ExpansionPanel>
+      <Details>
+        <Foldable
+          key="0"
+        >
+          <Summary>
+            c
+          </Summary>
+          <Details>
+            <Themed(styled.div)
+              key="0"
+            >
+              d: e
+            </Themed(styled.div)>
+          </Details>
+        </Foldable>
+      </Details>
+    </Foldable>
   </styled.div>
 </Themed(styled.div)>
 `;

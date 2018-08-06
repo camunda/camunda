@@ -3,7 +3,7 @@ import styled, {css} from 'styled-components';
 import {themed, themeStyle, Colors} from 'modules/theme';
 import {Down, Right} from 'modules/components/Icon';
 
-export const ExpansionPanel = themed(styled.div`
+export const Foldable = themed(styled.div`
   color: ${themeStyle({
     dark: '#ffffff',
     light: Colors.uiDark04
@@ -23,7 +23,7 @@ const iconStyle = css`
   })};
 `;
 
-export const ExpandButton = styled.button`
+export const FoldButton = styled.button`
   cursor: pointer;
   background: transparent;
   border: none;
@@ -53,5 +53,5 @@ export const Summary = themed(styled.div`
 
 export const Details = styled.div`
   padding-left: 22px;
-  display: ${({expanded}) => (expanded ? 'block' : 'none')};
+  display: ${({folded}) => (!folded ? 'block' : 'none')};
 `;

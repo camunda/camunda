@@ -12,8 +12,8 @@ describe('InstanceHistory', () => {
   it('should render a pane with InstanceLog section and Copyright', () => {
     // given
     const mockProps = {
-      instance: {foo: 'foo'},
-      activitiesDetails: [{bar: 'bar'}]
+      instance: {id: 'foo'},
+      activitiesDetails: {bar: 'bar'}
     };
     const node = shallow(<InstanceHistory {...mockProps} />);
 

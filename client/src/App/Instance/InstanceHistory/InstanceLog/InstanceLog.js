@@ -9,14 +9,12 @@ import * as Styled from './styled';
 export default class InstanceLog extends React.Component {
   static propTypes = {
     instance: PropTypes.object,
-    activitiesDetails: PropTypes.arrayOf(
-      PropTypes.shape({
-        state: PropTypes.string,
-        type: PropTypes.string,
-        name: PropTypes.string,
-        id: PropTypes.id
-      })
-    )
+    activitiesDetails: PropTypes.shape({
+      id: PropTypes.string,
+      state: PropTypes.string,
+      type: PropTypes.string,
+      name: PropTypes.string
+    })
   };
 
   state = {
@@ -27,7 +25,7 @@ export default class InstanceLog extends React.Component {
     this.setState({selected});
   };
 
-  renderLogEntry = ({state, type, name, id}) => (
+  renderLogEntry = ([id, {state, type, name}]) => (
     <Styled.LogEntry
       key={id}
       href="#"
@@ -58,7 +56,7 @@ export default class InstanceLog extends React.Component {
             {getWorkflowName(instance)}
           </Styled.Header>
           {activitiesDetails
-            ? activitiesDetails.map(this.renderLogEntry)
+            ? Object.entries(activitiesDetails).map(this.renderLogEntry)
             : null}
         </React.Fragment>
       </Styled.InstanceLog>

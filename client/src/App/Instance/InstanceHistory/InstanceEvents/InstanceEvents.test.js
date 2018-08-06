@@ -6,12 +6,15 @@ import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 
 import InstanceEvents from './InstanceEvents';
 import * as Styled from './styled';
-import ExpansionPanel from './ExpansionPanel';
+import Foldable from './Foldable';
 
 const fooActivityEvents = [
   {
     eventType: 'fooCreated',
-    activityInstanceId: 'foo'
+    activityInstanceId: 'foo',
+    metadata: {
+      a: 'b'
+    }
   },
   {
     eventType: 'fooActiviated',
@@ -32,7 +35,14 @@ const barActivityEvents = [
 
 const instanceEvents = [
   {
-    eventType: 'baz'
+    eventType: 'baz',
+    metadata: {
+      c: {
+        d: 'e',
+        e: null
+      },
+      f: null
+    }
   }
 ];
 
@@ -46,9 +56,12 @@ api.fetchEvents = mockResolvedAsyncFn(mockEvents);
 
 const mockInstance = {id: 'foo'};
 
-const fooActivityDetails = {id: 'foo', name: 'foo name'};
-const barActivityDetails = {id: 'bar', name: 'bar name'};
-const mockActivitiesDetails = [fooActivityDetails, barActivityDetails];
+const fooActivityDetails = {name: 'foo name'};
+const barActivityDetails = {name: 'bar name'};
+const mockActivitiesDetails = {
+  foo: fooActivityDetails,
+  bar: barActivityDetails
+};
 
 describe('InstanceEvents', () => {
   beforeEach(() => {
@@ -106,38 +119,37 @@ describe('InstanceEvents', () => {
     // then
     expect(node.state().events).toEqual(mockEvents);
     expect(node.state('groupedEvents')).toEqual(expectedGroupedEvents);
-    // ExpansionPanel for each event and each group
-    const ExpansionPanelNodes = node.find(ExpansionPanel);
-    expect(ExpansionPanelNodes).toHaveLength(mockEvents.length + 2);
+    // Foldable for each event and each group
+    const FoldableNodes = node.find(Foldable);
+    expect(FoldableNodes).toHaveLength(8);
 
-    // Foo ExpansionPanel
-    const FooExpansionPanelNode = ExpansionPanelNodes.at(0);
+    // Foo Foldable
+    const FooFoldableNode = FoldableNodes.at(0);
     // Foo Summary
-    const SummaryNode = FooExpansionPanelNode.find(ExpansionPanel.Summary).at(
-      0
-    );
+    const SummaryNode = FooFoldableNode.find(Foldable.Summary).at(0);
     expect(SummaryNode.prop('bold')).toBe(true);
     expect(SummaryNode.contains(fooActivityDetails.name));
 
     // Foo Details
-    const ExpansionPanelDetailsNode = FooExpansionPanelNode.find(
-      ExpansionPanel.Details
-    ).at(0);
-    expect(ExpansionPanelDetailsNode).toHaveLength(1);
+    const FoldableDetailsNode = FooFoldableNode.find(Foldable.Details).at(0);
+    expect(FoldableDetailsNode).toHaveLength(1);
 
-    // Foo Events ExpansionPanels
-    expect(ExpansionPanelDetailsNode.find(ExpansionPanel)).toHaveLength(
+    // Foo Events Foldables
+    expect(FoldableDetailsNode.find(Foldable)).toHaveLength(
       fooActivityEvents.length
     );
 
-    // Instance Events ExpnsionPanels
-    const InstanceExpansionPanelNode = ExpansionPanelNodes.at(1);
+    // Instance Events Foldables
+    const InstanceFoldableNode = FoldableNodes.at(6);
     // Instance Event Summary
-    const InstanceEventSummaryNode = InstanceExpansionPanelNode.find(
-      ExpansionPanel.Summary
+    const InstanceEventSummaryNode = InstanceFoldableNode.find(
+      Foldable.Summary
     ).at(0);
     expect(InstanceEventSummaryNode.prop('bold')).not.toBe(true);
     expect(InstanceEventSummaryNode.contains(instanceEvents[0].eventType));
+
+    // Instance Events Foldables
+    expect(InstanceFoldableNode.find(Foldable)).toHaveLength(2);
 
     expect(node).toMatchSnapshot();
   });

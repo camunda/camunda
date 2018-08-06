@@ -3,20 +3,18 @@
 exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
 <Themed(styled.div)
   activitiesDetails={
-    Array [
-      Object {
-        "id": "1",
+    Object {
+      "1": Object {
         "name": "someName1",
         "state": "someState1",
         "type": "someType1",
       },
-      Object {
-        "id": "2",
+      "2": Object {
         "name": "someName2",
         "state": "someState2",
         "type": "someType2",
       },
-    ]
+    }
   }
   instance={
     Object {

@@ -11,7 +11,7 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
               Object {
                 "activityId": "foo",
                 "endDate": "2018-07-16T09:30:56.276Z",
-                "id": "fooId",
+                "id": "foo",
                 "startDate": "2018-07-16T09:30:56.276Z",
                 "state": "COMPLETED",
               },
@@ -59,7 +59,7 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
                 Object {
                   "activityId": "foo",
                   "endDate": "2018-07-16T09:30:56.276Z",
-                  "id": "fooId",
+                  "id": "foo",
                   "startDate": "2018-07-16T09:30:56.276Z",
                   "state": "COMPLETED",
                 },
@@ -94,11 +94,9 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
         />
         <InstanceHistory
           activitiesDetails={
-            Array [
-              Object {
-                "foo": "bar",
-              },
-            ]
+            Object {
+              "foo": "bar",
+            }
           }
           instance={
             Object {
@@ -106,7 +104,7 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
                 Object {
                   "activityId": "foo",
                   "endDate": "2018-07-16T09:30:56.276Z",
-                  "id": "fooId",
+                  "id": "foo",
                   "startDate": "2018-07-16T09:30:56.276Z",
                   "state": "COMPLETED",
                 },

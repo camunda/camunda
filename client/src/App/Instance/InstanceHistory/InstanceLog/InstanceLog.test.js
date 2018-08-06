@@ -11,20 +11,18 @@ const mockProps = {
   instance: {
     workflowId: 'foo'
   },
-  activitiesDetails: [
-    {
+  activitiesDetails: {
+    1: {
       state: 'someState1',
       type: 'someType1',
-      name: 'someName1',
-      id: '1'
+      name: 'someName1'
     },
-    {
+    2: {
       state: 'someState2',
       type: 'someType2',
-      name: 'someName2',
-      id: '2'
+      name: 'someName2'
     }
-  ]
+  }
 };
 
 describe('InstanceLog', () => {
@@ -50,21 +48,29 @@ describe('InstanceLog', () => {
   it('should render entries if there are actvitiesDetails', () => {
     // given
     const node = shallow(<InstanceLog {...mockProps} />);
-    const {activitiesDetails} = mockProps;
+    const activitiesDetailsEntries = Object.entries(
+      mockProps.activitiesDetails
+    );
 
     // then
     // Log Entries
     const LogEntryNodes = node.find(Styled.LogEntry);
-    expect(LogEntryNodes).toHaveLength(activitiesDetails.length);
+    expect(LogEntryNodes).toHaveLength(
+      Object.keys(activitiesDetailsEntries).length
+    );
     LogEntryNodes.forEach((LogEntryNode, idx) => {
       expect(LogEntryNode.prop('isSelected')).toBe(false);
-      expect(LogEntryNode.contains(activitiesDetails[idx].name));
+      expect(LogEntryNode.contains(activitiesDetailsEntries[idx][1].name));
       // FlowNodeIcon
       const FlowNodeIconNode = LogEntryNode.find(Styled.FlowNodeIcon);
       expect(FlowNodeIconNode).toHaveLength(1);
       expect(FlowNodeIconNode.prop('isSelected')).toBe(false);
-      expect(FlowNodeIconNode.prop('state')).toBe(activitiesDetails[idx].state);
-      expect(FlowNodeIconNode.prop('type')).toBe(activitiesDetails[idx].type);
+      expect(FlowNodeIconNode.prop('state')).toBe(
+        activitiesDetailsEntries[idx][1].state
+      );
+      expect(FlowNodeIconNode.prop('type')).toBe(
+        activitiesDetailsEntries[idx][1].type
+      );
     });
 
     // snapshot
@@ -74,7 +80,10 @@ describe('InstanceLog', () => {
   it('should change selection when clicking on a log entry', () => {
     // given
     const node = shallow(<InstanceLog {...mockProps} />);
-    const {activitiesDetails} = mockProps;
+    const activitiesDetailsEntries = Object.entries(
+      mockProps.activitiesDetails
+    );
+
     const LogEntryNodes = node.find(Styled.LogEntry);
 
     LogEntryNodes.forEach((LogEntryNode, idx) => {
@@ -84,7 +93,7 @@ describe('InstanceLog', () => {
       LogEntryNode = node.find(Styled.LogEntry).at(idx);
 
       // then
-      expect(node.state('selected')).toBe(activitiesDetails[idx].id);
+      expect(node.state('selected')).toEqual(activitiesDetailsEntries[idx][0]);
       expect(LogEntryNode.prop('isSelected')).toBe(true);
       // FlowNodeIcon
       const FlowNodeIconNode = LogEntryNode.find(Styled.FlowNodeIcon);
@@ -96,8 +105,10 @@ describe('InstanceLog', () => {
   it('should change selection to header when clicking on it', () => {
     // given
     const node = shallow(<InstanceLog {...mockProps} />);
-    const {activitiesDetails} = mockProps;
-    node.setState({selected: activitiesDetails[0].id});
+    const activitiesDetailsEntries = Object.entries(
+      mockProps.activitiesDetails
+    );
+    node.setState({selected: activitiesDetailsEntries[0][0]});
     node.update();
     let HeaderNode = node.find(Styled.Header);
 

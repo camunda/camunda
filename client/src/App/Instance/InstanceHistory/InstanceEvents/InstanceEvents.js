@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 
 import {fetchEvents} from 'modules/api/events';
 
-import ExpansionPanel from './ExpansionPanel';
+import Foldable from './Foldable';
 import {getGroupedEvents} from './service';
 import * as Styled from './styled';
 
@@ -12,7 +12,7 @@ export default class InstanceEvents extends React.Component {
     instance: PropTypes.shape({
       id: PropTypes.string.isRequired
     }).isRequired,
-    activitiesDetails: PropTypes.array
+    activitiesDetails: PropTypes.object
   };
 
   state = {
@@ -58,12 +58,12 @@ export default class InstanceEvents extends React.Component {
         }
 
         return (
-          <ExpansionPanel key={idx}>
-            <ExpansionPanel.Summary>{key}</ExpansionPanel.Summary>
-            <ExpansionPanel.Details>
+          <Foldable key={idx}>
+            <Foldable.Summary>{key}</Foldable.Summary>
+            <Foldable.Details>
               {!!value && this.renderData(value)}
-            </ExpansionPanel.Details>
-          </ExpansionPanel>
+            </Foldable.Details>
+          </Foldable>
         );
       });
   };
@@ -72,12 +72,12 @@ export default class InstanceEvents extends React.Component {
     const key = `${eventType}${idx}`;
 
     return (
-      <ExpansionPanel key={key}>
-        <ExpansionPanel.Summary>{eventType}</ExpansionPanel.Summary>
-        <ExpansionPanel.Details>
+      <Foldable key={key}>
+        <Foldable.Summary>{eventType}</Foldable.Summary>
+        <Foldable.Details>
           {!!metadata && this.renderData(metadata)}
-        </ExpansionPanel.Details>
-      </ExpansionPanel>
+        </Foldable.Details>
+      </Foldable>
     );
   };
 
@@ -85,12 +85,10 @@ export default class InstanceEvents extends React.Component {
     const key = `${name}${idx}`;
 
     return (
-      <ExpansionPanel key={key}>
-        <ExpansionPanel.Summary bold={true}>{name}</ExpansionPanel.Summary>
-        <ExpansionPanel.Details>
-          {events.map(this.renderEvent)}
-        </ExpansionPanel.Details>
-      </ExpansionPanel>
+      <Foldable key={key}>
+        <Foldable.Summary bold={true}>{name}</Foldable.Summary>
+        <Foldable.Details>{events.map(this.renderEvent)}</Foldable.Details>
+      </Foldable>
     );
   };
 
