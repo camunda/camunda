@@ -87,13 +87,15 @@ public class AlertJob implements Job {
   }
 
   private String composeFixText(AlertDefinitionDto alert, ReportDefinitionDto reportDefinition, NumberReportResultDto result) {
+    String statusText = alert.getThresholdOperator().equals(AlertDefinitionDto.LESS)
+            ? "has been reached" : "is not exceeded anymore";
     String emailBody = "Camunda Optimize - Report Status\n" +
         "Alert name: " + alert.getName() + "\n" +
         "Report name: " + reportDefinition.getName() + "\n" +
         "Status: Given threshold [" +
         alert.getThreshold() +
-        "] is not exceeded anymore. " +
-        "Current value: " +
+        "] " + statusText +
+        ". Current value: " +
         result.getResult() +
         ". Please check your Optimize report for more information! \n" +
         createViewLink(alert);
@@ -143,13 +145,15 @@ public class AlertJob implements Job {
       ReportDefinitionDto reportDefinition,
       NumberReportResultDto result
   ) {
+    String statusText = alert.getThresholdOperator().equals(AlertDefinitionDto.LESS)
+            ? "is not reached" : "was exceeded";
     String emailBody = "Camunda Optimize - Report Status\n" +
         "Alert name: " + alert.getName() + "\n" +
         "Report name: " + reportDefinition.getName() + "\n" +
         "Status: Given threshold [" +
         alert.getThreshold() +
-        "] was exceeded. " +
-        "Current value: " +
+        "] " + statusText +
+        ". Current value: " +
         result.getResult() +
         ". Please check your Optimize report for more information!\n" +
         createViewLink(alert);
@@ -158,7 +162,7 @@ public class AlertJob implements Job {
 
   private boolean thresholdExceeded(AlertDefinitionDto alert, NumberReportResultDto result) {
     boolean exceeded = false;
-    if (AlertDefinitionDto.GRATER.equals(alert.getThresholdOperator())) {
+    if (AlertDefinitionDto.GREATER.equals(alert.getThresholdOperator())) {
       exceeded = result.getResult() > alert.getThreshold();
     } else if (AlertDefinitionDto.LESS.equals(alert.getThresholdOperator())) {
       exceeded = result.getResult() < alert.getThreshold();

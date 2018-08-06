@@ -4,7 +4,7 @@ import java.time.OffsetDateTime;
 
 
 public class AlertDefinitionDto extends AlertCreationDto {
-  public static final String GRATER = ">";
+  public static final String GREATER = ">";
   public static final String LESS = "<";
 
   protected String id;
