@@ -30,7 +30,12 @@ export default class DurationFilter extends React.Component {
     const {value, operator, unit} = this.state;
     const isValidInput = numberParser.isPositiveNumber(value);
     return (
-      <Modal open={true} onClose={this.props.close} className="DurationFilter__modal">
+      <Modal
+        open={true}
+        onClose={this.props.close}
+        onEnterPress={isValidInput ? this.createFilter : undefined}
+        className="DurationFilter__modal"
+      >
         <Modal.Header>Add Duration Filter</Modal.Header>
         <Modal.Content>
           <Message type="warning">

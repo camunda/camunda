@@ -42,7 +42,12 @@ export default class BarChartModal extends React.Component {
   render() {
     const isFieldValid = isValidNumber(this.state.target);
     return (
-      <Modal open={this.props.open} onClose={this.props.onClose} className="BarChartModal__modal">
+      <Modal
+        open={this.props.open}
+        onClose={this.props.onClose}
+        onEnterPress={isFieldValid ? this.confirmModal : undefined}
+        className="BarChartModal__modal"
+      >
         <Modal.Header>Set Target Value</Modal.Header>
         <Modal.Content>
           <ButtonGroup className="BarChartModal__ButtonGroup">

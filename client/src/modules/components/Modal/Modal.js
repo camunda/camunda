@@ -63,6 +63,9 @@ export default class Modal extends React.Component {
     if (evt.key === 'Escape') {
       const handler = this.props.onClose;
       handler && handler();
+    } else if (evt.key === 'Enter' && this.props.open) {
+      const handler = this.props.onEnterPress;
+      handler && handler(evt);
     }
   };
 

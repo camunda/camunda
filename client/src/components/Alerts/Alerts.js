@@ -106,7 +106,12 @@ export default class Alerts extends React.Component {
           />
         )}
         {this.state.alertToDelete && (
-          <Modal open={true} onClose={this.cancelDeleting} className="EntityList__delete-modal">
+          <Modal
+            open={true}
+            onClose={this.cancelDeleting}
+            onEnterPress={this.deleteAlert}
+            className="EntityList__delete-modal"
+          >
             <Modal.Header>Delete {this.state.alertToDelete.name}</Modal.Header>
             <Modal.Content>
               <p>

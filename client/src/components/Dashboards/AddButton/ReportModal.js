@@ -39,7 +39,11 @@ export default class ReportModal extends React.Component {
     const loading = this.state.availableReports === null;
 
     return (
-      <Modal open onClose={this.props.close}>
+      <Modal
+        open
+        onClose={this.props.close}
+        onEnterPress={this.state.selectedReportId ? this.addReport : undefined}
+      >
         <Modal.Header>Add a Report</Modal.Header>
         <Modal.Content>
           <ControlGroup layout="centered">

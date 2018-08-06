@@ -41,6 +41,30 @@ it('should not call the onClose function when modal content is clicked', () => {
   expect(spy).not.toHaveBeenCalled();
 });
 
+it('should call the onEnterPress function when enter is pressed', () => {
+  const spy = jest.fn();
+  mount(
+    <Modal open={true} onEnterPress={spy}>
+      <input />
+    </Modal>
+  );
+
+  const event = new KeyboardEvent('keydown', {key: 'Enter'});
+  window.dispatchEvent(event);
+
+  expect(spy).toHaveBeenCalledWith(event);
+});
+
+it('should call the onEnterPress function when enter is pressed', () => {
+  const spy = jest.fn();
+  mount(<Modal open={false} onEnterPress={spy} />);
+
+  const event = new KeyboardEvent('keydown', {key: 'Enter'});
+  window.dispatchEvent(event);
+
+  expect(spy).not.toHaveBeenCalled();
+});
+
 describe('Header', () => {
   it('should render children', () => {
     const node = mount(
