@@ -24,7 +24,7 @@ import io.zeebe.broker.client.api.events.DeploymentEvent;
 import io.zeebe.broker.client.cmd.ClientCommandRejectedException;
 import io.zeebe.broker.client.util.ClientRule;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.DeploymentIntent;
@@ -43,8 +43,8 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 public class CreateDeploymentTest {
-  private static final WorkflowDefinition WORKFLOW_MODEL =
-      Bpmn.createExecutableWorkflow("process").startEvent().done();
+  private static final BpmnModelInstance WORKFLOW_MODEL =
+      Bpmn.createExecutableProcess("process").startEvent().done();
 
   private static final byte[] WORKFLOW_AS_BYTES =
       Bpmn.convertToString(WORKFLOW_MODEL).getBytes(UTF_8);
@@ -407,10 +407,10 @@ public class CreateDeploymentTest {
     // given
     brokerRule.deployments().registerCreateCommand();
 
-    final WorkflowDefinition definition1 =
-        Bpmn.createExecutableWorkflow("model1").startEvent().done();
-    final WorkflowDefinition definition2 =
-        Bpmn.createExecutableWorkflow("model2").startEvent().done();
+    final BpmnModelInstance definition1 =
+        Bpmn.createExecutableProcess("model1").startEvent().done();
+    final BpmnModelInstance definition2 =
+        Bpmn.createExecutableProcess("model2").startEvent().done();
 
     // when
     clientRule

@@ -13,56 +13,81 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.zeebe.model.bpmn.impl.instance;
 
-import io.zeebe.model.bpmn.BpmnConstants;
-import io.zeebe.model.bpmn.impl.metadata.InputOutputMappingImpl;
-import io.zeebe.model.bpmn.impl.metadata.SubscriptionImpl;
-import io.zeebe.model.bpmn.impl.metadata.TaskDefinitionImpl;
-import io.zeebe.model.bpmn.impl.metadata.TaskHeadersImpl;
-import javax.xml.bind.annotation.XmlElement;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_EXTENSION_ELEMENTS;
 
-public class ExtensionElementsImpl {
-  private TaskDefinitionImpl taskDefinition;
-  private TaskHeadersImpl taskHeaders;
-  private InputOutputMappingImpl inputOutputMapping;
-  private SubscriptionImpl subscription;
+import io.zeebe.model.bpmn.Query;
+import io.zeebe.model.bpmn.impl.QueryImpl;
+import io.zeebe.model.bpmn.instance.ExtensionElements;
+import java.util.Collection;
+import org.camunda.bpm.model.xml.ModelBuilder;
+import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
+import org.camunda.bpm.model.xml.impl.util.ModelUtil;
+import org.camunda.bpm.model.xml.instance.ModelElementInstance;
+import org.camunda.bpm.model.xml.type.ModelElementType;
+import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 
-  @XmlElement(
-      name = BpmnConstants.ZEEBE_ELEMENT_TASK_DEFINITION,
-      namespace = BpmnConstants.ZEEBE_NS)
-  public void setTaskDefinition(TaskDefinitionImpl taskDefinition) {
-    this.taskDefinition = taskDefinition;
+/**
+ * The BPMN extensionElements element
+ *
+ * @author Daniel Meyer
+ * @author Sebastian Menski
+ */
+public class ExtensionElementsImpl extends BpmnModelElementInstanceImpl
+    implements ExtensionElements {
+
+  public static void registerType(ModelBuilder modelBuilder) {
+
+    final ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(ExtensionElements.class, BPMN_ELEMENT_EXTENSION_ELEMENTS)
+            .namespaceUri(BPMN20_NS)
+            .instanceProvider(
+                new ModelElementTypeBuilder.ModelTypeInstanceProvider<ExtensionElements>() {
+                  @Override
+                  public ExtensionElements newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new ExtensionElementsImpl(instanceContext);
+                  }
+                });
+
+    typeBuilder.build();
   }
 
-  public TaskDefinitionImpl getTaskDefinition() {
-    return taskDefinition;
+  public ExtensionElementsImpl(ModelTypeInstanceContext context) {
+    super(context);
   }
 
-  @XmlElement(name = BpmnConstants.ZEEBE_ELEMENT_TASK_HEADERS, namespace = BpmnConstants.ZEEBE_NS)
-  public void setTaskHeaders(TaskHeadersImpl taskHeaders) {
-    this.taskHeaders = taskHeaders;
+  @Override
+  public Collection<ModelElementInstance> getElements() {
+    return ModelUtil.getModelElementCollection(getDomElement().getChildElements(), modelInstance);
   }
 
-  public TaskHeadersImpl getTaskHeaders() {
-    return taskHeaders;
+  @Override
+  public Query<ModelElementInstance> getElementsQuery() {
+    return new QueryImpl<ModelElementInstance>(getElements());
   }
 
-  @XmlElement(name = BpmnConstants.ZEEBE_ELEMENT_MAPPING, namespace = BpmnConstants.ZEEBE_NS)
-  public void setInputOutputMapping(InputOutputMappingImpl inputOutputMapping) {
-    this.inputOutputMapping = inputOutputMapping;
+  @Override
+  public ModelElementInstance addExtensionElement(String namespaceUri, String localName) {
+    final ModelElementType extensionElementType =
+        modelInstance.registerGenericType(namespaceUri, localName);
+    final ModelElementInstance extensionElement = extensionElementType.newInstance(modelInstance);
+    addChildElement(extensionElement);
+    return extensionElement;
   }
 
-  public InputOutputMappingImpl getInputOutputMapping() {
-    return inputOutputMapping;
+  @Override
+  public <T extends ModelElementInstance> T addExtensionElement(Class<T> extensionElementClass) {
+    final ModelElementInstance extensionElement = modelInstance.newInstance(extensionElementClass);
+    addChildElement(extensionElement);
+    return extensionElementClass.cast(extensionElement);
   }
 
-  public SubscriptionImpl getSubscription() {
-    return subscription;
-  }
-
-  @XmlElement(name = BpmnConstants.ZEEBE_ELEMENT_SUBSCRIPTION, namespace = BpmnConstants.ZEEBE_NS)
-  public void setSubscription(SubscriptionImpl subscription) {
-    this.subscription = subscription;
+  @Override
+  public void addChildElement(ModelElementInstance extensionElement) {
+    getDomElement().appendChild(extensionElement.getDomElement());
   }
 }

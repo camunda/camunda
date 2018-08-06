@@ -30,7 +30,7 @@ import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
 import org.junit.Before;
 import org.junit.Rule;
@@ -38,10 +38,10 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class IncidentTest {
-  private static final WorkflowDefinition WORKFLOW =
-      Bpmn.createExecutableWorkflow("process")
+  private static final BpmnModelInstance WORKFLOW =
+      Bpmn.createExecutableProcess("process")
           .startEvent()
-          .serviceTask("failingTask", t -> t.taskType("test").input("$.foo", "$.foo"))
+          .serviceTask("failingTask", t -> t.zeebeTaskType("test").zeebeInput("$.foo", "$.foo"))
           .done();
 
   private static final String PAYLOAD = "{\"foo\": \"bar\"}";

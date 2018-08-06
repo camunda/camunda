@@ -13,21 +13,81 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.zeebe.model.bpmn.impl.instance;
 
-import io.zeebe.model.bpmn.BpmnConstants;
-import javax.xml.bind.annotation.XmlAttribute;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_MESSAGE_REF;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_MESSAGE_EVENT_DEFINITION;
 
-public class MessageEventDefinitionImpl extends FlowNodeImpl {
+import io.zeebe.model.bpmn.instance.EventDefinition;
+import io.zeebe.model.bpmn.instance.Message;
+import io.zeebe.model.bpmn.instance.MessageEventDefinition;
+import io.zeebe.model.bpmn.instance.Operation;
+import org.camunda.bpm.model.xml.ModelBuilder;
+import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
+import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
+import org.camunda.bpm.model.xml.type.child.SequenceBuilder;
+import org.camunda.bpm.model.xml.type.reference.AttributeReference;
+import org.camunda.bpm.model.xml.type.reference.ElementReference;
 
-  private String messageRef;
+/** @author Sebastian Menski */
+public class MessageEventDefinitionImpl extends EventDefinitionImpl
+    implements MessageEventDefinition {
 
-  public String getMessageRef() {
-    return messageRef;
+  protected static AttributeReference<Message> messageRefAttribute;
+  protected static ElementReference<Operation, OperationRef> operationRefChild;
+
+  public static void registerType(ModelBuilder modelBuilder) {
+    final ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(MessageEventDefinition.class, BPMN_ELEMENT_MESSAGE_EVENT_DEFINITION)
+            .namespaceUri(BPMN20_NS)
+            .extendsType(EventDefinition.class)
+            .instanceProvider(
+                new ModelElementTypeBuilder.ModelTypeInstanceProvider<MessageEventDefinition>() {
+                  @Override
+                  public MessageEventDefinition newInstance(
+                      ModelTypeInstanceContext instanceContext) {
+                    return new MessageEventDefinitionImpl(instanceContext);
+                  }
+                });
+
+    messageRefAttribute =
+        typeBuilder
+            .stringAttribute(BPMN_ATTRIBUTE_MESSAGE_REF)
+            .qNameAttributeReference(Message.class)
+            .build();
+
+    final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
+
+    operationRefChild =
+        sequenceBuilder.element(OperationRef.class).qNameElementReference(Operation.class).build();
+
+    typeBuilder.build();
   }
 
-  @XmlAttribute(name = BpmnConstants.BPMN_ATTRIBUTE_MESSAGE_REF)
-  public void setMessageRef(String messageRef) {
-    this.messageRef = messageRef;
+  public MessageEventDefinitionImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
+  @Override
+  public Message getMessage() {
+    return messageRefAttribute.getReferenceTargetElement(this);
+  }
+
+  @Override
+  public void setMessage(Message message) {
+    messageRefAttribute.setReferenceTargetElement(this, message);
+  }
+
+  @Override
+  public Operation getOperation() {
+    return operationRefChild.getReferenceTargetElement(this);
+  }
+
+  @Override
+  public void setOperation(Operation operation) {
+    operationRefChild.setReferenceTargetElement(this, operation);
   }
 }

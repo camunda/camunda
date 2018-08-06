@@ -13,6 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.zeebe.model.bpmn.instance;
 
-public interface EndEvent extends FlowNode {}
+import io.zeebe.model.bpmn.builder.EndEventBuilder;
+
+/**
+ * The BPMN endEvent element
+ *
+ * @author Sebastian Menski
+ */
+public interface EndEvent extends ThrowEvent {
+
+  @Override
+  EndEventBuilder builder();
+}

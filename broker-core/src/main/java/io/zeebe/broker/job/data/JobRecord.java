@@ -30,7 +30,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class JobRecord extends UnpackedObject {
-  protected static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
+  public static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
 
   private final LongProperty deadlineProp =
       new LongProperty("deadline", Protocol.INSTANT_NULL_VALUE);

@@ -25,7 +25,7 @@ import io.zeebe.broker.system.workflow.repository.data.ResourceType;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.clientapi.RecordType;
@@ -36,6 +36,7 @@ import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
 import io.zeebe.util.StreamUtil;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -51,8 +52,8 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class CreateDeploymentTest {
-  private static final WorkflowDefinition WORKFLOW =
-      Bpmn.createExecutableWorkflow("process").startEvent().endEvent().done();
+  private static final BpmnModelInstance WORKFLOW =
+      Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
@@ -161,7 +162,7 @@ public class CreateDeploymentTest {
   }
 
   @Test
-  public void shouldRejectDeploymentIfNotValid() throws Exception {
+  public void shouldRejectDeploymentIfNotValidDesignTimeAspect() throws Exception {
     // given
     final Path path = Paths.get(getClass().getResource("/workflows/invalid_process.bpmn").toURI());
     final byte[] resource = Files.readAllBytes(path);
@@ -178,8 +179,31 @@ public class CreateDeploymentTest {
     assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATE);
     assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+    assertThat(resp.rejectionReason()).contains("ERROR: Must have exactly one start event");
+  }
+
+  @Test
+  public void shouldRejectDeploymentIfNotValidRuntimeAspect() throws Exception {
+    // given
+    final Path path =
+        Paths.get(getClass().getResource("/workflows/invalid_process_condition.bpmn").toURI());
+    final byte[] resource = Files.readAllBytes(path);
+
+    // when
+    final ExecuteCommandResponse resp =
+        apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, resource);
+
+    // then
+    final SubscribedRecord createDeploymentCommand = getFirstDeploymentCreateCommand();
+
+    assertThat(resp.key()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
+    assertThat(resp.sourceRecordPosition()).isEqualTo(createDeploymentCommand.position());
+    assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATE);
+    assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
     assertThat(resp.rejectionReason())
-        .contains("The process must contain at least one none start event.");
+        .contains("Element: flow2 > conditionExpression")
+        .contains("ERROR: Condition expression is invalid");
   }
 
   @Test
@@ -212,7 +236,7 @@ public class CreateDeploymentTest {
     assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
     assertThat(resp.rejectionReason())
         .contains("Resource 'process2.bpmn':")
-        .contains("The process must contain at least one none start event.");
+        .contains("ERROR: Must have exactly one start event");
     assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATE);
   }
 
@@ -260,7 +284,7 @@ public class CreateDeploymentTest {
     assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
     assertThat(resp.rejectionReason())
         .contains("Failed to deploy resource 'invalid.bpmn':")
-        .contains("Failed to read BPMN model");
+        .contains("SAXException while parsing input stream");
   }
 
   @Test
@@ -317,8 +341,10 @@ public class CreateDeploymentTest {
     return deploymentResource;
   }
 
-  private byte[] bpmnXml(final WorkflowDefinition definition) {
-    return Bpmn.convertToString(definition).getBytes(UTF_8);
+  private byte[] bpmnXml(final BpmnModelInstance definition) {
+    final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+    Bpmn.writeModelToStream(outStream, definition);
+    return outStream.toByteArray();
   }
 
   @SuppressWarnings("unchecked")

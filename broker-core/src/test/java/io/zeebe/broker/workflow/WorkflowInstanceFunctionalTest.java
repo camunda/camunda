@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.broker.system.workflow.repository.data.ResourceType;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -72,7 +72,7 @@ public class WorkflowInstanceFunctionalTest {
   @Test
   public void shouldStartWorkflowInstanceAtNoneStartEvent() {
     // given
-    testClient.deploy(Bpmn.createExecutableWorkflow("process").startEvent("foo").endEvent().done());
+    testClient.deploy(Bpmn.createExecutableProcess("process").startEvent("foo").endEvent().done());
 
     // when
     final ExecuteCommandResponse response =
@@ -103,9 +103,9 @@ public class WorkflowInstanceFunctionalTest {
   public void shouldTakeSequenceFlowFromStartEvent() {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
-            .sequenceFlow("foo")
+            .sequenceFlowId("foo")
             .endEvent()
             .done());
 
@@ -130,7 +130,7 @@ public class WorkflowInstanceFunctionalTest {
   @Test
   public void shouldOccureEndEvent() {
     // given
-    testClient.deploy(Bpmn.createExecutableWorkflow("process").startEvent().endEvent("foo").done());
+    testClient.deploy(Bpmn.createExecutableProcess("process").startEvent().endEvent("foo").done());
 
     // when
     final long workflowInstanceKey = testClient.createWorkflowInstance("process");
@@ -153,7 +153,7 @@ public class WorkflowInstanceFunctionalTest {
   @Test
   public void shouldCompleteWorkflowInstance() {
     // given
-    testClient.deploy(Bpmn.createExecutableWorkflow("process").startEvent().endEvent().done());
+    testClient.deploy(Bpmn.createExecutableProcess("process").startEvent().endEvent().done());
 
     // when
     final long workflowInstanceKey = testClient.createWorkflowInstance("process");
@@ -176,7 +176,7 @@ public class WorkflowInstanceFunctionalTest {
   @Test
   public void shouldConsumeTokenIfEventHasNoOutgoingSequenceflow() {
     // given
-    testClient.deploy(Bpmn.createExecutableWorkflow("process").startEvent().done());
+    testClient.deploy(Bpmn.createExecutableProcess("process").startEvent().done());
 
     // when
     final long workflowInstanceKey = testClient.createWorkflowInstance("process");
@@ -199,10 +199,10 @@ public class WorkflowInstanceFunctionalTest {
   @Test
   public void shouldConsumeTokenIfActivityHasNoOutgoingSequenceflow() {
     // given
-    final WorkflowDefinition definition =
-        Bpmn.createExecutableWorkflow("process")
+    final BpmnModelInstance definition =
+        Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("foo", t -> t.taskType("bar"))
+            .serviceTask("foo", t -> t.zeebeTaskType("bar"))
             .done();
     testClient.deploy(definition);
     final long workflowInstanceKey = testClient.createWorkflowInstance("process");
@@ -228,12 +228,14 @@ public class WorkflowInstanceFunctionalTest {
   @Test
   public void shouldActivateServiceTask() {
     // given
-    testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+    final BpmnModelInstance model =
+        Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("foo", t -> t.taskType("bar"))
+            .serviceTask("foo", t -> t.zeebeTaskType("bar"))
             .endEvent()
-            .done());
+            .done();
+
+    testClient.deploy(model);
 
     // when
     final long workflowInstanceKey = testClient.createWorkflowInstance("process");
@@ -257,9 +259,9 @@ public class WorkflowInstanceFunctionalTest {
   public void shouldCreateTaskWhenServiceTaskIsActivated() {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("foo", t -> t.taskType("bar").taskRetries(5))
+            .serviceTask("foo", t -> t.zeebeTaskType("bar").zeebeTaskRetries(5))
             .endEvent()
             .done());
 
@@ -283,9 +285,11 @@ public class WorkflowInstanceFunctionalTest {
   public void shouldCreateJobWithWorkflowInstanceAndCustomHeaders() {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("foo", t -> t.taskType("bar").taskHeader("a", "b").taskHeader("c", "d"))
+            .serviceTask(
+                "foo",
+                t -> t.zeebeTaskType("bar").zeebeTaskHeader("a", "b").zeebeTaskHeader("c", "d"))
             .endEvent()
             .done());
 
@@ -311,10 +315,10 @@ public class WorkflowInstanceFunctionalTest {
   @Test
   public void shouldCompleteServiceTaskWhenTaskIsCompleted() {
     // given
-    final WorkflowDefinition definition =
-        Bpmn.createExecutableWorkflow("process")
+    final BpmnModelInstance definition =
+        Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("foo", t -> t.taskType("bar"))
+            .serviceTask("foo", t -> t.zeebeTaskType("bar"))
             .endEvent()
             .done();
 
@@ -347,15 +351,20 @@ public class WorkflowInstanceFunctionalTest {
 
   @Test
   public void shouldSpitOnExclusiveGateway() {
-    final WorkflowDefinition workflowDefinition =
-        Bpmn.createExecutableWorkflow("workflow")
+    final BpmnModelInstance workflowDefinition =
+        Bpmn.createExecutableProcess("workflow")
             .startEvent()
             .exclusiveGateway("xor")
-            .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
+            .sequenceFlowId("s1")
+            .condition("$.foo < 5")
             .endEvent("a")
-            .sequenceFlow("s2", s -> s.condition("$.foo >= 5 && $.foo < 10"))
+            .moveToLastGateway()
+            .sequenceFlowId("s2")
+            .condition("$.foo >= 5 && $.foo < 10")
             .endEvent("b")
-            .sequenceFlow("s3", s -> s.defaultFlow())
+            .moveToLastExclusiveGateway()
+            .defaultFlow()
+            .sequenceFlowId("s3")
             .endEvent("c")
             .done();
 
@@ -386,15 +395,17 @@ public class WorkflowInstanceFunctionalTest {
 
   @Test
   public void shouldJoinOnExclusiveGateway() {
-    final WorkflowDefinition workflowDefinition =
-        Bpmn.createExecutableWorkflow("workflow")
+    final BpmnModelInstance workflowDefinition =
+        Bpmn.createExecutableProcess("workflow")
             .startEvent()
             .exclusiveGateway("split")
-            .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
+            .sequenceFlowId("s1")
+            .condition("$.foo < 5")
             .exclusiveGateway("joinRequest")
-            .continueAt("split")
-            .sequenceFlow("s2", s -> s.defaultFlow())
-            .joinWith("joinRequest")
+            .moveToLastExclusiveGateway()
+            .defaultFlow()
+            .sequenceFlowId("s2")
+            .connectTo("joinRequest")
             .endEvent("end")
             .done();
 
@@ -434,15 +445,17 @@ public class WorkflowInstanceFunctionalTest {
   @Test
   public void shouldSetSourceRecordPositionCorrectOnJoinXor() {
     // given
-    final WorkflowDefinition workflowDefinition =
-        Bpmn.createExecutableWorkflow("workflow")
+    final BpmnModelInstance workflowDefinition =
+        Bpmn.createExecutableProcess("workflow")
             .startEvent()
             .exclusiveGateway("split")
-            .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
+            .sequenceFlowId("s1")
+            .condition("$.foo < 5")
             .exclusiveGateway("joinRequest")
-            .continueAt("split")
-            .sequenceFlow("s2", s -> s.defaultFlow())
-            .joinWith("joinRequest")
+            .moveToLastExclusiveGateway()
+            .defaultFlow()
+            .sequenceFlowId("s2")
+            .connectTo("joinRequest")
             .endEvent("end")
             .done();
 
@@ -506,10 +519,10 @@ public class WorkflowInstanceFunctionalTest {
   @Test
   public void testWorkflowInstanceStatesWithServiceTask() {
     // given
-    final WorkflowDefinition definition =
-        Bpmn.createExecutableWorkflow("process")
+    final BpmnModelInstance definition =
+        Bpmn.createExecutableProcess("process")
             .startEvent("a")
-            .serviceTask("b", t -> t.taskType("foo"))
+            .serviceTask("b", t -> t.zeebeTaskType("foo"))
             .endEvent("c")
             .done();
 
@@ -543,13 +556,16 @@ public class WorkflowInstanceFunctionalTest {
   @Test
   public void testWorkflowInstanceStatesWithExclusiveGateway() {
     // given
-    final WorkflowDefinition workflowDefinition =
-        Bpmn.createExecutableWorkflow("workflow")
+    final BpmnModelInstance workflowDefinition =
+        Bpmn.createExecutableProcess("workflow")
             .startEvent()
             .exclusiveGateway("xor")
-            .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
+            .sequenceFlowId("s1")
+            .condition("$.foo < 5")
             .endEvent("a")
-            .sequenceFlow("s2", s -> s.defaultFlow())
+            .moveToLastExclusiveGateway()
+            .defaultFlow()
+            .sequenceFlowId("s2")
             .endEvent("b")
             .done();
 
@@ -634,9 +650,9 @@ public class WorkflowInstanceFunctionalTest {
     final int numDeployments = 100;
     for (int i = 0; i < numDeployments; i++) {
       testClient.deploy(
-          Bpmn.createExecutableWorkflow("process")
+          Bpmn.createExecutableProcess("process")
               .startEvent()
-              .serviceTask("foo", t -> t.taskType("bar"))
+              .serviceTask("foo", t -> t.zeebeTaskType("bar"))
               .endEvent()
               .done());
     }

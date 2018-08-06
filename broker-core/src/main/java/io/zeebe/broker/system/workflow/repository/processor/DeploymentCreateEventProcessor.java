@@ -18,7 +18,6 @@
 package io.zeebe.broker.system.workflow.repository.processor;
 
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
@@ -28,20 +27,24 @@ import io.zeebe.broker.system.workflow.repository.data.DeploymentRecord;
 import io.zeebe.broker.system.workflow.repository.data.DeploymentResource;
 import io.zeebe.broker.system.workflow.repository.data.ResourceType;
 import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex;
-import io.zeebe.model.bpmn.BpmnModelApi;
-import io.zeebe.model.bpmn.impl.error.InvalidModelException;
-import io.zeebe.model.bpmn.instance.Workflow;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.broker.workflow.model.yaml.BpmnYamlParser;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.model.bpmn.instance.Process;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.util.buffer.BufferUtil;
+import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Collection;
 import java.util.Iterator;
 import org.agrona.DirectBuffer;
+import org.agrona.io.DirectBufferInputStream;
 
 public class DeploymentCreateEventProcessor implements TypedRecordProcessor<DeploymentRecord> {
-  private final BpmnModelApi bpmn = new BpmnModelApi();
+  private final BpmnValidator validator = new BpmnValidator();
+  private final BpmnYamlParser yamlParser = new BpmnYamlParser();
 
   private final WorkflowRepositoryIndex index;
 
@@ -113,31 +116,37 @@ public class DeploymentCreateEventProcessor implements TypedRecordProcessor<Depl
       final DeploymentResource deploymentResource = resourceIterator.next();
 
       try {
-        final WorkflowDefinition definition = readWorkflowDefinition(deploymentResource);
+        final BpmnModelInstance definition = readWorkflowDefinition(deploymentResource);
+        final String validationError = validator.validate(definition);
 
-        for (Workflow workflow : definition.getWorkflows()) {
-          if (workflow.isExecutable()) {
-            final String bpmnProcessId = BufferUtil.bufferAsString(workflow.getBpmnProcessId());
-            final long key = index.getNextKey();
-            final int version = index.getNextVersion(topicName, bpmnProcessId);
+        if (validationError == null) {
+          final Collection<Process> processes =
+              definition.getDefinitions().getChildElementsByType(Process.class);
 
-            deploymentEvent
-                .deployedWorkflows()
-                .add()
-                .setBpmnProcessId(workflow.getBpmnProcessId())
-                .setVersion(version)
-                .setKey(key)
-                .setResourceName(deploymentResource.getResourceName());
+          for (Process workflow : processes) {
+            if (workflow.isExecutable()) {
+              final String bpmnProcessId = workflow.getId();
+              final long key = index.getNextKey();
+              final int version = index.getNextVersion(topicName, bpmnProcessId);
+
+              deploymentEvent
+                  .deployedWorkflows()
+                  .add()
+                  .setBpmnProcessId(BufferUtil.wrapString(workflow.getId()))
+                  .setVersion(version)
+                  .setKey(key)
+                  .setResourceName(deploymentResource.getResourceName());
+            }
           }
+        } else {
+          validationErrors.append(
+              String.format(
+                  "Resource '%s':\n", bufferAsString(deploymentResource.getResourceName())));
+          validationErrors.append(validationError);
+          success = false;
         }
 
         transformWorkflowResource(deploymentResource, definition);
-      } catch (InvalidModelException ex) {
-        validationErrors.append(
-            String.format(
-                "Resource '%s':\n", bufferAsString(deploymentResource.getResourceName())));
-        validationErrors.append(ex.getMessage());
-        success = false;
       } catch (Exception e) {
         validationErrors.append(
             String.format(
@@ -157,25 +166,26 @@ public class DeploymentCreateEventProcessor implements TypedRecordProcessor<Depl
     return success;
   }
 
-  private WorkflowDefinition readWorkflowDefinition(DeploymentResource deploymentResource) {
+  private BpmnModelInstance readWorkflowDefinition(DeploymentResource deploymentResource) {
     final DirectBuffer resource = deploymentResource.getResource();
+    final DirectBufferInputStream resourceStream = new DirectBufferInputStream(resource);
 
     switch (deploymentResource.getResourceType()) {
-      case BPMN_XML:
-        return bpmn.readFromXmlBuffer(resource);
-
       case YAML_WORKFLOW:
-        return bpmn.readFromYamlBuffer(resource);
-
+        return yamlParser.readFromStream(resourceStream);
+      case BPMN_XML:
       default:
-        return bpmn.readFromXmlBuffer(resource);
+        return Bpmn.readModelFromStream(resourceStream);
     }
   }
 
   private void transformWorkflowResource(
-      final DeploymentResource deploymentResource, final WorkflowDefinition definition) {
+      final DeploymentResource deploymentResource, final BpmnModelInstance definition) {
     if (deploymentResource.getResourceType() != ResourceType.BPMN_XML) {
-      final DirectBuffer bpmnXml = wrapString(bpmn.convertToString(definition));
+      final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+      Bpmn.writeModelToStream(outStream, definition);
+
+      final DirectBuffer bpmnXml = BufferUtil.wrapArray(outStream.toByteArray());
       deploymentResource.setResource(bpmnXml);
     }
   }

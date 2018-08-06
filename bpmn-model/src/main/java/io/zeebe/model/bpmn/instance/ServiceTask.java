@@ -13,13 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.zeebe.model.bpmn.instance;
 
-public interface ServiceTask extends FlowNode {
+import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 
-  TaskDefinition getTaskDefinition();
+/**
+ * The BPMN serviceTask element
+ *
+ * @author Sebastian Menski
+ */
+public interface ServiceTask extends Task {
 
-  TaskHeaders getTaskHeaders();
+  @Override
+  ServiceTaskBuilder builder();
 
-  InputOutputMapping getInputOutputMapping();
+  String getImplementation();
+
+  void setImplementation(String implementation);
+
+  Operation getOperation();
+
+  void setOperation(Operation operation);
 }

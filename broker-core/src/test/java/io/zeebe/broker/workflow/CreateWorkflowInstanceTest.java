@@ -37,7 +37,7 @@ import io.zeebe.broker.system.workflow.repository.data.ResourceType;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.workflow.map.WorkflowCache;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
@@ -104,7 +104,7 @@ public class CreateWorkflowInstanceTest {
   @Test
   public void shouldCreateWorkflowInstanceByBpmnProcessId() {
     // given
-    testClient.deploy(Bpmn.createExecutableWorkflow("process").startEvent().endEvent().done());
+    testClient.deploy(Bpmn.createExecutableProcess("process").startEvent().endEvent().done());
 
     // when
     // then
@@ -137,12 +137,12 @@ public class CreateWorkflowInstanceTest {
     // given
     testClient.deployWithResponse(
         ClientApiRule.DEFAULT_TOPIC_NAME,
-        Bpmn.createExecutableWorkflow("process").startEvent("bar").endEvent().done());
+        Bpmn.createExecutableProcess("process").startEvent("bar").endEvent().done());
 
     final ExecuteCommandResponse deployment2 =
         testClient.deployWithResponse(
             ClientApiRule.DEFAULT_TOPIC_NAME,
-            Bpmn.createExecutableWorkflow("process").startEvent("bar").endEvent().done());
+            Bpmn.createExecutableProcess("process").startEvent("bar").endEvent().done());
 
     // when
     final ExecuteCommandResponse resp =
@@ -179,11 +179,11 @@ public class CreateWorkflowInstanceTest {
     final ExecuteCommandResponse deployment1 =
         testClient.deployWithResponse(
             ClientApiRule.DEFAULT_TOPIC_NAME,
-            Bpmn.createExecutableWorkflow("process").startEvent("foo").endEvent().done());
+            Bpmn.createExecutableProcess("process").startEvent("foo").endEvent().done());
 
     testClient.deployWithResponse(
         ClientApiRule.DEFAULT_TOPIC_NAME,
-        Bpmn.createExecutableWorkflow("process").startEvent("bar").endEvent().done());
+        Bpmn.createExecutableProcess("process").startEvent("bar").endEvent().done());
 
     // when
     final ExecuteCommandResponse resp =
@@ -217,12 +217,12 @@ public class CreateWorkflowInstanceTest {
   @Test
   public void shouldCreateWorkflowInstanceByWorkflowKeyAndLatestVersion() {
     // given
-    testClient.deploy(Bpmn.createExecutableWorkflow("process").startEvent("foo").endEvent().done());
+    testClient.deploy(Bpmn.createExecutableProcess("process").startEvent("foo").endEvent().done());
 
     final ExecuteCommandResponse depl =
         testClient.deployWithResponse(
             ClientApiRule.DEFAULT_TOPIC_NAME,
-            Bpmn.createExecutableWorkflow("process").startEvent("bar").endEvent().done());
+            Bpmn.createExecutableProcess("process").startEvent("bar").endEvent().done());
 
     final long workflowKey = extractWorkflowKey(depl);
 
@@ -253,9 +253,9 @@ public class CreateWorkflowInstanceTest {
     final ExecuteCommandResponse depl =
         testClient.deployWithResponse(
             ClientApiRule.DEFAULT_TOPIC_NAME,
-            Bpmn.createExecutableWorkflow("process").startEvent().endEvent().done());
+            Bpmn.createExecutableProcess("process").startEvent().endEvent().done());
 
-    testClient.deploy(Bpmn.createExecutableWorkflow("process").startEvent().endEvent().done());
+    testClient.deploy(Bpmn.createExecutableProcess("process").startEvent().endEvent().done());
 
     final long workflowKey = extractWorkflowKey(depl);
 
@@ -283,7 +283,7 @@ public class CreateWorkflowInstanceTest {
   @Test
   public void shouldCreateWorkflowInstanceWithPayload() {
     // given
-    testClient.deploy(Bpmn.createExecutableWorkflow("process").startEvent().endEvent().done());
+    testClient.deploy(Bpmn.createExecutableProcess("process").startEvent().endEvent().done());
 
     // when
     final ExecuteCommandResponse resp =
@@ -316,7 +316,7 @@ public class CreateWorkflowInstanceTest {
   @Test
   public void shouldCreateWorkflowInstanceWithNilPayload() {
     // given
-    testClient.deploy(Bpmn.createExecutableWorkflow("process").startEvent().endEvent().done());
+    testClient.deploy(Bpmn.createExecutableProcess("process").startEvent().endEvent().done());
 
     // when
     final ExecuteCommandResponse resp =
@@ -336,7 +336,7 @@ public class CreateWorkflowInstanceTest {
   @Test
   public void shouldCreateWorkflowInstanceWithZeroLengthPayload() {
     // given
-    testClient.deploy(Bpmn.createExecutableWorkflow("process").startEvent().endEvent().done());
+    testClient.deploy(Bpmn.createExecutableProcess("process").startEvent().endEvent().done());
 
     // when
     final ExecuteCommandResponse resp =
@@ -356,7 +356,7 @@ public class CreateWorkflowInstanceTest {
   @Test
   public void shouldCreateWorkflowInstanceWithNoPayload() {
     // given
-    testClient.deploy(Bpmn.createExecutableWorkflow("process").startEvent().endEvent().done());
+    testClient.deploy(Bpmn.createExecutableProcess("process").startEvent().endEvent().done());
 
     // when
     final ExecuteCommandResponse resp =
@@ -375,7 +375,7 @@ public class CreateWorkflowInstanceTest {
   @Test
   public void shouldThrowExceptionOnCreationWithInvalidPayload() throws Exception {
     // given
-    testClient.deploy(Bpmn.createExecutableWorkflow("process").startEvent().endEvent().done());
+    testClient.deploy(Bpmn.createExecutableProcess("process").startEvent().endEvent().done());
 
     // when
     final byte[] invalidPayload = MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("'foo'"));
@@ -402,9 +402,9 @@ public class CreateWorkflowInstanceTest {
   @Test
   public void shouldCreateMultipleWorkflowInstancesForDifferentBpmnProcessIds() {
     // given
-    testClient.deploy(Bpmn.createExecutableWorkflow("foo").startEvent().endEvent().done());
+    testClient.deploy(Bpmn.createExecutableProcess("foo").startEvent().endEvent().done());
 
-    testClient.deploy(Bpmn.createExecutableWorkflow("baaaar").startEvent().endEvent().done());
+    testClient.deploy(Bpmn.createExecutableProcess("baaaar").startEvent().endEvent().done());
 
     // when
     final long workflowInstanceKeyFoo = testClient.createWorkflowInstance("foo");
@@ -431,11 +431,13 @@ public class CreateWorkflowInstanceTest {
   @Test
   public void shouldCreateMultipleWorkflowInstancesForDifferentVersionsOnForceRefresh() {
     // given
-    final WorkflowDefinition workflow =
-        Bpmn.createExecutableWorkflow("process")
+    final BpmnModelInstance workflow =
+        Bpmn.createExecutableProcess("process")
             .startEvent("start")
             .serviceTask(
-                "task", task -> task.taskType("test").taskRetries(3).taskHeader("foo", "bar"))
+                "task",
+                task ->
+                    task.zeebeTaskType("test").zeebeTaskRetries(3).zeebeTaskHeader("foo", "bar"))
             .endEvent("end")
             .done();
 
@@ -481,11 +483,13 @@ public class CreateWorkflowInstanceTest {
   @Test
   public void shouldCreateMultipleWorkflowInstancesForDifferentVersionsAfterTimeout() {
     // given
-    final WorkflowDefinition workflow =
-        Bpmn.createExecutableWorkflow("process")
+    final BpmnModelInstance workflow =
+        Bpmn.createExecutableProcess("process")
             .startEvent("start")
             .serviceTask(
-                "task", task -> task.taskType("test").taskRetries(3).taskHeader("foo", "bar"))
+                "task",
+                task ->
+                    task.zeebeTaskType("test").zeebeTaskRetries(3).zeebeTaskHeader("foo", "bar"))
             .endEvent("end")
             .done();
 
@@ -568,8 +572,8 @@ public class CreateWorkflowInstanceTest {
     apiRule.createTopic("test", partitions);
     final List<Integer> partitionIds = apiRule.getPartitionIds("test");
 
-    final WorkflowDefinition definition =
-        Bpmn.createExecutableWorkflow("process").startEvent().endEvent().done();
+    final BpmnModelInstance definition =
+        Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
 
     // when
     apiRule.topic().deploy("test", definition);

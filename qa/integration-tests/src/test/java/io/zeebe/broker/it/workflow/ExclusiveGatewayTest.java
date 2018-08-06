@@ -24,7 +24,7 @@ import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -41,13 +41,14 @@ public class ExclusiveGatewayTest {
 
   @Test
   public void shouldEvaluateConditionOnFlow() {
-    final WorkflowDefinition workflowDefinition =
-        Bpmn.createExecutableWorkflow("workflow")
+    final BpmnModelInstance workflowDefinition =
+        Bpmn.createExecutableProcess("workflow")
             .startEvent()
             .exclusiveGateway()
-            .sequenceFlow(s -> s.condition("$.foo < 5"))
+            .condition("$.foo < 5")
             .endEvent("a")
-            .sequenceFlow(s -> s.defaultFlow())
+            .moveToLastExclusiveGateway()
+            .defaultFlow()
             .endEvent("b")
             .done();
 
@@ -77,13 +78,14 @@ public class ExclusiveGatewayTest {
 
   @Test
   public void shouldTakeDefaultFlow() {
-    final WorkflowDefinition workflowDefinition =
-        Bpmn.createExecutableWorkflow("workflow")
+    final BpmnModelInstance workflowDefinition =
+        Bpmn.createExecutableProcess("workflow")
             .startEvent()
             .exclusiveGateway()
-            .sequenceFlow(s -> s.condition("$.foo < 5"))
+            .condition("$.foo < 5")
             .endEvent("a")
-            .sequenceFlow(s -> s.defaultFlow())
+            .moveToLastExclusiveGateway()
+            .defaultFlow()
             .endEvent("b")
             .done();
 
@@ -114,15 +116,16 @@ public class ExclusiveGatewayTest {
   @Test
   public void shouldExecuteWorkflowWithLoop() {
     // given
-    final WorkflowDefinition workflowDefinition =
-        Bpmn.createExecutableWorkflow("workflow")
+    final BpmnModelInstance workflowDefinition =
+        Bpmn.createExecutableProcess("workflow")
             .startEvent()
-            .serviceTask("inc", t -> t.taskType("inc"))
+            .serviceTask("inc", t -> t.zeebeTaskType("inc"))
             .exclusiveGateway()
-            .sequenceFlow(s -> s.condition("$.count > 5"))
+            .condition("$.count > 5")
             .endEvent()
-            .sequenceFlow("back", s -> s.defaultFlow())
-            .joinWith("inc")
+            .moveToLastExclusiveGateway()
+            .defaultFlow()
+            .connectTo("inc")
             .done();
 
     clientRule

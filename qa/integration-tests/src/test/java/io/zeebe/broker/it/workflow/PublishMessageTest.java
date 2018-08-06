@@ -28,7 +28,7 @@ import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -44,12 +44,11 @@ public class PublishMessageTest {
   public RuleChain ruleChain =
       RuleChain.outerRule(brokerRule).around(clientRule).around(eventRecorder);
 
-  private static final WorkflowDefinition WORKFLOW =
-      Bpmn.createExecutableWorkflow("wf")
+  private static final BpmnModelInstance WORKFLOW =
+      Bpmn.createExecutableProcess("wf")
           .startEvent()
-          .intermediateCatchEvent(
-              "catch-event", c -> c.messageName("order canceled").correlationKey("$.orderId"))
-          .sequenceFlow()
+          .intermediateCatchEvent("catch-event")
+          .message(c -> c.name("order canceled").zeebeCorrelationKey("$.orderId"))
           .endEvent()
           .done();
 

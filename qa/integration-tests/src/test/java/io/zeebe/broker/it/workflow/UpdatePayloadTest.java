@@ -28,7 +28,7 @@ import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.Collections;
 import org.junit.Before;
 import org.junit.Rule;
@@ -39,10 +39,10 @@ import org.junit.rules.RuleChain;
 public class UpdatePayloadTest {
   private static final String PAYLOAD = "{\"foo\":\"bar\"}";
 
-  private static final WorkflowDefinition WORKFLOW =
-      Bpmn.createExecutableWorkflow("process")
+  private static final BpmnModelInstance WORKFLOW =
+      Bpmn.createExecutableProcess("process")
           .startEvent("start")
-          .serviceTask("task-1", t -> t.taskType("task-1").output("$.result", "$.result"))
+          .serviceTask("task-1", t -> t.zeebeTaskType("task-1").zeebeOutput("$.result", "$.result"))
           .endEvent("end")
           .done();
 

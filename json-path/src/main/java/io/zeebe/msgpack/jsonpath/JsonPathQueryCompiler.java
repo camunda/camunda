@@ -26,12 +26,14 @@ import java.nio.charset.StandardCharsets;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
+/** Can be reused, but is not thread-safe */
 public class JsonPathQueryCompiler implements JsonPathTokenVisitor {
   protected static final int ROOT_COLLECTION_FILTER_ID = 0;
   protected static final int MAP_VALUE_FILTER_ID = 1;
   protected static final int ARRAY_INDEX_FILTER_ID = 2;
   protected static final int WILDCARD_FILTER_ID = 3;
 
+  private JsonPathQuery currentQuery;
   protected static final MsgPackFilter[] JSON_PATH_FILTERS = new MsgPackFilter[4];
 
   static {
@@ -41,7 +43,6 @@ public class JsonPathQueryCompiler implements JsonPathTokenVisitor {
     JSON_PATH_FILTERS[WILDCARD_FILTER_ID] = new WildcardFilter();
   }
 
-  protected JsonPathQuery jsonPathQuery = new JsonPathQuery(JSON_PATH_FILTERS);
   protected JsonPathTokenizer tokenizer = new JsonPathTokenizer();
 
   protected UnsafeBuffer expressionBuffer = new UnsafeBuffer(0, 0);
@@ -54,22 +55,25 @@ public class JsonPathQueryCompiler implements JsonPathTokenVisitor {
 
   public JsonPathQuery compile(DirectBuffer buffer, int offset, int length) {
     // TODO: syntactically validate expression
-    jsonPathQuery.wrap(buffer, offset, length);
+    currentQuery = new JsonPathQuery(JSON_PATH_FILTERS);
+    currentQuery.wrap(buffer, offset, length);
 
     mode = ParsingMode.DEFAULT;
     tokenizer.tokenize(buffer, offset, length, this);
-    return jsonPathQuery;
+    final JsonPathQuery returnValue = currentQuery;
+    currentQuery = null;
+    return returnValue;
   }
 
   @Override
   public void visit(
       JsonPathToken type, DirectBuffer valueBuffer, int valueOffset, int valueLength) {
-    if (!jsonPathQuery.isValid()) {
+    if (!currentQuery.isValid()) {
       // ignore tokens once query is invalid
       return;
     }
 
-    final MsgPackFilterContext filterInstances = jsonPathQuery.getFilterInstances();
+    final MsgPackFilterContext filterInstances = currentQuery.getFilterInstances();
 
     if (mode == ParsingMode.DEFAULT) {
       switch (type) {
@@ -88,7 +92,7 @@ public class JsonPathQueryCompiler implements JsonPathTokenVisitor {
         case CHILD_BRACKET_OPERATOR_END:
           return; // ignore
         default:
-          jsonPathQuery.invalidate(valueOffset, "Unexpected json-path token " + type);
+          currentQuery.invalidate(valueOffset, "Unexpected json-path token " + type);
       }
 
     } else if (mode == ParsingMode.SUBORDINATE) {
@@ -115,7 +119,7 @@ public class JsonPathQueryCompiler implements JsonPathTokenVisitor {
           filterInstances.filterId(WILDCARD_FILTER_ID);
           return;
         default:
-          jsonPathQuery.invalidate(valueOffset, "Unexpected json-path token " + type);
+          currentQuery.invalidate(valueOffset, "Unexpected json-path token " + type);
       }
     }
   }

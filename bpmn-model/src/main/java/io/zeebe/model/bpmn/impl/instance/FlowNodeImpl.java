@@ -13,64 +13,131 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.zeebe.model.bpmn.impl.instance;
 
-import io.zeebe.model.bpmn.BpmnConstants;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_SOURCE_REF;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_TARGET_REF;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_FLOW_NODE;
+
+import io.zeebe.model.bpmn.BpmnModelException;
+import io.zeebe.model.bpmn.Query;
+import io.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
+import io.zeebe.model.bpmn.impl.QueryImpl;
+import io.zeebe.model.bpmn.instance.FlowElement;
 import io.zeebe.model.bpmn.instance.FlowNode;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
-import java.util.ArrayList;
-import java.util.List;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlIDREF;
+import java.util.Collection;
+import java.util.HashSet;
+import org.camunda.bpm.model.xml.ModelBuilder;
+import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
+import org.camunda.bpm.model.xml.instance.ModelElementInstance;
+import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
+import org.camunda.bpm.model.xml.type.child.SequenceBuilder;
+import org.camunda.bpm.model.xml.type.reference.AttributeReference;
+import org.camunda.bpm.model.xml.type.reference.ElementReferenceCollection;
+import org.camunda.bpm.model.xml.type.reference.Reference;
 
-public class FlowNodeImpl extends FlowElementImpl implements FlowNode {
-  private List<SequenceFlowImpl> incoming = new ArrayList<>();
-  private List<SequenceFlowImpl> outgoing = new ArrayList<>();
+/**
+ * The BPMN flowNode element
+ *
+ * @author Sebastian Menski
+ */
+public abstract class FlowNodeImpl extends FlowElementImpl implements FlowNode {
 
-  @XmlIDREF
-  @XmlElement(name = BpmnConstants.BPMN_ELEMENT_INCOMING, namespace = BpmnConstants.BPMN20_NS)
-  public void setIncoming(List<SequenceFlowImpl> incoming) {
-    this.incoming.addAll(incoming);
+  protected static ElementReferenceCollection<SequenceFlow, Incoming> incomingCollection;
+  protected static ElementReferenceCollection<SequenceFlow, Outgoing> outgoingCollection;
+
+  public static void registerType(ModelBuilder modelBuilder) {
+    final ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(FlowNode.class, BPMN_ELEMENT_FLOW_NODE)
+            .namespaceUri(BPMN20_NS)
+            .extendsType(FlowElement.class)
+            .abstractType();
+
+    final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
+
+    incomingCollection =
+        sequenceBuilder
+            .elementCollection(Incoming.class)
+            .qNameElementReferenceCollection(SequenceFlow.class)
+            .build();
+
+    outgoingCollection =
+        sequenceBuilder
+            .elementCollection(Outgoing.class)
+            .qNameElementReferenceCollection(SequenceFlow.class)
+            .build();
+
+    typeBuilder.build();
   }
 
-  public List<SequenceFlowImpl> getIncoming() {
-    return incoming;
+  public FlowNodeImpl(ModelTypeInstanceContext context) {
+    super(context);
   }
 
-  @XmlIDREF
-  @XmlElement(name = BpmnConstants.BPMN_ELEMENT_OUTGOING, namespace = BpmnConstants.BPMN20_NS)
-  public void setOutgoing(List<SequenceFlowImpl> outgoing) {
-    this.outgoing.addAll(outgoing);
-  }
-
-  public List<SequenceFlowImpl> getOutgoing() {
-    return outgoing;
-  }
-
-  @SuppressWarnings({"unchecked", "rawtypes"})
   @Override
-  public List<SequenceFlow> getIncomingSequenceFlows() {
-    return (List) incoming;
+  @SuppressWarnings("rawtypes")
+  public AbstractFlowNodeBuilder builder() {
+    throw new BpmnModelException(
+        "No builder implemented for type "
+            + getElementType().getTypeNamespace()
+            + ":"
+            + getElementType().getTypeName());
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   @Override
-  public List<SequenceFlow> getOutgoingSequenceFlows() {
-    return (List) outgoing;
+  @SuppressWarnings("rawtypes")
+  public void updateAfterReplacement() {
+    super.updateAfterReplacement();
+    final Collection<Reference> incomingReferences =
+        getIncomingReferencesByType(SequenceFlow.class);
+    for (final Reference<?> reference : incomingReferences) {
+      for (final ModelElementInstance sourceElement : reference.findReferenceSourceElements(this)) {
+        final String referenceIdentifier = reference.getReferenceIdentifier(sourceElement);
+
+        if (referenceIdentifier != null
+            && referenceIdentifier.equals(getId())
+            && reference instanceof AttributeReference) {
+          final String attributeName =
+              ((AttributeReference) reference).getReferenceSourceAttribute().getAttributeName();
+          if (attributeName.equals(BPMN_ATTRIBUTE_SOURCE_REF)) {
+            getOutgoing().add((SequenceFlow) sourceElement);
+          } else if (attributeName.equals(BPMN_ATTRIBUTE_TARGET_REF)) {
+            getIncoming().add((SequenceFlow) sourceElement);
+          }
+        }
+      }
+    }
   }
 
   @Override
-  public String toString() {
-    final StringBuilder builder = new StringBuilder();
-    builder.append("FlowNode [id=");
-    builder.append(getId());
-    builder.append(", name=");
-    builder.append(getName());
-    builder.append(", incoming=");
-    builder.append(incoming);
-    builder.append(", outgoing=");
-    builder.append(outgoing);
-    builder.append("]");
-    return builder.toString();
+  public Collection<SequenceFlow> getIncoming() {
+    return incomingCollection.getReferenceTargetElements(this);
+  }
+
+  @Override
+  public Collection<SequenceFlow> getOutgoing() {
+    return outgoingCollection.getReferenceTargetElements(this);
+  }
+
+  @Override
+  public Query<FlowNode> getPreviousNodes() {
+    final Collection<FlowNode> previousNodes = new HashSet<>();
+    for (final SequenceFlow sequenceFlow : getIncoming()) {
+      previousNodes.add(sequenceFlow.getSource());
+    }
+    return new QueryImpl<>(previousNodes);
+  }
+
+  @Override
+  public Query<FlowNode> getSucceedingNodes() {
+    final Collection<FlowNode> succeedingNodes = new HashSet<>();
+    for (final SequenceFlow sequenceFlow : getOutgoing()) {
+      succeedingNodes.add(sequenceFlow.getTarget());
+    }
+    return new QueryImpl<>(succeedingNodes);
   }
 }

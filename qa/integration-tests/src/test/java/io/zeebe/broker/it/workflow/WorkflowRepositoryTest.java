@@ -27,7 +27,7 @@ import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.util.StreamUtil;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -52,12 +52,12 @@ public class WorkflowRepositoryTest {
 
   private final List<Workflow> deployedWorkflows = new ArrayList<>();
 
-  private final WorkflowDefinition workflow1v1 =
-      Bpmn.createExecutableWorkflow("wf1").startEvent("foo").done();
-  private final WorkflowDefinition workflow1v2 =
-      Bpmn.createExecutableWorkflow("wf1").startEvent("bar").done();
-  private final WorkflowDefinition workflow2 =
-      Bpmn.createExecutableWorkflow("wf2").startEvent("start").done();
+  private final BpmnModelInstance workflow1v1 =
+      Bpmn.createExecutableProcess("wf1").startEvent("foo").done();
+  private final BpmnModelInstance workflow1v2 =
+      Bpmn.createExecutableProcess("wf1").startEvent("bar").done();
+  private final BpmnModelInstance workflow2 =
+      Bpmn.createExecutableProcess("wf2").startEvent("start").done();
 
   @Before
   public void deployWorkflows() {

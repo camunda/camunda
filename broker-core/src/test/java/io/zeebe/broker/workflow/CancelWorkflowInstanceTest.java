@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -47,10 +47,10 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class CancelWorkflowInstanceTest {
-  private static final WorkflowDefinition WORKFLOW =
-      Bpmn.createExecutableWorkflow("process")
+  private static final BpmnModelInstance WORKFLOW =
+      Bpmn.createExecutableProcess("process")
           .startEvent()
-          .serviceTask("task", t -> t.taskType("test").taskRetries(5))
+          .serviceTask("task", t -> t.zeebeTaskType("test").zeebeTaskRetries(5))
           .endEvent()
           .done();
 
@@ -143,9 +143,10 @@ public class CancelWorkflowInstanceTest {
   public void shouldCancelIntermediateCatchEvent() {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("wf")
+        Bpmn.createExecutableProcess("wf")
             .startEvent()
-            .intermediateCatchEvent("catch-event", b -> b.messageName("msg").correlationKey("$.id"))
+            .intermediateCatchEvent("catch-event")
+            .message(b -> b.name("msg").zeebeCorrelationKey("$.id"))
             .done());
 
     final long workflowInstanceKey =
@@ -232,7 +233,7 @@ public class CancelWorkflowInstanceTest {
   @Test
   public void shouldRejectCancelCompletedWorkflowInstance() {
     // given
-    testClient.deploy(Bpmn.createExecutableWorkflow("process").startEvent().endEvent().done());
+    testClient.deploy(Bpmn.createExecutableProcess("process").startEvent().endEvent().done());
 
     final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 

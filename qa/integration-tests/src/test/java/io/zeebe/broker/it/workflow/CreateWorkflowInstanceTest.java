@@ -56,7 +56,7 @@ public class CreateWorkflowInstanceTest {
             .getWorkflowClient()
             .newDeployCommand()
             .addWorkflowModel(
-                Bpmn.createExecutableWorkflow("anId").startEvent().endEvent().done(),
+                Bpmn.createExecutableProcess("anId").startEvent().endEvent().done(),
                 "workflow.bpmn")
             .send()
             .join();
@@ -65,7 +65,7 @@ public class CreateWorkflowInstanceTest {
         .getWorkflowClient()
         .newDeployCommand()
         .addWorkflowModel(
-            Bpmn.createExecutableWorkflow("anId").startEvent().endEvent().done(), "workflow.bpmn")
+            Bpmn.createExecutableProcess("anId").startEvent().endEvent().done(), "workflow.bpmn")
         .send()
         .join();
   }

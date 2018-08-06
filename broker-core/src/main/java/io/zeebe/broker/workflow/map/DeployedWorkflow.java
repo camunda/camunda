@@ -17,10 +17,10 @@
  */
 package io.zeebe.broker.workflow.map;
 
-import io.zeebe.model.bpmn.instance.Workflow;
+import io.zeebe.broker.workflow.model.ExecutableWorkflow;
 
 public class DeployedWorkflow {
-  private final Workflow workflow;
+  private final ExecutableWorkflow workflow;
 
   private final long key;
 
@@ -28,14 +28,14 @@ public class DeployedWorkflow {
 
   private long fetched;
 
-  public DeployedWorkflow(Workflow workflow, long key, int version, long fetched) {
+  public DeployedWorkflow(ExecutableWorkflow workflow, long key, int version, long fetched) {
     this.workflow = workflow;
     this.key = key;
     this.version = version;
     this.fetched = fetched;
   }
 
-  public Workflow getWorkflow() {
+  public ExecutableWorkflow getWorkflow() {
     return workflow;
   }
 

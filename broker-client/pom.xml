@@ -30,12 +30,17 @@
       <groupId>io.zeebe</groupId>
       <artifactId>zb-bpmn-model</artifactId>
     </dependency>
-
+    
     <dependency>
       <groupId>org.msgpack</groupId>
       <artifactId>msgpack-core</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-msgpack-core</artifactId>
+    </dependency>
+    
     <dependency>
       <groupId>org.msgpack</groupId>
       <artifactId>jackson-dataformat-msgpack</artifactId>

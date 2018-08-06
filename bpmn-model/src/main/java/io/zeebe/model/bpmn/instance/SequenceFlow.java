@@ -13,17 +13,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.zeebe.model.bpmn.instance;
 
-import io.zeebe.msgpack.el.CompiledJsonCondition;
+import io.zeebe.model.bpmn.builder.SequenceFlowBuilder;
+import io.zeebe.model.bpmn.instance.bpmndi.BpmnEdge;
 
+/**
+ * The BPMN sequenceFlow element
+ *
+ * @author Sebastian Menski
+ */
 public interface SequenceFlow extends FlowElement {
 
-  FlowNode getSourceNode();
+  @Override
+  SequenceFlowBuilder builder();
 
-  FlowNode getTargetNode();
+  FlowNode getSource();
 
-  boolean hasCondition();
+  void setSource(FlowNode source);
 
-  CompiledJsonCondition getCondition();
+  FlowNode getTarget();
+
+  void setTarget(FlowNode target);
+
+  boolean isImmediate();
+
+  void setImmediate(boolean isImmediate);
+
+  ConditionExpression getConditionExpression();
+
+  void setConditionExpression(ConditionExpression conditionExpression);
+
+  void removeConditionExpression();
+
+  @Override
+  BpmnEdge getDiagramElement();
 }
