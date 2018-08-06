@@ -326,7 +326,7 @@ it('should call the applyAddons function if provided', () => {
   expect(spy).toHaveBeenCalled();
 });
 
-it.only('should return flownode Id if name is null when calling applyFlowNodeNames', async () => {
+it('should return flownode Id if name is null when calling applyFlowNodeNames', async () => {
   const node = mount(<ReportView report={exampleDurationReport} />);
   node.setState({
     loaded: true
