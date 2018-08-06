@@ -1253,6 +1253,6 @@ public class IncidentTest {
             .sendAndAwait();
 
     assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(response.intent()).isEqualTo(WorkflowInstanceIntent.CANCELED);
+    assertThat(response.intent()).isEqualTo(WorkflowInstanceIntent.CANCELING);
   }
 }

@@ -17,42 +17,33 @@
  */
 package io.zeebe.broker.workflow.processor.flownode;
 
+import io.zeebe.broker.logstreams.processor.TypedBatchWriter;
+import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
-import io.zeebe.broker.workflow.index.ElementInstance;
 import io.zeebe.broker.workflow.model.ExecutableFlowNode;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.util.buffer.BufferUtil;
 
-public class ConsumeTokenHandler implements BpmnStepHandler<ExecutableFlowNode> {
+public class TerminateElementHandler implements BpmnStepHandler<ExecutableFlowNode> {
 
   @Override
   public void handle(BpmnStepContext<ExecutableFlowNode> context) {
-    final WorkflowInstanceRecord value = context.getValue();
+    final TypedRecord<WorkflowInstanceRecord> terminatingRecord = context.getRecord();
 
-    final long scopeInstanceKey = value.getScopeInstanceKey();
-    final long workflowInstanceKey = value.getWorkflowInstanceKey();
-    final ElementInstance scopeInstance = context.getFlowScopeInstance();
-    final WorkflowInstanceRecord scopeInstanceValue = scopeInstance.getValue();
+    final TypedBatchWriter batch = context.getStreamWriter().newBatch();
 
-    scopeInstanceValue.setPayload(BufferUtil.cloneBuffer(value.getPayload()));
+    addTerminatingRecords(context, batch);
 
-    if (scopeInstanceKey == workflowInstanceKey) {
-      context
-          .getStreamWriter()
-          .writeFollowUpEvent(
-              scopeInstanceKey, WorkflowInstanceIntent.COMPLETED, scopeInstanceValue);
-      context.destroyFlowScopeInstance();
-
-    } else {
-
-      context
-          .getStreamWriter()
-          .writeFollowUpEvent(
-              scopeInstanceKey, WorkflowInstanceIntent.ACTIVITY_COMPLETING, scopeInstanceValue);
-    }
+    batch.addFollowUpEvent(
+        terminatingRecord.getKey(),
+        WorkflowInstanceIntent.ACTIVITY_TERMINATED,
+        terminatingRecord.getValue());
 
     context.destroyElementInstance();
   }
+
+  // to be overriden by subclasses
+  protected void addTerminatingRecords(
+      BpmnStepContext<ExecutableFlowNode> context, TypedBatchWriter batch) {}
 }

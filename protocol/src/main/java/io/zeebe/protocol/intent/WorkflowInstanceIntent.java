@@ -28,20 +28,22 @@ public enum WorkflowInstanceIntent implements Intent {
   ACTIVITY_ACTIVATED((short) 7),
   ACTIVITY_COMPLETING((short) 8),
   ACTIVITY_COMPLETED((short) 9),
-  ACTIVITY_TERMINATED((short) 10),
+  ACTIVITY_TERMINATING((short) 10),
+  ACTIVITY_TERMINATED((short) 11),
 
-  COMPLETED((short) 11),
+  COMPLETED((short) 12),
 
-  CANCEL((short) 12),
-  CANCELED((short) 13),
+  CANCEL((short) 13),
+  CANCELING((short) 14),
+  CANCELED((short) 15),
 
-  UPDATE_PAYLOAD((short) 14),
-  PAYLOAD_UPDATED((short) 15),
+  UPDATE_PAYLOAD((short) 16),
+  PAYLOAD_UPDATED((short) 17),
 
-  CATCH_EVENT_ENTERING((short) 16),
-  CATCH_EVENT_ENTERED((short) 17),
-  CATCH_EVENT_OCCURRING((short) 18),
-  CATCH_EVENT_OCCURRED((short) 19);
+  CATCH_EVENT_ENTERING((short) 18),
+  CATCH_EVENT_ENTERED((short) 19),
+  CATCH_EVENT_OCCURRING((short) 20),
+  CATCH_EVENT_OCCURRED((short) 21);
 
   private short value;
 
@@ -76,24 +78,28 @@ public enum WorkflowInstanceIntent implements Intent {
       case 9:
         return ACTIVITY_COMPLETED;
       case 10:
-        return ACTIVITY_TERMINATED;
+        return ACTIVITY_TERMINATING;
       case 11:
-        return COMPLETED;
+        return ACTIVITY_TERMINATED;
       case 12:
-        return CANCEL;
+        return COMPLETED;
       case 13:
-        return CANCELED;
+        return CANCEL;
       case 14:
-        return UPDATE_PAYLOAD;
+        return CANCELING;
       case 15:
-        return PAYLOAD_UPDATED;
+        return CANCELED;
       case 16:
-        return CATCH_EVENT_ENTERING;
+        return UPDATE_PAYLOAD;
       case 17:
-        return CATCH_EVENT_ENTERED;
+        return PAYLOAD_UPDATED;
       case 18:
-        return CATCH_EVENT_OCCURRING;
+        return CATCH_EVENT_ENTERING;
       case 19:
+        return CATCH_EVENT_ENTERED;
+      case 20:
+        return CATCH_EVENT_OCCURRING;
+      case 21:
         return CATCH_EVENT_OCCURRED;
       default:
         return Intent.UNKNOWN;

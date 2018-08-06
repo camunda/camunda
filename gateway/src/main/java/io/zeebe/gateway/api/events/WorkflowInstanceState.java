@@ -18,6 +18,7 @@ package io.zeebe.gateway.api.events;
 public enum WorkflowInstanceState {
   CREATED,
   COMPLETED,
+  CANCELING,
   CANCELED,
 
   PAYLOAD_UPDATED,
@@ -33,6 +34,7 @@ public enum WorkflowInstanceState {
   ACTIVITY_ACTIVATED,
   ACTIVITY_COMPLETING,
   ACTIVITY_COMPLETED,
+  ACTIVITY_TERMINATING,
   ACTIVITY_TERMINATED,
 
   CATCH_EVENT_ENTERING,

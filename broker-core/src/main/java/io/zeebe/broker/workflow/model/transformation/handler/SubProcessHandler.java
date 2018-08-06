@@ -41,5 +41,7 @@ public class SubProcessHandler implements ModelElementTransformer<SubProcess> {
 
     subprocess.bindLifecycleState(
         WorkflowInstanceIntent.ACTIVITY_ACTIVATED, BpmnStep.TRIGGER_START_EVENT);
+    subprocess.bindLifecycleState(
+        WorkflowInstanceIntent.ACTIVITY_TERMINATING, BpmnStep.TERMINATE_CONTAINED_INSTANCES);
   }
 }

@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.workflow.model.transformation.handler;
 
+import io.zeebe.broker.workflow.model.BpmnStep;
 import io.zeebe.broker.workflow.model.ExecutableIntermediateMessageCatchEvent;
 import io.zeebe.broker.workflow.model.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
@@ -64,7 +65,14 @@ public class IntermediateCatchEventHandler
     executableElement.setCorrelationKey(query);
     executableElement.setMessageName(BufferUtil.wrapString(message.getName()));
 
+    bindLifecycle(context, executableElement);
+  }
+
+  private void bindLifecycle(
+      TransformContext context, final ExecutableIntermediateMessageCatchEvent executableElement) {
     executableElement.bindLifecycleState(
         WorkflowInstanceIntent.CATCH_EVENT_OCCURRED, context.getCurrentFlowNodeOutgoingStep());
+    executableElement.bindLifecycleState(
+        WorkflowInstanceIntent.ACTIVITY_TERMINATING, BpmnStep.TERMINATE_ELEMENT);
   }
 }

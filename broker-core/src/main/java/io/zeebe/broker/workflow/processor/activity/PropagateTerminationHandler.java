@@ -15,44 +15,39 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.processor.flownode;
+package io.zeebe.broker.workflow.processor.activity;
 
-import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.index.ElementInstance;
 import io.zeebe.broker.workflow.model.ExecutableFlowNode;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.util.buffer.BufferUtil;
 
-public class ConsumeTokenHandler implements BpmnStepHandler<ExecutableFlowNode> {
+public class PropagateTerminationHandler implements BpmnStepHandler<ExecutableFlowNode> {
 
   @Override
   public void handle(BpmnStepContext<ExecutableFlowNode> context) {
-    final WorkflowInstanceRecord value = context.getValue();
+    final long workflowInstanceKey = context.getValue().getWorkflowInstanceKey();
+    final ElementInstance flowScopeInstance = context.getFlowScopeInstance();
 
-    final long scopeInstanceKey = value.getScopeInstanceKey();
-    final long workflowInstanceKey = value.getWorkflowInstanceKey();
-    final ElementInstance scopeInstance = context.getFlowScopeInstance();
-    final WorkflowInstanceRecord scopeInstanceValue = scopeInstance.getValue();
+    if (flowScopeInstance.getChildren().isEmpty()) {
+      if (flowScopeInstance.getKey() == workflowInstanceKey) {
+        context
+            .getStreamWriter()
+            .writeFollowUpEvent(
+                flowScopeInstance.getKey(),
+                WorkflowInstanceIntent.CANCELED,
+                flowScopeInstance.getValue());
+      } else {
+        context
+            .getStreamWriter()
+            .writeFollowUpEvent(
+                flowScopeInstance.getKey(),
+                WorkflowInstanceIntent.ACTIVITY_TERMINATED,
+                flowScopeInstance.getValue());
+      }
 
-    scopeInstanceValue.setPayload(BufferUtil.cloneBuffer(value.getPayload()));
-
-    if (scopeInstanceKey == workflowInstanceKey) {
-      context
-          .getStreamWriter()
-          .writeFollowUpEvent(
-              scopeInstanceKey, WorkflowInstanceIntent.COMPLETED, scopeInstanceValue);
       context.destroyFlowScopeInstance();
-
-    } else {
-
-      context
-          .getStreamWriter()
-          .writeFollowUpEvent(
-              scopeInstanceKey, WorkflowInstanceIntent.ACTIVITY_COMPLETING, scopeInstanceValue);
     }
-
-    context.destroyElementInstance();
   }
 }

@@ -49,5 +49,7 @@ public class ActivityHandler implements ModelElementTransformer<Activity> {
         WorkflowInstanceIntent.ACTIVITY_COMPLETING, BpmnStep.APPLY_OUTPUT_MAPPING);
     activity.bindLifecycleState(
         WorkflowInstanceIntent.ACTIVITY_COMPLETED, context.getCurrentFlowNodeOutgoingStep());
+    activity.bindLifecycleState(
+        WorkflowInstanceIntent.ACTIVITY_TERMINATED, BpmnStep.PROPAGATE_TERMINATION);
   }
 }

@@ -15,29 +15,32 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.processor.sequenceflow;
+package io.zeebe.broker.workflow.processor.subprocess;
 
-import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
-import io.zeebe.broker.workflow.model.ExecutableFlowNode;
-import io.zeebe.broker.workflow.model.ExecutableSequenceFlow;
+import io.zeebe.broker.workflow.index.ElementInstance;
+import io.zeebe.broker.workflow.model.ExecutableSubProcess;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import java.util.List;
 
-public class EnterIntermediateEventHandler implements BpmnStepHandler<ExecutableSequenceFlow> {
+public class TerminateContainedElementsHandler implements BpmnStepHandler<ExecutableSubProcess> {
 
   @Override
-  public void handle(BpmnStepContext<ExecutableSequenceFlow> context) {
+  public void handle(BpmnStepContext<ExecutableSubProcess> context) {
+    final ElementInstance subProcessInstance = context.getElementInstance();
 
-    final ExecutableSequenceFlow sequenceFlow = context.getElement();
-    final ExecutableFlowNode targetNode = sequenceFlow.getTarget();
+    final List<ElementInstance> children = subProcessInstance.getChildren();
 
-    final WorkflowInstanceRecord value = context.getValue();
-    value.setActivityId(targetNode.getId());
+    for (int i = 0; i < children.size(); i++) {
+      final ElementInstance child = children.get(i);
 
-    final long key =
-        context.getStreamWriter().writeNewEvent(WorkflowInstanceIntent.CATCH_EVENT_ENTERING, value);
-
-    context.newInstanceInFlowScope(key, value, WorkflowInstanceIntent.CATCH_EVENT_ENTERING);
+      if (child.canTerminate()) {
+        context
+            .getStreamWriter()
+            .writeFollowUpEvent(
+                child.getKey(), WorkflowInstanceIntent.ACTIVITY_TERMINATING, child.getValue());
+      }
+    }
   }
 }
