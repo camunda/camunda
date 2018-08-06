@@ -1,6 +1,6 @@
 import React from 'react';
 
-import {BPMNDiagram, TargetValueBadge} from 'components';
+import {BPMNDiagram, TargetValueBadge, LoadingIndicator} from 'components';
 import HeatmapOverlay from './HeatmapOverlay';
 
 import {calculateTargetValueHeat} from './service';
@@ -18,7 +18,7 @@ const Heatmap = props => {
   }
 
   if (!xml) {
-    return <div className="heatmap-loading-indicator">loading...</div>;
+    return <LoadingIndicator />;
   }
 
   let heatmapComponent;

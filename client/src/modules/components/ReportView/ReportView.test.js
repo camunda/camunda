@@ -14,7 +14,12 @@ jest.mock('./views', () => {
 
 jest.mock('components', () => {
   return {
-    ErrorBoundary: props => <div>{props.children}</div>
+    ErrorBoundary: props => <div>{props.children}</div>,
+    LoadingIndicator: props => (
+      <div className="LoadingIndicator__div" {...props}>
+        Loading...
+      </div>
+    )
   };
 });
 

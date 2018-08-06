@@ -1,7 +1,7 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import {Select, BPMNDiagram} from 'components';
+import {Select, BPMNDiagram, LoadingIndicator} from 'components';
 
 import {loadProcessDefinitions} from 'services';
 
@@ -91,7 +91,11 @@ export default class ProcessDefinitionSelection extends React.Component {
     const version = this.props.processDefinitionVersion;
 
     if (!loaded) {
-      return <div className="ProcessDefinitionSelection__loading-indicator">loading...</div>;
+      return (
+        <div className="ProcessDefinitionSelection">
+          <LoadingIndicator />
+        </div>
+      );
     }
 
     return (

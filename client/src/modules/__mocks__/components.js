@@ -16,3 +16,4 @@ export {default as Table} from '../components/__mocks__/Table';
 export {default as Logo} from '../components/__mocks__/Logo';
 export {default as ErrorMessage} from '../components/__mocks__/ErrorMessage';
 export {default as ErrorPage} from '../components/__mocks__/ErrorPage';
+export {default as LoadingIndicator} from '../components/__mocks__/LoadingIndicator';

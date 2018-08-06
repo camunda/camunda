@@ -13,7 +13,8 @@ import {
   Popover,
   Icon,
   ErrorMessage,
-  ErrorPage
+  ErrorPage,
+  LoadingIndicator
 } from 'components';
 
 import {
@@ -481,7 +482,7 @@ export default withErrorHandling(
       }
 
       if (!loaded) {
-        return <div className="report-loading-indicator">loading...</div>;
+        return <LoadingIndicator />;
       }
 
       if (redirect) {

@@ -1,7 +1,7 @@
 import React from 'react';
 import update from 'immutability-helper';
 
-import {Button, Modal} from 'components';
+import {Button, Modal, LoadingIndicator} from 'components';
 
 import {loadAlerts, loadReports, saveNewAlert, deleteAlert, updateAlert} from './service';
 
@@ -96,7 +96,7 @@ export default class Alerts extends React.Component {
             </Button>
           </div>
         </div>
-        {this.state.alerts && this.state.reports ? this.renderList() : <div>loading...</div>}
+        {this.state.alerts && this.state.reports ? this.renderList() : <LoadingIndicator />}
         {this.state.reports && (
           <AlertModal
             reports={this.state.reports}

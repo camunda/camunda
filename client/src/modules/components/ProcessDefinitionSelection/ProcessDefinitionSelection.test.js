@@ -19,6 +19,11 @@ jest.mock('components', () => {
       <div id="diagram">
         Diagram {props.children} {props.xml}
       </div>
+    ),
+    LoadingIndicator: props => (
+      <div className="LoadingIndicator__div" {...props}>
+        Loading...
+      </div>
     )
   };
 });
@@ -53,7 +58,7 @@ it('should render without crashing', () => {
 it('should display a loading indicator', () => {
   const node = mount(<ProcessDefinitionSelection {...props} />);
 
-  expect(node.find('.ProcessDefinitionSelection__loading-indicator')).toBePresent();
+  expect(node.find('.LoadingIndicator__div')).toBePresent();
 });
 
 it('should initially load all process definitions', () => {

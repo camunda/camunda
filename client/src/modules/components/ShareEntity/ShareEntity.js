@@ -1,5 +1,5 @@
 import React from 'react';
-import {CopyToClipboard, Switch, Icon} from 'components';
+import {CopyToClipboard, Switch, Icon, LoadingIndicator} from 'components';
 
 import './ShareEntity.css';
 
@@ -59,7 +59,11 @@ export default class ShareEntity extends React.Component {
 
   render() {
     if (!this.state.loaded) {
-      return <div className="ShareEntity__loading-indicator">loading...</div>;
+      return (
+        <div className="ShareEntity">
+          <LoadingIndicator />
+        </div>
+      );
     }
 
     return (

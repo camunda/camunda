@@ -8,7 +8,12 @@ import {getCamundaEndpoints, getRelativeValue} from './service';
 
 jest.mock('components', () => {
   return {
-    Table: ({head, body}) => <div>{JSON.stringify({head, body})}</div>
+    Table: ({head, body}) => <div>{JSON.stringify({head, body})}</div>,
+    LoadingIndicator: props => (
+      <div className="LoadingIndicator__div" {...props}>
+        Loading...
+      </div>
+    )
   };
 });
 

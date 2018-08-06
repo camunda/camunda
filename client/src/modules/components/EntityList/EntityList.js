@@ -5,7 +5,7 @@ import classnames from 'classnames';
 import {withErrorHandling} from 'HOC';
 import {Redirect, Link} from 'react-router-dom';
 
-import {Button, Modal, Message, Icon, Input} from 'components';
+import {Button, Modal, Message, Icon, Input, LoadingIndicator} from 'components';
 
 import {load, create, remove, duplicate} from './service';
 
@@ -260,7 +260,7 @@ class EntityList extends React.Component {
         </React.Fragment>
       );
     } else {
-      list = <div>loading...</div>;
+      list = <LoadingIndicator />;
     }
 
     if (redirectToEntity !== false) {

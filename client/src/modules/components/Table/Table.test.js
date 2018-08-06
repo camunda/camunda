@@ -23,7 +23,8 @@ jest.mock('react-table', () => () => (
 
 jest.mock('components', () => {
   return {
-    Button: props => <button {...props}>{props.children}</button>
+    Button: props => <button {...props}>{props.children}</button>,
+    LoadingIndicator: props => <div className="LoadingIndicator__div">{props.type}</div>
   };
 });
 

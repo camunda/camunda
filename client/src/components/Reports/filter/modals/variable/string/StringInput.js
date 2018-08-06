@@ -1,7 +1,7 @@
 import React from 'react';
 import debounce from 'debounce';
 
-import {ButtonGroup, Button, TypeaheadMultipleSelection} from 'components';
+import {ButtonGroup, Button, TypeaheadMultipleSelection, LoadingIndicator} from 'components';
 import classnames from 'classnames';
 
 import {loadValues} from './service';
@@ -156,7 +156,7 @@ export default class StringInput extends React.Component {
                 onClick={this.loadMore}
                 disabled={this.state.loading}
               >
-                {this.state.loading ? 'loading...' : 'Load More'}
+                {this.state.loading ? <LoadingIndicator small={true} /> : 'Load More'}
               </Button>
             )}
           </div>

@@ -1,7 +1,7 @@
 import React from 'react';
 import ReportBlankSlate from '../ReportBlankSlate';
 
-import {Table as TableRenderer} from 'components';
+import {Table as TableRenderer, LoadingIndicator} from 'components';
 import {processRawData} from 'services';
 import {withErrorHandling} from 'HOC';
 
@@ -37,7 +37,7 @@ export default withErrorHandling(
       }
 
       if (this.state.needEndpoint && this.state.camundaEndpoints === null) {
-        return 'loading...';
+        return <LoadingIndicator />;
       }
 
       return (

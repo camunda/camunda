@@ -2,7 +2,7 @@ import React from 'react';
 
 import classnames from 'classnames';
 
-import {ReportView} from 'components';
+import {ReportView, LoadingIndicator} from 'components';
 import {Link} from 'react-router-dom';
 
 import './OptimizeReport.css';
@@ -34,7 +34,7 @@ export default class OptimizeReport extends React.Component {
 
   render() {
     if (!this.state.data) {
-      return 'loading...';
+      return <LoadingIndicator />;
     }
 
     const {report, disableNameLink, disableReportScrolling, children = () => {}} = this.props;

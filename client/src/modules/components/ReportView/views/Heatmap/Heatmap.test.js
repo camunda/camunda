@@ -16,7 +16,12 @@ jest.mock('components', () => {
         Diagram {props.children} {props.xml}
       </div>
     ),
-    TargetValueBadge: () => <div>TargetValuesBadge</div>
+    TargetValueBadge: () => <div>TargetValuesBadge</div>,
+    LoadingIndicator: props => (
+      <div {...props} className="LoadingIndicator__div">
+        Loading...
+      </div>
+    )
   };
 });
 jest.mock('./HeatmapOverlay', () => props => <div>HeatmapOverlay</div>);
@@ -60,7 +65,7 @@ it('should load an updated process definition xml', () => {
 it('should display a loading indication while loading', () => {
   const node = mount(<Heatmap data={data} />);
 
-  expect(node.find('.heatmap-loading-indicator')).toBePresent();
+  expect(node.find('.LoadingIndicator__div')).toBePresent();
 });
 
 it('should display an error message if visualization is incompatible with data', () => {

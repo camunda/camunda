@@ -17,7 +17,12 @@ jest.mock('react-router-dom', () => {
 
 jest.mock('components', () => {
   return {
-    ReportView: () => <div>ReportView</div>
+    ReportView: () => <div>ReportView</div>,
+    LoadingIndicator: props => (
+      <div className="LoadingIndicator__div" {...props}>
+        Loading...
+      </div>
+    )
   };
 });
 

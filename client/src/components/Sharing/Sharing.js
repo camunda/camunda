@@ -1,7 +1,7 @@
 import React from 'react';
 
 import './Sharing.css';
-import {ReportView, DashboardView, Icon, Button} from 'components';
+import {ReportView, DashboardView, Icon, Button, LoadingIndicator} from 'components';
 import {Link} from 'react-router-dom';
 import {evaluateEntity, createLoadReportCallback} from './service';
 
@@ -55,7 +55,7 @@ export default class Sharing extends React.Component {
   render() {
     const {loading, evaluationResult} = this.state;
     if (loading) {
-      return <div className="Sharing__loading-indicator">loading...</div>;
+      return <LoadingIndicator />;
     }
 
     if (!evaluationResult || !this.hasValidType(this.getType())) {

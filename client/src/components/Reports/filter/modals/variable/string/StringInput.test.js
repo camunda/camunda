@@ -18,7 +18,8 @@ jest.mock('components', () => {
   return {
     TypeaheadMultipleSelection,
     Button: props => <button {...props}>{props.children}</button>,
-    ButtonGroup: props => <div {...props}>{props.children}</div>
+    ButtonGroup: props => <div {...props}>{props.children}</div>,
+    LoadingIndicator: () => <div className="LoadingIndicator__div">Loading...</div>
   };
 });
 

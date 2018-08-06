@@ -16,7 +16,8 @@ import {
   Dropdown,
   Popover,
   ErrorMessage,
-  ErrorPage
+  ErrorPage,
+  LoadingIndicator
 } from 'components';
 
 import {
@@ -443,7 +444,7 @@ export default withErrorHandling(
       }
 
       if (!loaded) {
-        return <div className="dashboard-loading-indicator">loading...</div>;
+        return <LoadingIndicator />;
       }
 
       if (redirect) {

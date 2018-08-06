@@ -13,7 +13,8 @@ import {
   Input,
   Select,
   TargetValueBadge,
-  ErrorMessage
+  ErrorMessage,
+  LoadingIndicator
 } from 'components';
 import {formatters, numberParser} from 'services';
 
@@ -236,15 +237,14 @@ export default class DurationHeatmapModal extends React.Component {
       >
         <Modal.Header>Target Value Comparison </Modal.Header>
         <Modal.Content className="DurationHeatmapModal__modal-content-container">
+          {this.state.loading && <LoadingIndicator />}
           <div className="DurationHeatmapModal__DiagramContainer">
             <BPMNDiagram xml={this.props.configuration.xml}>
               <TargetValueDiagramBehavior onClick={this.updateFocus} focus={this.state.focus} />
               <TargetValueBadge values={this.state.values} />
             </BPMNDiagram>
           </div>
-          {this.state.loading ? (
-            <p className="DurationHeatmapModal__loading">loading...</p>
-          ) : (
+          {!this.state.loading && (
             <Table
               head={['Activity', 'Actual Value', 'Target Value']}
               body={this.constructTableBody()}

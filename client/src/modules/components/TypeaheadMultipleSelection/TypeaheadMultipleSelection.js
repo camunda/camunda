@@ -1,5 +1,5 @@
 import React from 'react';
-import {Input} from 'components';
+import {Input, LoadingIndicator} from 'components';
 
 import './TypeaheadMultipleSelection.css';
 
@@ -61,11 +61,7 @@ export default function TypeaheadMultipleSelection(props) {
       <Input className="TypeaheadMultipleSelection__input" onChange={props.setPrefix} />
     </div>
   );
-  const loadingIndicator = loading ? (
-    <div className="TypeaheadMultipleSelection__loading-indicator">Loading...</div>
-  ) : (
-    ''
-  );
+  const loadingIndicator = loading ? <LoadingIndicator /> : '';
   if (availableValues.length === 0) {
     return (
       <div className="TypeaheadMultipleSelection">

@@ -62,7 +62,12 @@ jest.mock('components', () => {
     Icon: props => <span>{props.type}</span>,
     Message: props => <p>{props.children}</p>,
     Button: props => <button {...props}>{props.children}</button>,
-    Input: props => <input {...props} type="text" />
+    Input: props => <input {...props} type="text" />,
+    LoadingIndicator: props => (
+      <div className="LoadingIndicator__div" {...props}>
+        Loading...
+      </div>
+    )
   };
 });
 
@@ -71,7 +76,7 @@ load.mockReturnValue([sampleEntity]);
 it('should display a loading indicator', () => {
   const node = mount(<EntityList api="endpoint" label="Dashboard" />);
 
-  expect(node).toIncludeText('loading');
+  expect(node.find('.LoadingIndicator__div')).toBePresent();
 });
 
 it('should initially load data', () => {

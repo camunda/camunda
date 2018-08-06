@@ -1,6 +1,6 @@
 import React from 'react';
 
-import {ErrorBoundary} from 'components';
+import {ErrorBoundary, LoadingIndicator} from 'components';
 import {getFlowNodeNames, formatters, reportConfig} from 'services';
 import moment from 'moment';
 import ReportBlankSlate from './ReportBlankSlate';
@@ -142,7 +142,7 @@ export default class ReportView extends React.Component {
     }
 
     if (!this.state.loaded) {
-      return <p>loading...</p>;
+      return <LoadingIndicator />;
     }
 
     switch (data.visualization) {
