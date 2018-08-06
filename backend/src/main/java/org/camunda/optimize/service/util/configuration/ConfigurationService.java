@@ -216,10 +216,21 @@ public class ConfigurationService {
     return this.getClass().getClassLoader().getResourceAsStream(location);
   }
 
+  private String cutTrailingSlash(String string) {
+    if (string != null && !string.isEmpty() && string.endsWith("/")) {
+      string = string.substring(0, string.length() - 1);
+    }
+    return string;
+  }
+
   public Map<String, EngineConfiguration> getConfiguredEngines() {
     if (configuredEngines == null) {
       TypeRef<HashMap<String, EngineConfiguration>> typeRef = new TypeRef<HashMap<String, EngineConfiguration>>() {};
       configuredEngines = jsonContext.read(ConfigurationServiceConstants.CONFIGURED_ENGINES, typeRef);
+      configuredEngines.forEach((k, v) -> {
+        v.setRest(cutTrailingSlash(v.getRest()));
+        v.getWebapps().setEndpoint(cutTrailingSlash(v.getWebapps().getEndpoint()));
+      });
     }
     return configuredEngines;
   }
@@ -283,7 +294,9 @@ public class ConfigurationService {
 
   public String getUserValidationEndpoint() {
     if (userValidationEndpoint == null) {
-      userValidationEndpoint = jsonContext.read(ConfigurationServiceConstants.USER_VALIDATION_ENDPOINT);
+      userValidationEndpoint = cutTrailingSlash(
+              jsonContext.read(ConfigurationServiceConstants.USER_VALIDATION_ENDPOINT)
+      );
     }
     return userValidationEndpoint;
   }
@@ -304,7 +317,9 @@ public class ConfigurationService {
 
   public String getProcessDefinitionEndpoint() {
     if (processDefinitionEndpoint == null) {
-      processDefinitionEndpoint = jsonContext.read(ConfigurationServiceConstants.PROCESS_DEFINITION_ENDPOINT);
+      processDefinitionEndpoint = cutTrailingSlash(
+              jsonContext.read(ConfigurationServiceConstants.PROCESS_DEFINITION_ENDPOINT)
+      );
     }
     return processDefinitionEndpoint;
   }
@@ -483,7 +498,9 @@ public class ConfigurationService {
 
   public String getProcessDefinitionXmlEndpoint() {
     if (processDefinitionXmlEndpoint == null) {
-      processDefinitionXmlEndpoint = jsonContext.read(ConfigurationServiceConstants.PROCESS_DEFINITION_XML_ENDPOINT);
+      processDefinitionXmlEndpoint = cutTrailingSlash(
+              jsonContext.read(ConfigurationServiceConstants.PROCESS_DEFINITION_XML_ENDPOINT)
+      );
     }
     return processDefinitionXmlEndpoint;
   }

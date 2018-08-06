@@ -54,7 +54,7 @@ engines:
     # Optimize directly to a dedicated process instance in Cockpit
     webapps:
       # Defines the endpoint where to find the camunda webapps for the given engine
-      endpoint: 'http://localhost:8080/camunda/'
+      endpoint: 'http://localhost:8080/camunda'
       # Enables/disables linking to other Camunda Web Applications
       enabled: true
 
