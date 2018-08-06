@@ -241,6 +241,42 @@ public class IntermediateMessageCatchEventTest {
   }
 
   @Test
+  public void shouldCorrelateMessageWithZeroTTL() throws Exception {
+    // given
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
+
+    testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.CATCH_EVENT_ENTERED);
+
+    // when
+    testClient.publishMessage("order canceled", "order-123", asMsgPack("foo", "bar"), 0);
+
+    // then
+    final SubscribedRecord event =
+        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.CATCH_EVENT_OCCURRED);
+
+    assertThat(event.value()).containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey);
+  }
+
+  @Test
+  public void shouldNotCorrelateMessageAfterTTL() throws Exception {
+    // given
+    testClient.publishMessage("order canceled", "order-123", asMsgPack("nr", "first"), 0);
+    testClient.publishMessage("order canceled", "order-123", asMsgPack("nr", "second"), 10_000);
+
+    // when
+    testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
+
+    // then
+    final SubscribedRecord event =
+        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.CATCH_EVENT_OCCURRED);
+
+    final byte[] payload = (byte[]) event.value().get("payload");
+    assertThat(MSGPACK_MAPPER.readTree(payload))
+        .isEqualTo(JSON_MAPPER.readTree("{'orderId':'order-123', 'nr':'second'}"));
+  }
+
+  @Test
   public void shouldCorrelateMessageByCorrelationKey() throws Exception {
     // given
     final long workflowInstanceKey1 =

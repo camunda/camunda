@@ -32,6 +32,7 @@ import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import java.io.ByteArrayInputStream;
+import java.time.Duration;
 import java.util.Collections;
 import org.junit.Before;
 import org.junit.Rule;
@@ -51,11 +52,13 @@ public class PublishMessageTest {
 
   private final MsgPackConverter msgPackConverter = new MsgPackConverter();
   private WorkflowClient workflowClient;
+  private Duration defaultTimeToLive;
 
   @Before
   public void setUp() {
     brokerRule.workflowInstances().registerPublishMessageCommand();
     workflowClient = clientRule.getClient().topicClient().workflowClient();
+    defaultTimeToLive = clientRule.getClient().getConfiguration().getDefaultMessageTimeToLive();
   }
 
   @Test
@@ -78,11 +81,13 @@ public class PublishMessageTest {
         .containsOnly(
             entry("name", "order canceled"),
             entry("correlationKey", "order-123"),
+            entry("timeToLive", defaultTimeToLive.toMillis()),
             entry("payload", MsgPackHelper.EMTPY_OBJECT));
 
     assertThat(messageEvent.getState()).isEqualTo(MessageState.PUBLISHED);
     assertThat(messageEvent.getName()).isEqualTo("order canceled");
     assertThat(messageEvent.getCorrelationKey()).isEqualTo("order-123");
+    assertThat(messageEvent.getTimeToLive()).isEqualTo(defaultTimeToLive);
     assertThat(messageEvent.getMessageId()).isNull();
     assertThat(messageEvent.getPayload()).isEqualTo("{}");
     assertThat(messageEvent.getPayloadAsMap()).isEmpty();
@@ -106,10 +111,38 @@ public class PublishMessageTest {
         .containsOnly(
             entry("name", "order canceled"),
             entry("correlationKey", "order-123"),
+            entry("timeToLive", defaultTimeToLive.toMillis()),
             entry("messageId", "456"),
             entry("payload", MsgPackHelper.EMTPY_OBJECT));
 
     assertThat(messageEvent.getMessageId()).isEqualTo("456");
+  }
+
+  @Test
+  public void shouldPublishMessageWithTimeToLive() {
+    // given
+    final Duration timeToLive = Duration.ofDays(1);
+
+    // when
+    final MessageEvent messageEvent =
+        workflowClient
+            .newPublishMessageCommand()
+            .messageName("order canceled")
+            .correlationKey("order-123")
+            .timeToLive(timeToLive)
+            .send()
+            .join();
+
+    // then
+    final ExecuteCommandRequest commandRequest = brokerRule.getReceivedCommandRequests().get(0);
+    assertThat(commandRequest.getCommand())
+        .containsOnly(
+            entry("name", "order canceled"),
+            entry("correlationKey", "order-123"),
+            entry("timeToLive", timeToLive.toMillis()),
+            entry("payload", MsgPackHelper.EMTPY_OBJECT));
+
+    assertThat(messageEvent.getTimeToLive()).isEqualTo(timeToLive);
   }
 
   @Test
@@ -133,6 +166,7 @@ public class PublishMessageTest {
         .containsOnly(
             entry("name", "order canceled"),
             entry("correlationKey", "order-123"),
+            entry("timeToLive", defaultTimeToLive.toMillis()),
             entry("payload", msgPackConverter.convertToMsgPack(payload)));
 
     assertThat(messageEvent.getPayload()).isEqualTo(payload);
@@ -140,9 +174,10 @@ public class PublishMessageTest {
   }
 
   @Test
-  public void shouldPublishMessageWithIdAndPayload() {
+  public void shouldPublishMessageWithAllParameters() {
     // given
     final String payload = "{\"bar\":4}";
+    final Duration timeToLive = Duration.ofDays(1);
 
     // when
     final MessageEvent messageEvent =
@@ -150,6 +185,7 @@ public class PublishMessageTest {
             .newPublishMessageCommand()
             .messageName("order canceled")
             .correlationKey("order-123")
+            .timeToLive(timeToLive)
             .messageId("456")
             .payload(payload)
             .send()
@@ -161,11 +197,13 @@ public class PublishMessageTest {
         .containsOnly(
             entry("name", "order canceled"),
             entry("correlationKey", "order-123"),
+            entry("timeToLive", timeToLive.toMillis()),
             entry("messageId", "456"),
             entry("payload", msgPackConverter.convertToMsgPack(payload)));
 
     assertThat(messageEvent.getName()).isEqualTo("order canceled");
     assertThat(messageEvent.getCorrelationKey()).isEqualTo("order-123");
+    assertThat(messageEvent.getTimeToLive()).isEqualTo(timeToLive);
     assertThat(messageEvent.getMessageId()).isEqualTo("456");
     assertThat(messageEvent.getPayload()).isEqualTo(payload);
   }
@@ -188,10 +226,7 @@ public class PublishMessageTest {
     // then
     final ExecuteCommandRequest commandRequest = brokerRule.getReceivedCommandRequests().get(0);
     assertThat(commandRequest.getCommand())
-        .containsOnly(
-            entry("name", "order canceled"),
-            entry("correlationKey", "order-123"),
-            entry("payload", msgPackConverter.convertToMsgPack(payload)));
+        .contains(entry("payload", msgPackConverter.convertToMsgPack(payload)));
 
     assertThat(messageEvent.getPayload()).isEqualTo(payload);
     assertThat(messageEvent.getPayloadAsMap()).containsOnly(entry("bar", 4));

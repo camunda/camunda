@@ -19,6 +19,7 @@ import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
@@ -26,10 +27,13 @@ import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.gateway.api.ZeebeFuture;
 import io.zeebe.gateway.api.clients.WorkflowClient;
 import io.zeebe.gateway.api.events.MessageEvent;
+import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
 import io.zeebe.gateway.api.events.WorkflowInstanceState;
 import io.zeebe.gateway.cmd.ClientCommandRejectedException;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import java.time.Duration;
+import java.util.Collections;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -99,6 +103,73 @@ public class PublishMessageTest {
     // then
     waitUntil(
         () -> eventRecorder.getWorkflowInstanceEvents(WorkflowInstanceState.COMPLETED).size() == 2);
+  }
+
+  @Test
+  public void shouldCorrelateMessageWithZeroTTL() {
+    // given
+    workflowClient
+        .newCreateInstanceCommand()
+        .bpmnProcessId("wf")
+        .latestVersion()
+        .payload("{\"orderId\":\"order-123\"}")
+        .send()
+        .join();
+
+    waitUntil(
+        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.CATCH_EVENT_ENTERED));
+
+    // when
+    workflowClient
+        .newPublishMessageCommand()
+        .messageName("order canceled")
+        .correlationKey("order-123")
+        .timeToLive(Duration.ZERO)
+        .send()
+        .join();
+
+    // then
+    waitUntil(
+        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.CATCH_EVENT_OCCURRED));
+  }
+
+  @Test
+  public void shouldNotCorrelateMessageAfterTTL() {
+    // given
+    workflowClient
+        .newPublishMessageCommand()
+        .messageName("order canceled")
+        .correlationKey("order-123")
+        .timeToLive(Duration.ZERO)
+        .payload(Collections.singletonMap("msg", "failure"))
+        .send()
+        .join();
+
+    workflowClient
+        .newPublishMessageCommand()
+        .messageName("order canceled")
+        .correlationKey("order-123")
+        .timeToLive(Duration.ofMinutes(1))
+        .payload(Collections.singletonMap("msg", "expected"))
+        .send()
+        .join();
+
+    // when
+    workflowClient
+        .newCreateInstanceCommand()
+        .bpmnProcessId("wf")
+        .latestVersion()
+        .payload("{\"orderId\":\"order-123\"}")
+        .send()
+        .join();
+
+    // then
+    waitUntil(
+        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.CATCH_EVENT_OCCURRED));
+
+    final WorkflowInstanceEvent catchEventOccurred =
+        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.CATCH_EVENT_OCCURRED);
+    assertThat(catchEventOccurred.getPayloadAsMap()).contains(entry("msg", "expected"));
   }
 
   @Test

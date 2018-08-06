@@ -34,6 +34,7 @@ import io.zeebe.protocol.intent.SubscriberIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import java.io.ByteArrayOutputStream;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -272,13 +273,24 @@ public class TestTopicClient {
   }
 
   public ExecuteCommandResponse publishMessage(
+      String messageName, String correlationKey, DirectBuffer payload, long ttl) {
+    return publishMessage(messageName, correlationKey, BufferUtil.bufferAsArray(payload), ttl);
+  }
+
+  public ExecuteCommandResponse publishMessage(
       String messageName, String correlationKey, byte[] payload) {
+    return publishMessage(messageName, correlationKey, payload, Duration.ofHours(1).toMillis());
+  }
+
+  public ExecuteCommandResponse publishMessage(
+      String messageName, String correlationKey, byte[] payload, long ttl) {
     return apiRule
         .createCmdRequest()
         .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
         .command()
         .put("name", messageName)
         .put("correlationKey", correlationKey)
+        .put("timeToLive", ttl)
         .put("payload", payload)
         .done()
         .sendAndAwait();

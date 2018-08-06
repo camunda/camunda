@@ -19,8 +19,10 @@ package io.zeebe.broker.subscription.message.state;
 
 import io.zeebe.broker.logstreams.processor.JsonSnapshotSupport;
 import io.zeebe.broker.subscription.message.state.MessageDataStore.MessageData;
+import io.zeebe.util.sched.clock.ActorClock;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class MessageDataStore extends JsonSnapshotSupport<MessageData> {
 
@@ -53,6 +55,18 @@ public class MessageDataStore extends JsonSnapshotSupport<MessageData> {
         .orElse(null);
   }
 
+  public List<Message> findMessagesWithDeadlineBefore(long deadline) {
+    return getData()
+        .getMessages()
+        .stream()
+        .filter(m -> m.getDeadline() <= deadline)
+        .collect(Collectors.toList());
+  }
+
+  public boolean removeMessage(long key) {
+    return getData().getMessages().removeIf(m -> m.getKey() == key);
+  }
+
   public static class MessageData {
 
     private final List<Message> messages = new ArrayList<>();
@@ -67,12 +81,22 @@ public class MessageDataStore extends JsonSnapshotSupport<MessageData> {
     private final String correlationKey;
     private final byte[] payload;
     private final String id;
+    private final long timeToLive;
+    private final long deadline;
 
-    public Message(String name, String correlationKey, byte[] payload, String id) {
+    private long key;
+
+    public Message(String name, String correlationKey, long timeToLive, byte[] payload, String id) {
       this.name = name;
       this.correlationKey = correlationKey;
       this.payload = payload;
       this.id = id;
+      this.timeToLive = timeToLive;
+      this.deadline = timeToLive + ActorClock.currentTimeMillis();
+    }
+
+    public long getKey() {
+      return key;
     }
 
     public String getName() {
@@ -89,6 +113,18 @@ public class MessageDataStore extends JsonSnapshotSupport<MessageData> {
 
     public String getId() {
       return id;
+    }
+
+    public long getDeadline() {
+      return deadline;
+    }
+
+    public long getTimeToLive() {
+      return timeToLive;
+    }
+
+    public void setKey(long key) {
+      this.key = key;
     }
   }
 }
