@@ -15,11 +15,11 @@
  */
 package io.zeebe.broker.it.util;
 
-import io.zeebe.broker.client.api.commands.BrokerInfo;
-import io.zeebe.broker.client.impl.ControlMessageRequestHandler;
-import io.zeebe.broker.client.impl.ZeebeClientImpl;
-import io.zeebe.broker.client.impl.clustering.TopologyImpl;
-import io.zeebe.broker.client.impl.clustering.TopologyRequestImpl;
+import io.zeebe.gateway.api.commands.BrokerInfo;
+import io.zeebe.gateway.impl.ControlMessageRequestHandler;
+import io.zeebe.gateway.impl.ZeebeClientImpl;
+import io.zeebe.gateway.impl.clustering.TopologyImpl;
+import io.zeebe.gateway.impl.clustering.TopologyRequestImpl;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.transport.ClientResponse;
 import io.zeebe.transport.ClientTransport;

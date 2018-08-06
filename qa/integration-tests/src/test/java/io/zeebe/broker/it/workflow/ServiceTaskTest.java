@@ -19,14 +19,14 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.zeebe.broker.client.api.events.JobEvent;
-import io.zeebe.broker.client.api.events.JobState;
-import io.zeebe.broker.client.api.events.WorkflowInstanceEvent;
-import io.zeebe.broker.client.api.events.WorkflowInstanceState;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.gateway.api.events.JobEvent;
+import io.zeebe.gateway.api.events.JobState;
+import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
+import io.zeebe.gateway.api.events.WorkflowInstanceState;
 import io.zeebe.model.bpmn.Bpmn;
 import java.util.HashMap;
 import java.util.Map;

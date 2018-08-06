@@ -15,12 +15,12 @@
  */
 package io.zeebe.example.data;
 
-import io.zeebe.broker.client.ZeebeClient;
-import io.zeebe.broker.client.ZeebeClientBuilder;
-import io.zeebe.broker.client.api.clients.JobClient;
-import io.zeebe.broker.client.api.clients.WorkflowClient;
-import io.zeebe.broker.client.api.events.JobEvent;
-import io.zeebe.broker.client.api.subscription.JobHandler;
+import io.zeebe.gateway.ZeebeClient;
+import io.zeebe.gateway.ZeebeClientBuilder;
+import io.zeebe.gateway.api.clients.JobClient;
+import io.zeebe.gateway.api.clients.WorkflowClient;
+import io.zeebe.gateway.api.events.JobEvent;
+import io.zeebe.gateway.api.subscription.JobHandler;
 import java.util.Scanner;
 
 public class HandlePayloadAsPojo {

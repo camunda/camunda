@@ -17,10 +17,10 @@
  */
 package io.zeebe.broker.transport;
 
-import io.zeebe.Gateway;
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.system.configuration.SocketBindingGatewayCfg;
+import io.zeebe.gateway.Gateway;
 import java.io.IOException;
 
 public class GatewayComponent implements Component {

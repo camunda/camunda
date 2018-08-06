@@ -15,11 +15,11 @@
  */
 package io.zeebe.example.workflow;
 
-import io.zeebe.broker.client.ZeebeClient;
-import io.zeebe.broker.client.ZeebeClientBuilder;
-import io.zeebe.broker.client.api.ZeebeFuture;
-import io.zeebe.broker.client.api.clients.WorkflowClient;
-import io.zeebe.broker.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.gateway.ZeebeClient;
+import io.zeebe.gateway.ZeebeClientBuilder;
+import io.zeebe.gateway.api.ZeebeFuture;
+import io.zeebe.gateway.api.clients.WorkflowClient;
+import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
 
 public class NonBlockingWorkflowInstanceCreator {
   public static void main(String[] args) {

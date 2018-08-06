@@ -15,19 +15,19 @@
  */
 package io.zeebe.broker.it.util;
 
-import io.zeebe.broker.client.api.clients.TopicClient;
-import io.zeebe.broker.client.api.commands.JobCommand;
-import io.zeebe.broker.client.api.commands.JobCommandName;
-import io.zeebe.broker.client.api.commands.WorkflowInstanceCommand;
-import io.zeebe.broker.client.api.commands.WorkflowInstanceCommandName;
-import io.zeebe.broker.client.api.events.IncidentEvent;
-import io.zeebe.broker.client.api.events.IncidentState;
-import io.zeebe.broker.client.api.events.JobEvent;
-import io.zeebe.broker.client.api.events.JobState;
-import io.zeebe.broker.client.api.events.WorkflowInstanceEvent;
-import io.zeebe.broker.client.api.events.WorkflowInstanceState;
-import io.zeebe.broker.client.api.subscription.TopicSubscription;
 import io.zeebe.broker.it.ClientRule;
+import io.zeebe.gateway.api.clients.TopicClient;
+import io.zeebe.gateway.api.commands.JobCommand;
+import io.zeebe.gateway.api.commands.JobCommandName;
+import io.zeebe.gateway.api.commands.WorkflowInstanceCommand;
+import io.zeebe.gateway.api.commands.WorkflowInstanceCommandName;
+import io.zeebe.gateway.api.events.IncidentEvent;
+import io.zeebe.gateway.api.events.IncidentState;
+import io.zeebe.gateway.api.events.JobEvent;
+import io.zeebe.gateway.api.events.JobState;
+import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
+import io.zeebe.gateway.api.events.WorkflowInstanceState;
+import io.zeebe.gateway.api.subscription.TopicSubscription;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;

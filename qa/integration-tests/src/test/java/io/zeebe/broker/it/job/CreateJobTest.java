@@ -19,13 +19,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.zeebe.broker.client.ClientProperties;
-import io.zeebe.broker.client.api.clients.JobClient;
-import io.zeebe.broker.client.api.events.JobEvent;
-import io.zeebe.broker.client.api.events.JobState;
-import io.zeebe.broker.client.cmd.BrokerErrorException;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
+import io.zeebe.gateway.ClientProperties;
+import io.zeebe.gateway.api.clients.JobClient;
+import io.zeebe.gateway.api.events.JobEvent;
+import io.zeebe.gateway.api.events.JobState;
+import io.zeebe.gateway.cmd.BrokerErrorException;
 import java.util.Collections;
 import java.util.Properties;
 import org.junit.Rule;

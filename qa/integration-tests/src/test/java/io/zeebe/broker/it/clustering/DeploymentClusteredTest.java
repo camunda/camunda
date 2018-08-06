@@ -19,15 +19,15 @@ import static io.zeebe.broker.it.clustering.ClusteringRule.DEFAULT_REPLICATION_F
 import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.client.ZeebeClient;
-import io.zeebe.broker.client.api.commands.Partition;
-import io.zeebe.broker.client.api.commands.Topic;
-import io.zeebe.broker.client.api.events.DeploymentEvent;
-import io.zeebe.broker.client.api.events.WorkflowInstanceEvent;
-import io.zeebe.broker.client.api.events.WorkflowInstanceState;
-import io.zeebe.broker.client.cmd.ClientCommandRejectedException;
-import io.zeebe.broker.client.impl.workflow.CreateWorkflowInstanceCommandImpl;
 import io.zeebe.broker.it.ClientRule;
+import io.zeebe.gateway.ZeebeClient;
+import io.zeebe.gateway.api.commands.Partition;
+import io.zeebe.gateway.api.commands.Topic;
+import io.zeebe.gateway.api.events.DeploymentEvent;
+import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
+import io.zeebe.gateway.api.events.WorkflowInstanceState;
+import io.zeebe.gateway.cmd.ClientCommandRejectedException;
+import io.zeebe.gateway.impl.workflow.CreateWorkflowInstanceCommandImpl;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.test.util.AutoCloseableRule;

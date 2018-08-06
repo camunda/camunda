@@ -18,9 +18,9 @@ package io.zeebe.broker.it.startup;
 import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.client.api.commands.Partition;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.clustering.ClusteringRule;
+import io.zeebe.gateway.api.commands.Partition;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
 import java.util.List;
