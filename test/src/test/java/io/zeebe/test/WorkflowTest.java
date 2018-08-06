@@ -17,10 +17,10 @@ package io.zeebe.test;
 
 import static io.zeebe.test.EmbeddedBrokerRule.DEFAULT_CONFIG_SUPPLIER;
 
-import io.zeebe.broker.client.ClientProperties;
-import io.zeebe.broker.client.ZeebeClient;
-import io.zeebe.broker.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.broker.system.configuration.SocketBindingClientApiCfg;
+import io.zeebe.gateway.ClientProperties;
+import io.zeebe.gateway.ZeebeClient;
+import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
 import java.util.Properties;
 import org.junit.Before;
 import org.junit.Rule;

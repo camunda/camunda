@@ -17,9 +17,9 @@ package io.zeebe.broker.it.network;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.client.api.events.JobEvent;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
+import io.zeebe.gateway.api.events.JobEvent;
 import io.zeebe.test.util.TestUtil;
 import org.junit.Rule;
 import org.junit.Test;

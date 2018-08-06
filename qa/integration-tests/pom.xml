@@ -26,7 +26,7 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-broker-client</artifactId>
+      <artifactId>zeebe-gateway</artifactId>
     </dependency>
 
     <dependency>

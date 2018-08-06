@@ -24,10 +24,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.UnstableTest;
 import io.zeebe.broker.Broker;
-import io.zeebe.broker.client.api.commands.Partition;
-import io.zeebe.broker.client.api.commands.Topic;
 import io.zeebe.broker.clustering.base.snapshots.SnapshotReplicationService;
 import io.zeebe.broker.it.ClientRule;
+import io.zeebe.gateway.api.commands.Partition;
+import io.zeebe.gateway.api.commands.Topic;
 import io.zeebe.logstreams.snapshot.SerializableWrapper;
 import io.zeebe.logstreams.spi.ReadableSnapshot;
 import io.zeebe.logstreams.spi.SnapshotStorage;

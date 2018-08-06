@@ -15,9 +15,9 @@
  */
 package io.zeebe.broker.it.util;
 
-import io.zeebe.broker.client.api.clients.JobClient;
-import io.zeebe.broker.client.api.events.JobEvent;
-import io.zeebe.broker.client.api.subscription.JobHandler;
+import io.zeebe.gateway.api.clients.JobClient;
+import io.zeebe.gateway.api.events.JobEvent;
+import io.zeebe.gateway.api.subscription.JobHandler;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

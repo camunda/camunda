@@ -18,10 +18,10 @@ package io.zeebe.broker.it.network;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.client.api.events.JobEvent;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
+import io.zeebe.gateway.api.events.JobEvent;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.junit.Rule;

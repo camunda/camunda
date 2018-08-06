@@ -15,9 +15,9 @@
  */
 package io.zeebe.example.cluster;
 
-import io.zeebe.broker.client.ZeebeClient;
-import io.zeebe.broker.client.ZeebeClientBuilder;
-import io.zeebe.broker.client.api.commands.Topology;
+import io.zeebe.gateway.ZeebeClient;
+import io.zeebe.gateway.ZeebeClientBuilder;
+import io.zeebe.gateway.api.commands.Topology;
 
 public class TopologyViewer {
 

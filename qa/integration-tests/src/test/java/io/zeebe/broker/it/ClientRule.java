@@ -17,17 +17,17 @@ package io.zeebe.broker.it;
 
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 
-import io.zeebe.broker.client.ClientProperties;
-import io.zeebe.broker.client.ZeebeClient;
-import io.zeebe.broker.client.api.clients.JobClient;
-import io.zeebe.broker.client.api.clients.TopicClient;
-import io.zeebe.broker.client.api.clients.WorkflowClient;
-import io.zeebe.broker.client.api.commands.Partition;
-import io.zeebe.broker.client.api.commands.Topic;
-import io.zeebe.broker.client.api.commands.Topics;
-import io.zeebe.broker.client.api.commands.Topology;
-import io.zeebe.broker.client.impl.ZeebeClientBuilderImpl;
-import io.zeebe.broker.client.impl.ZeebeClientImpl;
+import io.zeebe.gateway.ClientProperties;
+import io.zeebe.gateway.ZeebeClient;
+import io.zeebe.gateway.api.clients.JobClient;
+import io.zeebe.gateway.api.clients.TopicClient;
+import io.zeebe.gateway.api.clients.WorkflowClient;
+import io.zeebe.gateway.api.commands.Partition;
+import io.zeebe.gateway.api.commands.Topic;
+import io.zeebe.gateway.api.commands.Topics;
+import io.zeebe.gateway.api.commands.Topology;
+import io.zeebe.gateway.impl.ZeebeClientBuilderImpl;
+import io.zeebe.gateway.impl.ZeebeClientImpl;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.util.Arrays;

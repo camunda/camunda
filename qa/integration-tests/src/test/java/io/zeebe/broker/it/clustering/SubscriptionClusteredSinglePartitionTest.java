@@ -23,10 +23,10 @@ import static io.zeebe.broker.it.clustering.ClusteringRule.BROKER_3_TOML;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.client.ZeebeClient;
-import io.zeebe.broker.client.api.events.RaftEvent;
-import io.zeebe.broker.client.api.events.RaftState;
 import io.zeebe.broker.it.ClientRule;
+import io.zeebe.gateway.ZeebeClient;
+import io.zeebe.gateway.api.events.RaftEvent;
+import io.zeebe.gateway.api.events.RaftState;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
 import java.util.ArrayList;

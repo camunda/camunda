@@ -20,11 +20,11 @@ import static io.zeebe.test.TopicEventRecorder.jobKey;
 import static io.zeebe.test.TopicEventRecorder.wfInstanceKey;
 import static org.assertj.core.api.Assertions.fail;
 
-import io.zeebe.broker.client.ZeebeClient;
-import io.zeebe.broker.client.api.events.JobEvent;
-import io.zeebe.broker.client.api.events.JobState;
-import io.zeebe.broker.client.api.events.WorkflowInstanceEvent;
-import io.zeebe.broker.client.api.events.WorkflowInstanceState;
+import io.zeebe.gateway.ZeebeClient;
+import io.zeebe.gateway.api.events.JobEvent;
+import io.zeebe.gateway.api.events.JobState;
+import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
+import io.zeebe.gateway.api.events.WorkflowInstanceState;
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.Instant;

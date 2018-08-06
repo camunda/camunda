@@ -18,12 +18,12 @@ package io.zeebe.broker.it.clustering;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.client.ZeebeClient;
-import io.zeebe.broker.client.api.commands.Partition;
-import io.zeebe.broker.client.api.commands.Topic;
-import io.zeebe.broker.client.api.events.JobState;
-import io.zeebe.broker.client.impl.job.CreateJobCommandImpl;
 import io.zeebe.broker.it.ClientRule;
+import io.zeebe.gateway.ZeebeClient;
+import io.zeebe.gateway.api.commands.Partition;
+import io.zeebe.gateway.api.commands.Topic;
+import io.zeebe.gateway.api.events.JobState;
+import io.zeebe.gateway.impl.job.CreateJobCommandImpl;
 import io.zeebe.test.util.AutoCloseableRule;
 import java.util.ArrayList;
 import java.util.List;
