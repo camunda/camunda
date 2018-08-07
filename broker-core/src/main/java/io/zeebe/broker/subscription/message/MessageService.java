@@ -26,6 +26,8 @@ import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
+import io.zeebe.broker.subscription.message.processor.DeleteMessageProcessor;
+import io.zeebe.broker.subscription.message.processor.MessageTimeToLiveChecker;
 import io.zeebe.broker.subscription.message.processor.OpenMessageSubscriptionProcessor;
 import io.zeebe.broker.subscription.message.processor.PublishMessageProcessor;
 import io.zeebe.broker.subscription.message.state.MessageDataStore;
@@ -40,6 +42,7 @@ import io.zeebe.servicecontainer.ServiceGroupReference;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.ServerTransport;
+import java.time.Duration;
 
 public class MessageService implements Service<MessageService> {
 
@@ -55,6 +58,8 @@ public class MessageService implements Service<MessageService> {
       ServiceGroupReference.<Partition>create()
           .onAdd((partitionName, partition) -> startStreamProcessors(partitionName, partition))
           .build();
+
+  public static final Duration MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL = Duration.ofSeconds(10);
 
   private void startStreamProcessors(
       ServiceName<Partition> partitionServiceName, Partition partition) {
@@ -86,6 +91,8 @@ public class MessageService implements Service<MessageService> {
         .keyGenerator(new KeyGenerator(0, 1))
         .onCommand(ValueType.MESSAGE, MessageIntent.PUBLISH, publishMessageProcessor)
         .onCommand(
+            ValueType.MESSAGE, MessageIntent.DELETE, new DeleteMessageProcessor(messageStore))
+        .onCommand(
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.OPEN,
             openMessageSubscriptionProcessor)
@@ -111,6 +118,12 @@ public class MessageService implements Service<MessageService> {
                 publishMessageProcessor.setSubscriptionCommandSender(subscriptionCommandSender);
                 openMessageSubscriptionProcessor.setSubscriptionCommandSender(
                     subscriptionCommandSender);
+
+                final MessageTimeToLiveChecker timeToLiveChecker =
+                    new MessageTimeToLiveChecker(env.buildCommandWriter(), messageStore);
+                streamProcessor
+                    .getActor()
+                    .runAtFixedRate(MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL, timeToLiveChecker);
               }
             })
         .build();

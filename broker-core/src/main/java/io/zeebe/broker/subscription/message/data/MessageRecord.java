@@ -45,12 +45,27 @@ public class MessageRecord extends UnpackedObject {
     return nameProp.getValue();
   }
 
+  public MessageRecord setName(DirectBuffer name) {
+    nameProp.setValue(name);
+    return this;
+  }
+
   public DirectBuffer getCorrelationKey() {
     return correlationKeyProp.getValue();
   }
 
+  public MessageRecord setCorrelationKey(DirectBuffer correlationKey) {
+    correlationKeyProp.setValue(correlationKey);
+    return this;
+  }
+
   public DirectBuffer getPayload() {
     return payloadProp.getValue();
+  }
+
+  public MessageRecord setPayload(DirectBuffer payload) {
+    payloadProp.setValue(payload);
+    return this;
   }
 
   public boolean hasMessageId() {
@@ -61,7 +76,17 @@ public class MessageRecord extends UnpackedObject {
     return messageIdProp.getValue();
   }
 
+  public MessageRecord setMessageId(DirectBuffer messageId) {
+    messageIdProp.setValue(messageId);
+    return this;
+  }
+
   public long getTimeToLive() {
     return timeToLiveProp.getValue();
+  }
+
+  public MessageRecord setTimeToLive(long timeToLive) {
+    timeToLiveProp.setValue(timeToLive);
+    return this;
   }
 }

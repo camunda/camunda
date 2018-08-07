@@ -33,6 +33,7 @@ import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandRequestBuilder;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
+import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -121,6 +122,42 @@ public class PublishMessageTest {
 
     assertThat(response.intent()).isEqualTo(MessageIntent.PUBLISHED);
     assertThat(response.getValue()).contains(entry("messageId", "msg-1"));
+  }
+
+  @Test
+  public void shouldPublishMessageWithZeroTTL() {
+
+    final ExecuteCommandResponse response =
+        apiRule
+            .createCmdRequest()
+            .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
+            .command()
+            .put("name", "order canceled")
+            .put("correlationKey", "order-123")
+            .put("timeToLive", 0)
+            .done()
+            .sendAndAwait();
+
+    assertThat(response.intent()).isEqualTo(MessageIntent.PUBLISHED);
+    assertThat(response.getValue()).contains(entry("timeToLive", 0L));
+  }
+
+  @Test
+  public void shouldPublishMessageWithNegativeTTL() {
+
+    final ExecuteCommandResponse response =
+        apiRule
+            .createCmdRequest()
+            .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
+            .command()
+            .put("name", "order canceled")
+            .put("correlationKey", "order-123")
+            .put("timeToLive", -1L)
+            .done()
+            .sendAndAwait();
+
+    assertThat(response.intent()).isEqualTo(MessageIntent.PUBLISHED);
+    assertThat(response.getValue()).contains(entry("timeToLive", -1L));
   }
 
   @Test
@@ -213,6 +250,48 @@ public class PublishMessageTest {
     assertThat(rejection.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
     assertThat(rejection.rejectionReason())
         .isEqualTo("message with id 'msg-1' is already published");
+  }
+
+  @Test
+  public void shouldDeleteMessageAfterTTL() {
+    // given
+    final long timeToLive = 100;
+
+    final ExecuteCommandResponse response =
+        apiRule
+            .createCmdRequest()
+            .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
+            .command()
+            .put("name", "order canceled")
+            .put("correlationKey", "order-123")
+            .put("timeToLive", timeToLive)
+            .done()
+            .sendAndAwait();
+
+    // when
+    final TestTopicClient testClient = apiRule.topic();
+    testClient.receiveEvents().filter(intent(MessageIntent.PUBLISHED)).findFirst();
+
+    brokerRule
+        .getClock()
+        .addTime(MessageService.MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL.plusMillis(timeToLive));
+
+    // then
+    final SubscribedRecord deletedEvent =
+        testClient
+            .receiveEvents()
+            .filter(intent(MessageIntent.DELETED))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("no delete event found"));
+
+    assertThat(deletedEvent.key()).isEqualTo(response.key());
+    assertThat(deletedEvent.value())
+        .containsExactly(
+            entry("name", "order canceled"),
+            entry("correlationKey", "order-123"),
+            entry("timeToLive", timeToLive),
+            entry("payload", EMTPY_OBJECT),
+            entry("messageId", ""));
   }
 
   @Test
