@@ -46,6 +46,7 @@ export default withErrorHandling(
           disableNavigation: this.props.disableNavigation,
           xml
         });
+        this.viewer = null;
       }
     };
 
