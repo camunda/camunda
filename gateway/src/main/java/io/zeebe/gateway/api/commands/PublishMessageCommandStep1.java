@@ -17,6 +17,7 @@ package io.zeebe.gateway.api.commands;
 
 import io.zeebe.gateway.api.events.MessageEvent;
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.Map;
 
 public interface PublishMessageCommandStep1 {
@@ -49,6 +50,21 @@ public interface PublishMessageCommandStep1 {
      *     it to the broker.
      */
     PublishMessageCommandStep3 messageId(String messageId);
+
+    /**
+     * Set the time-to-live of the message. The message can only be correlated within the given
+     * time-to-live.
+     *
+     * <p>If the duration is zero or negative then the message can only be correlated to open
+     * subscriptions (e.g. to an entered message catch event).
+     *
+     * <p>If no duration is set then the default is used from the configuration.
+     *
+     * @param timeToLive the time-to-live of the message
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    PublishMessageCommandStep3 timeToLive(Duration timeToLive);
 
     /**
      * Set the payload of the message.

@@ -17,7 +17,10 @@ package io.zeebe.protocol.intent;
 
 public enum MessageIntent implements Intent {
   PUBLISH((short) 0),
-  PUBLISHED((short) 1);
+  PUBLISHED((short) 1),
+
+  DELETE((short) 2),
+  DELETED((short) 3);
 
   private short value;
 
@@ -36,6 +39,10 @@ public enum MessageIntent implements Intent {
         return PUBLISH;
       case 1:
         return PUBLISHED;
+      case 2:
+        return DELETE;
+      case 3:
+        return DELETED;
       default:
         return Intent.UNKNOWN;
     }

@@ -99,6 +99,21 @@ public class ClientConfigurationTest {
   }
 
   @Test
+  public void shouldConfigureDefaultMessageTimeToLive() {
+    // given
+    final Properties config = new Properties();
+    config.setProperty(ClientProperties.DEFAULT_MESSAGE_TIME_TO_LIVE, "123");
+
+    // when
+    final ZeebeClient client = ZeebeClient.newClientBuilder().withProperties(config).build();
+    closeables.manage(client);
+
+    // then
+    assertThat(client.getConfiguration().getDefaultMessageTimeToLive())
+        .isEqualTo(Duration.ofMillis(123));
+  }
+
+  @Test
   public void shouldApplyDefaults() {
     // given
     final ZeebeClient client = ZeebeClient.newClient();
@@ -112,5 +127,6 @@ public class ClientConfigurationTest {
     assertThat(configuration.getDefaultTopic()).isEqualTo(DEFAULT_TOPIC);
     assertThat(configuration.getDefaultTopicSubscriptionBufferSize()).isEqualTo(1024);
     assertThat(configuration.getDefaultJobSubscriptionBufferSize()).isEqualTo(32);
+    assertThat(configuration.getDefaultMessageTimeToLive()).isEqualTo(Duration.ofHours(1));
   }
 }

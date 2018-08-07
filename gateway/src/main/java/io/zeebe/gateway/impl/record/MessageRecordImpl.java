@@ -24,11 +24,13 @@ import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.Map;
 
 public abstract class MessageRecordImpl extends RecordImpl {
   private String name;
   private String correlationKey;
+  private long timeToLive;
   private String messageId;
   private PayloadField payload;
 
@@ -61,6 +63,24 @@ public abstract class MessageRecordImpl extends RecordImpl {
 
   public void setCorrelationKey(String correlationKey) {
     this.correlationKey = correlationKey;
+  }
+
+  @JsonProperty("timeToLive")
+  public long getTimeToLiveInMillis() {
+    return timeToLive;
+  }
+
+  @JsonProperty("timeToLive")
+  public void setTimeToLiveInMillis(long timeToLive) {
+    this.timeToLive = timeToLive;
+  }
+
+  public Duration getTimeToLive() {
+    return Duration.ofMillis(timeToLive);
+  }
+
+  public void setTimeToLive(Duration timeToLive) {
+    this.timeToLive = timeToLive.toMillis();
   }
 
   public String getMessageId() {

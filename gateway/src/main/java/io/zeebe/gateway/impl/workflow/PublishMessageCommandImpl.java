@@ -22,13 +22,13 @@ import io.zeebe.gateway.api.events.MessageEvent;
 import io.zeebe.gateway.cmd.ClientException;
 import io.zeebe.gateway.impl.CommandImpl;
 import io.zeebe.gateway.impl.PartitionManager;
-import io.zeebe.gateway.impl.RequestManager;
+import io.zeebe.gateway.impl.TopicClientImpl;
 import io.zeebe.gateway.impl.command.MessageCommandImpl;
-import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.gateway.impl.record.RecordImpl;
 import io.zeebe.protocol.impl.SubscriptionUtil;
 import io.zeebe.protocol.intent.MessageIntent;
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -39,16 +39,16 @@ public class PublishMessageCommandImpl extends CommandImpl<MessageEvent>
   private final PartitionManager partitionManager;
   private final String topicName;
 
-  public PublishMessageCommandImpl(
-      final RequestManager commandManager,
-      ZeebeObjectMapperImpl objectMapper,
-      String topicName,
-      PartitionManager partitionManager) {
-    super(commandManager);
+  public PublishMessageCommandImpl(TopicClientImpl client) {
+    super(client.getCommandManager());
 
-    this.command = new MessageCommandImpl(objectMapper, MessageIntent.PUBLISH);
-    this.topicName = topicName;
-    this.partitionManager = partitionManager;
+    this.command = new MessageCommandImpl(client.getObjectMapper(), MessageIntent.PUBLISH);
+    this.topicName = client.getTopic();
+    this.partitionManager = client.getPartitionManager();
+
+    // apply defaults from configuration
+    final Duration defaultTimeToLive = client.getConfiguration().getDefaultMessageTimeToLive();
+    command.setTimeToLive(defaultTimeToLive);
   }
 
   @Override
@@ -78,6 +78,12 @@ public class PublishMessageCommandImpl extends CommandImpl<MessageEvent>
   @Override
   public PublishMessageCommandStep3 messageId(String messageId) {
     command.setMessageId(messageId);
+    return this;
+  }
+
+  @Override
+  public PublishMessageCommandStep3 timeToLive(Duration timeToLive) {
+    command.setTimeToLive(timeToLive);
     return this;
   }
 
