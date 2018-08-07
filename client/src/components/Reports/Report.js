@@ -157,6 +157,11 @@ export default withErrorHandling(
         data.filter = data.filter.filter(
           ({type}) => type !== 'executedFlowNodes' && type !== 'variable'
         );
+
+        if (data.groupBy && data.groupBy.type === 'variable') {
+          data.groupBy = null;
+          data.visualization = null;
+        }
         await this.loadXmlToConfiguration(data);
       }
 

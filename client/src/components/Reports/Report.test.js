@@ -382,6 +382,60 @@ describe('edit mode', async () => {
     expect(node.state().data.configuration.xml).toBe('some xml');
   });
 
+  it('should reset groupby variables and visualization if process definition is changed', async () => {
+    props.match.params.viewMode = 'edit';
+    const node = await mount(shallow(<Report {...props} />).get(0));
+
+    await node.instance().componentDidMount();
+
+    node.setState({
+      data: {
+        filter: [],
+        view: {
+          operation: 'foo'
+        },
+        groupBy: {
+          type: 'variable'
+        },
+        visualization: 'number'
+      }
+    });
+
+    await node
+      .instance()
+      .updateReport({processDefinitionKey: 'asd', processDefinitionVersion: '123'});
+
+    expect(node.state().data.groupBy).toBe(null);
+    expect(node.state().data.visualization).toBe(null);
+  });
+
+  it('should not reset groupby and visualization if process definition is changed, but not grouped by variables', async () => {
+    props.match.params.viewMode = 'edit';
+    const node = await mount(shallow(<Report {...props} />).get(0));
+
+    await node.instance().componentDidMount();
+
+    node.setState({
+      data: {
+        filter: [],
+        view: {
+          operation: 'foo'
+        },
+        groupBy: {
+          type: 'none'
+        },
+        visualization: 'number'
+      }
+    });
+
+    await node
+      .instance()
+      .updateReport({processDefinitionKey: 'asd', processDefinitionVersion: '123'});
+
+    expect(node.state().data.groupBy).toEqual({type: 'none'});
+    expect(node.state().data.visualization).toBe('number');
+  });
+
   it('should provide a link to view mode', async () => {
     props.match.params.viewMode = 'edit';
 
