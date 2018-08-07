@@ -17,10 +17,10 @@ package io.zeebe.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.commands.BrokerInfo;
 import io.zeebe.client.api.commands.PartitionBrokerRole;
-import io.zeebe.client.api.commands.PartitionInfo;
-import io.zeebe.client.api.commands.Topology;
+import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -38,17 +38,25 @@ public class ZeebeClientTest {
 
   @Test
   public void shouldGetHealthCheck() throws InterruptedException {
-    final Topology response = client.newTopologyRequest().send().join();
-    assertThat(response).isNotNull();
+    Stream.generate(() -> client.newTopologyRequest().send())
+        .limit(10)
+        .map(ZeebeFuture::join)
+        .forEach(
+            response -> {
+              assertThat(response).isNotNull();
 
-    final BrokerInfo broker = response.getBrokers().get(0);
-    assertThat(broker.getAddress()).isEqualTo("0.0.0.0:26501");
-    assertThat(broker.getPartitions().size()).isEqualTo(1);
+              final BrokerInfo broker = response.getBrokers().get(0);
+              assertThat(broker.getAddress()).isEqualTo("0.0.0.0:26501");
+              assertThat(broker.getPartitions().size()).isEqualTo(1);
 
-    for (final PartitionInfo partition : broker.getPartitions()) {
-      assertThat(partition.getPartitionId()).isEqualTo(0);
-      assertThat(partition.getTopicName()).isEqualTo("internal-system");
-      assertThat(partition.getRole()).isEqualTo(PartitionBrokerRole.LEADER);
-    }
+              broker
+                  .getPartitions()
+                  .forEach(
+                      partition -> {
+                        assertThat(partition.getPartitionId()).isEqualTo(0);
+                        assertThat(partition.getTopicName()).isEqualTo("internal-system");
+                        assertThat(partition.getRole()).isEqualTo(PartitionBrokerRole.LEADER);
+                      });
+            });
   }
 }
