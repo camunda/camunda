@@ -21,6 +21,7 @@ import static io.zeebe.util.buffer.BufferUtil.bufferAsArray;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.zeebe.broker.logstreams.processor.SideEffectProducer;
+import io.zeebe.broker.logstreams.processor.TypedBatchWriter;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
@@ -83,7 +84,8 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
       responseWriter.writeRejectionOnCommand(record, RejectionType.BAD_VALUE, rejectionReason);
 
     } else {
-      final long key = streamWriter.writeNewEvent(MessageIntent.PUBLISHED, record.getValue());
+      final TypedBatchWriter batchWriter = streamWriter.newBatch();
+      final long key = batchWriter.addNewEvent(MessageIntent.PUBLISHED, record.getValue());
       responseWriter.writeEventOnCommand(key, MessageIntent.PUBLISHED, record);
 
       matchingSubscriptions =
@@ -91,9 +93,14 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
 
       sideEffect.accept(this::correlateMessage);
 
-      // TODO handle TTL <= 0
-      message.setKey(key);
-      messageStore.addMessage(message);
+      if (messageRecord.getTimeToLive() > 0) {
+        message.setKey(key);
+        messageStore.addMessage(message);
+
+      } else {
+        // don't add the message to the store to avoid that it can be correlated again
+        batchWriter.addFollowUpCommand(key, MessageIntent.DELETE, messageRecord);
+      }
     }
   }
 

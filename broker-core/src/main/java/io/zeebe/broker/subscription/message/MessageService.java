@@ -59,7 +59,7 @@ public class MessageService implements Service<MessageService> {
           .onAdd((partitionName, partition) -> startStreamProcessors(partitionName, partition))
           .build();
 
-  public static final Duration MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL = Duration.ofSeconds(10);
+  public static final Duration MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL = Duration.ofSeconds(60);
 
   private void startStreamProcessors(
       ServiceName<Partition> partitionServiceName, Partition partition) {

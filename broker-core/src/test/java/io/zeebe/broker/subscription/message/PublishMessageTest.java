@@ -295,6 +295,44 @@ public class PublishMessageTest {
   }
 
   @Test
+  public void shouldDeleteMessageImmediatelyWithZeroTTL() {
+    // given
+    final ExecuteCommandResponse response =
+        apiRule
+            .createCmdRequest()
+            .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
+            .command()
+            .put("name", "order canceled")
+            .put("correlationKey", "order-123")
+            .put("timeToLive", 0L)
+            .done()
+            .sendAndAwait();
+
+    // when
+    final TestTopicClient testClient = apiRule.topic();
+    testClient.receiveEvents().filter(intent(MessageIntent.PUBLISHED)).findFirst();
+
+    brokerRule.getClock().addTime(MessageService.MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL);
+
+    // then
+    final SubscribedRecord deletedEvent =
+        testClient
+            .receiveEvents()
+            .filter(intent(MessageIntent.DELETED))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("no delete event found"));
+
+    assertThat(deletedEvent.key()).isEqualTo(response.key());
+    assertThat(deletedEvent.value())
+        .containsExactly(
+            entry("name", "order canceled"),
+            entry("correlationKey", "order-123"),
+            entry("timeToLive", 0L),
+            entry("payload", EMTPY_OBJECT),
+            entry("messageId", ""));
+  }
+
+  @Test
   public void shouldFailToPublishMessageWithoutName() {
 
     final ExecuteCommandRequestBuilder request =

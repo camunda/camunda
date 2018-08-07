@@ -23,7 +23,6 @@ import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.message.data.MessageRecord;
 import io.zeebe.broker.subscription.message.state.MessageDataStore;
-import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.MessageIntent;
 
 public class DeleteMessageProcessor implements TypedRecordProcessor<MessageRecord> {
@@ -40,13 +39,8 @@ public class DeleteMessageProcessor implements TypedRecordProcessor<MessageRecor
       TypedResponseWriter responseWriter,
       TypedStreamWriter streamWriter) {
 
-    final boolean removed = messageStore.removeMessage(record.getKey());
+    streamWriter.writeFollowUpEvent(record.getKey(), MessageIntent.DELETED, record.getValue());
 
-    if (removed) {
-      streamWriter.writeFollowUpEvent(record.getKey(), MessageIntent.DELETED, record.getValue());
-    } else {
-      streamWriter.writeRejection(
-          record, RejectionType.NOT_APPLICABLE, "message is already deleted");
-    }
+    messageStore.removeMessage(record.getKey());
   }
 }
