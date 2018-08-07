@@ -383,3 +383,20 @@ it('should when typing a search query filter value in case insensitive', () => {
   expect(node).toIncludeText('foo');
   expect(node).toIncludeText('fOO');
 });
+
+it('should render cells content correctly', () => {
+  const node = mount(
+    shallow(<EntityList api="endpoint" label="Report" operations={['search']} />).get(0)
+  );
+  node.setState({
+    loaded: true,
+    data: [sampleEntity]
+  });
+  const data = node
+    .instance()
+    .renderCells([{content: 'test', link: 'test link', parentClassName: 'parent'}]);
+
+  expect(data).toHaveLength(1);
+  expect(data[0].type).toBe('span');
+  expect(data[0].props.children.props.to).toBe('test link');
+});

@@ -39,7 +39,6 @@
 
 .EntityList__item {
   display: flex;
-  padding: 12px 0;
   border-bottom: 1px solid #ededed;
 }
 
@@ -52,8 +51,7 @@
 }
 
 .EntityList__data {
-  flex: 1 0 auto;
-  flex-grow: 1;
+  flex: 1 1 auto;
   padding: 0 4px;
 }
 
@@ -64,14 +62,9 @@
   text-overflow: ellipsis;
 }
 
-.EntityList__data--title a {
+.EntityList__data--title {
   font-weight: bold;
   text-decoration: none;
-  color: #333333;
-}
-
-.EntityList__data--title a:active,
-.EntityList__data--title a:visited {
   color: #333333;
 }
 
@@ -87,8 +80,16 @@
   font-size: 0.875em;
 }
 
+a.EntityList__info {
+  padding: 12px 0;
+  display: flex;
+  flex-grow: 1;
+  text-decoration: none;
+}
+
 .EntityList__no-entities {
   font-style: italic;
+  padding: 12px 0;
 }
 
 .EntityList__createButton {
@@ -98,4 +99,8 @@
 
 .EntityList__input {
   width: 100%;
+}
+
+.EntityList__operations {
+  padding: 12px 0;
 }

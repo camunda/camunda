@@ -80,24 +80,28 @@ class EntityList extends React.Component {
 
   formatData = data =>
     data.map(({name, id, lastModified, lastModifier, shared}) => {
-      const entry = [
-        {
-          content: name,
-          link: `/${this.props.api}/${id}`,
-          parentClassName: 'EntityList__data--title'
-        },
-        {
-          content: `Last modified ${moment(lastModified).format('lll')} by ${lastModifier}`,
-          parentClassName: 'EntityList__data--metadata'
-        },
-        {
-          parentClassName: 'EntityList__data--icons',
-          content: shared && <Icon type="share" title={`This ${this.props.label} is shared`} />
-        }
-      ];
+      const entry = {
+        name: name,
+        link: `/${this.props.api}/${id}`,
+        infos: [
+          {
+            content: name,
+            parentClassName: 'EntityList__data--title'
+          },
+          {
+            content: `Last modified ${moment(lastModified).format('lll')} by ${lastModifier}`,
+            parentClassName: 'EntityList__data--metadata'
+          },
+          {
+            parentClassName: 'EntityList__data--icons',
+            content: shared && <Icon type="share" title={`This ${this.props.label} is shared`} />
+          }
+        ],
+        operations: []
+      };
 
       if (this.props.operations.includes('delete')) {
-        entry.push({
+        entry.operations.push({
           content: (
             <Icon
               type="delete"
@@ -111,7 +115,7 @@ class EntityList extends React.Component {
       }
 
       if (this.props.operations.includes('duplicate')) {
-        entry.push({
+        entry.operations.push({
           content: (
             <Icon
               type="copy-document"
@@ -125,7 +129,7 @@ class EntityList extends React.Component {
       }
 
       if (this.props.operations.includes('edit')) {
-        entry.push({
+        entry.operations.push({
           content: <Icon type="edit" title="Edit a report" className="EntityList__editLink" />,
           link: `/${this.props.api}/${id}/edit`,
           parentClassName: 'EntityList__data--tool'
@@ -174,6 +178,14 @@ class EntityList extends React.Component {
       );
     }
     return cell.content;
+  };
+
+  renderCells = data => {
+    return data.map((cell, idx) => (
+      <span key={idx} className={classnames('EntityList__data', cell.parentClassName)}>
+        {this.renderCell(cell)}
+      </span>
+    ));
   };
 
   render() {
@@ -240,20 +252,14 @@ class EntityList extends React.Component {
           {searchInput}
           <ul className="EntityList__list">
             {this.formatData(this.state.data)
-              .filter(row => row[0].content.toLowerCase().includes(this.state.query.toLowerCase()))
+              .filter(row => row.name.toLowerCase().includes(this.state.query.toLowerCase()))
               .map((row, idx) => {
                 return (
                   <li key={idx} className="EntityList__item">
-                    {row.map((cell, idx) => {
-                      return (
-                        <span
-                          key={idx}
-                          className={classnames('EntityList__data', cell.parentClassName)}
-                        >
-                          {this.renderCell(cell)}
-                        </span>
-                      );
-                    })}
+                    <Link to={row.link} className="EntityList__info">
+                      {this.renderCells(row.infos)}
+                    </Link>
+                    <div className="EntityList__operations">{this.renderCells(row.operations)}</div>
                   </li>
                 );
               })}
