@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.workflow.model.transformation.handler;
 
-import io.zeebe.broker.workflow.model.BpmnAspect;
+import io.zeebe.broker.workflow.model.BpmnStep;
 import io.zeebe.broker.workflow.model.ExecutableExclusiveGateway;
 import io.zeebe.broker.workflow.model.ExecutableSequenceFlow;
 import io.zeebe.broker.workflow.model.ExecutableWorkflow;
@@ -25,6 +25,7 @@ import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.ExclusiveGateway;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.Collection;
 
 public class ExclusiveGatewayHandler implements ModelElementTransformer<ExclusiveGateway> {
@@ -42,16 +43,22 @@ public class ExclusiveGatewayHandler implements ModelElementTransformer<Exclusiv
 
     transformDefaultFlow(element, workflow, gateway);
 
-    transformBpmnAspect(element, gateway);
+    bindLifecycle(element, gateway, context);
   }
 
-  private void transformBpmnAspect(
-      ExclusiveGateway element, final ExecutableExclusiveGateway gateway) {
+  private void bindLifecycle(
+      ExclusiveGateway element,
+      final ExecutableExclusiveGateway gateway,
+      TransformContext context) {
     final Collection<SequenceFlow> outgoingFlows = element.getOutgoing();
 
     if (outgoingFlows.size() >= 1
         && outgoingFlows.iterator().next().getConditionExpression() != null) {
-      gateway.setBpmnAspect(BpmnAspect.EXCLUSIVE_SPLIT);
+      gateway.bindLifecycleState(
+          WorkflowInstanceIntent.GATEWAY_ACTIVATED, BpmnStep.EXCLUSIVE_SPLIT);
+    } else {
+      gateway.bindLifecycleState(
+          WorkflowInstanceIntent.GATEWAY_ACTIVATED, context.getCurrentFlowNodeOutgoingStep());
     }
   }
 

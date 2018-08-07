@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.workflow.model.transformation;
 
+import io.zeebe.broker.workflow.model.BpmnStep;
 import io.zeebe.broker.workflow.model.ExecutableWorkflow;
 import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;
 import io.zeebe.util.buffer.BufferUtil;
@@ -31,7 +32,15 @@ public class TransformContext {
   private Map<DirectBuffer, ExecutableWorkflow> workflows = new HashMap<>();
   private JsonPathQueryCompiler jsonPathQueryCompiler;
 
+  /*
+   * set whenever parsing a workflow
+   */
   private ExecutableWorkflow currentWorkflow;
+
+  /*
+   * set whenever parsing a flow node
+   */
+  private BpmnStep currentFlowNodeOutgoingStep;
 
   public ExecutableWorkflow getCurrentWorkflow() {
     return currentWorkflow;
@@ -59,5 +68,13 @@ public class TransformContext {
 
   public void setJsonPathQueryCompiler(JsonPathQueryCompiler jsonPathQueryCompiler) {
     this.jsonPathQueryCompiler = jsonPathQueryCompiler;
+  }
+
+  public BpmnStep getCurrentFlowNodeOutgoingStep() {
+    return currentFlowNodeOutgoingStep;
+  }
+
+  public void setCurrentFlowNodeOutgoingStep(BpmnStep outgoingStep) {
+    this.currentFlowNodeOutgoingStep = outgoingStep;
   }
 }

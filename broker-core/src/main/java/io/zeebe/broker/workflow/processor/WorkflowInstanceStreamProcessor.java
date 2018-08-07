@@ -45,23 +45,13 @@ import io.zeebe.broker.workflow.map.PayloadCache;
 import io.zeebe.broker.workflow.map.WorkflowCache;
 import io.zeebe.broker.workflow.map.WorkflowInstanceIndex;
 import io.zeebe.broker.workflow.map.WorkflowInstanceIndex.WorkflowInstance;
-import io.zeebe.broker.workflow.model.BpmnAspect;
-import io.zeebe.broker.workflow.model.ExecutableExclusiveGateway;
 import io.zeebe.broker.workflow.model.ExecutableFlowElement;
 import io.zeebe.broker.workflow.model.ExecutableFlowNode;
 import io.zeebe.broker.workflow.model.ExecutableIntermediateMessageCatchEvent;
-import io.zeebe.broker.workflow.model.ExecutableSequenceFlow;
-import io.zeebe.broker.workflow.model.ExecutableServiceTask;
 import io.zeebe.broker.workflow.model.ExecutableWorkflow;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
-import io.zeebe.msgpack.el.CompiledJsonCondition;
-import io.zeebe.msgpack.el.JsonConditionException;
-import io.zeebe.msgpack.el.JsonConditionInterpreter;
-import io.zeebe.msgpack.mapping.Mapping;
-import io.zeebe.msgpack.mapping.MappingException;
 import io.zeebe.msgpack.mapping.MappingProcessor;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResult;
@@ -70,7 +60,6 @@ import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.protocol.intent.IncidentIntent;
-import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
@@ -81,12 +70,8 @@ import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycleAware {
@@ -101,7 +86,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
   private final PayloadCache payloadCache;
 
   private final MappingProcessor payloadMappingProcessor = new MappingProcessor(4096);
-  private final JsonConditionInterpreter conditionInterpreter = new JsonConditionInterpreter();
 
   private TypedStreamReader streamReader;
   private SubscriptionCommandSender subscriptionCommandSender;
@@ -125,7 +109,13 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
   }
 
   public TypedStreamProcessor createStreamProcessor(TypedStreamEnvironment environment) {
-    final BpmnAspectEventProcessor bpmnAspectProcessor = new BpmnAspectEventProcessor();
+    final LogStream logStream = environment.getStream();
+    this.workflowCache =
+        new WorkflowCache(managementApiClient, topologyManager, logStream.getTopicName());
+
+    final BpmnStepProcessor bpmnStepProcessor =
+        new BpmnStepProcessor(
+            workflowCache, workflowInstanceIndex, activityInstanceMap, payloadCache);
 
     return environment
         .newStreamProcessor()
@@ -149,23 +139,17 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         .onEvent(
             ValueType.WORKFLOW_INSTANCE,
             WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
-            w -> isActive(w.getWorkflowInstanceKey()),
-            new SequenceFlowTakenEventProcessor())
+            bpmnStepProcessor)
         .onEvent(
-            ValueType.WORKFLOW_INSTANCE,
-            WorkflowInstanceIntent.ACTIVITY_READY,
-            w -> isActive(w.getWorkflowInstanceKey()),
-            new ActivityReadyEventProcessor())
+            ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ACTIVITY_READY, bpmnStepProcessor)
         .onEvent(
             ValueType.WORKFLOW_INSTANCE,
             WorkflowInstanceIntent.ACTIVITY_ACTIVATED,
-            w -> isActive(w.getWorkflowInstanceKey()),
-            new ActivityActivatedEventProcessor())
+            bpmnStepProcessor)
         .onEvent(
             ValueType.WORKFLOW_INSTANCE,
             WorkflowInstanceIntent.ACTIVITY_COMPLETING,
-            w -> isActive(w.getWorkflowInstanceKey()),
-            new ActivityCompletingEventProcessor())
+            bpmnStepProcessor)
         .onEvent(
             ValueType.WORKFLOW_INSTANCE,
             WorkflowInstanceIntent.CATCH_EVENT_ENTERING,
@@ -183,28 +167,23 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         .onEvent(
             ValueType.WORKFLOW_INSTANCE,
             WorkflowInstanceIntent.START_EVENT_OCCURRED,
-            w -> isActive(w.getWorkflowInstanceKey()),
-            bpmnAspectProcessor)
+            bpmnStepProcessor)
         .onEvent(
             ValueType.WORKFLOW_INSTANCE,
             WorkflowInstanceIntent.END_EVENT_OCCURRED,
-            w -> isActive(w.getWorkflowInstanceKey()),
-            bpmnAspectProcessor)
+            bpmnStepProcessor)
         .onEvent(
             ValueType.WORKFLOW_INSTANCE,
             WorkflowInstanceIntent.GATEWAY_ACTIVATED,
-            w -> isActive(w.getWorkflowInstanceKey()),
-            bpmnAspectProcessor)
+            bpmnStepProcessor)
         .onEvent(
             ValueType.WORKFLOW_INSTANCE,
             WorkflowInstanceIntent.ACTIVITY_COMPLETED,
-            w -> isActive(w.getWorkflowInstanceKey()),
-            bpmnAspectProcessor)
+            bpmnStepProcessor)
         .onEvent(
             ValueType.WORKFLOW_INSTANCE,
             WorkflowInstanceIntent.CATCH_EVENT_OCCURRED,
-            w -> isActive(w.getWorkflowInstanceKey()),
-            bpmnAspectProcessor)
+            bpmnStepProcessor)
         .onEvent(
             ValueType.WORKFLOW_INSTANCE,
             WorkflowInstanceIntent.CANCELED,
@@ -234,8 +213,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
     this.actor = streamProcessor.getActor();
     final LogStream logStream = streamProcessor.getEnvironment().getStream();
-    this.workflowCache =
-        new WorkflowCache(managementApiClient, topologyManager, logStream.getTopicName());
 
     final StreamProcessorContext context = streamProcessor.getStreamProcessorContext();
     final MetricsManager metricsManager = context.getActorScheduler().getMetricsManager();
@@ -505,216 +482,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
     }
   }
 
-  private final class TakeSequenceFlowAspectHandler
-      extends FlowElementEventProcessor<ExecutableFlowNode> {
-
-    @Override
-    void processFlowElementEvent(
-        TypedRecord<WorkflowInstanceRecord> event,
-        TypedStreamWriter streamWriter,
-        ExecutableFlowNode currentFlowNode) {
-
-      // the activity has exactly one outgoing sequence flow
-      final ExecutableSequenceFlow sequenceFlow = currentFlowNode.getOutgoing().get(0);
-
-      final WorkflowInstanceRecord value = event.getValue();
-      value.setActivityId(sequenceFlow.getId());
-
-      streamWriter.writeNewEvent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, value);
-    }
-  }
-
-  private final class ExclusiveSplitAspectHandler
-      extends FlowElementEventProcessor<ExecutableExclusiveGateway> {
-
-    @Override
-    void processFlowElementEvent(
-        TypedRecord<WorkflowInstanceRecord> event,
-        TypedStreamWriter streamWriter,
-        ExecutableExclusiveGateway exclusiveGateway) {
-
-      try {
-        final WorkflowInstanceRecord value = event.getValue();
-        final ExecutableSequenceFlow sequenceFlow =
-            getSequenceFlowWithFulfilledCondition(exclusiveGateway, value.getPayload());
-
-        if (sequenceFlow != null) {
-          value.setActivityId(sequenceFlow.getId());
-          streamWriter.writeNewEvent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, value);
-        } else {
-          final String errorMessage =
-              "All conditions evaluated to false and no default flow is set.";
-          raiseIncident(event, ErrorType.CONDITION_ERROR, errorMessage, streamWriter);
-        }
-      } catch (JsonConditionException e) {
-        raiseIncident(event, ErrorType.CONDITION_ERROR, e.getMessage(), streamWriter);
-      }
-    }
-
-    private ExecutableSequenceFlow getSequenceFlowWithFulfilledCondition(
-        ExecutableExclusiveGateway exclusiveGateway, DirectBuffer payload) {
-      final List<ExecutableSequenceFlow> sequenceFlows =
-          exclusiveGateway.getOutgoingWithCondition();
-      for (int s = 0; s < sequenceFlows.size(); s++) {
-        final ExecutableSequenceFlow sequenceFlow = sequenceFlows.get(s);
-
-        final CompiledJsonCondition compiledCondition = sequenceFlow.getCondition();
-        final boolean isFulFilled =
-            conditionInterpreter.eval(compiledCondition.getCondition(), payload);
-
-        if (isFulFilled) {
-          return sequenceFlow;
-        }
-      }
-      return exclusiveGateway.getDefaultFlow();
-    }
-  }
-
-  private final class ConsumeTokenAspectHandler
-      extends FlowElementEventProcessor<ExecutableFlowElement> {
-
-    @Override
-    void processFlowElementEvent(
-        TypedRecord<WorkflowInstanceRecord> event,
-        TypedStreamWriter streamWriter,
-        ExecutableFlowElement currentFlowNode) {
-      final WorkflowInstanceRecord workflowInstanceEvent = event.getValue();
-
-      final WorkflowInstance workflowInstance =
-          workflowInstanceIndex.get(workflowInstanceEvent.getWorkflowInstanceKey());
-
-      final int activeTokenCount = workflowInstance != null ? workflowInstance.getTokenCount() : 0;
-      if (activeTokenCount == 1) {
-        final long workflowInstanceKey = workflowInstanceEvent.getWorkflowInstanceKey();
-
-        workflowInstanceEvent.setActivityId("");
-        streamWriter.writeFollowUpEvent(
-            workflowInstanceKey, WorkflowInstanceIntent.COMPLETED, workflowInstanceEvent);
-
-        workflowInstanceIndex.remove(workflowInstanceKey);
-        payloadCache.remove(workflowInstanceKey);
-      }
-    }
-  }
-
-  private final class SequenceFlowTakenEventProcessor
-      extends FlowElementEventProcessor<ExecutableSequenceFlow> {
-
-    @Override
-    void processFlowElementEvent(
-        TypedRecord<WorkflowInstanceRecord> event,
-        TypedStreamWriter streamWriter,
-        ExecutableSequenceFlow sequenceFlow) {
-      final ExecutableFlowNode targetNode = sequenceFlow.getTarget();
-
-      final WorkflowInstanceRecord value = event.getValue();
-      value.setActivityId(targetNode.getId());
-
-      final Intent nextState;
-
-      if (targetNode instanceof ExecutableServiceTask) {
-        nextState = WorkflowInstanceIntent.ACTIVITY_READY;
-      } else if (targetNode instanceof ExecutableExclusiveGateway) {
-        nextState = WorkflowInstanceIntent.GATEWAY_ACTIVATED;
-      } else if (targetNode instanceof ExecutableIntermediateMessageCatchEvent) {
-        nextState = WorkflowInstanceIntent.CATCH_EVENT_ENTERING;
-      } else {
-        // TODO: assuming the default is END_EVENT is a bit hacky, but this will go away anyway with
-        // https://github.com/zeebe-io/zeebe/issues/1078
-        nextState = WorkflowInstanceIntent.END_EVENT_OCCURRED;
-      }
-
-      streamWriter.writeNewEvent(nextState, event.getValue());
-    }
-  }
-
-  private final class ActivityReadyEventProcessor
-      extends FlowElementEventProcessor<ExecutableFlowNode> {
-
-    private UnsafeBuffer wfInstancePayload = new UnsafeBuffer(0, 0);
-
-    @Override
-    void processFlowElementEvent(
-        TypedRecord<WorkflowInstanceRecord> event,
-        TypedStreamWriter streamWriter,
-        ExecutableFlowNode serviceTask) {
-
-      final WorkflowInstanceRecord activityEvent = event.getValue();
-      wfInstancePayload.wrap(activityEvent.getPayload());
-
-      final Mapping[] inputMappings = serviceTask.getInputMappings();
-
-      MappingException mappingException = null;
-
-      // only if we have no default mapping we have to use the mapping processor
-      if (inputMappings.length > 0) {
-        try {
-          final int resultLen =
-              payloadMappingProcessor.extract(activityEvent.getPayload(), inputMappings);
-          final MutableDirectBuffer mappedPayload = payloadMappingProcessor.getResultBuffer();
-          activityEvent.setPayload(mappedPayload, 0, resultLen);
-        } catch (MappingException e) {
-          mappingException = e;
-        }
-      }
-
-      if (mappingException == null) {
-        streamWriter.writeFollowUpEvent(
-            event.getKey(), WorkflowInstanceIntent.ACTIVITY_ACTIVATED, activityEvent);
-
-        payloadCache.addPayload(
-            activityEvent.getWorkflowInstanceKey(), event.getPosition(), wfInstancePayload);
-      } else {
-        raiseIncident(
-            event, ErrorType.IO_MAPPING_ERROR, mappingException.getMessage(), streamWriter);
-      }
-
-      workflowInstanceIndex
-          .get(activityEvent.getWorkflowInstanceKey())
-          .setActivityInstanceKey(event.getKey())
-          .write();
-
-      activityInstanceMap
-          .newActivityInstance(event.getKey())
-          .setActivityId(activityEvent.getActivityId())
-          .setJobKey(-1L)
-          .write();
-    }
-  }
-
-  private final class ActivityActivatedEventProcessor
-      extends FlowElementEventProcessor<ExecutableServiceTask> {
-    private final JobRecord jobCommand = new JobRecord();
-
-    @Override
-    void processFlowElementEvent(
-        TypedRecord<WorkflowInstanceRecord> event,
-        TypedStreamWriter streamWriter,
-        ExecutableServiceTask serviceTask) {
-
-      final WorkflowInstanceRecord value = event.getValue();
-
-      jobCommand.reset();
-
-      jobCommand
-          .setType(serviceTask.getType())
-          .setRetries(serviceTask.getRetries())
-          .setPayload(value.getPayload())
-          .headers()
-          .setBpmnProcessId(value.getBpmnProcessId())
-          .setWorkflowDefinitionVersion(value.getVersion())
-          .setWorkflowKey(value.getWorkflowKey())
-          .setWorkflowInstanceKey(value.getWorkflowInstanceKey())
-          .setActivityId(serviceTask.getId())
-          .setActivityInstanceKey(event.getKey());
-
-      final DirectBuffer headers = serviceTask.getEncodedHeaders();
-      jobCommand.setCustomHeaders(headers);
-
-      streamWriter.writeNewCommand(JobIntent.CREATE, jobCommand);
-    }
-  }
-
   public final class CatchEventEnteringProcessor
       extends FlowElementEventProcessor<ExecutableIntermediateMessageCatchEvent> {
 
@@ -874,71 +641,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
     private boolean isJobOpen(long jobKey, long activityInstanceKey) {
       // job key = -1 when activity is left
       return activityInstanceMap.wrapActivityInstanceKey(activityInstanceKey).getJobKey() == jobKey;
-    }
-  }
-
-  private final class ActivityCompletingEventProcessor
-      extends FlowElementEventProcessor<ExecutableFlowNode> {
-
-    @Override
-    void processFlowElementEvent(
-        TypedRecord<WorkflowInstanceRecord> event,
-        TypedStreamWriter streamWriter,
-        ExecutableFlowNode serviceTask) {
-
-      final WorkflowInstanceRecord activityEvent = event.getValue();
-      final DirectBuffer workflowInstancePayload =
-          payloadCache.getPayload(activityEvent.getWorkflowInstanceKey());
-
-      tryToExecuteOutputBehavior(
-          streamWriter, event, activityEvent, workflowInstancePayload, serviceTask);
-    }
-
-    private void tryToExecuteOutputBehavior(
-        TypedStreamWriter streamWriter,
-        TypedRecord<WorkflowInstanceRecord> event,
-        WorkflowInstanceRecord activityEvent,
-        DirectBuffer workflowInstancePayload,
-        ExecutableFlowNode serviceTask) {
-      final ZeebeOutputBehavior outputBehavior = serviceTask.getOutputBehavior();
-
-      MappingException mappingException = null;
-
-      if (outputBehavior == ZeebeOutputBehavior.none) {
-        activityEvent.setPayload(workflowInstancePayload);
-      } else {
-        if (outputBehavior == ZeebeOutputBehavior.overwrite) {
-          workflowInstancePayload = EMPTY_PAYLOAD;
-        }
-
-        final Mapping[] outputMappings = serviceTask.getOutputMappings();
-        final DirectBuffer jobPayload = activityEvent.getPayload();
-
-        try {
-          final int resultLen =
-              payloadMappingProcessor.merge(jobPayload, workflowInstancePayload, outputMappings);
-          final MutableDirectBuffer mergedPayload = payloadMappingProcessor.getResultBuffer();
-          activityEvent.setPayload(mergedPayload, 0, resultLen);
-
-        } catch (MappingException e) {
-          mappingException = e;
-        }
-      }
-
-      if (mappingException == null) {
-        streamWriter.writeFollowUpEvent(
-            event.getKey(), WorkflowInstanceIntent.ACTIVITY_COMPLETED, activityEvent);
-
-        workflowInstanceIndex
-            .get(event.getValue().getWorkflowInstanceKey())
-            .setActivityInstanceKey(-1L)
-            .write();
-
-        activityInstanceMap.remove(event.getKey());
-      } else {
-        raiseIncident(
-            event, ErrorType.IO_MAPPING_ERROR, mappingException.getMessage(), streamWriter);
-      }
     }
   }
 
@@ -1170,6 +872,11 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         });
   }
 
+  /**
+   * Please use {@link BpmnStepHandler} instead unless you need async behavior. We can remove this
+   * class once its remaining subclasses can be easily ported to step handlers.
+   */
+  @Deprecated
   private abstract class FlowElementEventProcessor<T extends ExecutableFlowElement>
       implements TypedRecordProcessor<WorkflowInstanceRecord> {
     private final IncidentRecord incidentCommand = new IncidentRecord();
@@ -1235,37 +942,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         writer.writeFollowUpEvent(
             record.getMetadata().getIncidentKey(), IncidentIntent.RESOLVE_FAILED, incidentCommand);
       }
-    }
-  }
-
-  @SuppressWarnings("rawtypes")
-  private final class BpmnAspectEventProcessor
-      extends FlowElementEventProcessor<ExecutableFlowElement> {
-
-    private final Map<BpmnAspect, FlowElementEventProcessor> aspectHandlers;
-
-    private FlowElementEventProcessor delegate;
-
-    private BpmnAspectEventProcessor() {
-      aspectHandlers = new EnumMap<>(BpmnAspect.class);
-
-      aspectHandlers.put(BpmnAspect.TAKE_SEQUENCE_FLOW, new TakeSequenceFlowAspectHandler());
-      aspectHandlers.put(BpmnAspect.CONSUME_TOKEN, new ConsumeTokenAspectHandler());
-      aspectHandlers.put(BpmnAspect.EXCLUSIVE_SPLIT, new ExclusiveSplitAspectHandler());
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    void processFlowElementEvent(
-        TypedRecord<WorkflowInstanceRecord> event,
-        TypedStreamWriter streamWriter,
-        ExecutableFlowElement currentFlowNode) {
-
-      final BpmnAspect bpmnAspect = currentFlowNode.getBpmnAspect();
-
-      delegate = aspectHandlers.get(bpmnAspect);
-
-      delegate.processFlowElementEvent(event, streamWriter, currentFlowNode);
     }
   }
 }

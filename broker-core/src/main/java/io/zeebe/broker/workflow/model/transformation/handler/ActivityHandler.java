@@ -17,32 +17,37 @@
  */
 package io.zeebe.broker.workflow.model.transformation.handler;
 
+import io.zeebe.broker.workflow.model.BpmnStep;
 import io.zeebe.broker.workflow.model.ExecutableFlowNode;
 import io.zeebe.broker.workflow.model.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
-import io.zeebe.model.bpmn.instance.StartEvent;
+import io.zeebe.model.bpmn.instance.Activity;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-public class StartEventHandler implements ModelElementTransformer<StartEvent> {
+public class ActivityHandler implements ModelElementTransformer<Activity> {
 
   @Override
-  public Class<StartEvent> getType() {
-    return StartEvent.class;
+  public Class<Activity> getType() {
+    return Activity.class;
   }
 
   @Override
-  public void transform(StartEvent element, TransformContext context) {
+  public void transform(Activity element, TransformContext context) {
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
-    final ExecutableFlowNode startEvent =
+    final ExecutableFlowNode activity =
         workflow.getElementById(element.getId(), ExecutableFlowNode.class);
-    workflow.setStartEvent(startEvent);
 
-    bindLifecycle(context, startEvent);
+    bindLifecycle(context, activity);
   }
 
-  private void bindLifecycle(TransformContext context, final ExecutableFlowNode startEvent) {
-    startEvent.bindLifecycleState(
-        WorkflowInstanceIntent.START_EVENT_OCCURRED, context.getCurrentFlowNodeOutgoingStep());
+  private void bindLifecycle(TransformContext context, final ExecutableFlowNode activity) {
+    activity.bindLifecycleState(
+        WorkflowInstanceIntent.ACTIVITY_READY, BpmnStep.APPLY_INPUT_MAPPING);
+    // ACTIVATED is bound per activity type
+    activity.bindLifecycleState(
+        WorkflowInstanceIntent.ACTIVITY_COMPLETING, BpmnStep.APPLY_OUTPUT_MAPPING);
+    activity.bindLifecycleState(
+        WorkflowInstanceIntent.ACTIVITY_COMPLETED, context.getCurrentFlowNodeOutgoingStep());
   }
 }

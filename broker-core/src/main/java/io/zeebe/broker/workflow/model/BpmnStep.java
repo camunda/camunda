@@ -17,31 +17,29 @@
  */
 package io.zeebe.broker.workflow.model;
 
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.util.buffer.BufferUtil;
-import java.util.EnumMap;
-import java.util.Map;
-import org.agrona.DirectBuffer;
+public enum BpmnStep {
+  NONE,
 
-public abstract class ExecutableFlowElement {
+  // exactly one outgoing sequence flow
+  TAKE_SEQUENCE_FLOW,
 
-  private final DirectBuffer id;
-  private Map<WorkflowInstanceIntent, BpmnStep> bpmnSteps =
-      new EnumMap<>(WorkflowInstanceIntent.class);
+  // end event, no outgoing sequence flow
+  CONSUME_TOKEN,
 
-  public ExecutableFlowElement(String id) {
-    this.id = BufferUtil.wrapString(id);
-  }
+  // xor-gateway
+  EXCLUSIVE_SPLIT,
 
-  public DirectBuffer getId() {
-    return id;
-  }
+  CREATE_JOB,
 
-  public void bindLifecycleState(WorkflowInstanceIntent state, BpmnStep step) {
-    this.bpmnSteps.put(state, step);
-  }
+  APPLY_INPUT_MAPPING,
 
-  public BpmnStep getStep(WorkflowInstanceIntent state) {
-    return bpmnSteps.get(state);
-  }
+  APPLY_OUTPUT_MAPPING,
+
+  ACTIVATE_GATEWAY,
+
+  ENTER_INTERMEDIATE_EVENT,
+
+  START_ACTIVITY,
+
+  TRIGGER_END_EVENT
 }

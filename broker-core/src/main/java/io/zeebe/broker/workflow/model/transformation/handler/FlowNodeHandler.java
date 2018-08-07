@@ -19,7 +19,7 @@ package io.zeebe.broker.workflow.model.transformation.handler;
 
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
-import io.zeebe.broker.workflow.model.BpmnAspect;
+import io.zeebe.broker.workflow.model.BpmnStep;
 import io.zeebe.broker.workflow.model.ExecutableFlowNode;
 import io.zeebe.broker.workflow.model.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
@@ -48,11 +48,17 @@ public class FlowNodeHandler implements ModelElementTransformer<FlowNode> {
 
     transformIoMappings(element, flowNode, context);
 
+    final BpmnStep outgoingBehavior = determineOutgoingBehavior(element, flowNode);
+    context.setCurrentFlowNodeOutgoingStep(outgoingBehavior);
+  }
+
+  private BpmnStep determineOutgoingBehavior(FlowNode element, final ExecutableFlowNode flowNode) {
     final int outgoingFlows = element.getOutgoing().size();
+
     if (outgoingFlows == 0) {
-      flowNode.setBpmnAspect(BpmnAspect.CONSUME_TOKEN);
+      return BpmnStep.CONSUME_TOKEN;
     } else {
-      flowNode.setBpmnAspect(BpmnAspect.TAKE_SEQUENCE_FLOW);
+      return BpmnStep.TAKE_SEQUENCE_FLOW;
     }
   }
 
