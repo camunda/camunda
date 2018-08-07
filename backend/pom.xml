@@ -705,6 +705,7 @@
               </execution>
             </executions>
             <configuration>
+              <skip>${skipTests}</skip>
               <!-- Container configuration -->
               <container>
                 <type>remote</type>

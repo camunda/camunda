@@ -1,6 +1,7 @@
 # Testing
 
 There are three kinds of tests in the backend:
+
 * [Unit tests](#unit-testing)
 * [Integration tests](#integration-testing)
 * [Performance tests](#performance-testing)
@@ -8,11 +9,12 @@ There are three kinds of tests in the backend:
 ## Prerequisites
 
 * You need to have a recent version of Docker and `docker-compose` installed.
-* `docker` and `docker-compose` commands must be usable without `sudo`. See [Docker website]I(https://docs.docker.com/install/linux/linux-postinstall/) how to archieve that.
+* `docker` and `docker-compose` commands must be usable without `sudo`. See [Docker website](https://docs.docker.com/install/linux/linux-postinstall/) how to archieve that.
 
 ## Unit testing
 
 Run the following command to run the unit tests:
+
 ```
 mvn clean test
 ```
@@ -106,6 +108,7 @@ public class YourCustomIT  {
 ```
 
 Note, that there are two kind of integration tests:
+
 * Backend end to end test: Data is added to the engine, imported to Optimize and a query executed. Therefore, all three rules are needed.
 * Rest service tests: The idea is just to test the rest endpoint. Data is added to elasticsearch manually, a rest request is performed against Optimize and the result validated. Therefore, only the *EmbeddedOptimizeRule* and the *ElasticSearchIntegrationTestRule* are needed here. Also use the application context */it/it-applicationContext.xml* for this kind of tests.
 
@@ -121,3 +124,22 @@ There are two kinds of performance tests:
 * [Query Performance Tests](../qa/service-performance-tests/README.md)
 
 Have a look at the dedicated readme files to get more information about how to run them.
+
+## Migration testing
+
+### Prerequisites
+
+* Operating system: Linux/OSX as test setup uses bash cmds
+* Available binaries on path: curl, [jq](https://stedolan.github.io/jq/)
+
+To run the schema migration tests locally, execute the following cmds:
+
+### Execute tests locally
+
+```shell
+// first build everything required for running the integration tests
+mvn clean install -Dskip.docker -DskipTests -Pproduction,it,engine-latest -pl backend,upgrade -am
+
+// then run the schema migration test
+mvn clean verify -f qa/upgrade-es-schema-tests/pom.xml -Pupgrade-es-schema-tests
+```

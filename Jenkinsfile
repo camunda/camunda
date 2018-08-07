@@ -93,6 +93,8 @@ pipeline {
           post {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+            }
+            failure {
               archiveTestArtifacts('backend', 'migration')
             }
           }
@@ -296,11 +298,10 @@ void migrationTestSteps(String engineVersion = 'latest') {
     sh ("""apt-get update && apt-get install -y jq""")
     setupPermissionsForHostDirs('backend')
 
-    runMaven("-T\$LIMITS_CPU -f upgrade/pom.xml clean install")
-    runMaven("-T\$LIMITS_CPU -f qa/pom.xml clean install")
-    runMaven("-T\$LIMITS_CPU -f backend/pom.xml -Dskip.docker -Pproduction,it,engine-${engineVersion} dependency:copy-dependencies@copy-dependencies")
-    runMaven("-T\$LIMITS_CPU -f qa/upgrade-es-schema-tests/pom.xml clean test")
-    runMaven("-T\$LIMITS_CPU -f backend/pom.xml -Dskip.docker -Pproduction,it,engine-${engineVersion} install")
+    // build all required artifacts for migration tests
+    runMaven("install -Dskip.docker -DskipTests -Pproduction,it,engine-${engineVersion} -pl backend,upgrade -am -T\$LIMITS_CPU")
+    // run migration tests
+    runMaven("verify -f qa/upgrade-es-schema-tests/pom.xml -Pupgrade-es-schema-tests")
   }
 }
 
@@ -310,9 +311,9 @@ void dockerRegistryLogin() {
 
 void setupPermissionsForHostDirs(String directory) {
   sh("""#!/bin/bash -ex
-    mkdir -p ${directory}/target/{es_logs,cambpm_logs,qa_libs}
+    mkdir -p ${directory}/target/{es_logs,cambpm_logs}
     # must be 1000 so ES and CamBPM can write to the mounted volumes defined in docker-compose.yml
-    chown -R 1000:1000 ${directory}/target/{es_logs,cambpm_logs,qa_libs}
+    chown -R 1000:1000 ${directory}/target/{es_logs,cambpm_logs}
   """)
 }
 
