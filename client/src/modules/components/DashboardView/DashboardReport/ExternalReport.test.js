@@ -11,3 +11,11 @@ it('should include an iframe with the provided external url', () => {
   expect(iframe).toBePresent();
   expect(iframe).toHaveProp('src', 'externalURL');
 });
+
+it('should update the iframe key to reload it when loadReportData function is called ', async () => {
+  const node = mount(<ExternalReport report={{configuration: {external: 'externalURL'}}} />);
+
+  await node.instance().reloadReport();
+
+  expect(node.state().reloadState).toBe(1);
+});
