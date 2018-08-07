@@ -93,12 +93,12 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
 
       sideEffect.accept(this::correlateMessage);
 
-      if (messageRecord.getTimeToLive() > 0) {
+      if (messageRecord.getTimeToLive() > 0L) {
         message.setKey(key);
         messageStore.addMessage(message);
 
       } else {
-        // don't add the message to the store to avoid that it can be correlated again
+        // don't add the message to the store to avoid that it can be correlated afterwards
         batchWriter.addFollowUpCommand(key, MessageIntent.DELETE, messageRecord);
       }
     }
