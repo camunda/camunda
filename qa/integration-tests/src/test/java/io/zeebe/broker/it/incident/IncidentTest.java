@@ -23,6 +23,7 @@ import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.gateway.api.clients.JobClient;
 import io.zeebe.gateway.api.clients.WorkflowClient;
+import io.zeebe.gateway.api.events.DeploymentEvent;
 import io.zeebe.gateway.api.events.IncidentState;
 import io.zeebe.gateway.api.events.JobEvent;
 import io.zeebe.gateway.api.events.JobState;
@@ -66,7 +67,7 @@ public class IncidentTest {
   @Test
   public void shouldCreateAndResolveInputMappingIncident() {
     // given
-    workflowClient.newDeployCommand().addWorkflowModel(WORKFLOW, "workflow.bpmn").send().join();
+    deploy();
 
     workflowClient
         .newCreateInstanceCommand()
@@ -91,7 +92,7 @@ public class IncidentTest {
   @Test
   public void shouldDeleteIncidentWhenWorkflowInstanceIsCanceled() {
     // given
-    workflowClient.newDeployCommand().addWorkflowModel(WORKFLOW, "workflow.bpmn").send().join();
+    deploy();
 
     final WorkflowInstanceEvent workflowInstance =
         workflowClient
@@ -113,7 +114,7 @@ public class IncidentTest {
   @Test
   public void shouldCreateAndResolveJobIncident() {
     // given a workflow instance with an open job
-    workflowClient.newDeployCommand().addWorkflowModel(WORKFLOW, "workflow.bpmn").send().join();
+    deploy();
 
     workflowClient
         .newCreateInstanceCommand()
@@ -148,6 +149,13 @@ public class IncidentTest {
 
     // then the incident is deleted
     waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.DELETED));
+  }
+
+  private void deploy() {
+    final DeploymentEvent deploymentEvent =
+        workflowClient.newDeployCommand().addWorkflowModel(WORKFLOW, "workflow.bpmn").send().join();
+
+    clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
   }
 
   private static final class ControllableJobHandler implements JobHandler {

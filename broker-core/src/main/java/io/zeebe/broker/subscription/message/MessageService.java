@@ -113,7 +113,7 @@ public class MessageService implements Service<MessageService> {
                         stream.getPartitionId());
                 getTopologyManagerInjector()
                     .getValue()
-                    .addTopologyPartitionListener(subscriptionCommandSender);
+                    .addTopologyPartitionListener(subscriptionCommandSender.getPartitionListener());
 
                 publishMessageProcessor.setSubscriptionCommandSender(subscriptionCommandSender);
                 openMessageSubscriptionProcessor.setSubscriptionCommandSender(

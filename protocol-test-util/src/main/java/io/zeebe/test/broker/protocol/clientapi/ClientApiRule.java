@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.Int2ObjectHashMap;
 import org.junit.rules.ExternalResource;
 
 public class ClientApiRule extends ExternalResource {
@@ -125,12 +126,17 @@ public class ClientApiRule extends ExternalResource {
     return (int) incomingMessageCollector.getNumMessagesFulfilling(this::isSubscribedEvent);
   }
 
+  private Int2ObjectHashMap<TestTopicClient> testTopicClients = new Int2ObjectHashMap<>();
+
   public TestTopicClient topic() {
     return topic(defaultPartitionId);
   }
 
   public TestTopicClient topic(final int partitionId) {
-    return new TestTopicClient(this, partitionId);
+    if (!testTopicClients.containsKey(partitionId)) {
+      testTopicClients.put(partitionId, new TestTopicClient(this, partitionId));
+    }
+    return testTopicClients.get(partitionId);
   }
 
   public ExecuteCommandRequest openTopicSubscription(final String name, final long startPosition) {

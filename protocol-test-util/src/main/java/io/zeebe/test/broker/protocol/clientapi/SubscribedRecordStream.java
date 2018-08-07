@@ -47,6 +47,10 @@ public class SubscribedRecordStream extends StreamWrapper<SubscribedRecord> {
     return recordsOfValueType(ValueType.WORKFLOW_INSTANCE);
   }
 
+  public SubscribedRecordStream ofTypeDeployment() {
+    return recordsOfValueType(ValueType.DEPLOYMENT);
+  }
+
   public SubscribedRecordStream ofTypeJob() {
     return recordsOfValueType(ValueType.JOB);
   }

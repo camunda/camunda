@@ -23,6 +23,7 @@ import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.gateway.api.clients.WorkflowClient;
+import io.zeebe.gateway.api.events.DeploymentEvent;
 import io.zeebe.gateway.api.events.JobEvent;
 import io.zeebe.gateway.api.events.JobState;
 import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
@@ -47,12 +48,8 @@ public class YamlWorkflowTest {
   @Test
   public void shouldCreateWorkflowInstance() {
     // given
-    clientRule
-        .getWorkflowClient()
-        .newDeployCommand()
-        .addResourceFromClasspath("workflows/simple-workflow.yaml")
-        .send()
-        .join();
+    final String resource = "workflows/simple-workflow.yaml";
+    deploy(resource);
 
     // when
     final WorkflowInstanceEvent workflowInstance =
@@ -72,12 +69,8 @@ public class YamlWorkflowTest {
   @Test
   public void shouldCompleteWorkflowInstanceWithTask() {
     // given
-    clientRule
-        .getWorkflowClient()
-        .newDeployCommand()
-        .addResourceFromClasspath("workflows/simple-workflow.yaml")
-        .send()
-        .join();
+    final String resource = "workflows/simple-workflow.yaml";
+    deploy(resource);
 
     clientRule
         .getWorkflowClient()
@@ -106,12 +99,8 @@ public class YamlWorkflowTest {
   @Test
   public void shouldGetTaskWithHeaders() {
     // given
-    clientRule
-        .getWorkflowClient()
-        .newDeployCommand()
-        .addResourceFromClasspath("workflows/workflow-with-headers.yaml")
-        .send()
-        .join();
+    final String resource = "workflows/workflow-with-headers.yaml";
+    deploy(resource);
 
     clientRule
         .getWorkflowClient()
@@ -137,11 +126,8 @@ public class YamlWorkflowTest {
   public void shouldCompleteTaskWithPayload() {
     // given
     final WorkflowClient workflowClient = clientRule.getWorkflowClient();
-    workflowClient
-        .newDeployCommand()
-        .addResourceFromClasspath("workflows/workflow-with-mappings.yaml")
-        .send()
-        .join();
+    final String resource = "workflows/workflow-with-mappings.yaml";
+    deploy(resource);
 
     workflowClient
         .newCreateInstanceCommand()
@@ -170,5 +156,17 @@ public class YamlWorkflowTest {
     final WorkflowInstanceEvent workflowEvent =
         eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED);
     assertThat(workflowEvent.getPayload()).isEqualTo("{\"foo\":1,\"result\":3}");
+  }
+
+  private void deploy(String resource) {
+    final DeploymentEvent deploymentEvent =
+        clientRule
+            .getWorkflowClient()
+            .newDeployCommand()
+            .addResourceFromClasspath(resource)
+            .send()
+            .join();
+
+    clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
   }
 }

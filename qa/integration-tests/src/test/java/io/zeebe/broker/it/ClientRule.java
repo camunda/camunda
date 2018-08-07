@@ -16,6 +16,7 @@
 package io.zeebe.broker.it;
 
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static org.junit.Assert.fail;
 
 import io.zeebe.gateway.ClientProperties;
 import io.zeebe.gateway.ZeebeClient;
@@ -26,14 +27,17 @@ import io.zeebe.gateway.api.commands.Partition;
 import io.zeebe.gateway.api.commands.Topic;
 import io.zeebe.gateway.api.commands.Topics;
 import io.zeebe.gateway.api.commands.Topology;
+import io.zeebe.gateway.api.record.ValueType;
 import io.zeebe.gateway.impl.ZeebeClientBuilderImpl;
 import io.zeebe.gateway.impl.ZeebeClientImpl;
+import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.junit.rules.ExternalResource;
@@ -88,6 +92,36 @@ public class ClientRule extends ExternalResource {
 
     doRepeatedly(this::topicsByName)
         .until(t -> t != null && t.keySet().containsAll(expectedTopicNames));
+  }
+
+  public void waitUntilDeploymentIsDone(long key) {
+    final AtomicBoolean deploymentFound = new AtomicBoolean(false);
+
+    client
+        .topicClient()
+        .newSubscription()
+        .name("deployment-await")
+        .recordHandler(
+            record -> {
+              System.out.println("search record");
+              if (record.getMetadata().getPartitionId() == 1
+                  && record.getMetadata().getValueType() == ValueType.DEPLOYMENT
+                  && record.getMetadata().getIntent() == DeploymentIntent.CREATED.name()
+                  && record.getKey() == key) {
+                deploymentFound.compareAndSet(false, true);
+              }
+            })
+        .open();
+
+    doRepeatedly(
+            () -> {
+              try {
+                Thread.sleep(100);
+              } catch (Exception ex) {
+                fail();
+              }
+            })
+        .until((v) -> deploymentFound.get());
   }
 
   public Map<String, List<Partition>> topicsByName() {

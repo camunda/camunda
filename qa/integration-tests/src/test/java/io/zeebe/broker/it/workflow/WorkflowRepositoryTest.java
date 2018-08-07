@@ -85,6 +85,8 @@ public class WorkflowRepositoryTest {
             .send()
             .join();
 
+    clientRule.waitUntilDeploymentIsDone(thirdDeployment.getKey());
+
     deployedWorkflows.addAll(firstDeployment.getDeployedWorkflows());
     deployedWorkflows.addAll(secondDeployment.getDeployedWorkflows());
     deployedWorkflows.addAll(thirdDeployment.getDeployedWorkflows());

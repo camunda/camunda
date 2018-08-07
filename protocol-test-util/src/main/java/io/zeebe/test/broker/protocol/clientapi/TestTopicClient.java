@@ -15,12 +15,12 @@
  */
 package io.zeebe.test.broker.protocol.clientapi;
 
-import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsArray;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -69,11 +69,16 @@ public class TestTopicClient {
         .withFailMessage("Deployment failed: %s", response.rejectionReason())
         .isEqualTo(RecordType.EVENT);
 
+    receiveFirstDeploymentEvent(DeploymentIntent.CREATED, response.key());
     return response.key();
   }
 
   public ExecuteCommandResponse deployWithResponse(byte[] resource) {
     return deployWithResponse(resource, "BPMN_XML", "process.bpmn");
+  }
+
+  public ExecuteCommandResponse deployWithResponse(byte[] resource, boolean waitUntilDeployed) {
+    return deployWithResponse(resource, "BPMN_XML", "process.bpmn", waitUntilDeployed);
   }
 
   public ExecuteCommandResponse deployWithResponse(final BpmnModelInstance workflow) {
@@ -91,20 +96,35 @@ public class TestTopicClient {
 
   public ExecuteCommandResponse deployWithResponse(
       final byte[] resource, final String resourceType, final String resourceName) {
+    return deployWithResponse(resource, resourceType, resourceName, true);
+  }
+
+  public ExecuteCommandResponse deployWithResponse(
+      final byte[] resource,
+      final String resourceType,
+      final String resourceName,
+      boolean waitUntilDeployed) {
     final Map<String, Object> deploymentResource = new HashMap<>();
     deploymentResource.put("resource", resource);
     deploymentResource.put("resourceType", resourceType);
     deploymentResource.put("resourceName", resourceName);
 
-    return apiRule
-        .createCmdRequest()
-        .partitionId(DEPLOYMENT_PARTITION)
-        .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
-        .command()
-        .put(PROP_WORKFLOW_RESOURCES, Collections.singletonList(deploymentResource))
-        .put("resouceType", resourceType)
-        .done()
-        .sendAndAwait();
+    final ExecuteCommandResponse commandResponse =
+        apiRule
+            .createCmdRequest()
+            .partitionId(Protocol.DEPLOYMENT_PARTITION)
+            .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
+            .command()
+            .put(PROP_WORKFLOW_RESOURCES, Collections.singletonList(deploymentResource))
+            .put("resouceType", resourceType)
+            .done()
+            .sendAndAwait();
+
+    if (waitUntilDeployed) {
+      receiveFirstDeploymentEvent(DeploymentIntent.CREATED, commandResponse.key());
+    }
+
+    return commandResponse;
   }
 
   public ExecuteCommandResponse createWorkflowInstanceWithResponse(String bpmnProcessId) {
@@ -410,6 +430,15 @@ public class TestTopicClient {
 
   public SubscribedRecord receiveFirstIncidentCommand(IncidentIntent intent) {
     return receiveCommands().ofTypeIncident().withIntent(intent).getFirst();
+  }
+
+  public SubscribedRecord receiveFirstDeploymentEvent(DeploymentIntent intent, long deploymentKey) {
+    return receiveEvents()
+        .ofTypeDeployment()
+        .withIntent(intent)
+        .filter(d -> d.key() == deploymentKey)
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("no event received"));
   }
 
   public SubscribedRecord receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent intent) {

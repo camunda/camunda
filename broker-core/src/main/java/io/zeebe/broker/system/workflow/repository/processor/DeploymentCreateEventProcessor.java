@@ -17,172 +17,138 @@
  */
 package io.zeebe.broker.system.workflow.repository.processor;
 
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
-
+import io.zeebe.broker.clustering.base.topology.TopologyManager;
+import io.zeebe.broker.clustering.base.topology.TopologyPartitionListenerImpl;
+import io.zeebe.broker.logstreams.processor.SideEffectProducer;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
+import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.system.workflow.repository.data.DeploymentRecord;
-import io.zeebe.broker.system.workflow.repository.data.DeploymentResource;
-import io.zeebe.broker.system.workflow.repository.data.ResourceType;
 import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex;
-import io.zeebe.broker.workflow.model.yaml.BpmnYamlParser;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.instance.Process;
-import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.logstreams.log.LogStreamWriterImpl;
+import io.zeebe.logstreams.processor.EventLifecycleContext;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.protocol.intent.DeploymentIntent;
-import io.zeebe.util.buffer.BufferUtil;
-import java.io.ByteArrayOutputStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.Collection;
-import java.util.Iterator;
+import io.zeebe.transport.ClientTransport;
+import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.future.ActorFuture;
+import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
-import org.agrona.io.DirectBufferInputStream;
+import org.agrona.ExpandableArrayBuffer;
 
 public class DeploymentCreateEventProcessor implements TypedRecordProcessor<DeploymentRecord> {
-  private final BpmnValidator validator = new BpmnValidator();
-  private final BpmnYamlParser yamlParser = new BpmnYamlParser();
 
-  private final WorkflowRepositoryIndex index;
+  private final TopologyManager topologyManager;
+  private final DeploymentTransformer deploymentTransformer;
+  private final LogStreamWriterImpl logStreamWriter;
+  private final ClientTransport managementApi;
 
-  private boolean accepted;
-  private RejectionType rejectionType;
-  private String rejectionReason;
+  private ActorControl actor;
+  private TopologyPartitionListenerImpl partitionListener;
+  private DeploymentDistributor deploymentDistributor;
+  private int streamProcessorId;
 
-  public DeploymentCreateEventProcessor(WorkflowRepositoryIndex index) {
-    this.index = index;
+  public DeploymentCreateEventProcessor(
+      TopologyManager topologyManager,
+      WorkflowRepositoryIndex index,
+      ClientTransport managementClient,
+      LogStreamWriterImpl logStreamWriter) {
+    deploymentTransformer = new DeploymentTransformer(index);
+    this.topologyManager = topologyManager;
+    managementApi = managementClient;
+    this.logStreamWriter = logStreamWriter;
+  }
+
+  @Override
+  public void onOpen(TypedStreamProcessor streamProcessor) {
+    streamProcessorId = streamProcessor.getStreamProcessorContext().getId();
+    actor = streamProcessor.getActor();
+
+    partitionListener = new TopologyPartitionListenerImpl(streamProcessor.getActor());
+    topologyManager.addTopologyPartitionListener(partitionListener);
+
+    deploymentDistributor = new DeploymentDistributor(managementApi, partitionListener, actor);
   }
 
   @Override
   public void processRecord(
       TypedRecord<DeploymentRecord> event,
       TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter) {
-
+      TypedStreamWriter streamWriter,
+      Consumer<SideEffectProducer> sideEffect,
+      EventLifecycleContext ctx) {
     final DeploymentRecord deploymentEvent = event.getValue();
 
-    accepted = readAndValidateWorkflows(deploymentEvent);
-
+    final boolean accepted = deploymentTransformer.transform(deploymentEvent);
     if (accepted) {
-      final long key = streamWriter.getKeyGenerator().nextKey();
-
-      streamWriter.writeFollowUpEvent(
-          key,
-          DeploymentIntent.CREATED,
-          event.getValue(),
-          m ->
-              m.requestId(event.getMetadata().getRequestId())
-                  .requestStreamId(event.getMetadata().getRequestStreamId()));
+      processValidDeployment(event, responseWriter, streamWriter, sideEffect, deploymentEvent);
     } else {
       streamWriter.writeRejection(
           event,
-          rejectionType,
-          rejectionReason,
+          deploymentTransformer.getRejectionType(),
+          deploymentTransformer.getRejectionReason(),
           m ->
               m.requestId(event.getMetadata().getRequestId())
                   .requestStreamId(event.getMetadata().getRequestStreamId()));
     }
   }
 
-  private boolean readAndValidateWorkflows(final DeploymentRecord deploymentEvent) {
-    final StringBuilder validationErrors = new StringBuilder();
+  private void processValidDeployment(
+      TypedRecord<DeploymentRecord> event,
+      TypedResponseWriter responseWriter,
+      TypedStreamWriter streamWriter,
+      Consumer<SideEffectProducer> sideEffect,
+      DeploymentRecord deploymentEvent) {
+    final long key = streamWriter.getKeyGenerator().nextKey();
 
-    boolean success = true;
+    sideEffect.accept(
+        () -> {
+          final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
+          deploymentEvent.write(buffer, 0);
+          final ActorFuture<Void> pushDeployment =
+              deploymentDistributor.pushDeployment(key, event.getPosition(), buffer);
 
-    final Iterator<DeploymentResource> resourceIterator = deploymentEvent.resources().iterator();
+          actor.runOnCompletion(
+              pushDeployment, (aVoid, throwable) -> writeDeploymentCreatedEvent(key));
 
-    if (!resourceIterator.hasNext()) {
-      validationErrors.append("Deployment doesn't contain a resource to deploy");
+          responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, event);
+          return responseWriter.flush();
+        });
+  }
 
-      success = false;
-    } else {
-      // TODO: only one resource is supported; turn resources into a property
+  private void writeDeploymentCreatedEvent(long deploymentKey) {
+    final PendingDeploymentDistribution pendingDeploymentDistribution =
+        deploymentDistributor.removePendingDeployment(deploymentKey);
+    final DirectBuffer buffer = pendingDeploymentDistribution.getDeployment();
+    final long sourcePosition = pendingDeploymentDistribution.getSourcePosition();
 
-      final DeploymentResource deploymentResource = resourceIterator.next();
+    final DeploymentRecord deploymentRecord = new DeploymentRecord();
+    deploymentRecord.wrap(buffer);
+    final RecordMetadata recordMetadata = new RecordMetadata();
+    recordMetadata
+        .intent(DeploymentIntent.CREATED)
+        .valueType(ValueType.DEPLOYMENT)
+        .recordType(RecordType.EVENT);
 
-      try {
-        final BpmnModelInstance definition = readWorkflowDefinition(deploymentResource);
-        final String validationError = validator.validate(definition);
-
-        if (validationError == null) {
-          final Collection<Process> processes =
-              definition.getDefinitions().getChildElementsByType(Process.class);
-
-          for (Process workflow : processes) {
-            if (workflow.isExecutable()) {
-              final String bpmnProcessId = workflow.getId();
-              final long key = index.getNextKey();
-              final int version = index.getNextVersion(bpmnProcessId);
-
-              deploymentEvent
-                  .deployedWorkflows()
-                  .add()
-                  .setBpmnProcessId(BufferUtil.wrapString(workflow.getId()))
-                  .setVersion(version)
-                  .setKey(key)
-                  .setResourceName(deploymentResource.getResourceName());
-            }
+    actor.runUntilDone(
+        () -> {
+          final long position =
+              logStreamWriter
+                  .key(deploymentKey)
+                  .producerId(streamProcessorId)
+                  .sourceRecordPosition(sourcePosition)
+                  .valueWriter(deploymentRecord)
+                  .metadataWriter(recordMetadata)
+                  .tryWrite();
+          if (position < 0) {
+            actor.yield();
+          } else {
+            actor.done();
           }
-        } else {
-          validationErrors.append(
-              String.format(
-                  "Resource '%s':\n", bufferAsString(deploymentResource.getResourceName())));
-          validationErrors.append(validationError);
-          success = false;
-        }
-
-        transformWorkflowResource(deploymentResource, definition);
-      } catch (Exception e) {
-        validationErrors.append(
-            String.format(
-                "Failed to deploy resource '%s':\n",
-                bufferAsString(deploymentResource.getResourceName())));
-        validationErrors.append(generateErrorMessage(e));
-
-        success = false;
-      }
-    }
-
-    if (!success) {
-      rejectionType = RejectionType.BAD_VALUE;
-      rejectionReason = validationErrors.toString();
-    }
-
-    return success;
-  }
-
-  private BpmnModelInstance readWorkflowDefinition(DeploymentResource deploymentResource) {
-    final DirectBuffer resource = deploymentResource.getResource();
-    final DirectBufferInputStream resourceStream = new DirectBufferInputStream(resource);
-
-    switch (deploymentResource.getResourceType()) {
-      case YAML_WORKFLOW:
-        return yamlParser.readFromStream(resourceStream);
-      case BPMN_XML:
-      default:
-        return Bpmn.readModelFromStream(resourceStream);
-    }
-  }
-
-  private void transformWorkflowResource(
-      final DeploymentResource deploymentResource, final BpmnModelInstance definition) {
-    if (deploymentResource.getResourceType() != ResourceType.BPMN_XML) {
-      final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-      Bpmn.writeModelToStream(outStream, definition);
-
-      final DirectBuffer bpmnXml = BufferUtil.wrapArray(outStream.toByteArray());
-      deploymentResource.setResource(bpmnXml);
-    }
-  }
-
-  private String generateErrorMessage(final Exception e) {
-    final StringWriter stacktraceWriter = new StringWriter();
-
-    e.printStackTrace(new PrintWriter(stacktraceWriter));
-
-    return stacktraceWriter.toString();
+        });
   }
 }
