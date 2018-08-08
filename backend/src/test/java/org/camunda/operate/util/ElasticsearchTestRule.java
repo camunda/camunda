@@ -1,9 +1,12 @@
 package org.camunda.operate.util;
 
+import java.util.Arrays;
 import java.util.List;
+import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.es.ElasticsearchSchemaManager;
 import org.camunda.operate.es.types.TypeMappingCreator;
 import org.camunda.operate.es.writer.ElasticsearchBulkProcessor;
+import org.camunda.operate.es.writer.PersistenceException;
 import org.camunda.operate.property.ElasticsearchProperties;
 import org.camunda.operate.property.OperateProperties;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
@@ -121,6 +124,15 @@ public class ElasticsearchTestRule extends ExternalResource {
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
+  }
+
+  public void persist(WorkflowInstanceEntity... entitiesToPersist) {
+    try {
+      elasticsearchBulkProcessor.persistOperateEntities(Arrays.asList(entitiesToPersist));
+    } catch (PersistenceException e) {
+      throw new RuntimeException(e);
+    }
+    refreshIndexesInElasticsearch();
   }
 
 //  private void assureElasticsearchIsClean() {

@@ -13,14 +13,12 @@ import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.types.WorkflowInstanceType;
-import org.camunda.operate.es.writer.ElasticsearchBulkProcessor;
-import org.camunda.operate.es.writer.PersistenceException;
 import org.camunda.operate.rest.dto.IncidentDto;
 import org.camunda.operate.rest.dto.SortingDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceDto;
+import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceRequestDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceResponseDto;
-import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
 import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.MockMvcTestRule;
@@ -28,7 +26,6 @@ import org.camunda.operate.util.OperateIntegrationTest;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -60,9 +57,6 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
   @Rule
   public MockMvcTestRule mockMvcTestRule = new MockMvcTestRule();
-
-  @Autowired
-  private ElasticsearchBulkProcessor elasticsearchBulkProcessor;
 
   private WorkflowInstanceEntity instanceWithoutIncident;
 
@@ -112,7 +106,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     final WorkflowInstanceEntity workflowInstance1 = createWorkflowInstance(date1, date5);
     final WorkflowInstanceEntity workflowInstance2 = createWorkflowInstance(date2, date4);
     final WorkflowInstanceEntity workflowInstance3 = createWorkflowInstance(date3, null);
-    persist(workflowInstance1, workflowInstance2, workflowInstance3);
+    elasticsearchTestRule.persist(workflowInstance1, workflowInstance2, workflowInstance3);
 
     //when
     WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(q -> {
@@ -209,7 +203,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     resolvedIncidentWithMsg.setErrorMessage(errorMessage);
     workflowInstance2.getIncidents().add(resolvedIncidentWithMsg);
 
-    persist(workflowInstance1, workflowInstance2);
+    elasticsearchTestRule.persist(workflowInstance1, workflowInstance2);
 
     //given
     WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(q -> q.setErrorMessage(errorMessage));
@@ -260,7 +254,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     completedWithIdActivityInstance.setActivityId(activityId);
     workflowInstance2.getActivities().add(completedWithIdActivityInstance);
 
-    persist(workflowInstance1, workflowInstance2);
+    elasticsearchTestRule.persist(workflowInstance1, workflowInstance2);
 
     //when
     WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(q ->
@@ -290,7 +284,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     final WorkflowInstanceEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
     final WorkflowInstanceEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.CANCELED);
     final WorkflowInstanceEntity workflowInstance3 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
-    persist(workflowInstance1, workflowInstance2, workflowInstance3);
+    elasticsearchTestRule.persist(workflowInstance1, workflowInstance2, workflowInstance3);
 
     WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(q ->
       q.setIds(Arrays.asList(workflowInstance1.getId(), workflowInstance2.getId()))
@@ -321,7 +315,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     final WorkflowInstanceEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.CANCELED);
     final WorkflowInstanceEntity workflowInstance3 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
     final WorkflowInstanceEntity workflowInstance4 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
-    persist(workflowInstance1, workflowInstance2, workflowInstance3, workflowInstance4);
+    elasticsearchTestRule.persist(workflowInstance1, workflowInstance2, workflowInstance3, workflowInstance4);
 
     WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(q ->
       q.setExcludeIds(Arrays.asList(workflowInstance1.getId(), workflowInstance3.getId()))
@@ -360,7 +354,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     workflowInstance3.setWorkflowId(wfId3);
     workflowInstance4.setWorkflowId(wfId3);
 
-    persist(workflowInstance1, workflowInstance2, workflowInstance3, workflowInstance4);
+    elasticsearchTestRule.persist(workflowInstance1, workflowInstance2, workflowInstance3, workflowInstance4);
 
     WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(q -> q.setWorkflowIds(Arrays.asList(wfId1, wfId3)));
 
@@ -381,15 +375,6 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     assertThat(response.getWorkflowInstances()).extracting(WorkflowInstanceType.ID)
       .containsExactlyInAnyOrder(workflowInstance1.getId(), workflowInstance3.getId(), workflowInstance4.getId());
-  }
-
-  private void persist(WorkflowInstanceEntity... entitiesToPersist) {
-    try {
-      elasticsearchBulkProcessor.persistOperateEntities(Arrays.asList(entitiesToPersist));
-    } catch (PersistenceException e) {
-      throw new RuntimeException(e);
-    }
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
   }
 
   @Test
@@ -897,7 +882,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     instanceWithoutIncident.getActivities().add(createActivityInstance(ActivityState.COMPLETED));
 
     //persist instances
-    persist(runningInstance, completedInstance, instanceWithIncident, instanceWithoutIncident, canceledInstance);
+    elasticsearchTestRule.persist(runningInstance, completedInstance, instanceWithIncident, instanceWithoutIncident, canceledInstance);
   }
 
   private WorkflowInstanceEntity createWorkflowInstance(WorkflowInstanceState state) {

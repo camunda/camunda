@@ -207,7 +207,7 @@ public class OperationIT extends OperateIntegrationTest {
   }
 
   @Test
-  public void testOperationsTooManyInstancesException() throws Exception {
+  public void testFailOperationAsTooManyInstances() throws Exception {
     // given
     operateProperties.setBatchOperationMaxSize(5L);
 
