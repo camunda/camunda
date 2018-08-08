@@ -16,7 +16,7 @@ jest.mock('components', () => {
   return {
     ErrorBoundary: props => <div>{props.children}</div>,
     LoadingIndicator: props => (
-      <div className="LoadingIndicator__div" {...props}>
+      <div className="sk-circle" {...props}>
         Loading...
       </div>
     )

@@ -19,7 +19,7 @@ jest.mock('components', () => {
   return {
     ReportView: () => <div>ReportView</div>,
     LoadingIndicator: props => (
-      <div className="LoadingIndicator__div" {...props}>
+      <div className="sk-circle" {...props}>
         Loading...
       </div>
     )

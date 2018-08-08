@@ -13,7 +13,7 @@ jest.mock('components', () => {
     Switch: props => <input id="switch" ref={props.ref} value={props.value} {...props} />,
     Icon: props => <span>{props.type}</span>,
     LoadingIndicator: props => (
-      <div className="LoadingIndicator__div" {...props}>
+      <div className="sk-circle" {...props}>
         Loading...
       </div>
     )
@@ -83,5 +83,5 @@ it('should construct special link for embedding', () => {
 it('should display a loading indicator', () => {
   const node = mount(<ShareEntity {...props} />);
 
-  expect(node.find('.LoadingIndicator__div')).toBePresent();
+  expect(node.find('.sk-circle')).toBePresent();
 });

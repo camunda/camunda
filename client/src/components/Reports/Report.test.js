@@ -83,7 +83,7 @@ beforeEach(() => {
 it('should display a loading indicator', () => {
   const node = mount(shallow(<Report {...props} />).get(0));
 
-  expect(node.find('.LoadingIndicator__div')).toBePresent();
+  expect(node.find('.sk-circle')).toBePresent();
 });
 
 it("should show an error page if report doesn't exist", async () => {

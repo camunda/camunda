@@ -106,7 +106,7 @@ it("should show an error page if dashboard doesn't exist", async () => {
 it('should display a loading indicator', () => {
   const node = mount(shallow(<Dashboard {...props} />).get(0));
 
-  expect(node.find('.LoadingIndicator__div')).toBePresent();
+  expect(node.find('.sk-circle')).toBePresent();
 });
 
 it('should initially load data', () => {

@@ -156,7 +156,7 @@ export default class StringInput extends React.Component {
                 onClick={this.loadMore}
                 disabled={this.state.loading}
               >
-                {this.state.loading ? <LoadingIndicator small={true} /> : 'Load More'}
+                {this.state.loading ? <LoadingIndicator small /> : 'Load More'}
               </Button>
             )}
           </div>

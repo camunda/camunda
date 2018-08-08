@@ -18,7 +18,7 @@ jest.mock('components', () => {
     Button: () => <div>Button</div>,
     Icon: () => <span>Icon</span>,
     LoadingIndicator: props => (
-      <div className="LoadingIndicator__div" {...props}>
+      <div className="sk-circle" {...props}>
         Loading...
       </div>
     )
@@ -54,7 +54,7 @@ it('should initially load data', () => {
 it('should display a loading indicator', () => {
   const node = mount(<Sharing {...props} />);
 
-  expect(node.find('.LoadingIndicator__div')).toBePresent();
+  expect(node.find('.sk-circle')).toBePresent();
 });
 
 it('should display an error message if evaluation was unsuccessful', () => {

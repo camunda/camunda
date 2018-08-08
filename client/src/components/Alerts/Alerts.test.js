@@ -14,7 +14,7 @@ jest.mock('components', () => {
     Modal,
     Button: props => <button {...props}>{props.children}</button>,
     LoadingIndicator: props => (
-      <div className="LoadingIndicator__div" {...props}>
+      <div className="sk-circle" {...props}>
         Loading...
       </div>
     )
@@ -87,7 +87,7 @@ it('should include an edit/add alert modal after reports are loaded', async () =
 it('should display a loading message while content is loading', () => {
   const node = mount(<Alerts />);
 
-  expect(node.find('.LoadingIndicator__div').exists()).toBe(true);
+  expect(node.find('.sk-circle').exists()).toBe(true);
 });
 
 it('should show a message when no alerts are defined', async () => {

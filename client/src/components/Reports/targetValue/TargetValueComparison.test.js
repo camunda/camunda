@@ -62,7 +62,7 @@ jest.mock('components', () => {
     ),
     Table: ({body}) => <div>{JSON.stringify(body.map(row => [row[0], row[1]]))}</div>,
     LoadingIndicator: props => (
-      <div className="LoadingIndicator__div" {...props}>
+      <div className="sk-circle" {...props}>
         Loading...
       </div>
     )
