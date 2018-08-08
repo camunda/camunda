@@ -8,6 +8,7 @@ export const Foldable = themed(styled.div`
     dark: '#ffffff',
     light: Colors.uiDark04
   })};
+  font-size: 14px;
 `);
 
 const iconStyle = css`
@@ -47,7 +48,6 @@ export const Summary = themed(styled.div`
   position: relative;
   padding-top: 7px;
   padding-bottom: 7px;
-
   font-weight: ${({isBold}) => (!isBold ? 'normal' : 'bold')};
 `);
 
