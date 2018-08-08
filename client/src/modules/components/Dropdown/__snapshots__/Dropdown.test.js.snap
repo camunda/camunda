@@ -1,11 +1,10 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Dropdown should match snapshot 1`] = `
+exports[`Dropdown should match Snapshot 1`] = `
 <styled.div
   innerRef={[Function]}
 >
   <styled.button
-    data-test-id="dropdown-label"
     onClick={[Function]}
   >
     <styled.div>
@@ -13,5 +12,26 @@ exports[`Dropdown should match snapshot 1`] = `
     </styled.div>
     <Down />
   </styled.button>
+  <Menu
+    placement="bottom"
+  >
+    <Child
+      key=".0"
+      placement="bottom"
+    />
+  </Menu>
 </styled.div>
 `;
+
+exports[`Dropdown should render Button with Icon or text label 1`] = `
+<styled.button
+  onClick={[Function]}
+>
+  <styled.div>
+    Foo
+  </styled.div>
+  <Down />
+</styled.button>
+`;
+
+exports[`Dropdown should render Button with Icon or text label 2`] = `[Function]`;
