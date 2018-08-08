@@ -4,11 +4,12 @@ import PropTypes from 'prop-types';
 import SplitPane from 'modules/components/SplitPane';
 import {EXPAND_STATE, SORT_ORDER, DEFAULT_SORTING} from 'modules/constants';
 import {isEmpty, isEqual} from 'modules/utils';
+import {parseFilterForRequest} from 'modules/utils/filter';
+import {fetchWorkflowInstances} from 'modules/api/instances';
 
 import List from './List';
 import ListFooter from './ListFooter';
-import {parseFilterForRequest} from 'modules/utils/filter';
-import {fetchWorkflowInstances} from 'modules/api/instances';
+import * as Styled from './styled';
 
 export default class ListView extends React.Component {
   static propTypes = {
@@ -87,7 +88,7 @@ export default class ListView extends React.Component {
     return (
       <SplitPane.Pane {...this.props}>
         <SplitPane.Pane.Header>Instances</SplitPane.Pane.Header>
-        <SplitPane.Pane.Body>
+        <Styled.PaneBody>
           {!isEmpty(this.props.filter) && (
             <List
               data={this.state.instances}
@@ -103,7 +104,7 @@ export default class ListView extends React.Component {
               handleSorting={this.handleSorting}
             />
           )}
-        </SplitPane.Pane.Body>
+        </Styled.PaneBody>
         <SplitPane.Pane.Footer>
           {!isEmpty(this.props.filter) && (
             <ListFooter

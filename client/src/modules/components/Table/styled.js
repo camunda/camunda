@@ -12,14 +12,6 @@ export const Table = themed(styled.table`
   })};
 `);
 
-export const THead = themed(styled.thead`
-  text-align: left;
-  background-color: ${themeStyle({
-    dark: Colors.uiDark03,
-    light: Colors.uiLight02
-  })};
-`);
-
 export const TH = themed(styled.th`
   font-weight: 600;
   padding: 0 0 0 5px;
@@ -29,6 +21,14 @@ export const TH = themed(styled.th`
     float: right;
     height: 31px;
     margin-top: 3px;
+  }
+
+  &:not(:last-child) {
+    border-right: 1px solid
+      ${themeStyle({
+        dark: Colors.uiDark04,
+        light: Colors.uiLight05
+      })};
   }
 `);
 
@@ -85,14 +85,17 @@ export const TR = themed(styled.tr`
   }
 `);
 
-export const HeaderRow = themed(styled.tr`
-  height: 36px;
-  line-height: 37px;
-
-  border-width: 1px 0;
-  border-style: solid;
-  border-color: ${themeStyle({
+export const THead = themed(styled.thead`
+  text-align: left;
+  background-color: ${themeStyle({
     dark: Colors.uiDark04,
-    light: Colors.uiLight05
+    light: Colors.uiLight02
   })};
+
+  ${TR.WrappedComponent} {
+    background-color: ${themeStyle({
+      dark: Colors.uiDark03,
+      light: Colors.uiLight02
+    })};
+  }
 `);

@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 
 import Checkbox from 'modules/components/Checkbox';
 import Table from 'modules/components/Table';
-import StateIcon from 'modules/components/StateIcon';
 import {getWorkflowName} from 'modules/utils/instance';
 import {formatDate} from 'modules/utils/date';
 import {EXPAND_STATE} from 'modules/constants';
@@ -93,23 +92,6 @@ export default class List extends React.Component {
     if (ids && ids.has(id)) return true;
 
     return false;
-  };
-
-  getSelection = instance => {
-    const isSelected = this.isSelected(instance.id);
-    return (
-      <Styled.Selection>
-        <Styled.SelectionStatusIndicator selected={false} />
-        <Checkbox
-          type="selection"
-          isChecked={isSelected}
-          onChange={this.onSelectionChange(instance)}
-        />
-
-        <StateIcon instance={instance} />
-        <Styled.WorkflowName>{getWorkflowName(instance)}</Styled.WorkflowName>
-      </Styled.Selection>
-    );
   };
 
   getModifiedIdSet = ({isAdded, set, id}) => {
@@ -212,7 +194,7 @@ export default class List extends React.Component {
                     title={`Select instance ${instance.id}`}
                   />
 
-                  <StateIcon instance={instance} />
+                  <Styled.InstanceStateIcon instance={instance} />
                   <Styled.WorkflowName>
                     {getWorkflowName(instance)}
                   </Styled.WorkflowName>
