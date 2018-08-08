@@ -45,9 +45,9 @@ import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
-import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.intent.TopicIntent;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.TestUtil;
@@ -75,7 +75,7 @@ public class ClientApiMessageHandlerTest {
   protected static final RemoteAddress DEFAULT_ADDRESS =
       new RemoteAddressImpl(21, new SocketAddress("foo", 4242));
 
-  protected static final DirectBuffer LOG_STREAM_TOPIC_NAME = wrapString("test-topic");
+  protected static final DirectBuffer LOG_STREAM_TOPIC_NAME = wrapString("default-topic");
   protected static final int LOG_STREAM_PARTITION_ID = 1;
 
   protected static final byte[] JOB_EVENT;
@@ -378,7 +378,7 @@ public class ClientApiMessageHandlerTest {
     // values are not present
     final int writtenLength =
         writeCommandRequestToBuffer(
-            buffer, LOG_STREAM_PARTITION_ID, null, ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
+            buffer, LOG_STREAM_PARTITION_ID, null, ValueType.TOPIC, TopicIntent.CREATE);
 
     // when
     final boolean isHandled =
@@ -395,7 +395,7 @@ public class ClientApiMessageHandlerTest {
     assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.INVALID_MESSAGE);
     assertThat(errorDecoder.errorData())
         .contains("Cannot deserialize command:")
-        .contains("Property 'topicName' has no valid value");
+        .contains("Property 'name' has no valid value");
   }
 
   @Test

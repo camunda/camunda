@@ -76,22 +76,6 @@ public interface ManagementSubscriptionBuilderStep1 {
     ManagementSubscriptionBuilderStep3 deploymentCommandHandler(DeploymentCommandHandler handler);
 
     /**
-     * Register a handler that processes all topic events.
-     *
-     * @param handler the handler to process all topic events
-     * @return the builder for this subscription
-     */
-    ManagementSubscriptionBuilderStep3 topicEventHandler(TopicEventHandler handler);
-
-    /**
-     * Register a handler that processes all topic commands.
-     *
-     * @param handler the handler to process all topic commands
-     * @return the builder for this subscription
-     */
-    ManagementSubscriptionBuilderStep3 topicCommandHandler(TopicCommandHandler handler);
-
-    /**
      * Register a handler that processes all raft events.
      *
      * @param handler the handler to process all raft events

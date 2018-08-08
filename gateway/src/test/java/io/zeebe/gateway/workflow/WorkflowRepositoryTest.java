@@ -15,7 +15,6 @@
  */
 package io.zeebe.gateway.workflow;
 
-import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
@@ -76,10 +75,7 @@ public class WorkflowRepositoryTest {
         brokerRule.getReceivedControlMessageRequestsByType(ControlMessageType.GET_WORKFLOW).get(0);
     assertThat(request.getData())
         .containsOnly(
-            entry("topicName", DEFAULT_TOPIC),
-            entry("bpmnProcessId", "wf"),
-            entry("version", -1L),
-            entry("workflowKey", -1L));
+            entry("bpmnProcessId", "wf"), entry("version", -1L), entry("workflowKey", -1L));
   }
 
   @Test
@@ -102,10 +98,7 @@ public class WorkflowRepositoryTest {
         brokerRule.getReceivedControlMessageRequestsByType(ControlMessageType.GET_WORKFLOW).get(0);
     assertThat(request.getData())
         .containsOnly(
-            entry("topicName", DEFAULT_TOPIC),
-            entry("bpmnProcessId", "wf"),
-            entry("version", 2L),
-            entry("workflowKey", -1L));
+            entry("bpmnProcessId", "wf"), entry("version", 2L), entry("workflowKey", -1L));
   }
 
   @Test
@@ -119,9 +112,7 @@ public class WorkflowRepositoryTest {
 
     final ControlMessageRequest request =
         brokerRule.getReceivedControlMessageRequestsByType(ControlMessageType.GET_WORKFLOW).get(0);
-    assertThat(request.getData())
-        .containsOnly(
-            entry("topicName", DEFAULT_TOPIC), entry("version", -1L), entry("workflowKey", 123L));
+    assertThat(request.getData()).containsOnly(entry("version", -1L), entry("workflowKey", 123L));
   }
 
   @Test
@@ -161,8 +152,7 @@ public class WorkflowRepositoryTest {
         brokerRule
             .getReceivedControlMessageRequestsByType(ControlMessageType.LIST_WORKFLOWS)
             .get(0);
-    assertThat(request.getData())
-        .containsOnly(entry("topicName", DEFAULT_TOPIC), entry("bpmnProcessId", "wf1"));
+    assertThat(request.getData()).containsOnly(entry("bpmnProcessId", "wf1"));
   }
 
   @Test

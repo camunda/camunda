@@ -62,7 +62,6 @@ public class GetWorkflowControlMessageHandler extends AbstractControlMessageHand
       final GetWorkflowControlRequest controlRequest = new GetWorkflowControlRequest();
       controlRequest.wrap(buffer);
 
-      final String topicName = BufferUtil.bufferAsString(controlRequest.getTopicName());
       final String bpmnProcessId = BufferUtil.bufferAsString(controlRequest.getBpmnProcessId());
       final long workflowKey = controlRequest.getWorkflowKey();
 
@@ -77,12 +76,11 @@ public class GetWorkflowControlMessageHandler extends AbstractControlMessageHand
         final int version = controlRequest.getVersion();
 
         if (version == -1) {
-          future = repository.getLatestWorkflowByBpmnProcessId(topicName, bpmnProcessId);
+          future = repository.getLatestWorkflowByBpmnProcessId(bpmnProcessId);
           errorMessage =
               String.format("No workflow found with BPMN process id '%s'", bpmnProcessId);
         } else {
-          future =
-              repository.getWorkflowByBpmnProcessIdAndVersion(topicName, bpmnProcessId, version);
+          future = repository.getWorkflowByBpmnProcessIdAndVersion(bpmnProcessId, version);
           errorMessage =
               String.format(
                   "No workflow found with BPMN process id '%s' and version '%d'",
@@ -106,7 +104,6 @@ public class GetWorkflowControlMessageHandler extends AbstractControlMessageHand
                 controlResponse
                     .setBpmnXml(workflowAndResource.getRight())
                     .setWorkflowKey(workflow.getKey())
-                    .setTopicName(topicName)
                     .setVersion(workflow.getVersion())
                     .setBpmnProcessId(workflow.getBpmnProcessId())
                     .setResourceName(workflow.getResourceName());

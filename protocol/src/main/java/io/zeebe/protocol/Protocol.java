@@ -43,4 +43,7 @@ public class Protocol {
 
   /** By convention, the partition id that can be used for topic creation commands */
   public static final int SYSTEM_PARTITION = 0;
+
+  /** By convention, the partition to deploy to */
+  public static final int DEPLOYMENT_PARTITION = 1;
 }

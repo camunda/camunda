@@ -19,12 +19,9 @@ package io.zeebe.broker.system.workflow.repository.data;
 
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.ArrayProperty;
-import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.msgpack.value.ValueArray;
-import org.agrona.DirectBuffer;
 
 public class DeploymentRecord extends UnpackedObject {
-  private final StringProperty topicNameProp = new StringProperty("topicName");
 
   private final ArrayProperty<DeploymentResource> resourcesProp =
       new ArrayProperty<>("resources", new DeploymentResource());
@@ -33,9 +30,7 @@ public class DeploymentRecord extends UnpackedObject {
       new ArrayProperty<>("deployedWorkflows", new DeployedWorkflow());
 
   public DeploymentRecord() {
-    this.declareProperty(topicNameProp)
-        .declareProperty(resourcesProp)
-        .declareProperty(deployedWorkflowsProp);
+    this.declareProperty(resourcesProp).declareProperty(deployedWorkflowsProp);
   }
 
   public ValueArray<DeployedWorkflow> deployedWorkflows() {
@@ -44,14 +39,5 @@ public class DeploymentRecord extends UnpackedObject {
 
   public ValueArray<DeploymentResource> resources() {
     return resourcesProp;
-  }
-
-  public DirectBuffer getTopicName() {
-    return topicNameProp.getValue();
-  }
-
-  public DeploymentRecord setTopicName(String topicName) {
-    this.topicNameProp.setValue(topicName);
-    return this;
   }
 }

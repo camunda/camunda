@@ -26,13 +26,11 @@ import org.agrona.DirectBuffer;
 public class GetWorkflowControlRequest extends UnpackedObject {
   private LongProperty workflowKeyProp = new LongProperty("workflowKey", -1);
   private IntegerProperty versionProp = new IntegerProperty("version", -1);
-  private StringProperty topicNameProp = new StringProperty("topicName");
   private StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
 
   public GetWorkflowControlRequest() {
     declareProperty(workflowKeyProp)
         .declareProperty(versionProp)
-        .declareProperty(topicNameProp)
         .declareProperty(bpmnProcessIdProp);
   }
 
@@ -42,15 +40,6 @@ public class GetWorkflowControlRequest extends UnpackedObject {
 
   public GetWorkflowControlRequest setWorkflowKey(long key) {
     workflowKeyProp.setValue(key);
-    return this;
-  }
-
-  public DirectBuffer getTopicName() {
-    return topicNameProp.getValue();
-  }
-
-  public GetWorkflowControlRequest setTopicName(String topicName) {
-    topicNameProp.setValue(topicName);
     return this;
   }
 

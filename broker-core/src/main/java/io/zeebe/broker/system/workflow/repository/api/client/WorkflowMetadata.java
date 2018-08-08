@@ -26,13 +26,11 @@ import org.agrona.DirectBuffer;
 public class WorkflowMetadata extends UnpackedObject {
   private LongProperty workflowKeyProp = new LongProperty("workflowKey", -1);
   private IntegerProperty versionProp = new IntegerProperty("version", -1);
-  private StringProperty topicNameProp = new StringProperty("topicName");
   private StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId");
   private StringProperty resourceNameProp = new StringProperty("resourceName");
 
   public WorkflowMetadata() {
     declareProperty(workflowKeyProp)
-        .declareProperty(topicNameProp)
         .declareProperty(versionProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(resourceNameProp);
@@ -56,15 +54,6 @@ public class WorkflowMetadata extends UnpackedObject {
     return this;
   }
 
-  public DirectBuffer getTopicName() {
-    return topicNameProp.getValue();
-  }
-
-  public WorkflowMetadata setTopicName(DirectBuffer topicName) {
-    topicNameProp.setValue(topicName);
-    return this;
-  }
-
   public DirectBuffer getBpmnProcessId() {
     return bpmnProcessIdProp.getValue();
   }
@@ -76,11 +65,6 @@ public class WorkflowMetadata extends UnpackedObject {
 
   public WorkflowMetadata setBpmnProcessId(String value) {
     bpmnProcessIdProp.setValue(value);
-    return this;
-  }
-
-  public WorkflowMetadata setTopicName(String topicName) {
-    this.topicNameProp.setValue(topicName);
     return this;
   }
 

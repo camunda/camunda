@@ -53,7 +53,6 @@ public class FetchWorkflowRequestHandler {
     final long workflowKey = fetchWorkflowRequest.getWorkflowKey();
 
     if (workflowKey == FetchWorkflowRequestDecoder.workflowKeyNullValue()) {
-      final String topicName = BufferUtil.bufferAsString(fetchWorkflowRequest.getTopicName());
 
       final int version = fetchWorkflowRequest.getVersion();
 
@@ -61,12 +60,10 @@ public class FetchWorkflowRequestHandler {
           BufferUtil.bufferAsString(fetchWorkflowRequest.getBpmnProcessId());
 
       if (version == FetchWorkflowRequestDecoder.versionMaxValue()) {
-        future =
-            workflowRepositoryService.getLatestWorkflowByBpmnProcessId(topicName, bpmnProcessId);
+        future = workflowRepositoryService.getLatestWorkflowByBpmnProcessId(bpmnProcessId);
       } else {
         future =
-            workflowRepositoryService.getWorkflowByBpmnProcessIdAndVersion(
-                topicName, bpmnProcessId, version);
+            workflowRepositoryService.getWorkflowByBpmnProcessIdAndVersion(bpmnProcessId, version);
       }
     } else {
       future = workflowRepositoryService.getWorkflowByKey(workflowKey);

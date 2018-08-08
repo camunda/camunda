@@ -21,6 +21,7 @@ import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW
 import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_KEY;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_VERSION;
 import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
+import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
@@ -79,7 +80,6 @@ public class WorkflowRepositoryClientApiTest {
     assertThat(data.get(PROP_WORKFLOW_BPMN_PROCESS_ID))
         .isEqualTo(deployedWorkflow.get(PROP_WORKFLOW_BPMN_PROCESS_ID));
     assertThat(data.get("resourceName")).isEqualTo("wf.bpmn");
-    assertThat(data.get("topicName")).isEqualTo(DEFAULT_TOPIC);
     assertThat((String) data.get("bpmnXml")).isNotEmpty();
   }
 
@@ -301,9 +301,9 @@ public class WorkflowRepositoryClientApiTest {
     final ControlMessageResponse requestWorkflowResponse =
         apiRule
             .createControlMessageRequest()
+            .partitionId(DEPLOYMENT_PARTITION)
             .messageType(ControlMessageType.LIST_WORKFLOWS)
             .data()
-            .put("topicName", DEFAULT_TOPIC)
             .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "")
             .done()
             .sendAndAwait();
@@ -321,7 +321,6 @@ public class WorkflowRepositoryClientApiTest {
     assertThat(theWorkflow.get(PROP_WORKFLOW_BPMN_PROCESS_ID))
         .isEqualTo(deployedWorkflow.get(PROP_WORKFLOW_BPMN_PROCESS_ID));
     assertThat(theWorkflow.get("resourceName")).isEqualTo("wf.bpmn");
-    assertThat(theWorkflow.get("topicName")).isEqualTo(DEFAULT_TOPIC);
     assertThat(theWorkflow.containsKey("bpmnXml")).isFalse();
   }
 
@@ -334,9 +333,9 @@ public class WorkflowRepositoryClientApiTest {
     ControlMessageResponse requestWorkflowResponse =
         apiRule
             .createControlMessageRequest()
+            .partitionId(DEPLOYMENT_PARTITION)
             .messageType(ControlMessageType.LIST_WORKFLOWS)
             .data()
-            .put("topicName", DEFAULT_TOPIC)
             .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
             .done()
             .sendAndAwait();
@@ -393,9 +392,9 @@ public class WorkflowRepositoryClientApiTest {
     final ControlMessageResponse requestWorkflowResponse =
         apiRule
             .createControlMessageRequest()
+            .partitionId(DEPLOYMENT_PARTITION)
             .messageType(ControlMessageType.LIST_WORKFLOWS)
             .data()
-            .put("topicName", DEFAULT_TOPIC)
             .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "")
             .done()
             .sendAndAwait();

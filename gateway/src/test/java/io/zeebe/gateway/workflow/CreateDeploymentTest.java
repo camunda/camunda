@@ -16,6 +16,7 @@
 package io.zeebe.gateway.workflow;
 
 import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
+import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -26,7 +27,6 @@ import io.zeebe.gateway.cmd.ClientCommandRejectedException;
 import io.zeebe.gateway.util.ClientRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
@@ -65,7 +65,7 @@ public class CreateDeploymentTest {
   }
 
   @Test
-  public void shouldSendDeploymentRequestToSystemTopic() {
+  public void shouldSendDeploymentRequestToDefaultTopic() {
     // given
     brokerRule.deployments().registerCreateCommand();
 
@@ -83,10 +83,10 @@ public class CreateDeploymentTest {
     assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
 
     final ExecuteCommandRequest commandRequest = brokerRule.getReceivedCommandRequests().get(0);
-    assertThat(commandRequest.partitionId()).isEqualTo(Protocol.SYSTEM_PARTITION);
+    assertThat(commandRequest.partitionId()).isEqualTo(DEPLOYMENT_PARTITION);
 
     assertThat(deployment.getDeploymentTopic()).isEqualTo(DEFAULT_TOPIC);
-    assertThat(deployment.getMetadata().getTopicName()).isEqualTo(Protocol.SYSTEM_TOPIC);
+    assertThat(deployment.getMetadata().getTopicName()).isEqualTo(DEFAULT_TOPIC);
     assertThat(deployment.getMetadata().getSourceRecordPosition()).isEqualTo(1L);
   }
 
@@ -136,8 +136,8 @@ public class CreateDeploymentTest {
     assertThat(commandRequest.key()).isEqualTo(-1);
 
     assertThat(deployment.getMetadata().getKey()).isEqualTo(2L);
-    assertThat(deployment.getMetadata().getTopicName()).isEqualTo(Protocol.SYSTEM_TOPIC);
-    assertThat(deployment.getMetadata().getPartitionId()).isEqualTo(Protocol.SYSTEM_PARTITION);
+    assertThat(deployment.getMetadata().getTopicName()).isEqualTo(DEFAULT_TOPIC);
+    assertThat(deployment.getMetadata().getPartitionId()).isEqualTo(DEPLOYMENT_PARTITION);
     assertThat(deployment.getMetadata().getSourceRecordPosition()).isEqualTo(1L);
 
     assertThat(deployment.getDeployedWorkflows()).hasSize(2);

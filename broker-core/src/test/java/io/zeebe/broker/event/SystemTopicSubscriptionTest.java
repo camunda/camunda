@@ -43,6 +43,8 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class SystemTopicSubscriptionTest {
+
+  public static final int DEFAULT_PARTITION = 1;
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
   public ClientApiRule apiRule = new ClientApiRule();
 
@@ -94,7 +96,7 @@ public class SystemTopicSubscriptionTest {
 
     // when
     final ExecuteCommandResponse addResponse =
-        apiRule.openTopicSubscription(Protocol.SYSTEM_PARTITION, "foo", 0).await();
+        apiRule.openTopicSubscription(DEFAULT_PARTITION, "foo", 0).await();
 
     final long subscriberKey = addResponse.key();
 
@@ -119,7 +121,7 @@ public class SystemTopicSubscriptionTest {
         .containsOnly(ExecuteCommandResponseDecoder.keyNullValue(), deploymentKey);
     assertThat(deploymentEvents)
         .extracting(SubscribedRecord::partitionId)
-        .containsOnly(Protocol.SYSTEM_PARTITION);
+        .containsOnly(DEFAULT_PARTITION);
     assertThat(deploymentEvents)
         .extracting(SubscribedRecord::timestamp)
         .containsOnly(brokerRule.getClock().getCurrentTimeInMillis());

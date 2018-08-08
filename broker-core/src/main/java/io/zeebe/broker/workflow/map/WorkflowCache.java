@@ -17,6 +17,8 @@
  */
 package io.zeebe.broker.workflow.map;
 
+import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
+
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
@@ -28,7 +30,6 @@ import io.zeebe.broker.workflow.model.transformation.BpmnTransformer;
 import io.zeebe.clustering.management.FetchWorkflowResponseDecoder;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.Protocol;
 import io.zeebe.transport.ClientResponse;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RemoteAddress;
@@ -61,17 +62,13 @@ public class WorkflowCache implements TopologyPartitionListener {
   private final ClientTransport clientTransport;
   private final TopologyManager topologyManager;
 
-  private final DirectBuffer topicName;
   private final BpmnTransformer transformer = new BpmnTransformer();
 
-  private volatile RemoteAddress systemTopicLeaderAddress;
+  private volatile RemoteAddress defaultTopicLeaderAddress;
 
-  public WorkflowCache(
-      ClientTransport clientTransport, TopologyManager topologyManager, DirectBuffer topicName) {
+  public WorkflowCache(ClientTransport clientTransport, TopologyManager topologyManager) {
     this.clientTransport = clientTransport;
     this.topologyManager = topologyManager;
-    this.topicName = topicName;
-
     topologyManager.addTopologyPartitionListener(this);
   }
 
@@ -80,7 +77,7 @@ public class WorkflowCache implements TopologyPartitionListener {
   }
 
   public ActorFuture<ClientResponse> fetchWorkflowByKey(long key) {
-    fetchRequest.reset().topicName(topicName).workflowKey(key);
+    fetchRequest.reset().workflowKey(key);
 
     return clientTransport
         .getOutput()
@@ -90,7 +87,7 @@ public class WorkflowCache implements TopologyPartitionListener {
 
   public ActorFuture<ClientResponse> fetchLatestWorkflowByBpmnProcessId(
       DirectBuffer bpmnProcessId) {
-    fetchRequest.reset().topicName(topicName).latestVersion().bpmnProcessId(bpmnProcessId);
+    fetchRequest.reset().latestVersion().bpmnProcessId(bpmnProcessId);
 
     return clientTransport
         .getOutput()
@@ -100,7 +97,7 @@ public class WorkflowCache implements TopologyPartitionListener {
 
   public ActorFuture<ClientResponse> fetchWorkflowByBpmnProcessIdAndVersion(
       DirectBuffer bpmnProcessId, int version) {
-    fetchRequest.reset().topicName(topicName).version(version).bpmnProcessId(bpmnProcessId);
+    fetchRequest.reset().version(version).bpmnProcessId(bpmnProcessId);
 
     return clientTransport
         .getOutput()
@@ -173,7 +170,7 @@ public class WorkflowCache implements TopologyPartitionListener {
   }
 
   private RemoteAddress systemTopicLeader() {
-    return systemTopicLeaderAddress;
+    return defaultTopicLeaderAddress;
   }
 
   public DeployedWorkflow getLatestWorkflowVersionByProcessId(DirectBuffer processId) {
@@ -208,13 +205,13 @@ public class WorkflowCache implements TopologyPartitionListener {
 
   @Override
   public void onPartitionUpdated(PartitionInfo partitionInfo, NodeInfo member) {
-    final RemoteAddress currentLeader = systemTopicLeaderAddress;
+    final RemoteAddress currentLeader = defaultTopicLeaderAddress;
 
-    if (partitionInfo.getPartitionId() == Protocol.SYSTEM_PARTITION) {
+    if (partitionInfo.getPartitionId() == DEPLOYMENT_PARTITION) {
       if (member.getLeaders().contains(partitionInfo)) {
         final SocketAddress managementApiAddress = member.getManagementApiAddress();
         if (currentLeader == null || currentLeader.getAddress().equals(managementApiAddress)) {
-          systemTopicLeaderAddress = clientTransport.registerRemoteAddress(managementApiAddress);
+          defaultTopicLeaderAddress = clientTransport.registerRemoteAddress(managementApiAddress);
         }
       }
     }

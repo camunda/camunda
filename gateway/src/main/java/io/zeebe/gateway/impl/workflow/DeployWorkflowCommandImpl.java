@@ -15,6 +15,8 @@
  */
 package io.zeebe.gateway.impl.workflow;
 
+import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
+import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 import static io.zeebe.util.EnsureUtil.ensureNotNull;
 
 import io.zeebe.gateway.api.commands.DeployWorkflowCommandStep1;
@@ -30,7 +32,6 @@ import io.zeebe.gateway.impl.command.DeploymentResourceImpl;
 import io.zeebe.gateway.impl.record.RecordImpl;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.util.StreamUtil;
 import java.io.ByteArrayOutputStream;
@@ -52,8 +53,10 @@ public class DeployWorkflowCommandImpl extends CommandImpl<DeploymentEvent>
   public DeployWorkflowCommandImpl(final RequestManager commandManager, String topic) {
     super(commandManager);
 
-    // send command always to the system topic
-    this.command.setTopicName(Protocol.SYSTEM_TOPIC);
+    // send command always to the deployment partition of the default topic
+    this.command.setTopicName(DEFAULT_TOPIC);
+    this.command.setPartitionId(DEPLOYMENT_PARTITION);
+
     // set the topic to deploy to
     this.command.setDeploymentTopic(topic);
   }
