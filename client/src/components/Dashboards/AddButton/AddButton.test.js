@@ -19,7 +19,6 @@ jest.mock('../service', () => {
 });
 
 jest.mock('./ReportModal', () => () => <p>ReportModal</p>);
-jest.mock('./ExternalModal', () => () => <p>ExternalModal</p>);
 
 const props = {
   tileDimensions: {

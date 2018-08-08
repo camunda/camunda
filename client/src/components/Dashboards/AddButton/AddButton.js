@@ -5,36 +5,23 @@ import {Button, DashboardObject} from 'components';
 import {getOccupiedTiles} from '../service';
 
 import ReportModal from './ReportModal';
-import ExternalModal from './ExternalModal';
 
 import './AddButton.css';
 
 const size = {width: 6, height: 4};
 
 export default class AddButton extends React.Component {
-  constructor(props) {
-    super(props);
+  state = {open: false};
 
-    this.state = {
-      modalState: 'closed'
-    };
-  }
-
-  openModal = evt => {
+  openModal = () => {
     this.setState({
-      modalState: 'report'
+      open: true
     });
   };
 
-  closeModal = evt => {
+  closeModal = () => {
     this.setState({
-      modalState: 'closed'
-    });
-  };
-
-  gotoExternalMode = evt => {
-    this.setState({
-      modalState: 'external'
+      open: false
     });
   };
 
@@ -58,21 +45,13 @@ export default class AddButton extends React.Component {
       return null;
     }
 
-    const props = {
-      close: this.closeModal,
-      confirm: this.addReport
-    };
-
     return (
       <DashboardObject tileDimensions={this.props.tileDimensions} {...position}>
         <Button className="AddButton" onClick={this.openModal}>
           <div className="AddButton__symbol" />
           <div className="AddButton__text">Add a Report</div>
         </Button>
-        {this.state.modalState === 'report' && (
-          <ReportModal {...props} gotoExternalMode={this.gotoExternalMode} />
-        )}
-        {this.state.modalState === 'external' && <ExternalModal {...props} />}
+        {this.state.open && <ReportModal close={this.closeModal} confirm={this.addReport} />}
       </DashboardObject>
     );
   }

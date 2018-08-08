@@ -1,20 +1,18 @@
 import React from 'react';
 
-import {Modal, Button, Select, ControlGroup} from 'components';
+import {Modal, Button, Select, ControlGroup, Input, ErrorMessage} from 'components';
 
 import {loadReports} from '../service';
 
 import './ReportModal.css';
 
 export default class ReportModal extends React.Component {
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      availableReports: null,
-      selectedReportId: ''
-    };
-  }
+  state = {
+    availableReports: null,
+    selectedReportId: '',
+    external: false,
+    externalUrl: ''
+  };
 
   componentDidMount = async () => {
     const reports = await loadReports();
@@ -31,33 +29,57 @@ export default class ReportModal extends React.Component {
   };
 
   addReport = () => {
-    this.props.confirm({id: this.state.selectedReportId});
+    const {external, selectedReportId, externalUrl} = this.state;
+    this.props.confirm(
+      external ? {id: '', configuration: {external: externalUrl}} : {id: selectedReportId}
+    );
+  };
+
+  toggleExternal = () => {
+    this.setState(({external}) => {
+      return {
+        external: !external,
+        externalUrl: '',
+        selectedReportId: ''
+      };
+    });
+  };
+
+  isValid = url => {
+    // url has to start with https:// or http://
+    return url.match(/^(https|http):\/\/.+/);
   };
 
   render() {
     const noReports = !this.state.availableReports || this.state.availableReports.length === 0;
     const loading = this.state.availableReports === null;
 
+    const {external, externalUrl, selectedReportId, availableReports} = this.state;
+    const isInvalidExternal = !this.isValid(externalUrl);
+
+    const isInvalid = external ? isInvalidExternal : !selectedReportId;
+
     return (
       <Modal
+        className="ReportModal"
         open
         onClose={this.props.close}
-        onConfirm={this.state.selectedReportId ? this.addReport : undefined}
+        onConfirm={!isInvalid ? this.addReport : undefined}
       >
         <Modal.Header>Add a Report</Modal.Header>
         <Modal.Content>
           <ControlGroup layout="centered">
             <label htmlFor="ReportModal__selectReports">Select a Report…</label>
             <Select
-              disabled={noReports || loading}
-              value={this.state.selectedReportId}
+              disabled={noReports || loading || external}
+              value={selectedReportId}
               onChange={this.selectReport}
               name="ReportModal__selectReports"
               className="ReportModal__selectReports"
             >
               {this.renderPleaseSelectOption(!noReports)}
               {!loading &&
-                this.state.availableReports.map(report => {
+                availableReports.map(report => {
                   return (
                     <Select.Option key={report.id} value={report.id}>
                       {this.truncate(report.name, 50)}
@@ -73,18 +95,37 @@ export default class ReportModal extends React.Component {
               )}
             </Select>
           </ControlGroup>
-          <p className="ReportModal__externalSourceLink" onClick={this.props.gotoExternalMode}>
-            Add External Source
+          <p className="ReportModal__externalSourceLink" onClick={this.toggleExternal}>
+            {external ? 'Add Optimize Report' : 'Add External Source'}
           </p>
+          {external && (
+            <ControlGroup>
+              <label htmlFor="externalInput">
+                Enter URL of external datasource to be included on the dashboard
+              </label>
+              <Input
+                name="externalInput"
+                className="externalInput"
+                placeholder="https://www.example.com/widget/embed.html"
+                value={externalUrl}
+                isInvalid={isInvalidExternal}
+                onChange={({target: {value}}) =>
+                  this.setState({
+                    externalUrl: value
+                  })
+                }
+              />
+              {isInvalidExternal && (
+                <ErrorMessage className="ExternalModal__error">
+                  URL has to start with http:// or https://
+                </ErrorMessage>
+              )}
+            </ControlGroup>
+          )}
         </Modal.Content>
         <Modal.Actions>
           <Button onClick={this.props.close}>Cancel</Button>
-          <Button
-            type="primary"
-            color="blue"
-            onClick={this.addReport}
-            disabled={!this.state.selectedReportId}
-          >
+          <Button type="primary" color="blue" onClick={this.addReport} disabled={isInvalid}>
             Add Report
           </Button>
         </Modal.Actions>

@@ -17,7 +17,9 @@ jest.mock('components', () => {
     Modal,
     Select,
     Button: props => <button {...props}>{props.children}</button>,
-    ControlGroup: props => <div>{props.children}</div>
+    ControlGroup: props => <div>{props.children}</div>,
+    Input: ({isInvalid, ...props}) => <input {...props} />,
+    ErrorMessage: props => <div {...props} />
   };
 });
 
@@ -114,4 +116,29 @@ it('should contain an Add External Source field', () => {
   const node = mount(<ReportModal />);
 
   expect(node).toIncludeText('Add External Source');
+});
+
+it('should contain a text input field if in external source mode', () => {
+  const node = mount(<ReportModal />);
+
+  node.setState({external: true});
+
+  expect(node.find('input[name="externalInput"]')).toBePresent();
+});
+
+it('should show an error and disable the submit button if the url does not start with http in external mode', () => {
+  const node = mount(<ReportModal />);
+
+  node.setState({external: true, externalUrl: 'Dear computer, please show me a report. Thanks.'});
+
+  expect(node.find('button[type="primary"]')).toBeDisabled();
+  expect(node).toIncludeText('URL has to start with http:// or https://');
+});
+
+it('should disable the dropdown when external mode is enabled', () => {
+  const node = mount(<ReportModal />);
+
+  node.setState({external: true});
+
+  expect(node.find('select')).toBeDisabled();
 });
