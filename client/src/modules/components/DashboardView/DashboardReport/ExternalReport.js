@@ -1,13 +1,9 @@
 import React from 'react';
 
 export default class ExternalReport extends React.Component {
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      reloadState: 0
-    };
-  }
+  state = {
+    reloadState: 0
+  };
 
   reloadReport = () => {
     this.setState({reloadState: this.state.reloadState + 1});
