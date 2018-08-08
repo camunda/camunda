@@ -91,3 +91,8 @@ export const BADGE_TYPE = {
   INCIDENTS: 'incidents',
   INSTANCES: 'instances'
 };
+
+export const DROPDOWN_PLACEMENT = {
+  TOP: 'top',
+  BOTTOM: 'bottom'
+};

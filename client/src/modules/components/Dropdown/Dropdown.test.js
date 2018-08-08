@@ -1,6 +1,8 @@
 import React from 'react';
 import {shallow} from 'enzyme';
-import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
+
+import {Batch} from 'modules/components/Icon';
+import {DROPDOWN_PLACEMENT} from 'modules/constants';
 
 import Dropdown from './Dropdown';
 
@@ -11,28 +13,69 @@ describe('Dropdown', () => {
   beforeEach(() => {
     Child = () => <span>I am a child component</span>;
     node = shallow(
-      <Dropdown label="Foo">
+      <Dropdown label="Foo" placement={DROPDOWN_PLACEMENT.BOTTOM}>
         <Child />
       </Dropdown>
     );
     node.instance().storeContainer(document.createElement('div'));
   });
 
-  it('should be closed initially', () => {});
+  it('should render Button with Icon or text label', () => {
+    expect(node.find(Styled.Button)).toMatchSnapshot();
 
-  it('should not display its child contents when it is closed', () => {
-    expect(node.find(Child)).not.toExist();
+    node = shallow(
+      <Dropdown label={<Batch />}>
+        <Child />
+      </Dropdown>
+    );
+    expect(Styled.Button).toMatchSnapshot();
   });
 
-  it('should open on click of the label', () => {
-    node.find('[data-test-id="dropdown-label"]').simulate('click');
+  it('should be closed initially', () => {
+    expect(node.state().open).toBe(false);
+  });
 
+  it('should show/hide child contents when open/closed', () => {
+    expect(node.find(Child)).not.toExist();
+
+    node.setState({open: true});
+
+    expect(node.find(Child)).toExist();
+  });
+
+  it('should pass "placement" prop to children', () => {
+    node.setState({open: true});
+    expect(node.find('Child').props().placement).toBe(
+      DROPDOWN_PLACEMENT.BOTTOM
+    );
+  });
+
+  it('should pass "bottom" as default placement to children', () => {
+    node = shallow(
+      <Dropdown label="Foo">
+        <Child />
+      </Dropdown>
+    );
+
+    node.setState({open: true});
+
+    expect(node.find('Child').props().placement).toBe(
+      DROPDOWN_PLACEMENT.BOTTOM
+    );
+  });
+
+  it('should open/close on click of the button', () => {
+    //given
+    node.find(Styled.Button).simulate('click');
     expect(node.state().open).toBe(true);
+    //when
+    node.find(Styled.Button).simulate('click');
+    //then
+    expect(node.state().open).toBe(false);
   });
 
   it('should display its child contents if it is open', () => {
     node.setState({open: true});
-
     expect(node.find(Child)).toExist();
   });
 
@@ -42,49 +85,8 @@ describe('Dropdown', () => {
     expect(node.state().open).toBe(false);
   });
 
-  it('should match snapshot', () => {
+  it('should match Snapshot', () => {
+    node.setState({open: true});
     expect(node).toMatchSnapshot();
-  });
-});
-
-describe('DropdownMenu', () => {
-  let node, Child, placement;
-  beforeEach(() => {
-    Child = () => <span>I am a child component</span>;
-    node = shallow(
-      <Styled.DropdownMenu placement={'top'}>
-        <Child />
-      </Styled.DropdownMenu>
-    );
-  });
-
-  it('should render bottom as default placement direction', async () => {
-    //
-  });
-
-  it('should pass prop "placement" to children', () => {
-    //
-  });
-});
-
-describe('Dropdown.Option', () => {
-  let Child, node, spy;
-  beforeEach(() => {
-    Child = () => <span>I am a child component</span>;
-    spy = jest.fn();
-    node = shallow(
-      <Dropdown.Option onClick={spy}>
-        <Child />
-      </Dropdown.Option>
-    );
-  });
-
-  it('should renders its children', () => {
-    expect(node.find(Child)).toExist();
-  });
-
-  it('should pass properties', () => {
-    node.simulate('click');
-    expect(spy).toHaveBeenCalled();
   });
 });

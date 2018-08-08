@@ -3,10 +3,16 @@ import PropTypes from 'prop-types';
 
 import Dropdown from 'modules/components/Dropdown';
 import withSharedState from 'modules/components/withSharedState';
+import {DROPDOWN_PLACEMENT} from 'modules/constants';
 
 import Paginator from './Paginator';
 
 import {getMaxPage} from './service';
+import {
+  DROPDOWN_LABEL,
+  DROPDOWN_CREATE_OPTION,
+  DROPDOWN_ADD_CURRENT_OPTION
+} from './constants';
 import * as Styled from './styled';
 
 class ListFooter extends React.Component {
@@ -15,21 +21,21 @@ class ListFooter extends React.Component {
     perPage: PropTypes.number.isRequired,
     firstElement: PropTypes.number.isRequired,
     total: PropTypes.number.isRequired,
-    addNewSelection: PropTypes.func.isRequired,
+    handleAddNewSelection: PropTypes.func.isRequired,
     getStateLocally: PropTypes.func.isRequired,
     storeStateLocally: PropTypes.func.isRequired,
-    addToCurrentSelection: PropTypes.func
+    onAddToOpenSelection: PropTypes.func
   };
 
   renderSelectionDropDown = () => {
     return (
       <Styled.SelectionButton>
-        <Dropdown placement="top" label="Add to Selection...">
-          <Dropdown.Option onClick={this.props.addToCurrentSelection}>
-            Add to Current Selection
+        <Dropdown placement={DROPDOWN_PLACEMENT.TOP} label={DROPDOWN_LABEL}>
+          <Dropdown.Option onClick={this.props.onAddToOpenSelection}>
+            {DROPDOWN_ADD_CURRENT_OPTION}
           </Dropdown.Option>
-          <Dropdown.Option onClick={this.props.addNewSelection}>
-            Create Selection
+          <Dropdown.Option onClick={this.props.handleAddNewSelection}>
+            {DROPDOWN_CREATE_OPTION}
           </Dropdown.Option>
         </Dropdown>
       </Styled.SelectionButton>
@@ -38,7 +44,7 @@ class ListFooter extends React.Component {
 
   renderSelectionButton = () => {
     return (
-      <Styled.SelectionButton onClick={this.props.addNewSelection}>
+      <Styled.SelectionButton onClick={this.props.handleAddNewSelection}>
         Create Selection
       </Styled.SelectionButton>
     );

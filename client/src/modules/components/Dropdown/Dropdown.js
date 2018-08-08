@@ -1,9 +1,13 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import * as Styled from './styled';
-
 import {Down} from 'modules/components/Icon';
+import {DROPDOWN_PLACEMENT} from 'modules/constants';
+
+import Menu from './Menu';
+import Option from './Option';
+
+import * as Styled from './styled';
 
 export default class Dropdown extends React.Component {
   static propTypes = {
@@ -42,6 +46,7 @@ export default class Dropdown extends React.Component {
     }
   };
 
+  // render Dropdown button with passed text or icon as label;
   getLabelType = label =>
     typeof label === 'object' ? (
       label
@@ -49,10 +54,10 @@ export default class Dropdown extends React.Component {
       <Styled.LabelWrapper>{label}</Styled.LabelWrapper>
     );
 
-  childwithProps = () => {
+  childrenWithProps = () => {
     return React.Children.map(this.props.children, child => {
       return React.cloneElement(child, {
-        placement: this.props.placement
+        placement: this.props.placement || DROPDOWN_PLACEMENT.BOTTOM
       });
     });
   };
@@ -60,27 +65,18 @@ export default class Dropdown extends React.Component {
   render() {
     return (
       <Styled.Dropdown innerRef={this.storeContainer}>
-        <Styled.Label data-test-id="dropdown-label" onClick={this.toggleOpen}>
+        <Styled.Button onClick={this.toggleOpen}>
           {this.getLabelType(this.props.label)}
           <Down />
-        </Styled.Label>
+        </Styled.Button>
         {this.state.open && (
-          <Styled.DropdownMenu placement={this.props.placement}>
-            {this.childwithProps()}
-          </Styled.DropdownMenu>
+          <Menu placement={this.props.placement || DROPDOWN_PLACEMENT.BOTTOM}>
+            {this.childrenWithProps()}
+          </Menu>
         )}
       </Styled.Dropdown>
     );
   }
 }
-
-Dropdown.Option = function DropdownOption(props) {
-  return <Styled.Option {...props}>{props.children}</Styled.Option>;
-};
-
-Dropdown.Option.propTypes = {
-  children: PropTypes.oneOfType([
-    PropTypes.arrayOf(PropTypes.node),
-    PropTypes.node
-  ])
-};
+// export Dropdown-option component
+Dropdown.Option = Option;
