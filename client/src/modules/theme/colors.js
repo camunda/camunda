@@ -20,8 +20,7 @@ const Colors = {
   uiLight06: '#62626e',
 
   // List Item Colors
-  darkItemOdd: '#37383e',
-  darkItemEven: '#313238',
+  darkItemEven: '#37383e',
   lightItemOdd: '#fdfdfe',
   lightItemEven: '#f9fafc',
 

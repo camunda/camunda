@@ -28,7 +28,6 @@ export default class InstanceLog extends React.Component {
   renderLogEntry = ([id, {state, type, name}]) => (
     <Styled.LogEntry
       key={id}
-      href="#"
       isSelected={this.state.selected === id}
       onClick={() => this.setSelected(id)}
     >
@@ -48,7 +47,6 @@ export default class InstanceLog extends React.Component {
       <Styled.InstanceLog {...this.props}>
         <React.Fragment>
           <Styled.Header
-            href="#"
             isSelected={this.state.selected === HEADER}
             onClick={() => this.setSelected(HEADER)}
           >
