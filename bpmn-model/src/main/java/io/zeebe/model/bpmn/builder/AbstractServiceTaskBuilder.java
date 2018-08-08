@@ -19,10 +19,6 @@ package io.zeebe.model.bpmn.builder;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.ServiceTask;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 
@@ -65,31 +61,6 @@ public abstract class AbstractServiceTaskBuilder<B extends AbstractServiceTaskBu
     final ZeebeHeader header = createChild(taskHeaders, ZeebeHeader.class);
     header.setKey(key);
     header.setValue(value);
-
-    return myself;
-  }
-
-  public B zeebeOutputBehavior(ZeebeOutputBehavior outputBehavior) {
-    final ZeebeIoMapping ioMapping = getCreateSingleExtensionElement(ZeebeIoMapping.class);
-    ioMapping.setOutputBehavhior(outputBehavior);
-
-    return myself;
-  }
-
-  public B zeebeInput(String source, String target) {
-    final ZeebeIoMapping ioMapping = getCreateSingleExtensionElement(ZeebeIoMapping.class);
-    final ZeebeInput input = createChild(ioMapping, ZeebeInput.class);
-    input.setSource(source);
-    input.setTarget(target);
-
-    return myself;
-  }
-
-  public B zeebeOutput(String source, String target) {
-    final ZeebeIoMapping ioMapping = getCreateSingleExtensionElement(ZeebeIoMapping.class);
-    final ZeebeOutput input = createChild(ioMapping, ZeebeOutput.class);
-    input.setSource(source);
-    input.setTarget(target);
 
     return myself;
   }

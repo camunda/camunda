@@ -47,13 +47,16 @@ public class WorkflowInstanceRecord extends UnpackedObject {
 
   private final DocumentProperty payloadProp = new DocumentProperty(PROP_WORKFLOW_PAYLOAD);
 
+  private final LongProperty scopeInstanceKey = new LongProperty("scopeInstanceKey", -1L);
+
   public WorkflowInstanceRecord() {
     this.declareProperty(bpmnProcessIdProp)
         .declareProperty(versionProp)
         .declareProperty(workflowKeyProp)
         .declareProperty(workflowInstanceKeyProp)
         .declareProperty(activityIdProp)
-        .declareProperty(payloadProp);
+        .declareProperty(payloadProp)
+        .declareProperty(scopeInstanceKey);
   }
 
   public DirectBuffer getBpmnProcessId() {
@@ -95,6 +98,15 @@ public class WorkflowInstanceRecord extends UnpackedObject {
 
   public WorkflowInstanceRecord setWorkflowInstanceKey(long workflowInstanceKey) {
     this.workflowInstanceKeyProp.setValue(workflowInstanceKey);
+    return this;
+  }
+
+  public long getScopeInstanceKey() {
+    return scopeInstanceKey.getValue();
+  }
+
+  public WorkflowInstanceRecord setScopeInstanceKey(long scopeInstanceKey) {
+    this.scopeInstanceKey.setValue(scopeInstanceKey);
     return this;
   }
 

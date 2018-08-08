@@ -92,6 +92,7 @@ public class UpdatePayloadTest {
             entry("workflowKey", baseEvent.getWorkflowKey()),
             entry("workflowInstanceKey", baseEvent.getWorkflowInstanceKey()),
             entry("activityId", baseEvent.getActivityId()),
+            entry("scopeInstanceKey", baseEvent.getScopeInstanceKey()),
             entry("payload", ENCODED_PAYLOAD));
 
     assertThat(workflowInstanceEvent.getMetadata().getSourceRecordPosition()).isEqualTo(4L);

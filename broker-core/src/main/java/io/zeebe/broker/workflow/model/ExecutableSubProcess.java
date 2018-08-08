@@ -17,30 +17,19 @@
  */
 package io.zeebe.broker.workflow.model;
 
-public enum BpmnStep {
-  NONE,
+public class ExecutableSubProcess extends ExecutableFlowNode {
 
-  // exactly one outgoing sequence flow
-  TAKE_SEQUENCE_FLOW,
+  private ExecutableFlowNode startEvent;
 
-  // end event, no outgoing sequence flow
-  CONSUME_TOKEN,
+  public ExecutableSubProcess(String id) {
+    super(id);
+  }
 
-  // xor-gateway
-  EXCLUSIVE_SPLIT,
+  public ExecutableFlowNode getStartEvent() {
+    return startEvent;
+  }
 
-  CREATE_JOB,
-
-  APPLY_INPUT_MAPPING,
-
-  APPLY_OUTPUT_MAPPING,
-
-  ACTIVATE_GATEWAY,
-
-  ENTER_INTERMEDIATE_EVENT,
-
-  START_ACTIVITY,
-
-  TRIGGER_END_EVENT,
-  TRIGGER_START_EVENT
+  public void setStartEvent(ExecutableFlowNode startEvent) {
+    this.startEvent = startEvent;
+  }
 }

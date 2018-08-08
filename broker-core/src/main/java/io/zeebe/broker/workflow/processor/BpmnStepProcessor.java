@@ -43,6 +43,7 @@ import io.zeebe.broker.workflow.processor.sequenceflow.ActivateGatewayHandler;
 import io.zeebe.broker.workflow.processor.sequenceflow.EnterIntermediateEventHandler;
 import io.zeebe.broker.workflow.processor.sequenceflow.StartActivityHandler;
 import io.zeebe.broker.workflow.processor.sequenceflow.TriggerEndEventHandler;
+import io.zeebe.broker.workflow.processor.subprocess.TriggerStartEventHandler;
 import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.transport.ClientResponse;
@@ -87,7 +88,8 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
 
     // flow node
     stepHandlers.put(
-        BpmnStep.CONSUME_TOKEN, new ConsumeTokenHandler(payloadCache, workflowInstanceIndex));
+        BpmnStep.CONSUME_TOKEN,
+        new ConsumeTokenHandler(payloadCache, workflowInstanceIndex, activityInstanceMap));
     stepHandlers.put(BpmnStep.TAKE_SEQUENCE_FLOW, new TakeSequenceFlowHandler());
 
     // sequence flow
@@ -95,6 +97,9 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
     stepHandlers.put(BpmnStep.ENTER_INTERMEDIATE_EVENT, new EnterIntermediateEventHandler());
     stepHandlers.put(BpmnStep.START_ACTIVITY, new StartActivityHandler());
     stepHandlers.put(BpmnStep.TRIGGER_END_EVENT, new TriggerEndEventHandler());
+
+    // sub process
+    stepHandlers.put(BpmnStep.TRIGGER_START_EVENT, new TriggerStartEventHandler());
   }
 
   @Override

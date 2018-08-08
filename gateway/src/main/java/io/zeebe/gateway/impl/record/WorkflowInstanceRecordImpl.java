@@ -33,6 +33,7 @@ public abstract class WorkflowInstanceRecordImpl extends RecordImpl
   private int version = -1;
   private long workflowKey = -1L;
   private long workflowInstanceKey = -1L;
+  private long scopeInstanceKey = -1;
   private String activityId;
   private PayloadField payload;
 
@@ -50,6 +51,7 @@ public abstract class WorkflowInstanceRecordImpl extends RecordImpl
     this.workflowKey = base.getWorkflowKey();
     this.workflowInstanceKey = base.getWorkflowInstanceKey();
     this.activityId = base.getActivityId();
+    this.scopeInstanceKey = base.getScopeInstanceKey();
 
     this.payload = new PayloadField(base.payload);
   }
@@ -79,6 +81,15 @@ public abstract class WorkflowInstanceRecordImpl extends RecordImpl
 
   public void setWorkflowInstanceKey(long workflowInstanceKey) {
     this.workflowInstanceKey = workflowInstanceKey;
+  }
+
+  @Override
+  public long getScopeInstanceKey() {
+    return scopeInstanceKey;
+  }
+
+  public void setScopeInstanceKey(long scopeInstanceKey) {
+    this.scopeInstanceKey = scopeInstanceKey;
   }
 
   @Override

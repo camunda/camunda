@@ -81,7 +81,7 @@ public class InputMappingHandler implements BpmnStepHandler<ExecutableFlowNode> 
               record.getKey(), WorkflowInstanceIntent.ACTIVITY_ACTIVATED, activityEvent);
 
       payloadCache.addPayload(
-          activityEvent.getWorkflowInstanceKey(), record.getPosition(), wfInstancePayload);
+          activityEvent.getScopeInstanceKey(), record.getPosition(), wfInstancePayload);
     } else {
       context.raiseIncident(ErrorType.IO_MAPPING_ERROR, mappingException.getMessage());
     }
@@ -94,6 +94,7 @@ public class InputMappingHandler implements BpmnStepHandler<ExecutableFlowNode> 
     activityInstanceMap
         .newActivityInstance(record.getKey())
         .setActivityId(activityEvent.getActivityId())
+        .setScopeInstanceKey(activityEvent.getScopeInstanceKey())
         .setJobKey(-1L)
         .write();
   }

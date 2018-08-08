@@ -25,8 +25,9 @@ import org.agrona.DirectBuffer;
 /** Executable* prefix in order to avoid confusion with model API classes. */
 public class ExecutableWorkflow {
 
-  private DirectBuffer id;
-  private Map<DirectBuffer, ExecutableFlowElement> flowElements = new HashMap<>();
+  private final DirectBuffer id;
+  private final Map<DirectBuffer, ExecutableFlowElement> flowElements = new HashMap<>();
+
   private ExecutableFlowNode startEvent;
 
   public ExecutableWorkflow(String id) {
@@ -45,6 +46,14 @@ public class ExecutableWorkflow {
     return flowElements.get(id);
   }
 
+  public ExecutableFlowNode getStartEvent() {
+    return startEvent;
+  }
+
+  public void setStartEvent(ExecutableFlowNode startEvent) {
+    this.startEvent = startEvent;
+  }
+
   /** convenience function for transformation */
   public <T extends ExecutableFlowElement> T getElementById(String id, Class<T> expectedType) {
     final DirectBuffer buffer = BufferUtil.wrapString(id);
@@ -58,13 +67,5 @@ public class ExecutableWorkflow {
     } else {
       throw new RuntimeException("Element is not an instance of " + expectedType.getSimpleName());
     }
-  }
-
-  public ExecutableFlowNode getStartEvent() {
-    return startEvent;
-  }
-
-  public void setStartEvent(ExecutableFlowNode startEvent) {
-    this.startEvent = startEvent;
   }
 }

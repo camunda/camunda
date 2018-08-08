@@ -59,6 +59,7 @@ public class Events {
     baseEvent.setVersion(123);
     baseEvent.setWorkflowInstanceKey(456L);
     baseEvent.setWorkflowKey(789L);
+    baseEvent.setScopeInstanceKey(890L);
 
     return baseEvent;
   }

@@ -36,11 +36,13 @@ public class ActivityInstanceMap implements AutoCloseable {
   private static final int ID_MAX_LENGTH = 255;
 
   private static final int SIZE_OF_ACTIVITY_ID = ID_MAX_LENGTH * SIZE_OF_CHAR;
-  private static final int INDEX_VALUE_SIZE = SIZE_OF_LONG + SIZE_OF_INT + SIZE_OF_ACTIVITY_ID;
+  private static final int INDEX_VALUE_SIZE =
+      SIZE_OF_LONG + SIZE_OF_INT + SIZE_OF_ACTIVITY_ID + SIZE_OF_LONG;
 
   private static final int JOB_KEY_OFFSET = 0;
   private static final int ACTIVITY_ID_LENGTH_OFFSET = JOB_KEY_OFFSET + SIZE_OF_LONG;
   private static final int ACTIVITY_ID_OFFSET = ACTIVITY_ID_LENGTH_OFFSET + SIZE_OF_INT;
+  private static final int SCOPE_INSTANCE_KEY_OFFSET = ACTIVITY_ID_OFFSET + SIZE_OF_ACTIVITY_ID;
 
   private static final ByteOrder BYTE_ORDER = ByteOrder.LITTLE_ENDIAN;
 
@@ -95,6 +97,10 @@ public class ActivityInstanceMap implements AutoCloseable {
     return activityIdBuffer;
   }
 
+  public long getScopeInstanceKey() {
+    return buffer.getLong(SCOPE_INSTANCE_KEY_OFFSET, BYTE_ORDER);
+  }
+
   public ActivityInstanceMap newActivityInstance(long activityInstanceKey) {
     key = activityInstanceKey;
     isRead = true;
@@ -110,6 +116,12 @@ public class ActivityInstanceMap implements AutoCloseable {
     ensureRead();
     buffer.putInt(ACTIVITY_ID_LENGTH_OFFSET, activityId.capacity(), BYTE_ORDER);
     buffer.putBytes(ACTIVITY_ID_OFFSET, activityId, 0, activityId.capacity());
+    return this;
+  }
+
+  public ActivityInstanceMap setScopeInstanceKey(long scopeInstanceKey) {
+    ensureRead();
+    buffer.putLong(SCOPE_INSTANCE_KEY_OFFSET, scopeInstanceKey, BYTE_ORDER);
     return this;
   }
 

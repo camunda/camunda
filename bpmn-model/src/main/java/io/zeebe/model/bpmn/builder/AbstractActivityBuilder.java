@@ -22,6 +22,10 @@ import io.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
 import io.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
 import io.zeebe.model.bpmn.instance.dc.Bounds;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -121,5 +125,30 @@ public abstract class AbstractActivityBuilder<
 
     boundaryBounds.setX(x);
     boundaryBounds.setY(y);
+  }
+
+  public B zeebeOutputBehavior(ZeebeOutputBehavior outputBehavior) {
+    final ZeebeIoMapping ioMapping = getCreateSingleExtensionElement(ZeebeIoMapping.class);
+    ioMapping.setOutputBehavhior(outputBehavior);
+
+    return myself;
+  }
+
+  public B zeebeInput(String source, String target) {
+    final ZeebeIoMapping ioMapping = getCreateSingleExtensionElement(ZeebeIoMapping.class);
+    final ZeebeInput input = createChild(ioMapping, ZeebeInput.class);
+    input.setSource(source);
+    input.setTarget(target);
+
+    return myself;
+  }
+
+  public B zeebeOutput(String source, String target) {
+    final ZeebeIoMapping ioMapping = getCreateSingleExtensionElement(ZeebeIoMapping.class);
+    final ZeebeOutput input = createChild(ioMapping, ZeebeOutput.class);
+    input.setSource(source);
+    input.setTarget(target);
+
+    return myself;
   }
 }
