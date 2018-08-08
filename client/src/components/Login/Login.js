@@ -15,7 +15,7 @@ export default class Login extends React.Component {
     this.state = {
       username: '',
       password: '',
-      error: false,
+      error: null,
       redirect: false
     };
   }
@@ -31,12 +31,25 @@ export default class Login extends React.Component {
 
     const {username, password} = this.state;
 
-    const token = await login(username, password);
+    const authResult = await login(username, password);
 
-    if (token) {
-      this.setState({error: false, redirect: true});
+    if (authResult.token) {
+      this.setState({error: null, redirect: true});
     } else {
-      this.setState({error: true});
+      let error;
+      switch (authResult.statusCode) {
+        case 401:
+          error = 'Could not log you in. Please check your username and password.';
+          break;
+        case 403:
+          error = `The user [${
+            this.state.username
+          }] is not authorized to access Optimize! Please check the Camunda Admin configuration to change user authorizations!`;
+          break;
+        default:
+          error = authResult.errorMessage || 'An error occurred. Could not log you in.';
+      }
+      this.setState({error});
       this.passwordField.focus();
       this.passwordField.select();
     }
@@ -56,13 +69,7 @@ export default class Login extends React.Component {
           <Logo className="Login__logo" />
           Camunda Optimize
         </h1>
-        {error ? (
-          <Message type="error">
-            Could not log you in. Please check your username and password.
-          </Message>
-        ) : (
-          ''
-        )}
+        {error ? <Message type="error">{error}</Message> : ''}
         <div className="Login__controls">
           <div className="Login__row">
             <label className="Login__label" htmlFor="username">

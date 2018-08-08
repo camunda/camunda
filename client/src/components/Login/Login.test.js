@@ -57,7 +57,7 @@ it('should call the login function when submitting the form', async () => {
   const password = 'dennis';
 
   node.setState({username, password});
-  login.mockReturnValueOnce(true);
+  login.mockReturnValueOnce({token: '4mfio34nfinN93Jk9'});
 
   await node.find('button').simulate('click');
 
@@ -67,7 +67,7 @@ it('should call the login function when submitting the form', async () => {
 it('should redirect to the previous location after login', async () => {
   const node = mount(<Login location={{state: {from: '/protected'}}} />);
 
-  login.mockReturnValueOnce(true);
+  login.mockReturnValueOnce({token: '4mfio34nfinN93Jk9'});
 
   await node.find('button').simulate('click');
 
@@ -77,7 +77,7 @@ it('should redirect to the previous location after login', async () => {
 it('should redirect to home after login if no previous page is given', async () => {
   const node = mount(<Login />);
 
-  login.mockReturnValueOnce(true);
+  login.mockReturnValueOnce({token: '4mfio34nfinN93Jk9'});
 
   await node.find('button').simulate('click');
 

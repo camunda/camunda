@@ -8,8 +8,9 @@ export async function login(username, password) {
 
     store({username, token});
 
-    return token;
+    return {token};
   } catch (e) {
-    return false;
+    const error = await e.json();
+    return {errorMessage: error.errorMessage, statusCode: e.status};
   }
 }
