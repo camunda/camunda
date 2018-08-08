@@ -42,7 +42,7 @@ export default class ReportModal extends React.Component {
       <Modal
         open
         onClose={this.props.close}
-        onEnterPress={this.state.selectedReportId ? this.addReport : undefined}
+        onConfirm={this.state.selectedReportId ? this.addReport : undefined}
       >
         <Modal.Header>Add a Report</Modal.Header>
         <Modal.Content>

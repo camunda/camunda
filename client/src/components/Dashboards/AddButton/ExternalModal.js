@@ -26,7 +26,7 @@ export default class ExternalModal extends React.Component {
     const isInvalid = !this.isValid(this.state.source);
 
     return (
-      <Modal open onClose={this.props.close} onEnterPress={!isInvalid ? this.addReport : undefined}>
+      <Modal open onClose={this.props.close} onConfirm={!isInvalid ? this.addReport : undefined}>
         <Modal.Header>Add a Report</Modal.Header>
         <Modal.Content>
           <ControlGroup layout="centered">

@@ -4,7 +4,7 @@ import {mount} from 'enzyme';
 import ProgressBarModal from './ProgressBarModal';
 
 jest.mock('components', () => {
-  const Modal = ({onEnterPress, ...props}) => <div {...props}>{props.children}</div>;
+  const Modal = ({onConfirm, ...props}) => <div {...props}>{props.children}</div>;
   Modal.Header = props => <div>{props.children}</div>;
   Modal.Content = props => <div>{props.children}</div>;
   Modal.Actions = props => <div>{props.children}</div>;

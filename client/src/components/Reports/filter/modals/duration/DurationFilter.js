@@ -33,7 +33,7 @@ export default class DurationFilter extends React.Component {
       <Modal
         open={true}
         onClose={this.props.close}
-        onEnterPress={isValidInput ? this.createFilter : undefined}
+        onConfirm={isValidInput ? this.createFilter : undefined}
         className="DurationFilter__modal"
       >
         <Modal.Header>Add Duration Filter</Modal.Header>

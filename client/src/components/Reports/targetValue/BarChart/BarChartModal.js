@@ -45,7 +45,7 @@ export default class BarChartModal extends React.Component {
       <Modal
         open={this.props.open}
         onClose={this.props.onClose}
-        onEnterPress={isFieldValid ? this.confirmModal : undefined}
+        onConfirm={isFieldValid ? this.confirmModal : undefined}
         className="BarChartModal__modal"
       >
         <Modal.Header>Set Target Value</Modal.Header>

@@ -18,7 +18,7 @@ jest.mock('components', () => {
   const Select = props => <select {...props}>{props.children}</select>;
   Select.Option = props => <option {...props}>{props.children}</option>;
 
-  const Modal = ({onEnterPress, ...props}) => <div {...props}>{props.children}</div>;
+  const Modal = ({onConfirm, ...props}) => <div {...props}>{props.children}</div>;
   Modal.Header = props => <div>{props.children}</div>;
   Modal.Content = props => <div>{props.children}</div>;
   Modal.Actions = props => <div>{props.children}</div>;

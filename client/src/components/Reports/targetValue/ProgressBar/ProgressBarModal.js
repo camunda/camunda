@@ -20,7 +20,7 @@ export default class ProgressBarModal extends React.Component {
       <Modal
         open={this.props.open}
         onClose={this.props.onClose}
-        onEnterPress={this.state.isValid ? this.confirmModal : undefined}
+        onConfirm={this.state.isValid ? this.confirmModal : undefined}
         className="ProgressBarModal__modal"
       >
         <Modal.Header>Set Target Value</Modal.Header>

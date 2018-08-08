@@ -436,7 +436,7 @@ export default withErrorHandling(
           <Modal
             open={deleteModalVisible}
             onClose={this.closeDeleteModal}
-            onEnterPress={this.props.deleteReport}
+            onConfirm={this.deleteReport}
             className="Report__delete-modal"
           >
             <Modal.Header>Delete {this.state.name}</Modal.Header>

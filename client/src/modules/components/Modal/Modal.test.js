@@ -41,10 +41,10 @@ it('should not call the onClose function when modal content is clicked', () => {
   expect(spy).not.toHaveBeenCalled();
 });
 
-it('should call the onEnterPress function when enter is pressed', () => {
+it('should call the onConfirm function when enter is pressed', () => {
   const spy = jest.fn();
   mount(
-    <Modal open={true} onEnterPress={spy}>
+    <Modal open={true} onConfirm={spy}>
       <input />
     </Modal>
   );
@@ -55,9 +55,9 @@ it('should call the onEnterPress function when enter is pressed', () => {
   expect(spy).toHaveBeenCalledWith(event);
 });
 
-it('should call the onEnterPress function when enter is pressed', () => {
+it('should call the onConfirm function when enter is pressed', () => {
   const spy = jest.fn();
-  mount(<Modal open={false} onEnterPress={spy} />);
+  mount(<Modal open={false} onConfirm={spy} />);
 
   const event = new KeyboardEvent('keydown', {key: 'Enter'});
   window.dispatchEvent(event);

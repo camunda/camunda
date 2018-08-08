@@ -80,49 +80,52 @@ export default class DateFilter extends React.Component {
   };
 
   render() {
+    const {mode, validDate, startDate, endDate, dynamicValue, dynamicUnit} = this.state;
     return (
-      <Modal open={true} onClose={this.props.close} className="DateFilter__modal">
+      <Modal
+        open={true}
+        onClose={this.props.close}
+        onConfirm={mode === 'dynamic' && validDate ? this.createFilter : undefined}
+        className="DateFilter__modal"
+      >
         <Modal.Header>Add Start Date Filter</Modal.Header>
         <Modal.Content>
           <ButtonGroup className="DateFilter__mode-buttons">
             <Button
               onClick={() => this.setMode('static')}
               name="button-static"
-              active={this.state.mode === 'static'}
+              active={mode === 'static'}
             >
               Fixed Date
             </Button>
             <Button
               onClick={() => this.setMode('dynamic')}
               name="button-dynamic"
-              active={this.state.mode === 'dynamic'}
+              active={mode === 'dynamic'}
             >
               Relative Date
             </Button>
           </ButtonGroup>
-          {this.state.mode === 'static' && (
+          {mode === 'static' && (
             <React.Fragment>
               <label className="DateFilter__input-label">
                 Select start and end dates to filter by:
               </label>
-              <DatePicker
-                onDateChange={this.onDateChange}
-                initialDates={{startDate: this.state.startDate, endDate: this.state.endDate}}
-              />
+              <DatePicker onDateChange={this.onDateChange} initialDates={{startDate, endDate}} />
             </React.Fragment>
           )}
-          {this.state.mode === 'dynamic' && (
+          {mode === 'dynamic' && (
             <div className="DateFilter__inputs">
               <label className="DateFilter__input-label">
                 Only include process instances started within the last
               </label>
               <Input
-                value={this.state.dynamicValue}
+                value={dynamicValue}
                 onChange={this.setDynamicValue}
                 className="DateFilter__rolling-input"
-                isInvalid={!this.state.validDate}
+                isInvalid={!validDate}
               />
-              <Select value={this.state.dynamicUnit} onChange={this.setDynamicUnit}>
+              <Select value={dynamicUnit} onChange={this.setDynamicUnit}>
                 <Select.Option value="minutes">Minutes</Select.Option>
                 <Select.Option value="hours">Hours</Select.Option>
                 <Select.Option value="days">Days</Select.Option>
@@ -130,7 +133,7 @@ export default class DateFilter extends React.Component {
                 <Select.Option value="months">Months</Select.Option>
                 <Select.Option value="years">Years</Select.Option>
               </Select>
-              {!this.state.validDate && (
+              {!validDate && (
                 <ErrorMessage className="DateFilter__warning">
                   Please enter a numeric value
                 </ErrorMessage>
@@ -140,12 +143,7 @@ export default class DateFilter extends React.Component {
         </Modal.Content>
         <Modal.Actions>
           <Button onClick={this.props.close}>Cancel</Button>
-          <Button
-            type="primary"
-            color="blue"
-            disabled={!this.state.validDate}
-            onClick={this.createFilter}
-          >
+          <Button type="primary" color="blue" disabled={!validDate} onClick={this.createFilter}>
             {this.props.filterData ? 'Edit ' : 'Add '}Filter
           </Button>
         </Modal.Actions>

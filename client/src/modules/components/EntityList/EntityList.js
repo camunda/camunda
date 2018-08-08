@@ -145,7 +145,7 @@ class EntityList extends React.Component {
       <Modal
         open={deleteModalVisible}
         onClose={this.closeDeleteModal}
-        onEnterPress={this.deleteEntity(deleteModalEntity.id)}
+        onConfirm={this.deleteEntity(deleteModalEntity.id)}
         className="EntityList__delete-modal"
       >
         <Modal.Header>Delete {deleteModalEntity.name}</Modal.Header>
