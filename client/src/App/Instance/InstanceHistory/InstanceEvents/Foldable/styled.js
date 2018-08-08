@@ -48,10 +48,10 @@ export const Summary = themed(styled.div`
   padding-top: 7px;
   padding-bottom: 7px;
 
-  font-weight: ${({bold}) => (!bold ? 'normal' : 'bold')};
+  font-weight: ${({isBold}) => (!isBold ? 'normal' : 'bold')};
 `);
 
 export const Details = styled.div`
   padding-left: 22px;
-  display: ${({folded}) => (!folded ? 'block' : 'none')};
+  display: ${({isFolded}) => (!isFolded ? 'block' : 'none')};
 `;

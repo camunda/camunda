@@ -3,14 +3,14 @@
 exports[`Foldable should be folded by default 1`] = `
 <Themed(styled.div)>
   <Summary
-    folded={true}
+    isFolded={true}
     key=".0"
     toggleFold={[Function]}
   >
     foo summary
   </Summary>
   <Details
-    folded={true}
+    isFolded={true}
     key=".1"
     toggleFold={[Function]}
   >
@@ -22,14 +22,14 @@ exports[`Foldable should be folded by default 1`] = `
 exports[`Foldable toggleFold should change folded state 1`] = `
 <Themed(styled.div)>
   <Summary
-    folded={false}
+    isFolded={false}
     key=".0"
     toggleFold={[Function]}
   >
     foo summary
   </Summary>
   <Details
-    folded={false}
+    isFolded={false}
     key=".1"
     toggleFold={[Function]}
   >

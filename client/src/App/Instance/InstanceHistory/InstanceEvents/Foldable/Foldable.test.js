@@ -17,7 +17,7 @@ describe('Foldable', () => {
     );
 
     // then
-    expect(node.state('folded')).toBe(true);
+    expect(node.state('isFolded')).toBe(true);
 
     // Summmary
     const SummaryNode = node.find(Foldable.Summary);
@@ -34,7 +34,7 @@ describe('Foldable', () => {
     const DetailsNode = node.find(Foldable.Details);
     expect(DetailsNode).toHaveLength(1);
     expect(DetailsNode.contains(fooDetailsText)).toBe(true);
-    expect(DetailsNode.prop('folded')).toBe(true);
+    expect(DetailsNode.prop('isFolded')).toBe(true);
 
     expect(node).toMatchSnapshot();
   });
@@ -55,7 +55,7 @@ describe('Foldable', () => {
     node.update();
 
     // then
-    expect(node.state('folded')).toBe(false);
+    expect(node.state('isFolded')).toBe(false);
 
     // Summary
     const SummaryNode = node.find(Foldable.Summary);
@@ -63,7 +63,7 @@ describe('Foldable', () => {
 
     // Details
     const DetailsNode = node.find(Foldable.Details);
-    expect(DetailsNode.prop('folded')).toBe(false);
+    expect(DetailsNode.prop('isFolded')).toBe(false);
 
     expect(node).toMatchSnapshot();
   });

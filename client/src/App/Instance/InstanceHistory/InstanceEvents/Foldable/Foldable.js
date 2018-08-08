@@ -12,18 +12,18 @@ export default class Foldable extends React.Component {
   };
 
   state = {
-    folded: true
+    isFolded: true
   };
 
   toggleFold = () => {
-    const {folded} = this.state;
-    this.setState({folded: !folded});
+    const {isFolded} = this.state;
+    this.setState({isFolded: !isFolded});
   };
 
   render() {
     const children = Children.map(this.props.children, child =>
       cloneElement(child, {
-        folded: this.state.folded,
+        isFolded: this.state.isFolded,
         toggleFold: this.toggleFold
       })
     );
@@ -32,11 +32,16 @@ export default class Foldable extends React.Component {
   }
 }
 
-Foldable.Summary = function Summary({toggleFold, folded, children, ...props}) {
+Foldable.Summary = function Summary({
+  toggleFold,
+  isFolded,
+  children,
+  ...props
+}) {
   return (
     <Styled.Summary {...props}>
       <Styled.FoldButton onClick={toggleFold}>
-        {!folded ? <Styled.DownIcon /> : <Styled.RightIcon />}
+        {!isFolded ? <Styled.DownIcon /> : <Styled.RightIcon />}
       </Styled.FoldButton>
       {children}
     </Styled.Summary>
@@ -45,7 +50,7 @@ Foldable.Summary = function Summary({toggleFold, folded, children, ...props}) {
 
 Foldable.Summary.propTypes = {
   toggleFold: PropTypes.func,
-  folded: PropTypes.bool,
+  isFolded: PropTypes.bool,
   children: PropTypes.oneOfType([
     PropTypes.arrayOf(PropTypes.node),
     PropTypes.node
