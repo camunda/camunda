@@ -1,28 +1,17 @@
 // vim: set filetype=groovy:
 
-static String runGo() {
-    return '''\
-#!/bin/bash -eux
-export GOPATH="${WORKSPACE}/gopath"
-export PATH="${PATH}:${WORKSPACE}/go/bin:${GOPATH}/bin"
+def jdkVersion = 'jdk-8-latest'
+def mavenVersion = 'maven-3.5-latest'
+def mavenSettingsConfig = 'camunda-maven-settings'
 
-cd ${GOPATH}/src/github.com/zeebe-io/zeebe/clients/go
-make test
+def joinJmhResults = '''\
+#!/bin/bash -x
+cat **/*/jmh-result.json | jq -s add > target/jmh-result.json
 '''
-}
 
-static String setupGo() {
+def goTests() {
     return '''\
 #!/bin/bash -eux
-echo "== Workspace =="
-
-export GOPATH="${WORKSPACE}/gopath"
-export PATH="${PATH}:${WORKSPACE}/go/bin:${GOPATH}/bin"
-
-GO_VERSION=1.10
-curl -sL https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz | tar xvzf - -C \${WORKSPACE}
-mkdir -p ${GOPATH}
-
 echo "== Go build environment =="
 go version
 echo "GOPATH=${GOPATH}"
@@ -33,23 +22,10 @@ mkdir -p ${PROJECT_ROOT}
 PROJECT_DIR="${PROJECT_ROOT}/zeebe"
 ln -fvs ${WORKSPACE} ${PROJECT_DIR}
 
-cd ${PROJECT_DIR}/clients/go
-make install-deps
-
-echo "== Building distro =="
-cd ${WORKSPACE}
-mvn clean install -pl dist -am -DskipTests
+cd ${GOPATH}/src/github.com/zeebe-io/zeebe/clients/go
+make install-deps test
 '''
 }
-
-def jdkVersion = 'jdk-8-latest'
-def mavenVersion = 'maven-3.5-latest'
-def mavenSettingsConfig = 'camunda-maven-settings'
-
-def joinJmhResults = '''\
-#!/bin/bash -x
-cat **/*/jmh-result.json | jq -s add > target/jmh-result.json
-'''
 
 pipeline {
     agent { node { label 'ubuntu-large' } }
@@ -66,6 +42,8 @@ pipeline {
                 withMaven(jdk: jdkVersion, maven: mavenVersion, mavenSettingsConfig: mavenSettingsConfig) {
                     sh 'mvn -B -T 1C clean com.mycila:license-maven-plugin:check com.coveo:fmt-maven-plugin:check install -DskipTests'
                 }
+
+                stash name: "zeebe-dist", includes: "dist/target/zeebe-broker/**/*"
             }
         }
 
@@ -108,10 +86,8 @@ pipeline {
                     agent { node { label 'ubuntu' } }
 
                     steps {
-                        withMaven(jdk: jdkVersion, maven: mavenVersion, mavenSettingsConfig: mavenSettingsConfig) {
-                            sh setupGo()
-                            sh runGo()
-                        }
+                        unstash name: "zeebe-dist"
+                        sh goTests()
                     }
                 }
             }
