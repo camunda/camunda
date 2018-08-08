@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.zeebe.client.impl;
 
 import io.grpc.ManagedChannel;
@@ -26,13 +27,14 @@ import io.zeebe.client.api.commands.TopologyRequestStep1;
 import io.zeebe.client.api.record.ZeebeObjectMapper;
 import io.zeebe.client.api.subscription.ManagementSubscriptionBuilderStep1;
 import io.zeebe.gateway.protocol.GatewayGrpc;
+import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import java.net.URI;
 import java.net.URISyntaxException;
 
 public class ZeebeClientImpl implements ZeebeClient {
 
-  private final GatewayGrpc.GatewayBlockingStub blockingStub;
   private final ZeebeClientConfiguration config;
+  private final GatewayStub asyncStub;
 
   public ZeebeClientImpl(final ZeebeClientConfiguration configuration) {
     this.config = configuration;
@@ -49,7 +51,8 @@ public class ZeebeClientImpl implements ZeebeClient {
         ManagedChannelBuilder.forAddress(address.getHost(), address.getPort())
             .usePlaintext()
             .build();
-    blockingStub = GatewayGrpc.newBlockingStub(channel);
+
+    asyncStub = GatewayGrpc.newStub(channel);
   }
 
   @Override
@@ -79,7 +82,7 @@ public class ZeebeClientImpl implements ZeebeClient {
 
   @Override
   public TopologyRequestStep1 newTopologyRequest() {
-    return new TopologyRequestImpl(blockingStub);
+    return new TopologyRequestImpl(asyncStub);
   }
 
   @Override

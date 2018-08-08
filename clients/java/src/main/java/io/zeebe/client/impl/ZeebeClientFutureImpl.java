@@ -13,15 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.zeebe.client.impl;
 
+import io.grpc.stub.StreamObserver;
 import io.zeebe.client.api.ZeebeFuture;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 
-public class ZeebeClientFutureImpl<T> extends CompletableFuture<T> implements ZeebeFuture<T> {
+public class ZeebeClientFutureImpl<T, R> extends CompletableFuture<T>
+    implements ZeebeFuture<T>, StreamObserver<R> {
+
+  private final Function<R, T> responseMapper;
+
+  ZeebeClientFutureImpl(final Function<R, T> responseMapper) {
+    this.responseMapper = responseMapper;
+  }
 
   @Override
   public T join() {
@@ -39,5 +49,24 @@ public class ZeebeClientFutureImpl<T> extends CompletableFuture<T> implements Ze
     } catch (final InterruptedException | ExecutionException | TimeoutException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  @Override
+  public void onNext(final R r) {
+    try {
+      complete(responseMapper.apply(r));
+    } catch (final Exception e) {
+      completeExceptionally(e);
+    }
+  }
+
+  @Override
+  public void onError(final Throwable throwable) {
+    completeExceptionally(throwable);
+  }
+
+  @Override
+  public void onCompleted() {
+    // do nothing as we don't support streaming
   }
 }

@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.zeebe.client;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import io.zeebe.client.api.commands.PartitionBrokerRole;
-import io.zeebe.client.api.commands.PartitionInfo;
 import io.zeebe.client.factories.GrpcBrokerInfoFactory;
 import io.zeebe.client.impl.BrokerInfoImpl;
 import io.zeebe.gateway.protocol.GatewayOuterClass;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
-import java.util.List;
+import java.util.LinkedList;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -43,23 +43,26 @@ public class BrokerInfoImplTest {
 
     assertThat(impl.getHost()).isEqualTo(broker.getHost());
     assertThat(impl.getPort()).isEqualTo(broker.getPort());
+
     assertThat(impl.getAddress())
         .isEqualTo(String.format("%s:%d", broker.getHost(), broker.getPort()));
 
     assertThat(impl.getPartitions().size()).isEqualTo(1);
+    final LinkedList<Partition> expectedPartitions = new LinkedList<>(broker.getPartitionsList());
 
-    final List<PartitionInfo> receivedPartitions = impl.getPartitions();
-    final List<Partition> expectedPartitions = broker.getPartitionsList();
-    for (int i = 0; i < broker.getPartitionsCount(); ++i) {
-      final PartitionInfo received = receivedPartitions.get(i);
-      final Partition expected = expectedPartitions.get(i);
+    impl.getPartitions()
+        .forEach(
+            received -> {
+              final Partition expected = expectedPartitions.pop();
 
-      assertThat(received.getTopicName()).isEqualTo(expected.getTopicName());
-      assertThat(received.getRole() == PartitionBrokerRole.LEADER)
-          .isEqualTo(expected.getRole() == GatewayOuterClass.Partition.PartitionBrokerRole.LEADER);
-      assertThat(received.getPartitionId()).isEqualTo(expected.getPartitionId());
-      assertThat(received.isLeader())
-          .isEqualTo(expected.getRole() == GatewayOuterClass.Partition.PartitionBrokerRole.LEADER);
-    }
+              assertThat(received.getTopicName()).isEqualTo(expected.getTopicName());
+              assertThat(received.getPartitionId()).isEqualTo(expected.getPartitionId());
+
+              assertThat(received.getRole() == PartitionBrokerRole.LEADER)
+                  .isEqualTo(expected.getRole() == Partition.PartitionBrokerRole.LEADER);
+
+              assertThat(received.isLeader())
+                  .isEqualTo(expected.getRole() == Partition.PartitionBrokerRole.LEADER);
+            });
   }
 }

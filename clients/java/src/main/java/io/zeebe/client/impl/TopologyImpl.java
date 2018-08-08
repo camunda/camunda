@@ -13,33 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package io.zeebe.client.impl;
 
-import io.zeebe.client.api.ZeebeFuture;
+import io.zeebe.client.api.commands.BrokerInfo;
 import io.zeebe.client.api.commands.Topology;
-import io.zeebe.client.api.commands.TopologyRequestStep1;
-import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
-import io.zeebe.gateway.protocol.GatewayOuterClass.HealthRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthResponse;
+import java.util.ArrayList;
+import java.util.List;
 
-public class TopologyRequestImpl implements TopologyRequestStep1 {
+public class TopologyImpl implements Topology {
 
-  private final GatewayStub asyncStub;
+  private final List<BrokerInfo> brokers;
 
-  TopologyRequestImpl(final GatewayStub asyncStub) {
-    this.asyncStub = asyncStub;
+  public TopologyImpl(final HealthResponse response) {
+    brokers = new ArrayList<>();
+    for (final GatewayOuterClass.BrokerInfo broker : response.getBrokersList()) {
+      brokers.add(new BrokerInfoImpl(broker));
+    }
   }
 
   @Override
-  public ZeebeFuture<Topology> send() {
-    final HealthRequest request = HealthRequest.getDefaultInstance();
-
-    final ZeebeClientFutureImpl<Topology, HealthResponse> future =
-        new ZeebeClientFutureImpl<>(TopologyImpl::new);
-
-    asyncStub.health(request, future);
-
-    return future;
+  public List<BrokerInfo> getBrokers() {
+    return brokers;
   }
 }
