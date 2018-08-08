@@ -23,7 +23,7 @@ exports[`InstanceEvents should render grouped events if events or activities cha
       key="foo name0"
     >
       <Summary
-        bold={true}
+        isBold={true}
       >
         foo name
       </Summary>
@@ -56,7 +56,7 @@ exports[`InstanceEvents should render grouped events if events or activities cha
       key="bar name1"
     >
       <Summary
-        bold={true}
+        isBold={true}
       >
         bar name
       </Summary>
