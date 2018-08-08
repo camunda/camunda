@@ -3,7 +3,8 @@ import {shallow} from 'enzyme';
 
 import WrappedFooter from './ListFooter';
 import Paginator from './Paginator';
-const Footer = WrappedFooter.WrappedComponent;
+
+const {WrappedComponent: Footer} = WrappedFooter;
 
 describe('ListFooter', () => {
   it('should not show a pagination if there is only one page', () => {
@@ -14,7 +15,7 @@ describe('ListFooter', () => {
         }}
         storeStateLocally={() => {}}
         onFirstElementChange={jest.fn()}
-        addNewSelection={jest.fn()}
+        handleAddNewSelection={jest.fn()}
         addToCurrentSelection={jest.fn()}
         perPage={10}
         firstElement={0}
@@ -34,8 +35,8 @@ describe('ListFooter', () => {
         }}
         storeStateLocally={() => {}}
         onFirstElementChange={jest.fn()}
-        addNewSelection={spy}
-        addToCurrentSelection={jest.fn()}
+        handleAddNewSelection={spy}
+        onAddToOpenSelection={jest.fn()}
         perPage={10}
         firstElement={30}
         total={100}
