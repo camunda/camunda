@@ -23,8 +23,7 @@ exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
   }
 >
   <React.Fragment>
-    <Styled(Themed(styled.a))
-      href="#"
+    <Themed(Styled(Themed(styled.button)))
       isSelected={true}
       onClick={[Function]}
     >
@@ -32,9 +31,8 @@ exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
         isSelected={true}
       />
       foo
-    </Styled(Themed(styled.a))>
-    <Themed(styled.a)
-      href="#"
+    </Themed(Styled(Themed(styled.button)))>
+    <Themed(styled.button)
       isSelected={false}
       key="1"
       onClick={[Function]}
@@ -45,9 +43,8 @@ exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
         type="someType1"
       />
       someName1
-    </Themed(styled.a)>
-    <Themed(styled.a)
-      href="#"
+    </Themed(styled.button)>
+    <Themed(styled.button)
       isSelected={false}
       key="2"
       onClick={[Function]}
@@ -58,7 +55,7 @@ exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
         type="someType2"
       />
       someName2
-    </Themed(styled.a)>
+    </Themed(styled.button)>
   </React.Fragment>
 </Themed(styled.div)>
 `;
