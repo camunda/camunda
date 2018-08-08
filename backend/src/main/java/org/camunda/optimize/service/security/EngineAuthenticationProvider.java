@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -26,8 +27,6 @@ public class EngineAuthenticationProvider {
   }
 
   private boolean performAuthenticationCheck(CredentialsDto credentialsDto, EngineContext engineContext) {
-    boolean authenticated = false;
-    try {
       Response response = engineContext.getEngineClient()
         .target(configurationService.getEngineRestApiEndpointOfCustomEngine(engineContext.getEngineAlias()))
         .path(configurationService.getUserValidationEndpoint())
@@ -36,23 +35,18 @@ public class EngineAuthenticationProvider {
 
       if (response.getStatus() == 200) {
         AuthenticationResultDto responseEntity = response.readEntity(AuthenticationResultDto.class);
-        authenticated = responseEntity.isAuthenticated();
+        if (responseEntity.isAuthenticated()) {
+          return true;
+        }
+
+        throw new NotAuthorizedException("Could not log you in. Please check your username and password.");
       } else {
         logger.error("Could not validate user [{}] against the engine [{}]. " +
-            "Maybe you did not provide a user or password.",
+            "Maybe you did not provide a user or password or the user is locked",
           credentialsDto.getUsername(),
           engineContext.getEngineAlias()
         );
+        throw response.readEntity(RuntimeException.class);
       }
-
-    } catch (Exception e) {
-      logger.error("Could not validate user [{}] against the engine [{}]. Please check the connection to the engine!",
-        credentialsDto.getUsername(),
-        engineContext.getEngineAlias(),
-        e);
-    }
-
-    return authenticated;
   }
-
 }

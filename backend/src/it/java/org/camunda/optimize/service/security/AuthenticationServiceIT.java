@@ -44,6 +44,20 @@ public class AuthenticationServiceIT {
   }
 
   @Test
+  public void authenticateLockedUser() {
+    //given
+    engineRule.addUser("kermit", "kermit");
+    engineRule.grantUserOptimizeAccess("kermit");
+
+    //when
+    embeddedOptimizeRule.authenticateUserRequest("kermit", "wrongPassword");
+    Response response = embeddedOptimizeRule.authenticateUserRequest("kermit", "kermit");
+
+    //then
+    assertThat(response.getStatus(),is(500));
+  }
+
+  @Test
   public void authenticateUnknownUser() {
     //when
     Response response = embeddedOptimizeRule.authenticateUserRequest("kermit", "kermit");
