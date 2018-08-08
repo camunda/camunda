@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -35,11 +34,7 @@ public class EngineAuthenticationProvider {
 
       if (response.getStatus() == 200) {
         AuthenticationResultDto responseEntity = response.readEntity(AuthenticationResultDto.class);
-        if (responseEntity.isAuthenticated()) {
-          return true;
-        }
-
-        throw new NotAuthorizedException("Could not log you in. Please check your username and password.");
+        return responseEntity.isAuthenticated();
       } else {
         logger.error("Could not validate user [{}] against the engine [{}]. " +
             "Maybe you did not provide a user or password or the user is locked",
