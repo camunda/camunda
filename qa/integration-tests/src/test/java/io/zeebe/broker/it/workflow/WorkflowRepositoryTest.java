@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
-import io.zeebe.gateway.api.ZeebeFuture;
 import io.zeebe.gateway.api.commands.Workflow;
 import io.zeebe.gateway.api.commands.WorkflowResource;
 import io.zeebe.gateway.api.events.DeploymentEvent;
@@ -29,6 +28,7 @@ import io.zeebe.gateway.cmd.BrokerErrorException;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.util.StreamUtil;
+import io.zeebe.util.sched.future.ActorFuture;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -147,17 +147,17 @@ public class WorkflowRepositoryTest {
 
   @Test
   public void shouldFailToGetResourceByWorkflowKeyIfNotExist() {
-    final ZeebeFuture<WorkflowResource> future =
+    final ActorFuture<WorkflowResource> future =
         clientRule.getWorkflowClient().newResourceRequest().workflowKey(123).send();
 
-    assertThatThrownBy(() -> future.join())
+    assertThatThrownBy(future::join)
         .isInstanceOf(BrokerErrorException.class)
         .hasMessageContaining("No workflow found with key '123'");
   }
 
   @Test
   public void shouldFailToGetResourceByBpmnProcessIdIfNotExist() {
-    final ZeebeFuture<WorkflowResource> future =
+    final ActorFuture<WorkflowResource> future =
         clientRule
             .getWorkflowClient()
             .newResourceRequest()

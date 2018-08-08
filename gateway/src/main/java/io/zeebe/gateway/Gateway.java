@@ -17,6 +17,8 @@ package io.zeebe.gateway;
 
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
+import io.zeebe.gateway.impl.ZeebeClientImpl;
+import io.zeebe.util.sched.ActorScheduler;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.time.Duration;
@@ -30,7 +32,7 @@ public class Gateway {
   private static final String GATEWAY_DEFAULT_HOST = "0.0.0.0";
 
   private final String host;
-  private int port;
+  private final int port;
 
   private Server server;
   private ZeebeClient zbClient;
@@ -73,10 +75,11 @@ public class Gateway {
 
   public void start() throws IOException {
     zbClient = ZeebeClient.newClientBuilder().requestTimeout(Duration.ofMillis(250)).build();
-
+    final ClusterClient clusterClient = new ClusterClient(zbClient);
+    final ActorScheduler actorScheduler = ((ZeebeClientImpl) zbClient).getScheduler();
     server =
         NettyServerBuilder.forAddress(new InetSocketAddress(host, port))
-            .addService(new EndpointManager(new ResponseMapper(), zbClient))
+            .addService(new EndpointManager(new ResponseMapper(), clusterClient, actorScheduler))
             .build();
 
     server.start();

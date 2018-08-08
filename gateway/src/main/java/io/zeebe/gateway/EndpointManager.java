@@ -20,38 +20,29 @@ import io.zeebe.gateway.api.commands.Topology;
 import io.zeebe.gateway.protocol.GatewayGrpc;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthResponse;
+import io.zeebe.util.sched.ActorScheduler;
+import io.zeebe.util.sched.future.ActorFuture;
 
 public class EndpointManager extends GatewayGrpc.GatewayImplBase {
 
   private final ResponseMapper responseMapper;
-  private final ZeebeClient zbClient;
+  private final ClusterClient clusterClient;
+  private final RequestActor requestActor;
 
-  public ResponseMapper getResponseMapper() {
-    return responseMapper;
-  }
-
-  public ZeebeClient getZbClient() {
-    return zbClient;
-  }
-
-  EndpointManager(final ResponseMapper mapper, final ZeebeClient clusterClient) {
+  public EndpointManager(
+      final ResponseMapper mapper,
+      final ClusterClient clusterClient,
+      ActorScheduler actorScheduler) {
     this.responseMapper = mapper;
-    this.zbClient = clusterClient;
+    this.clusterClient = clusterClient;
+    this.requestActor = new RequestActor();
+    actorScheduler.submitActor(requestActor);
   }
 
   @Override
   public void health(
       final HealthRequest request, final StreamObserver<HealthResponse> responseObserver) {
-
-    try {
-      final Topology response = zbClient.newTopologyRequest().send().join();
-
-      responseObserver.onNext(responseMapper.toResponse(response));
-      responseObserver.onCompleted();
-
-    } catch (final RuntimeException e) {
-      responseObserver.onError(e);
-      responseObserver.onCompleted();
-    }
+    final ActorFuture<Topology> responseFuture = clusterClient.sendRequest(request);
+    requestActor.handleResponse(responseFuture, responseMapper::toResponse, responseObserver);
   }
 }

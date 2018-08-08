@@ -17,9 +17,9 @@ package io.zeebe.example.workflow;
 
 import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.ZeebeClientBuilder;
-import io.zeebe.gateway.api.ZeebeFuture;
 import io.zeebe.gateway.api.clients.WorkflowClient;
 import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
+import io.zeebe.util.sched.future.ActorFuture;
 
 public class NonBlockingWorkflowInstanceCreator {
   public static void main(String[] args) {
@@ -40,7 +40,7 @@ public class NonBlockingWorkflowInstanceCreator {
 
       while (instancesCreating < numberOfInstances) {
         // this is non-blocking/async => returns a future
-        final ZeebeFuture<WorkflowInstanceEvent> future =
+        final ActorFuture<WorkflowInstanceEvent> future =
             workflowClient
                 .newCreateInstanceCommand()
                 .bpmnProcessId(bpmnProcessId)

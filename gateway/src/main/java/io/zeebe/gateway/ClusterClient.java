@@ -13,16 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.gateway.api;
+package io.zeebe.gateway;
 
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import io.zeebe.gateway.api.commands.Topology;
+import io.zeebe.gateway.protocol.GatewayOuterClass.HealthRequest;
+import io.zeebe.util.sched.future.ActorFuture;
 
-public interface ZeebeFuture<T> extends Future<T> {
+public class ClusterClient {
 
-  /** Like {@link #get()} but throws runtime exceptions. */
-  T join();
+  private final ZeebeClient client;
 
-  /** Like {@link #get(long, java.util.concurrent.TimeUnit)} but throws runtime exceptions. */
-  T join(long timeout, TimeUnit unit);
+  public ClusterClient(ZeebeClient client) {
+    this.client = client;
+  }
+
+  public ActorFuture<Topology> sendRequest(final HealthRequest healthRequest) {
+    return client.newTopologyRequest().send();
+  }
 }
