@@ -6,6 +6,7 @@ import Table from 'modules/components/Table';
 import {getWorkflowName} from 'modules/utils/instance';
 import {formatDate} from 'modules/utils/date';
 import {EXPAND_STATE} from 'modules/constants';
+import StateIcon from 'modules/components/StateIcon';
 
 import HeaderSortIcon from './HeaderSortIcon';
 import * as Styled from './styled';
@@ -194,7 +195,7 @@ export default class List extends React.Component {
                     title={`Select instance ${instance.id}`}
                   />
 
-                  <Styled.InstanceStateIcon instance={instance} />
+                  <StateIcon instance={instance} />
                   <Styled.WorkflowName>
                     {getWorkflowName(instance)}
                   </Styled.WorkflowName>

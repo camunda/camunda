@@ -42,7 +42,7 @@ export const Input = themed(styled.input`
 export const CustomCheckbox = themed(styled.div`
   position: relative;
   display: inline-block;
-  margin-right: 10px;
+  margin-right: 11px;
   width: 12px;
   height: 12px;
 

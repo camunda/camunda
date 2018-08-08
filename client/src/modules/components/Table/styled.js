@@ -6,15 +6,15 @@ export const Table = themed(styled.table`
   font-size: 14px;
   border-spacing: 0;
   border-collapse: collapse;
-  color: ${themeStyle({
-    dark: '#ffffff',
-    light: Colors.uiLight06
-  })};
 `);
 
 export const TH = themed(styled.th`
   font-weight: 600;
   padding: 0 0 0 5px;
+  color: ${themeStyle({
+    dark: 'rgba(255, 255, 255, 0.8)',
+    light: 'rgba(98, 98, 110, 0.8)'
+  })};
 
   &:not(:last-child):after {
     content: ' ';
@@ -32,10 +32,14 @@ export const TH = themed(styled.th`
   }
 `);
 
-export const TD = styled.td`
+export const TD = themed(styled.td`
   padding: 0 0 0 5px;
   white-space: nowrap;
-`;
+  color: ${themeStyle({
+    dark: 'rgba(255, 255, 255, 0.9)',
+    light: 'rgba(98, 98, 110, 0.9)'
+  })};
+`);
 
 export const TR = themed(styled.tr`
   height: 36px;

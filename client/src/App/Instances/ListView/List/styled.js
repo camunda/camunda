@@ -2,7 +2,6 @@ import styled from 'styled-components';
 import {Link} from 'react-router-dom';
 
 import {Colors, themed, themeStyle} from 'modules/theme';
-import StateIcon from 'modules/components/StateIcon';
 
 export const List = styled.div`
   flex-grow: 1;
@@ -45,10 +44,6 @@ export const Selection = styled.div`
   & * {
     top: 0px;
   }
-`;
-
-export const InstanceStateIcon = styled(StateIcon)`
-  margin-left: 12px;
 `;
 
 export const InstanceAnchor = themed(styled(Link)`
