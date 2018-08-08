@@ -81,7 +81,7 @@ class EntityList extends React.Component {
   formatData = data =>
     data.map(({name, id, lastModified, lastModifier, shared}) => {
       const entry = {
-        name: name,
+        name,
         link: `/${this.props.api}/${id}`,
         infos: [
           {
