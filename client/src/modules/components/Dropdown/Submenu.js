@@ -3,6 +3,8 @@ import classnames from 'classnames';
 
 import DropdownOption from './DropdownOption';
 
+import {Icon} from 'components';
+
 import './Submenu.css';
 
 export default class Submenu extends React.Component {
@@ -25,10 +27,10 @@ export default class Submenu extends React.Component {
           onClick={this.open}
         >
           {this.props.label}
-          <div className="Submenu__indicator" />
+          <Icon type="right" className="open-submenu" />
         </DropdownOption>
         {this.props.open && (
-          <div className="Submenu__container" style={{left: this.props.offset + 'px'}}>
+          <div className="Submenu__container" style={{left: this.props.offset - 1 + 'px'}}>
             {this.props.children}
           </div>
         )}

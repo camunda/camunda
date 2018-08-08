@@ -1,7 +1,7 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import {Button} from 'components';
+import {Button, Icon} from 'components';
 import DropdownOption from './DropdownOption';
 import Submenu from './Submenu';
 
@@ -97,12 +97,13 @@ export default class Dropdown extends React.Component {
           id={this.props.id ? this.props.id + '-button' : ''}
         >
           {this.props.label}
-          <span className="Dropdown__caret" />
+          <Icon type="down" />
         </Button>
         <div
           className="Dropdown__menu"
           aria-labelledby={this.props.id ? this.props.id + '-button' : ''}
           ref={this.menuContainer}
+          style={{minWidth: (this.container && this.container.clientWidth) + 'px'}}
         >
           <ul className="Dropdown__menu-list">
             {React.Children.map(this.props.children, (child, idx) => (

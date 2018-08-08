@@ -30,6 +30,10 @@
   border-top: 1px solid #bbbbbb;
   border-bottom: 1px solid #bbbbbb;
 
+  input {
+    width: 100%;
+  }
+
   &:first-child,
   & + .ReportControlPanel__variableInputContainer {
     border-top: none;

@@ -5,7 +5,8 @@ import Dropdown from './Dropdown';
 
 jest.mock('components', () => {
   return {
-    Button: ({children}) => <button>{children}</button>
+    Button: ({children}) => <button>{children}</button>,
+    Icon: () => <span />
   };
 });
 

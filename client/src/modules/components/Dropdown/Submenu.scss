@@ -1,5 +1,12 @@
 .DropdownOption.Submenu__DropdownOption {
   padding-right: 20px;
+
+  .open-submenu {
+    display: inline-block;
+    position: absolute;
+    right: 0;
+    margin-right: 0;
+  }
 }
 
 .DropdownOption.Submenu__DropdownOption--open {
@@ -7,18 +14,6 @@
   color: #fff;
   border: none;
   transition: none;
-}
-
-.Submenu__indicator {
-  width: 0;
-  height: 0;
-  border-style: solid;
-  border-width: 5px 0 5px 10px;
-  border-color: transparent transparent transparent #000000;
-  display: inline-block;
-  margin-top: 4px;
-  position: absolute;
-  right: 6px;
 }
 
 .Submenu__container {
