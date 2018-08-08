@@ -1,4 +1,4 @@
-package org.camunda.optimize.test.performance.data.generation;
+package org.camunda.optimize.data.generation;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -21,7 +21,6 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.dto.DeploymentDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
-import org.camunda.optimize.test.util.PropertyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +31,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -40,19 +38,19 @@ public class SimpleEngineClient {
 
   private final Logger logger = LoggerFactory.getLogger(SimpleEngineClient.class);
 
-  CloseableHttpClient client;
+  private CloseableHttpClient client;
+  private String engineRestEndpoint;
   private ObjectMapper objectMapper = new ObjectMapper();
-  private Properties properties;
 
 
-  public SimpleEngineClient() {
-    properties = PropertyUtil.loadProperties("import-performance-test.properties");
+  public SimpleEngineClient(String engineRestEndpoint) {
+    this.engineRestEndpoint = engineRestEndpoint;
     client = HttpClientBuilder.create().build();
     objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
   }
 
   public List<String> deployProcesses(BpmnModelInstance modelInstance, int nVersions) {
-    List<String> processDefinitonIds = IntStream.rangeClosed(1, nVersions)
+    return IntStream.rangeClosed(1, nVersions)
       .mapToObj(n -> {
         try {
           return deployProcessAndGetId(modelInstance);
@@ -62,7 +60,6 @@ public class SimpleEngineClient {
         return null;
       })
       .collect(Collectors.toList());
-    return processDefinitonIds;
   }
 
    public void close() {
@@ -73,13 +70,12 @@ public class SimpleEngineClient {
     }
   }
 
-  public String deployProcessAndGetId(BpmnModelInstance modelInstance) throws IOException {
+  private String deployProcessAndGetId(BpmnModelInstance modelInstance) throws IOException {
     DeploymentDto deploymentDto = deployProcess(modelInstance);
-    String processDefinitionId = getProcessDefinitionId(deploymentDto);
-    return processDefinitionId;
+    return getProcessDefinitionId(deploymentDto);
   }
 
-  public String getProcessDefinitionId(DeploymentDto deployment) throws IOException {
+  private String getProcessDefinitionId(DeploymentDto deployment) throws IOException {
     List<ProcessDefinitionEngineDto> processDefinitions = getAllProcessDefinitions(deployment);
     if (processDefinitions.size() != 1) {
       logger.warn("Deployment should contain only one process definition!");
@@ -87,7 +83,7 @@ public class SimpleEngineClient {
     return processDefinitions.get(0).getId();
   }
 
-  public List<ProcessDefinitionEngineDto> getAllProcessDefinitions(DeploymentDto deployment) throws IOException {
+  private List<ProcessDefinitionEngineDto> getAllProcessDefinitions(DeploymentDto deployment) throws IOException {
     HttpRequestBase get = new HttpGet(getProcessDefinitionUri());
     URI uri = null;
     try {
@@ -109,14 +105,14 @@ public class SimpleEngineClient {
   }
 
   private String getProcessDefinitionUri() {
-    return  getEngineUrl() + "/process-definition";
+    return  engineRestEndpoint + "/process-definition";
   }
 
   private String getDeploymentUri() {
-    return getEngineUrl() + "/deployment/create";
+    return engineRestEndpoint + "/deployment/create";
   }
 
-  public DeploymentDto deployProcess(BpmnModelInstance bpmnModelInstance) {
+  private DeploymentDto deployProcess(BpmnModelInstance bpmnModelInstance) {
     String process = Bpmn.convertToString(bpmnModelInstance);
     HttpPost deploymentRequest = createDeploymentRequest(process);
     DeploymentDto deployment = new DeploymentDto();
@@ -166,7 +162,7 @@ public class SimpleEngineClient {
   }
 
   private String getStartProcessInstanceUri(String procDefId) {
-    return getEngineUrl() +  "/process-definition/" + procDefId + "/start";
+    return engineRestEndpoint +  "/process-definition/" + procDefId + "/start";
   }
 
   private HttpPost createDeploymentRequest(String process) {
@@ -180,10 +176,5 @@ public class SimpleEngineClient {
       .build();
     post.setEntity(entity);
     return post;
-  }
-
-  public String getEngineUrl() {
-    return properties.getProperty("camunda.optimize.engine.rest",
-      "http://localhost:8080/engine-rest");
   }
 }

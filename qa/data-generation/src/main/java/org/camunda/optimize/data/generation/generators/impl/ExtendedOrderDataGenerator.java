@@ -1,7 +1,8 @@
-package org.camunda.optimize.test.performance.data.generation.impl;
+package org.camunda.optimize.data.generation.generators.impl;
 
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.test.performance.data.generation.DataGenerator;
+import org.camunda.optimize.data.generation.generators.DataGenerator;
+import org.camunda.optimize.data.generation.SimpleEngineClient;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -13,6 +14,10 @@ public class ExtendedOrderDataGenerator extends DataGenerator {
 
   private static final int nVersions = 20;
   private static final int totalInstanceCount = 5000;
+
+  public ExtendedOrderDataGenerator(SimpleEngineClient engineClient) {
+    super(engineClient);
+  }
 
   protected BpmnModelInstance retrieveDiagram() {
     try {

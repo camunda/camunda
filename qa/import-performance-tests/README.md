@@ -10,7 +10,7 @@ In order to measure performance of the import process following steps are requir
 to start test one could use following command 
 
 ```
-mvn -Pperformance clean verify
+mvn -Pperformance-test clean verify
 ```
 
 please note that test relies on the fact that you already have Camunda BPM Platform started and 
@@ -89,18 +89,10 @@ docker run -d -p 1521:1521 registry.camunda.com/camunda-ci-oracle
 ```
 * start engine
 
-## Test data generation
-
-In order to measure performance of import process test case will create some data by deploying and starting
- a process into the running process engine instance. By default 100 000 process instances will be started. This
-  value can be adjusted through the `import.test.number.of.processes` property located in _import-performance-test.properties_.
-  Additionally data generation step can be completely disabled by changing value of 
-  `import.test.generate.data` to _false_. 
   
 ## Import process 
 
-Once test data is generated import process will start in Camunda Optimize instance embedded into Jetty web 
- container. Progress of the process will be printed out to the standard output stream while operation is running. 
+The import process will automatically start. The progress of the import will be printed out to the standard output stream while the import is running.
  
 ## Results\Reporting 
 

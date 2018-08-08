@@ -1,7 +1,8 @@
-package org.camunda.optimize.test.performance.data.generation;
+package org.camunda.optimize.data.generation.generators;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.data.generation.SimpleEngineClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,9 +25,9 @@ public abstract class DataGenerator implements Runnable {
 
   private SimpleEngineClient engineClient;
 
-  public DataGenerator() {
+  public DataGenerator(SimpleEngineClient engineClient) {
     generateVersionNumber();
-    engineClient = new SimpleEngineClient();
+    this.engineClient = engineClient;
   }
 
   protected abstract BpmnModelInstance retrieveDiagram();
@@ -56,7 +57,6 @@ public abstract class DataGenerator implements Runnable {
     } catch (IOException e) {
       e.printStackTrace();
     } finally {
-      engineClient.close();
       logger.info("{} finished data generation!", getClass().getSimpleName());
     }
   }

@@ -1,7 +1,8 @@
-package org.camunda.optimize.test.performance.data.generation.impl;
+package org.camunda.optimize.data.generation.generators.impl;
 
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.test.performance.data.generation.DataGenerator;
+import org.camunda.optimize.data.generation.generators.DataGenerator;
+import org.camunda.optimize.data.generation.SimpleEngineClient;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -19,6 +20,10 @@ public class HiringProcessDataGenerator extends DataGenerator {
   private static String TASK_OFFER_ACCEPTED = "Task_offer_accepted";
   private static String[] allVariableNames = {TASK_AUTOMATICALLY_ASSIGNED, TASK_SCREEN_PROCEED, TASK_PHONE_PROCEED,
     TASK_ONSITE_INTERVIEW, TASK_MAKE_OFFER, TASK_OFFER_ACCEPTED};
+
+  public HiringProcessDataGenerator(SimpleEngineClient engineClient) {
+    super(engineClient);
+  }
 
   protected BpmnModelInstance retrieveDiagram() {
     try {
