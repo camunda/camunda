@@ -1,27 +1,27 @@
-.DropdownOption.Submenu__DropdownOption {
+.Submenu {
   padding-right: 20px;
 
-  .open-submenu {
+  &.open {
+    background-color: #008fe6;
+    color: #fff;
+    border: none;
+    transition: none;
+  }
+
+  .Icon.rightIcon {
     display: inline-block;
     position: absolute;
     right: 0;
     margin-right: 0;
   }
-}
 
-.DropdownOption.Submenu__DropdownOption--open {
-  background-color: #008fe6;
-  color: #fff;
-  border: none;
-  transition: none;
-}
-
-.Submenu__container {
-  position: absolute;
-  top: -1px;
-  background-color: white;
-  border: 1px solid #bbb;
-  padding: 0;
-  border-radius: 3px;
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+  .childrenContainer {
+    position: absolute;
+    top: -1px;
+    background-color: white;
+    border: 1px solid #bbb;
+    padding: 0;
+    border-radius: 3px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+  }
 }

@@ -1,6 +1,4 @@
-.DropdownOption,
-a.DropdownOption,
-button.DropdownOption {
+.DropdownOption {
   white-space: nowrap;
   color: #333;
   text-decoration: none;
@@ -12,6 +10,9 @@ button.DropdownOption {
   width: 100%;
   text-align: left;
   border-radius: 0;
+  height: 28px;
+  line-height: 16px;
+  cursor: pointer;
 
   &.is-active {
     border: none;
@@ -35,16 +36,20 @@ button.DropdownOption {
 
   &[disabled],
   &[disabled='disabled'] {
+    cursor: not-allowed;
+    opacity: 0.65;
+
     &:hover {
+      color: #333;
       background-color: #fff;
       border: none;
     }
   }
-}
 
-.Button .Icon.DropdownOption__checkMark {
-  margin-left: -12px;
-  margin-right: 2px;
-  min-width: 10px;
-  width: 10px;
+  .Icon.checkMark {
+    margin-left: -12px;
+    margin-right: 2px;
+    min-width: 10px;
+    width: 10px;
+  }
 }

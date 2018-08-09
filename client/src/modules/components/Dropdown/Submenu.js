@@ -8,33 +8,59 @@ import {Icon} from 'components';
 import './Submenu.css';
 
 export default class Submenu extends React.Component {
-  open = evt => {
+  onClick = evt => {
+    if (this.props.disabled) {
+      return;
+    }
+
     if (this.props.onClick) {
       this.props.onClick(evt);
     }
-    this.props.onOpen(evt);
+    if (this.props.onOpen) {
+      this.props.onOpen(evt);
+    }
+    this.props.forceOpen(evt);
+  };
+
+  onMouseOver = evt => {
+    if (this.props.disabled || this.props.open) {
+      return;
+    }
+    if (this.props.onOpen) {
+      this.props.onOpen(evt);
+    }
+
+    this.props.setOpened(evt);
+  };
+
+  onMouseLeave = evt => {
+    this.props.setClosed(evt);
   };
 
   render() {
     return (
-      <React.Fragment>
-        <DropdownOption
-          checked={this.props.checked}
-          disabled={this.props.disabled}
-          className={classnames('Submenu__DropdownOption', {
-            'Submenu__DropdownOption--open': this.props.open
-          })}
-          onClick={this.open}
-        >
-          {this.props.label}
-          <Icon type="right" className="open-submenu" />
-        </DropdownOption>
+      <DropdownOption
+        checked={this.props.checked}
+        disabled={this.props.disabled}
+        className={classnames('Submenu', {
+          open: this.props.open
+        })}
+        onClick={this.onClick}
+        onMouseOver={this.onMouseOver}
+        onMouseLeave={this.onMouseLeave}
+      >
+        {this.props.label}
+        <Icon type="right" className="rightIcon" />
         {this.props.open && (
-          <div className="Submenu__container" style={{left: this.props.offset - 1 + 'px'}}>
+          <div
+            onClick={this.props.closeParent}
+            className="childrenContainer"
+            style={{left: this.props.offset - 1 + 'px'}}
+          >
             {this.props.children}
           </div>
         )}
-      </React.Fragment>
+      </DropdownOption>
     );
   }
 }

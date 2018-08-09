@@ -15,7 +15,7 @@ jest.mock('./filter', () => {
 jest.mock('components', () => {
   const Dropdown = props => <div {...props}>{props.children}</div>;
   Dropdown.Option = props => <button {...props}>{props.children}</button>;
-  Dropdown.Submenu = props => <div {...props} />;
+  Dropdown.Submenu = ({onOpen, ...props}) => <div {...props} />;
 
   return {
     Dropdown,
@@ -93,15 +93,15 @@ it('should toggle target value view mode off when a setting changes', () => {
 it('should disable the groupBy and visualization Selects if view is not selected', () => {
   const node = mount(<ReportControlPanel {...data} view="" />);
 
-  expect(node.find('.ReportControlPanel__dropdown').at(2)).toBeDisabled();
-  expect(node.find('.ReportControlPanel__dropdown').at(3)).toBeDisabled();
+  expect(node.find('.configDropdown').at(2)).toBeDisabled();
+  expect(node.find('.configDropdown').at(3)).toBeDisabled();
 });
 
 it('should not disable the groupBy and visualization Selects if view is selected', () => {
   const node = mount(<ReportControlPanel {...data} />);
 
-  expect(node.find('.ReportControlPanel__select').at(2)).not.toBeDisabled();
-  expect(node.find('.ReportControlPanel__select').at(3)).not.toBeDisabled();
+  expect(node.find('.configDropdown').at(2)).not.toBeDisabled();
+  expect(node.find('.configDropdown').at(3)).not.toBeDisabled();
 });
 
 it('should set or reset following selects according to the getNext function', () => {
@@ -135,7 +135,7 @@ it('should show process definition name', async () => {
 
   const node = await mount(<ReportControlPanel {...data} />);
 
-  expect(node.find('.ReportControlPanel__popover')).toIncludeText('aName');
+  expect(node.find('.processDefinitionPopover')).toIncludeText('aName');
 });
 
 it('should change process definition name if process definition is updated', async () => {
@@ -144,7 +144,7 @@ it('should change process definition name if process definition is updated', asy
   extractProcessDefinitionName.mockReturnValue('aName');
   node.setProps({processDefinitionKey: 'bar'});
 
-  expect(node.find('.ReportControlPanel__popover')).toIncludeText('aName');
+  expect(node.find('.processDefinitionPopover')).toIncludeText('aName');
 });
 
 it('should load the variables of the process', () => {

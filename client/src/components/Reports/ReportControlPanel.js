@@ -86,15 +86,10 @@ export default class ReportControlPanel extends React.Component {
   render() {
     return (
       <div className="ReportControlPanel">
-        <ul className="ReportControlPanel__list">
-          <li className="ReportControlPanel__item ReportControlPanel__item--select">
-            <label
-              htmlFor="ReportControlPanel__process-definition"
-              className="ReportControlPanel__label"
-            >
-              Process definition
-            </label>
-            <Popover className="ReportControlPanel__popover" title={this.createTitle()}>
+        <ul>
+          <li className="select">
+            <label>Process definition</label>
+            <Popover className="processDefinitionPopover" title={this.createTitle()}>
               <ProcessDefinitionSelection
                 {...this.definitionConfig()}
                 xml={this.props.configuration.xml}
@@ -104,25 +99,19 @@ export default class ReportControlPanel extends React.Component {
               />
             </Popover>
           </li>
-          <li className="ReportControlPanel__item ReportControlPanel__item--select">
-            <label htmlFor="ReportControlPanel__view" className="ReportControlPanel__label">
-              View
-            </label>
+          <li className="select">
+            <label>View</label>
             {this.renderDropdown('view', view)}
           </li>
-          <li className="ReportControlPanel__item ReportControlPanel__item--select">
-            <label htmlFor="ReportControlPanel__group-by" className="ReportControlPanel__label">
-              Group by
-            </label>
+          <li className="select">
+            <label>Group by</label>
             {this.renderDropdown('groupBy', groupBy)}
           </li>
-          <li className="ReportControlPanel__item ReportControlPanel__item--select">
-            <label htmlFor="ReportControlPanel__visualize-as" className="ReportControlPanel__label">
-              Visualize as
-            </label>
+          <li className="select">
+            <label>Visualize as</label>
             {this.renderDropdown('visualization', visualization)}
           </li>
-          <li className="ReportControlPanel__item ReportControlPanel__item--filter">
+          <li className="filter">
             <Filter
               data={this.props.filter}
               onChange={this.props.updateReport}
@@ -130,7 +119,7 @@ export default class ReportControlPanel extends React.Component {
               xml={this.props.configuration.xml}
             />
           </li>
-          <li className="ReportControlPanel__item">
+          <li>
             <TargetValueComparison
               reportResult={this.props.reportResult}
               configuration={this.props.configuration}
@@ -138,7 +127,7 @@ export default class ReportControlPanel extends React.Component {
             />
           </li>
           {this.props.visualization === 'heat' && (
-            <li className="ReportControlPanel__item">
+            <li>
               <Button
                 active={this.props.configuration.alwaysShowTooltips}
                 onClick={this.toggleAllTooltips}
@@ -163,6 +152,10 @@ export default class ReportControlPanel extends React.Component {
 
   renderDropdown = (type, config) => {
     let disabled = false;
+
+    if (!this.props.processDefinitionKey || !this.props.processDefinitionVersion) {
+      disabled = true;
+    }
     if (type === 'groupBy' && !this.props.view) {
       disabled = true;
     }
@@ -172,7 +165,7 @@ export default class ReportControlPanel extends React.Component {
     return (
       <Dropdown
         label={getLabelFor(config, this.props[type]) || 'Please Select...'}
-        className="ReportControlPanel__dropdown"
+        className="configDropdown"
         disabled={disabled}
       >
         {Object.keys(config).map(key => {
@@ -198,7 +191,7 @@ export default class ReportControlPanel extends React.Component {
         key={key}
         disabled={disabled}
         checked={checked}
-        onClick={() => this.setState({variableStartIdx: 0, variableTypeaheadValue: ''})}
+        onOpen={() => this.setState({variableStartIdx: 0, variableTypeaheadValue: ''})}
       >
         {type === 'groupBy' && key === 'variable'
           ? this.renderVariables()
@@ -252,8 +245,8 @@ export default class ReportControlPanel extends React.Component {
       0
     );
     return (
-      <div className="ReportControlPanel__variablesDropdown" onClick={this.catchClick}>
-        <div className="ReportControlPanel__variableInputContainer">
+      <div className="variablesGroupby" onClick={this.catchClick}>
+        <div className="inputContainer">
           <Input
             value={this.state.variableTypeaheadValue}
             onKeyDown={evt => evt.stopPropagation()}
@@ -268,7 +261,7 @@ export default class ReportControlPanel extends React.Component {
           </Dropdown.Option>
         )}
         {this.state.variableStartIdx > 0 && (
-          <div className="ReportControlPanel__variableInputContainer">
+          <div className="inputContainer">
             <Button
               onClick={() =>
                 this.setState({
@@ -282,7 +275,7 @@ export default class ReportControlPanel extends React.Component {
             </Button>
           </div>
         )}
-        <div className="ReportControlPanel__variableOptionsList">
+        <div className="variableOptionsList">
           {filteredVars
             .slice(
               this.state.variableStartIdx,
@@ -301,8 +294,8 @@ export default class ReportControlPanel extends React.Component {
             ))}
         </div>
         {remaining > 0 && (
-          <div className="ReportControlPanel__variableInputContainer ReportControlPanel__loadMoreContainer">
-            <span className="ReportControlPanel__moreItemsLabel">
+          <div className="inputContainer loadMore">
+            <span>
               {remaining} more item{remaining > 1 && 's'}
             </span>
             <Button

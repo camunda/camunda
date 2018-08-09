@@ -3,99 +3,107 @@
   border-radius: 8px;
   border: 1px solid #dfdfdf;
   padding: 12px 12px 0 12px;
-}
 
-.ReportControlPanel__popover {
-  width: 100%;
-}
+  > ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: inline;
 
-.ReportControlPanel__dropdown {
-  width: 100%;
+    > li {
+      display: inline-block;
+      position: relative;
+      padding-top: 22px;
+      padding-right: 20px;
+      margin-bottom: 24px;
 
-  .Dropdown__button {
-    width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-}
+      &.select {
+        width: 15%;
+        min-width: 200px;
+      }
 
-.ReportControlPanel__variablesDropdown {
-  min-width: 130px;
-}
+      &.filter {
+        display: inline;
+        padding-top: 27px;
+      }
 
-.ReportControlPanel__variableInputContainer {
-  padding: 3px;
-  background-color: #f4f4f4;
-  border-top: 1px solid #bbbbbb;
-  border-bottom: 1px solid #bbbbbb;
-
-  input {
-    width: 100%;
-  }
-
-  &:first-child,
-  & + .ReportControlPanel__variableInputContainer {
-    border-top: none;
+      > label {
+        color: #626262;
+        font-size: 0.875em;
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+    }
   }
 
-  &:last-child {
-    border-bottom: none;
-  }
-
-  .Button {
+  .processDefinitionPopover {
     width: 100%;
   }
-}
 
-.ReportControlPanel__variableOptionsList {
-  box-shadow: inset 1px 4px 9px -6px;
-  .DropdownOption {
-    background-color: transparent;
+  .configDropdown {
+    width: 100%;
+
+    .activateButton {
+      width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .variablesGroupby {
+      min-width: 130px;
+      cursor: default;
+
+      .inputContainer {
+        padding: 3px;
+        background-color: #f4f4f4;
+        border-top: 1px solid #bbbbbb;
+        border-bottom: 1px solid #bbbbbb;
+
+        input {
+          width: 100%;
+        }
+
+        &:first-child,
+        & + .ReportControlPanel__variableInputContainer {
+          border-top: none;
+        }
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        .Button {
+          width: 100%;
+          display: block;
+        }
+
+        &.loadMore {
+          box-shadow: 0px -4px 9px -6px black;
+
+          > span {
+            text-align: center;
+            font-size: 12px;
+            display: inline-block;
+            width: 100%;
+            vertical-align: top;
+            color: #333333;
+            margin-bottom: 3px;
+          }
+        }
+      }
+
+      .variableOptionsList {
+        box-shadow: inset 1px 4px 9px -6px black;
+        .DropdownOption {
+          background-color: transparent;
+
+          &:hover {
+            background-color: #008fe6;
+          }
+        }
+      }
+    }
   }
-}
-
-.ReportControlPanel__moreItemsLabel {
-  text-align: center;
-  font-size: 12px;
-  display: inline-block;
-  width: 100%;
-  vertical-align: top;
-}
-
-.ReportControlPanel__loadMoreContainer {
-  box-shadow: 0px -4px 9px -6px;
-}
-
-.ReportControlPanel__list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: inline;
-}
-
-.ReportControlPanel__item {
-  display: inline-block;
-  position: relative;
-  padding-top: 22px;
-  padding-right: 20px;
-  margin-bottom: 24px;
-}
-
-.ReportControlPanel__item--select {
-  width: 15%;
-  min-width: 200px;
-}
-
-.ReportControlPanel__item--filter {
-  display: inline;
-  padding-top: 27px;
-}
-
-.ReportControlPanel__label {
-  color: #626262;
-  font-size: 0.875em;
-  position: absolute;
-  top: 0;
-  left: 0;
 }

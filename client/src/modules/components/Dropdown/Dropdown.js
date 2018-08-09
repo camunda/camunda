@@ -15,12 +15,13 @@ export default class Dropdown extends React.Component {
     this.options = [];
     this.state = {
       open: false,
-      openSubmenu: null
+      openSubmenu: null,
+      fixedSubmenu: null
     };
   }
 
   toggleOpen = () => {
-    this.setState({open: !this.state.open, openSubmenu: null});
+    this.setState({open: !this.state.open, openSubmenu: null, fixedSubmenu: null});
   };
 
   close = ({target}) => {
@@ -89,7 +90,7 @@ export default class Dropdown extends React.Component {
         onKeyDown={this.handleKeyPress}
       >
         <Button
-          className="Dropdown__button"
+          className="activateButton"
           aria-haspopup="true"
           aria-expanded={open ? 'true' : 'false'}
           active={this.props.active}
@@ -100,22 +101,33 @@ export default class Dropdown extends React.Component {
           <Icon type="down" />
         </Button>
         <div
-          className="Dropdown__menu"
+          className="menu"
           aria-labelledby={this.props.id ? this.props.id + '-button' : ''}
           ref={this.menuContainer}
           style={{minWidth: (this.container && this.container.clientWidth) + 'px'}}
         >
-          <ul className="Dropdown__menu-list">
+          <ul>
             {React.Children.map(this.props.children, (child, idx) => (
               <li ref={this.optionRef} key={idx}>
                 {child.type === Submenu
                   ? React.cloneElement(child, {
-                      open: this.state.openSubmenu === idx,
+                      open:
+                        this.state.fixedSubmenu === idx ||
+                        (this.state.fixedSubmenu === null && this.state.openSubmenu === idx),
                       offset: this.menuContainer.current && this.menuContainer.current.offsetWidth,
-                      onOpen: evt => {
-                        evt.stopPropagation();
+                      setOpened: () => {
                         this.setState({openSubmenu: idx});
-                      }
+                      },
+                      setClosed: () => {
+                        this.setState({openSubmenu: null});
+                      },
+                      forceOpen: evt => {
+                        evt.stopPropagation();
+                        this.setState(({fixedSubmenu}) => {
+                          return {fixedSubmenu: fixedSubmenu === idx ? null : idx};
+                        });
+                      },
+                      closeParent: () => this.setState({open: false, openSubmenu: null})
                     })
                   : child}
               </li>

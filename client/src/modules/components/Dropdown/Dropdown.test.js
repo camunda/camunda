@@ -35,7 +35,7 @@ it('should display the child elements when clicking the trigger', () => {
     </Dropdown>
   );
 
-  node.find('.Dropdown__button').simulate('click');
+  node.find('.activateButton').simulate('click');
 
   expect(node.find('.Dropdown')).toMatchSelector('.is-open');
 });
@@ -79,7 +79,7 @@ it('should set aria-haspopup to true', () => {
     </Dropdown>
   );
 
-  expect(node.find('.Dropdown__button')).toMatchSelector('.Dropdown__button[aria-haspopup="true"]');
+  expect(node.find('.activateButton')).toMatchSelector('.activateButton[aria-haspopup="true"]');
 });
 
 it('should set aria-expanded to false by default', () => {
@@ -89,9 +89,7 @@ it('should set aria-expanded to false by default', () => {
     </Dropdown>
   );
 
-  expect(node.find('.Dropdown__button')).toMatchSelector(
-    '.Dropdown__button[aria-expanded="false"]'
-  );
+  expect(node.find('.activateButton')).toMatchSelector('.activateButton[aria-expanded="false"]');
 });
 
 it('should set aria-expanded to true when open', () => {
@@ -104,7 +102,7 @@ it('should set aria-expanded to true when open', () => {
   node.simulate('click');
 
   expect(node.state('open')).toBe(true);
-  expect(node.find('.Dropdown__button')).toMatchSelector('.Dropdown__button[aria-expanded="true"]');
+  expect(node.find('.activateButton')).toMatchSelector('.activateButton[aria-expanded="true"]');
 });
 
 it('should set aria-expanded to false when closed', () => {
@@ -119,9 +117,7 @@ it('should set aria-expanded to false when closed', () => {
   node.simulate('click');
 
   expect(node.state('open')).toBe(false);
-  expect(node.find('.Dropdown__button')).toMatchSelector(
-    '.Dropdown__button[aria-expanded="false"]'
-  );
+  expect(node.find('.activateButton')).toMatchSelector('.activateButton[aria-expanded="false"]');
 });
 
 it('should set aria-labelledby on the menu as provided as a prop, amended by "-button"', () => {
@@ -131,9 +127,7 @@ it('should set aria-labelledby on the menu as provided as a prop, amended by "-b
     </Dropdown>
   );
 
-  expect(node.find('.Dropdown__menu')).toMatchSelector(
-    '.Dropdown__menu[aria-labelledby="my-dropdown-button"]'
-  );
+  expect(node.find('.menu')).toMatchSelector('.menu[aria-labelledby="my-dropdown-button"]');
 });
 
 it('should close after pressing Esc', () => {
@@ -191,7 +185,7 @@ it('should change focus after pressing an arrow key if opened', () => {
   expect(document.activeElement.textContent).toBe('bar');
 });
 
-it('should pass open, offset and onOpen properties to submenus', () => {
+it('should pass open, offset, setOpened, setClosed, forceOpen and closeParent properties to submenus', () => {
   const node = mount(
     <Dropdown>
       <Dropdown.Submenu />
@@ -201,5 +195,35 @@ it('should pass open, offset and onOpen properties to submenus', () => {
   const submenuNode = node.find(Dropdown.Submenu);
   expect(submenuNode).toHaveProp('open');
   expect(submenuNode).toHaveProp('offset');
-  expect(submenuNode).toHaveProp('onOpen');
+  expect(submenuNode).toHaveProp('setOpened');
+  expect(submenuNode).toHaveProp('setClosed');
+  expect(submenuNode).toHaveProp('forceOpen');
+  expect(submenuNode).toHaveProp('closeParent');
+});
+
+it('should open a submenu when it is opened', () => {
+  const node = mount(
+    <Dropdown>
+      <Dropdown.Submenu />
+      <Dropdown.Submenu />
+    </Dropdown>
+  );
+
+  node.setState({openSubmenu: 0});
+
+  expect(node.find(Dropdown.Submenu).at(0)).toHaveProp('open', true);
+});
+
+it('should not open a submenu when it is opened, but another is forced open', () => {
+  const node = mount(
+    <Dropdown>
+      <Dropdown.Submenu />
+      <Dropdown.Submenu />
+    </Dropdown>
+  );
+
+  node.setState({openSubmenu: 0, fixedSubmenu: 1});
+
+  expect(node.find(Dropdown.Submenu).at(0)).toHaveProp('open', false);
+  expect(node.find(Dropdown.Submenu).at(1)).toHaveProp('open', true);
 });
