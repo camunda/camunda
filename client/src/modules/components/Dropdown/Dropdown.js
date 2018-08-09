@@ -98,7 +98,7 @@ export default class Dropdown extends React.Component {
           id={this.props.id ? this.props.id + '-button' : ''}
         >
           {this.props.label}
-          <Icon type="down" />
+          <Icon type="down" className="downIcon" />
         </Button>
         <div
           className="menu"

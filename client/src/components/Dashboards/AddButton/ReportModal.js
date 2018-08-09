@@ -96,7 +96,7 @@ export default class ReportModal extends React.Component {
             </Select>
           </ControlGroup>
           <p className="ReportModal__externalSourceLink" onClick={this.toggleExternal}>
-            {external ? 'Add Optimize Report' : 'Add External Source'}
+            {external ? '- Add Optimize Report' : '+ Add External Source'}
           </p>
           {external && (
             <ControlGroup>
