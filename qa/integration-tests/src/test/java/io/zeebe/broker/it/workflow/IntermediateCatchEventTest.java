@@ -73,7 +73,9 @@ public class IntermediateCatchEventTest {
         .join();
 
     waitUntil(
-        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.CATCH_EVENT_ENTERED));
+        () ->
+            eventRecorder.hasElementInState(
+                "catch-event", WorkflowInstanceState.ELEMENT_ACTIVATED));
 
     // when
     clientRule
@@ -85,7 +87,7 @@ public class IntermediateCatchEventTest {
         .join();
 
     // then
-    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED));
+    waitUntil(() -> eventRecorder.hasElementInState("wf", WorkflowInstanceState.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -110,7 +112,7 @@ public class IntermediateCatchEventTest {
         .join();
 
     // then
-    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED));
+    waitUntil(() -> eventRecorder.hasElementInState("wf", WorkflowInstanceState.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -136,10 +138,10 @@ public class IntermediateCatchEventTest {
         .join();
 
     // then
-    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED));
+    waitUntil(() -> eventRecorder.hasElementInState("wf", WorkflowInstanceState.ELEMENT_COMPLETED));
 
     final WorkflowInstanceEvent catchEventOccurredEvent =
-        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.CATCH_EVENT_OCCURRED);
+        eventRecorder.getElementInState("catch-event", WorkflowInstanceState.ELEMENT_COMPLETED);
     assertThat(catchEventOccurredEvent.getPayloadAsMap())
         .containsExactly(entry("orderId", "order-123"), entry("foo", "bar"));
   }

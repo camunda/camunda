@@ -19,30 +19,41 @@ package io.zeebe.broker.workflow.processor;
 
 import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.incident.data.IncidentRecord;
+import io.zeebe.broker.logstreams.processor.SideEffectProducer;
+import io.zeebe.broker.logstreams.processor.TypedCommandWriter;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.broker.logstreams.processor.TypedStreamWriterImpl;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.index.ElementInstance;
 import io.zeebe.broker.workflow.index.ElementInstanceIndex;
 import io.zeebe.broker.workflow.model.ExecutableFlowElement;
+import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.util.sched.ActorControl;
+import java.util.function.Consumer;
 
 public class BpmnStepContext<T extends ExecutableFlowElement> {
 
-  private final ElementInstanceIndex scopeInstances;
-
   private TypedRecord<WorkflowInstanceRecord> record;
   private ExecutableFlowElement element;
-  private TypedStreamWriter streamWriter;
+  private TypedCommandWriter commandWriter;
+  private ElementInstanceWriter streamWriter;
 
   private ElementInstance flowScopeInstance;
   private ElementInstance elementInstance;
 
   private final IncidentRecord incidentCommand = new IncidentRecord();
 
-  public BpmnStepContext(ElementInstanceIndex scopeInstances) {
-    this.scopeInstances = scopeInstances;
+  // TODO: the following things can be removed once we have no more asynchronous processing
+  private ActorControl actor;
+  private EventLifecycleContext asyncContext;
+  private Consumer<SideEffectProducer> sideEffect;
+
+  public BpmnStepContext(ElementInstanceIndex scopeInstances, WorkflowInstanceMetrics metrics) {
+
+    this.streamWriter = new ElementInstanceWriter(scopeInstances, metrics);
   }
 
   public TypedRecord<WorkflowInstanceRecord> getRecord() {
@@ -51,6 +62,10 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
 
   public WorkflowInstanceRecord getValue() {
     return record.getValue();
+  }
+
+  public WorkflowInstanceIntent getState() {
+    return (WorkflowInstanceIntent) record.getMetadata().getIntent();
   }
 
   public void setRecord(TypedRecord<WorkflowInstanceRecord> record) {
@@ -65,16 +80,25 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
     this.element = element;
   }
 
-  public TypedStreamWriter getStreamWriter() {
+  public ElementInstanceWriter getStreamWriter() {
     return streamWriter;
   }
 
   public void setStreamWriter(TypedStreamWriter streamWriter) {
-    this.streamWriter = streamWriter;
+    this.streamWriter.setStreamWriter(streamWriter);
+    this.commandWriter = streamWriter;
+  }
+
+  public TypedCommandWriter getCommandWriter() {
+    return commandWriter;
   }
 
   public ElementInstance getFlowScopeInstance() {
     return flowScopeInstance;
+  }
+
+  public void setFlowScopeInstance(ElementInstance flowScopeInstance) {
+    this.flowScopeInstance = flowScopeInstance;
   }
 
   /**
@@ -86,29 +110,32 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
     return elementInstance;
   }
 
-  public ElementInstance newInstanceInFlowScope(
-      long key, WorkflowInstanceRecord value, WorkflowInstanceIntent state) {
-    return scopeInstances.newInstance(flowScopeInstance, key, value, state);
-  }
-
-  public void destroyElementInstance() {
-    if (elementInstance != null) {
-      scopeInstances.removeInstance(elementInstance.getKey());
-    }
-  }
-
-  public void destroyFlowScopeInstance() {
-    if (flowScopeInstance != null) {
-      scopeInstances.removeInstance(flowScopeInstance.getKey());
-    }
-  }
-
   public void setElementInstance(ElementInstance elementInstance) {
     this.elementInstance = elementInstance;
   }
 
-  public void setFlowScopeInstance(ElementInstance flowScopeInstance) {
-    this.flowScopeInstance = flowScopeInstance;
+  public void setActor(ActorControl actor) {
+    this.actor = actor;
+  }
+
+  public ActorControl getActor() {
+    return actor;
+  }
+
+  public void setAsyncContext(EventLifecycleContext asyncContext) {
+    this.asyncContext = asyncContext;
+  }
+
+  public EventLifecycleContext getAsyncContext() {
+    return asyncContext;
+  }
+
+  public void setSideEffect(Consumer<SideEffectProducer> sideEffect) {
+    this.sideEffect = sideEffect;
+  }
+
+  public Consumer<SideEffectProducer> getSideEffect() {
+    return sideEffect;
   }
 
   public void raiseIncident(ErrorType errorType, String errorMessage) {
@@ -121,10 +148,16 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
         .setErrorMessage(errorMessage);
 
     if (!record.getMetadata().hasIncidentKey()) {
-      streamWriter.writeNewCommand(IncidentIntent.CREATE, incidentCommand);
+      commandWriter.writeNewCommand(IncidentIntent.CREATE, incidentCommand);
     } else {
-      streamWriter.writeFollowUpEvent(
-          record.getMetadata().getIncidentKey(), IncidentIntent.RESOLVE_FAILED, incidentCommand);
+      // TODO: casting is ok for the moment; the problem is rather that we
+      // write an event (not command) for a different stream processor
+      // => https://github.com/zeebe-io/zeebe/issues/1033
+      ((TypedStreamWriterImpl) commandWriter)
+          .writeFollowUpEvent(
+              record.getMetadata().getIncidentKey(),
+              IncidentIntent.RESOLVE_FAILED,
+              incidentCommand);
     }
   }
 }

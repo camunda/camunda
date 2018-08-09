@@ -86,11 +86,11 @@ public class WorkflowInstanceTopicSubscriptionTest {
     TestUtil.waitUntil(() -> handler.numRecords() >= 2);
 
     final WorkflowInstanceEvent event = handler.getEvent(1);
-    assertThat(event.getState()).isEqualTo(WorkflowInstanceState.START_EVENT_OCCURRED);
+    assertThat(event.getState()).isEqualTo(WorkflowInstanceState.ELEMENT_READY);
     assertThat(event.getBpmnProcessId()).isEqualTo("process");
     assertThat(event.getVersion()).isEqualTo(1);
     assertThat(event.getWorkflowInstanceKey()).isEqualTo(workflowInstance.getWorkflowInstanceKey());
-    assertThat(event.getActivityId()).isEqualTo("a");
+    assertThat(event.getActivityId()).isEqualTo("process");
     assertThat(event.getPayload()).isEqualTo("{\"foo\":123}");
   }
 

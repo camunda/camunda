@@ -69,7 +69,8 @@ public class ExclusiveGatewayTest {
         .send()
         .join();
 
-    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED));
+    waitUntil(
+        () -> eventRecorder.hasElementInState("workflow", WorkflowInstanceState.ELEMENT_COMPLETED));
 
     final WorkflowInstanceEvent endEvent =
         eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.END_EVENT_OCCURRED);
@@ -106,7 +107,8 @@ public class ExclusiveGatewayTest {
         .send()
         .join();
 
-    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED));
+    waitUntil(
+        () -> eventRecorder.hasElementInState("workflow", WorkflowInstanceState.ELEMENT_COMPLETED));
 
     final WorkflowInstanceEvent endEvent =
         eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.END_EVENT_OCCURRED);
@@ -160,10 +162,11 @@ public class ExclusiveGatewayTest {
         .open();
 
     // then
-    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED));
+    waitUntil(
+        () -> eventRecorder.hasElementInState("workflow", WorkflowInstanceState.ELEMENT_COMPLETED));
 
     final WorkflowInstanceEvent event =
-        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED);
+        eventRecorder.getElementInState("workflow", WorkflowInstanceState.ELEMENT_COMPLETED);
     assertThat(event.getPayload()).isEqualTo("{\"count\":6}");
   }
 }

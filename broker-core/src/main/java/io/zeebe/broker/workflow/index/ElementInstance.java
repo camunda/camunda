@@ -18,6 +18,7 @@
 package io.zeebe.broker.workflow.index;
 
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
+import io.zeebe.broker.workflow.processor.WorkflowInstanceLifecycle;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.ArrayList;
 import java.util.List;
@@ -101,8 +102,6 @@ public class ElementInstance {
   }
 
   public boolean canTerminate() {
-    return state == WorkflowInstanceIntent.ACTIVITY_READY
-        || state == WorkflowInstanceIntent.ACTIVITY_ACTIVATED
-        || state == WorkflowInstanceIntent.ACTIVITY_COMPLETING;
+    return WorkflowInstanceLifecycle.canTerminate(state);
   }
 }

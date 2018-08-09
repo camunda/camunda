@@ -123,7 +123,7 @@ public class ServiceTaskTest {
     assertThat(recordingJobHandler.getHandledJobs()).hasSize(1);
 
     final WorkflowInstanceEvent activityInstance =
-        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_ACTIVATED);
+        eventRecorder.getElementInState("task", WorkflowInstanceState.ELEMENT_ACTIVATED);
 
     final JobEvent jobEvent = recordingJobHandler.getHandledJobs().get(0);
     assertThat(jobEvent.getHeaders())
@@ -172,7 +172,8 @@ public class ServiceTaskTest {
 
     // then
     waitUntil(() -> eventRecorder.hasJobEvent(JobState.COMPLETED));
-    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED));
+    waitUntil(
+        () -> eventRecorder.hasElementInState("process", WorkflowInstanceState.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -246,10 +247,10 @@ public class ServiceTaskTest {
 
     // then
     waitUntil(
-        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_COMPLETED));
+        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED));
 
     final WorkflowInstanceEvent workflowEvent =
-        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_COMPLETED);
+        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED);
     assertThat(workflowEvent.getPayload()).isEqualTo("{\"bar\":2}");
   }
 
@@ -297,10 +298,10 @@ public class ServiceTaskTest {
 
     // then
     waitUntil(
-        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_COMPLETED));
+        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED));
 
     final WorkflowInstanceEvent workflowEvent =
-        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_COMPLETED);
+        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED);
     assertThat(workflowEvent.getPayload()).isEqualTo("{\"foo\":2}");
   }
 
@@ -349,7 +350,9 @@ public class ServiceTaskTest {
     waitUntil(() -> eventRecorder.getJobEvents(JobState.COMPLETED).size() == instances);
     waitUntil(
         () ->
-            eventRecorder.getWorkflowInstanceEvents(WorkflowInstanceState.COMPLETED).size()
+            eventRecorder
+                    .getElementsInState("process", WorkflowInstanceState.ELEMENT_COMPLETED)
+                    .size()
                 == instances);
   }
 }

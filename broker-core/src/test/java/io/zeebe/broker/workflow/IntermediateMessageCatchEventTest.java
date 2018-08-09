@@ -81,7 +81,7 @@ public class IntermediateMessageCatchEventTest {
         testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
 
     final SubscribedRecord event =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.CATCH_EVENT_ENTERED);
+        testClient.receiveElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     assertThat(event.value())
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "wf")
@@ -98,19 +98,21 @@ public class IntermediateMessageCatchEventTest {
     testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
 
     final List<SubscribedRecord> events =
-        testClient.receiveRecords().ofTypeWorkflowInstance().limit(9).collect(Collectors.toList());
+        testClient.receiveRecords().ofTypeWorkflowInstance().limit(11).collect(Collectors.toList());
 
     assertThat(events)
         .extracting(SubscribedRecord::intent)
         .containsExactly(
             WorkflowInstanceIntent.CREATE,
             WorkflowInstanceIntent.CREATED,
+            WorkflowInstanceIntent.ELEMENT_READY,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
             WorkflowInstanceIntent.START_EVENT_OCCURRED,
             WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
-            WorkflowInstanceIntent.CATCH_EVENT_ENTERING,
-            WorkflowInstanceIntent.CATCH_EVENT_ENTERED,
-            WorkflowInstanceIntent.CATCH_EVENT_OCCURRING,
-            WorkflowInstanceIntent.CATCH_EVENT_OCCURRED,
+            WorkflowInstanceIntent.ELEMENT_READY,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+            WorkflowInstanceIntent.ELEMENT_COMPLETING,
+            WorkflowInstanceIntent.ELEMENT_COMPLETED,
             WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN);
   }
 
@@ -121,7 +123,7 @@ public class IntermediateMessageCatchEventTest {
         testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
 
     final SubscribedRecord catchEventEntered =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.CATCH_EVENT_ENTERED);
+        testClient.receiveElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     final SubscribedRecord messageSubscription =
         findMessageSubscription(testClient, MessageSubscriptionIntent.OPENED);
@@ -175,14 +177,14 @@ public class IntermediateMessageCatchEventTest {
     final long workflowInstanceKey =
         testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
 
-    testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.CATCH_EVENT_ENTERED);
+    testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
     testClient.publishMessage("order canceled", "order-123", asMsgPack("foo", "bar"));
 
     // then
     final SubscribedRecord event =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.CATCH_EVENT_OCCURRED);
+        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     assertThat(event.value())
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "wf")
@@ -206,7 +208,7 @@ public class IntermediateMessageCatchEventTest {
 
     // then
     final SubscribedRecord event =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.CATCH_EVENT_OCCURRED);
+        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     assertThat(event.value())
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "wf")
@@ -246,14 +248,14 @@ public class IntermediateMessageCatchEventTest {
     final long workflowInstanceKey =
         testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
 
-    testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.CATCH_EVENT_ENTERED);
+    testClient.receiveElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
     testClient.publishMessage("order canceled", "order-123", asMsgPack("foo", "bar"), 0);
 
     // then
     final SubscribedRecord event =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.CATCH_EVENT_OCCURRED);
+        testClient.receiveElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     assertThat(event.value()).containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey);
   }
@@ -269,7 +271,7 @@ public class IntermediateMessageCatchEventTest {
 
     // then
     final SubscribedRecord event =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.CATCH_EVENT_OCCURRED);
+        testClient.receiveElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     final byte[] payload = (byte[]) event.value().get("payload");
     assertThat(MSGPACK_MAPPER.readTree(payload))
@@ -291,14 +293,14 @@ public class IntermediateMessageCatchEventTest {
     // then
     final SubscribedRecord catchEventOccurred1 =
         testClient.receiveFirstWorkflowInstanceEvent(
-            workflowInstanceKey1, WorkflowInstanceIntent.CATCH_EVENT_OCCURRED);
+            workflowInstanceKey1, WorkflowInstanceIntent.ELEMENT_COMPLETED);
     final byte[] payload1 = (byte[]) catchEventOccurred1.value().get("payload");
     assertThat(MSGPACK_MAPPER.readTree(payload1))
         .isEqualTo(JSON_MAPPER.readTree("{'orderId':'order-123', 'foo':'bar'}"));
 
     final SubscribedRecord catchEventOccurred2 =
         testClient.receiveFirstWorkflowInstanceEvent(
-            workflowInstanceKey2, WorkflowInstanceIntent.CATCH_EVENT_OCCURRED);
+            workflowInstanceKey2, WorkflowInstanceIntent.ELEMENT_COMPLETED);
     final byte[] payload2 = (byte[]) catchEventOccurred2.value().get("payload");
     assertThat(MSGPACK_MAPPER.readTree(payload2))
         .isEqualTo(JSON_MAPPER.readTree("{'orderId':'order-456', 'foo':'baz'}"));
@@ -319,7 +321,8 @@ public class IntermediateMessageCatchEventTest {
     final List<SubscribedRecord> events =
         testClient
             .receiveEvents()
-            .filter(intent(WorkflowInstanceIntent.CATCH_EVENT_OCCURRED))
+            .filter(intent(WorkflowInstanceIntent.ELEMENT_COMPLETED))
+            .filter(r -> "catch-event".equals(r.value().get("activityId")))
             .limit(2)
             .collect(Collectors.toList());
 
@@ -335,7 +338,7 @@ public class IntermediateMessageCatchEventTest {
         testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
 
     final SubscribedRecord catchEventEntered =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.CATCH_EVENT_ENTERED);
+        testClient.receiveElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
     final DirectBuffer messagePayload = asMsgPack("foo", "bar");
@@ -366,7 +369,7 @@ public class IntermediateMessageCatchEventTest {
         testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
 
     final SubscribedRecord catchEventEntered =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.CATCH_EVENT_ENTERED);
+        testClient.receiveElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
     apiRule
@@ -376,6 +379,8 @@ public class IntermediateMessageCatchEventTest {
         .command()
         .done()
         .send();
+
+    testClient.receiveElementInState("wf", WorkflowInstanceIntent.ELEMENT_TERMINATED);
 
     testClient.publishMessage("order canceled", "order-123");
 

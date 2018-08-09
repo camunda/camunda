@@ -15,21 +15,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.model;
+package io.zeebe.broker.workflow.processor.process;
 
-public class ExecutableSubProcess extends ExecutableFlowNode {
+import io.zeebe.broker.workflow.model.ExecutableWorkflow;
+import io.zeebe.broker.workflow.processor.BpmnStepContext;
+import io.zeebe.broker.workflow.processor.BpmnStepHandler;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-  private ExecutableFlowNode startEvent;
+public class CompleteProcessHandler implements BpmnStepHandler<ExecutableWorkflow> {
 
-  public ExecutableSubProcess(String id) {
-    super(id);
-  }
-
-  public ExecutableFlowNode getStartEvent() {
-    return startEvent;
-  }
-
-  public void setStartEvent(ExecutableFlowNode startEvent) {
-    this.startEvent = startEvent;
+  @Override
+  public void handle(BpmnStepContext<ExecutableWorkflow> context) {
+    context
+        .getStreamWriter()
+        .writeFollowUpEvent(
+            context.getRecord().getKey(),
+            WorkflowInstanceIntent.ELEMENT_COMPLETED,
+            context.getValue());
   }
 }

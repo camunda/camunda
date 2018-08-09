@@ -62,9 +62,9 @@ public class ServiceTaskHandler implements ModelElementTransformer<ServiceTask> 
   }
 
   private void bindLifecycle(final ExecutableServiceTask serviceTask) {
-    serviceTask.bindLifecycleState(WorkflowInstanceIntent.ACTIVITY_ACTIVATED, BpmnStep.CREATE_JOB);
+    serviceTask.bindLifecycleState(WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.CREATE_JOB);
     serviceTask.bindLifecycleState(
-        WorkflowInstanceIntent.ACTIVITY_TERMINATING, BpmnStep.TERMINATE_JOB_TASK);
+        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.TERMINATE_JOB_TASK);
   }
 
   private void transformTaskDefinition(

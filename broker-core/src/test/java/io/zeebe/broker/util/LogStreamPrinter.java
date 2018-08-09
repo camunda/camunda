@@ -39,6 +39,9 @@ public class LogStreamPrinter {
   private static final ServiceName<Object> PRINTER_SERVICE_NAME =
       ServiceName.newServiceName("printer", Object.class);
 
+  private static final String HEADER_INDENTATION = "\t";
+  private static final String ENTRY_INDENTATION = HEADER_INDENTATION + "\t";
+
   private static final Logger LOGGER = LoggerFactory.getLogger("io.zeebe.broker.test");
 
   public static void printRecords(Broker broker, String topic, int partitionId) {
@@ -63,10 +66,65 @@ public class LogStreamPrinter {
     }
   }
 
+  public static void printRecords(LogStream logStream) {
+    final StringBuilder sb = new StringBuilder();
+    sb.append("Records on partition ");
+    sb.append(logStream.getPartitionId());
+    sb.append(":\n");
+
+    try (LogStreamReader streamReader = new BufferedLogStreamReader(logStream)) {
+      streamReader.seekToFirstEvent();
+
+      while (streamReader.hasNext()) {
+        final LoggedEvent event = streamReader.next();
+        writeRecord(event, sb);
+      }
+    }
+
+    LOGGER.info(sb.toString());
+  }
+
+  private static void writeRecord(final LoggedEvent event, final StringBuilder sb) {
+    sb.append(HEADER_INDENTATION);
+    writeRecordHeader(event, sb);
+    sb.append("\n");
+    final RecordMetadata metadata = new RecordMetadata();
+    event.readMetadata(metadata);
+    sb.append(ENTRY_INDENTATION);
+    writeMetadata(metadata, sb);
+    sb.append("\n");
+
+    sb.append(ENTRY_INDENTATION);
+    writeRecordBody(sb, event, metadata);
+    sb.append("\n");
+  }
+
+  private static void writeRecordBody(
+      final StringBuilder sb, final LoggedEvent event, final RecordMetadata metadata) {
+    if (metadata.getValueType() == ValueType.WORKFLOW_INSTANCE) {
+      final WorkflowInstanceRecord record = new WorkflowInstanceRecord();
+      event.readValue(record);
+      writeWorkflowInstanceBody(record, sb);
+    } else {
+      sb.append("<value>");
+    }
+  }
+
+  private static void writeRecordHeader(LoggedEvent event, StringBuilder sb) {
+    sb.append("Position: ");
+    sb.append(event.getPosition());
+  }
+
+  private static void writeWorkflowInstanceBody(WorkflowInstanceRecord record, StringBuilder sb) {
+    record.writeJSON(sb);
+  }
+
+  private static void writeMetadata(RecordMetadata metadata, StringBuilder sb) {
+    sb.append(metadata.toString());
+  }
+
   private static class PrinterService implements Service<Object> {
 
-    private static final String HEADER_INDENTATION = "\t";
-    private static final String ENTRY_INDENTATION = HEADER_INDENTATION + "\t";
     private Injector<LogStream> logStreamInjector = new Injector<>();
 
     @Override
@@ -78,60 +136,7 @@ public class LogStreamPrinter {
     public void start(ServiceStartContext startContext) {
       final LogStream logStream = logStreamInjector.getValue();
 
-      final StringBuilder sb = new StringBuilder();
-      sb.append("Records on partition ");
-      sb.append(logStream.getPartitionId());
-      sb.append(":\n");
-
-      try (LogStreamReader streamReader = new BufferedLogStreamReader(logStream)) {
-        streamReader.seekToFirstEvent();
-
-        while (streamReader.hasNext()) {
-          final LoggedEvent event = streamReader.next();
-          writeRecord(event, sb);
-        }
-      }
-
-      LOGGER.info(sb.toString());
-    }
-
-    private void writeRecord(final LoggedEvent event, final StringBuilder sb) {
-      sb.append(HEADER_INDENTATION);
-      writeRecordHeader(event, sb);
-      sb.append("\n");
-      final RecordMetadata metadata = new RecordMetadata();
-      event.readMetadata(metadata);
-      sb.append(ENTRY_INDENTATION);
-      writeMetadata(metadata, sb);
-      sb.append("\n");
-
-      sb.append(ENTRY_INDENTATION);
-      writeRecordBody(sb, event, metadata);
-      sb.append("\n");
-    }
-
-    private void writeRecordBody(
-        final StringBuilder sb, final LoggedEvent event, final RecordMetadata metadata) {
-      if (metadata.getValueType() == ValueType.WORKFLOW_INSTANCE) {
-        final WorkflowInstanceRecord record = new WorkflowInstanceRecord();
-        event.readValue(record);
-        writeWorkflowInstanceBody(record, sb);
-      } else {
-        sb.append("<value>");
-      }
-    }
-
-    private void writeRecordHeader(LoggedEvent event, StringBuilder sb) {
-      sb.append("Position: ");
-      sb.append(event.getPosition());
-    }
-
-    private void writeWorkflowInstanceBody(WorkflowInstanceRecord record, StringBuilder sb) {
-      record.writeJSON(sb);
-    }
-
-    private void writeMetadata(RecordMetadata metadata, StringBuilder sb) {
-      sb.append(metadata.toString());
+      printRecords(logStream);
     }
 
     public Injector<LogStream> getLogStreamInjector() {

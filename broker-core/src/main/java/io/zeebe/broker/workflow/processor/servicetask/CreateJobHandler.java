@@ -52,6 +52,6 @@ public class CreateJobHandler implements BpmnStepHandler<ExecutableServiceTask> 
     final DirectBuffer headers = serviceTask.getEncodedHeaders();
     jobCommand.setCustomHeaders(headers);
 
-    context.getStreamWriter().writeNewCommand(JobIntent.CREATE, jobCommand);
+    context.getCommandWriter().writeNewCommand(JobIntent.CREATE, jobCommand);
   }
 }

@@ -90,8 +90,6 @@ public class WorkflowInstanceFunctionalTest {
     assertThat(response.position()).isGreaterThan(workflowCreateCmd.position());
 
     assertThat(startEvent.key()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
-    // created and start startEvent is written in batch
-    assertThat(startEvent.sourceRecordPosition()).isEqualTo(workflowCreateCmd.position());
     assertThat(startEvent.position()).isGreaterThan(response.position());
     assertThat(startEvent.value())
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
@@ -163,15 +161,15 @@ public class WorkflowInstanceFunctionalTest {
     final SubscribedRecord endEvent =
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.END_EVENT_OCCURRED);
     final SubscribedRecord completedEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.COMPLETED);
+        testClient.receiveElementInState("process", WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     assertThat(completedEvent.key()).isEqualTo(workflowInstanceKey);
-    assertThat(completedEvent.sourceRecordPosition()).isEqualTo(endEvent.position());
+    assertThat(completedEvent.position()).isGreaterThan(endEvent.position());
     assertThat(completedEvent.value())
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
         .containsEntry(PROP_WORKFLOW_VERSION, 1L)
         .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
-        .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "");
+        .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "process");
   }
 
   @Test
@@ -186,15 +184,15 @@ public class WorkflowInstanceFunctionalTest {
     final SubscribedRecord startEvent =
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.START_EVENT_OCCURRED);
     final SubscribedRecord completedEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.COMPLETED);
+        testClient.receiveElementInState("process", WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     assertThat(completedEvent.key()).isEqualTo(workflowInstanceKey);
-    assertThat(completedEvent.sourceRecordPosition()).isEqualTo(startEvent.position());
+    assertThat(completedEvent.position()).isGreaterThan(startEvent.position());
     assertThat(completedEvent.value())
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
         .containsEntry(PROP_WORKFLOW_VERSION, 1L)
         .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
-        .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "");
+        .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "process");
   }
 
   @Test
@@ -213,17 +211,17 @@ public class WorkflowInstanceFunctionalTest {
 
     // then
     final SubscribedRecord activityCompleted =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+        testClient.receiveElementInState("foo", WorkflowInstanceIntent.ELEMENT_COMPLETED);
     final SubscribedRecord completedEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.COMPLETED);
+        testClient.receiveElementInState("process", WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     assertThat(completedEvent.key()).isEqualTo(workflowInstanceKey);
-    assertThat(completedEvent.sourceRecordPosition()).isEqualTo(activityCompleted.position());
+    assertThat(completedEvent.position()).isGreaterThan(activityCompleted.position());
     assertThat(completedEvent.value())
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
         .containsEntry(PROP_WORKFLOW_VERSION, 1L)
         .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
-        .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "");
+        .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "process");
   }
 
   @Test
@@ -243,9 +241,9 @@ public class WorkflowInstanceFunctionalTest {
 
     // then
     final SubscribedRecord activityReady =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_READY);
+        testClient.receiveElementInState("foo", WorkflowInstanceIntent.ELEMENT_READY);
     final SubscribedRecord activatedEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED);
+        testClient.receiveElementInState("foo", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     assertThat(activatedEvent.key()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
     assertThat(activatedEvent.sourceRecordPosition()).isEqualTo(activityReady.position());
@@ -271,7 +269,7 @@ public class WorkflowInstanceFunctionalTest {
 
     // then
     final SubscribedRecord activityActivated =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED);
+        testClient.receiveElementInState("foo", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
     final SubscribedRecord createJobCmd = testClient.receiveFirstJobCommand(JobIntent.CREATE);
 
     assertThat(createJobCmd.key()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
@@ -332,12 +330,12 @@ public class WorkflowInstanceFunctionalTest {
 
     // then
     final SubscribedRecord activityActivatedEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED);
+        testClient.receiveElementInState("foo", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
     final SubscribedRecord jobCompleted = testClient.receiveFirstJobEvent(JobIntent.COMPLETED);
     final SubscribedRecord activityCompleting =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETING);
+        testClient.receiveElementInState("foo", WorkflowInstanceIntent.ELEMENT_COMPLETING);
     final SubscribedRecord activityCompletedEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+        testClient.receiveElementInState("foo", WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     assertThat(activityCompleting.sourceRecordPosition()).isEqualTo(jobCompleted.position());
     assertThat(activityCompletedEvent.key()).isEqualTo(activityActivatedEvent.key());
@@ -417,10 +415,10 @@ public class WorkflowInstanceFunctionalTest {
     final long workflowInstance2 =
         testClient.createWorkflowInstance("workflow", asMsgPack("foo", 8));
 
-    testClient.receiveFirstWorkflowInstanceEvent(
-        workflowInstance1, WorkflowInstanceIntent.COMPLETED);
-    testClient.receiveFirstWorkflowInstanceEvent(
-        workflowInstance2, WorkflowInstanceIntent.COMPLETED);
+    testClient.receiveElementInState(
+        workflowInstance1, "workflow", WorkflowInstanceIntent.ELEMENT_COMPLETED);
+    testClient.receiveElementInState(
+        workflowInstance2, "workflow", WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     List<String> takenSequenceFlows =
         testClient
@@ -467,8 +465,8 @@ public class WorkflowInstanceFunctionalTest {
         testClient.createWorkflowInstance("workflow", asMsgPack("foo", 4));
 
     // then
-    testClient.receiveFirstWorkflowInstanceEvent(
-        workflowInstance1, WorkflowInstanceIntent.COMPLETED);
+    testClient.receiveElementInState(
+        workflowInstance1, "workflow", WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     List<SubscribedRecord> sequenceFlows =
         testClient
@@ -493,8 +491,8 @@ public class WorkflowInstanceFunctionalTest {
         testClient.createWorkflowInstance("workflow", asMsgPack("foo", 8));
 
     // then
-    testClient.receiveFirstWorkflowInstanceEvent(
-        workflowInstance2, WorkflowInstanceIntent.COMPLETED);
+    testClient.receiveElementInState(
+        workflowInstance2, "workflow", WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     sequenceFlows =
         testClient
@@ -536,22 +534,25 @@ public class WorkflowInstanceFunctionalTest {
 
     // then
     final List<SubscribedRecord> workflowEvents =
-        testClient.receiveRecords().ofTypeWorkflowInstance().limit(11).collect(Collectors.toList());
+        testClient.receiveRecords().ofTypeWorkflowInstance().limit(14).collect(Collectors.toList());
 
     assertThat(workflowEvents)
         .extracting(e -> e.intent())
         .containsExactly(
             WorkflowInstanceIntent.CREATE,
             WorkflowInstanceIntent.CREATED,
+            WorkflowInstanceIntent.ELEMENT_READY,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
             WorkflowInstanceIntent.START_EVENT_OCCURRED,
             WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
-            WorkflowInstanceIntent.ACTIVITY_READY,
-            WorkflowInstanceIntent.ACTIVITY_ACTIVATED,
-            WorkflowInstanceIntent.ACTIVITY_COMPLETING,
-            WorkflowInstanceIntent.ACTIVITY_COMPLETED,
+            WorkflowInstanceIntent.ELEMENT_READY,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+            WorkflowInstanceIntent.ELEMENT_COMPLETING,
+            WorkflowInstanceIntent.ELEMENT_COMPLETED,
             WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
             WorkflowInstanceIntent.END_EVENT_OCCURRED,
-            WorkflowInstanceIntent.COMPLETED);
+            WorkflowInstanceIntent.ELEMENT_COMPLETING,
+            WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }
 
   @Test
@@ -577,19 +578,22 @@ public class WorkflowInstanceFunctionalTest {
 
     // then
     final List<SubscribedRecord> workflowEvents =
-        testClient.receiveRecords().ofTypeWorkflowInstance().limit(8).collect(Collectors.toList());
+        testClient.receiveRecords().ofTypeWorkflowInstance().limit(11).collect(Collectors.toList());
 
     assertThat(workflowEvents)
         .extracting(e -> e.intent())
         .containsExactly(
             WorkflowInstanceIntent.CREATE,
             WorkflowInstanceIntent.CREATED,
+            WorkflowInstanceIntent.ELEMENT_READY,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
             WorkflowInstanceIntent.START_EVENT_OCCURRED,
             WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
             WorkflowInstanceIntent.GATEWAY_ACTIVATED,
             WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
             WorkflowInstanceIntent.END_EVENT_OCCURRED,
-            WorkflowInstanceIntent.COMPLETED);
+            WorkflowInstanceIntent.ELEMENT_COMPLETING,
+            WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }
 
   @Test
@@ -625,18 +629,14 @@ public class WorkflowInstanceFunctionalTest {
 
     // then
     final SubscribedRecord event =
-        testClient
-            .receiveEvents()
-            .ofTypeWorkflowInstance()
-            .withIntent(WorkflowInstanceIntent.COMPLETED)
-            .getFirst();
+        testClient.receiveElementInState("yaml-workflow", WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     assertThat(event.key()).isEqualTo(workflowInstanceKey);
     assertThat(event.value())
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "yaml-workflow")
         .containsEntry(PROP_WORKFLOW_VERSION, 1L)
         .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
-        .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "");
+        .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "yaml-workflow");
   }
 
   /**

@@ -115,14 +115,15 @@ public class ZeebeObjectMapperTest {
         .send()
         .join();
 
-    clientRule
-        .getWorkflowClient()
-        .newCreateInstanceCommand()
-        .bpmnProcessId("workflow")
-        .latestVersion()
-        .payload("{\"foo\":\"bar\"}")
-        .send()
-        .join();
+    final WorkflowInstanceEvent workflowInstanceEvent =
+        clientRule
+            .getWorkflowClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId("workflow")
+            .latestVersion()
+            .payload("{\"foo\":\"bar\"}")
+            .send()
+            .join();
 
     clientRule
         .getJobClient()
@@ -161,7 +162,7 @@ public class ZeebeObjectMapperTest {
             .stream()
             .filter(
                 recordFilter(
-                    ValueType.WORKFLOW_INSTANCE, WorkflowInstanceState.ACTIVITY_READY.name()))
+                    ValueType.WORKFLOW_INSTANCE, WorkflowInstanceState.ELEMENT_READY.name()))
             .map(r -> (WorkflowInstanceEvent) r)
             .collect(Collectors.toList());
 
@@ -181,7 +182,9 @@ public class ZeebeObjectMapperTest {
                 .stream()
                 .anyMatch(
                     recordFilter(
-                        ValueType.WORKFLOW_INSTANCE, WorkflowInstanceState.COMPLETED.name())));
+                            ValueType.WORKFLOW_INSTANCE,
+                            WorkflowInstanceState.ELEMENT_COMPLETED.name())
+                        .and(r -> r.getKey() == workflowInstanceEvent.getWorkflowInstanceKey())));
     waitUntil(
         () ->
             records

@@ -114,14 +114,41 @@ public class TopicEventRecorder extends ExternalResource {
     return wfInstanceEvents.stream().anyMatch(state(state));
   }
 
+  public boolean hasElementInState(String elementId, WorkflowInstanceState state) {
+    return wfInstanceEvents
+        .stream()
+        .filter(state(state))
+        .filter(r -> elementId.equals(r.getActivityId()))
+        .findFirst()
+        .isPresent();
+  }
+
   public List<WorkflowInstanceEvent> getWorkflowInstanceEvents(final WorkflowInstanceState state) {
     return wfInstanceEvents.stream().filter(state(state)).collect(Collectors.toList());
+  }
+
+  public List<WorkflowInstanceEvent> getElementsInState(
+      String elementId, final WorkflowInstanceState state) {
+    return wfInstanceEvents
+        .stream()
+        .filter(state(state))
+        .filter(r -> elementId.equals(r.getActivityId()))
+        .collect(Collectors.toList());
   }
 
   public WorkflowInstanceEvent getSingleWorkflowInstanceEvent(WorkflowInstanceState state) {
     return wfInstanceEvents
         .stream()
         .filter(state(state))
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("no event found"));
+  }
+
+  public WorkflowInstanceEvent getElementInState(String elementId, WorkflowInstanceState state) {
+    return wfInstanceEvents
+        .stream()
+        .filter(state(state))
+        .filter(r -> elementId.equals(r.getActivityId()))
         .findFirst()
         .orElseThrow(() -> new AssertionError("no event found"));
   }

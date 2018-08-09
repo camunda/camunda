@@ -21,14 +21,12 @@ import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW
 import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_INSTANCE_KEY;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_VERSION;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ACTIVITY_TERMINATED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.CANCEL;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.broker.util.LogStreamPrinter;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.clientapi.RecordType;
@@ -43,7 +41,6 @@ import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -81,18 +78,12 @@ public class CancelWorkflowInstanceTest {
     testClient = apiRule.topic();
   }
 
-  @After
-  public void tearDown() {
-    LogStreamPrinter.printRecords(
-        brokerRule.getBroker(), "default-topic", apiRule.getDefaultPartitionId());
-  }
-
   @Test
   public void shouldCancelWorkflowInstance() {
     // given
     testClient.deploy(WORKFLOW);
     final long workflowInstanceKey = testClient.createWorkflowInstance("process");
-    testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED);
+    testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
     final ExecuteCommandResponse response = cancelWorkflowInstance(workflowInstanceKey);
@@ -105,31 +96,32 @@ public class CancelWorkflowInstanceTest {
     assertThat(response.intent()).isEqualTo(WorkflowInstanceIntent.CANCELING);
 
     final SubscribedRecord workflowInstanceCanceledEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.CANCELED);
+        testClient.receiveElementInState("process", WorkflowInstanceIntent.ELEMENT_TERMINATED);
 
     assertThat(workflowInstanceCanceledEvent.key()).isEqualTo(workflowInstanceKey);
     assertThat(workflowInstanceCanceledEvent.value())
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
         .containsEntry(PROP_WORKFLOW_VERSION, 1L)
         .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
-        .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "");
+        .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "process");
 
     final List<SubscribedRecord> workflowEvents =
         testClient
             .receiveRecords()
             .ofTypeWorkflowInstance()
             .skipUntil(r -> r.intent() == WorkflowInstanceIntent.CANCEL)
-            .limit(5)
+            .limit(6)
             .collect(Collectors.toList());
 
     assertThat(workflowEvents)
         .extracting(e -> e.value().get("activityId"), e -> e.intent())
         .containsExactly(
             tuple(null, WorkflowInstanceIntent.CANCEL),
-            tuple("", WorkflowInstanceIntent.CANCELING),
-            tuple("task", WorkflowInstanceIntent.ACTIVITY_TERMINATING),
-            tuple("task", WorkflowInstanceIntent.ACTIVITY_TERMINATED),
-            tuple("", WorkflowInstanceIntent.CANCELED));
+            tuple("process", WorkflowInstanceIntent.CANCELING),
+            tuple("process", WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple("task", WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple("task", WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple("process", WorkflowInstanceIntent.ELEMENT_TERMINATED));
   }
 
   @Test
@@ -137,7 +129,7 @@ public class CancelWorkflowInstanceTest {
     // given
     testClient.deploy(SUB_PROCESS_WORKFLOW);
     final long workflowInstanceKey = testClient.createWorkflowInstance("process");
-    testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED);
+    testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
     cancelWorkflowInstance(workflowInstanceKey);
@@ -148,19 +140,20 @@ public class CancelWorkflowInstanceTest {
             .receiveRecords()
             .ofTypeWorkflowInstance()
             .skipUntil(r -> r.intent() == WorkflowInstanceIntent.CANCEL)
-            .limit(7)
+            .limit(8)
             .collect(Collectors.toList());
 
     assertThat(workflowEvents)
         .extracting(e -> e.value().get("activityId"), e -> e.intent())
         .containsExactly(
             tuple(null, WorkflowInstanceIntent.CANCEL),
-            tuple("", WorkflowInstanceIntent.CANCELING),
-            tuple("subProcess", WorkflowInstanceIntent.ACTIVITY_TERMINATING),
-            tuple("task", WorkflowInstanceIntent.ACTIVITY_TERMINATING),
-            tuple("task", WorkflowInstanceIntent.ACTIVITY_TERMINATED),
-            tuple("subProcess", WorkflowInstanceIntent.ACTIVITY_TERMINATED),
-            tuple("", WorkflowInstanceIntent.CANCELED));
+            tuple("process", WorkflowInstanceIntent.CANCELING),
+            tuple("process", WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple("subProcess", WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple("task", WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple("task", WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple("subProcess", WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple("process", WorkflowInstanceIntent.ELEMENT_TERMINATED));
   }
 
   @Test
@@ -171,17 +164,15 @@ public class CancelWorkflowInstanceTest {
     final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
     final SubscribedRecord activityActivatedEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED);
+        testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     final ExecuteCommandResponse response = cancelWorkflowInstance(workflowInstanceKey);
 
     // then
     assertThat(response.intent()).isEqualTo(WorkflowInstanceIntent.CANCELING);
 
-    final SubscribedRecord cancelWorkflow =
-        testClient.receiveFirstWorkflowInstanceCommand(WorkflowInstanceIntent.CANCEL);
     final SubscribedRecord activityTerminatedEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(ACTIVITY_TERMINATED);
+        testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_TERMINATED);
 
     assertThat(activityTerminatedEvent.key()).isEqualTo(activityActivatedEvent.key());
     assertThat(activityTerminatedEvent.value())
@@ -205,22 +196,17 @@ public class CancelWorkflowInstanceTest {
         testClient.createWorkflowInstance("wf", asMsgPack("id", "123"));
 
     final SubscribedRecord catchEventEntered =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.CATCH_EVENT_ENTERED);
+        testClient.receiveElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     final ExecuteCommandResponse response = cancelWorkflowInstance(workflowInstanceKey);
 
     // then
     assertThat(response.intent()).isEqualTo(WorkflowInstanceIntent.CANCELING);
 
-    final SubscribedRecord cancelWorkflow =
-        testClient.receiveFirstWorkflowInstanceCommand(WorkflowInstanceIntent.CANCEL);
     final SubscribedRecord activityTerminatingEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_TERMINATING);
+        testClient.receiveElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_TERMINATING);
     final SubscribedRecord activityTerminatedEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(ACTIVITY_TERMINATED);
-
-    assertThat(activityTerminatingEvent.sourceRecordPosition())
-        .isEqualTo(cancelWorkflow.position());
+        testClient.receiveElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_TERMINATED);
 
     assertThat(activityTerminatedEvent.key()).isEqualTo(catchEventEntered.key());
     assertThat(activityTerminatedEvent.sourceRecordPosition())
@@ -248,7 +234,7 @@ public class CancelWorkflowInstanceTest {
     assertThat(response.intent()).isEqualTo(WorkflowInstanceIntent.CANCELING);
 
     final SubscribedRecord terminateActivity =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_TERMINATING);
+        testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_TERMINATING);
     final SubscribedRecord jobCancelCmd = testClient.receiveFirstJobCommand(JobIntent.CANCEL);
     final SubscribedRecord jobCanceledEvent = testClient.receiveFirstJobEvent(JobIntent.CANCELED);
 
@@ -295,11 +281,7 @@ public class CancelWorkflowInstanceTest {
 
     final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
-    testClient
-        .receiveEvents()
-        .ofTypeWorkflowInstance()
-        .withIntent(WorkflowInstanceIntent.COMPLETED)
-        .getFirst();
+    testClient.receiveElementInState("process", WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     // when
     final ExecuteCommandResponse response = cancelWorkflowInstance(workflowInstanceKey);
@@ -319,6 +301,23 @@ public class CancelWorkflowInstanceTest {
 
     assertThat(cancelRejection).isNotNull();
     assertThat(cancelRejection.sourceRecordPosition()).isEqualTo(cancelCommand.position());
+  }
+
+  @Test
+  public void shouldRejectCancelAlreadyCanceledWorkflowInstance() {
+    // given
+    testClient.deploy(WORKFLOW);
+
+    final long workflowInstanceKey = testClient.createWorkflowInstance("process");
+    cancelWorkflowInstance(workflowInstanceKey);
+
+    // when
+    final ExecuteCommandResponse response = cancelWorkflowInstance(workflowInstanceKey);
+
+    // then
+    assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
+    assertThat(response.rejectionReason()).isEqualTo("Workflow instance is not running");
   }
 
   private ExecuteCommandResponse cancelWorkflowInstance(final long workflowInstanceKey) {

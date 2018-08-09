@@ -18,7 +18,7 @@
 package io.zeebe.broker.workflow.model.transformation.handler;
 
 import io.zeebe.broker.workflow.model.BpmnStep;
-import io.zeebe.broker.workflow.model.ExecutableSubProcess;
+import io.zeebe.broker.workflow.model.ExecutableFlowElementContainer;
 import io.zeebe.broker.workflow.model.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
@@ -36,12 +36,12 @@ public class SubProcessHandler implements ModelElementTransformer<SubProcess> {
   public void transform(SubProcess element, TransformContext context) {
 
     final ExecutableWorkflow currentWorkflow = context.getCurrentWorkflow();
-    final ExecutableSubProcess subprocess =
-        currentWorkflow.getElementById(element.getId(), ExecutableSubProcess.class);
+    final ExecutableFlowElementContainer subprocess =
+        currentWorkflow.getElementById(element.getId(), ExecutableFlowElementContainer.class);
 
     subprocess.bindLifecycleState(
-        WorkflowInstanceIntent.ACTIVITY_ACTIVATED, BpmnStep.TRIGGER_START_EVENT);
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.TRIGGER_START_EVENT);
     subprocess.bindLifecycleState(
-        WorkflowInstanceIntent.ACTIVITY_TERMINATING, BpmnStep.TERMINATE_CONTAINED_INSTANCES);
+        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.TERMINATE_CONTAINED_INSTANCES);
   }
 }

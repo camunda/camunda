@@ -285,6 +285,15 @@ public class TestStreams {
     }
 
     @Override
+    public void blockAfterWorkflowInstanceRecord(
+        Predicate<TypedRecord<WorkflowInstanceRecord>> test) {
+      blockAfterEvent(
+          e ->
+              Records.isWorkflowInstanceRecord(e)
+                  && test.test(CopiedTypedEvent.toTypedEvent(e, WorkflowInstanceRecord.class)));
+    }
+
+    @Override
     public void blockAfterTopicEvent(Predicate<TypedRecord<TopicRecord>> test) {
       blockAfterEvent(
           e ->

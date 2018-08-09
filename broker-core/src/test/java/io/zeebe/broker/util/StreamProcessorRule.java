@@ -21,6 +21,7 @@ import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.topic.StreamProcessorControl;
 import io.zeebe.broker.transport.clientapi.BufferingServerOutput;
 import io.zeebe.broker.util.TestStreams.FluentLogWriter;
+import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RecordType;
@@ -134,6 +135,11 @@ public class StreamProcessorRule implements TestRule {
 
   public BufferingServerOutput getOutput() {
     return output;
+  }
+
+  public void printAllRecords() {
+    final LogStream logStream = streams.getLogStream(STREAM_NAME);
+    LogStreamPrinter.printRecords(logStream);
   }
 
   private class SetupRule extends ExternalResource {

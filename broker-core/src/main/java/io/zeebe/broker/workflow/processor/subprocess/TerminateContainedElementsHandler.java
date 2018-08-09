@@ -18,28 +18,36 @@
 package io.zeebe.broker.workflow.processor.subprocess;
 
 import io.zeebe.broker.workflow.index.ElementInstance;
-import io.zeebe.broker.workflow.model.ExecutableSubProcess;
+import io.zeebe.broker.workflow.model.ExecutableFlowElementContainer;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.List;
 
-public class TerminateContainedElementsHandler implements BpmnStepHandler<ExecutableSubProcess> {
+public class TerminateContainedElementsHandler
+    implements BpmnStepHandler<ExecutableFlowElementContainer> {
 
   @Override
-  public void handle(BpmnStepContext<ExecutableSubProcess> context) {
+  public void handle(BpmnStepContext<ExecutableFlowElementContainer> context) {
     final ElementInstance subProcessInstance = context.getElementInstance();
 
     final List<ElementInstance> children = subProcessInstance.getChildren();
 
-    for (int i = 0; i < children.size(); i++) {
-      final ElementInstance child = children.get(i);
+    if (children.isEmpty()) {
+      context
+          .getStreamWriter()
+          .writeFollowUpEvent(
+              context.getRecord().getKey(),
+              WorkflowInstanceIntent.ELEMENT_TERMINATED,
+              context.getValue());
+    } else {
+      final ElementInstance child = children.get(0);
 
       if (child.canTerminate()) {
         context
             .getStreamWriter()
             .writeFollowUpEvent(
-                child.getKey(), WorkflowInstanceIntent.ACTIVITY_TERMINATING, child.getValue());
+                child.getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATING, child.getValue());
       }
     }
   }

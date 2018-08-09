@@ -18,17 +18,17 @@
 package io.zeebe.broker.workflow.processor.subprocess;
 
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
+import io.zeebe.broker.workflow.model.ExecutableFlowElementContainer;
 import io.zeebe.broker.workflow.model.ExecutableFlowNode;
-import io.zeebe.broker.workflow.model.ExecutableSubProcess;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-public class TriggerStartEventHandler implements BpmnStepHandler<ExecutableSubProcess> {
+public class TriggerStartEventHandler implements BpmnStepHandler<ExecutableFlowElementContainer> {
 
   @Override
-  public void handle(BpmnStepContext<ExecutableSubProcess> context) {
-    final ExecutableSubProcess element = context.getElement();
+  public void handle(BpmnStepContext<ExecutableFlowElementContainer> context) {
+    final ExecutableFlowElementContainer element = context.getElement();
     final ExecutableFlowNode startEvent = element.getStartEvent();
 
     final WorkflowInstanceRecord value = context.getValue();

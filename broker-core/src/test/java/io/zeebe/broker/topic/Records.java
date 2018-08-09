@@ -70,6 +70,10 @@ public class Records {
     return isRecordOfType(event, ValueType.INCIDENT);
   }
 
+  public static boolean isWorkflowInstanceRecord(LoggedEvent event) {
+    return isRecordOfType(event, ValueType.WORKFLOW_INSTANCE);
+  }
+
   public static boolean hasIntent(LoggedEvent event, Intent intent) {
     if (event == null) {
       return false;

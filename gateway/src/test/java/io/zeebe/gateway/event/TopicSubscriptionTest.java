@@ -811,7 +811,7 @@ public class TopicSubscriptionTest {
         expectedEventTimestamp,
         RecordType.EVENT,
         ValueType.WORKFLOW_INSTANCE,
-        WorkflowInstanceIntent.COMPLETED);
+        WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     // then
     waitUntil(() -> eventHandler.numWorkflowInstanceEvents() >= 2);
@@ -834,7 +834,7 @@ public class TopicSubscriptionTest {
         expectedEventTimestamp,
         RecordType.EVENT,
         ValueType.WORKFLOW_INSTANCE,
-        "COMPLETED");
+        "ELEMENT_COMPLETED");
 
     assertThat(eventHandler.numTopicEvents()).isEqualTo(0);
     assertThat(eventHandler.numJobEvents()).isEqualTo(0);
@@ -929,7 +929,7 @@ public class TopicSubscriptionTest {
             b.subscriberKey(123L)
                 .recordType(RecordType.EVENT)
                 .valueType(ValueType.WORKFLOW_INSTANCE)
-                .intent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED)
+                .intent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
                 .value()
                 .put("scopeInstanceKey", 42)
                 .done());

@@ -416,6 +416,26 @@ public class TestTopicClient {
     return receiveEvents().ofTypeWorkflowInstance().withIntent(intent).getFirst();
   }
 
+  public SubscribedRecord receiveElementInState(String elementId, WorkflowInstanceIntent intent) {
+    return receiveEvents()
+        .ofTypeWorkflowInstance()
+        .withIntent(intent)
+        .filter(r -> elementId.equals(r.value().get("activityId")))
+        .findFirst()
+        .get();
+  }
+
+  public SubscribedRecord receiveElementInState(
+      long workflowInstanceKey, String elementId, WorkflowInstanceIntent intent) {
+    return receiveEvents()
+        .ofTypeWorkflowInstance()
+        .withIntent(intent)
+        .filter(r -> (Long) r.value.get("workflowInstanceKey") == workflowInstanceKey)
+        .filter(r -> elementId.equals(r.value().get("activityId")))
+        .findFirst()
+        .get();
+  }
+
   public SubscribedRecord receiveFirstWorkflowInstanceCommand(WorkflowInstanceIntent intent) {
     return receiveCommands().ofTypeWorkflowInstance().withIntent(intent).getFirst();
   }

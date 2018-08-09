@@ -23,7 +23,6 @@ import io.zeebe.broker.workflow.model.ExecutableFlowNode;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.util.buffer.BufferUtil;
 
 public class ConsumeTokenHandler implements BpmnStepHandler<ExecutableFlowNode> {
 
@@ -32,27 +31,14 @@ public class ConsumeTokenHandler implements BpmnStepHandler<ExecutableFlowNode> 
     final WorkflowInstanceRecord value = context.getValue();
 
     final long scopeInstanceKey = value.getScopeInstanceKey();
-    final long workflowInstanceKey = value.getWorkflowInstanceKey();
     final ElementInstance scopeInstance = context.getFlowScopeInstance();
     final WorkflowInstanceRecord scopeInstanceValue = scopeInstance.getValue();
 
-    scopeInstanceValue.setPayload(BufferUtil.cloneBuffer(value.getPayload()));
+    scopeInstanceValue.setPayload(value.getPayload());
 
-    if (scopeInstanceKey == workflowInstanceKey) {
-      context
-          .getStreamWriter()
-          .writeFollowUpEvent(
-              scopeInstanceKey, WorkflowInstanceIntent.COMPLETED, scopeInstanceValue);
-      context.destroyFlowScopeInstance();
-
-    } else {
-
-      context
-          .getStreamWriter()
-          .writeFollowUpEvent(
-              scopeInstanceKey, WorkflowInstanceIntent.ACTIVITY_COMPLETING, scopeInstanceValue);
-    }
-
-    context.destroyElementInstance();
+    context
+        .getStreamWriter()
+        .writeFollowUpEvent(
+            scopeInstanceKey, WorkflowInstanceIntent.ELEMENT_COMPLETING, scopeInstanceValue);
   }
 }

@@ -78,9 +78,7 @@ public class OutputMappingHandler implements BpmnStepHandler<ExecutableFlowNode>
       context
           .getStreamWriter()
           .writeFollowUpEvent(
-              record.getKey(), WorkflowInstanceIntent.ACTIVITY_COMPLETED, activityEvent);
-
-      context.destroyElementInstance();
+              record.getKey(), WorkflowInstanceIntent.ELEMENT_COMPLETED, activityEvent);
     } else {
       context.raiseIncident(ErrorType.IO_MAPPING_ERROR, mappingException.getMessage());
     }

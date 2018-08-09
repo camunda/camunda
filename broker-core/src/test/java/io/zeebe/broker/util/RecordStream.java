@@ -22,14 +22,23 @@ import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.system.workflow.repository.data.DeploymentRecord;
 import io.zeebe.broker.topic.Records;
+import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.stream.StreamWrapper;
+import io.zeebe.util.buffer.BufferUtil;
 import java.util.stream.Stream;
+import org.agrona.DirectBuffer;
 
 public class RecordStream extends StreamWrapper<LoggedEvent> {
 
   public RecordStream(Stream<LoggedEvent> stream) {
     super(stream);
+  }
+
+  public RecordStream withIntent(Intent intent) {
+    return new RecordStream(filter(r -> Records.hasIntent(r, intent)));
   }
 
   public TypedRecordStream<JobRecord> onlyJobRecords() {
@@ -49,9 +58,28 @@ public class RecordStream extends StreamWrapper<LoggedEvent> {
             .map(e -> CopiedTypedEvent.toTypedEvent(e, DeploymentRecord.class)));
   }
 
+  public TypedRecordStream<WorkflowInstanceRecord> onlyWorkflowInstanceRecords() {
+    return new TypedRecordStream<>(
+        filter(Records::isWorkflowInstanceRecord)
+            .map(e -> CopiedTypedEvent.toTypedEvent(e, WorkflowInstanceRecord.class)));
+  }
+
   public TypedRecordStream<TopicRecord> onlyTopicRecords() {
     return new TypedRecordStream<>(
         filter(Records::isTopicRecord)
             .map(e -> CopiedTypedEvent.toTypedEvent(e, TopicRecord.class)));
+  }
+
+  /**
+   * This method makes only sense when the stream contains only entries of one workflow instance and
+   * the element is only instantiated once within that instance.
+   */
+  public Stream<WorkflowInstanceIntent> onlyStatesOf(String elementId) {
+    final DirectBuffer elementIdBuffer = BufferUtil.wrapString(elementId);
+
+    return onlyWorkflowInstanceRecords()
+        .onlyEvents()
+        .filter(r -> elementIdBuffer.equals(r.getValue().getActivityId()))
+        .map(r -> (WorkflowInstanceIntent) r.getMetadata().getIntent());
   }
 }

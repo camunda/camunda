@@ -24,7 +24,7 @@ import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-public class EnterIntermediateEventHandler implements BpmnStepHandler<ExecutableSequenceFlow> {
+public class StartStatefulElementHandler implements BpmnStepHandler<ExecutableSequenceFlow> {
 
   @Override
   public void handle(BpmnStepContext<ExecutableSequenceFlow> context) {
@@ -35,9 +35,6 @@ public class EnterIntermediateEventHandler implements BpmnStepHandler<Executable
     final WorkflowInstanceRecord value = context.getValue();
     value.setActivityId(targetNode.getId());
 
-    final long key =
-        context.getStreamWriter().writeNewEvent(WorkflowInstanceIntent.CATCH_EVENT_ENTERING, value);
-
-    context.newInstanceInFlowScope(key, value, WorkflowInstanceIntent.CATCH_EVENT_ENTERING);
+    context.getStreamWriter().writeNewEvent(WorkflowInstanceIntent.ELEMENT_READY, value);
   }
 }

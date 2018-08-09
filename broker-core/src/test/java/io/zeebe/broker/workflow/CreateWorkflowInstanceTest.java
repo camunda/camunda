@@ -443,7 +443,7 @@ public class CreateWorkflowInstanceTest {
     testClient
         .receiveEvents()
         .ofTypeWorkflowInstance()
-        .withIntent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED)
+        .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
         .getFirst();
 
     // when
@@ -458,7 +458,8 @@ public class CreateWorkflowInstanceTest {
         testClient
             .receiveEvents()
             .ofTypeWorkflowInstance()
-            .withIntent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED)
+            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .filter(r -> "task".equals(r.value().get("activityId")))
             .limit(2)
             .collect(Collectors.toList());
 
@@ -495,7 +496,7 @@ public class CreateWorkflowInstanceTest {
     testClient
         .receiveEvents()
         .ofTypeWorkflowInstance()
-        .withIntent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED)
+        .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
         .getFirst();
 
     // when
@@ -513,7 +514,8 @@ public class CreateWorkflowInstanceTest {
         testClient
             .receiveEvents()
             .ofTypeWorkflowInstance()
-            .withIntent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED)
+            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .filter(r -> "task".equals(r.value().get("activityId")))
             .limit(2)
             .collect(Collectors.toList());
 

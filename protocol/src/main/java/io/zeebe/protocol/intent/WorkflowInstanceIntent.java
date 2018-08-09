@@ -24,26 +24,18 @@ public enum WorkflowInstanceIntent implements Intent {
   SEQUENCE_FLOW_TAKEN((short) 4),
   GATEWAY_ACTIVATED((short) 5),
 
-  ACTIVITY_READY((short) 6),
-  ACTIVITY_ACTIVATED((short) 7),
-  ACTIVITY_COMPLETING((short) 8),
-  ACTIVITY_COMPLETED((short) 9),
-  ACTIVITY_TERMINATING((short) 10),
-  ACTIVITY_TERMINATED((short) 11),
+  ELEMENT_READY((short) 6),
+  ELEMENT_ACTIVATED((short) 7),
+  ELEMENT_COMPLETING((short) 8),
+  ELEMENT_COMPLETED((short) 9),
+  ELEMENT_TERMINATING((short) 10),
+  ELEMENT_TERMINATED((short) 11),
 
-  COMPLETED((short) 12),
+  CANCEL((short) 12),
+  CANCELING((short) 13),
 
-  CANCEL((short) 13),
-  CANCELING((short) 14),
-  CANCELED((short) 15),
-
-  UPDATE_PAYLOAD((short) 16),
-  PAYLOAD_UPDATED((short) 17),
-
-  CATCH_EVENT_ENTERING((short) 18),
-  CATCH_EVENT_ENTERED((short) 19),
-  CATCH_EVENT_OCCURRING((short) 20),
-  CATCH_EVENT_OCCURRED((short) 21);
+  UPDATE_PAYLOAD((short) 14),
+  PAYLOAD_UPDATED((short) 15);
 
   private short value;
 
@@ -70,37 +62,25 @@ public enum WorkflowInstanceIntent implements Intent {
       case 5:
         return GATEWAY_ACTIVATED;
       case 6:
-        return ACTIVITY_READY;
+        return ELEMENT_READY;
       case 7:
-        return ACTIVITY_ACTIVATED;
+        return ELEMENT_ACTIVATED;
       case 8:
-        return ACTIVITY_COMPLETING;
+        return ELEMENT_COMPLETING;
       case 9:
-        return ACTIVITY_COMPLETED;
+        return ELEMENT_COMPLETED;
       case 10:
-        return ACTIVITY_TERMINATING;
+        return ELEMENT_TERMINATING;
       case 11:
-        return ACTIVITY_TERMINATED;
+        return ELEMENT_TERMINATED;
       case 12:
-        return COMPLETED;
-      case 13:
         return CANCEL;
-      case 14:
+      case 13:
         return CANCELING;
-      case 15:
-        return CANCELED;
-      case 16:
+      case 14:
         return UPDATE_PAYLOAD;
-      case 17:
+      case 15:
         return PAYLOAD_UPDATED;
-      case 18:
-        return CATCH_EVENT_ENTERING;
-      case 19:
-        return CATCH_EVENT_ENTERED;
-      case 20:
-        return CATCH_EVENT_OCCURRING;
-      case 21:
-        return CATCH_EVENT_OCCURRED;
       default:
         return Intent.UNKNOWN;
     }

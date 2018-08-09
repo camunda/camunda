@@ -25,6 +25,7 @@ import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.incident.processor.IncidentStreamProcessor;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
+import io.zeebe.broker.workflow.map.WorkflowCache;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceStreamProcessor;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
@@ -37,7 +38,6 @@ import io.zeebe.transport.ServerTransport;
 /** Tracks leader partitions and installs the workflow instance stream processors */
 public class WorkflowStreamProcessingManagerService
     implements Service<WorkflowStreamProcessingManagerService> {
-  public static final int PAYLOAD_CACHE_SIZE = 64;
 
   protected static final String NAME = "workflow.queue.manager";
 
@@ -68,13 +68,16 @@ public class WorkflowStreamProcessingManagerService
   private void installWorkflowStreamProcessor(
       Partition partition, ServiceName<Partition> partitionServiceName) {
     final ServerTransport transport = clientApiTransportInjector.getValue();
+    final ClientTransport managementApiClient = managementApiClientInjector.getValue();
+
+    final WorkflowCache workflowCache = new WorkflowCache(managementApiClient, topologyManager);
 
     final WorkflowInstanceStreamProcessor streamProcessor =
         new WorkflowInstanceStreamProcessor(
-            managementApiClientInjector.getValue(),
+            workflowCache,
+            managementApiClient,
             getSubscriptionApiClientInjector().getValue(),
-            topologyManager,
-            PAYLOAD_CACHE_SIZE);
+            topologyManager);
     final TypedStreamEnvironment env =
         new TypedStreamEnvironment(partition.getLogStream(), transport.getOutput());
 

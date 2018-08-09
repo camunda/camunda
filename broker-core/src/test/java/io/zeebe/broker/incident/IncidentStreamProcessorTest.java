@@ -94,7 +94,7 @@ public class IncidentStreamProcessorTest {
 
     final long position =
         rule.writeEvent(
-            activityInstanceKey, WorkflowInstanceIntent.ACTIVITY_READY, activityInstance);
+            activityInstanceKey, WorkflowInstanceIntent.ELEMENT_READY, activityInstance);
 
     final IncidentRecord incident = new IncidentRecord();
     incident.setWorkflowInstanceKey(workflowInstanceKey);
@@ -107,7 +107,7 @@ public class IncidentStreamProcessorTest {
 
     rule.writeEvent(activityInstanceKey, WorkflowInstanceIntent.PAYLOAD_UPDATED, activityInstance);
     rule.writeEvent(
-        activityInstanceKey, WorkflowInstanceIntent.ACTIVITY_TERMINATED, activityInstance);
+        activityInstanceKey, WorkflowInstanceIntent.ELEMENT_TERMINATED, activityInstance);
 
     // when
     control.unblock();

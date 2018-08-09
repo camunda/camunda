@@ -23,19 +23,13 @@ import java.util.Map;
 import org.agrona.DirectBuffer;
 
 /** Executable* prefix in order to avoid confusion with model API classes. */
-public class ExecutableWorkflow {
+public class ExecutableWorkflow extends ExecutableFlowElementContainer {
 
-  private final DirectBuffer id;
   private final Map<DirectBuffer, ExecutableFlowElement> flowElements = new HashMap<>();
 
-  private ExecutableFlowNode startEvent;
-
   public ExecutableWorkflow(String id) {
-    this.id = BufferUtil.wrapString(id);
-  }
-
-  public DirectBuffer getId() {
-    return id;
+    super(id);
+    addFlowElement(this);
   }
 
   public void addFlowElement(ExecutableFlowElement element) {
@@ -44,14 +38,6 @@ public class ExecutableWorkflow {
 
   public ExecutableFlowElement getElementById(DirectBuffer id) {
     return flowElements.get(id);
-  }
-
-  public ExecutableFlowNode getStartEvent() {
-    return startEvent;
-  }
-
-  public void setStartEvent(ExecutableFlowNode startEvent) {
-    this.startEvent = startEvent;
   }
 
   /** convenience function for transformation */
