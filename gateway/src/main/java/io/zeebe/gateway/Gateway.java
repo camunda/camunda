@@ -16,8 +16,9 @@
 package io.zeebe.gateway;
 
 import io.grpc.Server;
-import io.grpc.ServerBuilder;
+import io.grpc.netty.NettyServerBuilder;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.time.Duration;
 import org.slf4j.Logger;
 
@@ -74,10 +75,10 @@ public class Gateway {
     zbClient = ZeebeClient.newClientBuilder().requestTimeout(Duration.ofMillis(250)).build();
 
     server =
-        ServerBuilder.forPort(
-                port) // TODO: Issue #1136 - https://github.com/zeebe-io/zeebe/issues/1136
+        NettyServerBuilder.forAddress(new InetSocketAddress(host, port))
             .addService(new EndpointManager(new ResponseMapper(), zbClient))
             .build();
+
     server.start();
     LOG.info("Gateway started at port: {}", port);
   }
