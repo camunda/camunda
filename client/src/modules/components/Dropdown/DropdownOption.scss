@@ -16,6 +16,9 @@
 
   &.is-active {
     border: none;
+    color: #111;
+    background-color: darken(#e6e6e6, 12);
+    transition: none;
   }
 
   &.Typeahead__search-result {
