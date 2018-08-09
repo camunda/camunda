@@ -61,13 +61,13 @@ const colorStyle = css`
 
 const iconPositionStyle = css`
   position: relative;
-  top: 2px;
+  top: 3px;
 `;
 export const LogEntry = themed(styled.button`
   background: transparent;
   margin: 0;
   border: none;
-  padding: 6px;
+  padding: 5px;
   padding-left: 43px;
   height: 32px;
   text-align: left;
