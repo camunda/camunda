@@ -46,4 +46,17 @@ public class ConfigurationServiceTest {
     }
   }
 
+  @Test
+  public void testCutTrailingSlash() throws Exception {
+    // given
+    String[] locations = {"override-engine-config.yaml"};
+    ConfigurationService underTest = new ConfigurationService(locations);
+
+    // when
+    String resultUrl =
+            underTest.getConfiguredEngines().get("myAwesomeEngine").getWebapps().getEndpoint();
+
+    // then
+    assertThat(resultUrl.endsWith("/"), is(false));
+  }
 }
