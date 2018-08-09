@@ -110,7 +110,7 @@ it('should display a list with the results', () => {
   expect(node).toIncludeText(sampleEntity.name);
   expect(node).toIncludeText(sampleEntity.lastModifier);
   expect(node).toIncludeText('some date');
-  expect(node.find('.EntityList__no-entities')).not.toBePresent();
+  expect(node.find('noEntities')).not.toBePresent();
   expect(node.find('ul')).toBePresent();
 });
 
@@ -122,7 +122,7 @@ it('should display no-entities indicator if no entities', () => {
     data: []
   });
 
-  expect(node.find('.EntityList__no-entities')).toBePresent();
+  expect(node.find('.noEntities')).toBePresent();
 });
 
 it('should display create entity link if no entities', () => {
@@ -132,7 +132,7 @@ it('should display create entity link if no entities', () => {
     loaded: true,
     data: []
   });
-  expect(node.find('.EntityList__createLink')).toBePresent();
+  expect(node.find('.createLink')).toBePresent();
 });
 
 it('should not display create entity link if there are entities', () => {
@@ -142,7 +142,7 @@ it('should not display create entity link if there are entities', () => {
     loaded: true,
     data: [sampleEntity]
   });
-  expect(node.find('.EntityList__createLink')).not.toBePresent();
+  expect(node.find('.createLink')).not.toBePresent();
 });
 
 it('should not display create entity button on home page', () => {
@@ -162,7 +162,7 @@ it('should not display create entity button on home page', () => {
     data: []
   });
 
-  expect(node.find('.EntityList__createButton')).not.toBePresent();
+  expect(node.find('.createButton')).not.toBePresent();
 });
 
 it('should call new entity on click on the new entity button and redirect to the new entity', async () => {
@@ -181,9 +181,9 @@ it('should display all operations per default', () => {
     data: [sampleEntity]
   });
 
-  expect(node.find('.EntityList__createButton')).toBePresent();
-  expect(node.find('.EntityList__deleteIcon')).toBePresent();
-  expect(node.find('.EntityList__editLink')).toBePresent();
+  expect(node.find('.createButton')).toBePresent();
+  expect(node.find('.deleteIcon')).toBePresent();
+  expect(node.find('.editLink')).toBePresent();
 });
 
 it('should not display any operations if none are specified', () => {
@@ -195,9 +195,9 @@ it('should not display any operations if none are specified', () => {
     data: [sampleEntity]
   });
 
-  expect(node.find('.EntityList__createButton')).not.toBePresent();
-  expect(node).not.toIncludeText('EntityList__deleteIcon');
-  expect(node).not.toIncludeText('EntityList__editLink');
+  expect(node.find('.createButton')).not.toBePresent();
+  expect(node).not.toIncludeText('deleteIcon');
+  expect(node).not.toIncludeText('editLink');
 });
 
 it('should display a create button if specified', () => {
@@ -210,7 +210,7 @@ it('should display a create button if specified', () => {
     data: [sampleEntity]
   });
 
-  expect(node.find('.EntityList__createButton')).toBePresent();
+  expect(node.find('.createButton')).toBePresent();
 });
 
 it('should display an edit link if specified', () => {
@@ -222,7 +222,7 @@ it('should display an edit link if specified', () => {
     data: [sampleEntity]
   });
 
-  expect(node.find('.EntityList__editLink')).toBePresent();
+  expect(node.find('.editLink')).toBePresent();
 });
 
 it('should display a delete button if specified', () => {
@@ -234,7 +234,7 @@ it('should display a delete button if specified', () => {
     data: [sampleEntity]
   });
 
-  expect(node.find('.EntityList__deleteIcon')).toBePresent();
+  expect(node.find('.deleteIcon')).toBePresent();
 });
 
 it('should be able to sort by date', async () => {
@@ -271,9 +271,9 @@ it('should open deletion modal on delete button click', () => {
     data: [sampleEntity]
   });
 
-  node.find('.EntityList__deleteIcon').simulate('click');
+  node.find('.deleteIcon').simulate('click');
 
-  expect(node.find('.EntityList__delete-modal')).toBePresent();
+  expect(node.find('.deleteModal')).toBePresent();
 });
 
 it('should display an error if error occurred', () => {
@@ -313,7 +313,7 @@ it('should display a duplicate icon button if specified', () => {
     loaded: true,
     data: [sampleEntity]
   });
-  expect(node.find('.EntityList__duplicateIcon')).toBePresent();
+  expect(node.find('.duplicateIcon')).toBePresent();
 });
 
 it('should invoke duplicate on click', async () => {
@@ -354,7 +354,7 @@ it('should display a search input if specified', () => {
     data: [sampleEntity]
   });
 
-  expect(node.find('.EntityList__input')).toBePresent();
+  expect(node.find('.input')).toBePresent();
 });
 
 it('should when typing a search query Keep only those entries, where the provided value matches anything in the name', () => {

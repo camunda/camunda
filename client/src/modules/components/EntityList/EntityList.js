@@ -88,14 +88,14 @@ class EntityList extends React.Component {
         infos: [
           {
             content: name,
-            parentClassName: 'EntityList__data--title'
+            parentClassName: 'dataTitle'
           },
           {
             content: `Last modified ${moment(lastModified).format('lll')} by ${lastModifier}`,
-            parentClassName: 'EntityList__data--metadata'
+            parentClassName: 'dataMeta'
           },
           {
-            parentClassName: 'EntityList__data--icons',
+            parentClassName: 'dataIcons',
             content: shared && <Icon type="share" title={`This ${this.props.label} is shared`} />
           }
         ],
@@ -109,10 +109,10 @@ class EntityList extends React.Component {
               type="delete"
               title="Delete a report"
               onClick={this.showDeleteModal({id, name})}
-              className="EntityList__deleteIcon"
+              className="deleteIcon"
             />
           ),
-          parentClassName: 'EntityList__data--tool'
+          parentClassName: 'dataTool'
         });
       }
 
@@ -123,18 +123,18 @@ class EntityList extends React.Component {
               type="copy-document"
               title="Duplicate a report"
               onClick={this.duplicateEntity(id)}
-              className="EntityList__duplicateIcon"
+              className="duplicateIcon"
             />
           ),
-          parentClassName: 'EntityList__data--tool'
+          parentClassName: 'dataTool'
         });
       }
 
       if (this.props.operations.includes('edit')) {
         entry.operations.push({
-          content: <Icon type="edit" title="Edit a report" className="EntityList__editLink" />,
+          content: <Icon type="edit" title="Edit a report" className="editLink" />,
           link: `/${this.props.api}/${id}/edit`,
-          parentClassName: 'EntityList__data--tool'
+          parentClassName: 'dataTool'
         });
       }
 
@@ -148,20 +148,20 @@ class EntityList extends React.Component {
         open={deleteModalVisible}
         onClose={this.closeDeleteModal}
         onConfirm={this.deleteEntity(deleteModalEntity.id)}
-        className="EntityList__delete-modal"
+        className="deleteModal"
       >
         <Modal.Header>Delete {deleteModalEntity.name}</Modal.Header>
         <Modal.Content>
           <p>You are about to delete {deleteModalEntity.name}. Are you sure you want to proceed?</p>
         </Modal.Content>
         <Modal.Actions>
-          <Button className="EntityList__close-delete-modal-button" onClick={this.closeDeleteModal}>
+          <Button className="deleteModalButton" onClick={this.closeDeleteModal}>
             Cancel
           </Button>
           <Button
             type="primary"
             color="red"
-            className="EntityList__delete-entity-modal-button"
+            className="deleteEntityModalButton"
             onClick={this.deleteEntity(deleteModalEntity.id)}
           >
             Delete
@@ -179,14 +179,14 @@ class EntityList extends React.Component {
         </Link>
       );
     }
-    if (cell.parentClassName === 'EntityList__data--title')
+    if (cell.parentClassName === 'dataTitle')
       return formatters.getHighlightedText(cell.content, this.state.query);
     return cell.content;
   };
 
   renderCells = data => {
     return data.map((cell, idx) => (
-      <span key={idx} className={classnames('EntityList__data', cell.parentClassName)}>
+      <span key={idx} className={classnames('data', cell.parentClassName)}>
         {this.renderCell(cell)}
       </span>
     ));
@@ -197,7 +197,7 @@ class EntityList extends React.Component {
     let searchInput = null;
     if (this.props.operations.includes('create')) {
       createButton = (
-        <Button color="green" className="EntityList__createButton" onClick={this.createEntity}>
+        <Button color="green" className="createButton" onClick={this.createEntity}>
           Create new {this.props.label}
         </Button>
       );
@@ -205,7 +205,7 @@ class EntityList extends React.Component {
     if (this.props.operations.includes('search')) {
       searchInput = (
         <Input
-          className="EntityList__input"
+          className="input"
           onChange={({target: {value}}) => this.setState({query: value})}
           placeholder="Filter for name"
         />
@@ -213,9 +213,9 @@ class EntityList extends React.Component {
     }
 
     const header = (
-      <div className="EntityList__header">
-        <h1 className="EntityList__heading">{this.props.label}s</h1>
-        <div className="EntityList__tools">{createButton}</div>
+      <div className="header">
+        <h1 className="heading">{this.props.label}s</h1>
+        <div className="tools">{createButton}</div>
       </div>
     );
 
@@ -238,7 +238,7 @@ class EntityList extends React.Component {
     const isListEmpty = this.state.data.length === 0;
 
     const createLink = (
-      <a className="EntityList__createLink" role="button" onClick={this.createEntity}>
+      <a className="createLink" role="button" onClick={this.createEntity}>
         Create a new {this.props.label}…
       </a>
     );
@@ -246,24 +246,24 @@ class EntityList extends React.Component {
     let list;
     if (loaded) {
       list = isListEmpty ? (
-        <ul className="EntityList__list">
-          <li className="EntityList__item EntityList__no-entities">
+        <ul className="list">
+          <li className="item noEntities">
             {`You have no ${this.props.label}s configured yet.`}&nbsp;{createLink}
           </li>
         </ul>
       ) : (
         <React.Fragment>
           {searchInput}
-          <ul className="EntityList__list">
+          <ul className="list">
             {this.formatData(this.state.data)
               .filter(row => row.name.toLowerCase().includes(this.state.query.toLowerCase()))
               .map((row, idx) => {
                 return (
-                  <li key={idx} className="EntityList__item">
-                    <Link to={row.link} className="EntityList__info">
+                  <li key={idx} className="item">
+                    <Link to={row.link} className="info">
                       {this.renderCells(row.infos)}
                     </Link>
-                    <div className="EntityList__operations">{this.renderCells(row.operations)}</div>
+                    <div className="operations">{this.renderCells(row.operations)}</div>
                   </li>
                 );
               })}
