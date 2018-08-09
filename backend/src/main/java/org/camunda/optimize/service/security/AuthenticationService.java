@@ -45,7 +45,7 @@ public class AuthenticationService {
     }
     // could not find an authorized authorized user, so throw an exception
     logger.error("Error during user authentication");
-    throw new NotAuthorizedException("Can't authorize user [" + credentials.getUsername() + "]");
+    throw new NotAuthorizedException("Could not log you in. Please check your username and password.", "ignored");
   }
 
   private void throwForbiddenException(CredentialsDto credentialsDto) {
