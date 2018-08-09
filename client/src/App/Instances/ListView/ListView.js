@@ -17,7 +17,7 @@ export default class ListView extends React.Component {
     instancesInFilter: PropTypes.number.isRequired,
     onSelectionUpdate: PropTypes.func.isRequired,
     filter: PropTypes.object.isRequired,
-    addNewSelection: PropTypes.func,
+    handleAddNewSelection: PropTypes.func,
     expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
     errorMessage: PropTypes.string,
     addToCurrentSelection: PropTypes.func
@@ -115,7 +115,7 @@ export default class ListView extends React.Component {
                 this.setState({firstElement})
               }
               addToCurrentSelection={this.props.addToCurrentSelection}
-              addNewSelection={this.props.addNewSelection}
+              handleAddNewSelection={this.props.handleAddNewSelection}
             />
           )}
         </SplitPane.Pane.Footer>

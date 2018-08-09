@@ -100,7 +100,7 @@ class Instances extends Component {
     });
   };
 
-  addNewSelection = async () => {
+  handleAddNewSelection = async () => {
     const {selection, filter} = this.state;
 
     //Replace Sets with arrays.
@@ -319,7 +319,7 @@ class Instances extends Component {
                 }}
                 selection={this.state.selection}
                 filter={this.state.filter}
-                addNewSelection={this.addNewSelection}
+                handleAddNewSelection={this.handleAddNewSelection}
                 addToCurrentSelection={() =>
                   this.addToCurrentSelection(this.state.openSelection)
                 }
