@@ -111,8 +111,8 @@ describe('convertToMilliseconds', () => {
 describe('getHighlightedText', () => {
   it('Should wrap the highlighted text in a span and give it textBlue class', () => {
     const results = getHighlightedText('test text', 'text');
-    expect(results.props.children[1].props.children).toBe('text');
-    expect(results.props.children[1].props.className).toBe('textBlue');
+    expect(results[1].props.children).toBe('text');
+    expect(results[1].props.className).toBe('textBlue');
   });
 
   it('Should return the same text as string if the highlight is empty', () => {
