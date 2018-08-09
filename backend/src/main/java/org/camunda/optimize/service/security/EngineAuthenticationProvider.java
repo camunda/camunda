@@ -41,6 +41,10 @@ public class EngineAuthenticationProvider {
           credentialsDto.getUsername(),
           engineContext.getEngineAlias()
         );
+
+        // read Exception from the engine response
+        // and rethrow it to forward the error message to the client
+        // e.g when the user is locked, the error message will contain corresponding information
         throw response.readEntity(RuntimeException.class);
       }
   }

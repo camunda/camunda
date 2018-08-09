@@ -43,6 +43,8 @@ public class AuthenticationServiceIT {
     assertThat(response.getStatus(),is(200));
   }
 
+
+  //comment in back after stopping support of engine 7.8
 //  @Test
 //  public void authenticateLockedUser() {
 //    //given
