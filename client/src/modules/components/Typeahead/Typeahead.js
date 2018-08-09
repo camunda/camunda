@@ -1,6 +1,7 @@
 import React from 'react';
 import classnames from 'classnames';
 import {Input, Dropdown} from 'components';
+import {formatters} from 'services';
 
 import './Typeahead.css';
 
@@ -215,7 +216,7 @@ export default class Typeahead extends React.Component {
     return (
       <div ref={this.containerRef} className={classnames('Typeahead', this.props.className)}>
         <Input
-          className={classnames('Typeahead__input', {'is-invalid': this.props.isInvalid})}
+          className={classnames({isInvalid: this.props.isInvalid})}
           value={query}
           onChange={this.updateQuery}
           onClick={this.showOptions}
@@ -228,22 +229,22 @@ export default class Typeahead extends React.Component {
           values.length > 0 && (
             <div
               style={searchResultContainerStyle}
-              className="Typeahead__search-result-list"
+              className="SearchResultsList"
               ref={this.optionsListRef}
               onMouseUp={this.returnFocusToInput}
             >
               {values.map((value, index) => {
                 return (
                   <Dropdown.Option
-                    className={classnames('Typeahead__search-result', {
-                      'is-active': index === selectedValueIdx
+                    className={classnames('searchResult', {
+                      isActive: index === selectedValueIdx
                     })}
                     style={valueStyle}
                     onMouseDown={evt => evt.preventDefault()}
                     onClick={this.selectValue(value)}
                     key={formatter(value)}
                   >
-                    {formatter(value)}
+                    {formatters.getHighlightedText(formatter(value), this.state.query)}
                   </Dropdown.Option>
                 );
               })}

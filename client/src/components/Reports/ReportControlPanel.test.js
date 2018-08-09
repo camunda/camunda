@@ -43,7 +43,10 @@ jest.mock('services', () => {
       isAllowed: jest.fn().mockReturnValue(true),
       getNext: jest.fn()
     },
-    extractProcessDefinitionName: jest.fn()
+    extractProcessDefinitionName: jest.fn(),
+    formatters: {
+      getHighlightedText: text => text
+    }
   };
 });
 

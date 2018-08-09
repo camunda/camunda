@@ -36,7 +36,7 @@ main {
 }
 
 a {
-  color: #00a8ff;
+  color: $cam-blue;
   text-decoration: none;
   cursor: pointer;
 }
@@ -46,7 +46,7 @@ a:hover {
 }
 
 a:visited {
-  color: #00a8ff;
+  color: $cam-blue;
 }
 
 /* TYPOGRAPHY */
@@ -76,6 +76,10 @@ section h1 {
 
 .small {
   font-size: 0.875em;
+}
+
+.textBlue {
+  color: $cam-blue;
 }
 
 /* UTILITIES */

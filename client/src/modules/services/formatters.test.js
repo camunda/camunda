@@ -4,7 +4,8 @@ import {
   convertDurationToObject,
   convertDurationToSingleNumber,
   convertCamelToSpaces,
-  convertToMilliseconds
+  convertToMilliseconds,
+  getHighlightedText
 } from './formatters';
 const separator = '\u202F';
 const nbsp = '\u00A0';
@@ -105,4 +106,17 @@ describe('convertToMilliseconds', () => {
   expect(convertToMilliseconds(2, 'months')).toBe(5184000000);
   expect(convertToMilliseconds(3, 'hours')).toBe(10800000);
   expect(convertToMilliseconds(100, 'millis')).toBe(100);
+});
+
+describe('getHighlightedText', () => {
+  it('Should wrap the highlighted text in a span and give it textBlue class', () => {
+    const results = getHighlightedText('test text', 'text');
+    expect(results.props.children[1].props.children).toBe('text');
+    expect(results.props.children[1].props.className).toBe('textBlue');
+  });
+
+  it('Should return the same text as string if the highlight is empty', () => {
+    const results = getHighlightedText('test text', '');
+    expect(results).toBe('test text');
+  });
 });

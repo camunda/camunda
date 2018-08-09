@@ -51,6 +51,14 @@ jest.mock('moment', () => (...params) => {
   };
 });
 
+jest.mock('services', () => {
+  return {
+    formatters: {
+      getHighlightedText: text => text
+    }
+  };
+});
+
 jest.mock('components', () => {
   const Modal = props => <div id="Modal">{props.open && props.children}</div>;
   Modal.Header = props => <div id="modal_header">{props.children}</div>;

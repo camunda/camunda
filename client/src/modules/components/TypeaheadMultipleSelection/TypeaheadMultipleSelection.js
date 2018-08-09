@@ -1,10 +1,14 @@
 import React from 'react';
 import {Input, LoadingIndicator} from 'components';
+import {formatters} from 'services';
 
 import './TypeaheadMultipleSelection.css';
 
-export default function TypeaheadMultipleSelection(props) {
-  const mapSelectedValues = values => {
+export default class TypeaheadMultipleSelection extends React.Component {
+  state = {
+    searchQuery: ''
+  };
+  mapSelectedValues = values => {
     return (
       values.length > 0 && (
         <div className="TypeaheadMultipleSelection__labeled-valueList">
@@ -14,7 +18,12 @@ export default function TypeaheadMultipleSelection(props) {
               return (
                 <li key={idx} className="TypeaheadMultipleSelection__valueListItem">
                   <label>
-                    <Input type="checkbox" checked value={value} onChange={props.toggleValue} />
+                    <Input
+                      type="checkbox"
+                      checked
+                      value={value}
+                      onChange={this.props.toggleValue}
+                    />
                     {value}
                   </label>
                 </li>
@@ -26,7 +35,7 @@ export default function TypeaheadMultipleSelection(props) {
     );
   };
 
-  const mapAvaliableValues = (availableValues, selectedValues) => {
+  mapAvaliableValues = (availableValues, selectedValues) => {
     return (
       <div className="TypeaheadMultipleSelection__labeled-valueList">
         <p>Available Values: </p>
@@ -40,9 +49,9 @@ export default function TypeaheadMultipleSelection(props) {
                       type="checkbox"
                       checked={selectedValues.includes(value)}
                       value={value}
-                      onChange={props.toggleValue}
+                      onChange={this.props.toggleValue}
                     />
-                    {value}
+                    {formatters.getHighlightedText(value, this.state.searchQuery)}
                   </label>
                 </li>
               );
@@ -54,36 +63,44 @@ export default function TypeaheadMultipleSelection(props) {
     );
   };
 
-  const {availableValues, selectedValues, loading} = props;
-  const input = (
-    <div className="TypeaheadMultipleSelection__labeled-input">
-      <p>Values that start with:</p>
-      <Input className="TypeaheadMultipleSelection__input" onChange={props.setPrefix} />
-    </div>
-  );
-  const loadingIndicator = loading ? <LoadingIndicator /> : '';
-  if (availableValues.length === 0) {
+  render() {
+    const {availableValues, selectedValues, loading} = this.props;
+    const input = (
+      <div className="TypeaheadMultipleSelection__labeled-input">
+        <p>Values that start with:</p>
+        <Input
+          className="TypeaheadMultipleSelection__input"
+          onChange={e => {
+            this.setState({searchQuery: e.target.value});
+            return this.props.setPrefix(e);
+          }}
+        />
+      </div>
+    );
+    const loadingIndicator = loading ? <LoadingIndicator /> : '';
+    if (availableValues.length === 0) {
+      return (
+        <div className="TypeaheadMultipleSelection">
+          {input}
+          {loadingIndicator}
+          <div className="TypeaheadMultipleSelection__valueList">
+            {this.mapSelectedValues(selectedValues)}
+            <li className="TypeaheadMultipleSelection__no-items">
+              {loading ? '' : 'No values match the query'}
+            </li>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="TypeaheadMultipleSelection">
         {input}
         {loadingIndicator}
         <div className="TypeaheadMultipleSelection__valueList">
-          {mapSelectedValues(selectedValues)}
-          <li className="TypeaheadMultipleSelection__no-items">
-            {loading ? '' : 'No values match the query'}
-          </li>
+          {this.mapSelectedValues(selectedValues)}
+          {this.mapAvaliableValues(availableValues, selectedValues)}
         </div>
       </div>
     );
   }
-  return (
-    <div className="TypeaheadMultipleSelection">
-      {input}
-      {loadingIndicator}
-      <div className="TypeaheadMultipleSelection__valueList">
-        {mapSelectedValues(selectedValues)}
-        {mapAvaliableValues(availableValues, selectedValues)}
-      </div>
-    </div>
-  );
 }

@@ -9,6 +9,8 @@ import {Button, Modal, Message, Icon, Input, LoadingIndicator} from 'components'
 
 import {load, create, remove, duplicate} from './service';
 
+import {formatters} from 'services';
+
 import './EntityList.css';
 
 class EntityList extends React.Component {
@@ -177,6 +179,8 @@ class EntityList extends React.Component {
         </Link>
       );
     }
+    if (cell.parentClassName === 'EntityList__data--title')
+      return formatters.getHighlightedText(cell.content, this.state.query);
     return cell.content;
   };
 

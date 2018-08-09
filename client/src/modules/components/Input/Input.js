@@ -12,7 +12,7 @@ export default React.forwardRef(function Input(props, ref) {
       type="text"
       {...allowedProps}
       className={classnames('Input', props.className, {
-        'is-invalid': props.isInvalid
+        isInvalid: props.isInvalid
       })}
       ref={ref}
     >

@@ -2,7 +2,7 @@ import React from 'react';
 import {Popover, ProcessDefinitionSelection, Button, Dropdown, Input} from 'components';
 
 import {Filter} from './filter';
-import {extractProcessDefinitionName, reportConfig} from 'services';
+import {extractProcessDefinitionName, reportConfig, formatters} from 'services';
 
 import {TargetValueComparison} from './targetValue';
 
@@ -296,7 +296,7 @@ export default class ReportControlPanel extends React.Component {
                   this.update('groupBy', {type: 'variable', value: {...variable}});
                 }}
               >
-                {variable.name}
+                {formatters.getHighlightedText(variable.name, this.state.variableTypeaheadValue)}
               </Dropdown.Option>
             ))}
         </div>
