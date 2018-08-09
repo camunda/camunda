@@ -36,19 +36,7 @@ export default class Login extends React.Component {
     if (authResult.token) {
       this.setState({error: null, redirect: true});
     } else {
-      let error;
-      switch (authResult.statusCode) {
-        case 401:
-          error = 'Could not log you in. Please check your username and password.';
-          break;
-        case 403:
-          error = `The user [${
-            this.state.username
-          }] is not authorized to access Optimize! Please check the Camunda Admin configuration to change user authorizations!`;
-          break;
-        default:
-          error = authResult.errorMessage || 'An error occurred. Could not log you in.';
-      }
+      const error = authResult.errorMessage || 'An error occurred. Could not log you in.';
       this.setState({error});
       this.passwordField.focus();
       this.passwordField.select();

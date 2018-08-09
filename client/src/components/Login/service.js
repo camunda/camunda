@@ -10,7 +10,6 @@ export async function login(username, password) {
 
     return {token};
   } catch (e) {
-    const error = await e.json();
-    return {errorMessage: error.errorMessage, statusCode: e.status};
+    return await e.json();
   }
 }
