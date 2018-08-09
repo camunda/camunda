@@ -88,20 +88,16 @@ export function convertToMilliseconds(value, unit) {
   return value * timeUnits[unit].value;
 }
 
-export function getHighlightedText(text, higlight) {
-  if (!higlight) return text;
-  // Split on higlight term and include term into parts, ignore case
-  const parts = text.split(new RegExp(`(${higlight})`, 'gi'));
-  return (
-    <React.Fragment>
-      {parts.map((part, i) => (
-        <span
-          key={i}
-          className={part.toLowerCase() === higlight.toLowerCase() ? 'textBlue' : undefined}
-        >
-          {part}
-        </span>
-      ))}
-    </React.Fragment>
-  );
+export function getHighlightedText(text, highlight) {
+  if (!highlight) return text;
+  // Split on highlight term and include term into parts, ignore case
+  const parts = text.split(new RegExp(`(${highlight})`, 'gi'));
+  return parts.map((part, i) => (
+    <span
+      key={i}
+      className={part.toLowerCase() === highlight.toLowerCase() ? 'textBlue' : undefined}
+    >
+      {part}
+    </span>
+  ));
 }
