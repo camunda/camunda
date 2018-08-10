@@ -19,6 +19,7 @@ package io.zeebe.broker.subscription.message.data;
 
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.DocumentProperty;
+import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import org.agrona.DirectBuffer;
 
@@ -26,6 +27,8 @@ public class MessageRecord extends UnpackedObject {
 
   private final StringProperty nameProp = new StringProperty("name");
   private final StringProperty correlationKeyProp = new StringProperty("correlationKey");
+  // TTL in milliseconds
+  private final LongProperty timeToLiveProp = new LongProperty("timeToLive");
 
   private final DocumentProperty payloadProp = new DocumentProperty("payload");
   private final StringProperty messageIdProp = new StringProperty("messageId", "");
@@ -33,6 +36,7 @@ public class MessageRecord extends UnpackedObject {
   public MessageRecord() {
     this.declareProperty(nameProp)
         .declareProperty(correlationKeyProp)
+        .declareProperty(timeToLiveProp)
         .declareProperty(payloadProp)
         .declareProperty(messageIdProp);
   }
@@ -41,12 +45,27 @@ public class MessageRecord extends UnpackedObject {
     return nameProp.getValue();
   }
 
+  public MessageRecord setName(DirectBuffer name) {
+    nameProp.setValue(name);
+    return this;
+  }
+
   public DirectBuffer getCorrelationKey() {
     return correlationKeyProp.getValue();
   }
 
+  public MessageRecord setCorrelationKey(DirectBuffer correlationKey) {
+    correlationKeyProp.setValue(correlationKey);
+    return this;
+  }
+
   public DirectBuffer getPayload() {
     return payloadProp.getValue();
+  }
+
+  public MessageRecord setPayload(DirectBuffer payload) {
+    payloadProp.setValue(payload);
+    return this;
   }
 
   public boolean hasMessageId() {
@@ -55,5 +74,19 @@ public class MessageRecord extends UnpackedObject {
 
   public DirectBuffer getMessageId() {
     return messageIdProp.getValue();
+  }
+
+  public MessageRecord setMessageId(DirectBuffer messageId) {
+    messageIdProp.setValue(messageId);
+    return this;
+  }
+
+  public long getTimeToLive() {
+    return timeToLiveProp.getValue();
+  }
+
+  public MessageRecord setTimeToLive(long timeToLive) {
+    timeToLiveProp.setValue(timeToLive);
+    return this;
   }
 }

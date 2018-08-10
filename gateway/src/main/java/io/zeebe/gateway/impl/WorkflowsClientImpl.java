@@ -63,11 +63,7 @@ public class WorkflowsClientImpl implements WorkflowClient {
 
   @Override
   public PublishMessageCommandStep1 newPublishMessageCommand() {
-    return new PublishMessageCommandImpl(
-        client.getCommandManager(),
-        client.getObjectMapper(),
-        client.getTopic(),
-        client.getPartitionManager());
+    return new PublishMessageCommandImpl(client);
   }
 
   @Override
