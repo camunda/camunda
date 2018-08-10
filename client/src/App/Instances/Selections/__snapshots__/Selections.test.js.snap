@@ -1,0 +1,87 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Selections should match this snapshot 1`] = `
+<styled.div>
+  <Panel
+    isRounded={true}
+  >
+    <Styled(PanelHeader)
+      isRounded={true}
+    >
+      <span>
+        Selections
+      </span>
+      <Styled(Badge)
+        badgeContent={6}
+        circleContent={2}
+        type="comboSelection"
+      />
+    </Styled(PanelHeader)>
+    <PanelBody>
+      <SelectionList
+        deleteSelection={[Function]}
+        openSelection={0}
+        retrySelection={[Function]}
+        selections={
+          Array [
+            Object {
+              "queries": Array [
+                Object {
+                  "active": true,
+                  "excludeIds": Array [],
+                  "ids": Array [],
+                  "incidents": true,
+                  "running": true,
+                },
+              ],
+              "selectionId": 0,
+              "totalCount": 3,
+              "workflowInstances": Array [
+                Object {
+                  "id": 1,
+                },
+                Object {
+                  "id": 2,
+                },
+                Object {
+                  "id": 3,
+                },
+              ],
+            },
+            Object {
+              "queries": Array [
+                Object {
+                  "active": true,
+                  "excludeIds": Array [],
+                  "ids": Array [],
+                  "incidents": false,
+                  "running": true,
+                },
+              ],
+              "selectionId": 1,
+              "totalCount": 3,
+              "workflowInstances": Array [
+                Object {
+                  "id": 1,
+                },
+                Object {
+                  "id": 2,
+                },
+                Object {
+                  "id": 3,
+                },
+              ],
+            },
+          ]
+        }
+        toggleSelection={[Function]}
+      />
+    </PanelBody>
+    <Styled(ExpandButton)
+      direction="RIGHT"
+      isExpanded={true}
+    />
+    <PanelFooter />
+  </Panel>
+</styled.div>
+`;

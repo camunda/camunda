@@ -1,7 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import {batchRetry} from 'modules/api/selections';
 import Selection from '../Selection/index.js';
 
 import {NO_SELECTIONS_MESSAGE} from './constants';
@@ -9,23 +8,11 @@ import * as Styled from './styled.js';
 
 export default class SelectionList extends React.Component {
   static propTypes = {
-    openSelection: PropTypes.number,
     selections: PropTypes.array.isRequired,
-    onDelete: PropTypes.func.isRequired,
-    onToggle: PropTypes.func.isRequired
-  };
-  state = {
-    openSelection: null
-  };
-
-  retrySelection = async evt => {
-    evt && evt.stopPropagation();
-
-    try {
-      await batchRetry();
-    } catch (e) {
-      console.log(e);
-    }
+    openSelection: PropTypes.number,
+    toggleSelection: PropTypes.func.isRequired,
+    deleteSelection: PropTypes.func.isRequired,
+    retrySelection: PropTypes.func.isRequired
   };
 
   render() {
@@ -42,9 +29,9 @@ export default class SelectionList extends React.Component {
                   selectionId={selectionId}
                   instances={workflowInstances}
                   instanceCount={totalCount}
-                  onRetry={evt => this.retrySelection(evt)}
-                  onToggle={() => this.props.onToggle(selectionId)}
-                  onDelete={() => this.props.onDelete(selectionId)}
+                  onRetry={evt => this.props.retrySelection(evt)}
+                  onToggle={() => this.props.toggleSelection(selectionId)}
+                  onDelete={() => this.props.deleteSelection(selectionId)}
                 />
               </Styled.SelectionWrapper>
             );
