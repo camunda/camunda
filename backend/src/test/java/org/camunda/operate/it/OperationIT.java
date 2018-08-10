@@ -18,6 +18,7 @@ import org.apache.http.HttpStatus;
 import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
+import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.types.WorkflowInstanceType;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.IncidentDto;
@@ -37,18 +38,19 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.builder.BpmnBuilder;
+import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
 public class OperationIT extends OperateIntegrationTest {
 
   private static final String POST_BATCH_OPERATION_URL = "/api/workflow-instances/operation";
@@ -75,12 +77,13 @@ public class OperationIT extends OperateIntegrationTest {
   private OperationExecutor operationExecutor;
 
   private Long initialBatchOperationMaxSize;
+  private String workflowId;
 
   @Before
   public void starting() {
     this.mockMvc = mockMvcTestRule.getMockMvc();
     this.initialBatchOperationMaxSize = operateProperties.getBatchOperationMaxSize();
-    zeebeUtil.deployWorkflowToTheTopic(zeebeTestRule.getTopicName(), "demoProcess_v_1.bpmn");
+    workflowId = zeebeUtil.deployWorkflowToTheTopic(zeebeTestRule.getTopicName(), "demoProcess_v_1.bpmn");
   }
 
   @After
@@ -98,7 +101,7 @@ public class OperationIT extends OperateIntegrationTest {
 
     //when
     final WorkflowInstanceQueryDto allRunningQuery = createAllRunningQuery();
-    postUpdateRetriesOperationWithOKResponse(allRunningQuery);
+    postOperationWithOKResponse(allRunningQuery, OperationType.UPDATE_RETRIES);
 
     //then
     WorkflowInstanceResponseDto response = getWorkflowInstances(allRunningQuery);
@@ -112,7 +115,7 @@ public class OperationIT extends OperateIntegrationTest {
   }
 
   @Test
-  public void testOperationExecutedOnOneInstance() throws Exception {
+  public void testUpdateRetriesExecutedOnOneInstance() throws Exception {
     // given
     final String workflowInstanceId = startDemoWorkflowInstance();
     failTaskWithNoRetriesLeft("taskA");
@@ -121,7 +124,7 @@ public class OperationIT extends OperateIntegrationTest {
     //we call UPDATE_RETRIES operation on instance
     final WorkflowInstanceQueryDto workflowInstanceQuery = createAllRunningQuery();
     workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceId));
-    postUpdateRetriesOperationWithOKResponse(workflowInstanceQuery);
+    postOperationWithOKResponse(workflowInstanceQuery, OperationType.UPDATE_RETRIES);
 
     //and execute the operation
     operationExecutor.executeOneBatch();
@@ -155,6 +158,46 @@ public class OperationIT extends OperateIntegrationTest {
   }
 
   @Test
+  public void testCancelExecutedOnOneInstance() throws Exception {
+    // given
+    final String workflowInstanceId = startDemoWorkflowInstance();
+
+    //when
+    //we call CANCEL operation on instance
+    final WorkflowInstanceQueryDto workflowInstanceQuery = createAllQuery();
+    workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceId));
+    postOperationWithOKResponse(workflowInstanceQuery, OperationType.CANCEL);
+
+    //and execute the operation
+    operationExecutor.executeOneBatch();
+
+    //then
+    //before we process messages from Zeebe, the state of the operation must be SENT
+    WorkflowInstanceResponseDto workflowInstances = getWorkflowInstances(workflowInstanceQuery);
+
+    assertThat(workflowInstances.getWorkflowInstances()).hasSize(1);
+    assertThat(workflowInstances.getWorkflowInstances().get(0).getOperations()).hasSize(1);
+    OperationDto operation = workflowInstances.getWorkflowInstances().get(0).getOperations().get(0);
+    assertThat(operation.getType()).isEqualTo(OperationType.CANCEL);
+    assertThat(operation.getState()).isEqualTo(OperationState.SENT);
+    assertThat(operation.getStartDate()).isNotNull();
+    assertThat(operation.getEndDate()).isNull();
+
+    //after we process messages from Zeebe, the state of the operation is changed to COMPLETED
+    elasticsearchTestRule.processAllEvents(3);
+    workflowInstances = getWorkflowInstances(workflowInstanceQuery);
+    assertThat(workflowInstances.getWorkflowInstances()).hasSize(1);
+    assertThat(workflowInstances.getWorkflowInstances().get(0).getOperations()).hasSize(1);
+    operation = workflowInstances.getWorkflowInstances().get(0).getOperations().get(0);
+    assertThat(operation.getType()).isEqualTo(OperationType.CANCEL);
+    assertThat(operation.getState()).isEqualTo(OperationState.COMPLETED);
+    assertThat(operation.getStartDate()).isNotNull();
+    assertThat(operation.getEndDate()).isNotNull();
+    //assert that process is canceled
+    assertThat(workflowInstances.getWorkflowInstances().get(0).getState()).isEqualTo(WorkflowInstanceState.CANCELED);
+  }
+
+  @Test
   public void testTwoOperationsOnOneInstance() throws Exception {
     // given
     final String workflowInstanceId = startDemoWorkflowInstance();
@@ -163,8 +206,8 @@ public class OperationIT extends OperateIntegrationTest {
     //when we call UPDATE_RETRIES operation two times on one instance
     final WorkflowInstanceQueryDto workflowInstanceQuery = createAllRunningQuery();
     workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceId));
-    postUpdateRetriesOperationWithOKResponse(workflowInstanceQuery);  //#1
-    postUpdateRetriesOperationWithOKResponse(workflowInstanceQuery);  //#2
+    postOperationWithOKResponse(workflowInstanceQuery, OperationType.UPDATE_RETRIES);  //#1
+    postOperationWithOKResponse(workflowInstanceQuery, OperationType.UPDATE_RETRIES);  //#2
 
     //and execute the operation
     operationExecutor.executeOneBatch();
@@ -189,7 +232,7 @@ public class OperationIT extends OperateIntegrationTest {
     //we call UPDATE_RETRIES operation on instance
     final WorkflowInstanceQueryDto workflowInstanceQuery = createAllRunningQuery();
     workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceId));
-    postUpdateRetriesOperationWithOKResponse(workflowInstanceQuery);
+    postOperationWithOKResponse(workflowInstanceQuery, OperationType.UPDATE_RETRIES);
 
     //and execute the operation
     operationExecutor.executeOneBatch();
@@ -207,6 +250,69 @@ public class OperationIT extends OperateIntegrationTest {
   }
 
   @Test
+  public void testFailCancelOnCanceledInstance() throws Exception {
+    // given
+    final String workflowInstanceId = startDemoWorkflowInstance();
+    zeebeUtil.cancelWorkflowInstance(zeebeTestRule.getTopicName(), workflowInstanceId, workflowId);
+    elasticsearchTestRule.processAllEvents(10);
+
+    //when
+    //we call CANCEL operation on instance
+    final WorkflowInstanceQueryDto workflowInstanceQuery = createAllQuery();
+    workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceId));
+    postOperationWithOKResponse(workflowInstanceQuery, OperationType.CANCEL);
+
+    //and execute the operation
+    operationExecutor.executeOneBatch();
+
+    //then
+    //the state of operation is FAILED, as there are no appropriate incidents
+    WorkflowInstanceResponseDto workflowInstances = getWorkflowInstances(workflowInstanceQuery);
+    assertThat(workflowInstances.getWorkflowInstances()).hasSize(1);
+    assertThat(workflowInstances.getWorkflowInstances().get(0).getOperations()).hasSize(1);
+    OperationDto operation = workflowInstances.getWorkflowInstances().get(0).getOperations().get(0);
+    assertThat(operation.getState()).isEqualTo(OperationState.FAILED);
+    assertThat(operation.getErrorMessage()).isEqualTo("Unable to cancel CANCELED workflow instance. Instance must be in ACTIVE state.");
+    assertThat(operation.getEndDate()).isNotNull();
+    assertThat(operation.getStartDate()).isNotNull();
+  }
+
+  @Test
+  public void testFailCancelOnCompletedInstance() throws Exception {
+    // given
+    final String bpmnProcessId = "startEndProcess";
+    final WorkflowDefinition startEndProcess =
+      Bpmn.createExecutableWorkflow(bpmnProcessId)
+        .startEvent()
+        .endEvent()
+        .done();
+    final String workflowId = zeebeUtil.deployWorkflowToTheTopic(zeebeTestRule.getTopicName(), startEndProcess, "startEndProcess.bpmn");
+    final String workflowInstanceId = zeebeUtil.startWorkflowInstance(zeebeTestRule.getTopicName(), bpmnProcessId, null);
+    elasticsearchTestRule.processAllEvents(20);
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
+
+    //when
+    //we call CANCEL operation on instance
+    final WorkflowInstanceQueryDto workflowInstanceQuery = createAllQuery();
+    workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceId));
+    postOperationWithOKResponse(workflowInstanceQuery, OperationType.CANCEL);
+
+    //and execute the operation
+    operationExecutor.executeOneBatch();
+
+    //then
+    //the state of operation is FAILED, as there are no appropriate incidents
+    WorkflowInstanceResponseDto workflowInstances = getWorkflowInstances(workflowInstanceQuery);
+    assertThat(workflowInstances.getWorkflowInstances()).hasSize(1);
+    assertThat(workflowInstances.getWorkflowInstances().get(0).getOperations()).hasSize(1);
+    OperationDto operation = workflowInstances.getWorkflowInstances().get(0).getOperations().get(0);
+    assertThat(operation.getState()).isEqualTo(OperationState.FAILED);
+    assertThat(operation.getErrorMessage()).isEqualTo("Unable to cancel COMPLETED workflow instance. Instance must be in ACTIVE state.");
+    assertThat(operation.getEndDate()).isNotNull();
+    assertThat(operation.getStartDate()).isNotNull();
+  }
+
+  @Test
   public void testFailOperationAsTooManyInstances() throws Exception {
     // given
     operateProperties.setBatchOperationMaxSize(5L);
@@ -217,19 +323,19 @@ public class OperationIT extends OperateIntegrationTest {
     }
 
     //when
-    final MvcResult mvcResult = postUpdateRetriesOperation(createAllRunningQuery(), HttpStatus.SC_BAD_REQUEST);
+    final MvcResult mvcResult = postOperation(createAllRunningQuery(), OperationType.UPDATE_RETRIES, HttpStatus.SC_BAD_REQUEST);
 
     final String expectedErrorMsg = String
       .format("Too many workflow instances are selected for batch operation. Maximum possible amount: %s", operateProperties.getBatchOperationMaxSize());
     assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo(expectedErrorMsg);
   }
 
-  private MvcResult postUpdateRetriesOperationWithOKResponse(WorkflowInstanceQueryDto query) throws Exception {
-    return postUpdateRetriesOperation(query, HttpStatus.SC_OK);
+  private MvcResult postOperationWithOKResponse(WorkflowInstanceQueryDto query, OperationType operationType) throws Exception {
+    return postOperation(query, operationType, HttpStatus.SC_OK);
   }
 
-  private MvcResult postUpdateRetriesOperation(WorkflowInstanceQueryDto query, int expectedStatus) throws Exception {
-    WorkflowInstanceBatchOperationDto batchOperationDto = createBatchOperationDto(OperationType.UPDATE_RETRIES, query);
+  private MvcResult postOperation(WorkflowInstanceQueryDto query, OperationType operationType, int expectedStatus) throws Exception {
+    WorkflowInstanceBatchOperationDto batchOperationDto = createBatchOperationDto(operationType, query);
     MockHttpServletRequestBuilder postOperationRequest =
       post(POST_BATCH_OPERATION_URL)
         .content(mockMvcTestRule.json(batchOperationDto))
@@ -287,6 +393,17 @@ public class OperationIT extends OperateIntegrationTest {
     query.setRunning(true);
     query.setActive(true);
     query.setIncidents(true);
+    return query;
+  }
+
+  private WorkflowInstanceQueryDto createAllQuery() {
+    WorkflowInstanceQueryDto query = new WorkflowInstanceQueryDto();
+    query.setRunning(true);
+    query.setActive(true);
+    query.setIncidents(true);
+    query.setFinished(true);
+    query.setCanceled(true);
+    query.setCompleted(true);
     return query;
   }
 

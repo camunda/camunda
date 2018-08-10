@@ -219,8 +219,12 @@ public class ElasticsearchRequestCreatorsHolder {
         //complete operation in workflow instance if needed
         if (entity.getEventSourceType().equals(EventSourceType.JOB) &&
           entity.getEventType().equals(org.camunda.operate.entities.EventType.RETRIES_UPDATED)) {
-          final String workflowInstanceId = entity.getWorkflowInstanceId();
-          bulkRequestBuilder = bulkRequestBuilder.add(batchOperationWriter.createOperationCompletedRequest(workflowInstanceId, OperationType.UPDATE_RETRIES));
+          bulkRequestBuilder = bulkRequestBuilder.add(batchOperationWriter.createOperationCompletedRequest(entity.getWorkflowInstanceId(), OperationType.UPDATE_RETRIES));
+          //if we update smth, we need it to have affect at once
+          bulkRequestBuilder.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+        } else if (entity.getEventSourceType().equals(EventSourceType.WORKFLOW_INSTANCE) &&
+          entity.getEventType().equals(org.camunda.operate.entities.EventType.CANCELED)){
+          bulkRequestBuilder = bulkRequestBuilder.add(batchOperationWriter.createOperationCompletedRequest(entity.getWorkflowInstanceId(), OperationType.CANCEL));
           //if we update smth, we need it to have affect at once
           bulkRequestBuilder.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
         }

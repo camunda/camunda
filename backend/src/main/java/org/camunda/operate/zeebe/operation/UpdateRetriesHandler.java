@@ -42,7 +42,7 @@ import io.zeebe.client.impl.event.JobEventImpl;
  * Updates retries for all jobs, that has related incidents.
  */
 @Component
-public class UpdateRetriesHandler implements OperationHandler {
+public class UpdateRetriesHandler extends AbstractOperationHandler implements OperationHandler {
 
   private static final Logger logger = LoggerFactory.getLogger(UpdateRetriesHandler.class);
 
@@ -50,13 +50,7 @@ public class UpdateRetriesHandler implements OperationHandler {
   private WorkflowInstanceReader workflowInstanceReader;
 
   @Autowired
-  private BatchOperationWriter batchOperationWriter;
-
-  @Autowired
   private ZeebeClient zeebeClient;
-
-  @Autowired
-  private OperateProperties operateProperties;
 
   @Override
   public void handle(String workflowInstanceId) throws PersistenceException {
@@ -85,32 +79,6 @@ public class UpdateRetriesHandler implements OperationHandler {
       }
     }
 
-  }
-
-  private void failOperationsOfCurrentType(WorkflowInstanceEntity workflowInstance, String errorMsg) throws PersistenceException {
-    for (OperationEntity operation: workflowInstance.getOperations()) {
-      if (operation.getState().equals(OperationState.LOCKED) && operation.getLockOwner().equals(operateProperties.getOperationExecutor().getWorkerId())) {
-        operation.setState(OperationState.FAILED);
-        operation.setLockExpirationTime(null);
-        operation.setLockOwner(null);
-        operation.setEndDate(OffsetDateTime.now());
-        operation.setErrorMessage(errorMsg);
-        batchOperationWriter.updateOperation(workflowInstance.getId(), operation);
-        logger.debug("Operation {} failed with message: {} ", operation.getId(), operation.getErrorMessage());
-      }
-    }
-  }
-
-  private void markAsSentOperationsOfCurrentType(WorkflowInstanceEntity workflowInstance) throws PersistenceException {
-    for (OperationEntity operation: workflowInstance.getOperations()) {
-      if (operation.getState().equals(OperationState.LOCKED) && operation.getLockOwner().equals(operateProperties.getOperationExecutor().getWorkerId())) {
-        operation.setState(OperationState.SENT);
-        operation.setLockExpirationTime(null);
-        operation.setLockOwner(null);
-        batchOperationWriter.updateOperation(workflowInstance.getId(), operation);
-        logger.debug("Operation {} was sent to Zeebe", operation.getId());
-      }
-    }
   }
 
   private JobEvent createJobEvent(WorkflowInstanceEntity workflowInstance, IncidentEntity incident) {
