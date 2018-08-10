@@ -15,12 +15,15 @@
  */
 package io.zeebe.transport;
 
-import io.zeebe.util.ZbLogger;
+public interface EndpointRegistry {
 
-public class Loggers {
+  String getName();
 
-  public static final ZbLogger TRANSPORT_LOGGER = new ZbLogger("io.zeebe.transport");
-  public static final ZbLogger TRANSPORT_MEMORY_LOGGER = new ZbLogger("io.zeebe.transport.memory");
-  public static final ZbLogger TRANSPORT_ENDPOINT_LOGGER =
-      new ZbLogger("io.zeebe.transport.endpoint");
+  RemoteAddress getEndpoint(Integer nodeId);
+
+  SocketAddress setEndpoint(int nodeId, SocketAddress socketAddress);
+
+  SocketAddress removeEndpoint(int nodeId);
+
+  SocketAddress retire(int nodeId);
 }

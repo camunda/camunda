@@ -76,7 +76,7 @@ public class ClientApiRule extends ExternalResource {
     incomingMessageCollector = new RawMessageCollector();
 
     transport =
-        Transports.newClientTransport()
+        Transports.newClientTransport("gateway")
             .inputListener(incomingMessageCollector)
             .scheduler(scheduler)
             .build();

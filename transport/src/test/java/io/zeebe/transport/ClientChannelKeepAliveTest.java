@@ -72,7 +72,7 @@ public class ClientChannelKeepAliveTest {
 
   protected ClientTransport buildClientTransport(Duration keepAlivePeriod) {
     final ClientTransportBuilder transportBuilder =
-        Transports.newClientTransport().scheduler(actorSchedulerRule.get());
+        Transports.newClientTransport("test").scheduler(actorSchedulerRule.get());
 
     if (keepAlivePeriod != null) {
       transportBuilder.keepAlivePeriod(keepAlivePeriod);

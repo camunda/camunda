@@ -161,7 +161,7 @@ public class RaftRule extends ExternalResource implements RaftStateListener {
             .scheduler(actorScheduler)
             .build(raftApiMessageHandler, raftApiMessageHandler);
 
-    clientTransport = Transports.newClientTransport().scheduler(actorScheduler).build();
+    clientTransport = Transports.newClientTransport(name).scheduler(actorScheduler).build();
 
     logStream =
         LogStreams.createFsLogStream(wrapString(topicName), partition)

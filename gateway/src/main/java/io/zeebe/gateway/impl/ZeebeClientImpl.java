@@ -106,7 +106,7 @@ public class ZeebeClientImpl implements ZeebeClient {
             .build();
 
     final ClientTransportBuilder transportBuilder =
-        Transports.newClientTransport()
+        Transports.newClientTransport("broker")
             .messageMaxLength(1024 * 1024)
             .messageReceiveBuffer(dataFrameReceiveBuffer)
             .messageMemoryPool(
@@ -116,7 +116,7 @@ public class ZeebeClientImpl implements ZeebeClient {
 
     // internal transport is used for topology request
     final ClientTransportBuilder internalTransportBuilder =
-        Transports.newClientTransport()
+        Transports.newClientTransport("broker-internal")
             .messageMaxLength(1024 * 1024)
             .messageMemoryPool(new UnboundedMemoryPool())
             .requestMemoryPool(new UnboundedMemoryPool())

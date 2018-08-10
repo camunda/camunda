@@ -72,7 +72,7 @@ public class TransportChannelListenerTest {
 
   private ClientTransport buildClientTransport(Consumer<ClientTransportBuilder> builderConsumer) {
     final ClientTransportBuilder transportBuilder =
-        Transports.newClientTransport().scheduler(actorSchedulerRule.get());
+        Transports.newClientTransport("test").scheduler(actorSchedulerRule.get());
     builderConsumer.accept(transportBuilder);
 
     final ClientTransport clientTransport = transportBuilder.build();

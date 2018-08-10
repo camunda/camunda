@@ -24,6 +24,7 @@ import java.time.Duration;
 public class ClientTransport implements AutoCloseable {
   private final ClientOutput output;
   private final RemoteAddressList remoteAddressList;
+  private final EndpointRegistry endpointRegistry;
   private final ActorContext transportActorContext;
   private final Dispatcher receiveBuffer;
   private final TransportContext transportContext;
@@ -33,12 +34,30 @@ public class ClientTransport implements AutoCloseable {
     this.transportContext = transportContext;
     this.output = transportContext.getClientOutput();
     this.remoteAddressList = transportContext.getRemoteAddressList();
+    this.endpointRegistry = transportContext.getEndpointRegistry();
     this.receiveBuffer = transportContext.getReceiveBuffer();
   }
 
   /** @return interface to stage outbound data */
   public ClientOutput getOutput() {
     return output;
+  }
+
+  /**
+   * Register an endpoint address for node id. Transport will make sure to keep an open channel to
+   * this endpoint until it is deactivated or retired.
+   */
+  public void registerEndpoint(int nodeId, SocketAddress socketAddress) {
+    endpointRegistry.setEndpoint(nodeId, socketAddress);
+  }
+
+  /**
+   * Signals that the endpoint of the node is no longer in use for the time being. A transport
+   * channel will no longer be managed. A endpoint is reactivated when the endpoint is registered
+   * again.
+   */
+  public void deactivateEndpoint(int nodeId) {
+    endpointRegistry.removeEndpoint(nodeId);
   }
 
   /**

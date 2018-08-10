@@ -32,13 +32,31 @@ public interface ClientOutput {
   boolean sendMessage(TransportMessage transportMessage);
 
   /**
-   * Same as {@link #sendRequest(RemoteAddress, BufferWriter, long)} where the timeout is set to the
-   * configured default timeout.
+   * Sends a message according to the single message protocol.
+   *
+   * <p>Returns false if the message cannot be currently written due to an unknown endpoint or
+   * exhausted capacity. Throws an exception if the request is not sendable at all (e.g. buffer
+   * writer throws exception).
+   */
+  boolean sendMessage(int nodeId, BufferWriter writer);
+
+  /**
+   * Same as {@link #sendRequest(RemoteAddress, BufferWriter, Duration)} where the timeout is set to
+   * the configured default timeout.
    *
    * @return the response future or null in case no memory is currently available to allocate the
    *     request
    */
   ActorFuture<ClientResponse> sendRequest(RemoteAddress addr, BufferWriter writer);
+
+  /**
+   * Like {@link #sendRequest(RemoteAddress, BufferWriter)} with a lookup of the current endpoint
+   * for the given node id.
+   *
+   * @return the response future or null in case no memory is currently available to allocate the
+   *     request
+   */
+  ActorFuture<ClientResponse> sendRequest(int nodeId, BufferWriter writer);
 
   /**
    * Like {@link #sendRequestWithRetry(Supplier, Predicate, BufferWriter, Duration)} with a static
@@ -49,6 +67,15 @@ public interface ClientOutput {
    */
   ActorFuture<ClientResponse> sendRequest(
       RemoteAddress addr, BufferWriter writer, Duration timeout);
+
+  /**
+   * Like {@link #sendRequest(RemoteAddress, BufferWriter, Duration)} with a lookup of the current
+   * endpoint for the given node id.
+   *
+   * @return the response future or null in case no memory is currently available to allocate the
+   *     request
+   */
+  ActorFuture<ClientResponse> sendRequest(int nodeId, BufferWriter writer, Duration timeout);
 
   /**
    * Like {@link #sendRequest(RemoteAddress, BufferWriter)} but retries the request if there is no
@@ -78,6 +105,19 @@ public interface ClientOutput {
    */
   ActorFuture<ClientResponse> sendRequestWithRetry(
       Supplier<RemoteAddress> remoteAddressSupplier,
+      Predicate<DirectBuffer> responseInspector,
+      BufferWriter writer,
+      Duration timeout);
+
+  /**
+   * Like {@link #sendRequestWithRetry(Supplier, Predicate, BufferWriter, Duration)} with a lookup
+   * of the current endpoint for the given node id.
+   *
+   * @return the response future or null in case no memory is currently available to allocate the
+   *     request
+   */
+  ActorFuture<ClientResponse> sendRequestToNodeWithRetry(
+      Supplier<Integer> nodeIdSupplier,
       Predicate<DirectBuffer> responseInspector,
       BufferWriter writer,
       Duration timeout);

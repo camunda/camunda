@@ -53,7 +53,8 @@ public class BufferingServerTransportTest {
 
   @Before
   public void setUp() {
-    clientTransport = Transports.newClientTransport().scheduler(actorSchedulerRule.get()).build();
+    clientTransport =
+        Transports.newClientTransport("test").scheduler(actorSchedulerRule.get()).build();
     closeables.manage(clientTransport);
 
     serverReceiveBuffer =

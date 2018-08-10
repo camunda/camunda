@@ -52,11 +52,22 @@ public class BufferingClientOutput implements ClientOutput {
   }
 
   @Override
+  public ActorFuture<ClientResponse> sendRequest(int nodeId, BufferWriter writer) {
+    throw new UnsupportedOperationException("not yet implemented");
+  }
+
+  @Override
   public ActorFuture<ClientResponse> sendRequest(
       RemoteAddress addr, BufferWriter writer, Duration timeout) {
     final Request request = new Request(addr, writer, timeout);
     sentRequests.add(request);
     return request.response;
+  }
+
+  @Override
+  public ActorFuture<ClientResponse> sendRequest(
+      int nodeId, BufferWriter writer, Duration timeout) {
+    throw new UnsupportedOperationException("not yet implemented");
   }
 
   @Override
@@ -69,7 +80,21 @@ public class BufferingClientOutput implements ClientOutput {
   }
 
   @Override
+  public ActorFuture<ClientResponse> sendRequestToNodeWithRetry(
+      Supplier<Integer> nodeIdSupplier,
+      Predicate<DirectBuffer> responseInspector,
+      BufferWriter writer,
+      Duration timeout) {
+    throw new UnsupportedOperationException("not yet implemented");
+  }
+
+  @Override
   public boolean sendMessage(TransportMessage transportMessage) {
+    throw new UnsupportedOperationException("not yet implemented");
+  }
+
+  @Override
+  public boolean sendMessage(int nodeId, BufferWriter writer) {
     throw new UnsupportedOperationException("not yet implemented");
   }
 

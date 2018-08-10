@@ -86,7 +86,7 @@ public class ThroughPutTestRaft implements RaftStateListener {
             .scheduler(scheduler)
             .build(raftApiMessageHandler, raftApiMessageHandler);
 
-    clientTransport = Transports.newClientTransport().scheduler(scheduler).build();
+    clientTransport = Transports.newClientTransport("test").scheduler(scheduler).build();
 
     final String logName = String.format("%s-%d-%s", topicName, partition, socketAddress);
     final ServiceName<LogStream> logStreamServiceName =

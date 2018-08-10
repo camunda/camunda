@@ -152,7 +152,7 @@ public class RequestResponseStressTest {
       final SocketAddress addr = SocketUtil.getNextAddress();
 
       clientTransport =
-          Transports.newClientTransport()
+          Transports.newClientTransport("test")
               .scheduler(scheduler)
               .requestMemoryPool(new BlockingMemoryPool(ByteValue.ofMegabytes(4), 1000))
               .build();

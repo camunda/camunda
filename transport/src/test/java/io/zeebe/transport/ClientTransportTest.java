@@ -98,7 +98,7 @@ public class ClientTransportTest {
     closeables.manage(clientReceiveBuffer);
 
     clientTransport =
-        Transports.newClientTransport()
+        Transports.newClientTransport("test")
             .scheduler(actorSchedulerRule.get())
             .messageReceiveBuffer(clientReceiveBuffer)
             .build();
@@ -145,6 +145,26 @@ public class ClientTransportTest {
 
     assertThat(channelListener.getOpenedConnections()).hasSize(1);
     assertThat(channelListener.getOpenedConnections().get(0)).isEqualTo(remoteAddress);
+  }
+
+  @Test
+  public void shouldOpenChannelOnRegistrationOfEndpoint() {
+    // given
+    final int nodeId = 123;
+    final ControllableServerTransport serverTransport = buildControllableServerTransport();
+    serverTransport.listenOn(SERVER_ADDRESS1);
+    final RecordingChannelListener channelListener = new RecordingChannelListener();
+    clientTransport.registerChannelListener(channelListener);
+
+    // when
+    clientTransport.registerEndpoint(nodeId, SERVER_ADDRESS1);
+
+    // then
+    waitUntil(() -> channelListener.getOpenedConnections().size() == 1);
+
+    assertThat(channelListener.getOpenedConnections()).hasSize(1);
+    assertThat(channelListener.getOpenedConnections().get(0))
+        .hasFieldOrPropertyWithValue("address", SERVER_ADDRESS1);
   }
 
   @Test
@@ -843,6 +863,203 @@ public class ClientTransportTest {
     } catch (InterruptedException | ExecutionException | TimeoutException e) {
       fail("Could not close transport in time", e);
     }
+  }
+
+  @Test
+  public void shouldSendMessageToNodeId() throws InterruptedException {
+    // given
+    final int nodeId = 123;
+    final DirectBufferWriter writer = new DirectBufferWriter();
+    writer.wrap(BUF1);
+
+    final RecordingMessageHandler messageHandler = new RecordingMessageHandler();
+
+    buildServerTransport(
+        b -> b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress()).build(messageHandler, null));
+
+    clientTransport.registerEndpoint(nodeId, SERVER_ADDRESS1);
+
+    // when
+    clientTransport.getOutput().sendMessage(nodeId, writer);
+
+    // then
+    waitUntil(() -> messageHandler.numReceivedMessages() == 1);
+    assertThatBuffer(messageHandler.getMessage(0).getBuffer()).hasBytes(BUF1);
+  }
+
+  @Test
+  public void shouldIgnoreMessageToUnknownNodeId() throws InterruptedException {
+    // given
+    final int nodeId = 123;
+    final DirectBufferWriter writer = new DirectBufferWriter();
+    writer.wrap(BUF1);
+
+    // when
+    final boolean messageSent = clientTransport.getOutput().sendMessage(nodeId, writer);
+
+    // then
+    assertThat(messageSent).isFalse();
+  }
+
+  @Test
+  public void shouldSendRequestToNodeId() {
+    // given
+    final int nodeId = 123;
+    buildServerTransport(
+        b ->
+            b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
+                .build(null, new EchoRequestResponseHandler()));
+
+    clientTransport.registerEndpoint(nodeId, SERVER_ADDRESS1);
+
+    // when
+    final ActorFuture<ClientResponse> request =
+        clientTransport.getOutput().sendRequest(nodeId, new DirectBufferWriter().wrap(BUF1));
+
+    // then
+    final ClientResponse response = request.join();
+    assertThatBuffer(response.getResponseBuffer()).hasBytes(BUF1);
+  }
+
+  @Test
+  public void shouldSendRequestToNodeIdWithRetries() {
+    // given
+    final int nodeId = 123;
+    buildServerTransport(
+        b ->
+            b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
+                .build(null, new EchoRequestResponseHandler()));
+
+    clientTransport.registerEndpoint(nodeId, SERVER_ADDRESS1);
+
+    // when
+    final ActorFuture<ClientResponse> request =
+        clientTransport
+            .getOutput()
+            .sendRequest(nodeId, new DirectBufferWriter().wrap(BUF1), Duration.ofSeconds(10));
+
+    // then
+    final ClientResponse response = request.join();
+    assertThatBuffer(response.getResponseBuffer()).hasBytes(BUF1);
+  }
+
+  @Test
+  public void shouldTimeoutRequestToUnknownNodeIdWithRetries() {
+    // given
+    final ClientOutput output = clientTransport.getOutput();
+
+    // when
+    final ActorFuture<ClientResponse> responseFuture =
+        output.sendRequest(123, new DirectBufferWriter().wrap(BUF1), Duration.ofMillis(500));
+
+    // then
+    assertThatThrownBy(responseFuture::join).hasMessageContaining("Request timed out after PT0.5S");
+  }
+
+  @Test
+  public void shouldRetryAfterTimeoutWhenNodeIdSupplierReturnsNull() {
+    // given
+    final int nodeId = 123;
+    buildServerTransport(
+        b ->
+            b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
+                .build(null, new EchoRequestResponseHandler()));
+
+    clientTransport.registerRemoteAndAwaitChannel(SERVER_ADDRESS1);
+
+    final AtomicBoolean attemptToggle = new AtomicBoolean();
+    final Supplier<Integer> nodeIdSupplier =
+        () -> {
+          if (attemptToggle.getAndSet(true)) {
+            return nodeId;
+          } else {
+            clientTransport.registerEndpoint(nodeId, SERVER_ADDRESS1);
+            return null;
+          }
+        };
+
+    // when
+    final ActorFuture<ClientResponse> responseFuture =
+        clientTransport
+            .getOutput()
+            .sendRequestToNodeWithRetry(
+                nodeIdSupplier,
+                b -> false,
+                new DirectBufferWriter().wrap(BUF1),
+                Duration.ofSeconds(2));
+
+    final ClientResponse response = responseFuture.join();
+    assertThatBuffer(response.getResponseBuffer()).hasBytes(BUF1);
+  }
+
+  @Test
+  public void shouldNotCreateChannelsWhenEndpointIsDeactivated() throws InterruptedException {
+    // given
+    final int nodeId = 123;
+    buildServerTransport(
+        b ->
+            b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
+                .build(null, new EchoRequestResponseHandler()));
+
+    final RecordingChannelListener channelListener = new RecordingChannelListener();
+    clientTransport.registerChannelListener(channelListener).join();
+
+    clientTransport.registerEndpoint(nodeId, SERVER_ADDRESS1);
+
+    waitUntil(
+        () ->
+            channelListener.getOpenedConnections().stream().anyMatch(this::containsServerAddress1));
+
+    // when
+    clientTransport.deactivateEndpoint(nodeId);
+    clientTransport.closeAllChannels().join();
+
+    // then
+    waitUntil(
+        () ->
+            channelListener.getClosedConnections().stream().anyMatch(this::containsServerAddress1));
+    Thread.sleep(1000L); // timeout for potential reconnection of channel
+
+    // no new channel was connected
+    assertThat(channelListener.getOpenedConnections()).hasSize(1);
+  }
+
+  @Test
+  public void shouldReopenChannelAfterEndpointReactivation() {
+    // given
+    final int nodeId = 123;
+    buildServerTransport(
+        b ->
+            b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
+                .build(null, new EchoRequestResponseHandler()));
+
+    final RecordingChannelListener channelListener = new RecordingChannelListener();
+    clientTransport.registerChannelListener(channelListener).join();
+
+    clientTransport.registerEndpoint(nodeId, SERVER_ADDRESS1);
+    waitUntil(
+        () ->
+            channelListener.getOpenedConnections().stream().anyMatch(this::containsServerAddress1));
+
+    clientTransport.deactivateEndpoint(nodeId);
+    clientTransport.closeAllChannels().join();
+
+    // when
+    clientTransport.registerEndpoint(nodeId, SERVER_ADDRESS1);
+
+    // then
+    waitUntil(() -> channelListener.getOpenedConnections().size() >= 2);
+    final long openedConnections =
+        channelListener
+            .getOpenedConnections()
+            .stream()
+            .filter(this::containsServerAddress1)
+            .count();
+    assertThat(openedConnections).isGreaterThanOrEqualTo(2);
+  }
+
+  private boolean containsServerAddress1(final RemoteAddress remoteAddress) {
+    return SERVER_ADDRESS1.equals(remoteAddress.getAddress());
   }
 
   protected class CountFragmentsHandler implements FragmentHandler {

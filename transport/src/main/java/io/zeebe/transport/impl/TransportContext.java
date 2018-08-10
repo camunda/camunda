@@ -18,6 +18,7 @@ package io.zeebe.transport.impl;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.transport.ClientOutput;
+import io.zeebe.transport.EndpointRegistry;
 import io.zeebe.transport.ServerOutput;
 import java.time.Duration;
 
@@ -33,6 +34,7 @@ public class TransportContext {
   private Dispatcher sendBuffer;
 
   private RemoteAddressListImpl remoteAddressList;
+  private EndpointRegistry endpointRegistry;
 
   private FragmentHandler receiveHandler;
 
@@ -78,6 +80,14 @@ public class TransportContext {
 
   public void setRemoteAddressList(RemoteAddressListImpl remoteAddressList) {
     this.remoteAddressList = remoteAddressList;
+  }
+
+  public EndpointRegistry getEndpointRegistry() {
+    return endpointRegistry;
+  }
+
+  public void setEndpointRegistry(EndpointRegistry endpointRegistry) {
+    this.endpointRegistry = endpointRegistry;
   }
 
   public void setReceiveHandler(FragmentHandler receiveHandler) {

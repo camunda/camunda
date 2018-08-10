@@ -31,13 +31,16 @@ import io.zeebe.util.sched.ActorScheduler;
 import java.util.Collection;
 
 public class ClientTransportService implements Service<ClientTransport> {
+
+  private final String name;
   protected final Collection<SocketAddress> defaultEndpoints;
   private final ByteValue messageBufferSize;
 
   protected ClientTransport transport;
 
   public ClientTransportService(
-      Collection<SocketAddress> defaultEndpoints, ByteValue messageBufferSize) {
+      String name, Collection<SocketAddress> defaultEndpoints, ByteValue messageBufferSize) {
+    this.name = name;
     this.defaultEndpoints = defaultEndpoints;
     this.messageBufferSize = messageBufferSize;
   }
@@ -46,7 +49,7 @@ public class ClientTransportService implements Service<ClientTransport> {
   public void start(ServiceStartContext startContext) {
     final ActorScheduler scheduler = startContext.getScheduler();
 
-    final ClientTransportBuilder transportBuilder = Transports.newClientTransport();
+    final ClientTransportBuilder transportBuilder = Transports.newClientTransport(name);
 
     transport =
         transportBuilder

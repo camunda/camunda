@@ -47,7 +47,7 @@ public class MixedProtocolsTest {
     final int numRequests = 1000;
 
     final ClientTransport clientTransport =
-        Transports.newClientTransport().scheduler(actorSchedulerRule.get()).build();
+        Transports.newClientTransport("test").scheduler(actorSchedulerRule.get()).build();
     closeables.manage(clientTransport);
 
     final ReverseOrderChannelHandler handler = new ReverseOrderChannelHandler();

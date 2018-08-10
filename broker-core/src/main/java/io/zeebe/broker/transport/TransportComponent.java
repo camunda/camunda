@@ -300,7 +300,7 @@ public class TransportComponent implements Component {
       ByteValue sendBufferSize,
       Collection<SocketAddress> defaultEndpoints) {
     final ClientTransportService service =
-        new ClientTransportService(defaultEndpoints, sendBufferSize);
+        new ClientTransportService(name, defaultEndpoints, sendBufferSize);
 
     return serviceContainer
         .createService(TransportServiceNames.clientTransport(name), service)
