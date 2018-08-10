@@ -1,9 +1,11 @@
 import React from 'react';
 import {mount, shallow} from 'enzyme';
 
-import BPMNDiagram from './BPMNDiagram';
+import ThemedBPMNDiagram from './BPMNDiagram';
 import NavigatedViewer from 'bpmn-js/lib/NavigatedViewer';
 import Viewer from 'bpmn-js/lib/Viewer';
+
+const {WrappedComponent: BPMNDiagram} = ThemedBPMNDiagram;
 
 // since jest does not offer an out of the box way to flush promises:
 // https://github.com/facebook/jest/issues/2157

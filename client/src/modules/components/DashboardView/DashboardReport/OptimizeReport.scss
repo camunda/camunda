@@ -50,3 +50,10 @@
     min-width: 100%;
   }
 }
+
+.dark {
+  .OptimizeReport__heading,
+  .OptimizeReport__heading:active {
+    color: #ddd;
+  }
+}

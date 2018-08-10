@@ -1,8 +1,10 @@
 import React from 'react';
 import {mount, shallow} from 'enzyme';
 
-import Dashboard from './Dashboard';
+import ThemedDashboard from './Dashboard';
 import {loadDashboard, remove, update, isAuthorizedToShareDashboard} from './service';
+
+const {WrappedComponent: Dashboard} = ThemedDashboard;
 
 jest.mock('./service', () => {
   return {
@@ -237,6 +239,42 @@ it('should invoke the renderDashboard function after the interval duration ends'
   node.instance().setAutorefresh(600)();
   jest.runTimersToTime(700);
   expect(await node.instance().renderDashboard).toHaveBeenCalledTimes(1);
+});
+
+it('should have a toggle theme button that is only visible in fullscreen mode', () => {
+  const node = mount(shallow(<Dashboard {...props} />).get(0));
+  node.setState({loaded: true});
+
+  expect(node).not.toIncludeText('Toggle Theme');
+
+  node.setState({fullScreenActive: true});
+
+  expect(node).toIncludeText('Toggle Theme');
+});
+
+it('should toggle the theme when clicking the toggle theme button', () => {
+  const spy = jest.fn();
+  const node = mount(shallow(<Dashboard {...props} />).get(0));
+  node.setState({loaded: true, fullScreenActive: true});
+  node.setProps({toggleTheme: spy});
+
+  node
+    .find('button')
+    .at(0)
+    .simulate('click');
+
+  expect(spy).toHaveBeenCalled();
+});
+
+it('should return to light mode when exiting fullscreen mode', () => {
+  const spy = jest.fn();
+  const node = mount(shallow(<Dashboard {...props} />).get(0));
+  node.setState({loaded: true, fullScreenActive: true});
+  node.setProps({toggleTheme: spy, theme: 'dark'});
+
+  node.instance().toggleFullscreen();
+
+  expect(spy).toHaveBeenCalled();
 });
 
 describe('edit mode', async () => {

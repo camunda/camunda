@@ -1,3 +1,15 @@
+.dark {
+  .DropdownOption {
+    background-color: black;
+    color: #ddd;
+
+    &.is-active {
+      color: #eee;
+      background-color: #333;
+    }
+  }
+}
+
 .DropdownOption {
   white-space: nowrap;
   color: #333;

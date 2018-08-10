@@ -1,3 +1,19 @@
+.dark {
+  .Button {
+    color: #ddd;
+    background-color: #000;
+    border: 1px solid #333;
+
+    &:hover,
+    &:active,
+    &.is-active {
+      color: #ddd;
+      background-color: #333;
+      border: 1px solid #333;
+    }
+  }
+}
+
 .Button,
 a.Button {
   color: #333;

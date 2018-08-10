@@ -1,7 +1,9 @@
 import React from 'react';
 import {mount} from 'enzyme';
 
-import OptimizeReport from './OptimizeReport';
+import ThemedOptimizeReport from './OptimizeReport';
+
+const {WrappedComponent: OptimizeReport} = ThemedOptimizeReport;
 
 jest.mock('react-router-dom', () => {
   return {

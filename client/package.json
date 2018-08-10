@@ -5,7 +5,7 @@
   "dependencies": {
     "array-includes": "^3.0.3",
     "array.prototype.find": "^2.0.4",
-    "bpmn-js": "0.23.2",
+    "bpmn-js": "2.4.1",
     "chart.js": "2.7.2",
     "classnames": "^2.2.5",
     "debounce": "^1.1.0",

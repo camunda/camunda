@@ -1,11 +1,13 @@
 import React from 'react';
 import {mount} from 'enzyme';
 
-import Chart from './Chart';
+import ThemedChart from './Chart';
 import ChartRenderer from 'chart.js';
 
 import {getRelativeValue} from './service';
 import {formatters} from 'services';
+
+const {WrappedComponent: Chart} = ThemedChart;
 
 const {convertToMilliseconds} = formatters;
 

@@ -19,6 +19,12 @@ jest.mock('components', () => {
   };
 });
 
+jest.mock('theme', () => {
+  return {
+    Provider: ({children}) => children
+  };
+});
+
 jest.mock('./components', () => {
   const {Route} = require.requireActual('react-router-dom');
   return {

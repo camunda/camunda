@@ -1,7 +1,18 @@
 @import 'shared-styles.scss';
 
+.dark {
+  .fullscreen {
+    background-color: #222;
+  }
+
+  .Dashboard__metadata {
+    color: #999999;
+  }
+}
+
 .fullscreen {
   background-color: white;
+  transition: background-color 0.3s;
 }
 
 .Dashboard--fullscreen {
