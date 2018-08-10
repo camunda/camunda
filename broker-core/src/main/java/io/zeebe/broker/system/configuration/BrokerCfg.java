@@ -23,6 +23,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class BrokerCfg {
+  public static final int DEFAULT_NODE_ID = 0;
+
+  private int nodeId = DEFAULT_NODE_ID;
   private int bootstrap = 0;
 
   private NetworkCfg network = new NetworkCfg();
@@ -40,12 +43,21 @@ public class BrokerCfg {
   }
 
   public void init(String brokerBase, Environment environment) {
+    applyEnvironment(environment);
     network.init(this, brokerBase, environment);
     cluster.init(this, brokerBase, environment);
     threads.init(this, brokerBase, environment);
     metrics.init(this, brokerBase, environment);
     data.init(this, brokerBase, environment);
     exporters.forEach(e -> e.init(this, brokerBase, environment));
+  }
+
+  private void applyEnvironment(final Environment environment) {
+    environment.getInt(EnvironmentConstants.ENV_NODE_ID).ifPresent(v -> nodeId = v);
+  }
+
+  public int getNodeId() {
+    return nodeId;
   }
 
   public int getBootstrap() {

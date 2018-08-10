@@ -30,6 +30,12 @@
 
 # ----------------------------------------------------
 
+# Specifies the unique id of this broker node in a cluster.
+# The id should be between 0 and number of nodes in the cluster (exclusive).
+#
+# This setting can also be overridden using the environment variable ZEEBE_NODE_ID.
+# nodeId = 0;
+
 # Controls the number of nodes this broker waits for until doing bootstrapping:
 #
 # * When using a single-node cluster, the value should be 1

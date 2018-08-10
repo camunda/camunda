@@ -1,5 +1,7 @@
 # Broker 2
 
+nodeId = 1
+
 [network.gateway]
 enabled = false
 

@@ -17,9 +17,9 @@
  */
 package io.zeebe.broker.system.configuration;
 
-public class NetworkCfg implements ConfigurationEntry {
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PORT_OFFSET;
 
-  public static final String ENV_PORT_OFFSET = "ZEEBE_PORT_OFFSET";
+public class NetworkCfg implements ConfigurationEntry {
 
   private String host = "0.0.0.0";
   private String defaultSendBufferSize = "16M";
