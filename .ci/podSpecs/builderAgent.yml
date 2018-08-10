@@ -31,10 +31,10 @@ spec:
       resources:
         limits:
           cpu: 2
-          memory: 2Gi
+          memory: 3Gi
         requests:
           cpu: 2
-          memory: 2Gi
+          memory: 3Gi
     - name: node
       image: node:8.11.2-alpine
       command: ["cat"]
