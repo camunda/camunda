@@ -559,4 +559,59 @@ describe('edit mode', async () => {
     expect(node.state().data.processDefinitionKey).toBe('key');
     expect(node.state().data.processDefinitionVersion).toBe(2);
   });
+
+  describe('isOnlyVizChanged', () => {
+    it('should return false if visualization data is not loaded before', async () => {
+      const node = mount(shallow(<Report {...props} />).get(0));
+      await node.instance().componentDidMount();
+      node.setState({
+        data: {
+          view: 'test view',
+          groupBy: {type: 'name'}
+        }
+      });
+      const updates = {
+        visualization: 'barchart',
+        view: 'test view',
+        groupBy: {type: 'name'}
+      };
+      expect(!!node.instance().isOnlyVizChanged(updates)).toBe(false);
+    });
+
+    it('should return false if groupBy or view also changed', async () => {
+      const node = mount(shallow(<Report {...props} />).get(0));
+      await node.instance().componentDidMount();
+      node.setState({
+        data: {
+          visualization: 'table',
+          view: 'test view',
+          groupBy: {type: 'name'}
+        }
+      });
+      const updates = {
+        visualization: 'barchart',
+        view: 'another view',
+        groupBy: {type: 'another name'}
+      };
+      expect(node.instance().isOnlyVizChanged(updates)).toBe(false);
+    });
+
+    it('should return true if only visualization has changed', async () => {
+      const node = mount(shallow(<Report {...props} />).get(0));
+      await node.instance().componentDidMount();
+      node.setState({
+        data: {
+          visualization: 'table',
+          view: 'test view',
+          groupBy: {type: 'name'}
+        }
+      });
+      const updates = {
+        visualization: 'barchart',
+        view: 'test view',
+        groupBy: {type: 'name'}
+      };
+      expect(node.instance().isOnlyVizChanged(updates)).toBe(true);
+    });
+  });
 });

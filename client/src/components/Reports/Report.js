@@ -49,6 +49,7 @@ export default withErrorHandling(
         lastModified: null,
         lastModifier: null,
         loaded: false,
+        loadingReportData: false,
         redirect: false,
         originalName: null,
         deleteModalVisible: false,
@@ -178,10 +179,12 @@ export default withErrorHandling(
       const updatedSomethingOtherThanConfiguration = Object.keys(updates).find(
         entry => entry !== 'configuration'
       );
-      if (updatedSomethingOtherThanConfiguration) {
+      if (updatedSomethingOtherThanConfiguration && !this.isOnlyVizChanged(updates)) {
         let reportResult;
         if (this.allFieldsAreSelected(data)) {
+          this.setState({loadingReportData: true});
           reportResult = await getReportData(data);
+          this.setState({loadingReportData: false});
         }
         if (!reportResult) {
           reportResult = {data};
@@ -192,11 +195,29 @@ export default withErrorHandling(
         this.setState({
           reportResult: {
             ...reportResult,
-            data: {...reportResult.data, configuration: data.configuration}
+            data: {
+              ...reportResult.data,
+              configuration: data.configuration,
+              visualization: data.visualization
+            }
           }
         });
       }
     };
+
+    isOnlyVizChanged(updates) {
+      const {visualization, groupBy, view} = this.state.data;
+      return (
+        // there should be a visualization change
+        updates.visualization &&
+        // visualization data should be loaded before
+        visualization &&
+        // should be the same view
+        (!updates.view || updates.view === view) &&
+        // should be the same groupBy
+        (!updates.groupBy || !groupBy || updates.groupBy.type === groupBy.type)
+      );
+    }
 
     loadXmlToConfiguration = async data => {
       if (data.processDefinitionKey && data.processDefinitionVersion) {
@@ -263,7 +284,7 @@ export default withErrorHandling(
       `/api/export/csv/${this.id}/${encodeURIComponent(this.state.name.replace(/\s/g, '_'))}.csv`;
 
     renderEditMode = () => {
-      const {name, lastModifier, lastModified, data, reportResult} = this.state;
+      const {name, lastModifier, lastModified, data, reportResult, loadingReportData} = this.state;
       return (
         <div className="Report">
           <div className="Report__header">
@@ -314,10 +335,14 @@ export default withErrorHandling(
             updateReport={this.updateReport}
           />
           <div className="Report__view">
-            <ReportView
-              report={reportResult}
-              applyAddons={this.applyAddons(ColumnRearrangement, ColumnSelection)}
-            />
+            {loadingReportData ? (
+              <LoadingIndicator />
+            ) : (
+              <ReportView
+                report={reportResult}
+                applyAddons={this.applyAddons(ColumnRearrangement, ColumnSelection)}
+              />
+            )}
           </div>
         </div>
       );
