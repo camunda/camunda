@@ -15,18 +15,28 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker;
+package io.zeebe.broker.exporter.context;
 
-import io.zeebe.util.ZbLogger;
+import io.zeebe.exporter.context.Configuration;
+import io.zeebe.exporter.context.Context;
 import org.slf4j.Logger;
 
-public class Loggers {
-  public static final Logger CLUSTERING_LOGGER = new ZbLogger("io.zeebe.broker.clustering");
-  public static final Logger SERVICES_LOGGER = new ZbLogger("io.zeebe.broker.services");
-  public static final Logger SYSTEM_LOGGER = new ZbLogger("io.zeebe.broker.system");
-  public static final Logger TRANSPORT_LOGGER = new ZbLogger("io.zeebe.broker.transport");
-  public static final Logger STREAM_PROCESSING = new ZbLogger("io.zeebe.broker.streamProcessing");
-  public static final Logger WORKFLOW_REPOSITORY_LOGGER =
-      new ZbLogger("io.zeebe.broker.workflow.repository");
-  public static final Logger EXPORTER_LOGGER = new ZbLogger("io.zeebe.broker.exporter");
+public class ExporterContext implements Context {
+  private final Logger logger;
+  private final Configuration configuration;
+
+  public ExporterContext(final Logger logger, final Configuration configuration) {
+    this.logger = logger;
+    this.configuration = configuration;
+  }
+
+  @Override
+  public Logger getLogger() {
+    return logger;
+  }
+
+  @Override
+  public Configuration getConfiguration() {
+    return configuration;
+  }
 }
