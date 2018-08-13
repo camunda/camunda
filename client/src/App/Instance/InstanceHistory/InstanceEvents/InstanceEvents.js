@@ -100,9 +100,13 @@ export default class InstanceEvents extends React.Component {
   };
 
   renderGroup = (group, idx) => {
-    return group.events
-      ? this.renderEventsGroup(group, idx)
-      : this.renderEvent(group, idx);
+    return (
+      <Styled.EventEntry key={idx}>
+        {group.events
+          ? this.renderEventsGroup(group, idx)
+          : this.renderEvent(group, idx)}
+      </Styled.EventEntry>
+    );
   };
 
   render() {

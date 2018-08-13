@@ -23,8 +23,16 @@ export const EventsContainer = styled.div`
   display: flex;
   flex-direction: column;
   min-height: min-content;
-  padding-left: 15px;
 `;
+
+export const EventEntry = themed(styled.div`
+  padding-left: 15px;
+  border-bottom: 1px solid
+    ${themeStyle({
+      dark: Colors.uiDark04,
+      light: Colors.uiLight05
+    })};
+`);
 
 export const DataEntry = themed(styled.div`
   opacity: 0.9;

@@ -19,103 +19,115 @@ exports[`InstanceEvents should render grouped events if events or activities cha
   }
 >
   <styled.div>
-    <Foldable
-      key="foo name0"
+    <Themed(styled.div)
+      key="0"
     >
-      <Summary
-        isBold={true}
-        isFoldable={true}
+      <Foldable
+        key="foo name0"
       >
-        foo name
-      </Summary>
-      <Details>
-        <Foldable
-          key="fooCreated0"
+        <Summary
+          isBold={true}
+          isFoldable={true}
         >
-          <Summary
-            isFoldable={true}
+          foo name
+        </Summary>
+        <Details>
+          <Foldable
+            key="fooCreated0"
           >
-            fooCreated
-          </Summary>
-          <Details>
-            <Themed(styled.div)
-              key="0"
+            <Summary
+              isFoldable={true}
             >
-              a: b
-            </Themed(styled.div)>
-          </Details>
-        </Foldable>
-        <Foldable
-          key="fooActiviated1"
-        >
-          <Summary
-            isFoldable={false}
+              fooCreated
+            </Summary>
+            <Details>
+              <Themed(styled.div)
+                key="0"
+              >
+                a: b
+              </Themed(styled.div)>
+            </Details>
+          </Foldable>
+          <Foldable
+            key="fooActiviated1"
           >
-            fooActiviated
-          </Summary>
-          <Details />
-        </Foldable>
-      </Details>
-    </Foldable>
-    <Foldable
-      key="bar name1"
-    >
-      <Summary
-        isBold={true}
-        isFoldable={true}
-      >
-        bar name
-      </Summary>
-      <Details>
-        <Foldable
-          key="barCreated0"
-        >
-          <Summary
-            isFoldable={false}
-          >
-            barCreated
-          </Summary>
-          <Details />
-        </Foldable>
-        <Foldable
-          key="barActivated1"
-        >
-          <Summary
-            isFoldable={false}
-          >
-            barActivated
-          </Summary>
-          <Details />
-        </Foldable>
-      </Details>
-    </Foldable>
-    <Foldable
-      key="baz2"
-    >
-      <Summary
-        isFoldable={true}
-      >
-        baz
-      </Summary>
-      <Details>
-        <Foldable
-          key="0"
-        >
-          <Summary
-            isFoldable={true}
-          >
-            c
-          </Summary>
-          <Details>
-            <Themed(styled.div)
-              key="0"
+            <Summary
+              isFoldable={false}
             >
-              d: e
-            </Themed(styled.div)>
-          </Details>
-        </Foldable>
-      </Details>
-    </Foldable>
+              fooActiviated
+            </Summary>
+            <Details />
+          </Foldable>
+        </Details>
+      </Foldable>
+    </Themed(styled.div)>
+    <Themed(styled.div)
+      key="1"
+    >
+      <Foldable
+        key="bar name1"
+      >
+        <Summary
+          isBold={true}
+          isFoldable={true}
+        >
+          bar name
+        </Summary>
+        <Details>
+          <Foldable
+            key="barCreated0"
+          >
+            <Summary
+              isFoldable={false}
+            >
+              barCreated
+            </Summary>
+            <Details />
+          </Foldable>
+          <Foldable
+            key="barActivated1"
+          >
+            <Summary
+              isFoldable={false}
+            >
+              barActivated
+            </Summary>
+            <Details />
+          </Foldable>
+        </Details>
+      </Foldable>
+    </Themed(styled.div)>
+    <Themed(styled.div)
+      key="2"
+    >
+      <Foldable
+        key="baz2"
+      >
+        <Summary
+          isFoldable={true}
+        >
+          baz
+        </Summary>
+        <Details>
+          <Foldable
+            key="0"
+          >
+            <Summary
+              isFoldable={true}
+            >
+              c
+            </Summary>
+            <Details>
+              <Themed(styled.div)
+                key="0"
+              >
+                d: e
+              </Themed(styled.div)>
+            </Details>
+          </Foldable>
+        </Details>
+      </Foldable>
+    </Themed(styled.div)>
   </styled.div>
 </Themed(styled.div)>
 `;
