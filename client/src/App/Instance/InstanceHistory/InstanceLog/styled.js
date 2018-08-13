@@ -49,13 +49,9 @@ const backgroundColorStyle = css`
 
 const colorStyle = css`
   color: ${({theme, isSelected, state}) => {
-    if (state === ACTIVITY_STATE.INCIDENT) {
-      return;
-    } else {
-      return isSelected || theme === 'dark'
-        ? 'rgba(255, 255, 255, 0.9)'
-        : Colors.uiDark04;
-    }
+    return isSelected || theme === 'dark'
+      ? 'rgba(255, 255, 255, 0.9)'
+      : Colors.uiDark04;
   }};
 `;
 
@@ -83,10 +79,11 @@ export const LogEntry = themed(styled.button`
 
 export const Header = themed(styled(LogEntry)`
   padding-left: 23px;
-  color: ${themeStyle({
-    dark: 'rgba(255, 255, 255, 0.9)',
-    light: 'rgba(69, 70, 78, 0.9)'
-  })};
+  color: ${({theme, isSelected, state}) => {
+    return isSelected || theme === 'dark'
+      ? 'rgba(255, 255, 255, 0.9)'
+      : 'rgba(69, 70, 78, 0.9)';
+  }};
   font-weight: bold;
 `);
 
