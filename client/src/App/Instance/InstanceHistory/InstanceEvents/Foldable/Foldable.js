@@ -34,27 +34,37 @@ export default class Foldable extends React.Component {
 
 Foldable.Summary = function Summary({
   toggleFold,
+  isFoldable,
   isFolded,
   children,
   ...props
 }) {
   return (
     <Styled.Summary {...props}>
-      <Styled.FoldButton onClick={toggleFold}>
-        {!isFolded ? <Styled.DownIcon /> : <Styled.RightIcon />}
-      </Styled.FoldButton>
-      {children}
+      {!isFoldable ? null : (
+        <Styled.FoldButton onClick={toggleFold}>
+          {!isFolded ? <Styled.DownIcon /> : <Styled.RightIcon />}
+        </Styled.FoldButton>
+      )}
+      <Styled.SummaryLabel isFoldable={isFoldable}>
+        {children}
+      </Styled.SummaryLabel>
     </Styled.Summary>
   );
 };
 
 Foldable.Summary.propTypes = {
   toggleFold: PropTypes.func,
+  isFoldable: PropTypes.bool,
   isFolded: PropTypes.bool,
   children: PropTypes.oneOfType([
     PropTypes.arrayOf(PropTypes.node),
     PropTypes.node
   ])
+};
+
+Foldable.Summary.defaultProps = {
+  isFoldable: true
 };
 
 Foldable.Details = function Details(props) {

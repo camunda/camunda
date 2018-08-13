@@ -2,6 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import {fetchEvents} from 'modules/api/events';
+import {isEmpty} from 'modules/utils';
 
 import Foldable from './Foldable';
 import {getGroupedEvents} from './service';
@@ -49,7 +50,13 @@ export default class InstanceEvents extends React.Component {
 
   renderData = data => {
     return Object.entries(data)
-      .filter(([_, value]) => Boolean(value))
+      .filter(([_, value]) => {
+        if (typeof value === 'object') {
+          return !isEmpty(value);
+        }
+
+        return Boolean(value);
+      })
       .map(([key, value], idx) => {
         if (typeof value !== 'object') {
           return (
@@ -60,9 +67,7 @@ export default class InstanceEvents extends React.Component {
         return (
           <Foldable key={idx}>
             <Foldable.Summary>{key}</Foldable.Summary>
-            <Foldable.Details>
-              {!!value && this.renderData(value)}
-            </Foldable.Details>
+            <Foldable.Details>{this.renderData(value)}</Foldable.Details>
           </Foldable>
         );
       });
@@ -73,7 +78,9 @@ export default class InstanceEvents extends React.Component {
 
     return (
       <Foldable key={key}>
-        <Foldable.Summary>{eventType}</Foldable.Summary>
+        <Foldable.Summary isFoldable={!isEmpty(metadata)}>
+          {eventType}
+        </Foldable.Summary>
         <Foldable.Details>
           {!!metadata && this.renderData(metadata)}
         </Foldable.Details>

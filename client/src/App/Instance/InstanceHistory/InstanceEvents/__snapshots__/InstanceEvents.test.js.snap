@@ -24,6 +24,7 @@ exports[`InstanceEvents should render grouped events if events or activities cha
     >
       <Summary
         isBold={true}
+        isFoldable={true}
       >
         foo name
       </Summary>
@@ -31,7 +32,9 @@ exports[`InstanceEvents should render grouped events if events or activities cha
         <Foldable
           key="fooCreated0"
         >
-          <Summary>
+          <Summary
+            isFoldable={true}
+          >
             fooCreated
           </Summary>
           <Details>
@@ -45,7 +48,9 @@ exports[`InstanceEvents should render grouped events if events or activities cha
         <Foldable
           key="fooActiviated1"
         >
-          <Summary>
+          <Summary
+            isFoldable={false}
+          >
             fooActiviated
           </Summary>
           <Details />
@@ -57,6 +62,7 @@ exports[`InstanceEvents should render grouped events if events or activities cha
     >
       <Summary
         isBold={true}
+        isFoldable={true}
       >
         bar name
       </Summary>
@@ -64,7 +70,9 @@ exports[`InstanceEvents should render grouped events if events or activities cha
         <Foldable
           key="barCreated0"
         >
-          <Summary>
+          <Summary
+            isFoldable={false}
+          >
             barCreated
           </Summary>
           <Details />
@@ -72,7 +80,9 @@ exports[`InstanceEvents should render grouped events if events or activities cha
         <Foldable
           key="barActivated1"
         >
-          <Summary>
+          <Summary
+            isFoldable={false}
+          >
             barActivated
           </Summary>
           <Details />
@@ -82,14 +92,18 @@ exports[`InstanceEvents should render grouped events if events or activities cha
     <Foldable
       key="baz2"
     >
-      <Summary>
+      <Summary
+        isFoldable={true}
+      >
         baz
       </Summary>
       <Details>
         <Foldable
           key="0"
         >
-          <Summary>
+          <Summary
+            isFoldable={true}
+          >
             c
           </Summary>
           <Details>

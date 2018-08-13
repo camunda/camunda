@@ -30,7 +30,6 @@ export const FoldButton = styled.button`
   border: none;
 
   padding: 0;
-  margin-right: 6px;
   top: 1px;
 `;
 
@@ -50,6 +49,10 @@ export const Summary = themed(styled.div`
   padding-bottom: 7px;
   font-weight: ${({isBold}) => (!isBold ? 'normal' : 'bold')};
 `);
+
+export const SummaryLabel = styled.span`
+  margin-left: ${({isFoldable}) => (!!isFoldable ? '6px' : '22px')};
+`;
 
 export const Details = styled.div`
   padding-left: 22px;
