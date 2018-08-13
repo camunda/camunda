@@ -28,7 +28,10 @@ const parseDate = (value, name) => {
   const formatWithTimezone = 'YYYY-MM-DDTHH:mm:ss.SSSZZ';
 
   if (!isValidDate) {
-    return null;
+    return {
+      [`${name}After`]: null,
+      [`${name}Before`]: null
+    };
   }
 
   // temporary condition to check for presence of time in user input

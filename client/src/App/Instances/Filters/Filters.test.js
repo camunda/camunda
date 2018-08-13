@@ -513,7 +513,7 @@ describe('Filters', () => {
       );
     });
 
-    it('should not  update the filters when startDate is invalid', async () => {
+    it('should send null values for empty or invalid start dates', async () => {
       const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
 
       //when
@@ -525,7 +525,10 @@ describe('Filters', () => {
       node.update();
 
       // then
-      expect(spy).toHaveBeenCalledWith({});
+      expect(spy).toHaveBeenCalledWith({
+        startDateAfter: null,
+        startDateBefore: null
+      });
     });
   });
 
@@ -564,7 +567,7 @@ describe('Filters', () => {
       );
     });
 
-    it('should not  update the filters when endDate is invalid', async () => {
+    it('should send null values for empty or invalid endDate', async () => {
       const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
 
       //when
@@ -576,7 +579,10 @@ describe('Filters', () => {
       node.update();
 
       // then
-      expect(spy).toHaveBeenCalledWith({});
+      expect(spy).toHaveBeenCalledWith({
+        endDateAfter: null,
+        endDateBefore: null
+      });
     });
   });
 });
