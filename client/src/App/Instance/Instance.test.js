@@ -127,7 +127,10 @@ describe('Instance', () => {
         ...mockFlowNodesDetails.foo,
         ...firstActivity
       });
-      expect(activitiesDetails[secondId]).toMatchObject({...secondActivity});
+      expect(activitiesDetails[secondId]).toMatchObject({
+        ...secondActivity,
+        state: ACTIVITY_STATE.INCIDENT
+      });
     });
   });
 

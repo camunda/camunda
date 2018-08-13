@@ -48,7 +48,7 @@ export default class Instance extends Component {
       (map, {id, ...activity}) => {
         // change activity state to incident in case the activity is active
         // and it has an active incident
-        if (activity.state === ACTIVE && activityInstanceId === activity.id) {
+        if (activity.state === ACTIVE && activityInstanceId === id) {
           activity.state = INCIDENT;
         }
 
