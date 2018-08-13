@@ -67,10 +67,31 @@ class EntityList extends React.Component {
 
   duplicateEntity = id => async evt => {
     const {data, reports, name} = this.state.data.find(entity => entity.id === id);
-    const copy = {...(data && {data}), ...(reports && {reports}), name: `Copy of "${name}"`};
+    const newName = this.getNewReportName(this.state.data, name);
+    const copy = {...(data && {data}), ...(reports && {reports}), name: newName};
     await duplicate(this.props.api, copy);
     // fetch the data again after duplication to update the state
     await this.loadData();
+  };
+
+  getNewReportName = (reports, name) => {
+    // remove any additions to the name
+    const originalName = name.split(' - Copy')[0];
+    const copyName = `${originalName} - Copy`;
+    // get the duplicate numbers
+    const numbers = reports
+      .filter(report => report.name.includes(copyName))
+      .map(this.getDuplicatesNumbers);
+    // if the name is the original name and no duplicates then return the copy name
+    if (!name.includes('Copy') && !numbers.length) return copyName;
+    // otherwise append also the next number
+    return `${copyName} ${Math.max(...numbers) + 1}`;
+  };
+
+  getDuplicatesNumbers = copy => {
+    const pieces = copy.name.split(' ');
+    const reportNumber = Number(pieces[pieces.length - 1]);
+    return isNaN(reportNumber) ? 1 : reportNumber;
   };
 
   closeDeleteModal = () => {
