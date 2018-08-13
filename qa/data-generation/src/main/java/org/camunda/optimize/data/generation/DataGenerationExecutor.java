@@ -1,15 +1,21 @@
 package org.camunda.optimize.data.generation;
 
 import org.camunda.optimize.data.generation.generators.DataGenerator;
+import org.camunda.optimize.data.generation.generators.UserTaskCompleter;
+import org.camunda.optimize.data.generation.generators.client.SimpleEngineClient;
 import org.camunda.optimize.data.generation.generators.impl.AuthorizationArrangementDataGenerator;
+import org.camunda.optimize.data.generation.generators.impl.BookRequestDataGenerator;
+import org.camunda.optimize.data.generation.generators.impl.BranchAnalysisDataGenerator;
 import org.camunda.optimize.data.generation.generators.impl.ChangeContactDataDataGenerator;
 import org.camunda.optimize.data.generation.generators.impl.ContactInterviewDataGenerator;
 import org.camunda.optimize.data.generation.generators.impl.DocumentCheckHandlingDataGenerator;
+import org.camunda.optimize.data.generation.generators.impl.EmbeddedSubprocessRequestDataGenerator;
 import org.camunda.optimize.data.generation.generators.impl.ExportInsuranceDataGenerator;
 import org.camunda.optimize.data.generation.generators.impl.ExtendedOrderDataGenerator;
 import org.camunda.optimize.data.generation.generators.impl.HiringProcessDataGenerator;
 import org.camunda.optimize.data.generation.generators.impl.InvoiceDataGenerator;
 import org.camunda.optimize.data.generation.generators.impl.LeadQualificationDataGenerator;
+import org.camunda.optimize.data.generation.generators.impl.MultiInstanceSubprocessRequestDataGenerator;
 import org.camunda.optimize.data.generation.generators.impl.MultiParallelDataGenerator;
 import org.camunda.optimize.data.generation.generators.impl.OrderConfirmationDataGenerator;
 import org.camunda.optimize.data.generation.generators.impl.PickUpHandlingDataGenerator;
@@ -44,6 +50,7 @@ public class DataGenerationExecutor {
   private BlockingQueue<Runnable> importJobsQueue;
 
   private ScheduledExecutorService progressReporter;
+  private UserTaskCompleter completer;
 
   DataGenerationExecutor(long totalInstanceCount, String engineRestEndpoint) {
     this.totalInstanceCount = totalInstanceCount;
@@ -62,14 +69,14 @@ public class DataGenerationExecutor {
 
   private void initGenerators(SimpleEngineClient engineClient) {
     dataGenerators = new ArrayList<>();
+    dataGenerators.add(new BranchAnalysisDataGenerator(engineClient));
+    dataGenerators.add(new BookRequestDataGenerator(engineClient));
+    dataGenerators.add(new EmbeddedSubprocessRequestDataGenerator(engineClient));
+    dataGenerators.add(new MultiInstanceSubprocessRequestDataGenerator(engineClient));
     dataGenerators.add(new HiringProcessDataGenerator(engineClient));
     dataGenerators.add(new ExtendedOrderDataGenerator(engineClient));
     dataGenerators.add(new ContactInterviewDataGenerator(engineClient));
-    dataGenerators.add(new SimpleServiceTaskDataGenerator(engineClient, "SimpleServiceTaskProcess1"));
-    dataGenerators.add(new SimpleServiceTaskDataGenerator(engineClient, "SimpleServiceTaskProcess2"));
-    dataGenerators.add(new SimpleServiceTaskDataGenerator(engineClient, "SimpleServiceTaskProcess3"));
-    dataGenerators.add(new SimpleServiceTaskDataGenerator(engineClient, "SimpleServiceTaskProcess4"));
-    dataGenerators.add(new SimpleServiceTaskDataGenerator(engineClient, "SimpleServiceTaskProcess5"));
+    dataGenerators.add(new SimpleServiceTaskDataGenerator(engineClient));
     dataGenerators.add(new LeadQualificationDataGenerator(engineClient));
     dataGenerators.add(new InvoiceDataGenerator(engineClient));
     dataGenerators.add(new OrderConfirmationDataGenerator(engineClient));
@@ -97,6 +104,8 @@ public class DataGenerationExecutor {
 
   public void executeDataGeneration() {
     init();
+    completer = new UserTaskCompleter(engineClient);
+    completer.startUserTaskCompletion();
     for (DataGenerator dataGenerator : getDataGenerators()) {
       importExecutor.execute(dataGenerator);
     }
@@ -109,6 +118,7 @@ public class DataGenerationExecutor {
     if (progressReporter != null) {
       stopReportingProgress(progressReporter);
     }
+    completer.stopUserTaskCompletion();
     engineClient.close();
   }
 

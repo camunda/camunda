@@ -1,18 +1,24 @@
 package org.camunda.optimize.data.generation.generators;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.data.generation.SimpleEngineClient;
+import org.camunda.optimize.data.generation.generators.client.SimpleEngineClient;
+import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -22,8 +28,9 @@ public abstract class DataGenerator implements Runnable {
 
   private int nVersions;
   private int instanceCountToGenerate;
+  private MessageEventCorrelater messageEventCorrelater;
 
-  private SimpleEngineClient engineClient;
+  protected SimpleEngineClient engineClient;
 
   public DataGenerator(SimpleEngineClient engineClient) {
     generateVersionNumber();
@@ -50,21 +57,76 @@ public abstract class DataGenerator implements Runnable {
   public void run() {
     logger.info("Start {}...", getClass().getSimpleName());
     BpmnModelInstance instance = retrieveDiagram();
-    List<String> processDefinitionIds = engineClient.deployProcesses(instance, nVersions);
-    List<Integer> processInstanceSizePerDefinition = createProcessInstanceSizePerDefinition();
     try {
+      startCorrelatingMessages();
+      List<String> processDefinitionIds = engineClient.deployProcesses(instance, nVersions);
+      List<Integer> processInstanceSizePerDefinition = createProcessInstanceSizePerDefinition();
       startProcessInstances(processInstanceSizePerDefinition, processDefinitionIds);
-    } catch (IOException e) {
-      e.printStackTrace();
+      messageEventCorrelater.correlateMessages();
+    } catch (Exception e) {
+      logger.error("Error while generating the data", e);
     } finally {
+      stopCorrelatingMessages();
       logger.info("{} finished data generation!", getClass().getSimpleName());
     }
+  }
+
+  private Map<String, Object> createSimpleVariables() {
+    Map<String, Object> person = new HashMap<>();
+    person.put("name", "Kermit");
+    person.put("age", 50);
+    ObjectMapper objectMapper = new ObjectMapper();
+    String personAsString = null;
+    try {
+      personAsString = objectMapper.writeValueAsString(person);
+    } catch (JsonProcessingException e) {
+      logger.warn("Could not serialize complex variable!", e);
+    }
+    ComplexVariableDto complexVariableDto = new ComplexVariableDto();
+    complexVariableDto.setType("Object");
+    complexVariableDto.setValue(personAsString);
+    ComplexVariableDto.ValueInfo info = new ComplexVariableDto.ValueInfo();
+    info.setObjectTypeName("org.camunda.foo.Person");
+    info.setSerializationDataFormat("application/json");
+    complexVariableDto.setValueInfo(info);
+
+
+    Random random = new Random();
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("person", complexVariableDto);
+    Integer integer = random.nextInt();
+    variables.put("stringVar", "aStringValue");
+    variables.put("boolVar", random.nextBoolean());
+    variables.put("integerVar", random.nextInt());
+    variables.put("shortVar", integer.shortValue());
+    variables.put("longVar", random.nextLong());
+    variables.put("doubleVar", random.nextDouble());
+    SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+    variables.put("dateVar", df.format(new Date(random.nextInt())));
+    return variables;
+  }
+
+  private void startCorrelatingMessages() {
+    messageEventCorrelater =
+      new MessageEventCorrelater(engineClient, getCorrelationNames());
+    messageEventCorrelater.startCorrelatingMessages();
+  }
+
+  private void stopCorrelatingMessages() {
+    if (messageEventCorrelater != null) {
+      messageEventCorrelater.stopCorrelatingMessages();
+    }
+  }
+
+  protected String[] getCorrelationNames() {
+    return new String[] {};
   }
 
   private void startProcessInstances(List<Integer> batchSizes, List<String> processDefinitionIds) throws IOException {
     for (int ithBatch = 0; ithBatch < batchSizes.size(); ithBatch++) {
       for (int i = 0; i < batchSizes.get(ithBatch); i++) {
         Map<String, Object> variables = createVariablesForProcess();
+        variables.putAll(createSimpleVariables());
         engineClient.startProcessInstance(processDefinitionIds.get(ithBatch), variables);
       }
     }

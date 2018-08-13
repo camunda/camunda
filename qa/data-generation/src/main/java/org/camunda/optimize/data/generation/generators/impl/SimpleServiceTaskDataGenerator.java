@@ -3,22 +3,19 @@ package org.camunda.optimize.data.generation.generators.impl;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.data.generation.generators.DataGenerator;
-import org.camunda.optimize.data.generation.SimpleEngineClient;
+import org.camunda.optimize.data.generation.generators.client.SimpleEngineClient;
 
 import java.util.HashSet;
 import java.util.Set;
 
 public class SimpleServiceTaskDataGenerator extends DataGenerator {
 
-  private String processDefinitionId;
-
-  public SimpleServiceTaskDataGenerator(SimpleEngineClient simpleEngineClient, String processDefinitionId) {
+  public SimpleServiceTaskDataGenerator(SimpleEngineClient simpleEngineClient) {
     super(simpleEngineClient);
-    this.processDefinitionId = processDefinitionId;
   }
 
   protected BpmnModelInstance retrieveDiagram() {
-    return Bpmn.createExecutableProcess(processDefinitionId)
+    return Bpmn.createExecutableProcess("simpleServiceTask")
         .name("Simple Service Task Process")
           .startEvent()
             .serviceTask()

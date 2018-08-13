@@ -23,7 +23,7 @@ To configure the data generation, you have the following two possibilities:
 
 * adjust the number of process instances that are being generated (the default value is displayed):
 ```
-mvn clean compile exec:java -Dexec.args="--numberOfProcessInstances 100_000"
+mvn clean compile exec:java -Dexec.args="--numberOfProcessInstances 100000"
 ```
 
 * adjust the rest endpoint to the engine (the default value is displayed):

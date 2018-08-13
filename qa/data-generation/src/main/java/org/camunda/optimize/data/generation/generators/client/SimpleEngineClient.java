@@ -1,10 +1,11 @@
-package org.camunda.optimize.data.generation;
+package org.camunda.optimize.data.generation.generators.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -18,6 +19,8 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.data.generation.generators.client.dto.MessageCorrelationDto;
+import org.camunda.optimize.data.generation.generators.client.dto.TaskDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.dto.DeploymentDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
@@ -27,12 +30,14 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
 
 public class SimpleEngineClient {
 
@@ -177,4 +182,80 @@ public class SimpleEngineClient {
     post.setEntity(entity);
     return post;
   }
+
+  public void correlateMessage(String messageName) {
+    HttpPost post = new HttpPost(engineRestEndpoint + "/message/");
+    post.setHeader("Content-type", "application/json");
+    MessageCorrelationDto message = new MessageCorrelationDto();
+    message.setAll(true);
+    message.setMessageName(messageName);
+    StringEntity content =
+      null;
+    try {
+      content = new StringEntity(objectMapper.writeValueAsString(message), Charset.defaultCharset());
+      post.setEntity(content);
+      HttpResponse response = client.execute(post);
+      if (response.getStatusLine().getStatusCode() != 204) {
+        System.out.println("Warning: Code for send candidate replied should be 204!");
+      }
+    } catch (IOException e) {
+      logger.error("Error while trying to correlate message!", e);
+    }
+  }
+
+  public void finishAllUserTasks() {
+    HttpGet get = new HttpGet(getTaskListUri());
+    executeFinishAllUserTasks(client, get);
+  }
+
+  private void executeFinishAllUserTasks(CloseableHttpClient client, HttpGet get) {
+    try {
+      CloseableHttpResponse response = client.execute(get);
+      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+      List<TaskDto> tasks = objectMapper.readValue(responseString, new TypeReference<List<TaskDto>>() {
+      });
+      response.close();
+      for (TaskDto task : tasks) {
+        claimAndCompleteUserTask(client, task);
+      }
+    } catch (IOException e) {
+      logger.error("Error while trying to finish the user task!!", e);
+    }
+  }
+
+
+
+  private String getTaskListUri() {
+    return engineRestEndpoint + "/task";
+  }
+
+  private void claimAndCompleteUserTask(CloseableHttpClient client, TaskDto task) throws IOException {
+    HttpPost claimPost = new HttpPost(getClaimTaskUri(task.getId()));
+    claimPost.setEntity(new StringEntity("{ \"userId\" : " + "\"demo\"" + "}"));
+    claimPost.addHeader("Content-Type", "application/json");
+    CloseableHttpResponse response = client.execute(claimPost);
+    if (response.getStatusLine().getStatusCode() != 204) {
+      throw new RuntimeException("Could not claim user task!");
+    }
+
+    HttpPost completePost = new HttpPost(getCompleteTaskUri(task.getId()));
+    completePost.setEntity(new StringEntity("{}"));
+    completePost.addHeader("Content-Type", "application/json");
+    response.close();
+    response = client.execute(completePost);
+    if (response.getStatusLine().getStatusCode() != 204) {
+      throw new RuntimeException("Could not complete user task!");
+    }
+    response.close();
+  }
+
+  private String getClaimTaskUri(String taskId) {
+    return engineRestEndpoint + "/task/" + taskId + "/claim";
+  }
+
+  private String getCompleteTaskUri(String taskId) {
+    return engineRestEndpoint + "/task/" + taskId + "/complete";
+  }
+
+
 }

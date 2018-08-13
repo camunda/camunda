@@ -8,11 +8,11 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
-public class DocumentCheckHandlingDataGenerator extends DataGenerator {
+public class MultiInstanceSubprocessRequestDataGenerator extends DataGenerator {
 
-  private static final String DIAGRAM = "diagrams/document-check-handling.bpmn";
+  private static final String DIAGRAM = "diagrams/multi-instance.bpmn";
 
-  public DocumentCheckHandlingDataGenerator(SimpleEngineClient engineClient) {
+  public MultiInstanceSubprocessRequestDataGenerator(SimpleEngineClient engineClient) {
     super(engineClient);
   }
 
@@ -26,9 +26,7 @@ public class DocumentCheckHandlingDataGenerator extends DataGenerator {
   }
 
   public Set<String> getPathVariableNames() {
-    Set<String> variableNames = new HashSet<>();
-    variableNames.add("approved");
-    return variableNames;
+    return new HashSet<>();
   }
 
 }
