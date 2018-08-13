@@ -6,6 +6,7 @@ import org.camunda.optimize.service.util.VariableHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
@@ -22,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Properties;
@@ -46,6 +48,7 @@ public class ImportPerformanceTest {
 
   private ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   private EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+  private EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule();
 
 
   private static final int QUEUE_SIZE = 100;
@@ -59,19 +62,23 @@ public class ImportPerformanceTest {
 
   @Rule
   public RuleChain chain = RuleChain
-      .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
+      .outerRule(elasticSearchRule).around(embeddedOptimizeRule).around(engineDatabaseRule);
 
   @Before
-  public void setUp() {
+  public void setUp() throws SQLException {
     Properties properties = PropertyUtil.loadProperties("import-performance-test.properties");
     NUMBER_OF_PROCESS_DEFINITIONS =
-      Long.parseLong(properties.getProperty("import.test.number.of.process-definitions", "289"));
+      engineDatabaseRule.countProcessDefinitions();
+    logger.info("The Camunda Platform contains {} process definitions.", NUMBER_OF_PROCESS_DEFINITIONS);
     NUMBER_OF_PROCESS_INSTANCES =
-      Long.parseLong(properties.getProperty("import.test.number.of.process-instances", "2000000"));
+      engineDatabaseRule.countHistoricProcessInstances();
+    logger.info("The Camunda Platform contains {} historic process instances.", NUMBER_OF_PROCESS_INSTANCES);
     NUMBER_OF_VARIABLE_INSTANCES =
-      Long.parseLong(properties.getProperty("import.test.number.of.variable-instances", "6913889"));
+      engineDatabaseRule.countHistoricVariableInstances();
+    logger.info("The Camunda Platform contains {} historic variable instances.", NUMBER_OF_VARIABLE_INSTANCES);
     NUMBER_OF_ACTIVITY_INSTANCES =
-      Long.parseLong(properties.getProperty("import.test.number.of.activity-instances", "21932786"));
+      engineDatabaseRule.countHistoricActivityInstances();
+    logger.info("The Camunda Platform contains {} historic activity instances.", NUMBER_OF_ACTIVITY_INSTANCES);
 
     maxImportDurationInMin = Long.parseLong(properties.getProperty("import.test.max.duration.in.min", "240"));
     elasticSearchRule.disableCleanup();

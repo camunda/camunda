@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.Map;
@@ -75,7 +76,7 @@ public class EngineDatabaseRule extends TestWatcher {
   }
 
   protected String handleDatabaseSyntax(String statement) {
-    return (database == DATABASE_POSTGRESQL) ? statement.toLowerCase() : statement;
+    return (database.equals(DATABASE_POSTGRESQL)) ? statement.toLowerCase() : statement;
   }
 
   @Override
@@ -174,6 +175,66 @@ public class EngineDatabaseRule extends TestWatcher {
       statement.executeUpdate();
     }
     connection.commit();
+  }
+
+  public int countHistoricActivityInstances() throws SQLException {
+    String sql = "select count(*) as total from act_hi_actinst;";
+    String postgresSQL =
+      "SELECT reltuples AS total FROM pg_class WHERE relname = 'act_hi_actinst';";
+    sql = DATABASE_POSTGRESQL.equals(database)? postgresSQL: sql;
+    ResultSet statement =
+      connection.createStatement().executeQuery(sql);
+    statement.next();
+    int totalCount =  statement.getInt("total");
+
+    // substract the amount of activity instances that are not finished yet
+    sql = "select count(*) as total from act_hi_actinst where END_TIME_ is null;";
+    statement =
+      connection.createStatement().executeQuery(sql);
+    statement.next();
+    totalCount -=  statement.getInt("total");
+    return totalCount;
+  }
+
+  public int countHistoricProcessInstances() throws SQLException {
+    String sql = "select count(*) as total from act_hi_procinst;";
+    String postgresSQL =
+      "SELECT reltuples AS total FROM pg_class WHERE relname = 'act_hi_procinst';";
+    sql = DATABASE_POSTGRESQL.equals(database)? postgresSQL: sql;
+    ResultSet statement =
+      connection.createStatement().executeQuery(sql);
+    statement.next();
+    return statement.getInt("total");
+  }
+
+  public int countHistoricVariableInstances() throws SQLException {
+    String sql = "select count(*) as total from act_hi_varinst;";
+    String postgresSQL =
+      "SELECT reltuples AS total FROM pg_class WHERE relname = 'act_hi_varinst';";
+    sql = DATABASE_POSTGRESQL.equals(database)? postgresSQL: sql;
+    ResultSet statement =
+      connection.createStatement().executeQuery(sql);
+    statement.next();
+    int totalAmount =  statement.getInt("total");
+
+    // subtract all case and complex variables
+    sql = "select count(*) as total from act_hi_varinst " +
+            "where var_type_ not in ('string', 'double', 'integer', 'long', 'short', 'date', 'boolean' ) " +
+              "or CASE_INST_ID_  is not null;";
+    statement =
+      connection.createStatement().executeQuery(sql);
+    statement.next();
+    totalAmount -= statement.getInt("total");
+
+    return totalAmount;
+  }
+
+  public int countProcessDefinitions() throws SQLException {
+    String sql = "select count(*) as total from act_re_procdef;";
+    ResultSet statement =
+      connection.createStatement().executeQuery(sql);
+    statement.next();
+    return statement.getInt("total");
   }
 
   @Override
