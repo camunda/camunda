@@ -260,3 +260,20 @@ We use [prettier](https://prettier.io/) to automatically format the Javascript s
 ## Further Reading
 
 This project was bootstrapped using [create-react-app](https://github.com/facebook/create-react-app), so if you want to find out how something related to the build process works, check out their [User Guide](https://github.com/facebook/create-react-app/blob/master/packages/react-scripts/template/README.md#table-of-contents).
+
+
+## Accessibility
+
+We care about #a11y! In order to cover basic requirements, we should make sure that:  
+  
+* We use semantic markup
+* Interactive elements can
+	* Be accessed using keyboard and screenreader
+	* Name/label are provided when necessary
+	* Can be actioned using mouse, Enter Key, or Space bar
+
+We will further work on more detailed instructions and requirements, for now you can check  
+  
+* The Accessibility section of our [Design Review Guidelines](https://app.camunda.com/confluence/display/camBPM/Design+Review+Guidelines)
+* Our [Confluence page on Accessibility](https://app.camunda.com/confluence/display/camBPM/Accessibility)
+* [Get started using VoiceOver, the Mac built-in screen reader](https://webaim.org/articles/voiceover/)
