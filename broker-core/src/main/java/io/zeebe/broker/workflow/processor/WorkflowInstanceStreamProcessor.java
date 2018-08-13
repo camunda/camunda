@@ -97,6 +97,9 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
             subscriptionApiClient,
             topologyManager);
 
+    final ComposeableSerializableSnapshot<ElementInstanceIndex> snapshotSupport =
+        new ComposeableSerializableSnapshot<>(scopeInstances);
+
     return environment
         .newStreamProcessor()
         .keyGenerator(KeyGenerator.createWorkflowInstanceKeyGenerator())
@@ -165,6 +168,16 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
             WorkflowInstanceSubscriptionIntent.CORRELATE,
             new CorrelateWorkflowInstanceSubscription())
         .withListener(this)
+
+        // this is pretty ugly, but goes away when we switch to rocksdb
+        .withStateResource(snapshotSupport)
+        .withListener(
+            new StreamProcessorLifecycleAware() {
+              @Override
+              public void onOpen(TypedStreamProcessor streamProcessor) {
+                scopeInstances.shareState(snapshotSupport.getObject());
+              }
+            })
         .build();
   }
 

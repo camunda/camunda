@@ -19,9 +19,12 @@ package io.zeebe.broker.workflow.index;
 
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import java.io.Serializable;
 import org.agrona.collections.Long2ObjectHashMap;
 
-public class ElementInstanceIndex {
+public class ElementInstanceIndex implements Serializable {
+
+  private static final long serialVersionUID = 1L;
 
   private Long2ObjectHashMap<ElementInstance> instances = new Long2ObjectHashMap<>();
 
@@ -54,5 +57,9 @@ public class ElementInstanceIndex {
     if (scopeInstance != null) {
       scopeInstance.destroy();
     }
+  }
+
+  public void shareState(ElementInstanceIndex other) {
+    this.instances = other.instances;
   }
 }

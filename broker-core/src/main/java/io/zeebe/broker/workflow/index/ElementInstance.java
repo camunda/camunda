@@ -20,19 +20,24 @@ package io.zeebe.broker.workflow.index;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceLifecycle;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import org.agrona.ExpandableDirectByteBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
-public class ElementInstance {
+public class ElementInstance implements Serializable {
+
+  private static final long serialVersionUID = 1L;
 
   private final long key;
   private final ElementInstance parent;
 
   private WorkflowInstanceIntent state;
 
-  private ExpandableDirectByteBuffer valueBuffer = new ExpandableDirectByteBuffer();
-  private WorkflowInstanceRecord value = new WorkflowInstanceRecord();
+  private transient ExpandableDirectByteBuffer valueBuffer = new ExpandableDirectByteBuffer();
+  private transient WorkflowInstanceRecord value = new WorkflowInstanceRecord();
 
   private List<ElementInstance> children = new ArrayList<>();
 
@@ -103,5 +108,31 @@ public class ElementInstance {
 
   public boolean canTerminate() {
     return WorkflowInstanceLifecycle.canTerminate(state);
+  }
+
+  private void writeObject(java.io.ObjectOutputStream out) throws IOException {
+    out.defaultWriteObject();
+
+    final byte[] valueArray = new byte[value.getLength()];
+    out.writeInt(valueArray.length);
+
+    final UnsafeBuffer buf = new UnsafeBuffer(valueArray);
+    value.write(buf, 0);
+
+    out.write(valueArray);
+  }
+
+  private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+    in.defaultReadObject();
+    final int valueLength = in.readInt();
+
+    final byte[] valueArray = new byte[valueLength];
+    in.readFully(valueArray);
+
+    valueBuffer = new ExpandableDirectByteBuffer();
+    value = new WorkflowInstanceRecord();
+
+    valueBuffer.putBytes(0, valueArray);
+    value.wrap(valueBuffer, 0, valueLength);
   }
 }
