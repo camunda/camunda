@@ -12,6 +12,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.Map;
+import java.util.Properties;
 
 public class EngineDatabaseRule extends TestWatcher {
 
@@ -34,35 +35,49 @@ public class EngineDatabaseRule extends TestWatcher {
 
   private String database = System.getProperty("database", "h2");
 
+  public EngineDatabaseRule(Properties properties) {
+    database = properties.getProperty("db.name");
+    String jdbcDriver = properties.getProperty("db.jdbc.driver");
+    String dbUrl = properties.getProperty("db.url");
+    String dbUser = properties.getProperty("db.username");
+    String dbPassword = properties.getProperty("db.password");
+    initDatabaseConnection(jdbcDriver, dbUrl, dbUser, dbPassword);
+  }
+
   public EngineDatabaseRule() {
+    String jdbcDriver;
+    String dbUrl;
+    String dbUser;
+    String dbPassword;
+
+    switch (database) {
+      case DATABASE_H2:
+        jdbcDriver = JDBC_DRIVER_H2;
+        dbUrl = DB_URL_H2;
+        dbUser = USER_H2;
+        dbPassword = PASS_H2;
+        break;
+      case DATABASE_POSTGRESQL:
+        jdbcDriver = JDBC_DRIVER_POSTGRESQL;
+        dbUrl = DB_URL_POSTGRESQL;
+        dbUser = USER_POSTGRESQL;
+        dbPassword = PASS_POSTGRESQL;
+        break;
+      default:
+        throw new IllegalArgumentException("Unable to discover database " + database);
+    }
+    initDatabaseConnection(jdbcDriver, dbUrl, dbUser, dbPassword);
+  }
+
+  private void initDatabaseConnection(String jdbcDriver, String dbUrl, String dbUser, String dbPassword) {
     try {
       if (connection == null || connection.isClosed()) {
-        String jdbcDriver;
-        String dbUrl;
-        String user;
-        String pass;
 
-        switch (database) {
-          case DATABASE_H2:
-            jdbcDriver = JDBC_DRIVER_H2;
-            dbUrl = DB_URL_H2;
-            user = USER_H2;
-            pass = PASS_H2;
-            break;
-          case DATABASE_POSTGRESQL:
-            jdbcDriver = JDBC_DRIVER_POSTGRESQL;
-            dbUrl = DB_URL_POSTGRESQL;
-            user = USER_POSTGRESQL;
-            pass = PASS_POSTGRESQL;
-            break;
-          default:
-            throw new IllegalArgumentException("Unable to discover database " + database);
-        }
         // Register JDBC driver
         Class.forName(jdbcDriver);
 
         logger.info("Connecting to a selected " + database + " database...");
-        connection = DriverManager.getConnection(dbUrl, user, pass);
+        connection = DriverManager.getConnection(dbUrl, dbUser, dbPassword);
         logger.info("Connected to " + database + " database successfully...");
 
         // to be able to batch sql statements

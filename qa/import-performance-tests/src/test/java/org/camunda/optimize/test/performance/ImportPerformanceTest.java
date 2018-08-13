@@ -45,10 +45,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class ImportPerformanceTest {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
+  private final Properties properties = PropertyUtil.loadProperties("import-performance-test.properties");
 
   private ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   private EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  private EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule();
+  private EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule(properties);
 
 
   private static final int QUEUE_SIZE = 100;
