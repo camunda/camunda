@@ -183,7 +183,7 @@ pipeline {
       steps {
         container('maven') {
           sh 'mvn -T\$LIMITS_CPU -DskipTests -Dskip.fe.build -Dskip.docker -s settings.xml clean install -B'
-          sh 'mvn -Pperformance-test -f qa/import-performance-tests/pom.xml -s settings.xml clean test -B'
+          sh 'mvn -Pperformance-test -f qa/import-performance-tests/pom.xml -s settings.xml clean test -Ddb.url=jdbc:postgresql://opt-ci-perf.db:5432/optimize-ci-performance -B'
         }
       }
       post {

@@ -12,6 +12,7 @@
 
   <properties>
     <skip.tests>true</skip.tests>
+    <db.url/>
   </properties>
 
   <dependencies>
@@ -101,6 +102,13 @@
   </dependencies>
 
   <build>
+    <testResources>
+      <testResource>
+        <directory>src/test/resources</directory>
+        <filtering>true</filtering>
+      </testResource>
+    </testResources>
+
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

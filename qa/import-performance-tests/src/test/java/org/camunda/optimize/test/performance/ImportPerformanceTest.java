@@ -67,7 +67,6 @@ public class ImportPerformanceTest {
 
   @Before
   public void setUp() throws SQLException {
-    Properties properties = PropertyUtil.loadProperties("import-performance-test.properties");
     NUMBER_OF_PROCESS_DEFINITIONS =
       engineDatabaseRule.countProcessDefinitions();
     logger.info("The Camunda Platform contains {} process definitions.", NUMBER_OF_PROCESS_DEFINITIONS);

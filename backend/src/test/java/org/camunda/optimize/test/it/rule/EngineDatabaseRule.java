@@ -39,6 +39,9 @@ public class EngineDatabaseRule extends TestWatcher {
     database = properties.getProperty("db.name");
     String jdbcDriver = properties.getProperty("db.jdbc.driver");
     String dbUrl = properties.getProperty("db.url");
+    if (dbUrl == null || dbUrl.isEmpty() || dbUrl.startsWith("${")) {
+      dbUrl = properties.getProperty("db.url.default");
+    }
     String dbUser = properties.getProperty("db.username");
     String dbPassword = properties.getProperty("db.password");
     initDatabaseConnection(jdbcDriver, dbUrl, dbUser, dbPassword);
@@ -90,7 +93,7 @@ public class EngineDatabaseRule extends TestWatcher {
     }
   }
 
-  protected String handleDatabaseSyntax(String statement) {
+  private String handleDatabaseSyntax(String statement) {
     return (database.equals(DATABASE_POSTGRESQL)) ? statement.toLowerCase() : statement;
   }
 
