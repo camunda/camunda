@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="28" height="20" viewBox="0 0 28 20">
+  <g fill="none" fill-rule="evenodd" transform="translate(-24 -214)">
+    <rect width="865" height="780" fill="#FFF"/>
+    <g fill-rule="nonzero" transform="translate(24 214)">
+      <path fill="#6A727E" d="M0,0 L28,0 L28,20 L0,20 L0,0 Z M2,2 L2,18 L26,18 L26,2 L2,2 Z"/>
+      <polyline stroke="#9CA4B0" points="4 13 10 15 16 7.987 24 7"/>
+      <polyline stroke="#2C3139" points="4 16 10 10 16 12.025 24 4"/>
+    </g>
+  </g>
+</svg>
