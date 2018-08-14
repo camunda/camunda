@@ -22,9 +22,8 @@ const mockOnDelete = jest.fn();
 
 describe('Selection', () => {
   let node;
-  let isOpen;
+  const isOpen = true;
   beforeEach(() => {
-    isOpen = true;
     node = shallow(
       <Selection
         isOpen={isOpen}

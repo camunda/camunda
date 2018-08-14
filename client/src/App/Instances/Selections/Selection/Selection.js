@@ -26,6 +26,8 @@ export default class Selection extends React.Component {
     onDelete: PropTypes.func.isRequired
   };
 
+  stopClickPropagation = evt => evt && evt.stopPropagation();
+
   renderArrowIcon = isOpen => (isOpen ? <Down /> : <Right />);
 
   renderBody = instances => {
@@ -48,7 +50,7 @@ export default class Selection extends React.Component {
 
   renderActions = (onRetry, onDelete) => (
     <Styled.Actions>
-      <Styled.DropdownTrigger onClick={evt => evt && evt.stopPropagation()}>
+      <Styled.DropdownTrigger onClick={this.stopClickPropagation}>
         <Dropdown label={<Batch />}>
           <Dropdown.Option onClick={onRetry}>
             <Retry />
