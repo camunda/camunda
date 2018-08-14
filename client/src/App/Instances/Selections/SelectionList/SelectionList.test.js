@@ -2,6 +2,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import SelectionList from './SelectionList';
+import {NO_SELECTIONS_MESSAGE} from './constants';
 
 import * as Styled from './styled';
 
@@ -34,7 +35,10 @@ describe('SelectionList', () => {
     node.setProps({selections});
 
     // then
-    expect(node.find(Styled.NoSelectionWrapper)).toMatchSnapshot();
+    const NoSelectionWrapper = node.find(Styled.NoSelectionWrapper);
+    expect(NoSelectionWrapper).toHaveLength(1);
+    expect(NoSelectionWrapper.contains(NO_SELECTIONS_MESSAGE)).toBe(true);
+    expect(node).toMatchSnapshot();
   });
 
   it('should render Selection when existent', () => {

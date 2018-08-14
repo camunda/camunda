@@ -29,7 +29,7 @@ export default class SelectionList extends React.Component {
                   selectionId={selectionId}
                   instances={workflowInstances}
                   instanceCount={totalCount}
-                  onRetry={evt => this.props.retrySelection(evt)}
+                  onRetry={this.props.retrySelection}
                   onToggle={() => this.props.toggleSelection(selectionId)}
                   onDelete={() => this.props.deleteSelection(selectionId)}
                 />
