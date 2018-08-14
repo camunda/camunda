@@ -516,7 +516,25 @@ describe('Filters', () => {
       );
     });
 
-    it('should send null values for empty or invalid start dates', async () => {
+    it('should send null values for empty start dates', async () => {
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+
+      //when
+      await flushPromises();
+
+      node.instance().handleFieldChange({
+        target: {value: '', name: 'startDate'}
+      });
+      node.update();
+
+      // then
+      expect(spy).toHaveBeenCalledWith({
+        startDateAfter: null,
+        startDateBefore: null
+      });
+    });
+
+    it('should not update the filters when startDate is invalid', async () => {
       const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
 
       //when
@@ -528,10 +546,7 @@ describe('Filters', () => {
       node.update();
 
       // then
-      expect(spy).toHaveBeenCalledWith({
-        startDateAfter: null,
-        startDateBefore: null
-      });
+      expect(spy).toHaveBeenCalledWith({});
     });
   });
 
@@ -578,6 +593,21 @@ describe('Filters', () => {
 
       node.instance().handleFieldChange({
         target: {value: 'invalid date', name: 'endDate'}
+      });
+      node.update();
+
+      // then
+      expect(spy).toHaveBeenCalledWith({});
+    });
+
+    it('should not update the filters when endDate is invalid', async () => {
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+
+      //when
+      await flushPromises();
+
+      node.instance().handleFieldChange({
+        target: {value: '', name: 'endDate'}
       });
       node.update();
 

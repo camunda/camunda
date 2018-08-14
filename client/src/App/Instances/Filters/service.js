@@ -27,11 +27,15 @@ const parseDate = (value, name) => {
   // enforce no comma in the timezone
   const formatWithTimezone = 'YYYY-MM-DDTHH:mm:ss.SSSZZ';
 
-  if (!isValidDate) {
+  if (value === '') {
     return {
       [`${name}After`]: null,
       [`${name}Before`]: null
     };
+  }
+
+  if (!isValidDate) {
+    return null;
   }
 
   // temporary condition to check for presence of time in user input
