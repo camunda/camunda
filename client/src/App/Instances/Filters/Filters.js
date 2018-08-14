@@ -49,13 +49,18 @@ export default class Filters extends React.Component {
     currentWorkflow: {},
     currentWorkflowVersion: EMPTY_OPTION,
     currentActivityId: EMPTY_OPTION,
-    ids: ''
+    ids: '',
+    workflowNameOptions: []
   };
 
   componentDidMount = async () => {
+    const groupedWorkflows = await api.fetchGroupedWorkflowInstances();
+    const workflowNameOptions = parseWorkflowNames(groupedWorkflows);
+
     this.setState({
-      groupedWorkflows: await api.fetchGroupedWorkflowInstances(),
-      ids: this.props.filter.ids
+      groupedWorkflows,
+      ids: this.props.filter.ids,
+      workflowNameOptions
     });
   };
 
@@ -146,7 +151,7 @@ export default class Filters extends React.Component {
                 disabled={this.state.groupedWorkflows.length === 0}
                 name={FIELDS.workflowName.name}
                 placeholder={FIELDS.workflowName.placeholder}
-                options={parseWorkflowNames(this.state.groupedWorkflows)}
+                options={this.state.workflowNameOptions}
                 onChange={this.handleWorkflowNameChange}
               />
             </Styled.Field>

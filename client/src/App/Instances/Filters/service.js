@@ -1,7 +1,7 @@
 import {isValid, addDays, startOfDay, addMinutes, format} from 'date-fns';
 import {ALL_VERSIONS_OPTION} from './constants';
 
-export function parseWorkflowNames(workflows) {
+export function parseWorkflowNames(workflows = []) {
   return workflows.map(item => ({
     value: item.bpmnProcessId,
     label: item.name || item.bpmnProcessId

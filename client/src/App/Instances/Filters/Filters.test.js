@@ -243,8 +243,11 @@ describe('Filters', () => {
       // then
       expect(api.fetchGroupedWorkflowInstances).toHaveBeenCalled();
       expect(node.state().groupedWorkflows).toEqual(groupedWorkflowsMock);
-      expect(node.find({name: 'workflowName'}).props().options).toEqual(
+      expect(node.state().workflowNameOptions).toEqual(
         parseWorkflowNames(groupedWorkflowsMock)
+      );
+      expect(node.find({name: 'workflowName'}).props().options).toEqual(
+        node.state().workflowNameOptions
       );
     });
 
