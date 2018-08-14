@@ -67,12 +67,12 @@ export default class TypeaheadMultipleSelection extends React.Component {
     const {availableValues, selectedValues, loading} = this.props;
     const input = (
       <div className="TypeaheadMultipleSelection__labeled-input">
-        <p>Values that start with:</p>
+        <p>Values that contain:</p>
         <Input
           className="TypeaheadMultipleSelection__input"
           onChange={e => {
             this.setState({searchQuery: e.target.value});
-            return this.props.setPrefix(e);
+            return this.props.setFilter(e);
           }}
         />
       </div>

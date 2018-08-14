@@ -15,7 +15,7 @@ export default class StringInput extends React.Component {
 
   state = {
     loading: false,
-    prefix: '',
+    valueFilter: '',
     availableValues: [],
     valuesLoaded: 0,
     valuesAreComplete: false,
@@ -50,7 +50,7 @@ export default class StringInput extends React.Component {
           this.props.variable.type,
           0,
           this.state.valuesLoaded + valuesToLoad + this.props.filter.values.length + 1,
-          this.state.prefix
+          this.state.valueFilter
         );
 
         const numberOfUnselectedValuesToDisplay =
@@ -94,11 +94,11 @@ export default class StringInput extends React.Component {
     this.loadAvailableValues(true);
   };
 
-  setValuePrefix = async evt => {
-    const queryIncluded = this.state.prefix.slice(0, -1) === evt.target.value;
+  setValueFilter = async evt => {
+    const queryIncluded = this.state.valueFilter.slice(0, -1) === evt.target.value;
     this.setState(
       {
-        prefix: evt.target.value,
+        valueFilter: evt.target.value,
         valuesLoaded: queryIncluded ? this.props.filter.values.length : 0,
         numberOfUnselectedValuesToDisplay: valuesToLoad
       },
@@ -146,7 +146,7 @@ export default class StringInput extends React.Component {
             <TypeaheadMultipleSelection
               availableValues={this.state.availableValues}
               selectedValues={this.props.filter.values}
-              setPrefix={this.setValuePrefix}
+              setFilter={this.setValueFilter}
               toggleValue={this.toggleValue}
               loading={this.state.loading ? 1 : 0}
             />

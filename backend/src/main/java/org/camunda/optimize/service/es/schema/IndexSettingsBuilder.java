@@ -1,8 +1,10 @@
 package org.camunda.optimize.service.es.schema;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentType;
 
 import java.io.IOException;
@@ -13,24 +15,42 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 public class IndexSettingsBuilder {
 
   public static Settings build(ConfigurationService configurationService) throws IOException {
-    return Settings.builder()
-      .loadFromSource(jsonBuilder()
+    XContentBuilder builder = jsonBuilder();
+    builder
       .startObject()
         .field("refresh_interval", configurationService.getEsRefreshInterval())
         .field("number_of_replicas", configurationService.getEsNumberOfReplicas())
-        .field("number_of_shards", configurationService.getEsNumberOfShards())
-        .startObject("analysis")
-          .startObject("analyzer")
-            .startObject(configurationService.getAnalyzerName())
-              .field("type", "custom")
-              .field("tokenizer", configurationService.getTokenizer())
-              .field("filter", new String[]{configurationService.getTokenFilter()})
-            .endObject()
-        . endObject()
+        .field("number_of_shards", configurationService.getEsNumberOfShards());
+        addAnalysis(builder)
+      .endObject();
+    return Settings.builder()
+      .loadFromSource(builder.string(), XContentType.JSON).build();
+  }
+
+  private static XContentBuilder addAnalysis(XContentBuilder builder) throws IOException {
+    return builder
+    .startObject("analysis")
+      .startObject("analyzer")
+        .startObject("lowercase_ngram")
+          .field("type", "custom")
+          .field("tokenizer", "standard")
+          .field("filter", new String[]{"ngram_filter", "lowercase"})
         .endObject()
       .endObject()
-      .string(), XContentType.JSON)
-    .build();
+      .startObject("normalizer")
+        .startObject("lowercase_normalizer")
+          .field("type", "custom")
+          .field("filter", new String[]{"lowercase"})
+        .endObject()
+      .endObject()
+      .startObject("filter")
+        .startObject("ngram_filter")
+          .field("type", "nGram")
+          .field("min_gram", 1)
+          .field("max_gram", 10)
+        .endObject()
+      .endObject()
+    .endObject();
   }
 
   public static String buildAsString(ConfigurationService configurationService,

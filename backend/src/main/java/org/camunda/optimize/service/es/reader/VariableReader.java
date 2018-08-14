@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.es.reader;
 
 import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
+import org.camunda.optimize.rest.VariableRestService;
 import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 import org.camunda.optimize.service.util.VariableHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -8,7 +9,9 @@ import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.WildcardQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.BucketOrder;
@@ -33,9 +36,7 @@ import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ST
 import static org.camunda.optimize.service.util.VariableHelper.getAllVariableTypeFieldLabels;
 import static org.camunda.optimize.service.util.VariableHelper.getNestedVariableNameFieldLabel;
 import static org.camunda.optimize.service.util.VariableHelper.getNestedVariableValueFieldLabel;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.prefixQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
@@ -49,6 +50,9 @@ public class VariableReader {
   public static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
   private static final String NAMES_AGGREGATION = "names";
   private static final String VALUE_AGGREGATION = "values";
+  private static final String STRING_VARIABLE_VALUE_NGRAM = "nGramField";
+  private static final String STRING_VARIABLE_VALUE_LOWERCASE = "lowercaseField";
+
 
   @Autowired
   private Client esclient;
@@ -143,7 +147,7 @@ public class VariableReader {
                                         String processDefinitionVersion,
                                         String name,
                                         String type,
-                                        String valuePrefix) {
+                                        String valueFilter) {
     logger.debug("Fetching variable values for process definition with key [{}] and version [{}]",
       processDefinitionKey,
       processDefinitionVersion);
@@ -157,7 +161,7 @@ public class VariableReader {
           .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
           .setTypes(configurationService.getProcessInstanceType())
           .setQuery(query)
-          .addAggregation(getVariableValueAggregation(name, variableFieldLabel, valuePrefix))
+          .addAggregation(getVariableValueAggregation(name, variableFieldLabel, valueFilter))
           .get();
 
     Aggregations aggregations = response.getAggregations();
@@ -175,17 +179,18 @@ public class VariableReader {
     return allValues;
   }
 
-  private AggregationBuilder getVariableValueAggregation(String name, String variableFieldLabel, String namePrefix) {
+  private AggregationBuilder getVariableValueAggregation(String name, String variableFieldLabel, String valueFilter) {
     TermsAggregationBuilder collectAllVariableValues =
       terms(VALUE_AGGREGATION)
         .field(getNestedVariableValueFieldLabel(variableFieldLabel))
         .size(10_000)
         .order(BucketOrder.key(true));
+
     if (DATE_VARIABLES.equals(variableFieldLabel)) {
       collectAllVariableValues.format(configurationService.getOptimizeDateFormat());
     }
     FilterAggregationBuilder filterForVariableWithGivenNameAndPrefix =
-      getVariableValueFilterAggregation(name, variableFieldLabel, namePrefix);
+      getVariableValueFilterAggregation(name, variableFieldLabel, valueFilter);
     NestedAggregationBuilder checkoutVariables =
       nested(variableFieldLabel, variableFieldLabel);
 
@@ -201,22 +206,38 @@ public class VariableReader {
 
   private FilterAggregationBuilder getVariableValueFilterAggregation(String name,
                                                                      String variableFieldLabel,
-                                                                     String namePrefix) {
+                                                                     String valueFilter) {
     BoolQueryBuilder filterQuery = boolQuery()
         .must(termQuery(getNestedVariableNameFieldLabel(variableFieldLabel), name));
-    addPrefixFilter(variableFieldLabel, namePrefix, filterQuery);
+    addPrefixFilter(variableFieldLabel, valueFilter, filterQuery);
     return filter(
       FILTER_FOR_NAME_AGGREGATION,
       filterQuery
     );
   }
 
-  private void addPrefixFilter(String variableFieldLabel, String namePrefix, BoolQueryBuilder filterQuery) {
-    String securedNamePrefix = namePrefix == null ? "" : namePrefix;
-    if (STRING_VARIABLES.equals(variableFieldLabel)) {
-      filterQuery
-         .must(prefixQuery(getNestedVariableValueFieldLabel(variableFieldLabel), securedNamePrefix));
+  private void addPrefixFilter(String variableFieldLabel, String valueFilter, BoolQueryBuilder filterQuery) {
+    if (!(valueFilter == null) && !valueFilter.isEmpty() && STRING_VARIABLES.equals(variableFieldLabel)) {
+      valueFilter = valueFilter.toLowerCase();
+      QueryBuilder filter = (valueFilter.length() > 10)
+          ? wildcardQuery(
+              getMultiFieldName(variableFieldLabel, STRING_VARIABLE_VALUE_LOWERCASE),
+              buildWildcardQuery(valueFilter)
+          )
+          : termQuery(
+                  getMultiFieldName(getNestedVariableValueFieldLabel(variableFieldLabel), STRING_VARIABLE_VALUE_NGRAM),
+                  valueFilter
+          );
+
+      filterQuery.must(filter);
     }
   }
 
+  private String getMultiFieldName(String variableFieldLabel, String fieldName) {
+    return getNestedVariableValueFieldLabel(variableFieldLabel) + "." + fieldName;
+  }
+
+  private String buildWildcardQuery(String valueFilter) {
+    return "*" + valueFilter + "*";
+  }
 }

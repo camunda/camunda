@@ -15,8 +15,6 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
-import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
-
 @Component
 public class ElasticSearchSchemaManager {
 

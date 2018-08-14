@@ -31,7 +31,7 @@ public class VariableRestService {
   public static final String NUM_RESULTS = "numResults";
   public static final String RESULT_OFFSET = "resultOffset";
   public static final String ORDER_BY = "orderBy";
-  public static final String VALUE_PREFIX = "valuePrefix";
+  public static final String VALUE_FILTER = "valueFilter";
 
   @Autowired
   private VariableReader variableReader;
@@ -66,7 +66,7 @@ public class VariableRestService {
       @QueryParam(PROCESS_DEFINITION_VERSION) String processDefinitionVersion,
       @QueryParam(NAME) String name,
       @QueryParam(TYPE) String type,
-      @QueryParam(VALUE_PREFIX) String valuePrefix,
+      @QueryParam(VALUE_FILTER) String valueFilter,
       @QueryParam(RESULT_OFFSET) String resultOffset,
       @QueryParam(NUM_RESULTS) String numResults) {
 
@@ -75,7 +75,7 @@ public class VariableRestService {
     ValidationHelper.ensureNotEmpty("variable name", name);
     ValidationHelper.ensureNotEmpty("variable type", type);
     List<String> variableValues =
-      variableReader.getVariableValues(processDefinitionKey, processDefinitionVersion, name, type, valuePrefix);
+      variableReader.getVariableValues(processDefinitionKey, processDefinitionVersion, name, type, valueFilter);
 
     MultivaluedMap<String, String> queryParameters = new MultivaluedStringMap();
     queryParameters.put(RESULT_OFFSET, Collections.singletonList(resultOffset));

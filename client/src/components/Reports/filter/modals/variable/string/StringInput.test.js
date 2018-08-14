@@ -9,7 +9,7 @@ jest.mock('components', () => {
   const TypeaheadMultipleSelection = props => {
     const allowedProps = {...props};
     delete allowedProps.toggleValue;
-    delete allowedProps.setPrefix;
+    delete allowedProps.setFilter;
     delete allowedProps.availableValues;
     delete allowedProps.selectedValues;
     return <div {...allowedProps}>{props.availableValues.concat(props.selectedValues)}</div>;

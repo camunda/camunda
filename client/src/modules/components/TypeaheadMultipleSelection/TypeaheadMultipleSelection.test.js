@@ -12,14 +12,14 @@ jest.mock('services', () => {
   };
 });
 
-it('should still contain selected value after changing the prefix', async () => {
+it('should still contain selected value after changing the filter', async () => {
   const allValues = ['asd', 'dhdf', 'fefwf', 'aaf', 'thdfhr'];
   const toggleValue = jest.fn();
-  const setPrefix = jest.fn();
+  const setFilter = jest.fn();
   const node = mount(
     <TypeaheadMultipleSelection
       toggleValue={toggleValue}
-      setPrefix={setPrefix}
+      setFilter={setFilter}
       selectedValues={[]}
       availableValues={allValues}
     />
@@ -28,15 +28,15 @@ it('should still contain selected value after changing the prefix', async () => 
   toggleValue.mockImplementation(value =>
     node.setProps({selectedValues: node.props().selectedValues.concat([value])})
   );
-  setPrefix.mockImplementation(prefix =>
+  setFilter.mockImplementation(filter =>
     node.setProps({
-      availableValues: allValues.filter(value => value.slice(0, prefix.length) === prefix)
+      availableValues: allValues.filter(value => value.slice(0, filter.length) === filter)
     })
   );
 
-  node.props().setPrefix('a');
+  node.props().setFilter('a');
   node.props().toggleValue('asd');
-  node.props().setPrefix('f');
+  node.props().setFilter('f');
   expect(node).toIncludeText('asd');
   expect(node).toIncludeText('fefwf');
 });
@@ -44,11 +44,11 @@ it('should still contain selected value after changing the prefix', async () => 
 it('it should not show the unselected value if it does not match the query', async () => {
   const allValues = ['asd', 'dhdf', 'fefwf', 'aaf', 'thdfhr'];
   const toggleValue = jest.fn();
-  const setPrefix = jest.fn();
+  const setFilter = jest.fn();
   const node = mount(
     <TypeaheadMultipleSelection
       toggleValue={toggleValue}
-      setPrefix={setPrefix}
+      setFilter={setFilter}
       selectedValues={[]}
       availableValues={allValues}
     />
@@ -61,15 +61,15 @@ it('it should not show the unselected value if it does not match the query', asy
         : node.props().selectedValues.concat([value])
     })
   );
-  setPrefix.mockImplementation(prefix =>
+  setFilter.mockImplementation(filter =>
     node.setProps({
-      availableValues: allValues.filter(value => value.slice(0, prefix.length) === prefix)
+      availableValues: allValues.filter(value => value.slice(0, filter.length) === filter)
     })
   );
 
-  node.props().setPrefix('a');
+  node.props().setFilter('a');
   node.props().toggleValue('asd');
-  node.props().setPrefix('f');
+  node.props().setFilter('f');
   node.props().toggleValue('asd');
   expect(node).toIncludeText('fefwf');
   expect(node).not.toIncludeText('asd');
@@ -100,17 +100,17 @@ it('should add a value to the list of values when the checkbox is clicked', asyn
   expect(node.props().selectedValues.includes('value2')).toBe(true);
 });
 
-it('should request the values filtered by prefix entered in the input', () => {
-  const setPrefix = jest.fn();
+it('should request the values filtered by filter entered in the input', () => {
+  const setFilter = jest.fn();
   const allValues = ['asd', 'dhdf', 'fefwf', 'aaf', 'thdfhr'];
   const node = mount(
     <TypeaheadMultipleSelection
-      setPrefix={setPrefix}
+      setFilter={setFilter}
       selectedValues={[]}
       availableValues={allValues}
     />
   );
-  setPrefix.mockImplementation(({target: {value}}) =>
+  setFilter.mockImplementation(({target: {value}}) =>
     node.setProps({
       availableValues: allValues.filter(v => v.slice(0, value.length) === value)
     })

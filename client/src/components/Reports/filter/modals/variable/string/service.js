@@ -7,7 +7,7 @@ export async function loadValues(
   type,
   resultOffset,
   numResults,
-  valuePrefix
+  valueFilter
 ) {
   const response = await get(`/api/variables/values`, {
     processDefinitionKey,
@@ -16,7 +16,7 @@ export async function loadValues(
     type,
     resultOffset,
     numResults,
-    valuePrefix
+    valueFilter
   });
 
   return await response.json();
