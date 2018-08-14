@@ -79,7 +79,7 @@ export const LogEntry = themed(styled.button`
 
 export const Header = themed(styled(LogEntry)`
   padding-left: 23px;
-  color: ${({theme, isSelected, state}) => {
+  color: ${({theme, isSelected}) => {
     return isSelected || theme === 'dark'
       ? 'rgba(255, 255, 255, 0.9)'
       : 'rgba(69, 70, 78, 0.9)';

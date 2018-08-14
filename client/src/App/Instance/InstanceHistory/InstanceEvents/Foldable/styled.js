@@ -5,7 +5,7 @@ import {Down, Right} from 'modules/components/Icon';
 
 export const Foldable = themed(styled.div`
   color: ${themeStyle({
-    dark: '#ffffff',
+    dark: 'rgba(255, 255, 255, 0.9)',
     light: Colors.uiDark04
   })};
   font-size: 14px;
@@ -15,11 +15,8 @@ const iconStyle = css`
   width: 16px;
   height: 16px;
   object-fit: contain;
-  opacity: ${themeStyle({
-    dark: 0.9
-  })};
   color: ${themeStyle({
-    dark: '#ffffff',
+    dark: 'rgba(255, 255, 255, 0.9)',
     light: Colors.uiDark04
   })};
 `;
@@ -48,6 +45,8 @@ export const Summary = themed(styled.div`
   padding-top: 7px;
   padding-bottom: 7px;
   font-weight: ${({isBold}) => (!isBold ? 'normal' : 'bold')};
+  color: ${({isBold, theme}) =>
+    !isBold || theme === 'dark' ? '' : 'rgba(69, 70, 78, 0.9)'};
 `);
 
 export const SummaryLabel = styled.span`

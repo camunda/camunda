@@ -60,7 +60,8 @@ Foldable.Summary.propTypes = {
   children: PropTypes.oneOfType([
     PropTypes.arrayOf(PropTypes.node),
     PropTypes.node
-  ])
+  ]),
+  isBold: PropTypes.string
 };
 
 Foldable.Summary.defaultProps = {
