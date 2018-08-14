@@ -6,10 +6,8 @@ import Panel from 'modules/components/Panel';
 import {batchRetry} from 'modules/api/selections';
 import {BADGE_TYPE, DIRECTION} from 'modules/constants';
 import {getSelectionById} from 'modules/utils/selection';
-import {fetchWorkflowInstanceBySelection} from 'modules/api/instances';
 
 import SelectionList from './SelectionList';
-import {getParentFilter} from './service';
 
 import * as Styled from './styled';
 
