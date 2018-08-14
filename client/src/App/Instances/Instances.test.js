@@ -1,14 +1,13 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
+import {mockResolvedAsyncFn} from 'modules/testUtils';
 
 import WrappedInstances from './Instances';
 import {DEFAULT_FILTER} from 'modules/constants';
 import * as api from 'modules/api/instances/instances';
 import Filters from './Filters';
 import ListView from './ListView';
-import Header from '../Header';
 import Diagram from 'modules/components/Diagram';
 import PanelHeader from 'modules/components/Panel/PanelHeader';
 
@@ -244,119 +243,6 @@ describe('Instances', () => {
       expect(node.find(PanelHeader).props().children).toBe(
         workflowMock.name || workflowMock.id
       );
-      const demoSelection = {
-        queries: [{}],
-        selecionId: 0,
-        totalCount: 2,
-        workflowInstances: [
-          {
-            id: '4294984040',
-            workflowId: '1',
-            startDate: '2018-07-10T08:58:58.073+0000',
-            endDate: null,
-            state: 'ACTIVE',
-            businessKey: 'demoProcess',
-            incidents: [],
-            activities: []
-          },
-
-          {
-            id: '4294984041',
-            workflowId: '1',
-            startDate: '2018-07-10T08:58:58.073+0000',
-            endDate: null,
-            state: 'ACTIVE',
-            businessKey: 'demoProcess',
-            incidents: [],
-            activities: []
-          }
-        ]
-      };
-
-      const times = x => f => {
-        if (x > 0) {
-          f();
-          times(x - 1)(f);
-        }
-      };
-
-      api.fetchWorkflowInstanceBySelection = mockResolvedAsyncFn({
-        id: '1',
-        workflowId: '1',
-        startDate: '2018-07-10T08:58:58.073+0000',
-        endDate: null,
-        state: 'ACTIVE',
-        businessKey: 'demoProcess',
-        incidents: [],
-        activities: []
-      });
-
-      const selections = [];
-      selections.push(demoSelection);
-    });
-  });
-
-  describe('Selections', () => {
-    const demoSelection = {
-      queries: [{}],
-      selecionId: 0,
-      totalCount: 2,
-      workflowInstances: [
-        {
-          id: '4294984040',
-          workflowId: '1',
-          startDate: '2018-07-10T08:58:58.073+0000',
-          endDate: null,
-          state: 'ACTIVE',
-          businessKey: 'demoProcess',
-          incidents: [],
-          activities: []
-        },
-
-        {
-          id: '4294984041',
-          workflowId: '1',
-          startDate: '2018-07-10T08:58:58.073+0000',
-          endDate: null,
-          state: 'ACTIVE',
-          businessKey: 'demoProcess',
-          incidents: [],
-          activities: []
-        }
-      ]
-    };
-
-    const times = x => f => {
-      if (x > 0) {
-        f();
-        times(x - 1)(f);
-      }
-    };
-
-    api.fetchWorkflowInstanceBySelection = mockResolvedAsyncFn({
-      id: '1',
-      workflowId: '1',
-      startDate: '2018-07-10T08:58:58.073+0000',
-      endDate: null,
-      state: 'ACTIVE',
-      businessKey: 'demoProcess',
-      incidents: [],
-      activities: []
-    });
-
-    const selections = [];
-    selections.push(demoSelection);
-
-    it('should toggle a selection', () => {
-      // given
-      const node = shallow(InstancesWithRunningFilter);
-      node.setState({selections});
-
-      //when
-      node.instance().toggleSelection(demoSelection.selecionId);
-
-      //then
-      expect(node.state('openSelection')).toBe(demoSelection.selecionId);
     });
 
     it('should update the activityIds when the diagram finishes loading', () => {

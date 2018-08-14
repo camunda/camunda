@@ -1,4 +1,5 @@
 import {isValidJSON} from 'modules/utils';
+import {getSelectionById} from 'modules/utils/selection';
 
 export function parseQueryString(queryString = '') {
   var params = {};
@@ -23,19 +24,30 @@ export function createNewSelectionFragment() {
   return {ids: new Set(), excludeIds: new Set()};
 }
 
-export function getParentFilter(filter) {
-  const appliedFilters = Object.keys(filter);
-  if (appliedFilters.includes('incidents' || 'active')) return {running: true};
-  if (appliedFilters.includes('completed' || 'canceled'))
-    return {finished: true};
+export function getParentFilter(appliedFilters) {
+  return Object.keys(appliedFilters).includes('incidents' || 'active')
+    ? {running: true}
+    : {finished: true};
 }
 
-export function getSelectionById(selections, id) {
-  return selections
-    .map(
-      (selection, index) =>
-        selection.selectionId === id && {...selection, index}
-    )
-    .filter(selection => selection.selectionId >= 0)
-    .shift();
+export function getPayload({selectionId, state}) {
+  const {selection, selections, filter} = state;
+  let selectiondata;
+
+  if (selectionId) {
+    selectiondata = getSelectionById(selections, selectionId);
+  }
+
+  return {
+    queries: [
+      {
+        ...filter,
+        ...getParentFilter(filter),
+        ...selection,
+        ids: [...(selection.ids || [])],
+        excludeIds: [...(selection.excludeIds || [])]
+      },
+      ...(selectionId ? selections[selectiondata.index].queries : '')
+    ]
+  };
 }

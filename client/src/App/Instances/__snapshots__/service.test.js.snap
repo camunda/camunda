@@ -1,0 +1,14 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Selection services should return payload for create new Selection 1`] = `
+Object {
+  "queries": Array [
+    Object {
+      "excludeIds": Array [],
+      "ids": Array [],
+      "incidents": true,
+      "running": true,
+    },
+  ],
+}
+`;

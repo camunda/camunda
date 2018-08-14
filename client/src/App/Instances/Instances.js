@@ -1,32 +1,34 @@
 import React, {Component, Fragment} from 'react';
 import PropTypes from 'prop-types';
 
-import {fetchWorkflowInstanceBySelection} from 'modules/api/instances';
-
 import Content from 'modules/components/Content';
-import Panel from 'modules/components/Panel';
+
 import withSharedState from 'modules/components/withSharedState';
 import SplitPane from 'modules/components/SplitPane';
 import Diagram from 'modules/components/Diagram';
-import {DIRECTION, DEFAULT_FILTER} from 'modules/constants';
-import {fetchWorkflowInstancesCount} from 'modules/api/instances';
+import {DEFAULT_FILTER} from 'modules/constants';
+import {
+  fetchWorkflowInstanceBySelection,
+  fetchWorkflowInstancesCount
+} from 'modules/api/instances';
+
 import {
   parseFilterForRequest,
   getFilterQueryString
 } from 'modules/utils/filter';
 
-import {BADGE_TYPE} from 'modules/constants';
+import {getSelectionById} from 'modules/utils/selection';
 
 import Header from '../Header';
 import ListView from './ListView';
-import SelectionList from './SelectionList';
+import Filters from './Filters';
+import Selections from './Selections';
+
 import {
   parseQueryString,
   createNewSelectionFragment,
-  getParentFilter,
-  getSelectionById
+  getPayload
 } from './service';
-import Filters from './Filters';
 import * as Styled from './styled.js';
 
 class Instances extends Component {
@@ -71,12 +73,19 @@ class Instances extends Component {
     }
   }
 
+  handleStateChange = change => {
+    this.setState(change);
+  };
+
   addSelectionToList = async selection => {
     const {
-      rollingSelectionIndex: currentSelectionIndex,
+      rollingSelectionIndex,
       instancesInSelectionsCount,
-      selectionCount
+      selectionCount,
+      selections
     } = this.state;
+
+    const currentSelectionIndex = rollingSelectionIndex;
 
     // Add Id for each selection
     await this.setState(prevState => ({
@@ -93,108 +102,36 @@ class Instances extends Component {
       selectionCount: selectionCount + 1
     }));
     this.props.storeStateLocally({
-      selectionCount: this.state.selectionCount,
-      instancesInSelectionsCount: this.state.instancesInSelectionsCount,
-      selections: this.state.selections,
-      rollingSelectionIndex: this.state.rollingSelectionIndex
+      selectionCount,
+      instancesInSelectionsCount,
+      selections,
+      rollingSelectionIndex
     });
   };
 
-  handleAddNewSelection = async () => {
-    const {selection, filter} = this.state;
-
-    //Replace Sets with arrays.
-    const payload = {
-      queries: [
-        {
-          ...filter,
-          ...getParentFilter(filter),
-          ...selection,
-          ids: [...(selection.ids || [])],
-          excludeIds: [...(selection.excludeIds || [])]
-        }
-      ]
-    };
-
+  addNewSelection = async () => {
+    const payload = getPayload({state: this.state});
     const instancesDetails = await fetchWorkflowInstanceBySelection(payload);
-
-    this.addSelectionToList({
-      ...payload,
-      ...instancesDetails
-    });
+    this.addSelectionToList({...payload, ...instancesDetails});
   };
 
-  updateSelectionData = async selectionId => {
-    const {selection, selections, filter} = this.state;
-    const selectiondata = getSelectionById(selections, selectionId);
-
-    const payload = {
-      queries: [
-        {
-          ...filter,
-          ...getParentFilter(filter),
-          ...selection,
-          ids: [...(selection.ids || [])],
-          excludeIds: [...(selection.excludeIds || [])]
-        },
-        ...(selections[selectiondata.index].queries || '')
-      ]
-    };
-
-    const instancesDetails = await fetchWorkflowInstanceBySelection(payload);
-
-    return {
-      ...(selectiondata && selections[selectiondata.index]),
-      ...payload,
-      ...instancesDetails
-    };
-  };
-
-  addToCurrentSelection = async selectionId => {
-    const selectiondata = getSelectionById(this.state.selections, selectionId);
-    const newSelection = await this.updateSelectionData(selectionId);
-
+  addToOpenSelection = async selectionId => {
     const {selections} = this.state;
+    const selectiondata = getSelectionById(selections, selectionId);
+    const payload = getPayload({state: this.state, selectionId});
+    const instancesDetails = await fetchWorkflowInstanceBySelection(payload);
+
+    const newSelection = {
+      ...selections[selectiondata.index],
+      ...payload,
+      ...instancesDetails
+    };
 
     selections[selectiondata.index] = newSelection;
 
     this.setState(selections);
     this.props.storeStateLocally({
       selections
-    });
-  };
-
-  toggleSelection = selectionId => {
-    this.setState({
-      openSelection:
-        selectionId !== this.state.openSelection ? selectionId : null
-    });
-  };
-
-  updateSelection = change => {
-    this.setState({
-      selection: {...change}
-    });
-  };
-
-  deleteSelection = async deleteId => {
-    const {selections, instancesInSelectionsCount, selectionCount} = this.state;
-
-    const selectionToRemove = getSelectionById(selections, deleteId);
-
-    // remove the selection
-    selections.splice(selectionToRemove.index, 1);
-
-    await this.setState({
-      selections,
-      instancesInSelectionsCount:
-        instancesInSelectionsCount - selectionToRemove.totalCount,
-      selectionCount: selectionCount - 1 || 0
-    });
-    this.props.storeStateLocally({
-      selections,
-      instancesInSelectionsCount: this.state.instancesInSelectionsCount,
-      selectionCount: this.state.selectionCount
     });
   };
 
@@ -273,7 +210,6 @@ class Instances extends Component {
 
   render() {
     const {running, incidents: incidentsCount} = this.props.getStateLocally();
-
     return (
       <Fragment>
         <Header
@@ -314,43 +250,28 @@ class Instances extends Component {
 
               <ListView
                 instancesInFilter={this.state.filterCount}
-                onSelectionUpdate={change => {
-                  this.updateSelection(change);
+                updateSelection={change => {
+                  this.handleStateChange({selection: {...change}});
                 }}
                 selection={this.state.selection}
                 filter={this.state.filter}
-                handleAddNewSelection={this.handleAddNewSelection}
-                addToCurrentSelection={() =>
-                  this.addToCurrentSelection(this.state.openSelection)
+                addNewSelection={this.addNewSelection}
+                addToOpenSelection={() =>
+                  this.addToOpenSelection(this.state.openSelection)
                 }
                 errorMessage={this.state.errorMessage}
               />
             </Styled.Center>
-            <Styled.Selections>
-              <Panel isRounded>
-                <Styled.SelectionHeader isRounded>
-                  <span>Selections</span>
-                  <Styled.Badge
-                    type={BADGE_TYPE.COMBOSELECTION}
-                    badgeContent={this.state.instancesInSelectionsCount}
-                    circleContent={this.state.selectionCount}
-                  />
-                </Styled.SelectionHeader>
-                <Panel.Body>
-                  <SelectionList
-                    openSelection={this.state.openSelection}
-                    selections={this.state.selections}
-                    onDelete={this.deleteSelection}
-                    onToggle={this.toggleSelection}
-                  />
-                </Panel.Body>
-                <Styled.RightExpandButton
-                  direction={DIRECTION.RIGHT}
-                  isExpanded={true}
-                />
-                <Panel.Footer />
-              </Panel>
-            </Styled.Selections>
+            <Selections
+              openSelection={this.state.openSelection}
+              selections={this.state.selections}
+              rollingSelectionIndex={this.state.rollingSelectionIndex}
+              selectionCount={this.state.selectionCount}
+              instancesInSelectionsCount={this.state.instancesInSelectionsCount}
+              filter={this.state.filter}
+              handleStateChange={this.handleStateChange}
+              storeStateLocally={this.props.storeStateLocally}
+            />
           </Styled.Instances>
         </Content>
       </Fragment>

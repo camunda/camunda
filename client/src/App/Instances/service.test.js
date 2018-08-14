@@ -1,4 +1,4 @@
-import {parseQueryString} from './service';
+import {parseQueryString, getParentFilter, getPayload} from './service';
 
 describe('Instances service', () => {
   describe('parseQueryString', () => {
@@ -28,5 +28,34 @@ describe('Instances service', () => {
 
       expect(parseQueryString(input)).toEqual(output);
     });
+  });
+});
+
+describe('Selection services', () => {
+  let filter;
+  let state;
+
+  it('should return parent filter', () => {
+    //when
+    filter = {incidents: true};
+    //then
+    expect(getParentFilter(filter)).toEqual({running: true});
+
+    //when
+    filter = {completed: true};
+    //then
+    expect(getParentFilter(filter)).toEqual({finished: true});
+  });
+
+  it('should return payload for create new Selection', () => {
+    //when
+    state = {
+      selection: {ids: [], excludeIds: []},
+      selections: [],
+      filter: {incidents: true}
+    };
+
+    //then
+    expect(getPayload({state})).toMatchSnapshot();
   });
 });
